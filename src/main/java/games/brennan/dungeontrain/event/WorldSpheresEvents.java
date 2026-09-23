@@ -46,11 +46,13 @@ import java.util.Set;
  *   <li>Outside every sphere the block is erased — outright in the core, and noise-dithered against
  *       the depth-weighted End erosion probability across the entry fade, so the terrain crumbles
  *       from below as the spheres begin.</li>
- *   <li>The corridor is preserved in its tunnel window only ({@code wallMinZ..wallMaxZ} ×
- *       {@code bedY..ceilingY}: bed, rails, cleared airspace, shell), so the track survives without a
- *       wall of terrain following it through the void, and a sphere crossing the track gets a clean
- *       slot cut through it. Pillar stubs below the bed are treated like any other block — the bed
- *       floats over open void exactly as it does in the End band.</li>
+ *   <li>Only the track itself is preserved — the bed row and the rail row across the track's own
+ *       Z-lane, exactly what {@code WorldDisintegrationEvents} keeps in the End fade. The tunnel
+ *       shell a mountain earned, the pillars under the bed and any terrain in the lane are ordinary
+ *       blocks: they dissolve with the ground they belonged to, so no stone-brick tube outlives its
+ *       mountain. The train's airspace ({@code airMinZ..airMaxZ} × the rows between bed and tunnel
+ *       ceiling) is carved through any sphere that crosses the track, so the bed floats over open
+ *       void and a crossing sphere gets a clean slot cut through it.</li>
  * </ul>
  *
  * <p>Runs on {@link ChunkEvent.Load} gated on {@link ChunkEvent.Load#isNewChunk()} — once at
@@ -103,8 +105,10 @@ public final class WorldSpheresEvents {
         TrackGeometry g = TrackGeometry.from(data.dims(), data.getTrainY());
         TunnelGeometry tg = TunnelGeometry.from(g);
         int bedY = g.bedY();
-        int keepZMin = tg.wallMinZ(), keepZMax = tg.wallMaxZ();
-        int keepYMin = tg.floorY(), keepYMax = tg.ceilingY();
+        int laneZMin = g.trackZMin(), laneZMax = g.trackZMax();     // bed + rail rows survive here
+        int railY = g.railY();
+        int airZMin = tg.airMinZ(), airZMax = tg.airMaxZ();         // train airspace carved through spheres
+        int airYMin = bedY + 1, airYMax = tg.ceilingY() - 1;
 
         double[] ramp = new double[16];
         boolean any = false;
@@ -127,20 +131,21 @@ public final class WorldSpheresEvents {
             boolean core = ramp[dx] >= 1.0;
             for (int dz = 0; dz < 16; dz++) {
                 int worldZ = chunkMinZ + dz;
-                boolean corridorZ = worldZ >= keepZMin && worldZ <= keepZMax;
+                boolean laneZ = worldZ >= laneZMin && worldZ <= laneZMax;
+                boolean airZ = worldZ >= airZMin && worldZ <= airZMax;
 
                 colSpheres.clear();
                 for (SphereField.Sphere s : candidates) {
                     if (s.touchesColumn(worldX, worldZ)) colSpheres.add(s);
                 }
-                if (colSpheres.isEmpty() && core && !corridorZ) {
+                if (colSpheres.isEmpty() && core && !laneZ) {
                     changed |= clearColumn(chunk, dx, dz, worldX, worldZ, minY, maxY);
                     continue;
                 }
 
                 snapshot(chunk, dx, dz, col, minY);
                 changed |= rewriteColumn(chunk, dx, dz, worldX, worldZ, col, colSpheres, ramp[dx], core,
-                        corridorZ, keepYMin, keepYMax, bedY, seed, minY, maxY);
+                        laneZ, airZ, railY, airYMin, airYMax, bedY, seed, minY, maxY);
             }
         }
         return changed;
@@ -182,15 +187,16 @@ public final class WorldSpheresEvents {
     /** Gather-write one column from its snapshot; true if any block changed. */
     private static boolean rewriteColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                          BlockState[] col, List<SphereField.Sphere> spheres,
-                                         double ramp, boolean core, boolean corridorZ,
-                                         int keepYMin, int keepYMax, int bedY, long seed,
+                                         double ramp, boolean core, boolean laneZ, boolean airZ,
+                                         int railY, int airYMin, int airYMax, int bedY, long seed,
                                          int minY, int maxY) {
         boolean changed = false;
         for (int y = minY; y < maxY; y++) {
-            if (corridorZ && y >= keepYMin && y <= keepYMax) continue;   // tunnel window: bed, rails, shell
+            if (laneZ && (y == bedY || y == railY)) continue;            // the track itself: bed + rails
             BlockState cur = col[y - minY];
             BlockState ns;
-            SphereField.Sphere owner = SphereField.bestAt(spheres, worldX, y, worldZ);
+            boolean trainAir = airZ && y >= airYMin && y <= airYMax;     // keep the train's airspace open
+            SphereField.Sphere owner = trainAir ? null : SphereField.bestAt(spheres, worldX, y, worldZ);
             if (owner != null) {
                 int sy = owner.sourceY(y);
                 ns = (sy >= minY && sy < maxY) ? lifted(col[sy - minY]) : AIR;
