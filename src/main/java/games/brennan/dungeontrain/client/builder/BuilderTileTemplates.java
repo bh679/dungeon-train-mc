@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.TemplateCells;
+import games.brennan.dungeontrain.editor.TemplateLoot;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -89,8 +90,15 @@ final class BuilderTileTemplates {
         Map<BlockPos, BlockState> cells = TemplateCells.of(template);
         TemplateCells.NbtTally tally = TemplateCells.tallyBlockEntities(template);
         TemplateSummary summary = new TemplateSummary(cells.size(), template.getSize(),
-                tally.blockEntities(), tally.containers(), TemplateCells.entityCount(tag.get()));
+                tally.blockEntities(), tally.containers(), TemplateCells.entityCount(tag.get()),
+                TemplateCells.lights(cells), TemplateLoot.of(template, kind, subKindOf(partKind, trackKind), id));
         return new Loaded(cells, summary);
+    }
+
+    /** The sub kind a part or track is keyed by in its sidecars, or null for every other kind. */
+    private static String subKindOf(CarriagePartKind partKind, TrackKind trackKind) {
+        if (partKind != null) return partKind.id();
+        return trackKind == null ? null : trackKind.id();
     }
 
     /** The same store-per-kind switch {@link BuilderPhotoPaths#photoFor} makes, for the NBT. */

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.editor.TemplateCells;
+import games.brennan.dungeontrain.editor.TemplateLoot;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.RelayBuildPreviewRequestPacket;
 import net.minecraft.client.Minecraft;
@@ -197,7 +198,8 @@ public final class RelayBuildPreviews {
                 TemplateCells.NbtTally tally = TemplateCells.tallyBlockEntities(template);
                 entry = new Entry(cells.isEmpty() ? null : BuilderTileMesh.bake(cells),
                     new TemplateSummary(cells.size(), template.getSize(), tally.blockEntities(),
-                        tally.containers(), TemplateCells.entityCount(pending.template())));
+                        tally.containers(), TemplateCells.entityCount(pending.template()),
+                        TemplateCells.lights(cells), TemplateLoot.of(template)));
             } catch (RuntimeException e) {
                 // A build this version cannot read keeps its slate rather than taking the screen down.
                 entry = new Entry(null, TemplateSummary.NONE);

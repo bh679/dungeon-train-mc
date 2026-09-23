@@ -3660,6 +3660,88 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.sheet.loot_source.prefab": {
+    "1": {
+      "label": "the id of the loot prefab that fills this container",
+      "examples": [
+        "bookshelf",
+        "fullironallenchant"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.sheet.loot_source.table": {
+    "1": {
+      "label": "the id of the vanilla loot table, or archaeology for suspicious sand and gravel",
+      "examples": [
+        "minecraft:chests/simple_dungeon",
+        "archaeology"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.sheet.light_level": {
+    "1": {
+      "label": "the block's light level, 1 to 15",
+      "examples": [
+        "14",
+        "15"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.sheet.loot_source.default": {
+    "1": {
+      "label": "the id of the loot prefab an empty container of this block type may roll",
+      "examples": [
+        "bookshelf"
+      ]
+    },
+    "2": {
+      "label": "the percent chance that prefab is rolled",
+      "examples": [
+        "20",
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.loot_page.header": {
+    "1": {
+      "label": "the build's total loot value score, one decimal place",
+      "examples": [
+        "24.6"
+      ]
+    },
+    "2": {
+      "label": "how many different items the build's loot can give",
+      "examples": [
+        "37"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.loot_page.in": {
+    "1": {
+      "label": "a comma-separated list of the blocks that can hold this item, each with a count",
+      "examples": [
+        "Chest ×12, Barrel ×3"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.sheet.loot_variant": {
+    "1": {
+      "label": "the percent chance this block variant is the one placed",
+      "examples": [
+        "25",
+        "50"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.sheet.loot_value": {
+    "1": {
+      "label": "a loot value score with one decimal place",
+      "examples": [
+        "3.5",
+        "42.0"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.layout.section": {
     "1": {
       "label": "the template type this section lists (Carriages, Floor, Walls…)",
