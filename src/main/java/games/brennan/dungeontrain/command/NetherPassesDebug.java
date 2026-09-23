@@ -15,8 +15,9 @@ import java.util.Set;
 
 /**
  * {@code /dungeontrain debug nether-passes}: for the first few Nether bands, prints the core's world-X
- * range and the core biomes sampled along it (Z=0), and says which bands are BetterNether. Also logged
- * at INFO so a headless RCON run can read it from {@code latest.log}.
+ * range and the core biomes sampled along it (Z=0), and says which bands are BetterNether. Also gives
+ * the End core's X range for the same pass, so a check that BetterNether left the End band alone has a
+ * place to look. Logged at INFO so a headless RCON run can read it from {@code latest.log}.
  */
 final class NetherPassesDebug {
 
@@ -65,7 +66,21 @@ final class NetherPassesDebug {
         String kind = BetterNetherCoreBiomes.isBetterNetherPass(pass) && biomes.hasBetterNether()
                 ? "BetterNether" : "vanilla";
         return "  pass " + pass + " (" + kind + "): core x=" + coreMin + ".." + coreMax
-                + " centre=" + ((coreMin + coreMax) / 2) + " biomes=" + seen;
+                + " centre=" + ((coreMin + coreMax) / 2) + " biomes=" + seen
+                + " | " + describeEndCore(cycle, bandEnd, bandStart - Math.max(0, cycle.owGap()) + cycle.period());
+    }
+
+    /** The End core's X range between the Nether band's end and the end of this cycle repeat. */
+    private static String describeEndCore(WorldGenCycle cycle, long from, long to) {
+        long min = Long.MAX_VALUE;
+        long max = Long.MIN_VALUE;
+        for (long x = from; x < to && x <= Integer.MAX_VALUE; x += CORE_SCAN_STEP) {
+            if (cycle.isEndCore((int) x)) {
+                min = Math.min(min, x);
+                max = Math.max(max, x);
+            }
+        }
+        return min > max ? "no End core" : "End core x=" + min + ".." + max + " centre=" + ((min + max) / 2);
     }
 
     private static ChatFormatting passColour(int pass) {
