@@ -15,14 +15,14 @@ import java.util.Random;
  * veins and clay patches, flowers and grass, dead bushes, reeds, pumpkins, cacti and springs. Dungeons
  * live in {@link BetaDungeon}; trees in {@link BetaTrees}.
  */
-final class BetaFeatures {
+public final class BetaFeatures {
 
     private BetaFeatures() {}
 
     // ---- lakes ------------------------------------------------------------------------
 
     /** A water or lava lake blob in a 16×8×16 box around {@code (x, y, z)}. */
-    static boolean lake(BetaWorld world, Random rand, int x, int y, int z, BlockState fluid) {
+    public static boolean lake(BetaWorld world, Random rand, int x, int y, int z, BlockState fluid) {
         x -= 8;
         z -= 8;
         while (y > 0 && world.isAir(x, y, z)) y--;
@@ -101,7 +101,7 @@ final class BetaFeatures {
     // ---- veins ------------------------------------------------------------------------
 
     /** A vein of {@code size} blocks of {@code ore} replacing {@code target}. */
-    static void vein(BetaWorld world, Random rand, int x, int y, int z, int size, BlockState ore, Block target) {
+    public static void vein(BetaWorld world, Random rand, int x, int y, int z, int size, BlockState ore, Block target) {
         float angle = rand.nextFloat() * 3.141593F;
         double x0 = (float) (x + 8) + LegacyMath.sin(angle) * size / 8.0F;
         double x1 = (float) (x + 8) - LegacyMath.sin(angle) * size / 8.0F;
@@ -140,7 +140,7 @@ final class BetaFeatures {
     }
 
     /** A clay patch: only starts in water, and turns sand to clay. */
-    static void clay(BetaWorld world, Random rand, int x, int y, int z, int size) {
+    public static void clay(BetaWorld world, Random rand, int x, int y, int z, int size) {
         if (!world.is(x, y, z, Blocks.WATER)) return;
         vein(world, rand, x, y, z, size, Blocks.CLAY.defaultBlockState(), Blocks.SAND);
     }
@@ -152,7 +152,7 @@ final class BetaFeatures {
     }
 
     /** Flowers (on grass/dirt) and mushrooms (on any solid block, shaded): 64 tries around the start. */
-    static void flowers(BetaWorld world, Random rand, int x, int y, int z, BlockState plant) {
+    public static void flowers(BetaWorld world, Random rand, int x, int y, int z, BlockState plant) {
         boolean mushroom = plant.is(Blocks.BROWN_MUSHROOM) || plant.is(Blocks.RED_MUSHROOM);
         for (int i = 0; i < 64; i++) {
             int px = x + rand.nextInt(8) - rand.nextInt(8);
@@ -167,7 +167,7 @@ final class BetaFeatures {
     }
 
     /** Tall grass / ferns: settle onto the ground, then 128 tries. */
-    static void tallGrass(BetaWorld world, Random rand, int x, int y, int z, BlockState plant) {
+    public static void tallGrass(BetaWorld world, Random rand, int x, int y, int z, BlockState plant) {
         while (y > 0 && world.isAirOrLeaves(x, y, z)) y--;
         for (int i = 0; i < 128; i++) {
             int px = x + rand.nextInt(8) - rand.nextInt(8);
@@ -178,7 +178,7 @@ final class BetaFeatures {
     }
 
     /** Dead bushes on sand: settle onto the ground, then 4 tries. */
-    static void deadBush(BetaWorld world, Random rand, int x, int y, int z) {
+    public static void deadBush(BetaWorld world, Random rand, int x, int y, int z) {
         while (y > 0 && world.isAirOrLeaves(x, y, z)) y--;
         for (int i = 0; i < 4; i++) {
             int px = x + rand.nextInt(8) - rand.nextInt(8);
@@ -191,7 +191,7 @@ final class BetaFeatures {
     }
 
     /** Sugar cane beside water: 20 tries, each a stalk of 2–4. */
-    static void reeds(BetaWorld world, Random rand, int x, int y, int z) {
+    public static void reeds(BetaWorld world, Random rand, int x, int y, int z) {
         for (int i = 0; i < 20; i++) {
             int px = x + rand.nextInt(4) - rand.nextInt(4);
             int pz = z + rand.nextInt(4) - rand.nextInt(4);
@@ -212,7 +212,7 @@ final class BetaFeatures {
     }
 
     /** A pumpkin patch on grass: 64 tries, random facing. */
-    static void pumpkins(BetaWorld world, Random rand, int x, int y, int z) {
+    public static void pumpkins(BetaWorld world, Random rand, int x, int y, int z) {
         for (int i = 0; i < 64; i++) {
             int px = x + rand.nextInt(8) - rand.nextInt(8);
             int py = y + rand.nextInt(4) - rand.nextInt(4);
@@ -225,7 +225,7 @@ final class BetaFeatures {
     }
 
     /** Cacti on sand with open sides: 10 tries, each 1–3 tall. */
-    static void cactus(BetaWorld world, Random rand, int x, int y, int z) {
+    public static void cactus(BetaWorld world, Random rand, int x, int y, int z) {
         for (int i = 0; i < 10; i++) {
             int px = x + rand.nextInt(8) - rand.nextInt(8);
             int py = y + rand.nextInt(4) - rand.nextInt(4);
@@ -244,10 +244,36 @@ final class BetaFeatures {
         }
     }
 
+    // ---- snow ---------------------------------------------------------------------------
+
+    /** Decides, per column and ground height, whether a snow layer belongs there (Beta: by temperature). */
+    @FunctionalInterface
+    public interface SnowRule {
+        boolean snows(int x, int y, int z);
+    }
+
+    /**
+     * Snow on exposed solid ground (never on ice) across the decorating square {@code bx+8 .. bx+23}
+     * (likewise z), wherever {@code rule} allows it.
+     */
+    public static void snowCover(BetaWorld world, int bx, int bz, SnowRule rule) {
+        BlockState snow = Blocks.SNOW.defaultBlockState();
+        for (int x = bx + 8; x < bx + 24; x++) {
+            for (int z = bz + 8; z < bz + 24; z++) {
+                int y = world.topSolidOrLiquid(x, z);
+                if (y <= 0 || y >= BetaTerrain.HEIGHT) continue;
+                if (rule.snows(x, y, z) && world.isAir(x, y, z) && world.isSolid(x, y - 1, z)
+                        && !world.is(x, y - 1, z, Blocks.ICE)) {
+                    world.set(x, y, z, snow);
+                }
+            }
+        }
+    }
+
     // ---- springs ------------------------------------------------------------------------
 
     /** A one-block spring in a stone wall with exactly one open side. */
-    static void spring(BetaWorld world, int x, int y, int z, BlockState fluid) {
+    public static void spring(BetaWorld world, int x, int y, int z, BlockState fluid) {
         if (!world.is(x, y + 1, z, Blocks.STONE) || !world.is(x, y - 1, z, Blocks.STONE)) return;
         if (!world.isAir(x, y, z) && !world.is(x, y, z, Blocks.STONE)) return;
         int stone = 0;

@@ -163,17 +163,7 @@ public final class BetaPopulator {
 
     /** Snow on exposed solid ground wherever Beta's altitude-adjusted temperature drops below 0.5. */
     private static void snow(BetaWorld world, BetaClimate climate, int bx, int bz) {
-        BlockState snow = Blocks.SNOW.defaultBlockState();
-        for (int x = bx + 8; x < bx + 24; x++) {
-            for (int z = bz + 8; z < bz + 24; z++) {
-                int y = world.topSolidOrLiquid(x, z);
-                if (y <= 0 || y >= BetaTerrain.HEIGHT) continue;
-                double t = climate.temperature(x, z) - (y - 64) / 64.0D * 0.3D;
-                if (t < 0.5D && world.isAir(x, y, z) && world.isSolid(x, y - 1, z)
-                        && !world.is(x, y - 1, z, Blocks.ICE)) {
-                    world.set(x, y, z, snow);
-                }
-            }
-        }
+        BetaFeatures.snowCover(world, bx, bz,
+                (x, y, z) -> climate.temperature(x, z) - (y - 64) / 64.0D * 0.3D < 0.5D);
     }
 }

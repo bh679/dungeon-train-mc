@@ -42,11 +42,26 @@ final class LegacyBandsTest {
     }
 
     @Test
-    @DisplayName("cycle order runs Beta then Skylands; only Skylands is void below")
+    @DisplayName("Alpha winter: the last share of the core and the exit fade, never outside the slot")
+    void winterShare() {
+        assertFalse(LegacyBands.isWinter(0.49, 0.5));
+        assertTrue(LegacyBands.isWinter(0.5, 0.5));
+        assertTrue(LegacyBands.isWinter(1.2, 0.5));       // exit fade
+        assertFalse(LegacyBands.isWinter(-0.1, 0.5));     // lead gap / entry fade
+        assertFalse(LegacyBands.isWinter(Double.NaN, 1.0));
+        assertFalse(LegacyBands.isWinter(0.99, 0.0));
+        assertFalse(LegacyBands.isWinter(1.5, 0.0));
+        assertTrue(LegacyBands.isWinter(0.0, 1.0));
+    }
+
+    @Test
+    @DisplayName("cycle order runs Beta, Skylands, Alpha; only Skylands is void below")
     void kindOrder() {
-        assertArrayEquals(new LegacyBandKind[] {LegacyBandKind.BETA, LegacyBandKind.SKYLANDS}, LegacyBandKind.values());
+        assertArrayEquals(new LegacyBandKind[] {LegacyBandKind.BETA, LegacyBandKind.SKYLANDS, LegacyBandKind.ALPHA},
+                LegacyBandKind.values());
         assertFalse(LegacyBandKind.BETA.voidBelow());
         assertTrue(LegacyBandKind.SKYLANDS.voidBelow());
+        assertFalse(LegacyBandKind.ALPHA.voidBelow());
     }
 
     @Test

@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * The biomes a legacy-band column is shown as. Beta's climate biome at the column picks a vanilla
  * overworld biome ({@link BetaBiome#vanillaBiome}) so grass tint, weather, snowfall and mob spawns follow
- * the old biome map. Only biomes the overworld source already generates are used — widening its biome
+ * the old biome map; pre-biome Alpha shows as forest, its winter half as snowy plains. Only biomes the overworld source already generates are used — widening its biome
  * set would renumber every chunk's feature steps — and a missing one falls back to the vanilla pick.
  *
  * <p>Published per world from {@code NetherBandContextEvents} (before any chunk bakes) and read on the
@@ -23,7 +23,12 @@ import java.util.Map;
  */
 public final class LegacyBiomes {
 
-    private record Context(BiomeSource overworldSource, long seed, Map<BetaBiome, Holder<Biome>> beta) {}
+    private record Context(BiomeSource overworldSource, long seed, Map<BetaBiome, Holder<Biome>> beta,
+                           Holder<Biome> alpha, Holder<Biome> alphaWinter) {}
+
+    /** Alpha had no biome map: one vanilla biome for the band, a snowy one for its winter half. */
+    private static final String ALPHA_BIOME = "forest";
+    private static final String ALPHA_WINTER_BIOME = "snowy_plains";
 
     private static volatile Context current;
 
@@ -39,15 +44,20 @@ public final class LegacyBiomes {
         BiomeSource source = overworld.getChunkSource().getGenerator().getBiomeSource();
         Map<BetaBiome, Holder<Biome>> beta = new EnumMap<>(BetaBiome.class);
         for (BetaBiome b : BetaBiome.values()) {
-            ResourceLocation id = ResourceLocation.withDefaultNamespace(b.vanillaBiome());
-            for (Holder<Biome> holder : source.possibleBiomes()) {
-                if (holder.is(id)) {
-                    beta.put(b, holder);
-                    break;
-                }
-            }
+            Holder<Biome> holder = find(source, b.vanillaBiome());
+            if (holder != null) beta.put(b, holder);
         }
-        current = new Context(source, data.getGenerationSeed(), beta);
+        current = new Context(source, data.getGenerationSeed(), beta,
+                find(source, ALPHA_BIOME), find(source, ALPHA_WINTER_BIOME));
+    }
+
+    /** The overworld source's own holder for {@code minecraft:<path>}, or null if it never generates it. */
+    private static Holder<Biome> find(BiomeSource source, String path) {
+        ResourceLocation id = ResourceLocation.withDefaultNamespace(path);
+        for (Holder<Biome> holder : source.possibleBiomes()) {
+            if (holder.is(id)) return holder;
+        }
+        return null;
     }
 
     public static void clear() {
@@ -61,11 +71,13 @@ public final class LegacyBiomes {
     public static Holder<Biome> override(Object source, int blockX, int blockZ) {
         Context c = current;
         if (c == null || source != c.overworldSource()) return null;
-        LegacyBandKind kind = LegacyBands.kindOfChunk(c.seed(), WorldGenCycle.fromConfig(), blockX >> 4, blockZ >> 4);
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        LegacyBandKind kind = LegacyBands.kindOfChunk(c.seed(), cycle, blockX >> 4, blockZ >> 4);
         if (kind == null) return null;
         return switch (kind) {
             case BETA -> c.beta().get(LegacyBands.beta(c.seed()).climate().biome(blockX, blockZ));
             case SKYLANDS -> c.beta().get(BetaBiome.SKY);
+            case ALPHA -> LegacyBands.isAlphaWinter(cycle, blockX >> 4) ? c.alphaWinter() : c.alpha();
         };
     }
 }

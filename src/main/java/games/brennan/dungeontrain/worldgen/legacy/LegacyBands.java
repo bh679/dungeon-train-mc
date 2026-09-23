@@ -1,10 +1,11 @@
 package games.brennan.dungeontrain.worldgen.legacy;
 
-import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.legacy.alpha.AlphaTerrain;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
 import games.brennan.dungeontrain.worldgen.legacy.sky.SkyTerrain;
-import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.BlockGetter;
@@ -135,6 +136,33 @@ public final class LegacyBands {
         }
     }
 
+    private static volatile AlphaTerrain alpha;
+
+    /** The Alpha generator for {@code seed}; one shared, immutable instance per seed. */
+    public static AlphaTerrain alpha(long seed) {
+        AlphaTerrain a = alpha;
+        if (a != null && a.seed() == seed) return a;
+        synchronized (LegacyBands.class) {
+            if (alpha == null || alpha.seed() != seed) alpha = new AlphaTerrain(seed);
+            return alpha;
+        }
+    }
+
+    /**
+     * True if Alpha chunk column {@code chunkX} is in Alpha's winter mode: the last
+     * {@link LegacyBandConfig#alphaWinterShare()} of the core, and the exit fade after it. Decided at the
+     * chunk's west edge so terrain, biome and snow all agree for the chunk.
+     */
+    public static boolean isAlphaWinter(WorldGenCycle cycle, int chunkX) {
+        return isWinter(cycle.legacyCoreProgress(LegacyBandKind.ALPHA, chunkX << 4), LegacyBandConfig.alphaWinterShare());
+    }
+
+    /** Pure winter test on a core progress (see {@link WorldGenCycle#legacyCoreProgress}). Package-private for tests. */
+    static boolean isWinter(double progress, double share) {
+        if (Double.isNaN(progress) || share <= 0.0D) return false;
+        return progress >= 1.0D - share;
+    }
+
     private static volatile SkyTerrain sky;
 
     /** The Sky (Skylands) generator for {@code seed}; one shared, immutable instance per seed. */
@@ -159,13 +187,13 @@ public final class LegacyBands {
     static final int SKY_LOWEST_LAND_OLD_Y = 16;
 
     /**
-     * World Y of {@code kind}'s old {@code y = 0} in {@code level}. Beta is pinned to sea level
+     * World Y of {@code kind}'s old {@code y = 0} in {@code level}. Beta and Alpha are pinned to sea level
      * ({@link LegacyChunkWriter#Y_OFFSET}); Skylands has no sea, so it follows the train's bed instead,
      * clamped so its lowest land stays above the world floor.
      */
     public static int yOffset(LegacyBandKind kind, ServerLevel level) {
         return switch (kind) {
-            case BETA -> LegacyChunkWriter.Y_OFFSET;
+            case BETA, ALPHA -> LegacyChunkWriter.Y_OFFSET;
             case SKYLANDS -> {
                 DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
                 int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();
