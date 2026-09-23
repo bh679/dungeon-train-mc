@@ -4,6 +4,8 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.alpha.AlphaTerrain;
+import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingLevel;
+import games.brennan.dungeontrain.worldgen.legacy.indev.IndevLevels;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
 import games.brennan.dungeontrain.worldgen.legacy.infdev.InfdevTerrain;
 import games.brennan.dungeontrain.worldgen.legacy.infdev.InfdevVersion;
@@ -125,6 +127,17 @@ public final class LegacyBands {
         cacheSeed = Long.MIN_VALUE;
     }
 
+    /** Drop the generators and their resident levels (server stop) — Indev tiles hold ~8 MB each. */
+    public static void releaseGenerators() {
+        synchronized (LegacyBands.class) {
+            beta = null;
+            alpha = null;
+            sky = null;
+            infdev = null;
+            indev = null;
+        }
+    }
+
     // ---- generators ------------------------------------------------------------------
 
     private static volatile BetaTerrain beta;
@@ -190,6 +203,18 @@ public final class LegacyBands {
         }
     }
 
+    private static volatile IndevLevels indev;
+
+    /** The tiled Indev floating levels for {@code seed}; one shared instance (and tile cache) per seed. */
+    public static IndevLevels indevFloating(long seed) {
+        IndevLevels i = indev;
+        if (i != null && i.seed() == seed) return i;
+        synchronized (LegacyBands.class) {
+            if (indev == null || indev.seed() != seed) indev = new IndevLevels(seed);
+            return indev;
+        }
+    }
+
     // ---- vertical placement -------------------------------------------------------------
 
     /**
@@ -202,6 +227,13 @@ public final class LegacyBands {
     static final int SKY_LOWEST_LAND_OLD_Y = 16;
 
     /**
+     * Old Y an Indev floating level puts at the track bed: its layer "sea levels" are 224/176/128/80/32, so
+     * bedding at 85 rests the fourth layer's island tops around the train, with three layers overhead and
+     * one below — the train tunnels through islands and passes under others.
+     */
+    static final int FLOATING_BED_OLD_Y = 85;
+
+    /**
      * World Y of {@code kind}'s old {@code y = 0} in {@code level}. Beta, Alpha and Infdev are pinned to sea level
      * ({@link LegacyChunkWriter#Y_OFFSET}); Skylands has no sea, so it follows the train's bed instead,
      * clamped so its lowest land stays above the world floor.
@@ -209,12 +241,23 @@ public final class LegacyBands {
     public static int yOffset(LegacyBandKind kind, ServerLevel level) {
         return switch (kind) {
             case BETA, ALPHA, INFDEV -> LegacyChunkWriter.Y_OFFSET;
+            case FLOATING -> {
+                DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+                int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();
+                yield floatingYOffset(bedY, level.getMinBuildHeight(), level.getMaxBuildHeight());
+            }
             case SKYLANDS -> {
                 DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
                 int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();
                 yield skyYOffset(bedY, level.getMinBuildHeight());
             }
         };
+    }
+
+    /** Pure form of the Indev floating {@link #yOffset}: bed-anchored, the whole level kept in the world. */
+    static int floatingYOffset(int bedY, int minBuildY, int maxBuildY) {
+        int offset = bedY - FLOATING_BED_OLD_Y;
+        return Math.max(minBuildY, Math.min(offset, maxBuildY - IndevFloatingLevel.HEIGHT));
     }
 
     /** Pure form of the Skylands {@link #yOffset}. Package-private for tests. */

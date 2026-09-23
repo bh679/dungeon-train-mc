@@ -26,7 +26,9 @@ public enum LegacyBandKind {
      * Infdev — steps through the 20100227, 0415, 0420 and 0611 snapshots across the band (227's brick
      * pyramids and obsidian walls first, then the density terrain of the later three).
      */
-    INFDEV(false);
+    INFDEV(false),
+    /** Indev's Floating level type — stacked layers of islands over void, one finite level per tile. */
+    FLOATING(true);
 
     private final boolean voidBelow;
 

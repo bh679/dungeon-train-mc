@@ -25,6 +25,7 @@ public final class LegacyBandConfig {
     public static final Defaults SKYLANDS_DEFAULTS = new Defaults(true, 6000, 480, 3000);
     public static final Defaults ALPHA_DEFAULTS = new Defaults(true, 6000, 480, 3000);
     public static final Defaults INFDEV_DEFAULTS = new Defaults(true, 8000, 480, 3000);
+    public static final Defaults FLOATING_DEFAULTS = new Defaults(true, 6000, 480, 3000);
 
     /** Shipped share of the Alpha core (counted from its end) that is winter mode. */
     public static final double ALPHA_WINTER_SHARE_DEFAULT = 0.5D;
@@ -43,6 +44,7 @@ public final class LegacyBandConfig {
             case SKYLANDS -> SKYLANDS_DEFAULTS;
             case ALPHA -> ALPHA_DEFAULTS;
             case INFDEV -> INFDEV_DEFAULTS;
+            case FLOATING -> FLOATING_DEFAULTS;
         };
     }
 
@@ -52,6 +54,7 @@ public final class LegacyBandConfig {
             case SKYLANDS -> "Skylands";
             case ALPHA -> "Alpha 1.1.2";
             case INFDEV -> "Infdev";
+            case FLOATING -> "Indev floating";
         };
     }
 

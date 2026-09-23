@@ -13,9 +13,14 @@ public final class PerlinOctaveNoise {
     private final PerlinNoise[] noises;
 
     public PerlinOctaveNoise(Random random, int octaves) {
+        this(random, octaves, true);
+    }
+
+    /** {@code useOffset = false} builds Classic/Indev octaves (see {@link PerlinNoise#PerlinNoise(Random, boolean)}). */
+    public PerlinOctaveNoise(Random random, int octaves, boolean useOffset) {
         this.noises = new PerlinNoise[octaves];
         for (int i = 0; i < octaves; i++) {
-            noises[i] = new PerlinNoise(random);
+            noises[i] = new PerlinNoise(random, useOffset);
         }
     }
 
@@ -88,6 +93,20 @@ public final class PerlinOctaveNoise {
             total += noise.sampleXYZ(x * scaleX * frequency, y * scaleY * frequency, z * scaleZ * frequency,
                     scaleY * frequency, y * scaleY * frequency) / frequency;
             frequency /= 2.0D;
+        }
+        return total;
+    }
+
+    /**
+     * The Classic/Indev 2-D sampler: octave {@code i} at {@code 1/2^i} of the coordinate, weighted {@code 2^i},
+     * on the {@code z = 0} plane.
+     */
+    public double sampleXY(double x, double y) {
+        double total = 0.0D;
+        double frequency = 1.0D;
+        for (PerlinNoise noise : noises) {
+            total += noise.samplePlane(x / frequency, y / frequency) * frequency;
+            frequency *= 2.0D;
         }
         return total;
     }

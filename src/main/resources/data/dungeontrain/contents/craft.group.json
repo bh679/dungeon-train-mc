@@ -77,7 +77,8 @@
         "BETA",
         "ALPHA",
         "INFDEV",
-        "SKYLANDS"
+        "SKYLANDS",
+        "FLOATING"
       ]
     },
     {
@@ -89,7 +90,8 @@
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
-        "SKYLANDS"
+        "SKYLANDS",
+        "FLOATING"
       ]
     },
     {

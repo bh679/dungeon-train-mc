@@ -41,7 +41,9 @@ public enum TrainPhase {
     /** Floating islands over void from a port of Beta 1.7.3's unused Sky generator; see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
     SKYLANDS,
     /** Terrain from ports of the Infdev snapshots' world generators; see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
-    INFDEV;
+    INFDEV,
+    /** Stacked layers of islands over void from a port of Indev's Floating level type; see {@link games.brennan.dungeontrain.worldgen.legacy.indev.IndevLevels}. */
+    FLOATING;
 
     /** Bitmask with every phase set ({@code 1<<ordinal} per value) — the "all phases" wire value. */
     public static final int ALL_MASK = (1 << values().length) - 1;
@@ -90,6 +92,7 @@ public enum TrainPhase {
             case ALPHA -> "Alpha";
             case SKYLANDS -> "Skylands";
             case INFDEV -> "Infdev";
+            case FLOATING -> "Floating";
         };
     }
 
@@ -135,6 +138,10 @@ public enum TrainPhase {
         if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
                 games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.INFDEV, worldX)) {
             return INFDEV;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.FLOATING, worldX)) {
+            return FLOATING;
         }
         if (StacksBand.isInBand(overworld, worldX)) {
             return STACKS;

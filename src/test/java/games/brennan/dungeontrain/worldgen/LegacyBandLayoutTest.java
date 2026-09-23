@@ -163,4 +163,22 @@ final class LegacyBandLayoutTest {
         assertEquals(-1.0, c.legacyProgress(LegacyBandKind.BETA, x(400)));
         assertEquals(-1.0, c.legacyProgress(LegacyBandKind.INFDEV, x(250)));   // disabled / absent band
     }
+
+    @Test
+    @DisplayName("Indev floating comes last; disabled bands before it collapse so it starts where Beta ends")
+    void floatingAfterDisabledBands() {
+        LegacySpan floating = new LegacySpan(LegacyBandKind.FLOATING, 80, 30, 150);
+        WorldGenCycle c = cycle(BETA, new LegacySpan(LegacyBandKind.SKYLANDS, 80, 30, 0),
+                new LegacySpan(LegacyBandKind.ALPHA, 80, 30, 0), new LegacySpan(LegacyBandKind.INFDEV, 80, 30, 0),
+                floating);
+        assertEquals(cycle(BETA).period() + 80 + 2 * 30 + 150, c.period());
+        long start = BETA.totalLen(); // 400
+        assertFalse(c.isInLegacyApproachOrBand(LegacyBandKind.FLOATING, x(start - 1)));
+        assertTrue(c.isInLegacyApproachOrBand(LegacyBandKind.FLOATING, x(start)));
+        assertNull(c.legacyAt(x(start + 79)));
+        assertEquals(LegacyBandKind.FLOATING, c.legacyAt(x(start + 80)).kind());
+        assertTrue(c.isInLegacyBand(LegacyBandKind.FLOATING, x(start + 80 + 30)));
+        assertTrue(c.isInLegacyBand(LegacyBandKind.FLOATING, x(start + 80 + 30 + 149)));
+        assertFalse(c.isInLegacyBand(LegacyBandKind.FLOATING, x(start + 80 + 30 + 150)));
+    }
 }

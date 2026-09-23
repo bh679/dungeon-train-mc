@@ -55,15 +55,33 @@ final class LegacyBandsTest {
     }
 
     @Test
-    @DisplayName("cycle order runs Beta, Skylands, Alpha, Infdev; only Skylands is void below")
+    @DisplayName("cycle order runs Beta, Skylands, Alpha, Infdev, Indev floating; Skylands and floating are void below")
     void kindOrder() {
         assertArrayEquals(new LegacyBandKind[] {LegacyBandKind.BETA, LegacyBandKind.SKYLANDS, LegacyBandKind.ALPHA,
-                        LegacyBandKind.INFDEV},
+                        LegacyBandKind.INFDEV, LegacyBandKind.FLOATING},
                 LegacyBandKind.values());
         assertFalse(LegacyBandKind.BETA.voidBelow());
         assertTrue(LegacyBandKind.SKYLANDS.voidBelow());
         assertFalse(LegacyBandKind.ALPHA.voidBelow());
         assertFalse(LegacyBandKind.INFDEV.voidBelow());
+        assertTrue(LegacyBandKind.FLOATING.voidBelow());
+    }
+
+    @Test
+    @DisplayName("the floating band's core is all floating chunks")
+    void floatingCore() {
+        WorldGenCycle.LegacyHit core = new WorldGenCycle.LegacyHit(LegacyBandKind.FLOATING, 1.0);
+        for (int cx = -20; cx < 20; cx++) {
+            assertEquals(LegacyBandKind.FLOATING, LegacyBands.classify(SEED, cx, -cx * 3, core));
+        }
+    }
+
+    @Test
+    @DisplayName("Indev floating levels bed on the track, clamped so the whole level stays inside the world")
+    void floatingYOffset() {
+        assertEquals(76 - LegacyBands.FLOATING_BED_OLD_Y, LegacyBands.floatingYOffset(76, -64, 320));
+        assertEquals(-64, LegacyBands.floatingYOffset(0, -64, 320));   // never below the floor
+        assertEquals(320 - 256, LegacyBands.floatingYOffset(300, -64, 320)); // never through the ceiling
     }
 
     @Test

@@ -84,7 +84,8 @@
       "BETA",
       "ALPHA",
       "INFDEV",
-      "SKYLANDS"
+      "SKYLANDS",
+      "FLOATING"
     ],
     "mode": "bedrock_lock",
     "builder": {
@@ -176,7 +177,8 @@
       "BETA",
       "ALPHA",
       "INFDEV",
-      "SKYLANDS"
+      "SKYLANDS",
+      "FLOATING"
     ],
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
   },
@@ -395,7 +397,8 @@
       "BETA",
       "ALPHA",
       "INFDEV",
-      "SKYLANDS"
+      "SKYLANDS",
+      "FLOATING"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
   },

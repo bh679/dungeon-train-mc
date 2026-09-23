@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.alpha.AlphaPopulator;
+import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingLevel;
+import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingPopulator;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBiome;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaPopulator;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaWorld;
@@ -47,7 +49,10 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
         long genT0 = GenProfiler.t0();
         try {
             long seed = DungeonTrainWorldData.get(serverLevel).getGenerationSeed();
-            BetaWorld world = new BetaWorld(level, LegacyBands.yOffset(kind, serverLevel));
+            int yOffset = LegacyBands.yOffset(kind, serverLevel);
+            BetaWorld world = kind == LegacyBandKind.FLOATING
+                    ? new BetaWorld(level, yOffset, IndevFloatingLevel.HEIGHT)
+                    : new BetaWorld(level, yOffset);
             switch (kind) {
                 case BETA -> BetaPopulator.populate(world, LegacyBands.beta(seed), chunk.x, chunk.z);
                 case SKYLANDS -> BetaPopulator.populate(world, seed, LegacyBands.sky(seed).forestNoise(),
@@ -56,6 +61,7 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
                         LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), chunk.x));
                 case INFDEV -> InfdevPopulator.populate(world, LegacyBands.infdev(seed),
                         LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), chunk.x), chunk.x, chunk.z);
+                case FLOATING -> IndevFloatingPopulator.populate(world, seed, chunk.x, chunk.z);
             }
             return true;
         } catch (Throwable t) {

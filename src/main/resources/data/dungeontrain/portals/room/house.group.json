@@ -16,7 +16,8 @@
         "BETA",
         "ALPHA",
         "INFDEV",
-        "SKYLANDS"
+        "SKYLANDS",
+        "FLOATING"
       ]
     },
     {
@@ -37,7 +38,8 @@
         "BETA",
         "ALPHA",
         "INFDEV",
-        "SKYLANDS"
+        "SKYLANDS",
+        "FLOATING"
       ]
     },
     {
@@ -125,7 +127,8 @@
         "BETA",
         "ALPHA",
         "INFDEV",
-        "SKYLANDS"
+        "SKYLANDS",
+        "FLOATING"
       ]
     },
     {

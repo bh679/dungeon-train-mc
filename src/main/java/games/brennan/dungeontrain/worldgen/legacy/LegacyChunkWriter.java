@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.worldgen.legacy;
 
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBlocks;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingLevel;
+import games.brennan.dungeontrain.worldgen.legacy.indev.IndevLevels;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -56,8 +58,38 @@ public final class LegacyChunkWriter {
             case SKYLANDS -> LegacyBands.sky(seed).generate(cx, cz).blocks();
             case ALPHA -> LegacyBands.alpha(seed).generate(cx, cz, LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), cx));
             case INFDEV -> LegacyBands.infdev(seed).generate(cx, cz, LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), cx));
+            case FLOATING -> null; // not a Beta-layout column: a slice of a whole finite level
         };
-        write(chunk, blocks, floorY, yOffset, !kind.voidBelow());
+        if (blocks == null) {
+            writeFloating(chunk, LegacyBands.indevFloating(seed).levelForChunk(cx, cz), yOffset);
+        } else {
+            write(chunk, blocks, floorY, yOffset, !kind.voidBelow());
+        }
+    }
+
+    /**
+     * Copy the chunk's 16×16 column of an Indev floating {@code level} into {@code chunk}, old {@code y = 0}
+     * at world {@code yOffset}. Void below, and air is never written, so the level's gaps stay empty.
+     */
+    static void writeFloating(ChunkAccess chunk, IndevFloatingLevel level, int yOffset) {
+        int lx0 = IndevLevels.localX(chunk.getPos().getMinBlockX());
+        int lz0 = IndevLevels.localZ(chunk.getPos().getMinBlockZ());
+        int minY = Math.max(chunk.getMinBuildHeight(), yOffset);
+        int maxY = Math.min(chunk.getMaxBuildHeight() - 1, yOffset + IndevFloatingLevel.HEIGHT - 1);
+        for (int y = minY; y <= maxY; y++) {
+            int oldY = y - yOffset;
+            LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
+            int ly = y & 15;
+            for (int x = 0; x < 16; x++) {
+                for (int z = 0; z < 16; z++) {
+                    byte id = level.block(lx0 + x, oldY, lz0 + z);
+                    if (id == BetaBlocks.AIR) continue;
+                    BlockState state = STATES[id & 0xFF];
+                    if (state != null) section.setBlockState(x, ly, z, state, false);
+                }
+            }
+        }
+        Heightmap.primeHeightmaps(chunk, EnumSet.of(Heightmap.Types.OCEAN_FLOOR_WG, Heightmap.Types.WORLD_SURFACE_WG));
     }
 
     /** Write a Beta-layout column ({@link BetaTerrain#index}, {@link BetaBlocks} ids) — Alpha and Infdev share it. */

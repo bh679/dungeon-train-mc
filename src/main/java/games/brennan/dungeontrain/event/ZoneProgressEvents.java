@@ -143,6 +143,9 @@ public final class ZoneProgressEvents {
     /** How far (blocks) into the Infdev legacy band core before {@code reached_infdev} — same depth gate. */
     private static final int INFDEV_DEPTH_BLOCKS = 500;
 
+    /** Same depth gate for {@code reached_floating}, into the Indev floating legacy band core. */
+    private static final int FLOATING_DEPTH_BLOCKS = 500;
+
     private ZoneProgressEvents() {}
 
     @SubscribeEvent
@@ -239,6 +242,12 @@ public final class ZoneProgressEvents {
             if (LegacyBands.isInBand(level, LegacyBandKind.INFDEV, px)
                 && LegacyBands.isInBand(level, LegacyBandKind.INFDEV, px - INFDEV_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_infdev");
+            }
+
+            // Indev floating legacy band — stacked island layers over void. Same depth gate.
+            if (LegacyBands.isInBand(level, LegacyBandKind.FLOATING, px)
+                && LegacyBands.isInBand(level, LegacyBandKind.FLOATING, px - FLOATING_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_floating");
             }
 
             switch (DisintegrationBand.zoneAt(level, player.getBlockX())) {

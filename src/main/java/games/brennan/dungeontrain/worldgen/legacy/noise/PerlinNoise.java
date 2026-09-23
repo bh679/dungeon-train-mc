@@ -20,9 +20,17 @@ public final class PerlinNoise {
     private final double offsetZ;
 
     public PerlinNoise(Random random) {
-        this.offsetX = random.nextDouble() * 256.0D;
-        this.offsetY = random.nextDouble() * 256.0D;
-        this.offsetZ = random.nextDouble() * 256.0D;
+        this(random, true);
+    }
+
+    /**
+     * {@code useOffset = false} is the Classic/Indev form: no random lattice origin (and no origin doubles
+     * drawn from {@code random}), only the shuffle.
+     */
+    public PerlinNoise(Random random, boolean useOffset) {
+        this.offsetX = useOffset ? random.nextDouble() * 256.0D : 0.0D;
+        this.offsetY = useOffset ? random.nextDouble() * 256.0D : 0.0D;
+        this.offsetZ = useOffset ? random.nextDouble() * 256.0D : 0.0D;
         for (int i = 0; i < 256; i++) {
             permutations[i] = i;
         }
@@ -136,6 +144,34 @@ public final class PerlinNoise {
                 }
             }
         }
+    }
+
+    /**
+     * {@link #sample} on the {@code z = 0} plane, as the Classic/Indev 2-D sampler reads it. With no Z origin
+     * offset (the {@code useOffset = false} form) the Z fade weight is exactly 0, so the far Z face never
+     * contributes and is skipped — same value, half the gradients. Falls back to the full sample otherwise.
+     */
+    public double samplePlane(double x, double y) {
+        if (offsetZ != 0.0D) return sample(x, y, 0.0D);
+        x += offsetX;
+        y += offsetY;
+        int floorX = LegacyMath.floor(x);
+        int floorY = LegacyMath.floor(y);
+        int cx = floorX & 0xFF;
+        int cy = floorY & 0xFF;
+        x -= floorX;
+        y -= floorY;
+        double u = fade(x);
+        double v = fade(y);
+        int a = permutations[cx] + cy;
+        int aa = permutations[a];
+        int ab = permutations[a + 1];
+        int b = permutations[cx + 1] + cy;
+        int ba = permutations[b];
+        int bb = permutations[b + 1];
+        return lerp(v,
+                lerp(u, grad(permutations[aa], x, y, 0.0D), grad(permutations[ba], x - 1.0D, y, 0.0D)),
+                lerp(u, grad(permutations[ab], x, y - 1.0D, 0.0D), grad(permutations[bb], x - 1.0D, y - 1.0D, 0.0D)));
     }
 
     /** The old 2-D sampler (Y fixed at the lattice origin), scaled by {@code 1/amplitude}. */
