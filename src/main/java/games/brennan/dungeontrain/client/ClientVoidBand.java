@@ -31,6 +31,7 @@ public final class ClientVoidBand {
     public static void update(int length, boolean starts) {
         carriageLength = Math.max(1, length);
         startsWithTrain = starts;
+        games.brennan.dungeontrain.worldgen.VanillaBiomeTwins.setClientWorldHasTrain(starts);
     }
 
     /** Reset to safe defaults on disconnect so a band never leaks into the next world. */

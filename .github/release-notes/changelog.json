@@ -18175,7 +18175,7 @@
     },
     {
       "id": "three-lap-journey",
-      "version": "0.937.0",
+      "version": "0.938.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -18189,6 +18189,24 @@
         "Shorter first visits \u2014 the Nether and End arrive sooner, and the climb into the Nether is half as long",
         "Every full loop of the journey is twice as long as the last",
         "The order is a single config line, for anyone who wants their own"
+      ],
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "second-lap-overworld-wwoo-bop",
+      "version": "0.938.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The overworld has a second wind",
+      "summary": "On your way round again, the land either side of the Nether isn't the land you remember. Keep riding.",
+      "highlights": [
+        "Now needs William Wythers' Overhauled Overworld and Biomes O' Plenty (with their libraries). The CurseForge and Modrinth apps install them for you."
       ],
       "date": "2026-09-23",
       "released": false,

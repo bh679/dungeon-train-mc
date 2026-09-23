@@ -279,7 +279,12 @@ are hard deps too — every second Nether band's core uses BetterNether biomes
 (`worldgen/density/BetterNetherCoreBiomes`; `/dungeontrain debug nether-passes` lists each band's biomes). **BetterEnd: New
 Dawn** (`betterend-neoforge(required)`, same libraries) is a hard dep on the same contract — every second
 End-islands band copies real BetterEnd End chunks (`worldgen/EndBandStyle` + `EndBandSampler`); vanilla bands
-read `worldgen/density/VanillaEndBiomes` because BCLib patches `TheEndBiomeSource` itself.
+read `worldgen/density/VanillaEndBiomes` because BCLib patches `TheEndBiomeSource` itself. **William Wythers' Overhauled
+Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too: on odd laps the
+overworld gap before the Nether band is WWOO and the gap after it is BoP (`worldgen/SecondLapOverworld`;
+`/dungeontrain debug overworld-laps` lists each lap's stretches and biomes). WWOO is confined at feature placement plus vanilla
+"twins" for its biome colours/climate/spawns outside the stretch, BoP at biome choice — see
+`worldgen/VanillaBiomeFeatures`, `worldgen/VanillaBiomeTwins` and `worldgen/density/OverworldStretchBiomes`.
 On top of those, `modpack.config.json` → `optional_mods[]` bundles the siblings (each carrying
 `dependency_type: required` + a `gradle_property` floor) and the companions, each with a
 `required` flag.

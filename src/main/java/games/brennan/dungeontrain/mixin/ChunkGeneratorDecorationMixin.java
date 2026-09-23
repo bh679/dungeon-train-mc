@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.StacksBand;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
+import games.brennan.dungeontrain.worldgen.WwooDecorationPass;
 import games.brennan.dungeontrain.worldgen.feature.DeferredStructurePlacement;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
@@ -75,8 +76,29 @@ public abstract class ChunkGeneratorDecorationMixin {
 
     @Inject(method = "applyBiomeDecoration", at = @At("HEAD"))
     private void dungeontrain$computeSkip(WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager, CallbackInfo ci) {
-        dungeontrain$skipDecoration.set(dungeontrain$isFullyErodedBandChunk(level, chunk));
+        boolean skip = dungeontrain$isFullyErodedBandChunk(level, chunk);
+        dungeontrain$skipDecoration.set(skip);
         dungeontrain$deferStructures.set(DeferredStructurePlacement.isDeferred(level, chunk.getPos()));
+        WwooDecorationPass.begin(level, chunk, skip);
+    }
+
+    /**
+     * Each decoration step starts by asking whether structures generate — the one per-step call in
+     * {@code applyBiomeDecoration}. Just before it, the vanilla features WWOO removed from the previous
+     * step are placed (outside the WWOO stretch; see {@link WwooDecorationPass}).
+     */
+    @Inject(method = "applyBiomeDecoration",
+        at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/level/StructureManager;shouldGenerateStructures()Z"))
+    private void dungeontrain$vanillaFeaturesBeforeStep(WorldGenLevel level, ChunkAccess chunk,
+                                                        StructureManager structureManager, CallbackInfo ci) {
+        WwooDecorationPass.beforeStep(level, (ChunkGenerator) (Object) this);
+    }
+
+    @Inject(method = "applyBiomeDecoration", at = @At("TAIL"))
+    private void dungeontrain$vanillaFeaturesLastStep(WorldGenLevel level, ChunkAccess chunk,
+                                                      StructureManager structureManager, CallbackInfo ci) {
+        WwooDecorationPass.finish(level, (ChunkGenerator) (Object) this);
     }
 
     @Redirect(
@@ -87,6 +109,9 @@ public abstract class ChunkGeneratorDecorationMixin {
                                                RandomSource random, BlockPos origin) {
         if (dungeontrain$skipDecoration.get() && !dungeontrain$isDtFeature(feature)) {
             return false; // fully-eroded core: skip the vanilla feature (it would be erased anyway)
+        }
+        if (WwooDecorationPass.vetoes(feature)) {
+            return false; // outside the WWOO stretch: WWOO-only or overridden (vanilla version places later)
         }
         return feature.placeWithBiomeCheck(level, generator, random, origin);
     }

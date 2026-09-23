@@ -493,6 +493,15 @@ dependencies {
     implementation "maven.modrinth:fast-paintings:${fastpaintings_version}"
     implementation "maven.modrinth:moonlight:${moonlight_version}"
 
+    // Second-lap overworld mods (WWOO + Biomes O' Plenty) and their libraries — REQUIRED third-party
+    // deps (see gradle.properties). Not bundled. DT names their biomes/features only by registry id,
+    // except TerraBlender, whose Regions API builds the BoP-only biome source.
+    implementation "maven.modrinth:wwoo:${wwoo_version}"
+    implementation "maven.modrinth:cristel-lib:${cristellib_version}"
+    implementation "maven.modrinth:biomes-o-plenty:${biomesoplenty_version}"
+    implementation "maven.modrinth:terrablender:${terrablender_version}"
+    implementation "maven.modrinth:glitchcore:${glitchcore_version}"
+
     // BetterEnd: New Dawn + its three libraries — REQUIRED third-party deps (see gradle.properties).
     // On the dev classpath so runClient/runServer generate BetterEnd's End, which the even End-islands
     // bands copy. DT names no BetterEnd class (it only samples the End dimension's generator).
@@ -775,6 +784,9 @@ tasks.register('generateModMetadata', ProcessResources) {
         // Third-party required deps (Fast Paintings + its Moonlight library) — floors only.
         fastpaintings_min_version         : fastpaintings_min_version,
         moonlight_min_version             : moonlight_min_version,
+        // Second-lap overworld mods — floors only.
+        wwoo_min_version                  : wwoo_min_version,
+        biomesoplenty_min_version         : biomesoplenty_min_version,
         betternether_min_version          : betternether_min_version,
         // BetterEnd: New Dawn + its libraries — floors only.
         betterend_min_version             : betterend_min_version,

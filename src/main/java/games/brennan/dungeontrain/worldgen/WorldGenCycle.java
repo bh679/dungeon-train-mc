@@ -634,6 +634,31 @@ public record WorldGenCycle(long startX, int owGap,
         return null;
     }
 
+    /** World-block length of the overworld gap that leads into Nether pass {@code pass} (classic: {@code owGap}). */
+    public long overworldGapBefore(int pass) {
+        return overworldGapBeside(pass, -1);
+    }
+
+    /** World-block length of the overworld gap that follows Nether pass {@code pass} (classic: {@code owGap}). */
+    public long overworldGapAfter(int pass) {
+        return overworldGapBeside(pass, +1);
+    }
+
+    private long overworldGapBeside(int pass, int dir) {
+        if (layout == null) return Math.max(0, owGap);
+        int n = layout.typeCount(CycleLayout.Type.NETHER);
+        if (n == 0 || pass < 0) return 0L;
+        int k = pass / n;
+        int occ = pass % n;
+        for (int i = 0; i < layout.count(); i++) {
+            if (layout.slot(i).type() != CycleLayout.Type.NETHER || layout.occurrence(i) != occ) continue;
+            int j = i + dir;
+            if (j < 0 || j >= layout.count() || layout.slot(j).type() != CycleLayout.Type.OVERWORLD) return 0L;
+            return layout.length(j) << k;
+        }
+        return 0L;
+    }
+
     private long netherStart() {
         return Math.max(0, owGap);
     }
@@ -960,6 +985,32 @@ public record WorldGenCycle(long startX, int owGap,
         long p = period();
         if (p <= 0L || worldX < startX) return -1L;
         return Math.floorDiv((long) worldX - startX + phaseShift, p);
+    }
+
+    /** Which plain-overworld gap a world-X sits in — see {@link #overworldGapAt}. */
+    public enum OverworldGap { LEAD, POST_NETHER, NONE }
+
+    /**
+     * The overworld gap on either side of the Nether band at this world-X: {@link OverworldGap#LEAD} for
+     * the {@code owGap} that opens every cycle and runs into the Nether band, {@link OverworldGap#POST_NETHER}
+     * for the {@code owGap} between the Nether band and the End band, {@link OverworldGap#NONE} anywhere
+     * else (a special band, the later lead gaps, or before the anchor). Pair with {@link #cycleIndex}
+     * for the lap. The lead gap of cycle 0 is shortened by {@code phaseShift} — it starts at the anchor.
+     */
+    public OverworldGap overworldGapAt(int worldX) {
+        if (layout != null) {
+            int i = slotAt(worldX);
+            if (i < 0 || layout.slot(i).type() != CycleLayout.Type.OVERWORLD) return OverworldGap.NONE;
+            if (i + 1 < layout.count() && layout.slot(i + 1).type() == CycleLayout.Type.NETHER) return OverworldGap.LEAD;
+            if (i > 0 && layout.slot(i - 1).type() == CycleLayout.Type.NETHER) return OverworldGap.POST_NETHER;
+            return OverworldGap.NONE;
+        }
+        long o = offset(worldX);
+        if (o < 0L) return OverworldGap.NONE;
+        if (o < netherStart()) return OverworldGap.LEAD;
+        long postStart = netherStart() + netherLen();
+        if (o >= postStart && o < endStart()) return OverworldGap.POST_NETHER;
+        return OverworldGap.NONE;
     }
 
     /**

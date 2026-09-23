@@ -130,6 +130,10 @@ public final class DebugCommand {
                 .executes(ctx -> CycleLayoutDebug.report(ctx.getSource(), 2))
                 .then(Commands.argument("runs", IntegerArgumentType.integer(1, 8))
                     .executes(ctx -> CycleLayoutDebug.report(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "runs")))))
+            // /dungeontrain debug overworld-laps — the overworld gaps either side of the first Nether bands,
+            // which second-lap mod owns each (WWOO before, Biomes O' Plenty after, odd laps) and a biome
+            // census sampled from the overworld source. Also logged at INFO for RCON runs.
+            .then(Commands.literal("overworld-laps").executes(ctx -> OverworldLapsDebug.report(ctx.getSource())))
             .then(Commands.literal("pair")
                 .executes(ctx -> runPair(ctx.getSource(), 0.0))
                 .then(Commands.argument("velocity", DoubleArgumentType.doubleArg())
