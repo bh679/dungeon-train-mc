@@ -9,7 +9,6 @@ import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.data.registries.VanillaRegistries;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -41,7 +40,7 @@ import java.util.TreeMap;
  * Choosing biomes can't confine that, so this class rebuilds each biome's vanilla feature list and
  * {@link WwooDecorationPass} decorates from it everywhere except the WWOO stretch.</p>
  *
- * <p>The vanilla lists come from {@link VanillaRegistries#createLookup()}, which builds the vanilla
+ * <p>The vanilla lists come from {@link VanillaWorldgenLookup#create()}, which builds the vanilla
  * worldgen registries from code — datapacks can't touch it. Per biome and step, the <b>target</b> list
  * is the vanilla one plus whatever NeoForge biome modifiers added (so DT's own features and other
  * mods' injected ones survive). A live feature whose JSON differs from the vanilla one is
@@ -131,13 +130,15 @@ public final class VanillaBiomeFeatures {
     }
 
     private static VanillaBiomeFeatures build(RegistryAccess live) {
-        HolderLookup.Provider vanilla = VanillaRegistries.createLookup();
+        HolderLookup.Provider vanilla = VanillaWorldgenLookup.create();
         Registry<Biome> liveBiomes = live.registryOrThrow(Registries.BIOME);
         Registry<PlacedFeature> livePlaced = live.registryOrThrow(Registries.PLACED_FEATURE);
         HolderLookup.RegistryLookup<Biome> vanillaBiomes = vanilla.lookupOrThrow(Registries.BIOME);
         HolderLookup.RegistryLookup<PlacedFeature> vanillaPlaced = vanilla.lookupOrThrow(Registries.PLACED_FEATURE);
 
-        Set<ResourceKey<PlacedFeature>> overridden = overriddenFeatures(live, vanilla, livePlaced, vanillaPlaced);
+        WwooDatapack wwoo = WwooDatapack.get();
+        if (wwoo.isEmpty()) return null;
+        Set<ResourceKey<PlacedFeature>> overridden = overriddenFeatures(live, vanilla, livePlaced, vanillaPlaced, wwoo);
 
         Map<ResourceKey<Biome>, List<Set<ResourceKey<PlacedFeature>>>> targets = new HashMap<>();
         Map<ResourceKey<Biome>, List<Set<ResourceKey<PlacedFeature>>>> lives = new HashMap<>();
@@ -147,7 +148,9 @@ public final class VanillaBiomeFeatures {
             Biome biome = e.getValue();
             List<Set<ResourceKey<PlacedFeature>>> modified = keysPerStep(biome.getGenerationSettings().features());
             List<Set<ResourceKey<PlacedFeature>>> target = modified;
-            Optional<Holder.Reference<Biome>> vanillaBiome = vanillaBiomes.get(e.getKey());
+            // Only the biome files WWOO ships: BetterNether/BetterEnd patch other vanilla biomes and keep them.
+            Optional<Holder.Reference<Biome>> vanillaBiome = wwoo.biomes().contains(e.getKey())
+                    ? vanillaBiomes.get(e.getKey()) : Optional.empty();
             if (vanillaBiome.isPresent()) {
                 List<Set<ResourceKey<PlacedFeature>>> original = keysPerStep(biome.modifiableBiomeInfo()
                         .getOriginalBiomeInfo().generationSettings().features());
@@ -222,6 +225,9 @@ public final class VanillaBiomeFeatures {
             rules.put(biome, new BiomeRule(Set.copyOf(liveAllowed), Set.copyOf(extraAllowed), List.copyOf(perStep)));
         }
         if (rules.isEmpty()) return null;
+        LOGGER.debug("[DungeonTrain] WWOO-changed biomes (features): {}; overridden: {}",
+                rules.keySet().stream().map(k -> k.location().toString()).sorted().toList(),
+                overridden.stream().map(k -> k.location().toString()).sorted().toList());
         return new VanillaBiomeFeatures(Map.copyOf(rules), Set.copyOf(veto), keyOf, overridden.size());
     }
 
@@ -236,16 +242,21 @@ public final class VanillaBiomeFeatures {
         return vanillaPlaced.get(key).map(Holder::value).orElse(null);
     }
 
-    /** Vanilla placed features whose live JSON (or configured feature's JSON) differs from vanilla's. */
+    /** WWOO-shipped placed features whose live JSON (or configured feature's JSON) differs from vanilla's. */
     private static Set<ResourceKey<PlacedFeature>> overriddenFeatures(RegistryAccess live, HolderLookup.Provider vanilla,
                                                                       Registry<PlacedFeature> livePlaced,
-                                                                      HolderLookup.RegistryLookup<PlacedFeature> vanillaPlaced) {
+                                                                      HolderLookup.RegistryLookup<PlacedFeature> vanillaPlaced,
+                                                                      WwooDatapack wwoo) {
         RegistryOps<JsonElement> liveOps = live.createSerializationContext(JsonOps.INSTANCE);
         RegistryOps<JsonElement> vanillaOps = vanilla.createSerializationContext(JsonOps.INSTANCE);
         Set<ResourceKey<PlacedFeature>> out = new HashSet<>();
         vanillaPlaced.listElements().forEach(ref -> {
             PlacedFeature livePf = livePlaced.get(ref.key());
             if (livePf == null) return;
+            // Only features WWOO's packs override (directly, or through their configured feature).
+            boolean wwooTouches = wwoo.placedFeatures().contains(ref.key())
+                    || livePf.feature().unwrapKey().map(k -> wwoo.configuredFeatures().contains(k.location())).orElse(false);
+            if (!wwooTouches) return;
             if (differs(PlacedFeature.DIRECT_CODEC.encodeStart(liveOps, livePf).result(),
                     PlacedFeature.DIRECT_CODEC.encodeStart(vanillaOps, ref.value()).result())
                     || differs(ConfiguredFeature.DIRECT_CODEC.encodeStart(liveOps, livePf.feature().value()).result(),

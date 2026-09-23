@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
+import games.brennan.dungeontrain.worldgen.density.BetterNetherCoreBiomes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
@@ -165,6 +166,23 @@ public final class NetherMobSpawner {
         if (biome.is(Biomes.CRIMSON_FOREST)) return CRIMSON_MOBS;
         if (biome.is(Biomes.BASALT_DELTAS)) return BASALT_MOBS;
         return GROUND_MOBS; // nether_wastes / anything else
+    }
+
+    /**
+     * Ground mob for a BetterNether biome (alternate Nether bands): a weighted draw from the biome's own
+     * MONSTER spawn list, which is where BetterNether registers its mobs (naga, skull, jungle skeleton…)
+     * alongside the vanilla Nether ones. Ghasts are left out; they keep the collision-checked ghast path
+     * above. Returns {@code null} for a vanilla biome or an empty draw, so the caller uses the roster.
+     */
+    private static EntityType<?> betterNetherGroundMob(Holder<Biome> biome, RandomSource rng) {
+        boolean betterNether = biome.unwrapKey()
+                .map(k -> BetterNetherCoreBiomes.NAMESPACE.equals(k.location().getNamespace()))
+                .orElse(false);
+        if (!betterNether) return null;
+        return biome.value().getMobSettings().getMobs(MobCategory.MONSTER).getRandom(rng)
+                .map(data -> data.type)
+                .filter(type -> type != EntityType.GHAST)
+                .orElse(null);
     }
 
     /**
@@ -344,7 +362,8 @@ public final class NetherMobSpawner {
             if (blockedSpawnSite(dims, bedrockY, feet)) continue;
             if (!level.getBlockState(feet.below()).blocksMotion()) continue;
             if (!level.getBlockState(feet).isAir() || !level.getBlockState(feet.above()).isAir()) continue;
-            EntityType<? extends Mob> type = roster[rng.nextInt(roster.length)];
+            EntityType<?> betterNether = betterNetherGroundMob(biome, rng);
+            EntityType<?> type = betterNether != null ? betterNether : roster[rng.nextInt(roster.length)];
             spawn(level, type, feet, rng);
             return;
         }
@@ -381,7 +400,7 @@ public final class NetherMobSpawner {
         return level.noCollision(box);
     }
 
-    private static void spawn(ServerLevel level, EntityType<? extends Mob> type, BlockPos pos, RandomSource rng) {
+    private static void spawn(ServerLevel level, EntityType<?> type, BlockPos pos, RandomSource rng) {
         Entity entity = type.create(level);
         if (!(entity instanceof Mob mob)) {
             if (entity != null) entity.discard();

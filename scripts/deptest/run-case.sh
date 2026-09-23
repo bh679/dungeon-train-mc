@@ -9,6 +9,8 @@
 #   ain ais pmob ecp te  the five un-bundled sibling mods, at their pinned versions
 #   kt db sff  the three hybrid siblings (also jarJar'd in the DT jar), at their pinned versions
 #   fp moon    Fast Paintings + its Moonlight library (third-party required deps)
+#   bn bclib wover wunder  BetterNether: New Dawn + its three libraries (third-party required deps)
+#   be         BetterEnd: New Dawn (shares BetterNether's three libraries)
 #   wwoo cristel bop tb glitch  WWOO + Cristel Lib, Biomes O' Plenty + TerraBlender + GlitchCore
 #              (second-lap overworld mods, third-party required deps)
 #   pmob-new   PlayerMob ABOVE the declared floor (uses playermob_version)
@@ -69,6 +71,11 @@ resolve() {
     # Third-party required deps, keyed by Modrinth VERSION ID (see gradle.properties).
     fp)       cached "maven.modrinth/fast-paintings" "$(prop fastpaintings_version)" ;;
     moon)     cached "maven.modrinth/moonlight"      "$(prop moonlight_version)" ;;
+    bn)       cached "maven.modrinth/betternether-neoforge" "$(prop betternether_version)" ;;
+    bclib)    cached "maven.modrinth/bclib-neoforge"        "$(prop bclib_version)" ;;
+    wover)    cached "maven.modrinth/worldweaver-neoforge"  "$(prop worldweaver_version)" ;;
+    wunder)   cached "maven.modrinth/wunderlib-neoforge"    "$(prop wunderlib_version)" ;;
+    be)       cached "maven.modrinth/betterend-neoforge"    "$(prop betterend_version)" ;;
     wwoo)     cached "maven.modrinth/wwoo"            "$(prop wwoo_version)" ;;
     cristel)  cached "maven.modrinth/cristel-lib"     "$(prop cristellib_version)" ;;
     bop)      cached "maven.modrinth/biomes-o-plenty" "$(prop biomesoplenty_version)" ;;

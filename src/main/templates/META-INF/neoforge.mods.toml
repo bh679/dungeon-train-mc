@@ -44,6 +44,46 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# BetterNether: New Dawn — third-party, REQUIRED. Its biomes fill every second Nether band's core
+# (worldgen/density/BetterNetherCoreBiomes). DT names its biomes/blocks only by id, so a floor is
+# enough. Its libraries (BCLib, WorldWeaver, WunderLib) are shared with BetterEnd and declared below.
+[[dependencies.${mod_id}]]
+    modId="betternether"
+    type="required"
+    versionRange="[${betternether_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# BetterEnd: New Dawn (+ its libraries) — REQUIRED. Every even End-islands band copies real End
+# chunks, which BetterEnd populates; its blocks also have to exist on the client to render there.
+[[dependencies.${mod_id}]]
+    modId="betterend"
+    type="required"
+    versionRange="[${betterend_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="bclib"
+    type="required"
+    versionRange="[${bclib_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="wover"
+    type="required"
+    versionRange="[${worldweaver_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="wunderlib"
+    type="required"
+    versionRange="[${wunderlib_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Second-lap overworld mods — third-party, REQUIRED. On odd laps the overworld gap before the
 # Nether band is William Wythers' Overhauled Overworld and the gap after it is Biomes O' Plenty
 # (worldgen/SecondLapOverworld). Floors only; their libraries (Cristel Lib, TerraBlender,
@@ -244,6 +284,10 @@ logoFile="logo.png"
 
 # TEMPORARY — remove together with VivecraftMixinPlugin once Vivecraft Sable Compat is live and
 # bundled in the modpack. Self-gating: no-ops unless Vivecraft is present and the addon is not.
+# BetterEnd: New Dawn (required dep) — suppresses its dev-only debug items, which crash dev boots.
+[[mixins]]
+    config="${mod_id}.betterend.mixins.json"
+
 [[mixins]]
     config="${mod_id}.vivecraft.mixins.json"
 

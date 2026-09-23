@@ -273,7 +273,13 @@ the sibling mods **AIN/AIS/PMOB/ECP/TE are un-bundled required downloads**, decl
 CurseForge/Modrinth apps auto-install them and each sibling's own page gets the download credit. The third-party
 **Fast Paintings + Moonlight** (`fast-paintings(required)`, `selene(required)`) are hard deps on the same
 contract — paintings are blocks under FP, and templates/shared carriages carry those blocks (see
-`compat/PaintingTransformProcessor` for why flipped stamps still work). **William Wythers' Overhauled
+`compat/PaintingTransformProcessor` for why flipped stamps still work). **BetterNether: New Dawn** + its
+BCLib/WorldWeaver/WunderLib libraries (`betternether-neoforge(required)` etc., same slugs on both platforms)
+are hard deps too — every second Nether band's core uses BetterNether biomes
+(`worldgen/density/BetterNetherCoreBiomes`; `/dungeontrain debug nether-passes` lists each band's biomes). **BetterEnd: New
+Dawn** (`betterend-neoforge(required)`, same libraries) is a hard dep on the same contract — every second
+End-islands band copies real BetterEnd End chunks (`worldgen/EndBandStyle` + `EndBandSampler`); vanilla bands
+read `worldgen/density/VanillaEndBiomes` because BCLib patches `TheEndBiomeSource` itself. **William Wythers' Overhauled
 Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too: on odd laps the
 overworld gap before the Nether band is WWOO and the gap after it is BoP (`worldgen/SecondLapOverworld`;
 `/dungeontrain debug overworld-laps` lists each lap's stretches and biomes). WWOO is confined at feature placement plus vanilla

@@ -78,7 +78,13 @@ public final class GenProfiler {
         SPHERES_FOREIGN_SAMPLE,
         /** {@code WorldSpheresEvents} — writing a finished foreign-sphere sample into its live chunk
          *  (MAIN-thread, like {@link #SPHERES_CARVE}; excluded from {@link Sample#dtTotalMs}). */
-        SPHERES_FOREIGN_APPLY
+        SPHERES_FOREIGN_APPLY,
+        /** {@code EndBandSampler} — off-thread generation of a BetterEnd End-band pass's real End chunks
+         *  (its own sampler threads; excluded from {@link Sample#dtTotalMs}). */
+        END_BAND_SAMPLE,
+        /** {@code WorldEndBandEvents} — writing a finished End-band sample into its live chunk (MAIN-thread;
+         *  excluded from {@link Sample#dtTotalMs}). */
+        END_BAND_APPLY
     }
 
     private static final int N = Bucket.values().length;

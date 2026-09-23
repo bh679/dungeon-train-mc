@@ -9,7 +9,6 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.data.registries.VanillaRegistries;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.MobCategory;
@@ -31,7 +30,7 @@ import java.util.function.DoubleSupplier;
  * confines: the biome's colours, fog and sky, climate (snow and ice), ambient sounds and music, and
  * mob spawns all belong to the biome id and would apply on every lap. So for each live
  * {@code minecraft:} biome whose climate, effects or spawns differ from vanilla's, the vanilla
- * {@code Biome} (rebuilt from code by {@link VanillaRegistries#createLookup()}, which datapacks can't
+ * {@code Biome} (rebuilt from code by {@link VanillaWorldgenLookup#create()}, which datapacks can't
  * touch) is kept as its twin. {@code BiomeMixin} and {@code ChunkGeneratorSpawnsMixin} answer from the
  * twin wherever the question has a position outside the WWOO stretch; inside it, WWOO answers.</p>
  *
@@ -114,6 +113,11 @@ public final class VanillaBiomeTwins {
             synchronized (TWINS) {
                 TWINS.putAll(twins);
             }
+            if (LOGGER.isDebugEnabled()) {
+                Registry<Biome> reg = live.registryOrThrow(Registries.BIOME);
+                LOGGER.debug("[DungeonTrain] Vanilla biome twins ({}): {}", side,
+                        twins.keySet().stream().map(b -> String.valueOf(reg.getKey(b))).sorted().toList());
+            }
             synchronized (SPAWNS) {
                 SPAWNS.putAll(spawns);
             }
@@ -136,12 +140,14 @@ public final class VanillaBiomeTwins {
     }
 
     private static void collect(RegistryAccess live, Map<Biome, Biome> twins, Map<Biome, MobSpawnSettings> spawns) {
-        HolderLookup.Provider vanilla = VanillaRegistries.createLookup();
+        HolderLookup.Provider vanilla = VanillaWorldgenLookup.create();
         HolderLookup.RegistryLookup<Biome> vanillaBiomes = vanilla.lookupOrThrow(Registries.BIOME);
         Registry<Biome> liveBiomes = live.registryOrThrow(Registries.BIOME);
         RegistryOps<JsonElement> liveOps = live.createSerializationContext(JsonOps.INSTANCE);
         RegistryOps<JsonElement> vanillaOps = vanilla.createSerializationContext(JsonOps.INSTANCE);
+        WwooDatapack wwoo = WwooDatapack.get();
         for (Map.Entry<ResourceKey<Biome>, Biome> e : liveBiomes.entrySet()) {
+            if (!wwoo.biomes().contains(e.getKey())) continue; // BetterNether/BetterEnd edits to other vanilla biomes stay
             Optional<Holder.Reference<Biome>> ref = vanillaBiomes.get(e.getKey());
             if (ref.isEmpty()) continue;
             Biome liveBiome = e.getValue();
