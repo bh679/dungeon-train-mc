@@ -24,6 +24,8 @@
     "NoiseBasedChunkGeneratorMixin",
     "ChunkGeneratorDecorationMixin",
     "BiomeFilterMixin",
+    "BiomeMixin",
+    "ChunkGeneratorSpawnsMixin",
     "ChunkGeneratorStructureStateMixin",
     "WorldGenRegionFloorMixin",
     "StructureBasementMixin",

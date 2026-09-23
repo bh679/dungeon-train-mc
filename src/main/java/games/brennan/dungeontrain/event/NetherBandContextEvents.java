@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.VanillaBiomeFeatures;
+import games.brennan.dungeontrain.worldgen.VanillaBiomeTwins;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.EndCoreBiomes;
 import games.brennan.dungeontrain.worldgen.density.NetherBandBiomeSet;
@@ -68,6 +69,8 @@ public final class NetherBandContextEvents {
     @SubscribeEvent
     public static void onServerAboutToStart(ServerAboutToStartEvent event) {
         VanillaBiomeFeatures.publish(VanillaBiomeFeatures.resolve(event.getServer()));
+        VanillaBiomeTwins.clear();
+        VanillaBiomeTwins.build(event.getServer().registryAccess(), "server");
     }
 
     @SubscribeEvent(priority = EventPriority.LOW)
@@ -156,5 +159,6 @@ public final class NetherBandContextEvents {
         NetherBandContext.clear();
         OverworldStretchBiomes.clear();
         VanillaBiomeFeatures.clear();
+        VanillaBiomeTwins.clear();
     }
 }

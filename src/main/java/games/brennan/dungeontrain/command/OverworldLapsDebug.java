@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.command;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
 import games.brennan.dungeontrain.worldgen.VanillaBiomeFeatures;
+import games.brennan.dungeontrain.worldgen.VanillaBiomeTwins;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.WwooDecorationPass;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
@@ -51,7 +52,8 @@ final class OverworldLapsDebug {
         WorldGenCycle cycle = ctx.cycle();
         send(source, "[DungeonTrain] overworld-laps: period=" + cycle.period()
                 + " bopRegions=" + (stretchBiomes == null ? "none" : stretchBiomes.bopRegionCount())
-                + " wwooFeatures=" + VanillaBiomeFeatures.describe(), ChatFormatting.AQUA);
+                + " wwooFeatures=" + VanillaBiomeFeatures.describe()
+                + " wwooTwins=" + VanillaBiomeTwins.count(), ChatFormatting.AQUA);
         send(source, "  decoration: " + WwooDecorationPass.describeCounters(), ChatFormatting.AQUA);
         for (int lap = 0; lap < LAPS; lap++) {
             long base = cycle.startX() - cycle.phaseShift() + lap * cycle.period();

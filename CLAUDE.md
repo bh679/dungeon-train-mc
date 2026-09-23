@@ -276,8 +276,9 @@ contract — paintings are blocks under FP, and templates/shared carriages carry
 `compat/PaintingTransformProcessor` for why flipped stamps still work). **William Wythers' Overhauled
 Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too: on odd laps the
 overworld gap before the Nether band is WWOO and the gap after it is BoP (`worldgen/SecondLapOverworld`;
-`/dungeontrain debug overworld-laps` lists each lap's stretches and biomes). WWOO is confined at feature placement,
-BoP at biome choice — see `worldgen/VanillaBiomeFeatures` and `worldgen/density/OverworldStretchBiomes`.
+`/dungeontrain debug overworld-laps` lists each lap's stretches and biomes). WWOO is confined at feature placement plus vanilla
+"twins" for its biome colours/climate/spawns outside the stretch, BoP at biome choice — see
+`worldgen/VanillaBiomeFeatures`, `worldgen/VanillaBiomeTwins` and `worldgen/density/OverworldStretchBiomes`.
 On top of those, `modpack.config.json` → `optional_mods[]` bundles the siblings (each carrying
 `dependency_type: required` + a `gradle_property` floor) and the companions, each with a
 `required` flag.
