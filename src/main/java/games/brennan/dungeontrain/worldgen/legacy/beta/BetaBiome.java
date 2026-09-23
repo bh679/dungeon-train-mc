@@ -16,7 +16,12 @@ public enum BetaBiome {
     DESERT("desert", true),
     PLAINS("plains", false),
     ICE_DESERT("snowy_plains", true),
-    TUNDRA("snowy_plains", false);
+    TUNDRA("snowy_plains", false),
+    /**
+     * The Sky dimension's single biome (Skylands band). Never picked from the climate table. Shown as
+     * plains: the nearest green grass tint — Sky itself was rainless, but no green overworld biome is.
+     */
+    SKY("plains", false);
 
     private static final BetaBiome[] LOOKUP = new BetaBiome[64 * 64];
 

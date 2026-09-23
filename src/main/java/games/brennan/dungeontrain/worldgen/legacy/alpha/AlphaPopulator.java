@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen.legacy.alpha;
 
+import games.brennan.dungeontrain.worldgen.legacy.LegacyChunkWriter;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaDungeon;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaFeatures;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTrees;
@@ -32,7 +33,7 @@ public final class AlphaPopulator {
     private AlphaPopulator() {}
 
     public static void populate(WorldGenLevel level, AlphaTerrain terrain, int chunkX, int chunkZ, boolean winter) {
-        BetaWorld world = new BetaWorld(level);
+        BetaWorld world = new BetaWorld(level, LegacyChunkWriter.Y_OFFSET);
         long seed = terrain.seed();
         int bx = chunkX * 16;
         int bz = chunkZ * 16;

@@ -115,4 +115,22 @@ final class LegacyBandLayoutTest {
         assertEquals(1.0, c.legacyAt(x(299)).ramp());
         assertNull(c.legacyAt(x(300)));
     }
+
+    @Test
+    @DisplayName("Skylands follows Beta: its slot starts where Beta's ends, and disabling it leaves Beta's layout")
+    void skylandsFollowsBeta() {
+        LegacySpan sky = new LegacySpan(LegacyBandKind.SKYLANDS, 80, 30, 120);
+        WorldGenCycle both = cycle(BETA, sky);
+        assertEquals(cycle(BETA).period() + 80 + 2 * 30 + 120, both.period());
+        long skyStart = BETA.totalLen(); // 400
+        assertFalse(both.isInLegacyApproachOrBand(LegacyBandKind.SKYLANDS, x(skyStart - 1)));
+        assertTrue(both.isInLegacyApproachOrBand(LegacyBandKind.SKYLANDS, x(skyStart)));
+        assertNull(both.legacyAt(x(skyStart + 79)));
+        assertEquals(LegacyBandKind.SKYLANDS, both.legacyAt(x(skyStart + 80 + 30)).kind());
+        assertTrue(both.isInLegacyBand(LegacyBandKind.SKYLANDS, x(skyStart + 80 + 30)));
+        assertTrue(both.isInLegacyBand(LegacyBandKind.BETA, x(200)));
+        WorldGenCycle skyOff = cycle(BETA, new LegacySpan(LegacyBandKind.SKYLANDS, 80, 30, 0));
+        assertEquals(cycle(BETA).period(), skyOff.period());
+        assertNull(skyOff.legacyAt(x(skyStart + 80 + 30)));
+    }
 }

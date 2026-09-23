@@ -167,10 +167,11 @@ public abstract class NoiseBasedChunkGeneratorMixin {
         if (kind == null) return false;
         long seed = DungeonTrainWorldData.get(level).getGenerationSeed();
         int floorY = ((NoiseBasedChunkGenerator) (Object) this).getMinY();
+        int yOffset = LegacyBands.yOffset(kind, level);
         cir.setReturnValue(CompletableFuture.supplyAsync(() -> {
             long genT0 = GenProfiler.t0();
             try {
-                LegacyChunkWriter.fill(kind, seed, chunk, floorY);
+                LegacyChunkWriter.fill(kind, seed, chunk, floorY, yOffset);
             } finally {
                 GenProfiler.add(GenProfiler.Bucket.LEGACY, genT0);
             }

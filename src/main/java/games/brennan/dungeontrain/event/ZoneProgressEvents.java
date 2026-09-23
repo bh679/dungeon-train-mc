@@ -134,6 +134,9 @@ public final class ZoneProgressEvents {
      */
     private static final int BETA_DEPTH_BLOCKS = 500;
 
+    /** Depth (blocks) into the Skylands legacy band core before {@code reached_skylands} — same gate. */
+    private static final int SKYLANDS_DEPTH_BLOCKS = 500;
+
     /** Same depth gate for {@code reached_alpha}, into the Alpha legacy band core. */
     private static final int ALPHA_DEPTH_BLOCKS = 500;
 
@@ -218,6 +221,12 @@ public final class ZoneProgressEvents {
             }
 
             // Alpha legacy band — after Beta: terrain from Alpha 1.1.2's generator. Same depth gate.
+            // Skylands legacy band — after Beta: islands from Beta 1.7.3's unused Sky generator. Same depth gate.
+            if (LegacyBands.isInBand(level, LegacyBandKind.SKYLANDS, px)
+                && LegacyBands.isInBand(level, LegacyBandKind.SKYLANDS, px - SKYLANDS_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_skylands");
+            }
+
             if (LegacyBands.isInBand(level, LegacyBandKind.ALPHA, px)
                 && LegacyBands.isInBand(level, LegacyBandKind.ALPHA, px - ALPHA_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_alpha");
