@@ -13,7 +13,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
-import net.minecraft.world.level.biome.TheEndBiomeSource;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import org.slf4j.Logger;
 
@@ -35,8 +34,8 @@ import org.slf4j.Logger;
  * <p><b>BetterEnd.</b> With BetterEnd: New Dawn installed the live End biome source is BCLib's, which
  * mixes BetterEnd biomes into the outer End. Only the BetterEnd End-band passes (every even crossing —
  * {@link EndBandStyle}) read it; the vanilla passes, and the island field that decides chorus and End
- * cities, read a private vanilla {@link TheEndBiomeSource} with the same climate sampler, so a vanilla
- * band's labels match its vanilla end-stone islands.</p>
+ * cities, read {@link VanillaEndBiomes} — vanilla's End layout reimplemented, since BCLib patches
+ * {@code TheEndBiomeSource} itself — so a vanilla band's labels, chorus and cities match plain vanilla.</p>
  *
  * <p>A missing End dimension or any sampling error falls back to the {@code the_end} holder — biome
  * generation is never broken.</p>
@@ -53,15 +52,15 @@ public final class EndCoreBiomes {
     private static final int SAMPLE_QUART_Y = QuartPos.fromBlock(SAMPLE_BLOCK_Y);
 
     private final BiomeSource endBiomeSource;     // nullable — fallback-only when the End is absent
-    private final BiomeSource vanillaBiomeSource; // nullable alongside; vanilla End layout, never modded
+    private final VanillaEndBiomes vanilla;       // nullable alongside; vanilla End layout, never modded
     private final Climate.Sampler endSampler;     // nullable alongside the source
     private final Holder<Biome> fallback;         // minecraft:the_end
     private final boolean betterEndPasses;        // true if the even passes are sampled from the live End
 
-    private EndCoreBiomes(BiomeSource endBiomeSource, BiomeSource vanillaBiomeSource, Climate.Sampler endSampler,
+    private EndCoreBiomes(BiomeSource endBiomeSource, VanillaEndBiomes vanilla, Climate.Sampler endSampler,
                           Holder<Biome> fallback, boolean betterEndPasses) {
         this.endBiomeSource = endBiomeSource;
-        this.vanillaBiomeSource = vanillaBiomeSource;
+        this.vanilla = vanilla;
         this.endSampler = endSampler;
         this.fallback = fallback;
         this.betterEndPasses = betterEndPasses;
@@ -77,18 +76,19 @@ public final class EndCoreBiomes {
      * terrain agree; vanilla passes sample the vanilla layout.
      */
     public Holder<Biome> biomeAt(int worldX, int worldZ, long passIndex) {
-        if (endBiomeSource == null || vanillaBiomeSource == null || endSampler == null) return fallback;
+        if (endBiomeSource == null || vanilla == null || endSampler == null) return fallback;
         try {
             if (passIndex <= 0L) {
                 // The real End's main-island check is a fixed radius around its origin — sampling
                 // the origin itself always resolves to `the_end`, matching a player's first arrival.
-                return vanillaBiomeSource.getNoiseBiome(0, SAMPLE_QUART_Y, 0, endSampler);
+                return vanilla.biomeAtQuart(0, SAMPLE_QUART_Y, 0);
             }
-            BiomeSource source = betterEndPasses && EndBandStyle.isBetterEndPass(passIndex)
-                    ? endBiomeSource : vanillaBiomeSource;
             int sampleX = (int) Math.min(Integer.MAX_VALUE, EndBandStyle.endSampleX(worldX, passIndex));
-            return source.getNoiseBiome(
-                    QuartPos.fromBlock(sampleX), SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ), endSampler);
+            if (betterEndPasses && EndBandStyle.isBetterEndPass(passIndex)) {
+                return endBiomeSource.getNoiseBiome(
+                        QuartPos.fromBlock(sampleX), SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ), endSampler);
+            }
+            return vanilla.biomeAtQuart(QuartPos.fromBlock(sampleX), SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ));
         } catch (Throwable t) {
             SAMPLE_ERRORS.error(LOGGER,
                     "[DungeonTrain] End core biome sample failed; baking the_end fallback instead", t);
@@ -111,12 +111,12 @@ public final class EndCoreBiomes {
      * @param endY   End-space Y of the island surface
      */
     public Holder<Biome> islandFieldBiomeAt(int worldX, int endY, int worldZ) {
-        if (vanillaBiomeSource == null || endSampler == null) return fallback;
+        if (vanilla == null) return fallback;
         try {
-            return vanillaBiomeSource.getNoiseBiome(
+            return vanilla.biomeAtQuart(
                     QuartPos.fromBlock(worldX + OUTER_SAMPLE_OFFSET_X),
                     QuartPos.fromBlock(endY),
-                    QuartPos.fromBlock(worldZ), endSampler);
+                    QuartPos.fromBlock(worldZ));
         } catch (Throwable t) {
             SAMPLE_ERRORS.error(LOGGER,
                     "[DungeonTrain] End island-field biome sample failed; baking the_end fallback instead", t);
@@ -144,7 +144,8 @@ public final class EndCoreBiomes {
             }
             ChunkGenerator gen = end.getChunkSource().getGenerator();
             BiomeSource src = gen.getBiomeSource();
-            BiomeSource vanilla = TheEndBiomeSource.create(end.registryAccess().lookupOrThrow(Registries.BIOME));
+            VanillaEndBiomes vanilla = VanillaEndBiomes.create(end.getSeed(),
+                    end.registryAccess().lookupOrThrow(Registries.BIOME));
             Climate.Sampler sampler = end.getChunkSource().randomState().sampler();
             return new EndCoreBiomes(src, vanilla, sampler, fallback, EndBandSampler.available(server));
         } catch (Throwable t) {
