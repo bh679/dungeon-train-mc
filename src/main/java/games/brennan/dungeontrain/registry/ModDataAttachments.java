@@ -72,6 +72,19 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Per-chunk flag: this chunk sits in a BetterEnd End-band pass and is still owed its real-End terrain,
+     * which is generated off-thread and written in a moment after the chunk loads
+     * ({@code WorldEndBandEvents}). Persisted so a chunk that unloads first is filled on its next load;
+     * cleared once written, so the terrain is never written twice. Serialized only while set.
+     */
+    public static final Supplier<AttachmentType<Boolean>> END_BAND_PENDING =
+        TYPES.register("end_band_pending",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL, pending -> pending)
+                .build()
+        );
+
+    /**
      * Per-player flag: has this player already seen the fly-up spawn intro
      * cinematic in this world? Set once on first login and serialized so it
      * survives logout / world reload. {@code copyOnDeath} preserves it across

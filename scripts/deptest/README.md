@@ -43,7 +43,7 @@ The NeoForge version follows `neo_version` for the same reason.
 
 | Case | `mods/` contents | Expected |
 |---|---|---|
-| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids |
+| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + BetterEnd set + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids |
 | **B** | minus AIN | Fails — `adventureitemnames … Actual version: '[MISSING]'` |
 | **C** | DT + Sable only | Fails — names **all five**, with each declared range (the hybrid trio is nested, so never missing) |
 | **D** | PlayerMob **above** the floor | Server starts cleanly |
@@ -51,6 +51,7 @@ The NeoForge version follows `neo_version` for the same reason.
 | **F** | minus Sable | Fails — `Expected range: '[x,x]'` (exact pin, not a minimum); the fence fix's own `[2.0.5,)` Sable floor also fires |
 | **G** | DT + Sable + five siblings, no top-level hybrid jars (Modrinth / manual layout) | Server starts cleanly on the nested copies |
 | **H** | minus Fast Paintings + Moonlight | Fails — names `fastpaintings` and `moonlight` with their `[x,)` floors |
+| **I** | minus BetterEnd + BCLib + WorldWeaver + WunderLib | Fails — names `betterend`, `bclib`, `wover` and `wunderlib` with their `[x,)` floors |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.

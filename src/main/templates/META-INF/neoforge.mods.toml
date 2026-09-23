@@ -44,6 +44,36 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# BetterEnd: New Dawn (+ its libraries) — REQUIRED. Every even End-islands band copies real End
+# chunks, which BetterEnd populates; its blocks also have to exist on the client to render there.
+[[dependencies.${mod_id}]]
+    modId="betterend"
+    type="required"
+    versionRange="[${betterend_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="bclib"
+    type="required"
+    versionRange="[${bclib_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="wover"
+    type="required"
+    versionRange="[${worldweaver_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="wunderlib"
+    type="required"
+    versionRange="[${wunderlib_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Sibling mods (same author). These are NOT bundled — each is a separate required
 # download, so its own Modrinth/CurseForge page gets credited for the install.
 #
@@ -226,6 +256,10 @@ logoFile="logo.png"
 
 # TEMPORARY — remove together with VivecraftMixinPlugin once Vivecraft Sable Compat is live and
 # bundled in the modpack. Self-gating: no-ops unless Vivecraft is present and the addon is not.
+# BetterEnd: New Dawn (required dep) — suppresses its dev-only debug items, which crash dev boots.
+[[mixins]]
+    config="${mod_id}.betterend.mixins.json"
+
 [[mixins]]
     config="${mod_id}.vivecraft.mixins.json"
 
