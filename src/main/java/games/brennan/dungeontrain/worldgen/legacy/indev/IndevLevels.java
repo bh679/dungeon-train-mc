@@ -10,9 +10,11 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * The Indev floating band's world, tiled out of finite {@link IndevFloatingLevel}s: the XZ plane is cut
- * into {@link IndevFloatingLevel#WIDTH}×{@link IndevFloatingLevel#LENGTH} tiles aligned to the world grid,
- * and each tile is its own seeded Indev level. Indev's edge falloff empties every level's rim, so
- * neighbouring levels are separated by open void.
+ * into {@link IndevFloatingLevel#WIDTH}×{@link IndevFloatingLevel#LENGTH} tiles, and each tile is its own
+ * seeded Indev level. Indev's edge falloff empties every level's rim, so neighbouring levels are separated
+ * by open void. The grid is shifted half a tile in Z ({@link #Z_SHIFT}) so the train's corridor, which runs
+ * along {@code z ≈ 0}, passes through the middle of each level — where every layer has islands — rather
+ * than along the empty seam between two rows of levels.
  *
  * <p><b>Build once, share.</b> A level is generated whole (see {@link IndevFloatingLevel}), so the first
  * worldgen worker to need a tile builds it and every other worker asking for the same tile waits on the
@@ -40,9 +42,22 @@ public final class IndevLevels {
         return seed;
     }
 
+    /** Blocks the tile grid is shifted along Z: level centres sit on {@code z = 0}. A multiple of 16. */
+    public static final int Z_SHIFT = IndevFloatingLevel.LENGTH / 2;
+
     /** The level containing chunk {@code (chunkX, chunkZ)} — a chunk never straddles two tiles. */
     public IndevFloatingLevel levelForChunk(int chunkX, int chunkZ) {
-        return level(Math.floorDiv(chunkX << 4, IndevFloatingLevel.WIDTH), Math.floorDiv(chunkZ << 4, IndevFloatingLevel.LENGTH));
+        return level(Math.floorDiv(chunkX << 4, IndevFloatingLevel.WIDTH), Math.floorDiv((chunkZ << 4) + Z_SHIFT, IndevFloatingLevel.LENGTH));
+    }
+
+    /** Level-local X of world block {@code x}. */
+    public static int localX(int x) {
+        return Math.floorMod(x, IndevFloatingLevel.WIDTH);
+    }
+
+    /** Level-local Z of world block {@code z}. */
+    public static int localZ(int z) {
+        return Math.floorMod(z + Z_SHIFT, IndevFloatingLevel.LENGTH);
     }
 
     /** The level for tile {@code (tileX, tileZ)}, building it on this thread if nobody has yet. */

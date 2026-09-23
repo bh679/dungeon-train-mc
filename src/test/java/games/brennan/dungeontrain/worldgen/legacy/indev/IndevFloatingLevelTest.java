@@ -111,8 +111,11 @@ final class IndevFloatingLevelTest {
         IndevLevels levels = new IndevLevels(0x1D5EEDL);
         IndevFloatingLevel a = levels.level(3, -2);
         assertSame(a, levels.level(3, -2));
-        assertSame(a, levels.levelForChunk(3 * 16, -2 * 16));        // tile (3,-2)'s first chunk
-        assertSame(a, levels.levelForChunk(3 * 16 + 15, -2 * 16 + 15)); // …and its last
+        // Tile (3,-2) spans chunk X 48..63 and, shifted half a tile in Z, chunk Z -40..-25.
+        assertSame(a, levels.levelForChunk(3 * 16, -2 * 16 - 8));
+        assertSame(a, levels.levelForChunk(3 * 16 + 15, -2 * 16 + 7));
+        assertEquals(0, IndevLevels.localZ(-IndevLevels.Z_SHIFT));
+        assertEquals(IndevFloatingLevel.LENGTH / 2, IndevLevels.localZ(0));  // z = 0 is a level's middle
         assertEquals(a.block(100, 120, 40), level.block(100, 120, 40)); // same tile seed → same level
         assertNotEquals(IndevLevels.tileSeed(1L, 0, 0), IndevLevels.tileSeed(1L, 0, 1));
         for (int i = 0; i < IndevLevels.MAX_TILES + 2; i++) levels.level(100 + i, 0);

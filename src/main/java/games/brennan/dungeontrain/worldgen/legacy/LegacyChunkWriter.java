@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBlocks;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaChunk;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
 import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingLevel;
+import games.brennan.dungeontrain.worldgen.legacy.indev.IndevLevels;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -61,8 +62,8 @@ public final class LegacyChunkWriter {
 
     /** Copy the chunk's 16×16 column of {@code level} into {@code chunk}; air stays unwritten (void). */
     static void writeFloating(ChunkAccess chunk, IndevFloatingLevel level) {
-        int lx0 = Math.floorMod(chunk.getPos().getMinBlockX(), IndevFloatingLevel.WIDTH);
-        int lz0 = Math.floorMod(chunk.getPos().getMinBlockZ(), IndevFloatingLevel.LENGTH);
+        int lx0 = IndevLevels.localX(chunk.getPos().getMinBlockX());
+        int lz0 = IndevLevels.localZ(chunk.getPos().getMinBlockZ());
         int minY = Math.max(chunk.getMinBuildHeight(), FLOATING_Y_OFFSET);
         int maxY = Math.min(chunk.getMaxBuildHeight() - 1, FLOATING_Y_OFFSET + IndevFloatingLevel.HEIGHT - 1);
         for (int y = minY; y <= maxY; y++) {
