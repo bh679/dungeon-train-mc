@@ -121,4 +121,26 @@ final class VariantClipboardItemPoolTest {
         assertFalse(encoded.contains("fmax"), "default fillMax (FILL_ALL) should be omitted");
         assertTrue(encoded.contains("e"), "entries list always present");
     }
+
+    @Test
+    @DisplayName("encodeStates / decodeStates: redstone-toggle mode round-trips, default omitted")
+    void encodeDecodeStates_activeMode() {
+        games.brennan.dungeontrain.editor.VariantState on =
+            games.brennan.dungeontrain.editor.VariantState.of(
+                net.minecraft.world.level.block.Blocks.OAK_TRAPDOOR.defaultBlockState())
+            .withActive(games.brennan.dungeontrain.editor.VariantActive.random());
+        games.brennan.dungeontrain.editor.VariantState plain =
+            games.brennan.dungeontrain.editor.VariantState.of(
+                net.minecraft.world.level.block.Blocks.OAK_TRAPDOOR.defaultBlockState());
+
+        CompoundTag tag = VariantClipboardItem.encodeStates(List.of(on, plain), 0);
+        List<games.brennan.dungeontrain.editor.VariantState> back = VariantClipboardItem.decodeStates(tag);
+
+        assertEquals(2, back.size());
+        assertEquals(games.brennan.dungeontrain.editor.VariantActive.Mode.RANDOM, back.get(0).active().mode());
+        assertEquals(games.brennan.dungeontrain.editor.VariantActive.Mode.INACTIVE, back.get(1).active().mode());
+        net.minecraft.nbt.ListTag list = tag.getList(VariantClipboardItem.NBT_ROOT_KEY, net.minecraft.nbt.Tag.TAG_COMPOUND);
+        assertTrue(list.getCompound(0).contains("am"), "the mode key must be written for the non-default entry");
+        assertFalse(list.getCompound(1).contains("am"), "the default mode must be omitted");
+    }
 }

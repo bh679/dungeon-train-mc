@@ -598,7 +598,7 @@ public final class CarriageContentsPlacer {
             } else {
                 net.minecraft.world.level.block.state.BlockState rotated =
                     games.brennan.dungeontrain.editor.RotationApplier.apply(
-                        StagePlacementScope.resolve(picked.state()), picked.rotation(), picked.half(),
+                        StagePlacementScope.resolve(picked.state()), picked.rotation(), picked.half(), picked.active(),
                         entry.localPos(), seed, carriageIndex,
                         sidecar.lockIdAt(entry.localPos()));
                 // Reflect AFTER the authored rotation roll, so the cell reads as the mirror image of

@@ -168,4 +168,24 @@ final class BlockVariantSyncPacketTest {
         original.encode(buf);
         return BlockVariantSyncPacket.decode(buf);
     }
+
+    @Test
+    @DisplayName("round-trip preserves the redstone-toggle activeMode byte; short ctor defaults it to INACTIVE")
+    void roundTrip_activeMode() {
+        BlockVariantSyncPacket.Entry on = new BlockVariantSyncPacket.Entry(
+            "minecraft:oak_trapdoor[open=true]", null, 1, (byte) 1, (byte) 0, null, null,
+            (byte) 1, 0, -1, 0, false, (byte) 0);
+        BlockVariantSyncPacket.Entry legacy = new BlockVariantSyncPacket.Entry(
+            "minecraft:stone", null, 1, (byte) 1, (byte) 0, null);
+        assertEquals(BlockVariantSyncPacket.Entry.ACTIVE_MODE_DEFAULT, legacy.activeMode(),
+            "short constructors must default to INACTIVE (ordinal 2)");
+        BlockVariantSyncPacket original = new BlockVariantSyncPacket(
+            "carriage:flatbed", new BlockPos(1, 1, 1), List.of(on, legacy), 0,
+            new Vec3(0.5, 0.5, 0.5), new Vec3(1, 0, 0), new Vec3(0, 1, 0));
+
+        BlockVariantSyncPacket decoded = roundTrip(original);
+
+        assertEquals((byte) 0, decoded.entries().get(0).activeMode(), "ACTIVE ordinal survives the wire");
+        assertEquals((byte) 2, decoded.entries().get(1).activeMode(), "default survives the wire");
+    }
 }

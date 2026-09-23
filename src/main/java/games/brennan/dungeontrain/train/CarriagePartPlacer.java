@@ -210,7 +210,7 @@ public final class CarriagePartPlacer {
                 // mirror still flips the result correctly (mirror operates
                 // on the final FACING/AXIS, regardless of how it was set).
                 BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
-                    StagePlacementScope.resolve(picked.state()), picked.rotation(), picked.half(),
+                    StagePlacementScope.resolve(picked.state()), picked.rotation(), picked.half(), picked.active(),
                     entry.localPos(), seed, carriageIndex,
                     sidecar.lockIdAt(entry.localPos()));
                 // Mirror flips state properties (FACING/AXIS); BE NBT
