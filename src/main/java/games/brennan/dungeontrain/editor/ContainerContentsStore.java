@@ -85,7 +85,7 @@ public final class ContainerContentsStore {
 
     public static final int CURRENT_SCHEMA_VERSION = 3;
 
-    static final String SUBDIR = "containers";
+    public static final String SUBDIR = "containers";
     static final String EXT = ".contents.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/containers/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/containers";
@@ -740,7 +740,7 @@ public final class ContainerContentsStore {
      * {@link TemplateSidecars} carries between installs. Stated here rather than rebuilt there so
      * the sanitising rule below stays this class's business.
      */
-    static String basenameFor(String plotKey) {
+    public static String basenameFor(String plotKey) {
         return safeFilename(plotKey) + EXT;
     }
 

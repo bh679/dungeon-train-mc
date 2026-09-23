@@ -1,10 +1,19 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 3,
   "selfWeight": 0,
   "variants": [
     {
       "id": "prison_broken",
-      "weight": 1
+      "weight": 1,
+      "stages": [
+        "stone",
+        "spruce",
+        "wood_oak",
+        "mangrove",
+        "jungle",
+        "darkwood",
+        "acacia"
+      ]
     },
     {
       "id": "reading_room_dark_oak",
