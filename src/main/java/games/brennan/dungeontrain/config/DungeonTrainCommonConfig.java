@@ -276,7 +276,7 @@ public final class DungeonTrainCommonConfig {
     /** Blocks of spheres-band world-gen (the whole void-with-spheres stretch). 0 drops the band from the cycle. */
     public static final int MIN_SPHERES_HOLD_BLOCKS = 0;
     public static final int MAX_SPHERES_HOLD_BLOCKS = 100_000_000;
-    public static final int DEFAULT_SPHERES_HOLD_BLOCKS = 12000;
+    public static final int DEFAULT_SPHERES_HOLD_BLOCKS = 14000;
     /** Entry fade before the band: the natural terrain outside the spheres dissolves into void across this span. */
     public static final int MIN_SPHERES_FADE_BLOCKS = 0;
     public static final int MAX_SPHERES_FADE_BLOCKS = 100_000_000;
@@ -312,7 +312,7 @@ public final class DungeonTrainCommonConfig {
     /** Blocks into the spheres core that keep the normal overworld sky before the End sky takes over. */
     public static final int MIN_SPHERES_END_SKY_START_BLOCKS = 0;
     public static final int MAX_SPHERES_END_SKY_START_BLOCKS = 100_000_000;
-    public static final int DEFAULT_SPHERES_END_SKY_START_BLOCKS = 4000;
+    public static final int DEFAULT_SPHERES_END_SKY_START_BLOCKS = 3000;
     /** Crossfade span (blocks) at each edge of the spheres End-sky second half. */
     public static final int MIN_SPHERES_END_SKY_FADE_BLOCKS = 0;
     public static final int MAX_SPHERES_END_SKY_FADE_BLOCKS = 2000;
@@ -397,7 +397,14 @@ public final class DungeonTrainCommonConfig {
      */
     public static final int SPHERES_V2_HOLD_BLOCKS = 8000;
 
-    public static final int CURRENT_CONFIG_VERSION = 3;
+    /**
+     * The spheres band hold + End-sky start v3 shipped (12000 / 4000) before the band became the
+     * six-segment progression ({@link SpheresProgressionConfig}). The v3 -> v4 migration moves exactly these.
+     */
+    public static final int SPHERES_V3_HOLD_BLOCKS = 12000;
+    public static final int SPHERES_V3_END_SKY_START_BLOCKS = 4000;
+
+    public static final int CURRENT_CONFIG_VERSION = 4;
     public static final int DEFAULT_CONFIG_VERSION = 0;
     public static final int MIN_CONFIG_VERSION = 0;
     public static final int MAX_CONFIG_VERSION = 1_000_000;
@@ -847,7 +854,7 @@ public final class DungeonTrainCommonConfig {
                         "Set false to drop the spheres phase from the cycle.")
                 .define("spheresEnabled", DEFAULT_SPHERES_ENABLED);
         ModConfigSpec.IntValue spheresHoldBlocks = b
-                .comment("Blocks of spheres-band world-gen (the whole void-with-spheres stretch). Default 12000.")
+                .comment("Blocks of spheres-band world-gen (the whole void-with-spheres stretch). Default 14000.")
                 .defineInRange("spheresHoldBlocks", DEFAULT_SPHERES_HOLD_BLOCKS,
                         MIN_SPHERES_HOLD_BLOCKS, MAX_SPHERES_HOLD_BLOCKS);
         ModConfigSpec.IntValue spheresFadeBlocks = b
@@ -905,8 +912,8 @@ public final class DungeonTrainCommonConfig {
                 .define("spheresEndSky", DEFAULT_SPHERES_END_SKY);
         ModConfigSpec.IntValue spheresEndSkyStartBlocks = b
                 .comment("Blocks into the spheres band (counted from the end of the entry fade) that keep the normal",
-                        "overworld sky before the End sky takes over for the rest of the band. Default 4000 — with the",
-                        "default 12000-block band that is 4000 blocks of overworld sky, then 8000 of End sky.")
+                        "overworld sky before the End sky takes over. Default 3000 — the End sky then holds until",
+                        "spheresNetherSkyStartBlocks, where the Nether sky takes the band's last stretch.")
                 .defineInRange("spheresEndSkyStartBlocks", DEFAULT_SPHERES_END_SKY_START_BLOCKS,
                         MIN_SPHERES_END_SKY_START_BLOCKS, MAX_SPHERES_END_SKY_START_BLOCKS);
         ModConfigSpec.IntValue spheresEndSkyFadeBlocks = b
@@ -915,6 +922,7 @@ public final class DungeonTrainCommonConfig {
                         "0 = hard switch. Default 150.")
                 .defineInRange("spheresEndSkyFadeBlocks", DEFAULT_SPHERES_END_SKY_FADE_BLOCKS,
                         MIN_SPHERES_END_SKY_FADE_BLOCKS, MAX_SPHERES_END_SKY_FADE_BLOCKS);
+        SpheresProgressionConfig.define(b);
         ModConfigSpec.BooleanValue stacksEnabled = b
                 .comment("Stacks phase — part of the single repeating world-gen cycle, appended after the spheres band",
                         "with a long plain-overworld lead-in. Along +X it is mostly void; scattered chunks each hold a",
@@ -1073,10 +1081,19 @@ public final class DungeonTrainCommonConfig {
             WorldGenCycle.invalidateCache();
         }
 
-        // v2 -> v3: the spheres band grew again, 8000 -> 12000 (the last 8000 under the End sky). A
-        // v1 install already landed on 12000 above, so this only moves a hold still at v2's 8000.
+        // v2 -> v3: the spheres band grew again, 8000 -> the current default. A
+        // v1 install already landed on the default above, so this only moves a hold still at v2's 8000.
         if (from < 3) {
             migrateBandHold("spheresHoldBlocks", SPHERES_HOLD_BLOCKS, SPHERES_V2_HOLD_BLOCKS, DEFAULT_SPHERES_HOLD_BLOCKS, from);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v3 -> v4: the spheres band became a six-segment progression — 14000 long, End sky from 3000.
+        // Only values still at v3's shipped defaults move; a chosen length or start is left alone.
+        if (from < 4) {
+            migrateBandHold("spheresHoldBlocks", SPHERES_HOLD_BLOCKS, SPHERES_V3_HOLD_BLOCKS, DEFAULT_SPHERES_HOLD_BLOCKS, from);
+            migrateBandHold("spheresEndSkyStartBlocks", SPHERES_END_SKY_START_BLOCKS, SPHERES_V3_END_SKY_START_BLOCKS,
+                    DEFAULT_SPHERES_END_SKY_START_BLOCKS, from);
             WorldGenCycle.invalidateCache();
         }
 

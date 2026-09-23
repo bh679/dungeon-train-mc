@@ -1,12 +1,11 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.track.TrackGeometry;
-import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import games.brennan.dungeontrain.worldgen.SphereField;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.SunlitChunks;
@@ -93,8 +92,12 @@ public final class WorldSpheresEvents {
         if (!SpheresBand.chunkTouchesBand(level, chunkMinX)) return;
 
         long genT0 = GenProfiler.t0();
-        boolean changed = carve(level, chunk, chunkMinX, chunkMinZ);
+        List<SphereField.Sphere> offline = new ArrayList<>(2);
+        boolean changed = carve(level, chunk, chunkMinX, chunkMinZ, offline);
         GenProfiler.add(GenProfiler.Bucket.SPHERES_CARVE, genT0);
+        // Spheres cut from another dimension (or built around a structure) were left empty above;
+        // their terrain is generated off-thread and written in once it's ready.
+        WorldSpheresForeignEvents.queue(level, chunk, offline);
         if (changed) {
             Heightmap.primeHeightmaps(chunk, FULL_HEIGHTMAPS);
             chunk.setUnsaved(true);
@@ -102,17 +105,15 @@ public final class WorldSpheresEvents {
         }
     }
 
-    /** The column-by-column rewrite; true if any block changed. */
-    private static boolean carve(ServerLevel level, ChunkAccess chunk, int chunkMinX, int chunkMinZ) {
-        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        long seed = data.getGenerationSeed();
-        TrackGeometry g = TrackGeometry.from(data.dims(), data.getTrainY());
-        TunnelGeometry tg = TunnelGeometry.from(g);
-        int bedY = g.bedY();
-        int laneZMin = g.trackZMin(), laneZMax = g.trackZMax();     // bed + rail rows survive here
-        int railY = g.railY();
-        int airZMin = tg.airMinZ(), airZMax = tg.airMaxZ();         // train airspace carved through spheres
-        int airYMin = bedY + 1, airYMax = tg.ceilingY() - 1;
+    /**
+     * The column-by-column rewrite; true if any block changed. Every offline sphere
+     * ({@link SphereField.Sphere#offline}) touching a carved column is added to {@code offline}: its
+     * cells are left as air here, for {@link WorldSpheresForeignEvents} to fill.
+     */
+    private static boolean carve(ServerLevel level, ChunkAccess chunk, int chunkMinX, int chunkMinZ,
+                                 List<SphereField.Sphere> offline) {
+        long seed = DungeonTrainWorldData.get(level).getGenerationSeed();
+        SphereCarveGeometry geo = SphereCarveGeometry.of(level);
 
         double[] ramp = new double[16];
         boolean any = false;
@@ -135,12 +136,14 @@ public final class WorldSpheresEvents {
             boolean core = ramp[dx] >= 1.0;
             for (int dz = 0; dz < 16; dz++) {
                 int worldZ = chunkMinZ + dz;
-                boolean laneZ = worldZ >= laneZMin && worldZ <= laneZMax;
-                boolean airZ = worldZ >= airZMin && worldZ <= airZMax;
+                boolean laneZ = geo.laneZ(worldZ);
+                boolean airZ = geo.airZ(worldZ);
 
                 colSpheres.clear();
                 for (SphereField.Sphere s : candidates) {
-                    if (s.touchesColumn(worldX, worldZ)) colSpheres.add(s);
+                    if (!s.touchesColumn(worldX, worldZ)) continue;
+                    colSpheres.add(s);
+                    if (s.offline() && !offline.contains(s)) offline.add(s);
                 }
                 if (colSpheres.isEmpty() && core && !laneZ) {
                     changed |= clearColumn(chunk, dx, dz, worldX, worldZ, minY, maxY);
@@ -149,7 +152,7 @@ public final class WorldSpheresEvents {
 
                 snapshot(chunk, dx, dz, col, minY);
                 changed |= rewriteColumn(chunk, dx, dz, worldX, worldZ, col, colSpheres, ramp[dx], core,
-                        laneZ, airZ, railY, airYMin, airYMax, bedY, seed, minY, maxY);
+                        laneZ, airZ, geo, seed, minY, maxY);
             }
         }
         return changed;
@@ -180,7 +183,7 @@ public final class WorldSpheresEvents {
                 if (y < minY || y >= maxY) continue;
                 BlockState cur = section.getBlockState(dx, ly, dz);
                 if (cur.isAir()) continue;
-                if (cur.hasBlockEntity()) chunk.removeBlockEntity(new BlockPos(worldX, y, worldZ));
+                if (cur.hasBlockEntity()) SilentBlockOps.evictBlockEntity(chunk, new BlockPos(worldX, y, worldZ));
                 section.setBlockState(dx, ly, dz, AIR, false);
                 changed = true;
             }
@@ -192,16 +195,18 @@ public final class WorldSpheresEvents {
     private static boolean rewriteColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                          BlockState[] col, List<SphereField.Sphere> spheres,
                                          double ramp, boolean core, boolean laneZ, boolean airZ,
-                                         int railY, int airYMin, int airYMax, int bedY, long seed,
-                                         int minY, int maxY) {
+                                         SphereCarveGeometry geo, long seed, int minY, int maxY) {
         boolean changed = false;
+        int bedY = geo.bedY();
         for (int y = minY; y < maxY; y++) {
-            if (laneZ && (y == bedY || y == railY)) continue;            // the track itself: bed + rails
+            if (laneZ && (y == bedY || y == geo.railY())) continue;      // the track itself: bed + rails
             BlockState cur = col[y - minY];
             BlockState ns;
-            boolean trainAir = airZ && y >= airYMin && y <= airYMax;     // keep the train's airspace open
+            boolean trainAir = geo.reserved(y, false, airZ);             // keep the train's airspace open
             SphereField.Sphere owner = trainAir ? null : SphereField.bestAt(spheres, worldX, y, worldZ);
-            if (owner != null) {
+            if (owner != null && owner.offline()) {
+                ns = AIR;                                                // filled later, off-thread
+            } else if (owner != null) {
                 int sy = owner.sourceY(y);
                 ns = (sy >= minY && sy < maxY) ? lifted(col[sy - minY]) : AIR;
             } else if (core || cur.isAir()) {
@@ -212,7 +217,7 @@ public final class WorldSpheresEvents {
                 ns = Disintegration.coherentNoise(seed, worldX, y, worldZ) >= p ? cur : AIR;
             }
             if (ns == cur) continue;
-            if (cur.hasBlockEntity()) chunk.removeBlockEntity(new BlockPos(worldX, y, worldZ));
+            if (cur.hasBlockEntity()) SilentBlockOps.evictBlockEntity(chunk, new BlockPos(worldX, y, worldZ));
             int sIdx = chunk.getSectionIndex(y);
             chunk.getSection(sIdx).setBlockState(dx, y & 15, dz, ns, false);
             changed = true;

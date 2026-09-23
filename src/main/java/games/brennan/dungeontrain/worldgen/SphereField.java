@@ -47,10 +47,31 @@ public final class SphereField {
                          int centerMinY, int centerMaxY, double surfaceBias) {}
 
     /**
-     * One sphere: lifted (display) centre {@code (cx, cy, cz)}, radius {@code r}, and the vertical
-     * lift {@code dy = cy − sourceCenterY} applied to its terrain.
+     * One sphere: lifted (display) centre {@code (cx, cy, cz)}, radius {@code r}, the vertical lift
+     * {@code dy = cy − sourceCenterY} applied to its terrain, the dimension its terrain is cut from, and
+     * whether it is built around a structure. An overworld sphere with no structure is carved inline
+     * from the chunk's own terrain; every other sphere is generated off-thread
+     * ({@code ForeignSphereSampler}).
      */
-    public record Sphere(int cx, int cy, int cz, int r, int dy) {
+    public record Sphere(int cx, int cy, int cz, int r, int dy, SphereSource source, boolean structure) {
+
+        /** A plain overworld sphere — the shape every sphere had before the band mixed dimensions. */
+        public Sphere(int cx, int cy, int cz, int r, int dy) {
+            this(cx, cy, cz, r, dy, SphereSource.OVERWORLD, false);
+        }
+
+        /** True if this sphere's terrain comes from the off-thread sampler rather than the chunk itself. */
+        public boolean offline() {
+            return structure || source != SphereSource.OVERWORLD;
+        }
+
+        /**
+         * A stable 64-bit id from the centre — unique per sphere, because each placement cube rolls at
+         * most one and the centre lies inside its cube. Used to track which spheres a chunk still owes.
+         */
+        public long id() {
+            return ((long) cx & 0x3FFFFFFL) | (((long) cz & 0x3FFFFFFL) << 26) | (((long) cy & 0xFFFL) << 52);
+        }
 
         /** True if the world position lies inside the sphere (inclusive surface). */
         public boolean contains(int x, int y, int z) {
@@ -82,11 +103,42 @@ public final class SphereField {
         int surfaceY(int x, int z);
     }
 
+    /** Returned by {@link Mixer#endSurfaceY} for an End column with no island — the sphere turns Nether. */
+    public static final int NO_SURFACE = Integer.MIN_VALUE;
+
+    /**
+     * Where along the band a sphere may come from another dimension, and how its foreign terrain is
+     * anchored. {@link #OVERWORLD_ONLY} reproduces the pre-mix band exactly.
+     */
+    public interface Mixer {
+        /** The dimension a sphere centred at world-X {@code cx} is cut from, given a uniform roll {@code u}. */
+        SphereSource sourceAt(int cx, double u);
+
+        /** Chance {@code 0..1} a sphere centred at world-X {@code cx} is built around a structure. */
+        double structureChanceAt(int cx);
+
+        /** End surface Y at a column (island top), or {@link #NO_SURFACE} over the End void. */
+        int endSurfaceY(int x, int z);
+
+        Mixer OVERWORLD_ONLY = new Mixer() {
+            @Override public SphereSource sourceAt(int cx, double u) { return SphereSource.OVERWORLD; }
+            @Override public double structureChanceAt(int cx) { return 0.0; }
+            @Override public int endSurfaceY(int x, int z) { return NO_SURFACE; }
+        };
+    }
+
+    /** Nether spheres are cut around a source centre in this Y range — cavern floors, walls, the lava sea. */
+    static final int NETHER_SOURCE_MIN_Y = 40;
+    static final int NETHER_SOURCE_MAX_Y = 100;
+
     private static final int PRESENCE_SALT = 11;
     private static final int JITTER_X_SALT = 12;
     private static final int JITTER_Y_SALT = 13;
     private static final int JITTER_Z_SALT = 14;
     private static final int RADIUS_SALT = 15;
+    private static final int SOURCE_SALT = 16;
+    private static final int STRUCTURE_SALT = 17;
+    private static final int NETHER_Y_SALT = 18;
 
     /** Sentinel for "this cell rolled no sphere" in the memo (a {@code null} value can't be stored). */
     private static final Sphere NONE = new Sphere(0, 0, 0, 0, 0);
@@ -94,11 +146,17 @@ public final class SphereField {
 
     private final Params p;
     private final SurfaceSampler surface;
+    private final Mixer mixer;
     private final ConcurrentHashMap<Long, Sphere> memo = new ConcurrentHashMap<>();
 
     public SphereField(Params params, SurfaceSampler surface) {
+        this(params, surface, Mixer.OVERWORLD_ONLY);
+    }
+
+    public SphereField(Params params, SurfaceSampler surface, Mixer mixer) {
         this.p = params;
         this.surface = surface;
+        this.mixer = mixer;
     }
 
     public Params params() {
@@ -182,9 +240,28 @@ public final class SphereField {
         int rMax = Math.max(rMin, p.rMax());
         int r = rMin + (int) Math.floor((rMax - rMin + 1) * u * u);  // biased small: most spheres are little
         if (r > rMax) r = rMax;
-        int surfaceY = surface.surfaceY(cx, cz);
-        int sourceCenterY = surfaceY - (int) Math.round(r * (2.0 * p.surfaceBias() - 1.0));
-        return new Sphere(cx, cy, cz, r, cy - sourceCenterY);
+        SphereSource source = mixer.sourceAt(cx, hash01(seed, cellX, cellY, cellZ, SOURCE_SALT));
+        boolean structure = hash01(seed, cellX, cellY, cellZ, STRUCTURE_SALT) < mixer.structureChanceAt(cx);
+        int sourceCenterY;
+        int bias = (int) Math.round(r * (2.0 * p.surfaceBias() - 1.0));
+        if (source == SphereSource.END) {
+            int endY = mixer.endSurfaceY(cx, cz);
+            if (endY == NO_SURFACE) {
+                source = SphereSource.NETHER;                 // over the End void: nothing to cut
+            } else {
+                sourceCenterY = endY - bias;                  // an island cap, like an overworld sphere
+                return new Sphere(cx, cy, cz, r, cy - sourceCenterY, source, structure);
+            }
+        }
+        if (source == SphereSource.NETHER) {
+            // The Nether has a roof, so there is no surface to anchor to: cut around a hashed height.
+            double u2 = hash01(seed, cellX, cellY, cellZ, NETHER_Y_SALT);
+            sourceCenterY = NETHER_SOURCE_MIN_Y
+                    + (int) Math.floor(u2 * (NETHER_SOURCE_MAX_Y - NETHER_SOURCE_MIN_Y + 1));
+        } else {
+            sourceCenterY = surface.surfaceY(cx, cz) - bias;
+        }
+        return new Sphere(cx, cy, cz, r, cy - sourceCenterY, source, structure);
     }
 
     private static boolean circleMeetsSquare(Sphere s, int minX, int maxX, int minZ, int maxZ) {

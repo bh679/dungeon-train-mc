@@ -1,31 +1,21 @@
 package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.worldgen.OfflineChunkSampler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
-import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.server.level.GenerationChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.util.RandomSource;
-import net.minecraft.util.StaticCache2D;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.biome.MobSpawnSettings;
-import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ProtoChunk;
-import net.minecraft.world.level.chunk.UpgradeData;
-import net.minecraft.world.level.chunk.status.ChunkPyramid;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
-import net.minecraft.world.level.chunk.status.ChunkStep;
-import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -130,11 +120,9 @@ final class PortalChunkFeatures {
      * a room, rather than failing the pair. Runs on the sampling worker.</p>
      */
     static void carve(NoiseBasedChunkGenerator generator, ServerLevel level, RandomState random,
-                      ProtoChunk chunk, Workspace workspace, long worldSeed, int pairKey) {
+                      ProtoChunk chunk, OfflineChunkSampler.Workspace workspace, long worldSeed, int pairKey) {
         try {
-            generator.applyCarvers(workspace.region(), worldSeed, random,
-                biomeManager(generator, random, worldSeed), workspace.structures(), chunk,
-                GenerationStep.Carving.AIR);
+            OfflineChunkSampler.carve(generator, random, chunk, workspace, worldSeed);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Chunk dimension carving failed for pair {} — the room keeps "
                 + "its uncarved terrain", pairKey, t);
@@ -154,7 +142,7 @@ final class PortalChunkFeatures {
      *               entirely outside them can be rejected in favour of one that does not
      */
     static void decorate(NoiseBasedChunkGenerator generator, ServerLevel level, RandomState random,
-                         ProtoChunk chunk, Workspace workspace, BoundingBox window, long worldSeed,
+                         ProtoChunk chunk, OfflineChunkSampler.Workspace workspace, BoundingBox window, long worldSeed,
                          int pairKey) {
         try {
             plantStructure(level, generator, random, chunk, window, worldSeed, pairKey);
@@ -263,61 +251,6 @@ final class PortalChunkFeatures {
             return y;
         }
         return Integer.MIN_VALUE;
-    }
-
-    /**
-     * The region a sample is generated in and the structure manager bound to it — built once per
-     * sample and handed to every pass.
-     *
-     * <p>The manager is what {@code fillFromNoise} needs to bear terrain down under whatever was
-     * built there. Handing it the level's own instead would have it read structure starts out of the
-     * world — one chunk load at a time, on a worker thread, for a chunk sixty thousand chunks from
-     * anything.</p>
-     */
-    record Workspace(WorldGenRegion region, StructureManager structures) {}
-
-    /** A workspace over {@code chunk} and the ring of throwaway neighbours around it. */
-    static Workspace workspaceFor(ServerLevel level, NoiseBasedChunkGenerator generator,
-                                  RandomState random, ProtoChunk chunk) {
-        WorldGenRegion region = regionAround(level, generator, random, chunk,
-            ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES));
-        return new Workspace(region, level.structureManager().forWorldGenRegion(region));
-    }
-
-    /** A biome manager reading the generator's own biome source rather than any level's chunks. */
-    private static BiomeManager biomeManager(NoiseBasedChunkGenerator generator, RandomState random,
-                                             long worldSeed) {
-        return new BiomeManager(
-            (x, y, z) -> generator.getBiomeSource().getNoiseBiome(x, y, z, random.sampler()),
-            BiomeManager.obfuscateSeed(worldSeed));
-    }
-
-    /**
-     * A region centred on {@code chunk}, ringed by empty chunks out to the step's own radius.
-     *
-     * <p>The neighbours are deliberately blank. Filling them would double or triple the sampling for
-     * terrain nobody sees — the room takes the middle chunk and nothing else — and their only job
-     * here is to catch what a feature at the edge writes past it.</p>
-     */
-    private static WorldGenRegion regionAround(ServerLevel level, NoiseBasedChunkGenerator generator,
-                                               RandomState random, ProtoChunk chunk, ChunkStep step) {
-        ChunkPos centre = chunk.getPos();
-        int radius = Math.max(1, step.accumulatedDependencies().getRadius());
-        Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
-        StaticCache2D<GenerationChunkHolder> cache = StaticCache2D.create(
-            centre.x, centre.z, radius, (x, z) -> {
-                ChunkPos pos = new ChunkPos(x, z);
-                if (pos.equals(centre)) return new SampleHolder(pos, chunk);
-                // Blank, and deliberately cheap: a neighbour is only here to catch what a feature at
-                // the middle chunk's edge writes past it, and it is thrown away a moment later.
-                // Saying it has reached SURFACE is enough to stop vanilla refusing to answer for it;
-                // sampling its biomes as well cost more than generating the chunk anybody sees, four
-                // hundred climate lookups at a time, eight times over, for every candidate site.
-                ProtoChunk blank = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomeRegistry, null);
-                blank.setPersistedStatus(ChunkStatus.SURFACE);
-                return new SampleHolder(pos, blank);
-            });
-        return new WorldGenRegion(level, cache, step, chunk);
     }
 
     /**
@@ -499,53 +432,5 @@ final class PortalChunkFeatures {
             }
         }
         return present;
-    }
-
-    /**
-     * The least a {@link WorldGenRegion} will accept as a chunk holder: one chunk, always present,
-     * never scheduled.
-     *
-     * <p>A real holder is the chunk system's own bookkeeping — ticket levels, generation futures, a
-     * queue position. None of that exists for a sample nobody asked the chunk system for, and none
-     * of it is read on the path a feature takes to a block.</p>
-     */
-    private static final class SampleHolder extends GenerationChunkHolder {
-
-        private final ChunkAccess chunk;
-
-        private SampleHolder(ChunkPos pos, ChunkAccess chunk) {
-            super(pos);
-            this.chunk = chunk;
-        }
-
-        @Override
-        public ChunkAccess getChunkIfPresent(ChunkStatus status) {
-            return chunk;
-        }
-
-        @Override
-        public ChunkAccess getChunkIfPresentUnchecked(ChunkStatus status) {
-            return chunk;
-        }
-
-        @Override
-        public ChunkAccess getLatestChunk() {
-            return chunk;
-        }
-
-        @Override
-        public ChunkStatus getPersistedStatus() {
-            return ChunkStatus.FEATURES;
-        }
-
-        @Override
-        public int getTicketLevel() {
-            return 0;
-        }
-
-        @Override
-        public int getQueueLevel() {
-            return 0;
-        }
     }
 }
