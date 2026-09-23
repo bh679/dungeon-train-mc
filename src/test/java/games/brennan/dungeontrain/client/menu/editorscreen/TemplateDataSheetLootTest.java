@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.editor.TemplateCells;
+import games.brennan.dungeontrain.editor.LootValue;
 import games.brennan.dungeontrain.editor.TemplateLoot;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.Vec3i;
@@ -40,11 +41,11 @@ final class TemplateDataSheetLootTest {
         new TemplateCells.LightBlock(Blocks.LANTERN, 1, 15));
 
     private static final List<TemplateLoot.LootBlock> LOOT = List.of(
-        new TemplateLoot.LootBlock(Blocks.BARREL, 1, TemplateLoot.Source.PREFAB, "fullgold", 100, false, 40,
-            List.of(Items.GOLDEN_SWORD)),
-        new TemplateLoot.LootBlock(Blocks.CHEST, 3, TemplateLoot.Source.POOL, "", 100, false, 10,
-            List.of(Items.BREAD)),
-        new TemplateLoot.LootBlock(Blocks.CHISELED_BOOKSHELF, 1, TemplateLoot.Source.POOL, "", 25, true, 2,
+        new TemplateLoot.LootBlock(Blocks.BARREL, 1, TemplateLoot.Source.PREFAB, "fullgold", 100, false, 40, 40,
+            List.of(new LootValue.Scored(Items.GOLDEN_SWORD, 9))),
+        new TemplateLoot.LootBlock(Blocks.CHEST, 3, TemplateLoot.Source.POOL, "", 100, false, 10, 25,
+            List.of(new LootValue.Scored(Items.BREAD, 1))),
+        new TemplateLoot.LootBlock(Blocks.CHISELED_BOOKSHELF, 1, TemplateLoot.Source.POOL, "", 25, true, 2, 2,
             List.of()));
 
     @Test
@@ -62,10 +63,13 @@ final class TemplateDataSheetLootTest {
     }
 
     @Test
-    @DisplayName("Loot is one icon per block, in value order, with count, variant mark and tooltip")
+    @DisplayName("Loot opens with the total, then one icon per block in value order; every cell opens the Loot page")
     void lootIcons() {
         TemplateDataSheet.Line line = TemplateDataSheet.lootLine(summary(List.of(), LOOT), "…");
-        List<TemplateDataSheet.Cell> cells = line.cells();
+        TemplateDataSheet.Cell total = line.cells().get(0);
+        assertEquals("67.0", total.text(), "40 + 25 + 2");
+        assertTrue(total.action() instanceof TemplateDataSheet.Action.ShowLoot);
+        List<TemplateDataSheet.Cell> cells = line.cells().subList(1, line.cells().size());
         assertEquals(3, cells.size());
         assertEquals(Items.BARREL, cells.get(0).icon().getItem());
         assertEquals(Items.CHEST, cells.get(1).icon().getItem());
@@ -74,7 +78,7 @@ final class TemplateDataSheetLootTest {
         assertFalse(cells.get(2).on(), "a variant-only block is marked");
         for (TemplateDataSheet.Cell c : cells) {
             assertTrue(c.isIcon());
-            assertNull(c.action(), "read-only");
+            assertTrue(c.action() instanceof TemplateDataSheet.Action.ShowLoot, "the row opens the Loot page");
             assertTrue(c.tooltip() != null && !c.tooltip().isEmpty());
         }
         assertTrue(cells.get(0).tooltip().contains("fullgold"), cells.get(0).tooltip());
@@ -95,20 +99,22 @@ final class TemplateDataSheetLootTest {
         FixedFont font = new FixedFont();
         int labelW = Math.max(font.width(loot.label()), font.width(after.label()));
         int left = 2 + labelW + TemplateDataSheet.LABEL_GAP;
-        // Room for the barrel and the chest with its count, not the bookshelf too.
-        int two = TemplateDataSheet.ICON + TemplateDataSheet.CELL_GAP
+        // Room for the total, the barrel and the chest with its count, not the bookshelf too.
+        int three = font.width("67.0") + TemplateDataSheet.CELL_GAP
+            + TemplateDataSheet.ICON + TemplateDataSheet.CELL_GAP
             + TemplateDataSheet.ICON + 1 + font.width("3");
-        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(0, 0, left + two + 2, 200);
+        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(0, 0, left + three + 2, 200);
         List<TemplateDataSheet.Placed> placed = TemplateDataSheet.place(List.of(loot, after), r, font);
 
-        assertEquals(3, placed.size(), "two icons and the weight");
-        assertEquals(Items.BARREL, placed.get(0).cell().icon().getItem());
-        assertEquals(Items.CHEST, placed.get(1).cell().icon().getItem());
-        assertEquals(TemplateDataSheet.ICON + 2, placed.get(0).rect().w());
-        assertEquals(placed.get(0).rect().y() + TemplateDataSheet.LINE_H, placed.get(2).rect().y(),
+        assertEquals(4, placed.size(), "the total, two icons and the weight");
+        assertEquals("67.0", placed.get(0).cell().text());
+        assertEquals(Items.BARREL, placed.get(1).cell().icon().getItem());
+        assertEquals(Items.CHEST, placed.get(2).cell().icon().getItem());
+        assertEquals(TemplateDataSheet.ICON + 2, placed.get(1).rect().w());
+        assertEquals(placed.get(1).rect().y() + TemplateDataSheet.LINE_H, placed.get(3).rect().y(),
             "an icon line is a text line's height");
-        InventoryEditorLayout.Rect icon = placed.get(0).rect();
-        assertEquals(0, TemplateDataSheet.hit(placed, icon.x() + 4, icon.y() + 4), "hover finds the icon");
+        InventoryEditorLayout.Rect icon = placed.get(1).rect();
+        assertEquals(1, TemplateDataSheet.hit(placed, icon.x() + 4, icon.y() + 4), "hover finds the icon");
     }
 
     private static final class FixedFont extends net.minecraft.client.gui.Font {

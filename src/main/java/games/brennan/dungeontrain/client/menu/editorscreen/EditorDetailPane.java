@@ -38,12 +38,26 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT }
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM }
 
     private final VersionStrip versions = new VersionStrip();
     /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
     private int relayId;
     private int seq;
+
+    /** The selected template's numbers, for the Loot page; null until its tile has been read. */
+    private TemplateSummary summary;
+    /** Every item the selection's loot can give, most valuable first — the Loot page's grid. */
+    private List<games.brennan.dungeontrain.editor.TemplateLoot.ItemEntry> lootItems = List.of();
+    private LootGrid lootGrid;
+
+    /** What the selection is made of. Set by the screen before each layout, like the version. */
+    public void showSummary(TemplateSummary summary) {
+        if (summary == this.summary) return;
+        this.summary = summary;
+        lootItems = summary == null ? List.of()
+            : games.brennan.dungeontrain.editor.TemplateLoot.allItems(summary.loot());
+    }
 
     /** Which version of the selection the preview shows. Set by the screen before each render. */
     public void showVersion(int relayId, int seq) {
@@ -107,7 +121,10 @@ public final class EditorDetailPane {
         // A new selection starts on its first page; a shorter list clamps the page it was on.
         if (ctx.selection() == null || !ctx.selection().equals(pagedFor)) page = 0;
         pagedFor = ctx.selection();
-        pages = Pages.of(rows.size(), Math.max(0, body().h() / ROW_H));
+        int perLootPage = LootGrid.of(lootGridArea(), 0).capacity();
+        int lootPages = lootItems.isEmpty() || perLootPage <= 0 ? 0
+            : (lootItems.size() + perLootPage - 1) / perLootPage;
+        pages = Pages.of(rows.size(), Math.max(0, body().h() / ROW_H), lootPages);
         page = pages.clamp(page);
 
         IconRow row = layoutIcons(icons.size(), layout.icons().x(), layout.icons().w());
@@ -215,6 +232,16 @@ public final class EditorDetailPane {
         return moved || pages.pageCount() > 1;
     }
 
+    /** Turn to the Loot page — what clicking the sheet's Loot row does. False when there is none. */
+    public boolean showLootPage() {
+        if (pages.lootPages() == 0) return false;
+        page = Pages.LOOT_PAGE;
+        return true;
+    }
+
+    /** True while the Loot page is showing. */
+    public boolean onLootPage() { return pages.isLootPage(page); }
+
     /** The page the body is on, zero-based: 0 is the model and its sheet, the rest are the rows. */
     public int page() { return page; }
 
@@ -237,40 +264,71 @@ public final class EditorDetailPane {
      * @param count   how many rows there are
      * @param perPage rows on each row page — the body's slots, less the pager's
      */
-    public record Pages(int count, int perPage) {
-        public static final Pages NONE = new Pages(0, 0);
+    public record Pages(int count, int perPage, int lootPages) {
+        public static final Pages NONE = new Pages(0, 0, 0);
+        /** The first Loot page, when there is one, comes straight after the model page. */
+        public static final int LOOT_PAGE = 1;
 
         public static Pages of(int count, int bodySlots) {
-            return new Pages(Math.max(0, count), Math.max(0, bodySlots - 1));
+            return of(count, bodySlots, 0);
+        }
+
+        /** As {@link #of(int, int)}, with {@code lootPages} Loot pages between the model and the rows. */
+        public static Pages of(int count, int bodySlots, int lootPages) {
+            return new Pages(Math.max(0, count), Math.max(0, bodySlots - 1), Math.max(0, lootPages));
         }
 
         /** True when there is anything past the model page. */
         public boolean paged() {
+            return hasRows() || lootPages > 0;
+        }
+
+        private boolean hasRows() {
             return count > 0 && perPage > 0;
         }
 
-        /** How many row pages follow the model page. */
-        public int rowPages() {
-            return paged() ? (count + perPage - 1) / perPage : 0;
+        /** The pages before the first row page: the model, then the Loot pages. */
+        private int lead() {
+            return 1 + lootPages;
         }
 
-        /** The model page plus the row pages; at least one. */
+        /** How many row pages follow the model and Loot pages. */
+        public int rowPages() {
+            return hasRows() ? (count + perPage - 1) / perPage : 0;
+        }
+
+        /** The model page, the Loot pages, and the row pages; at least one. */
         public int pageCount() {
-            return 1 + rowPages();
+            return lead() + rowPages();
         }
 
         public int clamp(int page) {
             return Math.max(0, Math.min(page, pageCount() - 1));
         }
 
-        /** The first row index on {@code page}; meaningless on the model page. */
+        public boolean isLootPage(int page) {
+            int p = clamp(page);
+            return p >= LOOT_PAGE && p < lead();
+        }
+
+        /** Which Loot page {@code page} is, from 0; meaningless off one. */
+        public int lootIndex(int page) {
+            return Math.max(0, clamp(page) - LOOT_PAGE);
+        }
+
+        /** True when {@code page} is one of rows rather than the model or a Loot page. */
+        public boolean isRowPage(int page) {
+            return clamp(page) >= lead();
+        }
+
+        /** The first row index on {@code page}; meaningless off a row page. */
         public int first(int page) {
-            return Math.max(0, clamp(page) - 1) * perPage;
+            return Math.max(0, clamp(page) - lead()) * perPage;
         }
 
         /** One past the last row index on {@code page}. */
         public int end(int page) {
-            return clamp(page) == 0 ? 0 : Math.min(count, first(page) + perPage);
+            return isRowPage(page) ? Math.min(count, first(page) + perPage) : 0;
         }
 
         /** True when the pager is drawn — only when there is a page to turn to. */
@@ -295,10 +353,11 @@ public final class EditorDetailPane {
             TemplateDataSheet.draw(g, font, layout.sheet(), sheetLines, sheetCells,
                 hovered.kind() == HitKind.SHEET ? hovered.index() : -1);
         } else {
-            // Nothing of the model page is hittable while a row page is up.
+            // Nothing of the model page is hittable while another page is up.
             sheetLines = List.of();
             sheetCells = List.of();
-            drawRows(g, font, theme);
+            if (onLootPage()) drawLootPage(g, font, theme);
+            else drawRows(g, font, theme);
         }
         if (pages.hasPager()) drawPager(g, font);
         drawIcons(g);
@@ -389,6 +448,56 @@ public final class EditorDetailPane {
         g.disableScissor();
     }
 
+    /**
+     * The Loot page: the template's total value and item count, then every item it can give as a
+     * slot-sized icon, most valuable first. Hover names an item, its value and where it turns up.
+     */
+    private void drawLootPage(GuiGraphics g, Font font, EditorScreenTheme theme) {
+        InventoryEditorLayout.Rect r = rowArea();
+        double total = summary == null ? 0 : games.brennan.dungeontrain.editor.TemplateLoot.totalValue(summary.loot());
+        String header = EditorScreenLang.text(EditorScreenLang.LOOT_PAGE_HEADER,
+            TemplateDataSheet.formatValue(total), lootItems.size());
+        g.drawString(font, font.plainSubstrByWidth(header, r.w() - 4), r.x() + 2, r.y() + 2,
+            TemplateDataSheet.LABEL, false);
+        lootGrid = lootGridForPage();
+        for (int i = 0; i < lootGrid.shown(); i++) {
+            int x = lootGrid.cellX(i);
+            int y = lootGrid.cellY(i);
+            boolean hov = hovered.kind() == HitKind.LOOT_ITEM && hovered.index() == lootGrid.first() + i;
+            g.fill(x, y, x + LootGrid.CELL - 1, y + LootGrid.CELL - 1,
+                hov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+            g.renderItem(new net.minecraft.world.item.ItemStack(lootItems.get(lootGrid.first() + i).item()),
+                x + 1, y + 1);
+        }
+    }
+
+    /** This Loot page's slice of the grid: the items from its first on, as many as fit. */
+    private LootGrid lootGridForPage() {
+        LootGrid all = LootGrid.of(lootGridArea(), lootItems.size());
+        return all.page(pages.lootIndex(page));
+    }
+
+    /** The Loot page's grid: the row area under its header line. */
+    private InventoryEditorLayout.Rect lootGridArea() {
+        InventoryEditorLayout.Rect r = rowArea();
+        int top = r.y() + ROW_H;
+        return new InventoryEditorLayout.Rect(r.x() + 2, top, Math.max(0, r.w() - 4), Math.max(0, r.bottom() - top));
+    }
+
+    /** The Loot page's tooltip for one item: its name, its value, and the blocks it turns up in. */
+    private List<String> lootItemTooltip(int index) {
+        if (index < 0 || index >= lootItems.size()) return List.of();
+        games.brennan.dungeontrain.editor.TemplateLoot.ItemEntry e = lootItems.get(index);
+        String name = new net.minecraft.world.item.ItemStack(e.item()).getHoverName().getString();
+        List<String> sources = e.sources().stream()
+            .map(b -> b.count() > 1 ? b.block().getName().getString() + " ×" + b.count()
+                : b.block().getName().getString())
+            .distinct().toList();
+        return List.of(name,
+            EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_VALUE, TemplateDataSheet.formatValue(e.score())),
+            EditorScreenLang.text(EditorScreenLang.LOOT_PAGE_IN, String.join(", ", sources)));
+    }
+
     /** {@code <  n / N  >} in the body's last slot, on every page. */
     private void drawPager(GuiGraphics g, Font font) {
         EditorPager.draw(g, font, pagerRect(), page, pages.pageCount(), switch (hovered.kind()) {
@@ -465,6 +574,10 @@ public final class EditorDetailPane {
             }
         }
         InventoryEditorLayout.Rect r = rowArea();
+        if (onLootPage() && r.contains(mx, my)) {
+            int i = lootGrid == null ? -1 : lootGrid.hit(mx, my);
+            return i >= 0 ? new Hit(HitKind.LOOT_ITEM, lootGrid.first() + i, 0) : Hit.NONE;
+        }
         if (!onModelPage() && r.contains(mx, my)) {
             int k = (int) ((my - r.y()) / ROW_H);
             int idx = pages.first(page) + k;
@@ -504,6 +617,7 @@ public final class EditorDetailPane {
                 yield placed == null || placed.cell().tooltip() == null
                     ? List.of() : List.of(placed.cell().tooltip().split("\n"));
             }
+            case LOOT_ITEM -> lootItemTooltip(hit.index());
             case GO_HERE -> goHere == null || ctx.selection() == null ? List.of()
                 : List.of(EditorScreenLang.text(EditorScreenLang.GO_HERE),
                           EditorScreenLang.text(EditorScreenLang.STANDING_IN, ctx.selection().displayName()));

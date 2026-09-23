@@ -359,6 +359,7 @@ public final class EditorGuiScreen extends Screen {
             TemplateSummary summary = art == null ? null : art.summary();
             trackVersionsOf(tile == null ? 0 : tile.relayId(), "");
             detail.showVersion(tile == null ? 0 : tile.relayId(), previewSeq);
+            detail.showSummary(summary);
             detail.layout(layout, ctx, System.currentTimeMillis());
             detail.render(g, this.font, theme, art, summary, tile,
                 EditorDetailPane.pathLabel(index, ctx.selection()), orbit.yaw(), mx, my);
@@ -1146,6 +1147,9 @@ public final class EditorGuiScreen extends Screen {
         if (action instanceof TemplateDataSheet.Action.Open open) {
             modal.open(open.screen());
             return true;
+        }
+        if (action instanceof TemplateDataSheet.Action.ShowLoot) {
+            return detail.showLootPage();
         }
         if (action instanceof TemplateDataSheet.Action.PickBuilder pick) {
             setFocused(null);   // the filter box must not eat what is typed into the panel

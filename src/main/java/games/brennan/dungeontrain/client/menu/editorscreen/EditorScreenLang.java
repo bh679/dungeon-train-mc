@@ -196,6 +196,9 @@ public final class EditorScreenLang {
     public static final String SHEET_LOOT_DEFAULT = PREFIX + "sheet.loot_source.default";
     public static final String SHEET_LOOT_VARIANT = PREFIX + "sheet.loot_variant";
     public static final String SHEET_LOOT_VALUE = PREFIX + "sheet.loot_value";
+    public static final String SHEET_LOOT_TOTAL_TIP = PREFIX + "sheet.loot_total_tip";
+    public static final String LOOT_PAGE_HEADER = PREFIX + "loot_page.header";
+    public static final String LOOT_PAGE_IN = PREFIX + "loot_page.in";
     public static final String SHEET_WEIGHT = PREFIX + "sheet.weight";
     public static final String SHEET_SHARE = PREFIX + "sheet.share";
     public static final String SHEET_SPAWNS = PREFIX + "sheet.spawns";

@@ -77,6 +77,9 @@ public final class TemplateDataSheet {
          * {@code prefix + " " + uuid + " " + name} (or {@code prefix + " none"} to clear).
          */
         record PickBuilder(String prefix) implements Action {}
+
+        /** Turn the detail pane to its Loot page — every item the build can give. */
+        record ShowLoot() implements Action {}
     }
 
     /**
@@ -114,6 +117,10 @@ public final class TemplateDataSheet {
         }
 
         public Cell withTooltip(String tooltip) {
+            return new Cell(text, action, on, tooltip, icon, tipIcons);
+        }
+
+        public Cell withAction(Action action) {
             return new Cell(text, action, on, tooltip, icon, tipIcons);
         }
 
@@ -329,8 +336,12 @@ public final class TemplateDataSheet {
         if (summary.loot().isEmpty()) {
             return Line.of(label, EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_NONE));
         }
-        List<Cell> cells = new ArrayList<>(summary.loot().size());
-        for (TemplateLoot.LootBlock loot : summary.loot()) cells.add(lootCell(loot));
+        List<Cell> cells = new ArrayList<>(summary.loot().size() + 1);
+        // The whole row opens the Loot page: the total first, then every block.
+        Action show = new Action.ShowLoot();
+        cells.add(new Cell(formatValue(TemplateLoot.totalValue(summary.loot())), show, true)
+            .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_TOTAL_TIP)));
+        for (TemplateLoot.LootBlock loot : summary.loot()) cells.add(lootCell(loot).withAction(show));
         return new Line(label, List.copyOf(cells));
     }
 
@@ -354,9 +365,13 @@ public final class TemplateDataSheet {
         if (loot.isVariant()) {
             sb.append('\n').append(EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_VARIANT, loot.chance()));
         }
-        sb.append('\n').append(EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_VALUE,
-            String.format(java.util.Locale.ROOT, "%.1f", loot.value())));
+        sb.append('\n').append(EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_VALUE, formatValue(loot.value())));
         return sb.toString();
+    }
+
+    /** A loot value as the sheet and the Loot page print it: one decimal place. */
+    static String formatValue(double value) {
+        return String.format(java.util.Locale.ROOT, "%.1f", value);
     }
 
     /** Weight: the number steps (cmd-click types), and a pair of nudge buttons sits after it. */
@@ -541,6 +556,10 @@ public final class TemplateDataSheet {
             Placed p = placed.get(i);
             Cell cell = p.cell();
             if (cell.isIcon()) {
+                if (cell.action() != null && i == hovered) {
+                    g.fill(p.rect().x() - 1, p.rect().y(), p.rect().right() - 1, p.rect().bottom(),
+                        MenuRowPainter.CELL_HOVER);
+                }
                 drawIcon(g, font, p.rect(), cell);
                 continue;
             }

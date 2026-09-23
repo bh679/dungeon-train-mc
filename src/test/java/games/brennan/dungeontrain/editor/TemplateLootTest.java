@@ -157,6 +157,32 @@ final class TemplateLootTest {
     }
 
     @Test
+    @DisplayName("the total sums every block's value; allItems lists each item once, best first, with its blocks")
+    void totalAndAllItems() {
+        ContainerContentsStore store = ContainerContentsStore.detached("carriage:test");
+        store.putPool(new BlockPos(0, 0, 0), pool(ContainerContentsEntry.of(Items.BREAD, 1, 1),
+            ContainerContentsEntry.of(Items.DIAMOND_SWORD, 1, 1)));
+        store.putPool(new BlockPos(1, 0, 0), pool(ContainerContentsEntry.of(Items.BREAD, 1, 1)));
+        store.putPool(new BlockPos(2, 0, 0), pool(ContainerContentsEntry.of(Items.BREAD, 1, 1)));
+        List<TemplateLoot.LootBlock> loot = TemplateLoot.scan(List.of(
+            at(0, Blocks.BARREL.defaultBlockState(), null),
+            at(1, Blocks.CHEST.defaultBlockState(), null),
+            at(2, Blocks.CHEST.defaultBlockState(), null)), store, List.of());
+
+        double expected = 0;
+        for (TemplateLoot.LootBlock b : loot) expected += b.total();
+        assertEquals(expected, TemplateLoot.totalValue(loot), 1e-9);
+        TemplateLoot.LootBlock chests = loot.stream().filter(b -> b.block() == Blocks.CHEST).findFirst().orElseThrow();
+        assertEquals(2 * chests.value(), chests.total(), 1e-9, "two identical chests count twice");
+
+        List<TemplateLoot.ItemEntry> items = TemplateLoot.allItems(loot);
+        assertEquals(2, items.size(), "bread once, however many blocks hold it");
+        assertEquals(Items.DIAMOND_SWORD, items.get(0).item());
+        assertEquals(Items.BREAD, items.get(1).item());
+        assertEquals(2, items.get(1).sources().size(), "bread is in the barrel and the chests");
+    }
+
+    @Test
     @DisplayName("an empty chiseled bookshelf shows its block default prefab at one in five")
     void blockDefault() {
         List<TemplateLoot.LootBlock> loot = TemplateLoot.scan(List.of(

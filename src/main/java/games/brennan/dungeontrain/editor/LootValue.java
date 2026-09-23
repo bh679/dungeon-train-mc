@@ -7,9 +7,9 @@ import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * How much a container's loot is worth, as one comparable number — what the editor's Loot row
@@ -98,29 +98,36 @@ public final class LootValue {
         return total;
     }
 
-    /** The {@link #TOP_ITEMS} best distinct items a pool can give, best first. */
-    public static List<Item> topItems(ContainerContentsPool pool) {
+    /** An item a container can give, with its {@link #itemScore}. */
+    public record Scored(Item item, double score) {}
+
+    /** Every distinct item a pool can give, scored as one item, best first. */
+    public static List<Scored> items(ContainerContentsPool pool) {
         if (pool == null) return List.of();
-        List<ContainerContentsEntry> entries = new ArrayList<>(pool.entries());
-        entries.removeIf(e -> e.isAir() || e.resolveItem() == Items.AIR);
-        entries.sort(Comparator.comparingDouble(LootValue::entryScore).reversed());
-        return distinct(entries.stream().map(ContainerContentsEntry::resolveItem).toList());
-    }
-
-    /** The {@link #TOP_ITEMS} best distinct items among {@code stacks}, best first. */
-    public static List<Item> topStacks(List<ItemStack> stacks) {
-        List<ItemStack> sorted = new ArrayList<>(stacks);
-        sorted.removeIf(ItemStack::isEmpty);
-        sorted.sort(Comparator.comparingDouble(LootValue::itemScore).reversed());
-        return distinct(sorted.stream().map(ItemStack::getItem).toList());
-    }
-
-    private static List<Item> distinct(List<Item> items) {
-        Set<Item> seen = new LinkedHashSet<>();
-        for (Item i : items) {
-            if (seen.size() >= TOP_ITEMS) break;
-            seen.add(i);
+        List<Scored> out = new ArrayList<>();
+        for (ContainerContentsEntry e : pool.entries()) {
+            if (e.isAir() || e.resolveItem() == Items.AIR) continue;
+            out.add(new Scored(e.resolveItem(), itemScore(new ItemStack(e.resolveItem()))));
         }
-        return List.copyOf(seen);
+        return merged(out);
+    }
+
+    /** Every distinct item among {@code stacks}, scored as one item, best first. */
+    public static List<Scored> stackItems(List<ItemStack> stacks) {
+        List<Scored> out = new ArrayList<>();
+        for (ItemStack s : stacks) {
+            if (!s.isEmpty()) out.add(new Scored(s.getItem(), itemScore(s.copyWithCount(1))));
+        }
+        return merged(out);
+    }
+
+    /** One entry per item — its best score — ordered best first. */
+    public static List<Scored> merged(List<Scored> items) {
+        Map<Item, Double> best = new LinkedHashMap<>();
+        for (Scored s : items) best.merge(s.item(), s.score(), Math::max);
+        List<Scored> out = new ArrayList<>(best.size());
+        best.forEach((item, score) -> out.add(new Scored(item, score)));
+        out.sort(Comparator.comparingDouble(Scored::score).reversed());
+        return List.copyOf(out);
     }
 }

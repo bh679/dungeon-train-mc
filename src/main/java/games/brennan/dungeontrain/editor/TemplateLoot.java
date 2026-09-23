@@ -25,11 +25,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * The blocks in a template that hand out loot, most valuable first — what the editor's Loot row
@@ -58,14 +56,22 @@ public final class TemplateLoot {
      *                 being placed, times a {@link Source#DEFAULT}'s chance of rolling
      * @param variant  whether the block only appears through a block variant, so may not spawn
      * @param value    the best {@link LootValue} among the grouped blocks, already weighted by chance
-     * @param topItems the best items it can give, best first; empty for a vanilla loot table
+     * @param total    the grouped blocks' values summed — this kind's share of the template's loot
+     * @param items    every item it can give, scored, best first; empty for a vanilla loot table
      */
     public record LootBlock(Block block, int count, Source source, String detail, int chance,
-                            boolean variant, double value, List<Item> topItems) {
+                            boolean variant, double value, double total,
+                            List<LootValue.Scored> items) {
         public LootBlock {
-            topItems = List.copyOf(topItems);
+            items = List.copyOf(items);
             detail = detail == null ? "" : detail;
         }
+
+        /** The {@link LootValue#TOP_ITEMS} best items, for a tooltip's row of icons. */
+        public List<Item> topItems() {
+            return items.stream().limit(LootValue.TOP_ITEMS).map(LootValue.Scored::item).toList();
+        }
+
 
         /** True when the block only appears through a variant, so it may not spawn. */
         public boolean isVariant() {
@@ -150,22 +156,22 @@ public final class TemplateLoot {
             int weight = weightByBlock.getOrDefault(best.block(), 0);
             int chance = totalWeight <= 0 ? 100 : Math.max(1, Math.round(100f * weight / totalWeight));
             double value = 0;
-            Set<Item> top = new LinkedHashSet<>();
+            List<LootValue.Scored> items = new ArrayList<>();
             for (Found f : same) {
                 value += f.value();
-                for (Item i : f.topItems()) if (top.size() < LootValue.TOP_ITEMS) top.add(i);
+                items.addAll(f.items());
             }
             // Every candidate the same block means it is always there, whichever one is picked.
             int capped = Math.min(100, chance);
             out.add(new Found(best.block(), best.source(), best.detail(), capped,
-                best.variant() && capped < 100, value, List.copyOf(top)));
+                best.variant() && capped < 100, value, LootValue.merged(items)));
         }
         return out;
     }
 
     /** One block before grouping. */
     private record Found(Block block, Source source, String detail, int chance, boolean variant,
-                         double value, List<Item> topItems) {}
+                         double value, List<LootValue.Scored> items) {}
 
     /** What one block (or variant candidate) at {@code pos} would be given, or null for no loot. */
     private static Found judge(BlockState state, @Nullable CompoundTag nbt, @Nullable String prefabLink,
@@ -184,14 +190,14 @@ public final class TemplateLoot {
                     .map(LootPrefabStore.Data::pool).orElse(null);
                 if (pool != null && !pool.isEmpty()) {
                     return new Found(block, Source.PREFAB, prefabLink, chance, variant,
-                        weight * LootValue.poolValue(pool, slots), LootValue.topItems(pool));
+                        weight * LootValue.poolValue(pool, slots), LootValue.items(pool));
                 }
             }
             if (store != null && store.hasPoolAt(pos)) {
                 ContainerContentsPool pool = store.poolAt(pos);
                 String link = store.linkAt(pos);
                 return new Found(block, link == null ? Source.POOL : Source.PREFAB, link, chance, variant,
-                    weight * LootValue.poolValue(pool, slots), LootValue.topItems(pool));
+                    weight * LootValue.poolValue(pool, slots), LootValue.items(pool));
             }
         }
         if (nbt != null && nbt.contains(NBT_LOOT_TABLE, Tag.TAG_STRING)) {
@@ -201,7 +207,7 @@ public final class TemplateLoot {
         List<ItemStack> stacks = savedStacks(nbt);
         if (!stacks.isEmpty()) {
             return new Found(block, Source.INLINE, "", chance, variant,
-                weight * LootValue.stacksValue(stacks), LootValue.topStacks(stacks));
+                weight * LootValue.stacksValue(stacks), LootValue.stackItems(stacks));
         }
         String fallback = brushable ? null : BlockLootDefaults.prefabFor(state);
         if (fallback != null) {
@@ -213,7 +219,7 @@ public final class TemplateLoot {
                 return new Found(block, Source.DEFAULT, fallback,
                     Math.max(1, Math.round(chance * (float) odds)), variant,
                     weight * odds * LootValue.poolValue(pool, ContainerContentsRoller.slotsForContainer(state)),
-                    LootValue.topItems(pool));
+                    LootValue.items(pool));
             }
         }
         if (brushable) {
@@ -264,18 +270,50 @@ public final class TemplateLoot {
         for (List<Found> members : groups.values()) {
             members.sort(Comparator.comparingDouble(Found::value).reversed());
             Found best = members.get(0);
-            Set<Item> top = new LinkedHashSet<>();
-            for (Found m : members) {
-                for (Item i : m.topItems()) if (top.size() < LootValue.TOP_ITEMS) top.add(i);
-            }
+            List<LootValue.Scored> items = new ArrayList<>();
+            double total = 0;
             int chance = 0;
-            for (Found m : members) chance = Math.max(chance, m.chance());
+            for (Found m : members) {
+                items.addAll(m.items());
+                total += m.value();
+                chance = Math.max(chance, m.chance());
+            }
             // Each member is one cell: judge yields one per template block, mergeCell one per block per cell.
             out.add(new LootBlock(best.block(), members.size(), best.source(), best.detail(),
-                chance, best.variant(), best.value(), List.copyOf(top)));
+                chance, best.variant(), best.value(), total, LootValue.merged(items)));
         }
         out.sort(Comparator.comparingDouble(LootBlock::value).reversed()
             .thenComparing(Comparator.comparingInt(LootBlock::count).reversed()));
+        return List.copyOf(out);
+    }
+
+    /** The template's whole loot value: every loot block's chance-weighted value, summed. */
+    public static double totalValue(List<LootBlock> loot) {
+        double total = 0;
+        for (LootBlock b : loot) total += b.total();
+        return total;
+    }
+
+    /** One item the template can give: its score and the loot blocks it can turn up in. */
+    public record ItemEntry(Item item, double score, List<LootBlock> sources) {
+        public ItemEntry {
+            sources = List.copyOf(sources);
+        }
+    }
+
+    /** Every distinct item across {@code loot}, most valuable first, each with the blocks that hold it. */
+    public static List<ItemEntry> allItems(List<LootBlock> loot) {
+        Map<Item, Double> score = new LinkedHashMap<>();
+        Map<Item, List<LootBlock>> sources = new LinkedHashMap<>();
+        for (LootBlock b : loot) {
+            for (LootValue.Scored s : b.items()) {
+                score.merge(s.item(), s.score(), Math::max);
+                sources.computeIfAbsent(s.item(), k -> new ArrayList<>()).add(b);
+            }
+        }
+        List<ItemEntry> out = new ArrayList<>(score.size());
+        score.forEach((item, sc) -> out.add(new ItemEntry(item, sc, sources.get(item))));
+        out.sort(Comparator.comparingDouble(ItemEntry::score).reversed());
         return List.copyOf(out);
     }
 

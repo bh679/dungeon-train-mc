@@ -3702,6 +3702,28 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.loot_page.header": {
+    "1": {
+      "label": "the build's total loot value score, one decimal place",
+      "examples": [
+        "24.6"
+      ]
+    },
+    "2": {
+      "label": "how many different items the build's loot can give",
+      "examples": [
+        "37"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.loot_page.in": {
+    "1": {
+      "label": "a comma-separated list of the blocks that can hold this item, each with a count",
+      "examples": [
+        "Chest ×12, Barrel ×3"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.sheet.loot_variant": {
     "1": {
       "label": "the percent chance this block variant is the one placed",
