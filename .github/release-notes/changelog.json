@@ -18172,6 +18172,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "three-lap-journey",
+      "version": "0.937.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "balance"
+      ],
+      "title": "The journey, reordered",
+      "summary": "The whole journey has been laid out again. It now runs in three legs: the familiar first leg, a second leg where the Nether, the End and the overworld gaps each come back looking different, and a long third leg through every strange stretch we've added lately, one flowing straight into the next. The first visit to each place is shorter than before, and every time you get to the end and go round again, the whole thing is twice as long as it was.",
+      "highlights": [
+        "A three-leg journey: the classic leg, a second leg of familiar places with new faces, and a long third leg of everything strange",
+        "Shorter first visits \u2014 the Nether and End arrive sooner, and the climb into the Nether is half as long",
+        "Every full loop of the journey is twice as long as the last",
+        "The order is a single config line, for anyone who wants their own"
+      ],
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
