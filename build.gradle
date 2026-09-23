@@ -493,6 +493,14 @@ dependencies {
     implementation "maven.modrinth:fast-paintings:${fastpaintings_version}"
     implementation "maven.modrinth:moonlight:${moonlight_version}"
 
+    // BetterNether: New Dawn + its three libraries — REQUIRED third-party deps (see gradle.properties).
+    // Not bundled; launchers install them from the (required) relations. DT names BetterNether
+    // biomes/blocks only by registry id, so nothing compiles against these jars.
+    implementation "maven.modrinth:betternether-neoforge:${betternether_version}"
+    implementation "maven.modrinth:bclib-neoforge:${bclib_version}"
+    implementation "maven.modrinth:worldweaver-neoforge:${worldweaver_version}"
+    implementation "maven.modrinth:wunderlib-neoforge:${wunderlib_version}"
+
     // Unit tests — JUnit 5 Jupiter (pure-logic only).
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
