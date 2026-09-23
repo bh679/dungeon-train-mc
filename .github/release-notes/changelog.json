@@ -17975,6 +17975,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "legacy-band-floating",
+      "version": "0.933.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "Even further down the line",
+      "summary": "The track runs on past the last stretch you know, into a place older still. We won't say what is waiting there \u2014 ride far enough and see it for yourself.",
+      "highlights": [
+        "A new stretch at the far end of the journey, with a hidden goal for reaching it"
+      ],
+      "pr": 1502,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
