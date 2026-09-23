@@ -65,6 +65,7 @@ public final class LegacyBiomes {
         if (kind == null) return null;
         return switch (kind) {
             case BETA -> c.beta().get(LegacyBands.beta(c.seed()).climate().biome(blockX, blockZ));
+            case SKYLANDS -> c.beta().get(BetaBiome.SKY);
         };
     }
 }

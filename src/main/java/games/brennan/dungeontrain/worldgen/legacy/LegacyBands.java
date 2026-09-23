@@ -1,9 +1,13 @@
 package games.brennan.dungeontrain.worldgen.legacy;
 
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
+import games.brennan.dungeontrain.worldgen.legacy.sky.SkyTerrain;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
@@ -129,6 +133,69 @@ public final class LegacyBands {
             if (beta == null || beta.seed() != seed) beta = new BetaTerrain(seed);
             return beta;
         }
+    }
+
+    private static volatile SkyTerrain sky;
+
+    /** The Sky (Skylands) generator for {@code seed}; one shared, immutable instance per seed. */
+    public static SkyTerrain sky(long seed) {
+        SkyTerrain s = sky;
+        if (s != null && s.seed() == seed) return s;
+        synchronized (LegacyBands.class) {
+            if (sky == null || sky.seed() != seed) sky = new SkyTerrain(seed);
+            return sky;
+        }
+    }
+
+    // ---- vertical placement -------------------------------------------------------------
+
+    /**
+     * Old-generator Y the Skylands band puts at the track bed. Sky's land spans old y ≈ 16–95, densest at
+     * 30–40 (its bottom slide ends at 32); bedding at 52 keeps most island mass below the train with the
+     * taller islands rising past it — ridden over, tunnelled through, or passed overhead.
+     */
+    static final int SKY_BED_OLD_Y = 52;
+    /** Lowest old Y Sky's slides let land form at (see {@code SkyTerrainTest}); kept at or above the world floor. */
+    static final int SKY_LOWEST_LAND_OLD_Y = 16;
+
+    /**
+     * World Y of {@code kind}'s old {@code y = 0} in {@code level}. Beta is pinned to sea level
+     * ({@link LegacyChunkWriter#Y_OFFSET}); Skylands has no sea, so it follows the train's bed instead,
+     * clamped so its lowest land stays above the world floor.
+     */
+    public static int yOffset(LegacyBandKind kind, ServerLevel level) {
+        return switch (kind) {
+            case BETA -> LegacyChunkWriter.Y_OFFSET;
+            case SKYLANDS -> {
+                DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+                int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();
+                yield skyYOffset(bedY, level.getMinBuildHeight());
+            }
+        };
+    }
+
+    /** Pure form of the Skylands {@link #yOffset}. Package-private for tests. */
+    static int skyYOffset(int bedY, int minBuildY) {
+        return Math.max(bedY - SKY_BED_OLD_Y, minBuildY - SKY_LOWEST_LAND_OLD_Y);
+    }
+
+    /**
+     * True if liquid must not flow into {@code (x, y, z)}: the block sits in a
+     * {@linkplain LegacyBandKind#voidBelow void-below} band chunk with nothing but air beneath it down to
+     * the bottom of the old column — the open sky under or beside an island. Lets lakes and streams run
+     * across island tops and onto lower islands while stopping them at the edges, instead of cascading to
+     * the world floor and sheeting across the band (the spheres band's rule). The scan is at most one old
+     * column and exits on the first non-air block.
+     */
+    public static boolean isVoidSpace(ServerLevel level, BlockGetter blocks, int x, int y, int z) {
+        LegacyBandKind kind = kindOfChunk(level, x >> 4, z >> 4);
+        if (kind == null || !kind.voidBelow()) return false;
+        int bottom = Math.max(level.getMinBuildHeight(), yOffset(kind, level));
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int by = y - 1; by >= bottom; by--) {
+            if (!blocks.getBlockState(pos.set(x, by, z)).isAir()) return false;
+        }
+        return true;
     }
 
     // splitmix64-style finaliser, uniform in [0,1) per (seed, chunkX, chunkZ); same idiom as StacksBand.

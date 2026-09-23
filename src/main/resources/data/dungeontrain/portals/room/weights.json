@@ -81,7 +81,8 @@
       "UPSIDE_DOWN",
       "CHUNCKS",
       "SPHERES",
-      "BETA"
+      "BETA",
+      "SKYLANDS"
     ],
     "mode": "bedrock_lock",
     "builder": {
@@ -166,7 +167,8 @@
       "UPSIDE_DOWN",
       "CHUNCKS",
       "SPHERES",
-      "BETA"
+      "BETA",
+      "SKYLANDS"
     ],
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
   },
@@ -382,7 +384,8 @@
       "UPSIDE_DOWN",
       "CHUNCKS",
       "SPHERES",
-      "BETA"
+      "BETA",
+      "SKYLANDS"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
   },
