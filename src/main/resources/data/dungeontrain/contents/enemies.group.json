@@ -179,17 +179,11 @@
     },
     {
       "id": "corner",
-      "weight": 2,
-      "phases": [
-        "NETHER"
-      ]
+      "weight": 2
     },
     {
       "id": "piglin2",
-      "weight": 3,
-      "phases": [
-        "VOID"
-      ]
+      "weight": 3
     },
     {
       "id": "mossdoors",
