@@ -1,5 +1,9 @@
-package games.brennan.dungeontrain.worldgen.legacy.beta;
+package games.brennan.dungeontrain.worldgen.legacy.alpha;
 
+import games.brennan.dungeontrain.worldgen.legacy.beta.BetaDungeon;
+import games.brennan.dungeontrain.worldgen.legacy.beta.BetaFeatures;
+import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTrees;
+import games.brennan.dungeontrain.worldgen.legacy.beta.BetaWorld;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -7,42 +11,36 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.Random;
 
 /**
- * Beta 1.7.3's populate step for one chunk, in Beta's order and with Beta's per-chunk
- * {@link java.util.Random}: lakes, dungeons, clay, dirt/gravel/ore veins, trees (count from the forest
- * noise plus a per-biome bonus), flowers, grass, dead bushes, mushrooms, reeds, pumpkins, cacti,
- * springs, then snow cover by temperature.
+ * Alpha 1.1.2's populate step for one chunk, in Alpha's order and with its per-chunk
+ * {@link java.util.Random} (seeded exactly as Beta's): dungeons, clay, dirt/gravel/ore veins, trees
+ * (count from the forest noise — Alpha had no biomes, so every chunk may be forest), flowers, mushrooms,
+ * reeds, cacti and springs; in winter mode, snow over every exposed surface.
  *
- * <p>Like Beta, the work area is the 16×16 square offset {@code +8} into the neighbouring chunks, so
- * features straddle chunk borders instead of stopping at them. Every write stays within the
- * decorating chunk and its east/south neighbours — inside the worldgen region's writable window.</p>
+ * <p>Reuses the Beta decorators, which Beta inherited from Alpha unchanged. What Alpha did <em>not</em>
+ * have, and so is left out here: lakes, lapis, tall grass and ferns, dead bushes, pumpkins, birch and
+ * conifer trees, and any biome-dependent counts. The dungeon chest keeps Beta's loot list (a few items
+ * newer than Alpha 1.1.2).</p>
+ *
+ * <p>Like the original, the work area is the 16×16 square offset {@code +8} into the neighbouring
+ * chunks; every write stays within the decorating chunk and its east/south neighbours.</p>
  */
-public final class BetaPopulator {
+public final class AlphaPopulator {
 
     private static final BlockState WATER = Blocks.WATER.defaultBlockState();
     private static final BlockState LAVA = Blocks.LAVA.defaultBlockState();
 
-    private BetaPopulator() {}
+    private AlphaPopulator() {}
 
-    public static void populate(WorldGenLevel level, BetaTerrain terrain, int chunkX, int chunkZ) {
+    public static void populate(WorldGenLevel level, AlphaTerrain terrain, int chunkX, int chunkZ, boolean winter) {
         BetaWorld world = new BetaWorld(level);
         long seed = terrain.seed();
         int bx = chunkX * 16;
         int bz = chunkZ * 16;
-        BetaBiome biome = terrain.climate().biome(bx + 16, bz + 16);
         Random rand = new Random(seed);
         long mulX = rand.nextLong() / 2L * 2L + 1L;
         long mulZ = rand.nextLong() / 2L * 2L + 1L;
         rand.setSeed((long) chunkX * mulX + (long) chunkZ * mulZ ^ seed);
 
-        if (rand.nextInt(4) == 0) {
-            BetaFeatures.lake(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8, WATER);
-        }
-        if (rand.nextInt(8) == 0) {
-            int x = bx + rand.nextInt(16) + 8;
-            int y = rand.nextInt(rand.nextInt(120) + 8);
-            int z = bz + rand.nextInt(16) + 8;
-            if (y < BetaTerrain.SEA_LEVEL || rand.nextInt(10) == 0) BetaFeatures.lake(world, rand, x, y, z, LAVA);
-        }
         for (int i = 0; i < 8; i++) {
             BetaDungeon.place(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8);
         }
@@ -56,13 +54,11 @@ public final class BetaPopulator {
         veins(world, rand, bx, bz, 2, 32, 8, Blocks.GOLD_ORE.defaultBlockState());
         veins(world, rand, bx, bz, 8, 16, 7, Blocks.REDSTONE_ORE.defaultBlockState());
         veins(world, rand, bx, bz, 1, 16, 7, Blocks.DIAMOND_ORE.defaultBlockState());
-        BetaFeatures.vein(world, rand, bx + rand.nextInt(16), rand.nextInt(16) + rand.nextInt(16), bz + rand.nextInt(16),
-                6, Blocks.LAPIS_ORE.defaultBlockState(), Blocks.STONE);
 
-        trees(world, rand, terrain, biome, bx, bz);
-        plants(world, rand, biome, bx, bz);
+        trees(world, rand, terrain, bx, bz);
+        plants(world, rand, bx, bz);
         springs(world, rand, bx, bz);
-        snow(world, terrain.climate(), bx, bz);
+        if (winter) BetaFeatures.snowCover(world, bx, bz, (x, y, z) -> true);
     }
 
     private static void veins(BetaWorld world, Random rand, int bx, int bz, int count, int maxY, int size,
@@ -73,49 +69,24 @@ public final class BetaPopulator {
         }
     }
 
-    private static void trees(BetaWorld world, Random rand, BetaTerrain terrain, BetaBiome biome, int bx, int bz) {
-        int noiseCount = (int) ((terrain.forestNoise().sample2D(bx * 0.5D, bz * 0.5D) / 8.0D
+    /** Alpha's tree count: forest noise (never negative), plus one on a 1-in-10; big oak 1-in-10. */
+    private static void trees(BetaWorld world, Random rand, AlphaTerrain terrain, int bx, int bz) {
+        int count = (int) ((terrain.forestNoise().sample2D(bx * 0.5D, bz * 0.5D) / 8.0D
                 + rand.nextDouble() * 4.0D + 4.0D) / 3.0D);
-        int count = rand.nextInt(10) == 0 ? 1 : 0;
-        count += switch (biome) {
-            case FOREST, RAINFOREST, TAIGA -> noiseCount + 5;
-            case SEASONAL_FOREST -> noiseCount + 2;
-            case DESERT, TUNDRA, PLAINS -> -20;
-            default -> 0;
-        };
+        if (count < 0) count = 0;
+        if (rand.nextInt(10) == 0) count++;
         for (int i = 0; i < count; i++) {
             int x = bx + rand.nextInt(16) + 8;
             int z = bz + rand.nextInt(16) + 8;
-            BetaTrees.Kind kind = BetaTrees.pick(biome, rand);
+            BetaTrees.Kind kind = rand.nextInt(10) == 0 ? BetaTrees.Kind.FANCY : BetaTrees.Kind.OAK;
             BetaTrees.grow(kind, world, rand, x, world.heightValue(x, z), z);
         }
     }
 
-    private static void plants(BetaWorld world, Random rand, BetaBiome biome, int bx, int bz) {
-        int flowers = switch (biome) {
-            case FOREST, TAIGA -> 2;
-            case SEASONAL_FOREST -> 4;
-            case PLAINS -> 3;
-            default -> 0;
-        };
-        for (int i = 0; i < flowers; i++) {
+    private static void plants(BetaWorld world, Random rand, int bx, int bz) {
+        for (int i = 0; i < 2; i++) {
             BetaFeatures.flowers(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8,
                     Blocks.DANDELION.defaultBlockState());
-        }
-        int grass = switch (biome) {
-            case FOREST, SEASONAL_FOREST -> 2;
-            case RAINFOREST, PLAINS -> 10;
-            case TAIGA -> 1;
-            default -> 0;
-        };
-        for (int i = 0; i < grass; i++) {
-            BlockState plant = biome == BetaBiome.RAINFOREST && rand.nextInt(3) != 0
-                    ? Blocks.FERN.defaultBlockState() : Blocks.SHORT_GRASS.defaultBlockState();
-            BetaFeatures.tallGrass(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8, plant);
-        }
-        int deadBushes = biome == BetaBiome.DESERT ? 2 : 0;
-        for (int i = 0; i < deadBushes; i++) {
-            BetaFeatures.deadBush(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8);
         }
         if (rand.nextInt(2) == 0) {
             BetaFeatures.flowers(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8,
@@ -132,11 +103,7 @@ public final class BetaPopulator {
         for (int i = 0; i < 10; i++) {
             BetaFeatures.reeds(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8);
         }
-        if (rand.nextInt(32) == 0) {
-            BetaFeatures.pumpkins(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8);
-        }
-        int cacti = biome == BetaBiome.DESERT ? 10 : 0;
-        for (int i = 0; i < cacti; i++) {
+        for (int i = 0; i < 2; i++) {
             BetaFeatures.cactus(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8);
         }
     }
@@ -150,11 +117,5 @@ public final class BetaPopulator {
             BetaFeatures.spring(world, bx + rand.nextInt(16) + 8, rand.nextInt(rand.nextInt(rand.nextInt(112) + 8) + 8),
                     bz + rand.nextInt(16) + 8, LAVA);
         }
-    }
-
-    /** Snow on exposed solid ground wherever Beta's altitude-adjusted temperature drops below 0.5. */
-    private static void snow(BetaWorld world, BetaClimate climate, int bx, int bz) {
-        BetaFeatures.snowCover(world, bx, bz,
-                (x, y, z) -> climate.temperature(x, z) - (y - 64) / 64.0D * 0.3D < 0.5D);
     }
 }

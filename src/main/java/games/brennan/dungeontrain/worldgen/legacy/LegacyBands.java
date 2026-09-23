@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen.legacy;
 
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.legacy.alpha.AlphaTerrain;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
 import games.brennan.dungeontrain.worldgen.legacy.infdev.InfdevTerrain;
 import games.brennan.dungeontrain.worldgen.legacy.infdev.InfdevVersion;
@@ -133,6 +134,18 @@ public final class LegacyBands {
         }
     }
 
+    private static volatile AlphaTerrain alpha;
+
+    /** The Alpha generator for {@code seed}; one shared, immutable instance per seed. */
+    public static AlphaTerrain alpha(long seed) {
+        AlphaTerrain a = alpha;
+        if (a != null && a.seed() == seed) return a;
+        synchronized (LegacyBands.class) {
+            if (alpha == null || alpha.seed() != seed) alpha = new AlphaTerrain(seed);
+            return alpha;
+        }
+    }
+
     private static volatile InfdevTerrain infdev;
 
     /** The Infdev generators for {@code seed}; one shared, immutable instance per seed. */
@@ -143,6 +156,21 @@ public final class LegacyBands {
             if (infdev == null || infdev.seed() != seed) infdev = new InfdevTerrain(seed);
             return infdev;
         }
+    }
+
+    /**
+     * True if Alpha chunk column {@code chunkX} is in Alpha's winter mode: the last
+     * {@link LegacyBandConfig#alphaWinterShare()} of the core, and the exit fade after it. Decided at the
+     * chunk's west edge so terrain, biome and snow all agree for the chunk.
+     */
+    public static boolean isAlphaWinter(WorldGenCycle cycle, int chunkX) {
+        return isWinter(cycle.legacyCoreProgress(LegacyBandKind.ALPHA, chunkX << 4), LegacyBandConfig.alphaWinterShare());
+    }
+
+    /** Pure winter test on a core progress (see {@link WorldGenCycle#legacyCoreProgress}). Package-private for tests. */
+    static boolean isWinter(double progress, double share) {
+        if (Double.isNaN(progress) || share <= 0.0D) return false;
+        return progress >= 1.0D - share;
     }
 
     /**

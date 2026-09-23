@@ -89,6 +89,24 @@ final class LegacyBandLayoutTest {
     }
 
     @Test
+    @DisplayName("a second span follows the first; core progress runs 0 → 1 across the core")
+    void secondSpanAndProgress() {
+        LegacySpan alpha = new LegacySpan(LegacyBandKind.ALPHA, 100, 50, 200);
+        WorldGenCycle c = cycle(BETA, alpha);
+        assertEquals(preLegacy().period() + 2 * (100 + 2 * 50 + 200), c.period());
+        // Alpha's slot starts where Beta's ends (local 400).
+        assertNull(c.legacyAt(x(499)));
+        assertEquals(LegacyBandKind.ALPHA, c.legacyAt(x(500)).kind());
+        assertTrue(c.isInLegacyBand(LegacyBandKind.ALPHA, x(550)));
+        assertEquals(0.0, c.legacyCoreProgress(LegacyBandKind.ALPHA, x(550)));
+        assertEquals(0.5, c.legacyCoreProgress(LegacyBandKind.ALPHA, x(650)));
+        assertTrue(c.legacyCoreProgress(LegacyBandKind.ALPHA, x(760)) > 1.0);     // exit fade
+        assertTrue(c.legacyCoreProgress(LegacyBandKind.ALPHA, x(410)) < 0.0);     // lead gap
+        assertTrue(Double.isNaN(c.legacyCoreProgress(LegacyBandKind.ALPHA, x(399)))); // Beta's slot
+        assertTrue(Double.isNaN(cycle(BETA).legacyCoreProgress(LegacyBandKind.ALPHA, x(550))));
+    }
+
+    @Test
     @DisplayName("zero fade is a hard edge: ramp jumps straight to 1")
     void hardEdge() {
         WorldGenCycle c = cycle(new LegacySpan(LegacyBandKind.BETA, 100, 0, 200));

@@ -17,13 +17,13 @@ import java.util.Random;
  * skeleton or spider) and up to two chests against a wall, stocked from Beta's own loot list — saddles,
  * bread, gunpowder, the odd golden apple or music disc.
  */
-final class BetaDungeon {
+public final class BetaDungeon {
 
     private static final int HEIGHT = 3;
 
     private BetaDungeon() {}
 
-    static boolean place(BetaWorld world, Random rand, int x, int y, int z) {
+    public static boolean place(BetaWorld world, Random rand, int x, int y, int z) {
         int rx = rand.nextInt(2) + 2;
         int rz = rand.nextInt(2) + 2;
         int openings = 0;

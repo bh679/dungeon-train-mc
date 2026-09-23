@@ -1243,6 +1243,22 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * Where {@code worldX} sits along legacy band {@code kind}'s core: {@code 0} at the first core block,
+     * {@code 1} one past the last, below 0 in the lead gap / entry fade and above 1 in the exit fade.
+     * {@code NaN} outside the band's slot or when it is disabled. Pure.
+     */
+    public double legacyCoreProgress(LegacyBandKind kind, int worldX) {
+        LegacySpan span = spanOf(kind);
+        if (span == null) return Double.NaN;
+        long o = offset(worldX);
+        if (o < 0L) return Double.NaN;
+        long start = legacySlotStart(kind);
+        if (o < start || o >= start + span.totalLen()) return Double.NaN;
+        long holdStart = start + span.leadGapLen() + span.fadeLen();
+        return (double) (o - holdStart) / span.holdLen();
+    }
+
+    /**
      * True if {@code worldX} lies anywhere from the start of legacy band {@code kind}'s lead gap through
      * the end of its exit fade — the world has not settled back into plain overworld yet. Used by the
      * {@code reached_overworld_again} gate so "Re-Over-World" waits for the overworld after the LAST band.

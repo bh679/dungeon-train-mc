@@ -46,6 +46,8 @@ public final class LegacyChunkWriter {
     public static void fill(LegacyBandKind kind, long seed, ChunkAccess chunk, int floorY) {
         switch (kind) {
             case BETA -> write(chunk, LegacyBands.beta(seed).generate(chunk.getPos().x, chunk.getPos().z).blocks(), floorY);
+            case ALPHA -> write(chunk, LegacyBands.alpha(seed).generate(chunk.getPos().x, chunk.getPos().z,
+                    LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), chunk.getPos().x)), floorY);
             case INFDEV -> {
                 int cx = chunk.getPos().x;
                 write(chunk, LegacyBands.infdev(seed).generate(cx, chunk.getPos().z,
@@ -54,7 +56,7 @@ public final class LegacyChunkWriter {
         }
     }
 
-    /** Write an old-world column ({@link BetaTerrain#index} layout, old block ids). */
+    /** Write an old-world column ({@link BetaTerrain#index} layout, {@link BetaBlocks} ids) — Alpha and Infdev share it. */
     static void write(ChunkAccess chunk, byte[] blocks, int floorY) {
         int minY = Math.max(chunk.getMinBuildHeight(), floorY);
         int maxY = chunk.getMaxBuildHeight() - 1;

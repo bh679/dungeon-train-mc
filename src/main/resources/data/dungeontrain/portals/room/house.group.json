@@ -14,6 +14,7 @@
         "CHUNCKS",
         "SPHERES",
         "BETA",
+        "ALPHA",
         "INFDEV"
       ]
     },
@@ -33,6 +34,7 @@
         "CHUNCKS",
         "SPHERES",
         "BETA",
+        "ALPHA",
         "INFDEV"
       ]
     },
@@ -119,6 +121,7 @@
         "CHUNCKS",
         "SPHERES",
         "BETA",
+        "ALPHA",
         "INFDEV"
       ]
     },
@@ -144,6 +147,7 @@
         "NETHER",
         "UPSIDE_DOWN",
         "BETA",
+        "ALPHA",
         "INFDEV"
       ]
     },

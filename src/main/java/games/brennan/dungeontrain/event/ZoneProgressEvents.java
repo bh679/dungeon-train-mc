@@ -134,6 +134,9 @@ public final class ZoneProgressEvents {
      */
     private static final int BETA_DEPTH_BLOCKS = 500;
 
+    /** Same depth gate for {@code reached_alpha}, into the Alpha legacy band core. */
+    private static final int ALPHA_DEPTH_BLOCKS = 500;
+
     /** How far (blocks) into the Infdev legacy band core before {@code reached_infdev} — same depth gate. */
     private static final int INFDEV_DEPTH_BLOCKS = 500;
 
@@ -217,7 +220,13 @@ public final class ZoneProgressEvents {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_beta");
             }
 
-            // Infdev legacy band — after Beta: terrain from the Infdev snapshots' generators. Same depth gate.
+            // Alpha legacy band — after Beta: terrain from Alpha 1.1.2's generator. Same depth gate.
+            if (LegacyBands.isInBand(level, LegacyBandKind.ALPHA, px)
+                && LegacyBands.isInBand(level, LegacyBandKind.ALPHA, px - ALPHA_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_alpha");
+            }
+
+            // Infdev legacy band — after Alpha: terrain from the Infdev snapshots' generators. Same depth gate.
             if (LegacyBands.isInBand(level, LegacyBandKind.INFDEV, px)
                 && LegacyBands.isInBand(level, LegacyBandKind.INFDEV, px - INFDEV_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_infdev");
