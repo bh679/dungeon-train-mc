@@ -5,9 +5,13 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.EndBandSampler;
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.density.EndCoreBiomes;
+import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.MinecraftServer;
@@ -93,6 +97,9 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
 
             ServerLevel end = server.getLevel(Level.END);
             if (end == null) return false;
+            // Every even End band (2nd, 4th, 6th…) is BetterEnd's: real End chunks are copied in by
+            // WorldEndBandEvents instead, so no end stone or chorus is stamped here.
+            if (EndBandSampler.appliesTo(server, WorldGenCycle.fromConfig().endPassIndex(chunkMinX + 8))) return false;
 
             DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
             CarriageDims dims = data.dims();
@@ -165,11 +172,16 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
 
             // Grow real chorus plants — matching vanilla's distribution exactly: 0-4 attempts per chunk
             // (CountPlacement), random X/Z (InSquarePlacement), and ONLY in the end_highlands biome (the
-            // sole End biome that carries CHORUS_PLANT). We query the real End biome source at the sample
-            // column so chorus lands in the same places it would in the real End — the same patch of outer
-            // End that BandEndCityStructure asks about before standing an End city on the island.
-            net.minecraft.world.level.biome.BiomeSource endBiomes = end.getChunkSource().getGenerator().getBiomeSource();
-            net.minecraft.world.level.biome.Climate.Sampler endSampler = end.getChunkSource().randomState().sampler();
+            // sole End biome that carries CHORUS_PLANT). We ask the island-field biome (the vanilla End
+            // biome layout, even with BetterEnd installed) at the sample column so chorus lands in the same
+            // places it would in the vanilla End — the same patch of outer End that BandEndCityStructure
+            // asks about before standing an End city on the island.
+            NetherBandContext bandCtx = NetherBandContext.current();
+            EndCoreBiomes endBiomes = bandCtx != null ? bandCtx.endCoreBiomes() : null;
+            if (endBiomes == null) {
+                chunk.setUnsaved(true);
+                return true;
+            }
             ChunkGenerator generator = ctx.chunkGenerator();
             RandomSource random = ctx.random();
             int count = random.nextInt(CHORUS_COUNT_BOUND);
@@ -179,13 +191,10 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
                 if (endRamp[dx] <= 0.0) continue;
                 int top = islandTop[dx * 16 + dz];
                 if (top == Integer.MIN_VALUE || top + 1 > maxY) continue;
-                int sampleX = chunkMinX + dx + EndIslandGeometry.ISLAND_SAMPLE_OFFSET_X;
                 int worldZ = chunkMinZ + dz;
                 int endY = EndIslandGeometry.END_ISLAND_CENTER_Y + (top - bedY);
-                net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> biome = endBiomes.getNoiseBiome(
-                        net.minecraft.core.QuartPos.fromBlock(sampleX),
-                        net.minecraft.core.QuartPos.fromBlock(endY),
-                        net.minecraft.core.QuartPos.fromBlock(worldZ), endSampler);
+                net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> biome =
+                        endBiomes.islandFieldBiomeAt(chunkMinX + dx, endY, worldZ);
                 if (!biome.is(net.minecraft.world.level.biome.Biomes.END_HIGHLANDS)) continue;
                 for (int dy = 1; dy <= CHORUS_POCKET && top + dy <= maxY; dy++) {
                     setRaw(chunk, dx, top + dy, dz, Blocks.AIR.defaultBlockState());

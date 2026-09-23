@@ -35,9 +35,10 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Fast Paintings | `883287` | **enabled** | Third-party **hard dep** (MehVahdJukaar): turns paintings into blocks so they ride the train and stamp from templates. **Pinned**; floor `fastpaintings_min_version`. Requires **Moonlight**. |
 | Moonlight Lib | `499980` (slug `selene`) | **enabled** (library) | Fast Paintings' required library. Inert on its own. **Pinned**; floor `moonlight_min_version`. |
 | BetterNether: New Dawn | `1422293` (slug `betternether-neoforge`) | **enabled** | Third-party **hard dep** (Reijin2312, MIT — unofficial NeoForge continuation of BetterNether): its biomes fill every second Nether band's core. **Pinned**; floor `betternether_min_version`. Requires **BCLib**, **WorldWeaver**, **WunderLib**. |
-| BCLib: New Dawn | `1422283` (slug `bclib-neoforge`) | **enabled** (library) | BetterNether's required library. **Pinned**. |
-| WorldWeaver: New Dawn | `1422284` (slug `worldweaver-neoforge`) | **enabled** (library) | BetterNether's required worldgen library. **Pinned**. |
-| WunderLib: New Dawn | `1422273` (slug `wunderlib-neoforge`) | **enabled** (library) | BetterNether's required library. **Pinned**. |
+| BetterEnd: New Dawn | `1422294` (slug `betterend-neoforge`) | **enabled** | Third-party **hard dep** (Reijin2312, MIT — unofficial NeoForge continuation of BetterEnd): every second End-islands band copies its End. **Pinned**; floor `betterend_min_version`. Shares BetterNether's three libraries. |
+| BCLib: New Dawn | `1422283` (slug `bclib-neoforge`) | **enabled** (library) | BetterNether's + BetterEnd's required library. **Pinned**. |
+| WorldWeaver: New Dawn | `1422284` (slug `worldweaver-neoforge`) | **enabled** (library) | BetterNether's + BetterEnd's required worldgen library. **Pinned**. |
+| WunderLib: New Dawn | `1422273` (slug `wunderlib-neoforge`) | **enabled** (library) | BetterNether's + BetterEnd's required library. **Pinned**. |
 | AppleSkin | `248787` | **enabled** | Food saturation / hunger overlay. **Pinned** file ID. |
 | FerriteCore | `429235` | **enabled** | Memory-usage reducer (data-structure dedup) — no render/physics/chunk hooks, safe with Sable. **Pinned**. |
 | ModernFix | `790626` | **enabled** | Launch-time / world-load / memory optimiser. **Pinned**. |
@@ -91,7 +92,7 @@ flag straight into the manifest:
 - **Enabled by default, and mandatory (`required:true`)** — the five sibling mods **Adventure
   Item Names**, **Adventure Item Stats**, **Interactive Player Mobs**, **Ender Chest
   Persistence** and **Trade Everything** — plus the third-party **Fast Paintings** and its **Moonlight** library, and
-  **BetterNether: New Dawn** with its **BCLib**, **WorldWeaver** and **WunderLib** libraries. These are not companions: DT declares them as hard dependencies and will not
+  **BetterNether: New Dawn** and **BetterEnd: New Dawn** with their shared **BCLib**, **WorldWeaver** and **WunderLib** libraries. These are not companions: DT declares them as hard dependencies and will not
   load without them, so shipping any of them `required:false` (i.e. switched OFF) would break
   the pack outright. **Keep Trim**, **Dungeon Backup** and **Sable Fence & Trapdoor Fix** ride the same row on
   CurseForge only (`curseforge_only: true`): they are also jarJar'd inside the DT jar, so the

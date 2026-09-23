@@ -493,6 +493,11 @@ dependencies {
     implementation "maven.modrinth:fast-paintings:${fastpaintings_version}"
     implementation "maven.modrinth:moonlight:${moonlight_version}"
 
+    // BetterEnd: New Dawn + its three libraries — REQUIRED third-party deps (see gradle.properties).
+    // On the dev classpath so runClient/runServer generate BetterEnd's End, which the even End-islands
+    // bands copy. DT names no BetterEnd class (it only samples the End dimension's generator).
+    implementation "maven.modrinth:betterend-neoforge:${betterend_version}"
+
     // BetterNether: New Dawn + its three libraries — REQUIRED third-party deps (see gradle.properties).
     // Not bundled; launchers install them from the (required) relations. DT names BetterNether
     // biomes/blocks only by registry id, so nothing compiles against these jars.
@@ -519,6 +524,9 @@ dependencies {
 
 tasks.named('test', Test).configure {
     useJUnitPlatform()
+    // The JUnit launcher boots the full mod set; with BetterEnd + BCLib's registries on top, Gradle's
+    // 512 MB default heap runs out partway through the suite (OutOfMemoryError in the test worker).
+    maxHeapSize = '2g'
     testLogging {
         events 'passed', 'skipped', 'failed'
     }
@@ -768,6 +776,11 @@ tasks.register('generateModMetadata', ProcessResources) {
         fastpaintings_min_version         : fastpaintings_min_version,
         moonlight_min_version             : moonlight_min_version,
         betternether_min_version          : betternether_min_version,
+        // BetterEnd: New Dawn + its libraries — floors only.
+        betterend_min_version             : betterend_min_version,
+        bclib_min_version                 : bclib_min_version,
+        worldweaver_min_version           : worldweaver_min_version,
+        wunderlib_min_version             : wunderlib_min_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

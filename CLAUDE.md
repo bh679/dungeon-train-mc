@@ -276,7 +276,10 @@ contract — paintings are blocks under FP, and templates/shared carriages carry
 `compat/PaintingTransformProcessor` for why flipped stamps still work). **BetterNether: New Dawn** + its
 BCLib/WorldWeaver/WunderLib libraries (`betternether-neoforge(required)` etc., same slugs on both platforms)
 are hard deps too — every second Nether band's core uses BetterNether biomes
-(`worldgen/density/BetterNetherCoreBiomes`; `/dungeontrain debug nether-passes` lists each band's biomes).
+(`worldgen/density/BetterNetherCoreBiomes`; `/dungeontrain debug nether-passes` lists each band's biomes). **BetterEnd: New
+Dawn** (`betterend-neoforge(required)`, same libraries) is a hard dep on the same contract — every second
+End-islands band copies real BetterEnd End chunks (`worldgen/EndBandStyle` + `EndBandSampler`); vanilla bands
+read `worldgen/density/VanillaEndBiomes` because BCLib patches `TheEndBiomeSource` itself.
 On top of those, `modpack.config.json` → `optional_mods[]` bundles the siblings (each carrying
 `dependency_type: required` + a `gradle_property` floor) and the companions, each with a
 `required` flag.
