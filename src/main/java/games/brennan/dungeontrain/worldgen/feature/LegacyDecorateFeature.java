@@ -5,7 +5,9 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaPopulator;
+import games.brennan.dungeontrain.worldgen.legacy.infdev.InfdevPopulator;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
@@ -44,6 +46,8 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
             long seed = DungeonTrainWorldData.get(serverLevel).getGenerationSeed();
             switch (kind) {
                 case BETA -> BetaPopulator.populate(level, LegacyBands.beta(seed), chunk.x, chunk.z);
+                case INFDEV -> InfdevPopulator.populate(level, LegacyBands.infdev(seed),
+                        LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), chunk.x), chunk.x, chunk.z);
             }
             return true;
         } catch (Throwable t) {

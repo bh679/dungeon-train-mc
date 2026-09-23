@@ -14,7 +14,12 @@ import java.util.Locale;
  */
 public enum LegacyBandKind {
     /** Beta 1.7.3 — climate-driven terrain, sand/gravel beaches, overhangs, Beta caves and decoration. */
-    BETA;
+    BETA,
+    /**
+     * Infdev — steps through the 20100227, 0415, 0420 and 0611 snapshots across the band (227's brick
+     * pyramids and obsidian walls first, then the density terrain of the later three).
+     */
+    INFDEV;
 
     /** Lower-cased config / command token ({@code beta}). */
     public String token() {

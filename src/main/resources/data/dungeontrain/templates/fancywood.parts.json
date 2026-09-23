@@ -54,7 +54,8 @@
         "OVERWORLD",
         "VOID",
         "END",
-        "BETA"
+        "BETA",
+        "INFDEV"
       ],
       "stage": "stone"
     },
@@ -165,7 +166,8 @@
         "OVERWORLD",
         "VOID",
         "END",
-        "BETA"
+        "BETA",
+        "INFDEV"
       ],
       "stage": "deepdark"
     },
@@ -310,7 +312,8 @@
         "OVERWORLD",
         "VOID",
         "END",
-        "BETA"
+        "BETA",
+        "INFDEV"
       ],
       "stage": "stone"
     },
@@ -337,7 +340,8 @@
         "OVERWORLD",
         "VOID",
         "END",
-        "BETA"
+        "BETA",
+        "INFDEV"
       ],
       "stage": "stone"
     },
@@ -408,7 +412,8 @@
         "OVERWORLD",
         "VOID",
         "END",
-        "BETA"
+        "BETA",
+        "INFDEV"
       ],
       "stage": "deepdark"
     },
@@ -419,7 +424,8 @@
         "OVERWORLD",
         "VOID",
         "END",
-        "BETA"
+        "BETA",
+        "INFDEV"
       ],
       "stage": "deepdark"
     },

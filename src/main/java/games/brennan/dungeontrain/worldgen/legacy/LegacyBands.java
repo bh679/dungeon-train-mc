@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.worldgen.legacy;
 
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
+import games.brennan.dungeontrain.worldgen.legacy.infdev.InfdevTerrain;
+import games.brennan.dungeontrain.worldgen.legacy.infdev.InfdevVersion;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -129,6 +131,26 @@ public final class LegacyBands {
             if (beta == null || beta.seed() != seed) beta = new BetaTerrain(seed);
             return beta;
         }
+    }
+
+    private static volatile InfdevTerrain infdev;
+
+    /** The Infdev generators for {@code seed}; one shared, immutable instance per seed. */
+    public static InfdevTerrain infdev(long seed) {
+        InfdevTerrain t = infdev;
+        if (t != null && t.seed() == seed) return t;
+        synchronized (LegacyBands.class) {
+            if (infdev == null || infdev.seed() != seed) infdev = new InfdevTerrain(seed);
+            return infdev;
+        }
+    }
+
+    /**
+     * The Infdev snapshot for chunk column {@code chunkX}, from how far its west edge is through the band.
+     * Fill, biome and decoration all ask this, so a chunk is one version throughout.
+     */
+    public static InfdevVersion infdevVersion(WorldGenCycle cycle, int chunkX) {
+        return InfdevVersion.at(Math.max(0.0D, cycle.legacyProgress(LegacyBandKind.INFDEV, chunkX << 4)));
     }
 
     // splitmix64-style finaliser, uniform in [0,1) per (seed, chunkX, chunkZ); same idiom as StacksBand.

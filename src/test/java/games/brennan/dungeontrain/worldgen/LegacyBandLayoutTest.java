@@ -97,4 +97,34 @@ final class LegacyBandLayoutTest {
         assertEquals(1.0, c.legacyAt(x(299)).ramp());
         assertNull(c.legacyAt(x(300)));
     }
+
+    @Test
+    @DisplayName("a second band's slot starts right after the first band's exit fade")
+    void twoSpansChain() {
+        LegacySpan infdev = new LegacySpan(LegacyBandKind.INFDEV, 60, 20, 100);
+        WorldGenCycle c = cycle(BETA, infdev);
+        assertEquals(preLegacy().period() + 400 + 60 + 2 * 20 + 100, c.period());
+        assertEquals(LegacyBandKind.BETA, c.legacyAt(x(399)).kind());
+        assertNull(c.legacyAt(x(400)));                   // Infdev lead gap
+        assertNull(c.legacyAt(x(459)));
+        assertEquals(LegacyBandKind.INFDEV, c.legacyAt(x(460)).kind());
+        assertTrue(c.isInLegacyBand(LegacyBandKind.INFDEV, x(480)));
+        assertTrue(c.isInLegacyBand(LegacyBandKind.INFDEV, x(579)));
+        assertFalse(c.isInLegacyBand(LegacyBandKind.INFDEV, x(580)));
+        assertFalse(c.isInLegacyApproachOrBand(LegacyBandKind.INFDEV, x(399)));
+        assertTrue(c.isInLegacyApproachOrBand(LegacyBandKind.INFDEV, x(400)));
+        assertNull(c.legacyAt(x(600)));                   // next cycle
+    }
+
+    @Test
+    @DisplayName("progress runs 0 → 1 from entry-fade start to exit-fade end, -1 outside")
+    void progress() {
+        WorldGenCycle c = cycle(BETA);
+        assertEquals(-1.0, c.legacyProgress(LegacyBandKind.BETA, x(99)));
+        assertEquals(0.0, c.legacyProgress(LegacyBandKind.BETA, x(100)));
+        assertEquals(0.5, c.legacyProgress(LegacyBandKind.BETA, x(250)));
+        assertTrue(c.legacyProgress(LegacyBandKind.BETA, x(399)) > 0.99);
+        assertEquals(-1.0, c.legacyProgress(LegacyBandKind.BETA, x(400)));
+        assertEquals(-1.0, c.legacyProgress(LegacyBandKind.INFDEV, x(250)));   // disabled / absent band
+    }
 }

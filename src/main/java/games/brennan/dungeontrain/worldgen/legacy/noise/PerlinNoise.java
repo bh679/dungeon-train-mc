@@ -149,6 +149,47 @@ public final class PerlinNoise {
         return lerp(w, l0, l1) / amplitude;
     }
 
+    /**
+     * Vanilla's improved-noise sample with the Y-lattice clamp ({@code yScale}/{@code yMax}), which the
+     * Alpha and Infdev density samplers use. {@code yScale == 0} is the flat (2-D) form.
+     */
+    public double sampleXYZ(double x, double y, double z, double yScale, double yMax) {
+        x += offsetX;
+        y += offsetY;
+        z += offsetZ;
+        int floorX = LegacyMath.floor(x);
+        int floorY = LegacyMath.floor(y);
+        int floorZ = LegacyMath.floor(z);
+        x -= floorX;
+        y -= floorY;
+        z -= floorZ;
+        double yOffset = 0.0D;
+        if (yScale != 0.0D) {
+            yOffset = yMax >= 0.0D && yMax < y ? yMax : y;
+            yOffset = LegacyMath.floor(yOffset / yScale + 1.0000000116860974E-7D) * yScale;
+        }
+        double oy = y - yOffset;
+        int cx = floorX & 0xFF;
+        int cy = floorY & 0xFF;
+        int cz = floorZ & 0xFF;
+        int a = permutations[cx] + cy;
+        int aa = permutations[a] + cz;
+        int ab = permutations[a + 1] + cz;
+        int b = permutations[cx + 1] + cy;
+        int ba = permutations[b] + cz;
+        int bb = permutations[b + 1] + cz;
+        double u = fade(x);
+        double v = fade(y);
+        double w = fade(z);
+        return lerp(w,
+                lerp(v,
+                        lerp(u, grad(permutations[aa], x, oy, z), grad(permutations[ba], x - 1.0D, oy, z)),
+                        lerp(u, grad(permutations[ab], x, oy - 1.0D, z), grad(permutations[bb], x - 1.0D, oy - 1.0D, z))),
+                lerp(v,
+                        lerp(u, grad(permutations[aa + 1], x, oy, z - 1.0D), grad(permutations[ba + 1], x - 1.0D, oy, z - 1.0D)),
+                        lerp(u, grad(permutations[ab + 1], x, oy - 1.0D, z - 1.0D), grad(permutations[bb + 1], x - 1.0D, oy - 1.0D, z - 1.0D))));
+    }
+
     private static double lerp(double t, double a, double b) {
         return a + t * (b - a);
     }

@@ -39,7 +39,8 @@
       "phases": [
         "OVERWORLD",
         "UPSIDE_DOWN",
-        "BETA"
+        "BETA",
+        "INFDEV"
       ]
     },
     {

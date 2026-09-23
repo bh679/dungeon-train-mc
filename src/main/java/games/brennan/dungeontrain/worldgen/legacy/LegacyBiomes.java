@@ -23,7 +23,11 @@ import java.util.Map;
  */
 public final class LegacyBiomes {
 
-    private record Context(BiomeSource overworldSource, long seed, Map<BetaBiome, Holder<Biome>> beta) {}
+    private record Context(BiomeSource overworldSource, long seed, Map<BetaBiome, Holder<Biome>> beta,
+                           Holder<Biome> infdev) {}
+
+    /** Infdev generated one temperate biome everywhere; plains is its closest overworld match. */
+    private static final String INFDEV_BIOME = "plains";
 
     private static volatile Context current;
 
@@ -39,15 +43,19 @@ public final class LegacyBiomes {
         BiomeSource source = overworld.getChunkSource().getGenerator().getBiomeSource();
         Map<BetaBiome, Holder<Biome>> beta = new EnumMap<>(BetaBiome.class);
         for (BetaBiome b : BetaBiome.values()) {
-            ResourceLocation id = ResourceLocation.withDefaultNamespace(b.vanillaBiome());
-            for (Holder<Biome> holder : source.possibleBiomes()) {
-                if (holder.is(id)) {
-                    beta.put(b, holder);
-                    break;
-                }
-            }
+            Holder<Biome> holder = find(source, b.vanillaBiome());
+            if (holder != null) beta.put(b, holder);
         }
-        current = new Context(source, data.getGenerationSeed(), beta);
+        current = new Context(source, data.getGenerationSeed(), beta, find(source, INFDEV_BIOME));
+    }
+
+    /** The overworld source's holder for vanilla biome {@code path}, or {@code null} if it never generates it. */
+    private static Holder<Biome> find(BiomeSource source, String path) {
+        ResourceLocation id = ResourceLocation.withDefaultNamespace(path);
+        for (Holder<Biome> holder : source.possibleBiomes()) {
+            if (holder.is(id)) return holder;
+        }
+        return null;
     }
 
     public static void clear() {
@@ -65,6 +73,7 @@ public final class LegacyBiomes {
         if (kind == null) return null;
         return switch (kind) {
             case BETA -> c.beta().get(LegacyBands.beta(c.seed()).climate().biome(blockX, blockZ));
+            case INFDEV -> c.infdev();
         };
     }
 }

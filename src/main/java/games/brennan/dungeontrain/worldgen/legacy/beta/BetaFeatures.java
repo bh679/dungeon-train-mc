@@ -15,7 +15,7 @@ import java.util.Random;
  * veins and clay patches, flowers and grass, dead bushes, reeds, pumpkins, cacti and springs. Dungeons
  * live in {@link BetaDungeon}; trees in {@link BetaTrees}.
  */
-final class BetaFeatures {
+public final class BetaFeatures {
 
     private BetaFeatures() {}
 
@@ -152,7 +152,7 @@ final class BetaFeatures {
     }
 
     /** Flowers (on grass/dirt) and mushrooms (on any solid block, shaded): 64 tries around the start. */
-    static void flowers(BetaWorld world, Random rand, int x, int y, int z, BlockState plant) {
+    public static void flowers(BetaWorld world, Random rand, int x, int y, int z, BlockState plant) {
         boolean mushroom = plant.is(Blocks.BROWN_MUSHROOM) || plant.is(Blocks.RED_MUSHROOM);
         for (int i = 0; i < 64; i++) {
             int px = x + rand.nextInt(8) - rand.nextInt(8);
@@ -167,7 +167,7 @@ final class BetaFeatures {
     }
 
     /** Tall grass / ferns: settle onto the ground, then 128 tries. */
-    static void tallGrass(BetaWorld world, Random rand, int x, int y, int z, BlockState plant) {
+    public static void tallGrass(BetaWorld world, Random rand, int x, int y, int z, BlockState plant) {
         while (y > 0 && world.isAirOrLeaves(x, y, z)) y--;
         for (int i = 0; i < 128; i++) {
             int px = x + rand.nextInt(8) - rand.nextInt(8);

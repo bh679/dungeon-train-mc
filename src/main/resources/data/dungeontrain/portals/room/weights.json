@@ -81,7 +81,8 @@
       "UPSIDE_DOWN",
       "CHUNCKS",
       "SPHERES",
-      "BETA"
+      "BETA",
+      "INFDEV"
     ],
     "mode": "bedrock_lock",
     "builder": {
@@ -96,7 +97,8 @@
       "NETHER",
       "VOID",
       "END",
-      "BETA"
+      "BETA",
+      "INFDEV"
     ],
     "mode": "endless_open/single:minecraft:stone"
   },
@@ -107,7 +109,8 @@
       "NETHER",
       "VOID",
       "END",
-      "BETA"
+      "BETA",
+      "INFDEV"
     ],
     "mode": "bedrock_lock"
   },
@@ -166,7 +169,8 @@
       "UPSIDE_DOWN",
       "CHUNCKS",
       "SPHERES",
-      "BETA"
+      "BETA",
+      "INFDEV"
     ],
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
   },
@@ -382,7 +386,8 @@
       "UPSIDE_DOWN",
       "CHUNCKS",
       "SPHERES",
-      "BETA"
+      "BETA",
+      "INFDEV"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
   },
