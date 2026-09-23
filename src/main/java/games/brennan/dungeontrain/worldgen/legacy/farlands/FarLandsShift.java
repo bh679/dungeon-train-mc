@@ -23,18 +23,20 @@ import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
  *   <li>{@code 0–1000} {@link Stage#ENTRY} — {@value #APPROACH} blocks of ordinary Beta land, then the X
  *       edge wall crosses the track and the train rides the edge lands. The entry fade reads this too.</li>
  *   <li>{@code 1000–3000} {@link Stage#CLOSING} — left wall at {@value #SIDE_Z}; the right wall starts
- *       1000 out and steps in every 500 ({@link #CLOSING_STEPS}: long steps first, short last).</li>
+ *       1000 out and closes in chunk by chunk on a power-{@value #EASE_POWER} ease ({@link #closingDistance}):
+ *       fast at first, creeping at the end.</li>
  *   <li>{@code 3000–6000} {@link Stage#CANYON} — both walls at {@value #SIDE_Z}.</li>
- *   <li>{@code 6000–8000} {@link Stage#OPENING} — the left wall steps back out ({@link #OPENING_STEPS});
- *       the right one stays.</li>
+ *   <li>{@code 6000–8000} {@link Stage#OPENING} — the left wall eases back out, the mirror image
+ *       ({@link #openingDistance}); the right one stays.</li>
  *   <li>{@code 8000–9000} {@link Stage#EXIT} — the right wall sweeps across the track
  *       ({@link #SWEEP_STEPS}), the edge lands close over the train, and {@value #APPROACH} blocks before the
  *       end the train breaks out through the negative X edge's wall onto ordinary land, mirroring the entry.
  *       The exit fade reads this too.</li>
  * </ol>
  *
- * <p>Shifts are whole chunks, constant within a step of one band instance and one side of the track
- * (chunks with {@code z < 0} are the left side), so steps and sides meet as the band's chunk walls.</p>
+ * <p>Shifts are whole chunks, fixed per chunk column of one band instance and side of the track (chunks
+ * with {@code z < 0} are the left side), so a moving wall snaps to 16 blocks and its face steps chunk by
+ * chunk — the band's chunk-wall look.</p>
  *
  * @param dxChunks source chunk X minus world chunk X
  * @param dzChunks source chunk Z minus world chunk Z
@@ -60,12 +62,13 @@ public record FarLandsShift(int dxChunks, int dzChunks) {
     /** Script block of the exit wall. */
     static final int EXIT_WALL = SCRIPT_LEN - APPROACH;
 
-    /** Moving-wall step length (script blocks). */
-    static final int STEP = 500;
-    /** Right wall while closing in: eased 1000 → {@value #SIDE_Z}, big steps first. */
-    public static final int[] CLOSING_STEPS = {1000, 587, 292, 115};
-    /** Left wall while opening out: the closing steps in reverse, small steps first. */
-    public static final int[] OPENING_STEPS = {115, 292, 587, 1000};
+    /** Where a moving side wall is at its farthest. */
+    static final int FAR_Z = 1000;
+    /**
+     * Power of the moving-wall ease. Closing, the wall stands at {@code SIDE_Z + (FAR_Z − SIDE_Z)·(1 − t)^p}:
+     * it rushes in at first and creeps the last stretch. 3 is a gentler (cubed) curve.
+     */
+    public static final int EASE_POWER = 4;
     /** Right wall sweeping over the track, one step per third of the sweep. */
     public static final int[] SWEEP_STEPS = {20, -20, -60};
 
@@ -113,9 +116,11 @@ public record FarLandsShift(int dxChunks, int dzChunks) {
         boolean left = chunkZ < 0;
         return switch (stageAt(coreStartX, holdLen, chunkX)) {
             case ENTRY -> xEdge(EDGE - worldX(coreStartX, holdLen, APPROACH));
-            case CLOSING -> left ? leftWall(SIDE_Z) : rightWall(step(CLOSING_STEPS, p - ENTRY_END, STEP));
+            case CLOSING -> left ? leftWall(SIDE_Z)
+                    : rightWall(closingDistance((p - ENTRY_END) / (CLOSING_END - ENTRY_END)));
             case CANYON -> left ? leftWall(SIDE_Z) : rightWall(SIDE_Z);
-            case OPENING -> left ? leftWall(step(OPENING_STEPS, p - CANYON_END, STEP)) : rightWall(SIDE_Z);
+            case OPENING -> left ? leftWall(openingDistance((p - CANYON_END) / (OPENING_END - CANYON_END)))
+                    : rightWall(SIDE_Z);
             case EXIT -> p < SWEEP_END
                     ? rightWall(step(SWEEP_STEPS, p - OPENING_END,
                             (double) (SWEEP_END - OPENING_END) / SWEEP_STEPS.length))
@@ -127,6 +132,17 @@ public record FarLandsShift(int dxChunks, int dzChunks) {
     /** World X of script block {@code script}. */
     private static long worldX(long coreStartX, long holdLen, int script) {
         return coreStartX + (holdLen <= 0L ? script : Math.round((double) script * holdLen / SCRIPT_LEN));
+    }
+
+    /** Closing wall's distance from the track at {@code t} (0 → 1) through the stage: fast in, then creeping. */
+    public static int closingDistance(double t) {
+        double u = 1.0 - Math.max(0.0, Math.min(1.0, t));
+        return (int) Math.round(SIDE_Z + (FAR_Z - SIDE_Z) * Math.pow(u, EASE_POWER));
+    }
+
+    /** Opening wall's distance at {@code t}: the closing ease run backwards — creeping off, then rushing out. */
+    public static int openingDistance(double t) {
+        return closingDistance(1.0 - t);
     }
 
     private static int step(int[] steps, double into, double stepLen) {

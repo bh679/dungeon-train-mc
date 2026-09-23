@@ -57,20 +57,26 @@ final class FarLandsShiftTest {
     }
 
     @Test
-    @DisplayName("closing: left wall rests at SIDE_Z while the right steps in every 500, long steps first")
+    @DisplayName("closing: left wall rests at SIDE_Z; the right closes in every chunk, fast then creeping")
     void closing() {
-        int[] expected = FarLandsShift.CLOSING_STEPS;
-        for (int k = 0; k < expected.length; k++) {
-            long l = 1016 + k * 500L;
+        assertEquals(1000, FarLandsShift.closingDistance(0.0));
+        assertEquals(FarLandsShift.SIDE_Z, FarLandsShift.closingDistance(1.0));
+        long prev = Long.MAX_VALUE;
+        long firstQuarterDrop = 0;
+        long lastQuarterDrop = 0;
+        for (long l = 1008; l < 3000; l += 16) {
             assertNear(FarLandsShift.SIDE_Z, leftDist(at(l, -1)));
-            assertNear(expected[k], rightEdge(at(l, 0)));
             assertEquals(0, at(l, 0).dxChunks());
+            long d = rightEdge(at(l, 0));
+            assertTrue(d <= prev, "wall moved out at " + l);
+            if (prev != Long.MAX_VALUE) {
+                if (l < 1500) firstQuarterDrop += prev - d;
+                if (l >= 2500) lastQuarterDrop += prev - d;
+            }
+            prev = d;
         }
-        for (int k = 1; k < expected.length; k++) {
-            int prev = k == 1 ? expected[0] - expected[1] : expected[k - 2] - expected[k - 1];
-            assertTrue(expected[k - 1] - expected[k] < prev || k == 1, "steps must shrink");
-        }
-        assertTrue(expected[expected.length - 1] - FarLandsShift.SIDE_Z < expected[expected.length - 2] - expected[expected.length - 1]);
+        assertTrue(firstQuarterDrop > 10 * lastQuarterDrop, firstQuarterDrop + " vs " + lastQuarterDrop);
+        assertNear(1000, rightEdge(at(1008, 0)));
     }
 
     @Test
@@ -81,13 +87,17 @@ final class FarLandsShiftTest {
     }
 
     @Test
-    @DisplayName("opening: the left wall steps back out while the right one stays")
+    @DisplayName("opening: the left wall eases back out, mirroring the closing; the right one stays")
     void opening() {
-        int[] expected = FarLandsShift.OPENING_STEPS;
-        for (int k = 0; k < expected.length; k++) {
-            long l = 6016 + k * 500L;
-            assertNear(expected[k], leftDist(at(l, -1)));
+        for (double t = 0; t <= 1.0; t += 0.05) {
+            assertEquals(FarLandsShift.closingDistance(1.0 - t), FarLandsShift.openingDistance(t));
+        }
+        long prev = 0;
+        for (long l = 6000; l < 8000; l += 16) {
+            long d = leftDist(at(l, -1));
+            assertTrue(d >= prev, "wall moved in at " + l);
             assertNear(FarLandsShift.SIDE_Z, rightEdge(at(l, 0)));
+            prev = d;
         }
     }
 
