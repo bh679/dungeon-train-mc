@@ -508,6 +508,46 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("spheres End sky: 0 through the fade + first startBlocks of the core, End after, overworld again at the core's far edge")
+    void spheresEndSkyRamp() {
+        assertEquals(0.0, C.spheresEndSkyRamp(3390, 100, 50), EPS);       // disabled band → inert
+
+        // Core [4690,5090), len 400; start 100 → End sky begins at world-X 4790.
+        WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 300, 0.12, 0.5, 400, 200, 100, 0);
+        assertEquals(0.0, c.spheresEndSkyRamp(4450, 100, 50), EPS);       // lead gap
+        assertEquals(0.0, c.spheresEndSkyRamp(4600, 100, 50), EPS);       // entry fade
+        assertEquals(0.0, c.spheresEndSkyRamp(4690, 100, 50), EPS);       // core start
+        assertEquals(0.0, c.spheresEndSkyRamp(4789, 100, 50), EPS);       // last overworld-sky column
+
+        // Fade in over 50 blocks from the start offset, hold, fade out over the core's last 50.
+        assertEquals(1.0 / 50, c.spheresEndSkyRamp(4790, 100, 50), EPS);
+        assertEquals(1.0, c.spheresEndSkyRamp(4839, 100, 50), EPS);
+        assertEquals(1.0, c.spheresEndSkyRamp(5000, 100, 50), EPS);
+        assertEquals(1.0, c.spheresEndSkyRamp(5040, 100, 50), EPS);
+        assertEquals(1.0 / 50, c.spheresEndSkyRamp(5089, 100, 50), EPS);  // last core column
+        assertEquals(0.0, c.spheresEndSkyRamp(5090, 100, 50), EPS);       // back in plain overworld
+
+        // start 0 = End sky from the core's first column; start past the core = never.
+        assertEquals(1.0 / 50, c.spheresEndSkyRamp(4690, 0, 50), EPS);
+        assertEquals(0.0, c.spheresEndSkyRamp(4600, 0, 50), EPS);         // entry fade still overworld
+        assertEquals(0.0, c.spheresEndSkyRamp(5089, 400, 50), EPS);
+        assertEquals(0.0, c.spheresEndSkyRamp(5000, 10_000, 0), EPS);
+
+        // fade 0 = hard switch; oversized fade clamps to a quarter of the core (100).
+        assertEquals(0.0, c.spheresEndSkyRamp(4789, 100, 0), EPS);
+        assertEquals(1.0, c.spheresEndSkyRamp(4790, 100, 0), EPS);
+        assertEquals(1.0, c.spheresEndSkyRamp(5089, 100, 0), EPS);
+        assertEquals(1.0 / 100, c.spheresEndSkyRamp(4790, 100, 1000), EPS);
+        assertEquals(1.0, c.spheresEndSkyRamp(4889, 100, 1000), EPS);
+
+        // Never touches the End band itself, and repeats with the period.
+        assertEquals(0.0, c.spheresEndSkyRamp(2500, 0, 50), EPS);
+        int period = (int) c.period();
+        assertEquals(1.0, c.spheresEndSkyRamp(5000 + period, 100, 50), EPS);
+    }
+
+    @Test
     @DisplayName("spheres approach: lead gap, fade and core all count, so \"Re-Over-World\" waits for the overworld after the spheres")
     void spheresApproachOrBand() {
         org.junit.jupiter.api.Assertions.assertFalse(C.isInSpheresApproachOrBand(3390)); // disabled → inert

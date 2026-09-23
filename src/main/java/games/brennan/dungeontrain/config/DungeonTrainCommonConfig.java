@@ -276,7 +276,7 @@ public final class DungeonTrainCommonConfig {
     /** Blocks of spheres-band world-gen (the whole void-with-spheres stretch). 0 drops the band from the cycle. */
     public static final int MIN_SPHERES_HOLD_BLOCKS = 0;
     public static final int MAX_SPHERES_HOLD_BLOCKS = 100_000_000;
-    public static final int DEFAULT_SPHERES_HOLD_BLOCKS = 8000;
+    public static final int DEFAULT_SPHERES_HOLD_BLOCKS = 12000;
     /** Entry fade before the band: the natural terrain outside the spheres dissolves into void across this span. */
     public static final int MIN_SPHERES_FADE_BLOCKS = 0;
     public static final int MAX_SPHERES_FADE_BLOCKS = 100_000_000;
@@ -307,6 +307,16 @@ public final class DungeonTrainCommonConfig {
     public static final double MIN_SPHERES_SURFACE_BIAS = 0.0;
     public static final double MAX_SPHERES_SURFACE_BIAS = 1.0;
     public static final double DEFAULT_SPHERES_SURFACE_BIAS = 0.65;
+    /** Whether the later part of the spheres band core renders the End sky + End lighting. */
+    public static final boolean DEFAULT_SPHERES_END_SKY = true;
+    /** Blocks into the spheres core that keep the normal overworld sky before the End sky takes over. */
+    public static final int MIN_SPHERES_END_SKY_START_BLOCKS = 0;
+    public static final int MAX_SPHERES_END_SKY_START_BLOCKS = 100_000_000;
+    public static final int DEFAULT_SPHERES_END_SKY_START_BLOCKS = 4000;
+    /** Crossfade span (blocks) at each edge of the spheres End-sky second half. */
+    public static final int MIN_SPHERES_END_SKY_FADE_BLOCKS = 0;
+    public static final int MAX_SPHERES_END_SKY_FADE_BLOCKS = 2000;
+    public static final int DEFAULT_SPHERES_END_SKY_FADE_BLOCKS = 150;
 
     /**
      * Stacks band — a sixth looping phase, appended after the spheres band with a long plain-overworld
@@ -381,7 +391,13 @@ public final class DungeonTrainCommonConfig {
      */
     public static final int LEGACY_BAND_HOLD_BLOCKS = 5000;
 
-    public static final int CURRENT_CONFIG_VERSION = 2;
+    /**
+     * The spheres band hold the v1 -> v2 migration shipped (8000) before the band grew again to
+     * {@link #DEFAULT_SPHERES_HOLD_BLOCKS}. The v2 -> v3 migration moves exactly this value.
+     */
+    public static final int SPHERES_V2_HOLD_BLOCKS = 8000;
+
+    public static final int CURRENT_CONFIG_VERSION = 3;
     public static final int DEFAULT_CONFIG_VERSION = 0;
     public static final int MIN_CONFIG_VERSION = 0;
     public static final int MAX_CONFIG_VERSION = 1_000_000;
@@ -442,6 +458,9 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue SPHERES_CENTER_MIN_Y;
     public static final ModConfigSpec.IntValue SPHERES_CENTER_MAX_Y;
     public static final ModConfigSpec.DoubleValue SPHERES_SURFACE_BIAS;
+    public static final ModConfigSpec.BooleanValue SPHERES_END_SKY;
+    public static final ModConfigSpec.IntValue SPHERES_END_SKY_START_BLOCKS;
+    public static final ModConfigSpec.IntValue SPHERES_END_SKY_FADE_BLOCKS;
     public static final ModConfigSpec.BooleanValue STACKS_ENABLED;
     public static final ModConfigSpec.IntValue STACKS_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue STACKS_FADE_BLOCKS;
@@ -508,6 +527,9 @@ public final class DungeonTrainCommonConfig {
         SPHERES_CENTER_MIN_Y = pair.getLeft().spheresCenterMinY;
         SPHERES_CENTER_MAX_Y = pair.getLeft().spheresCenterMaxY;
         SPHERES_SURFACE_BIAS = pair.getLeft().spheresSurfaceBias;
+        SPHERES_END_SKY = pair.getLeft().spheresEndSky;
+        SPHERES_END_SKY_START_BLOCKS = pair.getLeft().spheresEndSkyStartBlocks;
+        SPHERES_END_SKY_FADE_BLOCKS = pair.getLeft().spheresEndSkyFadeBlocks;
         STACKS_ENABLED = pair.getLeft().stacksEnabled;
         STACKS_HOLD_BLOCKS = pair.getLeft().stacksHoldBlocks;
         STACKS_FADE_BLOCKS = pair.getLeft().stacksFadeBlocks;
@@ -825,7 +847,7 @@ public final class DungeonTrainCommonConfig {
                         "Set false to drop the spheres phase from the cycle.")
                 .define("spheresEnabled", DEFAULT_SPHERES_ENABLED);
         ModConfigSpec.IntValue spheresHoldBlocks = b
-                .comment("Blocks of spheres-band world-gen (the whole void-with-spheres stretch). Default 8000.")
+                .comment("Blocks of spheres-band world-gen (the whole void-with-spheres stretch). Default 12000.")
                 .defineInRange("spheresHoldBlocks", DEFAULT_SPHERES_HOLD_BLOCKS,
                         MIN_SPHERES_HOLD_BLOCKS, MAX_SPHERES_HOLD_BLOCKS);
         ModConfigSpec.IntValue spheresFadeBlocks = b
@@ -875,6 +897,24 @@ public final class DungeonTrainCommonConfig {
                         "natural surface cap with rock beneath.")
                 .defineInRange("spheresSurfaceBias", DEFAULT_SPHERES_SURFACE_BIAS,
                         MIN_SPHERES_SURFACE_BIAS, MAX_SPHERES_SURFACE_BIAS);
+        ModConfigSpec.BooleanValue spheresEndSky = b
+                .comment("When true, the later part of the spheres band renders the End sky, fog and lighting (the",
+                        "same End atmosphere as the disintegration band); the first spheresEndSkyStartBlocks keep the",
+                        "normal overworld sky and day/night lighting. The overworld sky returns as the band ends.",
+                        "Client-side visual only. Default true.")
+                .define("spheresEndSky", DEFAULT_SPHERES_END_SKY);
+        ModConfigSpec.IntValue spheresEndSkyStartBlocks = b
+                .comment("Blocks into the spheres band (counted from the end of the entry fade) that keep the normal",
+                        "overworld sky before the End sky takes over for the rest of the band. Default 4000 — with the",
+                        "default 12000-block band that is 4000 blocks of overworld sky, then 8000 of End sky.")
+                .defineInRange("spheresEndSkyStartBlocks", DEFAULT_SPHERES_END_SKY_START_BLOCKS,
+                        MIN_SPHERES_END_SKY_START_BLOCKS, MAX_SPHERES_END_SKY_START_BLOCKS);
+        ModConfigSpec.IntValue spheresEndSkyFadeBlocks = b
+                .comment("Crossfade span (blocks) between the overworld and End sky at spheresEndSkyStartBlocks, and",
+                        "back again over the last blocks of the band. Clamped to a quarter of spheresHoldBlocks.",
+                        "0 = hard switch. Default 150.")
+                .defineInRange("spheresEndSkyFadeBlocks", DEFAULT_SPHERES_END_SKY_FADE_BLOCKS,
+                        MIN_SPHERES_END_SKY_FADE_BLOCKS, MAX_SPHERES_END_SKY_FADE_BLOCKS);
         ModConfigSpec.BooleanValue stacksEnabled = b
                 .comment("Stacks phase — part of the single repeating world-gen cycle, appended after the spheres band",
                         "with a long plain-overworld lead-in. Along +X it is mostly void; scattered chunks each hold a",
@@ -925,6 +965,7 @@ public final class DungeonTrainCommonConfig {
                 spheresEnabled, spheresHoldBlocks, spheresFadeBlocks, spheresLeadGapBlocks,
                 spheresCellBlocks, spheresDensity, spheresMinRadius, spheresMaxRadius,
                 spheresCenterMinY, spheresCenterMaxY, spheresSurfaceBias,
+                spheresEndSky, spheresEndSkyStartBlocks, spheresEndSkyFadeBlocks,
                 stacksEnabled, stacksHoldBlocks, stacksFadeBlocks, stacksLeadGapBlocks, stacksDensity,
                 breakBlocksOnContact, backerNameWeight, catchUpBurstMode);
     }
@@ -1026,9 +1067,16 @@ public final class DungeonTrainCommonConfig {
         // v1 -> v2: the chuncks, spheres and stacks bands grew from 5000 to 8000 blocks. A hold still
         // at the old shipped length is a default nobody chose; any other length is left alone.
         if (from < 2) {
-            migrateBandHold("chuncksHoldBlocks", CHUNCKS_HOLD_BLOCKS, DEFAULT_CHUNCKS_HOLD_BLOCKS, from);
-            migrateBandHold("spheresHoldBlocks", SPHERES_HOLD_BLOCKS, DEFAULT_SPHERES_HOLD_BLOCKS, from);
-            migrateBandHold("stacksHoldBlocks", STACKS_HOLD_BLOCKS, DEFAULT_STACKS_HOLD_BLOCKS, from);
+            migrateBandHold("chuncksHoldBlocks", CHUNCKS_HOLD_BLOCKS, LEGACY_BAND_HOLD_BLOCKS, DEFAULT_CHUNCKS_HOLD_BLOCKS, from);
+            migrateBandHold("spheresHoldBlocks", SPHERES_HOLD_BLOCKS, LEGACY_BAND_HOLD_BLOCKS, DEFAULT_SPHERES_HOLD_BLOCKS, from);
+            migrateBandHold("stacksHoldBlocks", STACKS_HOLD_BLOCKS, LEGACY_BAND_HOLD_BLOCKS, DEFAULT_STACKS_HOLD_BLOCKS, from);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v2 -> v3: the spheres band grew again, 8000 -> 12000 (the last 8000 under the End sky). A
+        // v1 install already landed on 12000 above, so this only moves a hold still at v2's 8000.
+        if (from < 3) {
+            migrateBandHold("spheresHoldBlocks", SPHERES_HOLD_BLOCKS, SPHERES_V2_HOLD_BLOCKS, DEFAULT_SPHERES_HOLD_BLOCKS, from);
             WorldGenCycle.invalidateCache();
         }
 
@@ -1037,12 +1085,12 @@ public final class DungeonTrainCommonConfig {
         CatchUpBurstAuto.invalidate();
     }
 
-    /** One band-hold step of the v1 -> v2 migration: {@link #LEGACY_BAND_HOLD_BLOCKS} becomes {@code target}. */
-    private static void migrateBandHold(String key, ModConfigSpec.IntValue hold, int target, int from) {
-        if (hold.get() != LEGACY_BAND_HOLD_BLOCKS) return;
+    /** One band-hold migration step: a hold still at the shipped {@code legacy} length becomes {@code target}. */
+    private static void migrateBandHold(String key, ModConfigSpec.IntValue hold, int legacy, int target, int from) {
+        if (hold.get() != legacy) return;
         hold.set(target);
         LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: {} {} -> {}.",
-                from, CURRENT_CONFIG_VERSION, key, LEGACY_BAND_HOLD_BLOCKS, target);
+                from, CURRENT_CONFIG_VERSION, key, legacy, target);
     }
 
     /** Global default Compatible Terrain mode for new worlds; falls back to the hardcoded default pre-load. */
@@ -1338,6 +1386,21 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? SPHERES_SURFACE_BIAS.get() : DEFAULT_SPHERES_SURFACE_BIAS;
     }
 
+    /** Whether the spheres band's later part renders the End sky + lighting; falls back to the hardcoded default pre-load. */
+    public static boolean isSpheresEndSkyEnabled() {
+        return isLoaded() ? SPHERES_END_SKY.get() : DEFAULT_SPHERES_END_SKY;
+    }
+
+    /** Blocks into the spheres core before the End sky starts; falls back to the hardcoded default pre-load. */
+    public static int getSpheresEndSkyStartBlocks() {
+        return isLoaded() ? SPHERES_END_SKY_START_BLOCKS.get() : DEFAULT_SPHERES_END_SKY_START_BLOCKS;
+    }
+
+    /** Crossfade span (blocks) at each edge of the spheres End-sky half; falls back to the hardcoded default pre-load. */
+    public static int getSpheresEndSkyFadeBlocks() {
+        return isLoaded() ? SPHERES_END_SKY_FADE_BLOCKS.get() : DEFAULT_SPHERES_END_SKY_FADE_BLOCKS;
+    }
+
     /** Whether the stacks band is active; falls back to the hardcoded default pre-load. */
     public static boolean isStacksEnabled() {
         return isLoaded() ? STACKS_ENABLED.get() : DEFAULT_STACKS_ENABLED;
@@ -1416,6 +1479,9 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue spheresCenterMinY,
                           ModConfigSpec.IntValue spheresCenterMaxY,
                           ModConfigSpec.DoubleValue spheresSurfaceBias,
+                          ModConfigSpec.BooleanValue spheresEndSky,
+                          ModConfigSpec.IntValue spheresEndSkyStartBlocks,
+                          ModConfigSpec.IntValue spheresEndSkyFadeBlocks,
                           ModConfigSpec.BooleanValue stacksEnabled,
                           ModConfigSpec.IntValue stacksHoldBlocks,
                           ModConfigSpec.IntValue stacksFadeBlocks,
