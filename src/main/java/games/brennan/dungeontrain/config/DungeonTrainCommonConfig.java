@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.config;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CatchUpBurstAuto;
 import games.brennan.dungeontrain.train.CatchUpBurstMode;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.slf4j.Logger;
 import org.apache.commons.lang3.tuple.Pair;
@@ -246,7 +247,7 @@ public final class DungeonTrainCommonConfig {
     /** Blocks of chuncks-band world-gen (the whole mostly-void stretch). 0 drops the band from the cycle. */
     public static final int MIN_CHUNCKS_HOLD_BLOCKS = 0;
     public static final int MAX_CHUNCKS_HOLD_BLOCKS = 100_000_000;
-    public static final int DEFAULT_CHUNCKS_HOLD_BLOCKS = 5000;
+    public static final int DEFAULT_CHUNCKS_HOLD_BLOCKS = 8000;
     /** Entry fade before the band: void chunks ramp in (keep-density 1 → keepDensity) across this span. */
     public static final int MIN_CHUNCKS_FADE_BLOCKS = 0;
     public static final int MAX_CHUNCKS_FADE_BLOCKS = 100_000_000;
@@ -275,7 +276,7 @@ public final class DungeonTrainCommonConfig {
     /** Blocks of spheres-band world-gen (the whole void-with-spheres stretch). 0 drops the band from the cycle. */
     public static final int MIN_SPHERES_HOLD_BLOCKS = 0;
     public static final int MAX_SPHERES_HOLD_BLOCKS = 100_000_000;
-    public static final int DEFAULT_SPHERES_HOLD_BLOCKS = 5000;
+    public static final int DEFAULT_SPHERES_HOLD_BLOCKS = 8000;
     /** Entry fade before the band: the natural terrain outside the spheres dissolves into void across this span. */
     public static final int MIN_SPHERES_FADE_BLOCKS = 0;
     public static final int MAX_SPHERES_FADE_BLOCKS = 100_000_000;
@@ -318,7 +319,7 @@ public final class DungeonTrainCommonConfig {
     /** Blocks of stacks-band world-gen (the whole mostly-void stretch). 0 drops the band from the cycle. */
     public static final int MIN_STACKS_HOLD_BLOCKS = 0;
     public static final int MAX_STACKS_HOLD_BLOCKS = 100_000_000;
-    public static final int DEFAULT_STACKS_HOLD_BLOCKS = 5000;
+    public static final int DEFAULT_STACKS_HOLD_BLOCKS = 8000;
     /** Entry fade before the band: the fraction of chunks that turn to void ramps 0 → 1 across this span. */
     public static final int MIN_STACKS_FADE_BLOCKS = 0;
     public static final int MAX_STACKS_FADE_BLOCKS = 100_000_000;
@@ -372,7 +373,15 @@ public final class DungeonTrainCommonConfig {
      */
     public static final CatchUpBurstMode LEGACY_CATCH_UP_BURST_MODE = CatchUpBurstMode.FILL;
 
-    public static final int CURRENT_CONFIG_VERSION = 1;
+    /**
+     * The length the chuncks, spheres and stacks band holds all shipped with before they grew to
+     * 8000. The v1 -> v2 migration moves exactly this value, so a file still holding it gets the new
+     * default and any other length (a deliberate choice) is left alone — see
+     * {@link #runPendingMigrations()}.
+     */
+    public static final int LEGACY_BAND_HOLD_BLOCKS = 5000;
+
+    public static final int CURRENT_CONFIG_VERSION = 2;
     public static final int DEFAULT_CONFIG_VERSION = 0;
     public static final int MIN_CONFIG_VERSION = 0;
     public static final int MAX_CONFIG_VERSION = 1_000_000;
@@ -780,7 +789,7 @@ public final class DungeonTrainCommonConfig {
                         "Set false to drop the chuncks phase from the cycle.")
                 .define("chuncksEnabled", DEFAULT_CHUNCKS_ENABLED);
         ModConfigSpec.IntValue chuncksHoldBlocks = b
-                .comment("Blocks of chuncks-band world-gen (the whole mostly-void stretch). Default 5000.")
+                .comment("Blocks of chuncks-band world-gen (the whole mostly-void stretch). Default 8000.")
                 .defineInRange("chuncksHoldBlocks", DEFAULT_CHUNCKS_HOLD_BLOCKS,
                         MIN_CHUNCKS_HOLD_BLOCKS, MAX_CHUNCKS_HOLD_BLOCKS);
         ModConfigSpec.IntValue chuncksFadeBlocks = b
@@ -816,7 +825,7 @@ public final class DungeonTrainCommonConfig {
                         "Set false to drop the spheres phase from the cycle.")
                 .define("spheresEnabled", DEFAULT_SPHERES_ENABLED);
         ModConfigSpec.IntValue spheresHoldBlocks = b
-                .comment("Blocks of spheres-band world-gen (the whole void-with-spheres stretch). Default 5000.")
+                .comment("Blocks of spheres-band world-gen (the whole void-with-spheres stretch). Default 8000.")
                 .defineInRange("spheresHoldBlocks", DEFAULT_SPHERES_HOLD_BLOCKS,
                         MIN_SPHERES_HOLD_BLOCKS, MAX_SPHERES_HOLD_BLOCKS);
         ModConfigSpec.IntValue spheresFadeBlocks = b
@@ -876,7 +885,7 @@ public final class DungeonTrainCommonConfig {
                         "Set false to drop the stacks phase from the cycle.")
                 .define("stacksEnabled", DEFAULT_STACKS_ENABLED);
         ModConfigSpec.IntValue stacksHoldBlocks = b
-                .comment("Blocks of stacks-band world-gen (the whole mostly-void stretch). Default 5000.")
+                .comment("Blocks of stacks-band world-gen (the whole mostly-void stretch). Default 8000.")
                 .defineInRange("stacksHoldBlocks", DEFAULT_STACKS_HOLD_BLOCKS,
                         MIN_STACKS_HOLD_BLOCKS, MAX_STACKS_HOLD_BLOCKS);
         ModConfigSpec.IntValue stacksFadeBlocks = b
@@ -1014,9 +1023,26 @@ public final class DungeonTrainCommonConfig {
                     from, CURRENT_CONFIG_VERSION, LEGACY_CATCH_UP_BURST_MODE);
         }
 
+        // v1 -> v2: the chuncks, spheres and stacks bands grew from 5000 to 8000 blocks. A hold still
+        // at the old shipped length is a default nobody chose; any other length is left alone.
+        if (from < 2) {
+            migrateBandHold("chuncksHoldBlocks", CHUNCKS_HOLD_BLOCKS, DEFAULT_CHUNCKS_HOLD_BLOCKS, from);
+            migrateBandHold("spheresHoldBlocks", SPHERES_HOLD_BLOCKS, DEFAULT_SPHERES_HOLD_BLOCKS, from);
+            migrateBandHold("stacksHoldBlocks", STACKS_HOLD_BLOCKS, DEFAULT_STACKS_HOLD_BLOCKS, from);
+            WorldGenCycle.invalidateCache();
+        }
+
         CONFIG_VERSION.set(CURRENT_CONFIG_VERSION);
         CONFIG_VERSION.save();
         CatchUpBurstAuto.invalidate();
+    }
+
+    /** One band-hold step of the v1 -> v2 migration: {@link #LEGACY_BAND_HOLD_BLOCKS} becomes {@code target}. */
+    private static void migrateBandHold(String key, ModConfigSpec.IntValue hold, int target, int from) {
+        if (hold.get() != LEGACY_BAND_HOLD_BLOCKS) return;
+        hold.set(target);
+        LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: {} {} -> {}.",
+                from, CURRENT_CONFIG_VERSION, key, LEGACY_BAND_HOLD_BLOCKS, target);
     }
 
     /** Global default Compatible Terrain mode for new worlds; falls back to the hardcoded default pre-load. */

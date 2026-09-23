@@ -103,6 +103,10 @@
     {
       "id": "double",
       "weight": 3
+    },
+    {
+      "id": "books3",
+      "weight": 1
     }
   ]
 }
