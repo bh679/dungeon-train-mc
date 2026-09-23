@@ -152,7 +152,7 @@ public final class PortalRoomSinglePlanes {
         // a state, and dropping them would place every log in a palette on the axis it happened to be
         // copied from — the visible half of "it uses the variant you gave it". Lock id 0: a palette is
         // one list with no group to agree with, so each cell rolls its own facing under RANDOM.
-        BlockState state = RotationApplier.apply(picked.state(), picked.rotation(), picked.half(),
+        BlockState state = RotationApplier.apply(picked.state(), picked.rotation(), picked.half(), picked.active(),
             local, worldSeed, variantIndex, /*lockId*/ 0);
 
         // A block entity in a floor plane is legal — an author can put a chest in a palette — and it

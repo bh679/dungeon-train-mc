@@ -126,6 +126,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_DIFF_MAX = "dmax";
     /** v9 per-entry lock-group reference — see {@link VariantState#groupRef}. */
     private static final String NBT_GROUP_REF = "gref";
+    /** Per-entry redstone-toggle mode ordinal ({@code VariantActive}). Absent when default INACTIVE. */
+    private static final String NBT_ACTIVE_MODE = "am";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -401,6 +403,9 @@ public final class VariantClipboardItem extends Item {
             if (s.isGroupRef()) {
                 entry.putInt(NBT_GROUP_REF, s.groupRef());
             }
+            if (!s.active().isDefault()) {
+                entry.putByte(NBT_ACTIVE_MODE, (byte) s.active().mode().ordinal());
+            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
@@ -511,6 +516,16 @@ public final class VariantClipboardItem extends Item {
                     half = new games.brennan.dungeontrain.editor.VariantHalf(modes[ord]);
                 }
             }
+            games.brennan.dungeontrain.editor.VariantActive active =
+                games.brennan.dungeontrain.editor.VariantActive.NONE;
+            if (entry.contains(NBT_ACTIVE_MODE, Tag.TAG_BYTE)) {
+                int ord = entry.getByte(NBT_ACTIVE_MODE) & 0xFF;
+                games.brennan.dungeontrain.editor.VariantActive.Mode[] modes =
+                    games.brennan.dungeontrain.editor.VariantActive.Mode.values();
+                if (ord >= 0 && ord < modes.length) {
+                    active = new games.brennan.dungeontrain.editor.VariantActive(modes[ord]);
+                }
+            }
             games.brennan.dungeontrain.editor.VariantDifficulty difficulty =
                 games.brennan.dungeontrain.editor.VariantDifficulty.NONE;
             if (entry.contains(NBT_DIFF_MIN, Tag.TAG_INT) || entry.contains(NBT_DIFF_MAX, Tag.TAG_INT)) {
@@ -548,7 +563,7 @@ public final class VariantClipboardItem extends Item {
             }
             int groupRef = entry.contains(NBT_GROUP_REF, Tag.TAG_INT) ? entry.getInt(NBT_GROUP_REF) : 0;
             out.add(new VariantState(state, beNbt, weight, rotation, lootPrefab, null, half,
-                difficulty, groupRef));
+                difficulty, groupRef, active));
         }
         return out;
     }
