@@ -624,6 +624,7 @@ public final class TrainAssembler {
         //     {@code CLEAN_TICKS_FOR_SUCCESS} consecutive collision-free ticks.
         PendingContentsEntitySpawn[] pendingEntities = new PendingContentsEntitySpawn[groupSize];
         PendingRelayEntitySpawn[] pendingRelayEntities = new PendingRelayEntitySpawn[groupSize];
+        PendingWholeDecorSpawn[] pendingWholeDecor = new PendingWholeDecorSpawn[groupSize];
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
             BlockPos carriageShipyardOrigin = shipyardOrigin.offset(enclosedStartOffset + slot * length, 0, 0);
@@ -652,8 +653,24 @@ public final class TrainAssembler {
                 continue;
             }
             if (wholeGroup || roomBySlot[slot] != null) {
-                // Stamped verbatim from the Whole pool — no contents pass, no generated entities.
+                // Stamped verbatim from the Whole pool — no contents pass and nothing generated, but
+                // the template's OWN entities still have to go back: the armor stands, pictures,
+                // minecarts and mobs its author saved with it. Deferred like both siblings above,
+                // because the blocks here are lifted into the sub-level the same tick and a stamp-time
+                // entity is left standing on the track. See PendingWholeDecorSpawn.
                 pendingEntities[slot] = null;
+                if (wholeGroup) {
+                    // One record for the run, on the anchor slot: a group's template spans every
+                    // carriage, and spawning it once per slot would put the whole group's decor in
+                    // each of them. The per-carriage tagging happens inside spawnWholeDecorAt.
+                    if (slot == 0) {
+                        pendingWholeDecor[slot] = new PendingWholeDecorSpawn(
+                            carriageShipyardOrigin, groupPick.template(), carriagePIdx, groupSize);
+                    }
+                } else {
+                    pendingWholeDecor[slot] = new PendingWholeDecorSpawn(
+                        carriageShipyardOrigin, roomBySlot[slot].template(), carriagePIdx, 1);
+                }
                 continue;
             }
             CarriagePlacer.applyContentsBlocksAt(level, carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx, groupAnchorWorldX);
@@ -691,6 +708,7 @@ public final class TrainAssembler {
             velocity, shipyardOrigin, level.dimension(), anchorPIdx, groupSize, dims, trainId);
         provider.setPendingContentsEntitySpawns(pendingEntities);
         provider.setPendingRelayEntitySpawns(pendingRelayEntities);
+        provider.setPendingWholeDecorSpawns(pendingWholeDecor);
         ship.setKinematicDriver(provider);
         ship.setStatic(true);
 
