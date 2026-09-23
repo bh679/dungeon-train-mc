@@ -17874,6 +17874,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "armor-stand-loot-reroll",
+      "version": "0.932.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot"
+      ],
+      "title": "Armor stands roll fresh gear",
+      "summary": "Armor stands in shops like the leatherworker now roll new equipment from their loot on every carriage, instead of always wearing the same set.",
+      "highlights": [],
+      "pr": 1489,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
