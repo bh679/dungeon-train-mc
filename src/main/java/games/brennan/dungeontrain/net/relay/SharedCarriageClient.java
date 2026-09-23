@@ -569,10 +569,21 @@ public final class SharedCarriageClient {
      * player is told to try again rather than the relay silently doing nothing.</p>
      */
     public static CompletableFuture<VisibilityResult> publish(int id, String secret, boolean publish) {
+        return publish(id, secret, publish, "");
+    }
+
+    /**
+     * As above, with the author's note to the reviewer — how to test the redstone, loot that is meant
+     * to be there, where in the train they would like it. Sent as {@code note} only on a submit and
+     * only when there is one; a relay that does not read the field ignores it, so nothing here waits
+     * on the relay learning to.
+     */
+    public static CompletableFuture<VisibilityResult> publish(int id, String secret, boolean publish, String note) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("secret", secret == null ? "" : secret);
         body.addProperty("publish", publish);
+        if (publish && note != null && !note.isEmpty()) body.addProperty("note", note);
         return post("/carriages/publish", body).thenApply(resp -> {
             if (resp == null) return new VisibilityResult(CallStatus.ERROR, false, false, "");
             int sc = resp.statusCode();

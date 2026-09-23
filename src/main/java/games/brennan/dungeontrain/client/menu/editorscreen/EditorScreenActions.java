@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
+import games.brennan.dungeontrain.client.builder.BuilderSubmitNoteScreen;
 import games.brennan.dungeontrain.client.menu.EditorHistoryState;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
 import games.brennan.dungeontrain.client.menu.ParentRemoveConfirmScreen;
@@ -27,6 +28,8 @@ import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
+
+import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -180,9 +183,14 @@ public final class EditorScreenActions {
         }
         boolean published = entry.published();
         String label = published ? EditorScreenLang.ICON_WITHDRAW : EditorScreenLang.ICON_SUBMIT;
+        // A withdraw goes straight out; a submit first asks what the reviewer should know, and the
+        // send is that screen's Submit — its Cancel returns to this menu with nothing sent.
+        Runnable action = published
+            ? () -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), false))
+            : () -> BuilderSubmitNoteScreen.open(Component.literal(entry.buildName()),
+                note -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), true, note)));
         return new Icon(published ? "withdraw" : "submit", label,
-            new CommandMenuEntry.ClientAction(label, () -> DungeonTrainNet.sendToServer(
-                new BuilderProfileActionPacket(entry.relayId(), !published))), null);
+            new CommandMenuEntry.ClientAction(label, action), null);
     }
 
     /**

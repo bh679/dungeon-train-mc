@@ -460,10 +460,21 @@ public final class BuilderProfileScreen extends Screen {
     private void submitSelected() {
         BuilderProfilePacket.Entry entry = selectedBuild();
         if (entry == null || viewingOther() || !BuilderRelayKinds.canSubmitForReview(entry.kind())) return;
-        DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), !entry.published()));
+        if (entry.published()) {
+            sendAction(new BuilderProfileActionPacket(entry.relayId(), false));
+            return;
+        }
+        // A submit first asks what the reviewer should know; the send happens on that screen's Submit,
+        // and its Cancel comes back here with nothing sent.
+        this.minecraft.setScreen(new BuilderSubmitNoteScreen(this, Component.literal(entry.buildName()),
+                note -> sendAction(new BuilderProfileActionPacket(entry.relayId(), true, note))));
+    }
+
+    private void sendAction(BuilderProfileActionPacket packet) {
+        DungeonTrainNet.sendToServer(packet);
         // The server re-reads the profile once the relay answers, which lands back on this screen
         // through onProfile — so nothing is assumed to have worked here.
-        this.actionButton.active = false;
+        if (this.actionButton != null) this.actionButton.active = false;
     }
 
     /**

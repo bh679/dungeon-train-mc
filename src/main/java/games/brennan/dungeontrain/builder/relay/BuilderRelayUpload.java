@@ -311,15 +311,15 @@ public final class BuilderRelayUpload {
      * world happened to upload.</p>
      */
     public static CompletableFuture<Component> submitToTrain(ServerPlayer player, ServerLevel level,
-                                                             int relayId, boolean publish) {
+                                                             int relayId, boolean publish, String note) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         String key = data.builderRelayBuilds().keyForRelayId(relayId);
         BuilderRelayBuilds.Entry entry = key == null ? null : data.builderRelayBuilds().get(key);
         if (entry == null || entry.secret().isEmpty()) {
             // This world has no secret for the build. Recover one rather than refuse — see adopt().
-            return adopt(player, level, relayId, publish);
+            return adopt(player, level, relayId, publish, note);
         }
-        return publishWith(level, key, entry, BuilderRelayBuilds.kindOfKey(key), publish);
+        return publishWith(level, key, entry, BuilderRelayBuilds.kindOfKey(key), publish, note);
     }
 
     /**
@@ -343,7 +343,7 @@ public final class BuilderRelayUpload {
      * and not the path: a world that uploaded the build answers from its own saved data.</p>
      */
     private static CompletableFuture<Component> adopt(ServerPlayer player, ServerLevel level,
-                                                      int relayId, boolean publish) {
+                                                      int relayId, boolean publish, String note) {
         String owner = player == null ? "" : player.getUUID().toString();
         return SharedCarriageClient.fetchBuild(relayId, owner).thenCompose(result -> {
             SharedCarriageClient.BuildFetch build = result.build();
@@ -361,7 +361,7 @@ public final class BuilderRelayUpload {
             // the path afterSave already takes for a build it knows but is not holding.
             BuilderRelayBuilds.Entry adopted =
                     new BuilderRelayBuilds.Entry(build.id(), build.secret(), "", build.published());
-            return publishWith(level, key, adopted, build.kind(), publish);
+            return publishWith(level, key, adopted, build.kind(), publish, note);
         });
     }
 
@@ -395,7 +395,7 @@ public final class BuilderRelayUpload {
     /** The publish call itself, once a secret is in hand — the tail both paths above share. */
     private static CompletableFuture<Component> publishWith(ServerLevel level, String key,
                                                             BuilderRelayBuilds.Entry entry,
-                                                            String kindId, boolean publish) {
+                                                            String kindId, boolean publish, String note) {
         if (publish && BuilderRelayKinds.canJoinTheTrain(kindId)
                 && !DungeonTrainConfig.isSharedCarriagesEnabled()) {
             // Nothing leases from the pool while the feature is off, so publishing a carriage would put
@@ -404,7 +404,7 @@ public final class BuilderRelayUpload {
             return CompletableFuture.completedFuture(
                     msg("gui.dungeontrain.builder.profile.pool_off", ChatFormatting.YELLOW));
         }
-        return SharedCarriageClient.publish(entry.relayId(), entry.secret(), publish).thenApply(result -> {
+        return SharedCarriageClient.publish(entry.relayId(), entry.secret(), publish, note).thenApply(result -> {
             if (result.ok()) {
                 onServer(level, () -> {
                     DungeonTrainWorldData live = DungeonTrainWorldData.get(level);
@@ -422,6 +422,31 @@ public final class BuilderRelayUpload {
             }
             return msg("gui.dungeontrain.builder.profile.action_failed", ChatFormatting.RED);
         });
+    }
+
+    /** Characters of reviewer note kept — the same cap the packet and the screen carry. */
+    public static final int NOTE_MAX = 1000;
+
+    /**
+     * The author's note to the reviewer, made safe to forward: line endings normalised, control
+     * characters other than newline dropped, trimmed, and cut at {@link #NOTE_MAX}. Null is an empty
+     * note. Applied on the server before the note is sent anywhere, because the client's cap is a
+     * courtesy and a client is not something the relay should have to trust.
+     */
+    public static String cleanNote(String note) {
+        if (note == null || note.isEmpty()) return "";
+        StringBuilder out = new StringBuilder(note.length());
+        for (int i = 0; i < note.length(); i++) {
+            char c = note.charAt(i);
+            if (c == '\r') {
+                if (i + 1 < note.length() && note.charAt(i + 1) == '\n') continue;
+                out.append('\n');
+            } else if (c == '\n' || c == '\t' || !Character.isISOControl(c)) {
+                out.append(c);
+            }
+        }
+        String cleaned = out.toString().strip();
+        return cleaned.length() > NOTE_MAX ? cleaned.substring(0, NOTE_MAX).strip() : cleaned;
     }
 
     /**

@@ -17,8 +17,26 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * secret — is deliberately not on the wire: it lives in the world's saved data, and the server looks it
  * up by id. A client that names a build this world never uploaded gets told so, because there is no
  * secret to find, which is also what stops the packet being a way to publish somebody else's work.</p>
+ *
+ * <p>{@code note} is what the author wants the reviewer to know — how the redstone is meant to fire
+ * and how to test it, loot that is there on purpose, where in the train they would like it. Free
+ * text, optional, and only meaningful on a submit: a withdraw carries an empty one. The server trims
+ * and caps it again before it goes anywhere ({@code BuilderRelayUpload.cleanNote}), so the wire cap
+ * here is a bound on the packet, not the rule.</p>
  */
-public record BuilderProfileActionPacket(int relayId, boolean publish) implements CustomPacketPayload {
+public record BuilderProfileActionPacket(int relayId, boolean publish, String note) implements CustomPacketPayload {
+
+    /** Characters of note the packet will carry — the same cap the screen enforces while typing. */
+    public static final int NOTE_MAX = 1000;
+
+    /** A submit or withdraw with nothing to tell the reviewer. */
+    public BuilderProfileActionPacket(int relayId, boolean publish) {
+        this(relayId, publish, "");
+    }
+
+    public BuilderProfileActionPacket {
+        note = note == null ? "" : note;
+    }
 
     public static final Type<BuilderProfileActionPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "builder_profile_action"));
@@ -28,8 +46,9 @@ public record BuilderProfileActionPacket(int relayId, boolean publish) implement
             (buf, packet) -> {
                 buf.writeVarInt(packet.relayId);
                 buf.writeBoolean(packet.publish);
+                buf.writeUtf(packet.note, NOTE_MAX);
             },
-            buf -> new BuilderProfileActionPacket(buf.readVarInt(), buf.readBoolean())
+            buf -> new BuilderProfileActionPacket(buf.readVarInt(), buf.readBoolean(), buf.readUtf(NOTE_MAX))
         );
 
     @Override
@@ -42,7 +61,8 @@ public record BuilderProfileActionPacket(int relayId, boolean publish) implement
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             if (player.getServer() == null || !BuilderRelayUpload.canUpload(player)) return;
             ServerLevel level = player.getServer().overworld();
-            BuilderRelayUpload.submitToTrain(player, level, packet.relayId, packet.publish)
+            BuilderRelayUpload.submitToTrain(player, level, packet.relayId, packet.publish,
+                            BuilderRelayUpload.cleanNote(packet.note))
                     .thenAccept(message -> player.getServer().execute(() -> {
                         if (player.hasDisconnected()) return;
                         player.sendSystemMessage(message);
