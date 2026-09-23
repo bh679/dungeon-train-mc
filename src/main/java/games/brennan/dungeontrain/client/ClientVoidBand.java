@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.worldgen.SpheresSky;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 
 /**
@@ -61,16 +63,16 @@ public final class ClientVoidBand {
     }
 
     /**
-     * End-sky intensity over the later part of the spheres band ({@link WorldGenCycle#spheresEndSkyRamp}),
-     * so the whole End atmosphere keyed off {@link #endSkyIntensityAt} — sky, fog, lighting, clouds,
-     * music — takes over {@code spheresEndSkyStartBlocks} into the spheres and hands back to overworld
-     * as the band ends.
+     * End-sky intensity over the spheres band's End-sky window ({@link SpheresSky#endSky}), so the whole
+     * End atmosphere keyed off {@link #endSkyIntensityAt} — sky, fog, lighting, clouds, music — takes
+     * over {@code spheresEndSkyStartBlocks} into the spheres and crossfades into the Nether sky at
+     * {@code spheresNetherSkyStartBlocks}.
      */
     private static double spheresEndSkyIntensity(WorldGenCycle cycle, int worldX) {
         if (!DungeonTrainCommonConfig.isSpheresEnabled() || !DungeonTrainCommonConfig.isSpheresEndSkyEnabled()) {
             return 0.0;
         }
-        return cycle.spheresEndSkyRamp(worldX, DungeonTrainCommonConfig.getSpheresEndSkyStartBlocks(),
+        return SpheresSky.endSky(cycle, SpheresProgressionConfig.segments(), worldX,
                 DungeonTrainCommonConfig.getSpheresEndSkyFadeBlocks());
     }
 

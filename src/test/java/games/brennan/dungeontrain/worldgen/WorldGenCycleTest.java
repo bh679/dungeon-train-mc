@@ -548,6 +548,46 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("spheres skies: End window hands over to the Nether window as a crossfade, Nether holds to the band's end")
+    void spheresSkyWindowsCrossfade() {
+        // Core [4690,5090), len 400. End sky from 100, Nether sky from 300, fade 40.
+        WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 300, 0.12, 0.5, 400, 200, 100, 0);
+        SpheresSegments seg = SpheresSegments.of(100, 200, 250, 0, 0, 300, 0.0, 1.0, 1, 1, 1);
+
+        assertEquals(0.0, SpheresSky.endSky(c, seg, 4789, 40), EPS);      // overworld sky
+        assertEquals(1.0, SpheresSky.endSky(c, seg, 4940, 40), EPS);      // End sky held
+        assertEquals(0.0, SpheresSky.netherSky(c, seg, 4940, 40), EPS);
+
+        // At the handover both skies are about half-way — no dip back to overworld between them.
+        double end = SpheresSky.endSky(c, seg, 4990, 40);
+        double nether = SpheresSky.netherSky(c, seg, 4990, 40);
+        assertEquals(0.5, end, EPS);
+        assertEquals(21.0 / 40, nether, EPS);
+        for (int x = 4940; x < 5040; x++) {
+            double sum = SpheresSky.endSky(c, seg, x, 40) + SpheresSky.netherSky(c, seg, x, 40);
+            org.junit.jupiter.api.Assertions.assertTrue(sum >= 0.97, "sky coverage dips at x=" + x + ": " + sum);
+        }
+
+        assertEquals(0.0, SpheresSky.endSky(c, seg, 5040, 40), EPS);     // Nether only
+        assertEquals(1.0, SpheresSky.netherSky(c, seg, 5040, 40), EPS);
+        assertEquals(1.0 / 40, SpheresSky.netherSky(c, seg, 5089, 40), EPS); // last core column
+        assertEquals(0.0, SpheresSky.netherSky(c, seg, 5090, 40), EPS);      // back to plain overworld
+        assertEquals(0.0, SpheresSky.netherSky(c, seg, 4600, 40), EPS);      // entry fade
+    }
+
+    @Test
+    @DisplayName("spheres core offset: 0 at the first core column, -1 outside the core")
+    void spheresCoreOffset() {
+        WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 300, 0.12, 0.5, 400, 200, 100, 0);
+        assertEquals(-1L, c.spheresCoreOffset(4600));   // entry fade
+        assertEquals(0L, c.spheresCoreOffset(4690));
+        assertEquals(399L, c.spheresCoreOffset(5089));
+        assertEquals(-1L, c.spheresCoreOffset(5090));
+    }
+
+    @Test
     @DisplayName("spheres approach: lead gap, fade and core all count, so \"Re-Over-World\" waits for the overworld after the spheres")
     void spheresApproachOrBand() {
         org.junit.jupiter.api.Assertions.assertFalse(C.isInSpheresApproachOrBand(3390)); // disabled → inert

@@ -72,7 +72,13 @@ public final class GenProfiler {
          *  this is the band's only real gen cost. */
         SPHERES_CARVE,
         /** {@code StacksFeature.place} — stacks-band tower stamping (worker-thread; in {@link Sample#dtTotalMs}). */
-        STACKS_FEATURE
+        STACKS_FEATURE,
+        /** {@code ForeignSphereSampler} — off-thread generation of other-dimension / structure spheres (its
+         *  own sampler threads, never the server thread; excluded from {@link Sample#dtTotalMs}). */
+        SPHERES_FOREIGN_SAMPLE,
+        /** {@code WorldSpheresEvents} — writing a finished foreign-sphere sample into its live chunk
+         *  (MAIN-thread, like {@link #SPHERES_CARVE}; excluded from {@link Sample#dtTotalMs}). */
+        SPHERES_FOREIGN_APPLY
     }
 
     private static final int N = Bucket.values().length;
@@ -105,6 +111,11 @@ public final class GenProfiler {
     /** Accumulate {@code now - start} nanos into {@code bucket}. No-op when {@code start == 0} (disabled / unstarted). */
     public static void add(Bucket bucket, long start) {
         if (start != 0L) NANOS[bucket.ordinal()].add(System.nanoTime() - start);
+    }
+
+    /** Accumulate {@code nanos} into {@code bucket} — for work timed on a thread that can't use {@link #t0}. No-op when disabled. */
+    public static void addNanos(Bucket bucket, long nanos) {
+        if (enabled) NANOS[bucket.ordinal()].add(nanos);
     }
 
     /** Tally one newly-generated chunk reaching FULL (main-thread call site). No-op when disabled. */

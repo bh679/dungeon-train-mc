@@ -157,4 +157,97 @@ final class SphereFieldTest {
         assertEquals(0.0, s.normDistSq(10, 100, -5), 1e-12);
         assertEquals(1.0, s.normDistSq(18, 100, -5), 1e-12);
     }
+
+    // ---- dimension mix ------------------------------------------------------
+
+    /** A mixer that picks by roll among all three sources and a fixed structure chance; End surface as given. */
+    private static SphereField.Mixer mixer(double structureChance, int endSurface) {
+        return new SphereField.Mixer() {
+            @Override public SphereSource sourceAt(int cx, double u) {
+                return SphereSource.values()[(int) (u * 3)];
+            }
+            @Override public double structureChanceAt(int cx) { return structureChance; }
+            @Override public int endSurfaceY(int x, int z) { return endSurface; }
+        };
+    }
+
+    private static SphereField mixed(double structureChance, int endSurface) {
+        return new SphereField(new SphereField.Params(SEED, 64, 1.0, 6, 40, 0, 200, 0.65), (x, z) -> SURFACE,
+                mixer(structureChance, endSurface));
+    }
+
+    @Test
+    @DisplayName("with a mixer, sources are deterministic, all three appear, and the default field stays overworld-only")
+    void mixedSources() {
+        SphereField a = mixed(0.0, 60), b = mixed(0.0, 60), plain = field(1.0);
+        java.util.EnumMap<SphereSource, Integer> seen = new java.util.EnumMap<>(SphereSource.class);
+        for (int cx = -8; cx < 8; cx++) {
+            for (int cz = -8; cz < 8; cz++) {
+                SphereField.Sphere s = a.sphereInCell(cx, 1, cz);
+                assertEquals(s, b.sphereInCell(cx, 1, cz));
+                seen.merge(s.source(), 1, Integer::sum);
+                assertEquals(SphereSource.OVERWORLD, plain.sphereInCell(cx, 1, cz).source());
+                org.junit.jupiter.api.Assertions.assertFalse(plain.sphereInCell(cx, 1, cz).offline());
+            }
+        }
+        assertEquals(3, seen.size(), "all three sources should roll: " + seen);
+    }
+
+    @Test
+    @DisplayName("End spheres anchor to the island surface; over the End void they turn Nether; Nether centres sit in [40,100]")
+    void foreignAnchors() {
+        SphereField islands = mixed(0.0, 70);
+        SphereField voidEnd = mixed(0.0, SphereField.NO_SURFACE);
+        for (int cx = -8; cx < 8; cx++) {
+            for (int cz = -8; cz < 8; cz++) {
+                SphereField.Sphere s = islands.sphereInCell(cx, 1, cz);
+                int sourceCentre = s.sourceY(s.cy());
+                if (s.source() == SphereSource.END) {
+                    assertEquals(70 - (int) Math.round(s.r() * 0.3), sourceCentre);
+                    assertTrue(s.offline());
+                }
+                if (s.source() == SphereSource.NETHER) {
+                    assertTrue(sourceCentre >= 40 && sourceCentre <= 100, "nether centre " + sourceCentre);
+                }
+                org.junit.jupiter.api.Assertions.assertNotEquals(SphereSource.END, voidEnd.sphereInCell(cx, 1, cz).source());
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("the structure roll tracks the mixer's chance, and a structure makes even an overworld sphere offline")
+    void structureRoll() {
+        SphereField f = mixed(0.4, 60);
+        int structures = 0, n = 0;
+        for (int cx = -20; cx < 20; cx++) {
+            for (int cz = -20; cz < 20; cz++) {
+                SphereField.Sphere s = f.sphereInCell(cx, 1, cz);
+                n++;
+                if (s.structure()) {
+                    structures++;
+                    assertTrue(s.offline());
+                }
+            }
+        }
+        double rate = (double) structures / n;
+        assertTrue(rate > 0.33 && rate < 0.47, "structure rate " + rate);
+        org.junit.jupiter.api.Assertions.assertFalse(mixed(0.0, 60).sphereInCell(0, 1, 0).structure());
+    }
+
+    @Test
+    @DisplayName("sphere ids are distinct across cells")
+    void ids() {
+        SphereField f = mixed(0.0, 60);
+        Set<Long> ids = new HashSet<>();
+        int n = 0;
+        for (int cx = -10; cx < 10; cx++) {
+            for (int cz = -10; cz < 10; cz++) {
+                for (int cy = 0; cy <= 3; cy++) {
+                    ids.add(f.sphereInCell(cx, cy, cz).id());
+                    n++;
+                }
+            }
+        }
+        assertEquals(n, ids.size());
+    }
 }

@@ -3,40 +3,26 @@ package games.brennan.dungeontrain.portal;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.OfflineChunkSampler;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ProtoChunk;
-import net.minecraft.world.level.chunk.UpgradeData;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
-import net.minecraft.world.level.levelgen.Aquifer;
-import net.minecraft.world.level.levelgen.DensityFunction;
-import net.minecraft.world.level.levelgen.DensityFunctions;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
-import net.minecraft.world.level.levelgen.NoiseChunk;
-import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.RandomState;
-import net.minecraft.world.level.levelgen.WorldGenerationContext;
-import net.minecraft.world.level.levelgen.blending.Blender;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.slf4j.Logger;
 
-import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -238,34 +224,6 @@ public final class PortalChunkTerrain {
     });
     private static volatile long cacheSeed = Long.MIN_VALUE;
 
-    /**
-     * The beardifier a sample is generated with: nothing at all.
-     *
-     * <p>Vanilla's is {@code Beardifier.forStructuresInChunk}, which reads the structure starts
-     * around the chunk — and reading those loads chunks, which is the one thing this class exists
-     * not to do. Nothing was ever built into a sample site, so there is nothing to flatten terrain
-     * under, and a beardifier that contributes zero everywhere is the honest answer rather than a
-     * shortcut. Written out rather than reusing {@code DensityFunctions.BeardifierMarker.INSTANCE},
-     * which is the router's placeholder for this value and not accessible from here.</p>
-     */
-    private static final DensityFunctions.BeardifierOrMarker NO_BEARDS =
-        new DensityFunctions.BeardifierOrMarker() {
-            @Override
-            public double compute(DensityFunction.FunctionContext context) {
-                return 0.0;
-            }
-
-            @Override
-            public double minValue() {
-                return 0.0;
-            }
-
-            @Override
-            public double maxValue() {
-                return 0.0;
-            }
-        };
-
     private PortalChunkTerrain() {}
 
     /**
@@ -371,7 +329,7 @@ public final class PortalChunkTerrain {
      * to run another pass of generation over it.
      */
     private record Sample(ServerLevel level, NoiseBasedChunkGenerator generator, RandomState random,
-                          ProtoChunk chunk, PortalChunkFeatures.Workspace workspace, ChunkPos pos,
+                          ProtoChunk chunk, OfflineChunkSampler.Workspace workspace, ChunkPos pos,
                           Source source, int anchor, int minY, int maxY, int probes) {
 
         /** The same sample cut around a different row — what carving the ground under it moves. */
@@ -406,8 +364,6 @@ public final class PortalChunkTerrain {
         ChunkGenerator generator = level.getChunkSource().getGenerator();
         if (!(generator instanceof NoiseBasedChunkGenerator noiseGenerator)) return null;
         RandomState random = level.getChunkSource().randomState();
-        NoiseGeneratorSettings settings = noiseGenerator.generatorSettings().value();
-        Registry<Biome> biomes = level.registryAccess().registryOrThrow(Registries.BIOME);
 
         int minY = level.getMinBuildHeight();
         // Under the Nether's bedrock roof rather than over it: the logical height is where a
@@ -437,8 +393,7 @@ public final class PortalChunkTerrain {
             // what a candidate cost.
             if (voidedByBand(level, site)) continue;
             tried++;
-            Sample candidate = groundAt(level, noiseGenerator, random, settings, biomes, site,
-                source, minY, maxY);
+            Sample candidate = groundAt(level, noiseGenerator, random, site, source, minY, maxY);
             if (candidate == null) continue;
             if (candidate.probes() >= PROBES_REQUIRED) {
                 best = candidate;
@@ -466,32 +421,16 @@ public final class PortalChunkTerrain {
      * agree on roughly one ground height, which is what {@link #sampleTerrain} ranks sites by.</p>
      */
     private static Sample groundAt(ServerLevel level, NoiseBasedChunkGenerator generator,
-                                   RandomState random, NoiseGeneratorSettings settings,
-                                   Registry<Biome> biomes, ChunkPos pos, Source source,
+                                   RandomState random, ChunkPos pos, Source source,
                                    int minY, int maxY) {
-        ProtoChunk chunk = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomes, null);
-        chunk.fillBiomesFromNoise(generator.getBiomeSource(), random.sampler());
-        // A chunk nobody generated is at ChunkStatus.EMPTY, and half of vanilla refuses to answer
-        // questions about one: ProtoChunk.getNoiseBiome throws "Asking for biomes before we have
-        // biomes" below BIOMES, whatever its biome container actually holds. Saying where this
-        // sample has got to is what lets the structure pick and the decoration pass read it — and
-        // SURFACE rather than anything later, because the statuses past it are the ones that would
-        // have this chunk doing lighting work for a world it is not in.
-        chunk.setPersistedStatus(ChunkStatus.SURFACE);
-
-        // Vanilla's own fill, and it needs a structure manager to bear the terrain down under
-        // whatever was built there. The one bound to the sample's own region answers out of the
-        // throwaway chunks it is made of, so nothing reaches into the world for a structure start —
-        // which is what handing it the level's own manager would have done, a chunk load at a time.
-        PortalChunkFeatures.Workspace workspace =
-            PortalChunkFeatures.workspaceFor(level, generator, random, chunk);
-        ChunkAccess filled =
-            generator.fillFromNoise(Blender.empty(), random, workspace.structures(), chunk).join();
-        if (!(filled instanceof ProtoChunk ground)) return null;
-        Heightmap.primeHeightmaps(ground, EnumSet.of(
-            Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG,
-            Heightmap.Types.MOTION_BLOCKING, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));
-        dressSurface(generator, level, random, settings, biomes, ground);
+        // Biomes filled and the chunk marked SURFACE (vanilla refuses biome questions below BIOMES),
+        // then vanilla's own fill through a structure manager bound to the sample's own region, so
+        // nothing reaches into the world for a structure start — see OfflineChunkSampler.
+        ProtoChunk chunk = OfflineChunkSampler.blankSample(level, generator, random, pos);
+        OfflineChunkSampler.Workspace workspace =
+            OfflineChunkSampler.workspaceFor(level, generator, random, chunk);
+        ProtoChunk ground = OfflineChunkSampler.fillGround(level, generator, random, chunk, workspace);
+        if (ground == null) return null;
 
         int anchor = standableRow(ground, SIZE / 2, SIZE / 2, minY, maxY);
         if (anchor == NO_GROUND) return null;
@@ -509,42 +448,6 @@ public final class PortalChunkTerrain {
         }
         return new Sample(level, generator, random, ground, workspace, pos, source, anchor, minY,
             maxY, agreeing);
-    }
-
-    /**
-     * Run the dimension's real surface rules over the filled chunk — the pass that turns a hill of
-     * the default block into grass, dirt, sand or snow.
-     *
-     * <p>Straight to {@link net.minecraft.world.level.levelgen.SurfaceSystem} rather than through
-     * {@code ChunkGenerator.buildSurface}, which would build its noise chunk with a beardifier read
-     * off the level's structure starts — and reading those loads chunks. The noise chunk is built
-     * here with {@link #NO_BEARDS} instead: no structures to bear down on a sample nothing was ever
-     * built into.</p>
-     */
-    private static void dressSurface(NoiseBasedChunkGenerator generator, ServerLevel level,
-                                     RandomState random, NoiseGeneratorSettings settings,
-                                     Registry<Biome> biomes, ProtoChunk chunk) {
-        BiomeManager biomeManager = new BiomeManager(
-            (x, y, z) -> generator.getBiomeSource().getNoiseBiome(x, y, z, random.sampler()),
-            BiomeManager.obfuscateSeed(level.getSeed()));
-        NoiseChunk noise = NoiseChunk.forChunk(chunk, random, NO_BEARDS, settings,
-            fluidPicker(settings), Blender.empty());
-        random.surfaceSystem().buildSurface(random, biomeManager, biomes,
-            settings.useLegacyRandomSource(), new WorldGenerationContext(generator, level),
-            chunk, noise, settings.surfaceRule());
-    }
-
-    /**
-     * The same global fluid picker {@code NoiseBasedChunkGenerator} uses — sea level of the
-     * dimension's own fluid, with lava in the deep. Rebuilt rather than borrowed because vanilla's
-     * is private static and the surface rules need one to read a water table off.
-     */
-    private static Aquifer.FluidPicker fluidPicker(NoiseGeneratorSettings settings) {
-        Aquifer.FluidStatus lava = new Aquifer.FluidStatus(
-            -54, net.minecraft.world.level.block.Blocks.LAVA.defaultBlockState());
-        int seaLevel = settings.seaLevel();
-        Aquifer.FluidStatus sea = new Aquifer.FluidStatus(seaLevel, settings.defaultFluid());
-        return (x, y, z) -> y < Math.min(-54, seaLevel) ? lava : sea;
     }
 
     /** Copy the column around the anchor out of the sampled chunk, room-local. */
