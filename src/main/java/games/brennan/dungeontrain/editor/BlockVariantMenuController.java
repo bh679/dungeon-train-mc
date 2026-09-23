@@ -678,7 +678,7 @@ public final class BlockVariantMenuController {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= mutated.size()) return;
-                VariantState replacement = replaceWithHeld(player, mutated, idx);
+                VariantState replacement = replaceWithHeld(player, plot, localPos, mutated, idx);
                 if (replacement == null) return;
                 mutated.set(idx, replacement);
                 dirty = true;
@@ -1359,15 +1359,21 @@ public final class BlockVariantMenuController {
      * stair swapped for another stair keeps pointing the same way. Weight,
      * rotation lock, half mode and difficulty band are preserved; the loot
      * link follows the held item, so a plain block clears a stale one.
+     * A variant clipboard means the same thing it means on Add — a group
+     * reference — and may also retarget an existing reference row.
      */
-    private static VariantState replaceWithHeld(ServerPlayer player, List<VariantState> rows, int idx) {
+    private static VariantState replaceWithHeld(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos,
+                                                List<VariantState> rows, int idx) {
         VariantState old = rows.get(idx);
+        ItemStack held = player.getMainHandItem();
+        if (held.getItem() instanceof VariantClipboardItem) {
+            return replaceWithClipboard(player, plot, localPos, rows, idx, held);
+        }
         if (old.isMob() || old.isGroupRef()) {
             actionBar(player, "Shift-click only replaces block rows — remove the mob or group row instead",
                 ChatFormatting.YELLOW);
             return null;
         }
-        ItemStack held = player.getMainHandItem();
         BlockState newState;
         CompoundTag newBeNbt = null;
         String linkedPrefabId = null;
@@ -1409,6 +1415,63 @@ public final class BlockVariantMenuController {
         actionBar(player, "Replaced " + blockName(old.state()) + " with " + blockName(newState),
             ChatFormatting.GREEN);
         return replacement;
+    }
+
+    /**
+     * Shift-click with a variant clipboard in hand: the row becomes a reference to the
+     * clipboard's lock group, under the same rules the Add button applies to a clipboard
+     * (locked source, not this cell's own group, group exists, no reference cycle, one
+     * reference per group per cell). Mob rows are refused; a reference row is retargeted.
+     * Only the row's weight survives — rotation, half and difficulty are meaningless on a
+     * reference and {@link VariantState#ofGroupRef} leaves them at their defaults.
+     */
+    private static VariantState replaceWithClipboard(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos,
+                                                     List<VariantState> rows, int idx, ItemStack held) {
+        VariantState old = rows.get(idx);
+        if (old.isMob()) {
+            actionBar(player, "Shift-click cannot replace a mob row — remove it instead", ChatFormatting.YELLOW);
+            return null;
+        }
+        int refGroup = VariantClipboardItem.decodeLockId(VariantClipboardItem.readClipboardTag(held));
+        if (refGroup <= 0) {
+            actionBar(player, "That clipboard was copied from an unlocked cell — lock the source cell first",
+                ChatFormatting.YELLOW);
+            return null;
+        }
+        int cellLock = plot.lockIdAt(localPos);
+        if (refGroup == cellLock) {
+            actionBar(player, "A cell cannot reference its own group (" + refGroup + ")", ChatFormatting.YELLOW);
+            return null;
+        }
+        List<VariantState> targetStates = plot.groupRefs().statesForLockId(refGroup);
+        if (targetStates == null || targetStates.isEmpty()) {
+            actionBar(player, "No cell in this template uses lock-id " + refGroup, ChatFormatting.YELLOW);
+            return null;
+        }
+        if (cellLock > 0 && VariantGroupRefs.reaches(plot.groupRefs(), refGroup, cellLock)) {
+            actionBar(player, "Group " + refGroup + " already leads back to group " + cellLock
+                + " — that would loop", ChatFormatting.YELLOW);
+            return null;
+        }
+        if (old.isGroupRef() && old.groupRef() == refGroup) {
+            actionBar(player, "That row already references group " + refGroup, ChatFormatting.YELLOW);
+            return null;
+        }
+        for (int i = 0; i < rows.size(); i++) {
+            if (i != idx && rows.get(i).groupRef() == refGroup) {
+                actionBar(player, "This cell already references group " + refGroup, ChatFormatting.YELLOW);
+                return null;
+            }
+        }
+        VariantState replacement = VariantState.ofGroupRef(refGroup, targetStates.get(0).state())
+            .withWeight(old.weight());
+        actionBar(player, "Replaced " + rowName(old) + " with reference to group " + refGroup,
+            ChatFormatting.GREEN);
+        return replacement;
+    }
+
+    private static String rowName(VariantState row) {
+        return row.isGroupRef() ? "group " + row.groupRef() : blockName(row.state());
     }
 
     /** The dedup key {@code ADD} uses: state, block-entity payload, loot link and entity id. */

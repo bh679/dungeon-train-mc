@@ -88,8 +88,11 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *       {@code entryIndex} = row. The server swaps that row's block for the
  *       sender's main-hand block (empty hand = the empty placeholder, filled
  *       bucket = the fluid source), keeping the row's weight, rotation lock,
- *       half mode and difficulty band. Mob and group-reference rows are
- *       refused, as is anything in hand that is not a block or bucket.</li>
+ *       half mode and difficulty band. A variant clipboard in hand turns the
+ *       row into a reference to the clipboard's lock group instead (or
+ *       retargets a reference row), under the Add button's clipboard rules.
+ *       Mob rows are refused, as is anything else that is not a block or
+ *       bucket.</li>
  * </ul>
  *
  * <p>The server validates that the player is OP and is standing inside
