@@ -304,6 +304,7 @@ public class DungeonTrain {
                 games.brennan.dungeontrain.worldgen.WorldGenCycle.invalidateCache();
                 games.brennan.dungeontrain.worldgen.ChuncksBand.invalidateCache();
                 games.brennan.dungeontrain.worldgen.SpheresBand.invalidateCache();
+                games.brennan.dungeontrain.worldgen.StacksBand.invalidateCache();
                 // The catch-up pacing may now be a different stored value, or AUTO where it wasn't.
                 games.brennan.dungeontrain.train.CatchUpBurstAuto.invalidate();
                 // Same reasoning as the server-config step below — the common file needs its own

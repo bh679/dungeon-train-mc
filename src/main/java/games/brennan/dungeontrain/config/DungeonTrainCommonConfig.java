@@ -308,6 +308,31 @@ public final class DungeonTrainCommonConfig {
     public static final double DEFAULT_SPHERES_SURFACE_BIAS = 0.65;
 
     /**
+     * Stacks band — a sixth looping phase, appended after the spheres band with a long plain-overworld
+     * lead-in. Along +X it is mostly void; scattered chunks each hold a <b>vertical stack</b>: one vanilla
+     * structure piece (a village house, a bastion chunk, an End-city tower, an igloo, …) copied straight
+     * up from the world floor to near build height. Different stacks use different pieces; within one
+     * stack the piece repeats. The train crosses on the floating track bed, which passes between stacks.
+     */
+    public static final boolean DEFAULT_STACKS_ENABLED = true;
+    /** Blocks of stacks-band world-gen (the whole mostly-void stretch). 0 drops the band from the cycle. */
+    public static final int MIN_STACKS_HOLD_BLOCKS = 0;
+    public static final int MAX_STACKS_HOLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_STACKS_HOLD_BLOCKS = 5000;
+    /** Entry fade before the band: the fraction of chunks that turn to void ramps 0 → 1 across this span. */
+    public static final int MIN_STACKS_FADE_BLOCKS = 0;
+    public static final int MAX_STACKS_FADE_BLOCKS = 100_000_000;
+    public static final int DEFAULT_STACKS_FADE_BLOCKS = 1500;
+    /** Plain-overworld gap between the end of the spheres band and the stacks entry fade. */
+    public static final int MIN_STACKS_LEAD_GAP_BLOCKS = 0;
+    public static final int MAX_STACKS_LEAD_GAP_BLOCKS = 100_000_000;
+    public static final int DEFAULT_STACKS_LEAD_GAP_BLOCKS = 10000;
+    /** Fraction 0..1 of the band's void chunks that hold a vertical stack (the rest stay empty). */
+    public static final double MIN_STACKS_DENSITY = 0.0;
+    public static final double MAX_STACKS_DENSITY = 1.0;
+    public static final double DEFAULT_STACKS_DENSITY = 0.08;
+
+    /**
      * Whether a moving carriage breaks the world blocks its footprint passes through (drops included).
      * The corridor is normally pre-cleared at worldgen and re-swept at chunk load, so this only bites on
      * blocks that appear afterwards — player-placed walls, grown trees, structures outside the swept Z
@@ -408,6 +433,11 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue SPHERES_CENTER_MIN_Y;
     public static final ModConfigSpec.IntValue SPHERES_CENTER_MAX_Y;
     public static final ModConfigSpec.DoubleValue SPHERES_SURFACE_BIAS;
+    public static final ModConfigSpec.BooleanValue STACKS_ENABLED;
+    public static final ModConfigSpec.IntValue STACKS_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue STACKS_FADE_BLOCKS;
+    public static final ModConfigSpec.IntValue STACKS_LEAD_GAP_BLOCKS;
+    public static final ModConfigSpec.DoubleValue STACKS_DENSITY;
     public static final ModConfigSpec.BooleanValue BREAK_BLOCKS_ON_CONTACT;
     public static final ModConfigSpec.DoubleValue BACKER_NAME_WEIGHT;
     public static final ModConfigSpec.EnumValue<CatchUpBurstMode> CATCH_UP_BURST_MODE;
@@ -469,6 +499,11 @@ public final class DungeonTrainCommonConfig {
         SPHERES_CENTER_MIN_Y = pair.getLeft().spheresCenterMinY;
         SPHERES_CENTER_MAX_Y = pair.getLeft().spheresCenterMaxY;
         SPHERES_SURFACE_BIAS = pair.getLeft().spheresSurfaceBias;
+        STACKS_ENABLED = pair.getLeft().stacksEnabled;
+        STACKS_HOLD_BLOCKS = pair.getLeft().stacksHoldBlocks;
+        STACKS_FADE_BLOCKS = pair.getLeft().stacksFadeBlocks;
+        STACKS_LEAD_GAP_BLOCKS = pair.getLeft().stacksLeadGapBlocks;
+        STACKS_DENSITY = pair.getLeft().stacksDensity;
         BREAK_BLOCKS_ON_CONTACT = pair.getLeft().breakBlocksOnContact;
         BACKER_NAME_WEIGHT = pair.getLeft().backerNameWeight;
         CATCH_UP_BURST_MODE = pair.getLeft().catchUpBurstMode;
@@ -741,7 +776,7 @@ public final class DungeonTrainCommonConfig {
                         "band's trailing overworld gap. Along +X it is mostly void, sprinkled with occasional real",
                         "overworld chunks: some vertically complete, some a top-down slice (natural surface kept, flat",
                         "cut-off bottom). The train crosses on the floating track bed. The full cycle is:",
-                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → (repeat).",
+                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → OW → Spheres → OW → Stacks → (repeat).",
                         "Set false to drop the chuncks phase from the cycle.")
                 .define("chuncksEnabled", DEFAULT_CHUNCKS_ENABLED);
         ModConfigSpec.IntValue chuncksHoldBlocks = b
@@ -777,7 +812,7 @@ public final class DungeonTrainCommonConfig {
                         "floating spheres of natural overworld terrain: each sphere is cut from the vanilla terrain at",
                         "its own X/Z and lifted to its own height, so spheres drift at every altitude. The train",
                         "crosses on the floating track bed. The full cycle is:",
-                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → OW → Spheres → (repeat).",
+                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → OW → Spheres → OW → Stacks → (repeat).",
                         "Set false to drop the spheres phase from the cycle.")
                 .define("spheresEnabled", DEFAULT_SPHERES_ENABLED);
         ModConfigSpec.IntValue spheresHoldBlocks = b
@@ -831,6 +866,36 @@ public final class DungeonTrainCommonConfig {
                         "natural surface cap with rock beneath.")
                 .defineInRange("spheresSurfaceBias", DEFAULT_SPHERES_SURFACE_BIAS,
                         MIN_SPHERES_SURFACE_BIAS, MAX_SPHERES_SURFACE_BIAS);
+        ModConfigSpec.BooleanValue stacksEnabled = b
+                .comment("Stacks phase — part of the single repeating world-gen cycle, appended after the spheres band",
+                        "with a long plain-overworld lead-in. Along +X it is mostly void; scattered chunks each hold a",
+                        "vertical stack: one vanilla structure piece (village house, bastion chunk, End-city tower, …)",
+                        "copied straight up from the world floor to near build height. The train crosses on the",
+                        "floating track bed, which passes between stacks. The full cycle is:",
+                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → OW → Spheres → OW → Stacks → (repeat).",
+                        "Set false to drop the stacks phase from the cycle.")
+                .define("stacksEnabled", DEFAULT_STACKS_ENABLED);
+        ModConfigSpec.IntValue stacksHoldBlocks = b
+                .comment("Blocks of stacks-band world-gen (the whole mostly-void stretch). Default 5000.")
+                .defineInRange("stacksHoldBlocks", DEFAULT_STACKS_HOLD_BLOCKS,
+                        MIN_STACKS_HOLD_BLOCKS, MAX_STACKS_HOLD_BLOCKS);
+        ModConfigSpec.IntValue stacksFadeBlocks = b
+                .comment("Entry fade before the stacks band: the fraction of chunks that become void ramps from 0 (all",
+                        "real terrain) to 1 (all void) across this span, so the world dissolves into the void gradually",
+                        "instead of at a hard wall. Stacks appear in the void chunks as they arrive. 0 = hard edge.",
+                        "Default 1500.")
+                .defineInRange("stacksFadeBlocks", DEFAULT_STACKS_FADE_BLOCKS,
+                        MIN_STACKS_FADE_BLOCKS, MAX_STACKS_FADE_BLOCKS);
+        ModConfigSpec.IntValue stacksLeadGapBlocks = b
+                .comment("Plain-overworld gap inserted between the end of the spheres band and the stacks entry fade —",
+                        "a long stretch of normal world before the towers begin. Default 10000.")
+                .defineInRange("stacksLeadGapBlocks", DEFAULT_STACKS_LEAD_GAP_BLOCKS,
+                        MIN_STACKS_LEAD_GAP_BLOCKS, MAX_STACKS_LEAD_GAP_BLOCKS);
+        ModConfigSpec.DoubleValue stacksDensity = b
+                .comment("Fraction 0..1 of the band's void chunks that hold a vertical stack (the rest stay empty). A",
+                        "per-chunk, seed-stable noise gate. Default 0.08 (~8% of chunks carry a tower).")
+                .defineInRange("stacksDensity", DEFAULT_STACKS_DENSITY,
+                        MIN_STACKS_DENSITY, MAX_STACKS_DENSITY);
         b.pop();
 
         return new Holder(configVersion, defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent,
@@ -851,6 +916,7 @@ public final class DungeonTrainCommonConfig {
                 spheresEnabled, spheresHoldBlocks, spheresFadeBlocks, spheresLeadGapBlocks,
                 spheresCellBlocks, spheresDensity, spheresMinRadius, spheresMaxRadius,
                 spheresCenterMinY, spheresCenterMaxY, spheresSurfaceBias,
+                stacksEnabled, stacksHoldBlocks, stacksFadeBlocks, stacksLeadGapBlocks, stacksDensity,
                 breakBlocksOnContact, backerNameWeight, catchUpBurstMode);
     }
 
@@ -1246,6 +1312,31 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? SPHERES_SURFACE_BIAS.get() : DEFAULT_SPHERES_SURFACE_BIAS;
     }
 
+    /** Whether the stacks band is active; falls back to the hardcoded default pre-load. */
+    public static boolean isStacksEnabled() {
+        return isLoaded() ? STACKS_ENABLED.get() : DEFAULT_STACKS_ENABLED;
+    }
+
+    /** Stacks band span (blocks); falls back to the hardcoded default pre-load. */
+    public static int getStacksHoldBlocks() {
+        return isLoaded() ? STACKS_HOLD_BLOCKS.get() : DEFAULT_STACKS_HOLD_BLOCKS;
+    }
+
+    /** Stacks entry-fade span (blocks) where void ramps in; falls back to the hardcoded default pre-load. */
+    public static int getStacksFadeBlocks() {
+        return isLoaded() ? STACKS_FADE_BLOCKS.get() : DEFAULT_STACKS_FADE_BLOCKS;
+    }
+
+    /** Overworld lead-in gap (blocks) before the stacks band; falls back to the hardcoded default pre-load. */
+    public static int getStacksLeadGapBlocks() {
+        return isLoaded() ? STACKS_LEAD_GAP_BLOCKS.get() : DEFAULT_STACKS_LEAD_GAP_BLOCKS;
+    }
+
+    /** Fraction 0..1 of stacks-band void chunks that hold a stack; falls back to the hardcoded default pre-load. */
+    public static double getStacksDensity() {
+        return isLoaded() ? STACKS_DENSITY.get() : DEFAULT_STACKS_DENSITY;
+    }
+
     private record Holder(ModConfigSpec.IntValue configVersion,
                           ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
@@ -1299,6 +1390,11 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue spheresCenterMinY,
                           ModConfigSpec.IntValue spheresCenterMaxY,
                           ModConfigSpec.DoubleValue spheresSurfaceBias,
+                          ModConfigSpec.BooleanValue stacksEnabled,
+                          ModConfigSpec.IntValue stacksHoldBlocks,
+                          ModConfigSpec.IntValue stacksFadeBlocks,
+                          ModConfigSpec.IntValue stacksLeadGapBlocks,
+                          ModConfigSpec.DoubleValue stacksDensity,
                           ModConfigSpec.BooleanValue breakBlocksOnContact,
                           ModConfigSpec.DoubleValue backerNameWeight,
                           ModConfigSpec.EnumValue<CatchUpBurstMode> catchUpBurstMode) {}

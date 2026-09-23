@@ -540,6 +540,125 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("stacks band: disabled is byte-identical; enabled sits after the spheres core + lead gap with an entry fade then an all-void core")
+    void stacksBand() {
+        // Disabled (C has stacksHold=0): zero length, period unchanged, never in-band, void ramp 0.
+        assertEquals(0L, C.stacksLen());
+        assertEquals(0L, C.stacksFadeLen());
+        assertEquals(0L, C.stacksLeadGapLen());
+        assertEquals(PERIOD, C.period());
+        org.junit.jupiter.api.Assertions.assertFalse(C.isInStacksBand(4090));
+        org.junit.jupiter.api.Assertions.assertFalse(C.isInStacksApproachOrBand(4090));
+        assertEquals(0.0, C.stacksVoidRampAt(4090), EPS);
+
+        // The 21-arg (chuncks) and 24-arg (spheres) ctors are byte-identical to the 28-arg canonical ctor
+        // with the stacks knobs zeroed.
+        WorldGenCycle viaChuncksCtor = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 0, 0.12, 0.5, 0);
+        assertEquals(3090L, viaChuncksCtor.period());
+        assertEquals(0L, viaChuncksCtor.stacksLen());
+        WorldGenCycle viaSpheresCtor = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 0, 0.12, 0.5, 400, 200, 100, 0);
+        assertEquals(3790L, viaSpheresCtor.period());
+        assertEquals(0L, viaSpheresCtor.stacksLen());
+
+        // Same layout as chuncksBand()'s `c` (chuncks core [3590,4090) world-X, period 3090), plus a
+        // spheres band (lead 100, fade 200, core 400 → spheres core [4390,4790), period 3790), plus a
+        // 100-block stacks lead gap, a 200-block entry fade and a 400-block core (28-arg canonical ctor).
+        // Stacks lead gap begins right after the spheres core: world-X 4790; fade [4890,5090);
+        // core [5090,5490); period 3790 + 100 + 200 + 400 = 4490.
+        WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 0, 0.12, 0.5, 400, 200, 100, 400, 200, 100, 0.08, 0);
+        assertEquals(400L, c.stacksLen());
+        assertEquals(200L, c.stacksFadeLen());
+        assertEquals(100L, c.stacksLeadGapLen());
+        assertEquals(4490L, c.period());
+        assertEquals(0.08, c.stacksDensity(), EPS);                      // record accessor carries the knob
+
+        // isInStacksBand is the CORE only (not the lead gap or the fade).
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInSpheresBand(4789));  // spheres core end, unchanged
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInStacksBand(4789));
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInStacksBand(4790)); // lead gap (plain OW)
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresBand(4790));
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInStacksBand(4900)); // entry fade, not the core
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInStacksBand(5090));  // core entry
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInStacksBand(5489));  // core end
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInStacksBand(5490)); // wraps into the next period's leading owGap
+
+        // Entry transition: void ramp is 0 before the fade, ramps 0→1 across it, holds 1 in the core,
+        // and returns to 0 after (hard far edge).
+        assertEquals(0.0, c.stacksVoidRampAt(4889), EPS);                // lead gap end
+        assertEquals(0.0, c.stacksVoidRampAt(4890), EPS);                // fade start (t=0)
+        assertEquals(0.5, c.stacksVoidRampAt(4990), EPS);                // fade midpoint (100/200)
+        assertEquals(1.0, c.stacksVoidRampAt(5090), EPS);                // core start
+        assertEquals(1.0, c.stacksVoidRampAt(5300), EPS);                // deep in the core
+        assertEquals(0.0, c.stacksVoidRampAt(5490), EPS);                // past the core — hard far edge
+
+        // Disjoint from the other segments.
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInStacksBand(1530)); // nether core
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInStacksBand(2500)); // End core
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInStacksBand(3090)); // upside-down core
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInStacksBand(3800)); // chuncks core
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInStacksBand(4500)); // spheres core
+        assertEquals(0.0, c.stacksVoidRampAt(4500), EPS);
+        assertEquals(1.0, c.spheresVoidRamp(4500), EPS);                  // spheres knobs untouched
+        assertEquals(0.12, c.chuncksKeepDensityAt(3800), EPS);           // chuncks knobs untouched
+
+        // Repeats forever with the new period.
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInStacksBand(5090 + 4490));
+        assertEquals(c.stacksVoidRampAt(4990), c.stacksVoidRampAt(4990 + 4490), EPS);
+    }
+
+    @Test
+    @DisplayName("stacks approach: the lead gap, fade and core all count, so \"Re-Over-World\" waits for the overworld after the towers")
+    void stacksApproachOrBand() {
+        WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 0, 0.12, 0.5, 400, 200, 100, 400, 200, 100, 0.08, 0);
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInSpheresApproachOrBand(4789));  // spheres core end
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInStacksApproachOrBand(4789));
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInStacksApproachOrBand(4790));   // stacks lead gap (plain OW)
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresApproachOrBand(4790)); // the spheres gate hands over here
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInStacksApproachOrBand(4950));   // entry fade
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInStacksApproachOrBand(5090));   // core entry
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInStacksApproachOrBand(5489));   // core end
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInStacksApproachOrBand(5490));  // the overworld that follows — fires here
+        assertEquals(0L, c.cycleIndex(5489));
+        assertEquals(1L, c.cycleIndex(5490));
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInStacksApproachOrBand(4790 + 4490));
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInStacksApproachOrBand(2500));  // End core
+    }
+
+    @Test
+    @DisplayName("stacks band sits right after the chuncks core when the spheres band is disabled, and right after the upside-down exit gap when both are off")
+    void stacksWithoutSpheresOrChuncks() {
+        // Spheres off: stacks lead gap begins at the chuncks core end (world-X 4090); fade [4190,4390);
+        // core [4390,4790); period 3090 + 700 = 3790.
+        WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 0, 0.12, 0.5, 0, 0, 0, 400, 200, 100, 0.08, 0);
+        assertEquals(0L, c.spheresLen());
+        assertEquals(3790L, c.period());
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksBand(4089));
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInStacksApproachOrBand(4090));
+        assertEquals(0.0, c.stacksVoidRampAt(4190), EPS);
+        assertEquals(0.5, c.stacksVoidRampAt(4290), EPS);
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInStacksBand(4390));
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInStacksBand(4789));
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInStacksBand(4790));
+
+        // Both off, no fade, no lead gap: the core sits right after the upside-down exit gap (offset 2390 →
+        // world-X 3390), a hard edge.
+        WorldGenCycle d = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 0, 0, 0, 0.0, 0.0, 0, 0, 0, 400, 0, 0, 0.08, 0);
+        assertEquals(2390L + 400L, d.period());
+        org.junit.jupiter.api.Assertions.assertFalse(d.isInStacksBand(3389));
+        assertEquals(0.0, d.stacksVoidRampAt(3389), EPS);
+        org.junit.jupiter.api.Assertions.assertTrue(d.isInStacksBand(3390));
+        assertEquals(1.0, d.stacksVoidRampAt(3390), EPS);
+        org.junit.jupiter.api.Assertions.assertTrue(d.isInStacksBand(3789));
+        org.junit.jupiter.api.Assertions.assertFalse(d.isInStacksBand(3790));
+    }
+
+    @Test
     @DisplayName("netherCoreDepth: -1 outside the core (both crossfades included), 0 at the first full-Nether column")
     void netherCoreDepth() {
         // Band world-X [1300, 1960): rise [1300,1420), megaHold [1420,1480), crossfade-in

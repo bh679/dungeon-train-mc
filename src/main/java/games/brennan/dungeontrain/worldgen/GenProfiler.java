@@ -70,7 +70,9 @@ public final class GenProfiler {
         /** {@code WorldSpheresEvents.onChunkLoad} — spheres-band carve + lift rewrite (MAIN-thread, like
          *  {@link #EROSION}; excluded from {@link Sample#dtTotalMs}). Void chunks skip fill + decoration, so
          *  this is the band's only real gen cost. */
-        SPHERES_CARVE
+        SPHERES_CARVE,
+        /** {@code StacksFeature.place} — stacks-band tower stamping (worker-thread; in {@link Sample#dtTotalMs}). */
+        STACKS_FEATURE
     }
 
     private static final int N = Bucket.values().length;

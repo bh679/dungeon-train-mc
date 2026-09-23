@@ -48,6 +48,11 @@ public final class ModFeatures {
         NetherStructuresFeature::new
     );
 
+    public static final DeferredHolder<Feature<?>, Feature<NoneFeatureConfiguration>> STACKS = FEATURES.register(
+        "stacks",
+        StacksFeature::new
+    );
+
     private ModFeatures() {}
 
     /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */

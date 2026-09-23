@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
+import games.brennan.dungeontrain.worldgen.StacksBand;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
@@ -119,6 +120,12 @@ public final class ZoneProgressEvents {
      */
     private static final int SPHERES_DEPTH_BLOCKS = 500;
 
+    /**
+     * How far (blocks) into the stacks band core the player must be before {@code reached_stacks}
+     * ("Stack Overflow") is granted — same depth gate as the markers above.
+     */
+    private static final int STACKS_DEPTH_BLOCKS = 500;
+
     private ZoneProgressEvents() {}
 
     @SubscribeEvent
@@ -179,11 +186,18 @@ public final class ZoneProgressEvents {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_chuncks");
             }
 
-            // Spheres band — after the chuncks, the last phase of the cycle: floating spheres of lifted
-            // terrain over open void. Same depth gate as the bands above.
+            // Spheres band — after the chuncks: floating spheres of lifted terrain over open void. Same
+            // depth gate as the bands above.
             if (SpheresBand.isInBand(level, px)
                 && SpheresBand.isInBand(level, px - SPHERES_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_spheres");
+            }
+
+            // Stacks band — after the spheres, the last phase of the cycle: a void of towers, each one
+            // vanilla structure piece repeated to the sky. Same depth gate.
+            if (StacksBand.isInBand(level, px)
+                && StacksBand.isInBand(level, px - STACKS_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_stacks");
             }
 
             switch (DisintegrationBand.zoneAt(level, player.getBlockX())) {
@@ -208,11 +222,14 @@ public final class ZoneProgressEvents {
                     // Finally, exclude the chuncks band AND the plain-overworld run-up to it — those
                     // gaps read as OVERWORLD but the world breaks apart again straight after them, so
                     // the overworld has not actually restarted until the band is behind the player —
-                    // and likewise the spheres band that follows it (its lead gap, fade, then core).
+                    // and likewise the spheres band that follows it (its lead gap, fade, then core) and
+                    // the stacks band after that (its long lead gap, fade, then core) — the LAST band, so
+                    // "Re-Over-World" fires on the plain overworld that follows the towers.
                     if (DisintegrationBand.cyclePassIndex(level, px) >= 1
                         && !UpsideDownBand.isInBandEntryLeadOrExit(level, px)
                         && !ChuncksBand.isInApproachOrBand(level, px)
-                        && !SpheresBand.isInApproachOrBand(level, px)) {
+                        && !SpheresBand.isInApproachOrBand(level, px)
+                        && !StacksBand.isInApproachOrBand(level, px)) {
                         ModAdvancementTriggers.GAMEPLAY_ACTION.get()
                             .trigger(player, "reached_overworld_again");
                     }

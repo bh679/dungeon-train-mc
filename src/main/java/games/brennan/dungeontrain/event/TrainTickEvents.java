@@ -225,7 +225,7 @@ public final class TrainTickEvents {
         GenProfiler.Sample s = GenProfiler.sampleAndReset();
         if (s.chunks() <= 0) return;
         JITTER_LOGGER.debug(
-            "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} biome={} mirror={} track={} disint={} erosion={} chuncks={} spheres={} | perChunk df={} nether={} core={} biome={} mirror={} track={} disint={} erosion={} chuncks={} spheres={}",
+            "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} biome={} mirror={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} | perChunk df={} nether={} core={} biome={} mirror={} track={} disint={} erosion={} chuncks={} spheres={} stacks={}",
             level.dimension().location(), s.chunks(),
             String.format("%.2f", s.dtTotalMs()), String.format("%.3f", s.dtTotalPerChunkMs()),
             String.format("%.2f", s.ms(GenProfiler.Bucket.DF)),
@@ -238,6 +238,7 @@ public final class TrainTickEvents {
             String.format("%.2f", s.ms(GenProfiler.Bucket.EROSION)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.CHUNCKS_SLICE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.SPHERES_CARVE)),
+            String.format("%.2f", s.ms(GenProfiler.Bucket.STACKS_FEATURE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.DF)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.NETHER_FEATURE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.CORE_REPLACE)),
@@ -247,7 +248,8 @@ public final class TrainTickEvents {
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.DISINTEGRATION)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.EROSION)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.CHUNCKS_SLICE)),
-            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.SPHERES_CARVE)));
+            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.SPHERES_CARVE)),
+            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.STACKS_FEATURE)));
     }
 
     @SubscribeEvent

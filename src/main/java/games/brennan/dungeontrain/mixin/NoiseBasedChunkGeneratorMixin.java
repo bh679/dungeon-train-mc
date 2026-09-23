@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
+import games.brennan.dungeontrain.worldgen.StacksBand;
 import net.minecraft.Util;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
@@ -135,6 +136,9 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             return true; // End void/core: post-erosion would delete 100% of the terrain anyway
         }
         if (ChuncksBand.isVoidChunk(level, chunkMinX, chunkMinZ)) return true; // chuncks band: a mostly-void gap
-        return SpheresBand.isVoidChunk(level, chunkMinX, chunkMinZ);           // spheres band: open void between spheres
+        if (SpheresBand.isVoidChunk(level, chunkMinX, chunkMinZ)) return true;  // spheres band: open void between spheres
+        // Stacks band: VOID chunks are empty; STACK chunks are also generated empty, then StacksFeature
+        // stamps the tower into the air at decoration time.
+        return StacksBand.isVoidOrStackChunk(level, chunkMinX, chunkMinZ);
     }
 }
