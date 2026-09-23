@@ -7,6 +7,7 @@ import net.minecraft.tags.BiomeTags;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.chunk.ChunkGeneratorStructureState;
 import games.brennan.dungeontrain.worldgen.structure.BandNetherStructures;
+import games.brennan.dungeontrain.worldgen.structure.ForeignDimensionStructureSets;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
 import org.spongepowered.asm.mixin.Mixin;
@@ -14,6 +15,9 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Keeps the band's own structure sets enabled on the overworld generator — the End band's End cities, and
@@ -36,6 +40,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * is the biome source itself — a generator that lists any Nether or End biome is not the overworld. If that
  * cannot be determined the sets are simply dropped, so the failure direction is "no band structures" rather
  * than "altered Nether".</p>
+ *
+ * <p>The same gate also <b>drops</b> another dimension's mod sets from the overworld generator
+ * ({@link ForeignDimensionStructureSets}): BetterEnd tags every third-party biome for its eternal portal,
+ * so once Biomes O' Plenty biomes are listed by the overworld source that set would pass vanilla's filter
+ * and stand End portals in the BoP stretch. Here the failure direction is the opposite one — an error
+ * leaves vanilla's answer, so a misread set costs nothing.</p>
  */
 @Mixin(ChunkGeneratorStructureState.class)
 public abstract class ChunkGeneratorStructureStateMixin {
@@ -43,8 +53,27 @@ public abstract class ChunkGeneratorStructureStateMixin {
     @Inject(method = "hasBiomesForStructureSet", at = @At("HEAD"), cancellable = true)
     private static void dungeontrain$keepBandStructureSet(StructureSet structureSet, BiomeSource biomeSource,
                                                           CallbackInfoReturnable<Boolean> cir) {
-        if (!dungeontrain$isBandSet(structureSet)) return;
-        cir.setReturnValue(dungeontrain$isOverworldBiomeSource(biomeSource));
+        if (dungeontrain$isBandSet(structureSet)) {
+            cir.setReturnValue(dungeontrain$isOverworldBiomeSource(biomeSource));
+            return;
+        }
+        if (dungeontrain$isForeignDimensionSet(structureSet) && dungeontrain$isOverworldBiomeSource(biomeSource)) {
+            cir.setReturnValue(false);
+        }
+    }
+
+    /** True for a set another dimension's mod owns outright (see {@link ForeignDimensionStructureSets}). */
+    @Unique
+    private static boolean dungeontrain$isForeignDimensionSet(StructureSet structureSet) {
+        try {
+            List<ResourceLocation> ids = new ArrayList<>();
+            for (StructureSet.StructureSelectionEntry entry : structureSet.structures()) {
+                ids.add(entry.structure().unwrapKey().map(key -> key.location()).orElse(null));
+            }
+            return ForeignDimensionStructureSets.blockedOnOverworld(ids);
+        } catch (Throwable t) {
+            return false;   // unreadable → leave vanilla's answer
+        }
     }
 
     /**
