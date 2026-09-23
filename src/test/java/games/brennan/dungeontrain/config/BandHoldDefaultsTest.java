@@ -13,10 +13,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BandHoldDefaultsTest {
 
     @Test
-    @DisplayName("the chuncks and stacks bands default to 8000 blocks, the spheres band to 12000")
+    @DisplayName("the chuncks and stacks bands default to 8000 blocks, the spheres band to 14000")
     void bandHoldDefaults() {
         assertEquals(8000, DungeonTrainCommonConfig.DEFAULT_CHUNCKS_HOLD_BLOCKS);
-        assertEquals(12000, DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS);
+        assertEquals(14000, DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS);
         assertEquals(8000, DungeonTrainCommonConfig.DEFAULT_STACKS_HOLD_BLOCKS);
     }
 
@@ -24,7 +24,17 @@ class BandHoldDefaultsTest {
     @DisplayName("the v2 -> v3 migration moves exactly the spheres length v2 shipped")
     void spheresV2IsTheLengthV2Shipped() {
         assertEquals(8000, DungeonTrainCommonConfig.SPHERES_V2_HOLD_BLOCKS,
-                "the v2 -> v3 migration moves exactly this spheres hold to 12000");
+                "the v2 -> v3 migration moves exactly this spheres hold to the current default");
+    }
+
+    @Test
+    @DisplayName("the v3 -> v4 migration moves exactly the spheres length and End-sky start v3 shipped")
+    void spheresV3IsWhatV3Shipped() {
+        assertEquals(12000, DungeonTrainCommonConfig.SPHERES_V3_HOLD_BLOCKS);
+        assertEquals(4000, DungeonTrainCommonConfig.SPHERES_V3_END_SKY_START_BLOCKS);
+        assertEquals(3000, DungeonTrainCommonConfig.DEFAULT_SPHERES_END_SKY_START_BLOCKS);
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 4,
+                "CURRENT_CONFIG_VERSION must be at least 4, or the v3 -> v4 spheres step never runs");
     }
 
     @Test

@@ -11,6 +11,7 @@ import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -52,6 +53,34 @@ public final class ModDataAttachments {
             // between AttachmentType.builder(Supplier) and builder(Function<IAttachmentHolder, T>).
             () -> AttachmentType.builder(() -> new PlayerBiomeProgress())
                 .serialize(PlayerBiomeProgress.CODEC)
+                .build()
+        );
+
+    /**
+     * Per-chunk list of spheres-band sphere ids ({@code SphereField.Sphere#id}) whose terrain this chunk
+     * is still owed — spheres cut from another dimension, or built around a structure, are generated
+     * off-thread and written in a moment after the chunk loads ({@code WorldSpheresEvents}). Persisted
+     * so a chunk that unloads before its fill arrives is filled the next time it loads; an entry is
+     * removed once written, so a sphere is never filled twice (a player who digs one out keeps the hole).
+     * Serialized only while non-empty.
+     */
+    public static final Supplier<AttachmentType<List<Long>>> SPHERE_PENDING =
+        TYPES.register("sphere_pending",
+            () -> AttachmentType.<List<Long>>builder(() -> List.of())
+                .serialize(Codec.LONG.listOf(), list -> !list.isEmpty())
+                .build()
+        );
+
+    /**
+     * Per-chunk flag: this chunk sits in a BetterEnd End-band pass and is still owed its real-End terrain,
+     * which is generated off-thread and written in a moment after the chunk loads
+     * ({@code WorldEndBandEvents}). Persisted so a chunk that unloads first is filled on its next load;
+     * cleared once written, so the terrain is never written twice. Serialized only while set.
+     */
+    public static final Supplier<AttachmentType<Boolean>> END_BAND_PENDING =
+        TYPES.register("end_band_pending",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL, pending -> pending)
                 .build()
         );
 

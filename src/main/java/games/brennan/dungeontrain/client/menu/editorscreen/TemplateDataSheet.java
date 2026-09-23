@@ -9,12 +9,16 @@ import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
 import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.editor.TemplateCells;
+import games.brennan.dungeontrain.editor.TemplateLoot;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +45,10 @@ public final class TemplateDataSheet {
     static final int LINE_H = 10;
     static final int CELL_GAP = 3;
     static final int LABEL_GAP = 6;
+    /** An item icon's side: shrunk from a slot's 16 so an icon row is a text row's height. */
+    static final int ICON = 9;
+    /** The corner mark on an icon that may not spawn — a variant's loot block. */
+    static final int VARIANT_MARK = 0xFFB070FF;
 
     /** What clicking an editable cell does. */
     public sealed interface Action {
@@ -69,25 +77,59 @@ public final class TemplateDataSheet {
          * {@code prefix + " " + uuid + " " + name} (or {@code prefix + " none"} to clear).
          */
         record PickBuilder(String prefix) implements Action {}
+
+        /** Turn the detail pane to its Loot page — every item the build can give. */
+        record ShowLoot() implements Action {}
     }
 
     /**
-     * One run of text on a line.
+     * One run of text on a line, or one item icon.
      *
      * @param action null for plain text, which is never clickable
-     * @param on     whether the cell reads as set — a phase that is off is dimmed
+     * @param on     whether the cell reads as set — a phase that is off is dimmed; an icon that is
+     *               off is one that may not spawn, and carries a corner mark
+     * @param icon   drawn before {@code text} when present; an icon cell's text is its count, or
+     *               empty for one
+     * @param tipIcons items drawn as icons under the tooltip's text — a loot block's best items
      */
-    public record Cell(String text, Action action, boolean on, String tooltip) {
+    public record Cell(String text, Action action, boolean on, String tooltip, ItemStack icon,
+                       List<ItemStack> tipIcons) {
+        public Cell {
+            tipIcons = tipIcons == null ? List.of() : List.copyOf(tipIcons);
+        }
+
         public static Cell plain(String text) {
-            return new Cell(text, null, true, null);
+            return new Cell(text, null, true, null, null, List.of());
+        }
+
+        /**
+         * An item icon with its count beside it (none for a single one), read-only. The count is
+         * normal-size text rather than a slot's corner number, which would be unreadable on an
+         * icon this small.
+         */
+        public static Cell icon(ItemStack icon, int count, boolean on) {
+            return new Cell(count > 1 ? Integer.toString(count) : "", null, on, null, icon.copyWithCount(1),
+                List.of());
         }
 
         public Cell(String text, Action action, boolean on) {
-            this(text, action, on, null);
+            this(text, action, on, null, null, List.of());
         }
 
         public Cell withTooltip(String tooltip) {
-            return new Cell(text, action, on, tooltip);
+            return new Cell(text, action, on, tooltip, icon, tipIcons);
+        }
+
+        public Cell withAction(Action action) {
+            return new Cell(text, action, on, tooltip, icon, tipIcons);
+        }
+
+        public Cell withTipIcons(List<ItemStack> icons) {
+            return new Cell(text, action, on, tooltip, icon, icons);
+        }
+
+        public boolean isIcon() {
+            return icon != null && !icon.isEmpty();
         }
     }
 
@@ -129,6 +171,8 @@ public final class TemplateDataSheet {
         out.add(builderLine(v, key, EditorStatusHudOverlay.isDevModeOn()));
         out.add(sizeLine(summary, roomRows, key, pending));
         out.add(blocksLine(summary, pending));
+        out.add(lightsLine(summary, pending));
+        out.add(lootLine(summary, pending));
         out.add(weightLine(tile, key, pending));
         out.addAll(stageLines(v, key, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SOURCE), sourceLabel(provenance)));
@@ -251,6 +295,83 @@ public final class TemplateDataSheet {
             cells.add(Cell.plain("· " + EditorScreenLang.text(EditorScreenLang.SHEET_CONTAINERS, summary.containers())));
         }
         return new Line(label, List.copyOf(cells));
+    }
+
+    /**
+     * Lights: every light-giving block type as its icon and count, most numerous first; hover names
+     * it and its light level. A build with none reads 0.
+     */
+    static Line lightsLine(TemplateSummary summary, String pending) {
+        String label = EditorScreenLang.text(EditorScreenLang.SHEET_LIGHTS);
+        if (summary == null || summary.isEmpty()) return Line.of(label, pending);
+        if (summary.lights().isEmpty()) return Line.of(label, "0");
+        List<Cell> cells = new ArrayList<>(summary.lights().size());
+        for (TemplateCells.LightBlock light : summary.lights()) {
+            String name = light.block().getName().getString();
+            String tooltip = (light.count() > 1 ? name + " ×" + light.count() : name) + "\n"
+                + EditorScreenLang.text(EditorScreenLang.SHEET_LIGHT_LEVEL, light.emission());
+            cells.add(blockCell(light.block(), light.count(), true, name).withTooltip(tooltip));
+        }
+        return new Line(label, List.copyOf(cells));
+    }
+
+    /** A block as its item icon with a count, or as its name when it has no item form (wall torches do). */
+    private static Cell blockCell(Block block, int count, boolean on,
+                                  String name) {
+        ItemStack stack = new ItemStack(block.asItem());
+        if (stack.isEmpty()) return new Cell(count > 1 ? name + " " + count : name, null, on);
+        return Cell.icon(stack, count, on);
+    }
+
+    /**
+     * Loot: every loot block as its item's icon, most valuable first, a count on the icon when
+     * there are several and a corner mark on one that only a variant may place.
+     *
+     * <p>Most valuable first because {@link #place} drops whatever runs past the sheet's edge: on
+     * a narrow pane the cheapest go and the chest worth opening stays.</p>
+     */
+    static Line lootLine(TemplateSummary summary, String pending) {
+        String label = EditorScreenLang.text(EditorScreenLang.SHEET_LOOT);
+        if (summary == null || summary.isEmpty()) return Line.of(label, pending);
+        if (summary.loot().isEmpty()) {
+            return Line.of(label, EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_NONE));
+        }
+        List<Cell> cells = new ArrayList<>(summary.loot().size() + 1);
+        // The whole row opens the Loot page: the total first, then every block.
+        Action show = new Action.ShowLoot();
+        cells.add(new Cell(formatValue(TemplateLoot.totalValue(summary.loot())), show, true)
+            .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_TOTAL_TIP)));
+        for (TemplateLoot.LootBlock loot : summary.loot()) cells.add(lootCell(loot).withAction(show));
+        return new Line(label, List.copyOf(cells));
+    }
+
+    private static Cell lootCell(TemplateLoot.LootBlock loot) {
+        String name = loot.block().getName().getString();
+        return blockCell(loot.block(), loot.count(), !loot.isVariant(), name)
+            .withTooltip(lootTooltip(loot, name))
+            .withTipIcons(loot.topItems().stream().map(ItemStack::new).toList());
+    }
+
+    /** Name, where its loot comes from, its chance if a variant, and its value; the best items ride as icons. */
+    static String lootTooltip(TemplateLoot.LootBlock loot, String name) {
+        StringBuilder sb = new StringBuilder(loot.count() > 1 ? name + " ×" + loot.count() : name);
+        sb.append('\n').append(switch (loot.source()) {
+            case POOL -> EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_POOL);
+            case PREFAB -> EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_PREFAB, loot.detail());
+            case INLINE -> EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_INLINE);
+            case TABLE -> EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_TABLE, loot.detail());
+            case DEFAULT -> EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_DEFAULT, loot.detail(), loot.chance());
+        });
+        if (loot.isVariant()) {
+            sb.append('\n').append(EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_VARIANT, loot.chance()));
+        }
+        sb.append('\n').append(EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_VALUE, formatValue(loot.value())));
+        return sb.toString();
+    }
+
+    /** A loot value as the sheet and the Loot page print it: one decimal place. */
+    static String formatValue(double value) {
+        return String.format(java.util.Locale.ROOT, "%.1f", value);
     }
 
     /** Weight: the number steps (cmd-click types), and a pair of nudge buttons sits after it. */
@@ -411,7 +532,7 @@ public final class TemplateDataSheet {
             // starts at the left edge and gets the whole width for the row it carries on.
             int x = line.label().isEmpty() ? r.x() + 2 : r.x() + 2 + labelW + LABEL_GAP;
             for (Cell cell : line.cells()) {
-                int w = font.width(cell.text());
+                int w = cellWidth(cell, font);
                 if (x + w > r.right()) break;
                 placed.add(new Placed(cell, new InventoryEditorLayout.Rect(x, y - 1, w + 2, LINE_H)));
                 x += w + CELL_GAP;
@@ -434,6 +555,14 @@ public final class TemplateDataSheet {
         for (int i = 0; i < placed.size(); i++) {
             Placed p = placed.get(i);
             Cell cell = p.cell();
+            if (cell.isIcon()) {
+                if (cell.action() != null && i == hovered) {
+                    g.fill(p.rect().x() - 1, p.rect().y(), p.rect().right() - 1, p.rect().bottom(),
+                        MenuRowPainter.CELL_HOVER);
+                }
+                drawIcon(g, font, p.rect(), cell);
+                continue;
+            }
             boolean clickable = cell.action() != null;
             boolean hot = clickable && i == hovered;
             if (hot) {
@@ -448,11 +577,43 @@ public final class TemplateDataSheet {
         }
     }
 
-    /** Which placed cell is under the point and clickable, or -1. */
+    /** How wide a cell is drawn: its text, or an icon plus the count beside it. */
+    static int cellWidth(Cell cell, Font font) {
+        if (!cell.isIcon()) return font.width(cell.text());
+        return cell.text().isEmpty() ? ICON : ICON + 1 + font.width(cell.text());
+    }
+
+    /** An icon cell: the item shrunk to {@link #ICON}, its count beside it, the variant mark when off. */
+    private static void drawIcon(GuiGraphics g, Font font, InventoryEditorLayout.Rect rect, Cell cell) {
+        int x = rect.x();
+        int y = rect.y();
+        g.pose().pushPose();
+        g.pose().translate(x, y, 0);
+        g.pose().scale(ICON / 16f, ICON / 16f, 1f);
+        g.renderItem(cell.icon(), 0, 0);
+        g.pose().popPose();
+        if (!cell.text().isEmpty()) {
+            g.drawString(font, cell.text(), x + ICON + 1, y + 1, VALUE, false);
+        }
+        if (!cell.on()) {
+            // Above the item's own z so the mark is not hidden behind a block model.
+            g.pose().pushPose();
+            g.pose().translate(0, 0, 300);
+            g.fill(x, y, x + 3, y + 3, VARIANT_MARK);
+            g.pose().popPose();
+        }
+    }
+
+    /**
+     * Which placed cell is under the point and clickable or has something to say on hover, or -1.
+     * A read-only cell with a tooltip is hit too, so it can show its tooltip; a click on it does
+     * nothing, as the sheet's click handlers ignore a cell with no action.
+     */
     public static int hit(List<Placed> placed, double mx, double my) {
         for (int i = 0; i < placed.size(); i++) {
             Placed p = placed.get(i);
-            if (p.cell().action() != null && p.rect().contains(mx, my)) return i;
+            boolean live = p.cell().action() != null || p.cell().tooltip() != null;
+            if (live && p.rect().contains(mx, my)) return i;
         }
         return -1;
     }

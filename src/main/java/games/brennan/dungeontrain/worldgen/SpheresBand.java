@@ -1,9 +1,11 @@
 package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.List;
@@ -180,7 +182,7 @@ public final class SpheresBand {
             f = cachedField;
             if (f != null && seed == cachedSeed) return f;
             CANDIDATE_CACHE.clear();
-            f = new SphereField(paramsFromConfig(seed), surfaceSampler(overworld));
+            f = new SphereField(paramsFromConfig(seed), surfaceSampler(overworld), mixer(overworld));
             cachedSeed = seed;
             cachedField = f;
             return f;
@@ -209,6 +211,39 @@ public final class SpheresBand {
         var generator = source.getGenerator();
         var randomState = source.randomState();
         return (x, z) -> generator.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE_WG, overworld, randomState);
+    }
+
+    /**
+     * The band's dimension mix ({@link SpheresSegments}, from {@code SpheresProgressionConfig}): which
+     * dimension a sphere is cut from and how likely it is to hold a structure both follow where its
+     * centre sits along the band core. Snapshotted with the field, so a config reload
+     * ({@link #invalidateCache}) rebuilds both together. End spheres anchor to the End generator's island
+     * surface; a column over the End void reports {@link SphereField#NO_SURFACE}.
+     */
+    private static SphereField.Mixer mixer(ServerLevel overworld) {
+        SpheresSegments seg = SpheresProgressionConfig.segments();
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        ServerLevel end = overworld.getServer().getLevel(Level.END);
+        return new SphereField.Mixer() {
+            @Override
+            public SphereSource sourceAt(int cx, double u) {
+                return seg.sourceAt(cycle.spheresCoreOffset(cx), u);
+            }
+
+            @Override
+            public double structureChanceAt(int cx) {
+                return seg.structureChanceAt(cycle.spheresCoreOffset(cx));
+            }
+
+            @Override
+            public int endSurfaceY(int x, int z) {
+                if (end == null) return SphereField.NO_SURFACE;
+                var source = end.getChunkSource();
+                int y = source.getGenerator().getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE_WG, end,
+                        source.randomState());
+                return y <= end.getMinBuildHeight() ? SphereField.NO_SURFACE : y;
+            }
+        };
     }
 
     /**

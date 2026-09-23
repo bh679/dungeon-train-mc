@@ -105,6 +105,66 @@
       "modrinth_version": "BnjVBHVl"
     },
     {
+      "name": "BetterEnd: New Dawn",
+      "slug": "betterend-neoforge",
+      "project_id": 1422294,
+      "file_id": 8896285,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "betterend_min_version",
+      "version": "21.0.35",
+      "modrinth_project": "betterend-neoforge",
+      "modrinth_version": "EGvZ3oiw"
+    },
+    {
+      "name": "BetterNether: New Dawn",
+      "slug": "betternether-neoforge",
+      "project_id": 1422293,
+      "file_id": 8896389,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "betternether_min_version",
+      "version": "21.0.27",
+      "modrinth_project": "betternether-neoforge",
+      "modrinth_version": "MwTp39qc"
+    },
+    {
+      "name": "BCLib: New Dawn",
+      "slug": "bclib-neoforge",
+      "project_id": 1422283,
+      "file_id": 8608827,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "bclib_min_version",
+      "version": "21.0.26",
+      "modrinth_project": "bclib-neoforge",
+      "modrinth_version": "QkXw8Fsl"
+    },
+    {
+      "name": "WorldWeaver: New Dawn",
+      "slug": "worldweaver-neoforge",
+      "project_id": 1422284,
+      "file_id": 8594162,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "worldweaver_min_version",
+      "version": "21.0.25",
+      "modrinth_project": "worldweaver-neoforge",
+      "modrinth_version": "TrReu8cF"
+    },
+    {
+      "name": "WunderLib: New Dawn",
+      "slug": "wunderlib-neoforge",
+      "project_id": 1422273,
+      "file_id": 7469725,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "wunderlib_min_version",
+      "version": "21.0.10",
+      "modrinth_project": "wunderlib-neoforge",
+      "modrinth_version": "5db3GZzg"
+    },
+    {
       "name": "Dungeon Backup",
       "slug": "dungeon-train-backup",
       "project_id": 1694135,

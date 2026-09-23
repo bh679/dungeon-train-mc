@@ -246,7 +246,9 @@ jobs:
           # NOTE: AIN's Modrinth slug is `adventureitemnames` (no hyphens) while its
           # CurseForge slug is `adventure-item-names`; AIS is `adventure-items-stats` on
           # Modrinth vs `adventure-item-stats` on CurseForge. The spellings differ per
-          # platform on purpose — don't "fix" one to match the other.
+          # platform on purpose — don't "fix" one to match the other. Likewise Moonlight
+          # (Fast Paintings' library) is `moonlight` on Modrinth but `selene` on CurseForge.
+          # check-relations.py asserts every non-curseforge_only required dep is listed here.
           dependencies: |
             sable(required)
             adventureitemnames(required)
@@ -254,6 +256,13 @@ jobs:
             interactive-player-mobs(required)
             ender-chest-persistence(required)
             trade-everything(required)
+            betterend-neoforge(required)
+            fast-paintings(required)
+            moonlight(required)
+            betternether-neoforge(required)
+            bclib-neoforge(required)
+            worldweaver-neoforge(required)
+            wunderlib-neoforge(required)
             # keep-trim + dungeon-train-backup + sable-fence-trapdoor-fix are ABSENT by design:
             # on Modrinth they stay jarJar'd inside the DT jar; only CurseForge treats them as
             # separate mods. (keep-trim's Modrinth listing is also still in review — mc-publish
@@ -274,6 +283,11 @@ jobs:
             sable-fence-trapdoor-fix(required)
             fast-paintings(required)
             selene(required)
+            betterend-neoforge(required)
+            betternether-neoforge(required)
+            bclib-neoforge(required)
+            worldweaver-neoforge(required)
+            wunderlib-neoforge(required)
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)

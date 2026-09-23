@@ -966,6 +966,14 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /** Offset into the spheres band core at a world-X, or {@code -1} outside it. */
+    /**
+     * Blocks into the spheres band core at {@code worldX} ({@code 0} = first core column), or {@code -1}
+     * outside the core (the entry fade included). The coordinate {@link SpheresSegments} offsets use.
+     */
+    public long spheresCoreOffset(int worldX) {
+        return spheresOffset(worldX);
+    }
+
     private long spheresOffset(int worldX) {
         long o = offset(worldX);
         if (o < 0L) return -1L;
@@ -1027,16 +1035,30 @@ public record WorldGenCycle(long startX, int owGap,
      * is a hard switch. Pure (seed-independent), like the other ramps.
      */
     public double spheresEndSkyRamp(int worldX, int startBlocks, int fade) {
+        return spheresSkyWindowRamp(worldX, startBlocks, Long.MAX_VALUE, fade);
+    }
+
+    /**
+     * Sky ramp {@code 0..1} over a window {@code [startBlocks, endBlocks)} of the spheres band core
+     * (offsets from the first core column): climbs {@code 0 → 1} over {@code fade} blocks from
+     * {@code startBlocks}, holds, then falls {@code 1 → 0} over the {@code fade} blocks before
+     * {@code endBlocks}. {@code endBlocks} is clamped to the core length, so a window running to the
+     * band's end hands back to the overworld sky exactly at the core's hard far edge. {@code fade} is
+     * clamped to a quarter of the core; {@code 0} is a hard switch. Two windows that meet at {@code B}
+     * crossfade when one ends at {@code B + fade/2} and the other starts at {@code B − fade/2}.
+     */
+    public double spheresSkyWindowRamp(int worldX, long startBlocks, long endBlocks, int fade) {
         long len = spheresLen();
         if (len <= 0L) return 0.0;
         long ls = spheresOffset(worldX);
         if (ls < 0L) return 0.0;
         long start = Math.max(0L, startBlocks);
-        if (ls < start) return 0.0;
+        long end = Math.min(len, endBlocks);
+        if (ls < start || ls >= end) return 0.0;
         long f = Math.max(0L, Math.min(fade, len / 4L));
         if (f == 0L) return 1.0;
         double in = (double) (ls - start + 1L) / f;           // entering: reaches 1 after f blocks
-        double out = (double) (len - ls) / f;                 // leaving: 1/f on the core's last column
+        double out = (double) (end - ls) / f;                 // leaving: 1/f on the window's last column
         return Math.min(1.0, Math.min(in, out));
     }
 

@@ -58,9 +58,9 @@ public abstract class MultiNoiseBiomeSourceMixin {
                     ctx.netherCoreBiomes() != null, ctx.endCoreBiomes() != null,
                     blockX, blockY, blockZ)) {
                 case NETHER_CORE:
-                    // Per-biome fog/ambient/music + the vanilla Nether decoration features' own biome
-                    // filter pass so they place in NetherTransitionFeature.
-                    return ctx.netherCoreBiomes().biomeAt(blockX, blockZ);
+                    // Per-biome fog/ambient/music + the Nether decoration features' own biome filter
+                    // pass so they place in NetherTransitionFeature. Alternate passes are BetterNether.
+                    return ctx.netherCoreBiomes().biomeAt(blockX, blockZ, ctx.cycle().cycleIndex(blockX));
                 case END_CORE:
                     // Sample the real End's biome source (all five End biomes, swept across successive
                     // End-band passes — see EndCoreBiomes) so world label, surface skin and decoration agree.

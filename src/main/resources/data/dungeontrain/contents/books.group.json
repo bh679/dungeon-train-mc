@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 8,
+  "selfWeight": 6,
   "variants": [
     {
       "id": "seating",
@@ -106,6 +106,10 @@
     },
     {
       "id": "books3",
+      "weight": 1
+    },
+    {
+      "id": "books4",
       "weight": 1
     }
   ]
