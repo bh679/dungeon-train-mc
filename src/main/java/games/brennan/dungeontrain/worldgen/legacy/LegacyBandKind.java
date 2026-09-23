@@ -14,10 +14,26 @@ import java.util.Locale;
  */
 public enum LegacyBandKind {
     /** Beta 1.7.3 — climate-driven terrain, sand/gravel beaches, overhangs, Beta caves and decoration. */
-    BETA;
+    BETA,
+    /**
+     * The Far Lands — Beta's terrain out past ±12,550,824 blocks, where the limit noise's 32-bit floor
+     * saturates and the land breaks into the wall, tunnels and corner pillars. The finale: later-built
+     * eras insert before it.
+     */
+    FAR_LANDS;
 
-    /** Lower-cased config / command token ({@code beta}). */
+    /** Lower-cased config / command token ({@code beta}, {@code far_lands}). */
     public String token() {
         return name().toLowerCase(Locale.ROOT);
+    }
+
+    /** Camel-cased config-key stem ({@code Beta}, {@code FarLands}). */
+    public String configStem() {
+        StringBuilder out = new StringBuilder();
+        for (String part : token().split("_")) {
+            if (part.isEmpty()) continue;
+            out.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+        }
+        return out.toString();
     }
 }

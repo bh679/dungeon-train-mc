@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.worldgen.legacy;
 
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBlocks;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaChunk;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
+import games.brennan.dungeontrain.worldgen.legacy.farlands.FarLandsShift;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -44,6 +46,12 @@ public final class LegacyChunkWriter {
     public static void fill(LegacyBandKind kind, long seed, ChunkAccess chunk, int floorY) {
         switch (kind) {
             case BETA -> write(chunk, LegacyBands.beta(seed).generate(chunk.getPos().x, chunk.getPos().z), floorY);
+            case FAR_LANDS -> {
+                // The Far Lands are Beta's own terrain, read ~12.55M blocks out (see FarLandsShift).
+                FarLandsShift shift = FarLandsShift.of(WorldGenCycle.fromConfig(), chunk.getPos().x);
+                write(chunk, LegacyBands.beta(seed).generate(chunk.getPos().x + shift.dxChunks(),
+                        chunk.getPos().z + shift.dzChunks()), floorY);
+            }
         }
     }
 

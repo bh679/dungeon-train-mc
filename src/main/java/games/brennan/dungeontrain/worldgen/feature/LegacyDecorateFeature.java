@@ -5,7 +5,10 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaPopulator;
+import games.brennan.dungeontrain.worldgen.legacy.beta.BetaWorld;
+import games.brennan.dungeontrain.worldgen.legacy.farlands.FarLandsShift;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
@@ -44,6 +47,11 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
             long seed = DungeonTrainWorldData.get(serverLevel).getGenerationSeed();
             switch (kind) {
                 case BETA -> BetaPopulator.populate(level, LegacyBands.beta(seed), chunk.x, chunk.z);
+                case FAR_LANDS -> {
+                    FarLandsShift shift = FarLandsShift.of(WorldGenCycle.fromConfig(), chunk.x);
+                    BetaPopulator.populate(new BetaWorld(level, shift.dxBlocks(), shift.dzBlocks()),
+                            LegacyBands.beta(seed), chunk.x + shift.dxChunks(), chunk.z + shift.dzChunks());
+                }
             }
             return true;
         } catch (Throwable t) {

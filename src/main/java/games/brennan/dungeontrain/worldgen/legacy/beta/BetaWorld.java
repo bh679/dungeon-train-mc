@@ -13,15 +13,26 @@ import net.minecraft.world.level.material.Fluid;
  * A {@link WorldGenLevel} seen through Beta coordinates ({@code y = 0..127}, shifted by
  * {@link LegacyChunkWriter#Y_OFFSET} into the world) with the few material questions the Beta decorators
  * ask. Reads outside Beta's height answer air, writes outside it are dropped — as Beta's own bounds did.
- * Not thread-safe (one mutable cursor); create one per decoration call.
+ * An optional horizontal offset maps Beta X/Z onto the world ({@code world = beta − offset}) for bands that
+ * read Beta terrain from elsewhere (the Far Lands). Not thread-safe (one mutable cursor); create one per
+ * decoration call.
  */
 public final class BetaWorld {
 
     private final WorldGenLevel level;
+    private final int offsetX;
+    private final int offsetZ;
     private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
     public BetaWorld(WorldGenLevel level) {
+        this(level, 0, 0);
+    }
+
+    /** A view whose Beta coordinate {@code (x, z)} is world {@code (x − offsetX, z − offsetZ)}. */
+    public BetaWorld(WorldGenLevel level, int offsetX, int offsetZ) {
         this.level = level;
+        this.offsetX = offsetX;
+        this.offsetZ = offsetZ;
     }
 
     public WorldGenLevel level() {
@@ -30,17 +41,17 @@ public final class BetaWorld {
 
     /** World position of Beta coordinates (fresh, immutable). */
     public BlockPos pos(int x, int y, int z) {
-        return new BlockPos(x, y + LegacyChunkWriter.Y_OFFSET, z);
+        return new BlockPos(x - offsetX, y + LegacyChunkWriter.Y_OFFSET, z - offsetZ);
     }
 
     public BlockState get(int x, int y, int z) {
         if (y < 0 || y >= BetaTerrain.HEIGHT) return Blocks.AIR.defaultBlockState();
-        return level.getBlockState(cursor.set(x, y + LegacyChunkWriter.Y_OFFSET, z));
+        return level.getBlockState(cursor.set(x - offsetX, y + LegacyChunkWriter.Y_OFFSET, z - offsetZ));
     }
 
     public void set(int x, int y, int z, BlockState state) {
         if (y < 0 || y >= BetaTerrain.HEIGHT) return;
-        level.setBlock(cursor.set(x, y + LegacyChunkWriter.Y_OFFSET, z), state, Block.UPDATE_CLIENTS);
+        level.setBlock(cursor.set(x - offsetX, y + LegacyChunkWriter.Y_OFFSET, z - offsetZ), state, Block.UPDATE_CLIENTS);
     }
 
     public boolean isAir(int x, int y, int z) {

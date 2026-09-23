@@ -24,7 +24,14 @@ public final class BetaPopulator {
     private BetaPopulator() {}
 
     public static void populate(WorldGenLevel level, BetaTerrain terrain, int chunkX, int chunkZ) {
-        BetaWorld world = new BetaWorld(level);
+        populate(new BetaWorld(level), terrain, chunkX, chunkZ);
+    }
+
+    /**
+     * Populate Beta chunk {@code (chunkX, chunkZ)} through {@code world} — an offset view when the Beta
+     * chunk is not the world chunk it decorates (the Far Lands read Beta terrain from far out).
+     */
+    public static void populate(BetaWorld world, BetaTerrain terrain, int chunkX, int chunkZ) {
         long seed = terrain.seed();
         int bx = chunkX * 16;
         int bz = chunkZ * 16;

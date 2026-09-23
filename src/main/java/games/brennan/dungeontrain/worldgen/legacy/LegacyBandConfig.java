@@ -22,6 +22,7 @@ public final class LegacyBandConfig {
     public record Defaults(boolean enabled, int hold, int fade, int leadGap) {}
 
     public static final Defaults BETA_DEFAULTS = new Defaults(true, 6000, 480, 3000);
+    public static final Defaults FAR_LANDS_DEFAULTS = new Defaults(true, 6000, 480, 3000);
 
     private record Values(ModConfigSpec.BooleanValue enabled, ModConfigSpec.IntValue hold,
                           ModConfigSpec.IntValue fade, ModConfigSpec.IntValue leadGap, Defaults defaults) {}
@@ -33,12 +34,14 @@ public final class LegacyBandConfig {
     private static Defaults defaultsFor(LegacyBandKind kind) {
         return switch (kind) {
             case BETA -> BETA_DEFAULTS;
+            case FAR_LANDS -> FAR_LANDS_DEFAULTS;
         };
     }
 
     private static String label(LegacyBandKind kind) {
         return switch (kind) {
             case BETA -> "Beta 1.7.3";
+            case FAR_LANDS -> "Far Lands";
         };
     }
 
@@ -46,7 +49,7 @@ public final class LegacyBandConfig {
     public static void define(ModConfigSpec.Builder b) {
         for (LegacyBandKind kind : LegacyBandKind.values()) {
             Defaults d = defaultsFor(kind);
-            String prefix = "legacy" + Character.toUpperCase(kind.token().charAt(0)) + kind.token().substring(1);
+            String prefix = "legacy" + kind.configStem();
             ModConfigSpec.BooleanValue enabled = b
                     .comment(label(kind) + " legacy band — a stretch of the looping world-gen cycle, after the stacks",
                             "band, where the terrain comes from a port of that version's world generator (terrain,",

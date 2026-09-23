@@ -1225,6 +1225,26 @@ public record WorldGenCycle(long startX, int owGap,
         return o >= holdStart && o < holdStart + span.holdLen();
     }
 
+    /** Sentinel for {@link #legacyCoreStartX}: {@code worldX} is outside that band's slot. */
+    public static final long NOT_IN_LEGACY_SLOT = Long.MIN_VALUE;
+
+    /**
+     * World X where the core of the legacy band {@code kind} instance containing {@code worldX} begins —
+     * the anchor for a generator that lays its terrain out along the band (Far Lands: where the wall
+     * falls). Defined across the whole slot (lead gap, both fades, core), so the entry-fade chunks share
+     * the core's anchor; {@link #NOT_IN_LEGACY_SLOT} outside it or when the band is disabled.
+     */
+    public long legacyCoreStartX(LegacyBandKind kind, int worldX) {
+        LegacySpan span = spanOf(kind);
+        if (span == null) return NOT_IN_LEGACY_SLOT;
+        long o = offset(worldX);
+        if (o < 0L) return NOT_IN_LEGACY_SLOT;
+        long start = legacySlotStart(kind);
+        if (o < start || o >= start + span.totalLen()) return NOT_IN_LEGACY_SLOT;
+        long coreStart = start + span.leadGapLen() + span.fadeLen();
+        return (long) worldX - (o - coreStart);
+    }
+
     /**
      * True if {@code worldX} lies anywhere from the start of legacy band {@code kind}'s lead gap through
      * the end of its exit fade — the world has not settled back into plain overworld yet. Used by the

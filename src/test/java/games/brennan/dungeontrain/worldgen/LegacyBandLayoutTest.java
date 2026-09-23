@@ -89,6 +89,31 @@ final class LegacyBandLayoutTest {
     }
 
     @Test
+    @DisplayName("a second span follows the first in kind order and grows the period by its own slot")
+    void farLandsFollowsBeta() {
+        LegacySpan far = new LegacySpan(LegacyBandKind.FAR_LANDS, 60, 20, 100);
+        WorldGenCycle c = cycle(BETA, far);
+        assertEquals(cycle(BETA).period() + 60 + 2 * 20 + 100, c.period());
+        assertNull(c.legacyAt(x(400 + 59)));
+        assertEquals(LegacyBandKind.FAR_LANDS, c.legacyAt(x(400 + 60)).kind());
+        assertTrue(c.isInLegacyBand(LegacyBandKind.FAR_LANDS, x(400 + 80)));
+        assertFalse(c.isInLegacyBand(LegacyBandKind.BETA, x(400 + 80)));
+    }
+
+    @Test
+    @DisplayName("legacyCoreStartX anchors every column of a slot, per instance, to its core start")
+    void coreStartX() {
+        WorldGenCycle c = cycle(BETA);
+        long p = c.period();
+        for (int local : new int[] {0, 120, 150, 300, 399}) {
+            assertEquals(x(150), c.legacyCoreStartX(LegacyBandKind.BETA, x(local)));
+            assertEquals(x(150) + 2 * p, c.legacyCoreStartX(LegacyBandKind.BETA, (int) (x(local) + 2 * p)));
+        }
+        assertEquals(WorldGenCycle.NOT_IN_LEGACY_SLOT, c.legacyCoreStartX(LegacyBandKind.BETA, x(400)));
+        assertEquals(WorldGenCycle.NOT_IN_LEGACY_SLOT, c.legacyCoreStartX(LegacyBandKind.FAR_LANDS, x(200)));
+    }
+
+    @Test
     @DisplayName("zero fade is a hard edge: ramp jumps straight to 1")
     void hardEdge() {
         WorldGenCycle c = cycle(new LegacySpan(LegacyBandKind.BETA, 100, 0, 200));
