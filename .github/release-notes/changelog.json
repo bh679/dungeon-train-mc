@@ -17905,11 +17905,11 @@
         "feature",
         "world"
       ],
-      "title": "More time in the strange places",
-      "summary": "The scattered chunks, the floating spheres and the towering stacks all stretch out further, so you spend longer crossing each before the world settles back to normal.",
+      "title": "The strange stretches run longer",
+      "summary": "Some of the stranger places the line runs through now last longer before the world settles back to normal.",
       "highlights": [
-        "The chunks, spheres and stacks stretches all last longer.",
-        "Worlds started before this update may show a seam where the new layout meets land you've already seen."
+        "A few of the stranger stretches of the journey take longer to cross.",
+        "Worlds started before this update may show a seam where the new layout meets land you have already seen."
       ],
       "pr": 1490,
       "date": "2026-09-23",
