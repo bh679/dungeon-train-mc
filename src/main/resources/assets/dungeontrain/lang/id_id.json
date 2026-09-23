@@ -1151,6 +1151,7 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.prefab": "Prefab jarahan: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.inline": "Item yang tersimpan di blok",
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Tabel jarahan: %s",
+  "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Jarahan bawaan: %1$s, peluang %2$s%%",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Varian: peluang muncul %s%%",
   "gui.dungeontrain.editor_screen.sheet.loot_best": "Terbaik: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Nilai: %s",

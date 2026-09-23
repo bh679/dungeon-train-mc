@@ -3678,6 +3678,21 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.sheet.loot_source.default": {
+    "1": {
+      "label": "the id of the loot prefab an empty container of this block type may roll",
+      "examples": [
+        "bookshelf"
+      ]
+    },
+    "2": {
+      "label": "the percent chance that prefab is rolled",
+      "examples": [
+        "20",
+        "5"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.sheet.loot_variant": {
     "1": {
       "label": "the percent chance this block variant is the one placed",

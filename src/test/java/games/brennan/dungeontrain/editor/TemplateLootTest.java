@@ -137,8 +137,38 @@ final class TemplateLootTest {
         assertTrue(chest.isVariant());
         double full = LootValue.poolValue(store.poolAt(cell), 27);
         assertEquals(full * 0.25, chest.value(), 1e-9);
+        // Two chest candidates in one cell are one chest, at their summed chance.
+        CarriageVariantBlocks.Entry twoChests = new CarriageVariantBlocks.Entry(cell, List.of(
+            new VariantState(Blocks.CHEST.defaultBlockState(), null, 1),
+            new VariantState(Blocks.CHEST.defaultBlockState(), null, 1),
+            new VariantState(Blocks.STONE.defaultBlockState(), null, 2)));
+        List<TemplateLoot.LootBlock> merged = TemplateLoot.scan(List.of(), store, List.of(twoChests));
+        assertEquals(1, merged.size());
+        assertEquals(1, merged.get(0).count(), "one cell, one chest");
+        assertEquals(50, merged.get(0).chance());
+        CarriageVariantBlocks.Entry allChests = new CarriageVariantBlocks.Entry(cell, List.of(
+            new VariantState(Blocks.CHEST.defaultBlockState(), null, 1),
+            new VariantState(Blocks.CHEST.defaultBlockState(), null, 3)));
+        assertFalse(TemplateLoot.scan(List.of(), store, List.of(allChests)).get(0).isVariant(),
+            "a cell whose every candidate is a chest always has a chest");
+
         assertFalse(TemplateLoot.scan(List.of(at(0, Blocks.CHEST.defaultBlockState(), null)), store,
             List.of()).get(0).isVariant());
+    }
+
+    @Test
+    @DisplayName("an empty chiseled bookshelf shows its block default prefab at one in five")
+    void blockDefault() {
+        List<TemplateLoot.LootBlock> loot = TemplateLoot.scan(List.of(
+            at(0, Blocks.CHISELED_BOOKSHELF.defaultBlockState(), null),
+            at(1, Blocks.CHISELED_BOOKSHELF.defaultBlockState(), null)), null, List.of());
+        assertEquals(1, loot.size());
+        TemplateLoot.LootBlock shelf = loot.get(0);
+        assertEquals(TemplateLoot.Source.DEFAULT, shelf.source());
+        assertEquals("bookshelf", shelf.detail());
+        assertEquals(BlockLootDefaults.chancePct(), shelf.chance());
+        assertEquals(2, shelf.count());
+        assertFalse(shelf.isVariant());
     }
 
     @Test

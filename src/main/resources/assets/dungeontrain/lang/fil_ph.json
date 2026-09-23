@@ -1151,6 +1151,7 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.prefab": "Loot prefab: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.inline": "Mga item na naka-save sa block",
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Loot table: %s",
+  "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Default na loot: %1$s, %2$s%% tsansa",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Variant: %s%% tsansang lumitaw",
   "gui.dungeontrain.editor_screen.sheet.loot_best": "Pinakamahusay: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Halaga: %s",

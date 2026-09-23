@@ -1213,6 +1213,7 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.prefab": "Prefabrykat łupu: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.inline": "Przedmioty zapisane w bloku",
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Tabela łupów: %s",
+  "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Domyślny łup: %1$s, %2$s%% szansy",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Wariant: %s%% szansy na pojawienie się",
   "gui.dungeontrain.editor_screen.sheet.loot_best": "Najlepsze: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Wartość: %s",

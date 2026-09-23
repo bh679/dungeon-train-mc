@@ -92,6 +92,21 @@ public final class BlockLootDefaults {
         clear();
     }
 
+    /** The percent chance a covered block type rolls its default prefab. */
+    public static int chancePct() {
+        return DEFAULT_CHANCE_PCT;
+    }
+
+    /**
+     * The default prefab id for {@code state}'s block type, or null — without rolling. Loads the
+     * registry from the jar on first use, so a client with no integrated server (the editor's Loot
+     * row) can ask too.
+     */
+    public static synchronized String prefabFor(BlockState state) {
+        if (DEFAULTS.isEmpty()) reload();
+        return DEFAULTS.get(BuiltInRegistries.BLOCK.getKey(state.getBlock()));
+    }
+
     /**
      * Resolve the default loot pool for a container of {@code state}'s block
      * type at {@code localPos}, if the block type is registered AND a seeded

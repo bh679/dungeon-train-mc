@@ -1182,6 +1182,7 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.prefab": "Modèle de butin : %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.inline": "Objets enregistrés dans le bloc",
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Table de butin : %s",
+  "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Butin par défaut : %1$s, %2$s %% de chance",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Variante : %s %% de chance d'apparaître",
   "gui.dungeontrain.editor_screen.sheet.loot_best": "Meilleurs : %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Valeur : %s",

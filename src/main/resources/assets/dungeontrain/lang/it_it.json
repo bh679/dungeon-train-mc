@@ -1182,6 +1182,7 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.prefab": "Modello di bottino: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.inline": "Oggetti salvati nel blocco",
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Tabella del bottino: %s",
+  "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Bottino predefinito: %1$s, %2$s%% di probabilità",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Variante: %s%% di probabilità di apparire",
   "gui.dungeontrain.editor_screen.sheet.loot_best": "Migliori: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Valore: %s",

@@ -1580,6 +1580,7 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.prefab": "Loot prefab: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.inline": "Items saved in the block",
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Loot table: %s",
+  "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Default loot: %1$s, %2$s%% chance",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Variant: %s%% chance to appear",
   "gui.dungeontrain.editor_screen.sheet.loot_best": "Best: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Value: %s",

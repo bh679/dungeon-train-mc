@@ -35,11 +35,11 @@ final class TemplateDataSheetLootTest {
     }
 
     private static final List<TemplateLoot.LootBlock> LOOT = List.of(
-        new TemplateLoot.LootBlock(Blocks.BARREL, 1, TemplateLoot.Source.PREFAB, "fullgold", 100, 40,
+        new TemplateLoot.LootBlock(Blocks.BARREL, 1, TemplateLoot.Source.PREFAB, "fullgold", 100, false, 40,
             List.of(Items.GOLDEN_SWORD)),
-        new TemplateLoot.LootBlock(Blocks.CHEST, 3, TemplateLoot.Source.POOL, "", 100, 10,
+        new TemplateLoot.LootBlock(Blocks.CHEST, 3, TemplateLoot.Source.POOL, "", 100, false, 10,
             List.of(Items.BREAD)),
-        new TemplateLoot.LootBlock(Blocks.CHISELED_BOOKSHELF, 1, TemplateLoot.Source.POOL, "", 25, 2,
+        new TemplateLoot.LootBlock(Blocks.CHISELED_BOOKSHELF, 1, TemplateLoot.Source.POOL, "", 25, true, 2,
             List.of()));
 
     @Test

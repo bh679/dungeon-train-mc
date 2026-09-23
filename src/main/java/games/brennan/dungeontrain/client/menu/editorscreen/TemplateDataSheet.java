@@ -321,6 +321,7 @@ public final class TemplateDataSheet {
             case PREFAB -> EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_PREFAB, loot.detail());
             case INLINE -> EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_INLINE);
             case TABLE -> EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_TABLE, loot.detail());
+            case DEFAULT -> EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_DEFAULT, loot.detail(), loot.chance());
         });
         if (loot.isVariant()) {
             sb.append('\n').append(EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_VARIANT, loot.chance()));

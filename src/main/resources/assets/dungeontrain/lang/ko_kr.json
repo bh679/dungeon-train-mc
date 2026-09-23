@@ -1151,6 +1151,7 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.prefab": "전리품 프리팹: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.inline": "블록에 저장된 아이템",
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "전리품 테이블: %s",
+  "gui.dungeontrain.editor_screen.sheet.loot_source.default": "기본 전리품: %1$s, 확률 %2$s%%",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "변형: 등장 확률 %s%%",
   "gui.dungeontrain.editor_screen.sheet.loot_best": "최고: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "가치: %s",

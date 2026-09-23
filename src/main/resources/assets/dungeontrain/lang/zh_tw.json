@@ -1151,6 +1151,7 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.prefab": "戰利品預製件：%s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.inline": "方塊中儲存的物品",
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "戰利品表：%s",
+  "gui.dungeontrain.editor_screen.sheet.loot_source.default": "預設戰利品：%1$s，%2$s%% 機率",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "變體：%s%% 的出現機率",
   "gui.dungeontrain.editor_screen.sheet.loot_best": "最佳：%s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "價值：%s",

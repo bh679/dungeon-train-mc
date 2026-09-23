@@ -1151,6 +1151,7 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.prefab": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "748f7b26a3cf53f1"},
   "gui.dungeontrain.editor_screen.sheet.loot_source.inline": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "df5070246ab985f1"},
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "841013af9267cb82"},
+  "gui.dungeontrain.editor_screen.sheet.loot_source.default": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "792041eb04696033"},
   "gui.dungeontrain.editor_screen.sheet.loot_variant": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "64fa5baccf550216"},
   "gui.dungeontrain.editor_screen.sheet.loot_best": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "90454d15e958bc81"},
   "gui.dungeontrain.editor_screen.sheet.loot_value": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "e717acbea41ca4d5"},

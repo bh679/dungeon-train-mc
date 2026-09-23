@@ -1151,6 +1151,7 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.prefab": "战利品预制件：%s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.inline": "方块中保存的物品",
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "战利品表：%s",
+  "gui.dungeontrain.editor_screen.sheet.loot_source.default": "默认战利品：%1$s，%2$s%% 几率",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "变体：%s%% 的出现几率",
   "gui.dungeontrain.editor_screen.sheet.loot_best": "最佳：%s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "价值：%s",

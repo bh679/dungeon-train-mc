@@ -1182,6 +1182,7 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.prefab": "Beute-Vorlage: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.inline": "Im Block gespeicherte Gegenstände",
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Beutetabelle: %s",
+  "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Standardbeute: %1$s, %2$s%% Chance",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Variante: %s%% Chance zu erscheinen",
   "gui.dungeontrain.editor_screen.sheet.loot_best": "Beste: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Wert: %s",

@@ -48,18 +48,20 @@ import java.util.Set;
 public final class TemplateLoot {
 
     /** Where a block's loot comes from — what its tooltip says. */
-    public enum Source { POOL, PREFAB, INLINE, TABLE }
+    public enum Source { POOL, PREFAB, INLINE, TABLE, DEFAULT }
 
     /**
      * One kind of loot block, and how many of it the template has.
      *
      * @param detail   the prefab id or loot table id, or empty
-     * @param chance   percent chance the block is there at all: below 100 only for a variant
+     * @param chance   percent chance the block ends up holding this loot: a variant's chance of
+     *                 being placed, times a {@link Source#DEFAULT}'s chance of rolling
+     * @param variant  whether the block only appears through a block variant, so may not spawn
      * @param value    the best {@link LootValue} among the grouped blocks, already weighted by chance
      * @param topItems the best items it can give, best first; empty for a vanilla loot table
      */
     public record LootBlock(Block block, int count, Source source, String detail, int chance,
-                            double value, List<Item> topItems) {
+                            boolean variant, double value, List<Item> topItems) {
         public LootBlock {
             topItems = List.copyOf(topItems);
             detail = detail == null ? "" : detail;
@@ -67,7 +69,7 @@ public final class TemplateLoot {
 
         /** True when the block only appears through a variant, so it may not spawn. */
         public boolean isVariant() {
-            return chance < 100;
+            return variant;
         }
     }
 
@@ -111,29 +113,64 @@ public final class TemplateLoot {
         List<Found> found = new ArrayList<>();
         for (StructureTemplate.StructureBlockInfo info : blocks) {
             if (variantAt.containsKey(info.pos())) continue;
-            Found f = judge(info.state(), info.nbt(), null, store, info.pos(), 100);
+            Found f = judge(info.state(), info.nbt(), null, store, info.pos(), 100, false);
             if (f != null) found.add(f);
         }
         for (CarriageVariantBlocks.Entry e : variants) {
             int total = 0;
             for (VariantState s : e.states()) total += s.weight();
+            List<Found> cell = new ArrayList<>();
+            Map<Block, Integer> weightByBlock = new HashMap<>();
+            for (VariantState s : e.states()) weightByBlock.merge(s.state().getBlock(), s.weight(), Integer::sum);
             for (VariantState s : e.states()) {
                 int chance = total <= 0 ? 100 : Math.max(1, Math.round(100f * s.weight() / total));
                 Found f = judge(s.state(), s.blockEntityNbt(), s.linkedLootPrefabId(), store,
-                    e.localPos(), chance);
-                if (f != null) found.add(f);
+                    e.localPos(), chance, true);
+                if (f != null) cell.add(f);
             }
+            found.addAll(mergeCell(cell, weightByBlock, total));
         }
         return group(found);
     }
 
+    /**
+     * One cell's candidates, one per block: three chest candidates with different prefabs are one
+     * chest that is there at their summed chance, worth their summed (already chance-weighted)
+     * value, described by the most valuable of them.
+     */
+    private static List<Found> mergeCell(List<Found> candidates, Map<Block, Integer> weightByBlock,
+                                         int totalWeight) {
+        Map<Block, List<Found>> byBlock = new LinkedHashMap<>();
+        for (Found f : candidates) byBlock.computeIfAbsent(f.block(), k -> new ArrayList<>()).add(f);
+        List<Found> out = new ArrayList<>(byBlock.size());
+        for (List<Found> same : byBlock.values()) {
+            same.sort(Comparator.comparingDouble(Found::value).reversed());
+            Found best = same.get(0);
+            // From the summed weights, not the summed rounded percents, so 1+1+1 of 3 reads 100.
+            int weight = weightByBlock.getOrDefault(best.block(), 0);
+            int chance = totalWeight <= 0 ? 100 : Math.max(1, Math.round(100f * weight / totalWeight));
+            double value = 0;
+            Set<Item> top = new LinkedHashSet<>();
+            for (Found f : same) {
+                value += f.value();
+                for (Item i : f.topItems()) if (top.size() < LootValue.TOP_ITEMS) top.add(i);
+            }
+            // Every candidate the same block means it is always there, whichever one is picked.
+            int capped = Math.min(100, chance);
+            out.add(new Found(best.block(), best.source(), best.detail(), capped,
+                best.variant() && capped < 100, value, List.copyOf(top)));
+        }
+        return out;
+    }
+
     /** One block before grouping. */
-    private record Found(Block block, Source source, String detail, int chance, double value,
-                         List<Item> topItems) {}
+    private record Found(Block block, Source source, String detail, int chance, boolean variant,
+                         double value, List<Item> topItems) {}
 
     /** What one block (or variant candidate) at {@code pos} would be given, or null for no loot. */
     private static Found judge(BlockState state, @Nullable CompoundTag nbt, @Nullable String prefabLink,
-                               @Nullable ContainerContentsStore store, BlockPos pos, int chance) {
+                               @Nullable ContainerContentsStore store, BlockPos pos, int chance,
+                               boolean variant) {
         if (state == null || state.isAir()) return null;
         boolean brushable = ContainerContentsRoller.isBrushable(state);
         if (!brushable && !ContainerContentsRoller.isContainerState(state)) return null;
@@ -146,29 +183,42 @@ public final class TemplateLoot {
                 ContainerContentsPool pool = LootPrefabStore.load(prefabLink)
                     .map(LootPrefabStore.Data::pool).orElse(null);
                 if (pool != null && !pool.isEmpty()) {
-                    return new Found(block, Source.PREFAB, prefabLink, chance,
+                    return new Found(block, Source.PREFAB, prefabLink, chance, variant,
                         weight * LootValue.poolValue(pool, slots), LootValue.topItems(pool));
                 }
             }
             if (store != null && store.hasPoolAt(pos)) {
                 ContainerContentsPool pool = store.poolAt(pos);
                 String link = store.linkAt(pos);
-                return new Found(block, link == null ? Source.POOL : Source.PREFAB, link, chance,
+                return new Found(block, link == null ? Source.POOL : Source.PREFAB, link, chance, variant,
                     weight * LootValue.poolValue(pool, slots), LootValue.topItems(pool));
             }
         }
         if (nbt != null && nbt.contains(NBT_LOOT_TABLE, Tag.TAG_STRING)) {
-            return new Found(block, Source.TABLE, nbt.getString(NBT_LOOT_TABLE), chance,
+            return new Found(block, Source.TABLE, nbt.getString(NBT_LOOT_TABLE), chance, variant,
                 weight * LootValue.UNKNOWN_TABLE, List.of());
         }
         List<ItemStack> stacks = savedStacks(nbt);
         if (!stacks.isEmpty()) {
-            return new Found(block, Source.INLINE, "", chance,
+            return new Found(block, Source.INLINE, "", chance, variant,
                 weight * LootValue.stacksValue(stacks), LootValue.topStacks(stacks));
+        }
+        String fallback = brushable ? null : BlockLootDefaults.prefabFor(state);
+        if (fallback != null) {
+            // An empty container of a covered type rolls this prefab one time in five.
+            ContainerContentsPool pool = LootPrefabStore.load(fallback)
+                .map(LootPrefabStore.Data::pool).orElse(null);
+            if (pool != null && !pool.isEmpty()) {
+                double odds = BlockLootDefaults.chancePct() / 100.0;
+                return new Found(block, Source.DEFAULT, fallback,
+                    Math.max(1, Math.round(chance * (float) odds)), variant,
+                    weight * odds * LootValue.poolValue(pool, ContainerContentsRoller.slotsForContainer(state)),
+                    LootValue.topItems(pool));
+            }
         }
         if (brushable) {
             // Stamping gives a bare brushable block a vanilla archaeology table.
-            return new Found(block, Source.TABLE, ARCHAEOLOGY, chance,
+            return new Found(block, Source.TABLE, ARCHAEOLOGY, chance, variant,
                 weight * LootValue.UNKNOWN_TABLE, List.of());
         }
         return null;
@@ -200,14 +250,15 @@ public final class TemplateLoot {
     }
 
     /**
-     * Same block, same source, same chance: one entry with a count. The group keeps its most
-     * valuable member's value, so the order reads "which chest is best", not "how many chests".
+     * Same block, and either always there or only a variant: one icon with a count. Twelve chests
+     * with three different prefabs still read as one chest icon; the group keeps its most valuable
+     * member's source and value, so the order reads "which chest is best", not "how many chests",
+     * and the best chance any member has.
      */
     static List<LootBlock> group(List<Found> found) {
         Map<List<Object>, List<Found>> groups = new LinkedHashMap<>();
         for (Found f : found) {
-            groups.computeIfAbsent(List.of(f.block(), f.source(), f.detail() == null ? "" : f.detail(),
-                f.chance()), k -> new ArrayList<>()).add(f);
+            groups.computeIfAbsent(List.of(f.block(), f.variant()), k -> new ArrayList<>()).add(f);
         }
         List<LootBlock> out = new ArrayList<>(groups.size());
         for (List<Found> members : groups.values()) {
@@ -217,8 +268,11 @@ public final class TemplateLoot {
             for (Found m : members) {
                 for (Item i : m.topItems()) if (top.size() < LootValue.TOP_ITEMS) top.add(i);
             }
+            int chance = 0;
+            for (Found m : members) chance = Math.max(chance, m.chance());
+            // Each member is one cell: judge yields one per template block, mergeCell one per block per cell.
             out.add(new LootBlock(best.block(), members.size(), best.source(), best.detail(),
-                best.chance(), best.value(), List.copyOf(top)));
+                chance, best.variant(), best.value(), List.copyOf(top)));
         }
         out.sort(Comparator.comparingDouble(LootBlock::value).reversed()
             .thenComparing(Comparator.comparingInt(LootBlock::count).reversed()));
