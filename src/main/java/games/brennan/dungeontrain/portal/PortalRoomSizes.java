@@ -130,6 +130,11 @@ public final class PortalRoomSizes {
         PENDING.put(name, size);
     }
 
+    /** Whether {@code name} has an editor resize no save has baked in yet. */
+    public static boolean hasPending(String name) {
+        return name != null && PENDING.containsKey(name);
+    }
+
     /**
      * Drop the editor override, leaving the size the template last reported.
      *
