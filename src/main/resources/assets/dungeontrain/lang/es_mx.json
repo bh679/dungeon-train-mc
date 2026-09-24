@@ -1606,7 +1606,7 @@
   "advancements.dungeontrain.dungeon_train.reached_chuncks.title": "Error de chunks",
   "advancements.dungeontrain.dungeon_train.reached_chuncks.description": "Viaja hasta el tramo donde el mundo solo se generó a medias: islas de chunks a la deriva en el vacío.",
   "advancements.dungeontrain.dungeon_train.reached_chuncks.hint": "El mundo deja de cargar. Sigue adelante.",
-  "advancements.dungeontrain.dungeon_train.reached_spheres.title": "El círculo se cierra",
+  "advancements.dungeontrain.dungeon_train.reached_spheres.title": "Redondeado",
   "advancements.dungeontrain.dungeon_train.reached_spheres.description": "Sal entre las esferas: pedazos redondos del mundo, arrancados y colgados en el cielo.",
   "advancements.dungeontrain.dungeon_train.reached_spheres.hint": "Ya era hora de que llegaras tan lejos… REDONDAMENTE.",
   "advancements.dungeontrain.dungeon_train.reached_stacks.title": "Stack Overflow",

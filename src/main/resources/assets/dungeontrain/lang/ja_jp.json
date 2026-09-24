@@ -1568,7 +1568,7 @@
   "advancements.dungeontrain.dungeon_train.reached_chuncks.title": "チャンクエラー",
   "advancements.dungeontrain.dungeon_train.reached_chuncks.description": "世界が半分しか生成されなかった区間へ乗り入れる——虚空に漂うチャンクの島々へ。",
   "advancements.dungeontrain.dungeon_train.reached_chuncks.hint": "世界の読み込みが止まる。それでも進め。",
-  "advancements.dungeontrain.dungeon_train.reached_spheres.title": "丸く収まる",
+  "advancements.dungeontrain.dungeon_train.reached_spheres.title": "まんまる",
   "advancements.dungeontrain.dungeon_train.reached_spheres.description": "球体のあいだを走り抜けよう — 世界のまるごと丸い断片が、空に浮かんでいる。",
   "advancements.dungeontrain.dungeon_train.reached_spheres.hint": "ここまで来るとは、まさに「丸」く収まる頃合いだ。",
   "advancements.dungeontrain.dungeon_train.reached_stacks.title": "スタックオーバーフロー",

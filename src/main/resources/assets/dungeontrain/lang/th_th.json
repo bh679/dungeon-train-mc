@@ -1568,7 +1568,7 @@
   "advancements.dungeontrain.dungeon_train.reached_chuncks.title": "ชังก์ผิดพลาด",
   "advancements.dungeontrain.dungeon_train.reached_chuncks.description": "โดยสารเข้าสู่ช่วงที่โลกสร้างขึ้นมาได้เพียงครึ่งเดียว — เกาะชังก์ล่องลอยอยู่ในความว่างเปล่า",
   "advancements.dungeontrain.dungeon_train.reached_chuncks.hint": "โลกหยุดโหลด แต่จงไปต่อ",
-  "advancements.dungeontrain.dungeon_train.reached_spheres.title": "ครบวงกลม",
+  "advancements.dungeontrain.dungeon_train.reached_spheres.title": "กลมกลึง",
   "advancements.dungeontrain.dungeon_train.reached_spheres.description": "ขับออกไปท่ามกลางทรงกลม — ชิ้นส่วนกลม ๆ ของโลก ถูกฉีกออกและแขวนไว้บนฟ้า",
   "advancements.dungeontrain.dungeon_train.reached_spheres.hint": "ถึงเวลา\"กลม\" ๆ แล้วที่คุณจะมาได้ไกลขนาดนี้",
   "advancements.dungeontrain.dungeon_train.reached_stacks.title": "Stack Overflow",

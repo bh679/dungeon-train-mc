@@ -1606,7 +1606,7 @@
   "advancements.dungeontrain.dungeon_train.reached_chuncks.title": "Erreur de chunk",
   "advancements.dungeontrain.dungeon_train.reached_chuncks.description": "Roule jusqu'à la portion où le monde ne s'est généré qu'à moitié — des îlots de chunks à la dérive dans le vide.",
   "advancements.dungeontrain.dungeon_train.reached_chuncks.hint": "Le monde cesse de charger. Continue.",
-  "advancements.dungeontrain.dungeon_train.reached_spheres.title": "La boucle est bouclée",
+  "advancements.dungeontrain.dungeon_train.reached_spheres.title": "Tout rond",
   "advancements.dungeontrain.dungeon_train.reached_spheres.description": "Roulez parmi les sphères : des morceaux ronds du monde, arrachés et suspendus dans le ciel.",
   "advancements.dungeontrain.dungeon_train.reached_spheres.hint": "Il était ROND temps que vous arriviez jusqu'ici.",
   "advancements.dungeontrain.dungeon_train.reached_stacks.title": "Stack Overflow",
