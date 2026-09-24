@@ -111,6 +111,10 @@ public final class BlockVariantMenuRenderer {
      * overran into the neighbouring pill (Gate 2 screenshot, v0.928.1).
      */
     static final double ACTIVE_MODE_CELL_WIDTH = 0.78;
+    /** Multi-space "How many" pill (1 | 2) — single blocks sharing a cell with a door / bed / tall plant. */
+    static final double SPAN_COUNT_CELL_WIDTH = 0.24;
+    /** Multi-space sub-option pill: 1 | 2 | R under "1", S | R under "2". Fixed width so the row doesn't jump. */
+    static final double SPAN_SUB_CELL_WIDTH = 0.34;
     static final double TEXT_SCALE = 0.012;
     static final double POPUP_BUTTON_SIZE = 0.20;
     static final double ICON_SIZE = 0.22;
@@ -343,6 +347,7 @@ public final class BlockVariantMenuRenderer {
             boolean rotatable = parsed != null && concrete && RotationApplier.canRotate(parsed);
             boolean halfable = parsed != null && concrete && RotationApplier.canFlip(parsed);
             boolean toggleable = parsed != null && concrete && RedstoneToggle.canToggle(parsed);
+            boolean spanable = BlockVariantMenu.spanApplies(entry);
             VariantRotation.Mode rowMode = decodeMode(entry.rotMode());
             boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
             double weightCellR = colXR - xCellW;
@@ -359,8 +364,13 @@ public final class BlockVariantMenuRenderer {
             // weight, reusing the space the rotation/half cells leave free on a
             // mob row. They collapse to zero width on block rows, so nameCellR
             // is unchanged there.
+            // Multi-space pills: [How many][Position | Same-Random], read left to right.
+            double spanSubCellR = activeModeCellL;
+            double spanSubCellL = spanable ? spanSubCellR - SPAN_SUB_CELL_WIDTH : spanSubCellR;
+            double spanCountCellR = spanSubCellL;
+            double spanCountCellL = spanable ? spanCountCellR - SPAN_COUNT_CELL_WIDTH : spanCountCellR;
             boolean showDiff = entry.isMob();
-            double diffMaxCellR = activeModeCellL;
+            double diffMaxCellR = spanCountCellL;
             double diffMaxCellL = showDiff ? diffMaxCellR - DIFF_CELL_WIDTH : diffMaxCellR;
             double diffMinCellR = diffMaxCellL;
             double diffMinCellL = showDiff ? diffMinCellR - DIFF_CELL_WIDTH : diffMinCellR;
@@ -449,6 +459,12 @@ public final class BlockVariantMenuRenderer {
             if (toggleable) {
                 drawActiveModeCell(ps, buffer, font, i, entry,
                     activeModeCellL, activeModeCellR, rowBottom, rowTop, rowCY, hovered);
+            }
+
+            // Multi-space pills (single blocks in a door / bed / tall-plant cell)
+            if (spanable) {
+                drawSpanCells(ps, buffer, font, i, entry, spanCountCellL, spanCountCellR,
+                    spanSubCellL, spanSubCellR, rowBottom, rowTop, rowCY, hovered);
             }
 
             // Difficulty band cells (mob rows only)
@@ -699,6 +715,58 @@ public final class BlockVariantMenuRenderer {
             drawCenteredText(ps, buffer, font, label,
                 (sL + sR) / 2.0, rowCY,
                 selected ? 0xFFFFFFFF : 0xFF888888);
+        }
+    }
+
+    /**
+     * Draw the multi-space pills for a single block sharing its cell with a door / bed / tall
+     * plant: "How many" (1 | 2), then which space (1 | 2 | R) when 1, or whether the second space
+     * repeats the block or re-rolls among the cell's singles (S | R) when 2. The selected segment
+     * shows the resolved mode, so an unset (AUTO) row shows what spawn will actually do.
+     */
+    private static void drawSpanCells(PoseStack ps, MultiBufferSource buffer, Font font,
+                                      int rowIndex, BlockVariantSyncPacket.Entry entry,
+                                      double countL, double countR, double subL, double subR,
+                                      double rowBottom, double rowTop, double rowCY,
+                                      BlockVariantMenu.Hit hovered) {
+        games.brennan.dungeontrain.editor.VariantSpan.Mode mode = BlockVariantMenu.resolvedSpan(entry);
+        boolean countHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_SPAN_COUNT && hovered.index() == rowIndex;
+        boolean subHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_SPAN_SUB && hovered.index() == rowIndex;
+        drawSegmentPill(ps, buffer, font, countL, countR, rowBottom, rowTop, rowCY, countHover,
+            new String[] {"1", "2"}, mode.isOne() ? 0 : 1);
+        String random = MenuLang.t("block_variant.plane_random");
+        if (mode.isOne()) {
+            int sel = switch (mode) {
+                case ONE_SECOND -> 1;
+                case ONE_RANDOM -> 2;
+                default -> 0;
+            };
+            drawSegmentPill(ps, buffer, font, subL, subR, rowBottom, rowTop, rowCY, subHover,
+                new String[] {"1", "2", random}, sel);
+        } else {
+            drawSegmentPill(ps, buffer, font, subL, subR, rowBottom, rowTop, rowCY, subHover,
+                new String[] {MenuLang.t("block_variant.span_same"), random},
+                mode == games.brennan.dungeontrain.editor.VariantSpan.Mode.TWO_RANDOM ? 1 : 0);
+        }
+    }
+
+    /** An N-segment pill with one selected segment — the shared-blue "R" tint for the last Random segment. */
+    private static void drawSegmentPill(PoseStack ps, MultiBufferSource buffer, Font font,
+                                        double cellL, double cellR, double rowBottom, double rowTop,
+                                        double rowCY, boolean hover, String[] labels, int selected) {
+        double pillBot = rowBottom + 0.02;
+        double pillTop = rowTop - 0.02;
+        double segW = (cellR - cellL - 0.02) / labels.length;
+        for (int seg = 0; seg < labels.length; seg++) {
+            double sL = cellL + 0.01 + seg * segW;
+            double sR = sL + segW - 0.005;
+            boolean isSelected = seg == selected;
+            int tint = isSelected
+                ? (hover ? 0xC0D98CFF : 0x808A4FB3) // violet — distinct from the half / toggle pills
+                : (hover ? 0x60AAAAAA : 0x30777777);
+            drawQuad(ps, buffer, sL, pillBot, sR, pillTop, tint);
+            drawCenteredText(ps, buffer, font, labels[seg], (sL + sR) / 2.0, rowCY,
+                isSelected ? 0xFFFFFFFF : 0xFF888888);
         }
     }
 

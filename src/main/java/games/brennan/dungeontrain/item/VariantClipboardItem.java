@@ -128,6 +128,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_GROUP_REF = "gref";
     /** Per-entry redstone-toggle mode ordinal ({@code VariantActive}). Absent when default INACTIVE. */
     private static final String NBT_ACTIVE_MODE = "am";
+    /** Per-entry multi-space footprint mode ordinal ({@code VariantSpan}). Absent when default AUTO. */
+    private static final String NBT_SPAN_MODE = "sm";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -256,6 +258,17 @@ public final class VariantClipboardItem extends Item {
                 merged.putInt("z", placePos.getZ());
                 be.loadWithComponents(merged, serverLevel.registryAccess());
                 be.setChanged();
+            }
+        }
+        // A door / bed / tall plant placeholder is only one half on its own — add the partner
+        // half so the pasted cell reads as the whole block (only into an empty space; never over
+        // a build).
+        if (!firstIsSentinel && games.brennan.dungeontrain.editor.MultiBlockFootprint.isMultiSpace(first.state())) {
+            BlockPos partnerPos = placePos.offset(
+                games.brennan.dungeontrain.editor.MultiBlockFootprint.partnerOffset(first.state()));
+            if (serverLevel.getBlockState(partnerPos).canBeReplaced()) {
+                games.brennan.dungeontrain.worldgen.SilentBlockOps.setBlockSilent(serverLevel, partnerPos,
+                    games.brennan.dungeontrain.editor.MultiBlockFootprint.partnerState(first.state()));
             }
         }
 
@@ -405,6 +418,9 @@ public final class VariantClipboardItem extends Item {
             }
             if (!s.active().isDefault()) {
                 entry.putByte(NBT_ACTIVE_MODE, (byte) s.active().mode().ordinal());
+            }
+            if (!s.span().isDefault()) {
+                entry.putByte(NBT_SPAN_MODE, (byte) s.span().mode().ordinal());
             }
             list.add(entry);
         }
@@ -562,8 +578,11 @@ public final class VariantClipboardItem extends Item {
                 if (!raw.isEmpty()) lootPrefab = raw;
             }
             int groupRef = entry.contains(NBT_GROUP_REF, Tag.TAG_INT) ? entry.getInt(NBT_GROUP_REF) : 0;
+            games.brennan.dungeontrain.editor.VariantSpan span = entry.contains(NBT_SPAN_MODE, Tag.TAG_BYTE)
+                ? games.brennan.dungeontrain.editor.VariantSpan.fromOrdinal(entry.getByte(NBT_SPAN_MODE) & 0xFF)
+                : games.brennan.dungeontrain.editor.VariantSpan.NONE;
             out.add(new VariantState(state, beNbt, weight, rotation, lootPrefab, null, half,
-                difficulty, groupRef, active));
+                difficulty, groupRef, active, span));
         }
         return out;
     }

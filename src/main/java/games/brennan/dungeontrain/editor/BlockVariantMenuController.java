@@ -343,7 +343,8 @@ public final class BlockVariantMenuController {
                 (byte) s.half().mode().ordinal(),
                 s.difficulty().min(), s.difficulty().max(),
                 s.groupRef(), refLive,
-                (byte) s.active().mode().ordinal()));
+                (byte) s.active().mode().ordinal(),
+                (byte) s.span().mode().ordinal()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
@@ -757,6 +758,19 @@ public final class BlockVariantMenuController {
                 if (ord < 0 || ord >= modes.length) return;
                 VariantActive next = new VariantActive(modes[ord]);
                 mutated.set(idx, mutated.get(idx).withActive(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_SPAN_MODE -> {
+                // Multi-space footprint for a single block sharing the cell with a door / bed /
+                // tall plant. The client only ever sends an explicit mode; AUTO is the unset default.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                int ord = packet.delta();
+                VariantSpan.Mode[] modes = VariantSpan.Mode.values();
+                if (ord <= VariantSpan.Mode.AUTO.ordinal() || ord >= modes.length) return;
+                mutated.set(idx, mutated.get(idx).withSpan(new VariantSpan(modes[ord])));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }

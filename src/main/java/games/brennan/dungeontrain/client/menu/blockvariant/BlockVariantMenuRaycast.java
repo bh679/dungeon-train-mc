@@ -162,6 +162,7 @@ public final class BlockVariantMenuRaycast {
         boolean rotatable = parsed != null && concrete && RotationApplier.canRotate(parsed);
         boolean halfable = parsed != null && concrete && RotationApplier.canFlip(parsed);
         boolean toggleable = parsed != null && concrete && RedstoneToggle.canToggle(parsed);
+        boolean spanable = BlockVariantMenu.spanApplies(entry);
         VariantRotation.Mode rowMode = BlockVariantMenuRenderer.decodeMode(entry.rotMode());
         boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
         double rotDirsCellR = weightCellL;
@@ -174,8 +175,13 @@ public final class BlockVariantMenuRaycast {
         double activeModeCellL = toggleable ? activeModeCellR - BlockVariantMenuRenderer.ACTIVE_MODE_CELL_WIDTH : activeModeCellR;
         // Difficulty cells (mob rows only) — mirror the renderer geometry: they
         // occupy the space the rotation/half cells leave free on a mob row.
+        // Multi-space pills — mirror the renderer: [How many][Position | Same-Random].
+        double spanSubCellR = activeModeCellL;
+        double spanSubCellL = spanable ? spanSubCellR - BlockVariantMenuRenderer.SPAN_SUB_CELL_WIDTH : spanSubCellR;
+        double spanCountCellR = spanSubCellL;
+        double spanCountCellL = spanable ? spanCountCellR - BlockVariantMenuRenderer.SPAN_COUNT_CELL_WIDTH : spanCountCellR;
         boolean showDiff = entry.isMob();
-        double diffMaxCellR = activeModeCellL;
+        double diffMaxCellR = spanCountCellL;
         double diffMaxCellL = showDiff ? diffMaxCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMaxCellR;
         double diffMinCellR = diffMaxCellL;
         double diffMinCellL = showDiff ? diffMinCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMinCellR;
@@ -197,6 +203,12 @@ public final class BlockVariantMenuRaycast {
         }
         if (toggleable && hitX >= activeModeCellL && hitX <= activeModeCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_ACTIVE_MODE, idx);
+        }
+        if (spanable && hitX >= spanSubCellL && hitX <= spanSubCellR) {
+            return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_SPAN_SUB, idx);
+        }
+        if (spanable && hitX >= spanCountCellL && hitX <= spanCountCellR) {
+            return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_SPAN_COUNT, idx);
         }
         if (showDiff && hitX >= diffMinCellL && hitX <= diffMinCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_DIFF_MIN, idx);

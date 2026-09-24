@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.Half;
@@ -108,6 +109,13 @@ public final class VariantEditorPreviewTicker {
                 if (FrozenMobs.isBlocksMode(level)) showPlaceholder(level, worldPos);
                 continue;
             }
+            // A two-space cell (door / bed / tall plant) previews both spaces, rolled the way
+            // spawn rolls them (MultiBlockVariants), with the preview tick as the seed so the
+            // span choices cycle too.
+            if (MultiBlockFootprint.cellFootprint(states) != null) {
+                previewMultiSpace(level, plot, localPos, states, picked, previewTick);
+                continue;
+            }
             // The empty-placeholder slot shows the placeholder block itself — the ghost cube IS
             // the "this is a variant cell, and it can be nothing" marker, so a cell with a block
             // and an empty entry alternates block <-> ghost the way two blocks do. Legacy
@@ -134,6 +142,27 @@ public final class VariantEditorPreviewTicker {
                 } else {
                     SilentBlockOps.setBlockSilentNoCascade(level, worldPos, toShow, picked.blockEntityNbt());
                 }
+            }
+        }
+    }
+
+    private static void previewMultiSpace(ServerLevel level, BlockVariantPlot plot, BlockPos localPos,
+                                          List<VariantState> states, VariantState picked, long previewTick) {
+        for (MultiBlockVariants.Write w : MultiBlockVariants.expand(states, picked, localPos,
+                previewTick, 0, v -> computePreviewState(v, previewTick))) {
+            BlockPos worldPos = plot.origin().offset(w.localPos());
+            if (w.isAir()) {
+                // The cell itself keeps the ghost cube as its "can be nothing" marker; the
+                // partner space is just cleared.
+                if (w.localPos().equals(localPos)) {
+                    showPlaceholder(level, worldPos);
+                } else if (!level.getBlockState(worldPos).isAir()) {
+                    SilentBlockOps.setBlockSilentNoCascade(level, worldPos, Blocks.AIR.defaultBlockState(), null);
+                }
+                continue;
+            }
+            if (!level.getBlockState(worldPos).equals(w.state())) {
+                SilentBlockOps.setBlockSilentNoCascade(level, worldPos, w.state(), w.entry().blockEntityNbt());
             }
         }
     }

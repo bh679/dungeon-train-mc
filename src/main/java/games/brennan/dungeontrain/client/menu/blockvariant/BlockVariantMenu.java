@@ -70,6 +70,8 @@ public final class BlockVariantMenu {
         ENTRY_ROT_DIRS,
         ENTRY_HALF_MODE,
         ENTRY_ACTIVE_MODE,
+        ENTRY_SPAN_COUNT,
+        ENTRY_SPAN_SUB,
         ENTRY_DIFF_MIN,
         ENTRY_DIFF_MAX,
         ROT_DIR_OPTION,
@@ -197,6 +199,35 @@ public final class BlockVariantMenu {
 
     public static void closeRotPopup() {
         rotPopupRowIndex = -1;
+    }
+
+    /**
+     * True when {@code e} is a single-space block row in a cell that also holds a
+     * door / bed / tall plant — the rows that get the multi-space "How many" and
+     * "Position / Same-Random" pills. Renderer and raycaster both gate on this.
+     */
+    public static boolean spanApplies(BlockVariantSyncPacket.Entry e) {
+        if (e.isMob() || e.isGroupRef()) return false;
+        BlockState parsed = parseState(e.stateString());
+        if (parsed == null || games.brennan.dungeontrain.editor.MultiBlockFootprint.isMultiSpace(parsed)
+                || games.brennan.dungeontrain.editor.CarriageVariantBlocks.isEmptyPlaceholder(parsed)) {
+            return false;
+        }
+        for (BlockVariantSyncPacket.Entry other : entries) {
+            if (isMultiRow(other)) return true;
+        }
+        return false;
+    }
+
+    /** {@code e}'s span mode with AUTO resolved against the cell's first row, as spawn resolves it. */
+    public static games.brennan.dungeontrain.editor.VariantSpan.Mode resolvedSpan(BlockVariantSyncPacket.Entry e) {
+        boolean firstIsMulti = !entries.isEmpty() && isMultiRow(entries.get(0));
+        return games.brennan.dungeontrain.editor.VariantSpan.fromOrdinal(e.spanMode() & 0xFF).resolve(firstIsMulti);
+    }
+
+    private static boolean isMultiRow(BlockVariantSyncPacket.Entry e) {
+        if (e.isMob() || e.isGroupRef()) return false;
+        return games.brennan.dungeontrain.editor.MultiBlockFootprint.isMultiSpace(parseState(e.stateString()));
     }
 
     /**

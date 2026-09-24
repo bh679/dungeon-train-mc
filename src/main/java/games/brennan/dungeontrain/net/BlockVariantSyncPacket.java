@@ -99,10 +99,21 @@ public record BlockVariantSyncPacket(
     public record Entry(String stateString, @Nullable String beNbt, int weight,
                         byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
                         @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
-                        int groupRef, boolean groupRefLive, byte activeMode) {
+                        int groupRef, boolean groupRefLive, byte activeMode, byte spanMode) {
 
         /** Wire default for {@link #activeMode}: {@code VariantActive.Mode.INACTIVE}. */
         public static final byte ACTIVE_MODE_DEFAULT = (byte) 2;
+        /** Wire default for {@link #spanMode}: {@code VariantSpan.Mode.AUTO}. */
+        public static final byte SPAN_MODE_DEFAULT = (byte) 0;
+
+        /** Backward-compat constructor for call sites that don't carry a multi-space span mode (defaults to AUTO). */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                     @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
+                     int groupRef, boolean groupRefLive, byte activeMode) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId,
+                halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode, SPAN_MODE_DEFAULT);
+        }
 
         /** Backward-compat constructor for call sites that don't carry a redstone-toggle mode (defaults to INACTIVE). */
         public Entry(String stateString, @Nullable String beNbt, int weight,
@@ -216,6 +227,7 @@ public record BlockVariantSyncPacket(
             buf.writeVarInt(e.groupRef());
             buf.writeBoolean(e.groupRefLive());
             buf.writeByte(e.activeMode());
+            buf.writeByte(e.spanMode());
         }
     }
 
@@ -254,8 +266,10 @@ public record BlockVariantSyncPacket(
             int groupRef = buf.readVarInt();
             boolean groupRefLive = buf.readBoolean();
             byte activeMode = buf.readByte();
+            byte spanMode = buf.readByte();
             entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
-                linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode));
+                linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode,
+                spanMode));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
             copyRoll, copySettingsSupported, copyScope);

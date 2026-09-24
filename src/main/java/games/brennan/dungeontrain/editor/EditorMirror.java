@@ -221,11 +221,12 @@ public final class EditorMirror {
     public static VariantState reflectVariant(VariantState v, boolean flipX, boolean flipY, boolean flipZ) {
         if (v.isMob()) return v;
         return new VariantState(
-            reflect(v.state(), flipX, flipY, flipZ),
+            flipY ? MultiBlockFootprint.verticalFlip(reflect(v.state(), flipX, true, flipZ))
+                : reflect(v.state(), flipX, false, flipZ),
             v.blockEntityNbt(), v.weight(),
             reflectRotation(v.rotation(), flipX, flipY, flipZ),
             v.linkedLootPrefabId(), v.entityId(),
-            reflectHalf(v.half(), flipY), v.difficulty(), v.groupRef(), v.active());
+            reflectHalf(v.half(), flipY), v.difficulty(), v.groupRef(), v.active(), v.span());
     }
 
     /** Reflect a whole candidate pool ({@link #reflectVariant} over each entry). */

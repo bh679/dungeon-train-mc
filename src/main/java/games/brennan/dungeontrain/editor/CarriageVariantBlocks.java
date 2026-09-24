@@ -646,8 +646,15 @@ public final class CarriageVariantBlocks {
             // v3 entries had a per-entry "locked" field; v4 moved locking
             // to the cell level. Old "locked" values are silently dropped
             // on read — the file rewrites cleanly without it.
+            // Additive multi-space footprint setting for single blocks sharing
+            // a cell with a door / bed / tall plant. Absent → AUTO.
+            VariantSpan span = VariantSpan.NONE;
+            if (obj.has("span") && obj.get("span").isJsonPrimitive()
+                && obj.get("span").getAsJsonPrimitive().isString()) {
+                span = VariantSpan.fromToken(obj.get("span").getAsString());
+            }
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
-                VariantDifficulty.NONE, groupRef, active);
+                VariantDifficulty.NONE, groupRef, active, span);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -1324,6 +1331,9 @@ public final class CarriageVariantBlocks {
         }
         if (!s.active().isDefault()) {
             sb.append(", \"active\": \"").append(activeModeName(s.active().mode())).append("\"");
+        }
+        if (!s.span().isDefault()) {
+            sb.append(", \"span\": \"").append(VariantSpan.toToken(s.span().mode())).append("\"");
         }
         sb.append("}");
     }
