@@ -26,40 +26,51 @@ public final class BetaPopulator {
     /** Beta's own populate: biome from the climate, snow by temperature. */
     public static void populate(BetaWorld world, BetaTerrain terrain, int chunkX, int chunkZ) {
         BetaBiome biome = terrain.climate().biome(chunkX * 16 + 16, chunkZ * 16 + 16);
-        populate(world, terrain.seed(), terrain.forestNoise(), biome, terrain.climate(), chunkX, chunkZ);
+        populate(world, terrain.seed(), terrain.forestNoise(), biome, terrain.climate(), terrain.seaLevel(), chunkX, chunkZ);
     }
 
     /**
      * The shared populate step for a Beta-family generator (Beta, Sky): {@code biome} drives trees and
-     * plants; {@code snowClimate} lays snow by temperature, or {@code null} for none (Sky).
+     * plants; {@code snowClimate} lays snow by temperature, or {@code null} for none (Sky). Beta's sea level.
      */
     public static void populate(BetaWorld world, long seed, PerlinOctaveNoise forestNoise, BetaBiome biome,
                                 BetaClimate snowClimate, int chunkX, int chunkZ) {
+        populate(world, seed, forestNoise, biome, snowClimate, BetaTerrain.SEA_LEVEL, chunkX, chunkZ);
+    }
+
+    /**
+     * {@link #populate(BetaWorld, long, PerlinOctaveNoise, BetaBiome, BetaClimate, int, int)} with the
+     * generator's own sea level (lava lakes surface above it only one time in ten). The lake, dungeon, clay
+     * and shallow-ore draws span the world's whole column ({@link BetaWorld#height()}) — Beta's {@code 128}.
+     */
+    public static void populate(BetaWorld world, long seed, PerlinOctaveNoise forestNoise, BetaBiome biome,
+                                BetaClimate snowClimate, int seaLevel, int chunkX, int chunkZ) {
         int bx = chunkX * 16;
         int bz = chunkZ * 16;
+        int height = world.height();
         Random rand = new Random(seed);
         long mulX = rand.nextLong() / 2L * 2L + 1L;
         long mulZ = rand.nextLong() / 2L * 2L + 1L;
         rand.setSeed((long) chunkX * mulX + (long) chunkZ * mulZ ^ seed);
 
         if (rand.nextInt(4) == 0) {
-            BetaFeatures.lake(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8, WATER);
+            BetaFeatures.lake(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(height), bz + rand.nextInt(16) + 8, WATER);
         }
         if (rand.nextInt(8) == 0) {
             int x = bx + rand.nextInt(16) + 8;
-            int y = rand.nextInt(rand.nextInt(120) + 8);
+            int y = rand.nextInt(rand.nextInt(height - 8) + 8);
             int z = bz + rand.nextInt(16) + 8;
-            if (y < BetaTerrain.SEA_LEVEL || rand.nextInt(10) == 0) BetaFeatures.lake(world, rand, x, y, z, LAVA);
+            if (y < seaLevel || rand.nextInt(10) == 0) BetaFeatures.lake(world, rand, x, y, z, LAVA);
         }
         for (int i = 0; i < 8; i++) {
-            BetaDungeon.place(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8);
+            BetaDungeon.place(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(height), bz + rand.nextInt(16) + 8);
         }
         for (int i = 0; i < 10; i++) {
-            BetaFeatures.clay(world, rand, bx + rand.nextInt(16), rand.nextInt(128), bz + rand.nextInt(16), 32);
+            BetaFeatures.clay(world, rand, bx + rand.nextInt(16), rand.nextInt(height), bz + rand.nextInt(16), 32);
         }
-        veins(world, rand, bx, bz, 20, 128, 32, Blocks.DIRT.defaultBlockState());
-        veins(world, rand, bx, bz, 10, 128, 32, Blocks.GRAVEL.defaultBlockState());
-        veins(world, rand, bx, bz, 20, 128, 16, Blocks.COAL_ORE.defaultBlockState());
+        veins(world, rand, bx, bz, 20, height, 32, Blocks.DIRT.defaultBlockState());
+        veins(world, rand, bx, bz, 10, height, 32, Blocks.GRAVEL.defaultBlockState());
+        veins(world, rand, bx, bz, 20, height, 16, Blocks.COAL_ORE.defaultBlockState());
         veins(world, rand, bx, bz, 20, 64, 8, Blocks.IRON_ORE.defaultBlockState());
         veins(world, rand, bx, bz, 2, 32, 8, Blocks.GOLD_ORE.defaultBlockState());
         veins(world, rand, bx, bz, 8, 16, 7, Blocks.REDSTONE_ORE.defaultBlockState());
@@ -68,8 +79,8 @@ public final class BetaPopulator {
                 6, Blocks.LAPIS_ORE.defaultBlockState(), Blocks.STONE);
 
         trees(world, rand, forestNoise, biome, bx, bz);
-        plants(world, rand, biome, bx, bz);
-        springs(world, rand, bx, bz);
+        plants(world, rand, biome, bx, bz, height);
+        springs(world, rand, bx, bz, height);
         if (snowClimate != null) snow(world, snowClimate, bx, bz);
     }
 
@@ -100,7 +111,7 @@ public final class BetaPopulator {
         }
     }
 
-    private static void plants(BetaWorld world, Random rand, BetaBiome biome, int bx, int bz) {
+    private static void plants(BetaWorld world, Random rand, BetaBiome biome, int bx, int bz, int height) {
         int flowers = switch (biome) {
             case FOREST, TAIGA -> 2;
             case SEASONAL_FOREST -> 4;
@@ -108,7 +119,7 @@ public final class BetaPopulator {
             default -> 0;
         };
         for (int i = 0; i < flowers; i++) {
-            BetaFeatures.flowers(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8,
+            BetaFeatures.flowers(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(height), bz + rand.nextInt(16) + 8,
                     Blocks.DANDELION.defaultBlockState());
         }
         int grass = switch (biome) {
@@ -120,43 +131,43 @@ public final class BetaPopulator {
         for (int i = 0; i < grass; i++) {
             BlockState plant = biome == BetaBiome.RAINFOREST && rand.nextInt(3) != 0
                     ? Blocks.FERN.defaultBlockState() : Blocks.SHORT_GRASS.defaultBlockState();
-            BetaFeatures.tallGrass(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8, plant);
+            BetaFeatures.tallGrass(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(height), bz + rand.nextInt(16) + 8, plant);
         }
         int deadBushes = biome == BetaBiome.DESERT ? 2 : 0;
         for (int i = 0; i < deadBushes; i++) {
-            BetaFeatures.deadBush(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8);
+            BetaFeatures.deadBush(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(height), bz + rand.nextInt(16) + 8);
         }
         if (rand.nextInt(2) == 0) {
-            BetaFeatures.flowers(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8,
+            BetaFeatures.flowers(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(height), bz + rand.nextInt(16) + 8,
                     Blocks.POPPY.defaultBlockState());
         }
         if (rand.nextInt(4) == 0) {
-            BetaFeatures.flowers(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8,
+            BetaFeatures.flowers(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(height), bz + rand.nextInt(16) + 8,
                     Blocks.BROWN_MUSHROOM.defaultBlockState());
         }
         if (rand.nextInt(8) == 0) {
-            BetaFeatures.flowers(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8,
+            BetaFeatures.flowers(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(height), bz + rand.nextInt(16) + 8,
                     Blocks.RED_MUSHROOM.defaultBlockState());
         }
         for (int i = 0; i < 10; i++) {
-            BetaFeatures.reeds(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8);
+            BetaFeatures.reeds(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(height), bz + rand.nextInt(16) + 8);
         }
         if (rand.nextInt(32) == 0) {
-            BetaFeatures.pumpkins(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8);
+            BetaFeatures.pumpkins(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(height), bz + rand.nextInt(16) + 8);
         }
         int cacti = biome == BetaBiome.DESERT ? 10 : 0;
         for (int i = 0; i < cacti; i++) {
-            BetaFeatures.cactus(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(128), bz + rand.nextInt(16) + 8);
+            BetaFeatures.cactus(world, rand, bx + rand.nextInt(16) + 8, rand.nextInt(height), bz + rand.nextInt(16) + 8);
         }
     }
 
-    private static void springs(BetaWorld world, Random rand, int bx, int bz) {
+    private static void springs(BetaWorld world, Random rand, int bx, int bz, int height) {
         for (int i = 0; i < 50; i++) {
-            BetaFeatures.spring(world, bx + rand.nextInt(16) + 8, rand.nextInt(rand.nextInt(120) + 8),
+            BetaFeatures.spring(world, bx + rand.nextInt(16) + 8, rand.nextInt(rand.nextInt(height - 8) + 8),
                     bz + rand.nextInt(16) + 8, WATER);
         }
         for (int i = 0; i < 20; i++) {
-            BetaFeatures.spring(world, bx + rand.nextInt(16) + 8, rand.nextInt(rand.nextInt(rand.nextInt(112) + 8) + 8),
+            BetaFeatures.spring(world, bx + rand.nextInt(16) + 8, rand.nextInt(rand.nextInt(rand.nextInt(height - 16) + 8) + 8),
                     bz + rand.nextInt(16) + 8, LAVA);
         }
     }

@@ -24,6 +24,9 @@ final class BetaTerrainTest {
         assertArrayEquals(a.blocks(), b.blocks());
         assertArrayEquals(a.blocks(), TERRAIN.generate(3, -7).blocks());
         assertFalse(Arrays.equals(a.blocks(), new BetaTerrain(SEED + 1).generate(3, -7).blocks()));
+        // The explicit Beta profile is the same generator, byte for byte.
+        assertArrayEquals(a.blocks(), new BetaTerrain(SEED, BetaTerrain.Profile.BETA).generate(3, -7).blocks());
+        assertEquals(BetaTerrain.HEIGHT, a.height());
     }
 
     @Test

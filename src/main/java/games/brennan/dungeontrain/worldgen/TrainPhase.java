@@ -47,7 +47,9 @@ public enum TrainPhase {
     /** The Far Lands — Beta's generator past its 32-bit noise overflow; see {@link games.brennan.dungeontrain.worldgen.legacy.farlands.FarLandsShift}. */
     FAR_LANDS,
     /** Terrain from a port of Classic 0.30's finite level generator; see {@link games.brennan.dungeontrain.worldgen.legacy.classic.ClassicLevels}. */
-    CLASSIC;
+    CLASSIC,
+    /** The Caves of Chaos preset on the Beta pipeline — cavernous stone to y 256 over void; see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
+    CAVES_OF_CHAOS;
 
     /** Bitmask with every phase set ({@code 1<<ordinal} per value) — the "all phases" wire value. */
     public static final int ALL_MASK = (1 << values().length) - 1;
@@ -75,7 +77,7 @@ public enum TrainPhase {
 
     /**
      * Single-letter label for compact phase pickers/indicators — the first letter of the constant
-     * name, so the fifteen phases read {@code O N V E U C S S B A S I F F C}. A new phase is picked up automatically.
+     * name, so the sixteen phases read {@code O N V E U C S S B A S I F F C C}. A new phase is picked up automatically.
      */
     public String letter() {
         return String.valueOf(name().charAt(0));
@@ -99,6 +101,7 @@ public enum TrainPhase {
             case FLOATING -> "Floating";
             case FAR_LANDS -> "Far Lands";
             case CLASSIC -> "Classic";
+            case CAVES_OF_CHAOS -> "Caves of Chaos";
         };
     }
 
@@ -107,13 +110,14 @@ public enum TrainPhase {
         return name().toLowerCase(java.util.Locale.ROOT);
     }
 
-    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}/{@code spheres}/{@code stacks}/{@code beta}/{@code alpha}/{@code skylands}/{@code infdev}/{@code floating}/{@code far_lands}); null if unknown. */
+    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}/{@code spheres}/{@code stacks}/{@code beta}/{@code alpha}/{@code skylands}/{@code infdev}/{@code floating}/{@code far_lands}/{@code caves_of_chaos} (alias {@code chaos})); null if unknown. */
     public static TrainPhase byToken(String token) {
         if (token == null) return null;
         String t = token.trim().toLowerCase(java.util.Locale.ROOT);
         if (t.equals("ow")) return OVERWORLD;
         if (t.equals("ud") || t.equals("upsidedown")) return UPSIDE_DOWN;
         if (t.equals("farlands")) return FAR_LANDS;
+        if (t.equals("chaos") || t.equals("cavesofchaos")) return CAVES_OF_CHAOS;
         for (TrainPhase p : values()) {
             if (p.token().equals(t)) return p;
         }
@@ -137,6 +141,10 @@ public enum TrainPhase {
         if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
                 games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.FAR_LANDS, worldX)) {
             return FAR_LANDS;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.CAVES_OF_CHAOS, worldX)) {
+            return CAVES_OF_CHAOS;
         }
         if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
                 games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.BETA, worldX)) {
