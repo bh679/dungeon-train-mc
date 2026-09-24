@@ -18316,12 +18316,12 @@
         "compatibility",
         "world"
       ],
-      "title": "Floating spheres and BetterEnd bands cleaned up",
-      "summary": "Terrain borrowed from other worlds \u2014 the floating spheres, the BetterEnd bands and dimensional carriages \u2014 now grows its trees and plants the way the original world does, and no longer carries a ghost of the railway with it. Chorus plants keep their vanilla look everywhere.",
+      "title": "The stranger stretches look right",
+      "summary": "Some of the stranger places the line runs through borrow their scenery from elsewhere. That scenery now grows the way it should, and no longer carries a ghost of the railway along with it. Chorus plants keep their vanilla look.",
       "highlights": [
         "Trees stand on the ground instead of inside each other.",
         "No second track floating above the rails.",
-        "Chests in borrowed terrain open as they should.",
+        "Chests in borrowed scenery open as they should.",
         "Chorus plants look vanilla."
       ],
       "date": "2026-09-24",
