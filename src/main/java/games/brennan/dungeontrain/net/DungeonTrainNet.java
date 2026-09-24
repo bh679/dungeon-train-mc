@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "85";
+    public static final String PROTOCOL_VERSION = "86";
 
     private DungeonTrainNet() {}
 
@@ -249,12 +249,20 @@ public final class DungeonTrainNet {
         registrar.playToServer(BuilderProfileRequestPacket.TYPE, BuilderProfileRequestPacket.STREAM_CODEC, BuilderProfileRequestPacket::handle);
         registrar.playToClient(BuilderProfilePacket.TYPE, BuilderProfilePacket.STREAM_CODEC, BuilderProfilePacket::handle);
         registrar.playToServer(BuilderProfileActionPacket.TYPE, BuilderProfileActionPacket.STREAM_CODEC, BuilderProfileActionPacket::handle);
+        registrar.playToServer(BuilderProfileDeletePacket.TYPE, BuilderProfileDeletePacket.STREAM_CODEC, BuilderProfileDeletePacket::handle);
+        registrar.playToClient(BuilderProfileDeleteResultPacket.TYPE, BuilderProfileDeleteResultPacket.STREAM_CODEC, BuilderProfileDeleteResultPacket::handle);
         registrar.playToServer(BuilderProfileDownloadPacket.TYPE, BuilderProfileDownloadPacket.STREAM_CODEC, BuilderProfileDownloadPacket::handle);
         registrar.playToClient(BuilderProfileDownloadResultPacket.TYPE, BuilderProfileDownloadResultPacket.STREAM_CODEC, BuilderProfileDownloadResultPacket::handle);
         // Blocks for a tile-sized picture of somebody's relay build — a read, where the download
         // above is a write. See RelayBuildPreviewRequestPacket.
         registrar.playToServer(RelayBuildPreviewRequestPacket.TYPE, RelayBuildPreviewRequestPacket.STREAM_CODEC, RelayBuildPreviewRequestPacket::handle);
         registrar.playToClient(RelayBuildPreviewPacket.TYPE, RelayBuildPreviewPacket.STREAM_CODEC, RelayBuildPreviewPacket::handle);
+        // Which extra questions a Submit for Review note asks (redstone, loot) — read from the build's
+        // blocks on the server before the note screen opens. See BuilderSubmitHintsRequestPacket.
+        registrar.playToServer(BuilderSubmitHintsRequestPacket.TYPE, BuilderSubmitHintsRequestPacket.STREAM_CODEC, BuilderSubmitHintsRequestPacket::handle);
+        registrar.playToClient(BuilderSubmitHintsPacket.TYPE, BuilderSubmitHintsPacket.STREAM_CODEC, BuilderSubmitHintsPacket::handle);
+        // Editing a build's Submit for Review answers after the fact — owner or developer.
+        registrar.playToServer(BuilderNoteEditPacket.TYPE, BuilderNoteEditPacket.STREAM_CODEC, BuilderNoteEditPacket::handle);
         // The Stages tab's model: a carriage stamped with a stage's parts and rolled variants,
         // composed on the server and drawn on the client. See StagePreviewRequestPacket.
         registrar.playToServer(StagePreviewRequestPacket.TYPE, StagePreviewRequestPacket.STREAM_CODEC, StagePreviewRequestPacket::handle);
@@ -325,6 +333,11 @@ public final class DungeonTrainNet {
         registrar.playToClient(FreePlayCausePacket.TYPE, FreePlayCausePacket.STREAM_CODEC, FreePlayCausePacket::handle);
         registrar.playToClient(TrainDebugSyncPacket.TYPE, TrainDebugSyncPacket.STREAM_CODEC, TrainDebugSyncPacket::handle);
         registrar.playToClient(TrainDebugCarriagePacket.TYPE, TrainDebugCarriagePacket.STREAM_CODEC, TrainDebugCarriagePacket::handle);
+        // Where a save's relay upload has got to — drives the editor screen's "Uploading…" note and
+        // its refresh once the build lands. See BuilderUploadStatusPacket.
+        registrar.playToClient(BuilderUploadStatusPacket.TYPE, BuilderUploadStatusPacket.STREAM_CODEC, BuilderUploadStatusPacket::handle);
+        registrar.playToClient(EditorSaveAsPromptPacket.TYPE, EditorSaveAsPromptPacket.STREAM_CODEC, EditorSaveAsPromptPacket::handle);
+        registrar.playToServer(EditorSaveAsPacket.TYPE, EditorSaveAsPacket.STREAM_CODEC, EditorSaveAsPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

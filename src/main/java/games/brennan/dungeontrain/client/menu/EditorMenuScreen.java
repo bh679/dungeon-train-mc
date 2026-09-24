@@ -699,7 +699,8 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * "New" drills into a {@link NewSourcePickerScreen} for carriages and contents (Blank / Current
+     * "New" drills into a {@link NewSourcePickerScreen} for carriages, contents and whole rooms /
+     * groups (Blank / Current
      * / Standard seed picker before naming). For {@code tracks} the {@code modelId} is the kind tag
      * the player is standing on ({@code track}, {@code pillar_top}, {@code tunnel_section},
      * {@code adjunct_stairs}, ...) — passed to {@code /dt editor tracks new <kind> <typed-name>},
@@ -730,9 +731,14 @@ public final class EditorMenuScreen implements MenuScreen {
                     MenuLang.t("common.new"), "name",
                     "dungeontrain editor portals new " + modelId);
             }
-            // Parts are created through their own picker; architecture has no models yet; whole
-            // templates are authored in the Train Builder or loaded from the relay.
-            case PARTS, ARCHITECTURE, WHOLE, WHOLE_GROUP -> null;
+            case WHOLE -> new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.new"),
+                new NewSourcePickerScreen(NewSourcePickerScreen.Category.WHOLE, null, modelId));
+            case WHOLE_GROUP -> new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.new"),
+                new NewSourcePickerScreen(NewSourcePickerScreen.Category.WHOLE_GROUP, null, modelId));
+            // Parts are created through their own picker; architecture has no models yet.
+            case PARTS, ARCHITECTURE -> null;
         };
     }
 

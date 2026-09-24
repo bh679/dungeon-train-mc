@@ -309,8 +309,17 @@ public final class EditorDirtyCheck {
     private static void scanPortalRooms(ServerLevel level, CarriageDims dims, boolean devmode,
                                         List<DirtyEntry> out) {
         for (String name : TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM)) {
-            BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             String key = PortalRoomEditor.snapshotKey(name);
+            // Nothing below can report a room with no snapshot, no sidecar edit and no pending size:
+            // the block compare needs a snapshot, and a resize always goes through
+            // PortalRoomSizes.pending. Skipping here matters because plotOrigin and sizeOf each
+            // read every room's template on a cold cache — seconds on the server thread for rooms
+            // that are not even standing in the world.
+            if (!EditorPlotSnapshots.has(key) && !EditorPlotSnapshots.sidecarEdited(key)
+                    && !games.brennan.dungeontrain.portal.PortalRoomSizes.hasPending(name)) {
+                continue;
+            }
+            BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
 
             // Load the template BEFORE reading the plot size. A room's size lives in its template
@@ -568,8 +577,13 @@ public final class EditorDirtyCheck {
         return switch (model.kind()) {
             case CARRIAGE, CONTENTS -> model.id();
             case TRACK -> "track." + model.variantName();
-            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL, PORTAL_ROOM ->
+            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL ->
                 model.id() + "." + model.variantName();
+            // Template.PortalRoom has no variantName of its own — it would answer its id, giving
+            // portal_room.portal_room, which no scan row carries. scanPortalRooms keys by the name.
+            case PORTAL_ROOM -> model instanceof Template.PortalRoom room
+                ? "portal_room." + room.name()
+                : model.id() + "." + model.variantName();
             // Whole rows are keyed by the bare id under their own category ids — see scanWhole.
             case WHOLE_CARRIAGE, CARRIAGE_GROUP -> model.id();
             case PART -> null;

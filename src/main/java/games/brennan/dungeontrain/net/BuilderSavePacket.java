@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.BuilderPhotoRequest;
 import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.builder.BuilderBuiltins;
 import games.brennan.dungeontrain.builder.BuilderSave;
 import games.brennan.dungeontrain.builder.BuilderStructureStamp;
 import games.brennan.dungeontrain.builder.structure.BuilderStructureCells;
@@ -56,13 +57,29 @@ public record BuilderSavePacket() implements CustomPacketPayload {
                         .withStyle(ChatFormatting.GREEN));
                 // Snapshots were re-baselined by the save, so the client's green Save can clear.
                 DungeonTrainNet.sendTo(player, BuilderDirtyPacket.state(0));
+                // And the build's name may have just changed under it — a Save-as renames first —
+                // so the client's idea of what Save points at, and whether that is a built-in, is
+                // stale until told. Left alone, the next Save re-asked for a name it already has.
+                BuilderBoundsPacket.sendTo(player, level);
                 refreshStructures(level);
                 requestPhoto(player, level, result.written());
                 // …and, when the player has opted in, the build goes to their relay profile. After the
                 // local write, never instead of it: the file on disk is the build, and an upload that
                 // can't happen costs the player nothing.
-                BuilderRelayUpload.afterSave(player, level, result.written(),
-                        DungeonTrainWorldData.get(level).builderStage());
+                if (BuilderBuiltins.isProtected(level)) {
+                    // Saved over a template the mod ships — the Keep-as-local-edit button, or a save
+                    // that never went past the naming screen. Not theirs to put in My Builds, which
+                    // is the Editor's rule too; said aloud, because a build missing from My Builds
+                    // with no reason given reads as lost work. Only when uploads are on at all.
+                    if (BuilderRelayUpload.canUpload(player)) {
+                        player.sendSystemMessage(Component.translatable(
+                                "gui.dungeontrain.builder.profile.builtin_not_uploaded",
+                                result.variantId()).withStyle(ChatFormatting.YELLOW));
+                    }
+                } else {
+                    BuilderRelayUpload.afterSave(player, level, result.written(),
+                            DungeonTrainWorldData.get(level).builderStage());
+                }
             } else {
                 player.sendSystemMessage(Component.translatable(
                         "gui.dungeontrain.builder.save_failed", result.failure())

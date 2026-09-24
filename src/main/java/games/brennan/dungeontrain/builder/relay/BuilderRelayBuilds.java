@@ -99,6 +99,35 @@ public final class BuilderRelayBuilds {
         return end < 0 ? "" : key.substring(0, end);
     }
 
+    /**
+     * The sub kind a key was filed under — the second field {@link #keyOf} wrote.
+     *
+     * @return the empty string for a null or malformed key
+     */
+    public static String subKindOfKey(String key) {
+        String[] parts = splitKey(key);
+        return parts == null ? "" : parts[1];
+    }
+
+    /**
+     * The template id a key was filed under — the third field {@link #keyOf} wrote.
+     *
+     * @return the empty string for a null or malformed key
+     */
+    public static String idOfKey(String key) {
+        String[] parts = splitKey(key);
+        return parts == null ? "" : parts[2];
+    }
+
+    /** The three fields of a key, or null when it is not one {@link #keyOf} wrote. */
+    private static String[] splitKey(String key) {
+        if (key == null) return null;
+        int first = key.indexOf(SEPARATOR);
+        int second = first < 0 ? -1 : key.indexOf(SEPARATOR, first + 1);
+        if (second < 0) return null;
+        return new String[] {key.substring(0, first), key.substring(first + 1, second), key.substring(second + 1)};
+    }
+
     public Entry get(String key) {
         return byKey.get(key);
     }

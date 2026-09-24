@@ -7,7 +7,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Who owns a portal room's footprint, and for how long.
@@ -114,5 +116,22 @@ final class PortalRoomSizesTest {
         // the template changed, yet the cache now answers with the previous size.
         PortalRoomSizes.revert(ROOM);
         assertEquals(ON_DISK, PortalRoomSizes.sizeOf(ROOM, DIMS));
+    }
+
+    @Test
+    @DisplayName("hasPending tracks an unsaved resize until a save or revert spends it")
+    void hasPendingTracksTheOverride() {
+        // EditorDirtyCheck skips a portal room with no snapshot unless this says a resize is waiting.
+        assertFalse(PortalRoomSizes.hasPending(ROOM));
+        PortalRoomSizes.observe(ROOM, ON_DISK);
+        assertFalse(PortalRoomSizes.hasPending(ROOM), "loading a template is not a resize");
+        PortalRoomSizes.pending(ROOM, RESIZED);
+        assertTrue(PortalRoomSizes.hasPending(ROOM));
+        PortalRoomSizes.revert(ROOM);
+        assertFalse(PortalRoomSizes.hasPending(ROOM));
+        PortalRoomSizes.pending(ROOM, RESIZED);
+        PortalRoomSizes.settle(ROOM, RESIZED);
+        assertFalse(PortalRoomSizes.hasPending(ROOM));
+        assertFalse(PortalRoomSizes.hasPending(null));
     }
 }

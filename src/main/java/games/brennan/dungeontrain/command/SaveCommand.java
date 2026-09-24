@@ -4,6 +4,8 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
+import games.brennan.dungeontrain.editor.EditorSaveAs;
+import games.brennan.dungeontrain.editor.EditorShipped;
 import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Stores;
 import games.brennan.dungeontrain.template.Template;
@@ -60,6 +62,14 @@ public final class SaveCommand {
             .executes(ctx -> runSave(ctx.getSource(), false))
             .then(Commands.literal("default")
                 .executes(ctx -> runSave(ctx.getSource(), true)))
+            // The two answers to the Save-as prompt, typed: keep the edit over a shipped template on
+            // this install only, or save it as a new template of the player's own. See EditorSaveAs.
+            .then(Commands.literal("local")
+                .executes(ctx -> runSaveLocal(ctx.getSource())))
+            .then(Commands.literal("as")
+                .then(Commands.argument("name", com.mojang.brigadier.arguments.StringArgumentType.word())
+                    .executes(ctx -> runSaveAs(ctx.getSource(),
+                        com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "name")))))
             .then(Commands.literal("all")
                 .executes(ctx -> runSaveAll(ctx.getSource(), false))
                 .then(Commands.literal("default")
@@ -79,7 +89,61 @@ public final class SaveCommand {
                             .executes(ctx -> runSaveModel(ctx.getSource(),
                                 com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "category"),
                                 com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "id"),
-                                true))))));
+                                true)))
+                        .then(Commands.literal("local")
+                            .executes(ctx -> runSaveModel(ctx.getSource(),
+                                com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "category"),
+                                com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "id"),
+                                false, true))))));
+    }
+
+    /**
+     * Save {@code model}, unless it is a shipped template outside dev mode — then ask the player
+     * whether to save it as a new template or keep it as a local edit, and write nothing yet.
+     *
+     * <p>Every Editor Save that is not a command lands here (the plot panel, the editor screen's
+     * icon when the player is elsewhere), so this is where those paths learn about shipped
+     * templates. See {@link EditorSaveAs}.</p>
+     *
+     * @return true when the save ran and succeeded; false when it failed or the player was asked
+     */
+    public static boolean saveOrPrompt(ServerPlayer player, Template model) {
+        if (EditorShipped.isProtected(model)) {
+            EditorSaveAs.prompt(player, model);
+            return false;
+        }
+        return saveOnePlayerVisible(player, model);
+    }
+
+    /** {@code /dt save local}: the Keep-as-local-edit answer, for the plot the player is in. */
+    private static int runSaveLocal(CommandSourceStack source) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        Template model = locatedModel(source, player);
+        if (model == null) return 0;
+        return EditorSaveAs.keepLocal(player, model) ? 1 : 0;
+    }
+
+    /** {@code /dt save as <name>}: the Save-as-new answer, for the plot the player is in. */
+    private static int runSaveAs(CommandSourceStack source, String name) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        Template model = locatedModel(source, player);
+        if (model == null) return 0;
+        return EditorSaveAs.saveAsNew(player, model, name) ? 1 : 0;
+    }
+
+    /** The template of the plot the player stands in, or null with the reason already sent. */
+    private static Template locatedModel(CommandSourceStack source, ServerPlayer player) {
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        Optional<EditorCategory.Located> located = EditorCategory.locate(player, dims);
+        if (located.isPresent()) return located.get().model();
+        // Parts are not in EditorCategory's plot grid; they are found by position in their own.
+        games.brennan.dungeontrain.editor.CarriagePartEditor.PlotLocation part =
+            games.brennan.dungeontrain.editor.CarriagePartEditor.plotContaining(player.blockPosition(), dims);
+        if (part != null) return new Template.Part(part.kind(), part.name());
+        source.sendFailure(Component.translatable("chat.dungeontrain.save.not_plot_use_dt"));
+        return null;
     }
 
     /**
@@ -95,6 +159,12 @@ public final class SaveCommand {
      * separating kind and variant name — split here before lookup.</p>
      */
     public static int runSaveModel(CommandSourceStack source, String categoryId, String id, boolean promoteDefault) {
+        return runSaveModel(source, categoryId, id, promoteDefault, false);
+    }
+
+    /** As above; {@code local} is the Keep-as-local-edit answer and skips the Save-as prompt. */
+    public static int runSaveModel(CommandSourceStack source, String categoryId, String id,
+                                   boolean promoteDefault, boolean local) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
 
@@ -111,6 +181,10 @@ public final class SaveCommand {
             return 0;
         }
 
+        if (!local && !promoteDefault && EditorShipped.isProtected(model)) {
+            EditorSaveAs.prompt(player, model);
+            return 1;
+        }
         try {
             saveOne(source, player, model);
             if (promoteDefault) promoteOne(source, model);
@@ -222,6 +296,12 @@ public final class SaveCommand {
         }
 
         Template model = located.get().model();
+        if (!promoteDefault && EditorShipped.isProtected(model)) {
+            // A shipped template outside dev mode: ask rather than write over it. `save default`
+            // is left alone — promoting is a dev-mode act by definition.
+            EditorSaveAs.prompt(player, model);
+            return 1;
+        }
         try {
             saveOne(source, player, model);
             if (promoteDefault) promoteOne(source, model);

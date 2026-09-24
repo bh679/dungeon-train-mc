@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.builder.BuilderLabels;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.builder.BuilderSaveRoute;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.editor.EditorTemplateLists;
 import games.brennan.dungeontrain.net.BuilderNewPacket;
@@ -58,6 +59,12 @@ public final class BuilderNewScreen extends Screen {
 
     private final Screen lastScreen;
     private final Mode screenMode;
+    /**
+     * The shipped template this save would otherwise write over, or empty. Set only when the build
+     * still goes by the mod's own name — which is what adds the note and the Keep-as-local-edit
+     * button, and what makes that one name unavailable in the field.
+     */
+    private final String shippedId;
 
     private BuilderMode mode;
     /** Set in the constructor, once the mode is known — what a mode starts on is the mode's answer. */
@@ -70,17 +77,19 @@ public final class BuilderNewScreen extends Screen {
     private EditBox nameField;
     private Button createButton;
     private int hintY;
+    private int noteY;
 
     public BuilderNewScreen(Screen lastScreen) {
-        this(lastScreen, Mode.NEW);
+        this(lastScreen, Mode.NEW, "");
     }
 
-    private BuilderNewScreen(Screen lastScreen, Mode screenMode) {
+    private BuilderNewScreen(Screen lastScreen, Mode screenMode, String shippedId) {
         super(Component.translatable(screenMode == Mode.SAVE_AS
                 ? "gui.dungeontrain.builder.new.save_title"
                 : "gui.dungeontrain.builder.new.title"));
         this.lastScreen = lastScreen;
         this.screenMode = screenMode;
+        this.shippedId = shippedId == null ? "" : shippedId;
         this.mode = BuilderMode.fromId(BuilderBoundsState.modeId())
                 .orElse(BuilderMode.TRAIN_OUTSIDE);
         // Save-as describes a build that already exists, so it reads what that build actually is
@@ -100,7 +109,21 @@ public final class BuilderNewScreen extends Screen {
      * the moment the template gets written, not a chance to make it something else.</p>
      */
     public static BuilderNewScreen saveAs(Screen lastScreen) {
-        return new BuilderNewScreen(lastScreen, Mode.SAVE_AS);
+        return new BuilderNewScreen(lastScreen, Mode.SAVE_AS, "");
+    }
+
+    /**
+     * The screen Save has to show before it writes, or null when it can write straight away.
+     *
+     * <p>Every Save button in the Builder asks here rather than checking for a draft itself, so the
+     * shipped-name case — see {@link BuilderSaveRoute} — cannot be forgotten by one of them.</p>
+     */
+    public static BuilderNewScreen forSave(Screen lastScreen) {
+        return switch (BuilderSaveRoute.of(BuilderBoundsState.isDraft(), BuilderBoundsState.isBuiltin())) {
+            case SAVE -> null;
+            case NAME_REQUIRED -> saveAs(lastScreen);
+            case NAME_OR_LOCAL -> new BuilderNewScreen(lastScreen, Mode.SAVE_AS, BuilderBoundsState.buildName());
+        };
     }
 
     @Override
@@ -154,6 +177,18 @@ public final class BuilderNewScreen extends Screen {
         this.addRenderableWidget(this.createButton);
         this.addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, b -> this.onClose())
                 .bounds(fieldX + FIELD_WIDTH - BUTTON_WIDTH, y, BUTTON_WIDTH, ROW_HEIGHT).build());
+
+        if (!shippedId.isEmpty()) {
+            // The other way out: keep the change on this install, over the built-in, as Save did
+            // before it asked. Secondary and below the pair, because it is the one that can't be
+            // submitted — the server withholds the upload and says so.
+            y += ROW_HEIGHT + ROW_GAP;
+            this.addRenderableWidget(Button.builder(
+                            Component.translatable("gui.dungeontrain.builder.new.keep_local"),
+                            b -> keepLocal())
+                    .bounds(fieldX, y, FIELD_WIDTH, ROW_HEIGHT).build());
+        }
+        this.noteY = y + ROW_HEIGHT + LABEL_GAP;
 
         refreshCreateEnabled();
     }
@@ -242,9 +277,20 @@ public final class BuilderNewScreen extends Screen {
     private void refreshCreateEnabled() {
         if (this.createButton != null) {
             this.createButton.active = screenMode == Mode.SAVE_AS
-                    ? BuilderNewOptions.isValidName(name)
+                    ? BuilderNewOptions.isValidName(name) && !isShippedName()
                     : name.isEmpty() || BuilderNewOptions.isValidName(name);
         }
+    }
+
+    /** Saving as the built-in's own name would be the in-place save by another route. */
+    private boolean isShippedName() {
+        return !shippedId.isEmpty() && shippedId.equals(name);
+    }
+
+    /** Save over the built-in, under its own name — this install only; see {@link #init}. */
+    private void keepLocal() {
+        Minecraft.getInstance().setScreen(null);
+        DungeonTrainNet.sendToServer(new BuilderSavePacket());
     }
 
     private void confirm() {
@@ -267,10 +313,26 @@ public final class BuilderNewScreen extends Screen {
             g.drawCenteredString(this.font,
                     Component.translatable("gui.dungeontrain.builder.new.invalid_name"),
                     this.width / 2, hintY, 0xFF7070);
+        } else if (isShippedName()) {
+            g.drawCenteredString(this.font,
+                    Component.translatable("gui.dungeontrain.builder.new.shipped_name"),
+                    this.width / 2, hintY, 0xFF7070);
         } else if (name.isEmpty() && screenMode == Mode.NEW) {
             g.drawCenteredString(this.font,
                     Component.translatable("gui.dungeontrain.builder.new.unnamed"),
                     this.width / 2, hintY, 0xA0A0A0);
+        }
+        if (!shippedId.isEmpty()) {
+            // Why Save stopped here — wrapped, because a template's pretty name can be long and
+            // this has to read at any GUI scale.
+            Component note = Component.translatable("gui.dungeontrain.builder.new.builtin_note",
+                    BuilderLabels.pretty(shippedId));
+            int wrap = Math.min(this.width - 32, FIELD_WIDTH + 100);
+            int y = noteY;
+            for (var line : this.font.split(note, wrap)) {
+                g.drawCenteredString(this.font, line, this.width / 2, y, 0xA0A0A0);
+                y += this.font.lineHeight + 1;
+            }
         }
     }
 

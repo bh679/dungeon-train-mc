@@ -64,6 +64,11 @@ public final class BuilderTilePreviews {
         return BuilderTileMeshCache.summaryFor(kind, id, partKind, trackKind);
     }
 
+    /** Drop one template's baked model so its next draw re-reads the file — after it is saved. */
+    public static void evict(BuilderPhotoPaths.Kind kind, String id) {
+        BuilderTileMeshCache.evict(kind, id);
+    }
+
     /** Drop every baked mesh — on the way out of a screen, as the Open grid does. */
     public static void clear() {
         BuilderTileMeshCache.clear();

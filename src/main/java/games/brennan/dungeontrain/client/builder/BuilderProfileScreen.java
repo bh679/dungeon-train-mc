@@ -16,6 +16,9 @@ import games.brennan.dungeontrain.net.BuilderCreatorResultsPacket;
 import games.brennan.dungeontrain.net.BuilderOpenPacket;
 import games.brennan.dungeontrain.net.BuilderFavouritePacket;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
+import games.brennan.dungeontrain.net.BuilderProfileDeletePacket;
+import games.brennan.dungeontrain.net.BuilderProfileDeleteResultPacket;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayUpload;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
@@ -42,7 +45,9 @@ import java.util.Set;
  * <p>A save writes the template to disk and, when profiles are on, uploads it. That upload is private:
  * it follows the player between worlds and shows up here, and nowhere else. <b>Submit to the train</b>
  * is what makes a build part of the game for everybody — which is why it is a separate button on a
- * separate screen rather than something a save quietly does.</p>
+ * separate screen rather than something a save quietly does. The trash button is the way back out:
+ * it removes the upload from the relay for good, after a question, and leaves the local template
+ * alone ({@link BuilderProfileDeleteScreen}).</p>
  *
  * <p>The tiles are drawn from the LOCAL template of the same name, through the same
  * {@link BuilderTileMeshCache} the Open grid uses, so a build made on this machine shows its own
@@ -186,6 +191,7 @@ public final class BuilderProfileScreen extends Screen {
     private int selected = -1;
     private Button actionButton;
     private Button downloadButton;
+    private Button deleteButton;
 
     /**
      * What the last download did, shown under the grid until the selection changes.
@@ -211,6 +217,9 @@ public final class BuilderProfileScreen extends Screen {
      * exactly as the press that raised the question sent them.
      */
     private BuilderProfileDownloadPacket lastDownload;
+
+    /** The build whose delete is out, so an answer to a press from an earlier screen is ignored. */
+    private int pendingDeleteId = -1;
 
     private final BuilderTileSpin spin = new BuilderTileSpin();
     private long lastFrameNanos;
@@ -256,6 +265,7 @@ public final class BuilderProfileScreen extends Screen {
         // may predate a save, a publish, or a build somebody else's world just returned.
         BuilderProfileState.listen(this::onProfile);
         BuilderProfileState.listenForDownloads(this::onDownload);
+        BuilderProfileState.listenForDeletes(this::onDelete);
         DungeonTrainNet.sendToServer(new BuilderProfileRequestPacket(viewedUuid, BuilderProfileState.live()));
 
         this.spin.clear();
@@ -401,11 +411,13 @@ public final class BuilderProfileScreen extends Screen {
         this.scrollY = grid.clampScroll(scrollY);
 
         // Two actions, side by side across the same width the Back button occupies: what the build
-        // does on the relay, and what it does on this machine.
+        // does on the relay, and what it does on this machine — and, squared off at the end, the
+        // one that takes it off the relay altogether.
         int half = (BACK_BUTTON_WIDTH - ACTION_GAP) / 2;
+        int actionHalf = (BACK_BUTTON_WIDTH - BuilderTrashButton.SIZE - ACTION_GAP * 2) / 2;
         int left = this.width / 2 - BACK_BUTTON_WIDTH / 2;
         this.actionButton = Button.builder(actionLabel(), b -> submitSelected())
-                .bounds(left, gridBottom + 4, half, 20)
+                .bounds(left, gridBottom + 4, actionHalf, 20)
                 .build();
         this.actionButton.active = canActOnSelection();
         addRenderableWidget(this.actionButton);
@@ -413,14 +425,19 @@ public final class BuilderProfileScreen extends Screen {
         this.downloadButton = Button.builder(
                         Component.translatable("gui.dungeontrain.builder.profile.load_into_editor"),
                         b -> downloadSelected())
-                .bounds(left + half + ACTION_GAP, gridBottom + 4, half, 20)
+                .bounds(left + actionHalf + ACTION_GAP, gridBottom + 4, actionHalf, 20)
                 .build();
         this.downloadButton.active = selectedBuild() != null;
         addRenderableWidget(this.downloadButton);
 
-        // The bottom row is split the same way the action row above it is, rather than Back taking the
-        // whole width: Favourites is a place to go rather than something to do to the selected build,
-        // so it belongs down here with Back and not up there with Submit.
+        this.deleteButton = new BuilderTrashButton(left + (actionHalf + ACTION_GAP) * 2, gridBottom + 4,
+                b -> deleteSelected());
+        this.deleteButton.active = canDeleteSelection();
+        addRenderableWidget(this.deleteButton);
+
+        // The bottom row is split in halves rather than Back taking the whole width: Favourites is a
+        // place to go rather than something to do to the selected build, so it belongs down here
+        // with Back and not up there with Submit.
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
                 .bounds(left, this.height - BACK_BUTTON_BOTTOM_MARGIN, half, 20)
                 .build());
@@ -448,6 +465,15 @@ public final class BuilderProfileScreen extends Screen {
         return entry != null && !viewingOther() && BuilderRelayKinds.canSubmitForReview(entry.kind());
     }
 
+    /**
+     * Whether the trash button can do anything: a build has to be selected and it has to be this
+     * player's. Every kind may be deleted — unlike Submit, there is no kind the relay would not know
+     * what to do with. The relay refuses on its own where a delete would strand somebody riding it.
+     */
+    private boolean canDeleteSelection() {
+        return selectedBuild() != null && !viewingOther();
+    }
+
     private Component actionLabel() {
         BuilderProfilePacket.Entry entry = selectedBuild();
         if (viewingOther()) return Component.translatable("gui.dungeontrain.builder.profile.not_yours_short");
@@ -460,10 +486,71 @@ public final class BuilderProfileScreen extends Screen {
     private void submitSelected() {
         BuilderProfilePacket.Entry entry = selectedBuild();
         if (entry == null || viewingOther() || !BuilderRelayKinds.canSubmitForReview(entry.kind())) return;
-        DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), !entry.published()));
+        if (entry.published()) {
+            sendAction(new BuilderProfileActionPacket(entry.relayId(), false));
+            return;
+        }
+        // A submit first asks what the reviewer should know; the send happens on that screen's Submit,
+        // and its Cancel comes back here with nothing sent.
+        BuilderSubmitNoteScreen.open(entry.relayId(), Component.literal(entry.buildName()),
+                note -> sendAction(new BuilderProfileActionPacket(entry.relayId(), true, note)));
+    }
+
+    private void sendAction(BuilderProfileActionPacket packet) {
+        DungeonTrainNet.sendToServer(packet);
         // The server re-reads the profile once the relay answers, which lands back on this screen
         // through onProfile — so nothing is assumed to have worked here.
-        this.actionButton.active = false;
+        if (this.actionButton != null) this.actionButton.active = false;
+    }
+
+    /**
+     * The trash button: ask first, then tell the server.
+     *
+     * <p>The question is a screen of its own rather than a second press, because a slip on a button
+     * next to Load is the ordinary way an irreversible thing happens. On a yes the packet goes and
+     * the button greys until the server re-sends the profile — the row vanishing from the grid is
+     * the confirmation, and the chat line says why when it does not.</p>
+     */
+    private void deleteSelected() {
+        BuilderProfilePacket.Entry entry = selectedBuild();
+        if (entry == null || viewingOther()) return;
+        this.minecraft.setScreen(new BuilderProfileDeleteScreen(this, entry.buildName(),
+                () -> sendDelete(entry.relayId(), false)));
+    }
+
+    private void sendDelete(int relayId, boolean force) {
+        this.pendingDeleteId = relayId;
+        DungeonTrainNet.sendToServer(new BuilderProfileDeletePacket(relayId, force));
+        if (this.deleteButton != null) this.deleteButton.active = false;
+        this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.deleting");
+    }
+
+    /**
+     * A delete answered.
+     *
+     * <p>Only one outcome needs more than a note: a build somebody is riding right now is refused
+     * with a question, and the question is put to the player rather than swallowed — "delete
+     * anyway" sends the same press again with the override set. Answering no leaves the build where
+     * it is. The row itself goes or stays through the profile refresh that follows.</p>
+     */
+    private void onDelete(BuilderProfileDeleteResultPacket packet) {
+        if (packet.relayId() != pendingDeleteId) return;
+        this.pendingDeleteId = -1;
+        if (this.deleteButton != null) this.deleteButton.active = canDeleteSelection();
+        if (packet.outcome() == BuilderRelayUpload.DeleteOutcome.IN_USE) {
+            BuilderProfilePacket.Entry entry = BuilderProfileState.ownBuild(packet.relayId());
+            String name = entry == null ? "" : entry.buildName();
+            this.downloadNote = null;
+            this.minecraft.setScreen(new BuilderProfileDeleteScreen(this, name, true,
+                    () -> sendDelete(packet.relayId(), true)));
+            return;
+        }
+        this.downloadNote = switch (packet.outcome()) {
+            case DELETED -> Component.translatable("gui.dungeontrain.builder.profile.deleted");
+            case GONE -> Component.translatable("gui.dungeontrain.builder.profile.gone_short");
+            case NOT_YOURS -> Component.translatable("gui.dungeontrain.builder.profile.not_yours");
+            default -> Component.translatable("gui.dungeontrain.builder.profile.delete_failed");
+        };
     }
 
     /**
@@ -779,7 +866,7 @@ public final class BuilderProfileScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
-        g.drawCenteredString(this.font, this.title, this.width / 2, TITLE_TOP, 0xFFFFFF);
+        g.drawCenteredString(this.font, titleLine(), this.width / 2, TITLE_TOP, 0xFFFFFF);
         if (!DungeonTrain.isDevBuild()) {
             // On a dev build the same line is a button, added in rebuild().
             g.drawCenteredString(this.font, ownerLine(), this.width / 2, OWNER_TOP + 4, NOTE_COLOUR);
@@ -842,6 +929,20 @@ public final class BuilderProfileScreen extends Screen {
         BuilderProfileState.setLive(!BuilderProfileState.live());
         BuilderProfileState.clearCache();
         viewProfile(null);
+    }
+
+    /**
+     * The title, with how many builds the profile holds once they have arrived.
+     *
+     * <p>The count the relay keeps, not the tile count: an unchanged copy of a stock template is
+     * listed to its owner but is not one of their builds, so it is left out here as the relay leaves
+     * it out of every other count. Before the first answer, and on somebody else's profile, the bare
+     * title — a number would be a claim the screen cannot yet make, or one about the wrong person.</p>
+     */
+    private Component titleLine() {
+        if (status != BuilderProfilePacket.Status.OK || viewingOther()) return this.title;
+        long counted = builds.stream().filter(e -> !e.templateCopy()).count();
+        return Component.translatable("gui.dungeontrain.builder.profile.title_count", counted);
     }
 
     /**
@@ -984,6 +1085,7 @@ public final class BuilderProfileScreen extends Screen {
         super.removed();
         BuilderProfileState.listen(null);
         BuilderProfileState.listenForDownloads(null);
+        BuilderProfileState.listenForDeletes(null);
         BuilderTileMeshCache.clear();
     }
 

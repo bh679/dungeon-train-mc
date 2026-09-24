@@ -500,6 +500,17 @@ public final class EditorTypeMenuInputHandler {
     }
 
     /** {@code value} unless it is null or blank, in which case {@code fallback}. */
+    /**
+     * The HUD's active model id when the player stands in a plot of {@code category}, else empty —
+     * so a picker never offers a plot of another kind as "Current".
+     */
+    private static String standingKindId(PlotCategory category) {
+        boolean same = PlotCategory.fromId(EditorStatusHudOverlay.category())
+            .map(c -> c == category).orElse(false);
+        String id = EditorStatusHudOverlay.modelId();
+        return same && id != null ? id : "";
+    }
+
     private static String nonEmptyOr(String value, String fallback) {
         return (value != null && !value.isEmpty()) ? value : fallback;
     }
@@ -649,8 +660,14 @@ public final class EditorTypeMenuInputHandler {
             // Kind tag is the variant's modelId (portal_room).
             case PORTALS -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.PORTALS, first.modelId(), "");
-            // No models to seed a new one from; whole templates come from the Builder or the relay.
-            case ARCHITECTURE, WHOLE, WHOLE_GROUP -> null;
+            // Whole rooms / groups: Blank / Current. "Current" only when standing in a plot of the
+            // same kind — a room id is no source for a group.
+            case WHOLE, WHOLE_GROUP -> new NewSourcePickerScreen(
+                plotCategory == PlotCategory.WHOLE_GROUP
+                    ? NewSourcePickerScreen.Category.WHOLE_GROUP : NewSourcePickerScreen.Category.WHOLE,
+                null, standingKindId(plotCategory));
+            // No models to seed a new one from.
+            case ARCHITECTURE -> null;
         };
         if (picker == null) {
             LOGGER.warn("[DungeonTrain] EditorTypeMenu New: unsupported category '{}'", category);

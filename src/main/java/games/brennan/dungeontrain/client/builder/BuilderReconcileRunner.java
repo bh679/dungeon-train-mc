@@ -83,11 +83,12 @@ public final class BuilderReconcileRunner {
     public static CompletableFuture<BuilderReconcileScan.Result> scan() {
         if (!canRun()) return CompletableFuture.completedFuture(empty());
         UUID uuid = uuid();
-        return SharedCarriageClient.listMine(uuid.toString(), uuid.toString(), RelayTarget.dev())
-                .thenApplyAsync(builds -> {
+        return SharedCarriageClient.listMineWithCap(uuid.toString(), uuid.toString(), RelayTarget.dev())
+                .thenApplyAsync(mine -> {
                     // null is a failed call. Treating it as an empty profile would report every build
                     // on the install as lost, and offer to re-upload the lot.
-                    if (builds == null) return empty();
+                    if (mine == null) return empty();
+                    List<SharedCarriageClient.ProfileBuild> builds = mine.builds();
                     Set<String> relayKeys = new LinkedHashSet<>();
                     for (SharedCarriageClient.ProfileBuild build : builds) {
                         relayKeys.add(keyOf(build));
@@ -96,7 +97,7 @@ public final class BuilderReconcileRunner {
                     List<BuilderReconcileScan.Build> inBackups =
                             BuilderReconcileScan.backupBuilds(BuilderReconcileScan.keysOf(onDisk));
                     return BuilderReconcileScan.compare(onDisk, inBackups, relayKeys,
-                            BuilderProfileCap.used(builds));
+                            BuilderProfileCap.used(builds), mine.cap());
                 }, worker())
                 .exceptionally(error -> {
                     LOGGER.warn("[DungeonTrain] Build reconcile: scan failed: {}", error.toString());
@@ -123,11 +124,11 @@ public final class BuilderReconcileRunner {
         // Never fill the profile past its cap. Going over does not fail — the relay accepts the
         // upload and deletes this player's OLDEST build to make room, which would mean a restore
         // quietly costing them work in the act of returning it.
-        int allowance = Math.min(MAX_PER_RUN, BuilderProfileCap.remaining(scan.profileUsed()));
+        int allowance = Math.min(MAX_PER_RUN, BuilderProfileCap.remaining(scan.profileUsed(), scan.profileCap()));
         if (allowance <= 0) {
             LOGGER.warn("[DungeonTrain] Build reconcile: profile is full ({}/{}); {} build(s) left "
                     + "un-restored. Remove some from My Builds to make room.", scan.profileUsed(),
-                    BuilderProfileCap.MAX_PROFILE_BUILDS, queue.size());
+                    scan.profileCap(), queue.size());
             RUNNING.set(false);
             return CompletableFuture.completedFuture(new Outcome(0, 0, queue.size()));
         }
@@ -239,7 +240,7 @@ public final class BuilderReconcileRunner {
     }
 
     private static BuilderReconcileScan.Result empty() {
-        return new BuilderReconcileScan.Result(List.of(), List.of(), 0);
+        return new BuilderReconcileScan.Result(List.of(), List.of(), 0, BuilderProfileCap.DEFAULT_PROFILE_BUILDS);
     }
 
     private static void pace() {

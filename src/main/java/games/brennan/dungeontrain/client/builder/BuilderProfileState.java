@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.client.builder;
 
+import games.brennan.dungeontrain.builder.relay.SubmitNote;
 import games.brennan.dungeontrain.net.BuilderCreatorResultsPacket;
 import games.brennan.dungeontrain.net.BuilderFavouritesPacket;
+import games.brennan.dungeontrain.net.BuilderProfileDeleteResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import net.neoforged.api.distmarker.Dist;
@@ -26,6 +28,7 @@ public final class BuilderProfileState {
     private static volatile BuilderProfilePacket mineLatest = null;
     private static volatile Consumer<BuilderProfilePacket> listener = null;
     private static volatile Consumer<BuilderProfileDownloadResultPacket> downloadListener = null;
+    private static volatile Consumer<BuilderProfileDeleteResultPacket> deleteListener = null;
     private static volatile Consumer<BuilderCreatorResultsPacket> creatorListener = null;
     private static volatile BuilderFavouritesPacket favourites = null;
     private static volatile Consumer<BuilderFavouritesPacket> favouritesListener = null;
@@ -111,6 +114,17 @@ public final class BuilderProfileState {
         downloadListener = consumer;
     }
 
+    /** A delete finished. Not cached, for the same reason a download result is not. */
+    public static void deleteResult(BuilderProfileDeleteResultPacket packet) {
+        Consumer<BuilderProfileDeleteResultPacket> current = deleteListener;
+        if (current != null) current.accept(packet);
+    }
+
+    /** Listen for delete outcomes while a screen is open; null clears it. */
+    public static void listenForDeletes(Consumer<BuilderProfileDeleteResultPacket> consumer) {
+        deleteListener = consumer;
+    }
+
     /**
      * A creator search answered. Not cached, for the same reason a download result is not: it belongs
      * to one query typed into one open screen, and a search screen opened later starts empty.
@@ -147,6 +161,35 @@ public final class BuilderProfileState {
     }
 
     /**
+     * Note locally that one build's Submit for Review answers were edited, so the page that edited them
+     * shows the new ones before the next listing brings them back — in both the listing on screen and
+     * the player's own. The edit packet is fire-and-forget, like a star; a failure says so in chat and
+     * the next listing puts the truth back.
+     */
+    public static void noteAnswers(int relayId, SubmitNote note) {
+        latest = withAnswers(latest, relayId, note);
+        mineLatest = withAnswers(mineLatest, relayId, note);
+    }
+
+    private static BuilderProfilePacket withAnswers(BuilderProfilePacket packet, int relayId, SubmitNote note) {
+        if (packet == null) return null;
+        List<BuilderProfilePacket.Entry> updated = new java.util.ArrayList<>(packet.builds().size());
+        boolean changed = false;
+        for (BuilderProfilePacket.Entry e : packet.builds()) {
+            if (e.relayId() == relayId) {
+                updated.add(new BuilderProfilePacket.Entry(e.relayId(), e.kind(), e.subKind(),
+                        e.buildName(), e.published(), e.flag(), e.review(), e.stage(), e.changes(),
+                        e.favourite(), e.ownerUuid(), e.ownerName(), e.templateCopy(), note));
+                changed = true;
+            } else {
+                updated.add(e);
+            }
+        }
+        return changed ? new BuilderProfilePacket(packet.status(), List.copyOf(updated),
+                packet.ownerUuid(), packet.ownerName(), packet.mine()) : packet;
+    }
+
+    /**
      * Note locally that one build's star has been flipped, so a screen redrawn before the relay
      * answers shows what the player just did.
      *
@@ -164,7 +207,7 @@ public final class BuilderProfileState {
             if (e.relayId() == relayId && e.favourite() != favourite) {
                 updated.add(new BuilderProfilePacket.Entry(e.relayId(), e.kind(), e.subKind(),
                         e.buildName(), e.published(), e.flag(), e.review(), e.stage(), e.changes(),
-                        favourite, e.ownerUuid(), e.ownerName(), e.templateCopy()));
+                        favourite, e.ownerUuid(), e.ownerName(), e.templateCopy(), e.note()));
                 changed = true;
             } else {
                 updated.add(e);
