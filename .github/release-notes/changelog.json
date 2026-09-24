@@ -18272,8 +18272,27 @@
       "released_at": null
     },
     {
-      "id": "dtp-band-names",
+      "id": "editor-unsaved-mob-plots",
       "version": "0.947.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Editor no longer lists plots you didn't touch as unsaved",
+      "summary": "In the Train Editor, carriage contents and dimensional carriages with mobs or armor stands in them could show up as unsaved even though you never edited them \u2014 just from walking past them after opening a category. The unsaved list now only shows plots you actually changed.",
+      "highlights": [
+        "Saving a built-in under a new name now stops if other plots in its row have real unsaved edits that the save would reload, and names those plots so you can save them first"
+      ],
+      "pr": 1521,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dtp-band-names",
+      "version": "0.948.0",
       "type": "feat",
       "tags": [
         "feature",

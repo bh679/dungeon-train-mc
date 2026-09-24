@@ -577,8 +577,13 @@ public final class EditorDirtyCheck {
         return switch (model.kind()) {
             case CARRIAGE, CONTENTS -> model.id();
             case TRACK -> "track." + model.variantName();
-            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL, PORTAL_ROOM ->
+            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL ->
                 model.id() + "." + model.variantName();
+            // Template.PortalRoom has no variantName of its own — it would answer its id, giving
+            // portal_room.portal_room, which no scan row carries. scanPortalRooms keys by the name.
+            case PORTAL_ROOM -> model instanceof Template.PortalRoom room
+                ? "portal_room." + room.name()
+                : model.id() + "." + model.variantName();
             // Whole rows are keyed by the bare id under their own category ids — see scanWhole.
             case WHOLE_CARRIAGE, CARRIAGE_GROUP -> model.id();
             case PART -> null;
