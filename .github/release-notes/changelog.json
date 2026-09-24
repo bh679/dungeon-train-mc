@@ -18316,11 +18316,10 @@
         "editor",
         "community"
       ],
-      "title": "Your uploaded builds are yours alone",
-      "summary": "Fixed a hole that could let someone else change, publish or delete a build you uploaded from the Train Builder. Only you can manage your builds now.",
+      "title": "My Builds checks it's you before managing a build from another world",
+      "summary": "Submitting or deleting one of your builds from a world other than the one that uploaded it now confirms your Minecraft account first.",
       "highlights": [
-        "Other players can no longer edit, publish or delete your uploaded builds.",
-        "Managing a build from a different world than the one that uploaded it now needs single-player while signed in to your Minecraft account \u2014 the world that uploaded it works exactly as before."
+        "Managing a build from a different world than the one that uploaded it needs single-player while signed in to your Minecraft account \u2014 the world that uploaded it works exactly as before."
       ],
       "pr": 1523,
       "date": "2026-09-24",
