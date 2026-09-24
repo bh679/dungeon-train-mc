@@ -18308,21 +18308,221 @@
       "released_at": null
     },
     {
-      "id": "offline-sample-decoration-fixes",
-      "version": "0.948.0",
+      "id": "builder-owner-proof",
+      "version": "0.949.0",
       "type": "fix",
       "tags": [
         "fix",
-        "compatibility",
-        "world"
+        "editor",
+        "community"
       ],
-      "title": "The stranger stretches look right",
-      "summary": "Some of the stranger places the line runs through borrow their scenery from elsewhere. That scenery now grows the way it should, and no longer carries a ghost of the railway along with it. Chorus plants keep their vanilla look.",
+      "title": "My Builds checks it's you before managing a build from another world",
+      "summary": "Submitting or deleting one of your builds from a world other than the one that uploaded it now confirms your Minecraft account first.",
       "highlights": [
-        "Trees stand on the ground instead of inside each other.",
-        "No second track floating above the rails.",
-        "Chests in borrowed scenery open as they should.",
-        "Chorus plants look vanilla."
+        "Managing a build from a different world than the one that uploaded it needs single-player while signed in to your Minecraft account \u2014 the world that uploaded it works exactly as before."
+      ],
+      "pr": 1523,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "legacy-alpha-band",
+      "version": "0.949.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "The line runs further",
+      "summary": "Past the last stretch of the journey the track keeps going, somewhere you have not been yet. We won't spoil what is out there \u2014 ride far enough and see for yourself.",
+      "highlights": [
+        "A new stretch at the end of the journey, with a hidden goal for reaching it"
+      ],
+      "pr": 1497,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "legacy-band-two",
+      "version": "0.949.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "Another stretch of the line",
+      "summary": "Past the last stretch you know, the world changes again. Keep riding to find out how.",
+      "highlights": [
+        "A new hidden advancement waits there for anyone who rides far enough."
+      ],
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 1524
+    },
+    {
+      "id": "legacy-infdev-band",
+      "version": "0.949.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "Further still",
+      "summary": "Beyond even the newest stretch of the journey, the track keeps going. No spoilers \u2014 ride far enough and see for yourself.",
+      "highlights": [
+        "Another new stretch at the end of the journey, with a hidden goal for reaching it"
+      ],
+      "pr": 1499,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "legacy-band-floating",
+      "version": "0.949.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "Even further down the line",
+      "summary": "The track runs on past the last stretch you know, into a place older still. We won't say what is waiting there \u2014 ride far enough and see it for yourself.",
+      "highlights": [
+        "A new stretch at the far end of the journey, with a hidden goal for reaching it"
+      ],
+      "pr": 1502,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "legacy-band-far-lands",
+      "version": "0.949.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "The end of the line",
+      "summary": "Out past every other stretch of the journey, at the very end before it all loops round, the world does something it was never meant to. We won't say what \u2014 ride far enough and see for yourself.",
+      "highlights": [
+        "A final new stretch at the end of the journey, with a hidden goal for reaching it"
+      ],
+      "pr": 1504,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "legacy-band-classic",
+      "version": "0.949.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "One more stop before the end",
+      "summary": "Deep in the far stretches of the journey, just before the very end, there is a place you have not seen yet. No spoilers \u2014 ride far enough and see for yourself.",
+      "highlights": [
+        "Another new stretch near the end of the journey, with a hidden goal for reaching it"
+      ],
+      "pr": 1505,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "three-lap-journey",
+      "version": "0.949.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "balance"
+      ],
+      "title": "The journey, reordered",
+      "summary": "The whole journey has been laid out again. It now runs in three legs: the familiar first leg, a second leg where the Nether, the End and the overworld gaps each come back looking different, and a long third leg through every strange stretch we've added lately, one flowing straight into the next. The first visit to each place is shorter than before, and every time you get to the end and go round again, the whole thing is twice as long as it was.",
+      "highlights": [
+        "A three-leg journey: the classic leg, a second leg of familiar places with new faces, and a long third leg of everything strange",
+        "Shorter first visits \u2014 the Nether and End arrive sooner, and the climb into the Nether is half as long",
+        "Every full loop of the journey is twice as long as the last",
+        "The order is a single config line, for anyone who wants their own"
+      ],
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 1524
+    },
+    {
+      "id": "legacy-caves-of-chaos-band",
+      "version": "0.949.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "Past the edge of the old world",
+      "summary": "Beyond the far edge of the old world the track keeps going, somewhere stranger still. We won't say what it looks like \u2014 ride far enough and see for yourself.",
+      "highlights": [
+        "A new stretch of the journey, with a hidden goal for reaching it"
+      ],
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "band-advancements-follow-layout",
+      "version": "0.949.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "A goal for every stretch of the line",
+      "summary": "Every stretch of the journey now has its own hidden goal to reach, including a few that had none before, and the goals sit in the order you actually ride them, so the trail through the advancements screen reads like the trip itself. Each one lands a short way into its stretch, not the moment you cross the line. A handful of older goals also picked up sharper names.",
+      "highlights": [
+        "Five new hidden goals for stretches of the journey that had none",
+        "The journey's goals now line up in travel order, and follow along if the route changes",
+        "Every goal lands the same short distance into its stretch"
+      ],
+      "pr": 1518,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "legacy-amplified-band",
+      "version": "0.949.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "The land turned up to eleven",
+      "summary": "The long third leg of the journey opens with a new stretch where the hills have grown into mountains and the mountains scrape the sky. The track cuts straight through them. Reach it and there is a hidden goal waiting.",
+      "highlights": [
+        "A new stretch at the start of the journey's third leg, with a hidden goal for reaching it"
       ],
       "date": "2026-09-24",
       "released": false,

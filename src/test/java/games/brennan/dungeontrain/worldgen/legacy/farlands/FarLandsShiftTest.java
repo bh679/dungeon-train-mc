@@ -1,0 +1,143 @@
+package games.brennan.dungeontrain.worldgen.legacy.farlands;
+
+import games.brennan.dungeontrain.worldgen.legacy.farlands.FarLandsShift.Stage;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/** Pure layout of the Far Lands source-coordinate shift along a band instance. */
+final class FarLandsShiftTest {
+
+    private static final long HOLD = FarLandsShift.SCRIPT_LEN;
+    private static final long CORE = 1_234_560L;
+
+    private static int chunkAt(long local) {
+        return (int) Math.floorDiv(CORE + local, 16L);
+    }
+
+    private static FarLandsShift at(long local, int chunkZ) {
+        return FarLandsShift.forChunk(CORE, HOLD, chunkAt(local), chunkZ);
+    }
+
+    /** World Z of a right-side wall (Far Lands at z ≥ it). */
+    private static long rightEdge(FarLandsShift s) {
+        return (long) FarLandsShift.EDGE - s.dzBlocks();
+    }
+
+    /** Distance of a left-side wall from the track (Far Lands at z ≤ −it). */
+    private static long leftDist(FarLandsShift s) {
+        return (long) FarLandsShift.EDGE + s.dzBlocks();
+    }
+
+    private static void assertNear(long expected, long actual) {
+        assertTrue(actual >= expected && actual < expected + 16, "expected ~" + expected + " was " + actual);
+    }
+
+    @Test
+    @DisplayName("five 1k stages; the entry fade reads the entry, the exit fade the exit")
+    void stages() {
+        assertEquals(Stage.ENTRY, FarLandsShift.stageAt(CORE, HOLD, chunkAt(-160)));
+        assertEquals(Stage.ENTRY, FarLandsShift.stageAt(CORE, HOLD, chunkAt(FarLandsShift.ENTRY_END - 16)));
+        assertEquals(Stage.CLOSING, FarLandsShift.stageAt(CORE, HOLD, chunkAt(FarLandsShift.ENTRY_END + 16)));
+        assertEquals(Stage.CANYON, FarLandsShift.stageAt(CORE, HOLD, chunkAt(FarLandsShift.CLOSING_END + 16)));
+        assertEquals(Stage.OPENING, FarLandsShift.stageAt(CORE, HOLD, chunkAt(FarLandsShift.CANYON_END + 16)));
+        assertEquals(Stage.EXIT, FarLandsShift.stageAt(CORE, HOLD, chunkAt(FarLandsShift.OPENING_END + 16)));
+        assertEquals(Stage.EXIT, FarLandsShift.stageAt(CORE, HOLD, chunkAt(FarLandsShift.SCRIPT_LEN + 400)));
+    }
+
+    @Test
+    @DisplayName("entry: one X shift, Z untouched, the wall APPROACH blocks into the core")
+    void entry() {
+        FarLandsShift first = at(-160, 0);
+        for (long l = -160; l < FarLandsShift.ENTRY_END - 16; l += 16) assertEquals(first, at(l, (int) (l % 7)));
+        long wallWorldX = (long) FarLandsShift.EDGE - first.dxBlocks();
+        assertTrue(Math.abs(wallWorldX - (CORE + FarLandsShift.APPROACH)) < 16, "wall at " + wallWorldX);
+    }
+
+    @Test
+    @DisplayName("closing: left wall rests at SIDE_Z; the right closes in every chunk, fast then creeping")
+    void closing() {
+        assertEquals(1000, FarLandsShift.closingDistance(0.0));
+        assertEquals(FarLandsShift.SIDE_Z, FarLandsShift.closingDistance(1.0));
+        long prev = Long.MAX_VALUE;
+        long firstQuarterDrop = 0;
+        long lastQuarterDrop = 0;
+        long from = FarLandsShift.ENTRY_END + 16;
+        long to = FarLandsShift.CLOSING_END;
+        long quarter = (to - FarLandsShift.ENTRY_END) / 4;
+        for (long l = from; l < to; l += 16) {
+            assertNear(FarLandsShift.SIDE_Z, leftDist(at(l, -1)));
+            assertEquals(0, at(l, 0).dxChunks());
+            long d = rightEdge(at(l, 0));
+            assertTrue(d <= prev, "wall moved out at " + l);
+            if (prev != Long.MAX_VALUE) {
+                if (l < FarLandsShift.ENTRY_END + quarter) firstQuarterDrop += prev - d;
+                if (l >= to - quarter) lastQuarterDrop += prev - d;
+            }
+            prev = d;
+        }
+        assertTrue(firstQuarterDrop > 10 * lastQuarterDrop, firstQuarterDrop + " vs " + lastQuarterDrop);
+        assertTrue(rightEdge(at(from, 0)) > 900, "starts far out");
+    }
+
+    @Test
+    @DisplayName("canyon: both walls at SIDE_Z, mirror images")
+    void canyon() {
+        long mid = (FarLandsShift.CLOSING_END + FarLandsShift.CANYON_END) / 2;
+        assertNear(FarLandsShift.SIDE_Z, leftDist(at(mid, -3)));
+        assertNear(FarLandsShift.SIDE_Z, rightEdge(at(mid, 3)));
+    }
+
+    @Test
+    @DisplayName("opening: the left wall eases back out, mirroring the closing; the right one stays")
+    void opening() {
+        for (double t = 0; t <= 1.0; t += 0.05) {
+            assertEquals(FarLandsShift.closingDistance(1.0 - t), FarLandsShift.openingDistance(t));
+        }
+        long prev = 0;
+        for (long l = FarLandsShift.CANYON_END; l < FarLandsShift.OPENING_END; l += 16) {
+            long d = leftDist(at(l, -1));
+            assertTrue(d >= prev, "wall moved in at " + l);
+            assertNear(FarLandsShift.SIDE_Z, rightEdge(at(l, 0)));
+            prev = d;
+        }
+    }
+
+    @Test
+    @DisplayName("exit: the right wall steps beside, then over the track, then the train breaks out through an X wall")
+    void exit() {
+        long l = FarLandsShift.OPENING_END + 16;
+        assertNear(FarLandsShift.SWEEP_BESIDE_Z, rightEdge(at(l, 2)));
+        assertEquals(at(l, -2), at(l, 2));
+        for (int k = 0; k < FarLandsShift.SWEEP_INSIDE_STEPS.length; k++) {
+            long lk = FarLandsShift.SWEEP_BESIDE_END + (long) k * FarLandsShift.SWEEP_INSIDE_STEP + 16;
+            assertNear(FarLandsShift.SWEEP_INSIDE_STEPS[k], rightEdge(at(lk, -2)));
+        }
+        FarLandsShift out = at(FarLandsShift.SWEEP_END + 32, 0);
+        assertEquals(out, at(FarLandsShift.SCRIPT_LEN + 400, 5));
+        assertEquals(0, out.dzChunks());
+        long wallWorldX = -(long) FarLandsShift.EDGE - out.dxBlocks();
+        long expected = CORE + FarLandsShift.EXIT_WALL;
+        assertTrue(Math.abs(wallWorldX - expected) < 16, "exit wall at " + wallWorldX);
+    }
+
+    @Test
+    @DisplayName("the stretches inside the Far Lands are half the old 1k-stage ones")
+    void insideStretchesHalved() {
+        assertEquals(744 / 2, FarLandsShift.ENTRY_INSIDE, 8);
+        long exitInside = FarLandsShift.EXIT_WALL - FarLandsShift.SWEEP_BESIDE_END;
+        assertTrue(Math.abs(exitInside - 611 / 2) <= 8, "exit inside " + exitInside);
+    }
+
+    @Test
+    @DisplayName("a shorter core scales the script: stages keep their proportions")
+    void scaled() {
+        long hold = FarLandsShift.SCRIPT_LEN / 2;
+        long entryEnd = FarLandsShift.ENTRY_END / 2;
+        assertEquals(Stage.ENTRY, FarLandsShift.stageAt(CORE, hold, (int) ((CORE + entryEnd - 16) >> 4)));
+        assertEquals(Stage.CLOSING, FarLandsShift.stageAt(CORE, hold, (int) ((CORE + entryEnd + 16) >> 4)));
+        assertEquals(Stage.EXIT, FarLandsShift.stageAt(CORE, hold, (int) ((CORE + FarLandsShift.OPENING_END / 2 + 16) >> 4)));
+    }
+}

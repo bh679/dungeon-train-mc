@@ -45,8 +45,10 @@ final class NetherPassesDebug {
     }
 
     private static String describePass(WorldGenCycle cycle, NetherCoreBiomes biomes, int pass) {
-        long bandStart = cycle.startX() - cycle.phaseShift() + pass * cycle.period() + Math.max(0, cycle.owGap());
-        long bandEnd = bandStart + cycle.netherLen();
+        long[] range = cycle.netherPassRange(pass);
+        if (range == null) return "  pass " + pass + ": no Nether band";
+        long bandStart = range[0];
+        long bandEnd = range[1];
         long coreMin = Long.MAX_VALUE;
         long coreMax = Long.MIN_VALUE;
         for (long x = Math.max(bandStart, cycle.startX()); x < bandEnd; x += CORE_SCAN_STEP) {
@@ -60,7 +62,7 @@ final class NetherPassesDebug {
         Set<String> seen = new LinkedHashSet<>();
         for (long x = coreMin; x <= coreMax; x += BIOME_SAMPLE_STEP) {
             int ix = (int) x;
-            biomes.biomeAt(ix, 0, cycle.cycleIndex(ix)).unwrapKey()
+            biomes.biomeAt(ix, 0, cycle.netherPassIndex(ix)).unwrapKey()
                     .ifPresent(k -> seen.add(k.location().toString()));
         }
         String kind = BetterNetherCoreBiomes.isBetterNetherPass(pass) && biomes.hasBetterNether()

@@ -131,12 +131,12 @@ public final class BuilderRelayUpload {
         }
         if (known != null) {
             // Known build, but this world isn't holding the lease — it was published, or the lease
-            // expired. The owner secret is authority enough to write anyway; only a build uploaded
-            // before secrets existed has to go the long way round and take a lease back first.
+            // expired. The owner secret is authority enough to write anyway. Without one (a relay
+            // dedupe, which no longer hands a secret or a lease back) it has to be recovered first.
             if (!known.secret().isEmpty()) {
                 ownerSave(player, level, key, known, blocks, text, extras, written);
             } else {
-                claimThenSave(player, level, key, known, blocks, text, extras, written);
+                adoptThenSave(player, level, key, known, blocks, text, extras, written);
             }
             return;
         }
@@ -275,6 +275,36 @@ public final class BuilderRelayUpload {
                     tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
                     settle(player, written, false, 0);
                 }))
+                .exceptionally(t -> failed(player, level, written, t));
+    }
+
+    /**
+     * Save a build this world knows the relay id of but holds neither a lease nor a secret for.
+     *
+     * <p>That is a re-upload the relay deduped onto an existing row: it answers with the id alone,
+     * because identical blocks under a public uuid are not proof of authorship. The secret is
+     * recovered through {@link #adopt} — which needs this client to prove it is the owner — then
+     * remembered, and the save goes through as the owner. Unproven, the local save stands and the
+     * player is told why the relay copy did not follow.</p>
+     */
+    private static void adoptThenSave(ServerPlayer player, ServerLevel level, String key,
+                                      BuilderRelayBuilds.Entry known, String blocks, String text,
+                                      Extras extras, BuilderSave.Written written) {
+        BuilderRelayUpload.<Void>adopt(player, known.relayId(), verdict -> {
+                    onServer(level, () -> {
+                        if (player != null) player.sendSystemMessage(adoptionMessage(verdict));
+                        settle(player, written, false, 0);
+                    });
+                    return null;
+                }, (adoptedKey, adopted, kind) -> {
+                    onServer(level, () -> {
+                        DungeonTrainWorldData live = DungeonTrainWorldData.get(level);
+                        live.builderRelayBuilds().put(key, adopted);
+                        live.markBuilderRelayBuildsDirty();
+                        ownerSave(player, level, key, adopted, blocks, text, extras, written);
+                    });
+                    return CompletableFuture.completedFuture(null);
+                })
                 .exceptionally(t -> failed(player, level, written, t));
     }
 
@@ -441,10 +471,12 @@ public final class BuilderRelayUpload {
     }
 
     /** What a failed secret recovery says to the player, for the submit path. */
-    private static Component adoptionMessage(Adoption verdict) {
-        return verdict == Adoption.GONE
-                ? msg("gui.dungeontrain.builder.profile.gone_short", ChatFormatting.YELLOW)
-                : msg("gui.dungeontrain.builder.profile.not_yours", ChatFormatting.YELLOW);
+    static Component adoptionMessage(Adoption verdict) {
+        return switch (verdict) {
+            case GONE -> msg("gui.dungeontrain.builder.profile.gone_short", ChatFormatting.YELLOW);
+            case UNPROVEN -> msg("gui.dungeontrain.builder.profile.needs_signin", ChatFormatting.YELLOW);
+            default -> msg("gui.dungeontrain.builder.profile.not_yours", ChatFormatting.YELLOW);
+        };
     }
 
     /**
@@ -458,11 +490,12 @@ public final class BuilderRelayUpload {
      * world didn't upload that build" made a build the player owns, and is looking at, unsubmittable
      * for reasons they cannot see or fix.</p>
      *
-     * <p>{@code /carriages/fetch} is authorised on the owner's uuid and returns the secret for exactly
-     * that reason — it is the same call and the same reasoning behind
-     * {@link BuilderRelayDownload}'s remember step, which links a downloaded build to the world that
-     * pulled it. The relay refuses a build that is not this player's, so ownership is still checked
-     * where it is actually known.</p>
+     * <p>{@code /carriages/fetch} returns the secret only with a {@link RelayOwnerProof}: owner uuids
+     * are public, so the relay has Mojang confirm this client really is that account before handing
+     * over write authority. A proof is only possible on the host's own client (single-player or the
+     * LAN host, signed in) — anywhere else this answers {@link Adoption#UNPROVEN}, and the build can
+     * still be acted on from the world that uploaded it. {@link BuilderRelayDownload}'s remember step
+     * recovers the secret the same way.</p>
      *
      * <p>It costs a fetch of the whole blocks blob to read one field, which is why this is the fallback
      * and not the path: a world that uploaded the build answers from its own saved data.</p>
@@ -471,9 +504,16 @@ public final class BuilderRelayUpload {
                                                   java.util.function.Function<Adoption, T> refused,
                                                   WithSecret<T> action) {
         String owner = player == null ? "" : player.getUUID().toString();
-        return SharedCarriageClient.fetchBuild(relayId, owner).thenCompose(result -> {
+        String relay = RelayTarget.dev();
+        return RelayOwnerProof.obtain(player, relay).thenCompose(proof ->
+                SharedCarriageClient.fetchBuild(relayId, owner, relay, proof).thenCompose(result -> {
             SharedCarriageClient.BuildFetch build = result.build();
-            Adoption verdict = adoptionOf(result.status(), build);
+            Adoption verdict = adoptionOf(result.status(), build, proof != null);
+            if (proof != null && result.status() == SharedCarriageClient.CallStatus.OK && verdict != Adoption.ADOPT) {
+                // A proof the relay no longer honours (it restarted, or the window lapsed): drop it,
+                // so the next attempt proves afresh rather than presenting the same dead one.
+                RelayOwnerProof.forget(player, relay);
+            }
             if (verdict != Adoption.ADOPT) {
                 return CompletableFuture.completedFuture(refused.apply(verdict));
             }
@@ -483,7 +523,7 @@ public final class BuilderRelayUpload {
             BuilderRelayBuilds.Entry adopted =
                     new BuilderRelayBuilds.Entry(build.id(), build.secret(), "", build.published());
             return action.run(key, adopted, build.kind());
-        });
+        }));
     }
 
     /** A build's owner secret, or why there is none to be had. {@code secret} is empty unless ADOPT. */
@@ -509,7 +549,14 @@ public final class BuilderRelayUpload {
          */
         NOT_YOURS,
         /** The relay has no such id — evicted, or deleted by an operator. */
-        GONE
+        GONE,
+        /**
+         * The build may well be theirs, but this client could not prove it (a dedicated server, a LAN
+         * guest, an offline account), so the relay kept the secret. Said differently from NOT_YOURS
+         * because the player can do something about it: act from the world that uploaded it, or from
+         * single-player signed in.
+         */
+        UNPROVEN
     }
 
     /**
@@ -519,10 +566,12 @@ public final class BuilderRelayUpload {
      * needs a live relay and a loaded world, while the reading of its answer is three cases that must
      * not drift.</p>
      */
-    static Adoption adoptionOf(SharedCarriageClient.CallStatus status, SharedCarriageClient.BuildFetch build) {
+    static Adoption adoptionOf(SharedCarriageClient.CallStatus status, SharedCarriageClient.BuildFetch build,
+                               boolean proven) {
         if (status == SharedCarriageClient.CallStatus.UNKNOWN) return Adoption.GONE;
         if (status != SharedCarriageClient.CallStatus.OK || build == null) return Adoption.NOT_YOURS;
-        return build.secret().isEmpty() ? Adoption.NOT_YOURS : Adoption.ADOPT;
+        if (!build.secret().isEmpty()) return Adoption.ADOPT;
+        return proven ? Adoption.NOT_YOURS : Adoption.UNPROVEN;
     }
 
     /** The publish call itself, once a secret is in hand — the tail both paths above share. */

@@ -66,7 +66,7 @@ public final class NetherBand {
      */
     public static long netherPassIndex(ServerLevel overworld, int worldX) {
         if (startX(overworld) == OFF) return -1L;
-        return WorldGenCycle.fromConfig().cycleIndex(worldX);
+        return WorldGenCycle.fromConfig().netherPassIndex(worldX);
     }
 
     /**
