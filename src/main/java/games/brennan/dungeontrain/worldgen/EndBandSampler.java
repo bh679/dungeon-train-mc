@@ -197,8 +197,10 @@ public final class EndBandSampler {
         }
         int shiftX = pos.getMinBlockX() - endBaseX;
         Map<Long, CompoundTag> blockEntities = new HashMap<>();
-        ground.getBlockEntityNbts().forEach((at, nbt) ->
-                putBlockEntity(blockEntities, at, nbt.copy(), shiftX, bedY, minY, maxY));
+        ground.getBlockEntityNbts().forEach((at, nbt) -> {
+            // Vanilla's data-less placeholder: leave it out so the apply side creates the block entity fresh.
+            if (!OfflineChunkSampler.isPlaceholderBlockEntity(nbt)) putBlockEntity(blockEntities, at, nbt.copy(), shiftX, bedY, minY, maxY);
+        });
         ground.getBlockEntities().forEach((at, be) ->
                 putBlockEntity(blockEntities, at, be.saveWithFullMetadata(end.registryAccess()), shiftX, bedY, minY, maxY));
         return new Result(pos, minY, height, states, Map.copyOf(blockEntities));

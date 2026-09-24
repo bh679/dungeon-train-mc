@@ -486,6 +486,7 @@ public final class PortalChunkTerrain {
                                                              ChunkPos pos, int anchor) {
         Map<Integer, CompoundTag> out = new java.util.HashMap<>();
         chunk.getBlockEntityNbts().forEach((at, nbt) -> {
+            if (OfflineChunkSampler.isPlaceholderBlockEntity(nbt)) return;   // data-less; the live block makes its own
             Integer index = windowIndex(at, pos, anchor);
             if (index != null) out.put(index, nbt.copy());
         });

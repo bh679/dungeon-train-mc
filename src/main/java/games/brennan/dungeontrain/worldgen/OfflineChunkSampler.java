@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.worldgen;
 
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.GenerationChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
@@ -59,6 +60,19 @@ import java.util.EnumSet;
  * <p>Stateless; every method touches only the generator, its random state and the chunks passed in.</p>
  */
 public final class OfflineChunkSampler {
+
+    /**
+     * The block-entity id {@code WorldGenRegion.setBlock} records for a block-entity block written into a
+     * proto chunk: a placeholder with no data, which vanilla promotes to a fresh block entity when the
+     * chunk goes live ({@code LevelChunk.promotePendingBlockEntity}). A sample never goes live, so its
+     * consumers skip these at copy-out and create the block entity fresh at apply.
+     */
+    private static final String PLACEHOLDER_BLOCK_ENTITY_ID = "DUMMY";
+
+    /** True for the data-less placeholder vanilla records for a block-entity block in a proto chunk. */
+    public static boolean isPlaceholderBlockEntity(CompoundTag nbt) {
+        return nbt != null && PLACEHOLDER_BLOCK_ENTITY_ID.equals(nbt.getString("id"));
+    }
 
     /**
      * The beardifier a sample is generated with: nothing at all.
