@@ -18056,7 +18056,7 @@
     },
     {
       "id": "legacy-alpha-band",
-      "version": "0.933.0",
+      "version": "0.948.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -18076,7 +18076,7 @@
     },
     {
       "id": "legacy-band-two",
-      "version": "0.933.0",
+      "version": "0.948.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -18095,7 +18095,7 @@
     },
     {
       "id": "legacy-infdev-band",
-      "version": "0.933.0",
+      "version": "0.948.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -18115,7 +18115,7 @@
     },
     {
       "id": "legacy-band-floating",
-      "version": "0.933.0",
+      "version": "0.948.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -18135,7 +18135,7 @@
     },
     {
       "id": "legacy-band-far-lands",
-      "version": "0.933.0",
+      "version": "0.948.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -18155,7 +18155,7 @@
     },
     {
       "id": "legacy-band-classic",
-      "version": "0.933.0",
+      "version": "0.948.0",
       "type": "feat",
       "tags": [
         "feature",
