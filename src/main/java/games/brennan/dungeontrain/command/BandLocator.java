@@ -1,58 +1,74 @@
 package games.brennan.dungeontrain.command;
 
-import games.brennan.dungeontrain.worldgen.TrainPhase;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.OptionalInt;
+import java.util.function.IntPredicate;
 
 /**
- * Finds the world-X where the next occurrence of a {@link TrainPhase} band begins, for
- * {@code /dtp <band>}. Walks +X with {@link TrainPhase#phaseAt} (the single band classifier the
- * template gate also uses) so it stays correct whatever the band layout config is, then
- * binary-searches the exact entry column.
+ * Finds the world-X where the next occurrence of a band begins, for {@code /dtp <band>}. Walks +X with
+ * the band's own column test (see {@link DtpTarget}) so it stays correct whatever the band layout config
+ * is, then binary-searches the exact entry column.
+ *
+ * <p>Nothing here is a band distance: the search horizon and coarse step both come from the live
+ * {@link WorldGenCycle}. Under an ordered layout run {@code k} is {@code 2^k} times as long as run 0 and
+ * every band in it stretches by the same factor, so both scale with the run the search starts in.</p>
  */
 final class BandLocator {
 
-    /** Coarse scan step — far shorter than any band, so a band can't be stepped over. */
-    private static final int STEP = 16;
+    /** Run-0 coarse scan step — far shorter than any band, so a band can't be stepped over. Scales ×2^k with the run. */
+    private static final int BASE_STEP = 16;
+
+    /**
+     * Horizon in run lengths: from just past a band, the rest of this run plus the whole next run (twice as
+     * long under a layout) is under three run lengths.
+     */
+    private static final long HORIZON_RUNS = 3L;
 
     private BandLocator() {}
 
     /**
      * Entry X of the next {@code target} band strictly ahead of {@code fromX} — if {@code fromX} is
      * already inside one, that band is skipped. Empty when the cycle is empty, the band is disabled,
-     * or the world has no train (every column then reads {@link TrainPhase#OVERWORLD}).
+     * or the world has no train (every column test then reads false).
      */
-    static OptionalInt nextBandStartX(ServerLevel overworld, TrainPhase target, int fromX) {
-        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+    static OptionalInt nextBandStartX(ServerLevel overworld, DtpTarget target, int fromX) {
+        return nextBandStartX(WorldGenCycle.fromConfig(), x -> target.test().test(overworld, x), fromX);
+    }
+
+    /** Pure form of {@link #nextBandStartX(ServerLevel, DtpTarget, int)} over any column test. */
+    static OptionalInt nextBandStartX(WorldGenCycle cycle, IntPredicate inBand, int fromX) {
         long period = cycle.period();
         if (period <= 0L) return OptionalInt.empty();
 
+        int run = cycle.hasLayout() ? (int) Math.min(30L, Math.max(0L, cycle.cycleIndex(fromX))) : 0;
+        long runLength = period << run;
+        long step = (long) BASE_STEP << run;
         long leadIn = Math.max(0L, cycle.startX() - (long) fromX);
-        long limit = Math.min(Integer.MAX_VALUE - (long) STEP, (long) fromX + leadIn + 2L * period);
+        long limit = Math.min(Integer.MAX_VALUE - step, (long) fromX + leadIn + HORIZON_RUNS * runLength);
 
         long x = fromX;
-        while (x < limit && TrainPhase.phaseAt(overworld, (int) x) == target) x += STEP;
+        while (x < limit && inBand.test((int) x)) x += step;
 
         long outside = x;
         while (x < limit) {
-            x += STEP;
-            if (TrainPhase.phaseAt(overworld, (int) x) == target) {
-                return OptionalInt.of(refineEntry(overworld, target, (int) outside, (int) x));
+            x += step;
+            if (inBand.test((int) x)) {
+                return OptionalInt.of(refineEntry(inBand, (int) outside, (int) x));
             }
             outside = x;
         }
         return OptionalInt.empty();
     }
 
-    /** Binary search in {@code (outside, inside]} for the first column classified as {@code target}. */
-    private static int refineEntry(ServerLevel overworld, TrainPhase target, int outside, int inside) {
+    /** Binary search in {@code (outside, inside]} for the first column in the band. */
+    private static int refineEntry(IntPredicate inBand, int outside, int inside) {
         int lo = outside;
         int hi = inside;
         while (hi - lo > 1) {
             int mid = lo + (hi - lo) / 2;
-            if (TrainPhase.phaseAt(overworld, mid) == target) hi = mid;
+            if (inBand.test(mid)) hi = mid;
             else lo = mid;
         }
         return hi;

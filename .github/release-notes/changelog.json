@@ -18604,6 +18604,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dtp-every-band",
+      "version": "0.951.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Testing tools improvements",
+      "summary": "Getting around is a little easier when testing.",
+      "highlights": [],
+      "pr": 1528,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

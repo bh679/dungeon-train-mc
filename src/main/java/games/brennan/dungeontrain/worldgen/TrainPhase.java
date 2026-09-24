@@ -111,6 +111,30 @@ public enum TrainPhase {
         };
     }
 
+    /**
+     * Short command aliases beside each {@link #token()} — one table shared by {@link #byToken} and
+     * {@code /dtp}'s literals so the two can't drift apart. Insertion-ordered and unmodifiable.
+     */
+    public static java.util.Map<String, TrainPhase> aliases() {
+        return Aliases.MAP;
+    }
+
+    private static final class Aliases {
+        static final java.util.Map<String, TrainPhase> MAP;
+        static {
+            java.util.Map<String, TrainPhase> m = new java.util.LinkedHashMap<>();
+            m.put("ow", OVERWORLD);
+            m.put("ud", UPSIDE_DOWN);
+            m.put("upsidedown", UPSIDE_DOWN);
+            m.put("farlands", FAR_LANDS);
+            m.put("largebiomes", LARGE_BIOMES);
+            m.put("large", LARGE_BIOMES);
+            m.put("chaos", CAVES_OF_CHAOS);
+            m.put("cavesofchaos", CAVES_OF_CHAOS);
+            MAP = java.util.Collections.unmodifiableMap(m);
+        }
+    }
+
     /** Lower-cased command token for this phase ({@code overworld}, {@code nether}, …). */
     public String token() {
         return name().toLowerCase(java.util.Locale.ROOT);
@@ -120,11 +144,8 @@ public enum TrainPhase {
     public static TrainPhase byToken(String token) {
         if (token == null) return null;
         String t = token.trim().toLowerCase(java.util.Locale.ROOT);
-        if (t.equals("ow")) return OVERWORLD;
-        if (t.equals("ud") || t.equals("upsidedown")) return UPSIDE_DOWN;
-        if (t.equals("farlands")) return FAR_LANDS;
-        if (t.equals("largebiomes") || t.equals("large")) return LARGE_BIOMES;
-        if (t.equals("chaos") || t.equals("cavesofchaos")) return CAVES_OF_CHAOS;
+        TrainPhase alias = aliases().get(t);
+        if (alias != null) return alias;
         for (TrainPhase p : values()) {
             if (p.token().equals(t)) return p;
         }
