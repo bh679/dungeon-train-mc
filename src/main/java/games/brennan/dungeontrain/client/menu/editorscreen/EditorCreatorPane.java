@@ -32,7 +32,7 @@ public final class EditorCreatorPane {
     static final int LOADED_TEXT = 0xFF88DD88;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, LOAD, PARENT, GO_HERE, PREVIEW, OLDER, NEWER, SUBMIT }
+    public enum HitKind { NONE, LOAD, PARENT, GO_HERE, PREVIEW, OLDER, NEWER, SUBMIT, PAGE_PREV, PAGE_NEXT }
 
     /** The parent button's share of the load slot; the load button keeps the rest. */
     static final double PARENT_SHARE = 0.42;
@@ -45,6 +45,17 @@ public final class EditorCreatorPane {
     private InventoryEditorLayout.Rect goHereRect;
     private InventoryEditorLayout.Rect previewRect;
     private InventoryEditorLayout.Rect submitRect;
+
+    /**
+     * The sheet's pages: 0 is who made it and what happened to it, 1 is what they answered on
+     * submitting it. Only a build with answers has the second — and only then is there a pager.
+     */
+    private int sheetPage;
+    private int sheetPageCount = 1;
+    /** Which build {@link #sheetPage} belongs to; a new pick starts back on the first page. */
+    private int sheetPageFor;
+    private InventoryEditorLayout.Rect sheetRect;
+    private InventoryEditorLayout.Rect pagerRect;
 
     public void render(GuiGraphics g, Font font, InventoryEditorLayout layout,
                        EditorScreenTheme theme, BuilderProfilePacket.Entry entry, float yaw,
@@ -69,13 +80,32 @@ public final class EditorCreatorPane {
         }
 
         InventoryEditorLayout.Rect s = layout.sheet();
-        int y = s.y();
-        for (String[] line : lines(entry, seq)) {
-            if (y + LINE_H > s.bottom()) break;
-            g.drawString(font, line[0], s.x() + 2, y, MenuRowPainter.TEXT_HEADER, false);
-            g.drawString(font, font.plainSubstrByWidth(line[1], s.w() - LABEL_W - 6),
-                s.x() + LABEL_W, y, 0xFFFFFFFF, false);
-            y += LINE_H;
+        sheetRect = s;
+        int relayId = entry == null ? 0 : entry.relayId();
+        if (relayId != sheetPageFor) sheetPage = 0;
+        sheetPageFor = relayId;
+        boolean answered = entry != null && SubmissionPage.hasAnswers(entry.note());
+        sheetPageCount = answered ? 2 : 1;
+        sheetPage = Math.min(sheetPage, sheetPageCount - 1);
+        // The pager takes the sheet's last line when there is a second page to turn to.
+        pagerRect = answered ? new InventoryEditorLayout.Rect(s.x(), s.bottom() - LINE_H - 2, s.w(), LINE_H + 2) : null;
+        InventoryEditorLayout.Rect body = pagerRect == null ? s
+            : new InventoryEditorLayout.Rect(s.x(), s.y(), s.w(), Math.max(0, pagerRect.y() - s.y()));
+        if (sheetPage == 1) {
+            SubmissionPage.draw(g, font, body, entry.note());
+        } else {
+            int y = body.y();
+            for (String[] line : lines(entry, seq)) {
+                if (y + LINE_H > body.bottom()) break;
+                g.drawString(font, line[0], body.x() + 2, y, MenuRowPainter.TEXT_HEADER, false);
+                g.drawString(font, font.plainSubstrByWidth(line[1], body.w() - LABEL_W - 6),
+                    body.x() + LABEL_W, y, 0xFFFFFFFF, false);
+                y += LINE_H;
+            }
+        }
+        if (pagerRect != null) {
+            EditorPager.draw(g, font, pagerRect, sheetPage, sheetPageCount,
+                EditorPager.hit(pagerRect, sheetPage, sheetPageCount, mouseX, mouseY));
         }
 
         // Why the toolbar is missing, said once rather than as eight disabled buttons — OR whatever
@@ -264,6 +294,19 @@ public final class EditorCreatorPane {
         return mc.player.getUUID().toString().equals(entry.ownerUuid());
     }
 
+    /** Turn the sheet's page — the pager's arrows or the wheel. False when there is nowhere to turn. */
+    public boolean turnSheet(int dir) {
+        int next = Math.max(0, Math.min(sheetPageCount - 1, sheetPage + dir));
+        boolean moved = next != sheetPage;
+        sheetPage = next;
+        return moved;
+    }
+
+    /** True when the point is over the sheet — where the wheel turns its pages. */
+    public boolean overSheet(double mx, double my) {
+        return sheetRect != null && sheetPageCount > 1 && sheetRect.contains(mx, my);
+    }
+
     /** What a click at this point means. Reads back the geometry of the last frame. */
     public HitKind hitTest(double mx, double my) {
         switch (versions.hit(mx, my)) {
@@ -272,6 +315,11 @@ public final class EditorCreatorPane {
             case NONE -> { }
         }
         if (goHereRect != null && goHereRect.contains(mx, my)) return HitKind.GO_HERE;
+        switch (EditorPager.hit(pagerRect, sheetPage, sheetPageCount, mx, my)) {
+            case PREV -> { return HitKind.PAGE_PREV; }
+            case NEXT -> { return HitKind.PAGE_NEXT; }
+            case NONE -> { }
+        }
         if (submitRect != null && submitRect.contains(mx, my)) return HitKind.SUBMIT;
         if (loadRect != null && loadRect.contains(mx, my)) return HitKind.LOAD;
         if (parentRect != null && parentRect.contains(mx, my)) return HitKind.PARENT;

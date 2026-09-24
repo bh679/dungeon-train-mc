@@ -531,6 +531,7 @@
       "gui.dungeontrain.editor_screen.sheet.loot_value",
       "gui.dungeontrain.editor_screen.sheet.loot_total_tip",
       "gui.dungeontrain.editor_screen.loot_page.header",
+      "gui.dungeontrain.editor_screen.submission_page.header",
       "gui.dungeontrain.editor_screen.loot_page.in",
       "gui.dungeontrain.editor_screen.sheet.weight",
       "gui.dungeontrain.editor_screen.sheet.share",

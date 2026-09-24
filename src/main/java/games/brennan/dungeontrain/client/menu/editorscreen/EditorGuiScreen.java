@@ -824,6 +824,16 @@ public final class EditorGuiScreen extends Screen {
                     goToLoadedBuild();
                     return true;
                 }
+                case PAGE_PREV -> {
+                    click();
+                    creatorPane.turnSheet(-1);
+                    return true;
+                }
+                case PAGE_NEXT -> {
+                    click();
+                    creatorPane.turnSheet(1);
+                    return true;
+                }
                 case PREVIEW -> {
                     orbit.beginDrag();
                     return true;
@@ -1240,6 +1250,9 @@ public final class EditorGuiScreen extends Screen {
         if (onStages()) {
             if (stagesPane.over(layout, mouseX, mouseY)) return stagesPane.scrollBy(dir);
             if (stageDetail.over(mouseX, mouseY) && stageDetail.scrollBy(dir)) return true;
+        } else if (!onNav() && EditorCreatorBuilds.active() && creatorPane.overSheet(mouseX, mouseY)) {
+            creatorPane.turnSheet(dir);
+            return true;
         } else if (!onNav() && detail.overSettings(mouseX, mouseY) && detail.scrollBy(dir)) {
             return true;
         }

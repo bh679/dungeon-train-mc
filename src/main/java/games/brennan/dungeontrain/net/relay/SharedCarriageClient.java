@@ -168,7 +168,20 @@ public final class SharedCarriageClient {
                                String source, String stage, String flag, String review, int l, int h, int w,
                                int changeCount, long updatedTs,
                                boolean favourite, String ownerUuid, String ownerName,
-                               boolean templateCopy) {}
+                               boolean templateCopy, SubmitNote note) {
+        public ProfileBuild {
+            note = note == null ? SubmitNote.EMPTY : note;
+        }
+
+        /** A row with no submission answers — every listing but {@code /carriages/mine}. */
+        public ProfileBuild(int id, String kind, String subKind, String buildName, String visibility,
+                            String source, String stage, String flag, String review, int l, int h, int w,
+                            int changeCount, long updatedTs, boolean favourite, String ownerUuid,
+                            String ownerName, boolean templateCopy) {
+            this(id, kind, subKind, buildName, visibility, source, stage, flag, review, l, h, w, changeCount,
+                    updatedTs, favourite, ownerUuid, ownerName, templateCopy, SubmitNote.EMPTY);
+        }
+    }
 
     /**
      * Upload a Train Builder save. {@code visibility} is {@code profile} for a build that is only in
@@ -297,7 +310,19 @@ public final class SharedCarriageClient {
                 str(r, "ownerUuid"), str(r, "ownerName"),
                 r.has("templateCopy") && r.get("templateCopy").isJsonPrimitive()
                         && r.get("templateCopy").getAsJsonPrimitive().isBoolean()
-                        && r.get("templateCopy").getAsBoolean());
+                        && r.get("templateCopy").getAsBoolean(),
+                noteOf(r));
+    }
+
+    /**
+     * The author's Submit for Review answers on a row, as {@code /carriages/mine} spells them:
+     * {@code submitNote: {redstone?, loot?, notes?}} or null. Anything else — absent, null, a bare
+     * string — is no answers rather than a failed row. Package-private for tests.
+     */
+    static SubmitNote noteOf(JsonObject r) {
+        if (r == null || !r.has("submitNote") || !r.get("submitNote").isJsonObject()) return SubmitNote.EMPTY;
+        JsonObject n = r.getAsJsonObject("submitNote");
+        return new SubmitNote(str(n, "redstone"), str(n, "loot"), str(n, "notes"));
     }
 
     /** One builder the relay knows, as a creator search names them. */

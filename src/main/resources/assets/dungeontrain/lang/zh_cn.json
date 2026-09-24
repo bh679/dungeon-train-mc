@@ -1157,6 +1157,7 @@
   "gui.dungeontrain.editor_screen.sheet.loot_value": "价值：%s",
   "gui.dungeontrain.editor_screen.sheet.loot_total_tip": "战利品总价值——用于比较建筑。点击查看每件物品。",
   "gui.dungeontrain.editor_screen.loot_page.header": "战利品 · 价值 %1$s · %2$s 种物品",
+  "gui.dungeontrain.editor_screen.submission_page.header": "提交时的回答",
   "gui.dungeontrain.editor_screen.loot_page.in": "位于：%s",
   "gui.dungeontrain.editor_screen.sheet.weight": "权重",
   "gui.dungeontrain.editor_screen.sheet.share": "%s 个子变体共用同一次抽取",

@@ -164,7 +164,7 @@ public final class BuilderProfileState {
             if (e.relayId() == relayId && e.favourite() != favourite) {
                 updated.add(new BuilderProfilePacket.Entry(e.relayId(), e.kind(), e.subKind(),
                         e.buildName(), e.published(), e.flag(), e.review(), e.stage(), e.changes(),
-                        favourite, e.ownerUuid(), e.ownerName(), e.templateCopy()));
+                        favourite, e.ownerUuid(), e.ownerName(), e.templateCopy(), e.note()));
                 changed = true;
             } else {
                 updated.add(e);

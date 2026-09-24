@@ -1157,6 +1157,7 @@
   "gui.dungeontrain.editor_screen.sheet.loot_value": "มูลค่า: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_total_tip": "มูลค่าของรางวัลรวม — สำหรับเปรียบเทียบสิ่งก่อสร้าง คลิกเพื่อดูไอเท็มทั้งหมด",
   "gui.dungeontrain.editor_screen.loot_page.header": "ของรางวัล · มูลค่า %1$s · %2$s ไอเท็ม",
+  "gui.dungeontrain.editor_screen.submission_page.header": "คำตอบที่ส่งไป",
   "gui.dungeontrain.editor_screen.loot_page.in": "อยู่ใน: %s",
   "gui.dungeontrain.editor_screen.sheet.weight": "น้ำหนัก",
   "gui.dungeontrain.editor_screen.sheet.share": "รูปแบบย่อย %s แบบใช้การสุ่มร่วมกัน",

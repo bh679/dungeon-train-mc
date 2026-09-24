@@ -1157,6 +1157,7 @@
   "gui.dungeontrain.editor_screen.sheet.loot_value": "가치: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_total_tip": "전리품 총 가치 — 건축물 비교용. 클릭하면 모든 아이템을 봅니다.",
   "gui.dungeontrain.editor_screen.loot_page.header": "전리품 · 가치 %1$s · 아이템 %2$s개",
+  "gui.dungeontrain.editor_screen.submission_page.header": "제출한 답변",
   "gui.dungeontrain.editor_screen.loot_page.in": "위치: %s",
   "gui.dungeontrain.editor_screen.sheet.weight": "가중치",
   "gui.dungeontrain.editor_screen.sheet.share": "하위 변형 %s개가 확률을 공유함",
