@@ -18595,7 +18595,7 @@
         "world"
       ],
       "title": "Every stretch is a /dtp away",
-      "summary": "Operators can now send /dtp to every kind of stretch the journey has, including the reworked second-lap versions and the dispersing islands after the upside-down, plus short names like chaos and farlands. It also keeps finding them however far along the track you already are, and follows the band layout if a server changes it.",
+      "summary": "Operators can now send /dtp to every kind of stretch on the journey, by its name or a short alias. It keeps finding them however far along the track you already are, and follows the band layout if a server changes it.",
       "highlights": [],
       "pr": 1528,
       "date": "2026-09-24",
