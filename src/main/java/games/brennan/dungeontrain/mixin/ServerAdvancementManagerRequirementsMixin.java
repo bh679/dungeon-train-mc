@@ -2,7 +2,10 @@ package games.brennan.dungeontrain.mixin;
 
 import com.google.gson.JsonElement;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.BandAdvancementChainRewriter;
+import games.brennan.dungeontrain.advancement.BandAdvancements;
 import games.brennan.dungeontrain.advancement.requirement.AdvancementDisabler;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.advancement.requirement.AdvancementFlag;
 import games.brennan.dungeontrain.advancement.requirement.AdvancementRequirementOverrides;
 import games.brennan.dungeontrain.advancement.requirement.ForeignAdvancementFilter;
@@ -44,6 +47,10 @@ public abstract class ServerAdvancementManagerRequirementsMixin {
         Map<ResourceLocation, JsonElement> enabled =
             AdvancementDisabler.removeAll(rewritten, payload.with(AdvancementFlag.DISABLED), DungeonTrain.MOD_ID);
         AdvancementRequirementOverrides.markApplied(payload);
-        return enabled;
+        // Journey chain: with an ordered band layout the parents follow the layout, not the jar JSON.
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        if (!cycle.hasLayout()) return enabled;
+        return BandAdvancementChainRewriter.rewriteParents(enabled, BandAdvancements.chain(cycle.layout()),
+            BandAdvancements.ANCHOR, DungeonTrain.MOD_ID);
     }
 }

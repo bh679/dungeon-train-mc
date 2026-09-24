@@ -6,6 +6,7 @@
     "dungeontrain:disintegration",
     "dungeontrain:nether_structures",
     "dungeontrain:stacks",
+    "dungeontrain:legacy_decorate",
     "dungeontrain:track_bed"
   ],
   "step": "top_layer_modification"

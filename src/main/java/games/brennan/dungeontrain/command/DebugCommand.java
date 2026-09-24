@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.command;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -123,6 +124,20 @@ public final class DebugCommand {
             // /dungeontrain debug nether-passes — core X range + core biomes of the first Nether bands
             // (even passes vanilla, odd passes BetterNether). Also logged at INFO for RCON runs.
             .then(Commands.literal("nether-passes").executes(ctx -> NetherPassesDebug.report(ctx.getSource())))
+            // /dungeontrain debug cycle-layout [runs] — every band slot's world-X range (run 0 and the doubled
+            // runs after it) with the phase read at its midpoint. Also logged at INFO for RCON runs.
+            .then(Commands.literal("cycle-layout")
+                .executes(ctx -> CycleLayoutDebug.report(ctx.getSource(), 2))
+                .then(Commands.argument("runs", IntegerArgumentType.integer(1, 8))
+                    .executes(ctx -> CycleLayoutDebug.report(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "runs")))))
+            // /dungeontrain debug band-advancements — the journey advancement chain in layout order (the
+            // parents the datapack rewriter applied at load). Also logged at INFO for RCON runs.
+            // `at <x>` probes every band trigger's column test at that world-X (what a player there would earn).
+            .then(Commands.literal("band-advancements")
+                .executes(ctx -> BandAdvancementsDebug.report(ctx.getSource()))
+                .then(Commands.literal("at")
+                    .then(Commands.argument("x", IntegerArgumentType.integer())
+                        .executes(ctx -> BandAdvancementsDebug.probe(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "x"))))))
             // /dungeontrain debug overworld-laps — the overworld gaps either side of the first Nether bands,
             // which second-lap mod owns each (WWOO before, Biomes O' Plenty after, odd laps) and a biome
             // census sampled from the overworld source. Also logged at INFO for RCON runs.

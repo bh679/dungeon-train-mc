@@ -80,7 +80,17 @@
       "END",
       "UPSIDE_DOWN",
       "CHUNCKS",
-      "SPHERES"
+      "SPHERES",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "SKYLANDS",
+      "FLOATING",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "CAVES_OF_CHAOS"
     ],
     "mode": "bedrock_lock",
     "builder": {
@@ -94,7 +104,15 @@
       "OVERWORLD",
       "NETHER",
       "VOID",
-      "END"
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "CAVES_OF_CHAOS"
     ],
     "mode": "endless_open/single:minecraft:stone"
   },
@@ -104,7 +122,15 @@
       "OVERWORLD",
       "NETHER",
       "VOID",
-      "END"
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "CAVES_OF_CHAOS"
     ],
     "mode": "bedrock_lock"
   },
@@ -162,7 +188,17 @@
       "VOID",
       "UPSIDE_DOWN",
       "CHUNCKS",
-      "SPHERES"
+      "SPHERES",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "SKYLANDS",
+      "FLOATING",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "CAVES_OF_CHAOS"
     ],
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
   },
@@ -377,7 +413,17 @@
       "OVERWORLD",
       "UPSIDE_DOWN",
       "CHUNCKS",
-      "SPHERES"
+      "SPHERES",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "SKYLANDS",
+      "FLOATING",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "CAVES_OF_CHAOS"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
   },

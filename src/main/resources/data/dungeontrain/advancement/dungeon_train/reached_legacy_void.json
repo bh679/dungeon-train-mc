@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/reached_classic",
+  "display": {
+    "icon": { "id": "minecraft:black_stained_glass" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_legacy_void.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.reached_legacy_void.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "reached_legacy_void" }
+    }
+  },
+  "requirements": [["reached"]]
+}

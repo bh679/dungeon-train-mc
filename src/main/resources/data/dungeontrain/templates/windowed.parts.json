@@ -7,7 +7,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -17,7 +25,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -88,7 +104,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -98,7 +122,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -171,7 +203,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -182,7 +222,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -193,7 +241,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -204,7 +260,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -315,7 +379,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -326,7 +398,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -337,7 +417,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -348,7 +436,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -492,7 +588,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -502,7 +606,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -512,7 +624,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -522,7 +642,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -623,7 +751,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -633,7 +769,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -643,7 +787,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -653,7 +805,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -775,7 +935,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -786,7 +954,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -796,7 +972,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -808,7 +992,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -856,7 +1048,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -867,7 +1067,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -877,7 +1085,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -889,7 +1105,15 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
