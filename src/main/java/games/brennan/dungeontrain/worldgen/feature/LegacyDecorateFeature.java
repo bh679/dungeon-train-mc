@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingLevel;
 import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingPopulator;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBiome;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaPopulator;
+import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaWorld;
 import games.brennan.dungeontrain.worldgen.legacy.infdev.InfdevPopulator;
 import games.brennan.dungeontrain.worldgen.legacy.farlands.FarLandsShift;
@@ -46,16 +47,19 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
         ChunkPos chunk = new ChunkPos(ctx.origin());
         ServerLevel serverLevel = level.getLevel();
         LegacyBandKind kind = LegacyBands.kindOfChunk(serverLevel, chunk.x, chunk.z);
-        if (kind == null) return false;
+        if (kind == null || kind.isPreset()) return false; // presets get vanilla's own decoration
         long genT0 = GenProfiler.t0();
         try {
             long seed = DungeonTrainWorldData.get(serverLevel).getGenerationSeed();
             int yOffset = LegacyBands.yOffset(kind, serverLevel);
-            BetaWorld world = kind == LegacyBandKind.FLOATING
-                    ? new BetaWorld(level, yOffset, IndevFloatingLevel.HEIGHT)
-                    : new BetaWorld(level, yOffset);
+            BetaWorld world = switch (kind) {
+                case FLOATING -> new BetaWorld(level, yOffset, IndevFloatingLevel.HEIGHT);
+                case CAVES_OF_CHAOS -> new BetaWorld(level, yOffset, BetaTerrain.Profile.CAVES_OF_CHAOS.height());
+                default -> new BetaWorld(level, yOffset);
+            };
             switch (kind) {
                 case BETA -> BetaPopulator.populate(world, LegacyBands.beta(seed), chunk.x, chunk.z);
+                case CAVES_OF_CHAOS -> BetaPopulator.populate(world, LegacyBands.chaos(seed), chunk.x, chunk.z);
                 case SKYLANDS -> BetaPopulator.populate(world, seed, LegacyBands.sky(seed).forestNoise(),
                         BetaBiome.SKY, null, chunk.x, chunk.z);
                 case ALPHA -> AlphaPopulator.populate(level, LegacyBands.alpha(seed), chunk.x, chunk.z,
@@ -64,7 +68,7 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
                         LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), chunk.x), chunk.x, chunk.z);
                 case FLOATING -> IndevFloatingPopulator.populate(world, seed, chunk.x, chunk.z);
                 // Classic planted its trees, flowers and mushrooms while building the level — already written.
-                case CLASSIC -> {
+                case CLASSIC, LARGE_BIOMES, AMPLIFIED -> {
                     return false;
                 }
                 case VOID -> { /* nothing to decorate */ }

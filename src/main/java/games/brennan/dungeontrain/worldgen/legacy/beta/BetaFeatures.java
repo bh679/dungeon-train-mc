@@ -261,7 +261,7 @@ public final class BetaFeatures {
         for (int x = bx + 8; x < bx + 24; x++) {
             for (int z = bz + 8; z < bz + 24; z++) {
                 int y = world.topSolidOrLiquid(x, z);
-                if (y <= 0 || y >= BetaTerrain.HEIGHT) continue;
+                if (y <= 0 || y >= world.height()) continue;
                 if (rule.snows(x, y, z) && world.isAir(x, y, z) && world.isSolid(x, y - 1, z)
                         && !world.is(x, y - 1, z, Blocks.ICE)) {
                     world.set(x, y, z, snow);

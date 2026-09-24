@@ -55,13 +55,14 @@ final class LegacyBandsTest {
     }
 
     @Test
-    @DisplayName("cycle order runs Beta, Far Lands, Skylands, Alpha, Infdev, Indev floating, Classic, Void; Skylands, floating and void are void below")
+    @DisplayName("cycle order runs Beta, Far Lands, Caves of Chaos, Skylands, Alpha, Infdev, Indev floating, Classic, Void; chaos, Skylands, floating and void are void below")
     void kindOrder() {
-        assertArrayEquals(new LegacyBandKind[] {LegacyBandKind.BETA, LegacyBandKind.FAR_LANDS, LegacyBandKind.SKYLANDS,
+        assertArrayEquals(new LegacyBandKind[] {LegacyBandKind.LARGE_BIOMES, LegacyBandKind.AMPLIFIED, LegacyBandKind.BETA, LegacyBandKind.FAR_LANDS, LegacyBandKind.CAVES_OF_CHAOS, LegacyBandKind.SKYLANDS,
                         LegacyBandKind.ALPHA, LegacyBandKind.INFDEV, LegacyBandKind.FLOATING, LegacyBandKind.CLASSIC,
                         LegacyBandKind.VOID},
                 LegacyBandKind.values());
         assertTrue(LegacyBandKind.VOID.voidBelow());
+        assertTrue(LegacyBandKind.CAVES_OF_CHAOS.voidBelow());
         assertFalse(LegacyBandKind.BETA.voidBelow());
         assertTrue(LegacyBandKind.SKYLANDS.voidBelow());
         assertFalse(LegacyBandKind.ALPHA.voidBelow());
@@ -69,6 +70,11 @@ final class LegacyBandsTest {
         assertTrue(LegacyBandKind.FLOATING.voidBelow());
         assertFalse(LegacyBandKind.CLASSIC.voidBelow());
         assertFalse(LegacyBandKind.FAR_LANDS.voidBelow());
+        assertFalse(LegacyBandKind.LARGE_BIOMES.voidBelow());
+        assertFalse(LegacyBandKind.AMPLIFIED.voidBelow());
+        assertTrue(LegacyBandKind.LARGE_BIOMES.isPreset());
+        assertTrue(LegacyBandKind.AMPLIFIED.isPreset());
+        assertFalse(LegacyBandKind.BETA.isPreset());
     }
 
     @Test

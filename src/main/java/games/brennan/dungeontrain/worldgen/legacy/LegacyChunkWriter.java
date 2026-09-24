@@ -73,12 +73,14 @@ public final class LegacyChunkWriter {
             return;
         }
         byte[] blocks = switch (kind) {
+            case CAVES_OF_CHAOS -> LegacyBands.chaos(seed).generate(cx, cz).blocks();
             case BETA -> LegacyBands.beta(seed).generate(cx, cz).blocks();
             case SKYLANDS -> LegacyBands.sky(seed).generate(cx, cz).blocks();
             case ALPHA -> LegacyBands.alpha(seed).generate(cx, cz, LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), cx));
             case INFDEV -> LegacyBands.infdev(seed).generate(cx, cz, LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), cx));
             case FLOATING -> null; // not a Beta-layout column: a slice of a whole finite level
             case VOID -> throw new IllegalStateException("void handled above");
+            case LARGE_BIOMES, AMPLIFIED -> throw new IllegalStateException(kind + " is filled by its preset generator");
             case CLASSIC -> LegacyBands.classic(seed).chunkColumn(cx, cz);
             case FAR_LANDS -> {
                 // The Far Lands are Beta's own terrain, read ~12.55M blocks out (see FarLandsShift).
@@ -89,9 +91,17 @@ public final class LegacyChunkWriter {
         if (blocks == null) {
             writeFloating(chunk, LegacyBands.indevFloating(seed).levelForChunk(cx, cz), yOffset);
         } else {
-            int height = kind == LegacyBandKind.CLASSIC ? ClassicLevel.HEIGHT : BetaTerrain.HEIGHT;
-            write(chunk, blocks, height, floorY, yOffset, !kind.voidBelow());
+            write(chunk, blocks, heightOf(kind), floorY, yOffset, !kind.voidBelow());
         }
+    }
+
+    /** Column height of {@code kind}'s block array — Beta's 128 unless the generator says otherwise. */
+    static int heightOf(LegacyBandKind kind) {
+        return switch (kind) {
+            case CLASSIC -> ClassicLevel.HEIGHT;
+            case CAVES_OF_CHAOS -> BetaTerrain.Profile.CAVES_OF_CHAOS.height();
+            default -> BetaTerrain.HEIGHT;
+        };
     }
 
     /**

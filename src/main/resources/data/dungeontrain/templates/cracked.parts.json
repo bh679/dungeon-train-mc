@@ -124,7 +124,10 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -140,7 +143,10 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -249,7 +255,10 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -265,7 +274,10 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -414,7 +426,10 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -429,7 +444,10 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -507,7 +525,10 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -522,7 +543,10 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -650,7 +674,10 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -666,7 +693,10 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -720,7 +750,10 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -736,7 +769,10 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
