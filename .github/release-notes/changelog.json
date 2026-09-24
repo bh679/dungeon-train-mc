@@ -18594,8 +18594,8 @@
         "feature",
         "world"
       ],
-      "title": "Every stretch is a /dtp away",
-      "summary": "Operators can now send /dtp to every kind of stretch on the journey, by its name or a short alias. It keeps finding them however far along the track you already are, and follows the band layout if a server changes it.",
+      "title": "/dtp improvements",
+      "summary": "/dtp reaches more places.",
       "highlights": [],
       "pr": 1528,
       "date": "2026-09-24",
