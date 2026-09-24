@@ -445,11 +445,14 @@ public final class BuilderPauseMenuHandler {
      * Save the builder's carriage — position-independent, unlike the editor's own save.
      *
      * <p>A build with no name has nowhere to be written, so the first save asks for one, using the
-     * New screen with its other choices already filled in and locked.</p>
+     * New screen with its other choices already filled in and locked. A build that goes by a name
+     * the mod ships gets the same screen, with keeping it as a local edit offered beside it — see
+     * {@link BuilderNewScreen#forSave}.</p>
      */
     private static void save(Screen parent) {
-        if (BuilderBoundsState.isDraft()) {
-            Minecraft.getInstance().setScreen(BuilderNewScreen.saveAs(parent));
+        Screen naming = BuilderNewScreen.forSave(parent);
+        if (naming != null) {
+            Minecraft.getInstance().setScreen(naming);
             return;
         }
         Minecraft.getInstance().setScreen(null);

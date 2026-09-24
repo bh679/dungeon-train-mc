@@ -92,6 +92,9 @@ public final class EditorPlotSnapshots {
         SNAPSHOTS.put(key, snap);
         DECOR.put(key, decorFingerprint(level, origin, length, height, width));
         SIDECAR_EDITS.remove(key);
+        // Every stamp and every save lands here, and after either the sidecar on disk is the plot's
+        // baseline again — see EditorSidecarBaseline.
+        EditorSidecarBaseline.forget(key);
     }
 
     /**
@@ -193,6 +196,7 @@ public final class EditorPlotSnapshots {
         SNAPSHOTS.remove(key);
         DECOR.remove(key);
         SIDECAR_EDITS.remove(key);
+        EditorSidecarBaseline.forget(key);
     }
 
     /** Wipe all snapshots. */
@@ -200,6 +204,7 @@ public final class EditorPlotSnapshots {
         SNAPSHOTS.clear();
         DECOR.clear();
         SIDECAR_EDITS.clear();
+        EditorSidecarBaseline.clearAll();
     }
 
     /**
