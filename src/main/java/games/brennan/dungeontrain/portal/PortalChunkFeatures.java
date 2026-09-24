@@ -150,7 +150,7 @@ final class PortalChunkFeatures {
             // and, with it, whatever that structure is inhabited by: a village's villagers, an
             // outpost's pillagers, a bastion's piglins all come through this same region and land in
             // the same throwaway chunk the room is read out of.
-            generator.applyBiomeDecoration(workspace.region(), chunk, workspace.structures());
+            OfflineChunkSampler.decorate(generator, workspace, chunk);
 
             // The pass that puts a fresh chunk's animals in it — the herd of sheep on the hillside,
             // the pigs in the wood.
