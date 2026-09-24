@@ -311,7 +311,7 @@ public final class BuilderRelayUpload {
      * world happened to upload.</p>
      */
     public static CompletableFuture<Component> submitToTrain(ServerPlayer player, ServerLevel level,
-                                                             int relayId, boolean publish, String note) {
+                                                             int relayId, boolean publish, SubmitNote note) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         String key = data.builderRelayBuilds().keyForRelayId(relayId);
         BuilderRelayBuilds.Entry entry = key == null ? null : data.builderRelayBuilds().get(key);
@@ -343,7 +343,7 @@ public final class BuilderRelayUpload {
      * and not the path: a world that uploaded the build answers from its own saved data.</p>
      */
     private static CompletableFuture<Component> adopt(ServerPlayer player, ServerLevel level,
-                                                      int relayId, boolean publish, String note) {
+                                                      int relayId, boolean publish, SubmitNote note) {
         String owner = player == null ? "" : player.getUUID().toString();
         return SharedCarriageClient.fetchBuild(relayId, owner).thenCompose(result -> {
             SharedCarriageClient.BuildFetch build = result.build();
@@ -395,7 +395,7 @@ public final class BuilderRelayUpload {
     /** The publish call itself, once a secret is in hand — the tail both paths above share. */
     private static CompletableFuture<Component> publishWith(ServerLevel level, String key,
                                                             BuilderRelayBuilds.Entry entry,
-                                                            String kindId, boolean publish, String note) {
+                                                            String kindId, boolean publish, SubmitNote note) {
         if (publish && BuilderRelayKinds.canJoinTheTrain(kindId)
                 && !DungeonTrainConfig.isSharedCarriagesEnabled()) {
             // Nothing leases from the pool while the feature is off, so publishing a carriage would put

@@ -507,8 +507,8 @@ public final class EditorGuiScreen extends Screen {
         }
         // A submit first asks what the reviewer should know; the send happens on that screen's
         // Submit, and its Cancel comes back here with nothing sent.
-        this.minecraft.setScreen(new BuilderSubmitNoteScreen(this, Component.literal(entry.buildName()),
-                note -> sendCreatorAction(new BuilderProfileActionPacket(entry.relayId(), true, note))));
+        BuilderSubmitNoteScreen.open(entry.relayId(), Component.literal(entry.buildName()),
+                note -> sendCreatorAction(new BuilderProfileActionPacket(entry.relayId(), true, note)));
     }
 
     private void sendCreatorAction(BuilderProfileActionPacket packet) {

@@ -187,7 +187,7 @@ public final class EditorScreenActions {
         // send is that screen's Submit — its Cancel returns to this menu with nothing sent.
         Runnable action = published
             ? () -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), false))
-            : () -> BuilderSubmitNoteScreen.open(Component.literal(entry.buildName()),
+            : () -> BuilderSubmitNoteScreen.open(entry.relayId(), Component.literal(entry.buildName()),
                 note -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), true, note)));
         return new Icon(published ? "withdraw" : "submit", label,
             new CommandMenuEntry.ClientAction(label, action), null);

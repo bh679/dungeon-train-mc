@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.relay.SubmitNote;
 import games.brennan.dungeontrain.editor.TemplateLootPrefabs;
 import org.slf4j.Logger;
 
@@ -569,21 +570,20 @@ public final class SharedCarriageClient {
      * player is told to try again rather than the relay silently doing nothing.</p>
      */
     public static CompletableFuture<VisibilityResult> publish(int id, String secret, boolean publish) {
-        return publish(id, secret, publish, "");
+        return publish(id, secret, publish, SubmitNote.EMPTY);
     }
 
     /**
-     * As above, with the author's note to the reviewer — how to test the redstone, loot that is meant
-     * to be there, where in the train they would like it. Sent as {@code note} only on a submit and
-     * only when there is one; a relay that does not read the field ignores it, so nothing here waits
-     * on the relay learning to.
+     * As above, with the author's note to the reviewer. Sent only on a submit and only when there is
+     * one, as {@code note: {redstone?, loot?, notes?}} with the empty fields left out; a relay that
+     * does not read the field ignores it, so nothing here waits on the relay learning to.
      */
-    public static CompletableFuture<VisibilityResult> publish(int id, String secret, boolean publish, String note) {
+    public static CompletableFuture<VisibilityResult> publish(int id, String secret, boolean publish, SubmitNote note) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("secret", secret == null ? "" : secret);
         body.addProperty("publish", publish);
-        if (publish && note != null && !note.isEmpty()) body.addProperty("note", note);
+        if (publish && note != null && !note.isEmpty()) body.add("note", noteJson(note));
         return post("/carriages/publish", body).thenApply(resp -> {
             if (resp == null) return new VisibilityResult(CallStatus.ERROR, false, false, "");
             int sc = resp.statusCode();
@@ -595,6 +595,15 @@ public final class SharedCarriageClient {
             boolean inUse = !ok && "in_use".equals(str(o, "reason"));
             return new VisibilityResult(ok ? CallStatus.OK : CallStatus.ERROR, ok, inUse, str(o, "token"));
         });
+    }
+
+    /** The note as the relay reads it: only the fields the author filled in. Package-private for tests. */
+    static JsonObject noteJson(SubmitNote note) {
+        JsonObject o = new JsonObject();
+        if (!note.redstone().isEmpty()) o.addProperty("redstone", note.redstone());
+        if (!note.loot().isEmpty()) o.addProperty("loot", note.loot());
+        if (!note.notes().isEmpty()) o.addProperty("notes", note.notes());
+        return o;
     }
 
     /**

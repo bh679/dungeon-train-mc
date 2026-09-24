@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayUpload;
+import games.brennan.dungeontrain.builder.relay.SubmitNote;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -18,24 +19,24 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * up by id. A client that names a build this world never uploaded gets told so, because there is no
  * secret to find, which is also what stops the packet being a way to publish somebody else's work.</p>
  *
- * <p>{@code note} is what the author wants the reviewer to know — how the redstone is meant to fire
- * and how to test it, loot that is there on purpose, where in the train they would like it. Free
- * text, optional, and only meaningful on a submit: a withdraw carries an empty one. The server trims
- * and caps it again before it goes anywhere ({@code BuilderRelayUpload.cleanNote}), so the wire cap
- * here is a bound on the packet, not the rule.</p>
+ * <p>{@code note} is what the author wants the reviewer to know: how the redstone works and how to
+ * test it, what the loot is, and anything else ({@link SubmitNote}). Free text, optional, and only
+ * meaningful on a submit: a withdraw carries an empty one. The server trims and caps each field again
+ * before it goes anywhere ({@code BuilderRelayUpload.cleanNote}), so the wire cap here is a bound on
+ * the packet, not the rule.</p>
  */
-public record BuilderProfileActionPacket(int relayId, boolean publish, String note) implements CustomPacketPayload {
+public record BuilderProfileActionPacket(int relayId, boolean publish, SubmitNote note) implements CustomPacketPayload {
 
-    /** Characters of note the packet will carry — the same cap the screen enforces while typing. */
+    /** Characters per note field the packet will carry — the same cap the screen enforces while typing. */
     public static final int NOTE_MAX = 1000;
 
     /** A submit or withdraw with nothing to tell the reviewer. */
     public BuilderProfileActionPacket(int relayId, boolean publish) {
-        this(relayId, publish, "");
+        this(relayId, publish, SubmitNote.EMPTY);
     }
 
     public BuilderProfileActionPacket {
-        note = note == null ? "" : note;
+        note = note == null ? SubmitNote.EMPTY : note;
     }
 
     public static final Type<BuilderProfileActionPacket> TYPE =
@@ -46,9 +47,12 @@ public record BuilderProfileActionPacket(int relayId, boolean publish, String no
             (buf, packet) -> {
                 buf.writeVarInt(packet.relayId);
                 buf.writeBoolean(packet.publish);
-                buf.writeUtf(packet.note, NOTE_MAX);
+                buf.writeUtf(packet.note.redstone(), NOTE_MAX);
+                buf.writeUtf(packet.note.loot(), NOTE_MAX);
+                buf.writeUtf(packet.note.notes(), NOTE_MAX);
             },
-            buf -> new BuilderProfileActionPacket(buf.readVarInt(), buf.readBoolean(), buf.readUtf(NOTE_MAX))
+            buf -> new BuilderProfileActionPacket(buf.readVarInt(), buf.readBoolean(),
+                new SubmitNote(buf.readUtf(NOTE_MAX), buf.readUtf(NOTE_MAX), buf.readUtf(NOTE_MAX)))
         );
 
     @Override
@@ -62,7 +66,7 @@ public record BuilderProfileActionPacket(int relayId, boolean publish, String no
             if (player.getServer() == null || !BuilderRelayUpload.canUpload(player)) return;
             ServerLevel level = player.getServer().overworld();
             BuilderRelayUpload.submitToTrain(player, level, packet.relayId, packet.publish,
-                            BuilderRelayUpload.cleanNote(packet.note))
+                            packet.note.cleaned())
                     .thenAccept(message -> player.getServer().execute(() -> {
                         if (player.hasDisconnected()) return;
                         player.sendSystemMessage(message);
