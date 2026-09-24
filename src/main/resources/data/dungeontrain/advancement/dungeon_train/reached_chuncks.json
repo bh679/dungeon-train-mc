@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reassembly_required",
+  "parent": "dungeontrain:dungeon_train/reached_legacy_void",
   "display": {
     "icon": { "id": "minecraft:dirt" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_chuncks.title" },
