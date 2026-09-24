@@ -95,6 +95,16 @@ final class LegacyBandsTest {
     }
 
     @Test
+    @DisplayName("superflat sinks one chunk per later loop, stopping with its bedrock on the world floor")
+    void superflatSinksPerLoop() {
+        assertEquals(75, LegacyBands.superflatGrassY(75, 0, -64));
+        assertEquals(59, LegacyBands.superflatGrassY(75, 1, -64));
+        assertEquals(27, LegacyBands.superflatGrassY(75, 3, -64));
+        assertEquals(75, LegacyBands.superflatGrassY(75, -1, -64));   // before the anchor reads as the first loop
+        assertEquals(-61, LegacyBands.superflatGrassY(75, 40, -64));  // clamped: bedrock at -64
+    }
+
+    @Test
     @DisplayName("Indev floating levels bed on the track, clamped so the whole level stays inside the world")
     void floatingYOffset() {
         assertEquals(76 - LegacyBands.FLOATING_BED_OLD_Y, LegacyBands.floatingYOffset(76, -64, 320));

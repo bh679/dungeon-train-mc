@@ -81,7 +81,9 @@ public final class LegacyChunkWriter {
             return;
         }
         if (kind == LegacyBandKind.SUPERFLAT) {
-            writeSuperflat(chunk, yOffset);
+            // yOffset is the first loop's grass; every later loop's Superflat sits one chunk lower.
+            long loop = WorldGenCycle.fromConfig().cycleIndex(chunk.getPos().getMinBlockX());
+            writeSuperflat(chunk, LegacyBands.superflatGrassY(yOffset, loop, chunk.getMinBuildHeight()));
             return;
         }
         byte[] blocks = switch (kind) {

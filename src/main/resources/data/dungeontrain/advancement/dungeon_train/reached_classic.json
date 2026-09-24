@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_alpha",
+  "parent": "dungeontrain:dungeon_train/reached_infdev",
   "display": {
     "icon": { "id": "minecraft:cobblestone" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_classic.title" },

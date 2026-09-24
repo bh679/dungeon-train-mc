@@ -9,7 +9,7 @@ import java.util.Locale;
  *
  * <p>The run order comes from the {@code legacy:} token of {@code worldgenCycleOrder}, which runs its eras in
  * the order written ({@code CycleLayout#DEFAULT_ORDER}: Amplified → Beta 1.7.3 → Far Lands → Caves of Chaos →
- * Skylands → Indev floating → Alpha 1.1.2 → Classic → Infdev → Superflat → Void). Declaration order is only
+ * Skylands → Indev floating → Alpha 1.1.2 → Infdev → Classic → Superflat → Void). Declaration order is only
  * the fallback for a bare {@code legacy} token and the config-file order. Large Biomes and Amplified are <em>modern presets</em> rather than ports — vanilla's own
  * router with the preset flag flipped ({@link games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain}); they
  * run vanilla's surface, carvers and decoration ({@link #isPreset}). Large Biomes is built but <em>not shipped</em>:
