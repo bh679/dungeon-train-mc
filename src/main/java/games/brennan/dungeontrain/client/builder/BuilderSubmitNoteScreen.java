@@ -60,8 +60,14 @@ public final class BuilderSubmitNoteScreen extends Screen {
     private static final int ICON_GAP = 4;
     /** Room under a box for its own {@code n/1000} counter, which it draws 4px below itself. */
     private static final int COUNTER_GAP = 14;
-    /** Space above the first box for the title and the prompt. */
-    private static final int HEADER_HEIGHT = 40;
+    /** Space above the first box for the progress bar, the title and the prompt. */
+    private static final int HEADER_HEIGHT = 50;
+    /** The progress bar across the top: its height, and the gap between its segments. */
+    private static final int BAR_HEIGHT = 4;
+    private static final int BAR_GAP = 3;
+    private static final int BAR_EMPTY = 0xFF3A3A3A;
+    private static final int BAR_ANSWERED = 0xFF5FBF5F;
+    private static final int BAR_CURRENT = 0xFFFFFFFF;
     /** Inset of the edit box's text from its border — vanilla's {@code innerPadding()}. */
     private static final int BOX_PADDING = 4;
     private static final int TEXT_COLOUR = 0xFFFFFFFF;
@@ -193,10 +199,11 @@ public final class BuilderSubmitNoteScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
-        g.drawCenteredString(this.font, this.title, this.width / 2, top + 4, TEXT_COLOUR);
+        if (labelled()) renderProgress(g);
+        g.drawCenteredString(this.font, this.title, this.width / 2, top + 14, TEXT_COLOUR);
         g.drawCenteredString(this.font,
                 Component.translatable("gui.dungeontrain.builder.profile.note.prompt", buildName),
-                this.width / 2, top + 18, HINT_COLOUR);
+                this.width / 2, top + 28, HINT_COLOUR);
         List<Component> tooltip = null;
         Question q = current();
         if (box != null) {
@@ -217,6 +224,25 @@ public final class BuilderSubmitNoteScreen extends Screen {
         g.drawCenteredString(this.font,
                 Component.translatable("gui.dungeontrain.builder.profile.note.optional"),
                 this.width / 2, footY, HINT_COLOUR);
+    }
+
+    /**
+     * One segment per question across the top, the width of the box: filled once that question has
+     * an answer, outlined while it is the one showing — how far through the note the author is, at a
+     * glance, without counting pages.
+     */
+    private void renderProgress(GuiGraphics g) {
+        if (box == null) return;
+        int n = questions.size();
+        int x = box.getX();
+        int width = (box.getWidth() - BAR_GAP * (n - 1)) / n;
+        int y = top;
+        for (int i = 0; i < n; i++) {
+            int left = x + i * (width + BAR_GAP);
+            boolean answered = !answers.getOrDefault(questions.get(i), "").isBlank();
+            if (i == page) g.fill(left - 1, y - 1, left + width + 1, y + BAR_HEIGHT + 1, BAR_CURRENT);
+            g.fill(left, y, left + width, y + BAR_HEIGHT, answered ? BAR_ANSWERED : BAR_EMPTY);
+        }
     }
 
     /** The blocks that earned a question — none for the general one. */
