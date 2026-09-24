@@ -18170,8 +18170,30 @@
       "released_at": null
     },
     {
-      "id": "builder-review-questions",
+      "id": "x-menu-refresh-after-save",
       "version": "0.944.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor menu updates as soon as you save",
+      "summary": "Saving a build with the X menu open now updates the menu straight away. You no longer need to close and reopen it to see your changes.",
+      "highlights": [
+        "The 3D preview shows your latest blocks the moment you save",
+        "A small note on the preview shows your build uploading to My Builds, then whether it made it",
+        "The Submit button and version history light up as soon as the upload lands"
+      ],
+      "pr": 1513,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "builder-review-questions",
+      "version": "0.945.0",
       "type": "feat",
       "tags": [
         "feature",

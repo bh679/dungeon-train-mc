@@ -128,6 +128,23 @@ public final class BuilderTileMeshCache {
     }
 
     /**
+     * Drop one template's meshes — every part/track variant filed under this kind and id — so the
+     * next draw re-bakes it from disk. For a template that has just been saved.
+     *
+     * <p>Render thread only — it closes {@code VertexBuffer}s.</p>
+     */
+    public static void evict(BuilderPhotoPaths.Kind kind, String id) {
+        if (kind == null || id == null) return;
+        Iterator<Map.Entry<Key, Entry>> it = CACHE.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Key, Entry> e = it.next();
+            if (e.getKey().kind() != kind || !id.equals(e.getKey().id())) continue;
+            if (e.getValue().mesh() != null) e.getValue().mesh().close();
+            it.remove();
+        }
+    }
+
+    /**
      * Drop everything, closing the GPU buffers.
      *
      * <p>Render thread only — it closes {@code VertexBuffer}s.</p>
