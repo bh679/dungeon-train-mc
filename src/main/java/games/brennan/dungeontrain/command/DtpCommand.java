@@ -12,7 +12,6 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -29,8 +28,9 @@ import java.util.OptionalInt;
 /**
  * Registers {@code /dtp <x>} (OP-only, permission level 2): teleports the
  * player to world-X {@code x} and guarantees a train is there to land on.
- * {@code /dtp <band>} (e.g. {@code nether}, {@code end}, {@code spheres}) does the
- * same for the next occurrence of that band ahead of the player — see {@link BandLocator}.
+ * {@code /dtp <band>} (every phase token and alias, plus the styled occurrences — see
+ * {@link DtpTarget}) does the same for the next occurrence of that band ahead of the player — see
+ * {@link BandLocator}.
  *
  * <p>Vanilla {@code /tp} (and a bare walk) can outrun the train —
  * {@link games.brennan.dungeontrain.train.TrainCarriageAppender} only
@@ -85,24 +85,22 @@ public final class DtpCommand {
             .requires(s -> s.hasPermission(2))
             .then(Commands.argument("x", DoubleArgumentType.doubleArg())
                 .executes(ctx -> run(ctx.getSource(), DoubleArgumentType.getDouble(ctx, "x"))));
-        for (TrainPhase phase : TrainPhase.values()) {
-            root.then(bandLiteral(phase.token(), phase));
+        for (DtpTarget target : DtpTarget.all()) {
+            root.then(bandLiteral(target));
         }
-        root.then(bandLiteral("ow", TrainPhase.OVERWORLD));
-        root.then(bandLiteral("ud", TrainPhase.UPSIDE_DOWN));
         dispatcher.register(root);
     }
 
     /** {@code /dtp <band>}: literal children win over the {@code x} double argument, so numeric use is unaffected. */
-    private static LiteralArgumentBuilder<CommandSourceStack> bandLiteral(String token, TrainPhase phase) {
-        return Commands.literal(token)
-            .executes(ctx -> runBand(ctx.getSource(), phase, BAND_ENTRY_INSET))
+    private static LiteralArgumentBuilder<CommandSourceStack> bandLiteral(DtpTarget target) {
+        return Commands.literal(target.token())
+            .executes(ctx -> runBand(ctx.getSource(), target, BAND_ENTRY_INSET))
             .then(Commands.argument("distance", DoubleArgumentType.doubleArg())
-                .executes(ctx -> runBand(ctx.getSource(), phase, DoubleArgumentType.getDouble(ctx, "distance"))));
+                .executes(ctx -> runBand(ctx.getSource(), target, DoubleArgumentType.getDouble(ctx, "distance"))));
     }
 
-    /** Teleport {@code distance} blocks past the entry of the next {@code phase} band ahead of the player, via the normal {@link #run} path. */
-    private static int runBand(CommandSourceStack source, TrainPhase phase, double distance) {
+    /** Teleport {@code distance} blocks past the entry of the next {@code target} band ahead of the player, via the normal {@link #run} path. */
+    private static int runBand(CommandSourceStack source, DtpTarget target, double distance) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -110,9 +108,9 @@ public final class DtpCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
-        OptionalInt entry = BandLocator.nextBandStartX(source.getServer().overworld(), phase, player.getBlockX());
+        OptionalInt entry = BandLocator.nextBandStartX(source.getServer().overworld(), target, player.getBlockX());
         if (entry.isEmpty()) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.package.dtp_band_not_found", phase.displayName()));
+            source.sendFailure(Component.translatable("chat.dungeontrain.package.dtp_band_not_found", target.displayName()));
             return 0;
         }
         return run(source, entry.getAsInt() + distance);
