@@ -18145,6 +18145,51 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "my-builds-delete-from-relay",
+      "version": "0.943.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "ui"
+      ],
+      "title": "Delete a build from My Builds",
+      "summary": "My Builds has a trash button. Pick one of your uploaded builds, confirm, and it is gone from your profile for good \u2014 your local copy stays, and saving it again uploads it fresh. If another world is riding or editing that build right now you are told, and can choose to delete it anyway. The title now shows how many builds you have.",
+      "highlights": [
+        "Trash button on Esc \u2192 My Builds, with a confirm step",
+        "\"Delete anyway\" when a build is in use elsewhere",
+        "My Builds shows your build count"
+      ],
+      "pr": 1512,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "x-menu-refresh-after-save",
+      "version": "0.944.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor menu updates as soon as you save",
+      "summary": "Saving a build with the X menu open now updates the menu straight away. You no longer need to close and reopen it to see your changes.",
+      "highlights": [
+        "The 3D preview shows your latest blocks the moment you save",
+        "A small note on the preview shows your build uploading to My Builds, then whether it made it",
+        "The Submit button and version history light up as soon as the upload lands"
+      ],
+      "pr": 1513,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

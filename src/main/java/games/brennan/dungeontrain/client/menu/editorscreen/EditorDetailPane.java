@@ -33,6 +33,9 @@ public final class EditorDetailPane {
     /** Below this a button stops reading as one, so the spacing goes before the size does. */
     static final int MIN_ICON_CELL = 12;
     static final int HERE_TEXT = 0xFF55FF55;
+    /** The upload note's colours: the Submit icon's blue while going, a plain red when it did not. */
+    static final int UPLOADING_TEXT = 0xFF88BBFF;
+    static final int FAILED_TEXT = 0xFFFF6655;
     static final int DIM_TEXT = 0xB0FFFFFF;
     static final int DISABLED = 0x30FFFFFF;
     static final int DISABLED_ICON = 0x60FFFFFF;
@@ -340,11 +343,12 @@ public final class EditorDetailPane {
                        TemplateSummary summary, EditorRosterIndex.Tile tile, String pathLabel,
                        float yaw, int mouseX, int mouseY) {
         hovered = hitTest(mouseX, mouseY);
-        drawHeader(g, font, theme);
+        drawHeader(g, font, theme, art);
         String name = tile == null ? "" : tile.variant().displayName();
         if (onModelPage()) {
             PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
             versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
+            drawUploadNoteOnPreview(g, font, art);
             sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
                 tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
                 ctx.selection(), roomRows);
@@ -363,7 +367,7 @@ public final class EditorDetailPane {
         drawTest(g, font);
     }
 
-    private void drawHeader(GuiGraphics g, Font font, EditorScreenTheme theme) {
+    private void drawHeader(GuiGraphics g, Font font, EditorScreenTheme theme, TemplateArt art) {
         InventoryEditorLayout.Rect h = layout.header();
         int ty = h.y() + (h.h() - font.lineHeight) / 2;
         String name = ctx.hasSelection() ? ctx.selection().displayName()
@@ -379,6 +383,12 @@ public final class EditorDetailPane {
         goHereRect = null;
         String label = EditorScreenLang.text(EditorScreenLang.GO_HERE);
         int w = font.width(label) + 8;
+        if (!onModelPage()) {
+            // The model box carries the note on the model page; on the others the header does,
+            // cut to whatever the Go here button leaves so the two never overlap.
+            int room = saveX - x - 4 - (goHere != null ? w + 4 : 0);
+            x = drawUploadNote(g, font, art, x, ty, room);
+        }
         if (ctx.standingInSelection()) {
             // The status keeps its place; the button follows it, so the sentence gives way to the
             // button rather than the other way round when the header runs short.
@@ -397,6 +407,54 @@ public final class EditorDetailPane {
                 hot ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
             g.drawString(font, label, bx + 4, ty, hot ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
         }
+    }
+
+    /** The upload note's words and colour, or null when there is nothing to say. */
+    private record UploadNote(String text, String widest, int colour) {}
+
+    /**
+     * The small note shown while a save goes up to the relay — "↑ Uploading…" — and, for a moment
+     * after, how it ended. The upload runs for seconds after the local save and is what the Submit
+     * icon and the version strip wait on, so without this the screen looked as if the save had not
+     * taken.
+     */
+    private static UploadNote uploadNote(TemplateArt art) {
+        UploadStatusBook.Shown shown = EditorUploadStatus.shown(art);
+        if (shown == null) return null;
+        return switch (shown) {
+            case UPLOADING -> {
+                String word = "↑ " + EditorScreenLang.text(EditorScreenLang.UPLOADING);
+                int dots = (int) ((System.currentTimeMillis() / 400L) % 4L);
+                // The widest the dots get, so nothing beside it shuffles on each beat.
+                yield new UploadNote(word + ".".repeat(dots), word + "...", UPLOADING_TEXT);
+            }
+            case UPLOADED -> {
+                String t = "✓ " + EditorScreenLang.text(EditorScreenLang.UPLOADED);
+                yield new UploadNote(t, t, HERE_TEXT);
+            }
+            case FAILED -> {
+                String t = "✗ " + EditorScreenLang.text(EditorScreenLang.UPLOAD_FAILED);
+                yield new UploadNote(t, t, FAILED_TEXT);
+            }
+        };
+    }
+
+    /** In the model box's top-right corner, beside the model it is about — the model page's home for it. */
+    private void drawUploadNoteOnPreview(GuiGraphics g, Font font, TemplateArt art) {
+        UploadNote note = uploadNote(art);
+        if (note == null) return;
+        InventoryEditorLayout.Rect p = layout.preview();
+        int x = p.right() - 4 - font.width(note.widest());
+        g.drawString(font, note.text(), Math.max(p.x() + 2, x), p.y() + 4, note.colour(), true);
+    }
+
+    /** In the header, cut to {@code room}; answers the x the header continues from. */
+    private static int drawUploadNote(GuiGraphics g, Font font, TemplateArt art, int x, int ty, int room) {
+        UploadNote note = uploadNote(art);
+        if (note == null || room <= 0) return x;
+        String shown = font.plainSubstrByWidth(note.text(), room);
+        g.drawString(font, shown, x, ty, note.colour(), false);
+        return x + Math.min(room, font.width(note.widest())) + 6;
     }
 
     private void drawIcons(GuiGraphics g) {
