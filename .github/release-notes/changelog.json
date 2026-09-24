@@ -18190,6 +18190,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "tidier-advancements-screen",
+      "version": "0.944.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Tidier advancements screen",
+      "summary": "The advancements screen now shows only the Dungeon Train and vanilla tabs.",
+      "highlights": [],
+      "pr": 1514,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
