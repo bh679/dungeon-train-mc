@@ -7,19 +7,20 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.function.IntPredicate;
 
 /**
- * Which overworld rock the Nether band covers in netherrack, and where — so that no grey stone
- * shows from inside the Nether.
+ * Which overworld rock the Nether band covers in netherrack — so that no grey stone shows from inside
+ * the Nether.
  *
- * <p>The band's mountain body is real overworld terrain (stone, deepslate, dirt, ores). The core
- * restamps only its sampled Y band and the crossfade used to recolour only the surface skin, so the
- * cliff the core carves against the crossfade — and the rock above/below the core band — stayed
- * stone. {@link NetherTransitionFeature} uses this to repaint that rock.</p>
+ * <p>The band's mountain body is real overworld terrain (stone, deepslate, dirt, ores). The core carves
+ * its caverns right up against the crossfade, so the cliff it leaves — and the rock just past the core's
+ * top/bottom rows — would read as stone from inside. {@link NetherTransitionFeature} repaints only that
+ * one-block face; the mountain behind it (and its tunnel) stays stone.</p>
  */
 final class NetherRockCover {
 
     /**
-     * Crossfade columns within this many blocks (edge-waved X) of the real-Nether core are the
-     * core-facing wall: every piece of overworld rock in them becomes netherrack, not just a dithered share.
+     * Crossfade columns within this many blocks (edge-waved X) of the real-Nether core are checked for a
+     * face looking into the core — a cheap gate before the per-cell neighbour test. Generous on purpose:
+     * neighbouring columns' waved X can differ by a few blocks.
      */
     static final int WALL_DEPTH = 16;
 
@@ -44,8 +45,9 @@ final class NetherRockCover {
     }
 
     /**
-     * True when a crossfade column at edge-waved {@code wx} faces the core: the core begins within
-     * {@link #WALL_DEPTH} blocks on either side. Pure — {@code isCore} is the cycle's core test.
+     * True when a crossfade column at edge-waved {@code wx} is near enough the core to possibly face it:
+     * the core begins within {@link #WALL_DEPTH} blocks on either side. Pure — {@code isCore} is the
+     * cycle's core test.
      */
     static boolean isCoreWall(IntPredicate isCore, int wx) {
         return isCore.test(wx + WALL_DEPTH) || isCore.test(wx - WALL_DEPTH);
