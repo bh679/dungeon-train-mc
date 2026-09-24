@@ -5144,6 +5144,12 @@ public final class EditorCommand {
         }
         String targetName;
         if (newName == null) {
+            Template.Part part = new Template.Part(kind, sourceName);
+            if (games.brennan.dungeontrain.editor.EditorShipped.isProtected(part)) {
+                // A shipped part outside dev mode: ask rather than write over it — see EditorSaveAs.
+                games.brennan.dungeontrain.editor.EditorSaveAs.prompt(player, part);
+                return 1;
+            }
             targetName = sourceName;
         } else {
             if (!validatePartName(source, newName)) return 0;

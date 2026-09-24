@@ -208,7 +208,7 @@ public record EditorPlotActionPacket(
             return;
         }
         switch (packet.action) {
-            case SAVE -> SaveCommand.saveOnePlayerVisible(sender, model);
+            case SAVE -> SaveCommand.saveOrPrompt(sender, model);
             case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, model);
             case CLEAR -> {
                 BlockPos origin = games.brennan.dungeontrain.editor.WholeCarriageEditor.plotOrigin(model, dims);
@@ -234,7 +234,7 @@ public record EditorPlotActionPacket(
             return;
         }
         switch (packet.action) {
-            case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.Carriage(variant));
+            case SAVE -> SaveCommand.saveOrPrompt(sender, new Template.Carriage(variant));
             case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.Carriage(variant));
             case CLEAR -> {
                 BlockPos origin = CarriageEditor.plotOrigin(variant, dims);
@@ -261,7 +261,7 @@ public record EditorPlotActionPacket(
         }
         CarriageContents contents = opt.get();
         switch (packet.action) {
-            case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.Contents(contents));
+            case SAVE -> SaveCommand.saveOrPrompt(sender, new Template.Contents(contents));
             case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.Contents(contents));
             case CLEAR -> {
                 BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
@@ -300,7 +300,7 @@ public record EditorPlotActionPacket(
             if (("pillar_" + s.id()).equals(modelId)) {
                 String label = "pillar_" + s.id() + " '" + packet.modelName + "'";
                 switch (packet.action) {
-                    case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.Pillar(s, packet.modelName));
+                    case SAVE -> SaveCommand.saveOrPrompt(sender, new Template.Pillar(s, packet.modelName));
                     case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.Pillar(s, packet.modelName));
                     case CLEAR -> {
                         PillarEditor.clearPlot(overworld, s, packet.modelName, dims);
@@ -321,7 +321,7 @@ public record EditorPlotActionPacket(
             if (("adjunct_" + a.id()).equals(modelId)) {
                 String label = "adjunct_" + a.id() + " '" + packet.modelName + "'";
                 switch (packet.action) {
-                    case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.Adjunct(a, packet.modelName));
+                    case SAVE -> SaveCommand.saveOrPrompt(sender, new Template.Adjunct(a, packet.modelName));
                     case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.Adjunct(a, packet.modelName));
                     case CLEAR -> {
                         PillarEditor.clearPlotAdjunct(overworld, a, packet.modelName, dims);
@@ -344,7 +344,7 @@ public record EditorPlotActionPacket(
                     new games.brennan.dungeontrain.template.TunnelTemplateId(tv, packet.modelName);
                 String label = "tunnel_" + tv.name().toLowerCase(Locale.ROOT) + " '" + packet.modelName + "'";
                 switch (packet.action) {
-                    case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.Tunnel(tv, packet.modelName));
+                    case SAVE -> SaveCommand.saveOrPrompt(sender, new Template.Tunnel(tv, packet.modelName));
                     case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.Tunnel(tv, packet.modelName));
                     case CLEAR -> {
                         BlockPos origin = TunnelEditor.plotOrigin(id);
@@ -379,7 +379,7 @@ public record EditorPlotActionPacket(
         String name = packet.modelName;
         String label = "dimensional carriage '" + name + "'";
         switch (packet.action) {
-            case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.PortalRoom(name));
+            case SAVE -> SaveCommand.saveOrPrompt(sender, new Template.PortalRoom(name));
             case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.PortalRoom(name));
             case CLEAR -> {
                 // The same path the X menu's Clear takes. This used to call clearPlot, which erases

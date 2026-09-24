@@ -48,7 +48,7 @@ public final class BuilderBuiltins {
      * authored: a save there writes through to the source tree, and prompting for a new name would
      * make the mod's own content impossible to edit from the Builder.
      */
-    static boolean isProtected(boolean shipped, boolean devMode) {
+    public static boolean isProtected(boolean shipped, boolean devMode) {
         return shipped && !devMode;
     }
 

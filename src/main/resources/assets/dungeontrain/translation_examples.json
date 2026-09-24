@@ -3090,6 +3090,58 @@
       ]
     }
   },
+  "chat.dungeontrain.save_as.saved": {
+    "1": {
+      "label": "the new name the player saved their version under",
+      "examples": [
+        "my_standard",
+        "mossy_hall"
+      ]
+    },
+    "2": {
+      "label": "the built-in template the edits came from, now restored",
+      "examples": [
+        "standard",
+        "dimensional carriage / beam"
+      ]
+    }
+  },
+  "chat.dungeontrain.save_as.failed": {
+    "1": {
+      "label": "the error that stopped the save",
+      "examples": [
+        "Name 'mine' is already taken.",
+        "No server context."
+      ]
+    }
+  },
+  "chat.dungeontrain.save_as.blocked_dirty": {
+    "1": {
+      "label": "comma-separated list of templates with unsaved edits",
+      "examples": [
+        "black, cracked",
+        "track.nethertracks"
+      ]
+    }
+  },
+  "chat.dungeontrain.save_as.gone": {
+    "1": {
+      "label": "the template that no longer exists",
+      "examples": [
+        "standard",
+        "beam"
+      ]
+    }
+  },
+  "chat.dungeontrain.save_as.restore_failed": {
+    "1": {
+      "label": "the built-in template that could not be put back",
+      "examples": [
+        "standard",
+        "dimensional carriage / beam"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": {
     "1": {
       "label": "the id of the built-in template the player saved over, kept out of My Builds",
