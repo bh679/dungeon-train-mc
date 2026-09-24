@@ -111,6 +111,18 @@ public final class StagePlaceholderBlocks {
         return Collections.unmodifiableList(BLOCKS);
     }
 
+    /**
+     * The default state of the placeholder registered as {@code name} (no namespace), or
+     * {@code null} when no placeholder has that name — for code-stamped geometry that wants a
+     * stage block rather than a fixed vanilla one.
+     */
+    public static BlockState defaultState(String name) {
+        for (DeferredBlock<Block> block : BLOCKS) {
+            if (block.getId().getPath().equals(name)) return block.get().defaultBlockState();
+        }
+        return null;
+    }
+
     /** The catalogue in slot order — the Stage Palette panel's row feed. */
     public static List<Placeholder> placeholders() {
         return PLACEHOLDERS;

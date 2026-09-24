@@ -31,7 +31,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
  * Opening the column turns a broken portal into an ordinary walk-through carriage: entry corridor,
  * through both dummy doors, out of the exit corridor onto the train.</p>
  *
- * <p><b>Black concrete when it is closed.</b> The rest of the wall is the corridor's own stone brick
+ * <p><b>Black concrete when it is closed.</b> The rest of the wall is the stage's stone brick
  * shell. These two cells are the one place a player can meet the seam between the pair's two halves,
  * and reading as a deliberate plate rather than more masonry is what makes the opening legible when
  * it appears.</p>
