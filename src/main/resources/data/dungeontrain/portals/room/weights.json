@@ -89,7 +89,8 @@
       "FLOATING",
       "FAR_LANDS",
       "LARGE_BIOMES",
-      "AMPLIFIED"
+      "AMPLIFIED",
+      "CAVES_OF_CHAOS"
     ],
     "mode": "bedrock_lock",
     "builder": {
@@ -110,7 +111,8 @@
       "CLASSIC",
       "FAR_LANDS",
       "LARGE_BIOMES",
-      "AMPLIFIED"
+      "AMPLIFIED",
+      "CAVES_OF_CHAOS"
     ],
     "mode": "endless_open/single:minecraft:stone"
   },
@@ -127,7 +129,8 @@
       "CLASSIC",
       "FAR_LANDS",
       "LARGE_BIOMES",
-      "AMPLIFIED"
+      "AMPLIFIED",
+      "CAVES_OF_CHAOS"
     ],
     "mode": "bedrock_lock"
   },
@@ -194,7 +197,8 @@
       "FLOATING",
       "FAR_LANDS",
       "LARGE_BIOMES",
-      "AMPLIFIED"
+      "AMPLIFIED",
+      "CAVES_OF_CHAOS"
     ],
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
   },
@@ -418,7 +422,8 @@
       "FLOATING",
       "FAR_LANDS",
       "LARGE_BIOMES",
-      "AMPLIFIED"
+      "AMPLIFIED",
+      "CAVES_OF_CHAOS"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
   },

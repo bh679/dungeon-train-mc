@@ -134,6 +134,7 @@ public final class LegacyBands {
     public static void releaseGenerators() {
         synchronized (LegacyBands.class) {
             beta = null;
+            chaos = null;
             alpha = null;
             sky = null;
             infdev = null;
@@ -154,6 +155,18 @@ public final class LegacyBands {
         synchronized (LegacyBands.class) {
             if (beta == null || beta.seed() != seed) beta = new BetaTerrain(seed);
             return beta;
+        }
+    }
+
+    private static volatile BetaTerrain chaos;
+
+    /** The Caves of Chaos generator for {@code seed} — the Beta pipeline on its 256-block profile; one shared instance per seed. */
+    public static BetaTerrain chaos(long seed) {
+        BetaTerrain c = chaos;
+        if (c != null && c.seed() == seed) return c;
+        synchronized (LegacyBands.class) {
+            if (chaos == null || chaos.seed() != seed) chaos = new BetaTerrain(seed, BetaTerrain.Profile.CAVES_OF_CHAOS);
+            return chaos;
         }
     }
 
@@ -255,13 +268,15 @@ public final class LegacyBands {
 
     /**
      * World Y of {@code kind}'s old {@code y = 0} in {@code level}. Beta, Alpha and Infdev are pinned to sea level
-     * ({@link LegacyChunkWriter#Y_OFFSET}); Skylands has no sea, so it follows the train's bed instead,
-     * clamped so its lowest land stays above the world floor.
+     * ({@link LegacyChunkWriter#Y_OFFSET}); Caves of Chaos shares that origin (its 256 column tops out at
+     * world 254 with open void beneath it, and the track runs through the stone mass);
+     * Skylands has no sea, so it follows the train's bed instead, clamped so its lowest land stays above
+     * the world floor.
      */
     public static int yOffset(LegacyBandKind kind, ServerLevel level) {
         return switch (kind) {
             // Presets are vanilla terrain in world coordinates; the offset is unused but keeps the switch total.
-            case BETA, ALPHA, INFDEV, FAR_LANDS, VOID, LARGE_BIOMES, AMPLIFIED -> LegacyChunkWriter.Y_OFFSET;
+            case CAVES_OF_CHAOS, BETA, ALPHA, INFDEV, FAR_LANDS, VOID, LARGE_BIOMES, AMPLIFIED -> LegacyChunkWriter.Y_OFFSET;
             case CLASSIC -> ClassicLevels.Y_OFFSET;
             case FLOATING -> {
                 DungeonTrainWorldData data = DungeonTrainWorldData.get(level);

@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingLevel;
 import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingPopulator;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBiome;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaPopulator;
+import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaWorld;
 import games.brennan.dungeontrain.worldgen.legacy.infdev.InfdevPopulator;
 import games.brennan.dungeontrain.worldgen.legacy.farlands.FarLandsShift;
@@ -51,11 +52,14 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
         try {
             long seed = DungeonTrainWorldData.get(serverLevel).getGenerationSeed();
             int yOffset = LegacyBands.yOffset(kind, serverLevel);
-            BetaWorld world = kind == LegacyBandKind.FLOATING
-                    ? new BetaWorld(level, yOffset, IndevFloatingLevel.HEIGHT)
-                    : new BetaWorld(level, yOffset);
+            BetaWorld world = switch (kind) {
+                case FLOATING -> new BetaWorld(level, yOffset, IndevFloatingLevel.HEIGHT);
+                case CAVES_OF_CHAOS -> new BetaWorld(level, yOffset, BetaTerrain.Profile.CAVES_OF_CHAOS.height());
+                default -> new BetaWorld(level, yOffset);
+            };
             switch (kind) {
                 case BETA -> BetaPopulator.populate(world, LegacyBands.beta(seed), chunk.x, chunk.z);
+                case CAVES_OF_CHAOS -> BetaPopulator.populate(world, LegacyBands.chaos(seed), chunk.x, chunk.z);
                 case SKYLANDS -> BetaPopulator.populate(world, seed, LegacyBands.sky(seed).forestNoise(),
                         BetaBiome.SKY, null, chunk.x, chunk.z);
                 case ALPHA -> AlphaPopulator.populate(level, LegacyBands.alpha(seed), chunk.x, chunk.z,

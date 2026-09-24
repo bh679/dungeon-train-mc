@@ -6,8 +6,8 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * The seventeen worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
- * single 17-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
+ * The fifteen worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
+ * single 15-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
  * Used by the per-template spawn gate
  * ({@link games.brennan.dungeontrain.template.TemplateGate}): a weighted template may restrict
  * itself to a subset of phases, and the generator filters the candidate pool by the phase of the
@@ -48,6 +48,8 @@ public enum TrainPhase {
     FAR_LANDS,
     /** Terrain from a port of Classic 0.30's finite level generator; see {@link games.brennan.dungeontrain.worldgen.legacy.classic.ClassicLevels}. */
     CLASSIC,
+    /** The Caves of Chaos preset on the Beta pipeline — cavernous stone to y 256 over void; see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
+    CAVES_OF_CHAOS,
     /** Vanilla's Large Biomes preset; see {@link games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain}. */
     LARGE_BIOMES,
     /** Vanilla's Amplified preset; see {@link games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain}. */
@@ -79,7 +81,7 @@ public enum TrainPhase {
 
     /**
      * Single-letter label for compact phase pickers/indicators — the first letter of the constant
-     * name, so the seventeen phases read {@code O N V E U C S S B A S I F F C L A}. A new phase is picked up automatically.
+     * name, so the eighteen phases read {@code O N V E U C S S B A S I F F C C L A}. A new phase is picked up automatically.
      */
     public String letter() {
         return String.valueOf(name().charAt(0));
@@ -103,6 +105,7 @@ public enum TrainPhase {
             case FLOATING -> "Floating";
             case FAR_LANDS -> "Far Lands";
             case CLASSIC -> "Classic";
+            case CAVES_OF_CHAOS -> "Caves of Chaos";
             case LARGE_BIOMES -> "Large Biomes";
             case AMPLIFIED -> "Amplified";
         };
@@ -113,7 +116,7 @@ public enum TrainPhase {
         return name().toLowerCase(java.util.Locale.ROOT);
     }
 
-    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}/{@code spheres}/{@code stacks}/{@code beta}/{@code alpha}/{@code skylands}/{@code infdev}/{@code floating}/{@code far_lands}/{@code large_biomes}/{@code amplified}); null if unknown. */
+    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}/{@code spheres}/{@code stacks}/{@code beta}/{@code alpha}/{@code skylands}/{@code infdev}/{@code floating}/{@code far_lands}/{@code caves_of_chaos} (alias {@code chaos})); null if unknown. */
     public static TrainPhase byToken(String token) {
         if (token == null) return null;
         String t = token.trim().toLowerCase(java.util.Locale.ROOT);
@@ -121,6 +124,7 @@ public enum TrainPhase {
         if (t.equals("ud") || t.equals("upsidedown")) return UPSIDE_DOWN;
         if (t.equals("farlands")) return FAR_LANDS;
         if (t.equals("largebiomes") || t.equals("large")) return LARGE_BIOMES;
+        if (t.equals("chaos") || t.equals("cavesofchaos")) return CAVES_OF_CHAOS;
         for (TrainPhase p : values()) {
             if (p.token().equals(t)) return p;
         }
@@ -144,6 +148,10 @@ public enum TrainPhase {
         if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
                 games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.FAR_LANDS, worldX)) {
             return FAR_LANDS;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.CAVES_OF_CHAOS, worldX)) {
+            return CAVES_OF_CHAOS;
         }
         if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
                 games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.LARGE_BIOMES, worldX)) {

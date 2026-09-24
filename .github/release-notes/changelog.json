@@ -18212,6 +18212,46 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "legacy-caves-of-chaos-band",
+      "version": "0.939.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "Past the edge of the old world",
+      "summary": "Beyond the far edge of the old world the track keeps going, somewhere stranger still. We won't say what it looks like \u2014 ride far enough and see for yourself.",
+      "highlights": [
+        "A new stretch of the journey, with a hidden goal for reaching it"
+      ],
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "band-advancements-follow-layout",
+      "version": "0.939.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "A goal for every stretch of the line",
+      "summary": "Every stretch of the journey now has its own hidden goal to reach, including a few that had none before, and the goals sit in the order you actually ride them, so the trail through the advancements screen reads like the trip itself. Each one lands a short way into its stretch, not the moment you cross the line. A handful of older goals also picked up sharper names.",
+      "highlights": [
+        "Five new hidden goals for stretches of the journey that had none",
+        "The journey's goals now line up in travel order, and follow along if the route changes",
+        "Every goal lands the same short distance into its stretch"
+      ],
+      "pr": 1518,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
