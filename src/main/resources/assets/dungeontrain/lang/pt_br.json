@@ -3285,6 +3285,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s está em uso no trem de outro jogador — sincroniza no seu próximo salvamento.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "Essa construção está em uso agora. Tente de novo daqui a pouco.",
   "gui.dungeontrain.builder.profile.not_yours": "Essa construção não foi enviada deste mundo.",
+  "gui.dungeontrain.builder.profile.needs_signin": "Não foi possível provar daqui que essa construção é sua. Use o mundo de onde ela foi enviada, ou o modo um jogador conectado à sua conta do Minecraft.",
   "gui.dungeontrain.builder.profile.pool_off": "Os vagões compartilhados estão desativados neste mundo — ela não vai aparecer.",
   "gui.dungeontrain.builder.profile.published": "Enviada para análise. Continua salva nas suas construções.",
   "gui.dungeontrain.builder.profile.withdrawn": "Tirada do trem. Ela continua nas suas construções.",

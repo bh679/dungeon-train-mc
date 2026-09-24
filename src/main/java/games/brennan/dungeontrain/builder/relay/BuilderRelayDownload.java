@@ -172,7 +172,13 @@ public final class BuilderRelayDownload {
         String own = player.getUUID().toString();
         String owner = ownerUuid == null || ownerUuid.isBlank() ? own : ownerUuid.trim();
         boolean mine = owner.equals(own);
-        return SharedCarriageClient.fetchBuild(relayId, owner, RelayTarget.of(live))
+        String relay = RelayTarget.of(live);
+        // Only a download of the player's OWN build wants the secret (to remember the link, below),
+        // and the relay serves it only with a proof — so only that one pays for proving.
+        CompletableFuture<SharedCarriageClient.OwnerProof> proof = mine
+                ? RelayOwnerProof.obtain(player, relay)
+                : CompletableFuture.completedFuture(null);
+        return proof.thenCompose(p -> SharedCarriageClient.fetchBuild(relayId, owner, relay, p))
                 .thenCompose(result -> switch (result.status()) {
                     case FORBIDDEN -> CompletableFuture.completedFuture(Result.of(Outcome.NOT_YOURS));
                     case UNKNOWN -> CompletableFuture.completedFuture(Result.of(Outcome.GONE));
@@ -278,9 +284,9 @@ public final class BuilderRelayDownload {
         // name is a new build as far as the relay is concerned — recording the link would point this
         // world's saves of it at a row whose name no longer matches, quietly renaming the original.
         //
-        // Somebody ELSE's build is the same case for a stronger reason: the fetch hands back the
-        // owner's durable secret, and remembering it would let this world save over their row. A
-        // foreign build lands here as a local copy and nothing more.
+        // Somebody ELSE's build is the same case: the relay withholds their secret, and this world has
+        // no business saving over their row anyway. A foreign build lands here as a local copy and
+        // nothing more.
         if (resolution != BuilderRelayInstall.Resolution.LOAD_AS_NEW && mine) {
             remember(level, build, kind);
         }
@@ -368,18 +374,19 @@ public final class BuilderRelayDownload {
      * Record what the relay calls this build, so a later save in THIS world updates that row instead
      * of uploading a second copy of the same build.
      *
-     * <p>The secret is what makes that possible and is the reason the fetch returns one: it is the
-     * durable owner capability, issued once to whoever first uploaded the build, and no world can
-     * re-derive it. The lease token is left empty on purpose — this download took no lease, so the
+     * <p>The secret is what makes that possible: it is the durable owner capability, issued once to
+     * whoever first uploaded the build, and no world can re-derive it. The relay returns it only to a
+     * fetch carrying a {@link RelayOwnerProof}, so a download made where the player cannot prove who
+     * they are installs the build without this link. The lease token is left empty on purpose — this download took no lease, so the
      * next save claims one, which is exactly the path
      * {@link BuilderRelayUpload#afterSave} already takes for a build it knows but is not holding.</p>
      */
     private static void remember(ServerLevel level, SharedCarriageClient.BuildFetch build,
                                  BuilderPhotoPaths.Kind kind) {
         if (build.secret().isEmpty()) {
-            // An older relay, or a build stored before secrets existed. The template is installed and
-            // usable; only the link back to its relay row is missing, and a later save re-establishes
-            // that by re-uploading (the relay dedupes an identical builder submit per author).
+            // No owner proof (a dedicated server, a LAN guest, an offline account), or a build stored
+            // before secrets existed. The template is installed and usable; only the link back to its
+            // relay row is missing, so a later save from this world uploads it as a new build.
             LOGGER.info("[DungeonTrain] Builder relay download: id={} came back without a secret — "
                     + "installed, but this world cannot save to that row", build.id());
             return;

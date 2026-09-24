@@ -3242,6 +3242,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s กำลังถูกใช้อยู่บนรถไฟของผู้เล่นคนอื่น — จะซิงค์ตอนที่คุณบันทึกครั้งถัดไป",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "สิ่งปลูกสร้างนั้นกำลังถูกใช้อยู่ตอนนี้ ลองใหม่อีกสักครู่",
   "gui.dungeontrain.builder.profile.not_yours": "สิ่งปลูกสร้างนั้นไม่ได้อัปโหลดจากโลกนี้",
+  "gui.dungeontrain.builder.profile.needs_signin": "ไม่สามารถยืนยันจากที่นี่ได้ว่าสิ่งปลูกสร้างนั้นเป็นของคุณ ใช้โลกที่อัปโหลดมัน หรือเล่นคนเดียวโดยลงชื่อเข้าใช้บัญชี Minecraft ของคุณ",
   "gui.dungeontrain.builder.profile.pool_off": "โลกนี้ปิดตู้รถไฟที่แชร์อยู่ — มันจะไม่ปรากฏ",
   "gui.dungeontrain.builder.profile.published": "ส่งเข้าตรวจสอบแล้ว ยังบันทึกอยู่ในสิ่งปลูกสร้างของคุณ",
   "gui.dungeontrain.builder.profile.withdrawn": "เอาลงจากขบวนรถแล้ว มันยังอยู่ในสิ่งก่อสร้างของคุณ",

@@ -18306,6 +18306,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-owner-proof",
+      "version": "0.949.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "community"
+      ],
+      "title": "My Builds checks it's you before managing a build from another world",
+      "summary": "Submitting or deleting one of your builds from a world other than the one that uploaded it now confirms your Minecraft account first.",
+      "highlights": [
+        "Managing a build from a different world than the one that uploaded it needs single-player while signed in to your Minecraft account \u2014 the world that uploaded it works exactly as before."
+      ],
+      "pr": 1523,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

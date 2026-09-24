@@ -3256,6 +3256,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s 正在另一位玩家的列车上使用——下次保存时同步。",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "该建筑此刻正在使用中。请稍后再试。",
   "gui.dungeontrain.builder.profile.not_yours": "该建筑不是从这个世界上传的。",
+  "gui.dungeontrain.builder.profile.needs_signin": "无法在此证明该建筑属于你。请使用上传它的世界，或在登录 Minecraft 账户的单人游戏中操作。",
   "gui.dungeontrain.builder.profile.pool_off": "本世界已关闭共享车厢——它不会出现。",
   "gui.dungeontrain.builder.profile.published": "已提交审核。仍保存在你的建筑中。",
   "gui.dungeontrain.builder.profile.withdrawn": "已从列车上取下。它仍留在你的建筑中。",

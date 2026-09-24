@@ -1357,6 +1357,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s is in use on another player's train — it syncs on your next save.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "That build is in use right now. Try again shortly.",
   "gui.dungeontrain.builder.profile.not_yours": "That build wasn't uploaded from this world.",
+  "gui.dungeontrain.builder.profile.needs_signin": "Couldn't prove that build is yours from here. Use the world that uploaded it, or single-player signed in to your Minecraft account.",
   "gui.dungeontrain.builder.profile.pool_off": "Shared carriages are off on this world — it won't spawn.",
   "gui.dungeontrain.builder.profile.published": "Submitted for review. It stays saved to your builds.",
   "gui.dungeontrain.builder.profile.withdrawn": "Submission withdrawn. It stays saved to your builds.",
