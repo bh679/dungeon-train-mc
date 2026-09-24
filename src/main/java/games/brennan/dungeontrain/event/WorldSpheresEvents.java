@@ -208,7 +208,10 @@ public final class WorldSpheresEvents {
                 ns = AIR;                                                // filled later, off-thread
             } else if (owner != null) {
                 int sy = owner.sourceY(y);
-                ns = (sy >= minY && sy < maxY) ? lifted(col[sy - minY]) : AIR;
+                // The corridor's own bed + rail rows never travel: a lifted sphere crossing the lane
+                // would otherwise show a second track floating above the real one.
+                boolean corridor = laneZ && (sy == bedY || sy == geo.railY());
+                ns = (sy >= minY && sy < maxY && !corridor) ? lifted(col[sy - minY]) : AIR;
             } else if (core || cur.isAir()) {
                 ns = AIR;
             } else {

@@ -27,6 +27,13 @@ public final class SecondLapOverworld {
     /** The stretch at this world-X; {@link Stretch#VANILLA} when the cycle is missing. */
     public static Stretch at(WorldGenCycle cycle, int worldX) {
         if (cycle == null) return Stretch.VANILLA;
+        if (cycle.hasLayout()) {
+            // Ordered layout: the gap's own style label says which mod owns it (lap 2's WWOO / BoP slots).
+            CycleLayout.Style style = cycle.overworldStyleAt(worldX);
+            if (style == CycleLayout.Style.WWOO) return Stretch.WWOO;
+            if (style == CycleLayout.Style.BOP) return Stretch.BOP;
+            return Stretch.VANILLA;
+        }
         WorldGenCycle.OverworldGap gap = cycle.overworldGapAt(worldX);
         if (gap == WorldGenCycle.OverworldGap.NONE) return Stretch.VANILLA;
         if (!isModdedLap(cycle.cycleIndex(worldX))) return Stretch.VANILLA;

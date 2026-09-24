@@ -109,6 +109,14 @@ public final class BedrockFloorEvents {
             return;
         }
 
+        // Void-below legacy bands (Skylands): islands over open void — a chunk the old generator owns
+        // gets no floor. Fade chunks that rolled modern keep theirs, leaving old/new chunk walls.
+        games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind legacyKind =
+            games.brennan.dungeontrain.worldgen.legacy.LegacyBands.kindOfChunk(level, chunk.getPos().x, chunk.getPos().z);
+        if (legacyKind != null && legacyKind.voidBelow()) {
+            return;
+        }
+
         // The disintegration band's void has no floor — skip bedrock in columns whose band
         // phase is void/End (middleRamp > 0). Computed per column so a chunk straddling a
         // phase edge keeps its overworld bedrock and drops it under the void, independent of

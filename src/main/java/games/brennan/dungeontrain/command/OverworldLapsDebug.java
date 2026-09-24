@@ -56,11 +56,14 @@ final class OverworldLapsDebug {
                 + " wwooTwins=" + VanillaBiomeTwins.count(), ChatFormatting.AQUA);
         send(source, "  decoration: " + WwooDecorationPass.describeCounters(), ChatFormatting.AQUA);
         for (int lap = 0; lap < LAPS; lap++) {
-            long base = cycle.startX() - cycle.phaseShift() + lap * cycle.period();
-            long leadStart = Math.max(base, cycle.startX());
-            long leadEnd = base + Math.max(0, cycle.owGap());
-            long postStart = leadEnd + cycle.netherLen();
-            long postEnd = postStart + Math.max(0, cycle.owGap());
+            long[] nether = cycle.netherPassRange(lap);
+            if (nether == null) break;
+            // The gaps either side of Nether pass `lap`: the overworld slot before it and after it (ordered
+            // layout), or the classic owGap on each side of the period's one Nether band.
+            long leadStart = Math.max(cycle.startX(), nether[0] - cycle.overworldGapBefore(lap));
+            long leadEnd = nether[0];
+            long postStart = nether[1];
+            long postEnd = postStart + cycle.overworldGapAfter(lap);
             send(source, describe(cycle, biomeSource, sampler, overworld.getSeaLevel(), lap, "lead", leadStart, leadEnd),
                     colour(cycle, leadStart));
             send(source, describe(cycle, biomeSource, sampler, overworld.getSeaLevel(), lap, "post-Nether", postStart, postEnd),
@@ -100,7 +103,7 @@ final class OverworldLapsDebug {
             for (int z : SAMPLE_Z) {
                 if (ctx.netherCoreBiomes() != null && cycle.isNetherCore(ix)) {
                     samples++;
-                    if (OverworldStretchBiomes.isBop(ctx.netherCoreBiomes().biomeAt(ix, z, cycle.cycleIndex(ix)))) nether++;
+                    if (OverworldStretchBiomes.isBop(ctx.netherCoreBiomes().biomeAt(ix, z, cycle.netherPassIndex(ix)))) nether++;
                 }
                 if (ctx.endCoreBiomes() != null && cycle.isEndCore(ix)) {
                     samples++;

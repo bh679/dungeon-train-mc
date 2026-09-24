@@ -31,7 +31,17 @@
         "VOID",
         "UPSIDE_DOWN",
         "CHUNCKS",
-        "SPHERES"
+        "SPHERES",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ]
     },
     {
@@ -48,7 +58,17 @@
         "VOID",
         "END",
         "CHUNCKS",
-        "SPHERES"
+        "SPHERES",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ]
     },
     {

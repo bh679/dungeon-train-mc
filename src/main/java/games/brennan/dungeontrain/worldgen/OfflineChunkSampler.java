@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.worldgen;
 
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.GenerationChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
@@ -44,7 +45,12 @@ import java.util.EnumSet;
  *       sample and catches spill in chunks that are discarded.</li>
  *   <li><b>A {@code ProtoChunk} nobody generated is at {@link ChunkStatus#EMPTY}</b>, and vanilla refuses
  *       to answer biome questions below {@code BIOMES}; the sample and its neighbours are marked
- *       {@code SURFACE}.</li>
+ *       {@code SURFACE} for the noise fill. Once filled, the sample is raised to {@code FEATURES}:
+ *       {@code ProtoChunk.setBlockState} only maintains the heightmaps of the chunk's current status,
+ *       and {@code SURFACE} tracks just the {@code *_WG} pair — left there, carvers and features would
+ *       read the pre-decoration ground height for the rest of the sample (trees stacking inside trees,
+ *       and a jungle tree whose trunk lands in another's logs placing no logs, which
+ *       {@code CocoaDecorator} can't survive).</li>
  *   <li><b>Whole-chunk fill, never per-column.</b> {@code fillFromNoise} uses vanilla's interpolated cell
  *       grid (~100 ms a chunk); a column asked for alone runs the whole noise router (~28 ms each).</li>
  *   <li><b>Never join {@code fillFromNoise} from inside {@code Util.backgroundExecutor()}</b> — it
@@ -54,6 +60,44 @@ import java.util.EnumSet;
  * <p>Stateless; every method touches only the generator, its random state and the chunks passed in.</p>
  */
 public final class OfflineChunkSampler {
+
+    /**
+     * The block-entity id {@code WorldGenRegion.setBlock} records for a block-entity block written into a
+     * proto chunk: a placeholder with no data, which vanilla promotes to a fresh block entity when the
+     * chunk goes live ({@code LevelChunk.promotePendingBlockEntity}). A sample never goes live, so its
+     * consumers skip these at copy-out and create the block entity fresh at apply.
+     */
+    private static final String PLACEHOLDER_BLOCK_ENTITY_ID = "DUMMY";
+
+    /** True for the data-less placeholder vanilla records for a block-entity block in a proto chunk. */
+    public static boolean isPlaceholderBlockEntity(CompoundTag nbt) {
+        return nbt != null && PLACEHOLDER_BLOCK_ENTITY_ID.equals(nbt.getString("id"));
+    }
+
+    /** Set on the sampling thread for the span of {@link #decorate}; read by the decoration mixin. */
+    private static final ThreadLocal<Boolean> SAMPLING = ThreadLocal.withInitial(() -> Boolean.FALSE);
+
+    /** True while this thread is decorating an offline sample (see {@link #decorate}). */
+    public static boolean isSampling() {
+        return SAMPLING.get();
+    }
+
+    /**
+     * Run the biome decoration pass over a sample. The one way consumers should decorate: while it runs,
+     * {@code ChunkGeneratorDecorationMixin} vetoes DT's own features — the track bed lays a corridor in
+     * every DT dimension, and the band features (End islands, Nether transition and structures, stacks)
+     * key off the display X — none of which belong inside a sphere, an End-band copy or a dimensional
+     * carriage room. Copied out as-is, a sampled corridor lands 20 blocks above the real one in the
+     * BetterEnd End band and inside lifted spheres. The display world lays its own track.
+     */
+    public static void decorate(NoiseBasedChunkGenerator generator, Workspace workspace, ProtoChunk chunk) {
+        SAMPLING.set(Boolean.TRUE);
+        try {
+            generator.applyBiomeDecoration(workspace.region(), chunk, workspace.structures());
+        } finally {
+            SAMPLING.set(Boolean.FALSE);
+        }
+    }
 
     /**
      * The beardifier a sample is generated with: nothing at all.
@@ -117,6 +161,11 @@ public final class OfflineChunkSampler {
         Heightmap.primeHeightmaps(ground, EnumSet.of(
             Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG,
             Heightmap.Types.MOTION_BLOCKING, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));
+        // Vanilla carves at CARVERS and decorates at FEATURES, where setBlockState keeps the FINAL
+        // heightmaps (OCEAN_FLOOR, WORLD_SURFACE, MOTION_BLOCKING*) current. At SURFACE only the *_WG
+        // pair is tracked, so heightmap-placed features would keep reading the noise-fill ground.
+        // FEATURES is still below INITIALIZE_LIGHT, so no light engine is touched.
+        ground.setPersistedStatus(ChunkStatus.FEATURES);
         dressSurface(generator, level, random, ground);
         return ground;
     }
