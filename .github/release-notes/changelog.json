@@ -18170,16 +18170,16 @@
       "released_at": null
     },
     {
-      "id": "remove-betterx-advancement-tabs",
+      "id": "tidier-advancements-screen",
       "version": "0.943.0",
       "type": "feat",
       "tags": [
         "feature",
-        "compatibility",
-        "advancements"
+        "advancements",
+        "ui"
       ],
-      "title": "BetterNether and BetterEnd advancement tabs removed",
-      "summary": "The advancements screen now shows only Dungeon Train and vanilla tabs \u2014 BetterNether's and BetterEnd's own advancement tabs, toasts and chat announcements are gone. Their recipes still unlock in the recipe book as before.",
+      "title": "Tidier advancements screen",
+      "summary": "The advancements screen now shows only the Dungeon Train and vanilla tabs.",
       "highlights": [],
       "pr": 1514,
       "date": "2026-09-24",
