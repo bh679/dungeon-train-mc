@@ -68,6 +68,12 @@ public final class PresetTerrain {
         };
     }
 
+    /** True if {@code generator} is one of the published preset generators (the hooks must not re-enter them). */
+    public static boolean isPresetGenerator(Object generator) {
+        PresetTerrain t = current;
+        return t != null && (generator == t.largeBiomes.generator() || generator == t.amplified.generator());
+    }
+
     /**
      * Build both presets from {@code overworld}'s live generator, or {@code null} if it is not a
      * noise-based generator (nothing to rebuild from).

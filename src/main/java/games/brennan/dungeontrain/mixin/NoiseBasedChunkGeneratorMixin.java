@@ -93,7 +93,7 @@ public abstract class NoiseBasedChunkGeneratorMixin {
         try {
             LevelHeightAccessor lha = ((ChunkAccessAccessor) chunk).dungeontrain$getLevelHeightAccessor();
             if (!(lha instanceof ServerLevel level)) return;
-            PresetTerrain.Preset preset = dungeontrain$preset(level, chunk);
+            PresetTerrain.Preset preset = dungeontrain$preset(level, chunk, this);
             if (preset == null) return;
             cir.setReturnValue(preset.generator().createBiomes(preset.randomState(), blender, structureManager, chunk));
         } catch (Throwable t) {
@@ -109,7 +109,7 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             // During fresh generation the chunk's raw levelHeightAccessor IS the owning ServerLevel.
             LevelHeightAccessor lha = ((ChunkAccessAccessor) centerChunk).dungeontrain$getLevelHeightAccessor();
             if (!(lha instanceof ServerLevel level)) return;
-            PresetTerrain.Preset preset = dungeontrain$preset(level, centerChunk);
+            PresetTerrain.Preset preset = dungeontrain$preset(level, centerChunk, this);
             if (preset != null) {
                 // Vanilla's own fill, on the preset generator: same executor hand-off as vanilla's.
                 cir.setReturnValue(preset.generator().fillFromNoise(blender, preset.randomState(), structureManager, centerChunk));
@@ -228,9 +228,14 @@ public abstract class NoiseBasedChunkGeneratorMixin {
         return kind == null || kind.isPreset() ? null : kind;
     }
 
-    /** The published preset generator for this chunk, or null (modern chunk, old-generator chunk, or no presets). */
+    /**
+     * The published preset generator this chunk should be handed to, or null: modern chunk, old-generator
+     * chunk, no presets published — or {@code self} IS a preset generator (the hooks apply to every
+     * {@code NoiseBasedChunkGenerator}, so the hand-off must not re-enter itself).
+     */
     @Unique
-    private static PresetTerrain.Preset dungeontrain$preset(ServerLevel level, ChunkAccess chunk) {
+    private static PresetTerrain.Preset dungeontrain$preset(ServerLevel level, ChunkAccess chunk, Object self) {
+        if (PresetTerrain.isPresetGenerator(self)) return null;
         LegacyBandKind kind = LegacyBands.kindOfChunk(level, chunk.getPos().x, chunk.getPos().z);
         return kind == null || !kind.isPreset() ? null : PresetTerrain.of(kind);
     }
