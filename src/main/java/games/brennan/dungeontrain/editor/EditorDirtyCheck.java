@@ -309,8 +309,17 @@ public final class EditorDirtyCheck {
     private static void scanPortalRooms(ServerLevel level, CarriageDims dims, boolean devmode,
                                         List<DirtyEntry> out) {
         for (String name : TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM)) {
-            BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             String key = PortalRoomEditor.snapshotKey(name);
+            // Nothing below can report a room with no snapshot, no sidecar edit and no pending size:
+            // the block compare needs a snapshot, and a resize always goes through
+            // PortalRoomSizes.pending. Skipping here matters because plotOrigin and sizeOf each
+            // read every room's template on a cold cache — seconds on the server thread for rooms
+            // that are not even standing in the world.
+            if (!EditorPlotSnapshots.has(key) && !EditorPlotSnapshots.sidecarEdited(key)
+                    && !games.brennan.dungeontrain.portal.PortalRoomSizes.hasPending(name)) {
+                continue;
+            }
+            BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
 
             // Load the template BEFORE reading the plot size. A room's size lives in its template
