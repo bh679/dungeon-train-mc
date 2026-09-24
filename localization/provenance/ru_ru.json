@@ -3383,6 +3383,7 @@
   "gui.dungeontrain.builder.profile.in_use": {"author": "helluvaboy", "reviewer": "helluvaboy", "source_hash": "ecc75932a77078d6"},
   "gui.dungeontrain.builder.profile.in_use_withdraw": {"author": "helluvaboy", "reviewer": "helluvaboy", "source_hash": "f39bd77bc9fd6dc6"},
   "gui.dungeontrain.builder.profile.not_yours": {"author": "helluvaboy", "reviewer": "helluvaboy", "source_hash": "4a16a72a117237b3"},
+  "gui.dungeontrain.builder.profile.needs_signin": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "5ce7cb22c4bc1510"},
   "gui.dungeontrain.builder.profile.pool_off": {"author": "helluvaboy", "reviewer": "helluvaboy", "source_hash": "fc4a8cbcb1eca566"},
   "gui.dungeontrain.builder.profile.published": {"author": "helluvaboy", "reviewer": "helluvaboy", "source_hash": "b34a45cdc36707ed"},
   "gui.dungeontrain.builder.profile.withdrawn": {"author": "helluvaboy", "reviewer": "helluvaboy", "source_hash": "0b5fb229ec433795"},

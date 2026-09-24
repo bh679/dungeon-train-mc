@@ -775,10 +775,9 @@ public final class SharedCarriageClient {
      * {@code blocks} blob, the delta log to fold on top of it ({@code baseSeq} is the drop-watermark,
      * exactly as on a {@link PoolLease}), and the owner {@code secret}.</p>
      *
-     * <p>The secret is the load-bearing one. It is the durable capability the relay issued to whoever
-     * first uploaded the build, and without it the downloading world could open the build but never
-     * save back to its row — the next save would upload a second profile entry instead of updating
-     * this one.</p>
+     * <p>The secret is the durable capability the relay issued to whoever first uploaded the build;
+     * without it the downloading world could open the build but never save back to its row. It is
+     * empty unless the fetch carried an {@link OwnerProof} the relay accepted.</p>
      */
     public record BuildFetch(int id, String kind, String subKind, String buildName, String stage,
                              String visibility, String blocks, int l, int h, int w, int baseSeq,
@@ -811,13 +810,38 @@ public final class SharedCarriageClient {
     }
 
     /**
-     * Pull one build this player owns down in full, blocks and all.
+     * Proof that the caller is the Minecraft account it names: the {@code serverId} this client
+     * joined with, and the account name the relay asks Mojang's {@code hasJoined} about.
+     */
+    public record OwnerProof(String name, String serverId) {}
+
+    /**
+     * Ask the relay for a {@code serverId} to join with, as the first half of an {@link OwnerProof}.
+     * Completes with {@code ""} when the relay has no such route (an older relay, which still hands the
+     * secret out without one) or cannot be reached — the caller then fetches without a proof.
+     */
+    public static CompletableFuture<String> ownerProofChallenge(String uuid, String baseUrl) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid == null ? "" : uuid);
+        return post(baseUrl, "/carriages/owner-proof", body).thenApply(resp -> {
+            JsonObject o = resp == null ? null : okJson(resp);
+            if (o == null) {
+                if (resp == null || resp.statusCode() != 404) logFailure("/carriages/owner-proof", resp);
+                return "";
+            }
+            return str(o, "serverId");
+        });
+    }
+
+    /**
+     * Pull one build down in full, blocks and all.
      *
-     * <p>Authed by {@code ownerUuid} rather than by the build's secret, and that is the point: the
-     * world asking is typically one that has never uploaded this build — a fresh save, a reinstall,
-     * another machine — so it holds no secret to present. {@link #claim} is the opposite shape and
-     * cannot serve this: it needs the secret this call exists to recover, and it takes a lease, which
-     * would displace whoever is out riding a published build.</p>
+     * <p>The blocks are served on {@code ownerUuid} alone — previews and downloads of other creators'
+     * builds read them this way. The owner {@code secret} is not: owner uuids are public, so the relay
+     * hands it back only with an {@link OwnerProof} it has had Mojang confirm (see
+     * {@code RelayOwnerProof}). Without one {@link BuildFetch#secret} is empty.
+     * {@link #claim} is the opposite shape and cannot serve this: it needs the secret this call
+     * recovers, and it takes a lease, which would displace whoever is out riding a published build.</p>
      *
      * <p>{@link CallStatus#FORBIDDEN} means the build belongs to somebody else and
      * {@link CallStatus#UNKNOWN} that the relay no longer has it (evicted, or admin-removed); the
@@ -829,9 +853,19 @@ public final class SharedCarriageClient {
 
     /** As above against a named relay — a build is always fetched from the pool it was listed from. */
     public static CompletableFuture<FetchResult> fetchBuild(int id, String ownerUuid, String baseUrl) {
+        return fetchBuild(id, ownerUuid, baseUrl, null);
+    }
+
+    /** As above with an owner proof, so the relay may hand the secret back; {@code proof} may be null. */
+    public static CompletableFuture<FetchResult> fetchBuild(int id, String ownerUuid, String baseUrl,
+                                                            OwnerProof proof) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
+        if (proof != null && !proof.serverId().isEmpty()) {
+            body.addProperty("name", proof.name() == null ? "" : proof.name());
+            body.addProperty("serverId", proof.serverId());
+        }
         return post(baseUrl, "/carriages/fetch", body).thenApply(resp -> {
             if (resp == null) {
                 logFailure("/carriages/fetch", null);

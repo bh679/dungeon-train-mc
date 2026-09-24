@@ -3383,6 +3383,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s jest w użyciu w pociągu innego gracza — zsynchronizuje się przy twoim następnym zapisie.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "Ta budowla jest właśnie w użyciu. Spróbuj ponownie za chwilę.",
   "gui.dungeontrain.builder.profile.not_yours": "Ta budowla nie została przesłana z tego świata.",
+  "gui.dungeontrain.builder.profile.needs_signin": "Stąd nie da się udowodnić, że ta budowla jest twoja. Użyj świata, z którego została przesłana, albo trybu jednoosobowego z zalogowanym kontem Minecraft.",
   "gui.dungeontrain.builder.profile.pool_off": "Wspólne wagony są wyłączone w tym świecie — nie pojawi się.",
   "gui.dungeontrain.builder.profile.published": "Zgłoszona do weryfikacji. Pozostaje zapisana w twoich budowlach.",
   "gui.dungeontrain.builder.profile.withdrawn": "Zdjęta z pociągu. Zostaje w twoich budowlach.",

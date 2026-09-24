@@ -30,23 +30,47 @@ final class BuilderRelayAdoptionTest {
     @DisplayName("a build of this player's that came back with its secret is adopted")
     void ownBuildIsAdopted() {
         assertEquals(BuilderRelayUpload.Adoption.ADOPT,
-                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.OK, build("sec")));
+                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.OK, build("sec"), true));
     }
 
     @Test
     @DisplayName("somebody else's build, a garbled answer and a secretless row are all 'not yours'")
     void everythingWithoutAClaimIsNotYours() {
-        // The relay authorises the fetch on the owner's uuid, so FORBIDDEN is the ownership check.
+        // The relay refuses a fetch whose uuid isn't the build's owner.
         assertEquals(BuilderRelayUpload.Adoption.NOT_YOURS,
-                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.FORBIDDEN, null));
+                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.FORBIDDEN, null, true));
         assertEquals(BuilderRelayUpload.Adoption.NOT_YOURS,
-                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.ERROR, null));
+                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.ERROR, null, true));
         // OK with no build at all — a shape the client can produce, and not something to publish on.
         assertEquals(BuilderRelayUpload.Adoption.NOT_YOURS,
-                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.OK, null));
-        // An older relay, or a row stored before secrets existed: nothing to authorise a publish with.
+                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.OK, null, true));
+        // Proven, and still no secret: a row stored before secrets existed. Nothing to publish with.
         assertEquals(BuilderRelayUpload.Adoption.NOT_YOURS,
-                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.OK, build("")));
+                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.OK, build(""), true));
+    }
+
+    @Test
+    @DisplayName("no secret because this client couldn't prove who it is reads as 'unproven', not 'not yours'")
+    void secretlessWithoutProofIsUnproven() {
+        // The relay withholds the secret from any fetch without a Mojang-checked owner proof (owner
+        // uuids are public). On a dedicated server or an offline account no proof can be made, and
+        // the player needs telling where it CAN be done rather than that the build isn't theirs.
+        assertEquals(BuilderRelayUpload.Adoption.UNPROVEN,
+                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.OK, build(""), false));
+        // A secret that came back anyway (an older relay, before the proof existed) is still adopted.
+        assertEquals(BuilderRelayUpload.Adoption.ADOPT,
+                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.OK, build("sec"), false));
+        // Refusals that aren't about the secret keep their own answers.
+        assertEquals(BuilderRelayUpload.Adoption.NOT_YOURS,
+                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.FORBIDDEN, null, false));
+    }
+
+    @Test
+    @DisplayName("only the signed-in host's own client can prove ownership")
+    void onlyTheHostClientCanProve() {
+        assertEquals(true, RelayOwnerProof.canProve(true, true));
+        assertEquals(false, RelayOwnerProof.canProve(false, true), "a dedicated server holds no access token");
+        assertEquals(false, RelayOwnerProof.canProve(true, false), "a LAN guest is not this client's account");
     }
 
     @Test
@@ -55,6 +79,6 @@ final class BuilderRelayAdoptionTest {
         // Worth its own answer: "gone" tells the player their build was evicted or removed, while
         // "not yours" would send them looking for a permission problem that isn't there.
         assertEquals(BuilderRelayUpload.Adoption.GONE,
-                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.UNKNOWN, null));
+                BuilderRelayUpload.adoptionOf(SharedCarriageClient.CallStatus.UNKNOWN, null, false));
     }
 }

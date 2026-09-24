@@ -3297,6 +3297,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s sedang digunakan di kereta api pemain lain — ia akan disegerakkan pada simpanan anda yang seterusnya.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "Binaan itu sedang digunakan sekarang. Cuba lagi sebentar nanti.",
   "gui.dungeontrain.builder.profile.not_yours": "Binaan itu tidak dimuat naik dari dunia ini.",
+  "gui.dungeontrain.builder.profile.needs_signin": "Tidak dapat membuktikan dari sini bahawa binaan itu milik anda. Gunakan dunia yang memuat naiknya, atau pemain tunggal dengan akaun Minecraft anda dilog masuk.",
   "gui.dungeontrain.builder.profile.pool_off": "Gerabak kongsi dimatikan di dunia ini — ia tidak akan muncul.",
   "gui.dungeontrain.builder.profile.published": "Dihantar untuk semakan. Ia kekal tersimpan dalam binaan anda.",
   "gui.dungeontrain.builder.profile.withdrawn": "Diturunkan daripada kereta api. Ia kekal dalam binaan anda.",

@@ -3340,6 +3340,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s è in uso sul treno di un altro giocatore: si sincronizzerà al tuo prossimo salvataggio.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "Quella costruzione è in uso proprio ora. Riprova tra poco.",
   "gui.dungeontrain.builder.profile.not_yours": "Quella costruzione non è stata caricata da questo mondo.",
+  "gui.dungeontrain.builder.profile.needs_signin": "Impossibile dimostrare da qui che quella costruzione è tua. Usa il mondo da cui è stata caricata, oppure il giocatore singolo con l'accesso al tuo account Minecraft.",
   "gui.dungeontrain.builder.profile.pool_off": "I vagoni condivisi sono disattivati in questo mondo: non comparirà.",
   "gui.dungeontrain.builder.profile.published": "Inviata per la revisione. Resta salvata tra le tue costruzioni.",
   "gui.dungeontrain.builder.profile.withdrawn": "Tolta dal treno. Resta nelle tue costruzioni.",

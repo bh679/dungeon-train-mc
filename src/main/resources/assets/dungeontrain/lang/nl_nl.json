@@ -3340,6 +3340,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s is in gebruik op de trein van een andere speler — het synchroniseert bij je volgende keer opslaan.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "Dat bouwwerk is op dit moment in gebruik. Probeer het zo nog eens.",
   "gui.dungeontrain.builder.profile.not_yours": "Dat bouwwerk is niet vanuit deze wereld geüpload.",
+  "gui.dungeontrain.builder.profile.needs_signin": "Vanaf hier kan niet worden bewezen dat dat bouwwerk van jou is. Gebruik de wereld waaruit het is geüpload, of singleplayer terwijl je bent aangemeld met je Minecraft-account.",
   "gui.dungeontrain.builder.profile.pool_off": "Gedeelde wagons staan uit in deze wereld — het verschijnt niet.",
   "gui.dungeontrain.builder.profile.published": "Ingediend ter beoordeling. Blijft opgeslagen bij je bouwwerken.",
   "gui.dungeontrain.builder.profile.withdrawn": "Van de trein gehaald. Het blijft bij je bouwsels.",

@@ -3340,6 +3340,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s está em uso no comboio de outro jogador — sincroniza na tua próxima gravação.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "Essa construção está em uso neste momento. Tenta de novo daqui a pouco.",
   "gui.dungeontrain.builder.profile.not_yours": "Essa construção não foi enviada a partir deste mundo.",
+  "gui.dungeontrain.builder.profile.needs_signin": "Não foi possível provar a partir daqui que essa construção é tua. Usa o mundo a partir do qual foi enviada, ou o modo de um jogador com sessão iniciada na tua conta Minecraft.",
   "gui.dungeontrain.builder.profile.pool_off": "As carruagens partilhadas estão desligadas neste mundo — não vai aparecer.",
   "gui.dungeontrain.builder.profile.published": "Submetida para análise. Continua guardada nas tuas construções.",
   "gui.dungeontrain.builder.profile.withdrawn": "Tirada do comboio. Continua nas tuas construções.",

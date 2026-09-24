@@ -3300,6 +3300,7 @@
       "gui.dungeontrain.builder.profile.in_use",
       "gui.dungeontrain.builder.profile.in_use_withdraw",
       "gui.dungeontrain.builder.profile.not_yours",
+      "gui.dungeontrain.builder.profile.needs_signin",
       "gui.dungeontrain.builder.profile.pool_off",
       "gui.dungeontrain.builder.profile.published",
       "gui.dungeontrain.builder.profile.withdrawn",

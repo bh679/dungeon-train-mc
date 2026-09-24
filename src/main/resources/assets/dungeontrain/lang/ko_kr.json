@@ -3297,6 +3297,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s은(는) 다른 플레이어의 열차에서 사용 중입니다 — 다음 저장 때 동기화됩니다.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "그 건축물은 지금 사용 중입니다. 잠시 후 다시 시도하세요.",
   "gui.dungeontrain.builder.profile.not_yours": "그 건축물은 이 세계에서 업로드된 것이 아닙니다.",
+  "gui.dungeontrain.builder.profile.needs_signin": "여기서는 그 건축물이 당신의 것임을 증명할 수 없습니다. 업로드한 세계를 사용하거나, Minecraft 계정으로 로그인한 싱글플레이에서 시도하세요.",
   "gui.dungeontrain.builder.profile.pool_off": "이 세계에서는 공유 객차가 꺼져 있습니다 — 나타나지 않습니다.",
   "gui.dungeontrain.builder.profile.published": "검토를 위해 제출되었습니다. 내 건축물에도 그대로 저장됩니다.",
   "gui.dungeontrain.builder.profile.withdrawn": "열차에서 내렸습니다. 내 건축물에는 남습니다.",
