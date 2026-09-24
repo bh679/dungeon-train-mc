@@ -44,7 +44,12 @@ import java.util.EnumSet;
  *       sample and catches spill in chunks that are discarded.</li>
  *   <li><b>A {@code ProtoChunk} nobody generated is at {@link ChunkStatus#EMPTY}</b>, and vanilla refuses
  *       to answer biome questions below {@code BIOMES}; the sample and its neighbours are marked
- *       {@code SURFACE}.</li>
+ *       {@code SURFACE} for the noise fill. Once filled, the sample is raised to {@code FEATURES}:
+ *       {@code ProtoChunk.setBlockState} only maintains the heightmaps of the chunk's current status,
+ *       and {@code SURFACE} tracks just the {@code *_WG} pair — left there, carvers and features would
+ *       read the pre-decoration ground height for the rest of the sample (trees stacking inside trees,
+ *       and a jungle tree whose trunk lands in another's logs placing no logs, which
+ *       {@code CocoaDecorator} can't survive).</li>
  *   <li><b>Whole-chunk fill, never per-column.</b> {@code fillFromNoise} uses vanilla's interpolated cell
  *       grid (~100 ms a chunk); a column asked for alone runs the whole noise router (~28 ms each).</li>
  *   <li><b>Never join {@code fillFromNoise} from inside {@code Util.backgroundExecutor()}</b> — it
@@ -117,6 +122,11 @@ public final class OfflineChunkSampler {
         Heightmap.primeHeightmaps(ground, EnumSet.of(
             Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG,
             Heightmap.Types.MOTION_BLOCKING, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));
+        // Vanilla carves at CARVERS and decorates at FEATURES, where setBlockState keeps the FINAL
+        // heightmaps (OCEAN_FLOOR, WORLD_SURFACE, MOTION_BLOCKING*) current. At SURFACE only the *_WG
+        // pair is tracked, so heightmap-placed features would keep reading the noise-fill ground.
+        // FEATURES is still below INITIALIZE_LIGHT, so no light engine is touched.
+        ground.setPersistedStatus(ChunkStatus.FEATURES);
         dressSurface(generator, level, random, ground);
         return ground;
     }
