@@ -2807,6 +2807,7 @@
   "chat.dungeontrain.package.world_doesn_t_use": "Dunia ini tidak memakai sistem kereta otomatis (startsWithTrain mati).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain gagal: %s: %s",
   "chat.dungeontrain.package.teleporting_x_spawning_train": "Teleportasi ke X=%s — memunculkan kereta di sana sekarang; kamu akan mendarat di flatbed begitu kereta stabil. Kesulitan diatur ke tingkat %s agar sesuai.",
+  "chat.dungeontrain.package.dtp_band_not_found": "Tidak ada band %s di depanmu — mungkin dimatikan di konfigurasi.",
   "chat.dungeontrain.train.spawned_fresh_train_track": "Kereta baru dimunculkan di rel pada X=%s (id kapal %s, dibibit dengan %s gerbong / %s blok, kecepatan +X %s m/s) — kamu akan mendarat di flatbed begitu kereta stabil. Kereta sebelumnya dihapus; kesulitan kembali ke penskalaan otomatis dan %s gerbong komunitas yang diingat bisa muncul lagi. Gunakan '/dungeontrain carriages <count>' untuk mengubah jendela gerbong.",
   "chat.dungeontrain.train.train_speed_set_m": "Kecepatan kereta diatur ke %s m/s (%s %s aktif diperbarui)",
   "chat.dungeontrain.train.default_carriages_set_appender": "Gerbong default diatur ke %s. Appender akan memperpanjang atau memangkas jendela yang dibutuhkan pada tick berikutnya saat pemain melintasi batas pIdx.",

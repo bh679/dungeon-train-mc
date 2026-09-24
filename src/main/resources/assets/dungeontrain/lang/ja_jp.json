@@ -2807,6 +2807,7 @@
   "chat.dungeontrain.package.world_doesn_t_use": "このワールドは自動列車システムを使っていません（startsWithTrain がオフです）。",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain に失敗: %s: %s",
   "chat.dungeontrain.package.teleporting_x_spawning_train": "X=%s にテレポート中 — そこに列車を出現させています。落ち着いたらフラットベッドの上に降り立ちます。難易度はそれに合わせてティア %s に設定されました。",
+  "chat.dungeontrain.package.dtp_band_not_found": "前方に%sの帯はありません — 設定で無効になっている可能性があります。",
   "chat.dungeontrain.train.spawned_fresh_train_track": "X=%s の線路上に新しい列車を出現させました（船体 ID %s、車両 %s 台 / %s ブロックで初期化、速度 +X %s m/s）— 落ち着いたらフラットベッドの上に降り立ちます。以前の列車は削除され、難易度は自動スケーリングに戻り、記憶されていたコミュニティ車両 %s 台が再び出現できます。車両ウィンドウを変更するには '/dungeontrain carriages <count>' を使ってください。",
   "chat.dungeontrain.train.train_speed_set_m": "列車の速度を %s m/s に設定しました（稼働中の%s %s 件を更新）",
   "chat.dungeontrain.train.default_carriages_set_appender": "既定の車両数を %s に設定しました。アペンダーは、プレイヤーが pIdx 境界を越える際、次のティックで必要なウィンドウを延長または縮小します。",
