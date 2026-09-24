@@ -3162,7 +3162,7 @@
   "gui.dungeontrain.builder.profile.withdraw_submission": "Rút lại",
   "gui.dungeontrain.builder.profile.note.title": "Gửi duyệt",
   "gui.dungeontrain.builder.profile.note.prompt": "Đang gửi %s — có điều gì người duyệt nên biết không?",
-  "gui.dungeontrain.builder.profile.note.hint": "VD: redstone hoạt động ra sao và cách thử, chiến lợi phẩm đặc biệt bạn đã thêm, hoặc bạn muốn nó xuất hiện ở đâu trên đoàn tàu",
+  "gui.dungeontrain.builder.profile.note.hint": "Redstone hoạt động thế nào? Có những chiến lợi phẩm gì? Căn phòng này được dùng như thế nào?",
   "gui.dungeontrain.builder.profile.note.label": "Ghi chú cho người duyệt",
   "gui.dungeontrain.builder.profile.note.submit": "Gửi",
   "gui.dungeontrain.builder.profile.note.optional": "Không bắt buộc — để trống nếu không có gì cần thêm.",

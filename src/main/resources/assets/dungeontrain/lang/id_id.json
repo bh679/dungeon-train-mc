@@ -3162,7 +3162,7 @@
   "gui.dungeontrain.builder.profile.withdraw_submission": "Tarik Pengajuan",
   "gui.dungeontrain.builder.profile.note.title": "Ajukan untuk Ditinjau",
   "gui.dungeontrain.builder.profile.note.prompt": "Mengajukan %s — ada yang perlu diketahui peninjau?",
-  "gui.dungeontrain.builder.profile.note.hint": "mis. cara kerja redstone dan cara mengujinya, loot khusus yang kamu sertakan, atau di bagian kereta mana kamu ingin bangunan ini muncul",
+  "gui.dungeontrain.builder.profile.note.hint": "Bagaimana cara kerja redstone-nya? Loot apa saja yang disertakan? Bagaimana ruangan ini seharusnya digunakan?",
   "gui.dungeontrain.builder.profile.note.label": "Catatan untuk peninjau",
   "gui.dungeontrain.builder.profile.note.submit": "Ajukan",
   "gui.dungeontrain.builder.profile.note.optional": "Opsional — biarkan kosong jika tidak ada yang perlu ditambahkan.",

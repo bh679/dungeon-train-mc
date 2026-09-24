@@ -3205,7 +3205,7 @@
   "gui.dungeontrain.builder.profile.withdraw_submission": "Togli dal treno",
   "gui.dungeontrain.builder.profile.note.title": "Affida al treno",
   "gui.dungeontrain.builder.profile.note.prompt": "Stai affidando %s — c'è qualcosa che il revisore dovrebbe sapere?",
-  "gui.dungeontrain.builder.profile.note.hint": "es. come funziona la redstone e come provarla, bottino speciale che hai incluso, o in quale punto del treno vorresti che comparisse",
+  "gui.dungeontrain.builder.profile.note.hint": "Come funziona la redstone? Quale bottino è incluso? Come va usata questa stanza?",
   "gui.dungeontrain.builder.profile.note.label": "Nota per il revisore",
   "gui.dungeontrain.builder.profile.note.submit": "Invia",
   "gui.dungeontrain.builder.profile.note.optional": "Facoltativo — lascia vuoto se non c'è nulla da aggiungere.",

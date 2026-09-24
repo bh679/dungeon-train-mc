@@ -37,8 +37,13 @@ public final class BuilderSubmitNoteScreen extends Screen {
     private static final int FIELD_HEIGHT = 90;
     private static final int ROW_HEIGHT = 20;
     private static final int ROW_GAP = 6;
+    /** Room under the box for the edit box's own {@code n/1000} counter, which it draws 4px below itself. */
+    private static final int COUNTER_GAP = 14;
+    /** Inset of the edit box's text from its border — vanilla's {@code innerPadding()}. */
+    private static final int BOX_PADDING = 4;
     private static final int TEXT_COLOUR = 0xFFFFFFFF;
     private static final int HINT_COLOUR = 0xFFA0A0A0;
+    private static final int PLACEHOLDER_COLOUR = 0xFF707070;
 
     private final Screen backScreen;
     private final Component buildName;
@@ -76,7 +81,7 @@ public final class BuilderSubmitNoteScreen extends Screen {
         addRenderableWidget(this.noteBox);
         setInitialFocus(this.noteBox);
 
-        y += FIELD_HEIGHT + ROW_GAP;
+        y += FIELD_HEIGHT + COUNTER_GAP;
         int half = (fieldWidth - ROW_GAP) / 2;
         addRenderableWidget(Button.builder(
                 Component.translatable("gui.dungeontrain.builder.profile.note.submit"), b -> submit())
@@ -101,7 +106,19 @@ public final class BuilderSubmitNoteScreen extends Screen {
                 this.width / 2, top - 22, HINT_COLOUR);
         g.drawCenteredString(this.font,
                 Component.translatable("gui.dungeontrain.builder.profile.note.optional"),
-                this.width / 2, top + FIELD_HEIGHT + ROW_GAP + ROW_HEIGHT + ROW_GAP, HINT_COLOUR);
+                this.width / 2, top + FIELD_HEIGHT + COUNTER_GAP + ROW_HEIGHT + ROW_GAP, HINT_COLOUR);
+        renderPlaceholder(g);
+    }
+
+    /**
+     * Vanilla only draws the edit box's placeholder while the box is <em>unfocused</em>, and this screen
+     * focuses it on open — so without this the questions never show. Drawn whenever the box is empty.
+     */
+    private void renderPlaceholder(GuiGraphics g) {
+        if (this.noteBox == null || !this.note.isEmpty()) return;
+        g.drawWordWrap(this.font, Component.translatable("gui.dungeontrain.builder.profile.note.hint"),
+                this.noteBox.getX() + BOX_PADDING, this.noteBox.getY() + BOX_PADDING,
+                this.noteBox.getWidth() - BOX_PADDING * 2, PLACEHOLDER_COLOUR);
     }
 
     @Override

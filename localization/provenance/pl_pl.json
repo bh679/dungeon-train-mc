@@ -3248,7 +3248,7 @@
   "gui.dungeontrain.builder.profile.withdraw_submission": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "ef443fb8ebd44518"},
   "gui.dungeontrain.builder.profile.note.title": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "5acdc339980686e4"},
   "gui.dungeontrain.builder.profile.note.prompt": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "77e00471a466966a"},
-  "gui.dungeontrain.builder.profile.note.hint": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "0ba49ad86dd03401"},
+  "gui.dungeontrain.builder.profile.note.hint": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "d4674fef8d82273e"},
   "gui.dungeontrain.builder.profile.note.label": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "70dc4c28402a463b"},
   "gui.dungeontrain.builder.profile.note.submit": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "155f816c0407310c"},
   "gui.dungeontrain.builder.profile.note.optional": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "b69509d60af0e9a7"},

@@ -3176,7 +3176,7 @@
   "gui.dungeontrain.builder.profile.withdraw_submission": "撤回提交",
   "gui.dungeontrain.builder.profile.note.title": "提交审核",
   "gui.dungeontrain.builder.profile.note.prompt": "正在提交 %s——有什么需要审核者了解的吗？",
-  "gui.dungeontrain.builder.profile.note.hint": "例如：红石的工作原理和测试方法、你放入的特殊战利品，或希望它出现在列车的哪个位置",
+  "gui.dungeontrain.builder.profile.note.hint": "红石如何运作？包含哪些战利品？这个房间打算怎么使用？",
   "gui.dungeontrain.builder.profile.note.label": "给审核者的备注",
   "gui.dungeontrain.builder.profile.note.submit": "提交",
   "gui.dungeontrain.builder.profile.note.optional": "选填——没有要补充的可以留空。",

@@ -3162,7 +3162,7 @@
   "gui.dungeontrain.builder.profile.withdraw_submission": "Bawiin ang Pagpapasa",
   "gui.dungeontrain.builder.profile.note.title": "Ipasa para Suriin",
   "gui.dungeontrain.builder.profile.note.prompt": "Ipinapasa ang %s — may dapat bang malaman ang tagasuri?",
-  "gui.dungeontrain.builder.profile.note.hint": "hal. paano gumagana ang redstone at paano ito subukan, espesyal na loot na isinama mo, o saan sa tren mo gustong lumabas ito",
+  "gui.dungeontrain.builder.profile.note.hint": "Paano gumagana ang redstone? Anong loot ang kasama? Paano dapat gamitin ang kuwartong ito?",
   "gui.dungeontrain.builder.profile.note.label": "Tala para sa tagasuri",
   "gui.dungeontrain.builder.profile.note.submit": "Ipasa",
   "gui.dungeontrain.builder.profile.note.optional": "Opsyonal — iwanang blangko kung wala nang idaragdag.",

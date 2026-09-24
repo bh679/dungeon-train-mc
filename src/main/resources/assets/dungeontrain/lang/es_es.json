@@ -3205,7 +3205,7 @@
   "gui.dungeontrain.builder.profile.withdraw_submission": "Retirar el envío",
   "gui.dungeontrain.builder.profile.note.title": "Enviar a revisión",
   "gui.dungeontrain.builder.profile.note.prompt": "Enviando %s: ¿hay algo que el revisor deba saber?",
-  "gui.dungeontrain.builder.profile.note.hint": "p. ej. cómo funciona el redstone y cómo probarlo, botín especial que hayas incluido o en qué parte del tren te gustaría que apareciera",
+  "gui.dungeontrain.builder.profile.note.hint": "¿Cómo funciona el redstone? ¿Qué botín incluye? ¿Cómo se debe usar esta sala?",
   "gui.dungeontrain.builder.profile.note.label": "Nota para el revisor",
   "gui.dungeontrain.builder.profile.note.submit": "Enviar",
   "gui.dungeontrain.builder.profile.note.optional": "Opcional: déjalo en blanco si no hay nada que añadir.",

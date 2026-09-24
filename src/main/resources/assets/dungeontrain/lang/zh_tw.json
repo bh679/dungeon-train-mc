@@ -3176,7 +3176,7 @@
   "gui.dungeontrain.builder.profile.withdraw_submission": "撤回送審",
   "gui.dungeontrain.builder.profile.note.title": "送出審核",
   "gui.dungeontrain.builder.profile.note.prompt": "正在送出 %s——有什麼需要審核者知道的嗎？",
-  "gui.dungeontrain.builder.profile.note.hint": "例如：紅石的運作方式與測試方法、你放入的特殊戰利品，或希望它出現在列車的哪個位置",
+  "gui.dungeontrain.builder.profile.note.hint": "紅石如何運作？包含哪些戰利品？這個房間打算怎麼使用？",
   "gui.dungeontrain.builder.profile.note.label": "給審核者的備註",
   "gui.dungeontrain.builder.profile.note.submit": "送出",
   "gui.dungeontrain.builder.profile.note.optional": "選填——沒有要補充的可以留空。",

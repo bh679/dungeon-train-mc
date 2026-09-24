@@ -3248,7 +3248,7 @@
   "gui.dungeontrain.builder.profile.withdraw_submission": "Wycofaj zgłoszenie",
   "gui.dungeontrain.builder.profile.note.title": "Wyślij do sprawdzenia",
   "gui.dungeontrain.builder.profile.note.prompt": "Wysyłanie %s — czy sprawdzający powinien coś wiedzieć?",
-  "gui.dungeontrain.builder.profile.note.hint": "np. jak działa redstone i jak go przetestować, jakie specjalne łupy dodałeś lub w którym miejscu pociągu chcesz, żeby się pojawił",
+  "gui.dungeontrain.builder.profile.note.hint": "Jak działa redstone? Jakie łupy są w środku? Jak ma być używane to pomieszczenie?",
   "gui.dungeontrain.builder.profile.note.label": "Notatka dla sprawdzającego",
   "gui.dungeontrain.builder.profile.note.submit": "Wyślij",
   "gui.dungeontrain.builder.profile.note.optional": "Opcjonalne — zostaw puste, jeśli nie masz nic do dodania.",

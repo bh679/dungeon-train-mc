@@ -3162,7 +3162,7 @@
   "gui.dungeontrain.builder.profile.withdraw_submission": "ถอนการส่ง",
   "gui.dungeontrain.builder.profile.note.title": "ส่งเพื่อตรวจ",
   "gui.dungeontrain.builder.profile.note.prompt": "กำลังส่ง %s — มีอะไรที่ผู้ตรวจควรรู้ไหม?",
-  "gui.dungeontrain.builder.profile.note.hint": "เช่น เรดสโตนทำงานอย่างไรและทดสอบอย่างไร ของรางวัลพิเศษที่ใส่ไว้ หรืออยากให้ปรากฏตรงส่วนไหนของขบวนรถไฟ",
+  "gui.dungeontrain.builder.profile.note.hint": "เรดสโตนทำงานอย่างไร? มีของรางวัลอะไรบ้าง? ห้องนี้ตั้งใจให้ใช้งานอย่างไร?",
   "gui.dungeontrain.builder.profile.note.label": "บันทึกถึงผู้ตรวจ",
   "gui.dungeontrain.builder.profile.note.submit": "ส่ง",
   "gui.dungeontrain.builder.profile.note.optional": "ไม่บังคับ — เว้นว่างได้หากไม่มีอะไรจะเพิ่ม",

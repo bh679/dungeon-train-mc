@@ -3162,7 +3162,7 @@
   "gui.dungeontrain.builder.profile.withdraw_submission": "Tarik Balik Serahan",
   "gui.dungeontrain.builder.profile.note.title": "Serah untuk Semakan",
   "gui.dungeontrain.builder.profile.note.prompt": "Menyerahkan %s — ada apa-apa yang penyemak perlu tahu?",
-  "gui.dungeontrain.builder.profile.note.hint": "cth. cara redstone berfungsi dan cara mengujinya, harta khas yang anda sertakan, atau di bahagian kereta api mana anda mahu ia muncul",
+  "gui.dungeontrain.builder.profile.note.hint": "Bagaimanakah redstone berfungsi? Apakah harta yang disertakan? Bagaimanakah bilik ini sepatutnya digunakan?",
   "gui.dungeontrain.builder.profile.note.label": "Nota untuk penyemak",
   "gui.dungeontrain.builder.profile.note.submit": "Serah",
   "gui.dungeontrain.builder.profile.note.optional": "Pilihan — biarkan kosong jika tiada apa yang perlu ditambah.",

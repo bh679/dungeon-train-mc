@@ -3162,7 +3162,7 @@
   "gui.dungeontrain.builder.profile.withdraw_submission": "列車から降ろす",
   "gui.dungeontrain.builder.profile.note.title": "列車に預ける",
   "gui.dungeontrain.builder.profile.note.prompt": "%s を預けます。審査する人に伝えておくことはありますか？",
-  "gui.dungeontrain.builder.profile.note.hint": "例：レッドストーンの仕組みと試し方、入れておいた特別な戦利品、列車のどのあたりに配置してほしいか",
+  "gui.dungeontrain.builder.profile.note.hint": "レッドストーンはどう動く？どんな戦利品が入っている？この部屋はどう使うことを想定している？",
   "gui.dungeontrain.builder.profile.note.label": "審査する人へのメモ",
   "gui.dungeontrain.builder.profile.note.submit": "送信",
   "gui.dungeontrain.builder.profile.note.optional": "任意です。特になければ空欄のままで構いません。",

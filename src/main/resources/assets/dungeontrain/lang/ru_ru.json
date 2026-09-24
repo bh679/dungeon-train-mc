@@ -3248,7 +3248,7 @@
   "gui.dungeontrain.builder.profile.withdraw_submission": "Отозвать заявку",
   "gui.dungeontrain.builder.profile.note.title": "Отправить на рассмотрение",
   "gui.dungeontrain.builder.profile.note.prompt": "Отправляется %s — есть ли что-то, что стоит знать проверяющему?",
-  "gui.dungeontrain.builder.profile.note.hint": "например, как работает редстоун и как его проверить, какая особая добыча добавлена или где в поезде вы хотели бы видеть постройку",
+  "gui.dungeontrain.builder.profile.note.hint": "Как работает редстоун? Какая добыча внутри? Как предполагается использовать эту комнату?",
   "gui.dungeontrain.builder.profile.note.label": "Заметка проверяющему",
   "gui.dungeontrain.builder.profile.note.submit": "Отправить",
   "gui.dungeontrain.builder.profile.note.optional": "Необязательно — оставьте пустым, если добавить нечего.",

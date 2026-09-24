@@ -3205,7 +3205,7 @@
   "gui.dungeontrain.builder.profile.withdraw_submission": "Inzending intrekken",
   "gui.dungeontrain.builder.profile.note.title": "Insturen ter beoordeling",
   "gui.dungeontrain.builder.profile.note.prompt": "%s wordt ingestuurd — is er iets wat de beoordelaar moet weten?",
-  "gui.dungeontrain.builder.profile.note.hint": "bijv. hoe de redstone werkt en hoe je die test, speciale buit die je hebt toegevoegd, of waar in de trein je het wilt laten verschijnen",
+  "gui.dungeontrain.builder.profile.note.hint": "Hoe werkt de redstone? Welke buit zit erin? Hoe is deze kamer bedoeld om gebruikt te worden?",
   "gui.dungeontrain.builder.profile.note.label": "Notitie voor de beoordelaar",
   "gui.dungeontrain.builder.profile.note.submit": "Insturen",
   "gui.dungeontrain.builder.profile.note.optional": "Optioneel — laat leeg als er niets toe te voegen is.",
