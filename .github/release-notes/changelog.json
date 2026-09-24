@@ -18270,6 +18270,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dtp-band-names",
+      "version": "0.947.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Jump straight to the stranger stretches",
+      "summary": "Operators can now point /dtp at a kind of stretch by name instead of a coordinate, and it takes you to the next one ahead, optionally a set distance inside it.",
+      "highlights": [],
+      "pr": 1522,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
