@@ -18190,6 +18190,122 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "tidier-advancements-screen",
+      "version": "0.944.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Tidier advancements screen",
+      "summary": "The advancements screen now shows only the Dungeon Train and vanilla tabs.",
+      "highlights": [],
+      "pr": 1514,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "per-player-build-cap",
+      "version": "0.945.0",
+      "type": "chore",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Build limit follows the relay",
+      "summary": "The build uploader now reads each builder's build limit from the relay instead of assuming 200, so the relay can give individual builders more room.",
+      "highlights": [],
+      "pr": 1516,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "builder-review-questions",
+      "version": "0.946.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "ui"
+      ],
+      "title": "Tell the reviewer about your build",
+      "summary": "Submitting a build for review now asks what the reviewer should know. Builds with redstone machinery get a question about how it works, builds with loot or valuable blocks get one about the loot, and there's always room for anything else. Your answers stay on the build, where you can read and change them from the editor at any time.",
+      "highlights": [
+        "Redstone and loot questions appear only when your build has them, with the blocks that triggered them shown beside each question",
+        "One question per page, with a progress bar showing what you've answered",
+        "A new Submitted answers page in the editor preview shows your answers, and you can edit them before or after submitting"
+      ],
+      "pr": 1515,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "save-as-for-built-in-templates",
+      "version": "0.946.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Save your own version of a built-in template",
+      "summary": "Saving a template that comes with Dungeon Train, in the Train Editor or the Train Builder, now asks what you want: save your version under a new name, which goes to My Builds and can be submitted, or keep it as a local edit on this install. The original is left as it was.",
+      "highlights": [
+        "Save as new keeps your changes on a template of your own and puts the built-in back the way it was",
+        "Keep as local edit changes the built-in on your install only, and it is not uploaded",
+        "Built-in templates no longer end up in My Builds under the game's own name"
+      ],
+      "pr": 1520,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-unsaved-mob-plots",
+      "version": "0.947.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Editor no longer lists plots you didn't touch as unsaved",
+      "summary": "In the Train Editor, carriage contents and dimensional carriages with mobs or armor stands in them could show up as unsaved even though you never edited them \u2014 just from walking past them after opening a category. The unsaved list now only shows plots you actually changed.",
+      "highlights": [
+        "Saving a built-in under a new name now stops if other plots in its row have real unsaved edits that the save would reload, and names those plots so you can save them first"
+      ],
+      "pr": 1521,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dtp-band-names",
+      "version": "0.948.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Jump straight to the stranger stretches",
+      "summary": "Operators can now point /dtp at a kind of stretch by name instead of a coordinate, and it takes you to the next one ahead, optionally a set distance inside it.",
+      "highlights": [],
+      "pr": 1522,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

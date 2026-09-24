@@ -1,14 +1,10 @@
 package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
-import games.brennan.dungeontrain.editor.CarriageContentsStore;
-import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
-import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
-import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.builder.BuilderTemplateFiles;
 import games.brennan.dungeontrain.editor.TemplateCells;
 import games.brennan.dungeontrain.editor.TemplateLoot;
 import games.brennan.dungeontrain.track.variant.TrackKind;
-import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -101,24 +97,10 @@ final class BuilderTileTemplates {
         return trackKind == null ? null : trackKind.id();
     }
 
-    /** The same store-per-kind switch {@link BuilderPhotoPaths#photoFor} makes, for the NBT. */
+    /** The template file — see {@link BuilderTemplateFiles}. */
     private static Optional<CompoundTag> rawTag(BuilderPhotoPaths.Kind kind, String id,
                                                 CarriagePartKind partKind, TrackKind trackKind) {
-        if (kind == null || id == null || id.isEmpty()) {
-            return Optional.empty();
-        }
-        return switch (kind) {
-            case CARRIAGE -> CarriageTemplateStore.rawTag(id);
-            case CARRIAGE_GROUP -> CarriageGroupTemplateStore.rawTag(id);
-            case CONTENTS -> CarriageContentsStore.rawTag(id);
-            case PART -> partKind == null
-                    ? Optional.empty()
-                    : CarriagePartTemplateStore.rawTag(partKind, id);
-            case TRACK -> trackKind == null
-                    ? Optional.empty()
-                    : TrackVariantStore.rawTag(trackKind, id);
-            case PORTAL_ROOM -> TrackVariantStore.rawTag(TrackKind.PORTAL_ROOM, id);
-        };
+        return BuilderTemplateFiles.rawTag(kind, id, partKind, trackKind);
     }
 
     /**

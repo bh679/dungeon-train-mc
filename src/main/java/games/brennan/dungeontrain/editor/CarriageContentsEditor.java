@@ -588,6 +588,65 @@ public final class CarriageContentsEditor {
     }
 
     /**
+     * As {@link #duplicate}, for a copy that belongs in {@code parentId}'s group: it joins the group
+     * <b>before</b> anything is stamped, so its first plot is its own place in the parent's column.
+     *
+     * <p>{@code duplicate} then append — the order {@code editor contents group new} uses — registers
+     * the copy as a top-level template first, and stamps it into whichever top-level slot that gives
+     * it: another template's plot, drawn over until the next restamp. Appending first costs nothing
+     * and lands it where it will stay. The box is {@code source}'s, which is a member of the same
+     * group — the size a portal corridor's sub-variants are held to.</p>
+     */
+    public static BlockPos duplicateIntoGroup(ServerPlayer player, CarriageContents source,
+                                              CarriageContents.Custom target, String parentId) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        if (!CarriageContentsRegistry.register(target)) {
+            throw new IOException("Contents '" + target.id() + "' is already registered.");
+        }
+        games.brennan.dungeontrain.train.CarriageContentsGroup existing = CarriageContentsGroupStore.get(parentId)
+            .orElse(games.brennan.dungeontrain.train.CarriageContentsGroup.EMPTY);
+        try {
+            CarriageContentsGroupStore.save(parentId, existing.withMember(
+                new games.brennan.dungeontrain.train.CarriageContentsGroup.Member(
+                    target.id(), games.brennan.dungeontrain.train.CarriageContentsGroup.DEFAULT_WEIGHT)));
+        } catch (IOException e) {
+            CarriageContentsRegistry.unregister(target.id());
+            throw e;
+        }
+
+        BlockPos targetOrigin = plotOrigin(target, dims);
+        if (targetOrigin == null) {
+            throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
+        }
+        CarriageDims box = plotDims(source, dims);
+        CarriagePlacer.eraseAt(overworld, targetOrigin, box);
+        CarriageContentsPlacer.eraseAt(overworld, targetOrigin, box);
+        CarriagePlacer.placeAt(overworld, targetOrigin, shellFor(source), dims);
+        CarriageContentsPlacer.placeAt(overworld, targetOrigin, source, dims);
+
+        StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, box);
+        CarriageContentsStore.save(target, template);
+        TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CONTENTS, null,
+            source.id(), target.id());
+        // Restamp through the ordinary path so the cage and the dirty baseline match every other plot.
+        stampPlot(overworld, target, dims);
+
+        LOGGER.info("[DungeonTrain] Contents editor duplicate into group '{}': {} created '{}' from '{}' at {}",
+            parentId, player.getName().getString(), target.id(), source.id(), targetOrigin);
+        return targetOrigin;
+    }
+
+    /** The top-level row slot {@code id} occupies, or -1 for a group member or an unknown id. */
+    public static int topLevelSlotOf(String id) {
+        Integer index = topLevelSlotIndex().get(id);
+        return index == null ? -1 : index;
+    }
+
+    /**
      * Save the plot's current interior under a new name — mirrors the
      * rename-on-save behaviour of {@link CarriageEditor#saveAs}. Built-in
      * {@code default} cannot be renamed; customs are moved to the new name.

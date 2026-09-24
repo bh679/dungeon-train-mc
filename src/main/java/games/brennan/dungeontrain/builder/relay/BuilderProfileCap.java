@@ -16,18 +16,19 @@ import java.util.List;
  * is not sent, and the player is told to remove one instead. Choosing which build to lose is theirs
  * to make, and the relay's rule — oldest first — is the one choice nobody would pick deliberately.</p>
  *
- * <p><b>The number is duplicated from the relay</b>, which is a coupling worth naming. The relay does
- * not report its cap, and the mod cannot ask; {@link #MAX_PROFILE_BUILDS} is the relay's default for
- * that key. If an operator raises the relay's cap, this stays conservative — the mod refuses uploads
- * the relay would have accepted, which is a bearable failure. If an operator LOWERS it below this,
- * the relay resumes evicting silently and this guard stops covering the gap.</p>
+ * <p><b>The cap comes from the relay.</b> {@code /carriages/mine} reports the owner's own cap beside
+ * their builds ({@link SharedCarriageClient.Mine#cap()}) — the shared default for most players, a
+ * per-player exception for a few (the dev client's {@code Dev} keeps 2000). Callers pass that number
+ * in. {@link #DEFAULT_PROFILE_BUILDS} is only the stand-in for a relay too old to report one, and is
+ * the relay's own default for that key.</p>
  */
 public final class BuilderProfileCap {
 
     /**
-     * The relay's {@code carriage_profile_per_owner} default. Keep in step with {@code cap-config.js}.
+     * The relay's {@code carriage_profile_per_owner} default, used when a reply carries no {@code cap}.
+     * Keep in step with {@code cap-config.js}.
      */
-    public static final int MAX_PROFILE_BUILDS = 200;
+    public static final int DEFAULT_PROFILE_BUILDS = 200;
 
     private BuilderProfileCap() {}
 
@@ -48,12 +49,12 @@ public final class BuilderProfileCap {
     }
 
     /** How many more builds may be uploaded before the relay would start evicting. Never negative. */
-    public static int remaining(int used) {
-        return Math.max(0, MAX_PROFILE_BUILDS - used);
+    public static int remaining(int used, int cap) {
+        return Math.max(0, cap - used);
     }
 
     /** Whether one more build would overflow the profile — i.e. cost the player their oldest. */
-    public static boolean isFull(int used) {
-        return remaining(used) <= 0;
+    public static boolean isFull(int used, int cap) {
+        return remaining(used, cap) <= 0;
     }
 }

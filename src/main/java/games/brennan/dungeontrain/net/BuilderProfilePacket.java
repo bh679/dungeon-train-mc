@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
+import games.brennan.dungeontrain.builder.relay.SubmitNote;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import net.minecraft.network.FriendlyByteBuf;
@@ -80,10 +81,25 @@ public record BuilderProfilePacket(Status status, List<Entry> builds, String own
      * @param templateCopy the relay recognises it as an unmodified copy of a shipped template. Only
      *                   ever true on the owner's own listing — nobody else is shown these, and no
      *                   count includes them — so the tile can say why it is not counted as a build
+     * @param note       what the author answered when submitting it for review — the editor's
+     *                   Submitted answers page. Only a profile listing carries it; empty otherwise
      */
     public record Entry(int relayId, String kind, String subKind, String buildName, boolean published,
                         String flag, String review, String stage, int changes,
-                        boolean favourite, String ownerUuid, String ownerName, boolean templateCopy) {}
+                        boolean favourite, String ownerUuid, String ownerName, boolean templateCopy,
+                        SubmitNote note) {
+        public Entry {
+            note = note == null ? SubmitNote.EMPTY : note;
+        }
+
+        /** An entry with no submission answers — every listing but a profile's. */
+        public Entry(int relayId, String kind, String subKind, String buildName, boolean published,
+                     String flag, String review, String stage, int changes,
+                     boolean favourite, String ownerUuid, String ownerName, boolean templateCopy) {
+            this(relayId, kind, subKind, buildName, published, flag, review, stage, changes, favourite,
+                    ownerUuid, ownerName, templateCopy, SubmitNote.EMPTY);
+        }
+    }
 
     public static final Type<BuilderProfilePacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "builder_profile"));
@@ -137,6 +153,9 @@ public record BuilderProfilePacket(Status status, List<Entry> builds, String own
             buf.writeUtf(e.ownerUuid(), MAX_STRING);
             buf.writeUtf(e.ownerName(), MAX_STRING);
             buf.writeBoolean(e.templateCopy());
+            buf.writeUtf(e.note().redstone(), BuilderProfileActionPacket.NOTE_MAX);
+            buf.writeUtf(e.note().loot(), BuilderProfileActionPacket.NOTE_MAX);
+            buf.writeUtf(e.note().notes(), BuilderProfileActionPacket.NOTE_MAX);
         }
     }
 
@@ -149,7 +168,9 @@ public record BuilderProfilePacket(Status status, List<Entry> builds, String own
                     buf.readUtf(MAX_STRING), buf.readBoolean(), buf.readUtf(MAX_STRING),
                     buf.readUtf(MAX_STRING), buf.readUtf(MAX_STRING), buf.readVarInt(),
                     buf.readBoolean(), buf.readUtf(MAX_STRING), buf.readUtf(MAX_STRING),
-                    buf.readBoolean()));
+                    buf.readBoolean(), new SubmitNote(buf.readUtf(BuilderProfileActionPacket.NOTE_MAX),
+                        buf.readUtf(BuilderProfileActionPacket.NOTE_MAX),
+                        buf.readUtf(BuilderProfileActionPacket.NOTE_MAX))));
         }
         return List.copyOf(out);
     }
@@ -177,7 +198,7 @@ public record BuilderProfilePacket(Status status, List<Entry> builds, String own
         return new Entry(r.id(), r.kind(), r.subKind(), r.buildName(),
                 "published".equals(r.visibility()), r.flag(), BuilderReviewState.of(r.review()),
                 r.stage(), r.changeCount(), r.favourite(), r.ownerUuid(), r.ownerName(),
-                r.templateCopy());
+                r.templateCopy(), r.note());
     }
 
     /** How many entries a listing packet will carry — shared with {@link BuilderFavouritesPacket}. */

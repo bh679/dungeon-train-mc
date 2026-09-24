@@ -341,8 +341,32 @@ public final class CarriagePartEditor {
                 yield stored.get();
             }
         };
-        String sourceName = sourceNameHolder[0];
+        return placeNew(player, overworld, dims, kind, seed, sourceNameHolder[0], name, source.name());
+    }
 
+    /**
+     * A new part {@code name} of {@code kind} copied from {@code sourceName}'s <b>saved</b> template
+     * and sidecars — the part half of the Train Editor's Save-as, which saves the source first so
+     * the saved template is the player's edits. Teleports the player into the new plot.
+     */
+    public static BlockPos createCopyOf(ServerPlayer player, CarriagePartKind kind, String sourceName,
+                                        String name) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        if (CarriagePartRegistry.isKnown(kind, name)) {
+            throw new IOException("Part '" + kind.id() + ":" + name + "' is already registered.");
+        }
+        StructureTemplate seed = CarriagePartTemplateStore.get(overworld, kind, sourceName, dims)
+            .orElseThrow(() -> new IOException("Part '" + kind.id() + ":" + sourceName + "' has no saved template."));
+        return placeNew(player, overworld, dims, kind, seed, sourceName, name, "copy");
+    }
+
+    /** The shared tail of {@link #createFrom} and {@link #createCopyOf}: register, stamp, save, enter. */
+    private static BlockPos placeNew(ServerPlayer player, ServerLevel overworld, CarriageDims dims,
+                                     CarriagePartKind kind, StructureTemplate seed, String sourceName,
+                                     String name, String how) throws IOException {
         // Allocate the next free slot before registering so the index lands at
         // the end of the list (allocation depends on the current layout size).
         BlockPos targetOrigin = nextFreePlotOrigin(kind, dims);
@@ -381,7 +405,7 @@ public final class CarriagePartEditor {
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
         LOGGER.info("[DungeonTrain] Part editor createFrom: {} -> {}:{} (source={}) plot at {}",
-            player.getName().getString(), kind.id(), name, source, targetOrigin);
+            player.getName().getString(), kind.id(), name, how, targetOrigin);
         return targetOrigin;
     }
 
@@ -438,6 +462,8 @@ public final class CarriagePartEditor {
         StructureTemplate template = captureTemplate(overworld, origin, kind, dims);
         CarriagePartTemplateStore.save(kind, name, template);
         CarriagePartRegistry.register(kind, name);
+        // Saved: the sidecar on disk is this part's baseline again (see EditorSidecarBaseline).
+        EditorSidecarBaseline.forgetFile(CarriagePartVariantBlocks.configPathFor(kind, name));
 
         // Contents store: persist any in-session loot-prefab link changes
         // accumulated since enter (PrefabUseHandler defers its writes until
@@ -582,6 +608,7 @@ public final class CarriagePartEditor {
         // re-stamp reads the last-saved disk state; placement writes only
         // touch the in-memory cache until /save.
         ContainerContentsStore.invalidate("part:" + kind.id() + ":" + name);
+        EditorSidecarBaseline.forgetFile(CarriagePartVariantBlocks.configPathFor(kind, name));
         CarriagePartPlacer.eraseAt(level, origin, kind, dims);
         stampCurrent(level, origin, kind, name, dims);
         setOutline(level, origin, kind, dims);
