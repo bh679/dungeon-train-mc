@@ -58,7 +58,9 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED"
       ],
       "stage": "stone"
     },
@@ -173,7 +175,9 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED"
       ],
       "stage": "deepdark"
     },
@@ -322,7 +326,9 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED"
       ],
       "stage": "stone"
     },
@@ -353,7 +359,9 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED"
       ],
       "stage": "stone"
     },
@@ -428,7 +436,9 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED"
       ],
       "stage": "deepdark"
     },
@@ -443,7 +453,9 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED"
       ],
       "stage": "deepdark"
     },

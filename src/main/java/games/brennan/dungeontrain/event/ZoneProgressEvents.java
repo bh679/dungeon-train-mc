@@ -134,6 +134,10 @@ public final class ZoneProgressEvents {
      */
     private static final int BETA_DEPTH_BLOCKS = 500;
 
+    /** Same depth gate for {@code reached_large_biomes} / {@code reached_amplified}, into the preset bands' cores. */
+    private static final int LARGE_BIOMES_DEPTH_BLOCKS = 500;
+    private static final int AMPLIFIED_DEPTH_BLOCKS = 500;
+
     /** Depth (blocks) into the Skylands legacy band core before {@code reached_skylands} — same gate. */
     private static final int SKYLANDS_DEPTH_BLOCKS = 500;
 
@@ -230,7 +234,19 @@ public final class ZoneProgressEvents {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_stacks");
             }
 
-            // Beta legacy band — after the stacks: terrain from Beta 1.7.3's own generator. Same depth gate.
+            // Large Biomes band — first of the legacy run, after the stacks: vanilla's Large Biomes preset. Same depth gate.
+            if (LegacyBands.isInBand(level, LegacyBandKind.LARGE_BIOMES, px)
+                && LegacyBands.isInBand(level, LegacyBandKind.LARGE_BIOMES, px - LARGE_BIOMES_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_large_biomes");
+            }
+
+            // Amplified band — after Large Biomes: vanilla's Amplified preset. Same depth gate.
+            if (LegacyBands.isInBand(level, LegacyBandKind.AMPLIFIED, px)
+                && LegacyBands.isInBand(level, LegacyBandKind.AMPLIFIED, px - AMPLIFIED_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_amplified");
+            }
+
+            // Beta legacy band — after Amplified: terrain from Beta 1.7.3's own generator. Same depth gate.
             if (LegacyBands.isInBand(level, LegacyBandKind.BETA, px)
                 && LegacyBands.isInBand(level, LegacyBandKind.BETA, px - BETA_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_beta");

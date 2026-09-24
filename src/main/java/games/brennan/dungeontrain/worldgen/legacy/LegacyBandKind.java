@@ -10,9 +10,17 @@ import java.util.Locale;
  * <p>Declaration order is cycle order: the bands run newest-to-oldest, "back in time", so a generator
  * added later is inserted at its era's position, not appended. The full order once every era ships:
  * Large Biomes → Amplified → Beta 1.7.3 → Far Lands → Skylands → Alpha 1.1.2 → Infdev → Indev floating →
- * Classic → Void. Large Biomes and Amplified are not built yet.</p>
+ * Classic → Void.</p>
+ *
+ * <p>Large Biomes and Amplified are <em>modern presets</em> rather than ports — vanilla's own router with the
+ * preset flag flipped ({@link games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain}); they run
+ * vanilla's surface, carvers and decoration ({@link #isPreset}).</p>
  */
 public enum LegacyBandKind {
+    /** Vanilla's Large Biomes preset — the same terrain with every climate region four times as wide. */
+    LARGE_BIOMES(false),
+    /** Vanilla's Amplified preset — the overworld's relief stretched into towering peaks and cliffs. */
+    AMPLIFIED(false),
     /** Beta 1.7.3 — climate-driven terrain, sand/gravel beaches, overhangs, Beta caves and decoration. */
     BETA(false),
     /**
@@ -54,6 +62,14 @@ public enum LegacyBandKind {
      */
     public boolean voidBelow() {
         return voidBelow;
+    }
+
+    /**
+     * True for a modern-preset band (Large Biomes, Amplified): terrain from vanilla's router with a preset
+     * flag, so vanilla's surface, carvers and decoration run in its chunks instead of an old generator's.
+     */
+    public boolean isPreset() {
+        return this == LARGE_BIOMES || this == AMPLIFIED;
     }
 
     /** Lower-cased config / command token ({@code beta}, {@code far_lands}). */

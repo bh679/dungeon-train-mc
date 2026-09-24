@@ -46,7 +46,7 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
         ChunkPos chunk = new ChunkPos(ctx.origin());
         ServerLevel serverLevel = level.getLevel();
         LegacyBandKind kind = LegacyBands.kindOfChunk(serverLevel, chunk.x, chunk.z);
-        if (kind == null) return false;
+        if (kind == null || kind.isPreset()) return false; // presets get vanilla's own decoration
         long genT0 = GenProfiler.t0();
         try {
             long seed = DungeonTrainWorldData.get(serverLevel).getGenerationSeed();
@@ -64,7 +64,7 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
                         LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), chunk.x), chunk.x, chunk.z);
                 case FLOATING -> IndevFloatingPopulator.populate(world, seed, chunk.x, chunk.z);
                 // Classic planted its trees, flowers and mushrooms while building the level — already written.
-                case CLASSIC -> {
+                case CLASSIC, LARGE_BIOMES, AMPLIFIED -> {
                     return false;
                 }
                 case VOID -> { /* nothing to decorate */ }

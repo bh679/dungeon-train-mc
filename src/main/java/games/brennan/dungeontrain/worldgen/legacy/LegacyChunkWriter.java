@@ -79,6 +79,7 @@ public final class LegacyChunkWriter {
             case INFDEV -> LegacyBands.infdev(seed).generate(cx, cz, LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), cx));
             case FLOATING -> null; // not a Beta-layout column: a slice of a whole finite level
             case VOID -> throw new IllegalStateException("void handled above");
+            case LARGE_BIOMES, AMPLIFIED -> throw new IllegalStateException(kind + " is filled by its preset generator");
             case CLASSIC -> LegacyBands.classic(seed).chunkColumn(cx, cz);
             case FAR_LANDS -> {
                 // The Far Lands are Beta's own terrain, read ~12.55M blocks out (see FarLandsShift).

@@ -80,7 +80,9 @@
         "CLASSIC",
         "SKYLANDS",
         "FLOATING",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED"
       ]
     },
     {

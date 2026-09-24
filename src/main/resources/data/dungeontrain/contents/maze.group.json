@@ -43,7 +43,9 @@
         "ALPHA",
         "INFDEV",
         "CLASSIC",
-        "FAR_LANDS"
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED"
       ]
     },
     {

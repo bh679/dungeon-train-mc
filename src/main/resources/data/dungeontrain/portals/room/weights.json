@@ -87,7 +87,9 @@
       "CLASSIC",
       "SKYLANDS",
       "FLOATING",
-      "FAR_LANDS"
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED"
     ],
     "mode": "bedrock_lock",
     "builder": {
@@ -106,7 +108,9 @@
       "ALPHA",
       "INFDEV",
       "CLASSIC",
-      "FAR_LANDS"
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED"
     ],
     "mode": "endless_open/single:minecraft:stone"
   },
@@ -121,7 +125,9 @@
       "ALPHA",
       "INFDEV",
       "CLASSIC",
-      "FAR_LANDS"
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED"
     ],
     "mode": "bedrock_lock"
   },
@@ -186,7 +192,9 @@
       "CLASSIC",
       "SKYLANDS",
       "FLOATING",
-      "FAR_LANDS"
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED"
     ],
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
   },
@@ -408,7 +416,9 @@
       "CLASSIC",
       "SKYLANDS",
       "FLOATING",
-      "FAR_LANDS"
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
   },

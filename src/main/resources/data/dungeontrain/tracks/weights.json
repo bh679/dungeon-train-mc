@@ -9,7 +9,9 @@
       "ALPHA",
       "INFDEV",
       "CLASSIC",
-      "FAR_LANDS"
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED"
     ]
   },
   "nethertracks": {
@@ -28,7 +30,9 @@
       "ALPHA",
       "INFDEV",
       "CLASSIC",
-      "FAR_LANDS"
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED"
     ]
   },
   "sleepside": {
@@ -41,7 +45,9 @@
       "ALPHA",
       "INFDEV",
       "CLASSIC",
-      "FAR_LANDS"
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED"
     ]
   }
 }

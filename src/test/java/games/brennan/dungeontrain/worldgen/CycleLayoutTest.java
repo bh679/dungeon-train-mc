@@ -117,7 +117,7 @@ final class CycleLayoutTest {
     @DisplayName("a bare legacy token takes every enabled era at its configured length; a disabled era is skipped")
     void bareLegacy() {
         LegacySpan[] defaults = eraDefaults();
-        defaults[2] = new LegacySpan(LegacyBandKind.SKYLANDS, 0, 480, 0);          // disabled
+        defaults[LegacyBandKind.SKYLANDS.ordinal()] = new LegacySpan(LegacyBandKind.SKYLANDS, 0, 480, 0); // disabled
         CycleLayout l = CycleLayout.parse("legacy", FADES, defaults, t -> true, m -> {});
         assertEquals(1, l.count());
         assertEquals(LegacyBandKind.values().length - 1, l.eras().length);
