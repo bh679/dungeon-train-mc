@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_stacks",
+  "parent": "dungeontrain:dungeon_train/reached_caves_of_chaos",
   "display": {
     "icon": { "id": "minecraft:gravel" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_beta.title" },

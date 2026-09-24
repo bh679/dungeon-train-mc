@@ -44,7 +44,7 @@ final class CycleLayoutTest {
         // Lap 2: 8000 + 9064 + 8000 + 9480 + (1500+15000) + 5000 = 56,044
         // Lap 3: legacy (480·9 + 5000 + 4320 + 5000 + 2000·4 + 1000 = 27,640) + 2000 + 6500 + 5000 + 6500 = 47,640
         // (Large Biomes and Amplified are not built yet; with them the run would be 143,988.)
-        assertEquals(133_028L, l.period());
+        assertEquals(137_508L, l.period());
         assertEquals(2, l.typeCount(Type.NETHER));
         assertEquals(2, l.typeCount(Type.END));
         assertEquals(1, l.typeCount(Type.LEGACY_RUN));
@@ -73,16 +73,18 @@ final class CycleLayoutTest {
     void legacyRun() {
         CycleLayout l = shipped();
         LegacySpan[] eras = l.eras();
-        assertEquals(8, eras.length);
-        assertEquals(LegacyBandKind.BETA, eras[0].kind());
-        assertEquals(LegacyBandKind.FAR_LANDS, eras[1].kind());
-        assertEquals(LegacyBandKind.VOID, eras[7].kind());
-        assertEquals(5000, eras[0].hold());
-        assertEquals(4320, eras[1].hold());
-        assertEquals(1000, eras[7].hold());
+        assertEquals(9, eras.length);
+        assertEquals(LegacyBandKind.CAVES_OF_CHAOS, eras[0].kind());
+        assertEquals(LegacyBandKind.BETA, eras[1].kind());
+        assertEquals(LegacyBandKind.FAR_LANDS, eras[2].kind());
+        assertEquals(LegacyBandKind.VOID, eras[8].kind());
+        assertEquals(4000, eras[0].hold());
+        assertEquals(5000, eras[1].hold());
+        assertEquals(4320, eras[2].hold());
+        assertEquals(1000, eras[8].hold());
         assertEquals(480L, l.eraCoreStart(0));
-        assertEquals(480L + 5000L + 480L, l.eraCoreStart(1));
-        long total = 480L * 9 + 5000 + 4320 + 5000 + 2000 * 4 + 1000;
+        assertEquals(480L + 4000L + 480L, l.eraCoreStart(1));
+        long total = 480L * 10 + 4000 + 5000 + 4320 + 5000 + 2000 * 4 + 1000;
         assertEquals(total, l.length(11));
     }
 
@@ -117,7 +119,7 @@ final class CycleLayoutTest {
     @DisplayName("a bare legacy token takes every enabled era at its configured length; a disabled era is skipped")
     void bareLegacy() {
         LegacySpan[] defaults = eraDefaults();
-        defaults[2] = new LegacySpan(LegacyBandKind.SKYLANDS, 0, 480, 0);          // disabled
+        defaults[3] = new LegacySpan(LegacyBandKind.SKYLANDS, 0, 480, 0);          // disabled
         CycleLayout l = CycleLayout.parse("legacy", FADES, defaults, t -> true, m -> {});
         assertEquals(1, l.count());
         assertEquals(LegacyBandKind.values().length - 1, l.eras().length);

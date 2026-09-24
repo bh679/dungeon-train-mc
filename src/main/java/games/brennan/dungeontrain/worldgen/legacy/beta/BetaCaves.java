@@ -23,9 +23,22 @@ public final class BetaCaves {
     private final long seed;
     private final long mulX;
     private final long mulZ;
+    private final int height;
+    private final int topY;
 
+    /** Beta's 128-block column. */
     public BetaCaves(long seed) {
+        this(seed, BetaTerrain.HEIGHT);
+    }
+
+    /**
+     * A column {@code height} blocks tall (a Beta-layout {@code byte[]} of that height): tunnels start
+     * and are clipped {@code 8} below the top, as Beta's {@code 120} was for 128.
+     */
+    public BetaCaves(long seed, int height) {
         this.seed = seed;
+        this.height = height;
+        this.topY = height - 8;
         Random r = new Random(seed);
         this.mulX = r.nextLong() / 2L * 2L + 1L;
         this.mulZ = r.nextLong() / 2L * 2L + 1L;
@@ -46,7 +59,7 @@ public final class BetaCaves {
         if (rand.nextInt(15) != 0) count = 0;
         for (int i = 0; i < count; i++) {
             double x = sourceX * 16 + rand.nextInt(16);
-            double y = rand.nextInt(rand.nextInt(120) + 8);
+            double y = rand.nextInt(rand.nextInt(topY) + 8);
             double z = sourceZ * 16 + rand.nextInt(16);
             int tunnels = 1;
             if (rand.nextInt(4) == 0) {
@@ -118,12 +131,12 @@ public final class BetaCaves {
         }
     }
 
-    private static void carveEllipsoid(int chunkX, int chunkZ, byte[] blocks, double x, double y, double z,
+    private void carveEllipsoid(int chunkX, int chunkZ, byte[] blocks, double x, double y, double z,
                                        double radiusH, double radiusV) {
         int minX = Math.max(0, LegacyMath.floor(x - radiusH) - chunkX * 16 - 1);
         int maxX = Math.min(16, LegacyMath.floor(x + radiusH) - chunkX * 16 + 1);
         int minY = Math.max(1, LegacyMath.floor(y - radiusV) - 1);
-        int maxY = Math.min(120, LegacyMath.floor(y + radiusV) + 1);
+        int maxY = Math.min(topY, LegacyMath.floor(y + radiusV) + 1);
         int minZ = Math.max(0, LegacyMath.floor(z - radiusH) - chunkZ * 16 - 1);
         int maxZ = Math.min(16, LegacyMath.floor(z + radiusH) - chunkZ * 16 + 1);
         if (touchesWater(blocks, minX, maxX, minY, maxY, minZ, maxZ)) return;
@@ -137,7 +150,7 @@ public final class BetaCaves {
                 for (int ly = maxY - 1; ly >= minY; ly--) {
                     double ry = ((double) ly + 0.5D - y) / radiusV;
                     if (ry > -0.7D && rx * rx + ry * ry + rz * rz < 1.0D) {
-                        int i = BetaTerrain.index(lx, ly + 1, lz);
+                        int i = BetaTerrain.index(lx, ly + 1, lz, height);
                         byte b = blocks[i];
                         if (b == BetaBlocks.GRASS) hitGrass = true;
                         if (b == BetaBlocks.STONE || b == BetaBlocks.DIRT || b == BetaBlocks.GRASS) {
@@ -155,12 +168,12 @@ public final class BetaCaves {
     }
 
     /** Beta refuses to carve a region whose shell (or any block, for interior columns' ends) holds water. */
-    private static boolean touchesWater(byte[] blocks, int minX, int maxX, int minY, int maxY, int minZ, int maxZ) {
+    private boolean touchesWater(byte[] blocks, int minX, int maxX, int minY, int maxY, int minZ, int maxZ) {
         for (int lx = minX; lx < maxX; lx++) {
             for (int lz = minZ; lz < maxZ; lz++) {
                 for (int ly = maxY + 1; ly >= minY - 1; ly--) {
-                    if (ly < 0 || ly >= BetaTerrain.HEIGHT) continue;
-                    if (blocks[BetaTerrain.index(lx, ly, lz)] == BetaBlocks.WATER) return true;
+                    if (ly < 0 || ly >= height) continue;
+                    if (blocks[BetaTerrain.index(lx, ly, lz, height)] == BetaBlocks.WATER) return true;
                     if (ly != minY - 1 && lx != minX && lx != maxX - 1 && lz != minZ && lz != maxZ - 1) {
                         ly = minY;
                     }

@@ -9,10 +9,15 @@ import java.util.Locale;
  *
  * <p>Declaration order is cycle order: the bands run newest-to-oldest, "back in time", so a generator
  * added later is inserted at its era's position, not appended. The full order once every era ships:
- * Large Biomes → Amplified → Beta 1.7.3 → Far Lands → Skylands → Alpha 1.1.2 → Infdev → Indev floating →
- * Classic → Void. Large Biomes and Amplified are not built yet.</p>
+ * Large Biomes → Amplified → Caves of Chaos → Beta 1.7.3 → Far Lands → Skylands → Alpha 1.1.2 → Infdev →
+ * Indev floating → Classic → Void. Large Biomes and Amplified are not built yet.</p>
  */
 public enum LegacyBandKind {
+    /**
+     * Caves of Chaos — the 1.8–1.12 "Customized" preset on the Beta pipeline: a 256-block column, the sea
+     * down at y 6, mostly cavernous stone and towering overhangs ({@code BetaTerrain.Profile#CAVES_OF_CHAOS}).
+     */
+    CAVES_OF_CHAOS(false),
     /** Beta 1.7.3 — climate-driven terrain, sand/gravel beaches, overhangs, Beta caves and decoration. */
     BETA(false),
     /**
@@ -56,12 +61,12 @@ public enum LegacyBandKind {
         return voidBelow;
     }
 
-    /** Lower-cased config / command token ({@code beta}, {@code far_lands}). */
+    /** Lower-cased config / command token ({@code beta}, {@code far_lands}, {@code caves_of_chaos}). */
     public String token() {
         return name().toLowerCase(Locale.ROOT);
     }
 
-    /** Camel-cased config-key stem ({@code Beta}, {@code FarLands}). */
+    /** Camel-cased config-key stem ({@code Beta}, {@code FarLands}, {@code CavesOfChaos}). */
     public String configStem() {
         StringBuilder out = new StringBuilder();
         for (String part : token().split("_")) {

@@ -18212,6 +18212,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "legacy-caves-of-chaos-band",
+      "version": "0.939.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "A stretch of the line, out of order",
+      "summary": "Somewhere past the towers, a new stretch has slipped into the journey ahead of the old shores. We won't say what it looks like \u2014 ride far enough and see for yourself.",
+      "highlights": [
+        "A new stretch of the journey, with a hidden goal for reaching it"
+      ],
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

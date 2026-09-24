@@ -21,6 +21,7 @@ public final class LegacyBandConfig {
     /** Shipped defaults per kind: {@code {hold, fade, leadGap}}. */
     public record Defaults(boolean enabled, int hold, int fade, int leadGap) {}
 
+    public static final Defaults CAVES_OF_CHAOS_DEFAULTS = new Defaults(true, 4000, 480, 3000);
     public static final Defaults BETA_DEFAULTS = new Defaults(true, 6000, 480, 3000);
     public static final Defaults SKYLANDS_DEFAULTS = new Defaults(true, 6000, 480, 3000);
     public static final Defaults ALPHA_DEFAULTS = new Defaults(true, 6000, 480, 3000);
@@ -43,6 +44,7 @@ public final class LegacyBandConfig {
 
     private static Defaults defaultsFor(LegacyBandKind kind) {
         return switch (kind) {
+            case CAVES_OF_CHAOS -> CAVES_OF_CHAOS_DEFAULTS;
             case BETA -> BETA_DEFAULTS;
             case SKYLANDS -> SKYLANDS_DEFAULTS;
             case ALPHA -> ALPHA_DEFAULTS;
@@ -56,6 +58,7 @@ public final class LegacyBandConfig {
 
     private static String label(LegacyBandKind kind) {
         return switch (kind) {
+            case CAVES_OF_CHAOS -> "Caves of Chaos";
             case BETA -> "Beta 1.7.3";
             case SKYLANDS -> "Skylands";
             case ALPHA -> "Alpha 1.1.2";
