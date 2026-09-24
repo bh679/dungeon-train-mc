@@ -18168,6 +18168,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-review-questions",
+      "version": "0.944.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "ui"
+      ],
+      "title": "Tell the reviewer about your build",
+      "summary": "Submitting a build for review now asks what the reviewer should know. Builds with redstone machinery get a question about how it works, builds with loot or valuable blocks get one about the loot, and there's always room for anything else. Your answers stay on the build, where you can read and change them from the editor at any time.",
+      "highlights": [
+        "Redstone and loot questions appear only when your build has them, with the blocks that triggered them shown beside each question",
+        "One question per page, with a progress bar showing what you've answered",
+        "A new Submitted answers page in the editor preview shows your answers, and you can edit them before or after submitting"
+      ],
+      "pr": 1515,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
