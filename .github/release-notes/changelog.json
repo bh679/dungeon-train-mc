@@ -18127,6 +18127,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-unsaved-check-stall",
+      "version": "0.942.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "editor"
+      ],
+      "title": "Train Editor menus no longer freeze the first time you open them",
+      "summary": "The first time the Train Editor checked for unsaved changes, for example when you opened the X menu, the game could freeze for several seconds before the menu and world buttons responded. That check is now close to instant.",
+      "highlights": [],
+      "pr": 1511,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
