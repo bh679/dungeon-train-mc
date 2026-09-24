@@ -18587,6 +18587,25 @@
       "released_at": null
     },
     {
+      "id": "tunnel-ignores-trees",
+      "version": "0.950.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Trees no longer turn the line into a tunnel",
+      "summary": "The track stays out in the open when all that hangs over it is a tree canopy. Tunnels are kept for real hillsides and rock.",
+      "highlights": [
+        "Leafy canopies overhead no longer bury the line in a tunnel."
+      ],
+      "pr": 1530,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "dtp-every-band",
       "version": "0.951.0",
       "type": "feat",
