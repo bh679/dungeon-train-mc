@@ -128,6 +128,9 @@ public final class ZoneProgressEvents {
      */
     private static final int STACKS_DEPTH_BLOCKS = 500;
 
+    /** Same depth gate for {@code reached_caves_of_chaos}, into the Caves of Chaos legacy band core. */
+    private static final int CAVES_OF_CHAOS_DEPTH_BLOCKS = 500;
+
     /**
      * How far (blocks) into the Beta legacy band core the player must be before {@code reached_beta}
      * is granted — same depth gate as the markers above.
@@ -228,6 +231,13 @@ public final class ZoneProgressEvents {
             if (StacksBand.isInBand(level, px)
                 && StacksBand.isInBand(level, px - STACKS_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_stacks");
+            }
+
+            // Caves of Chaos legacy band — after the Far Lands: the Customized preset's cavernous stone on the
+            // Beta pipeline, over void. Same depth gate.
+            if (LegacyBands.isInBand(level, LegacyBandKind.CAVES_OF_CHAOS, px)
+                && LegacyBands.isInBand(level, LegacyBandKind.CAVES_OF_CHAOS, px - CAVES_OF_CHAOS_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_caves_of_chaos");
             }
 
             // Beta legacy band — after the stacks: terrain from Beta 1.7.3's own generator. Same depth gate.

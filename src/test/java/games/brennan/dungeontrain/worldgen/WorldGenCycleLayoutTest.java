@@ -41,7 +41,7 @@ final class WorldGenCycleLayoutTest {
     @DisplayName("period is the run-1 length and the layout is reported")
     void period() {
         assertTrue(C.hasLayout());
-        assertEquals(133_028L, C.period());
+        assertEquals(137_508L, C.period());
         assertEquals(232, C.riseLen());
     }
 
@@ -176,7 +176,14 @@ final class WorldGenCycleLayoutTest {
         assertEquals(x(l + 480 + 5000 + 480), (int) C.legacyCoreStartX(LegacyBandKind.FAR_LANDS, x(l + 480 + 5000 + 100)));
         assertEquals(WorldGenCycle.NOT_IN_LEGACY_SLOT, C.legacyCoreStartX(LegacyBandKind.FAR_LANDS, x(l + 100)));
         assertEquals(0.5, C.legacyCoreProgress(LegacyBandKind.BETA, x(l + 480 + 2500)), 1e-9);
-        assertTrue(C.legacyProgress(LegacyBandKind.ALPHA, x(LAYOUT.start(11) + LAYOUT.eraCoreStart(3))) > 0.0);
+        long chaos = l + 480 + 5000 + 480 + 4320 + 480;                 // Caves of Chaos core start, after the Far Lands
+        WorldGenCycle.LegacyHit cross2 = C.legacyAt(x(chaos - 240));
+        assertEquals(LegacyBandKind.FAR_LANDS, cross2.from());
+        assertEquals(LegacyBandKind.CAVES_OF_CHAOS, cross2.to());
+        assertTrue(C.isInLegacyBand(LegacyBandKind.CAVES_OF_CHAOS, x(chaos)));
+        assertEquals(4000L, C.legacyLen(LegacyBandKind.CAVES_OF_CHAOS));
+        assertFalse(C.isInLegacyBand(LegacyBandKind.CAVES_OF_CHAOS, x(chaos + 4000)));
+        assertTrue(C.legacyProgress(LegacyBandKind.ALPHA, x(LAYOUT.start(11) + LAYOUT.eraCoreStart(4))) > 0.0);
         long end = l + LAYOUT.length(11);
         WorldGenCycle.LegacyHit exit = C.legacyAt(x(end - 1));
         assertEquals(LegacyBandKind.VOID, exit.from());

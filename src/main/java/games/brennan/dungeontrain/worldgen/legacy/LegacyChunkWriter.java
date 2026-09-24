@@ -73,6 +73,7 @@ public final class LegacyChunkWriter {
             return;
         }
         byte[] blocks = switch (kind) {
+            case CAVES_OF_CHAOS -> LegacyBands.chaos(seed).generate(cx, cz).blocks();
             case BETA -> LegacyBands.beta(seed).generate(cx, cz).blocks();
             case SKYLANDS -> LegacyBands.sky(seed).generate(cx, cz).blocks();
             case ALPHA -> LegacyBands.alpha(seed).generate(cx, cz, LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), cx));
@@ -89,9 +90,17 @@ public final class LegacyChunkWriter {
         if (blocks == null) {
             writeFloating(chunk, LegacyBands.indevFloating(seed).levelForChunk(cx, cz), yOffset);
         } else {
-            int height = kind == LegacyBandKind.CLASSIC ? ClassicLevel.HEIGHT : BetaTerrain.HEIGHT;
-            write(chunk, blocks, height, floorY, yOffset, !kind.voidBelow());
+            write(chunk, blocks, heightOf(kind), floorY, yOffset, !kind.voidBelow());
         }
+    }
+
+    /** Column height of {@code kind}'s block array — Beta's 128 unless the generator says otherwise. */
+    static int heightOf(LegacyBandKind kind) {
+        return switch (kind) {
+            case CLASSIC -> ClassicLevel.HEIGHT;
+            case CAVES_OF_CHAOS -> BetaTerrain.Profile.CAVES_OF_CHAOS.height();
+            default -> BetaTerrain.HEIGHT;
+        };
     }
 
     /**

@@ -13,13 +13,14 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Stops water and lava from flowing <b>out of a modern chunk into an Indev floating chunk</b>
- * ({@link LegacyBandKind#FLOATING}). Across the band's fades modern chunks and floating chunks interleave,
+ * Stops water and lava from flowing <b>out of a modern chunk into a void-below legacy chunk</b>
+ * ({@link LegacyBandKind#voidBelow}: Indev floating, Skylands, Caves of Chaos). Across the band's fades modern chunks and floating chunks interleave,
  * so a modern ocean, river or aquifer can sit flush against a chunk that is mostly open void; without this
  * it would pour over the chunk wall into the void as an ever-spreading sheet that never settles — the same
  * runaway fluid-tick load the chuncks and stacks bands hit.
@@ -58,9 +59,15 @@ public class FlowingFluidLegacySeamMixin {
         int toChunkX = toPos.getX() >> 4;
         int toChunkZ = toPos.getZ() >> 4;
         if (toChunkX == fromPos.getX() >> 4 && toChunkZ == fromPos.getZ() >> 4) return; // same chunk
-        if (LegacyBands.kindOfChunk(server, toChunkX, toChunkZ) != LegacyBandKind.FLOATING) return;
-        if (LegacyBands.kindOfChunk(server, fromPos.getX() >> 4, fromPos.getZ() >> 4) != LegacyBandKind.FLOATING) {
+        if (!dungeontrain$voidBelow(LegacyBands.kindOfChunk(server, toChunkX, toChunkZ))) return;
+        if (!dungeontrain$voidBelow(LegacyBands.kindOfChunk(server, fromPos.getX() >> 4, fromPos.getZ() >> 4))) {
             cir.setReturnValue(false); // no modern liquid may pour over the wall into the floating void
         }
+    }
+
+    /** A chunk whose old generator leaves open void under its land (Indev floating, Skylands, Caves of Chaos). */
+    @Unique
+    private static boolean dungeontrain$voidBelow(LegacyBandKind kind) {
+        return kind != null && kind.voidBelow();
     }
 }
