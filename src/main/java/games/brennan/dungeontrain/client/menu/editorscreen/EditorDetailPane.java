@@ -348,6 +348,7 @@ public final class EditorDetailPane {
         if (onModelPage()) {
             PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
             versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
+            drawUploadNoteOnPreview(g, font, art);
             sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
                 tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
                 ctx.selection(), roomRows);
@@ -378,11 +379,16 @@ public final class EditorDetailPane {
             g.fill(x, ty + 2, x + 4, ty + 6, TemplateTilePainter.DIRTY);
             x += 8;
         }
-        x = drawUploadNote(g, font, art, x, ty);
         int saveX = h.right() - 1;
         goHereRect = null;
         String label = EditorScreenLang.text(EditorScreenLang.GO_HERE);
         int w = font.width(label) + 8;
+        if (!onModelPage()) {
+            // The model box carries the note on the model page; on the others the header does,
+            // cut to whatever the Go here button leaves so the two never overlap.
+            int room = saveX - x - 4 - (goHere != null ? w + 4 : 0);
+            x = drawUploadNote(g, font, art, x, ty, room);
+        }
         if (ctx.standingInSelection()) {
             // The status keeps its place; the button follows it, so the sentence gives way to the
             // button rather than the other way round when the header runs short.
@@ -403,38 +409,52 @@ public final class EditorDetailPane {
         }
     }
 
+    /** The upload note's words and colour, or null when there is nothing to say. */
+    private record UploadNote(String text, String widest, int colour) {}
+
     /**
-     * The small note beside the name while a save goes up to the relay — "↑ Uploading…" — and, for a
-     * moment after, how it ended. The upload runs for seconds after the local save and is what the
-     * Submit icon and the version strip wait on, so without this the screen looked as if the save
-     * had not taken. Answers the x the rest of the header continues from.
+     * The small note shown while a save goes up to the relay — "↑ Uploading…" — and, for a moment
+     * after, how it ended. The upload runs for seconds after the local save and is what the Submit
+     * icon and the version strip wait on, so without this the screen looked as if the save had not
+     * taken.
      */
-    private static int drawUploadNote(GuiGraphics g, Font font, TemplateArt art, int x, int ty) {
+    private static UploadNote uploadNote(TemplateArt art) {
         UploadStatusBook.Shown shown = EditorUploadStatus.shown(art);
-        if (shown == null) return x;
-        String note;
-        int colour;
-        switch (shown) {
+        if (shown == null) return null;
+        return switch (shown) {
             case UPLOADING -> {
+                String word = "↑ " + EditorScreenLang.text(EditorScreenLang.UPLOADING);
                 int dots = (int) ((System.currentTimeMillis() / 400L) % 4L);
-                note = "↑ " + EditorScreenLang.text(EditorScreenLang.UPLOADING) + ".".repeat(dots);
-                colour = UPLOADING_TEXT;
+                // The widest the dots get, so nothing beside it shuffles on each beat.
+                yield new UploadNote(word + ".".repeat(dots), word + "...", UPLOADING_TEXT);
             }
             case UPLOADED -> {
-                note = "✓ " + EditorScreenLang.text(EditorScreenLang.UPLOADED);
-                colour = HERE_TEXT;
+                String t = "✓ " + EditorScreenLang.text(EditorScreenLang.UPLOADED);
+                yield new UploadNote(t, t, HERE_TEXT);
             }
-            default -> {
-                note = "✗ " + EditorScreenLang.text(EditorScreenLang.UPLOAD_FAILED);
-                colour = FAILED_TEXT;
+            case FAILED -> {
+                String t = "✗ " + EditorScreenLang.text(EditorScreenLang.UPLOAD_FAILED);
+                yield new UploadNote(t, t, FAILED_TEXT);
             }
-        }
-        g.drawString(font, note, x, ty, colour, false);
-        // Reserve room for the widest the dots get, so what follows does not shuffle each beat.
-        int reserve = shown == UploadStatusBook.Shown.UPLOADING
-            ? font.width("↑ " + EditorScreenLang.text(EditorScreenLang.UPLOADING) + "...")
-            : font.width(note);
-        return x + reserve + 6;
+        };
+    }
+
+    /** In the model box's top-right corner, beside the model it is about — the model page's home for it. */
+    private void drawUploadNoteOnPreview(GuiGraphics g, Font font, TemplateArt art) {
+        UploadNote note = uploadNote(art);
+        if (note == null) return;
+        InventoryEditorLayout.Rect p = layout.preview();
+        int x = p.right() - 4 - font.width(note.widest());
+        g.drawString(font, note.text(), Math.max(p.x() + 2, x), p.y() + 4, note.colour(), true);
+    }
+
+    /** In the header, cut to {@code room}; answers the x the header continues from. */
+    private static int drawUploadNote(GuiGraphics g, Font font, TemplateArt art, int x, int ty, int room) {
+        UploadNote note = uploadNote(art);
+        if (note == null || room <= 0) return x;
+        String shown = font.plainSubstrByWidth(note.text(), room);
+        g.drawString(font, shown, x, ty, note.colour(), false);
+        return x + Math.min(room, font.width(note.widest())) + 6;
     }
 
     private void drawIcons(GuiGraphics g) {
