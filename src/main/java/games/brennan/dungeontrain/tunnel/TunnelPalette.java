@@ -35,17 +35,19 @@ public final class TunnelPalette {
      *       mud / packed mud).</li>
      *   <li><b>Nether</b> — netherrack, basalt (incl. smooth),
      *       blackstone, gilded blackstone, soul sand, soul soil, magma
-     *       block, glowstone, shroomlight, nether-ore family
+     *       block, glowstone, nether-ore family
      *       (nether_gold_ore, nether_quartz_ore, ancient_debris),
-     *       nylium (crimson + warped), wart blocks (nether + warped).</li>
+     *       nylium (crimson + warped).</li>
      *   <li><b>End</b> — end_stone. {@code end_stone_bricks} is excluded
      *       on purpose: it's a player-crafted variant and only appears
      *       naturally in end-city structures, well above the corridor.</li>
      * </ul>
      *
-     * <p>Leaves, wood, logs, plants, water, lava, and air all return
-     * false — encountering any of those above the would-be tunnel ceiling
-     * disqualifies a column because it means daylight or biome-surface
+     * <p>Leaves, wood, logs, huge-fungus canopy (wart blocks, shroomlight),
+     * mangrove roots, plants, water, lava, and air all return false (tree
+     * parts via {@link #isTreeMaterial}, which runs before every accept rule
+     * so no terrain tag can re-admit them). Encountering any of those above
+     * the would-be tunnel ceiling disqualifies a column because it means daylight or biome-surface
      * features are within the "2 blocks overhead" margin. Lava is rejected
      * via the {@link net.minecraft.world.level.material.FluidState} guard,
      * so nether lava lakes correctly disqualify too.</p>
@@ -59,6 +61,7 @@ public final class TunnelPalette {
     public static boolean isUndergroundMaterial(BlockState s) {
         if (s.isAir()) return false;
         if (!s.getFluidState().isEmpty()) return false;
+        if (isTreeMaterial(s)) return false;
 
         // Overworld.
         if (s.is(BlockTags.BASE_STONE_OVERWORLD)) return true;
@@ -85,14 +88,12 @@ public final class TunnelPalette {
         // Nether.
         if (s.is(BlockTags.BASE_STONE_NETHER)) return true;  // netherrack, basalt, blackstone
         if (s.is(BlockTags.NYLIUM)) return true;             // crimson_nylium, warped_nylium
-        if (s.is(BlockTags.WART_BLOCKS)) return true;        // nether + warped wart blocks
 
         if (s.is(Blocks.SMOOTH_BASALT)) return true;
         if (s.is(Blocks.SOUL_SAND)) return true;
         if (s.is(Blocks.SOUL_SOIL)) return true;
         if (s.is(Blocks.MAGMA_BLOCK)) return true;
         if (s.is(Blocks.GLOWSTONE)) return true;
-        if (s.is(Blocks.SHROOMLIGHT)) return true;
         if (s.is(Blocks.GILDED_BLACKSTONE)) return true;
         if (s.is(Blocks.NETHER_GOLD_ORE)) return true;
         if (s.is(Blocks.NETHER_QUARTZ_ORE)) return true;
@@ -102,6 +103,25 @@ public final class TunnelPalette {
         if (s.is(Blocks.END_STONE)) return true;
 
         return false;
+    }
+
+    /**
+     * Tree parts — logs / wood / stems / hyphae (any {@code minecraft:logs}
+     * member, modded included), leaves, huge-fungus canopy (wart blocks +
+     * shroomlight) and mangrove roots. Checked BEFORE every accept rule so a
+     * tree over the corridor can never start a tunnel, even when a mod (or
+     * vanilla, for {@code muddy_mangrove_roots} in {@code minecraft:dirt})
+     * tags a tree block into one of the terrain tags accepted above.
+     */
+    private static boolean isTreeMaterial(BlockState s) {
+        return s.is(BlockTags.LOGS)
+            || s.is(BlockTags.LEAVES)
+            || s.is(BlockTags.WART_BLOCKS)
+            || s.is(Blocks.NETHER_WART_BLOCK)
+            || s.is(Blocks.WARPED_WART_BLOCK)
+            || s.is(Blocks.SHROOMLIGHT)
+            || s.is(Blocks.MANGROVE_ROOTS)
+            || s.is(Blocks.MUDDY_MANGROVE_ROOTS);
     }
 
     /**
