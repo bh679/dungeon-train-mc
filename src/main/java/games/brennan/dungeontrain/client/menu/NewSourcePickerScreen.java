@@ -43,7 +43,15 @@ public final class NewSourcePickerScreen implements MenuScreen {
          * {@link #CONTENTS_SUB_VARIANT}, collapsing to a single row when the two are the same room.
          * Dispatches {@code editor portals group new <parent> <name> [source]}.
          */
-        PORTAL_ROOM_SUB_VARIANT
+        PORTAL_ROOM_SUB_VARIANT,
+        /**
+         * Whole room. Blank / Current, like {@link #CARRIAGES}; dispatches
+         * {@code editor whole new <name> <source>}. No "Standard" — there is no built-in room to fall
+         * back to.
+         */
+        WHOLE,
+        /** Whole group — {@link #WHOLE}'s shape through {@code editor whole group new}. */
+        WHOLE_GROUP
     }
 
     private final Category category;
@@ -82,6 +90,10 @@ public final class NewSourcePickerScreen implements MenuScreen {
             case TRACKS -> MenuLang.t("new_source.title_kind_name", kind);
             case PORTALS -> MenuLang.t("new_source.title_portal");
             case CONTENTS_SUB_VARIANT, PORTAL_ROOM_SUB_VARIANT -> MenuLang.t("new_source.title_sub_variant", currentId);
+            case WHOLE -> MenuLang.t("new_source.title_kind_source",
+                MenuLang.typeName(games.brennan.dungeontrain.editor.EditorWholeTypeMenus.ROOM_TYPE_NAME));
+            case WHOLE_GROUP -> MenuLang.t("new_source.title_kind_source",
+                MenuLang.typeName(games.brennan.dungeontrain.editor.EditorWholeTypeMenus.GROUP_TYPE_NAME));
         };
     }
 
@@ -162,6 +174,15 @@ public final class NewSourcePickerScreen implements MenuScreen {
                 } else {
                     // Standing in the parent: the two rows would say the same thing.
                     out.add(new CommandMenuEntry.TypeArg(MenuLang.t("common.new"), "name", prefix));
+                }
+            }
+            case WHOLE, WHOLE_GROUP -> {
+                String prefix = category == Category.WHOLE_GROUP
+                    ? "dungeontrain editor whole group new" : "dungeontrain editor whole new";
+                out.add(new CommandMenuEntry.TypeArg(MenuLang.t("new_source.blank"), "name", prefix, "blank"));
+                if (!currentId.isEmpty()) {
+                    out.add(new CommandMenuEntry.TypeArg(
+                        MenuLang.t("new_source.current", currentId), "name", prefix, currentId));
                 }
             }
         }

@@ -10,9 +10,11 @@ import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorPlotArrival;
 import games.brennan.dungeontrain.editor.WholeCarriageEditor;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
+import games.brennan.dungeontrain.editor.WholeTemplateNew;
 import games.brennan.dungeontrain.template.BuilderCredit;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageGroup;
 import games.brennan.dungeontrain.train.CarriageGroupRegistry;
 import games.brennan.dungeontrain.train.WholeCarriage;
@@ -45,8 +47,9 @@ import java.util.Optional;
  *   whole label &lt;room&gt; [name…]             display label
  *   whole builder &lt;room&gt; &lt;uuid|none&gt; [name…]
  *   whole reset &lt;room&gt;                     delete the user copy
+ *   whole new &lt;name&gt; [blank|&lt;room&gt;]        a new room — blank, or a copy (bare = the plot stood in)
  *   whole every &lt;0..64&gt;|inc|dec|off        one carriage group in every N is a whole group
- *   whole group enter|weight|label|builder|reset …   the same verbs for groups
+ *   whole group enter|weight|label|builder|reset|new …   the same verbs for groups
  * </pre>
  *
  * Kept out of {@link EditorCommand}, which is long past the point where another category's verbs
@@ -109,7 +112,13 @@ public final class WholeEditorCommand {
                                 StringArgumentType.getString(ctx, "uuid"), StringArgumentType.getString(ctx, "name")))))))
             .then(Commands.literal("reset")
                 .then(Commands.argument("id", StringArgumentType.word()).suggests(suggestions)
-                    .executes(ctx -> runReset(ctx.getSource(), kind, StringArgumentType.getString(ctx, "id")))));
+                    .executes(ctx -> runReset(ctx.getSource(), kind, StringArgumentType.getString(ctx, "id")))))
+            .then(Commands.literal("new")
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .executes(ctx -> runNew(ctx.getSource(), kind, StringArgumentType.getString(ctx, "name"), null))
+                    .then(Commands.argument("source", StringArgumentType.word()).suggests(suggestions)
+                        .executes(ctx -> runNew(ctx.getSource(), kind, StringArgumentType.getString(ctx, "name"),
+                            StringArgumentType.getString(ctx, "source"))))));
     }
 
     // ---- gates + stages -------------------------------------------------------------------------
@@ -247,6 +256,62 @@ public final class WholeEditorCommand {
         } catch (IOException e) {
             return failure(source, model.id(), e);
         }
+    }
+
+    /**
+     * Create a room or group. {@code sourceRaw} is {@code blank}, a template id to copy, or null —
+     * which copies the plot of this kind the player stands in, else starts blank.
+     */
+    private static int runNew(CommandSourceStack source, WholeKind kind, String rawName, String sourceRaw) {
+        ServerPlayer player = EditorCommand.playerOrNull(source);
+        if (player == null) return 0;
+        String name = rawName.toLowerCase(Locale.ROOT);
+        boolean valid = kind == WholeKind.GROUP ? CarriageGroup.isValidName(name) : WholeCarriage.isValidName(name);
+        if (!valid) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.invalid_name_use_lowercase", rawName));
+            return 0;
+        }
+        if (registered(kind, name)) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_already_taken", name));
+            return 0;
+        }
+        String copyFrom;
+        if (sourceRaw == null) {
+            copyFrom = standingIn(player, kind);
+        } else if ("blank".equalsIgnoreCase(sourceRaw)) {
+            copyFrom = null;
+        } else {
+            Template from = resolve(source, kind, sourceRaw);
+            if (from == null) return 0;
+            copyFrom = from.id();
+        }
+        if (!EditorCommand.ensureCategoryResident(source, EditorCategory.WHOLE)) return 0;
+        try {
+            var origin = WholeTemplateNew.create(player, kind, name, copyFrom);
+            source.sendSuccess(() -> copyFrom == null
+                ? Component.translatable("chat.dungeontrain.editor.created_blank_plot", name, origin.toShortString())
+                : Component.translatable("chat.dungeontrain.editor.created_from_plot", name, copyFrom, origin.toShortString()),
+                true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] whole {} new failed for {}", kind.id(), name, t);
+            source.sendFailure(Component.translatable(copyFrom == null
+                    ? "chat.dungeontrain.editor.new_blank_failed" : "chat.dungeontrain.editor.new_failed",
+                t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static boolean registered(WholeKind kind, String id) {
+        return kind == WholeKind.GROUP ? CarriageGroupRegistry.find(id).isPresent()
+            : WholeCarriageRegistry.find(id).isPresent();
+    }
+
+    /** The id of the {@code kind} plot the player stands in, or null. */
+    private static String standingIn(ServerPlayer player, WholeKind kind) {
+        CarriageDims dims = DungeonTrainWorldData.get(player.serverLevel().getServer().overworld()).dims();
+        WholeCarriageEditor.PlotLocation at = WholeCarriageEditor.plotContaining(player.blockPosition(), dims);
+        return at != null && at.kind() == kind ? at.id() : null;
     }
 
     private static int runEvery(CommandSourceStack source, int n) {
