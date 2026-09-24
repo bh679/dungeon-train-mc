@@ -18208,6 +18208,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "per-player-build-cap",
+      "version": "0.945.0",
+      "type": "chore",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Build limit follows the relay",
+      "summary": "The build uploader now reads each builder's build limit from the relay instead of assuming 200, so the relay can give individual builders more room.",
+      "highlights": [],
+      "pr": 1516,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

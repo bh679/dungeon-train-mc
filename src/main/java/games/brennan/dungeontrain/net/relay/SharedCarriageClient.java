@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.net.relay;
 
+import games.brennan.dungeontrain.builder.relay.BuilderProfileCap;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -261,21 +262,40 @@ public final class SharedCarriageClient {
      */
     public static CompletableFuture<List<ProfileBuild>> listMine(String ownerUuid, String viewerUuid,
                                                                  String baseUrl) {
+        return listMineWithCap(ownerUuid, viewerUuid, baseUrl).thenApply(mine -> mine == null ? null : mine.builds());
+    }
+
+    /**
+     * A profile listing together with how many unpublished builds its owner may keep.
+     *
+     * @param cap the relay's {@code cap} for this owner — the shared default for most players, a
+     *            per-player exception for a few (the dev client's {@code Dev}). A relay that predates
+     *            the field answers without it, and {@link BuilderProfileCap#DEFAULT_PROFILE_BUILDS}
+     *            stands in, which is exactly what the mod assumed before the relay reported one.
+     */
+    public record Mine(List<ProfileBuild> builds, int cap) {}
+
+    /** {@link #listMine(String, String, String)}, keeping the owner's cap the relay reports beside it. */
+    public static CompletableFuture<Mine> listMineWithCap(String ownerUuid, String viewerUuid, String baseUrl) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
         body.addProperty("viewer", viewerUuid == null ? "" : viewerUuid);
-        return post(baseUrl, "/carriages/mine", body).thenApply(resp -> {
-            JsonObject o = okJson(resp);
-            if (o == null || !o.has("carriages") || !o.get("carriages").isJsonArray()) return null;
-            List<ProfileBuild> out = new java.util.ArrayList<>();
-            for (JsonElement el : o.getAsJsonArray("carriages")) {
-                if (!el.isJsonObject()) continue;
-                JsonObject r = el.getAsJsonObject();
-                if (!r.has("id")) continue;
-                out.add(parseBuild(r));
-            }
-            return List.copyOf(out);
-        });
+        return post(baseUrl, "/carriages/mine", body).thenApply(resp -> parseMine(okJson(resp)));
+    }
+
+    /** The {@code /carriages/mine} reply, or {@code null} when it is unusable. Package-private for tests. */
+    static Mine parseMine(JsonObject o) {
+        if (o == null || !o.has("carriages") || !o.get("carriages").isJsonArray()) return null;
+        List<ProfileBuild> out = new java.util.ArrayList<>();
+        for (JsonElement el : o.getAsJsonArray("carriages")) {
+            if (!el.isJsonObject()) continue;
+            JsonObject r = el.getAsJsonObject();
+            if (!r.has("id")) continue;
+            out.add(parseBuild(r));
+        }
+        int cap = o.has("cap") && o.get("cap").isJsonPrimitive() && o.get("cap").getAsJsonPrimitive().isNumber()
+                ? o.get("cap").getAsInt() : 0;
+        return new Mine(List.copyOf(out), cap > 0 ? cap : BuilderProfileCap.DEFAULT_PROFILE_BUILDS);
     }
 
     /**
