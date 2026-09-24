@@ -312,14 +312,80 @@ public final class BuilderRelayUpload {
      */
     public static CompletableFuture<Component> submitToTrain(ServerPlayer player, ServerLevel level,
                                                              int relayId, boolean publish) {
+        return withSecret(player, level, relayId,
+                (key, entry, kind) -> publishWith(level, key, entry, kind, publish));
+    }
+
+    /**
+     * Remove one of this player's builds from the relay for good — the My Builds trash button.
+     *
+     * <p>The same ownership path as {@link #submitToTrain}: the world's own record first, the relay's
+     * {@code fetch} to recover a secret otherwise. What differs is the aftermath. On success this
+     * world's record of the build is dropped, so the next save of that template uploads it afresh
+     * rather than trying to write to a dead id — and so the title-screen reconcile, which offers to
+     * restore any recorded build the relay no longer lists, does not quietly bring it back. The local
+     * template file is untouched: the player asked for the relay copy to go, not their work.</p>
+     *
+     * <p>A refusal is the relay's to make: {@code in_use} while another world is holding the build,
+     * which the message wording shares with a refused withdraw because it is the same situation.</p>
+     */
+    public static CompletableFuture<Component> deleteBuild(ServerPlayer player, ServerLevel level,
+                                                           int relayId) {
+        return withSecret(player, level, relayId, (key, entry, kind) ->
+                SharedCarriageClient.deleteBuild(entry.relayId(), entry.secret()).thenApply(result -> {
+                    if (result.ok()) {
+                        if (key != null) {
+                            onServer(level, () -> {
+                                DungeonTrainWorldData live = DungeonTrainWorldData.get(level);
+                                live.builderRelayBuilds().remove(key);
+                                live.markBuilderRelayBuildsDirty();
+                            });
+                        }
+                        return msg("gui.dungeontrain.builder.profile.deleted", ChatFormatting.GREEN);
+                    }
+                    return deleteRefusal(result);
+                }));
+    }
+
+    /** What a refused delete means to the player — the part worth pinning in a test. */
+    static Component deleteRefusal(SharedCarriageClient.VisibilityResult result) {
+        if (result.inUse()) return msg("gui.dungeontrain.builder.profile.in_use_withdraw", ChatFormatting.YELLOW);
+        if (result.status() == SharedCarriageClient.CallStatus.UNKNOWN) {
+            return msg("gui.dungeontrain.builder.profile.gone_short", ChatFormatting.YELLOW);
+        }
+        if (result.status() == SharedCarriageClient.CallStatus.FORBIDDEN) {
+            return msg("gui.dungeontrain.builder.profile.not_yours", ChatFormatting.YELLOW);
+        }
+        return msg("gui.dungeontrain.builder.profile.delete_failed", ChatFormatting.RED);
+    }
+
+    /**
+     * What to do once a build's owner secret is in hand: {@code key} is this world's record of the
+     * build, or null when the secret was recovered from the relay and no record exists here.
+     */
+    @FunctionalInterface
+    interface WithSecret {
+        CompletableFuture<Component> run(String key, BuilderRelayBuilds.Entry entry, String kindId);
+    }
+
+    /**
+     * Find the secret that authorises acting on one of this player's builds, then act.
+     *
+     * <p>This world's own record first — a world that uploaded the build answers from its saved data.
+     * Otherwise the relay is asked to hand the secret back on the owner's uuid ({@link #adopt}), so
+     * what can be acted on is what the player owns rather than what this particular world happened
+     * to upload.</p>
+     */
+    private static CompletableFuture<Component> withSecret(ServerPlayer player, ServerLevel level,
+                                                           int relayId, WithSecret action) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         String key = data.builderRelayBuilds().keyForRelayId(relayId);
         BuilderRelayBuilds.Entry entry = key == null ? null : data.builderRelayBuilds().get(key);
         if (entry == null || entry.secret().isEmpty()) {
             // This world has no secret for the build. Recover one rather than refuse — see adopt().
-            return adopt(player, level, relayId, publish);
+            return adopt(player, relayId, action);
         }
-        return publishWith(level, key, entry, BuilderRelayBuilds.kindOfKey(key), publish);
+        return action.run(key, entry, BuilderRelayBuilds.kindOfKey(key));
     }
 
     /**
@@ -342,8 +408,7 @@ public final class BuilderRelayUpload {
      * <p>It costs a fetch of the whole blocks blob to read one field, which is why this is the fallback
      * and not the path: a world that uploaded the build answers from its own saved data.</p>
      */
-    private static CompletableFuture<Component> adopt(ServerPlayer player, ServerLevel level,
-                                                      int relayId, boolean publish) {
+    private static CompletableFuture<Component> adopt(ServerPlayer player, int relayId, WithSecret action) {
         String owner = player == null ? "" : player.getUUID().toString();
         return SharedCarriageClient.fetchBuild(relayId, owner).thenCompose(result -> {
             SharedCarriageClient.BuildFetch build = result.build();
@@ -361,7 +426,7 @@ public final class BuilderRelayUpload {
             // the path afterSave already takes for a build it knows but is not holding.
             BuilderRelayBuilds.Entry adopted =
                     new BuilderRelayBuilds.Entry(build.id(), build.secret(), "", build.published());
-            return publishWith(level, key, adopted, build.kind(), publish);
+            return action.run(key, adopted, build.kind());
         });
     }
 

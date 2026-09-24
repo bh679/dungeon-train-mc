@@ -12131,5 +12131,14 @@
         "triple_markt"
       ]
     }
+  },
+  "gui.dungeontrain.builder.profile.delete.title": {
+    "1": {
+      "label": "the name of the build about to be deleted from the relay",
+      "examples": [
+        "Brick Cabin",
+        "Library"
+      ]
+    }
   }
 }
