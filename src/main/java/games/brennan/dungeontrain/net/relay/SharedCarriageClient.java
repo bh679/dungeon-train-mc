@@ -678,6 +678,42 @@ public final class SharedCarriageClient {
     public record VisibilityResult(CallStatus status, boolean ok, boolean inUse, String token) {}
 
     /**
+     * Remove one of this player's builds from the relay for good — the My Builds trash button. Authed
+     * by the build's owner {@code secret}, like {@link #publish}; answered in the same shape, because
+     * the two refusals are the same: {@link VisibilityResult#inUse()} while another world is holding
+     * the build, {@link CallStatus#UNKNOWN} when the relay has no such id (already gone). The token
+     * is always empty — nothing is handed back from a delete.
+     *
+     * <p>This world's own id rides along so a lease it holds itself — the one its last save took —
+     * never counts as "in use"; {@code force} is the player's "delete anyway" past a lease that
+     * genuinely belongs to somebody else.</p>
+     */
+    public static CompletableFuture<VisibilityResult> deleteBuild(int id, String secret, boolean force) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("secret", secret == null ? "" : secret);
+        body.addProperty("world", WORLD);
+        if (force) body.addProperty("force", true);
+        return post("/carriages/delete", body).thenApply(resp -> {
+            if (resp == null) {
+                logFailure("/carriages/delete", null);
+                return new VisibilityResult(CallStatus.ERROR, false, false, "");
+            }
+            int sc = resp.statusCode();
+            if (sc == 403) return new VisibilityResult(CallStatus.FORBIDDEN, false, false, "");
+            if (sc == 404) return new VisibilityResult(CallStatus.UNKNOWN, false, false, "");
+            JsonObject o = sc / 100 == 2 ? asObject(resp) : null;
+            if (o == null) {
+                logFailure("/carriages/delete", resp);
+                return new VisibilityResult(CallStatus.ERROR, false, false, "");
+            }
+            boolean ok = o.has("ok") && o.get("ok").getAsBoolean();
+            boolean inUse = !ok && "in_use".equals(str(o, "reason"));
+            return new VisibilityResult(ok ? CallStatus.OK : CallStatus.ERROR, ok, inUse, "");
+        });
+    }
+
+    /**
      * Take a lease on one build this player owns, so a later save can write to it. Needed whenever the
      * world isn't holding the lease already — after publishing (which frees it) or after the lease
      * expired. {@link ClaimResult#inUse()} means another world has it right now.

@@ -3037,6 +3037,15 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.note.prompt": {
+    "1": {
+      "label": "the name of the build being submitted for review",
+      "examples": [
+        "brick_cabin",
+        "library"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.full": {
     "1": {
       "label": "how many builds a player's profile can hold on the build server",
@@ -12129,6 +12138,33 @@
       "label": "the group id the player typed",
       "examples": [
         "triple_markt"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.delete.title": {
+    "1": {
+      "label": "the name of the build about to be deleted from the relay",
+      "examples": [
+        "Brick Cabin",
+        "Library"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.delete.in_use.title": {
+    "1": {
+      "label": "the name of the build another world is currently holding",
+      "examples": [
+        "Brick Cabin",
+        "Library"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.title_count": {
+    "1": {
+      "label": "how many builds the player has on the relay",
+      "examples": [
+        "0",
+        "37"
       ]
     }
   }

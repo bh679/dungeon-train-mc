@@ -18089,6 +18089,85 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "physics-block-change-no-sync-load",
+      "version": "0.940.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "compatibility",
+        "train"
+      ],
+      "title": "Breaking or placing blocks no longer freezes the game",
+      "summary": "Editing a carriage \u2014 breaking a block, placing one, or water or lava flowing across it \u2014 could freeze the whole game for anything from a few seconds to a couple of minutes while the train's physics waited on the world. That wait is gone.",
+      "highlights": [],
+      "pr": 1509,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-whole-room-group-new",
+      "version": "0.941.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "New works for whole rooms and groups",
+      "summary": "The New button in the editor's Whole section now works for rooms and groups, from both the floating menu and the X menu. Start from a blank plot or copy the room or group you're standing in, and you're taken straight to it.",
+      "highlights": [
+        "Blank or copy the one you're standing in \u2014 copies keep their weight, stage, block variants and chest links"
+      ],
+      "pr": 1510,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-unsaved-check-stall",
+      "version": "0.942.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "editor"
+      ],
+      "title": "Train Editor menus no longer freeze the first time you open them",
+      "summary": "The first time the Train Editor checked for unsaved changes, for example when you opened the X menu, the game could freeze for several seconds before the menu and world buttons responded. That check is now close to instant.",
+      "highlights": [],
+      "pr": 1511,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "my-builds-delete-from-relay",
+      "version": "0.943.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "ui"
+      ],
+      "title": "Delete a build from My Builds",
+      "summary": "My Builds has a trash button. Pick one of your uploaded builds, confirm, and it is gone from your profile for good \u2014 your local copy stays, and saving it again uploads it fresh. If another world is riding or editing that build right now you are told, and can choose to delete it anyway. The title now shows how many builds you have.",
+      "highlights": [
+        "Trash button on Esc \u2192 My Builds, with a confirm step",
+        "\"Delete anyway\" when a build is in use elsewhere",
+        "My Builds shows your build count"
+      ],
+      "pr": 1512,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

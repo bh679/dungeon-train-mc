@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.builder;
 import games.brennan.dungeontrain.builder.relay.SubmitNote;
 import games.brennan.dungeontrain.net.BuilderCreatorResultsPacket;
 import games.brennan.dungeontrain.net.BuilderFavouritesPacket;
+import games.brennan.dungeontrain.net.BuilderProfileDeleteResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import net.neoforged.api.distmarker.Dist;
@@ -27,6 +28,7 @@ public final class BuilderProfileState {
     private static volatile BuilderProfilePacket mineLatest = null;
     private static volatile Consumer<BuilderProfilePacket> listener = null;
     private static volatile Consumer<BuilderProfileDownloadResultPacket> downloadListener = null;
+    private static volatile Consumer<BuilderProfileDeleteResultPacket> deleteListener = null;
     private static volatile Consumer<BuilderCreatorResultsPacket> creatorListener = null;
     private static volatile BuilderFavouritesPacket favourites = null;
     private static volatile Consumer<BuilderFavouritesPacket> favouritesListener = null;
@@ -110,6 +112,17 @@ public final class BuilderProfileState {
     /** Listen for download outcomes while a screen is open; null clears it, as {@link #listen} does. */
     public static void listenForDownloads(Consumer<BuilderProfileDownloadResultPacket> consumer) {
         downloadListener = consumer;
+    }
+
+    /** A delete finished. Not cached, for the same reason a download result is not. */
+    public static void deleteResult(BuilderProfileDeleteResultPacket packet) {
+        Consumer<BuilderProfileDeleteResultPacket> current = deleteListener;
+        if (current != null) current.accept(packet);
+    }
+
+    /** Listen for delete outcomes while a screen is open; null clears it. */
+    public static void listenForDeletes(Consumer<BuilderProfileDeleteResultPacket> consumer) {
+        deleteListener = consumer;
     }
 
     /**
