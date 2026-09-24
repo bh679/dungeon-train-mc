@@ -62,7 +62,7 @@ final class TunnelPaletteTest {
 
     /**
      * Nether accepts — direct {@code Blocks.X} matches only. Netherrack /
-     * basalt / blackstone / nyliums / wart blocks go through {@code BlockTags}
+     * basalt / blackstone / nyliums go through {@code BlockTags}
      * and cannot be unit-tested here (see class javadoc).
      */
     static Stream<Block> netherAccepts() {
@@ -73,7 +73,6 @@ final class TunnelPaletteTest {
             Blocks.SOUL_SAND,
             Blocks.SOUL_SOIL,
             Blocks.GLOWSTONE,
-            Blocks.SHROOMLIGHT,
             Blocks.NETHER_GOLD_ORE,
             Blocks.NETHER_QUARTZ_ORE,
             Blocks.ANCIENT_DEBRIS
@@ -94,6 +93,11 @@ final class TunnelPaletteTest {
             Blocks.AIR,                // open space
             Blocks.OAK_LOG,            // tree trunk — surface feature
             Blocks.OAK_LEAVES,         // canopy
+            Blocks.SHROOMLIGHT,        // huge-fungus canopy — Nether "leaves"
+            Blocks.NETHER_WART_BLOCK,  // crimson fungus canopy
+            Blocks.WARPED_WART_BLOCK,  // warped fungus canopy
+            Blocks.MANGROVE_ROOTS,     // tree roots
+            Blocks.MUDDY_MANGROVE_ROOTS, // tree roots (vanilla-tagged minecraft:dirt)
             Blocks.NETHER_BRICKS,      // player / nether-fortress variant, not raw terrain
             Blocks.PURPUR_BLOCK,       // end-city structure block
             Blocks.OBSIDIAN            // bulk obsidian (lava-source remnants, nether roof) — kept out so tunnel won't qualify inside lava-formed walls
