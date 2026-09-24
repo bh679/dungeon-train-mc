@@ -599,16 +599,18 @@ public final class SharedCarriageClient {
     }
 
     /**
-     * As above, with the author's note to the reviewer. Sent only on a submit and only when there is
-     * one, as {@code note: {redstone?, loot?, notes?}} with the empty fields left out; a relay that
-     * does not read the field ignores it, so nothing here waits on the relay learning to.
+     * As above, with the author's note to the reviewer. Sent on every submit, as
+     * {@code note: {redstone?, loot?, notes?}} with the empty fields left out — an empty object clears
+     * the stored answers; a relay that does not read the field ignores it.
      */
     public static CompletableFuture<VisibilityResult> publish(int id, String secret, boolean publish, SubmitNote note) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("secret", secret == null ? "" : secret);
         body.addProperty("publish", publish);
-        if (publish && note != null && !note.isEmpty()) body.add("note", noteJson(note));
+        // Always on a submit, empty included: the relay keeps the stored answers when a submit carries
+        // no note at all, so sending one is what lets clearing every box clear them.
+        if (publish && note != null) body.add("note", noteJson(note));
         return post("/carriages/publish", body).thenApply(resp -> {
             if (resp == null) return new VisibilityResult(CallStatus.ERROR, false, false, "");
             int sc = resp.statusCode();
@@ -620,6 +622,44 @@ public final class SharedCarriageClient {
             boolean inUse = !ok && "in_use".equals(str(o, "reason"));
             return new VisibilityResult(ok ? CallStatus.OK : CallStatus.ERROR, ok, inUse, str(o, "token"));
         });
+    }
+
+    /**
+     * Replace one build's Submit for Review answers, as its owner — authorised by the owner secret,
+     * like publish. Leaves the build and its review state alone.
+     */
+    public static CompletableFuture<CallStatus> setNote(int id, String secret, SubmitNote note) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("secret", secret == null ? "" : secret);
+        body.add("note", noteJson(note == null ? SubmitNote.EMPTY : note));
+        return post("/carriages/note", body).thenApply(SharedCarriageClient::noteStatus);
+    }
+
+    /**
+     * Replace anybody's build's answers, as the developer — through the admin cap, so only an install
+     * holding the admin URL can. {@link CallStatus#ERROR} straight away when there is none.
+     */
+    public static CompletableFuture<CallStatus> adminSetNote(int id, boolean useLive, SubmitNote note) {
+        String admin = RelayTarget.adminSearchBase();
+        if (admin.isEmpty()) return CompletableFuture.completedFuture(CallStatus.ERROR);
+        JsonObject body = new JsonObject();
+        body.add("note", noteJson(note == null ? SubmitNote.EMPTY : note));
+        return post(admin, "/carriages/" + id + "/note?cap=" + (useLive ? "live" : "dev"), body)
+                .thenApply(SharedCarriageClient::noteStatus);
+    }
+
+    /** What a note write came back with. */
+    private static CallStatus noteStatus(HttpResponse<String> resp) {
+        if (resp == null) {
+            logFailure("/carriages/note", null);
+            return CallStatus.ERROR;
+        }
+        int sc = resp.statusCode();
+        if (sc == 403) return CallStatus.FORBIDDEN;
+        if (sc == 404) return CallStatus.UNKNOWN;
+        JsonObject o = sc / 100 == 2 ? asObject(resp) : null;
+        return o != null && o.has("ok") && o.get("ok").getAsBoolean() ? CallStatus.OK : CallStatus.ERROR;
     }
 
     /** The note as the relay reads it: only the fields the author filled in. Package-private for tests. */

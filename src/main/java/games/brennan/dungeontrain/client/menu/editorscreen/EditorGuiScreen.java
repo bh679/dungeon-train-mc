@@ -834,6 +834,11 @@ public final class EditorGuiScreen extends Screen {
                     creatorPane.turnSheet(1);
                     return true;
                 }
+                case EDIT_NOTE -> {
+                    click();
+                    creatorPane.openNoteEditor(selectedCreatorBuild());
+                    return true;
+                }
                 case PREVIEW -> {
                     orbit.beginDrag();
                     return true;
@@ -1125,6 +1130,10 @@ public final class EditorGuiScreen extends Screen {
             }
             case PAGE_PREV -> {
                 return detail.scrollBy(-1);
+            }
+            case EDIT_NOTE -> {
+                detail.openNoteEditor();
+                return true;
             }
             case PAGE_NEXT -> {
                 return detail.scrollBy(+1);

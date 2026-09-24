@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.builder;
 
+import games.brennan.dungeontrain.builder.relay.SubmitNote;
 import games.brennan.dungeontrain.net.BuilderCreatorResultsPacket;
 import games.brennan.dungeontrain.net.BuilderFavouritesPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
@@ -144,6 +145,35 @@ public final class BuilderProfileState {
     /** Listen for favourites while a screen is open; null clears it, as {@link #listen} does. */
     public static void listenForFavourites(Consumer<BuilderFavouritesPacket> consumer) {
         favouritesListener = consumer;
+    }
+
+    /**
+     * Note locally that one build's Submit for Review answers were edited, so the page that edited them
+     * shows the new ones before the next listing brings them back — in both the listing on screen and
+     * the player's own. The edit packet is fire-and-forget, like a star; a failure says so in chat and
+     * the next listing puts the truth back.
+     */
+    public static void noteAnswers(int relayId, SubmitNote note) {
+        latest = withAnswers(latest, relayId, note);
+        mineLatest = withAnswers(mineLatest, relayId, note);
+    }
+
+    private static BuilderProfilePacket withAnswers(BuilderProfilePacket packet, int relayId, SubmitNote note) {
+        if (packet == null) return null;
+        List<BuilderProfilePacket.Entry> updated = new java.util.ArrayList<>(packet.builds().size());
+        boolean changed = false;
+        for (BuilderProfilePacket.Entry e : packet.builds()) {
+            if (e.relayId() == relayId) {
+                updated.add(new BuilderProfilePacket.Entry(e.relayId(), e.kind(), e.subKind(),
+                        e.buildName(), e.published(), e.flag(), e.review(), e.stage(), e.changes(),
+                        e.favourite(), e.ownerUuid(), e.ownerName(), e.templateCopy(), note));
+                changed = true;
+            } else {
+                updated.add(e);
+            }
+        }
+        return changed ? new BuilderProfilePacket(packet.status(), List.copyOf(updated),
+                packet.ownerUuid(), packet.ownerName(), packet.mine()) : packet;
     }
 
     /**

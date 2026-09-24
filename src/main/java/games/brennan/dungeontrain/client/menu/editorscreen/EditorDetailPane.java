@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
+import games.brennan.dungeontrain.client.builder.BuilderSubmitNoteScreen;
+import games.brennan.dungeontrain.client.builder.BuilderSubmitHintsRequests;
 import games.brennan.dungeontrain.builder.relay.SubmitNote;
 import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
@@ -41,7 +43,7 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM }
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE }
 
     private final VersionStrip versions = new VersionStrip();
     /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
@@ -55,6 +57,12 @@ public final class EditorDetailPane {
     private LootGrid lootGrid;
     /** The selection's Submit for Review answers, from the player's own relay listing; empty when none. */
     private SubmitNote submitNote = SubmitNote.EMPTY;
+    /** Which questions the selection earns and whether the player may edit them — asked of the server once. */
+    private BuilderSubmitHintsRequests.Answer submitAnswer = BuilderSubmitHintsRequests.Answer.UNKNOWN;
+    /** The Submitted answers page's Edit button as last drawn; null when not on screen. */
+    private InventoryEditorLayout.Rect editNoteRect;
+    /** The selection's display name as last drawn — what the edit screen's prompt names. */
+    private String shownName = "";
 
     /** What the selection is made of. Set by the screen before each layout, like the version. */
     public void showSummary(TemplateSummary summary) {
@@ -131,9 +139,13 @@ public final class EditorDetailPane {
             : (lootItems.size() + perLootPage - 1) / perLootPage;
         // What the author answered on submitting it: read off this player's own relay listing, which
         // is the only one that carries the answers. No answers, no page — as with the Loot page.
+        // Any template the relay holds has the page, answered or not: its questions are worth seeing,
+        // and editable, before the build is ever submitted.
         BuilderProfilePacket.Entry own = BuilderProfileState.ownBuild(relayId);
         submitNote = own == null ? SubmitNote.EMPTY : own.note();
-        int submitPages = SubmissionPage.hasAnswers(submitNote) ? 1 : 0;
+        submitAnswer = own == null ? BuilderSubmitHintsRequests.Answer.UNKNOWN
+            : BuilderSubmitHintsRequests.peek(relayId, "", false);
+        int submitPages = own == null ? 0 : 1;
         pages = Pages.of(rows.size(), Math.max(0, body().h() / ROW_H), lootPages, submitPages);
         page = pages.clamp(page);
 
@@ -251,6 +263,13 @@ public final class EditorDetailPane {
 
     /** True while the Loot page is showing. */
     public boolean onLootPage() { return pages.isLootPage(page); }
+
+    /** Open the selection's answers for editing — the Submitted answers page's Edit button. */
+    public void openNoteEditor() {
+        if (relayId <= 0 || !submitAnswer.canEdit()) return;
+        BuilderSubmitNoteScreen.openEditor(relayId, "", false, net.minecraft.network.chat.Component.literal(shownName),
+            submitAnswer.hints(), submitNote);
+    }
 
     /** True while the Submitted answers page is showing. */
     public boolean onSubmitPage() { return pages.isSubmitPage(page); }
@@ -370,8 +389,10 @@ public final class EditorDetailPane {
                        TemplateSummary summary, EditorRosterIndex.Tile tile, String pathLabel,
                        float yaw, int mouseX, int mouseY) {
         hovered = hitTest(mouseX, mouseY);
+        editNoteRect = null;
         drawHeader(g, font, theme);
         String name = tile == null ? "" : tile.variant().displayName();
+        shownName = name;
         if (onModelPage()) {
             PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
             versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
@@ -386,7 +407,8 @@ public final class EditorDetailPane {
             sheetLines = List.of();
             sheetCells = List.of();
             if (onLootPage()) drawLootPage(g, font, theme);
-            else if (onSubmitPage()) SubmissionPage.draw(g, font, rowArea(), submitNote);
+            else if (onSubmitPage()) editNoteRect = SubmissionPage.draw(g, font, rowArea(), submitNote,
+                submitAnswer.hints(), submitAnswer.canEdit(), mouseX, mouseY);
             else drawRows(g, font, theme);
         }
         if (pages.hasPager()) drawPager(g, font);
@@ -587,6 +609,9 @@ public final class EditorDetailPane {
             }
         }
         if (goHereRect != null && goHereRect.contains(mx, my)) return new Hit(HitKind.GO_HERE, 0, 0);
+        if (editNoteRect != null && onSubmitPage() && editNoteRect.contains(mx, my)) {
+            return new Hit(HitKind.EDIT_NOTE, 0, 0);
+        }
         if (pages.hasPager() && pagerRect().contains(mx, my)) {
             return switch (EditorPager.hit(pagerRect(), page, pages.pageCount(), mx, my)) {
                 case PREV -> new Hit(HitKind.PAGE_PREV, 0, 0);

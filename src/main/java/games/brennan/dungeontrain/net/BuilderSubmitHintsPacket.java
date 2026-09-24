@@ -14,8 +14,12 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Server → client: the answer to a {@link BuilderSubmitHintsRequestPacket} — which extra questions to ask. */
-public record BuilderSubmitHintsPacket(int relayId, SubmitHints.Hints hints) implements CustomPacketPayload {
+/**
+ * Server → client: the answer to a {@link BuilderSubmitHintsRequestPacket} — which extra questions the
+ * build earns, and whether this player may edit its answers (its owner, or the developer).
+ */
+public record BuilderSubmitHintsPacket(int relayId, SubmitHints.Hints hints, boolean canEdit)
+        implements CustomPacketPayload {
 
     public BuilderSubmitHintsPacket {
         hints = hints == null ? SubmitHints.Hints.NONE : hints;
@@ -34,9 +38,10 @@ public record BuilderSubmitHintsPacket(int relayId, SubmitHints.Hints hints) imp
                 buf.writeVarInt(packet.relayId);
                 writeFound(buf, packet.hints.redstone());
                 writeFound(buf, packet.hints.loot());
+                buf.writeBoolean(packet.canEdit);
             },
             buf -> new BuilderSubmitHintsPacket(buf.readVarInt(),
-                new SubmitHints.Hints(readFound(buf), readFound(buf)))
+                new SubmitHints.Hints(readFound(buf), readFound(buf)), buf.readBoolean())
         );
 
     private static void writeFound(FriendlyByteBuf buf, List<SubmitHints.Found> found) {
@@ -70,6 +75,6 @@ public record BuilderSubmitHintsPacket(int relayId, SubmitHints.Hints hints) imp
     }
 
     public static void handle(BuilderSubmitHintsPacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> BuilderSubmitHintsRequests.accept(packet.relayId, packet.hints));
+        ctx.enqueueWork(() -> BuilderSubmitHintsRequests.accept(packet.relayId, packet.hints, packet.canEdit));
     }
 }

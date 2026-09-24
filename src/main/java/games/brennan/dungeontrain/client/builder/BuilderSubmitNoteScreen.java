@@ -3,7 +3,10 @@ package games.brennan.dungeontrain.client.builder;
 import games.brennan.dungeontrain.builder.relay.SubmitNote;
 import games.brennan.dungeontrain.client.menu.editorscreen.EditorScreenLang;
 import games.brennan.dungeontrain.editor.SubmitHints;
+import games.brennan.dungeontrain.net.BuilderNoteEditPacket;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
+import games.brennan.dungeontrain.net.BuilderProfilePacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -103,6 +106,8 @@ public final class BuilderSubmitNoteScreen extends Screen {
     private final List<Question> questions;
     private final SubmitHints.Hints hints;
     private final Consumer<SubmitNote> onSubmit;
+    /** Editing the answers rather than submitting — the last page saves instead. */
+    private final boolean editing;
 
     /** Kept across pages and resizes, so neither empties a box. */
     private final Map<Question, String> answers = new EnumMap<>(Question.class);
@@ -122,18 +127,36 @@ public final class BuilderSubmitNoteScreen extends Screen {
      */
     public BuilderSubmitNoteScreen(Screen backScreen, Component buildName, SubmitHints.Hints hints,
                                    Consumer<SubmitNote> onSubmit) {
-        super(Component.translatable("gui.dungeontrain.builder.profile.note.title"));
+        this(backScreen, buildName, hints, SubmitNote.EMPTY, false, onSubmit);
+    }
+
+    /**
+     * @param initial  the build's answers so far, filled into the boxes — a question it answered is
+     *                 asked again even if the build no longer earns it, so the answer can be seen
+     * @param editing  editing the answers rather than submitting: titled "Edit answers" and saved with
+     *                 Save, and nothing is submitted
+     */
+    public BuilderSubmitNoteScreen(Screen backScreen, Component buildName, SubmitHints.Hints hints,
+                                   SubmitNote initial, boolean editing, Consumer<SubmitNote> onSubmit) {
+        super(Component.translatable(editing ? "gui.dungeontrain.builder.profile.note.edit_title"
+                : "gui.dungeontrain.builder.profile.note.title"));
+        this.editing = editing;
+        SubmitNote start = initial == null ? SubmitNote.EMPTY : initial;
         this.backScreen = backScreen;
         this.buildName = buildName == null ? Component.empty() : buildName;
         this.onSubmit = onSubmit;
         SubmitHints.Hints h = hints == null ? SubmitHints.Hints.NONE : hints;
         this.hints = h;
         List<Question> asked = new ArrayList<>();
-        if (h.hasRedstone()) asked.add(Question.REDSTONE);
-        if (h.hasLoot()) asked.add(Question.LOOT);
+        if (h.hasRedstone() || !start.redstone().isBlank()) asked.add(Question.REDSTONE);
+        if (h.hasLoot() || !start.loot().isBlank()) asked.add(Question.LOOT);
         asked.add(Question.NOTES);
         this.questions = List.copyOf(asked);
-        for (Question q : questions) answers.put(q, "");
+        for (Question q : questions) answers.put(q, switch (q) {
+            case REDSTONE -> start.redstone();
+            case LOOT -> start.loot();
+            case NOTES -> start.notes();
+        });
     }
 
     private boolean labelled() {
@@ -177,7 +200,8 @@ public final class BuilderSubmitNoteScreen extends Screen {
                         b -> { if (page == 0) onClose(); else turn(-1); })
                 .bounds(x, y, half, ROW_HEIGHT).build());
         addRenderableWidget(Button.builder(lastPage()
-                                ? Component.translatable("gui.dungeontrain.builder.profile.note.submit")
+                                ? Component.translatable(editing ? "gui.dungeontrain.builder.profile.note.save"
+                                        : "gui.dungeontrain.builder.profile.note.submit")
                                 : CommonComponents.GUI_CONTINUE,
                         b -> { if (lastPage()) submit(); else turn(1); })
                 .bounds(x + fieldWidth - half, y, half, ROW_HEIGHT).build());
@@ -322,9 +346,28 @@ public final class BuilderSubmitNoteScreen extends Screen {
      * return to it afterwards — the path every Submit for Review press takes.
      */
     public static void open(int relayId, Component buildName, Consumer<SubmitNote> onSubmit) {
-        BuilderSubmitHintsRequests.ask(relayId, hints -> {
+        // Whatever was written in the editor beforehand carries into the submit.
+        BuilderProfilePacket.Entry own = BuilderProfileState.ownBuild(relayId);
+        SubmitNote initial = own == null ? SubmitNote.EMPTY : own.note();
+        BuilderSubmitHintsRequests.ask(relayId, answer -> {
             Minecraft mc = Minecraft.getInstance();
-            mc.setScreen(new BuilderSubmitNoteScreen(mc.screen, buildName, hints, onSubmit));
+            mc.setScreen(new BuilderSubmitNoteScreen(mc.screen, buildName, answer.hints(), initial, false, onSubmit));
         });
+    }
+
+    /**
+     * Edit a build's answers without submitting it — the editor's Edit answers button. Saving sends
+     * them to the server, which writes them as the owner or as the developer, and shows them on the
+     * page straight away.
+     *
+     * @param ownerUuid whose build it is — the player's own, or anybody's when the developer edits
+     */
+    public static void openEditor(int relayId, String ownerUuid, boolean live, Component buildName,
+                                  SubmitHints.Hints hints, SubmitNote current) {
+        Minecraft mc = Minecraft.getInstance();
+        mc.setScreen(new BuilderSubmitNoteScreen(mc.screen, buildName, hints, current, true, note -> {
+            BuilderProfileState.noteAnswers(relayId, note);
+            DungeonTrainNet.sendToServer(new BuilderNoteEditPacket(relayId, ownerUuid, live, note));
+        }));
     }
 }

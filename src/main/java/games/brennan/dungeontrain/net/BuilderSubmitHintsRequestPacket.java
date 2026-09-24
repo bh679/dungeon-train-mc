@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.relay.BuilderNoteEdits;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayUpload;
 import games.brennan.dungeontrain.builder.relay.BuilderSubmitHints;
 import games.brennan.dungeontrain.editor.SubmitHints;
@@ -20,15 +21,29 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * answer always goes back, {@link SubmitHints.Hints#NONE} included: the client is waiting to open the
  * screen and a silence would only be covered by its timeout.</p>
  */
-public record BuilderSubmitHintsRequestPacket(int relayId) implements CustomPacketPayload {
+public record BuilderSubmitHintsRequestPacket(int relayId, String ownerUuid, boolean live)
+        implements CustomPacketPayload {
+
+    /** About one of the player's own builds, on this build's own relay pool — the Submit press. */
+    public BuilderSubmitHintsRequestPacket(int relayId) {
+        this(relayId, "", false);
+    }
+
+    public BuilderSubmitHintsRequestPacket {
+        ownerUuid = ownerUuid == null ? "" : ownerUuid;
+    }
 
     public static final Type<BuilderSubmitHintsRequestPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "builder_submit_hints_request"));
 
     public static final StreamCodec<FriendlyByteBuf, BuilderSubmitHintsRequestPacket> STREAM_CODEC =
         StreamCodec.of(
-            (buf, packet) -> buf.writeVarInt(packet.relayId),
-            buf -> new BuilderSubmitHintsRequestPacket(buf.readVarInt())
+            (buf, packet) -> {
+                buf.writeVarInt(packet.relayId);
+                buf.writeUtf(packet.ownerUuid, 48);
+                buf.writeBoolean(packet.live);
+            },
+            buf -> new BuilderSubmitHintsRequestPacket(buf.readVarInt(), buf.readUtf(48), buf.readBoolean())
         );
 
     @Override
@@ -40,14 +55,19 @@ public record BuilderSubmitHintsRequestPacket(int relayId) implements CustomPack
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player) || player.getServer() == null) return;
             if (!BuilderRelayUpload.canUpload(player)) {
-                DungeonTrainNet.sendTo(player, new BuilderSubmitHintsPacket(packet.relayId, SubmitHints.Hints.NONE));
+                DungeonTrainNet.sendTo(player,
+                    new BuilderSubmitHintsPacket(packet.relayId, SubmitHints.Hints.NONE, false));
                 return;
             }
             ServerLevel level = player.getServer().overworld();
-            BuilderSubmitHints.forBuild(player, level, packet.relayId)
+            // Blank owner means the asker's own build — the Submit press, which never names one.
+            String owner = packet.ownerUuid.isEmpty() ? player.getUUID().toString() : packet.ownerUuid;
+            boolean live = BuilderProfileRequestPacket.liveRequested(packet.live);
+            boolean canEdit = BuilderNoteEdits.canEdit(player, owner);
+            BuilderSubmitHints.forBuild(player, level, packet.relayId, owner, live)
                 .thenAccept(hints -> player.getServer().execute(() -> {
                     if (player.hasDisconnected()) return;
-                    DungeonTrainNet.sendTo(player, new BuilderSubmitHintsPacket(packet.relayId, hints));
+                    DungeonTrainNet.sendTo(player, new BuilderSubmitHintsPacket(packet.relayId, hints, canEdit));
                 }));
         });
     }

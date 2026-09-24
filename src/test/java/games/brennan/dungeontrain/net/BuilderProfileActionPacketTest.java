@@ -80,7 +80,7 @@ final class BuilderProfileActionPacketTest {
         for (SubmitHints.Hints h : new SubmitHints.Hints[] {SubmitHints.Hints.NONE,
                 new SubmitHints.Hints(List.of(repeater), List.of()),
                 new SubmitHints.Hints(List.of(repeater), List.of(chest))}) {
-            BuilderSubmitHintsPacket original = new BuilderSubmitHintsPacket(99, h);
+            BuilderSubmitHintsPacket original = new BuilderSubmitHintsPacket(99, h, h.hasLoot());
             FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
             try {
                 BuilderSubmitHintsPacket.STREAM_CODEC.encode(buf, original);
@@ -89,6 +89,37 @@ final class BuilderProfileActionPacketTest {
                 buf.release();
             }
         }
+    }
+
+    @Test
+    @DisplayName("a hints request names whose build and which pool")
+    void hintsRequestRoundTrip() {
+        for (BuilderSubmitHintsRequestPacket original : new BuilderSubmitHintsRequestPacket[] {
+                new BuilderSubmitHintsRequestPacket(7),
+                new BuilderSubmitHintsRequestPacket(8, "380df991-f603-344c-a090-369bad2a924a", true)}) {
+            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+            try {
+                BuilderSubmitHintsRequestPacket.STREAM_CODEC.encode(buf, original);
+                assertEquals(original, BuilderSubmitHintsRequestPacket.STREAM_CODEC.decode(buf));
+            } finally {
+                buf.release();
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("an answers edit carries the build, its owner and every answer")
+    void noteEditRoundTrip() {
+        BuilderNoteEditPacket original = new BuilderNoteEditPacket(12, "380df991-f603-344c-a090-369bad2a924a",
+                false, new SubmitNote("lever first", "", "near the engine"));
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        try {
+            BuilderNoteEditPacket.STREAM_CODEC.encode(buf, original);
+            assertEquals(original, BuilderNoteEditPacket.STREAM_CODEC.decode(buf));
+        } finally {
+            buf.release();
+        }
+        assertEquals(SubmitNote.EMPTY, new BuilderNoteEditPacket(1, null, false, null).note());
     }
 
     private static BuilderProfileActionPacket roundTrip(BuilderProfileActionPacket packet) {

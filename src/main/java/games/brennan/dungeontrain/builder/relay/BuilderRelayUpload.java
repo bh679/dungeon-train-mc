@@ -365,6 +365,27 @@ public final class BuilderRelayUpload {
         });
     }
 
+    /** A build's owner secret, or why there is none to be had. {@code secret} is empty unless ADOPT. */
+    record SecretLookup(String secret, Adoption verdict) {}
+
+    /**
+     * The owner secret for one of the player's builds: this world's saved one, else recovered from the
+     * relay the way {@link #adopt} does. For writes that need the secret but are not a publish.
+     */
+    static CompletableFuture<SecretLookup> secretFor(ServerPlayer player, ServerLevel level, int relayId) {
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        String key = data.builderRelayBuilds().keyForRelayId(relayId);
+        BuilderRelayBuilds.Entry entry = key == null ? null : data.builderRelayBuilds().get(key);
+        if (entry != null && !entry.secret().isEmpty()) {
+            return CompletableFuture.completedFuture(new SecretLookup(entry.secret(), Adoption.ADOPT));
+        }
+        String owner = player == null ? "" : player.getUUID().toString();
+        return SharedCarriageClient.fetchBuild(relayId, owner).thenApply(result -> {
+            Adoption verdict = adoptionOf(result.status(), result.build());
+            return new SecretLookup(verdict == Adoption.ADOPT ? result.build().secret() : "", verdict);
+        });
+    }
+
     /** What a fetch made in {@link #adopt} means for the submission that asked for it. */
     enum Adoption {
         /** The build is this player's and came back with its secret: file it and carry on. */

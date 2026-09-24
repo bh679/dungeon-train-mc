@@ -259,6 +259,8 @@ public final class DungeonTrainNet {
         // blocks on the server before the note screen opens. See BuilderSubmitHintsRequestPacket.
         registrar.playToServer(BuilderSubmitHintsRequestPacket.TYPE, BuilderSubmitHintsRequestPacket.STREAM_CODEC, BuilderSubmitHintsRequestPacket::handle);
         registrar.playToClient(BuilderSubmitHintsPacket.TYPE, BuilderSubmitHintsPacket.STREAM_CODEC, BuilderSubmitHintsPacket::handle);
+        // Editing a build's Submit for Review answers after the fact — owner or developer.
+        registrar.playToServer(BuilderNoteEditPacket.TYPE, BuilderNoteEditPacket.STREAM_CODEC, BuilderNoteEditPacket::handle);
         // The Stages tab's model: a carriage stamped with a stage's parts and rolled variants,
         // composed on the server and drawn on the client. See StagePreviewRequestPacket.
         registrar.playToServer(StagePreviewRequestPacket.TYPE, StagePreviewRequestPacket.STREAM_CODEC, StagePreviewRequestPacket::handle);
