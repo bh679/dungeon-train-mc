@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.editor.TemplateLootPrefabs;
 import games.brennan.dungeontrain.editor.TemplateSidecars;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import games.brennan.dungeontrain.event.SharedCarriageMode;
+import games.brennan.dungeontrain.net.BuilderUploadStatusPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
@@ -95,14 +97,20 @@ public final class BuilderRelayUpload {
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Builder relay upload: could not capture '{}': {}", written.id(), t.toString());
             tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
+            settle(player, written, false, 0);
             return;
         }
         if (blocks.length() > MAX_BLOCKS_CHARS) {
             LOGGER.info("[DungeonTrain] Builder relay upload: '{}' is {} chars, over the {} limit — kept local only.",
                     written.id(), blocks.length(), MAX_BLOCKS_CHARS);
             tell(player, "gui.dungeontrain.builder.profile.too_big", ChatFormatting.YELLOW, written.id());
+            settle(player, written, false, 0);
             return;
         }
+
+        // From here the upload is really going out: the client shows "Uploading…" until the settle.
+        DungeonTrainNet.sendTo(player, new BuilderUploadStatusPacket(
+                kindName(written), written.id(), BuilderUploadStatusPacket.STARTED, 0));
 
         // Everything about the template that is not its blocks — see TemplateSidecars. Read from the
         // files on disk rather than plumbed through BuilderSave.Written and the save packet: those
@@ -155,10 +163,12 @@ public final class BuilderRelayUpload {
                     if (builds != null && BuilderProfileCap.isFull(BuilderProfileCap.used(builds))) {
                         tell(player, "gui.dungeontrain.builder.profile.full", ChatFormatting.YELLOW,
                                 BuilderProfileCap.MAX_PROFILE_BUILDS);
+                        settle(player, written, false, 0);
                         return;
                     }
                     submitNewNow(player, level, key, blocks, text, extras, written, stageId);
-                }));
+                }))
+                .exceptionally(t -> failed(player, level, written, t));
     }
 
     /** The upload itself, once there is known to be room for it. */
@@ -174,6 +184,7 @@ public final class BuilderRelayUpload {
                 .thenAccept(result -> onServer(level, () -> {
                     if (result.isEmpty()) {
                         tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
+                        settle(player, written, false, 0);
                         return;
                     }
                     SharedCarriageClient.BuildUpload up = result.get();
@@ -182,7 +193,9 @@ public final class BuilderRelayUpload {
                             new BuilderRelayBuilds.Entry(up.id(), up.secret(), up.token(), false));
                     live.markBuilderRelayBuildsDirty();
                     tell(player, "gui.dungeontrain.builder.profile.saved", ChatFormatting.GRAY, written.id());
-                }));
+                    settle(player, written, true, up.id());
+                }))
+                .exceptionally(t -> failed(player, level, written, t));
     }
 
     /** A later save of a template this world still holds the lease on. */
@@ -193,6 +206,7 @@ public final class BuilderRelayUpload {
                 .thenAccept(status -> onServer(level, () -> {
                     if (status == SharedCarriageClient.CallStatus.OK) {
                         tell(player, "gui.dungeontrain.builder.profile.saved", ChatFormatting.GRAY, written.id());
+                        settle(player, written, true, entry.relayId());
                         return;
                     }
                     if (status == SharedCarriageClient.CallStatus.UNKNOWN) {
@@ -202,6 +216,7 @@ public final class BuilderRelayUpload {
                         live.builderRelayBuilds().remove(key);
                         live.markBuilderRelayBuildsDirty();
                         tell(player, "gui.dungeontrain.builder.profile.gone", ChatFormatting.YELLOW, written.id());
+                        settle(player, written, false, 0);
                         return;
                     }
                     if (status == SharedCarriageClient.CallStatus.FORBIDDEN) {
@@ -221,7 +236,9 @@ public final class BuilderRelayUpload {
                     LOGGER.warn("[DungeonTrain] Builder relay upload: saving '{}' through its lease failed — {}",
                             written.id(), status);
                     tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
-                }));
+                    settle(player, written, false, 0);
+                }))
+                .exceptionally(t -> failed(player, level, written, t));
     }
 
     /**
@@ -243,6 +260,7 @@ public final class BuilderRelayUpload {
                 .thenAccept(status -> onServer(level, () -> {
                     if (status == SharedCarriageClient.CallStatus.OK) {
                         tell(player, "gui.dungeontrain.builder.profile.saved", ChatFormatting.GRAY, written.id());
+                        settle(player, written, true, entry.relayId());
                         return;
                     }
                     if (status == SharedCarriageClient.CallStatus.UNKNOWN) {
@@ -255,7 +273,9 @@ public final class BuilderRelayUpload {
                     LOGGER.warn("[DungeonTrain] Builder relay upload: saving '{}' as its owner failed — {}",
                             written.id(), status);
                     tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
-                }));
+                    settle(player, written, false, 0);
+                }))
+                .exceptionally(t -> failed(player, level, written, t));
     }
 
     /**
@@ -281,6 +301,7 @@ public final class BuilderRelayUpload {
                     }
                     if (claim.inUse()) {
                         tell(player, "gui.dungeontrain.builder.profile.in_use", ChatFormatting.YELLOW, written.id());
+                        settle(player, written, false, 0);
                         return;
                     }
                     if (claim.status() == SharedCarriageClient.CallStatus.UNKNOWN) {
@@ -288,10 +309,13 @@ public final class BuilderRelayUpload {
                         live.builderRelayBuilds().remove(key);
                         live.markBuilderRelayBuildsDirty();
                         tell(player, "gui.dungeontrain.builder.profile.gone", ChatFormatting.YELLOW, written.id());
+                        settle(player, written, false, 0);
                         return;
                     }
                     tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
-                }));
+                    settle(player, written, false, 0);
+                }))
+                .exceptionally(t -> failed(player, level, written, t));
     }
 
     /**
@@ -539,6 +563,31 @@ public final class BuilderRelayUpload {
         MinecraftServer server = level.getServer();
         if (server == null) return;
         server.execute(action);
+    }
+
+    /**
+     * Tell the client how this save's upload ended — exactly once per save, beside the chat line that
+     * says the same thing in words. {@code relayId} is the build's row when it landed, else 0.
+     */
+    private static void settle(ServerPlayer player, BuilderSave.Written written, boolean ok, int relayId) {
+        if (player == null || written == null) return;
+        DungeonTrainNet.sendTo(player, new BuilderUploadStatusPacket(kindName(written), written.id(),
+                ok ? BuilderUploadStatusPacket.DONE : BuilderUploadStatusPacket.FAILED, relayId));
+    }
+
+    /** The photo-kind name the client's tile art is keyed on. */
+    private static String kindName(BuilderSave.Written written) {
+        return written.kind() == null ? "" : written.kind().name();
+    }
+
+    /** A relay call that threw rather than answered: report it like any other failed upload. */
+    private static Void failed(ServerPlayer player, ServerLevel level, BuilderSave.Written written, Throwable t) {
+        LOGGER.warn("[DungeonTrain] Builder relay upload: '{}' failed — {}", written.id(), t.toString());
+        onServer(level, () -> {
+            tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
+            settle(player, written, false, 0);
+        });
+        return null;
     }
 
     private static void tell(ServerPlayer player, String key, ChatFormatting colour, Object arg) {

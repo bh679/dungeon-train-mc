@@ -33,6 +33,9 @@ public final class EditorDetailPane {
     /** Below this a button stops reading as one, so the spacing goes before the size does. */
     static final int MIN_ICON_CELL = 12;
     static final int HERE_TEXT = 0xFF55FF55;
+    /** The upload note's colours: the Submit icon's blue while going, a plain red when it did not. */
+    static final int UPLOADING_TEXT = 0xFF88BBFF;
+    static final int FAILED_TEXT = 0xFFFF6655;
     static final int DIM_TEXT = 0xB0FFFFFF;
     static final int DISABLED = 0x30FFFFFF;
     static final int DISABLED_ICON = 0x60FFFFFF;
@@ -340,7 +343,7 @@ public final class EditorDetailPane {
                        TemplateSummary summary, EditorRosterIndex.Tile tile, String pathLabel,
                        float yaw, int mouseX, int mouseY) {
         hovered = hitTest(mouseX, mouseY);
-        drawHeader(g, font, theme);
+        drawHeader(g, font, theme, art);
         String name = tile == null ? "" : tile.variant().displayName();
         if (onModelPage()) {
             PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
@@ -363,7 +366,7 @@ public final class EditorDetailPane {
         drawTest(g, font);
     }
 
-    private void drawHeader(GuiGraphics g, Font font, EditorScreenTheme theme) {
+    private void drawHeader(GuiGraphics g, Font font, EditorScreenTheme theme, TemplateArt art) {
         InventoryEditorLayout.Rect h = layout.header();
         int ty = h.y() + (h.h() - font.lineHeight) / 2;
         String name = ctx.hasSelection() ? ctx.selection().displayName()
@@ -375,6 +378,7 @@ public final class EditorDetailPane {
             g.fill(x, ty + 2, x + 4, ty + 6, TemplateTilePainter.DIRTY);
             x += 8;
         }
+        x = drawUploadNote(g, font, art, x, ty);
         int saveX = h.right() - 1;
         goHereRect = null;
         String label = EditorScreenLang.text(EditorScreenLang.GO_HERE);
@@ -397,6 +401,40 @@ public final class EditorDetailPane {
                 hot ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
             g.drawString(font, label, bx + 4, ty, hot ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
         }
+    }
+
+    /**
+     * The small note beside the name while a save goes up to the relay — "↑ Uploading…" — and, for a
+     * moment after, how it ended. The upload runs for seconds after the local save and is what the
+     * Submit icon and the version strip wait on, so without this the screen looked as if the save
+     * had not taken. Answers the x the rest of the header continues from.
+     */
+    private static int drawUploadNote(GuiGraphics g, Font font, TemplateArt art, int x, int ty) {
+        UploadStatusBook.Shown shown = EditorUploadStatus.shown(art);
+        if (shown == null) return x;
+        String note;
+        int colour;
+        switch (shown) {
+            case UPLOADING -> {
+                int dots = (int) ((System.currentTimeMillis() / 400L) % 4L);
+                note = "↑ " + EditorScreenLang.text(EditorScreenLang.UPLOADING) + ".".repeat(dots);
+                colour = UPLOADING_TEXT;
+            }
+            case UPLOADED -> {
+                note = "✓ " + EditorScreenLang.text(EditorScreenLang.UPLOADED);
+                colour = HERE_TEXT;
+            }
+            default -> {
+                note = "✗ " + EditorScreenLang.text(EditorScreenLang.UPLOAD_FAILED);
+                colour = FAILED_TEXT;
+            }
+        }
+        g.drawString(font, note, x, ty, colour, false);
+        // Reserve room for the widest the dots get, so what follows does not shuffle each beat.
+        int reserve = shown == UploadStatusBook.Shown.UPLOADING
+            ? font.width("↑ " + EditorScreenLang.text(EditorScreenLang.UPLOADING) + "...")
+            : font.width(note);
+        return x + reserve + 6;
     }
 
     private void drawIcons(GuiGraphics g) {
