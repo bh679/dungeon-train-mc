@@ -14,7 +14,9 @@ import java.util.Locale;
  *
  * <p>Large Biomes and Amplified are <em>modern presets</em> rather than ports — vanilla's own router with the
  * preset flag flipped ({@link games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain}); they run
- * vanilla's surface, carvers and decoration ({@link #isPreset}).</p>
+ * vanilla's surface, carvers and decoration ({@link #isPreset}). Large Biomes is built but <em>not shipped</em>:
+ * it is off by default and absent from {@code CycleLayout#DEFAULT_ORDER} (opt in with
+ * {@code legacyLargeBiomesEnabled} + a {@code legacy:large_biomes=…} era in {@code worldgenCycleOrder}).</p>
  */
 public enum LegacyBandKind {
     /** Vanilla's Large Biomes preset — the same terrain with every climate region four times as wide. */

@@ -21,7 +21,7 @@ public final class LegacyBandConfig {
     /** Shipped defaults per kind: {@code {hold, fade, leadGap}}. */
     public record Defaults(boolean enabled, int hold, int fade, int leadGap) {}
 
-    public static final Defaults LARGE_BIOMES_DEFAULTS = new Defaults(true, 6000, 480, 3000);
+    public static final Defaults LARGE_BIOMES_DEFAULTS = new Defaults(false, 6000, 480, 3000);
     public static final Defaults AMPLIFIED_DEFAULTS = new Defaults(true, 6000, 480, 3000);
     public static final Defaults BETA_DEFAULTS = new Defaults(true, 6000, 480, 3000);
     public static final Defaults SKYLANDS_DEFAULTS = new Defaults(true, 6000, 480, 3000);

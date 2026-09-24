@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_large_biomes",
+  "parent": "dungeontrain:dungeon_train/reached_stacks",
   "display": {
     "icon": { "id": "minecraft:stone" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_amplified.title" },

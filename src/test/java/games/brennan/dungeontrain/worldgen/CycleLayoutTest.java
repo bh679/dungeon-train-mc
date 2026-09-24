@@ -42,8 +42,9 @@ final class CycleLayoutTest {
         assertEquals(16, l.count());
         // Lap 1: 3000 + (232+300+4000+300+232) + 4000 + (740+4000+740) + (600+4000+600+6000+600) = 29,344
         // Lap 2: 8000 + 9064 + 8000 + 9480 + (1500+15000) + 5000 = 56,044
-        // Lap 3: legacy (480·11 + 5000·2 + 5000 + 4320 + 5000 + 2000·4 + 1000 = 38,600) + 2000 + 6500 + 5000 + 6500 = 58,600
-        assertEquals(143_988L, l.period());
+        // Lap 3: legacy (480·10 + 5000 + 5000 + 4320 + 5000 + 2000·4 + 1000 = 33,120) + 2000 + 6500 + 5000 + 6500 = 53,120
+        // (Large Biomes is built but off by default and not in the shipped order.)
+        assertEquals(138_508L, l.period());
         assertEquals(2, l.typeCount(Type.NETHER));
         assertEquals(2, l.typeCount(Type.END));
         assertEquals(1, l.typeCount(Type.LEGACY_RUN));
@@ -72,19 +73,18 @@ final class CycleLayoutTest {
     void legacyRun() {
         CycleLayout l = shipped();
         LegacySpan[] eras = l.eras();
-        assertEquals(10, eras.length);
-        assertEquals(LegacyBandKind.LARGE_BIOMES, eras[0].kind());
-        assertEquals(LegacyBandKind.AMPLIFIED, eras[1].kind());
-        assertEquals(LegacyBandKind.BETA, eras[2].kind());
-        assertEquals(LegacyBandKind.FAR_LANDS, eras[3].kind());
-        assertEquals(LegacyBandKind.VOID, eras[9].kind());
+        assertEquals(9, eras.length);
+        assertEquals(LegacyBandKind.AMPLIFIED, eras[0].kind());
+        assertEquals(LegacyBandKind.BETA, eras[1].kind());
+        assertEquals(LegacyBandKind.FAR_LANDS, eras[2].kind());
+        assertEquals(LegacyBandKind.VOID, eras[8].kind());
         assertEquals(5000, eras[0].hold());
-        assertEquals(5000, eras[2].hold());
-        assertEquals(4320, eras[3].hold());
-        assertEquals(1000, eras[9].hold());
+        assertEquals(5000, eras[1].hold());
+        assertEquals(4320, eras[2].hold());
+        assertEquals(1000, eras[8].hold());
         assertEquals(480L, l.eraCoreStart(0));
         assertEquals(480L + 5000L + 480L, l.eraCoreStart(1));
-        long total = 480L * 11 + 5000 * 2 + 5000 + 4320 + 5000 + 2000 * 4 + 1000;
+        long total = 480L * 10 + 5000 + 5000 + 4320 + 5000 + 2000 * 4 + 1000;
         assertEquals(total, l.length(11));
     }
 
@@ -122,7 +122,7 @@ final class CycleLayoutTest {
         defaults[LegacyBandKind.SKYLANDS.ordinal()] = new LegacySpan(LegacyBandKind.SKYLANDS, 0, 480, 0); // disabled
         CycleLayout l = CycleLayout.parse("legacy", FADES, defaults, t -> true, m -> {});
         assertEquals(1, l.count());
-        assertEquals(LegacyBandKind.values().length - 1, l.eras().length);
+        assertEquals(LegacyBandKind.values().length - 1, l.eras().length);   // eraDefaults() enables every kind
         for (LegacySpan e : l.eras()) assertEquals(6000, e.hold());
     }
 
