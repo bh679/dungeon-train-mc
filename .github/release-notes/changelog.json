@@ -18585,6 +18585,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "rounded-advancement-retitle",
+      "version": "0.951.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "An advancement no longer shares its name with Full Circle",
+      "summary": "One of the newer journey advancements was also called \u201cFull Circle\u201d, the same as the drifting-carriage one. It's now called \u201cRounded\u201d, so the two are easy to tell apart on the advancements screen and in Discord.",
+      "highlights": [],
+      "pr": 1529,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
