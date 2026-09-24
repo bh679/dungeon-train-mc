@@ -39,6 +39,9 @@ final class EditorDirtyKeyTest {
         // A room uploaded as a TRACK sub-kind lands in the same key space.
         assertEquals("portal_room.bb",
                 EditorDirtyCheck.dirtyKeyFor(BuilderPhotoPaths.Kind.TRACK, TrackKind.PORTAL_ROOM.id(), "bb"));
+        // …and so does the Template form, which the Save-as guard reads.
+        assertEquals("portal_room.bb",
+                EditorDirtyCheck.dirtyKeyFor(new games.brennan.dungeontrain.template.Template.PortalRoom("bb")));
     }
 
     @Test
