@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyOffset;
@@ -11,6 +12,7 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -22,9 +24,13 @@ import net.minecraft.server.level.ServerPlayer;
 import org.joml.Vector3d;
 import org.slf4j.Logger;
 
+import java.util.OptionalInt;
+
 /**
  * Registers {@code /dtp <x>} (OP-only, permission level 2): teleports the
  * player to world-X {@code x} and guarantees a train is there to land on.
+ * {@code /dtp <band>} (e.g. {@code nether}, {@code end}, {@code spheres}) does the
+ * same for the next occurrence of that band ahead of the player — see {@link BandLocator}.
  *
  * <p>Vanilla {@code /tp} (and a bare walk) can outrun the train —
  * {@link games.brennan.dungeontrain.train.TrainCarriageAppender} only
@@ -69,13 +75,47 @@ public final class DtpCommand {
      */
     private static final double BLOCKS_PER_CARRIAGE = 35676.0 / 1041.0;
 
+    /** Default blocks past a band's entry column for {@code /dtp <band>} (override with {@code /dtp <band> <distance>}) — just inside, not on the boundary. */
+    private static final int BAND_ENTRY_INSET = 32;
+
     private DtpCommand() {}
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("dtp")
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("dtp")
             .requires(s -> s.hasPermission(2))
             .then(Commands.argument("x", DoubleArgumentType.doubleArg())
-                .executes(ctx -> run(ctx.getSource(), DoubleArgumentType.getDouble(ctx, "x")))));
+                .executes(ctx -> run(ctx.getSource(), DoubleArgumentType.getDouble(ctx, "x"))));
+        for (TrainPhase phase : TrainPhase.values()) {
+            root.then(bandLiteral(phase.token(), phase));
+        }
+        root.then(bandLiteral("ow", TrainPhase.OVERWORLD));
+        root.then(bandLiteral("ud", TrainPhase.UPSIDE_DOWN));
+        dispatcher.register(root);
+    }
+
+    /** {@code /dtp <band>}: literal children win over the {@code x} double argument, so numeric use is unaffected. */
+    private static LiteralArgumentBuilder<CommandSourceStack> bandLiteral(String token, TrainPhase phase) {
+        return Commands.literal(token)
+            .executes(ctx -> runBand(ctx.getSource(), phase, BAND_ENTRY_INSET))
+            .then(Commands.argument("distance", DoubleArgumentType.doubleArg())
+                .executes(ctx -> runBand(ctx.getSource(), phase, DoubleArgumentType.getDouble(ctx, "distance"))));
+    }
+
+    /** Teleport {@code distance} blocks past the entry of the next {@code phase} band ahead of the player, via the normal {@link #run} path. */
+    private static int runBand(CommandSourceStack source, TrainPhase phase, double distance) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception e) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
+            return 0;
+        }
+        OptionalInt entry = BandLocator.nextBandStartX(source.getServer().overworld(), phase, player.getBlockX());
+        if (entry.isEmpty()) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.package.dtp_band_not_found", phase.displayName()));
+            return 0;
+        }
+        return run(source, entry.getAsInt() + distance);
     }
 
     private static int run(CommandSourceStack source, double x) {

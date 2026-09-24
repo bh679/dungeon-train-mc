@@ -11043,6 +11043,15 @@
       ]
     }
   },
+  "chat.dungeontrain.package.dtp_band_not_found": {
+    "1": {
+      "label": "the name of a world band",
+      "examples": [
+        "Nether",
+        "Spheres"
+      ]
+    }
+  },
   "chat.dungeontrain.package.teleporting_x_spawning_train": {
     "1": {
       "label": "a coordinate",

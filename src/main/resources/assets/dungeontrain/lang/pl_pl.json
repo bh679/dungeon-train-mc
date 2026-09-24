@@ -2893,6 +2893,7 @@
   "chat.dungeontrain.package.world_doesn_t_use": "Ten świat nie używa systemu automatycznego pociągu (startsWithTrain jest wyłączone).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain nie powiódł się: %s: %s",
   "chat.dungeontrain.package.teleporting_x_spawning_train": "Przenoszę do X=%s — przywołuję tam pociąg; wylądujesz na platformie, gdy się ustabilizuje. Trudność ustawiono na poziom %s, aby pasowała.",
+  "chat.dungeontrain.package.dtp_band_not_found": "Brak pasa %s przed tobą — może być wyłączony w konfiguracji.",
   "chat.dungeontrain.train.spawned_fresh_train_track": "Przywołano nowy pociąg na torze przy X=%s (id statku %s, początkowo %s wagonów / %s bloków, prędkość +X %s m/s) — wylądujesz na platformie, gdy się ustabilizuje. Poprzedni pociąg usunięto; trudność znów skaluje się automatycznie, a zapamiętane wagony społeczności (%s) mogą pojawić się ponownie. Użyj '/dungeontrain carriages <count>', aby zmienić okno wagonów.",
   "chat.dungeontrain.train.train_speed_set_m": "Prędkość pociągu ustawiono na %s m/s (zaktualizowano aktywne: %s %s)",
   "chat.dungeontrain.train.default_carriages_set_appender": "Domyślną liczbę wagonów ustawiono na %s. Dołączacz wydłuży lub przytnie potrzebne okno w następnym ticku, gdy gracz przekroczy granice pIdx.",

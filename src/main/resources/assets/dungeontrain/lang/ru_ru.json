@@ -2898,6 +2898,7 @@
   "chat.dungeontrain.package.world_doesn_t_use": "Этот мир не использует систему автопоезда (startsWithTrain выключен).",
   "chat.dungeontrain.package.spawntrain_failed": "ошибка spawnTrain: %s: %s",
   "chat.dungeontrain.package.teleporting_x_spawning_train": "Телепортация к X=%s — там сейчас создаётся поезд; вы окажетесь на платформе, как только он остановится. Сложность установлена на ступень %s для соответствия.",
+  "chat.dungeontrain.package.dtp_band_not_found": "Впереди нет полосы «%s» — возможно, она отключена в настройках.",
   "chat.dungeontrain.train.spawned_fresh_train_track": "Создан новый поезд на путях в X=%s (id корабля %s, заполнен %s вагонами / %s блоками, скорость +X %s м/с) — вы окажетесь на платформе, как только он остановится. Предыдущий поезд удалён; сложность снова масштабируется автоматически, и %s запомненных вагонов сообщества могут появиться вновь. Используйте '/dungeontrain carriages <count>', чтобы изменить окно вагонов.",
   "chat.dungeontrain.train.train_speed_set_m": "Скорость поезда установлена на %s м/с (обновлено активных: %s %s)",
   "chat.dungeontrain.train.default_carriages_set_appender": "Количество вагонов по умолчанию установлено на %s. Добавлятель расширит или сократит нужное окно на следующем тике, когда игрок пересечёт границу pIdx.",
