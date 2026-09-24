@@ -75,7 +75,7 @@ public final class DtpCommand {
      */
     private static final double BLOCKS_PER_CARRIAGE = 35676.0 / 1041.0;
 
-    /** Blocks past a band's entry column that {@code /dtp <band>} lands at — just inside, not on the boundary. */
+    /** Default blocks past a band's entry column for {@code /dtp <band>} (override with {@code /dtp <band> <distance>}) — just inside, not on the boundary. */
     private static final int BAND_ENTRY_INSET = 32;
 
     private DtpCommand() {}
@@ -95,11 +95,14 @@ public final class DtpCommand {
 
     /** {@code /dtp <band>}: literal children win over the {@code x} double argument, so numeric use is unaffected. */
     private static LiteralArgumentBuilder<CommandSourceStack> bandLiteral(String token, TrainPhase phase) {
-        return Commands.literal(token).executes(ctx -> runBand(ctx.getSource(), phase));
+        return Commands.literal(token)
+            .executes(ctx -> runBand(ctx.getSource(), phase, BAND_ENTRY_INSET))
+            .then(Commands.argument("distance", DoubleArgumentType.doubleArg())
+                .executes(ctx -> runBand(ctx.getSource(), phase, DoubleArgumentType.getDouble(ctx, "distance"))));
     }
 
-    /** Teleport to just inside the next {@code phase} band ahead of the player, via the normal {@link #run} path. */
-    private static int runBand(CommandSourceStack source, TrainPhase phase) {
+    /** Teleport {@code distance} blocks past the entry of the next {@code phase} band ahead of the player, via the normal {@link #run} path. */
+    private static int runBand(CommandSourceStack source, TrainPhase phase, double distance) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -112,7 +115,7 @@ public final class DtpCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.package.dtp_band_not_found", phase.displayName()));
             return 0;
         }
-        return run(source, entry.getAsInt() + BAND_ENTRY_INSET);
+        return run(source, entry.getAsInt() + distance);
     }
 
     private static int run(CommandSourceStack source, double x) {
