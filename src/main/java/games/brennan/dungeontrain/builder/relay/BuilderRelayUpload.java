@@ -335,9 +335,9 @@ public final class BuilderRelayUpload {
      * world happened to upload.</p>
      */
     public static CompletableFuture<Component> submitToTrain(ServerPlayer player, ServerLevel level,
-                                                             int relayId, boolean publish) {
+                                                             int relayId, boolean publish, SubmitNote note) {
         return withSecret(player, level, relayId,
-                (key, entry, kind) -> publishWith(level, key, entry, kind, publish));
+                (key, entry, kind) -> publishWith(level, key, entry, kind, publish, note));
     }
 
     /**
@@ -486,6 +486,18 @@ public final class BuilderRelayUpload {
         });
     }
 
+    /** A build's owner secret, or why there is none to be had. {@code secret} is empty unless ADOPT. */
+    record SecretLookup(String secret, Adoption verdict) {}
+
+    /**
+     * The owner secret for one of the player's builds: this world's saved one, else recovered from the
+     * relay the way {@link #adopt} does. For writes that need the secret but are not a publish.
+     */
+    static CompletableFuture<SecretLookup> secretFor(ServerPlayer player, ServerLevel level, int relayId) {
+        return withSecretOr(player, level, relayId, verdict -> new SecretLookup("", verdict),
+                (key, entry, kind) -> CompletableFuture.completedFuture(new SecretLookup(entry.secret(), Adoption.ADOPT)));
+    }
+
     /** What a fetch made in {@link #adopt} means for the submission that asked for it. */
     enum Adoption {
         /** The build is this player's and came back with its secret: file it and carry on. */
@@ -516,7 +528,7 @@ public final class BuilderRelayUpload {
     /** The publish call itself, once a secret is in hand — the tail both paths above share. */
     private static CompletableFuture<Component> publishWith(ServerLevel level, String key,
                                                             BuilderRelayBuilds.Entry entry,
-                                                            String kindId, boolean publish) {
+                                                            String kindId, boolean publish, SubmitNote note) {
         if (publish && BuilderRelayKinds.canJoinTheTrain(kindId)
                 && !DungeonTrainConfig.isSharedCarriagesEnabled()) {
             // Nothing leases from the pool while the feature is off, so publishing a carriage would put
@@ -525,7 +537,7 @@ public final class BuilderRelayUpload {
             return CompletableFuture.completedFuture(
                     msg("gui.dungeontrain.builder.profile.pool_off", ChatFormatting.YELLOW));
         }
-        return SharedCarriageClient.publish(entry.relayId(), entry.secret(), publish).thenApply(result -> {
+        return SharedCarriageClient.publish(entry.relayId(), entry.secret(), publish, note).thenApply(result -> {
             if (result.ok()) {
                 onServer(level, () -> {
                     DungeonTrainWorldData live = DungeonTrainWorldData.get(level);
@@ -543,6 +555,31 @@ public final class BuilderRelayUpload {
             }
             return msg("gui.dungeontrain.builder.profile.action_failed", ChatFormatting.RED);
         });
+    }
+
+    /** Characters of reviewer note kept — the same cap the packet and the screen carry. */
+    public static final int NOTE_MAX = 1000;
+
+    /**
+     * The author's note to the reviewer, made safe to forward: line endings normalised, control
+     * characters other than newline dropped, trimmed, and cut at {@link #NOTE_MAX}. Null is an empty
+     * note. Applied on the server before the note is sent anywhere, because the client's cap is a
+     * courtesy and a client is not something the relay should have to trust.
+     */
+    public static String cleanNote(String note) {
+        if (note == null || note.isEmpty()) return "";
+        StringBuilder out = new StringBuilder(note.length());
+        for (int i = 0; i < note.length(); i++) {
+            char c = note.charAt(i);
+            if (c == '\r') {
+                if (i + 1 < note.length() && note.charAt(i + 1) == '\n') continue;
+                out.append('\n');
+            } else if (c == '\n' || c == '\t' || !Character.isISOControl(c)) {
+                out.append(c);
+            }
+        }
+        String cleaned = out.toString().strip();
+        return cleaned.length() > NOTE_MAX ? cleaned.substring(0, NOTE_MAX).strip() : cleaned;
     }
 
     /**

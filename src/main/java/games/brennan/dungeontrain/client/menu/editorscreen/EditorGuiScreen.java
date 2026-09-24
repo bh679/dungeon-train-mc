@@ -24,6 +24,7 @@ import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
+import games.brennan.dungeontrain.client.builder.BuilderSubmitNoteScreen;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfileRequestPacket;
@@ -519,7 +520,18 @@ public final class EditorGuiScreen extends Screen {
     private void submitSelectedCreatorBuild() {
         BuilderProfilePacket.Entry entry = selectedCreatorBuild();
         if (entry == null || !BuilderRelayKinds.canSubmitForReview(entry.kind())) return;
-        DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), !entry.published()));
+        if (entry.published()) {
+            sendCreatorAction(new BuilderProfileActionPacket(entry.relayId(), false));
+            return;
+        }
+        // A submit first asks what the reviewer should know; the send happens on that screen's
+        // Submit, and its Cancel comes back here with nothing sent.
+        BuilderSubmitNoteScreen.open(entry.relayId(), Component.literal(entry.buildName()),
+                note -> sendCreatorAction(new BuilderProfileActionPacket(entry.relayId(), true, note)));
+    }
+
+    private void sendCreatorAction(BuilderProfileActionPacket packet) {
+        DungeonTrainNet.sendToServer(packet);
         // The server's own re-read is addressed to the player's OWN profile, so this listing has to
         // ask again itself — and after a moment, once the relay has actually answered the action.
         creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_SUBMITTING);
@@ -831,6 +843,21 @@ public final class EditorGuiScreen extends Screen {
                     goToLoadedBuild();
                     return true;
                 }
+                case PAGE_PREV -> {
+                    click();
+                    creatorPane.turnSheet(-1);
+                    return true;
+                }
+                case PAGE_NEXT -> {
+                    click();
+                    creatorPane.turnSheet(1);
+                    return true;
+                }
+                case EDIT_NOTE -> {
+                    click();
+                    creatorPane.openNoteEditor(selectedCreatorBuild());
+                    return true;
+                }
                 case PREVIEW -> {
                     orbit.beginDrag();
                     return true;
@@ -1123,6 +1150,10 @@ public final class EditorGuiScreen extends Screen {
             case PAGE_PREV -> {
                 return detail.scrollBy(-1);
             }
+            case EDIT_NOTE -> {
+                detail.openNoteEditor();
+                return true;
+            }
             case PAGE_NEXT -> {
                 return detail.scrollBy(+1);
             }
@@ -1247,6 +1278,9 @@ public final class EditorGuiScreen extends Screen {
         if (onStages()) {
             if (stagesPane.over(layout, mouseX, mouseY)) return stagesPane.scrollBy(dir);
             if (stageDetail.over(mouseX, mouseY) && stageDetail.scrollBy(dir)) return true;
+        } else if (!onNav() && EditorCreatorBuilds.active() && creatorPane.overSheet(mouseX, mouseY)) {
+            creatorPane.turnSheet(dir);
+            return true;
         } else if (!onNav() && detail.overSettings(mouseX, mouseY) && detail.scrollBy(dir)) {
             return true;
         }

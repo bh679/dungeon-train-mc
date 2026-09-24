@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.relay.SubmitNote;
 import games.brennan.dungeontrain.editor.TemplateLootPrefabs;
 import org.slf4j.Logger;
 
@@ -168,7 +169,20 @@ public final class SharedCarriageClient {
                                String source, String stage, String flag, String review, int l, int h, int w,
                                int changeCount, long updatedTs,
                                boolean favourite, String ownerUuid, String ownerName,
-                               boolean templateCopy) {}
+                               boolean templateCopy, SubmitNote note) {
+        public ProfileBuild {
+            note = note == null ? SubmitNote.EMPTY : note;
+        }
+
+        /** A row with no submission answers — every listing but {@code /carriages/mine}. */
+        public ProfileBuild(int id, String kind, String subKind, String buildName, String visibility,
+                            String source, String stage, String flag, String review, int l, int h, int w,
+                            int changeCount, long updatedTs, boolean favourite, String ownerUuid,
+                            String ownerName, boolean templateCopy) {
+            this(id, kind, subKind, buildName, visibility, source, stage, flag, review, l, h, w, changeCount,
+                    updatedTs, favourite, ownerUuid, ownerName, templateCopy, SubmitNote.EMPTY);
+        }
+    }
 
     /**
      * Upload a Train Builder save. {@code visibility} is {@code profile} for a build that is only in
@@ -316,7 +330,19 @@ public final class SharedCarriageClient {
                 str(r, "ownerUuid"), str(r, "ownerName"),
                 r.has("templateCopy") && r.get("templateCopy").isJsonPrimitive()
                         && r.get("templateCopy").getAsJsonPrimitive().isBoolean()
-                        && r.get("templateCopy").getAsBoolean());
+                        && r.get("templateCopy").getAsBoolean(),
+                noteOf(r));
+    }
+
+    /**
+     * The author's Submit for Review answers on a row, as {@code /carriages/mine} spells them:
+     * {@code submitNote: {redstone?, loot?, notes?}} or null. Anything else — absent, null, a bare
+     * string — is no answers rather than a failed row. Package-private for tests.
+     */
+    static SubmitNote noteOf(JsonObject r) {
+        if (r == null || !r.has("submitNote") || !r.get("submitNote").isJsonObject()) return SubmitNote.EMPTY;
+        JsonObject n = r.getAsJsonObject("submitNote");
+        return new SubmitNote(str(n, "redstone"), str(n, "loot"), str(n, "notes"));
     }
 
     /** One builder the relay knows, as a creator search names them. */
@@ -589,10 +615,22 @@ public final class SharedCarriageClient {
      * player is told to try again rather than the relay silently doing nothing.</p>
      */
     public static CompletableFuture<VisibilityResult> publish(int id, String secret, boolean publish) {
+        return publish(id, secret, publish, SubmitNote.EMPTY);
+    }
+
+    /**
+     * As above, with the author's note to the reviewer. Sent on every submit, as
+     * {@code note: {redstone?, loot?, notes?}} with the empty fields left out — an empty object clears
+     * the stored answers; a relay that does not read the field ignores it.
+     */
+    public static CompletableFuture<VisibilityResult> publish(int id, String secret, boolean publish, SubmitNote note) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("secret", secret == null ? "" : secret);
         body.addProperty("publish", publish);
+        // Always on a submit, empty included: the relay keeps the stored answers when a submit carries
+        // no note at all, so sending one is what lets clearing every box clear them.
+        if (publish && note != null) body.add("note", noteJson(note));
         return post("/carriages/publish", body).thenApply(resp -> {
             if (resp == null) return new VisibilityResult(CallStatus.ERROR, false, false, "");
             int sc = resp.statusCode();
@@ -604,6 +642,53 @@ public final class SharedCarriageClient {
             boolean inUse = !ok && "in_use".equals(str(o, "reason"));
             return new VisibilityResult(ok ? CallStatus.OK : CallStatus.ERROR, ok, inUse, str(o, "token"));
         });
+    }
+
+    /**
+     * Replace one build's Submit for Review answers, as its owner — authorised by the owner secret,
+     * like publish. Leaves the build and its review state alone.
+     */
+    public static CompletableFuture<CallStatus> setNote(int id, String secret, SubmitNote note) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("secret", secret == null ? "" : secret);
+        body.add("note", noteJson(note == null ? SubmitNote.EMPTY : note));
+        return post("/carriages/note", body).thenApply(SharedCarriageClient::noteStatus);
+    }
+
+    /**
+     * Replace anybody's build's answers, as the developer — through the admin cap, so only an install
+     * holding the admin URL can. {@link CallStatus#ERROR} straight away when there is none.
+     */
+    public static CompletableFuture<CallStatus> adminSetNote(int id, boolean useLive, SubmitNote note) {
+        String admin = RelayTarget.adminSearchBase();
+        if (admin.isEmpty()) return CompletableFuture.completedFuture(CallStatus.ERROR);
+        JsonObject body = new JsonObject();
+        body.add("note", noteJson(note == null ? SubmitNote.EMPTY : note));
+        return post(admin, "/carriages/" + id + "/note?cap=" + (useLive ? "live" : "dev"), body)
+                .thenApply(SharedCarriageClient::noteStatus);
+    }
+
+    /** What a note write came back with. */
+    private static CallStatus noteStatus(HttpResponse<String> resp) {
+        if (resp == null) {
+            logFailure("/carriages/note", null);
+            return CallStatus.ERROR;
+        }
+        int sc = resp.statusCode();
+        if (sc == 403) return CallStatus.FORBIDDEN;
+        if (sc == 404) return CallStatus.UNKNOWN;
+        JsonObject o = sc / 100 == 2 ? asObject(resp) : null;
+        return o != null && o.has("ok") && o.get("ok").getAsBoolean() ? CallStatus.OK : CallStatus.ERROR;
+    }
+
+    /** The note as the relay reads it: only the fields the author filled in. Package-private for tests. */
+    static JsonObject noteJson(SubmitNote note) {
+        JsonObject o = new JsonObject();
+        if (!note.redstone().isEmpty()) o.addProperty("redstone", note.redstone());
+        if (!note.loot().isEmpty()) o.addProperty("loot", note.loot());
+        if (!note.notes().isEmpty()) o.addProperty("notes", note.notes());
+        return o;
     }
 
     /**
