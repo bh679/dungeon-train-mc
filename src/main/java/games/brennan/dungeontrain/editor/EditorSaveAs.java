@@ -54,6 +54,8 @@ public final class EditorSaveAs {
 
     /** Ask the player what to do with a Save on {@code model}. Writes nothing. */
     public static void prompt(ServerPlayer player, Template model) {
+        LOGGER.info("[DungeonTrain] Save-as: asking {} what to do with shipped '{}'",
+            player.getName().getString(), EditorTemplateAddress.of(model));
         DungeonTrainNet.sendTo(player,
             new EditorSaveAsPromptPacket(EditorTemplateAddress.of(model), model.displayName()));
     }
@@ -117,7 +119,7 @@ public final class EditorSaveAs {
             EditorRelaySave.withoutUpload(() -> Stores.save(player, source));
             made = kind.copy(player, source, name);
         } catch (Throwable t) {
-            LOGGER.error("[DungeonTrain] Save-as: '{}' -> '{}' failed", source.id(), name, t);
+            LOGGER.error("[DungeonTrain] Save-as: {} -> '{}' failed", EditorTemplateAddress.of(source), name, t);
             fail(player, Component.translatable("chat.dungeontrain.save_as.failed", String.valueOf(t.getMessage())));
         } finally {
             restore(player, level, dims, kind, source, recorded);
@@ -130,8 +132,8 @@ public final class EditorSaveAs {
         EditorRelaySave.afterSave(player, made);
         player.sendSystemMessage(Component.translatable("chat.dungeontrain.save_as.saved",
             made.displayName(), source.displayName()).withStyle(ChatFormatting.GREEN));
-        LOGGER.info("[DungeonTrain] Save-as: {} saved '{}' as new '{}'; '{}' restored",
-            player.getName().getString(), source.id(), made.id(), source.id());
+        LOGGER.info("[DungeonTrain] Save-as: {} saved {} as new {}; the source restored",
+            player.getName().getString(), EditorTemplateAddress.of(source), EditorTemplateAddress.of(made));
         refreshUnsaved(player);
         return true;
     }
