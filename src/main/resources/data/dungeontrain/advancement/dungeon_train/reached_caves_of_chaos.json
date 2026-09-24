@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_stacks",
+  "parent": "dungeontrain:dungeon_train/reached_far_lands",
   "display": {
     "icon": { "id": "minecraft:cobbled_deepslate" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_caves_of_chaos.title" },

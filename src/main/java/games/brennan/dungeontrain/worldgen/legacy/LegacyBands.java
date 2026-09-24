@@ -269,7 +269,7 @@ public final class LegacyBands {
     /**
      * World Y of {@code kind}'s old {@code y = 0} in {@code level}. Beta, Alpha and Infdev are pinned to sea level
      * ({@link LegacyChunkWriter#Y_OFFSET}); Caves of Chaos shares that origin (its 256 column tops out at
-     * world 254, its low sea sits just above the floor and the track runs through the stone mass);
+     * world 254 with open void beneath it, and the track runs through the stone mass);
      * Skylands has no sea, so it follows the train's bed instead, clamped so its lowest land stays above
      * the world floor.
      */

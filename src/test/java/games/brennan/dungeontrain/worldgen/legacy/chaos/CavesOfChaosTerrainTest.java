@@ -11,6 +11,7 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The Caves of Chaos profile on the Beta pipeline: a 256-block column, sea at 6, stone high overhead. */
@@ -24,12 +25,13 @@ final class CavesOfChaosTerrainTest {
     @DisplayName("the profile is Moderner Beta's Beta Caves of Chaos preset")
     void profile() {
         assertEquals(256, PROFILE.height());
-        assertEquals(6, PROFILE.seaLevel());
+        assertEquals(0, PROFILE.seaLevel());
+        assertFalse(PROFILE.bedrock());
         assertEquals(64.0D, PROFILE.lowerLimitScale());
         assertEquals(2.0D, PROFILE.upperLimitScale());
         assertEquals(8.0D, PROFILE.stretchY());
         assertEquals(256, TERRAIN.height());
-        assertEquals(6, TERRAIN.seaLevel());
+        assertEquals(0, TERRAIN.seaLevel());
     }
 
     @Test
@@ -45,7 +47,7 @@ final class CavesOfChaosTerrainTest {
     }
 
     @Test
-    @DisplayName("bedrock at the bottom, water only under the low sea, stone far above Beta's ceiling")
+    @DisplayName("no bedrock, no sea, stone far above Beta's ceiling")
     void column() {
         boolean stoneAbove128 = false;
         int columns = 0;
@@ -56,14 +58,12 @@ final class CavesOfChaosTerrainTest {
                 for (int x = 0; x < 16; x++) {
                     for (int z = 0; z < 16; z++) {
                         columns++;
-                        assertEquals(BetaBlocks.BEDROCK, c.get(x, 0, z));
+                        assertNotEquals(BetaBlocks.BEDROCK, c.get(x, 0, z));
                         // No air-at-the-top check: like the original preset (MC-71084), the terrain runs into the ceiling.
                         boolean land = false;
                         for (int y = 0; y < 256; y++) {
                             byte b = c.get(x, y, z);
-                            if (b == BetaBlocks.WATER || b == BetaBlocks.ICE) {
-                                assertTrue(y < PROFILE.seaLevel(), "water at " + y);
-                            }
+                            assertTrue(b != BetaBlocks.WATER && b != BetaBlocks.ICE, "sea water at " + y);
                             if (y >= 128 && b == BetaBlocks.STONE) stoneAbove128 = true;
                             if (y >= PROFILE.seaLevel() && (b == BetaBlocks.STONE || b == BetaBlocks.GRASS || b == BetaBlocks.DIRT)) land = true;
                         }

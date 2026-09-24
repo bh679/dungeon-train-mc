@@ -74,16 +74,17 @@ final class CycleLayoutTest {
         CycleLayout l = shipped();
         LegacySpan[] eras = l.eras();
         assertEquals(9, eras.length);
-        assertEquals(LegacyBandKind.CAVES_OF_CHAOS, eras[0].kind());
-        assertEquals(LegacyBandKind.BETA, eras[1].kind());
-        assertEquals(LegacyBandKind.FAR_LANDS, eras[2].kind());
+        assertEquals(LegacyBandKind.BETA, eras[0].kind());
+        assertEquals(LegacyBandKind.FAR_LANDS, eras[1].kind());
+        assertEquals(LegacyBandKind.CAVES_OF_CHAOS, eras[2].kind());
         assertEquals(LegacyBandKind.VOID, eras[8].kind());
-        assertEquals(4000, eras[0].hold());
-        assertEquals(5000, eras[1].hold());
-        assertEquals(4320, eras[2].hold());
+        assertEquals(5000, eras[0].hold());
+        assertEquals(4320, eras[1].hold());
+        assertEquals(4000, eras[2].hold());
         assertEquals(1000, eras[8].hold());
         assertEquals(480L, l.eraCoreStart(0));
-        assertEquals(480L + 4000L + 480L, l.eraCoreStart(1));
+        assertEquals(480L + 5000L + 480L, l.eraCoreStart(1));
+        assertEquals(480L + 5000L + 480L + 4320L + 480L, l.eraCoreStart(2));
         long total = 480L * 10 + 4000 + 5000 + 4320 + 5000 + 2000 * 4 + 1000;
         assertEquals(total, l.length(11));
     }

@@ -233,14 +233,14 @@ public final class ZoneProgressEvents {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_stacks");
             }
 
-            // Caves of Chaos legacy band — the first era after the stacks: the Customized preset's cavernous
-            // stone on the Beta pipeline. Same depth gate.
+            // Caves of Chaos legacy band — after the Far Lands: the Customized preset's cavernous stone on the
+            // Beta pipeline, over void. Same depth gate.
             if (LegacyBands.isInBand(level, LegacyBandKind.CAVES_OF_CHAOS, px)
                 && LegacyBands.isInBand(level, LegacyBandKind.CAVES_OF_CHAOS, px - CAVES_OF_CHAOS_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_caves_of_chaos");
             }
 
-            // Beta legacy band — after Caves of Chaos: terrain from Beta 1.7.3's own generator. Same depth gate.
+            // Beta legacy band — after the stacks: terrain from Beta 1.7.3's own generator. Same depth gate.
             if (LegacyBands.isInBand(level, LegacyBandKind.BETA, px)
                 && LegacyBands.isInBand(level, LegacyBandKind.BETA, px - BETA_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_beta");

@@ -34,16 +34,19 @@ public final class BetaTerrain {
 
     /**
      * The knobs a generator profile turns: the column height (a multiple of 8), the sea level, the two
-     * limit-noise divisors (Beta: 512 / 512) and the vertical stretch of the density offset (Beta: 12).
+     * limit-noise divisors (Beta: 512 / 512), the vertical stretch of the density offset (Beta: 12) and whether
+     * the bottom rows are bedrock.
      */
-    public record Profile(int height, int seaLevel, double lowerLimitScale, double upperLimitScale, double stretchY) {
+    public record Profile(int height, int seaLevel, double lowerLimitScale, double upperLimitScale, double stretchY,
+                          boolean bedrock) {
         /** Beta 1.7.3 as shipped. */
-        public static final Profile BETA = new Profile(HEIGHT, SEA_LEVEL, 512.0D, 512.0D, 12.0D);
+        public static final Profile BETA = new Profile(HEIGHT, SEA_LEVEL, 512.0D, 512.0D, 12.0D, true);
         /**
-         * The Caves of Chaos "Customized" preset on the Beta pipeline: a 256-block column, the sea down at
-         * y 6, limit divisors 64 / 2 and stretch 8 — mostly cavernous stone with towering overhangs.
+         * The Caves of Chaos "Customized" preset on the Beta pipeline: a 256-block column, limit divisors 64 / 2
+         * and stretch 8 — mostly cavernous stone with towering overhangs. The preset's sea sat at y 6; here the
+         * column hangs over open void, so there is no sea and no bedrock.
          */
-        public static final Profile CAVES_OF_CHAOS = new Profile(256, 6, 64.0D, 2.0D, 8.0D);
+        public static final Profile CAVES_OF_CHAOS = new Profile(256, 0, 64.0D, 2.0D, 8.0D, false);
 
         public Profile {
             if (height <= 0 || height % 8 != 0) throw new IllegalArgumentException("height must be a multiple of 8: " + height);
@@ -288,6 +291,7 @@ public final class BetaTerrain {
         final double d = 0.03125D;
         final int height = profile.height();
         final int seaLevel = profile.seaLevel();
+        final boolean bedrock = profile.bedrock();
         double[] sand = beachNoise.sampleGrid(chunkX * 16, chunkZ * 16, 0.0D, 16, 16, 1, d, d, 1.0D);
         double[] gravel = beachNoise.sampleGrid(chunkX * 16, 109.0134D, chunkZ * 16, 16, 1, 16, d, 1.0D, d);
         double[] depthNoise = surfaceNoise.sampleGrid(chunkX * 16, chunkZ * 16, 0.0D, 16, 16, 1, d * 2.0D, d * 2.0D, d * 2.0D);
@@ -303,8 +307,8 @@ public final class BetaTerrain {
                 byte filler = biome.fillerBlock();
                 for (int y = height - 1; y >= 0; y--) {
                     int i = idx(x, y, z);
-                    if (y <= rand.nextInt(5)) {
-                        blocks[i] = BetaBlocks.BEDROCK;
+                    if (y <= rand.nextInt(5)) {          // the draw is made either way: same RNG stream
+                        if (bedrock) blocks[i] = BetaBlocks.BEDROCK;
                         continue;
                     }
                     byte b = blocks[i];

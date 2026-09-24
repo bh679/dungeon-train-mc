@@ -48,7 +48,7 @@ public enum TrainPhase {
     FAR_LANDS,
     /** Terrain from a port of Classic 0.30's finite level generator; see {@link games.brennan.dungeontrain.worldgen.legacy.classic.ClassicLevels}. */
     CLASSIC,
-    /** The Caves of Chaos preset on the Beta pipeline — cavernous stone to y 256; see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
+    /** The Caves of Chaos preset on the Beta pipeline — cavernous stone to y 256 over void; see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
     CAVES_OF_CHAOS;
 
     /** Bitmask with every phase set ({@code 1<<ordinal} per value) — the "all phases" wire value. */

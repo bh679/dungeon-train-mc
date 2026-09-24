@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_far_lands",
+  "parent": "dungeontrain:dungeon_train/reached_caves_of_chaos",
   "display": {
     "icon": { "id": "minecraft:grass_block" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_overworld_again.title" },
