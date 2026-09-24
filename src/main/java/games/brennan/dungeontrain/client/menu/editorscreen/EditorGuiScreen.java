@@ -123,6 +123,14 @@ public final class EditorGuiScreen extends Screen {
     private int previewSeq;
     /** The relay row the preview is paging, so a change of selection can reset the paging. */
     private int previewRelayId;
+    /**
+     * The selection as of the last frame, and whether it had unsaved work then — so a save of it
+     * (dirty turning clean) can drop its baked model. The model is baked from the file once per
+     * screen, so without this the preview kept showing the build from before the save until X was
+     * reopened. Relay uploads refresh it too (EditorUploadStatus); this covers saves that stay local.
+     */
+    private VariantKey dirtyFor;
+    private boolean wasDirty;
 
     public EditorGuiScreen() {
         super(Component.translatable("gui.dungeontrain.editor_screen.title"));
@@ -262,6 +270,16 @@ public final class EditorGuiScreen extends Screen {
         }
     }
 
+    /** The selection just went from unsaved to saved: re-bake its model from the file the save wrote. */
+    private void refreshModelAfterSave(EditorScreenActions.Ctx ctx) {
+        VariantKey selection = ctx.selection();
+        if (selection != null && selection.equals(dirtyFor) && wasDirty && !ctx.dirty()) {
+            EditorUploadStatus.evictModel(TemplateArt.of(selection));
+        }
+        dirtyFor = selection;
+        wasDirty = ctx.dirty();
+    }
+
     /** A command went out: give the server a moment, then ask what changed. */
     private void afterCommand() {
         EditorRosterClient.scheduleRefresh(REFRESH_DELAY_TICKS);
@@ -290,6 +308,7 @@ public final class EditorGuiScreen extends Screen {
         games.brennan.dungeontrain.client.builder.StagePreviews.beginFrame();
 
         EditorScreenActions.Ctx ctx = context(index);
+        refreshModelAfterSave(ctx);
         if (previewKey == null ? ctx.selection() != null : !previewKey.equals(ctx.selection())) {
             previewKey = ctx.selection();
             orbit.reset();

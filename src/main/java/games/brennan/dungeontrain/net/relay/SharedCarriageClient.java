@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.net.relay;
 
+import games.brennan.dungeontrain.builder.relay.BuilderProfileCap;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -261,21 +262,40 @@ public final class SharedCarriageClient {
      */
     public static CompletableFuture<List<ProfileBuild>> listMine(String ownerUuid, String viewerUuid,
                                                                  String baseUrl) {
+        return listMineWithCap(ownerUuid, viewerUuid, baseUrl).thenApply(mine -> mine == null ? null : mine.builds());
+    }
+
+    /**
+     * A profile listing together with how many unpublished builds its owner may keep.
+     *
+     * @param cap the relay's {@code cap} for this owner — the shared default for most players, a
+     *            per-player exception for a few (the dev client's {@code Dev}). A relay that predates
+     *            the field answers without it, and {@link BuilderProfileCap#DEFAULT_PROFILE_BUILDS}
+     *            stands in, which is exactly what the mod assumed before the relay reported one.
+     */
+    public record Mine(List<ProfileBuild> builds, int cap) {}
+
+    /** {@link #listMine(String, String, String)}, keeping the owner's cap the relay reports beside it. */
+    public static CompletableFuture<Mine> listMineWithCap(String ownerUuid, String viewerUuid, String baseUrl) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
         body.addProperty("viewer", viewerUuid == null ? "" : viewerUuid);
-        return post(baseUrl, "/carriages/mine", body).thenApply(resp -> {
-            JsonObject o = okJson(resp);
-            if (o == null || !o.has("carriages") || !o.get("carriages").isJsonArray()) return null;
-            List<ProfileBuild> out = new java.util.ArrayList<>();
-            for (JsonElement el : o.getAsJsonArray("carriages")) {
-                if (!el.isJsonObject()) continue;
-                JsonObject r = el.getAsJsonObject();
-                if (!r.has("id")) continue;
-                out.add(parseBuild(r));
-            }
-            return List.copyOf(out);
-        });
+        return post(baseUrl, "/carriages/mine", body).thenApply(resp -> parseMine(okJson(resp)));
+    }
+
+    /** The {@code /carriages/mine} reply, or {@code null} when it is unusable. Package-private for tests. */
+    static Mine parseMine(JsonObject o) {
+        if (o == null || !o.has("carriages") || !o.get("carriages").isJsonArray()) return null;
+        List<ProfileBuild> out = new java.util.ArrayList<>();
+        for (JsonElement el : o.getAsJsonArray("carriages")) {
+            if (!el.isJsonObject()) continue;
+            JsonObject r = el.getAsJsonObject();
+            if (!r.has("id")) continue;
+            out.add(parseBuild(r));
+        }
+        int cap = o.has("cap") && o.get("cap").isJsonPrimitive() && o.get("cap").getAsJsonPrimitive().isNumber()
+                ? o.get("cap").getAsInt() : 0;
+        return new Mine(List.copyOf(out), cap > 0 ? cap : BuilderProfileCap.DEFAULT_PROFILE_BUILDS);
     }
 
     /**
@@ -591,6 +611,42 @@ public final class SharedCarriageClient {
      * now, and — on a withdraw — the fresh lease token the relay handed back so editing can continue.
      */
     public record VisibilityResult(CallStatus status, boolean ok, boolean inUse, String token) {}
+
+    /**
+     * Remove one of this player's builds from the relay for good — the My Builds trash button. Authed
+     * by the build's owner {@code secret}, like {@link #publish}; answered in the same shape, because
+     * the two refusals are the same: {@link VisibilityResult#inUse()} while another world is holding
+     * the build, {@link CallStatus#UNKNOWN} when the relay has no such id (already gone). The token
+     * is always empty — nothing is handed back from a delete.
+     *
+     * <p>This world's own id rides along so a lease it holds itself — the one its last save took —
+     * never counts as "in use"; {@code force} is the player's "delete anyway" past a lease that
+     * genuinely belongs to somebody else.</p>
+     */
+    public static CompletableFuture<VisibilityResult> deleteBuild(int id, String secret, boolean force) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("secret", secret == null ? "" : secret);
+        body.addProperty("world", WORLD);
+        if (force) body.addProperty("force", true);
+        return post("/carriages/delete", body).thenApply(resp -> {
+            if (resp == null) {
+                logFailure("/carriages/delete", null);
+                return new VisibilityResult(CallStatus.ERROR, false, false, "");
+            }
+            int sc = resp.statusCode();
+            if (sc == 403) return new VisibilityResult(CallStatus.FORBIDDEN, false, false, "");
+            if (sc == 404) return new VisibilityResult(CallStatus.UNKNOWN, false, false, "");
+            JsonObject o = sc / 100 == 2 ? asObject(resp) : null;
+            if (o == null) {
+                logFailure("/carriages/delete", resp);
+                return new VisibilityResult(CallStatus.ERROR, false, false, "");
+            }
+            boolean ok = o.has("ok") && o.get("ok").getAsBoolean();
+            boolean inUse = !ok && "in_use".equals(str(o, "reason"));
+            return new VisibilityResult(ok ? CallStatus.OK : CallStatus.ERROR, ok, inUse, "");
+        });
+    }
 
     /**
      * Take a lease on one build this player owns, so a later save can write to it. Needed whenever the

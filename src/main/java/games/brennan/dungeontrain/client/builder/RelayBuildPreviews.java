@@ -155,6 +155,28 @@ public final class RelayBuildPreviews {
         PENDING.add(new Pending(key, template));
     }
 
+    /**
+     * Forget everything held for one build — its baked versions and its history — so the next ask
+     * goes back to the relay. Called when a save of that build has just landed there: the cached
+     * copy is the version before it, and the history is one entry short.
+     *
+     * <p>Render thread only — it closes the dropped meshes' buffers.</p>
+     */
+    public static void forget(int relayId) {
+        if (relayId <= 0) return;
+        Iterator<Map.Entry<Key, Entry>> it = CACHE.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Key, Entry> e = it.next();
+            if (e.getKey().relayId() != relayId) continue;
+            if (e.getValue().mesh() != null) e.getValue().mesh().close();
+            it.remove();
+        }
+        IN_FLIGHT.removeIf(k -> k.relayId() == relayId);
+        RETRY_AFTER.keySet().removeIf(k -> k.relayId() == relayId);
+        PENDING.removeIf(p -> p.key().relayId() == relayId);
+        VERSIONS.remove(relayId);
+    }
+
     /** Draw this build, or answer false while it is still coming — the caller draws its slate. */
     public static boolean draw(GuiGraphics g, int relayId, int x, int y, int w, int h,
                                float yaw, float fill) {
