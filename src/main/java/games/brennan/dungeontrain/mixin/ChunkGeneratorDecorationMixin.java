@@ -208,6 +208,8 @@ public abstract class ChunkGeneratorDecorationMixin {
         } catch (Throwable t) {
             return false;
         }
+    }
+
     /** A legacy chunk owned by an OLD generator — a modern-preset band's chunks keep vanilla decoration. */
     @Unique
     private static boolean dungeontrain$isOldGeneratorChunk(ServerLevel serverLevel, ChunkAccess chunk) {
