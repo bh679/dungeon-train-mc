@@ -18528,6 +18528,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "offline-sample-decoration-fixes",
+      "version": "0.949.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "The stranger stretches look right",
+      "summary": "Some of the stranger places the line runs through borrow their scenery from elsewhere. That scenery now grows the way it should, and no longer carries a ghost of the railway along with it. Chorus plants keep their vanilla look.",
+      "highlights": [
+        "Trees stand on the ground instead of inside each other.",
+        "No second track floating above the rails.",
+        "Chests in borrowed scenery open as they should.",
+        "Chorus plants look vanilla."
+      ],
+      "pr": 1525,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
