@@ -3213,6 +3213,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s sedang dipakai di kereta pemain lain — akan disinkronkan saat kamu menyimpan berikutnya.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "Bangunan itu sedang dipakai sekarang. Coba lagi sebentar lagi.",
   "gui.dungeontrain.builder.profile.not_yours": "Bangunan itu tidak diunggah dari dunia ini.",
+  "gui.dungeontrain.builder.profile.needs_signin": "Tidak bisa membuktikan dari sini bahwa bangunan itu milikmu. Gunakan dunia yang mengunggahnya, atau pemain tunggal dengan akun Minecraft-mu masuk.",
   "gui.dungeontrain.builder.profile.pool_off": "Gerbong bersama dimatikan di dunia ini — bangunan ini tidak akan muncul.",
   "gui.dungeontrain.builder.profile.published": "Dikirim untuk ditinjau. Tetap tersimpan di bangunanmu.",
   "gui.dungeontrain.builder.profile.withdrawn": "Diturunkan dari kereta. Ia tetap ada di bangunanmu.",

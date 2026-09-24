@@ -18,9 +18,9 @@ import java.util.Map;
  * build by an id it assigns; the {@code secret} is issued once, to the submitter, and is the only thing
  * that authorises publishing that build to the train or claiming it back to edit — lose the record and
  * the build is still on the relay, still in the player's profile, but this world can no longer do
- * anything with it. (Re-uploading identical blocks recovers it, because the relay dedupes a builder
- * submit per author and template and hands the secret back, but that is a fallback rather than the
- * design.)</p>
+ * anything with it — unless the player proves to the relay that they own it ({@link RelayOwnerProof},
+ * through {@code BuilderRelayUpload.adopt}), which only the signed-in host's own client can do.
+ * Re-uploading identical blocks no longer recovers it: the relay's dedupe answers with the id alone.</p>
  *
  * <p>Keyed by {@link #keyOf} rather than by relay id: a Save knows which template it just wrote, not
  * what the relay called it. Not thread-safe — it is owned by the world's saved data and touched from

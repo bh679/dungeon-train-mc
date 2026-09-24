@@ -3256,6 +3256,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s est utilisée dans le train d'un autre joueur — elle se synchronisera à votre prochaine sauvegarde.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "Cette construction est utilisée en ce moment. Réessayez dans un instant.",
   "gui.dungeontrain.builder.profile.not_yours": "Cette construction n'a pas été envoyée depuis ce monde.",
+  "gui.dungeontrain.builder.profile.needs_signin": "Impossible de prouver d'ici que cette construction est la vôtre. Utilisez le monde depuis lequel elle a été envoyée, ou le mode solo connecté à votre compte Minecraft.",
   "gui.dungeontrain.builder.profile.pool_off": "Les wagons partagés sont désactivés dans ce monde — elle n'apparaîtra pas.",
   "gui.dungeontrain.builder.profile.published": "Soumise pour examen. Elle reste sauvegardée dans vos constructions.",
   "gui.dungeontrain.builder.profile.withdrawn": "Retirée du train. Elle reste dans tes constructions.",

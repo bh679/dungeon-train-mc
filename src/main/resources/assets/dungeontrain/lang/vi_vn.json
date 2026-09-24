@@ -3213,6 +3213,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s đang được dùng trên tàu của người chơi khác — sẽ đồng bộ ở lần lưu tiếp theo của bạn.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "Công trình đó đang được sử dụng. Hãy thử lại sau ít phút.",
   "gui.dungeontrain.builder.profile.not_yours": "Công trình đó không được tải lên từ thế giới này.",
+  "gui.dungeontrain.builder.profile.needs_signin": "Không thể chứng minh từ đây rằng công trình đó là của bạn. Hãy dùng thế giới đã tải nó lên, hoặc chơi đơn khi đã đăng nhập tài khoản Minecraft.",
   "gui.dungeontrain.builder.profile.pool_off": "Toa tàu chia sẻ đã tắt trong thế giới này — nó sẽ không xuất hiện.",
   "gui.dungeontrain.builder.profile.published": "Đã gửi để xét duyệt. Vẫn còn lưu trong các công trình của bạn.",
   "gui.dungeontrain.builder.profile.withdrawn": "Đã gỡ khỏi đoàn tàu. Nó vẫn nằm trong các công trình của bạn.",

@@ -3256,6 +3256,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s ist gerade im Zug eines anderen Spielers in Gebrauch — wird beim nächsten Speichern abgeglichen.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "Dieser Bau ist gerade in Gebrauch. Versuch es gleich noch einmal.",
   "gui.dungeontrain.builder.profile.not_yours": "Dieser Bau wurde nicht aus dieser Welt hochgeladen.",
+  "gui.dungeontrain.builder.profile.needs_signin": "Von hier aus lässt sich nicht nachweisen, dass dieser Bau dir gehört. Nutze die Welt, aus der er hochgeladen wurde, oder den Einzelspieler, angemeldet mit deinem Minecraft-Konto.",
   "gui.dungeontrain.builder.profile.pool_off": "Geteilte Waggons sind in dieser Welt aus — er wird nicht erscheinen.",
   "gui.dungeontrain.builder.profile.published": "Zur Prüfung eingereicht. Bleibt in deinen Bauten gespeichert.",
   "gui.dungeontrain.builder.profile.withdrawn": "Vom Zug genommen. Er bleibt in deinen Bauten.",

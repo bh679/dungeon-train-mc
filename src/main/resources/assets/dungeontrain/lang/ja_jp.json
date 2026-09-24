@@ -3213,6 +3213,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s は他のプレイヤーの列車で使用中です — 次回の保存時に同期されます。",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "その建築物は現在使用中です。しばらくしてからもう一度お試しください。",
   "gui.dungeontrain.builder.profile.not_yours": "その建築物はこのワールドからアップロードされたものではありません。",
+  "gui.dungeontrain.builder.profile.needs_signin": "ここからはその建築物があなたのものだと証明できません。アップロードしたワールドを使うか、Minecraft アカウントにサインインした状態でシングルプレイから操作してください。",
   "gui.dungeontrain.builder.profile.pool_off": "このワールドでは共有車両がオフです — 出現しません。",
   "gui.dungeontrain.builder.profile.published": "審査に提出しました。あなたの建築物にも残ります。",
   "gui.dungeontrain.builder.profile.withdrawn": "列車から降ろしました。あなたの建築には残ります。",

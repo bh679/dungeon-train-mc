@@ -3213,6 +3213,7 @@
   "gui.dungeontrain.builder.profile.in_use": "Ginagamit ang %s sa tren ng ibang player — magsi-sync ito sa susunod mong save.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "Ginagamit ang build na iyon ngayon. Subukan ulit mamaya.",
   "gui.dungeontrain.builder.profile.not_yours": "Hindi mula sa mundong ito na-upload ang build na iyon.",
+  "gui.dungeontrain.builder.profile.needs_signin": "Hindi mapatunayan mula rito na sa iyo ang build na iyon. Gamitin ang mundong nag-upload nito, o ang single-player na naka-sign in sa iyong Minecraft account.",
   "gui.dungeontrain.builder.profile.pool_off": "Naka-off ang shared na mga bagon sa mundong ito — hindi ito lalabas.",
   "gui.dungeontrain.builder.profile.published": "Naisumite para sa review. Naka-save pa rin ito sa iyong mga build.",
   "gui.dungeontrain.builder.profile.withdrawn": "Inalis sa tren. Nananatili ito sa mga gawa mo.",

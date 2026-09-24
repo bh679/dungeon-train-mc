@@ -2384,6 +2384,7 @@
       "gui.dungeontrain.builder.profile.upload_failed",
       "gui.dungeontrain.builder.profile.too_big",
       "gui.dungeontrain.builder.profile.full",
+      "gui.dungeontrain.builder.profile.needs_signin",
       "gui.dungeontrain.builder.profile.delete.tooltip",
       "gui.dungeontrain.builder.profile.delete.title",
       "gui.dungeontrain.builder.profile.delete.hint",

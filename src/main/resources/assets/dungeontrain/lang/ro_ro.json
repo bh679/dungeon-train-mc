@@ -1372,6 +1372,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s este în uz în trenul altui jucător — se sincronizează la următoarea ta salvare.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "Construcția aceea este în uz chiar acum. Încearcă din nou în curând.",
   "gui.dungeontrain.builder.profile.not_yours": "Construcția aceea nu a fost încărcată din această lume.",
+  "gui.dungeontrain.builder.profile.needs_signin": "Nu se poate dovedi de aici că acea construcție este a ta. Folosește lumea din care a fost încărcată sau modul single-player, conectat la contul tău Minecraft.",
   "gui.dungeontrain.builder.profile.pool_off": "Vagoanele partajate sunt oprite în această lume — nu va apărea.",
   "gui.dungeontrain.builder.profile.published": "Trimisă spre verificare. Rămâne salvată în construcțiile tale.",
   "gui.dungeontrain.builder.profile.withdrawn": "Trimitere retrasă. Rămâne salvată în construcțiile tale.",

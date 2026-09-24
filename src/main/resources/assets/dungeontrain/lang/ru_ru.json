@@ -3299,6 +3299,7 @@
   "gui.dungeontrain.builder.profile.in_use": "%s сейчас в чьём-то поезде — синхронизируется при следующем сохранении.",
   "gui.dungeontrain.builder.profile.in_use_withdraw": "Прямо сейчас кто-то находится на этой постройке. Попробуйте чуть позже.",
   "gui.dungeontrain.builder.profile.not_yours": "Мир не загрузил эту постройку.",
+  "gui.dungeontrain.builder.profile.needs_signin": "Отсюда нельзя подтвердить, что эта постройка ваша. Используйте мир, из которого она была загружена, или одиночную игру со входом в аккаунт Minecraft.",
   "gui.dungeontrain.builder.profile.pool_off": "Общие вагоны в этом мире отключены, так что он не появится.",
   "gui.dungeontrain.builder.profile.published": "Одобрено. Теперь она может попасться кому-угодно.",
   "gui.dungeontrain.builder.profile.withdrawn": "Отозвано. Она остаётся в ваших постройках.",
