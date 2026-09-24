@@ -1,15 +1,19 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.StacksBand;
+import games.brennan.dungeontrain.worldgen.OfflineChunkSampler;
 import games.brennan.dungeontrain.worldgen.WwooDecorationPass;
 import games.brennan.dungeontrain.worldgen.feature.DeferredStructurePlacement;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -106,6 +110,9 @@ public abstract class ChunkGeneratorDecorationMixin {
             target = "Lnet/minecraft/world/level/levelgen/placement/PlacedFeature;placeWithBiomeCheck(Lnet/minecraft/world/level/WorldGenLevel;Lnet/minecraft/world/level/chunk/ChunkGenerator;Lnet/minecraft/util/RandomSource;Lnet/minecraft/core/BlockPos;)Z"))
     private boolean dungeontrain$filterFeature(PlacedFeature feature, WorldGenLevel level, ChunkGenerator generator,
                                                RandomSource random, BlockPos origin) {
+        if (OfflineChunkSampler.isSampling() && dungeontrain$isDtNamespaceFeature(feature)) {
+            return false; // offline sample: DT's corridor and band features belong to the display world only
+        }
         if (dungeontrain$skipDecoration.get() && !dungeontrain$isDtFeature(feature)) {
             return false; // fully-eroded core: skip the vanilla feature (it would be erased anyway)
         }
@@ -184,6 +191,17 @@ public abstract class ChunkGeneratorDecorationMixin {
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] decoration-skip resolve failed at {}; running vanilla decoration",
                     chunk.getPos(), t);
+            return false;
+        }
+    }
+
+    /** Any feature registered under DT's namespace — vetoed inside offline samples. Unreadable → not vetoed. */
+    @Unique
+    private static boolean dungeontrain$isDtNamespaceFeature(PlacedFeature feature) {
+        try {
+            ResourceLocation key = BuiltInRegistries.FEATURE.getKey(feature.feature().value().feature());
+            return key != null && DungeonTrain.MOD_ID.equals(key.getNamespace());
+        } catch (Throwable t) {
             return false;
         }
     }

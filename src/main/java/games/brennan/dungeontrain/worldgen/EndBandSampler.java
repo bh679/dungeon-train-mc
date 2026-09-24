@@ -167,7 +167,7 @@ public final class EndBandSampler {
             LOGGER.debug("[DungeonTrain] End-band carvers failed at {} — keeping uncarved terrain", endPos, t);
         }
         try {
-            noise.applyBiomeDecoration(workspace.region(), ground, workspace.structures());
+            OfflineChunkSampler.decorate(noise, workspace, ground);
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] End-band decoration failed at {} — keeping bare terrain", endPos, t);
         }

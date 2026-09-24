@@ -171,7 +171,7 @@ public final class ForeignSphereSampler {
             SphereStructures.register(level, noise, random, ground, sphere, seed);
         }
         try {
-            noise.applyBiomeDecoration(workspace.region(), ground, workspace.structures());
+            OfflineChunkSampler.decorate(noise, workspace, ground);
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] Sphere decoration failed at {} — keeping bare terrain", pos, t);
         }

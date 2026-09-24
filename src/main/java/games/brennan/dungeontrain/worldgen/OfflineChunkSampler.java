@@ -74,6 +74,31 @@ public final class OfflineChunkSampler {
         return nbt != null && PLACEHOLDER_BLOCK_ENTITY_ID.equals(nbt.getString("id"));
     }
 
+    /** Set on the sampling thread for the span of {@link #decorate}; read by the decoration mixin. */
+    private static final ThreadLocal<Boolean> SAMPLING = ThreadLocal.withInitial(() -> Boolean.FALSE);
+
+    /** True while this thread is decorating an offline sample (see {@link #decorate}). */
+    public static boolean isSampling() {
+        return SAMPLING.get();
+    }
+
+    /**
+     * Run the biome decoration pass over a sample. The one way consumers should decorate: while it runs,
+     * {@code ChunkGeneratorDecorationMixin} vetoes DT's own features — the track bed lays a corridor in
+     * every DT dimension, and the band features (End islands, Nether transition and structures, stacks)
+     * key off the display X — none of which belong inside a sphere, an End-band copy or a dimensional
+     * carriage room. Copied out as-is, a sampled corridor lands 20 blocks above the real one in the
+     * BetterEnd End band and inside lifted spheres. The display world lays its own track.
+     */
+    public static void decorate(NoiseBasedChunkGenerator generator, Workspace workspace, ProtoChunk chunk) {
+        SAMPLING.set(Boolean.TRUE);
+        try {
+            generator.applyBiomeDecoration(workspace.region(), chunk, workspace.structures());
+        } finally {
+            SAMPLING.set(Boolean.FALSE);
+        }
+    }
+
     /**
      * The beardifier a sample is generated with: nothing at all.
      *
