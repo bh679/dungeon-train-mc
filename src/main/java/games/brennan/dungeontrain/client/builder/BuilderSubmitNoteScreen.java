@@ -31,10 +31,12 @@ import java.util.function.Consumer;
  * will guess wrong some of the time. So the author is asked, and whatever they write rides along with
  * the publish call as the build's note.</p>
  *
- * <p>Up to three boxes, stacked: <b>Redstone</b> when the build has machine parts, <b>Loot</b> when it
- * has loot or valuable blocks (both decided on the server from the build's blocks — {@link SubmitHints}),
- * and always, last, the general question. With only the general one there is nothing to tell apart,
- * so the boxes are labelled only when there is more than one.</p>
+ * <p>Up to three questions, one page each: <b>Redstone</b> when the build has machine parts,
+ * <b>Loot</b> when it has loot or valuable blocks (both decided on the server from the build's blocks —
+ * {@link SubmitHints}), and always, last, the general question. One at a time because three stacked
+ * boxes do not fit a normal window at a readable size; Continue and Back step between them, and what
+ * was typed on a page is kept when leaving it. With only the general question there is one page, no
+ * label and no step count — it looks as it did before there were others.</p>
  *
  * <p>Every box is optional: all empty and Submit is a submission like any other. Cancel returns to
  * the screen that asked without sending anything — the press is only committed by Submit here, which
@@ -96,9 +98,11 @@ public final class BuilderSubmitNoteScreen extends Screen {
     private final SubmitHints.Hints hints;
     private final Consumer<SubmitNote> onSubmit;
 
-    private final Map<Question, MultiLineEditBox> boxes = new EnumMap<>(Question.class);
-    /** Kept across resizes, so a window drag mid-sentence does not empty a box. */
+    /** Kept across pages and resizes, so neither empties a box. */
     private final Map<Question, String> answers = new EnumMap<>(Question.class);
+    /** Which question is showing — an index into {@link #questions}. */
+    private int page;
+    private MultiLineEditBox box;
     private int boxHeight = MAX_BOX_HEIGHT;
     private int top;
 
@@ -130,46 +134,53 @@ public final class BuilderSubmitNoteScreen extends Screen {
         return questions.size() > 1;
     }
 
-    /** Height of one question's slot: its label (when shown), its box, and its counter. */
-    private int slotHeight() {
-        return (labelled() ? LABEL_HEIGHT : 0) + boxHeight + COUNTER_GAP;
+    private Question current() {
+        return questions.get(page);
+    }
+
+    private boolean lastPage() {
+        return page == questions.size() - 1;
     }
 
     @Override
     protected void init() {
         int fieldWidth = Math.min(FIELD_WIDTH, this.width - 32);
         int x = this.width / 2 - fieldWidth / 2;
+        int label = labelled() ? LABEL_HEIGHT : 0;
 
-        // Shrink the boxes until every question, the buttons and the footnote fit the window.
-        int n = questions.size();
-        int fixed = HEADER_HEIGHT + n * ((labelled() ? LABEL_HEIGHT : 0) + COUNTER_GAP)
-                + ROW_HEIGHT + ROW_GAP + LABEL_HEIGHT + 16;
-        this.boxHeight = Math.max(MIN_BOX_HEIGHT, Math.min(MAX_BOX_HEIGHT, (this.height - fixed) / n));
-        int content = HEADER_HEIGHT + n * slotHeight() + ROW_HEIGHT + ROW_GAP + LABEL_HEIGHT;
+        // One question per page; the box shrinks only on a window too short even for that.
+        int fixed = HEADER_HEIGHT + label + COUNTER_GAP + ROW_HEIGHT + ROW_GAP + LABEL_HEIGHT + 16;
+        this.boxHeight = Math.max(MIN_BOX_HEIGHT, Math.min(MAX_BOX_HEIGHT, this.height - fixed));
+        int content = HEADER_HEIGHT + label + boxHeight + COUNTER_GAP + ROW_HEIGHT + ROW_GAP + LABEL_HEIGHT;
         this.top = Math.max(8, (this.height - content) / 2);
 
-        boxes.clear();
-        int y = top + HEADER_HEIGHT;
-        for (Question q : questions) {
-            if (labelled()) y += LABEL_HEIGHT;
-            MultiLineEditBox box = new MultiLineEditBox(this.font, x, y, fieldWidth, boxHeight,
-                    q.placeholder(), labelled() ? q.label()
-                            : Component.translatable("gui.dungeontrain.builder.profile.note.label"));
-            box.setCharacterLimit(BuilderProfileActionPacket.NOTE_MAX);
-            box.setValue(answers.getOrDefault(q, ""));
-            box.setValueListener(value -> answers.put(q, value));
-            addRenderableWidget(box);
-            boxes.put(q, box);
-            y += boxHeight + COUNTER_GAP;
-        }
-        setInitialFocus(boxes.get(questions.get(0)));
+        Question q = current();
+        int y = top + HEADER_HEIGHT + label;
+        this.box = new MultiLineEditBox(this.font, x, y, fieldWidth, boxHeight, q.placeholder(),
+                labelled() ? q.label() : Component.translatable("gui.dungeontrain.builder.profile.note.label"));
+        box.setCharacterLimit(BuilderProfileActionPacket.NOTE_MAX);
+        box.setValue(answers.getOrDefault(q, ""));
+        box.setValueListener(value -> answers.put(q, value));
+        addRenderableWidget(box);
+        setInitialFocus(box);
+        y += boxHeight + COUNTER_GAP;
 
+        // Left steps back (or cancels on the first page); right steps on (or submits on the last).
         int half = (fieldWidth - ROW_GAP) / 2;
-        addRenderableWidget(Button.builder(
-                Component.translatable("gui.dungeontrain.builder.profile.note.submit"), b -> submit())
+        addRenderableWidget(Button.builder(page == 0 ? CommonComponents.GUI_CANCEL : CommonComponents.GUI_BACK,
+                        b -> { if (page == 0) onClose(); else turn(-1); })
                 .bounds(x, y, half, ROW_HEIGHT).build());
-        addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose())
+        addRenderableWidget(Button.builder(lastPage()
+                                ? Component.translatable("gui.dungeontrain.builder.profile.note.submit")
+                                : CommonComponents.GUI_CONTINUE,
+                        b -> { if (lastPage()) submit(); else turn(1); })
                 .bounds(x + fieldWidth - half, y, half, ROW_HEIGHT).build());
+    }
+
+    /** Show the question {@code step} pages away, keeping what was typed on this one. */
+    private void turn(int step) {
+        this.page = Math.max(0, Math.min(questions.size() - 1, page + step));
+        rebuildWidgets();
     }
 
     private void submit() {
@@ -187,20 +198,22 @@ public final class BuilderSubmitNoteScreen extends Screen {
                 Component.translatable("gui.dungeontrain.builder.profile.note.prompt", buildName),
                 this.width / 2, top + 18, HINT_COLOUR);
         List<Component> tooltip = null;
-        for (Question q : questions) {
-            MultiLineEditBox box = boxes.get(q);
-            if (box == null) continue;
+        Question q = current();
+        if (box != null) {
             if (labelled()) {
                 int labelY = box.getY() - LABEL_HEIGHT;
                 g.drawString(this.font, q.label(), box.getX(), labelY + 4, TEXT_COLOUR);
-                List<Component> tip = renderFound(g, found(q), box.getX() + this.font.width(q.label()) + 6,
-                        labelY + 1, box.getX() + box.getWidth(), mouseX, mouseY);
-                if (tip != null) tooltip = tip;
+                String step = (page + 1) + "/" + questions.size();
+                int stepX = box.getX() + box.getWidth() - this.font.width(step);
+                g.drawString(this.font, step, stepX, labelY + 4, HINT_COLOUR);
+                tooltip = renderFound(g, found(q), box.getX() + this.font.width(q.label()) + 6,
+                        labelY + 1, stepX - ICON_GAP, mouseX, mouseY);
             }
             renderPlaceholder(g, q, box);
         }
         if (tooltip != null) g.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
-        int footY = top + HEADER_HEIGHT + questions.size() * slotHeight() + ROW_HEIGHT + ROW_GAP;
+        int footY = top + HEADER_HEIGHT + (labelled() ? LABEL_HEIGHT : 0) + boxHeight + COUNTER_GAP
+                + ROW_HEIGHT + ROW_GAP;
         g.drawCenteredString(this.font,
                 Component.translatable("gui.dungeontrain.builder.profile.note.optional"),
                 this.width / 2, footY, HINT_COLOUR);
@@ -264,7 +277,7 @@ public final class BuilderSubmitNoteScreen extends Screen {
 
     /**
      * Vanilla only draws an edit box's placeholder while the box is <em>unfocused</em>, and this screen
-     * focuses the first box on open — so without this its question never shows. Drawn whenever the
+     * focuses each page's box on open — so without this its question never shows. Drawn whenever the
      * box is empty.
      */
     private void renderPlaceholder(GuiGraphics g, Question q, MultiLineEditBox box) {
