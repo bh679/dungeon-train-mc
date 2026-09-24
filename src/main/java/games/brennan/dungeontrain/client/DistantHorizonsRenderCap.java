@@ -1,0 +1,131 @@
+package games.brennan.dungeontrain.client;
+
+import com.mojang.logging.LogUtils;
+import com.seibel.distanthorizons.api.DhApi;
+import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfig;
+import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.worldgen.DhHorizon;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import org.slf4j.Logger;
+
+import java.util.OptionalLong;
+
+/**
+ * Lowers <b>Distant Horizons</b>' render distance where its full horizon would give away what lies
+ * ahead: past the far side of a void, or more than one legacy era away. {@link DhHorizon} decides
+ * how far is allowed; this class only applies it.
+ *
+ * <p><b>The player's setting is the ceiling.</b> The cap goes through DH's API override
+ * ({@link IDhApiConfigValue#setValue}), which DH keeps apart from the value in its config file
+ * ({@link IDhApiConfigValue#getTrueValue}) and never saves. The override is always
+ * {@code min(cap, trueValue)}, read fresh every tick so a change made in DH's own menu is honoured,
+ * and wherever the view is clear the override is dropped ({@link IDhApiConfigValue#clearValue}) rather
+ * than set — DH is back on exactly the player's setting, never above it. Nothing persists, so a crash
+ * mid-cap cannot leave DH shortened.</p>
+ *
+ * <p><b>Reload cost.</b> A new DH render distance rebuilds DH's LOD tree, so the cap moves in whole
+ * {@link #STEP_CHUNKS}-chunk steps (rounded down, so never past the boundary) and is checked per client
+ * tick, not per frame.</p>
+ *
+ * <p><b>Loading.</b> Like {@link DistantHorizonsSuppression}, this names DH types and is reached only
+ * behind the {@code ModList} check in {@link DungeonTrainClient}. Any failure disables the cap and
+ * leaves DH on the player's setting.</p>
+ */
+public final class DistantHorizonsRenderCap {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    /** Cap granularity in chunks — one DH reload per this many chunks travelled at most. */
+    private static final int STEP_CHUNKS = 4;
+
+    /** The override currently applied, or {@code -1} when DH is on the player's own setting. */
+    private static int applied = -1;
+    private static boolean failed = false;
+
+    private DistantHorizonsRenderCap() {}
+
+    /** Bind the per-tick update and the logout reset. Call once, on the client, only when DH is loaded. */
+    public static void register() {
+        NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post e) -> tick());
+        NeoForge.EVENT_BUS.addListener((ClientPlayerNetworkEvent.LoggingOut e) -> release());
+        LOGGER.info("[DungeonTrain] Distant Horizons' render distance will be capped at voids and legacy eras");
+    }
+
+    private static void tick() {
+        if (failed) return;
+        try {
+            IDhApiConfigValue<Integer> distance = renderDistance();
+            if (distance == null) return;
+            OptionalLong cap = capBlocksHere();
+            if (cap.isEmpty()) {
+                release(distance);
+                return;
+            }
+            int target = targetChunks(cap.getAsLong(), distance);
+            if (target < 0) {
+                release(distance);
+            } else if (target != applied && distance.setValue(target)) {
+                applied = target;
+            }
+        } catch (Throwable t) {
+            failed = true;
+            LOGGER.warn("[DungeonTrain] Distant Horizons render cap disabled after an error; "
+                    + "DH stays on your own render distance: {}", t.toString());
+            release();
+        }
+    }
+
+    /** The allowed radius at the camera, or empty when this world or position has nothing to hide. */
+    private static OptionalLong capBlocksHere() {
+        if (!ClientDisplayConfig.isLoaded() || !ClientVoidBand.startsWithTrain()) return OptionalLong.empty();
+        boolean voids = ClientDisplayConfig.DISTANT_HORIZONS_LIMIT_PAST_VOIDS.get();
+        boolean legacy = ClientDisplayConfig.DISTANT_HORIZONS_LIMIT_LEGACY_ERAS.get();
+        if (!voids && !legacy) return OptionalLong.empty();
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || mc.level.dimension() != Level.OVERWORLD) return OptionalLong.empty();
+        Camera camera = mc.gameRenderer.getMainCamera();
+        if (camera == null) return OptionalLong.empty();
+        return DhHorizon.capBlocks(WorldGenCycle.fromConfig(), camera.getPosition().x, voids, legacy);
+    }
+
+    /**
+     * The override in chunks for a cap in blocks, or {@code -1} when the player's own setting already
+     * fits inside it (no override needed). Never above the player's setting, never below DH's minimum.
+     */
+    private static int targetChunks(long capBlocks, IDhApiConfigValue<Integer> distance) {
+        int user = distance.getTrueValue();
+        long chunks = (capBlocks / 16L) / STEP_CHUNKS * STEP_CHUNKS;
+        if (chunks >= user) return -1;
+        Integer min = distance.getMinValue();
+        return (int) Math.max(chunks, min == null ? 1 : min);
+    }
+
+    private static IDhApiConfigValue<Integer> renderDistance() {
+        IDhApiConfig configs = DhApi.Delayed.configs;
+        return configs == null ? null : configs.graphics().chunkRenderDistance();
+    }
+
+    /** Drop the override so DH is back on the player's own setting. */
+    private static void release() {
+        try {
+            IDhApiConfigValue<Integer> distance = renderDistance();
+            if (distance != null) release(distance);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Could not clear the Distant Horizons render cap: {}", t.toString());
+        }
+    }
+
+    private static void release(IDhApiConfigValue<Integer> distance) {
+        if (applied < 0) return;
+        distance.clearValue();
+        applied = -1;
+    }
+}

@@ -203,6 +203,19 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.BooleanValue PORTAL_ROOM_HIDE_DISTANT_HORIZONS;
 
+    /**
+     * Whether Distant Horizons' render distance is lowered near a void so it never draws what lies past
+     * the void's far side (the End islands across the first void, the overworld across the second).
+     * Only ever lowers DH below the player's own setting, and restores it when the view is clear.
+     */
+    public static final ModConfigSpec.BooleanValue DISTANT_HORIZONS_LIMIT_PAST_VOIDS;
+
+    /**
+     * Whether Distant Horizons' render distance is lowered in the legacy eras so it shows the next era
+     * but never the one after it. Same ceiling contract as {@link #DISTANT_HORIZONS_LIMIT_PAST_VOIDS}.
+     */
+    public static final ModConfigSpec.BooleanValue DISTANT_HORIZONS_LIMIT_LEGACY_ERAS;
+
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
@@ -359,6 +372,8 @@ public final class ClientDisplayConfig {
         UPSIDE_DOWN_HIDE_DISTANT_HORIZONS = pair.getLeft().upsideDownHideDistantHorizons;
         UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN = pair.getLeft().upsideDownDistantHorizonsMargin;
         PORTAL_ROOM_HIDE_DISTANT_HORIZONS = pair.getLeft().portalRoomHideDistantHorizons;
+        DISTANT_HORIZONS_LIMIT_PAST_VOIDS = pair.getLeft().distantHorizonsLimitPastVoids;
+        DISTANT_HORIZONS_LIMIT_LEGACY_ERAS = pair.getLeft().distantHorizonsLimitLegacyEras;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
@@ -490,6 +505,12 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue portalRoomHideDistantHorizons = b
                 .comment("Stop Distant Horizons drawing while you are inside a dimensional carriage - a portal room, or the corridor leading into one. A room is stamped in twin space at the coordinates of the carriage it stands in for, and DH draws its own LODs of the overworld around exactly those coordinates, so the room's sky comes with the surface world's horizon behind it. Worst in a Chunk Dimension room, which is itself a sampled slice of terrain that DH then contradicts. Set false to let DH draw inside rooms anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
                 .define("hideInPortalRooms", true);
+        ModConfigSpec.BooleanValue distantHorizonsLimitPastVoids = b
+                .comment("Lower Distant Horizons' render distance as you approach a void so it never draws what lies past the void's far side - you can see into the void, never across it. Only ever lowers DH below your own render distance setting, never above it, and puts your setting back as soon as the view is clear. Nothing is written to DH's config file. Does nothing if Distant Horizons is not installed.")
+                .define("limitPastVoids", true);
+        ModConfigSpec.BooleanValue distantHorizonsLimitLegacyEras = b
+                .comment("Lower Distant Horizons' render distance in the legacy eras so it shows the next era but never the one after it. Only ever lowers DH below your own render distance setting, never above it, and puts your setting back as soon as the view is clear. Nothing is written to DH's config file. Does nothing if Distant Horizons is not installed.")
+                .define("limitLegacyEras", true);
         b.pop();
 
         b.push("framerateThrottle");
@@ -740,6 +761,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMaxResolution,
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
+                distantHorizonsLimitPastVoids, distantHorizonsLimitLegacyEras,
                 framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
@@ -1733,6 +1755,8 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue upsideDownHideDistantHorizons,
             ModConfigSpec.IntValue upsideDownDistantHorizonsMargin,
             ModConfigSpec.BooleanValue portalRoomHideDistantHorizons,
+            ModConfigSpec.BooleanValue distantHorizonsLimitPastVoids,
+            ModConfigSpec.BooleanValue distantHorizonsLimitLegacyEras,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.DoubleValue trainEngineVolume,
