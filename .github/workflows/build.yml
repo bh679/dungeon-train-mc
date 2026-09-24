@@ -110,6 +110,9 @@ jobs:
       - name: Packet layout change bumps PROTOCOL_VERSION
         run: python3 scripts/net/check-protocol-version.py --base origin/${{ github.base_ref }}
 
+      - name: Protocol-version check tests (codec fixtures + #1449 regression)
+        run: python3 scripts/net/test_check_protocol_version.py
+
   # Stdlib-only Python guard for the translation provenance sidecars (who translated / who
   # human-reviewed each string). Two flavours, both under localization/ and both repo-side
   # only (the sidecars never ship — but the generated manifests derived from them, at

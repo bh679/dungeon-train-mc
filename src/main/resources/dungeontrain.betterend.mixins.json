@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "dungeontrain.refmap.json",
   "mixins": [
+    "betterend.BetterEndChorusCosmeticMixin",
     "betterend.BetterEndDebugItemsMixin"
   ],
   "client": [

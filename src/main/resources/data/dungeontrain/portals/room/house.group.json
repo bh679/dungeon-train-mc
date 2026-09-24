@@ -12,7 +12,17 @@
         "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
-        "SPHERES"
+        "SPHERES",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ]
     },
     {
@@ -29,7 +39,17 @@
         "NETHER",
         "UPSIDE_DOWN",
         "CHUNCKS",
-        "SPHERES"
+        "SPHERES",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ]
     },
     {
@@ -113,7 +133,17 @@
         "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
-        "SPHERES"
+        "SPHERES",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ]
     },
     {
@@ -136,7 +166,15 @@
       "phases": [
         "OVERWORLD",
         "NETHER",
-        "UPSIDE_DOWN"
+        "UPSIDE_DOWN",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "CAVES_OF_CHAOS"
       ]
     },
     {

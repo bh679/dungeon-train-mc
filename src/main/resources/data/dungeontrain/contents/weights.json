@@ -116,7 +116,15 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "UPSIDE_DOWN"
+      "UPSIDE_DOWN",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "CAVES_OF_CHAOS"
     ]
   },
   "vase": 1,

@@ -4,7 +4,15 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END"
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "CAVES_OF_CHAOS"
     ]
   },
   "nethertracks": {
@@ -18,7 +26,15 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END"
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "CAVES_OF_CHAOS"
     ]
   },
   "sleepside": {
@@ -26,7 +42,15 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END"
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "CAVES_OF_CHAOS"
     ]
   }
 }

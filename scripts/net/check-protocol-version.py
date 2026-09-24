@@ -9,9 +9,13 @@ that gains a field still handshakes fine and then blows up (`readBoolean()` past
 `boolean centre` on EditorPlotActionPacket with PROTOCOL_VERSION left at "72".
 
 This check diffs <base>...<head> over the net/ package and looks for added/removed lines that touch
-the codec idioms used there (buf.readX/buf.writeX, ByteBufCodecs.X, StreamCodec.of/composite). Any hit
-in a file other than DungeonTrainNet.java means the wire layout may have changed, and the diff must
-then also change the PROTOCOL_VERSION line. Comment-only, handler-only and refactor edits don't trip it.
+the codec idioms used there: buf.readX/buf.writeX (and the `b` lambda receiver inside readList /
+writeCollection), ByteBufCodecs.X including the lowercase factories (byteArray, list, optional…),
+Foo.STREAM_CODEC used as a composite argument or via .encode/.decode, and StreamCodec.of/composite/unit.
+Any hit in a file other than DungeonTrainNet.java means the wire layout may have changed, and the diff
+must then also change the PROTOCOL_VERSION line. Comment-only, handler-only and refactor edits don't
+trip it — including the `public static final StreamCodec<…> STREAM_CODEC =` declaration line itself,
+which has no leading dot. Fixture tests: scripts/net/test_check_protocol_version.py.
 
 A bump is always safe; a missed one is not — so there is no opt-out. If a flagged diff is genuinely
 wire-compatible, bump anyway.
@@ -35,9 +39,10 @@ REGISTRAR = NET_DIR + "DungeonTrainNet.java"
 
 # Codec idioms surveyed across the package — anything that reads or writes the byte stream.
 WIRE_LINE = re.compile(
-    r"\bbuf\.(?:read|write)[A-Za-z]*\("
-    r"|\bByteBufCodecs\.[A-Z_]+"
-    r"|\bStreamCodec\.(?:of|composite)\("
+    r"\b(?:buf|b)\.(?:read|write)[A-Za-z]*\("
+    r"|\bByteBufCodecs\.[A-Za-z_]+"
+    r"|\.STREAM_CODEC\b"
+    r"|\bStreamCodec\.[a-z][A-Za-z]*\("
 )
 VERSION_LINE = re.compile(r'PROTOCOL_VERSION\s*=\s*"[^"]*"')
 
@@ -81,18 +86,23 @@ def version_bumped(files: dict[str, list[str]]) -> bool:
     return any(VERSION_LINE.search(l) for l in files.get(REGISTRAR, []))
 
 
+def check(diff: str) -> tuple[dict[str, list[str]], bool]:
+    """Pure verdict over a unified diff: (wire-touching lines per packet file, PROTOCOL_VERSION changed)."""
+    files = changed_lines_by_file(diff)
+    return wire_hits(files), version_bumped(files)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--base", default="origin/main", help="ref the PR merges into (default origin/main)")
     ap.add_argument("--head", default="HEAD", help="ref under review (default HEAD)")
     args = ap.parse_args()
 
-    files = changed_lines_by_file(git_diff(args.base, args.head, NET_DIR))
-    hits = wire_hits(files)
+    hits, bumped = check(git_diff(args.base, args.head, NET_DIR))
     if not hits:
         print(f"ok: no packet wire-layout changes in {NET_DIR} ({args.base}...{args.head})")
         return 0
-    if version_bumped(files):
+    if bumped:
         print(f"ok: {len(hits)} packet file(s) changed wire layout and PROTOCOL_VERSION was bumped")
         return 0
 

@@ -280,11 +280,16 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                         colChanged = fillNetherColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 sampleX, coreGeom, seed, coreBiome);
                         GenProfiler.add(GenProfiler.Bucket.CORE_REPLACE, coreT0);
+                        colChanged |= coverCoreCaps(chunk, dx, dz, sampleX, worldZ, coreGeom);
                     } else if (inBeachSpan) {
                         colChanged = fillShoreColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 minY, worldTop, seaLevel, seed, beachProgress);
                     } else if (crossfade) {
                         colChanged = recolorCrossfadeColumn(chunk, dx, dz, worldX, worldZ, minY, worldTop, n, seed);
+                        if (coreGeom != null && NetherRockCover.isCoreWall(cycle::isNetherCore, wx)) {
+                            colChanged |= coverCoreFacingFace(chunk, dx, dz, worldX, worldZ, seed, cycle, coreGeom,
+                                    endBandActive);
+                        }
                     } else {
                         colChanged = recolorShoreSkinColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 minY, worldTop, seaLevel, seed);
@@ -494,7 +499,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             int x0 = cp.getMinBlockX(), z0 = cp.getMinBlockZ(), x1 = cp.getMaxBlockX(), z1 = cp.getMaxBlockZ();
             int[][] pts = {{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}, {(x0 + x1) >> 1, (z0 + z1) >> 1}};
             for (int[] p : pts) {
-                Holder<Biome> b = ncb.biomeAt(p[0], p[1], bandCtx.cycle().cycleIndex(p[0]));
+                Holder<Biome> b = ncb.biomeAt(p[0], p[1], bandCtx.cycle().netherPassIndex(p[0]));
                 if (b != null) out.add(b);
             }
         }
@@ -518,7 +523,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     /** The real-Nether biome KEY for a core column (drives the per-biome surface skin); nether_wastes fallback. */
     private static ResourceKey<Biome> coreBiomeKeyAt(NetherBandContext bandCtx, int worldX, int worldZ) {
         if (bandCtx == null || bandCtx.netherCoreBiomes() == null) return Biomes.NETHER_WASTES;
-        return bandCtx.netherCoreBiomes().biomeAt(worldX, worldZ, bandCtx.cycle().cycleIndex(worldX)).unwrapKey().orElse(Biomes.NETHER_WASTES);
+        return bandCtx.netherCoreBiomes().biomeAt(worldX, worldZ, bandCtx.cycle().netherPassIndex(worldX)).unwrapKey().orElse(Biomes.NETHER_WASTES);
     }
 
     /**
@@ -561,7 +566,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * netherrack as the real-Nether core approaches — turning the green mountain increasingly red over
      * the {@code coreFade} span. It reads the actual chunk heightmap top (which already reflects the
      * raised terrain at {@code top_layer_modification}) and recolours the top {@link #SURFACE_SKIN_DEPTH}
-     * solid blocks where the coherent dither falls under {@code n}; everything below stays natural stone.
+     * solid blocks where the coherent dither falls under {@code n}; everything below stays natural stone
+     * (the one-block face the core looks at is covered separately by {@link #coverCoreFacingFace}).
      * No {@code MountainNoise}/palette recompute is needed.
      *
      * <p>It also <b>drains worldgen water</b> from the column (aquifer pools, springs, surface lakes):
@@ -779,6 +785,69 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 }
                 airAbove = air;
             }
+        }
+        return changed;
+    }
+
+    /** Horizontal neighbour offsets {dx, dz} — the four sides a crossfade cell can face the core from. */
+    private static final int[][] SIDES = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+
+    /**
+     * The one-block face of the mountain that looks into the real-Nether core. The core carves its caverns
+     * right up to the crossfade, leaving a cliff of overworld rock; repaint just the rock cells that sit
+     * beside an open (air/lava) core cell, so from inside the Nether the wall reads netherrack while the
+     * mountain behind it — and its tunnel — stay stone. Whether a neighbouring core cell is open comes from
+     * the same {@link NetherCoreGeometry} density {@link #fillNetherColumn} stamps with, so it is exact even
+     * across a chunk border (no neighbour-chunk reads).
+     */
+    private boolean coverCoreFacingFace(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ, long seed,
+                                        WorldGenCycle cycle, NetherCoreGeometry coreGeom, boolean endBandActive) {
+        List<NetherCoreGeometry.Column> coreSides = new ArrayList<>(SIDES.length);
+        for (int[] side : SIDES) {
+            int nx = worldX + side[0];
+            int nz = worldZ + side[1];
+            int nwx = NetherMountainTerrain.wavyX(seed, nx, nz);
+            if (!cycle.isNetherCore(nwx)) continue;
+            if (endBandActive && cycle.endMiddleRamp(nwx) > 0.0) continue;
+            coreSides.add(coreGeom.column(NetherCoreGeometry.sampleX(nwx), nz));
+        }
+        if (coreSides.isEmpty()) return false;
+        ColumnWriter w = new ColumnWriter(chunk);
+        boolean changed = false;
+        for (int y = coreGeom.minCoreY(); y <= coreGeom.maxCoreY(); y++) {
+            if (!NetherRockCover.isOverworldRock(w.state(dx, y, dz))) continue;
+            if (!facesOpenCore(coreSides, y)) continue;
+            w.set(dx, y, dz, NETHERRACK);
+            changed = true;
+        }
+        return changed;
+    }
+
+    /** True when any of the neighbouring core columns is open (air or lava) at {@code y}. */
+    private static boolean facesOpenCore(List<NetherCoreGeometry.Column> coreSides, int y) {
+        for (NetherCoreGeometry.Column c : coreSides) {
+            double d = c.densityAt(y);
+            if (!Double.isNaN(d) && d <= 0.0) return true;
+        }
+        return false;
+    }
+
+    /**
+     * The core restamps only its sampled Y band, so where the band's top or bottom row is open the
+     * overworld rock just beyond it shows through as a stone roof/floor. Repaint that single capping
+     * block netherrack; the mountain further up/down stays as it is.
+     */
+    private boolean coverCoreCaps(ChunkAccess chunk, int dx, int dz, int sampleX, int worldZ,
+                                  NetherCoreGeometry coreGeom) {
+        NetherCoreGeometry.Column col = coreGeom.column(sampleX, worldZ);
+        ColumnWriter w = new ColumnWriter(chunk);
+        boolean changed = false;
+        int[][] caps = {{coreGeom.maxCoreY(), coreGeom.maxCoreY() + 1}, {coreGeom.minCoreY(), coreGeom.minCoreY() - 1}};
+        for (int[] cap : caps) {
+            if (col.isSolid(cap[0])) continue;                       // band edge is rock — nothing shows through
+            if (!NetherRockCover.isOverworldRock(w.state(dx, cap[1], dz))) continue;
+            w.set(dx, cap[1], dz, NETHERRACK);
+            changed = true;
         }
         return changed;
     }

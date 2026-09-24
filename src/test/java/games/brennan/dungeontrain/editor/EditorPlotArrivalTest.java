@@ -191,9 +191,13 @@ final class EditorPlotArrivalTest {
     @DisplayName("shell search matches a brute-force nearest on random boxes and blockages")
     void freeCell_matchesBruteForce() {
         Random rng = new Random(0x5EED);
-        for (int trial = 0; trial < 300; trial++) {
+        for (int trial = 0; trial < 1000; trial++) {
             Vec3i box = new Vec3i(3 + rng.nextInt(8), 4 + rng.nextInt(8), 3 + rng.nextInt(8));
-            BlockPos preferred = ORIGIN.offset(rng.nextInt(box.getX()), 1 + rng.nextInt(2), rng.nextInt(box.getZ()));
+            // Half the trials near the floor, the way real callers aim; half anywhere, well outside
+            // the box on every axis, to cover preferred cells no caller passes today.
+            BlockPos preferred = trial % 2 == 0
+                ? ORIGIN.offset(rng.nextInt(box.getX()), 1 + rng.nextInt(2), rng.nextInt(box.getZ()))
+                : anywhereAround(rng, box);
             Set<BlockPos> solid = new HashSet<>();
             int fill = rng.nextInt(box.getX() * box.getY() * box.getZ());
             for (int i = 0; i < fill; i++) {
@@ -205,15 +209,62 @@ final class EditorPlotArrivalTest {
             assertEquals(want.distSqr(preferred), got.distSqr(preferred),
                 "trial " + trial + " box " + box + " preferred " + preferred + ": got " + got + " want " + want);
             assertTrue(got.equals(preferred) || fits.test(got), "trial " + trial + " landed in a block: " + got);
+            assertTrue(got.equals(preferred) || interior(box, got),
+                "trial " + trial + " box " + box + " preferred " + preferred + " landed outside the interior: " + got);
         }
     }
 
-    /** The pre-shell-search algorithm: preferred, its +X row, then every interior cell sorted by distance. */
+    @Test
+    @DisplayName("the search never asks about a cell outside the interior, other than preferred itself")
+    void freeCell_neverProbesOutsideInterior() {
+        Random rng = new Random(0xB0B);
+        for (int trial = 0; trial < 1000; trial++) {
+            Vec3i box = new Vec3i(3 + rng.nextInt(8), 4 + rng.nextInt(8), 3 + rng.nextInt(8));
+            assertProbesStayInside(box, anywhereAround(rng, box), rng.nextInt(4));
+        }
+        // The case that motivated this: preferred beside the interior in X/Y but two or more past
+        // it on Z, so a shell's Z face lands beyond the far side of the box.
+        for (int dz : new int[]{-2, -5, 9, 12}) {
+            assertProbesStayInside(FOOTPRINT, new BlockPos(4, 231, dz), 1);
+        }
+    }
+
+    /**
+     * Run {@link EditorPlotArrival#freeCell} with a predicate that fails the test on any
+     * out-of-interior probe but {@code preferred}, and fits roughly one cell in {@code sparsity + 1}.
+     */
+    private static void assertProbesStayInside(Vec3i box, BlockPos preferred, int sparsity) {
+        Predicate<BlockPos> fits = p -> {
+            if (!p.equals(preferred) && !interior(box, p)) {
+                throw new AssertionError("box " + box + " preferred " + preferred + ": probed " + p);
+            }
+            return sparsity > 0 && Math.floorMod(p.getX() * 31 + p.getY() * 17 + p.getZ() * 7, sparsity + 1) == 0;
+        };
+        EditorPlotArrival.freeCell(ORIGIN, box, preferred, fits);
+    }
+
+    /** A cell up to six past the box on every side — inside, beside, or well clear of it. */
+    private static BlockPos anywhereAround(Random rng, Vec3i box) {
+        return ORIGIN.offset(rng.nextInt(box.getX() + 12) - 6, rng.nextInt(box.getY() + 12) - 6,
+            rng.nextInt(box.getZ() + 12) - 6);
+    }
+
+    /** Whether {@code p} is in the interior box: one in from every face, two below the ceiling. */
+    private static boolean interior(Vec3i box, BlockPos p) {
+        int dx = p.getX() - ORIGIN.getX(), dy = p.getY() - ORIGIN.getY(), dz = p.getZ() - ORIGIN.getZ();
+        return dx >= 1 && dx <= box.getX() - 2 && dy >= 1 && dy <= box.getY() - 3
+            && dz >= 1 && dz <= box.getZ() - 2;
+    }
+
+    /**
+     * The pre-shell-search algorithm: preferred, its +X row within the interior, then every interior
+     * cell sorted by distance.
+     */
     private static BlockPos reference(Vec3i box, BlockPos preferred, Predicate<BlockPos> fits) {
         if (fits.test(preferred)) return preferred;
         for (int x = preferred.getX() + 1; x <= ORIGIN.getX() + box.getX() - 2; x++) {
             BlockPos p = new BlockPos(x, preferred.getY(), preferred.getZ());
-            if (fits.test(p)) return p;
+            if (interior(box, p) && fits.test(p)) return p;
         }
         BlockPos best = null;
         for (int dx = 1; dx <= box.getX() - 2; dx++) {

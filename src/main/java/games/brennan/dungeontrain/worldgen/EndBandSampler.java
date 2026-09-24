@@ -167,7 +167,7 @@ public final class EndBandSampler {
             LOGGER.debug("[DungeonTrain] End-band carvers failed at {} — keeping uncarved terrain", endPos, t);
         }
         try {
-            noise.applyBiomeDecoration(workspace.region(), ground, workspace.structures());
+            OfflineChunkSampler.decorate(noise, workspace, ground);
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] End-band decoration failed at {} — keeping bare terrain", endPos, t);
         }
@@ -197,8 +197,10 @@ public final class EndBandSampler {
         }
         int shiftX = pos.getMinBlockX() - endBaseX;
         Map<Long, CompoundTag> blockEntities = new HashMap<>();
-        ground.getBlockEntityNbts().forEach((at, nbt) ->
-                putBlockEntity(blockEntities, at, nbt.copy(), shiftX, bedY, minY, maxY));
+        ground.getBlockEntityNbts().forEach((at, nbt) -> {
+            // Vanilla's data-less placeholder: leave it out so the apply side creates the block entity fresh.
+            if (!OfflineChunkSampler.isPlaceholderBlockEntity(nbt)) putBlockEntity(blockEntities, at, nbt.copy(), shiftX, bedY, minY, maxY);
+        });
         ground.getBlockEntities().forEach((at, be) ->
                 putBlockEntity(blockEntities, at, be.saveWithFullMetadata(end.registryAccess()), shiftX, bedY, minY, maxY));
         return new Result(pos, minY, height, states, Map.copyOf(blockEntities));

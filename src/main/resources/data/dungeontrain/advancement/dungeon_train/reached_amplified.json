@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/reached_stacks",
+  "display": {
+    "icon": { "id": "minecraft:stone" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_amplified.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.reached_amplified.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "reached_amplified" }
+    }
+  },
+  "requirements": [["reached"]]
+}
