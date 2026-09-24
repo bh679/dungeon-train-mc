@@ -18089,6 +18089,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "physics-block-change-no-sync-load",
+      "version": "0.940.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "compatibility",
+        "train"
+      ],
+      "title": "Breaking or placing blocks no longer freezes the game",
+      "summary": "Editing a carriage \u2014 breaking a block, placing one, or water or lava flowing across it \u2014 could freeze the whole game for anything from a few seconds to a couple of minutes while the train's physics waited on the world. That wait is gone.",
+      "highlights": [],
+      "pr": 1509,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
