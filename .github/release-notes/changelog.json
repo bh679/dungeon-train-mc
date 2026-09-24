@@ -18528,6 +18528,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "plot-arrival-bounds-hardening",
+      "version": "0.950.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "internal"
+      ],
+      "title": "Safer landing search in the builder",
+      "summary": "Hardened the search that finds a free spot when you enter a build in the editor, so it can never look outside the plot. Nothing changes in how you land today.",
+      "highlights": [],
+      "pr": 1527,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
