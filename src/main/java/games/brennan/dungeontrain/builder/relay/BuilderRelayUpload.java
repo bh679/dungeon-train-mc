@@ -146,15 +146,15 @@ public final class BuilderRelayUpload {
      */
     private static void submitNew(ServerPlayer player, ServerLevel level, String key, String blocks, String text,
                                   Extras extras, BuilderSave.Written written, String stageId) {
-        SharedCarriageClient.listMine(player.getUUID().toString(), player.getUUID().toString(),
+        SharedCarriageClient.listMineWithCap(player.getUUID().toString(), player.getUUID().toString(),
                         RelayTarget.dev())
-                .thenAccept(builds -> onServer(level, () -> {
+                .thenAccept(mine -> onServer(level, () -> {
                     // A failed listing is not evidence of a full profile. Upload rather than block —
                     // the relay is the authority, and refusing a save because a check could not be
                     // made would be the worse failure.
-                    if (builds != null && BuilderProfileCap.isFull(BuilderProfileCap.used(builds))) {
+                    if (mine != null && BuilderProfileCap.isFull(BuilderProfileCap.used(mine.builds()), mine.cap())) {
                         tell(player, "gui.dungeontrain.builder.profile.full", ChatFormatting.YELLOW,
-                                BuilderProfileCap.MAX_PROFILE_BUILDS);
+                                mine.cap());
                         return;
                     }
                     submitNewNow(player, level, key, blocks, text, extras, written, stageId);
