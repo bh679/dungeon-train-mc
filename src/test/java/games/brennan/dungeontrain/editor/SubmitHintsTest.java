@@ -76,8 +76,9 @@ final class SubmitHintsTest {
     @Test
     @DisplayName("each machine part on its own is redstone")
     void machineParts() {
-        for (Block b : List.of(Blocks.REPEATER, Blocks.COMPARATOR, Blocks.OBSERVER, Blocks.PISTON, Blocks.STICKY_PISTON)) {
-            assertTrue(hints(Blocks.STONE, b).redstone(), b.toString());
+        for (Block b : List.of(Blocks.REPEATER, Blocks.COMPARATOR, Blocks.OBSERVER, Blocks.PISTON, Blocks.STICKY_PISTON,
+                Blocks.CALIBRATED_SCULK_SENSOR, Blocks.DROPPER, Blocks.DISPENSER)) {
+            assertTrue(hints(Blocks.STONE, b).hasRedstone(), b.toString());
         }
     }
 
@@ -86,8 +87,8 @@ final class SubmitHintsTest {
     void decorationIsNotRedstone() {
         SubmitHints.Hints h = hints(Blocks.REDSTONE_WIRE, Blocks.LEVER, Blocks.STONE_BUTTON,
                 Blocks.OAK_BUTTON, Blocks.REDSTONE_TORCH, Blocks.STONE);
-        assertFalse(h.redstone());
-        assertFalse(h.loot());
+        assertFalse(h.hasRedstone());
+        assertFalse(h.hasLoot());
     }
 
     @Test
@@ -96,14 +97,14 @@ final class SubmitHintsTest {
         CompoundTag nbt = new CompoundTag();
         nbt.putString("LootTable", "minecraft:chests/simple_dungeon");
         SubmitHints.Hints h = hints(Blocks.CHEST, nbt);
-        assertTrue(h.loot());
-        assertFalse(h.redstone());
+        assertTrue(h.hasLoot());
+        assertFalse(h.hasRedstone());
     }
 
     @Test
     @DisplayName("an empty chest is not loot")
     void emptyChest() {
-        assertFalse(hints(Blocks.CHEST, Blocks.BARREL).loot());
+        assertFalse(hints(Blocks.CHEST, Blocks.BARREL).hasLoot());
     }
 
     @Test
@@ -111,15 +112,36 @@ final class SubmitHintsTest {
     void valuableBlocks() {
         for (Block b : List.of(Blocks.DIAMOND_BLOCK, Blocks.NETHERITE_BLOCK, Blocks.EMERALD_BLOCK,
                 Blocks.GOLD_BLOCK, Blocks.ANCIENT_DEBRIS, Blocks.BEACON)) {
-            assertTrue(hints(Blocks.STONE, b).loot(), b.toString());
+            assertTrue(hints(Blocks.STONE, b).hasLoot(), b.toString());
         }
-        assertFalse(hints(Blocks.IRON_BLOCK, Blocks.COPPER_BLOCK).loot());
+        assertFalse(hints(Blocks.IRON_BLOCK, Blocks.COPPER_BLOCK).hasLoot());
     }
 
     @Test
     @DisplayName("both at once, and nothing for an empty build")
     void bothAndNone() {
-        assertEquals(new SubmitHints.Hints(true, true), hints(Blocks.OBSERVER, Blocks.DIAMOND_BLOCK));
+        SubmitHints.Hints both = hints(Blocks.OBSERVER, Blocks.DIAMOND_BLOCK);
+        assertTrue(both.hasRedstone() && both.hasLoot());
         assertEquals(SubmitHints.Hints.NONE, hints());
+    }
+
+    @Test
+    @DisplayName("the found blocks come back counted, most valuable loot first")
+    void countedAndRanked() {
+        CompoundTag table = new CompoundTag();
+        table.putString("LootTable", "minecraft:chests/simple_dungeon");
+        SubmitHints.Hints h = hints(Blocks.GOLD_BLOCK, Blocks.NETHERITE_BLOCK, Blocks.DIAMOND_BLOCK,
+                Blocks.DIAMOND_BLOCK, Blocks.DIAMOND_BLOCK, Blocks.CHEST, table, Blocks.REPEATER, Blocks.REPEATER, Blocks.OBSERVER);
+        List<Block> loot = h.loot().stream().map(SubmitHints.Found::block).toList();
+        assertEquals(Blocks.DIAMOND_BLOCK, loot.get(0), "three diamond blocks outrank one netherite");
+        assertEquals(Blocks.NETHERITE_BLOCK, loot.get(1));
+        assertEquals(Blocks.GOLD_BLOCK, loot.get(2));
+        assertTrue(loot.contains(Blocks.CHEST));
+        SubmitHints.Found chest = h.loot().stream().filter(f -> f.block() == Blocks.CHEST).findFirst().orElseThrow();
+        assertEquals(SubmitHints.Kind.TABLE, chest.kind());
+        assertEquals("minecraft:chests/simple_dungeon", chest.detail());
+        assertEquals(3, h.loot().get(0).count());
+        assertEquals(Blocks.REPEATER, h.redstone().get(0).block(), "most numerous machine part first");
+        assertEquals(2, h.redstone().get(0).count());
     }
 }

@@ -5,6 +5,9 @@
     "minecraft:comparator",
     "minecraft:observer",
     "minecraft:piston",
-    "minecraft:sticky_piston"
+    "minecraft:sticky_piston",
+    "minecraft:calibrated_sculk_sensor",
+    "minecraft:dropper",
+    "minecraft:dispenser"
   ]
 }

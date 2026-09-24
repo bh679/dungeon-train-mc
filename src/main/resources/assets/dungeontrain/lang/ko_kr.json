@@ -3170,6 +3170,7 @@
   "gui.dungeontrain.builder.profile.note.redstone.hint": "레드스톤은 어떻게 작동하나요? 검토자는 어떻게 테스트하면 되나요?",
   "gui.dungeontrain.builder.profile.note.loot.label": "전리품",
   "gui.dungeontrain.builder.profile.note.loot.hint": "어떤 전리품이 들어 있나요? 의도적으로 넣은 건가요?",
+  "gui.dungeontrain.builder.profile.note.valuable": "귀중한 블록",
   "gui.dungeontrain.builder.profile.note.notes.label": "기타",
   "gui.dungeontrain.builder.profile.not_a_carriage": "열차에는 객차만 오릅니다",
   "gui.dungeontrain.builder.profile.on_train": "열차 위",

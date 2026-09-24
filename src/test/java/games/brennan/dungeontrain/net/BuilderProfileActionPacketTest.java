@@ -3,9 +3,15 @@ package games.brennan.dungeontrain.net;
 import games.brennan.dungeontrain.builder.relay.SubmitNote;
 import games.brennan.dungeontrain.editor.SubmitHints;
 import io.netty.buffer.Unpooled;
+import net.minecraft.SharedConstants;
+import net.minecraft.server.Bootstrap;
+import net.minecraft.world.level.block.Blocks;
+import org.junit.jupiter.api.BeforeAll;
 import net.minecraft.network.FriendlyByteBuf;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -16,6 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * truncated it would submit the build fine and lose exactly the thing the author was asked for.</p>
  */
 final class BuilderProfileActionPacketTest {
+
+    @BeforeAll
+    static void bootstrap() {
+        SharedConstants.tryDetectVersion();
+        Bootstrap.bootStrap();
+    }
 
     @Test
     @DisplayName("a submit carries its note to the reviewer across the wire")
@@ -60,10 +72,14 @@ final class BuilderProfileActionPacketTest {
     }
 
     @Test
-    @DisplayName("the hints answer carries both flags")
+    @DisplayName("the hints answer carries both lists of found blocks")
     void hintsRoundTrip() {
+        SubmitHints.Found repeater = new SubmitHints.Found(Blocks.REPEATER, 3, SubmitHints.Kind.REDSTONE, "", 3);
+        SubmitHints.Found chest = new SubmitHints.Found(Blocks.CHEST, 1, SubmitHints.Kind.TABLE,
+                "minecraft:chests/simple_dungeon", 12.5);
         for (SubmitHints.Hints h : new SubmitHints.Hints[] {SubmitHints.Hints.NONE,
-                new SubmitHints.Hints(true, false), new SubmitHints.Hints(false, true), new SubmitHints.Hints(true, true)}) {
+                new SubmitHints.Hints(List.of(repeater), List.of()),
+                new SubmitHints.Hints(List.of(repeater), List.of(chest))}) {
             BuilderSubmitHintsPacket original = new BuilderSubmitHintsPacket(99, h);
             FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
             try {

@@ -1332,6 +1332,7 @@
   "gui.dungeontrain.builder.profile.note.redstone.hint": "Cum funcționează redstone-ul? Cum ar trebui să-l testeze evaluatorul?",
   "gui.dungeontrain.builder.profile.note.loot.label": "Pradă",
   "gui.dungeontrain.builder.profile.note.loot.hint": "Ce pradă este inclusă? E acolo intenționat?",
+  "gui.dungeontrain.builder.profile.note.valuable": "Bloc valoros",
   "gui.dungeontrain.builder.profile.note.notes.label": "Altceva",
   "gui.dungeontrain.builder.profile.not_a_carriage": "Doar vagoanele pot fi trimise",
   "gui.dungeontrain.builder.profile.on_train": "trimisă",

@@ -3144,6 +3144,7 @@
       "gui.dungeontrain.builder.profile.note.redstone.hint",
       "gui.dungeontrain.builder.profile.note.loot.label",
       "gui.dungeontrain.builder.profile.note.loot.hint",
+      "gui.dungeontrain.builder.profile.note.valuable",
       "gui.dungeontrain.builder.profile.note.notes.label",
       "gui.dungeontrain.builder.profile.not_a_carriage",
       "gui.dungeontrain.builder.profile.on_train",

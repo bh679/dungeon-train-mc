@@ -3213,6 +3213,7 @@
   "gui.dungeontrain.builder.profile.note.redstone.hint": "Wie funktioniert die Redstone-Schaltung? Wie soll der Prüfer sie testen?",
   "gui.dungeontrain.builder.profile.note.loot.label": "Beute",
   "gui.dungeontrain.builder.profile.note.loot.hint": "Welche Beute ist enthalten? Ist sie absichtlich dort?",
+  "gui.dungeontrain.builder.profile.note.valuable": "Wertvoller Block",
   "gui.dungeontrain.builder.profile.note.notes.label": "Sonstiges",
   "gui.dungeontrain.builder.profile.not_a_carriage": "Nur Waggons fahren auf dem Zug mit",
   "gui.dungeontrain.builder.profile.on_train": "auf dem Zug",

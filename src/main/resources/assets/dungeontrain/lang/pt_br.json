@@ -3213,6 +3213,7 @@
   "gui.dungeontrain.builder.profile.note.redstone.hint": "Como o redstone funciona? Como o revisor deve testá-lo?",
   "gui.dungeontrain.builder.profile.note.loot.label": "Itens",
   "gui.dungeontrain.builder.profile.note.loot.hint": "Que itens estão incluídos? Eles estão lá de propósito?",
+  "gui.dungeontrain.builder.profile.note.valuable": "Bloco valioso",
   "gui.dungeontrain.builder.profile.note.notes.label": "Algo mais",
   "gui.dungeontrain.builder.profile.not_a_carriage": "Só vagões entram no trem",
   "gui.dungeontrain.builder.profile.on_train": "no trem",

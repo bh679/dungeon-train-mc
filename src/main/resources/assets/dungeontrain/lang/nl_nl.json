@@ -3213,6 +3213,7 @@
   "gui.dungeontrain.builder.profile.note.redstone.hint": "Hoe werkt de redstone? Hoe moet de beoordelaar het testen?",
   "gui.dungeontrain.builder.profile.note.loot.label": "Buit",
   "gui.dungeontrain.builder.profile.note.loot.hint": "Welke buit zit erin? Is die er met opzet?",
+  "gui.dungeontrain.builder.profile.note.valuable": "Waardevol blok",
   "gui.dungeontrain.builder.profile.note.notes.label": "Verder nog",
   "gui.dungeontrain.builder.profile.not_a_carriage": "Alleen wagons gaan mee op de trein",
   "gui.dungeontrain.builder.profile.on_train": "op de trein",

@@ -3256,6 +3256,7 @@
   "gui.dungeontrain.builder.profile.note.redstone.hint": "Как работает редстоун? Как проверяющему его протестировать?",
   "gui.dungeontrain.builder.profile.note.loot.label": "Добыча",
   "gui.dungeontrain.builder.profile.note.loot.hint": "Какая добыча внутри? Она там намеренно?",
+  "gui.dungeontrain.builder.profile.note.valuable": "Ценный блок",
   "gui.dungeontrain.builder.profile.note.notes.label": "Что-то ещё",
   "gui.dungeontrain.builder.profile.not_a_carriage": "В поезд идут только вагоны",
   "gui.dungeontrain.builder.profile.on_train": "отправлено",

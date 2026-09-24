@@ -3170,6 +3170,7 @@
   "gui.dungeontrain.builder.profile.note.redstone.hint": "Redstone hoạt động thế nào? Người duyệt nên thử nó ra sao?",
   "gui.dungeontrain.builder.profile.note.loot.label": "Chiến lợi phẩm",
   "gui.dungeontrain.builder.profile.note.loot.hint": "Có những chiến lợi phẩm gì? Chúng được đặt ở đó có chủ ý không?",
+  "gui.dungeontrain.builder.profile.note.valuable": "Khối có giá trị",
   "gui.dungeontrain.builder.profile.note.notes.label": "Điều khác",
   "gui.dungeontrain.builder.profile.not_a_carriage": "Chỉ toa mới lên được đoàn tàu",
   "gui.dungeontrain.builder.profile.on_train": "trên đoàn tàu",

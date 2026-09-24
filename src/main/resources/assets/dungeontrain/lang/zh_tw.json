@@ -3184,6 +3184,7 @@
   "gui.dungeontrain.builder.profile.note.redstone.hint": "紅石如何運作？審核者應該怎麼測試？",
   "gui.dungeontrain.builder.profile.note.loot.label": "戰利品",
   "gui.dungeontrain.builder.profile.note.loot.hint": "包含哪些戰利品？是刻意放在那裡的嗎？",
+  "gui.dungeontrain.builder.profile.note.valuable": "貴重方塊",
   "gui.dungeontrain.builder.profile.note.notes.label": "其他",
   "gui.dungeontrain.builder.profile.not_a_carriage": "只有車廂能上列車",
   "gui.dungeontrain.builder.profile.on_train": "在列車上",

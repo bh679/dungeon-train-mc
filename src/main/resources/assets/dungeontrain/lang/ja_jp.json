@@ -3170,6 +3170,7 @@
   "gui.dungeontrain.builder.profile.note.redstone.hint": "レッドストーンはどう動く？レビュアーはどう試せばいい？",
   "gui.dungeontrain.builder.profile.note.loot.label": "戦利品",
   "gui.dungeontrain.builder.profile.note.loot.hint": "どんな戦利品が入っている？意図して置いたもの？",
+  "gui.dungeontrain.builder.profile.note.valuable": "貴重なブロック",
   "gui.dungeontrain.builder.profile.note.notes.label": "その他",
   "gui.dungeontrain.builder.profile.not_a_carriage": "列車に乗るのは車両だけ",
   "gui.dungeontrain.builder.profile.on_train": "列車上",

@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.builder.relay.SubmitNote;
+import games.brennan.dungeontrain.client.menu.editorscreen.EditorScreenLang;
 import games.brennan.dungeontrain.editor.SubmitHints;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -10,6 +12,7 @@ import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -48,8 +51,11 @@ public final class BuilderSubmitNoteScreen extends Screen {
     private static final int MIN_BOX_HEIGHT = 36;
     private static final int ROW_HEIGHT = 20;
     private static final int ROW_GAP = 6;
-    /** Height of a box's label line above it. */
-    private static final int LABEL_HEIGHT = 12;
+    /** Height of a box's label line above it — room for the label and its row of block icons. */
+    private static final int LABEL_HEIGHT = 15;
+    /** Size a found block's icon is drawn at beside its label. */
+    private static final int ICON = 12;
+    private static final int ICON_GAP = 4;
     /** Room under a box for its own {@code n/1000} counter, which it draws 4px below itself. */
     private static final int COUNTER_GAP = 14;
     /** Space above the first box for the title and the prompt. */
@@ -87,6 +93,7 @@ public final class BuilderSubmitNoteScreen extends Screen {
     private final Screen backScreen;
     private final Component buildName;
     private final List<Question> questions;
+    private final SubmitHints.Hints hints;
     private final Consumer<SubmitNote> onSubmit;
 
     private final Map<Question, MultiLineEditBox> boxes = new EnumMap<>(Question.class);
@@ -110,9 +117,10 @@ public final class BuilderSubmitNoteScreen extends Screen {
         this.buildName = buildName == null ? Component.empty() : buildName;
         this.onSubmit = onSubmit;
         SubmitHints.Hints h = hints == null ? SubmitHints.Hints.NONE : hints;
+        this.hints = h;
         List<Question> asked = new ArrayList<>();
-        if (h.redstone()) asked.add(Question.REDSTONE);
-        if (h.loot()) asked.add(Question.LOOT);
+        if (h.hasRedstone()) asked.add(Question.REDSTONE);
+        if (h.hasLoot()) asked.add(Question.LOOT);
         asked.add(Question.NOTES);
         this.questions = List.copyOf(asked);
         for (Question q : questions) answers.put(q, "");
@@ -178,18 +186,80 @@ public final class BuilderSubmitNoteScreen extends Screen {
         g.drawCenteredString(this.font,
                 Component.translatable("gui.dungeontrain.builder.profile.note.prompt", buildName),
                 this.width / 2, top + 18, HINT_COLOUR);
+        List<Component> tooltip = null;
         for (Question q : questions) {
             MultiLineEditBox box = boxes.get(q);
             if (box == null) continue;
             if (labelled()) {
-                g.drawString(this.font, q.label(), box.getX(), box.getY() - LABEL_HEIGHT + 2, TEXT_COLOUR);
+                int labelY = box.getY() - LABEL_HEIGHT;
+                g.drawString(this.font, q.label(), box.getX(), labelY + 4, TEXT_COLOUR);
+                List<Component> tip = renderFound(g, found(q), box.getX() + this.font.width(q.label()) + 6,
+                        labelY + 1, box.getX() + box.getWidth(), mouseX, mouseY);
+                if (tip != null) tooltip = tip;
             }
             renderPlaceholder(g, q, box);
         }
+        if (tooltip != null) g.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
         int footY = top + HEADER_HEIGHT + questions.size() * slotHeight() + ROW_HEIGHT + ROW_GAP;
         g.drawCenteredString(this.font,
                 Component.translatable("gui.dungeontrain.builder.profile.note.optional"),
                 this.width / 2, footY, HINT_COLOUR);
+    }
+
+    /** The blocks that earned a question — none for the general one. */
+    private List<SubmitHints.Found> found(Question q) {
+        return switch (q) {
+            case REDSTONE -> hints.redstone();
+            case LOOT -> hints.loot();
+            case NOTES -> List.of();
+        };
+    }
+
+    /**
+     * The blocks behind a question, as a row of icons after its label, in the order the server ranked
+     * them (most valuable first). What does not fit before {@code right} is counted as "+N". Returns
+     * the tooltip of the icon under the mouse, or null.
+     */
+    private List<Component> renderFound(GuiGraphics g, List<SubmitHints.Found> found, int x, int y, int right,
+                                        int mouseX, int mouseY) {
+        List<Component> tooltip = null;
+        for (int i = 0; i < found.size(); i++) {
+            SubmitHints.Found f = found.get(i);
+            String count = f.count() > 1 ? "×" + f.count() : "";
+            int width = ICON + (count.isEmpty() ? 0 : 1 + this.font.width(count));
+            int more = found.size() - i - 1;
+            int reserve = more > 0 ? ICON_GAP + this.font.width("+" + more) : 0;
+            if (x + width + reserve > right) {
+                g.drawString(this.font, "+" + (found.size() - i), x, y + 3, HINT_COLOUR);
+                break;
+            }
+            g.pose().pushPose();
+            g.pose().translate(x, y, 0);
+            g.pose().scale(ICON / 16f, ICON / 16f, 1f);
+            g.renderItem(new ItemStack(f.block()), 0, 0);
+            g.pose().popPose();
+            if (!count.isEmpty()) g.drawString(this.font, count, x + ICON + 1, y + 3, HINT_COLOUR);
+            if (mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + ICON) tooltip = tooltipOf(f);
+            x += width + ICON_GAP;
+        }
+        return tooltip;
+    }
+
+    /** A found block's name and count, and where its loot comes from. */
+    private static List<Component> tooltipOf(SubmitHints.Found f) {
+        List<Component> lines = new ArrayList<>(2);
+        Component name = f.block().getName();
+        lines.add(f.count() > 1 ? name.copy().append(" ×" + f.count()) : name);
+        String source = switch (f.kind()) {
+            case REDSTONE -> null;
+            case VALUABLE -> Component.translatable("gui.dungeontrain.builder.profile.note.valuable").getString();
+            case POOL -> EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_POOL);
+            case PREFAB -> EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_PREFAB, f.detail());
+            case INLINE -> EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_INLINE);
+            case TABLE -> EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_TABLE, f.detail());
+        };
+        if (source != null) lines.add(Component.literal(source).withStyle(ChatFormatting.GRAY));
+        return lines;
     }
 
     /**

@@ -3170,6 +3170,7 @@
   "gui.dungeontrain.builder.profile.note.redstone.hint": "Bagaimana cara kerja redstone-nya? Bagaimana peninjau harus mengujinya?",
   "gui.dungeontrain.builder.profile.note.loot.label": "Loot",
   "gui.dungeontrain.builder.profile.note.loot.hint": "Loot apa saja yang disertakan? Apakah memang sengaja ditaruh di sana?",
+  "gui.dungeontrain.builder.profile.note.valuable": "Blok berharga",
   "gui.dungeontrain.builder.profile.note.notes.label": "Lainnya",
   "gui.dungeontrain.builder.profile.not_a_carriage": "Hanya gerbong yang naik ke kereta",
   "gui.dungeontrain.builder.profile.on_train": "di kereta",

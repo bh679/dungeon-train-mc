@@ -3170,6 +3170,7 @@
   "gui.dungeontrain.builder.profile.note.redstone.hint": "Paano gumagana ang redstone? Paano ito dapat subukan ng reviewer?",
   "gui.dungeontrain.builder.profile.note.loot.label": "Loot",
   "gui.dungeontrain.builder.profile.note.loot.hint": "Anong loot ang kasama? Sinadya ba itong ilagay doon?",
+  "gui.dungeontrain.builder.profile.note.valuable": "Mahalagang block",
   "gui.dungeontrain.builder.profile.note.notes.label": "Iba pa",
   "gui.dungeontrain.builder.profile.not_a_carriage": "Bagon lang ang sumasakay sa tren",
   "gui.dungeontrain.builder.profile.on_train": "nasa tren",

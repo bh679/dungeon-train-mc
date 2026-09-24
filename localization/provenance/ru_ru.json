@@ -3256,6 +3256,7 @@
   "gui.dungeontrain.builder.profile.note.redstone.hint": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "e4f651a7cb644afc"},
   "gui.dungeontrain.builder.profile.note.loot.label": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "839e7c03533466b1"},
   "gui.dungeontrain.builder.profile.note.loot.hint": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "2af9caf8600d9ab7"},
+  "gui.dungeontrain.builder.profile.note.valuable": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "446deb4a42e79ff1"},
   "gui.dungeontrain.builder.profile.note.notes.label": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "28e4bfad14be6c63"},
   "gui.dungeontrain.builder.profile.not_a_carriage": {"author": "helluvaboy", "reviewer": "helluvaboy", "source_hash": "2ce4b1484f255aef"},
   "gui.dungeontrain.builder.profile.on_train": {"author": "helluvaboy", "reviewer": "helluvaboy", "source_hash": ""},

@@ -3213,6 +3213,7 @@
   "gui.dungeontrain.builder.profile.note.redstone.hint": "¿Cómo funciona el redstone? ¿Cómo debe probarlo quien lo revise?",
   "gui.dungeontrain.builder.profile.note.loot.label": "Botín",
   "gui.dungeontrain.builder.profile.note.loot.hint": "¿Qué botín incluye? ¿Está ahí a propósito?",
+  "gui.dungeontrain.builder.profile.note.valuable": "Bloque valioso",
   "gui.dungeontrain.builder.profile.note.notes.label": "Algo más",
   "gui.dungeontrain.builder.profile.not_a_carriage": "Al tren solo suben vagones",
   "gui.dungeontrain.builder.profile.on_train": "en el tren",

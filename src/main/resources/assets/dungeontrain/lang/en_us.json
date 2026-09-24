@@ -1302,6 +1302,7 @@
   "gui.dungeontrain.builder.profile.note.redstone.hint": "How does the redstone work? How should the reviewer test it?",
   "gui.dungeontrain.builder.profile.note.loot.label": "Loot",
   "gui.dungeontrain.builder.profile.note.loot.hint": "What loot is included? Is it meant to be there?",
+  "gui.dungeontrain.builder.profile.note.valuable": "Valuable block",
   "gui.dungeontrain.builder.profile.note.notes.label": "Anything else",
   "gui.dungeontrain.builder.profile.loading": "Fetching your builds…",
   "gui.dungeontrain.builder.profile.empty": "No builds yet. Save one and it appears here.",
