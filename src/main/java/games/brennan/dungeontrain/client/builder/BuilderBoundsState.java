@@ -50,6 +50,8 @@ public final class BuilderBoundsState {
     private static volatile int weight = -1;
     /** Who originally built this template, when it came from another player; empty otherwise. */
     private static volatile String creator = "";
+    /** The open build goes by a name the mod ships, so Save must offer a name of the player's own. */
+    private static volatile boolean builtin = false;
 
     /** What this world does with the structures around the build — the pause-menu control's state. */
     private static volatile BuilderStructureMode structureMode = BuilderStructureMode.DEFAULT;
@@ -75,6 +77,7 @@ public final class BuilderBoundsState {
         trackKindId = orEmpty(packet.trackKindId());
         weight = packet.weight();
         creator = orEmpty(packet.creator());
+        builtin = packet.builtin();
         structureMode = BuilderStructureMode.orDefault(packet.structureModeId());
         structureRefresh = BuilderStructureRefresh.orDefault(packet.structureRefreshId());
         parked = packet.parked();
@@ -224,6 +227,15 @@ public final class BuilderBoundsState {
         return buildName.isEmpty();
     }
 
+    /**
+     * True when the open build is one the mod ships and this is not a dev checkout — Save has to
+     * offer a name of the player's own before it writes. The server's answer; see
+     * {@code BuilderBuiltins.isProtected}.
+     */
+    public static boolean isBuiltin() {
+        return builtin;
+    }
+
     /** Mode id, or empty when the server hasn't said (or this isn't a builder world). */
     public static String modeId() {
         return modeId;
@@ -256,6 +268,7 @@ public final class BuilderBoundsState {
         trackKindId = "";
         weight = -1;
         creator = "";
+        builtin = false;
         structureMode = BuilderStructureMode.DEFAULT;
         structureRefresh = BuilderStructureRefresh.DEFAULT;
         parked = 0;
