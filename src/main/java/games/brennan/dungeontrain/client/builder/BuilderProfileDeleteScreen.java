@@ -37,6 +37,8 @@ public final class BuilderProfileDeleteScreen extends Screen {
 
     private final Screen lastScreen;
     private final Runnable onConfirm;
+    /** Whether this is the second question — the relay said somebody is riding the build. */
+    private final boolean inUse;
 
     private List<FormattedCharSequence> titleLines = List.of();
     private List<FormattedCharSequence> hintLines = List.of();
@@ -48,24 +50,38 @@ public final class BuilderProfileDeleteScreen extends Screen {
      * @param onConfirm  run after the screen has gone back to {@code lastScreen}, on a yes only
      */
     public BuilderProfileDeleteScreen(Screen lastScreen, String buildName, Runnable onConfirm) {
-        super(Component.translatable("gui.dungeontrain.builder.profile.delete.title",
+        this(lastScreen, buildName, false, onConfirm);
+    }
+
+    /**
+     * As above, or the follow-up asked when the relay refused because another world is holding the
+     * build: same shape, different words, and the yes carries the override.
+     */
+    public BuilderProfileDeleteScreen(Screen lastScreen, String buildName, boolean inUse, Runnable onConfirm) {
+        super(Component.translatable(inUse
+                        ? "gui.dungeontrain.builder.profile.delete.in_use.title"
+                        : "gui.dungeontrain.builder.profile.delete.title",
                 Component.literal(BuilderLabels.pretty(buildName))));
         this.lastScreen = lastScreen;
         this.onConfirm = onConfirm;
+        this.inUse = inUse;
     }
 
     @Override
     protected void init() {
         int wrapWidth = Math.min(this.width - 40, 320);
         this.titleLines = this.font.split(getTitle(), wrapWidth);
-        this.hintLines = this.font.split(
-                Component.translatable("gui.dungeontrain.builder.profile.delete.hint"), wrapWidth);
+        this.hintLines = this.font.split(Component.translatable(inUse
+                ? "gui.dungeontrain.builder.profile.delete.in_use.hint"
+                : "gui.dungeontrain.builder.profile.delete.hint"), wrapWidth);
         this.buttonsTop = this.height / 2 - 30;
         int left = this.width / 2 - BUTTON_WIDTH / 2;
         // The destructive answer in red, and first: this screen exists to make the player look at
         // it, not to hide it behind a safe-looking default.
         addRenderableWidget(Button.builder(
-                        Component.translatable("gui.dungeontrain.builder.profile.delete.confirm")
+                        Component.translatable(inUse
+                                        ? "gui.dungeontrain.builder.profile.delete.in_use.confirm"
+                                        : "gui.dungeontrain.builder.profile.delete.confirm")
                                 .withStyle(ChatFormatting.RED),
                         b -> {
                             this.minecraft.setScreen(lastScreen);

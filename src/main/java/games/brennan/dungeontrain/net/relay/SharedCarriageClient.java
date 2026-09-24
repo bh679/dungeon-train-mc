@@ -598,11 +598,17 @@ public final class SharedCarriageClient {
      * the two refusals are the same: {@link VisibilityResult#inUse()} while another world is holding
      * the build, {@link CallStatus#UNKNOWN} when the relay has no such id (already gone). The token
      * is always empty — nothing is handed back from a delete.
+     *
+     * <p>This world's own id rides along so a lease it holds itself — the one its last save took —
+     * never counts as "in use"; {@code force} is the player's "delete anyway" past a lease that
+     * genuinely belongs to somebody else.</p>
      */
-    public static CompletableFuture<VisibilityResult> deleteBuild(int id, String secret) {
+    public static CompletableFuture<VisibilityResult> deleteBuild(int id, String secret, boolean force) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("secret", secret == null ? "" : secret);
+        body.addProperty("world", WORLD);
+        if (force) body.addProperty("force", true);
         return post("/carriages/delete", body).thenApply(resp -> {
             if (resp == null) {
                 logFailure("/carriages/delete", null);

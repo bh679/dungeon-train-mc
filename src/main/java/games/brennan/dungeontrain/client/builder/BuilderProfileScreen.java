@@ -17,6 +17,8 @@ import games.brennan.dungeontrain.net.BuilderOpenPacket;
 import games.brennan.dungeontrain.net.BuilderFavouritePacket;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDeletePacket;
+import games.brennan.dungeontrain.net.BuilderProfileDeleteResultPacket;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayUpload;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
@@ -216,6 +218,9 @@ public final class BuilderProfileScreen extends Screen {
      */
     private BuilderProfileDownloadPacket lastDownload;
 
+    /** The build whose delete is out, so an answer to a press from an earlier screen is ignored. */
+    private int pendingDeleteId = -1;
+
     private final BuilderTileSpin spin = new BuilderTileSpin();
     private long lastFrameNanos;
 
@@ -260,6 +265,7 @@ public final class BuilderProfileScreen extends Screen {
         // may predate a save, a publish, or a build somebody else's world just returned.
         BuilderProfileState.listen(this::onProfile);
         BuilderProfileState.listenForDownloads(this::onDownload);
+        BuilderProfileState.listenForDeletes(this::onDelete);
         DungeonTrainNet.sendToServer(new BuilderProfileRequestPacket(viewedUuid, BuilderProfileState.live()));
 
         this.spin.clear();
@@ -497,11 +503,43 @@ public final class BuilderProfileScreen extends Screen {
     private void deleteSelected() {
         BuilderProfilePacket.Entry entry = selectedBuild();
         if (entry == null || viewingOther()) return;
-        this.minecraft.setScreen(new BuilderProfileDeleteScreen(this, entry.buildName(), () -> {
-            DungeonTrainNet.sendToServer(new BuilderProfileDeletePacket(entry.relayId()));
-            if (this.deleteButton != null) this.deleteButton.active = false;
-            this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.deleting");
-        }));
+        this.minecraft.setScreen(new BuilderProfileDeleteScreen(this, entry.buildName(),
+                () -> sendDelete(entry.relayId(), false)));
+    }
+
+    private void sendDelete(int relayId, boolean force) {
+        this.pendingDeleteId = relayId;
+        DungeonTrainNet.sendToServer(new BuilderProfileDeletePacket(relayId, force));
+        if (this.deleteButton != null) this.deleteButton.active = false;
+        this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.deleting");
+    }
+
+    /**
+     * A delete answered.
+     *
+     * <p>Only one outcome needs more than a note: a build somebody is riding right now is refused
+     * with a question, and the question is put to the player rather than swallowed — "delete
+     * anyway" sends the same press again with the override set. Answering no leaves the build where
+     * it is. The row itself goes or stays through the profile refresh that follows.</p>
+     */
+    private void onDelete(BuilderProfileDeleteResultPacket packet) {
+        if (packet.relayId() != pendingDeleteId) return;
+        this.pendingDeleteId = -1;
+        if (this.deleteButton != null) this.deleteButton.active = canDeleteSelection();
+        if (packet.outcome() == BuilderRelayUpload.DeleteOutcome.IN_USE) {
+            BuilderProfilePacket.Entry entry = BuilderProfileState.ownBuild(packet.relayId());
+            String name = entry == null ? "" : entry.buildName();
+            this.downloadNote = null;
+            this.minecraft.setScreen(new BuilderProfileDeleteScreen(this, name, true,
+                    () -> sendDelete(packet.relayId(), true)));
+            return;
+        }
+        this.downloadNote = switch (packet.outcome()) {
+            case DELETED -> Component.translatable("gui.dungeontrain.builder.profile.deleted");
+            case GONE -> Component.translatable("gui.dungeontrain.builder.profile.gone_short");
+            case NOT_YOURS -> Component.translatable("gui.dungeontrain.builder.profile.not_yours");
+            default -> Component.translatable("gui.dungeontrain.builder.profile.delete_failed");
+        };
     }
 
     /**
@@ -817,7 +855,7 @@ public final class BuilderProfileScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
-        g.drawCenteredString(this.font, this.title, this.width / 2, TITLE_TOP, 0xFFFFFF);
+        g.drawCenteredString(this.font, titleLine(), this.width / 2, TITLE_TOP, 0xFFFFFF);
         if (!DungeonTrain.isDevBuild()) {
             // On a dev build the same line is a button, added in rebuild().
             g.drawCenteredString(this.font, ownerLine(), this.width / 2, OWNER_TOP + 4, NOTE_COLOUR);
@@ -880,6 +918,20 @@ public final class BuilderProfileScreen extends Screen {
         BuilderProfileState.setLive(!BuilderProfileState.live());
         BuilderProfileState.clearCache();
         viewProfile(null);
+    }
+
+    /**
+     * The title, with how many builds the profile holds once they have arrived.
+     *
+     * <p>The count the relay keeps, not the tile count: an unchanged copy of a stock template is
+     * listed to its owner but is not one of their builds, so it is left out here as the relay leaves
+     * it out of every other count. Before the first answer, and on somebody else's profile, the bare
+     * title — a number would be a claim the screen cannot yet make, or one about the wrong person.</p>
+     */
+    private Component titleLine() {
+        if (status != BuilderProfilePacket.Status.OK || viewingOther()) return this.title;
+        long counted = builds.stream().filter(e -> !e.templateCopy()).count();
+        return Component.translatable("gui.dungeontrain.builder.profile.title_count", counted);
     }
 
     /**
@@ -1022,6 +1074,7 @@ public final class BuilderProfileScreen extends Screen {
         super.removed();
         BuilderProfileState.listen(null);
         BuilderProfileState.listenForDownloads(null);
+        BuilderProfileState.listenForDeletes(null);
         BuilderTileMeshCache.clear();
     }
 

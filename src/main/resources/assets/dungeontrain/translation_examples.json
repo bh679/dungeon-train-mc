@@ -12140,5 +12140,23 @@
         "Library"
       ]
     }
+  },
+  "gui.dungeontrain.builder.profile.delete.in_use.title": {
+    "1": {
+      "label": "the name of the build another world is currently holding",
+      "examples": [
+        "Brick Cabin",
+        "Library"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.title_count": {
+    "1": {
+      "label": "how many builds the player has on the relay",
+      "examples": [
+        "0",
+        "37"
+      ]
+    }
   }
 }

@@ -329,34 +329,55 @@ public final class BuilderRelayUpload {
      * <p>A refusal is the relay's to make: {@code in_use} while another world is holding the build,
      * which the message wording shares with a refused withdraw because it is the same situation.</p>
      */
-    public static CompletableFuture<Component> deleteBuild(ServerPlayer player, ServerLevel level,
-                                                           int relayId) {
-        return withSecret(player, level, relayId, (key, entry, kind) ->
-                SharedCarriageClient.deleteBuild(entry.relayId(), entry.secret()).thenApply(result -> {
-                    if (result.ok()) {
-                        if (key != null) {
-                            onServer(level, () -> {
-                                DungeonTrainWorldData live = DungeonTrainWorldData.get(level);
-                                live.builderRelayBuilds().remove(key);
-                                live.markBuilderRelayBuildsDirty();
-                            });
-                        }
-                        return msg("gui.dungeontrain.builder.profile.deleted", ChatFormatting.GREEN);
+    public static CompletableFuture<DeleteOutcome> deleteBuild(ServerPlayer player, ServerLevel level,
+                                                               int relayId, boolean force) {
+        return withSecretOr(player, level, relayId, DeleteOutcome::ofAdoption, (key, entry, kind) ->
+                SharedCarriageClient.deleteBuild(entry.relayId(), entry.secret(), force).thenApply(result -> {
+                    if (result.ok() && key != null) {
+                        onServer(level, () -> {
+                            DungeonTrainWorldData live = DungeonTrainWorldData.get(level);
+                            live.builderRelayBuilds().remove(key);
+                            live.markBuilderRelayBuildsDirty();
+                        });
                     }
-                    return deleteRefusal(result);
+                    return DeleteOutcome.of(result);
                 }));
     }
 
-    /** What a refused delete means to the player — the part worth pinning in a test. */
-    static Component deleteRefusal(SharedCarriageClient.VisibilityResult result) {
-        if (result.inUse()) return msg("gui.dungeontrain.builder.profile.in_use_withdraw", ChatFormatting.YELLOW);
-        if (result.status() == SharedCarriageClient.CallStatus.UNKNOWN) {
-            return msg("gui.dungeontrain.builder.profile.gone_short", ChatFormatting.YELLOW);
+    /**
+     * How a delete ended, as the screen needs to hear it. Coded by ordinal on the wire — append only.
+     *
+     * <p>Three refusals kept apart on purpose: a build in use is a question ("delete anyway?"), a
+     * build the relay no longer has is already what the player wanted, and a build that is not
+     * theirs is not a button they should have been able to press.</p>
+     */
+    public enum DeleteOutcome {
+        DELETED, IN_USE, GONE, NOT_YOURS, FAILED;
+
+        /** The relay's answer to the delete itself — the part worth pinning in a test. */
+        static DeleteOutcome of(SharedCarriageClient.VisibilityResult result) {
+            if (result.ok()) return DELETED;
+            if (result.inUse()) return IN_USE;
+            if (result.status() == SharedCarriageClient.CallStatus.UNKNOWN) return GONE;
+            if (result.status() == SharedCarriageClient.CallStatus.FORBIDDEN) return NOT_YOURS;
+            return FAILED;
         }
-        if (result.status() == SharedCarriageClient.CallStatus.FORBIDDEN) {
-            return msg("gui.dungeontrain.builder.profile.not_yours", ChatFormatting.YELLOW);
+
+        /** A delete that never got as far as the relay because no secret could be found for it. */
+        static DeleteOutcome ofAdoption(Adoption verdict) {
+            return verdict == Adoption.GONE ? GONE : NOT_YOURS;
         }
-        return msg("gui.dungeontrain.builder.profile.delete_failed", ChatFormatting.RED);
+
+        /** The chat line for this outcome, coloured as the profile screen's other messages are. */
+        public Component message() {
+            return switch (this) {
+                case DELETED -> msg("gui.dungeontrain.builder.profile.deleted", ChatFormatting.GREEN);
+                case IN_USE -> msg("gui.dungeontrain.builder.profile.in_use_withdraw", ChatFormatting.YELLOW);
+                case GONE -> msg("gui.dungeontrain.builder.profile.gone_short", ChatFormatting.YELLOW);
+                case NOT_YOURS -> msg("gui.dungeontrain.builder.profile.not_yours", ChatFormatting.YELLOW);
+                case FAILED -> msg("gui.dungeontrain.builder.profile.delete_failed", ChatFormatting.RED);
+            };
+        }
     }
 
     /**
@@ -364,8 +385,8 @@ public final class BuilderRelayUpload {
      * build, or null when the secret was recovered from the relay and no record exists here.
      */
     @FunctionalInterface
-    interface WithSecret {
-        CompletableFuture<Component> run(String key, BuilderRelayBuilds.Entry entry, String kindId);
+    interface WithSecret<T> {
+        CompletableFuture<T> run(String key, BuilderRelayBuilds.Entry entry, String kindId);
     }
 
     /**
@@ -377,15 +398,29 @@ public final class BuilderRelayUpload {
      * to upload.</p>
      */
     private static CompletableFuture<Component> withSecret(ServerPlayer player, ServerLevel level,
-                                                           int relayId, WithSecret action) {
+                                                           int relayId, WithSecret<Component> action) {
+        return withSecretOr(player, level, relayId, BuilderRelayUpload::adoptionMessage, action);
+    }
+
+    /** As above for any result type: {@code refused} says what a failed secret recovery becomes. */
+    private static <T> CompletableFuture<T> withSecretOr(ServerPlayer player, ServerLevel level, int relayId,
+                                                         java.util.function.Function<Adoption, T> refused,
+                                                         WithSecret<T> action) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         String key = data.builderRelayBuilds().keyForRelayId(relayId);
         BuilderRelayBuilds.Entry entry = key == null ? null : data.builderRelayBuilds().get(key);
         if (entry == null || entry.secret().isEmpty()) {
             // This world has no secret for the build. Recover one rather than refuse — see adopt().
-            return adopt(player, relayId, action);
+            return adopt(player, relayId, refused, action);
         }
         return action.run(key, entry, BuilderRelayBuilds.kindOfKey(key));
+    }
+
+    /** What a failed secret recovery says to the player, for the submit path. */
+    private static Component adoptionMessage(Adoption verdict) {
+        return verdict == Adoption.GONE
+                ? msg("gui.dungeontrain.builder.profile.gone_short", ChatFormatting.YELLOW)
+                : msg("gui.dungeontrain.builder.profile.not_yours", ChatFormatting.YELLOW);
     }
 
     /**
@@ -408,18 +443,15 @@ public final class BuilderRelayUpload {
      * <p>It costs a fetch of the whole blocks blob to read one field, which is why this is the fallback
      * and not the path: a world that uploaded the build answers from its own saved data.</p>
      */
-    private static CompletableFuture<Component> adopt(ServerPlayer player, int relayId, WithSecret action) {
+    private static <T> CompletableFuture<T> adopt(ServerPlayer player, int relayId,
+                                                  java.util.function.Function<Adoption, T> refused,
+                                                  WithSecret<T> action) {
         String owner = player == null ? "" : player.getUUID().toString();
         return SharedCarriageClient.fetchBuild(relayId, owner).thenCompose(result -> {
             SharedCarriageClient.BuildFetch build = result.build();
             Adoption verdict = adoptionOf(result.status(), build);
-            if (verdict == Adoption.GONE) {
-                return CompletableFuture.completedFuture(
-                        msg("gui.dungeontrain.builder.profile.gone_short", ChatFormatting.YELLOW));
-            }
-            if (verdict == Adoption.NOT_YOURS) {
-                return CompletableFuture.completedFuture(
-                        msg("gui.dungeontrain.builder.profile.not_yours", ChatFormatting.YELLOW));
+            if (verdict != Adoption.ADOPT) {
+                return CompletableFuture.completedFuture(refused.apply(verdict));
             }
             String key = BuilderRelayBuilds.keyOf(build.kind(), build.subKind(), build.buildName());
             // No lease token: this adoption took none, so the next save of the template claims one —
