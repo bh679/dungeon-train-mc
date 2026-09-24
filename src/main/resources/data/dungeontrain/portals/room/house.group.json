@@ -20,6 +20,8 @@
         "SKYLANDS",
         "FLOATING",
         "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
         "CAVES_OF_CHAOS"
       ]
     },
@@ -45,6 +47,8 @@
         "SKYLANDS",
         "FLOATING",
         "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
         "CAVES_OF_CHAOS"
       ]
     },
@@ -137,6 +141,8 @@
         "SKYLANDS",
         "FLOATING",
         "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
         "CAVES_OF_CHAOS"
       ]
     },
@@ -166,6 +172,8 @@
         "INFDEV",
         "CLASSIC",
         "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
         "CAVES_OF_CHAOS"
       ]
     },

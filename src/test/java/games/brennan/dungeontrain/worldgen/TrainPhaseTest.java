@@ -16,7 +16,7 @@ final class TrainPhaseTest {
     @Test
     @DisplayName("ALL_MASK has every phase bit set")
     void allMask() {
-        assertEquals(0b1111111111111111, TrainPhase.ALL_MASK);
+        assertEquals(0b111111111111111111, TrainPhase.ALL_MASK);
         assertEquals(EnumSet.allOf(TrainPhase.class), TrainPhase.fromMask(TrainPhase.ALL_MASK));
     }
 
@@ -51,6 +51,8 @@ final class TrainPhaseTest {
         assertEquals(TrainPhase.FLOATING, TrainPhase.byToken("floating"));
         assertEquals(TrainPhase.FAR_LANDS, TrainPhase.byToken("far_lands"));
         assertEquals(TrainPhase.FAR_LANDS, TrainPhase.byToken("farlands"));
+        assertEquals(TrainPhase.LARGE_BIOMES, TrainPhase.byToken("largebiomes"));
+        assertEquals(TrainPhase.AMPLIFIED, TrainPhase.byToken("amplified"));
         assertEquals(TrainPhase.CAVES_OF_CHAOS, TrainPhase.byToken("caves_of_chaos"));
         assertEquals(TrainPhase.CAVES_OF_CHAOS, TrainPhase.byToken("chaos"));
         assertEquals(TrainPhase.CLASSIC, TrainPhase.byToken("classic"));
@@ -59,11 +61,11 @@ final class TrainPhaseTest {
     }
 
     @Test
-    @DisplayName("letter() yields O N V E U C S S B A S I F F C C in ordinal order")
+    @DisplayName("letter() yields O N V E U C S S B A S I F F C C L A in ordinal order")
     void letters() {
         StringBuilder sb = new StringBuilder();
         for (TrainPhase p : TrainPhase.values()) sb.append(p.letter());
-        assertEquals("ONVEUCSSBASIFFCC", sb.toString());
+        assertEquals("ONVEUCSSBASIFFCCLA", sb.toString());
     }
 
     @Test

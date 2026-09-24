@@ -132,6 +132,7 @@ public final class NetherBandContextEvents {
             NetherCoreGeometry.Source netherCore = NetherCoreGeometry.Source.resolve(server, bedY);
 
             games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.publish(overworld);
+            games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.publish(overworld);
             NetherBandContext.publish(new NetherBandContext(
                     enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
                     overworldBiomeSource, highlandBiomes, netherCoreBiomes, endCoreBiomes, endIslands,
@@ -151,6 +152,7 @@ public final class NetherBandContextEvents {
             // Never block server start on the band snapshot — a missing context just leaves terrain vanilla.
             NetherBandContext.clear();
             games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.clear();
+            games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.clear();
             OverworldStretchBiomes.clear();
             LOGGER.error("[DungeonTrain] Failed to publish nether-band terrain context; mountains stay flat this session", t);
         }
@@ -160,6 +162,7 @@ public final class NetherBandContextEvents {
     public static void onServerStopping(ServerStoppingEvent event) {
         NetherBandContext.clear();
         games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.clear();
+        games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.clear();
         games.brennan.dungeontrain.worldgen.legacy.LegacyBands.releaseGenerators();
         OverworldStretchBiomes.clear();
         VanillaBiomeFeatures.clear();

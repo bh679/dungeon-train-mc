@@ -275,7 +275,8 @@ public final class LegacyBands {
      */
     public static int yOffset(LegacyBandKind kind, ServerLevel level) {
         return switch (kind) {
-            case CAVES_OF_CHAOS, BETA, ALPHA, INFDEV, FAR_LANDS, VOID -> LegacyChunkWriter.Y_OFFSET;
+            // Presets are vanilla terrain in world coordinates; the offset is unused but keeps the switch total.
+            case CAVES_OF_CHAOS, BETA, ALPHA, INFDEV, FAR_LANDS, VOID, LARGE_BIOMES, AMPLIFIED -> LegacyChunkWriter.Y_OFFSET;
             case CLASSIC -> ClassicLevels.Y_OFFSET;
             case FLOATING -> {
                 DungeonTrainWorldData data = DungeonTrainWorldData.get(level);

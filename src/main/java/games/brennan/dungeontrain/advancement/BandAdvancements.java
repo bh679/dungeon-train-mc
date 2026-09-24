@@ -71,7 +71,7 @@ public final class BandAdvancements {
     public static final List<String> ALL = List.of(
             NETHER, VOID, END_ISLANDS, UPSIDE_DOWN, REASSEMBLY,
             WWOO, BETTER_NETHER, BOP, BETTER_END, SPHERES,
-            legacyId(LegacyBandKind.BETA), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.CAVES_OF_CHAOS),
+            legacyId(LegacyBandKind.AMPLIFIED), legacyId(LegacyBandKind.BETA), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.CAVES_OF_CHAOS),
             legacyId(LegacyBandKind.SKYLANDS),
             legacyId(LegacyBandKind.ALPHA), legacyId(LegacyBandKind.INFDEV), legacyId(LegacyBandKind.FLOATING),
             legacyId(LegacyBandKind.CLASSIC), LEGACY_VOID,
@@ -184,6 +184,7 @@ public final class BandAdvancements {
                 && cycle(l).endStyleAt(x) == CycleLayout.Style.BETTER));
         t.add(entry(SPHERES, SpheresBand::isInBand));
         for (LegacyBandKind kind : LegacyBandKind.values()) {
+            if (kind == LegacyBandKind.LARGE_BIOMES) continue;   // built, not shipped — see LegacyBandKind
             t.add(entry(legacyId(kind), (l, x) -> LegacyBands.isInBand(l, kind, x)));
         }
         t.add(entry(CHUNCKS, ChuncksBand::isInBand));

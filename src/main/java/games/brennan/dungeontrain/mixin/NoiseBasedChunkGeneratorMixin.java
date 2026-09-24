@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.worldgen.StacksBand;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyChunkWriter;
+import games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.Util;
 import net.minecraft.server.level.ServerLevel;
@@ -65,7 +66,11 @@ import java.util.concurrent.CompletableFuture;
  * <p><b>Legacy bands</b> reuse the same seam the other way round: a chunk owned by an old generator
  * ({@link LegacyBands#kindOfChunk}) gets that generator's terrain written here instead of vanilla's
  * noise, and its vanilla surface and carver passes are skipped — the old generator already laid its own
- * surface and carved its own caves.</p>
+ * surface and carved its own caves.
+ * A <b>modern-preset</b> band (Large Biomes, Amplified — {@link LegacyBandKind#isPreset}) instead hands the
+ * chunk to its own vanilla generator ({@link PresetTerrain}): first at {@code createBiomes}, which is where the
+ * chunk's {@code NoiseChunk} is created (so the NOISE, SURFACE and CARVER steps all read the preset router),
+ * then at {@code fillFromNoise}; vanilla's surface, carvers and decoration then run unchanged.</p>
  *
  * <p>Scope: only the overworld dimension (both bands' home). Fade-zone / straddle / kept chunks fall
  * through to vanilla so their terrain is byte-identical to before. The floating track bed + rails are
@@ -78,6 +83,24 @@ public abstract class NoiseBasedChunkGeneratorMixin {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /**
+     * Preset chunk: bake biomes through the preset generator so the chunk's {@code NoiseChunk} is created
+     * with the preset router and the biomes come from its climate sampler (wide biomes for Large Biomes).
+     */
+    @Inject(method = "createBiomes", at = @At("HEAD"), cancellable = true)
+    private void dungeontrain$presetBiomes(RandomState randomState, Blender blender, StructureManager structureManager,
+                                           ChunkAccess chunk, CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir) {
+        try {
+            LevelHeightAccessor lha = ((ChunkAccessAccessor) chunk).dungeontrain$getLevelHeightAccessor();
+            if (!(lha instanceof ServerLevel level)) return;
+            PresetTerrain.Preset preset = dungeontrain$preset(level, chunk, this);
+            if (preset == null) return;
+            cir.setReturnValue(preset.generator().createBiomes(preset.randomState(), blender, structureManager, chunk));
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] preset biome bake failed at {}; using vanilla gen", chunk.getPos(), t);
+        }
+    }
+
     @Inject(method = "fillFromNoise", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$skipFullyErodedBandFill(
             Blender blender, RandomState randomState, StructureManager structureManager,
@@ -86,6 +109,12 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             // During fresh generation the chunk's raw levelHeightAccessor IS the owning ServerLevel.
             LevelHeightAccessor lha = ((ChunkAccessAccessor) centerChunk).dungeontrain$getLevelHeightAccessor();
             if (!(lha instanceof ServerLevel level)) return;
+            PresetTerrain.Preset preset = dungeontrain$preset(level, centerChunk, this);
+            if (preset != null) {
+                // Vanilla's own fill, on the preset generator: same executor hand-off as vanilla's.
+                cir.setReturnValue(preset.generator().fillFromNoise(blender, preset.randomState(), structureManager, centerChunk));
+                return;
+            }
             if (dungeontrain$fillLegacy(level, centerChunk, cir)) return;
             if (!dungeontrain$isVoidChunk(level, centerChunk)) {
                 return; // any real-terrain column → keep it, let vanilla run
@@ -120,7 +149,7 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             ChunkAccess chunk, CallbackInfo ci) {
         try {
             ServerLevel level = region.getLevel();
-            if (dungeontrain$isVoidChunk(level, chunk) || dungeontrain$legacyKind(level, chunk) != null) {
+            if (dungeontrain$isVoidChunk(level, chunk) || dungeontrain$oldGeneratorKind(level, chunk) != null) {
                 ci.cancel(); // void: nothing to surface; legacy: the old generator laid its own surface
             }
         } catch (Throwable t) {
@@ -163,7 +192,7 @@ public abstract class NoiseBasedChunkGeneratorMixin {
     @Unique
     private boolean dungeontrain$fillLegacy(ServerLevel level, ChunkAccess chunk,
                                             CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir) {
-        LegacyBandKind kind = dungeontrain$legacyKind(level, chunk);
+        LegacyBandKind kind = dungeontrain$oldGeneratorKind(level, chunk);
         if (kind == null) return false;
         long seed = DungeonTrainWorldData.get(level).getGenerationSeed();
         int floorY = ((NoiseBasedChunkGenerator) (Object) this).getMinY();
@@ -186,14 +215,28 @@ public abstract class NoiseBasedChunkGeneratorMixin {
                                                 BiomeManager biomeManager, StructureManager structureManager,
                                                 ChunkAccess chunk, GenerationStep.Carving step, CallbackInfo ci) {
         try {
-            if (dungeontrain$legacyKind(region.getLevel(), chunk) != null) ci.cancel();
+            if (dungeontrain$oldGeneratorKind(region.getLevel(), chunk) != null) ci.cancel();
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] legacy carver skip failed at {}; running vanilla carvers", chunk.getPos(), t);
         }
     }
 
+    /** The legacy kind whose OLD generator owns this chunk — null for modern chunks and for preset chunks. */
     @Unique
-    private static LegacyBandKind dungeontrain$legacyKind(ServerLevel level, ChunkAccess chunk) {
-        return LegacyBands.kindOfChunk(level, chunk.getPos().x, chunk.getPos().z);
+    private static LegacyBandKind dungeontrain$oldGeneratorKind(ServerLevel level, ChunkAccess chunk) {
+        LegacyBandKind kind = LegacyBands.kindOfChunk(level, chunk.getPos().x, chunk.getPos().z);
+        return kind == null || kind.isPreset() ? null : kind;
+    }
+
+    /**
+     * The published preset generator this chunk should be handed to, or null: modern chunk, old-generator
+     * chunk, no presets published — or {@code self} IS a preset generator (the hooks apply to every
+     * {@code NoiseBasedChunkGenerator}, so the hand-off must not re-enter itself).
+     */
+    @Unique
+    private static PresetTerrain.Preset dungeontrain$preset(ServerLevel level, ChunkAccess chunk, Object self) {
+        if (PresetTerrain.isPresetGenerator(self)) return null;
+        LegacyBandKind kind = LegacyBands.kindOfChunk(level, chunk.getPos().x, chunk.getPos().z);
+        return kind == null || !kind.isPreset() ? null : PresetTerrain.of(kind);
     }
 }

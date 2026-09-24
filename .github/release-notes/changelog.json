@@ -18252,6 +18252,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "legacy-amplified-band",
+      "version": "0.939.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "The land turned up to eleven",
+      "summary": "The long third leg of the journey opens with a new stretch where the hills have grown into mountains and the mountains scrape the sky. The track cuts straight through them. Reach it and there is a hidden goal waiting.",
+      "highlights": [
+        "A new stretch at the start of the journey's third leg, with a hidden goal for reaching it"
+      ],
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

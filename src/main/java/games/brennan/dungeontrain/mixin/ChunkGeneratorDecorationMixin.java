@@ -184,12 +184,20 @@ public abstract class ChunkGeneratorDecorationMixin {
                     || StacksBand.isVoidOrStackChunk(serverLevel, chunkMinX, chunkMinZ)
                     // Legacy band: not void, but its old generator decorates it (LegacyDecorateFeature) —
                     // vanilla features and structure pieces would be modern things on old terrain.
-                    || LegacyBands.kindOfChunk(serverLevel, chunk.getPos().x, chunk.getPos().z) != null;
+                    || dungeontrain$isOldGeneratorChunk(serverLevel, chunk);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] decoration-skip resolve failed at {}; running vanilla decoration",
                     chunk.getPos(), t);
             return false;
         }
+    }
+
+    /** A legacy chunk owned by an OLD generator — a modern-preset band's chunks keep vanilla decoration. */
+    @Unique
+    private static boolean dungeontrain$isOldGeneratorChunk(ServerLevel serverLevel, ChunkAccess chunk) {
+        games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind kind =
+                LegacyBands.kindOfChunk(serverLevel, chunk.getPos().x, chunk.getPos().z);
+        return kind != null && !kind.isPreset();
     }
 
     /** The track bed + End-island features are the only ones kept in the eroded core. */

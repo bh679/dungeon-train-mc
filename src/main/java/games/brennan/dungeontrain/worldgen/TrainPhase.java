@@ -49,7 +49,11 @@ public enum TrainPhase {
     /** Terrain from a port of Classic 0.30's finite level generator; see {@link games.brennan.dungeontrain.worldgen.legacy.classic.ClassicLevels}. */
     CLASSIC,
     /** The Caves of Chaos preset on the Beta pipeline — cavernous stone to y 256 over void; see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
-    CAVES_OF_CHAOS;
+    CAVES_OF_CHAOS,
+    /** Vanilla's Large Biomes preset; see {@link games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain}. */
+    LARGE_BIOMES,
+    /** Vanilla's Amplified preset; see {@link games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain}. */
+    AMPLIFIED;
 
     /** Bitmask with every phase set ({@code 1<<ordinal} per value) — the "all phases" wire value. */
     public static final int ALL_MASK = (1 << values().length) - 1;
@@ -77,7 +81,7 @@ public enum TrainPhase {
 
     /**
      * Single-letter label for compact phase pickers/indicators — the first letter of the constant
-     * name, so the sixteen phases read {@code O N V E U C S S B A S I F F C C}. A new phase is picked up automatically.
+     * name, so the eighteen phases read {@code O N V E U C S S B A S I F F C C L A}. A new phase is picked up automatically.
      */
     public String letter() {
         return String.valueOf(name().charAt(0));
@@ -102,6 +106,8 @@ public enum TrainPhase {
             case FAR_LANDS -> "Far Lands";
             case CLASSIC -> "Classic";
             case CAVES_OF_CHAOS -> "Caves of Chaos";
+            case LARGE_BIOMES -> "Large Biomes";
+            case AMPLIFIED -> "Amplified";
         };
     }
 
@@ -117,6 +123,7 @@ public enum TrainPhase {
         if (t.equals("ow")) return OVERWORLD;
         if (t.equals("ud") || t.equals("upsidedown")) return UPSIDE_DOWN;
         if (t.equals("farlands")) return FAR_LANDS;
+        if (t.equals("largebiomes") || t.equals("large")) return LARGE_BIOMES;
         if (t.equals("chaos") || t.equals("cavesofchaos")) return CAVES_OF_CHAOS;
         for (TrainPhase p : values()) {
             if (p.token().equals(t)) return p;
@@ -145,6 +152,14 @@ public enum TrainPhase {
         if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
                 games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.CAVES_OF_CHAOS, worldX)) {
             return CAVES_OF_CHAOS;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.LARGE_BIOMES, worldX)) {
+            return LARGE_BIOMES;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.AMPLIFIED, worldX)) {
+            return AMPLIFIED;
         }
         if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
                 games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.BETA, worldX)) {

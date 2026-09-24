@@ -88,6 +88,8 @@
       "SKYLANDS",
       "FLOATING",
       "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
       "CAVES_OF_CHAOS"
     ],
     "mode": "bedrock_lock",
@@ -108,6 +110,8 @@
       "INFDEV",
       "CLASSIC",
       "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
       "CAVES_OF_CHAOS"
     ],
     "mode": "endless_open/single:minecraft:stone"
@@ -124,6 +128,8 @@
       "INFDEV",
       "CLASSIC",
       "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
       "CAVES_OF_CHAOS"
     ],
     "mode": "bedrock_lock"
@@ -190,6 +196,8 @@
       "SKYLANDS",
       "FLOATING",
       "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
       "CAVES_OF_CHAOS"
     ],
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
@@ -413,6 +421,8 @@
       "SKYLANDS",
       "FLOATING",
       "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
       "CAVES_OF_CHAOS"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
