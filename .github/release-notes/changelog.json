@@ -18282,7 +18282,7 @@
       "title": "Editor no longer lists plots you didn't touch as unsaved",
       "summary": "In the Train Editor, carriage contents and dimensional carriages with mobs or armor stands in them could show up as unsaved even though you never edited them \u2014 just from walking past them after opening a category. The unsaved list now only shows plots you actually changed.",
       "highlights": [
-        "Saving a built-in under a new name is refused again when it would reload other plots with real unsaved edits, and it names those plots"
+        "Saving a built-in under a new name now stops if other plots in its row have real unsaved edits that the save would reload, and names those plots so you can save them first"
       ],
       "pr": 1521,
       "date": "2026-09-24",
