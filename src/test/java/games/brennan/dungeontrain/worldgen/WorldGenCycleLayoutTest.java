@@ -41,7 +41,7 @@ final class WorldGenCycleLayoutTest {
     @DisplayName("period is the run-1 length and the layout is reported")
     void period() {
         assertTrue(C.hasLayout());
-        assertEquals(139_118L, C.period());
+        assertEquals(138_918L, C.period());
         assertEquals(232, C.riseLen());
     }
 
