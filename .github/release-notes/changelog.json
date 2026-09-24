@@ -18551,6 +18551,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "protocol-check-composite-codecs",
+      "version": "0.950.0",
+      "type": "ci",
+      "tags": [
+        "internal"
+      ],
+      "title": "Stricter version-mismatch check in the build pipeline",
+      "summary": "The build pipeline now catches more ways a network change could leave an older client connecting to a newer server and getting kicked mid-game, so those mismatches are stopped before release.",
+      "highlights": [],
+      "pr": 1526,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
