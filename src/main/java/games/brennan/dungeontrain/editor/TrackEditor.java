@@ -120,12 +120,7 @@ public final class TrackEditor {
      * when the player is not already standing in it.
      */
     public static void walkTo(ServerPlayer player, boolean onTop) {
-        enter(player, onTop, !standingInDefault(player));
-    }
-
-    /** Already inside the default track tile's plot — see {@link EditorPlotScope#standingIn}. */
-    private static boolean standingInDefault(ServerPlayer player) {
-        return EditorPlotScope.standingIn(player, new Template.Track());
+        enter(player, onTop, !EditorPlotScope.standingIn(player, new Template.Track()));
     }
 
     /**

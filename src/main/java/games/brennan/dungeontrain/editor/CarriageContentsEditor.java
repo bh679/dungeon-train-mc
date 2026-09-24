@@ -340,7 +340,7 @@ public final class CarriageContentsEditor {
      * only when the player is not already standing in it.
      */
     public static void walkTo(ServerPlayer player, CarriageContents contents, boolean onTop) {
-        enter(player, contents, null, onTop, !standingIn(player, contents));
+        enter(player, contents, null, onTop, !EditorPlotScope.standingIn(player, new Template.Contents(contents)));
     }
 
     /**
@@ -348,12 +348,7 @@ public final class CarriageContentsEditor {
      * restamping unless the player is already standing in this plot.
      */
     public static void enterInside(ServerPlayer player, CarriageContents contents, EditorPlotArrival.Inside inside) {
-        enter(player, contents, null, false, !standingIn(player, contents), inside);
-    }
-
-    /** Already inside this plot: a walk to its menu, not a reload — see {@link EditorPlotScope#standingIn}. */
-    private static boolean standingIn(ServerPlayer player, CarriageContents contents) {
-        return EditorPlotScope.standingIn(player, new Template.Contents(contents));
+        enter(player, contents, null, false, !EditorPlotScope.standingIn(player, new Template.Contents(contents)), inside);
     }
 
     /**
@@ -404,7 +399,7 @@ public final class CarriageContentsEditor {
         }
 
         Vec3i footprint = new Template.Contents(contents).plotSize(dims);
-        BlockPos door = CarriageDoorCells.doorBases(origin, box).get(0);
+        BlockPos door = EditorPlotArrival.firstOrNull(CarriageDoorCells.doorBases(origin, box));
         EditorPlotArrival.land(player, overworld, origin, footprint, onTop, inside, door);
 
         LOGGER.info("[DungeonTrain] Contents editor enter: {} -> {} (shell={}) plot at {} dims={}x{}x{} ({})",

@@ -150,7 +150,7 @@ public final class PortalRoomEditor {
      * not already standing in it, since a restamp would throw away every unsaved edit in every room.
      */
     public static void walkTo(ServerPlayer player, String name, boolean onTop) {
-        enter(player, name, onTop, !standingIn(player, name));
+        enter(player, name, onTop, !EditorPlotScope.standingIn(player, new Template.PortalRoom(name)));
     }
 
     /**
@@ -158,15 +158,7 @@ public final class PortalRoomEditor {
      * already standing in this room.
      */
     public static void enterInside(ServerPlayer player, String name, EditorPlotArrival.Inside inside) {
-        enter(player, name, false, !standingIn(player, name), inside);
-    }
-
-    /**
-     * Already inside room {@code name}'s plot — see {@link EditorPlotScope#standingIn}. Exact
-     * compare: {@code name} is expected canonical (registry-cased), as every caller's is.
-     */
-    private static boolean standingIn(ServerPlayer player, String name) {
-        return EditorPlotScope.standingIn(player, new Template.PortalRoom(name));
+        enter(player, name, false, !EditorPlotScope.standingIn(player, new Template.PortalRoom(name)), inside);
     }
 
     /**
@@ -216,7 +208,7 @@ public final class PortalRoomEditor {
         if (stamp) stampAllPlots(overworld, dims);
 
         List<BlockPos> doors = doorBases(name, origin, size, dims);
-        EditorPlotArrival.land(player, overworld, origin, size, onTop, inside, doors.isEmpty() ? null : doors.get(0));
+        EditorPlotArrival.land(player, overworld, origin, size, onTop, inside, EditorPlotArrival.firstOrNull(doors));
 
         player.sendSystemMessage(Component.literal(
             "[DungeonTrain] Dimensional carriage editor: this is the room between a portal's two corridors. "
