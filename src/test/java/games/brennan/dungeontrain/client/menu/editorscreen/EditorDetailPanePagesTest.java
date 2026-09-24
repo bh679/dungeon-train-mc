@@ -83,4 +83,37 @@ class EditorDetailPanePagesTest {
         assertEquals(1, lootOnly.firstLootPage());
         assertFalse(EditorDetailPane.Pages.of(17, 12).isLootPage(1), "no loot, no Loot page");
     }
+
+    @Test
+    void submittedAnswersPageComesLastAfterLoot() {
+        // 17 rows at 11 per page = 2 row pages, then 2 Loot pages, then the answers.
+        EditorDetailPane.Pages p = EditorDetailPane.Pages.of(17, 12, 2, 1);
+        assertEquals(6, p.pageCount());
+        assertEquals(5, p.firstSubmitPage());
+        assertTrue(p.isLootPage(3) && p.isLootPage(4));
+        assertFalse(p.isLootPage(5), "the answers page is not a Loot page");
+        assertTrue(p.isSubmitPage(5));
+        assertFalse(p.isSubmitPage(4));
+        assertFalse(p.isRowPage(5));
+        assertTrue(p.hasPager());
+    }
+
+    @Test
+    void answersAloneStillMakeAPager() {
+        EditorDetailPane.Pages p = EditorDetailPane.Pages.of(0, 12, 0, 1);
+        assertEquals(2, p.pageCount());
+        assertTrue(p.isSubmitPage(1));
+        assertFalse(p.isLootPage(1));
+        assertTrue(p.hasPager());
+    }
+
+    @Test
+    void noAnswersNoPage() {
+        EditorDetailPane.Pages p = EditorDetailPane.Pages.of(0, 12, 1, 0);
+        assertEquals(2, p.pageCount());
+        assertTrue(p.isLootPage(1));
+        assertFalse(p.isSubmitPage(1));
+        // At most one answers page, whatever is asked for.
+        assertEquals(3, EditorDetailPane.Pages.of(0, 12, 1, 5).pageCount());
+    }
 }

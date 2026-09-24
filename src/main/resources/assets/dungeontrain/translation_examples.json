@@ -3037,6 +3037,15 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.note.prompt": {
+    "1": {
+      "label": "the name of the build being submitted for review",
+      "examples": [
+        "brick_cabin",
+        "library"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.full": {
     "1": {
       "label": "how many builds a player's profile can hold on the build server",

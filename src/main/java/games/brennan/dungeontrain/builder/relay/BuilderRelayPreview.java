@@ -165,15 +165,23 @@ public final class BuilderRelayPreview {
         return bytes == null ? Attempt.GONE : new Attempt(bytes, false);
     }
 
+    /**
+     * A fetched build as a template: its blocks blob decoded, its deltas folded in, converted. Throws on
+     * a blob this version cannot read — callers decide what an unreadable build means to them.
+     */
+    static StructureTemplate templateOf(ServerLevel level, SharedCarriageClient.BuildFetch build)
+            throws java.io.IOException {
+        CompoundTag snapshot = BuilderRelayDownload.fold(CarriageBlockSnapshot.decode(build.blocks()), build);
+        HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
+        return CarriageSnapshotTemplate.toTemplate(snapshot, blocks);
+    }
+
     /** Decode, fold, convert and measure — everything the install path does before it writes. */
     private static Attempt convert(ServerLevel level, SharedCarriageClient.BuildFetch build) {
         if (build == null) return Attempt.GONE;
         CompoundTag tag;
         try {
-            CompoundTag snapshot = BuilderRelayDownload.fold(CarriageBlockSnapshot.decode(build.blocks()), build);
-            HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-            StructureTemplate template = CarriageSnapshotTemplate.toTemplate(snapshot, blocks);
-            tag = template.save(new CompoundTag());
+            tag = templateOf(level, build).save(new CompoundTag());
         } catch (Throwable t) {
             // A build this version cannot read is a tile that keeps its name plate, not a broken
             // screen — but it is worth saying which build and why, because "some of them have no
