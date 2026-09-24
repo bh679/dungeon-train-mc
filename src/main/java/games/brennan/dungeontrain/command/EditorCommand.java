@@ -4237,6 +4237,14 @@ public final class EditorCommand {
 
     private static int runDevMode(CommandSourceStack source, boolean on) {
         EditorDevMode.set(on);
+        // Dev mode decides whether a Train Builder build that goes by a shipped name may be saved
+        // in place, and the client only learns that from the bounds packet. Push a fresh one now,
+        // so turning dev mode off makes Save behave as it would for a player straight away rather
+        // than after the next Open. Outside a builder world the packet is the inert empty form.
+        net.minecraft.server.MinecraftServer server = source.getServer();
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            games.brennan.dungeontrain.net.BuilderBoundsPacket.sendTo(player, server.overworld());
+        }
         boolean writable = CarriageTemplateStore.sourceTreeAvailable();
         if (on) {
             if (writable) {

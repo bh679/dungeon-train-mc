@@ -10,7 +10,6 @@ import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriagePartKind;
-import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
 
@@ -61,8 +60,9 @@ public final class BuilderBuiltins {
         return switch (identity.kind()) {
             // A carriage save writes the whole carriage and its shell under one name, so either
             // tier shipping that name makes it the mod's.
-            case CARRIAGE -> WholeCarriageTemplateStore.bundled(id)
-                    || CarriageVariantRegistry.find(id).map(CarriageTemplateStore::bundled).orElse(false);
+            // Read from the jar by name: several shipped carriages (black, cracked, …) register as
+            // custom variants, which the variant-typed bundled() check would wave through.
+            case CARRIAGE -> WholeCarriageTemplateStore.bundled(id) || CarriageTemplateStore.shipsId(id);
             case CARRIAGE_GROUP -> CarriageGroupTemplateStore.bundled(id);
             case CONTENTS -> CarriageContentsRegistry.find(id).map(CarriageContentsStore::bundled).orElse(false);
             case PART -> {
