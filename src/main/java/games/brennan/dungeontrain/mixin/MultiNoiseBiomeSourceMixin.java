@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
 import games.brennan.dungeontrain.worldgen.density.BandBiomeDecision;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes;
 import games.brennan.dungeontrain.worldgen.density.OverworldBiomeSourceMark;
 import games.brennan.dungeontrain.worldgen.density.OverworldStretchBiomes;
 import net.minecraft.core.Holder;
@@ -67,6 +68,12 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                                          CallbackInfoReturnable<Holder<Biome>> cir) {
         long genT0 = GenProfiler.t0();
         try {
+            // Legacy bands first: an old generator's column shows its own biome map at every height.
+            Holder<Biome> legacy = LegacyBiomes.override(this, x << 2, z << 2);
+            if (legacy != null) {
+                cir.setReturnValue(legacy);
+                return;
+            }
             NetherBandContext ctx = NetherBandContext.current();
             // Overworld-only: the Nether also uses a MultiNoiseBiomeSource. The mark (not identity)
             // also covers TerraBlender's per-chunk clones of the overworld source.
@@ -106,7 +113,7 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
             case NETHER_CORE:
                 // Per-biome fog/ambient/music + the Nether decoration features' own biome filter
                 // pass so they place in NetherTransitionFeature. Alternate passes are BetterNether.
-                return ctx.netherCoreBiomes().biomeAt(blockX, blockZ, ctx.cycle().cycleIndex(blockX));
+                return ctx.netherCoreBiomes().biomeAt(blockX, blockZ, ctx.cycle().netherPassIndex(blockX));
             case END_CORE:
                 // Sample the real End's biome source (all five End biomes, swept across successive
                 // End-band passes — see EndCoreBiomes) so world label, surface skin and decoration agree.

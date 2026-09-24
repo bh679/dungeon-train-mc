@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_spheres",
+  "parent": "dungeontrain:dungeon_train/reached_chuncks",
   "display": {
     "icon": { "id": "minecraft:stone_bricks" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_stacks.title" },

@@ -99,7 +99,7 @@ public final class DungeonTrainCommonConfig {
     /** Length (blocks) of EACH mountain stage — stage 1 (×1), stage 2 (×s2), stage 3 (×s3). ~80 = 5 chunks. */
     public static final int MIN_NETHER_STAGE_BLOCKS = 0;
     public static final int MAX_NETHER_STAGE_BLOCKS = 100_000_000;
-    public static final int DEFAULT_NETHER_STAGE_BLOCKS = 80;
+    public static final int DEFAULT_NETHER_STAGE_BLOCKS = 40;
     /** Comma-separated heightmap multipliers, one per mountain stage (stage 1 = the first value, 1 = natural). */
     public static final String DEFAULT_NETHER_STAGE_MULTIPLIERS = "1,2,4,8,15";
     /** Mountain relief amplitude (blocks) at ×1 — scaled by the stage multiplier for the peak height. */
@@ -109,7 +109,7 @@ public final class DungeonTrainCommonConfig {
     /** Leading sand-beach stage length (blocks) — only rendered (as sand) when the band entrance is over ocean. */
     public static final int MIN_NETHER_BEACH_BLOCKS = 0;
     public static final int MAX_NETHER_BEACH_BLOCKS = 100_000_000;
-    public static final int DEFAULT_NETHER_BEACH_BLOCKS = 64;
+    public static final int DEFAULT_NETHER_BEACH_BLOCKS = 32;
     /** Blocks of full-height mega-mountain plateau on each side of the nether core (the tunnel zone). */
     public static final int MIN_NETHER_MOUNTAIN_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_MOUNTAIN_HOLD_BLOCKS = 100_000_000;
@@ -117,7 +117,7 @@ public final class DungeonTrainCommonConfig {
     /** Blocks over which the mountain rock crossfades to netherrack on each side of the core. */
     public static final int MIN_NETHER_CORE_FADE_BLOCKS = 0;
     public static final int MAX_NETHER_CORE_FADE_BLOCKS = 10_000;
-    public static final int DEFAULT_NETHER_CORE_FADE_BLOCKS = 600;
+    public static final int DEFAULT_NETHER_CORE_FADE_BLOCKS = 300;
     /** Blocks of real Nether world-gen at the centre of the band. */
     public static final int MIN_NETHER_CORE_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_CORE_HOLD_BLOCKS = 100_000_000;
@@ -402,9 +402,20 @@ public final class DungeonTrainCommonConfig {
      * six-segment progression ({@link SpheresProgressionConfig}). The v3 -> v4 migration moves exactly these.
      */
     public static final int SPHERES_V3_HOLD_BLOCKS = 12000;
+
+    /**
+     * The Nether transition's shipped lengths before v5 halved them (stage 80, beach 64, core fade 600).
+     * The v4 -> v5 migration moves only values still at these.
+     */
+    public static final int NETHER_V4_STAGE_BLOCKS = 80;
+    public static final int NETHER_V4_BEACH_BLOCKS = 64;
+    public static final int NETHER_V4_CORE_FADE_BLOCKS = 600;
     public static final int SPHERES_V3_END_SKY_START_BLOCKS = 4000;
 
-    public static final int CURRENT_CONFIG_VERSION = 4;
+    public static final int CURRENT_CONFIG_VERSION = 5;
+
+    /** The shipped band order — see {@link games.brennan.dungeontrain.worldgen.CycleLayout#DEFAULT_ORDER}. */
+    public static final String DEFAULT_WORLDGEN_CYCLE_ORDER = games.brennan.dungeontrain.worldgen.CycleLayout.DEFAULT_ORDER;
     public static final int DEFAULT_CONFIG_VERSION = 0;
     public static final int MIN_CONFIG_VERSION = 0;
     public static final int MAX_CONFIG_VERSION = 1_000_000;
@@ -473,6 +484,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue STACKS_FADE_BLOCKS;
     public static final ModConfigSpec.IntValue STACKS_LEAD_GAP_BLOCKS;
     public static final ModConfigSpec.DoubleValue STACKS_DENSITY;
+    public static final ModConfigSpec.ConfigValue<String> WORLDGEN_CYCLE_ORDER;
     public static final ModConfigSpec.BooleanValue BREAK_BLOCKS_ON_CONTACT;
     public static final ModConfigSpec.DoubleValue BACKER_NAME_WEIGHT;
     public static final ModConfigSpec.EnumValue<CatchUpBurstMode> CATCH_UP_BURST_MODE;
@@ -542,6 +554,7 @@ public final class DungeonTrainCommonConfig {
         STACKS_FADE_BLOCKS = pair.getLeft().stacksFadeBlocks;
         STACKS_LEAD_GAP_BLOCKS = pair.getLeft().stacksLeadGapBlocks;
         STACKS_DENSITY = pair.getLeft().stacksDensity;
+        WORLDGEN_CYCLE_ORDER = pair.getLeft().worldgenCycleOrder;
         BREAK_BLOCKS_ON_CONTACT = pair.getLeft().breakBlocksOnContact;
         BACKER_NAME_WEIGHT = pair.getLeft().backerNameWeight;
         CATCH_UP_BURST_MODE = pair.getLeft().catchUpBurstMode;
@@ -953,6 +966,19 @@ public final class DungeonTrainCommonConfig {
                         "per-chunk, seed-stable noise gate. Default 0.08 (~8% of chunks carry a tower).")
                 .defineInRange("stacksDensity", DEFAULT_STACKS_DENSITY,
                         MIN_STACKS_DENSITY, MAX_STACKS_DENSITY);
+        games.brennan.dungeontrain.worldgen.legacy.LegacyBandConfig.define(b);
+        ModConfigSpec.ConfigValue<String> worldgenCycleOrder = b
+                .comment("The order the bands come in, as one run of the cycle: comma-separated slots, each",
+                        "  ow[:style]:<blocks>            an overworld gap (style: vanilla | wwoo | bop)",
+                        "  nether[:style]:<core>          a Nether band (style: vanilla | better = BetterNether)",
+                        "  end[:style]:<core>             an End-islands band (style: vanilla | better = BetterEnd)",
+                        "  upside_down:<core>:<reassembly> the upside-down band and its Reassembly crossfade",
+                        "  chuncks:<core>  spheres:<core>  stacks:<core>",
+                        "  legacy:<era>=<core>:...        the old-generator eras, back to back, crossfading into each other",
+                        "Fades come from the keys above. Every run of the whole order is twice as long as the last.",
+                        "A band whose Enabled key is false is dropped wherever it is named. Blank = the classic",
+                        "single-period order that every band's own hold/lead keys describe.")
+                .define("worldgenCycleOrder", DEFAULT_WORLDGEN_CYCLE_ORDER);
         b.pop();
 
         return new Holder(configVersion, defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent,
@@ -975,6 +1001,7 @@ public final class DungeonTrainCommonConfig {
                 spheresCenterMinY, spheresCenterMaxY, spheresSurfaceBias,
                 spheresEndSky, spheresEndSkyStartBlocks, spheresEndSkyFadeBlocks,
                 stacksEnabled, stacksHoldBlocks, stacksFadeBlocks, stacksLeadGapBlocks, stacksDensity,
+                worldgenCycleOrder,
                 breakBlocksOnContact, backerNameWeight, catchUpBurstMode);
     }
 
@@ -1094,6 +1121,15 @@ public final class DungeonTrainCommonConfig {
             migrateBandHold("spheresHoldBlocks", SPHERES_HOLD_BLOCKS, SPHERES_V3_HOLD_BLOCKS, DEFAULT_SPHERES_HOLD_BLOCKS, from);
             migrateBandHold("spheresEndSkyStartBlocks", SPHERES_END_SKY_START_BLOCKS, SPHERES_V3_END_SKY_START_BLOCKS,
                     DEFAULT_SPHERES_END_SKY_START_BLOCKS, from);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v4 -> v5: the Nether transition halved — mountain stages, beach and core crossfades. Only values
+        // still at v4's shipped defaults move; a chosen length is left alone.
+        if (from < 5) {
+            migrateBandHold("netherStageBlocks", NETHER_STAGE_BLOCKS, NETHER_V4_STAGE_BLOCKS, DEFAULT_NETHER_STAGE_BLOCKS, from);
+            migrateBandHold("netherBeachBlocks", NETHER_BEACH_BLOCKS, NETHER_V4_BEACH_BLOCKS, DEFAULT_NETHER_BEACH_BLOCKS, from);
+            migrateBandHold("netherCoreFadeBlocks", NETHER_CORE_FADE_BLOCKS, NETHER_V4_CORE_FADE_BLOCKS, DEFAULT_NETHER_CORE_FADE_BLOCKS, from);
             WorldGenCycle.invalidateCache();
         }
 
@@ -1439,6 +1475,11 @@ public final class DungeonTrainCommonConfig {
     }
 
     /** Fraction 0..1 of stacks-band void chunks that hold a stack; falls back to the hardcoded default pre-load. */
+    /** The band order spec ({@code worldgenCycleOrder}); the shipped default pre-load. */
+    public static String getWorldgenCycleOrder() {
+        return isLoaded() ? WORLDGEN_CYCLE_ORDER.get() : DEFAULT_WORLDGEN_CYCLE_ORDER;
+    }
+
     public static double getStacksDensity() {
         return isLoaded() ? STACKS_DENSITY.get() : DEFAULT_STACKS_DENSITY;
     }
@@ -1504,6 +1545,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue stacksFadeBlocks,
                           ModConfigSpec.IntValue stacksLeadGapBlocks,
                           ModConfigSpec.DoubleValue stacksDensity,
+                          ModConfigSpec.ConfigValue<String> worldgenCycleOrder,
                           ModConfigSpec.BooleanValue breakBlocksOnContact,
                           ModConfigSpec.DoubleValue backerNameWeight,
                           ModConfigSpec.EnumValue<CatchUpBurstMode> catchUpBurstMode) {}
