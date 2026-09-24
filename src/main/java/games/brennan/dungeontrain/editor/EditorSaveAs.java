@@ -17,7 +17,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -92,18 +91,11 @@ public final class EditorSaveAs {
             fail(player, invalid.get());
             return false;
         }
-        // The copy may reload other plots of this kind from disk (a new name shifts the row). Any of
-        // them with unsaved edits would lose them, so refuse and name them instead.
-        List<String> reloadedIds = kind.reloaded(source, name).stream()
-            .map(EditorDirtyCheck::dirtyKeyFor).toList();
-        List<String> blocking = EditorSaveAsGuard.unsavedAmong(
-            kind.categoryId(source), reloadedIds, EditorDirtyCheck.dirtyKeyFor(source),
-            EditorSaveAsGuard.unsavedKeys(level, dims));
-        if (!blocking.isEmpty()) {
-            fail(player, Component.translatable("chat.dungeontrain.save_as.blocked_dirty",
-                String.join(", ", blocking)));
-            return false;
-        }
+        // The copy may reload other plots of this kind from disk (a new name shifts the row), which
+        // drops any unsaved edits in them. EditorSaveAsGuard can refuse and name those plots, but it
+        // is switched off for now: the dirty scan it reads reports plots nobody touched as unsaved
+        // (every contents plot after a category stamp, for one), so it blocked real saves. Re-enable
+        // it here once EditorDirtyCheck stops reporting false positives.
 
         EditorSaveAsFiles recorded;
         try {
