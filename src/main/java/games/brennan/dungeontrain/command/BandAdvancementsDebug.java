@@ -1,19 +1,24 @@
 package games.brennan.dungeontrain.command;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.BandAdvancementChainRewriter;
 import games.brennan.dungeontrain.advancement.BandAdvancements;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.ChatFormatting;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 
 import java.util.List;
 
 /**
  * {@code /dungeontrain debug band-advancements} — the journey advancement chain in the order the
- * current {@link WorldGenCycle} layout chains it (the parents the datapack rewriter applied at load).
- * Logged at INFO as well so a headless RCON run can read it from {@code latest.log}.
+ * current {@link WorldGenCycle} layout chains it, beside the parent each advancement actually carries
+ * in the loaded advancement tree (so a mismatch between the table and the datapack rewrite shows as
+ * {@code MISMATCH}). Logged at INFO as well so a headless RCON run can read it from {@code latest.log}.
  */
 final class BandAdvancementsDebug {
 
@@ -27,12 +32,33 @@ final class BandAdvancementsDebug {
         send(source, "[DungeonTrain] band-advancements: " + chain.size() + " in chain, "
                 + (cycle.hasLayout() ? "layout order" : "classic order (no layout — JSON parents apply)"),
                 ChatFormatting.AQUA);
-        String parent = BandAdvancements.ANCHOR;
+        String expected = BandAdvancements.ANCHOR;
+        int mismatches = 0;
         for (int i = 0; i < chain.size(); i++) {
-            send(source, String.format("  %2d %-26s parent=%s", i + 1, chain.get(i), parent), ChatFormatting.WHITE);
-            parent = chain.get(i);
+            String name = chain.get(i);
+            String loaded = loadedParent(source, name);
+            boolean ok = !cycle.hasLayout() || loaded == null || loaded.equals(expected);
+            if (!ok) mismatches++;
+            send(source, String.format("  %2d %-26s parent=%-26s loaded=%s%s", i + 1, name, expected,
+                    loaded == null ? "(not loaded)" : loaded, ok ? "" : "  MISMATCH"),
+                    ok ? ChatFormatting.WHITE : ChatFormatting.RED);
+            expected = name;
         }
+        send(source, "[DungeonTrain] band-advancements: " + mismatches + " mismatch(es)",
+                mismatches == 0 ? ChatFormatting.GREEN : ChatFormatting.RED);
         return 1;
+    }
+
+    /** Short name of the parent the loaded tree holds for {@code name}, or {@code null} if it is not loaded. */
+    private static String loadedParent(CommandSourceStack source, String name) {
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID,
+                BandAdvancementChainRewriter.PATH_PREFIX + name);
+        AdvancementHolder holder = source.getServer().getAdvancements().get(id);
+        if (holder == null) return null;
+        return holder.value().parent()
+                .map(p -> p.getPath().startsWith(BandAdvancementChainRewriter.PATH_PREFIX)
+                        ? p.getPath().substring(BandAdvancementChainRewriter.PATH_PREFIX.length()) : p.toString())
+                .orElse("(root)");
     }
 
     private static void send(CommandSourceStack source, String line, ChatFormatting colour) {
