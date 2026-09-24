@@ -18108,6 +18108,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-whole-room-group-new",
+      "version": "0.941.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "New works for whole rooms and groups",
+      "summary": "The New button in the editor's Whole section now works for rooms and groups, from both the floating menu and the X menu. Start from a blank plot or copy the room or group you're standing in, and you're taken straight to it.",
+      "highlights": [
+        "Blank or copy the one you're standing in \u2014 copies keep their weight, stage, block variants and chest links"
+      ],
+      "pr": 1510,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
