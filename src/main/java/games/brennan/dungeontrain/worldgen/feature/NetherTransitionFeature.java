@@ -280,11 +280,14 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                         colChanged = fillNetherColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 sampleX, coreGeom, seed, coreBiome);
                         GenProfiler.add(GenProfiler.Bucket.CORE_REPLACE, coreT0);
+                        colChanged |= coverCoreOutsideBand(chunk, dx, dz, coreGeom, minY, worldTop);
                     } else if (inBeachSpan) {
                         colChanged = fillShoreColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 minY, worldTop, seaLevel, seed, beachProgress);
                     } else if (crossfade) {
-                        colChanged = recolorCrossfadeColumn(chunk, dx, dz, worldX, worldZ, minY, worldTop, n, seed);
+                        boolean coreWall = coreGeom != null && NetherRockCover.isCoreWall(cycle::isNetherCore, wx);
+                        colChanged = recolorCrossfadeColumn(chunk, dx, dz, worldX, worldZ, minY, worldTop, n, seed,
+                                coreWall);
                     } else {
                         colChanged = recolorShoreSkinColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 minY, worldTop, seaLevel, seed);
@@ -561,7 +564,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * netherrack as the real-Nether core approaches — turning the green mountain increasingly red over
      * the {@code coreFade} span. It reads the actual chunk heightmap top (which already reflects the
      * raised terrain at {@code top_layer_modification}) and recolours the top {@link #SURFACE_SKIN_DEPTH}
-     * solid blocks where the coherent dither falls under {@code n}; everything below stays natural stone.
+     * solid blocks where the coherent dither falls under {@code n}. Below the skin the same dither turns
+     * overworld rock ({@link NetherRockCover#isOverworldRock}) netherrack, so cave walls and cliffs redden
+     * with the surface; a {@code coreWall} column ({@link NetherRockCover#isCoreWall}) converts all of it,
+     * so the cliff the core carves shows no stone from inside the Nether.
      * No {@code MountainNoise}/palette recompute is needed.
      *
      * <p>It also <b>drains worldgen water</b> from the column (aquifer pools, springs, surface lakes):
@@ -573,15 +579,22 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * whole band is already overwritten with netherrack/lava/air by {@link #fillNetherColumn}.</p>
      */
     private boolean recolorCrossfadeColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
-                                           int minY, int worldTop, double n, long seed) {
+                                           int minY, int worldTop, double n, long seed, boolean coreWall) {
         int top = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
         ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
         int floor = Math.max(minY, top - SURFACE_SKIN_DEPTH + 1);
-        for (int y = top; y >= floor; y--) {
-            double dither = Disintegration.coherentNoise(seed ^ CROSSFADE_DITHER_SALT, worldX, y, worldZ);
-            if (dither >= n) continue;                 // keep the natural mountain surface in this cell
-            if (!w.isSolidGround(dx, y, dz)) continue; // only recolour existing solid ground (never air/fluid)
+        for (int y = top; y >= minY; y--) {
+            // The core-facing wall is netherrack through and through; elsewhere the dither thickens with n.
+            if (!coreWall) {
+                double dither = Disintegration.coherentNoise(seed ^ CROSSFADE_DITHER_SALT, worldX, y, worldZ);
+                if (dither >= n) continue;             // keep the natural mountain rock in this cell
+            }
+            // The surface skin recolours any solid ground; below it only overworld rock, so cave walls and
+            // cliffs match the skin without eating anything built into the mountain.
+            boolean skin = y >= floor;
+            if (skin ? !w.isSolidGround(dx, y, dz) : !NetherRockCover.isOverworldRock(w.state(dx, y, dz))) continue;
+            if (w.isSame(dx, y, dz, NETHERRACK)) continue;
             w.set(dx, y, dz, NETHERRACK);
             changed = true;
         }
@@ -779,6 +792,25 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 }
                 airAbove = air;
             }
+        }
+        return changed;
+    }
+
+    /**
+     * The core restamps only its sampled Y band; the overworld mountain above and below it is still stone.
+     * Repaint that leftover rock netherrack so the Nether's roof and floor show no stone through openings
+     * or when dug into. Only {@link NetherRockCover#isOverworldRock} cells change.
+     */
+    private boolean coverCoreOutsideBand(ChunkAccess chunk, int dx, int dz, NetherCoreGeometry coreGeom,
+                                         int minY, int worldTop) {
+        ColumnWriter w = new ColumnWriter(chunk);
+        boolean changed = false;
+        for (int y = minY; y <= worldTop; y++) {
+            if (y == coreGeom.minCoreY()) y = coreGeom.maxCoreY() + 1;   // skip the band fillNetherColumn owns
+            if (y > worldTop) break;
+            if (!NetherRockCover.isOverworldRock(w.state(dx, y, dz))) continue;
+            w.set(dx, y, dz, NETHERRACK);
+            changed = true;
         }
         return changed;
     }
