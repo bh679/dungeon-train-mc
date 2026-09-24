@@ -18585,6 +18585,61 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "tunnel-ignores-trees",
+      "version": "0.950.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Trees no longer turn the line into a tunnel",
+      "summary": "The track stays out in the open when all that hangs over it is a tree canopy. Tunnels are kept for real hillsides and rock.",
+      "highlights": [
+        "Leafy canopies overhead no longer bury the line in a tunnel."
+      ],
+      "pr": 1530,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dtp-every-band",
+      "version": "0.951.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Testing tools improvements",
+      "summary": "Getting around is a little easier when testing.",
+      "highlights": [],
+      "pr": 1528,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "nether-walls-netherrack",
+      "version": "0.951.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "No more grey walls where the heat begins",
+      "summary": "Look back from the burning depths and the rock around you now belongs there too. The mountain keeps its own stone right up to the edge.",
+      "highlights": [
+        "The cliffs and ceilings facing the red caverns are netherrack."
+      ],
+      "pr": 1531,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
