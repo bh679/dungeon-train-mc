@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "78";
+    public static final String PROTOCOL_VERSION = "79";
 
     private DungeonTrainNet() {}
 
@@ -249,6 +249,8 @@ public final class DungeonTrainNet {
         registrar.playToServer(BuilderProfileRequestPacket.TYPE, BuilderProfileRequestPacket.STREAM_CODEC, BuilderProfileRequestPacket::handle);
         registrar.playToClient(BuilderProfilePacket.TYPE, BuilderProfilePacket.STREAM_CODEC, BuilderProfilePacket::handle);
         registrar.playToServer(BuilderProfileActionPacket.TYPE, BuilderProfileActionPacket.STREAM_CODEC, BuilderProfileActionPacket::handle);
+        registrar.playToServer(BuilderProfileDeletePacket.TYPE, BuilderProfileDeletePacket.STREAM_CODEC, BuilderProfileDeletePacket::handle);
+        registrar.playToClient(BuilderProfileDeleteResultPacket.TYPE, BuilderProfileDeleteResultPacket.STREAM_CODEC, BuilderProfileDeleteResultPacket::handle);
         registrar.playToServer(BuilderProfileDownloadPacket.TYPE, BuilderProfileDownloadPacket.STREAM_CODEC, BuilderProfileDownloadPacket::handle);
         registrar.playToClient(BuilderProfileDownloadResultPacket.TYPE, BuilderProfileDownloadResultPacket.STREAM_CODEC, BuilderProfileDownloadResultPacket::handle);
         // Blocks for a tile-sized picture of somebody's relay build — a read, where the download
