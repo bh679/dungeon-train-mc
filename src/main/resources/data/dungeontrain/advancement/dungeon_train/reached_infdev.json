@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_alpha",
+  "parent": "dungeontrain:dungeon_train/reached_classic",
   "display": {
     "icon": { "id": "minecraft:bricks" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_infdev.title" },

@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_skylands",
+  "parent": "dungeontrain:dungeon_train/reached_floating",
   "display": {
     "icon": { "id": "minecraft:oak_sapling" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_alpha.title" },

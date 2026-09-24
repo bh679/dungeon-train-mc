@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_classic",
+  "parent": "dungeontrain:dungeon_train/reached_superflat",
   "display": {
     "icon": { "id": "minecraft:black_stained_glass" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_legacy_void.title" },

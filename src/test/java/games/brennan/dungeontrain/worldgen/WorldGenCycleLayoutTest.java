@@ -41,7 +41,7 @@ final class WorldGenCycleLayoutTest {
     @DisplayName("period is the run-1 length and the layout is reported")
     void period() {
         assertTrue(C.hasLayout());
-        assertEquals(138_238L, C.period());
+        assertEquals(139_718L, C.period());
         assertEquals(232, C.riseLen());
     }
 
@@ -184,7 +184,12 @@ final class WorldGenCycleLayoutTest {
         assertTrue(C.isInLegacyBand(LegacyBandKind.CAVES_OF_CHAOS, x(chaos)));
         assertEquals(4000L, C.legacyLen(LegacyBandKind.CAVES_OF_CHAOS));
         assertFalse(C.isInLegacyBand(LegacyBandKind.CAVES_OF_CHAOS, x(chaos + 4000)));
-        assertTrue(C.legacyProgress(LegacyBandKind.ALPHA, x(LAYOUT.start(11) + LAYOUT.eraCoreStart(5))) > 0.0);
+        assertTrue(C.legacyProgress(LegacyBandKind.ALPHA,
+                x(l + LAYOUT.eraCoreStart(LAYOUT.eraIndex(LegacyBandKind.ALPHA)))) > 0.0);
+        int flat = LAYOUT.eraIndex(LegacyBandKind.SUPERFLAT);
+        assertEquals(LAYOUT.eraIndex(LegacyBandKind.VOID) - 1, flat);                  // Superflat runs just before Void
+        assertTrue(C.isInLegacyBand(LegacyBandKind.SUPERFLAT, x(l + LAYOUT.eraCoreStart(flat))));
+        assertEquals(1000L, C.legacyLen(LegacyBandKind.SUPERFLAT));
         long end = l + LAYOUT.length(11);
         WorldGenCycle.LegacyHit exit = C.legacyAt(x(end - 1));
         assertEquals(LegacyBandKind.VOID, exit.from());

@@ -288,7 +288,20 @@ public final class LegacyBands {
                 int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();
                 yield skyYOffset(bedY, level.getMinBuildHeight());
             }
+            case SUPERFLAT -> {
+                DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+                int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();
+                yield superflatYOffset(bedY, level.getMinBuildHeight());
+            }
         };
+    }
+
+    /**
+     * Pure form of the Superflat {@link #yOffset}: the world Y of the grass layer, one below the track bed so
+     * the train runs along the plain, kept high enough that the bedrock layer beneath stays in the world.
+     */
+    static int superflatYOffset(int bedY, int minBuildY) {
+        return Math.max(minBuildY + LegacyChunkWriter.SUPERFLAT_LAYERS.length - 1, bedY - 1);
     }
 
     /** Pure form of the Indev floating {@link #yOffset}: bed-anchored, the whole level kept in the world. */

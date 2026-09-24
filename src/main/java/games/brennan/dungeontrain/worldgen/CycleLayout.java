@@ -28,7 +28,8 @@ import java.util.function.Consumer;
  * <p>Parsed from the {@code worldgenCycleOrder} COMMON key ({@link #parse}): comma-separated
  * {@code slot[:style][:length]} tokens — {@code ow}, {@code nether}, {@code end}, {@code upside_down}
  * ({@code :core:reassembly}), {@code chuncks}, {@code spheres}, {@code stacks}, and {@code legacy}
- * ({@code :kind=core} per era, or bare for every enabled era at its configured length). A band whose
+ * ({@code :kind=core} per era, run in the order written, or bare for every enabled era at its configured
+ * length in declaration order). A band whose
  * config flag is off is dropped from the layout wherever the order names it.</p>
  */
 public final class CycleLayout {
@@ -60,7 +61,7 @@ public final class CycleLayout {
     public static final String DEFAULT_ORDER =
             "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
             + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:15000, ow:5000, "
-            + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:alpha=2000:infdev=2000:floating=2000:classic=2000:void=1000, "
+            + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:classic=2000:infdev=2000:superflat=1000:void=1000, "
             + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
 
     private final Slot[] slots;
@@ -153,8 +154,12 @@ public final class CycleLayout {
         return new CycleLayout(slots.toArray(new Slot[0]), eras, fades);
     }
 
+    /**
+     * The legacy run's eras. Named eras run in the order written; a bare {@code legacy} takes every enabled
+     * era in {@link LegacyBandKind} declaration order. An era named twice keeps its first position.
+     */
     private static LegacySpan[] parseEras(String[] parts, LegacySpan[] defaults, Consumer<String> warn) {
-        Map<LegacyBandKind, Integer> cores = new EnumMap<>(LegacyBandKind.class);
+        Map<LegacyBandKind, Integer> cores = new java.util.LinkedHashMap<>();
         boolean explicit = parts.length > 1;
         for (int i = 1; i < parts.length; i++) {
             String arg = parts[i].trim().toLowerCase(Locale.ROOT);
@@ -174,13 +179,17 @@ public final class CycleLayout {
                     continue;
                 }
             }
+            if (cores.containsKey(kind)) {
+                warn.accept("legacy era '" + kindName + "' named twice; keeping the first");
+                continue;
+            }
             cores.put(kind, len);
         }
+        Iterable<LegacyBandKind> order = explicit ? cores.keySet() : Arrays.asList(LegacyBandKind.values());
         List<LegacySpan> out = new ArrayList<>();
-        for (LegacyBandKind kind : LegacyBandKind.values()) {        // enum order = era order
+        for (LegacyBandKind kind : order) {
             LegacySpan d = defaultOf(defaults, kind);
             if (d == null || d.holdLen() <= 0L) continue;             // disabled in config
-            if (explicit && !cores.containsKey(kind)) continue;       // not named → not in this run
             Integer len = cores.get(kind);
             int core = len == null || len < 0 ? d.hold() : len;
             if (core <= 0) continue;
