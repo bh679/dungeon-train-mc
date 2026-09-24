@@ -124,11 +124,13 @@ public record EditorPlotArrival(double x, double y, double z, float yaw, float p
      * The cell a player can stand in nearest {@code preferred}, by {@code fits} — a two-block column
      * test on the cell and the one above it.
      *
-     * <p>Order: {@code preferred} itself; then its row toward +X, which from a doorway is the
-     * natural "step inside"; then the interior cell nearest by straight-line distance, ties going
-     * to the first seen. Interior means one block in from every face of the footprint, so the
-     * fallback never lands in the shell or the cage. If nothing fits — a sealed build —
-     * {@code preferred} comes back as-is, which is where the landing always was.</p>
+     * <p>Order: {@code preferred} itself; then its row toward +X within the interior, which from a
+     * doorway is the natural "step inside"; then the interior cell nearest by straight-line
+     * distance, ties going to the first seen. Interior means one block in from every face of the
+     * footprint, so the fallback never lands in the shell or the cage. If nothing fits — a sealed
+     * build — {@code preferred} comes back as-is, which is where the landing always was.
+     * {@code preferred} is the only cell outside the interior {@code fits} is ever asked about,
+     * wherever it sits.</p>
      *
      * <p>The nearest-cell search walks outward from {@code preferred} in expanding shells and stops
      * as soon as no unvisited cell can beat the best found, so its cost scales with how far the
@@ -138,13 +140,21 @@ public record EditorPlotArrival(double x, double y, double z, float yaw, float p
      */
     static BlockPos freeCell(BlockPos origin, Vec3i footprint, BlockPos preferred, Predicate<BlockPos> fits) {
         if (fits.test(preferred)) return preferred;
-        int maxX = origin.getX() + footprint.getX() - 2;
-        for (int x = preferred.getX() + 1; x <= maxX; x++) {
-            BlockPos p = new BlockPos(x, preferred.getY(), preferred.getZ());
-            if (fits.test(p)) return p;
+        if (inInterior(origin, footprint, preferred.getY(), preferred.getZ())) {
+            int maxX = origin.getX() + footprint.getX() - 2;
+            for (int x = Math.max(preferred.getX() + 1, origin.getX() + 1); x <= maxX; x++) {
+                BlockPos p = new BlockPos(x, preferred.getY(), preferred.getZ());
+                if (fits.test(p)) return p;
+            }
         }
         BlockPos nearest = nearestInterior(origin, footprint, preferred, fits);
         return nearest == null ? preferred : nearest;
+    }
+
+    /** Whether {@code y}/{@code z} lie inside the interior box — the row walk's precondition. */
+    private static boolean inInterior(BlockPos origin, Vec3i footprint, int y, int z) {
+        return y >= origin.getY() + 1 && y <= origin.getY() + footprint.getY() - 3
+            && z >= origin.getZ() + 1 && z <= origin.getZ() + footprint.getZ() - 2;
     }
 
     /**
@@ -173,8 +183,10 @@ public record EditorPlotArrival(double x, double y, double z, float yaw, float p
                         for (int z = zLo; z <= zHi; z++) nearest.consider(x, y, z);
                     } else {
                         // Strictly inside in X and Y: only the two Z faces are new at this radius.
-                        if (pz - r >= zLo) nearest.consider(x, y, pz - r);
-                        if (pz + r <= zHi) nearest.consider(x, y, pz + r);
+                        // Bounded on both sides: a preferred cell outside the box on Z puts a face
+                        // past the far side too, and that face must not be probed.
+                        if (pz - r >= minZ && pz - r <= maxZ) nearest.consider(x, y, pz - r);
+                        if (pz + r >= minZ && pz + r <= maxZ) nearest.consider(x, y, pz + r);
                     }
                 }
             }
