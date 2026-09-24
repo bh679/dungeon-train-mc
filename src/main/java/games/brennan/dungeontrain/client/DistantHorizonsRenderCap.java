@@ -48,8 +48,20 @@ public final class DistantHorizonsRenderCap {
     /** The override currently applied, or {@code -1} when DH is on the player's own setting. */
     private static int applied = -1;
     private static boolean failed = false;
+    /** The cap is below DH's minimum render distance — no radius DH accepts is safe, so it must not draw. */
+    private static volatile boolean belowFloor = false;
 
     private DistantHorizonsRenderCap() {}
+
+    /**
+     * Whether the allowed radius is smaller than DH's own minimum render distance (32 chunks), so even
+     * the shortest distance DH accepts would draw past a void. {@link DistantHorizonsSuppression} skips
+     * DH's frame while this holds — deep in or right at the edge of a void, where there is nothing for
+     * DH to show anyway.
+     */
+    static boolean belowFloor() {
+        return belowFloor;
+    }
 
     /** Bind the per-tick update and the logout reset. Call once, on the client, only when DH is loaded. */
     public static void register() {
@@ -65,9 +77,12 @@ public final class DistantHorizonsRenderCap {
             if (distance == null) return;
             OptionalLong cap = capBlocksHere();
             if (cap.isEmpty()) {
+                belowFloor = false;
                 release(distance);
                 return;
             }
+            Integer min = distance.getMinValue();
+            belowFloor = cap.getAsLong() / 16L < (min == null ? 1 : min);
             int target = targetChunks(cap.getAsLong(), distance);
             if (target < 0) {
                 release(distance);
@@ -76,6 +91,7 @@ public final class DistantHorizonsRenderCap {
             }
         } catch (Throwable t) {
             failed = true;
+            belowFloor = false;
             LOGGER.warn("[DungeonTrain] Distant Horizons render cap disabled after an error; "
                     + "DH stays on your own render distance: {}", t.toString());
             release();
