@@ -18225,6 +18225,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "save-as-for-built-in-templates",
+      "version": "0.945.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Save your own version of a built-in template",
+      "summary": "Saving a template that comes with Dungeon Train, in the Train Editor or the Train Builder, now asks what you want: save your version under a new name, which goes to My Builds and can be submitted, or keep it as a local edit on this install. The original is left as it was.",
+      "highlights": [
+        "Save as new keeps your changes on a template of your own and puts the built-in back the way it was",
+        "Keep as local edit changes the built-in on your install only, and it is not uploaded",
+        "Built-in templates no longer end up in My Builds under the game's own name"
+      ],
+      "pr": 1520,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
