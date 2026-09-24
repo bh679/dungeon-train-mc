@@ -3037,6 +3037,15 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.note.prompt": {
+    "1": {
+      "label": "the name of the build being submitted for review",
+      "examples": [
+        "brick_cabin",
+        "library"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.full": {
     "1": {
       "label": "how many builds a player's profile can hold on the build server",
@@ -3087,6 +3096,76 @@
       "examples": [
         "Brick Carriage",
         "Long Hall"
+      ]
+    }
+  },
+  "chat.dungeontrain.save_as.saved": {
+    "1": {
+      "label": "the new name the player saved their version under",
+      "examples": [
+        "my_standard",
+        "mossy_hall"
+      ]
+    },
+    "2": {
+      "label": "the built-in template the edits came from, now restored",
+      "examples": [
+        "standard",
+        "dimensional carriage / beam"
+      ]
+    }
+  },
+  "chat.dungeontrain.save_as.failed": {
+    "1": {
+      "label": "the error that stopped the save",
+      "examples": [
+        "Name 'mine' is already taken.",
+        "No server context."
+      ]
+    }
+  },
+  "chat.dungeontrain.save_as.blocked_dirty": {
+    "1": {
+      "label": "comma-separated list of templates with unsaved edits",
+      "examples": [
+        "black, cracked",
+        "track.nethertracks"
+      ]
+    }
+  },
+  "chat.dungeontrain.save_as.gone": {
+    "1": {
+      "label": "the template that no longer exists",
+      "examples": [
+        "standard",
+        "beam"
+      ]
+    }
+  },
+  "chat.dungeontrain.save_as.restore_failed": {
+    "1": {
+      "label": "the built-in template that could not be put back",
+      "examples": [
+        "standard",
+        "dimensional carriage / beam"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.builtin_not_uploaded": {
+    "1": {
+      "label": "the id of the built-in template the player saved over, kept out of My Builds",
+      "examples": [
+        "standard",
+        "jungletemple"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.new.builtin_note": {
+    "1": {
+      "label": "the display name of the built-in template the player is saving",
+      "examples": [
+        "Standard",
+        "Jungle Temple"
       ]
     }
   },
@@ -10961,6 +11040,15 @@
       "examples": [
         "No such file",
         "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.package.dtp_band_not_found": {
+    "1": {
+      "label": "the name of a world band",
+      "examples": [
+        "Nether",
+        "Spheres"
       ]
     }
   },

@@ -88,7 +88,17 @@ public interface BlockVariantPlot {
      * ids, mirror flags and copy settings — edits with no cell of their own — count too.
      */
     static void noteEdit(BlockVariantPlot plot, @Nullable BlockPos localPos) {
+        // Before the edit reaches disk: what the file holds now is what Save-as puts back.
+        EditorSidecarBaseline.remember(plot.dirtySnapshotKey(), plot.sidecarFile());
         EditorPlotSnapshots.markSidecarEdit(plot.dirtySnapshotKey(), localPos);
+    }
+
+    /**
+     * The config-tier file this plot's sidecar is written to, or null where there is none to record.
+     * Read by {@link #noteEdit} for {@link EditorSidecarBaseline}.
+     */
+    default @Nullable java.nio.file.Path sidecarFile() {
+        return null;
     }
 
     /** Editor mirror X (length) axis for this plot's sidecar. */
@@ -472,6 +482,7 @@ public interface BlockVariantPlot {
 
         @Override public String key() { return carriageKey(variant.id()); }
         @Override public String dirtySnapshotKey() { return EditorPlotSnapshots.key("carriages", variant.id()); }
+        @Override public java.nio.file.Path sidecarFile() { return CarriageVariantBlocks.configPathFor(variant); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
@@ -534,6 +545,7 @@ public interface BlockVariantPlot {
 
         @Override public String key() { return wholeKey(kind, id); }
         @Override public String dirtySnapshotKey() { return WholeCarriageEditor.snapshotKey(kind, id); }
+        @Override public java.nio.file.Path sidecarFile() { return WholeVariantBlocks.configPathFor(kind, id); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
@@ -588,6 +600,7 @@ public interface BlockVariantPlot {
 
         @Override public String key() { return contentsKey(contents.id()); }
         @Override public String dirtySnapshotKey() { return EditorPlotSnapshots.key("contents", contents.id()); }
+        @Override public java.nio.file.Path sidecarFile() { return CarriageContentsVariantBlocks.configPathFor(contents); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
@@ -646,6 +659,7 @@ public interface BlockVariantPlot {
         @Override public String key() { return partKey(kind, name); }
         /** Parts are stamped inside carriage plots and have no scan row of their own. */
         @Override public @Nullable String dirtySnapshotKey() { return null; }
+        @Override public java.nio.file.Path sidecarFile() { return CarriagePartVariantBlocks.configPathFor(kind, name); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
@@ -709,6 +723,7 @@ public interface BlockVariantPlot {
 
         @Override public String key() { return trackKey(kind, name); }
         @Override public String dirtySnapshotKey() { return EditorDirtyCheck.snapshotKeyFor(kind, name); }
+        @Override public java.nio.file.Path sidecarFile() { return TrackVariantBlocks.configPathFor(kind, name); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }

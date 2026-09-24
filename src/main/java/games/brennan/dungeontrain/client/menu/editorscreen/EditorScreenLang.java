@@ -198,6 +198,7 @@ public final class EditorScreenLang {
     public static final String SHEET_LOOT_VALUE = PREFIX + "sheet.loot_value";
     public static final String SHEET_LOOT_TOTAL_TIP = PREFIX + "sheet.loot_total_tip";
     public static final String LOOT_PAGE_HEADER = PREFIX + "loot_page.header";
+    public static final String SUBMISSION_PAGE_HEADER = PREFIX + "submission_page.header";
     public static final String LOOT_PAGE_IN = PREFIX + "loot_page.in";
     public static final String SHEET_WEIGHT = PREFIX + "sheet.weight";
     public static final String SHEET_SHARE = PREFIX + "sheet.share";
@@ -207,6 +208,10 @@ public final class EditorScreenLang {
     public static final String SHEET_STAGE_TOOLTIP = PREFIX + "sheet.stage_tooltip";
     public static final String SHEET_TRAIN_SIZE = PREFIX + "sheet.train_size";
     public static final String GO_HERE = PREFIX + "go_here";
+    /** The header's note while a save goes up to the relay, and how it ended — see EditorUploadStatus. */
+    public static final String UPLOADING = PREFIX + "upload.uploading";
+    public static final String UPLOADED = PREFIX + "upload.uploaded";
+    public static final String UPLOAD_FAILED = PREFIX + "upload.failed";
     public static final String STAGE_CUSTOM_SHORT = PREFIX + "stage_custom_short";
     public static final String SHEET_MIN_LEVEL = PREFIX + "sheet.min_level";
     public static final String SHEET_MAX_LEVEL = PREFIX + "sheet.max_level";

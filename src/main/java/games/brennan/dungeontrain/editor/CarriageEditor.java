@@ -366,6 +366,35 @@ public final class CarriageEditor {
     }
 
     /**
+     * The insertion counterpart of {@link #restampRowAfterDeletion}: a variant has just been
+     * <b>registered</b> at {@code fromIndex}, so every plot from there on sits one slot to the right
+     * of where its blocks were stamped. Erase that slice — one slot longer than it was — and stamp
+     * each variant from {@code fromIndex} at its new position, from its saved template.
+     *
+     * <p>{@link #duplicate} alone stamps only the new plot, which left the rest of the row drawn over
+     * by one slot. Plots in the slice lose any unsaved edits; Save-as checks for those first.</p>
+     */
+    public static void restampRowFrom(ServerLevel level, int fromIndex, CarriageDims dims) {
+        BlockState air = Blocks.AIR.defaultBlockState();
+        CarriageDims widest = PortalCorridorSize.corridorDims(dims, PortalCorridorKind.LONG);
+        List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
+        for (int i = Math.max(0, fromIndex); i < all.size(); i++) {
+            BlockPos pos = new BlockPos(FIRST_PLOT_X + i * plotStep(dims), PLOT_Y, PLOT_Z);
+            CarriagePlacer.eraseAt(level, pos, widest);
+            setOutline(level, pos, air, widest);
+        }
+        for (int i = Math.max(0, fromIndex); i < all.size(); i++) {
+            stampPlot(level, all.get(i), dims);
+        }
+    }
+
+    /** The row slot {@code id} occupies, or -1 when it is not registered. */
+    public static int slotOf(String id) {
+        Integer index = slotIndex().get(id);
+        return index == null ? -1 : index;
+    }
+
+    /**
      * Erase the plot for {@code variant} — footprint cleared to air and the
      * barrier cage around it removed. Used when switching categories (leaves
      * no stale carriages visible once the player moves on to tracks) and on

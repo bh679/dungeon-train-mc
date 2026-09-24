@@ -1,5 +1,10 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.net.BuilderProfilePacket;
+import games.brennan.dungeontrain.client.builder.BuilderProfileState;
+import games.brennan.dungeontrain.client.builder.BuilderSubmitNoteScreen;
+import games.brennan.dungeontrain.client.builder.BuilderSubmitHintsRequests;
+import games.brennan.dungeontrain.builder.relay.SubmitNote;
 import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.PortalTestSessionState;
@@ -33,12 +38,15 @@ public final class EditorDetailPane {
     /** Below this a button stops reading as one, so the spacing goes before the size does. */
     static final int MIN_ICON_CELL = 12;
     static final int HERE_TEXT = 0xFF55FF55;
+    /** The upload note's colours: the Submit icon's blue while going, a plain red when it did not. */
+    static final int UPLOADING_TEXT = 0xFF88BBFF;
+    static final int FAILED_TEXT = 0xFFFF6655;
     static final int DIM_TEXT = 0xB0FFFFFF;
     static final int DISABLED = 0x30FFFFFF;
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM }
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE }
 
     private final VersionStrip versions = new VersionStrip();
     /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
@@ -50,6 +58,14 @@ public final class EditorDetailPane {
     /** Every item the selection's loot can give, most valuable first — the Loot page's grid. */
     private List<games.brennan.dungeontrain.editor.TemplateLoot.ItemEntry> lootItems = List.of();
     private LootGrid lootGrid;
+    /** The selection's Submit for Review answers, from the player's own relay listing; empty when none. */
+    private SubmitNote submitNote = SubmitNote.EMPTY;
+    /** Which questions the selection earns and whether the player may edit them — asked of the server once. */
+    private BuilderSubmitHintsRequests.Answer submitAnswer = BuilderSubmitHintsRequests.Answer.UNKNOWN;
+    /** The Submitted answers page's Edit button as last drawn; null when not on screen. */
+    private InventoryEditorLayout.Rect editNoteRect;
+    /** The selection's display name as last drawn — what the edit screen's prompt names. */
+    private String shownName = "";
 
     /** What the selection is made of. Set by the screen before each layout, like the version. */
     public void showSummary(TemplateSummary summary) {
@@ -124,7 +140,16 @@ public final class EditorDetailPane {
         int perLootPage = LootGrid.of(lootGridArea(), 0).capacity();
         int lootPages = lootItems.isEmpty() || perLootPage <= 0 ? 0
             : (lootItems.size() + perLootPage - 1) / perLootPage;
-        pages = Pages.of(rows.size(), Math.max(0, body().h() / ROW_H), lootPages);
+        // What the author answered on submitting it: read off this player's own relay listing, which
+        // is the only one that carries the answers. No answers, no page — as with the Loot page.
+        // Any template the relay holds has the page, answered or not: its questions are worth seeing,
+        // and editable, before the build is ever submitted.
+        BuilderProfilePacket.Entry own = BuilderProfileState.ownBuild(relayId);
+        submitNote = own == null ? SubmitNote.EMPTY : own.note();
+        submitAnswer = own == null ? BuilderSubmitHintsRequests.Answer.UNKNOWN
+            : BuilderSubmitHintsRequests.peek(relayId, "", false);
+        int submitPages = own == null ? 0 : 1;
+        pages = Pages.of(rows.size(), Math.max(0, body().h() / ROW_H), lootPages, submitPages);
         page = pages.clamp(page);
 
         IconRow row = layoutIcons(icons.size(), layout.icons().x(), layout.icons().w());
@@ -242,6 +267,16 @@ public final class EditorDetailPane {
     /** True while the Loot page is showing. */
     public boolean onLootPage() { return pages.isLootPage(page); }
 
+    /** Open the selection's answers for editing — the Submitted answers page's Edit button. */
+    public void openNoteEditor() {
+        if (relayId <= 0 || !submitAnswer.canEdit()) return;
+        BuilderSubmitNoteScreen.openEditor(relayId, "", false, net.minecraft.network.chat.Component.literal(shownName),
+            submitAnswer.hints(), submitNote);
+    }
+
+    /** True while the Submitted answers page is showing. */
+    public boolean onSubmitPage() { return pages.isSubmitPage(page); }
+
     /** The page the body is on, zero-based: 0 is the model and its sheet, the rest are the rows. */
     public int page() { return page; }
 
@@ -257,16 +292,17 @@ public final class EditorDetailPane {
      * <p>The first page is always the model and its data sheet — path, size, blocks, weight, stage,
      * levels. The room's rows come after, as many per page as the whole body holds less the pager's
      * slot, so a long list of walls sub-options takes over the space the model had rather than
-     * squeezing under its sheet. The Loot pages, when the build has loot, come last. With no rows
-     * and no loot there is one page and no pager.</p>
+     * squeezing under its sheet. The Loot pages, when the build has loot, come after them, and the
+     * Submitted answers page, when its author answered anything on submitting it, comes last. With
+     * none of those there is one page and no pager.</p>
      *
      * <p>Pure, so it can be tested without a screen.</p>
      *
      * @param count   how many rows there are
      * @param perPage rows on each row page — the body's slots, less the pager's
      */
-    public record Pages(int count, int perPage, int lootPages) {
-        public static final Pages NONE = new Pages(0, 0, 0);
+    public record Pages(int count, int perPage, int lootPages, int submitPages) {
+        public static final Pages NONE = new Pages(0, 0, 0, 0);
 
         public static Pages of(int count, int bodySlots) {
             return of(count, bodySlots, 0);
@@ -274,12 +310,18 @@ public final class EditorDetailPane {
 
         /** As {@link #of(int, int)}, with {@code lootPages} Loot pages after the rows. */
         public static Pages of(int count, int bodySlots, int lootPages) {
-            return new Pages(Math.max(0, count), Math.max(0, bodySlots - 1), Math.max(0, lootPages));
+            return of(count, bodySlots, lootPages, 0);
+        }
+
+        /** As above, with {@code submitPages} Submitted answers pages (0 or 1) after the Loot pages. */
+        public static Pages of(int count, int bodySlots, int lootPages, int submitPages) {
+            return new Pages(Math.max(0, count), Math.max(0, bodySlots - 1), Math.max(0, lootPages),
+                Math.max(0, Math.min(1, submitPages)));
         }
 
         /** True when there is anything past the model page. */
         public boolean paged() {
-            return hasRows() || lootPages > 0;
+            return hasRows() || lootPages > 0 || submitPages > 0;
         }
 
         private boolean hasRows() {
@@ -296,9 +338,14 @@ public final class EditorDetailPane {
             return 1 + rowPages();
         }
 
-        /** The model page, the row pages, then the Loot pages; at least one. */
+        /** The Submitted answers page: straight after the last Loot page. */
+        public int firstSubmitPage() {
+            return firstLootPage() + lootPages;
+        }
+
+        /** The model page, the row pages, the Loot pages, then the Submitted answers page; at least one. */
         public int pageCount() {
-            return 1 + rowPages() + lootPages;
+            return 1 + rowPages() + lootPages + submitPages;
         }
 
         public int clamp(int page) {
@@ -306,7 +353,12 @@ public final class EditorDetailPane {
         }
 
         public boolean isLootPage(int page) {
-            return lootPages > 0 && clamp(page) >= firstLootPage();
+            int p = clamp(page);
+            return lootPages > 0 && p >= firstLootPage() && p < firstSubmitPage();
+        }
+
+        public boolean isSubmitPage(int page) {
+            return submitPages > 0 && clamp(page) >= firstSubmitPage();
         }
 
         /** Which Loot page {@code page} is, from 0; meaningless off one. */
@@ -340,11 +392,14 @@ public final class EditorDetailPane {
                        TemplateSummary summary, EditorRosterIndex.Tile tile, String pathLabel,
                        float yaw, int mouseX, int mouseY) {
         hovered = hitTest(mouseX, mouseY);
-        drawHeader(g, font, theme);
+        editNoteRect = null;
+        drawHeader(g, font, theme, art);
         String name = tile == null ? "" : tile.variant().displayName();
+        shownName = name;
         if (onModelPage()) {
             PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
             versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
+            drawUploadNoteOnPreview(g, font, art);
             sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
                 tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
                 ctx.selection(), roomRows);
@@ -356,6 +411,8 @@ public final class EditorDetailPane {
             sheetLines = List.of();
             sheetCells = List.of();
             if (onLootPage()) drawLootPage(g, font, theme);
+            else if (onSubmitPage()) editNoteRect = SubmissionPage.draw(g, font, rowArea(), submitNote,
+                submitAnswer.hints(), submitAnswer.canEdit(), mouseX, mouseY);
             else drawRows(g, font, theme);
         }
         if (pages.hasPager()) drawPager(g, font);
@@ -363,7 +420,7 @@ public final class EditorDetailPane {
         drawTest(g, font);
     }
 
-    private void drawHeader(GuiGraphics g, Font font, EditorScreenTheme theme) {
+    private void drawHeader(GuiGraphics g, Font font, EditorScreenTheme theme, TemplateArt art) {
         InventoryEditorLayout.Rect h = layout.header();
         int ty = h.y() + (h.h() - font.lineHeight) / 2;
         String name = ctx.hasSelection() ? ctx.selection().displayName()
@@ -379,6 +436,12 @@ public final class EditorDetailPane {
         goHereRect = null;
         String label = EditorScreenLang.text(EditorScreenLang.GO_HERE);
         int w = font.width(label) + 8;
+        if (!onModelPage()) {
+            // The model box carries the note on the model page; on the others the header does,
+            // cut to whatever the Go here button leaves so the two never overlap.
+            int room = saveX - x - 4 - (goHere != null ? w + 4 : 0);
+            x = drawUploadNote(g, font, art, x, ty, room);
+        }
         if (ctx.standingInSelection()) {
             // The status keeps its place; the button follows it, so the sentence gives way to the
             // button rather than the other way round when the header runs short.
@@ -397,6 +460,54 @@ public final class EditorDetailPane {
                 hot ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
             g.drawString(font, label, bx + 4, ty, hot ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
         }
+    }
+
+    /** The upload note's words and colour, or null when there is nothing to say. */
+    private record UploadNote(String text, String widest, int colour) {}
+
+    /**
+     * The small note shown while a save goes up to the relay — "↑ Uploading…" — and, for a moment
+     * after, how it ended. The upload runs for seconds after the local save and is what the Submit
+     * icon and the version strip wait on, so without this the screen looked as if the save had not
+     * taken.
+     */
+    private static UploadNote uploadNote(TemplateArt art) {
+        UploadStatusBook.Shown shown = EditorUploadStatus.shown(art);
+        if (shown == null) return null;
+        return switch (shown) {
+            case UPLOADING -> {
+                String word = "↑ " + EditorScreenLang.text(EditorScreenLang.UPLOADING);
+                int dots = (int) ((System.currentTimeMillis() / 400L) % 4L);
+                // The widest the dots get, so nothing beside it shuffles on each beat.
+                yield new UploadNote(word + ".".repeat(dots), word + "...", UPLOADING_TEXT);
+            }
+            case UPLOADED -> {
+                String t = "✓ " + EditorScreenLang.text(EditorScreenLang.UPLOADED);
+                yield new UploadNote(t, t, HERE_TEXT);
+            }
+            case FAILED -> {
+                String t = "✗ " + EditorScreenLang.text(EditorScreenLang.UPLOAD_FAILED);
+                yield new UploadNote(t, t, FAILED_TEXT);
+            }
+        };
+    }
+
+    /** In the model box's top-right corner, beside the model it is about — the model page's home for it. */
+    private void drawUploadNoteOnPreview(GuiGraphics g, Font font, TemplateArt art) {
+        UploadNote note = uploadNote(art);
+        if (note == null) return;
+        InventoryEditorLayout.Rect p = layout.preview();
+        int x = p.right() - 4 - font.width(note.widest());
+        g.drawString(font, note.text(), Math.max(p.x() + 2, x), p.y() + 4, note.colour(), true);
+    }
+
+    /** In the header, cut to {@code room}; answers the x the header continues from. */
+    private static int drawUploadNote(GuiGraphics g, Font font, TemplateArt art, int x, int ty, int room) {
+        UploadNote note = uploadNote(art);
+        if (note == null || room <= 0) return x;
+        String shown = font.plainSubstrByWidth(note.text(), room);
+        g.drawString(font, shown, x, ty, note.colour(), false);
+        return x + Math.min(room, font.width(note.widest())) + 6;
     }
 
     private void drawIcons(GuiGraphics g) {
@@ -556,6 +667,9 @@ public final class EditorDetailPane {
             }
         }
         if (goHereRect != null && goHereRect.contains(mx, my)) return new Hit(HitKind.GO_HERE, 0, 0);
+        if (editNoteRect != null && onSubmitPage() && editNoteRect.contains(mx, my)) {
+            return new Hit(HitKind.EDIT_NOTE, 0, 0);
+        }
         if (pages.hasPager() && pagerRect().contains(mx, my)) {
             return switch (EditorPager.hit(pagerRect(), page, pages.pageCount(), mx, my)) {
                 case PREV -> new Hit(HitKind.PAGE_PREV, 0, 0);

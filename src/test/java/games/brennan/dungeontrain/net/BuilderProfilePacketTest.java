@@ -25,6 +25,20 @@ final class BuilderProfilePacketTest {
     private static final String MINE = "11111111-1111-4111-8111-111111111111";
 
     @Test
+    @DisplayName("the author's submission answers survive the wire")
+    void noteRoundTrip() {
+        BuilderProfilePacket original = new BuilderProfilePacket(BuilderProfilePacket.Status.OK, List.of(
+                new BuilderProfilePacket.Entry(43, "carriage", "", "trap", true,
+                        "approved", BuilderReviewState.SUBMITTED, "stone", 1,
+                        false, MINE, "Brennan", false,
+                        new games.brennan.dungeontrain.builder.relay.SubmitNote("lever first", "two diamonds", "near the engine"))),
+                MINE, "Brennan", true);
+        BuilderProfilePacket back = roundTrip(original);
+        assertEquals(original, back);
+        assertEquals("two diamonds", back.builds().get(0).note().loot());
+    }
+
+    @Test
     @DisplayName("a build's submission state survives the wire alongside everything else")
     void entryRoundTrip() {
         BuilderProfilePacket original = new BuilderProfilePacket(BuilderProfilePacket.Status.OK, List.of(

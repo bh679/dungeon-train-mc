@@ -314,6 +314,20 @@ public final class CarriageTemplateStore {
     }
 
     /**
+     * True iff the mod jar carries a carriage template named {@code id}, whichever kind of variant
+     * it is registered as. Unlike {@link #bundled(CarriageVariant)}, a shipped custom variant counts:
+     * this answers "is the name the mod's", not "does a built-in have a default to fall back to".
+     */
+    public static boolean shipsId(String id) {
+        if (id == null || id.isEmpty()) return false;
+        try (InputStream in = CarriageTemplateStore.class.getResourceAsStream(RESOURCE_PREFIX + id + EXT)) {
+            return in != null;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
      * Move a custom template file from {@code sourceId} to {@code targetId}.
      * Used by the editor's save-with-rename path for custom-to-custom
      * renames. Returns false if the source file does not exist.

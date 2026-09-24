@@ -53,8 +53,10 @@ public final class BuilderReconcileScan {
      * @param profileUsed how many profile slots the relay already holds for this player — what a
      *                    restore has to stay under, since going over makes the relay delete their
      *                    oldest builds to make room
+     * @param profileCap  how many the relay lets this player keep — the ceiling {@code profileUsed}
+     *                    is measured against
      */
-    public record Result(List<Build> onDisk, List<Build> inBackups, int profileUsed) {
+    public record Result(List<Build> onDisk, List<Build> inBackups, int profileUsed, int profileCap) {
         public boolean isEmpty() {
             return onDisk.isEmpty() && inBackups.isEmpty();
         }
@@ -71,7 +73,7 @@ public final class BuilderReconcileScan {
      *                  player — pure input, so the sorting can be tested without a relay
      */
     public static Result compare(List<Build> onDisk, List<Build> inBackups, Set<String> relayKeys,
-                                 int profileUsed) {
+                                 int profileUsed, int profileCap) {
         List<Build> missingOnDisk = new ArrayList<>();
         Set<String> seen = new LinkedHashSet<>();
         for (Build build : onDisk) {
@@ -85,7 +87,7 @@ public final class BuilderReconcileScan {
             if (relayKeys.contains(build.key()) || !seen.add(build.key())) continue;
             missingInBackups.add(build);
         }
-        return new Result(List.copyOf(missingOnDisk), List.copyOf(missingInBackups), profileUsed);
+        return new Result(List.copyOf(missingOnDisk), List.copyOf(missingInBackups), profileUsed, profileCap);
     }
 
     /** Every build authored on this install, across every store directory. */

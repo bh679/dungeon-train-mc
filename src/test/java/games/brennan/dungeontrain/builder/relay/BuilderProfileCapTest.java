@@ -38,27 +38,37 @@ final class BuilderProfileCapTest {
     void nullListingIsNotFull() {
         // A failed relay call must never read as "your profile is full" — that would block saves.
         assertEquals(0, BuilderProfileCap.used(null));
-        assertFalse(BuilderProfileCap.isFull(0));
+        assertFalse(BuilderProfileCap.isFull(0, BuilderProfileCap.DEFAULT_PROFILE_BUILDS));
     }
 
     @Test
     @DisplayName("the profile is full only once every slot is taken")
     void fullAtTheCap() {
-        assertFalse(BuilderProfileCap.isFull(BuilderProfileCap.MAX_PROFILE_BUILDS - 1));
-        assertTrue(BuilderProfileCap.isFull(BuilderProfileCap.MAX_PROFILE_BUILDS));
+        assertFalse(BuilderProfileCap.isFull(CAP - 1, CAP));
+        assertTrue(BuilderProfileCap.isFull(CAP, CAP));
         // Over the cap is possible: an operator can lower it, or older builds predate this guard.
-        assertTrue(BuilderProfileCap.isFull(BuilderProfileCap.MAX_PROFILE_BUILDS + 5));
+        assertTrue(BuilderProfileCap.isFull(CAP + 5, CAP));
     }
 
     @Test
     @DisplayName("the allowance is what is left, and never negative")
     void remainingIsNeverNegative() {
-        assertEquals(BuilderProfileCap.MAX_PROFILE_BUILDS, BuilderProfileCap.remaining(0));
-        assertEquals(1, BuilderProfileCap.remaining(BuilderProfileCap.MAX_PROFILE_BUILDS - 1));
-        assertEquals(0, BuilderProfileCap.remaining(BuilderProfileCap.MAX_PROFILE_BUILDS));
+        assertEquals(CAP, BuilderProfileCap.remaining(0, CAP));
+        assertEquals(1, BuilderProfileCap.remaining(CAP - 1, CAP));
+        assertEquals(0, BuilderProfileCap.remaining(CAP, CAP));
         // A negative allowance would become a negative sublist bound in the restore queue.
-        assertEquals(0, BuilderProfileCap.remaining(BuilderProfileCap.MAX_PROFILE_BUILDS + 40));
+        assertEquals(0, BuilderProfileCap.remaining(CAP + 40, CAP));
     }
+
+    @Test
+    @DisplayName("a larger per-player cap is honoured, not clamped to the default")
+    void perPlayerCap() {
+        assertFalse(BuilderProfileCap.isFull(CAP, 2000));
+        assertEquals(1800, BuilderProfileCap.remaining(CAP, 2000));
+        assertTrue(BuilderProfileCap.isFull(2000, 2000));
+    }
+
+    private static final int CAP = BuilderProfileCap.DEFAULT_PROFILE_BUILDS;
 
     private static SharedCarriageClient.ProfileBuild build(String visibility) {
         return new SharedCarriageClient.ProfileBuild(1, "carriage", "", "name", visibility, "builder",
