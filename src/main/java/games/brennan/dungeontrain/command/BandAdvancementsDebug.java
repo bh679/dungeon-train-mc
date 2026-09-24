@@ -49,6 +49,27 @@ final class BandAdvancementsDebug {
         return 1;
     }
 
+    /**
+     * {@code /dungeontrain debug band-advancements at <x>} — every trigger's column test at world-X
+     * {@code x} and at {@code x - depth}: which advancements a player standing there would be granted.
+     */
+    static int probe(CommandSourceStack source, int worldX) {
+        var overworld = source.getServer().overworld();
+        int grants = 0;
+        for (BandAdvancements.Trigger t : BandAdvancements.triggers()) {
+            boolean here = t.test().test(overworld, worldX);
+            boolean behind = t.test().test(overworld, worldX - t.depth());
+            if (here && behind) grants++;
+            if (here || behind) {
+                send(source, String.format("  %-26s at X=%d: %s, X-%d: %s%s", t.id(), worldX, here, t.depth(), behind,
+                        here && behind ? "  -> GRANT" : ""), here && behind ? ChatFormatting.GREEN : ChatFormatting.GRAY);
+            }
+        }
+        send(source, "[DungeonTrain] band-advancements at X=" + worldX + ": " + grants + " would be granted",
+                ChatFormatting.AQUA);
+        return 1;
+    }
+
     /** Short name of the parent the loaded tree holds for {@code name}, or {@code null} if it is not loaded. */
     private static String loadedParent(CommandSourceStack source, String name) {
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID,
