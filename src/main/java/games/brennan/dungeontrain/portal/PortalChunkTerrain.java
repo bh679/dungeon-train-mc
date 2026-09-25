@@ -196,6 +196,16 @@ public final class PortalChunkTerrain {
         }
 
         /**
+         * True for the vanilla Nether and End rooms, which place only {@code minecraft:} features and
+         * structures. Their private generators keep the Better mods' biomes and terrain out, but those
+         * mods also add features to the vanilla biomes and list them in their structures' biome tags —
+         * see {@link games.brennan.dungeontrain.worldgen.VanillaOnlySample}.
+         */
+        public boolean vanillaOnly() {
+            return this == NETHER || this == END;
+        }
+
+        /**
          * Which overworld stretch this room's site must sit in — and so which look its terrain wears —
          * or {@code null} for the Nether and End, which have no stretches.
          */
@@ -415,7 +425,7 @@ public final class PortalChunkTerrain {
                 long decoratingFrom = System.currentTimeMillis();
                 PortalChunkFeatures.decorate(sample.generator(), sample.level(), sample.random(),
                     sample.chunk(), sample.workspace(), sample.window(), sample.level().getSeed(),
-                    pairKey);
+                    pairKey, sample.source());
                 READY.put(pairKey, new Cached(roomName, roll, sample.read()));
                 DECORATED.add(pairKey);
                 // The first number is what a portal carriage waits out before it can cross at all,
