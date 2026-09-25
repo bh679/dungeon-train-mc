@@ -26,6 +26,7 @@
     "NoiseRouterDataAccessor",
     "NoiseGeneratorSettingsAccessor",
     "ChunkGeneratorDecorationMixin",
+    "BclibFeatureSeedCounterMixin",
     "BiomeFilterMixin",
     "BiomeMixin",
     "ChunkGeneratorSpawnsMixin",
