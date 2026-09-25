@@ -2,10 +2,12 @@ package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.OfflineChunkSampler;
+import games.brennan.dungeontrain.worldgen.VanillaOnlySample;
 import games.brennan.dungeontrain.worldgen.VanillaBiomeTwins;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
@@ -141,17 +143,19 @@ final class PortalChunkFeatures {
      *
      * @param window the rows of {@code chunk} the room will actually show, so a structure that lands
      *               entirely outside them can be rejected in favour of one that does not
+     * @param vanillaOnly the vanilla Nether or End room: only {@code minecraft:} structures are planted
+     *                    and only {@code minecraft:} features placed — see {@link VanillaOnlySample}
      */
     static void decorate(NoiseBasedChunkGenerator generator, ServerLevel level, RandomState random,
                          ProtoChunk chunk, OfflineChunkSampler.Workspace workspace, BoundingBox window, long worldSeed,
-                         int pairKey) {
+                         int pairKey, boolean vanillaOnly) {
         try {
-            plantStructure(level, generator, random, chunk, window, worldSeed, pairKey);
+            plantStructure(level, generator, random, chunk, window, worldSeed, pairKey, vanillaOnly);
             // Places the structure registered above along with everything else the biome grows —
             // and, with it, whatever that structure is inhabited by: a village's villagers, an
             // outpost's pillagers, a bastion's piglins all come through this same region and land in
             // the same throwaway chunk the room is read out of.
-            OfflineChunkSampler.decorate(generator, workspace, chunk);
+            OfflineChunkSampler.decorate(generator, workspace, chunk, vanillaOnly);
 
             // The pass that puts a fresh chunk's animals in it — the herd of sheep on the hillside,
             // the pigs in the wood.
@@ -265,20 +269,20 @@ final class PortalChunkFeatures {
      */
     private static void plantStructure(ServerLevel level, NoiseBasedChunkGenerator generator,
                                        RandomState random, ProtoChunk chunk, BoundingBox window,
-                                       long worldSeed, int pairKey) {
+                                       long worldSeed, int pairKey, boolean vanillaOnly) {
         // Deterministic in the seed and the pair, like every other choice a pair makes.
         Random rng = new Random(worldSeed ^ ((long) pairKey * 0x9E3779B97F4A7C15L));
         boolean foreign = rng.nextFloat() < FOREIGN_STRUCTURE_CHANCE;
         List<Structure> candidates = foreign
-            ? foreignStructures(level, chunk, window)
-            : fittingStructures(level, chunk, window);
+            ? foreignStructures(level, chunk, window, vanillaOnly)
+            : fittingStructures(level, chunk, window, vanillaOnly);
         // A dimension whose biomes admit everything in the registry has nothing foreign to offer,
         // and a sample nothing admits has nothing native to — either way the other list stands in
         // rather than the room going without.
         if (candidates.isEmpty()) {
             candidates = foreign
-                ? fittingStructures(level, chunk, window)
-                : foreignStructures(level, chunk, window);
+                ? fittingStructures(level, chunk, window, vanillaOnly)
+                : foreignStructures(level, chunk, window, vanillaOnly);
             foreign = !foreign;
         }
         if (candidates.isEmpty()) {
@@ -372,10 +376,12 @@ final class PortalChunkFeatures {
      * answer.</p>
      */
     private static List<Structure> fittingStructures(ServerLevel level, ProtoChunk chunk,
-                                                     BoundingBox window) {
+                                                     BoundingBox window, boolean vanillaOnly) {
         Set<Holder<Biome>> present = biomesIn(chunk, window);
         List<Structure> fitting = new ArrayList<>();
-        for (Structure structure : level.registryAccess().registryOrThrow(Registries.STRUCTURE)) {
+        Registry<Structure> registry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        for (Structure structure : registry) {
+            if (vanillaOnly && !VanillaOnlySample.allows(registry.getKey(structure))) continue;
             if (admitsAny(structure, present)) fitting.add(structure);
         }
         return fitting;
@@ -397,12 +403,14 @@ final class PortalChunkFeatures {
      * traveller in the one place it lives.</p>
      */
     private static List<Structure> foreignStructures(ServerLevel level, ProtoChunk chunk,
-                                                     BoundingBox window) {
+                                                     BoundingBox window, boolean vanillaOnly) {
         Set<Holder<Biome>> present = biomesIn(chunk, window);
         Set<Holder<Biome>> elsewhere = otherDimensionBiomes(level);
         if (elsewhere.isEmpty()) return List.of();
         List<Structure> foreign = new ArrayList<>();
-        for (Structure structure : level.registryAccess().registryOrThrow(Registries.STRUCTURE)) {
+        Registry<Structure> registry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        for (Structure structure : registry) {
+            if (vanillaOnly && !VanillaOnlySample.allows(registry.getKey(structure))) continue;
             if (admitsAny(structure, elsewhere) && !admitsAny(structure, present)) {
                 foreign.add(structure);
             }

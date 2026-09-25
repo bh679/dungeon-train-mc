@@ -91,11 +91,22 @@ public final class OfflineChunkSampler {
      * BetterEnd End band and inside lifted spheres. The display world lays its own track.
      */
     public static void decorate(NoiseBasedChunkGenerator generator, Workspace workspace, ProtoChunk chunk) {
+        decorate(generator, workspace, chunk, false);
+    }
+
+    /**
+     * {@link #decorate(NoiseBasedChunkGenerator, Workspace, ProtoChunk)}, and with {@code vanillaOnly}
+     * every non-{@code minecraft:} placed feature is vetoed too — see {@link VanillaOnlySample}.
+     */
+    public static void decorate(NoiseBasedChunkGenerator generator, Workspace workspace, ProtoChunk chunk,
+                                boolean vanillaOnly) {
         SAMPLING.set(Boolean.TRUE);
+        VanillaOnlySample.set(vanillaOnly);
         try {
             generator.applyBiomeDecoration(workspace.region(), chunk, workspace.structures());
         } finally {
             SAMPLING.set(Boolean.FALSE);
+            VanillaOnlySample.set(false);
         }
     }
 
