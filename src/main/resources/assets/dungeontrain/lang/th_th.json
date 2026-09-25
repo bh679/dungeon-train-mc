@@ -1861,6 +1861,8 @@
   "gui.dungeontrain.options.backpack_button.tip": "แสดงปุ่มเปิด/ปิด Edible Backpacks บนหน้าจอกระเป๋าของคุณ เหนือช่องมือรอง การปิดจะแค่ซ่อนปุ่ม — แผงเป้ของคุณยังเปิดได้ด้วยปุ่มของ Edible Backpacks ซึ่งผูกได้ที่ การควบคุม ตำแหน่งของปุ่มตั้งได้ใน config/ediblebackpacks-client.toml",
   "gui.dungeontrain.options.snapshot_chat_log": "บันทึกรูปในแชท",
   "gui.dungeontrain.options.snapshot_chat_log.tip": "พิมพ์ข้อความหนึ่งบรรทัดในแชททุกครั้งที่ถ่ายรูปการเดินทางอัตโนมัติ พร้อมแท็กและเหตุผล เป็นตัวช่วยดีบัก ค่าเริ่มต้นคือปิด",
+  "gui.dungeontrain.options.dh_adjustments": "ปรับ Distant Horizons",
+  "gui.dungeontrain.options.dh_adjustments.tip": "ให้ Dungeon Train ซ่อนภูมิประเทศระยะไกลของ Distant Horizons ในจุดที่จะขัดแย้งกับโลกรอบตัวคุณ หรือเผยสิ่งที่อยู่ไกลออกไปตามราง ปิดไว้จะคง Distant Horizons ไว้ตามที่คุณตั้งค่าทุกประการ ไม่มีผลหากไม่ได้ติดตั้ง Distant Horizons",
   "gui.dungeontrain.options.snapshot_max_res": "ความละเอียดรูปสูงสุด",
   "gui.dungeontrain.options.snapshot_max_res.tip": "ขีดจำกัดความละเอียดของรูปการเดินทาง AUTO ใช้ 1080p และเพิ่มเป็น 1440p/2160p เมื่อใช้ Distant Horizons ร่วมกับเชดเดอร์ หรือกราฟิกแบบอลังการ",
   "gui.dungeontrain.options.snapshot_max_res.auto": "AUTO",

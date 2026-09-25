@@ -1861,6 +1861,8 @@
   "gui.dungeontrain.options.backpack_button.tip": "Ipakita ang buksan/isara na button ng Edible Backpacks sa screen ng inventory mo, sa ibabaw ng offhand slot. Ang pag-off nito ay itinatago lang ang button — bumubukas pa rin ang mga panel ng backpack mo gamit ang key ng Edible Backpacks, na puwede mong i-bind sa Controls. Kung saan nakalagay ang button ay nakatakda sa config/ediblebackpacks-client.toml.",
   "gui.dungeontrain.options.snapshot_chat_log": "Log ng litrato sa chat",
   "gui.dungeontrain.options.snapshot_chat_log.tip": "Naglalagay ng isang linya sa chat tuwing kusang kumukuha ng litrato ng pagsakay, kasama ang tag at dahilan nito. Pantulong sa debug; sarado bilang default.",
+  "gui.dungeontrain.options.dh_adjustments": "Ayusin ang Distant Horizons",
+  "gui.dungeontrain.options.dh_adjustments.tip": "Hayaang itago ng Dungeon Train ang malayong lupain ng Distant Horizons kung saan sasalungat ito sa mundo sa paligid mo o magbubunyag ng nasa unahan pa ng riles. Kapag naka-off, iniiwan ang Distant Horizons nang eksakto sa iyong setting. Walang epekto kung hindi naka-install ang Distant Horizons.",
   "gui.dungeontrain.options.snapshot_max_res": "Pinakamataas na resolusyon",
   "gui.dungeontrain.options.snapshot_max_res.tip": "Pinakamataas na hangganan ng resolusyon ng mga litrato ng pagsakay. Ang AUTO ay gumagamit ng 1080p, at umaakyat sa 1440p/2160p kapag may Distant Horizons + shaders o Fabulous graphics.",
   "gui.dungeontrain.options.snapshot_max_res.auto": "AUTO",

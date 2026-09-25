@@ -154,6 +154,43 @@ final class DhHorizonTest {
     }
 
     @Test
+    @DisplayName("buffer: entering the void tightens at once; backing out relaxes only a buffer past the edge")
+    void bufferHoldsUntilBackPastTheEdge() {
+        double b = 64;
+        long edge = x(END1 + F);                           // void start: past it, the overworld behind is cut
+        DhHorizon.XWindow w = DhHorizon.XWindow.OPEN;
+        w = DhHorizon.buffered(w, C, edge - 200, b, true, true);
+        assertTrue(Double.isInfinite(w.lo()), "well before the void the overworld behind is open");
+        w = DhHorizon.buffered(w, C, edge + 10, b, true, true);
+        assertEquals(edge, w.lo(), 1e-9, "tightens the moment the camera enters the void");
+        w = DhHorizon.buffered(w, C, edge - 10, b, true, true);
+        assertEquals(edge, w.lo(), 1e-9, "10 blocks back out: still held");
+        w = DhHorizon.buffered(w, C, edge - 63, b, true, true);
+        assertEquals(edge, w.lo(), 1e-9, "63 blocks back: still inside the buffer");
+        w = DhHorizon.buffered(w, C, edge - 65, b, true, true);
+        assertTrue(Double.isInfinite(w.lo()), "a buffer past the edge: relaxed");
+        w = DhHorizon.buffered(w, C, edge + 1, b, true, true);
+        assertEquals(edge, w.lo(), 1e-9, "and tightens again straight away on the way back in");
+    }
+
+    @Test
+    @DisplayName("buffer: a tighter edge always wins at once, whatever was applied before")
+    void bufferNeverDelaysTightening() {
+        DhHorizon.XWindow prev = new DhHorizon.XWindow(0, 10_000);
+        DhHorizon.XWindow here = new DhHorizon.XWindow(100, 900);
+        DhHorizon.XWindow open = DhHorizon.XWindow.OPEN;
+        assertEquals(here, DhHorizon.buffer(prev, here, open, open));
+    }
+
+    @Test
+    @DisplayName("buffer of 0 is the plain window")
+    void zeroBufferIsPlain() {
+        long at = x(END1 + F) - 10;
+        DhHorizon.XWindow tight = new DhHorizon.XWindow(x(END1 + F), x(END1 + F + VH));
+        assertEquals(DhHorizon.window(C, at, true, true), DhHorizon.buffered(tight, C, at, 0, true, true));
+    }
+
+    @Test
     @DisplayName("far from any void or legacy run the cap is far beyond any DH render distance")
     void farOverworld() {
         assertTrue(cap(START + 100) > 10_000L);

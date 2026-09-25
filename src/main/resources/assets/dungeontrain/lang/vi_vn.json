@@ -1861,6 +1861,8 @@
   "gui.dungeontrain.options.backpack_button.tip": "Hiện nút mở/đóng Edible Backpacks trên màn hình túi đồ của bạn, ngay trên ô tay phụ. Tắt đi chỉ ẩn nút — các bảng ba lô vẫn mở bằng phím Edible Backpacks, phím này có thể gán trong Điều khiển. Vị trí của nút được đặt trong config/ediblebackpacks-client.toml.",
   "gui.dungeontrain.options.snapshot_chat_log": "Ghi ảnh vào khung chat",
   "gui.dungeontrain.options.snapshot_chat_log.tip": "In một dòng chat mỗi khi ảnh chuyến đi được chụp tự động, kèm thẻ và lý do. Một công cụ gỡ lỗi; mặc định tắt.",
+  "gui.dungeontrain.options.dh_adjustments": "Điều chỉnh Distant Horizons",
+  "gui.dungeontrain.options.dh_adjustments.tip": "Cho phép Dungeon Train ẩn địa hình ở xa của Distant Horizons ở những nơi nó mâu thuẫn với thế giới quanh bạn hoặc để lộ những gì nằm xa hơn dọc đường ray. Tắt sẽ giữ Distant Horizons đúng như bạn đã thiết lập. Không có tác dụng nếu chưa cài Distant Horizons.",
   "gui.dungeontrain.options.snapshot_max_res": "Độ phân giải ảnh tối đa",
   "gui.dungeontrain.options.snapshot_max_res.tip": "Giới hạn trên cho độ phân giải ảnh chuyến đi. AUTO dùng 1080p, và tăng lên 1440p/2160p khi có Distant Horizons + shader hoặc đồ họa Tuyệt đẹp.",
   "gui.dungeontrain.options.snapshot_max_res.auto": "AUTO",

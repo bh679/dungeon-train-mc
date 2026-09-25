@@ -1861,6 +1861,8 @@
   "gui.dungeontrain.options.backpack_button.tip": "인벤토리 화면의 보조 손 칸 위에 Edible Backpacks 열기/닫기 버튼을 표시합니다. 끄면 버튼만 숨겨지며, 가방 패널은 조작 설정에서 지정할 수 있는 Edible Backpacks 키로 계속 열립니다. 버튼 위치는 config/ediblebackpacks-client.toml에서 정합니다.",
   "gui.dungeontrain.options.snapshot_chat_log": "사진 기록 채팅 표시",
   "gui.dungeontrain.options.snapshot_chat_log.tip": "탑승 사진이 자동으로 촬영될 때마다 태그와 이유를 채팅에 한 줄로 표시합니다. 디버그용이며 기본값은 꺼짐입니다.",
+  "gui.dungeontrain.options.dh_adjustments": "Distant Horizons 조정",
+  "gui.dungeontrain.options.dh_adjustments.tip": "주변 세계와 모순되거나 선로 더 앞에 있는 것을 미리 보여 줄 수 있는 곳에서 Dungeon Train이 Distant Horizons의 먼 지형을 숨기도록 합니다. 끄면 Distant Horizons를 설정한 그대로 둡니다. Distant Horizons가 설치되어 있지 않으면 아무 효과도 없습니다.",
   "gui.dungeontrain.options.snapshot_max_res": "사진 최대 해상도",
   "gui.dungeontrain.options.snapshot_max_res.tip": "탑승 사진 해상도의 상한입니다. 자동은 1080p를 쓰고, Distant Horizons와 셰이더 또는 '최고급' 그래픽에서는 1440p/2160p까지 올라갑니다.",
   "gui.dungeontrain.options.snapshot_max_res.auto": "자동",

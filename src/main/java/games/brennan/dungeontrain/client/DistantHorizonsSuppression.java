@@ -49,6 +49,13 @@ public final class DistantHorizonsSuppression {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /**
+     * Whether the upside-down band hid DH last frame. While it has, DH stays hidden out to the margin
+     * plus {@code distantHorizons.bufferBlocks}, so riding back and forth across the margin's edge does
+     * not flip DH on and off. Render thread only.
+     */
+    private static boolean bandHidden = false;
+
     private DistantHorizonsSuppression() {}
 
     /**
@@ -73,7 +80,10 @@ public final class DistantHorizonsSuppression {
      * has loaded, and to "draw" when there is no camera yet.
      */
     private static boolean hideThisFrame() {
-        if (!ClientDisplayConfig.isLoaded()) return false;
+        if (!ClientDisplayConfig.isLoaded() || !ClientDisplayConfig.isDistantHorizonsAdjustmentsEnabled()) {
+            bandHidden = false;
+            return false;
+        }
 
         Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
         if (camera == null) return false;
@@ -86,9 +96,11 @@ public final class DistantHorizonsSuppression {
             return true;
         }
 
-        return ClientDisplayConfig.UPSIDE_DOWN_HIDE_DISTANT_HORIZONS.get()
-                && ClientUpsideDownBand.isFlipZoneWithin((int) Math.floor(pos.x),
-                        ClientDisplayConfig.UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN.get());
+        int margin = ClientDisplayConfig.UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN.get()
+                + (bandHidden ? ClientDisplayConfig.getDistantHorizonsBufferBlocks() : 0);
+        bandHidden = ClientDisplayConfig.UPSIDE_DOWN_HIDE_DISTANT_HORIZONS.get()
+                && ClientUpsideDownBand.isFlipZoneWithin((int) Math.floor(pos.x), margin);
+        return bandHidden;
     }
 
     /** DH's cancellable before-render event: cancelling it skips DH's LOD pass for that frame. */

@@ -1861,6 +1861,8 @@
   "gui.dungeontrain.options.backpack_button.tip": "Edible Backpacks の開閉ボタンを、インベントリ画面のオフハンド枠の上に表示します。オフにしてもボタンが隠れるだけで、バックパックのパネルは Edible Backpacks のキーで開けます（「操作設定」で割り当てられます）。ボタンの位置は config/ediblebackpacks-client.toml で設定します。",
   "gui.dungeontrain.options.snapshot_chat_log": "写真ログをチャットに表示",
   "gui.dungeontrain.options.snapshot_chat_log.tip": "乗車写真が自動で撮影されるたびに、そのタグと理由をチャットに1行出力します。デバッグ用で、初期設定はオフです。",
+  "gui.dungeontrain.options.dh_adjustments": "Distant Horizons を調整",
+  "gui.dungeontrain.options.dh_adjustments.tip": "周囲の世界と矛盾したり、線路の先にあるものを明かしてしまう場所で、Dungeon Train が Distant Horizons の遠景地形を隠せるようにします。オフにすると Distant Horizons は設定したとおりのままになります。Distant Horizons が導入されていない場合は何もしません。",
   "gui.dungeontrain.options.snapshot_max_res": "写真の最大解像度",
   "gui.dungeontrain.options.snapshot_max_res.tip": "乗車写真の解像度の上限。自動では1080pを使い、Distant Horizons＋シェーダーまたは「最高品質」グラフィックのときは1440p/2160pまで上がります。",
   "gui.dungeontrain.options.snapshot_max_res.auto": "自動",

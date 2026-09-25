@@ -1861,6 +1861,8 @@
   "gui.dungeontrain.options.backpack_button.tip": "Tunjukkan butang buka/tutup Edible Backpacks pada skrin inventori anda, di atas slot tangan kiri. Mematikannya hanya menyembunyikan butang — panel beg galas anda masih boleh dibuka dengan kekunci Edible Backpacks, yang boleh anda ikat di bawah Controls. Kedudukan butang itu ditetapkan dalam config/ediblebackpacks-client.toml.",
   "gui.dungeontrain.options.snapshot_chat_log": "Log foto dalam sembang",
   "gui.dungeontrain.options.snapshot_chat_log.tip": "Menulis satu baris sembang setiap kali foto perjalanan dirakam secara automatik, dengan tag dan sebabnya. Alat bantu debug; dimatikan secara lalai.",
+  "gui.dungeontrain.options.dh_adjustments": "Laraskan Distant Horizons",
+  "gui.dungeontrain.options.dh_adjustments.tip": "Benarkan Dungeon Train menyembunyikan rupa bumi jauh Distant Horizons di mana ia akan bercanggah dengan dunia di sekeliling anda atau mendedahkan apa yang ada lebih jauh di sepanjang landasan. Mati membiarkan Distant Horizons tepat seperti yang anda tetapkan. Tiada kesan jika Distant Horizons tidak dipasang.",
   "gui.dungeontrain.options.snapshot_max_res": "Resolusi maks. foto",
   "gui.dungeontrain.options.snapshot_max_res.tip": "Had atas resolusi foto perjalanan. AUTO menggunakan 1080p, dan naik ke 1440p/2160p dengan Distant Horizons + shader atau grafik Fabulous.",
   "gui.dungeontrain.options.snapshot_max_res.auto": "AUTO",

@@ -279,6 +279,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case BOOK_AUTHOR_CHAT -> onOffCandidates("gui.dungeontrain.options.book_author_chat");
             case CINEMATIC_HOTKEY -> onOffCandidates("gui.dungeontrain.options.cinematic_hotkey");
             case SNAPSHOT_CHAT_LOG -> onOffCandidates("gui.dungeontrain.options.snapshot_chat_log");
+            case DH_ADJUSTMENTS -> onOffCandidates("gui.dungeontrain.options.dh_adjustments");
             case BACKPACK_BUTTON -> onOffCandidates("gui.dungeontrain.options.backpack_button");
             // Every mode, because the row must fit its LONGEST value — the button shows the
             // caption and the value together, and "Fill all" is not the longest in every locale.
@@ -498,6 +499,15 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                         (btn, val) -> ClientDisplayConfig.setRideSnapshotMaxResolution(val)),
                         "gui.dungeontrain.options.snapshot_max_res.tip");
             }
+
+            // The master switch for everything DT does to Distant Horizons — band / portal-room hiding
+            // and the track limit. Read live every frame and tick, so it lands without a reload.
+            case DH_ADJUSTMENTS -> withTip(
+                    CycleButton.onOffBuilder(ClientDisplayConfig.isDistantHorizonsAdjustmentsEnabled())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.dh_adjustments"),
+                                    (btn, on) -> ClientDisplayConfig.setDistantHorizonsAdjustmentsEnabled(on)),
+                    "gui.dungeontrain.options.dh_adjustments.tip");
 
             case SNAPSHOT_CHAT_LOG -> withTip(
                     CycleButton.onOffBuilder(ClientDisplayConfig.isRideSnapshotChatLogEnabled())

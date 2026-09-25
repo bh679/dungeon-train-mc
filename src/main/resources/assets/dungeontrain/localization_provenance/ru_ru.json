@@ -1221,6 +1221,8 @@
       "gui.dungeontrain.options.internet",
       "gui.dungeontrain.options.internet.tip",
       "gui.dungeontrain.options.snapshot_chat_log.tip",
+      "gui.dungeontrain.options.dh_adjustments",
+      "gui.dungeontrain.options.dh_adjustments.tip",
       "gui.dungeontrain.options.snapshot_max_res",
       "gui.dungeontrain.options.snapshot_max_res.tip",
       "gui.dungeontrain.options.snapshot_max_res.auto",

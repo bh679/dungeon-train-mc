@@ -97,6 +97,12 @@ public enum ClientOptionsTab {
         SNAPSHOT_MAX_RES,
         SNAPSHOT_CHAT_LOG,
         /**
+         * Whether Dungeon Train adjusts Distant Horizons at all (the band / portal-room hiding and the
+         * track limit). Shown whether or not DH is installed: its tip says it does nothing without DH,
+         * and a row that comes and goes would re-pair everything after it.
+         */
+        DH_ADJUSTMENTS,
+        /**
          * How fast an end of the train may extend once it has fallen behind. One global value
          * in the COMMON config, so it is present at the title screen as well as in a world, and
          * setting it in either place sets it for every world. Absent only on a multiplayer
@@ -186,6 +192,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.SNAPSHOT_CHAT_LOG);
                 rows.add(Row.CUSTOM_CONTENT);
                 rows.add(Row.SNAPSHOT_MAX_RES);
+                rows.add(Row.DH_ADJUSTMENTS);
                 // Conditional (absent on a multiplayer client), so it goes LAST: a row that
                 // appears and disappears re-pairs everything after it in the tab (see the class
                 // javadoc), and nothing follows it here.

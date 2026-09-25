@@ -216,6 +216,24 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.BooleanValue DISTANT_HORIZONS_LIMIT_LEGACY_ERAS;
 
+    /**
+     * Master switch for everything Dungeon Train does to Distant Horizons: the upside-down and
+     * dimensional-carriage hiding and the track limit at voids and legacy eras. Off leaves DH exactly as
+     * the player configured it. Toggled from Options → Train; the finer switches above only apply while
+     * this is on.
+     */
+    public static final ModConfigSpec.BooleanValue DISTANT_HORIZONS_DT_ADJUSTMENTS;
+
+    /**
+     * Buffer, in blocks, before a Distant Horizons adjustment is relaxed again: tightening is immediate,
+     * but DH only shows more once the camera is this far back past the line that tightened it, so
+     * rocking across a boundary does not flip DH on and off.
+     */
+    public static final ModConfigSpec.IntValue DISTANT_HORIZONS_BUFFER_BLOCKS;
+
+    public static final int DEFAULT_DISTANT_HORIZONS_BUFFER_BLOCKS = 64;
+    public static final int MAX_DISTANT_HORIZONS_BUFFER_BLOCKS = 4096;
+
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
@@ -374,6 +392,8 @@ public final class ClientDisplayConfig {
         PORTAL_ROOM_HIDE_DISTANT_HORIZONS = pair.getLeft().portalRoomHideDistantHorizons;
         DISTANT_HORIZONS_LIMIT_PAST_VOIDS = pair.getLeft().distantHorizonsLimitPastVoids;
         DISTANT_HORIZONS_LIMIT_LEGACY_ERAS = pair.getLeft().distantHorizonsLimitLegacyEras;
+        DISTANT_HORIZONS_DT_ADJUSTMENTS = pair.getLeft().distantHorizonsDtAdjustments;
+        DISTANT_HORIZONS_BUFFER_BLOCKS = pair.getLeft().distantHorizonsBufferBlocks;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
@@ -511,6 +531,12 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue distantHorizonsLimitLegacyEras = b
                 .comment("Stop Distant Horizons drawing more than one legacy era ahead or behind along the track - you can see the next era, never the one after it. Only the direction of the track is cut: the view out to either side is untouched. DH's render distance and settings are never changed, so nothing reloads. Does nothing if Distant Horizons is not installed.")
                 .define("limitLegacyEras", true);
+        ModConfigSpec.BooleanValue distantHorizonsDtAdjustments = b
+                .comment("Master switch: let Dungeon Train adjust Distant Horizons at all - hiding it in the upside-down section and inside dimensional carriages, and stopping it drawing past voids or beyond the next legacy era. Set false to leave Distant Horizons exactly as you configured it everywhere. The switches above only apply while this is on. Also settable in-game via Options -> Train -> Adjust Distant Horizons. Does nothing if Distant Horizons is not installed.")
+                .define("dtAdjustments", true);
+        ModConfigSpec.IntValue distantHorizonsBufferBlocks = b
+                .comment("How far, in blocks, you must travel back past a boundary before Distant Horizons shows more again. Hiding always happens straight away; showing waits for this buffer, so riding back and forth across a boundary does not flip Distant Horizons on and off. 0 turns the buffer off.")
+                .defineInRange("bufferBlocks", DEFAULT_DISTANT_HORIZONS_BUFFER_BLOCKS, 0, MAX_DISTANT_HORIZONS_BUFFER_BLOCKS);
         b.pop();
 
         b.push("framerateThrottle");
@@ -762,6 +788,7 @@ public final class ClientDisplayConfig {
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
                 distantHorizonsLimitPastVoids, distantHorizonsLimitLegacyEras,
+                distantHorizonsDtAdjustments, distantHorizonsBufferBlocks,
                 framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
@@ -1213,6 +1240,25 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         RIDE_SNAPSHOT_MAX_RESOLUTION.set(value);
         RIDE_SNAPSHOT_MAX_RESOLUTION.save();
+    }
+
+    // ----- Distant Horizons adjustments -----
+
+    /** Whether DT may adjust Distant Horizons at all. Defaults to on pre-load, matching the shipped default. */
+    public static boolean isDistantHorizonsAdjustmentsEnabled() {
+        return !isLoaded() || DISTANT_HORIZONS_DT_ADJUSTMENTS.get();
+    }
+
+    /** Set the Distant Horizons master switch. Toggled from Options → Train; no-op pre-load. */
+    public static void setDistantHorizonsAdjustmentsEnabled(boolean value) {
+        if (!isLoaded()) return;
+        DISTANT_HORIZONS_DT_ADJUSTMENTS.set(value);
+        DISTANT_HORIZONS_DT_ADJUSTMENTS.save();
+    }
+
+    /** See {@link #DISTANT_HORIZONS_BUFFER_BLOCKS}; the default pre-load. */
+    public static int getDistantHorizonsBufferBlocks() {
+        return isLoaded() ? DISTANT_HORIZONS_BUFFER_BLOCKS.get() : DEFAULT_DISTANT_HORIZONS_BUFFER_BLOCKS;
     }
 
     // ----- Idle framerate throttle (paused / unfocused / minimised) -----
@@ -1757,6 +1803,8 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue portalRoomHideDistantHorizons,
             ModConfigSpec.BooleanValue distantHorizonsLimitPastVoids,
             ModConfigSpec.BooleanValue distantHorizonsLimitLegacyEras,
+            ModConfigSpec.BooleanValue distantHorizonsDtAdjustments,
+            ModConfigSpec.IntValue distantHorizonsBufferBlocks,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.DoubleValue trainEngineVolume,

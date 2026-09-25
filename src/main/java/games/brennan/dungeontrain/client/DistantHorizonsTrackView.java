@@ -33,6 +33,9 @@ public final class DistantHorizonsTrackView {
 
     private static final DistantHorizonsTrackCulling CULLING = new DistantHorizonsTrackCulling();
 
+    /** The window applied last tick — what the buffer relaxes from. Client thread only. */
+    private static DhHorizon.XWindow applied = DhHorizon.XWindow.OPEN;
+
     private DistantHorizonsTrackView() {}
 
     /** Bind the culling override and the per-tick window update. Call once, only when DH is loaded. */
@@ -44,14 +47,26 @@ public final class DistantHorizonsTrackView {
                     + "DH may draw past voids and beyond the next legacy era: {}", t.toString());
             return;
         }
-        NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post e) -> CULLING.setWindow(windowHere()));
-        NeoForge.EVENT_BUS.addListener((ClientPlayerNetworkEvent.LoggingOut e) -> CULLING.setWindow(DhHorizon.XWindow.OPEN));
+        NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post e) -> apply(windowHere()));
+        NeoForge.EVENT_BUS.addListener((ClientPlayerNetworkEvent.LoggingOut e) -> apply(DhHorizon.XWindow.OPEN));
         LOGGER.info("[DungeonTrain] Distant Horizons will not draw past voids or beyond the next legacy era");
     }
 
-    /** The stretch of X the camera may see, or {@link DhHorizon.XWindow#OPEN} when nothing is hidden here. */
+    private static void apply(DhHorizon.XWindow window) {
+        applied = window;
+        CULLING.setWindow(window);
+    }
+
+    /**
+     * The stretch of X the camera may see — buffered, so it only relaxes once the camera is
+     * {@code distantHorizons.bufferBlocks} back past the boundary — or {@link DhHorizon.XWindow#OPEN}
+     * when nothing is hidden here.
+     */
     private static DhHorizon.XWindow windowHere() {
-        if (!ClientDisplayConfig.isLoaded() || !ClientVoidBand.startsWithTrain()) return DhHorizon.XWindow.OPEN;
+        if (!ClientDisplayConfig.isLoaded() || !ClientVoidBand.startsWithTrain()
+                || !ClientDisplayConfig.isDistantHorizonsAdjustmentsEnabled()) {
+            return DhHorizon.XWindow.OPEN;
+        }
         boolean voids = ClientDisplayConfig.DISTANT_HORIZONS_LIMIT_PAST_VOIDS.get();
         boolean legacy = ClientDisplayConfig.DISTANT_HORIZONS_LIMIT_LEGACY_ERAS.get();
         if (!voids && !legacy) return DhHorizon.XWindow.OPEN;
@@ -60,6 +75,7 @@ public final class DistantHorizonsTrackView {
         if (mc.level == null || mc.level.dimension() != Level.OVERWORLD) return DhHorizon.XWindow.OPEN;
         Camera camera = mc.gameRenderer.getMainCamera();
         if (camera == null) return DhHorizon.XWindow.OPEN;
-        return DhHorizon.window(WorldGenCycle.fromConfig(), camera.getPosition().x, voids, legacy);
+        return DhHorizon.buffered(applied, WorldGenCycle.fromConfig(), camera.getPosition().x,
+                ClientDisplayConfig.getDistantHorizonsBufferBlocks(), voids, legacy);
     }
 }

@@ -82,6 +82,37 @@ public final class DhHorizon {
         return new XWindow(w.lo, w.hi);
     }
 
+    /**
+     * {@link #window} with a buffer of {@code bufferBlocks} before any edge relaxes. An edge that
+     * tightens does so at once — nothing past a boundary is ever shown — but an edge only relaxes once
+     * the windows {@code bufferBlocks} behind and ahead of the camera agree it may, so riding back and
+     * forth across a boundary does not flip the view.
+     *
+     * @param previous the window applied last tick ({@link XWindow#OPEN} to start fresh)
+     */
+    public static XWindow buffered(XWindow previous, WorldGenCycle cycle, double camX, double bufferBlocks,
+                                   boolean voids, boolean legacy) {
+        XWindow here = window(cycle, camX, voids, legacy);
+        if (bufferBlocks <= 0.0) return here;
+        return buffer(previous, here,
+                window(cycle, camX - bufferBlocks, voids, legacy),
+                window(cycle, camX + bufferBlocks, voids, legacy));
+    }
+
+    /**
+     * Pure core of {@link #buffered}: tighten each edge to {@code here} at once; relax it only as far as
+     * the windows {@code behind} and {@code ahead} of the camera also allow.
+     */
+    static XWindow buffer(XWindow previous, XWindow here, XWindow behind, XWindow ahead) {
+        double lo = here.lo() > previous.lo()
+                ? here.lo()
+                : Math.min(previous.lo(), Math.max(here.lo(), Math.max(behind.lo(), ahead.lo())));
+        double hi = here.hi() < previous.hi()
+                ? here.hi()
+                : Math.max(previous.hi(), Math.min(here.hi(), Math.min(behind.hi(), ahead.hi())));
+        return new XWindow(lo, hi);
+    }
+
     /** Doubling run the camera is in (0 before the anchor). */
     private static int runOf(WorldGenCycle cycle, CycleLayout layout, double camX) {
         long off = (long) Math.floor(camX) - cycle.startX();

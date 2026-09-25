@@ -1899,6 +1899,8 @@
   "gui.dungeontrain.options.backpack_button.tip": "Toont de openen/sluiten-knop van Edible Backpacks in je inventarisscherm, boven het slot voor je andere hand. Uitzetten verbergt alleen de knop — je rugzakpanelen gaan nog steeds open met de toets van Edible Backpacks, die je bij Besturing kunt instellen. Waar de knop staat, stel je in via config/ediblebackpacks-client.toml.",
   "gui.dungeontrain.options.snapshot_chat_log": "Fotolog in chat",
   "gui.dungeontrain.options.snapshot_chat_log.tip": "Zet een chatregel neer elke keer dat er automatisch een ritfoto wordt gemaakt, met tag en reden. Een debughulp; standaard uit.",
+  "gui.dungeontrain.options.dh_adjustments": "Distant Horizons aanpassen",
+  "gui.dungeontrain.options.dh_adjustments.tip": "Laat Dungeon Train het verre terrein van Distant Horizons verbergen waar het de wereld om je heen zou tegenspreken of zou verraden wat er verderop langs het spoor ligt. Uit laat Distant Horizons precies zoals je het hebt ingesteld. Doet niets als Distant Horizons niet is geïnstalleerd.",
   "gui.dungeontrain.options.snapshot_max_res": "Max. fotoresolutie",
   "gui.dungeontrain.options.snapshot_max_res.tip": "Bovengrens voor de resolutie van ritfoto's. AUTO gebruikt 1080p en gaat naar 1440p/2160p met Distant Horizons + shaders of de grafische instelling Fabelachtig.",
   "gui.dungeontrain.options.snapshot_max_res.auto": "AUTO",

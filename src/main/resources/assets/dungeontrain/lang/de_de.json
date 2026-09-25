@@ -1899,6 +1899,8 @@
   "gui.dungeontrain.options.backpack_button.tip": "Zeigt den Öffnen/Schließen-Knopf von Edible Backpacks in deinem Inventar über dem Zweithand-Platz. Ausschalten blendet nur den Knopf aus — deine Rucksackfenster öffnen sich weiterhin mit der Edible-Backpacks-Taste, die du unter Steuerung belegen kannst. Wo der Knopf sitzt, wird in config/ediblebackpacks-client.toml festgelegt.",
   "gui.dungeontrain.options.snapshot_chat_log": "Foto-Chatprotokoll",
   "gui.dungeontrain.options.snapshot_chat_log.tip": "Gibt bei jedem automatisch aufgenommenen Fahrtfoto eine Chatzeile mit Tag und Grund aus. Eine Debug-Hilfe; standardmäßig aus.",
+  "gui.dungeontrain.options.dh_adjustments": "Distant Horizons anpassen",
+  "gui.dungeontrain.options.dh_adjustments.tip": "Lässt Dungeon Train das ferne Gelände von Distant Horizons ausblenden, wo es der Welt um dich herum widersprechen oder verraten würde, was weiter entlang der Strecke liegt. Aus lässt Distant Horizons genau so, wie du es eingestellt hast. Ohne installiertes Distant Horizons wirkungslos.",
   "gui.dungeontrain.options.snapshot_max_res": "Max. Fotoauflösung",
   "gui.dungeontrain.options.snapshot_max_res.tip": "Obergrenze für die Auflösung von Fahrtfotos. AUTO nutzt 1080p und steigt mit Distant Horizons + Shadern oder der Grafikeinstellung „Bombastisch“ auf 1440p/2160p.",
   "gui.dungeontrain.options.snapshot_max_res.auto": "AUTO",

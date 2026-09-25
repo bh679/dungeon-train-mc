@@ -2339,6 +2339,8 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Print a chat line naming the author each time a Dungeon Train book burns — \"The book by X burns\". The books you read, throw away or drop on death all catch fire, and this is the only place their writer is credited. Off by default.",
   "gui.dungeontrain.options.snapshot_chat_log": "Snapshot Chat Log",
   "gui.dungeontrain.options.snapshot_chat_log.tip": "Print a chat line each time a ride photo is auto-captured, showing its tag and reason. A debug aid; off by default.",
+  "gui.dungeontrain.options.dh_adjustments": "Adjust Distant Horizons",
+  "gui.dungeontrain.options.dh_adjustments.tip": "Let Dungeon Train hide Distant Horizons' far terrain wherever it would contradict the world around you or give away what lies further along the track. Off leaves Distant Horizons exactly as you set it. Does nothing if Distant Horizons is not installed.",
   "gui.dungeontrain.options.snapshot_max_res": "Snapshot Max Resolution",
   "gui.dungeontrain.options.snapshot_max_res.tip": "Upper limit for ride-photo capture resolution. AUTO uses 1080p, rising to 1440p/2160p with Distant Horizons + shaders or Fabulous graphics.",
   "gui.dungeontrain.options.snapshot_max_res.auto": "AUTO",
