@@ -18878,6 +18878,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-looks",
+      "version": "0.957.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "world"
+      ],
+      "title": "Dimensional carriages show the world they promise",
+      "summary": "Overworld dimensional carriages now always open onto ordinary Overworld terrain, instead of sometimes showing a slice of somewhere stranger. Nether and End carriages show the classic Nether and End, and new dimensional carriages open onto wilder overworld lands and a reimagined Nether and End.",
+      "highlights": [
+        "Overworld dimensional carriages always show ordinary Overworld terrain",
+        "Nether and End dimensional carriages show the classic Nether and End",
+        "New dimensional carriages: two wilder overworld lands, plus a reimagined Nether and End"
+      ],
+      "pr": 1547,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
