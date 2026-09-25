@@ -101,8 +101,8 @@ public final class BlockVariantMenuRaycast {
 
         double gridTopAbs = halfH - BlockVariantMenuRenderer.HEADER_HEIGHT - BlockVariantMenuRenderer.TOOLBAR_HEIGHT;
 
-        // Span option strip — modal like the OPTIONS popup: an option is a pick, anywhere else in
-        // the panel closes it (secondary -2), outside the panel does nothing.
+        // Span option strip (above the panel) — modal like the OPTIONS popup: an option is a pick,
+        // anywhere else in the panel closes it (secondary -2), outside both does nothing.
         if (BlockVariantMenu.spanPopupOpen()) {
             double[] r = BlockVariantMenuRenderer.spanPopupRect(panelW, halfH);
             if (hitX >= r[0] + 0.02 && hitX <= r[1] - 0.02 && hitY >= r[2] && hitY <= r[3]) {

@@ -82,10 +82,23 @@ public final class BlockVariantMenuController {
      * track the player's current look angle.
      */
     private record OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up,
-                           @Nullable Vec3 anchor, @Nullable Vec3 right) {
+                           @Nullable Vec3 anchor, @Nullable Vec3 right, @Nullable BlockPos anchorWorld) {
         /** A panel hung off a cell's face — the anchor is re-derived from that face on every re-sync. */
         OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up) {
-            this(variantId, localPos, face, up, null, null);
+            this(variantId, localPos, face, up, null, null, null);
+        }
+
+        /**
+         * A panel hung off {@code anchorWorld}'s face while editing {@code localPos} — the half of
+         * a door / bed / tall-plant cell the player aimed at, which may not be the owning cell.
+         */
+        OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up, BlockPos anchorWorld) {
+            this(variantId, localPos, face, up, null, null, anchorWorld);
+        }
+
+        /** A floating panel with a remembered basis. */
+        OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up, Vec3 anchor, Vec3 right) {
+            this(variantId, localPos, face, up, anchor, right, null);
         }
 
         /** True for a panel with no cell in the world, whose basis has to be remembered rather than recomputed. */
@@ -160,14 +173,16 @@ public final class BlockVariantMenuController {
             actionBar(player, "Block is outside the editor plot", ChatFormatting.YELLOW);
             return;
         }
-        // Either space of a door / bed / tall-plant cell opens that cell's menu.
-        BlockPos clampedLocal = MultiBlockFootprint.ownerCell(plot, clampToFootprint(localPos, plot));
-        BlockPos clampedWorld = plot.origin().offset(clampedLocal);
+        // Either space of a door / bed / tall-plant cell opens that cell's menu, but the panel
+        // hangs off the half the player actually aimed at.
+        BlockPos lookedLocal = clampToFootprint(localPos, plot);
+        BlockPos clampedLocal = MultiBlockFootprint.ownerCell(plot, lookedLocal);
+        BlockPos anchorWorld = plot.origin().offset(lookedLocal);
 
         Direction face = bhit.getDirection();
         Vec3 up = computeUp(face, player);
-        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up));
-        sendSync(player, plot, clampedLocal, clampedWorld, face, up);
+        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up, anchorWorld));
+        sendSync(player, plot, clampedLocal, anchorWorld, face, up);
     }
 
     /**
@@ -899,7 +914,11 @@ public final class BlockVariantMenuController {
             face = Direction.UP;
             up = computeUp(face, player);
         }
-        BlockPos worldPos = plot.origin().offset(localPos);
+        // Stay on the half the menu was opened from — for a two-space cell that may not be the
+        // owning cell itself.
+        BlockPos worldPos = sameMenu && open.anchorWorld() != null
+            ? open.anchorWorld()
+            : plot.origin().offset(localPos);
         sendSync(player, plot, localPos, worldPos, face, up);
     }
 

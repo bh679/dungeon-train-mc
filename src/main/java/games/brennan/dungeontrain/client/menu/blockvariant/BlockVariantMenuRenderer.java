@@ -116,8 +116,8 @@ public final class BlockVariantMenuRenderer {
 
     /**
      * The Span popup's rectangle {@code {left, right, bottom, top}}: one row of
-     * {@link #SPAN_OPTIONS} just under the toolbar, centred on the Span button and clamped inside
-     * the panel. The renderer and the raycaster both read it, so a click can't land one option off.
+     * {@link #SPAN_OPTIONS} just <em>above</em> the panel — so it never covers the list rows —
+     * centred on the Span button and clamped to the panel's width. The renderer and the raycaster both read it, so a click can't land one option off.
      */
     static double[] spanPopupRect(double panelW, double halfH) {
         List<BlockVariantMenu.CellKind> toolbar = BlockVariantMenu.toolbarCells();
@@ -127,8 +127,8 @@ public final class BlockVariantMenuRenderer {
         double popupW = SPAN_OPTIONS.length * SPAN_OPTION_WIDTH + 0.04;
         double left = buttonCX - popupW / 2.0;
         left = Math.max(-panelW / 2.0 + 0.02, Math.min(left, panelW / 2.0 - 0.02 - popupW));
-        double top = halfH - HEADER_HEIGHT - TOOLBAR_HEIGHT - 0.02;
-        double bottom = top - POPUP_BUTTON_SIZE - 0.04;
+        double bottom = halfH + 0.02;
+        double top = bottom + POPUP_BUTTON_SIZE + 0.04;
         return new double[] {left, left + popupW, bottom, top};
     }
 
@@ -545,7 +545,7 @@ public final class BlockVariantMenuRenderer {
             }
         }
 
-        // Span option strip, drawn over the grid like the OPTIONS popup below.
+        // Span option strip, floating just above the panel.
         if (BlockVariantMenu.spanPopupOpen()) {
             drawSpanPopup(ps, buffer, font, panelW, halfH, hovered);
         }
