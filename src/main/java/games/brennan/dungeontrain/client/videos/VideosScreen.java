@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.client.videos;
 
-import games.brennan.dungeontrain.client.StreamingSoftwareDetector;
+import games.brennan.dungeontrain.compat.StreamDetectBridge;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.BilibiliIconButton;
@@ -208,7 +208,7 @@ public final class VideosScreen extends Screen {
             @Override
             protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
                 super.renderWidget(g, mouseX, mouseY, partialTick);
-                if (StreamingSoftwareDetector.isRunningNow()) {
+                if (StreamDetectBridge.isRunningNow()) {
                     PulseBorder.render(g, getX(), getY(), getWidth(), getHeight(), STREAMING_PULSE_RGB, this.alpha);
                 }
             }

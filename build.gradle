@@ -188,19 +188,19 @@ neoForge {
             if (project.hasProperty('changelogUrl')) {
                 systemProperty 'dungeontrain.changelogUrl', project.property('changelogUrl').toString()
             }
-            // DPI-bypass notice seam: ./gradlew runClient -PdpiBypassTest=winws.exe makes
-            // DpiBypassDetector report that process without looking at the real process table, so
+            // DPI-bypass notice seam: ./gradlew runClient -PdpiBypassTest=winws.exe makes the
+            // DPI Bypass Detect add-on report that process without looking at the real process table, so
             // the title-screen notice can be seen and screenshotted on a machine that isn't running
             // zapret. Property rather than env var for the same daemon-environment reason as
             // relayBaseUrl above.
             if (project.hasProperty('dpiBypassTest')) {
-                systemProperty 'dungeontrain.dpi_bypass_test', project.property('dpiBypassTest').toString()
+                systemProperty 'dpibypassdetect.test', project.property('dpiBypassTest').toString()
             }
             // Same seam for the streaming-software probe: ./gradlew runClient -PstreamingTest=obs64.exe
-            // makes StreamingSoftwareDetector report OBS, so the Videos icon's share tab can be seen
+            // makes the Stream Detect add-on report OBS, so the Videos icon's share tab can be seen
             // on a machine that isn't streaming.
             if (project.hasProperty('streamingTest')) {
-                systemProperty 'dungeontrain.streaming_test', project.property('streamingTest').toString()
+                systemProperty 'streamdetect.test', project.property('streamingTest').toString()
             }
             // Shader-compat sweep: ./gradlew runClient -PshaderSweep="<world folder name>" opens that
             // world and drives itself round the five atmosphere sites, writing one screenshot each to
@@ -443,6 +443,16 @@ dependencies {
     // 0.909.x; revisit (drop the jarJar line) once the Modrinth listing is public.
     implementation "bh679:keeptrim:${keeptrim_version}"
     jarJar(group: 'bh679', name: 'keeptrim', version: keeptrim_version)
+
+    // Stream Detect + DPI Bypass Detect — OPTIONAL client-side add-ons holding the process-name
+    // detection (OBS/Streamlabs; zapret/GoodbyeDPI) that used to live in DT. Deliberately NOT
+    // jarJar'd: the point of the split is that DT's own jar never reads the process table, so its
+    // CurseForge reviews aren't held up by it. `implementation` puts them on the compile classpath
+    // (compat/StreamDetectBridge + DpiBypassDetectBridge name their API behind a ModList check) and
+    // on the dev run classpath so runClient exercises the real UI. Players get them from the
+    // optional relations / both modpacks (shipped ON).
+    implementation "bh679:streamdetect:${streamdetect_version}"
+    implementation "bh679:dpibypassdetect:${dpibypassdetect_version}"
 
     // Dungeon Backup — sibling mod: the player-data protection system (migration out of
     // config/, rolling zip restore points inside + outside the instance, title-screen recovery)
