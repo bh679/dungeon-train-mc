@@ -30,9 +30,9 @@ import java.util.OptionalLong;
  * than set — DH is back on exactly the player's setting, never above it. Nothing persists, so a crash
  * mid-cap cannot leave DH shortened.</p>
  *
- * <p><b>Reload cost.</b> A new DH render distance rebuilds DH's LOD tree, so the cap moves in whole
- * {@link #STEP_CHUNKS}-chunk steps (rounded down, so never past the boundary) and is checked per client
- * tick, not per frame.</p>
+ * <p><b>Reload cost.</b> A new DH render distance rebuilds DH's LOD tree — visibly — so which
+ * distance to apply is left to {@link DhCapPolicy}: a few coarse tiers, lowered at once but raised only
+ * with headroom, and held still while DH is hidden. Checked per client tick, not per frame.</p>
  *
  * <p><b>Loading.</b> Like {@link DistantHorizonsSuppression}, this names DH types and is reached only
  * behind the {@code ModList} check in {@link DungeonTrainClient}. Any failure disables the cap and
@@ -42,11 +42,8 @@ public final class DistantHorizonsRenderCap {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Cap granularity in chunks — one DH reload per this many chunks travelled at most. */
-    private static final int STEP_CHUNKS = 4;
-
-    /** The override currently applied, or {@code -1} when DH is on the player's own setting. */
-    private static int applied = -1;
+    /** The override currently applied, or {@link DhCapPolicy#RELEASED} when DH is on the player's own setting. */
+    private static int applied = DhCapPolicy.RELEASED;
     private static boolean failed = false;
     /** The cap is below DH's minimum render distance — no radius DH accepts is safe, so it must not draw. */
     private static volatile boolean belowFloor = false;
@@ -76,15 +73,12 @@ public final class DistantHorizonsRenderCap {
             IDhApiConfigValue<Integer> distance = renderDistance();
             if (distance == null) return;
             OptionalLong cap = capBlocksHere();
-            if (cap.isEmpty()) {
-                belowFloor = false;
-                release(distance);
-                return;
-            }
-            Integer min = distance.getMinValue();
-            belowFloor = cap.getAsLong() / 16L < (min == null ? 1 : min);
-            int target = targetChunks(cap.getAsLong(), distance);
-            if (target < 0) {
+            Integer minValue = distance.getMinValue();
+            int min = minValue == null ? 1 : minValue;
+            long capChunks = cap.isPresent() ? cap.getAsLong() / 16L : Long.MAX_VALUE;
+            belowFloor = capChunks < min;
+            int target = DhCapPolicy.next(applied, capChunks, distance.getTrueValue(), min);
+            if (target == DhCapPolicy.RELEASED) {
                 release(distance);
             } else if (target != applied && distance.setValue(target)) {
                 applied = target;
@@ -112,18 +106,6 @@ public final class DistantHorizonsRenderCap {
         return DhHorizon.capBlocks(WorldGenCycle.fromConfig(), camera.getPosition().x, voids, legacy);
     }
 
-    /**
-     * The override in chunks for a cap in blocks, or {@code -1} when the player's own setting already
-     * fits inside it (no override needed). Never above the player's setting, never below DH's minimum.
-     */
-    private static int targetChunks(long capBlocks, IDhApiConfigValue<Integer> distance) {
-        int user = distance.getTrueValue();
-        long chunks = (capBlocks / 16L) / STEP_CHUNKS * STEP_CHUNKS;
-        if (chunks >= user) return -1;
-        Integer min = distance.getMinValue();
-        return (int) Math.max(chunks, min == null ? 1 : min);
-    }
-
     private static IDhApiConfigValue<Integer> renderDistance() {
         IDhApiConfig configs = DhApi.Delayed.configs;
         return configs == null ? null : configs.graphics().chunkRenderDistance();
@@ -140,8 +122,8 @@ public final class DistantHorizonsRenderCap {
     }
 
     private static void release(IDhApiConfigValue<Integer> distance) {
-        if (applied < 0) return;
+        if (applied == DhCapPolicy.RELEASED) return;
         distance.clearValue();
-        applied = -1;
+        applied = DhCapPolicy.RELEASED;
     }
 }
