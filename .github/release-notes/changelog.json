@@ -18685,6 +18685,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dt-flyspeed-sprint",
+      "version": "0.953.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Faster creative sprint-flying",
+      "summary": "Operators can now speed up sprint-flying in creative with /dt flyspeed <multiplier>. Only sprinting forward gets faster \u2014 normal flight and flying up or down stay the same.",
+      "highlights": [
+        "/dt flyspeed 3 makes creative sprint-flying three times as fast; /dt flyspeed 1 puts it back to normal",
+        "Your chosen speed is remembered across relogs and respawns"
+      ],
+      "pr": 1535,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
