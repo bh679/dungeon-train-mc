@@ -21,10 +21,11 @@ import java.util.function.IntFunction;
  * the other half of {@link PortalChunkTerrain}, which is where the terrain comes from.
  *
  * <h2>Over the room's own template, never instead of it</h2>
- * <p>The variant is stamped first, exactly as any other room is: it clears the box and lays the
- * shell — the skybox floor, ceiling and side walls a chunk dimension is framed in. That shell is
- * what a room keeps if a sample ever fails, and it is what the seal ring at each mouth copies its
- * blocks from, so the terrain is poured into the box's <b>interior</b> and leaves it standing.</p>
+ * <p>The variant is stamped first, exactly as any other room is: it clears the box and lays a plain
+ * floor of ground — what a room keeps if a sample ever fails. The terrain is then poured into the
+ * <b>whole</b> box. There is no skybox frame inside it: the sky a chunk dimension stands in is its
+ * lock skin, one block outside the box ({@link PortalRoomLock}, set to the variant's skybox block
+ * in {@code weights.json}), so the chunk is all sixteen blocks wide.</p>
 
  * <p>The cube is always in hand by the time anything is stamped: a pair is not planned at all until
  * its terrain has been sampled, because the doorways are stood on that terrain — see
@@ -126,12 +127,12 @@ public final class PortalChunkDimension {
         int shift = copyShift(structure, dims, size);
 
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        // The interior only: the ±Z walls, the floor and the ceiling are the template's, because the
-        // seal ring at each mouth is a copy of the room's own wall (PortalCarriageBuilder#sealFillFor)
-        // and a wall of open sky would seal a mouth with nothing. The ±X ends are not walls — they
-        // are the door planes — so terrain runs the full length.
-        for (int y = 1; y < size.getY() - 1; y++) {
-            for (int z = 1; z < size.getZ() - 1 && z < slice.width(); z++) {
+        // The whole box, faces included: the room has no shell of its own — its skybox is the lock
+        // skin one block outside it — so the chunk runs all 16 blocks to the sky. Where the end
+        // column is open, the mouth's seal ring falls back to that same skin rather than to the
+        // floor row (PortalCarriageBuilder#sealFillFor), so an open face still seals with sky.
+        for (int y = 0; y < size.getY(); y++) {
+            for (int z = 0; z < size.getZ() && z < slice.width(); z++) {
                 for (int x = 0; x < size.getX() && x < slice.width(); x++) {
                     // Null for a row the cube does not reach. Those rows keep whatever the template
                     // put there, which is a room rather than a hole.

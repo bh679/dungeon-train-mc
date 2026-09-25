@@ -123,6 +123,27 @@ class PortalChunkDimensionTest {
     }
 
     @Test
+    @DisplayName("Each shipped variant is locked in its own sky's skybox, and the tag survives an edit")
+    void lock_isTheVariantsSkybox() {
+        Map<String, String> lockBySky = Map.of(
+            "day", "dungeontrain:skybox_surface",
+            "nether", "dungeontrain:skybox_nether",
+            "end", "dungeontrain:skybox_end");
+        lockBySky.forEach((sky, block) -> {
+            String tag = "chunk_dimension/exact/off/off/off/" + sky + "/sealed/0/9/0/9/" + block;
+            PortalRoomSettings settings = PortalRoomSettings.parse(tag);
+
+            assertTrue(settings.lockApplies(), "a chunk dimension is a sealing mode");
+            assertEquals(block, settings.effectiveLock().id(),
+                "the skybox IS the lock — there is no second skybox layer inside the box");
+            assertEquals(PortalChunkTerrain.SURFACE_ROW, settings.exitDoorHeightOffset().value(),
+                "the exit placeholders mirror the entry door, as the shorter tag did");
+            assertEquals(settings, PortalRoomSettings.parse(settings.toTag()),
+                "the editor must not drop the lock segment when it rewrites the tag");
+        });
+    }
+
+    @Test
     @DisplayName("Each doorway stands on the ground under it, and the two ends may differ")
     void doors_standOnTheGround() {
         // A column whose ground rises along the walk: 3 blocks deep at the entry end, 7 at the exit.
