@@ -23,7 +23,8 @@ import java.util.stream.Stream;
  * <p>Read from the WWOO mod jar itself ({@code resources/<pack>/data/minecraft/worldgen/…}), not by
  * "differs from vanilla": other mods rewrite vanilla biomes too — BetterNether patches the vanilla
  * Nether biomes and BetterEnd the End ones through WorldWeaver — and those edits must stay
- * everywhere. Only WWOO's are stretch-bound.</p>
+ * everywhere. Only WWOO's are stretch-bound. (One exception: the vanilla-style Nether band's core drops
+ * other mods' features from vanilla Nether biomes — see {@code NetherCoreFeatureFilter}.)</p>
  *
  * <p>WWOO's {@code minecraft:} tag edits are global and can't be stretch-bound; the ones its
  * features don't need are dropped at load by {@link WwooTagFilter}.</p>
