@@ -21,7 +21,9 @@ import java.util.Optional;
  * Outside the WWOO stretch a WWOO-changed biome answers as its vanilla twin
  * ({@link VanillaBiomeTwins}): grass and foliage colour, water, sky and fog colour, rain/snow/ice
  * climate, ambient sounds, music and particles. Questions carrying a position use it; the rest use
- * the client camera. A pure pass-through for biomes WWOO left alone, and inside the stretch.
+ * the client camera. Foliage and water tint are the exception: their getters take no position, but
+ * the tint resolvers do, so {@code client.BiomeColorsTwinMixin} swaps the twin in per block. A pure
+ * pass-through for biomes WWOO left alone, and inside the stretch.
  */
 @Mixin(Biome.class)
 public abstract class BiomeMixin {
@@ -80,17 +82,8 @@ public abstract class BiomeMixin {
 
     // ---- without a position: the client camera decides ------------------------------------------
 
-    @Inject(method = "getFoliageColor", at = @At("HEAD"), cancellable = true)
-    private void dungeontrain$foliageColor(CallbackInfoReturnable<Integer> cir) {
-        Biome twin = dungeontrain$twinAtCamera();
-        if (twin != null) cir.setReturnValue(twin.getFoliageColor());
-    }
-
-    @Inject(method = "getWaterColor", at = @At("HEAD"), cancellable = true)
-    private void dungeontrain$waterColor(CallbackInfoReturnable<Integer> cir) {
-        Biome twin = dungeontrain$twinAtCamera();
-        if (twin != null) cir.setReturnValue(twin.getWaterColor());
-    }
+    // Foliage and water colour are NOT gated here: they are tints, resolved per block by
+    // client.BiomeColorsTwinMixin. A camera gate here would re-tint that block by where the player stands.
 
     @Inject(method = "getWaterFogColor", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$waterFogColor(CallbackInfoReturnable<Integer> cir) {

@@ -18918,8 +18918,27 @@
       "released_at": null
     },
     {
+      "id": "tint-follows-the-land",
+      "version": "0.958.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Water and leaves keep their own colours",
+      "summary": "Water and leaves now always show the colours of the land they're in. Before, looking across from one stretch of the world into the next could paint the far side in the wrong colours, and those colours could stay stuck after you crossed over.",
+      "highlights": [
+        "No more patches of oddly coloured water hanging in view."
+      ],
+      "pr": 1549,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "server-dt-world-preset",
-      "version": "0.959.0",
+      "version": "0.958.0",
       "type": "fix",
       "tags": [
         "fix",
