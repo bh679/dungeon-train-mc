@@ -34,9 +34,9 @@ import java.util.List;
  * model name plus interactive controls (weight arrows, save / reset / clear,
  * and template-specific buttons like Contents for carriages).
  *
- * <p>Cylindrical billboard around world-up so the panel rotates to face the
- * camera horizontally but stays upright in Y — same basis the older labels
- * used.</p>
+ * <p>Fixed facing ({@link EditorPanelFacing#plotPanel()}): the panel faces
+ * {@code -X}, toward a player standing on the plot, and holds still as the
+ * camera moves rather than turning to follow it.</p>
  *
  * <p>Layout (top → bottom, only the rows applicable to the entry's category
  * are rendered):
@@ -878,8 +878,9 @@ public final class EditorPlotLabelsRenderer {
 
     /**
      * Build a cylindrical-billboard basis facing {@code cam} from {@code anchor}.
-     * Shared by renderer and raycast so the click hit math matches the visible
-     * panel exactly. Returns {@code [right, up, normal]}.
+     * Returns {@code [right, up, normal]}. The editor menus no longer use it —
+     * they hold a fixed facing ({@link EditorPanelFacing}); only the door-ghost
+     * labels still billboard.
      */
     public static Vec3[] basis(Vec3 anchor, Vec3 cam) {
         Vec3 toCam = cam.subtract(anchor);
@@ -1017,7 +1018,7 @@ public final class EditorPlotLabelsRenderer {
         Vec3 cam, Vec3 anchor,
         EditorPlotLabelsPacket.Entry entry, CellKind hovered
     ) {
-        Vec3[] b = basis(anchor, cam);
+        Vec3[] b = EditorPanelFacing.plotPanel();
         Vec3 right = b[0], up = b[1], normal = b[2];
 
         ps.pushPose();

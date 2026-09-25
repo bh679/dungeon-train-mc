@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.menu.EditorPanelFacing;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -51,9 +52,9 @@ import java.util.List;
  * column anchored next to a per-plot panel) keep their pre-nav single
  * column layout — no category bar, no tab strip.</p>
  *
- * <p>Same world-space billboarded panel chrome as
- * {@link EditorPlotLabelsRenderer} — backdrop quad, cylindrical billboard
- * around world up, single SEE_THROUGH text pass. Layout constants are
+ * <p>Same world-space panel chrome as
+ * {@link EditorPlotLabelsRenderer} — backdrop quad at a fixed facing
+ * ({@link #basisFor}), single SEE_THROUGH text pass. Layout constants are
  * package-private so {@link EditorTypeMenuRaycast} shares the same numbers
  * for hit detection.</p>
  */
@@ -293,37 +294,20 @@ public final class EditorTypeMenuRenderer {
     private static volatile int WHOLE_GROUP_EVERY = EditorTypeMenusPacket.NO_WHOLE_GROUP_EVERY;
     private static volatile Hovered HOVERED = Hovered.NONE;
 
-    /**
-     * Sticky billboard basis for the package menu — captured on the first
-     * render frame after the menu appears, reused every frame after. Unlike
-     * the cylindrical billboards used elsewhere, the package panel pins its
-     * initial orientation toward the player's spawn-in camera and stays
-     * fixed thereafter, so it reads as a stationary signpost rather than a
-     * follower panel. Cleared on editor exit (empty snapshot) so re-entry
-     * recaptures from the new camera.
-     */
-    private static volatile Vec3[] PACKAGE_BASIS = null;
-
     private EditorTypeMenuRenderer() {}
 
     /**
-     * Returns the billboard basis to use for {@code menu}. For the package
-     * menu this is sticky — captured on first call, reused thereafter.
-     * For every other menu kind this is the live cylindrical billboard.
+     * The fixed basis {@code menu} is drawn in — no longer a camera billboard. Companions ride
+     * beside the per-plot panel, so they share its facing; every other menu (nav, Stages) sits at
+     * the row start and takes the door facing for its category's row axis.
      *
-     * <p>Shared by the renderer and {@link EditorTypeMenuRaycast} so the
-     * hit-test plane matches the visible panel exactly even after the
-     * camera moves.</p>
+     * <p>Shared by the renderer and {@link EditorTypeMenuRaycast} so the hit-test plane matches the
+     * visible panel exactly. {@code anchor} and {@code cam} are unused now that nothing tracks the
+     * camera; kept so the two call sites stay unchanged.</p>
      */
     public static Vec3[] basisFor(EditorTypeMenusPacket.Menu menu, Vec3 anchor, Vec3 cam) {
-        if (!menu.isPackageMenu()) {
-            return EditorPlotLabelsRenderer.basis(anchor, cam);
-        }
-        Vec3[] cached = PACKAGE_BASIS;
-        if (cached != null) return cached;
-        Vec3[] fresh = EditorPlotLabelsRenderer.basis(anchor, cam);
-        PACKAGE_BASIS = fresh;
-        return fresh;
+        if (menu.isCompanion()) return EditorPanelFacing.plotPanel();
+        return EditorPanelFacing.doorPanel(EditorPanelFacing.isZRow(menu.activeCategoryId()));
     }
 
     /**
@@ -347,7 +331,6 @@ public final class EditorTypeMenuRenderer {
             HELP_PANEL_DISMISSED = packet.helpPanelDismissed();
             WHOLE_GROUP_EVERY = packet.wholeGroupEvery();
             HOVERED = Hovered.NONE;
-            PACKAGE_BASIS = null;
             stagesRemoveMode = false;
             StagesSort.clear();
             // Editor exited — drop the row icon strips and close the Stage Blocks panel too.
@@ -363,15 +346,6 @@ public final class EditorTypeMenuRenderer {
         SELECTED_STAGE = packet.selectedStageId();
         HELP_PANEL_DISMISSED = packet.helpPanelDismissed();
         WHOLE_GROUP_EVERY = packet.wholeGroupEvery();
-        // Keep PACKAGE_BASIS sticky across snapshots that still carry a
-        // package menu (so category switches don't reorient the panel); drop
-        // it if the new snapshot has no package menu, so the next appearance
-        // recaptures from the player's current camera.
-        boolean hasPackageMenu = false;
-        for (EditorTypeMenusPacket.Menu m : menus) {
-            if (m.isPackageMenu()) { hasPackageMenu = true; break; }
-        }
-        if (!hasPackageMenu) PACKAGE_BASIS = null;
         EditorTypeMenusPacket.Menu first = menus.get(0);
         LOGGER.info("[DungeonTrain] EditorTypeMenus: client received {} menus (first: '{}' with {} variants @ {})",
             menus.size(), first.typeName(), first.variants().size(), first.worldPos());
