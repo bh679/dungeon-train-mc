@@ -19063,6 +19063,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "process-detection-addons",
+      "version": "0.961.0",
+      "type": "refactor",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "OBS and connection-blocker support moves to sibling mods",
+      "summary": "Dungeon Train no longer works directly with OBS, Streamlabs, zapret or GoodbyeDPI. That is now handled by two small optional sibling mods, Stream Detect and DPI Bypass Detect. They power the Share stream! tab on the Videos button and the warning when zapret or GoodbyeDPI is blocking online features. Without them, Dungeon Train works exactly the same, just without those two prompts.",
+      "highlights": [
+        "Stream Detect and DPI Bypass Detect are small, separate, optional sibling mods; the menus and wording stay in Dungeon Train",
+        "Dungeon Train itself no longer works directly with OBS, Streamlabs, zapret or GoodbyeDPI"
+      ],
+      "pr": 1554,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

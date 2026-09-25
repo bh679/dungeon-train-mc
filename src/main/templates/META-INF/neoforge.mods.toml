@@ -219,6 +219,25 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Stream Detect + DPI Bypass Detect — OPTIONAL client-side sibling add-ons (NOT bundled). They
+# answer "is OBS/Streamlabs open?" and "is zapret/GoodbyeDPI running?" for DT's Videos share tab and
+# relay-blocked warning; the process-name reading lives in them so DT's own jar never does it.
+# Without them DT acts as if nothing was found (compat/StreamDetectBridge, DpiBypassDetectBridge).
+# Both modpacks ship them ON. Fixed floor: DT calls their 0.1.0 API.
+[[dependencies.${mod_id}]]
+    modId="streamdetect"
+    type="optional"
+    versionRange="[0.1.0,)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${mod_id}]]
+    modId="dpibypassdetect"
+    type="optional"
+    versionRange="[0.1.0,)"
+    ordering="NONE"
+    side="CLIENT"
+
 # tectonic (terrain mod; pulls lithostitched). Generates only when the in-game
 # "Compatible Terrain" option is on (Dungeon Train then uses vanilla overworld noise).
 [[dependencies.${mod_id}]]

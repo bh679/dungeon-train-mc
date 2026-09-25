@@ -30,7 +30,7 @@ import java.util.function.BooleanSupplier;
  *
  * <h3>The share tab</h3>
  * <p>While {@code showShareTab} says so — on the title screen, that is "OBS is running"
- * ({@code StreamingSoftwareDetector}) — the tile grows a tag out of its <b>right</b> edge reading
+ * ({@code compat.StreamDetectBridge}, answered by the optional Stream Detect add-on) — the tile grows a tag out of its <b>right</b> edge reading
  * "Streaming? Share link!", eased out over {@link #EXTEND_MS} and clipped as it goes so the text
  * slides out from behind the icon. The button's own width follows the animation, so the whole tag
  * is hover-tinted and clickable; the click is the same as ever (the Videos page, which carries the

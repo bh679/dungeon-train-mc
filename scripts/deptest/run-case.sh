@@ -86,6 +86,10 @@ resolve() {
     kt)       cached "bh679/keeptrim"                "$(prop keeptrim_version)" ;;
     db)       cached "bh679/dungeonbackup"           "$(prop dungeonbackup_version)" ;;
     sff)      cached "bh679/sable_fence_trapdoor_fix" "$(prop sablefencetrapdoorfix_version)" ;;
+    # Optional client-side add-ons (process-name detection). Present only in Case A; every other
+    # case runs without them, which is the proof DT loads when they are absent.
+    sd)       cached "bh679/streamdetect"            "$(prop streamdetect_version)" ;;
+    dbd)      cached "bh679/dpibypassdetect"         "$(prop dpibypassdetect_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;
     # Above the floor: whatever the cascade has moved playermob_version to. When those two
