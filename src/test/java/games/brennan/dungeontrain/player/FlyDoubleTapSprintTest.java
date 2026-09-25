@@ -10,11 +10,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FlyDoubleTapSprintTest {
 
     /** Runs press/release ticks ({@code true} = forward held) and reports whether any tick sprinted. */
-    private static boolean sprintsAfter(boolean eligible, boolean... held) {
+    private static boolean sprintsAfter(boolean flying, boolean... held) {
         int timer = 0;
         boolean was = false;
         for (boolean is : held) {
-            FlyDoubleTapSprint.Step step = FlyDoubleTapSprint.tick(timer, was, is, eligible);
+            // canStart mirrors vanilla: it needs forward impulse, so it is false whenever forward is up.
+            FlyDoubleTapSprint.Step step = FlyDoubleTapSprint.tick(timer, was, is, flying, is);
             if (step.sprint()) return true;
             timer = step.timer();
             was = is;
@@ -43,12 +44,23 @@ class FlyDoubleTapSprintTest {
     @Test
     void singleTapArmsTheWindow() {
         assertEquals(new FlyDoubleTapSprint.Step(FlyDoubleTapSprint.WINDOW_TICKS, false),
-                FlyDoubleTapSprint.tick(0, false, true, true));
+                FlyDoubleTapSprint.tick(0, false, true, true, true));
     }
 
     @Test
-    void ineligibleClearsTheWindow() {
-        assertEquals(new FlyDoubleTapSprint.Step(0, false), FlyDoubleTapSprint.tick(5, false, true, false));
+    void releaseBetweenTapsKeepsTheWindow() {
+        // Regression: the release tick has canStart=false (no forward impulse) and must not reset.
+        assertEquals(new FlyDoubleTapSprint.Step(6, false), FlyDoubleTapSprint.tick(7, true, false, true, false));
+    }
+
+    @Test
+    void pressThatCannotSprintDoesNotTrigger() {
+        assertEquals(new FlyDoubleTapSprint.Step(4, false), FlyDoubleTapSprint.tick(5, false, true, true, false));
+    }
+
+    @Test
+    void notFlyingClearsTheWindow() {
+        assertEquals(new FlyDoubleTapSprint.Step(0, false), FlyDoubleTapSprint.tick(5, false, true, false, true));
         assertFalse(sprintsAfter(false, true, false, true));
     }
 }

@@ -35,10 +35,9 @@ public abstract class LocalPlayerFlyDoubleTapSprintMixin {
     @Inject(method = "aiStep", at = @At("TAIL"))
     private void dungeontrain$flyDoubleTapSprint(CallbackInfo ci) {
         LocalPlayer self = (LocalPlayer) (Object) this;
-        boolean eligible = self.getAbilities().flying && !self.isPassenger()
-                && !self.isSprinting() && canStartSprinting();
-        FlyDoubleTapSprint.Step step = FlyDoubleTapSprint.tick(
-                dungeontrain$flySprintTimer, dungeontrain$wasForward, input.hasForwardImpulse(), eligible);
+        boolean flying = self.getAbilities().flying && !self.isPassenger() && !self.isSprinting();
+        FlyDoubleTapSprint.Step step = FlyDoubleTapSprint.tick(dungeontrain$flySprintTimer,
+                dungeontrain$wasForward, input.hasForwardImpulse(), flying, canStartSprinting());
         dungeontrain$flySprintTimer = step.timer();
         if (step.sprint()) self.setSprinting(true);
     }

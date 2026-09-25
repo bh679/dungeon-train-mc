@@ -23,12 +23,14 @@ public final class FlyDoubleTapSprint {
      * @param timer      ticks left in the window from last tick (0 = not armed)
      * @param wasForward forward held before this tick's input update
      * @param isForward  forward held after it
-     * @param eligible   flying, not riding, not already sprinting, and allowed to start sprinting
+     * @param flying     flying, not riding, not already sprinting — losing this clears the window
+     * @param canStart   vanilla {@code canStartSprinting()}; only consulted on a fresh press, because
+     *                   it also requires forward impulse and so is false on the release between taps
      */
-    public static Step tick(int timer, boolean wasForward, boolean isForward, boolean eligible) {
-        if (!eligible) return new Step(0, false);
+    public static Step tick(int timer, boolean wasForward, boolean isForward, boolean flying, boolean canStart) {
+        if (!flying) return new Step(0, false);
         int remaining = Math.max(0, timer - 1);
-        if (wasForward || !isForward) return new Step(remaining, false);
+        if (wasForward || !isForward || !canStart) return new Step(remaining, false);
         return remaining > 0 ? new Step(0, true) : new Step(WINDOW_TICKS, false);
     }
 }
