@@ -13,6 +13,16 @@
       "minLevel": 5
     },
     {
+      "id": "chunk_dimension_wwoo",
+      "weight": 6,
+      "minLevel": 2
+    },
+    {
+      "id": "chunk_dimension_bop",
+      "weight": 6,
+      "minLevel": 2
+    },
+    {
       "id": "superflat",
       "weight": 1
     }

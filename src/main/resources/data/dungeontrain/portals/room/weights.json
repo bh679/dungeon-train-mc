@@ -59,6 +59,10 @@
     "weight": 1,
     "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9"
   },
+  "chunk_dimension_bop": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9"
+  },
   "chunk_dimension_end": {
     "weight": 1,
     "mode": "chunk_dimension/exact/off/off/off/end/sealed/0/9"
@@ -66,6 +70,10 @@
   "chunk_dimension_nether": {
     "weight": 1,
     "mode": "chunk_dimension/exact/off/off/off/nether/sealed/0/9"
+  },
+  "chunk_dimension_wwoo": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9"
   },
   "cubes": {
     "weight": 1,

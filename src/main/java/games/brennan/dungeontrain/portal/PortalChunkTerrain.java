@@ -4,7 +4,10 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.OfflineChunkSampler;
+import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import net.minecraft.core.BlockPos;
@@ -25,6 +28,7 @@ import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.slf4j.Logger;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -127,6 +131,7 @@ public final class PortalChunkTerrain {
 
     private static final int SITE_X_SALT = 12;
     private static final int SITE_Z_SALT = 13;
+    private static final int SITE_RANGE_SALT = 14;
 
     /** How far apart consecutive attempts' salts sit, so the X and Z streams never collide. */
     private static final int SALT_STRIDE = 977;
@@ -140,20 +145,34 @@ public final class PortalChunkTerrain {
      * so nothing here has to know what a Nether room is lit like.</p>
      */
     public enum Source {
-        OVERWORLD(Level.OVERWORLD, "minecraft:stone"),
-        NETHER(Level.NETHER, "minecraft:netherrack"),
-        END(Level.END, "minecraft:end_stone");
+        OVERWORLD(Level.OVERWORLD, "minecraft:stone", SecondLapOverworld.Stretch.VANILLA),
+        /** The overworld as the overhauled-vanilla stretch dresses it — see {@link SecondLapOverworld}. */
+        OVERWORLD_WWOO(Level.OVERWORLD, "minecraft:stone", SecondLapOverworld.Stretch.WWOO),
+        /** The overworld as the added-biomes stretch dresses it — see {@link SecondLapOverworld}. */
+        OVERWORLD_BOP(Level.OVERWORLD, "minecraft:stone", SecondLapOverworld.Stretch.BOP),
+        NETHER(Level.NETHER, "minecraft:netherrack", null),
+        END(Level.END, "minecraft:end_stone", null);
 
         private final ResourceKey<Level> levelKey;
         private final String groundId;
+        private final SecondLapOverworld.Stretch stretch;
 
-        Source(ResourceKey<Level> levelKey, String groundId) {
+        Source(ResourceKey<Level> levelKey, String groundId, SecondLapOverworld.Stretch stretch) {
             this.levelKey = levelKey;
             this.groundId = groundId;
+            this.stretch = stretch;
         }
 
         public ResourceKey<Level> levelKey() {
             return levelKey;
+        }
+
+        /**
+         * Which overworld stretch this room's site must sit in — and so which look its terrain wears —
+         * or {@code null} for the Nether and End, which have no stretches.
+         */
+        public SecondLapOverworld.Stretch stretch() {
+            return stretch;
         }
 
         /**
@@ -166,8 +185,9 @@ public final class PortalChunkTerrain {
         }
 
         /**
-         * The dimension a portal room variant samples: {@link #NETHER} and {@link #END} for the two
-         * named sub-variants, {@link #OVERWORLD} for the parent and for anything unrecognised.
+         * The dimension a portal room variant samples: {@link #NETHER}, {@link #END},
+         * {@link #OVERWORLD_WWOO} and {@link #OVERWORLD_BOP} for the named sub-variants,
+         * {@link #OVERWORLD} for the parent and for anything unrecognised.
          *
          * <p>Total rather than throwing, for the reason every other reader of authored text in this
          * package is: the name comes off disk, and a room whose sidecar was hand-edited to something
@@ -178,6 +198,8 @@ public final class PortalChunkTerrain {
             String key = roomName.trim().toLowerCase(Locale.ROOT);
             if (key.endsWith(NETHER_SUFFIX)) return NETHER;
             if (key.endsWith(END_SUFFIX)) return END;
+            if (key.endsWith(WWOO_SUFFIX)) return OVERWORLD_WWOO;
+            if (key.endsWith(BOP_SUFFIX)) return OVERWORLD_BOP;
             return OVERWORLD;
         }
     }
@@ -187,6 +209,12 @@ public final class PortalChunkTerrain {
 
     /** What an End one's does. */
     private static final String END_SUFFIX = "_end";
+
+    /** What the overhauled-vanilla overworld variant's name ends with. */
+    private static final String WWOO_SUFFIX = "_wwoo";
+
+    /** What the added-biomes overworld variant's name ends with. */
+    private static final String BOP_SUFFIX = "_bop";
 
     // Sampled cubes by pair key, and the keys currently being sampled on a worker. Both static, both
     // dropped when the server stops (#clear, called from PortalCarriageEvents.onServerStopped) and
@@ -387,13 +415,16 @@ public final class PortalChunkTerrain {
         // a portal carriage used to wait ten seconds for its room.
         Sample best = null;
         int tried = 0;
+        SitePlan plan = SitePlan.of(level, source);
         for (int attempt = 0; attempt < SITE_ATTEMPTS; attempt++) {
-            ChunkPos site = siteFor(worldSeed, pairKey, attempt);
+            ChunkPos site = plan.site(worldSeed, pairKey, attempt);
             // Free, and it saves generating a chunk to find out: DT's own bands void whole stretches
             // of the overworld, and a sample that lands in one comes back empty however long it is
             // generated for. Asked before the work rather than after it — this used to be most of
-            // what a candidate cost.
-            if (voidedByBand(level, site)) continue;
+            // what a candidate cost. The stretch test is free too, and is what keeps the plain
+            // overworld room plain: a site in a band, a legacy era or a modded stretch would wear
+            // that look under the train wherever the room turned up.
+            if (voidedByBand(level, site) || !plan.accepts(site)) continue;
             tried++;
             Sample candidate = groundAt(level, noiseGenerator, random, site, source, minY, maxY);
             if (candidate == null) continue;
@@ -404,7 +435,8 @@ public final class PortalChunkTerrain {
             if (best == null || candidate.probes() > best.probes()) best = candidate;
         }
         if (best == null) return null;
-        LOGGER.debug("[DungeonTrain] Chunk dimension pair {} took {} generated site(s)", pairKey, tried);
+        LOGGER.debug("[DungeonTrain] Chunk dimension pair {} ({}) took {} generated site(s); site x={} z={}",
+            pairKey, source, tried, best.pos().getMinBlockX(), best.pos().getMinBlockZ());
 
         // Only the site that was kept pays for its caves.
         PortalChunkFeatures.carve(noiseGenerator, level, random, best.chunk(), best.workspace(),
@@ -603,6 +635,81 @@ public final class PortalChunkTerrain {
 
     private static boolean isVoidBelowLegacy(LegacyBandKind kind) {
         return kind != null && kind.voidBelow();
+    }
+
+    /**
+     * How a pair's candidate sites are chosen and judged for one source — the stretch it wants, the
+     * cycle that says where stretches are, and (for a modded stretch) the chunk-X ranges inside it.
+     *
+     * <p>The plain overworld room scatters its sites as it always did and turns away any outside
+     * vanilla overworld. A modded room is handed sites inside its own stretch, because a scattered
+     * one would almost never land there; in a world with no such stretch (its band switched off) it
+     * falls back to the plain room's sites rather than to an empty room.</p>
+     */
+    record SitePlan(WorldGenCycle cycle, SecondLapOverworld.Stretch stretch, List<int[]> ranges) {
+
+        static SitePlan of(ServerLevel level, Source source) {
+            if (source.stretch() == null || !level.dimension().equals(Level.OVERWORLD)) {
+                return new SitePlan(null, null, List.of());
+            }
+            WorldGenCycle cycle = liveCycle();
+            if (source.stretch() == SecondLapOverworld.Stretch.VANILLA) {
+                return new SitePlan(cycle, SecondLapOverworld.Stretch.VANILLA, List.of());
+            }
+            List<int[]> ranges = StretchSites.chunkRanges(cycle, source.stretch());
+            if (ranges.isEmpty()) {
+                LOGGER.debug("[DungeonTrain] No {} stretch in this world; {} samples plain overworld",
+                    source.stretch(), source);
+                return new SitePlan(cycle, SecondLapOverworld.Stretch.VANILLA, List.of());
+            }
+            return new SitePlan(cycle, source.stretch(), ranges);
+        }
+
+        ChunkPos site(long worldSeed, int pairKey, int attempt) {
+            ChunkPos scattered = siteFor(worldSeed, pairKey, attempt);
+            if (ranges.isEmpty()) return scattered;
+            int chunkX = StretchSites.chunkXIn(ranges,
+                hash01(worldSeed, pairKey, SITE_RANGE_SALT + attempt * SALT_STRIDE),
+                hash01(worldSeed, pairKey, SITE_X_SALT + attempt * SALT_STRIDE));
+            return new ChunkPos(chunkX, scattered.z);
+        }
+
+        boolean accepts(ChunkPos site) {
+            if (stretch == null) return true;
+            try {
+                return StretchSites.matches(cycle, stretch, site.getMinBlockX());
+            } catch (Throwable t) {
+                // Like voidedByBand: the cycle is the train's business, and a site it cannot place is
+                // judged the ordinary way rather than lost.
+                return true;
+            }
+        }
+    }
+
+    /** The cycle live world generation is using — the band context's, else the config's. */
+    static WorldGenCycle liveCycle() {
+        NetherBandContext ctx = NetherBandContext.current();
+        if (ctx != null && ctx.cycle() != null) return ctx.cycle();
+        return WorldGenCycle.fromConfig();
+    }
+
+    /**
+     * The chunk a pair would sample for {@code source}, judged by site alone — no generation, so it
+     * is the first candidate that passes the free tests, not necessarily the one a room ends up
+     * showing. For {@code /dungeontrain debug portal-sites}. {@code null} when every attempt failed.
+     */
+    public static ChunkPos firstAcceptedSite(ServerLevel level, Source source, long worldSeed, int pairKey) {
+        SitePlan plan = SitePlan.of(level, source);
+        for (int attempt = 0; attempt < SITE_ATTEMPTS; attempt++) {
+            ChunkPos site = plan.site(worldSeed, pairKey, attempt);
+            if (!voidedByBand(level, site) && plan.accepts(site)) return site;
+        }
+        return null;
+    }
+
+    /** The chunk the scattered sites start from — where a pair's search began before stretches counted. */
+    public static ChunkPos firstScatteredSite(long worldSeed, int pairKey) {
+        return siteFor(worldSeed, pairKey, 0);
     }
 
     /**
