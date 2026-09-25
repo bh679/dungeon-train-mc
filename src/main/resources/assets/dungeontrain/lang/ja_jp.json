@@ -3435,6 +3435,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "1行あたりのタイル数。左クリックで多く・小さく、右クリックまたはShift+クリックで少なく・大きく。",
   "key.dungeontrain.editor_undo": "エディター: 元に戻す (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "エディター: やり直す (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "エディター: テスト車両を再抽選 (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "オープニング映像を再生（スペクテイターのみ）",
   "key.dungeontrain.container_contents": "コンテナの中身メニューを開く（エディター）",
   "key.dungeontrain.manual_spawn": "次の車両を生成（手動生成モード）",

@@ -3409,6 +3409,7 @@
       "gui.dungeontrain.builder.open.tiles_per_row.tooltip",
       "key.dungeontrain.editor_undo",
       "key.dungeontrain.editor_redo",
+      "key.dungeontrain.editor_reseed",
       "key.dungeontrain.cinematographer_cinematic",
       "key.dungeontrain.container_contents",
       "key.dungeontrain.manual_spawn",

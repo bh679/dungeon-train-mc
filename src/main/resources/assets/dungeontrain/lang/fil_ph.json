@@ -3435,6 +3435,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "Mga tile bawat hanay. Left-click para mas marami at mas maliliit na tile; right-click o Shift+click para mas kaunti at mas malalaki.",
   "key.dungeontrain.editor_undo": "Editor: I-undo (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "Editor: I-redo (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "Editor: I-reseed ang Test na Bagon (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "I-replay ang Panimulang Cinematic (spectator lang)",
   "key.dungeontrain.container_contents": "Buksan ang Container Contents Menu (editor)",
   "key.dungeontrain.manual_spawn": "Isibol ang Susunod na Bagon (manual spawn mode)",

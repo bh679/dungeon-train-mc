@@ -3435,6 +3435,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "Ubin per baris. Klik kiri untuk lebih banyak ubin yang lebih kecil; klik kanan atau Shift+klik untuk lebih sedikit yang lebih besar.",
   "key.dungeontrain.editor_undo": "Editor: Urungkan (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "Editor: Ulangi (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "Editor: Acak Ulang Gerbong Uji (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "Putar Ulang Sinematik Pembuka (hanya mode penonton)",
   "key.dungeontrain.container_contents": "Buka Menu Isi Wadah (editor)",
   "key.dungeontrain.manual_spawn": "Munculkan Gerbong Berikutnya (mode munculkan manual)",

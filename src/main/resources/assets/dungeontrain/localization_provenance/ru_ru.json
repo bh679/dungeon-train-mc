@@ -2582,6 +2582,7 @@
       "gui.dungeontrain.builder.open.portal_mode.endless_open",
       "gui.dungeontrain.builder.open.portal_mode.endless_repetition",
       "gui.dungeontrain.builder.open.tiles_per_row.tooltip",
+      "key.dungeontrain.editor_reseed",
       "gui.dungeontrain.translate.group",
       "gui.dungeontrain.translate.group.tip",
       "gui.dungeontrain.translate.group.close",

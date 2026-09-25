@@ -3435,6 +3435,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "จำนวนช่องต่อแถว คลิกซ้ายเพื่อให้มากขึ้นและเล็กลง คลิกขวาหรือ Shift+คลิกเพื่อให้น้อยลงและใหญ่ขึ้น",
   "key.dungeontrain.editor_undo": "ตัวแก้ไข: เลิกทำ (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "ตัวแก้ไข: ทำซ้ำ (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "ตัวแก้ไข: สุ่มตู้ทดสอบใหม่ (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "เล่นฉากเปิดเรื่องซ้ำ (เฉพาะโหมดผู้ชม)",
   "key.dungeontrain.container_contents": "เปิดเมนูเนื้อหาภาชนะ (ตัวแก้ไข)",
   "key.dungeontrain.manual_spawn": "เรียกตู้ถัดไป (โหมดเรียกด้วยตนเอง)",

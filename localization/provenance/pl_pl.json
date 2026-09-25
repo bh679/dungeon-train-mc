@@ -3521,6 +3521,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "ffbd10742b7a94e0"},
   "key.dungeontrain.editor_undo": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "270335ee8c7e03ab"},
   "key.dungeontrain.editor_redo": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "975105206335224b"},
+  "key.dungeontrain.editor_reseed": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "2ed815e521be1f95"},
   "key.dungeontrain.cinematographer_cinematic": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "f7a6e98e3ff39346"},
   "key.dungeontrain.container_contents": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "6458bc10a6d6bb86"},
   "key.dungeontrain.manual_spawn": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "cf2d8cbcda5a25e0"},

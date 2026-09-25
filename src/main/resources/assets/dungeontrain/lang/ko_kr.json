@@ -3435,6 +3435,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "한 줄당 타일 수. 좌클릭하면 더 많고 작은 타일, 우클릭 또는 Shift+클릭하면 더 적고 큰 타일.",
   "key.dungeontrain.editor_undo": "편집기: 실행 취소 (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "편집기: 다시 실행 (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "편집기: 테스트 객차 재추첨 (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "인트로 시네마틱 다시 보기 (관전자 전용)",
   "key.dungeontrain.container_contents": "컨테이너 내용물 메뉴 열기 (에디터)",
   "key.dungeontrain.manual_spawn": "다음 객차 생성 (수동 생성 모드)",

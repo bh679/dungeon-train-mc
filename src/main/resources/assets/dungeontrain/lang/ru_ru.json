@@ -3521,6 +3521,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "Плиток в ряду. ЛКМ — больше плиток, мельче; ПКМ или Shift+клик — меньше, крупнее.",
   "key.dungeontrain.editor_undo": "Редактор: отменить (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "Редактор: Повторить (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "Редактор: Перебросить тестовый вагон (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "Повторить вступительный ролик (только в спектаторе)",
   "key.dungeontrain.container_contents": "Открыть меню контента контейнера (редактор)",
   "key.dungeontrain.manual_spawn": "Заспавнить следующий вагон (ручной режим)",

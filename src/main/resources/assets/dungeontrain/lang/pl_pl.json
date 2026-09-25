@@ -3521,6 +3521,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "Kafelki w rzędzie. LPM — więcej, mniejszych kafelków; PPM lub Shift+klik — mniej, większych.",
   "key.dungeontrain.editor_undo": "Edytor: cofnij (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "Edytor: ponów (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "Edytor: losuj ponownie testowy wagon (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "Odtwórz ponownie intro (tylko obserwator)",
   "key.dungeontrain.container_contents": "Otwórz menu zawartości pojemnika (edytor)",
   "key.dungeontrain.manual_spawn": "Przywołaj następny wagon (tryb ręcznego przywoływania)",

@@ -3478,6 +3478,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "Tuiles par rangée. Clic gauche pour plus de tuiles, plus petites ; clic droit ou Maj+clic pour moins de tuiles, plus grandes.",
   "key.dungeontrain.editor_undo": "Éditeur : annuler (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "Éditeur : rétablir (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "Éditeur : regénérer le wagon de test (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "Rejouer la cinématique d'intro (spectateur uniquement)",
   "key.dungeontrain.container_contents": "Ouvrir le menu du contenu des conteneurs (éditeur)",
   "key.dungeontrain.manual_spawn": "Faire apparaître le wagon suivant (mode manuel)",

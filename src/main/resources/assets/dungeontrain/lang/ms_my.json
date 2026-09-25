@@ -3435,6 +3435,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "Jubin setiap baris. Klik kiri untuk lebih banyak jubin yang lebih kecil; klik kanan atau Shift+klik untuk lebih sedikit yang lebih besar.",
   "key.dungeontrain.editor_undo": "Penyunting: Buat asal (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "Penyunting: Buat semula (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "Penyunting: Rawak Semula Gerabak Ujian (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "Ulang Tayang Sinematik Pembuka (penonton sahaja)",
   "key.dungeontrain.container_contents": "Buka Menu Isi Bekas (editor)",
   "key.dungeontrain.manual_spawn": "Jelmakan Gerabak Seterusnya (mod jelma manual)",

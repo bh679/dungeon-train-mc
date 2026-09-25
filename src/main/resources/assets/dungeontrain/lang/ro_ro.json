@@ -1811,6 +1811,7 @@
   "key.dungeontrain.template_blocks": "Deschide meniul blocurilor șablon (sau /dungeontrain editor blocks)",
   "key.dungeontrain.editor_undo": "Editor: Anulează (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "Editor: Refă (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "Editor: Regenerează vagonul de test (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "Reia cinematicul de intro (doar spectator)",
   "key.dungeontrain.container_contents": "Deschide meniul conținutului containerelor (editor)",
   "key.dungeontrain.manual_spawn": "Generează vagonul următor (mod manual)",
