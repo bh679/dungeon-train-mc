@@ -8,7 +8,8 @@ import games.brennan.dungeontrain.net.EditorUnsavedRequestPacket;
 import java.util.List;
 
 /**
- * Save prompt in front of {@code /dungeontrain portal test} — the Nav tab's "Test the Carriage".
+ * Save prompt in front of Test the Carriage — {@code /dungeontrain portal test} for a dimensional
+ * carriage, {@code /dungeontrain editor test} for a carriage or contents template.
  *
  * <p>The test stamps the room from the <b>saved</b> template
  * ({@code PortalCarriageBuilder.stampPairStructure} reads
@@ -27,13 +28,11 @@ import java.util.List;
  */
 public final class PortalTestSaveCheckScreen implements MenuScreen {
 
-    /** The command the whole screen exists to gate. */
+    /** The command the whole screen exists to gate, for a dimensional carriage. */
     private static final String TEST_COMMAND = "dungeontrain portal test";
 
-    /** That command for one named room — the author need not be standing in it. */
-    private String testCommand() {
-        return roomName.isEmpty() ? TEST_COMMAND : TEST_COMMAND + " " + roomName;
-    }
+    /** The same for a carriage or contents template — {@code CarriageTestCommand}. */
+    private static final String TEMPLATE_TEST_COMMAND = "dungeontrain editor test";
 
     /**
      * Position-resolved save, the same one the File tab's Save row runs. The player is standing in
@@ -42,13 +41,38 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
      */
     private static final String SAVE_COMMAND = "dungeontrain save";
 
-    private final String roomName;
+    /** The editor category and model key {@link EditorDirtyCheck} publishes for this template. */
+    private final String categoryId;
+    private final String dirtyKey;
+    /** The test command, naming the template — the author need not be standing in it. */
+    private final String testCommand;
     private boolean requestSent = false;
     private boolean bypassDispatched = false;
 
+    /** Test a dimensional carriage. */
     public PortalTestSaveCheckScreen(String roomName) {
-        this.roomName = roomName == null ? "" : roomName;
+        this("portals", roomName == null || roomName.isEmpty() ? "" : dirtyKey(roomName),
+            roomName == null || roomName.isEmpty() ? TEST_COMMAND : TEST_COMMAND + " " + roomName);
     }
+
+    private PortalTestSaveCheckScreen(String categoryId, String dirtyKey, String testCommand) {
+        this.categoryId = categoryId;
+        this.dirtyKey = dirtyKey;
+        this.testCommand = testCommand;
+    }
+
+    /**
+     * Test a carriage or contents template. The category id is the editor's ({@code carriages} /
+     * {@code contents}), which is also the command literal and the dirty scan's category, and both
+     * scans key a template's row on its bare id.
+     */
+    public static PortalTestSaveCheckScreen forTemplate(String categoryId, String id) {
+        return new PortalTestSaveCheckScreen(categoryId, id,
+            TEMPLATE_TEST_COMMAND + " " + categoryId + " " + id);
+    }
+
+    /** The command this screen dispatches — visible for testing. */
+    public String testCommand() { return testCommand; }
 
     @Override public String title() { return MenuLang.t("portal_test.title"); }
 
@@ -67,12 +91,12 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
             return List.of(new CommandMenuEntry.Loading(MenuLang.t("unsaved.checking")));
         }
 
-        if (!isDirty(rows, roomName)) {
+        if (!isDirty(rows, categoryId, dirtyKey)) {
             // Clean: go straight in. Dispatching from inside entries() is safe — CommandRunner
             // posts to the chat queue — and the guard keeps it to one dispatch per screen.
             if (!bypassDispatched) {
                 bypassDispatched = true;
-                CommandRunner.run(testCommand());
+                CommandRunner.run(testCommand);
                 CommandMenuState.close();
             }
             return List.of(new CommandMenuEntry.Loading(MenuLang.t("portal_test.testing")));
@@ -81,11 +105,11 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
         return List.of(
             new CommandMenuEntry.ClientAction(MenuLang.t("portal_test.save_and_test"), () -> {
                 CommandRunner.run(SAVE_COMMAND);
-                CommandRunner.run(testCommand());
+                CommandRunner.run(testCommand);
                 CommandMenuState.close();
             }, true),
             new CommandMenuEntry.ClientAction(MenuLang.t("portal_test.test_without_saving"), () -> {
-                CommandRunner.run(testCommand());
+                CommandRunner.run(testCommand);
                 CommandMenuState.close();
             }),
             new CommandMenuEntry.Back(MenuLang.t("common.back")));
@@ -102,10 +126,15 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
 
     /** True iff {@code rows} carries an unsaved row for this room's plot. */
     static boolean isDirty(List<EditorDirtyCheck.DirtyEntry> rows, String roomName) {
-        if (rows == null || roomName == null || roomName.isEmpty()) return false;
-        String key = dirtyKey(roomName);
+        if (roomName == null || roomName.isEmpty()) return false;
+        return isDirty(rows, "portals", dirtyKey(roomName));
+    }
+
+    /** True iff {@code rows} carries an unsaved row for {@code (categoryId, key)}. */
+    static boolean isDirty(List<EditorDirtyCheck.DirtyEntry> rows, String categoryId, String key) {
+        if (rows == null || key == null || key.isEmpty()) return false;
         for (EditorDirtyCheck.DirtyEntry r : rows) {
-            if (r.isUnsaved() && "portals".equals(r.categoryId()) && key.equals(r.modelId())) {
+            if (r.isUnsaved() && categoryId.equals(r.categoryId()) && key.equals(r.modelId())) {
                 return true;
             }
         }

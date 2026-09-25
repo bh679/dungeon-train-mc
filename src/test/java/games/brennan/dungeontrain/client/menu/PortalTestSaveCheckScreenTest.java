@@ -60,6 +60,31 @@ final class PortalTestSaveCheckScreenTest {
     }
 
     @Test
+    @DisplayName("A carriage or contents template matches its own scan row, keyed on the bare id")
+    void isDirty_templateRows() {
+        EditorDirtyCheck.DirtyEntry carriage =
+            new EditorDirtyCheck.DirtyEntry("carriages", "pen", "pen", true, false);
+        EditorDirtyCheck.DirtyEntry contents =
+            new EditorDirtyCheck.DirtyEntry("contents", "pen", "pen", true, false);
+        assertTrue(PortalTestSaveCheckScreen.isDirty(List.of(carriage), "carriages", "pen"));
+        assertTrue(PortalTestSaveCheckScreen.isDirty(List.of(contents), "contents", "pen"));
+        // Same id in the other category is a different template.
+        assertFalse(PortalTestSaveCheckScreen.isDirty(List.of(contents), "carriages", "pen"));
+        assertFalse(PortalTestSaveCheckScreen.isDirty(List.of(carriage), "carriages", "other"));
+    }
+
+    @Test
+    @DisplayName("Each kind of test dispatches its own command")
+    void testCommand_perKind() {
+        assertEquals("dungeontrain portal test crypt_hall",
+            new PortalTestSaveCheckScreen("crypt_hall").testCommand());
+        assertEquals("dungeontrain editor test carriages pen",
+            PortalTestSaveCheckScreen.forTemplate("carriages", "pen").testCommand());
+        assertEquals("dungeontrain editor test contents library",
+            PortalTestSaveCheckScreen.forTemplate("contents", "library").testCommand());
+    }
+
+    @Test
     @DisplayName("An empty list, and a plot with no room name, both read clean")
     void isDirty_cleanCases() {
         assertFalse(PortalTestSaveCheckScreen.isDirty(List.of(), "crypt_hall"));

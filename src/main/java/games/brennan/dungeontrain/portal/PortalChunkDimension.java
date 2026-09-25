@@ -144,7 +144,7 @@ public final class PortalChunkDimension {
                     // of a room differs from the first only where something grew, so all but a
                     // handful of these cells are already the block being written.
                     if (level.getBlockState(cursor) == state) continue;
-                    level.setBlock(cursor, state, Block.UPDATE_ALL);
+                    replaceQuietly(level, cursor, state);
                     applyBlockEntity(level, cursor, slice.blockEntityAt(x, y + shift, z));
                 }
             }
@@ -152,6 +152,66 @@ public final class PortalChunkDimension {
 
         openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.ENTRY);
         openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.EXIT);
+
+        if (slice.source().levelKey().equals(net.minecraft.world.level.Level.OVERWORLD)) {
+            paintBiomes(level, origin, size, shift, slice);
+        }
+    }
+
+    /**
+     * Give the room the sampled chunk's biomes, so it is tinted as the place it was cut from.
+     *
+     * <p>Grass, leaves and water take their colour from the biome of the cell they stand in, and the
+     * cells a room is stamped into belong to the world it is stamped into — an editor world's plains,
+     * or whatever the live world has down there. So a BoP redwood forest came out plains green. The
+     * room's interior is painted with the sample's own biomes, the way {@code /fillbiome} does it,
+     * and the chunks are resent so a player already standing there sees it change.</p>
+     *
+     * <p>Overworld rooms only. A Nether or End room is lit and fogged by the sky its variant
+     * authors, and a Nether biome in a sealed dark room would also bring the Nether's spawns with it.
+     * A room shares a quart (4×4×4) with whatever is beside its walls, so a biome edge can reach a
+     * block past them — the price of painting at the grain biomes are stored at.</p>
+     */
+    private static void paintBiomes(ServerLevel level, BlockPos origin, Vec3i size, int shift,
+                                    PortalChunkSlice slice) {
+        int minX = origin.getX() + 1;
+        int minY = origin.getY() + 1;
+        int minZ = origin.getZ() + 1;
+        int maxX = origin.getX() + size.getX() - 2;
+        int maxY = origin.getY() + size.getY() - 2;
+        int maxZ = origin.getZ() + size.getZ() - 2;
+        java.util.List<net.minecraft.world.level.chunk.ChunkAccess> changed = new java.util.ArrayList<>();
+        net.minecraft.world.level.biome.Climate.Sampler sampler =
+            level.getChunkSource().randomState().sampler();
+        for (int cx = minX >> 4; cx <= maxX >> 4; cx++) {
+            for (int cz = minZ >> 4; cz <= maxZ >> 4; cz++) {
+                net.minecraft.world.level.chunk.LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
+                if (chunk == null) continue;
+                boolean[] touched = {false};
+                chunk.fillBiomesFromNoise((qx, qy, qz, s) -> {
+                    net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> here =
+                        chunk.getNoiseBiome(qx, qy, qz);
+                    int bx = net.minecraft.core.QuartPos.toBlock(qx);
+                    int by = net.minecraft.core.QuartPos.toBlock(qy);
+                    int bz = net.minecraft.core.QuartPos.toBlock(qz);
+                    // A quart counts when its middle is inside the room's interior.
+                    int mx = bx + 2, my = by + 2, mz = bz + 2;
+                    if (mx < minX || mx > maxX || my < minY || my > maxY || mz < minZ || mz > maxZ) {
+                        return here;
+                    }
+                    net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> sampled =
+                        slice.biomeAt(mx - origin.getX(), my - origin.getY() + shift, mz - origin.getZ());
+                    if (sampled == null || sampled.equals(here)) return here;
+                    touched[0] = true;
+                    return sampled;
+                }, sampler);
+                if (touched[0]) {
+                    chunk.setUnsaved(true);
+                    changed.add(chunk);
+                }
+            }
+        }
+        if (!changed.isEmpty()) level.getChunkSource().chunkMap.resendBiomesForChunks(changed);
     }
 
     /**
@@ -253,12 +313,44 @@ public final class PortalChunkDimension {
 
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int dy = 1; dy <= DOOR_HEIGHT; dy++) {
-            cursor.set(x, floorY + dy, z);
-            if (mask.covers(cursor)) continue;
-            if (!level.getBlockState(cursor).isAir()) level.setBlock(cursor, air, Block.UPDATE_ALL);
+        // Then on inward, for as long as the walkway is still rock: a doorway whose mouth the sample
+        // buried — a Nether cave whose floor is further in than the end face — is dug through to the
+        // open cave rather than left as a door onto a wall. Where the terrain is already open, which
+        // is every hillside and most caves, the next column is clear and this stops at the door.
+        int step = entry ? 1 : -1;
+        int deepest = size.getX() / 2;
+        for (int depth = 0; depth <= deepest; depth++) {
+            int cx = x + depth * step;
+            if (depth > 0 && walkwayOpen(level, cursor, cx, floorY, z)) break;
+            for (int dy = 1; dy <= DOOR_HEIGHT; dy++) {
+                cursor.set(cx, floorY + dy, z);
+                if (mask.covers(cursor)) continue;
+                if (!level.getBlockState(cursor).isAir()) replaceQuietly(level, cursor, air);
+            }
         }
+    }
 
+    /**
+     * Overwrite one cell of the room without spilling what was in it.
+     *
+     * <p>A sampled structure's chest carries its loot table unrolled, and replacing a container rolls
+     * it and drops the lot on the floor: a ruined portal's chest standing in a doorway came out as a
+     * pile of gold nuggets and flint and steel in front of the door. Taking the block entity away
+     * first leaves nothing to roll. The room is being rewritten from the sample, so whatever the
+     * chest held belongs to the chunk being replaced, not to the player.</p>
+     */
+    private static void replaceQuietly(ServerLevel level, BlockPos pos, BlockState state) {
+        if (level.getBlockState(pos).hasBlockEntity()) level.removeBlockEntity(pos);
+        level.setBlock(pos, state, Block.UPDATE_ALL);
+    }
+
+    /** Whether a player could already stand in the walkway at {@code cx}: its door cells are open. */
+    private static boolean walkwayOpen(ServerLevel level, BlockPos.MutableBlockPos cursor, int cx,
+                                       int floorY, int z) {
+        for (int dy = 1; dy <= DOOR_HEIGHT; dy++) {
+            if (level.getBlockState(cursor.set(cx, floorY + dy, z)).blocksMotion()) return false;
+        }
+        return true;
     }
 
     /**

@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.portal;
 
+import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.List;
@@ -31,6 +33,12 @@ public final class PortalChunkSlice {
     private final List<Occupant> occupants;
 
     /**
+     * The sampled chunk's biomes over the cut, one per quart (4×4×4 cells) — what the room is
+     * painted with so its grass, leaves and water are tinted as the sample was. Null when unknown.
+     */
+    private final Holder<Biome>[] biomes;
+
+    /**
      * One entity the sample was generated with, and where it stood in the column — room-local, so a
      * room spawns it at the same place in its own terrain that it stood in the world's.
      */
@@ -38,6 +46,13 @@ public final class PortalChunkSlice {
 
     PortalChunkSlice(PortalChunkTerrain.Source source, int width, int height, BlockState[] states,
                      Map<Integer, CompoundTag> blockEntities, List<Occupant> occupants) {
+        this(source, width, height, states, blockEntities, occupants, null);
+    }
+
+    PortalChunkSlice(PortalChunkTerrain.Source source, int width, int height, BlockState[] states,
+                     Map<Integer, CompoundTag> blockEntities, List<Occupant> occupants,
+                     Holder<Biome>[] biomes) {
+        this.biomes = biomes;
         this.source = source;
         this.width = width;
         this.height = height;
@@ -56,6 +71,18 @@ public final class PortalChunkSlice {
      */
     public List<Occupant> occupants() {
         return occupants;
+    }
+
+    /** Quarts across the footprint. */
+    static int quarts(int blocks) {
+        return (blocks + 3) >> 2;
+    }
+
+    /** The sampled biome over a room-local cell, or null when outside the cut or not sampled. */
+    public Holder<Biome> biomeAt(int x, int y, int z) {
+        if (biomes == null || !inside(x, y, z)) return null;
+        int qw = quarts(width);
+        return biomes[((y >> 2) * qw + (z >> 2)) * qw + (x >> 2)];
     }
 
     /** Which dimension's generator this was sampled from. */

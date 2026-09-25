@@ -18998,6 +18998,51 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriages-open-onto-their-worlds",
+      "version": "0.959.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Dimensional carriages open onto their worlds",
+      "summary": "Stepping through a dimensional carriage now brings you out onto the ground of the place it was cut from, not into its rock, and the scenery it borrows grows its own plants and wears its own colours.",
+      "highlights": [
+        "Doorways in the darker, deeper carriages open onto the cave floor.",
+        "Borrowed scenery has its own plants, ground and colours.",
+        "In the editor, Test the Carriage works for these carriages in one press, and Reseed rolls fresh ground."
+      ],
+      "pr": 1552,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "test-carriage-contents-templates",
+      "version": "0.959.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Test the Carriage works for every carriage and interior",
+      "summary": "Test the Carriage used to work only for dimensional carriages. Now you can press it on any carriage or contents template in the editor and stand inside a full copy of it, rolled the way the train rolls one \u2014 block variants, loot, mobs and all. A carriage is tested with the contents it's allowed to carry, and a contents template is tested inside a carriage that actually has it enabled, so you see exactly what a player would meet. Reseed rolls it again; Exit Test takes you back.",
+      "highlights": [
+        "Test the Carriage on any carriage or contents template, not just dimensional carriages",
+        "Contents are tested inside a carriage that has them enabled, picked the way the train picks",
+        "Portal corridors and their contents can be tested like any other carriage",
+        "Hostile mobs in the build spawn during a test, so you can check them",
+        "Contents plots in the editor now stand in a carriage that has those contents enabled"
+      ],
+      "pr": 1553,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

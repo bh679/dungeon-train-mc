@@ -271,7 +271,7 @@ final class EditorScreenActionsTest {
     }
 
     @Test
-    @DisplayName("Test the Carriage is offered for any selected dimension room, wherever the author stands")
+    @DisplayName("Test the Carriage is offered for dimensions, carriages and contents, wherever the author stands")
     void testCarriage() {
         VariantKey room = VariantKey.of(PlotCategory.PORTALS, "portal_room", "house");
         EditorTypeMenusPacket.Variant v = gated("PORTALS", "portal_room", "house", 1, List.of());
@@ -287,9 +287,23 @@ final class EditorScreenActionsTest {
         CommandMenuEntry nowhere = EditorScreenActions.testEntry(ctx(room, v, null, PlotCategory.PORTALS));
         assertInstanceOf(PortalTestSaveCheckScreen.class, ((CommandMenuEntry.DrillIn) nowhere).target());
 
-        // Still dimensions only — nothing else has a room to stand up.
+        // Carriages and contents can be stood up too, each by its own test command.
         VariantKey carriage = VariantKey.of(PlotCategory.CARRIAGES, "pen", "pen");
-        assertNull(EditorScreenActions.testEntry(ctx(carriage, gated("CARRIAGES", "pen", "pen", 1, List.of()), carriage, PlotCategory.CARRIAGES)));
+        CommandMenuEntry carriageTest = EditorScreenActions.testEntry(
+            ctx(carriage, gated("CARRIAGES", "pen", "pen", 1, List.of()), carriage, PlotCategory.CARRIAGES));
+        PortalTestSaveCheckScreen carriageCheck = assertInstanceOf(PortalTestSaveCheckScreen.class,
+            ((CommandMenuEntry.DrillIn) carriageTest).target());
+        assertEquals("dungeontrain editor test carriages pen", carriageCheck.testCommand());
+        VariantKey contents = VariantKey.of(PlotCategory.CONTENTS, "library", "library");
+        CommandMenuEntry contentsTest = EditorScreenActions.testEntry(
+            ctx(contents, gated("CONTENTS", "library", "library", 1, List.of()), contents, PlotCategory.CONTENTS));
+        PortalTestSaveCheckScreen contentsCheck = assertInstanceOf(PortalTestSaveCheckScreen.class,
+            ((CommandMenuEntry.DrillIn) contentsTest).target());
+        assertEquals("dungeontrain editor test contents library", contentsCheck.testCommand());
+
+        // A part or a track tile is only ever a piece of something — nothing to stand up.
+        VariantKey part = VariantKey.of(PlotCategory.PARTS, "floor", "oak");
+        assertNull(EditorScreenActions.testEntry(ctx(part, gated("PARTS", "floor", "oak", 1, List.of()), part, PlotCategory.CARRIAGES)));
         assertNull(EditorScreenActions.testEntry(ctx(null, null, null, null)));
     }
 
