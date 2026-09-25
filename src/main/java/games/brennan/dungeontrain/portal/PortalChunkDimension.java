@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.portal.chunkparts.ChunkPartKind;
+import games.brennan.dungeontrain.portal.chunkparts.ChunkPartPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -87,7 +89,7 @@ public final class PortalChunkDimension {
                 PortalChunkTerrain.decorationApplied(pairKey);
                 continue;
             }
-            write(level, structure, dims, slice);
+            write(level, structure, dims, slice, pairKey);
             spawnOccupants(level, structure, dims, slice, pairKey);
             PortalChunkTerrain.decorationApplied(pairKey);
         }
@@ -104,13 +106,30 @@ public final class PortalChunkDimension {
                             int pairKey) {
         PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, structure.roomName());
         if (slice == null) return;
-        write(level, structure, dims, slice);
+        write(level, structure, dims, slice, pairKey);
+    }
+
+    /**
+     * Frame {@code structure}'s room in the chunk parts its {@code .parts.json} names, when it names
+     * any — see {@link ChunkPartPlacer}. A room with no frame, or one that is not a chunk box, is left
+     * in its lock skin.
+     */
+    public static void frame(ServerLevel level, PortalStructure structure, CarriageDims dims, int pairKey) {
+        if (!structure.roomSize().equals(ChunkPartKind.ROOM_SIZE)) return;
+        ChunkPartPlacer.Frame frame = ChunkPartPlacer.frameFor(level, structure.roomName(), pairKey);
+        if (frame == null) return;
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+        // Without the seal planes: the door part IS the seal, so it may write the mouth's plane, and
+        // only the corridor and its plug are kept — which is what cuts the doorway through the part.
+        ChunkPartPlacer.place(level, frame, structure.roomOrigin(dims, layout),
+            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false),
+            PortalCarriageBuilder.lockStateFor(structure));
     }
 
     // ---- writing -------------------------------------------------------------
 
     private static void write(ServerLevel level, PortalStructure structure, CarriageDims dims,
-                              PortalChunkSlice slice) {
+                              PortalChunkSlice slice, int pairKey) {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.roomOrigin(dims, layout);
         Vec3i size = structure.roomSize();
@@ -149,6 +168,10 @@ public final class PortalChunkDimension {
                 }
             }
         }
+
+        // Before the doorways: the frame's inner layer is written over the terrain's edge row, and
+        // a rewrite of the terrain (the decoration pass) would otherwise bury it.
+        frame(level, structure, dims, pairKey);
 
         openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.ENTRY);
         openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.EXIT);

@@ -156,7 +156,7 @@ public final class PortalCarriageBuilder {
      * Here air is a value an author can only reach by emptying their hand on the row, and it means
      * exactly what it says — no shell at all. See {@link PortalRoomLock}.</p>
      */
-    private static BlockState lockStateFor(PortalStructure structure) {
+    static BlockState lockStateFor(PortalStructure structure) {
         PortalRoomLock lock = structure.lock();
         if (lock.isAir()) return Blocks.AIR.defaultBlockState();
         return PortalRoomSinglePlanes.stateFor(lock.blockId()).orElse(LOCK);
@@ -998,6 +998,12 @@ public final class PortalCarriageBuilder {
                 roomOrigin, roomSize, lock);
             bedrockSkinCorridor(level, structure.exitOrigin(dims), dims, layout,
                 PortalCarriageRole.EXIT, roomOrigin, roomSize, lock);
+        }
+
+        // Last of all: a framed chunk dimension's outer layer stands where the skin, the mouth seals
+        // and the corridor rings were just laid, and replaces them — see ChunkPartPlacer.
+        if (structure.mode().generatesTerrain()) {
+            PortalChunkDimension.frame(level, structure, dims, pairKey);
         }
     }
 

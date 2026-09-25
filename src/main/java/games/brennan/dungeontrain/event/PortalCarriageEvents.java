@@ -682,6 +682,11 @@ public final class PortalCarriageEvents {
         // not inherit them.
         games.brennan.dungeontrain.portal.PortalChunkTerrain.clear();
         games.brennan.dungeontrain.portal.PortalChunkDimension.clear();
+        // Chunk room frames: the parts and room assignments are re-read from disk by the next world,
+        // which may be another pack's or have had them edited.
+        games.brennan.dungeontrain.portal.chunkparts.ChunkPartStore.clearCache();
+        games.brennan.dungeontrain.portal.chunkparts.ChunkRoomPartsStore.clearCache();
+        games.brennan.dungeontrain.portal.chunkparts.ChunkPartPlacer.clear();
     }
 
     /**
