@@ -8,7 +8,7 @@ it keeps the shipped data in the canonical form and makes it editable per lap.
 
 Every `"phases": [ ... ]` array is rewritten in place (its layout and indentation are kept, entries
 come out in LapBand declaration order). Entries that are already LapBand names pass through; an
-unknown entry aborts. Keep FROM_LEGACY and ORDER in step with LapBand.java (LapBandLegacyTableTest
+unknown entry aborts. Keep FROM_LEGACY, DIRECT and ORDER in step with LapBand.java (LapBandTest
 asserts they match).
 
 Usage: python3 scripts/worldgen/migrate-lap-bands.py [--check] [root ...]
@@ -30,25 +30,33 @@ ORDER = [
 ]
 
 FROM_LEGACY = {
-    "OVERWORLD": ["V_OVERWORLD_1", "V_OVERWORLD_2", "V_REASSEMBLY", "M_OVERWORLD_1", "M_OVERWORLD_2",
-                  "M_OVERWORLD_3", "L_SUPERFLAT", "C_OVERWORLD_1", "C_OVERWORLD_2"],
+    "OVERWORLD": ["V_OVERWORLD_1", "V_OVERWORLD_2", "M_OVERWORLD_1", "M_OVERWORLD_2", "M_OVERWORLD_3",
+                  "C_OVERWORLD_1", "C_OVERWORLD_2"],
     "NETHER": ["V_NETHER", "M_NETHER"],
     "END": ["V_END", "M_END"],
-    "VOID": ["L_VOID"],
-    "UPSIDE_DOWN": ["V_UPSIDE_DOWN"],
-    "CHUNCKS": ["C_CHUNCKS"],
-    "SPHERES": ["M_SPHERES"],
-    "STACKS": ["C_STACKS"],
-    "BETA": ["L_BETA"],
-    "ALPHA": ["L_ALPHA"],
-    "SKYLANDS": ["L_SKYLANDS"],
-    "INFDEV": ["L_INFDEV"],
-    "FLOATING": ["L_FLOATING"],
-    "FAR_LANDS": ["L_FAR_LANDS"],
-    "CLASSIC": ["L_CLASSIC"],
-    "CAVES_OF_CHAOS": ["L_CAVES_OF_CHAOS"],
-    "LARGE_BIOMES": ["L_LARGE_BIOMES"],
-    "AMPLIFIED": ["L_AMPLIFIED"],
+    "VOID": [],
+    "UPSIDE_DOWN": ["V_UPSIDE_DOWN", "V_REASSEMBLY"],
+    "CHUNCKS": ["C_CHUNCKS", "L_LARGE_BIOMES", "L_AMPLIFIED", "L_BETA", "L_FAR_LANDS"],
+    "STACKS": ["C_STACKS", "L_CAVES_OF_CHAOS", "L_SKYLANDS", "L_FLOATING", "L_ALPHA"],
+    "SPHERES": ["M_SPHERES", "L_INFDEV", "L_CLASSIC", "L_SUPERFLAT", "L_VOID"],
+    "BETA": [],
+    "ALPHA": [],
+    "SKYLANDS": [],
+    "INFDEV": [],
+    "FLOATING": [],
+    "FAR_LANDS": [],
+    "CLASSIC": [],
+    "CAVES_OF_CHAOS": [],
+    "LARGE_BIOMES": [],
+    "AMPLIFIED": [],
+}
+
+# Same-named bands: the fallback when a whole old gate migrates to nothing (LapBand.directOf).
+DIRECT = {
+    "CHUNCKS": ["C_CHUNCKS"], "STACKS": ["C_STACKS"], "SPHERES": ["M_SPHERES"], "VOID": ["L_VOID"],
+    "BETA": ["L_BETA"], "ALPHA": ["L_ALPHA"], "SKYLANDS": ["L_SKYLANDS"], "INFDEV": ["L_INFDEV"],
+    "FLOATING": ["L_FLOATING"], "FAR_LANDS": ["L_FAR_LANDS"], "CLASSIC": ["L_CLASSIC"],
+    "CAVES_OF_CHAOS": ["L_CAVES_OF_CHAOS"], "LARGE_BIOMES": ["L_LARGE_BIOMES"], "AMPLIFIED": ["L_AMPLIFIED"],
 }
 
 ARRAY = re.compile(r'("phases"\s*:\s*\[)([^\]]*)(\])')
@@ -57,14 +65,20 @@ ITEM = re.compile(r'"([^"]*)"')
 
 def migrate_tokens(tokens: list[str], where: str) -> list[str]:
     out: set[str] = set()
+    legacy: list[str] = []
     for t in tokens:
         u = t.strip().upper()
         if u in ORDER:
             out.add(u)
         elif u in FROM_LEGACY:
-            out.update(FROM_LEGACY[u])
+            legacy.append(u)
         else:
             raise SystemExit(f"{where}: unknown phase token {t!r}")
+    migrated = {b for u in legacy for b in FROM_LEGACY[u]}
+    if legacy and not migrated:
+        # An old gate of only VOID / legacy eras: keep it narrow (LapBand.migrateLegacyGate).
+        migrated = {b for u in legacy for b in DIRECT.get(u, FROM_LEGACY[u])}
+    out |= migrated
     return [b for b in ORDER if b in out]
 
 

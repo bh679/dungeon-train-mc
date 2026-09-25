@@ -38,8 +38,8 @@ final class TemplateWeightCodecTest {
         assertEquals(5, m.weight());
         assertEquals(3, m.gate().minLevel());
         assertEquals(TemplateGate.ALL, m.gate().maxLevel());
-        // Pre-lap names: NETHER covers both Nether occurrences, VOID the legacy void era.
-        assertEquals(EnumSet.of(LapBand.V_NETHER, LapBand.M_NETHER, LapBand.L_VOID), m.gate().phases());
+        // Pre-lap names: NETHER covers both Nether occurrences; VOID (now part of the End) adds nothing.
+        assertEquals(EnumSet.of(LapBand.V_NETHER, LapBand.M_NETHER), m.gate().phases());
     }
 
     @Test

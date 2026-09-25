@@ -32,6 +32,11 @@ final class LapBandGateMigrationTest {
         assertEquals(EnumSet.of(LapBand.M_NETHER, LapBand.L_BETA),
             parse("{\"phases\":[\"M_NETHER\",\"beta\"]}").phases());
         assertEquals(TemplateGate.ALL_PHASES, parse("{\"phases\":[\"NOT_A_BAND\"]}").phases());
+        // Void is part of the End band now; an overworld stage that listed it stays off the End.
+        assertEquals(LapBand.fromLegacy(games.brennan.dungeontrain.worldgen.TrainPhase.OVERWORLD),
+            parse("{\"phases\":[\"OVERWORLD\",\"VOID\"]}").phases());
+        // A gate of only old eras keeps its direct matches rather than widening to every band.
+        assertEquals(EnumSet.of(LapBand.L_BETA, LapBand.L_ALPHA), parse("{\"phases\":[\"BETA\",\"ALPHA\"]}").phases());
     }
 
     @Test
@@ -40,7 +45,7 @@ final class LapBandGateMigrationTest {
         TemplateGate g = parse("{\"minLevel\":3,\"phases\":[\"NETHER\",\"UPSIDE_DOWN\"]}");
         JsonObject out = new JsonObject();
         TemplateWeightCodec.writeGateFields(out, g);
-        assertEquals("[\"V_NETHER\",\"V_UPSIDE_DOWN\",\"M_NETHER\"]", out.get("phases").toString());
+        assertEquals("[\"V_NETHER\",\"V_UPSIDE_DOWN\",\"V_REASSEMBLY\",\"M_NETHER\"]", out.get("phases").toString());
         assertEquals(g, parse(out.toString()));
     }
 

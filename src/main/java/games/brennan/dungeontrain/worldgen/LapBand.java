@@ -168,35 +168,66 @@ public enum LapBand {
     }
 
     /**
-     * Every band a token names: a {@link LapBand} token is itself; an old {@link TrainPhase} token or
-     * alias ({@code nether}, {@code ow}, …) expands through {@link #fromLegacy}. Empty when unknown.
-     * This is what keeps pre-lap saves, relay uploads and typed commands working.
+     * Every band a <em>typed</em> token names: a {@link LapBand} token is itself; an old
+     * {@link TrainPhase} token or alias ({@code nether}, {@code ow}, {@code beta}, …) is its
+     * {@link #directOf direct match}. Empty when unknown.
      */
     public static EnumSet<LapBand> resolve(String token) {
         LapBand b = byToken(token);
         if (b != null) return EnumSet.of(b);
         TrainPhase legacy = TrainPhase.byToken(token);
-        return legacy == null ? EnumSet.noneOf(LapBand.class) : fromLegacy(legacy);
+        return legacy == null ? EnumSet.noneOf(LapBand.class) : directOf(legacy);
     }
 
     /**
-     * The bands an old 18-value {@link TrainPhase} gate entry covered. Old {@code phaseAt} read fades,
-     * the Upside Down's Reassembly and Superflat as {@code OVERWORLD}, so OVERWORLD takes those too.
-     * {@code VOID} maps to the legacy void era only: the void around the End is now part of the End
-     * band, and widening old overworld-flavoured gates (which listed VOID to carry on through the
-     * End's disintegration wings) onto the whole End would let overworld stages claim the End.
+     * Translate a whole pre-lap gate (old {@link TrainPhase} values) with {@link #fromLegacy}. When that
+     * yields no band (a gate of only {@code VOID} and / or old legacy eras) it falls back to the
+     * {@link #directOf direct matches}, so the gate never widens to "every band".
+     */
+    public static EnumSet<LapBand> migrateLegacyGate(Set<TrainPhase> old) {
+        EnumSet<LapBand> out = EnumSet.noneOf(LapBand.class);
+        for (TrainPhase p : old) out.addAll(fromLegacy(p));
+        if (!out.isEmpty()) return out;
+        for (TrainPhase p : old) out.addAll(directOf(p));
+        return out;
+    }
+
+    /**
+     * The bands an old gate value turns on when an old gate is migrated. Each value turns on every
+     * occurrence of its kind; the Upside Down takes its Reassembly. {@code VOID} (the empty stretch
+     * around the End islands) turns on nothing: that stretch is now part of the End band, and old
+     * gates that listed VOID but not END (the overworld stages) must stay off the End. The Legacy lap
+     * is new, so it is sourced from the old void-type bands, split evenly in cycle order — Chuncks the
+     * first four eras, Stacks the next four, Spheres the last four — and the old per-era values
+     * ({@code BETA}, {@code ALPHA}, …) turn on nothing. Keep in step with
+     * {@code scripts/worldgen/migrate-lap-bands.py}.
      */
     public static EnumSet<LapBand> fromLegacy(TrainPhase phase) {
         return switch (phase) {
-            case OVERWORLD -> EnumSet.of(V_OVERWORLD_1, V_OVERWORLD_2, V_REASSEMBLY, M_OVERWORLD_1,
-                M_OVERWORLD_2, M_OVERWORLD_3, L_SUPERFLAT, C_OVERWORLD_1, C_OVERWORLD_2);
+            case OVERWORLD -> EnumSet.of(V_OVERWORLD_1, V_OVERWORLD_2, M_OVERWORLD_1, M_OVERWORLD_2,
+                M_OVERWORLD_3, C_OVERWORLD_1, C_OVERWORLD_2);
             case NETHER -> EnumSet.of(V_NETHER, M_NETHER);
             case END -> EnumSet.of(V_END, M_END);
-            case VOID -> EnumSet.of(L_VOID);
-            case UPSIDE_DOWN -> EnumSet.of(V_UPSIDE_DOWN);
+            case UPSIDE_DOWN -> EnumSet.of(V_UPSIDE_DOWN, V_REASSEMBLY);
+            case CHUNCKS -> EnumSet.of(C_CHUNCKS, L_LARGE_BIOMES, L_AMPLIFIED, L_BETA, L_FAR_LANDS);
+            case STACKS -> EnumSet.of(C_STACKS, L_CAVES_OF_CHAOS, L_SKYLANDS, L_FLOATING, L_ALPHA);
+            case SPHERES -> EnumSet.of(M_SPHERES, L_INFDEV, L_CLASSIC, L_SUPERFLAT, L_VOID);
+            case VOID, BETA, ALPHA, SKYLANDS, INFDEV, FLOATING, FAR_LANDS, CLASSIC, CAVES_OF_CHAOS,
+                LARGE_BIOMES, AMPLIFIED -> EnumSet.noneOf(LapBand.class);
+        };
+    }
+
+    /**
+     * The same-named band(s) of an old value — what a typed old token means, and the fallback when a
+     * whole old gate migrates to nothing. {@code VOID} is the legacy void era.
+     */
+    public static EnumSet<LapBand> directOf(TrainPhase phase) {
+        return switch (phase) {
+            case OVERWORLD, NETHER, END, UPSIDE_DOWN -> fromLegacy(phase);
             case CHUNCKS -> EnumSet.of(C_CHUNCKS);
-            case SPHERES -> EnumSet.of(M_SPHERES);
             case STACKS -> EnumSet.of(C_STACKS);
+            case SPHERES -> EnumSet.of(M_SPHERES);
+            case VOID -> EnumSet.of(L_VOID);
             case BETA -> EnumSet.of(L_BETA);
             case ALPHA -> EnumSet.of(L_ALPHA);
             case SKYLANDS -> EnumSet.of(L_SKYLANDS);
@@ -217,7 +248,7 @@ public enum LapBand {
             case NETHER -> V_NETHER;
             case END, VOID -> V_END;
             case UPSIDE_DOWN -> V_UPSIDE_DOWN;
-            default -> fromLegacy(phase).iterator().next();
+            default -> directOf(phase).iterator().next();
         };
     }
 

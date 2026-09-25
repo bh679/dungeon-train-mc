@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import games.brennan.dungeontrain.worldgen.LapBand;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
@@ -260,17 +261,26 @@ public final class TemplateWeightCodec {
 
     /**
      * Absent / non-array / unparseable ⇒ {@code null} (the gate ctor treats that as "all bands").
-     * Each entry is a {@link LapBand} name, or a pre-lap {@code TrainPhase} name that expands to every
-     * band it used to cover ({@link LapBand#resolve}) — so older saves, packages and relay uploads read
-     * unchanged.
+     * Each entry is a {@link LapBand} name, or a pre-lap {@code TrainPhase} name; the old names are
+     * translated together as one old gate ({@link LapBand#migrateLegacyGate}) — so older saves, packages
+     * and relay uploads read with the lap migration applied.
      */
     private static EnumSet<LapBand> parsePhases(JsonElement el) {
         if (el == null || !el.isJsonArray()) return null;
         EnumSet<LapBand> set = EnumSet.noneOf(LapBand.class);
+        EnumSet<TrainPhase> old = EnumSet.noneOf(TrainPhase.class);
         for (JsonElement e : el.getAsJsonArray()) {
             if (!e.isJsonPrimitive() || !e.getAsJsonPrimitive().isString()) continue;
-            set.addAll(LapBand.resolve(e.getAsString()));
+            String s = e.getAsString();
+            LapBand band = LapBand.byToken(s);
+            if (band != null) {
+                set.add(band);
+                continue;
+            }
+            TrainPhase phase = TrainPhase.byToken(s);
+            if (phase != null) old.add(phase);
         }
+        if (!old.isEmpty()) set.addAll(LapBand.migrateLegacyGate(old));
         return set.isEmpty() ? null : set;
     }
 

@@ -80,8 +80,8 @@
       "phases": [
         "V_END",
         "V_UPSIDE_DOWN",
-        "M_END",
-        "L_VOID"
+        "V_REASSEMBLY",
+        "M_END"
       ],
       "stages": [
         "copper",
@@ -122,7 +122,14 @@
         "V_NETHER",
         "M_NETHER",
         "M_SPHERES",
-        "L_FLOATING",
+        "L_LARGE_BIOMES",
+        "L_AMPLIFIED",
+        "L_BETA",
+        "L_FAR_LANDS",
+        "L_INFDEV",
+        "L_CLASSIC",
+        "L_SUPERFLAT",
+        "L_VOID",
         "C_CHUNCKS"
       ]
     },
