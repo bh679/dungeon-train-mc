@@ -106,10 +106,14 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         }
     }
 
-    /** A vanilla pick needing no published context — never TerraBlender's, which could be BoP. */
+    /**
+     * A vanilla pick needing no published context — never TerraBlender's, which could be BoP. Debug-level:
+     * vanilla's stronghold-ring search legitimately lands here on every boot, while {@code publish()} runs
+     * between marking the source and publishing the context.
+     */
     private static Holder<Biome> dungeontrain$vanillaFallback(MultiNoiseBiomeSource source, int x, int y, int z,
                                                             Climate.Sampler sampler, String why) {
-        dungeontrain$FALLBACKS.warn(dungeontrain$LOGGER,
+        dungeontrain$FALLBACKS.debug(dungeontrain$LOGGER,
                 "[DungeonTrain] Overworld biome at quart ({}, {}, {}) used the vanilla fallback: {}", x, y, z, why);
         return OverworldStretchBiomes.vanillaFallback(source, x, y, z, sampler);
     }

@@ -29,12 +29,12 @@ public final class LogFirstN {
         }
     }
 
-    /** Warn for the first {@code max} occurrences ({@code format} is an SLF4J pattern); then silent. */
-    public void warn(Logger logger, String format, Object... args) {
+    /** Debug-log the first {@code max} occurrences ({@code format} is an SLF4J pattern); then silent. */
+    public void debug(Logger logger, String format, Object... args) {
         if (count.get() >= max) return; // per-quart hot path: no counting (or overflow) once silent
         int n = count.incrementAndGet();
         if (n <= max) {
-            logger.warn(format + " (occurrence " + n + "/" + max
+            logger.debug(format + " (occurrence " + n + "/" + max
                     + (n == max ? "; suppressing further reports)" : ")"), args);
         }
     }
