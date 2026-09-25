@@ -273,24 +273,61 @@ final class PortalChunkFeatures {
         // Deterministic in the seed and the pair, like every other choice a pair makes.
         Random rng = new Random(worldSeed ^ ((long) pairKey * 0x9E3779B97F4A7C15L));
         boolean foreign = rng.nextFloat() < FOREIGN_STRUCTURE_CHANCE;
-        List<Structure> candidates = foreign
-            ? foreignStructures(level, chunk, window, vanillaOnly)
-            : fittingStructures(level, chunk, window, vanillaOnly);
-        // A dimension whose biomes admit everything in the registry has nothing foreign to offer,
-        // and a sample nothing admits has nothing native to — either way the other list stands in
-        // rather than the room going without.
-        if (candidates.isEmpty()) {
-            candidates = foreign
-                ? fittingStructures(level, chunk, window, vanillaOnly)
-                : foreignStructures(level, chunk, window, vanillaOnly);
+        // The drawn list first, then the other one. A dimension whose biomes admit everything in the
+        // registry has nothing foreign to offer, a sample nothing admits has nothing native to, and
+        // a native list can have nothing that generates here at all — the vanilla End's only native
+        // structure is the End city, which turns down most of the islands a sample lands on. In each
+        // case the other list stands in rather than the room going without.
+        Planting planting = tryPlant(level, generator, random, chunk, window, worldSeed, pairKey, rng,
+            foreign ? foreignStructures(level, chunk, window, vanillaOnly)
+                : fittingStructures(level, chunk, window, vanillaOnly));
+        if (planting.start() == null) {
             foreign = !foreign;
+            planting = tryPlant(level, generator, random, chunk, window, worldSeed, pairKey, rng,
+                foreign ? foreignStructures(level, chunk, window, vanillaOnly)
+                    : fittingStructures(level, chunk, window, vanillaOnly));
         }
-        if (candidates.isEmpty()) {
-            LOGGER.warn("[DungeonTrain] Chunk dimension pair {} has no structure to plant — nothing "
-                + "in the registry admits the biome it sampled", pairKey);
+        if (planting.start() == null) {
+            LOGGER.warn("[DungeonTrain] Chunk dimension pair {} planted nothing — no candidate in either "
+                + "list generated a valid start", pairKey);
+            return;
+        }
+        StructureStart start = planting.start();
+        if (planting.inWindow()) {
+            register(chunk, start);
+            LOGGER.info("[DungeonTrain] Chunk dimension pair {} planted {}{} where it generated",
+                pairKey, nameOf(level, start.getStructure()), foreign ? " (from another dimension)" : "");
             return;
         }
 
+        // Nothing generated where the room can see it. That is the ordinary case in the Nether and
+        // the End rather than a rarity: a fortress or a bastion sits at the Y its own placement
+        // wants, and an End city stands on an island, while the cube is cut around whichever cavern
+        // floor or ledge the sample was anchored on — so the two rarely meet by luck. The structure
+        // is moved onto the room's ground instead of being thrown away, which is what makes "always
+        // at least one structure" true in all three dimensions rather than mostly true in one.
+        BoundingBox span = spanOf(start);
+        int lift = window.minY() + PortalChunkTerrain.SURFACE_ROW - span.minY();
+        start.getPieces().forEach(piece -> piece.move(0, lift, 0));
+        register(chunk, start);
+        LOGGER.info("[DungeonTrain] Chunk dimension pair {} planted {}{}, moved {} blocks onto the "
+            + "room's ground", pairKey, nameOf(level, start.getStructure()),
+            foreign ? " (from another dimension)" : "", lift);
+    }
+
+    /**
+     * What one list of candidates came to: a start that reaches the room's rows, else the first
+     * valid start that did not (to be moved onto them), else nothing.
+     */
+    private record Planting(StructureStart start, boolean inWindow) {}
+
+    /**
+     * Draw up to {@link #STRUCTURE_ATTEMPTS} of {@code candidates} and generate each at the sample,
+     * stopping at the first whose pieces reach {@code window}.
+     */
+    private static Planting tryPlant(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                     RandomState random, ProtoChunk chunk, BoundingBox window,
+                                     long worldSeed, int pairKey, Random rng, List<Structure> candidates) {
         StructureStart fallback = null;
         for (int attempt = 0; attempt < STRUCTURE_ATTEMPTS && !candidates.isEmpty(); attempt++) {
             Structure structure = candidates.remove(rng.nextInt(candidates.size()));
@@ -311,33 +348,10 @@ final class PortalChunkFeatures {
                 continue;
             }
             if (!start.isValid()) continue;
-            if (spanOf(start).intersects(window)) {
-                register(chunk, start);
-                LOGGER.info("[DungeonTrain] Chunk dimension pair {} planted {}{} where it generated",
-                    pairKey, nameOf(level, structure), foreign ? " (from another dimension)" : "");
-                return;
-            }
+            if (spanOf(start).intersects(window)) return new Planting(start, true);
             if (fallback == null) fallback = start;
         }
-
-        // Nothing generated where the room can see it. That is the ordinary case in the Nether and
-        // the End rather than a rarity: a fortress or a bastion sits at the Y its own placement
-        // wants, and an End city stands on an island, while the cube is cut around whichever cavern
-        // floor or ledge the sample was anchored on — so the two rarely meet by luck. The structure
-        // is moved onto the room's ground instead of being thrown away, which is what makes "always
-        // at least one structure" true in all three dimensions rather than mostly true in one.
-        if (fallback == null) {
-            LOGGER.warn("[DungeonTrain] Chunk dimension pair {} planted nothing — {} candidate(s), "
-                + "none of them generated a valid start", pairKey, STRUCTURE_ATTEMPTS);
-            return;
-        }
-        BoundingBox span = spanOf(fallback);
-        int lift = window.minY() + PortalChunkTerrain.SURFACE_ROW - span.minY();
-        fallback.getPieces().forEach(piece -> piece.move(0, lift, 0));
-        register(chunk, fallback);
-        LOGGER.info("[DungeonTrain] Chunk dimension pair {} planted {}{}, moved {} blocks onto the "
-            + "room's ground", pairKey, nameOf(level, fallback.getStructure()),
-            foreign ? " (from another dimension)" : "", lift);
+        return new Planting(fallback, false);
     }
 
     /** What a structure is called, for the log — its registry id, or its class when unregistered. */
