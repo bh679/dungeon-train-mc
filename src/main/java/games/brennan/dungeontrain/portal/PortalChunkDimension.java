@@ -252,12 +252,30 @@ public final class PortalChunkDimension {
 
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int dy = 1; dy <= DOOR_HEIGHT; dy++) {
-            cursor.set(x, floorY + dy, z);
-            if (mask.covers(cursor)) continue;
-            if (!level.getBlockState(cursor).isAir()) level.setBlock(cursor, air, Block.UPDATE_ALL);
+        // Then on inward, for as long as the walkway is still rock: a doorway whose mouth the sample
+        // buried — a Nether cave whose floor is further in than the end face — is dug through to the
+        // open cave rather than left as a door onto a wall. Where the terrain is already open, which
+        // is every hillside and most caves, the next column is clear and this stops at the door.
+        int step = entry ? 1 : -1;
+        int deepest = size.getX() / 2;
+        for (int depth = 0; depth <= deepest; depth++) {
+            int cx = x + depth * step;
+            if (depth > 0 && walkwayOpen(level, cursor, cx, floorY, z)) break;
+            for (int dy = 1; dy <= DOOR_HEIGHT; dy++) {
+                cursor.set(cx, floorY + dy, z);
+                if (mask.covers(cursor)) continue;
+                if (!level.getBlockState(cursor).isAir()) level.setBlock(cursor, air, Block.UPDATE_ALL);
+            }
         }
+    }
 
+    /** Whether a player could already stand in the walkway at {@code cx}: its door cells are open. */
+    private static boolean walkwayOpen(ServerLevel level, BlockPos.MutableBlockPos cursor, int cx,
+                                       int floorY, int z) {
+        for (int dy = 1; dy <= DOOR_HEIGHT; dy++) {
+            if (level.getBlockState(cursor.set(cx, floorY + dy, z)).blocksMotion()) return false;
+        }
+        return true;
     }
 
     /**
