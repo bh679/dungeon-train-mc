@@ -41,7 +41,7 @@ final class WorldGenCycleLayoutTest {
     @DisplayName("period is the run-1 length and the layout is reported")
     void period() {
         assertTrue(C.hasLayout());
-        assertEquals(142_988L, C.period());
+        assertEquals(138_918L, C.period());
         assertEquals(232, C.riseLen());
     }
 
@@ -52,9 +52,9 @@ final class WorldGenCycleLayoutTest {
         assertEquals(0.0, C.netherRamp(x(n1 - 1)));
         assertTrue(C.netherHeightRamp(x(n1 + 100)) > 0.0);
         assertTrue(C.isNetherCore(x(n1 + 232 + 300 + 10)));
-        assertTrue(C.isNetherCore(x(n1 + 232 + 300 + 3999)));
-        assertFalse(C.isNetherCore(x(n1 + 232 + 300 + 4000 + 10)));
-        assertEquals(0.0, C.netherRamp(x(n1 + 5064)));
+        assertTrue(C.isNetherCore(x(n1 + 232 + 300 + 2999)));
+        assertFalse(C.isNetherCore(x(n1 + 232 + 300 + 3000 + 10)));
+        assertEquals(0.0, C.netherRamp(x(n1 + 4064)));
         assertEquals(Style.VANILLA, C.netherStyleAt(x(n1 + 1000)));
         assertNull(C.netherStyleAt(x(n1 - 10)));
 
@@ -112,21 +112,21 @@ final class WorldGenCycleLayoutTest {
     }
 
     @Test
-    @DisplayName("upside-down: fades, a 4000 core, a 6000 Reassembly and the exit gap")
+    @DisplayName("upside-down: fades, a 2500 core, a 6000 Reassembly and the exit gap")
     void upsideDown() {
         long u = LAYOUT.start(4);
         assertEquals(0.0, C.upsideDownRamp(x(u - 1)));
         assertEquals(0.5, C.upsideDownRamp(x(u + 300)), 1e-9);
-        assertEquals(1.0, C.upsideDownRamp(x(u + 600 + 2000)));
-        assertTrue(C.isInUpsideDownBand(x(u + 600 + 4000 + 599)));
-        assertFalse(C.isInUpsideDownBand(x(u + 600 + 4000 + 600)));
-        assertTrue(C.isInUpsideDownExitFade(x(u + 5200)));
-        assertTrue(C.isInUpsideDownExitFade(x(u + 5200 + 5999)));
-        assertFalse(C.isInUpsideDownExitFade(x(u + 5200 + 6000)));
-        assertEquals(0.5, C.upsideDownExitOwRevealRamp(x(u + 5200 + 3000)), 1e-9);
-        assertEquals(0.5, C.upsideDownExitMirrorDisperseRamp(x(u + 5200 + 3000)), 1e-9);
-        assertEquals(0.0, C.upsideDownRamp(x(u + 5200 + 6000 + 10)));   // the 600 exit gap
-        assertEquals(LAYOUT.start(5), u + 600 + 4000 + 600 + 6000 + 600);
+        assertEquals(1.0, C.upsideDownRamp(x(u + 600 + 1250)));
+        assertTrue(C.isInUpsideDownBand(x(u + 600 + 2500 + 599)));
+        assertFalse(C.isInUpsideDownBand(x(u + 600 + 2500 + 600)));
+        assertTrue(C.isInUpsideDownExitFade(x(u + 3700)));
+        assertTrue(C.isInUpsideDownExitFade(x(u + 3700 + 5999)));
+        assertFalse(C.isInUpsideDownExitFade(x(u + 3700 + 6000)));
+        assertEquals(0.5, C.upsideDownExitOwRevealRamp(x(u + 3700 + 3000)), 1e-9);
+        assertEquals(0.5, C.upsideDownExitMirrorDisperseRamp(x(u + 3700 + 3000)), 1e-9);
+        assertEquals(0.0, C.upsideDownRamp(x(u + 3700 + 6000 + 10)));   // the 600 exit gap
+        assertEquals(LAYOUT.start(5), u + 600 + 2500 + 600 + 6000 + 600);
     }
 
     @Test
@@ -184,7 +184,12 @@ final class WorldGenCycleLayoutTest {
         assertTrue(C.isInLegacyBand(LegacyBandKind.CAVES_OF_CHAOS, x(chaos)));
         assertEquals(4000L, C.legacyLen(LegacyBandKind.CAVES_OF_CHAOS));
         assertFalse(C.isInLegacyBand(LegacyBandKind.CAVES_OF_CHAOS, x(chaos + 4000)));
-        assertTrue(C.legacyProgress(LegacyBandKind.ALPHA, x(LAYOUT.start(11) + LAYOUT.eraCoreStart(5))) > 0.0);
+        assertTrue(C.legacyProgress(LegacyBandKind.ALPHA,
+                x(l + LAYOUT.eraCoreStart(LAYOUT.eraIndex(LegacyBandKind.ALPHA)))) > 0.0);
+        int flat = LAYOUT.eraIndex(LegacyBandKind.SUPERFLAT);
+        assertEquals(LAYOUT.eraIndex(LegacyBandKind.VOID) - 1, flat);                  // Superflat runs just before Void
+        assertTrue(C.isInLegacyBand(LegacyBandKind.SUPERFLAT, x(l + LAYOUT.eraCoreStart(flat))));
+        assertEquals(1000L, C.legacyLen(LegacyBandKind.SUPERFLAT));
         long end = l + LAYOUT.length(11);
         WorldGenCycle.LegacyHit exit = C.legacyAt(x(end - 1));
         assertEquals(LegacyBandKind.VOID, exit.from());
@@ -224,9 +229,9 @@ final class WorldGenCycleLayoutTest {
             if (end) assertTrue(C.endSegmentInfluence(wx), "u=" + u);
         }
         assertFalse(C.netherInfluence(x(1000), 100));
-        assertTrue(C.netherInfluence(x(2990), 20));
-        assertFalse(C.endSegmentInfluence(x(12_000)));
-        assertTrue(C.endSegmentInfluence(x(12_064)));
+        assertTrue(C.netherInfluence(x(2740), 20));
+        assertFalse(C.endSegmentInfluence(x(9750)));
+        assertTrue(C.endSegmentInfluence(x(9814)));
         assertTrue(C.netherInfluence(x(P - 1), 2));           // straddles the run boundary: conservative true
     }
 

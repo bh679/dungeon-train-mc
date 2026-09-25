@@ -71,7 +71,7 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
                 case CLASSIC, LARGE_BIOMES, AMPLIFIED -> {
                     return false;
                 }
-                case VOID -> { /* nothing to decorate */ }
+                case VOID, SUPERFLAT -> { /* nothing to decorate: void, or a bare flat sheet */ }
                 case FAR_LANDS -> {
                     FarLandsShift shift = FarLandsShift.of(WorldGenCycle.fromConfig(), chunk.x, chunk.z);
                     BetaPopulator.populate(BetaWorld.shifted(level, yOffset, shift.dxBlocks(), shift.dzBlocks()),

@@ -214,10 +214,11 @@ public final class CarriageEditor {
 
     /**
      * The X menu's Go here: a walk to the plot, not a reload — restamps only when the player is
-     * not already standing in it.
+     * not already standing in it. Restamping a plot you are standing in would throw away
+     * every unsaved edit for the sake of a few blocks' teleport.
      */
     public static void walkTo(ServerPlayer player, CarriageVariant variant, boolean onTop) {
-        enter(player, variant, onTop, !standingIn(player, variant));
+        enter(player, variant, onTop, !EditorPlotScope.standingIn(player, new Template.Carriage(variant)));
     }
 
     /**
@@ -225,20 +226,7 @@ public final class CarriageEditor {
      * already standing in this plot.
      */
     public static void enterInside(ServerPlayer player, CarriageVariant variant, EditorPlotArrival.Inside inside) {
-        enter(player, variant, false, !standingIn(player, variant), inside);
-    }
-
-    /**
-     * Whether {@code player} is already inside {@code variant}'s plot — see
-     * {@link EditorPlotScope#standingIn}, the one test every editor shares.
-     *
-     * <p>Entering a plot you are standing in is a walk to its menu, not a reload — restamping
-     * would throw away every unsaved edit for the sake of a few blocks' teleport. Only the
-     * explicit walks ({@link #walkTo}, {@link #enterInside}) consult this; the command path always
-     * stamps.</p>
-     */
-    private static boolean standingIn(ServerPlayer player, CarriageVariant variant) {
-        return EditorPlotScope.standingIn(player, new Template.Carriage(variant));
+        enter(player, variant, false, !EditorPlotScope.standingIn(player, new Template.Carriage(variant)), inside);
     }
 
     /**
@@ -270,7 +258,7 @@ public final class CarriageEditor {
         if (stamp) stampPlot(overworld, variant, dims);
 
         Vec3i footprint = new Template.Carriage(variant).plotSize(dims);
-        BlockPos door = CarriageDoorCells.doorBases(origin, plotDims(variant, dims)).get(0);
+        BlockPos door = EditorPlotArrival.firstOrNull(CarriageDoorCells.doorBases(origin, plotDims(variant, dims)));
         EditorPlotArrival.land(player, overworld, origin, footprint, onTop, inside, door);
 
         LOGGER.info("[DungeonTrain] Editor enter: {} -> {} plot at {} dims={}x{}x{} ({})",

@@ -164,17 +164,7 @@ public final class PillarEditor {
      * only when the player is not already standing in it.
      */
     public static void walkTo(ServerPlayer player, PillarSection section, boolean onTop) {
-        enter(player, section, onTop, !standingIn(player, section));
-    }
-
-    /** Already inside {@code section}'s default-named plot — see {@link EditorPlotScope#standingIn}. */
-    private static boolean standingIn(ServerPlayer player, PillarSection section) {
-        return EditorPlotScope.standingIn(player, new Template.Pillar(section));
-    }
-
-    /** Already inside {@code adjunct}'s default-named plot — see {@link EditorPlotScope#standingIn}. */
-    private static boolean standingIn(ServerPlayer player, PillarAdjunct adjunct) {
-        return EditorPlotScope.standingIn(player, new Template.Adjunct(adjunct));
+        enter(player, section, onTop, !EditorPlotScope.standingIn(player, new Template.Pillar(section)));
     }
 
     /**
@@ -378,7 +368,7 @@ public final class PillarEditor {
 
     /** As {@link #walkTo(ServerPlayer, PillarSection, boolean)}: restamps only when not already inside. */
     public static void walkTo(ServerPlayer player, PillarAdjunct adjunct, boolean onTop) {
-        enter(player, adjunct, onTop, !standingIn(player, adjunct));
+        enter(player, adjunct, onTop, !EditorPlotScope.standingIn(player, new Template.Adjunct(adjunct)));
     }
 
     /**

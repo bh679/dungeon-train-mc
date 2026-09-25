@@ -27,7 +27,8 @@ public final class LegacyBiomes {
 
     private record Context(BiomeSource overworldSource, long seed, Map<BetaBiome, Holder<Biome>> beta,
                            Holder<Biome> alpha, Holder<Biome> alphaWinter, Holder<Biome> infdev,
-                           Holder<Biome> floating, Holder<Biome> classic) {}
+                           Holder<Biome> floating, Holder<Biome> classic,
+                           Holder<Biome> superflat) {}
 
     /** Alpha had no biome map: one vanilla biome for the band, a snowy one for its winter half. */
     private static final String ALPHA_BIOME = "forest";
@@ -41,6 +42,9 @@ public final class LegacyBiomes {
 
     /** Classic had one biome too: its levels read as plains. */
     private static final String CLASSIC_BIOME = "plains";
+
+    /** Superflat's default preset was plains. */
+    private static final String SUPERFLAT_BIOME = "plains";
 
     private static volatile Context current;
 
@@ -61,7 +65,7 @@ public final class LegacyBiomes {
         }
         current = new Context(source, data.getGenerationSeed(), beta,
                 find(source, ALPHA_BIOME), find(source, ALPHA_WINTER_BIOME), find(source, INFDEV_BIOME),
-                find(source, FLOATING_BIOME), find(source, CLASSIC_BIOME));
+                find(source, FLOATING_BIOME), find(source, CLASSIC_BIOME), find(source, SUPERFLAT_BIOME));
     }
 
     /** The overworld source's own holder for {@code minecraft:<path>}, or null if it never generates it. */
@@ -95,6 +99,7 @@ public final class LegacyBiomes {
             case INFDEV -> c.infdev();
             case FLOATING -> c.floating();
             case CLASSIC -> c.classic();
+            case SUPERFLAT -> c.superflat();
             case VOID -> null;                                   // keep the vanilla biome over the void
             case LARGE_BIOMES, AMPLIFIED -> null;                // presets sample the source with their own climate
             case FAR_LANDS -> {

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -40,29 +41,29 @@ final class CycleLayoutTest {
     void shippedGeometry() {
         CycleLayout l = shipped();
         assertEquals(16, l.count());
-        // Lap 1: 3000 + (232+300+4000+300+232) + 4000 + (740+4000+740) + (600+4000+600+6000+600) = 29,344
+        // Lap 1: 2750 + (232+300+3000+300+232) + 3000 + (740+3000+740) + (600+2500+600+6000+600) = 24,594
         // Lap 2: 8000 + 9064 + 8000 + 9480 + (1500+15000) + 5000 = 56,044
-        // Lap 3: legacy (480·9 + 5000 + 4320 + 5000 + 2000·4 + 1000 = 27,640) + 2000 + 6500 + 5000 + 6500 = 47,640
-        // (Large Biomes and Amplified are not built yet; with them the run would be 143,988.)
-        assertEquals(142_988L, l.period());   // + Amplified era (5000 + 480 fade)
+        // Lap 3: legacy (480·12 + 5000 + 5000 + 4320 + 4000 + 5000 + 2000·4 + 1000 + 200 = 38,280)
+        //        + 2000 + 6500 + 5000 + 6500 = 58,280
+        assertEquals(138_918L, l.period());
         assertEquals(2, l.typeCount(Type.NETHER));
         assertEquals(2, l.typeCount(Type.END));
         assertEquals(1, l.typeCount(Type.LEGACY_RUN));
         assertEquals(7, l.typeCount(Type.OVERWORLD));
         // Lap-1 starts
         assertEquals(0L, l.start(0));
-        assertEquals(3000L, l.start(1));                        // Nether
-        assertEquals(3000L + 5064L, l.start(2));                // OW after the Nether
-        assertEquals(12_064L, l.start(3));                      // End
-        assertEquals(12_064L + 5480L, l.start(4));              // Upside-down
-        assertEquals(29_344L, l.start(5));                      // OW·WWOO opens lap 2
+        assertEquals(2750L, l.start(1));                        // Nether
+        assertEquals(2750L + 4064L, l.start(2));                // OW after the Nether
+        assertEquals(9814L, l.start(3));                        // End
+        assertEquals(9814L + 4480L, l.start(4));                // Upside-down
+        assertEquals(24_594L, l.start(5));                      // OW·WWOO opens lap 2
         assertEquals(Style.WWOO, l.slot(5).style());
         assertEquals(Style.BETTER, l.slot(6).style());
         assertEquals(Style.BOP, l.slot(7).style());
         assertEquals(Style.BETTER, l.slot(8).style());
         assertEquals(Type.SPHERES, l.slot(9).type());
         assertEquals(Type.LEGACY_RUN, l.slot(11).type());
-        assertEquals(29_344L + 56_044L, l.start(11));
+        assertEquals(24_594L + 56_044L, l.start(11));
         assertEquals(Type.STACKS, l.slot(15).type());
         assertEquals(1, l.occurrence(6));                       // the BetterNether slot is Nether occurrence 1
         assertEquals(0, l.occurrence(1));
@@ -73,22 +74,38 @@ final class CycleLayoutTest {
     void legacyRun() {
         CycleLayout l = shipped();
         LegacySpan[] eras = l.eras();
-        assertEquals(10, eras.length);
-        assertEquals(LegacyBandKind.AMPLIFIED, eras[0].kind());
-        assertEquals(LegacyBandKind.BETA, eras[1].kind());
-        assertEquals(LegacyBandKind.FAR_LANDS, eras[2].kind());
-        assertEquals(LegacyBandKind.CAVES_OF_CHAOS, eras[3].kind());
-        assertEquals(LegacyBandKind.VOID, eras[9].kind());
+        assertEquals(11, eras.length);
+        // The shipped run order is the order the token writes, not declaration order.
+        assertArrayEquals(new LegacyBandKind[] {LegacyBandKind.AMPLIFIED, LegacyBandKind.BETA, LegacyBandKind.FAR_LANDS,
+                        LegacyBandKind.CAVES_OF_CHAOS, LegacyBandKind.SKYLANDS, LegacyBandKind.FLOATING, LegacyBandKind.ALPHA,
+                        LegacyBandKind.INFDEV, LegacyBandKind.CLASSIC, LegacyBandKind.SUPERFLAT, LegacyBandKind.VOID},
+                java.util.Arrays.stream(eras).map(LegacySpan::kind).toArray(LegacyBandKind[]::new));
         assertEquals(5000, eras[0].hold());
         assertEquals(5000, eras[1].hold());
         assertEquals(4320, eras[2].hold());
         assertEquals(4000, eras[3].hold());
         assertEquals(1000, eras[9].hold());
+        assertEquals(200, eras[10].hold());
         assertEquals(480L, l.eraCoreStart(0));
         assertEquals(480L + 5000L + 480L, l.eraCoreStart(1));
         assertEquals(480L + 5000L + 480L + 5000L + 480L, l.eraCoreStart(2));
-        long total = 480L * 11 + 5000 + 4000 + 5000 + 4320 + 5000 + 2000 * 4 + 1000;
+        long total = 480L * 12 + 5000 + 4000 + 5000 + 4320 + 5000 + 2000 * 4 + 1000 + 200;
         assertEquals(total, l.length(11));
+    }
+
+    @Test
+    @DisplayName("named legacy eras run in the order written; an era named twice keeps its first place")
+    void legacyWrittenOrder() {
+        List<String> warnings = new ArrayList<>();
+        CycleLayout l = CycleLayout.parse("legacy:void=100:classic=200:beta=300:classic=999", FADES, eraDefaults(),
+                t -> true, warnings::add);
+        LegacySpan[] eras = l.eras();
+        assertEquals(3, eras.length);
+        assertEquals(LegacyBandKind.VOID, eras[0].kind());
+        assertEquals(LegacyBandKind.CLASSIC, eras[1].kind());
+        assertEquals(200, eras[1].hold());
+        assertEquals(LegacyBandKind.BETA, eras[2].kind());
+        assertEquals(1, warnings.size(), warnings.toString());
     }
 
     @Test
@@ -155,17 +172,17 @@ final class CycleLayoutTest {
     @DisplayName("influence windows and approach starts")
     void influenceAndApproach() {
         CycleLayout l = shipped();
-        assertTrue(l.anyOfTypeIn(Type.NETHER, 2990L, 3010L));
-        assertFalse(l.anyOfTypeIn(Type.NETHER, 0L, 2999L));
-        assertFalse(l.anyOfTypeIn(Type.END, 0L, 12_063L));
-        assertTrue(l.anyOfTypeIn(Type.END, 12_063L, 12_064L));
+        assertTrue(l.anyOfTypeIn(Type.NETHER, 2740L, 2760L));
+        assertFalse(l.anyOfTypeIn(Type.NETHER, 0L, 2749L));
+        assertFalse(l.anyOfTypeIn(Type.END, 0L, 9813L));
+        assertTrue(l.anyOfTypeIn(Type.END, 9813L, 9814L));
         // Spheres (slot 9) follows BetterEnd directly: approach starts at its own slot.
         assertEquals(l.start(9), l.approachStart(9));
         // Chuncks (slot 13) sits after an OW gap that follows the legacy run: approach starts at the run's end.
         assertEquals(l.start(11) + l.length(11), l.approachStart(13));
         // Occurrence passes.
         assertEquals(-1, l.occurrencesStarted(Type.NETHER, 0L));
-        assertEquals(0, l.occurrencesStarted(Type.NETHER, 3000L));
+        assertEquals(0, l.occurrencesStarted(Type.NETHER, 2750L));
         assertEquals(0, l.occurrencesStarted(Type.NETHER, l.start(6) - 1));
         assertEquals(1, l.occurrencesStarted(Type.NETHER, l.start(6)));
     }

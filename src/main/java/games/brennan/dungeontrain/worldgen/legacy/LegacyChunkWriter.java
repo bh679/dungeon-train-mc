@@ -58,6 +58,14 @@ public final class LegacyChunkWriter {
         STATES[ClassicBlocks.RED_MUSHROOM] = Blocks.RED_MUSHROOM.defaultBlockState();
     }
 
+    /** Superflat's layers, grass first then downward: the 1.1 flat preset's grass, two dirt, bedrock. */
+    static final BlockState[] SUPERFLAT_LAYERS = {
+            Blocks.GRASS_BLOCK.defaultBlockState(),
+            Blocks.DIRT.defaultBlockState(),
+            Blocks.DIRT.defaultBlockState(),
+            Blocks.BEDROCK.defaultBlockState()
+    };
+
     private LegacyChunkWriter() {}
 
     /**
@@ -72,6 +80,12 @@ public final class LegacyChunkWriter {
             Heightmap.primeHeightmaps(chunk, EnumSet.of(Heightmap.Types.OCEAN_FLOOR_WG, Heightmap.Types.WORLD_SURFACE_WG));
             return;
         }
+        if (kind == LegacyBandKind.SUPERFLAT) {
+            // yOffset is the first loop's grass; every later loop's Superflat sits one chunk lower.
+            long loop = WorldGenCycle.fromConfig().cycleIndex(chunk.getPos().getMinBlockX());
+            writeSuperflat(chunk, LegacyBands.superflatGrassY(yOffset, loop, chunk.getMinBuildHeight()));
+            return;
+        }
         byte[] blocks = switch (kind) {
             case CAVES_OF_CHAOS -> LegacyBands.chaos(seed).generate(cx, cz).blocks();
             case BETA -> LegacyBands.beta(seed).generate(cx, cz).blocks();
@@ -80,6 +94,7 @@ public final class LegacyChunkWriter {
             case INFDEV -> LegacyBands.infdev(seed).generate(cx, cz, LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), cx));
             case FLOATING -> null; // not a Beta-layout column: a slice of a whole finite level
             case VOID -> throw new IllegalStateException("void handled above");
+            case SUPERFLAT -> throw new IllegalStateException("superflat handled above");
             case LARGE_BIOMES, AMPLIFIED -> throw new IllegalStateException(kind + " is filled by its preset generator");
             case CLASSIC -> LegacyBands.classic(seed).chunkColumn(cx, cz);
             case FAR_LANDS -> {
@@ -102,6 +117,25 @@ public final class LegacyChunkWriter {
             case CAVES_OF_CHAOS -> BetaTerrain.Profile.CAVES_OF_CHAOS.height();
             default -> BetaTerrain.HEIGHT;
         };
+    }
+
+    /**
+     * Lay the {@link #SUPERFLAT_LAYERS} sheet with its grass at world {@code grassY}; everything else stays
+     * the air the chunk arrived as (Superflat is void below).
+     */
+    static void writeSuperflat(ChunkAccess chunk, int grassY) {
+        for (int i = 0; i < SUPERFLAT_LAYERS.length; i++) {
+            int y = grassY - i;
+            if (y < chunk.getMinBuildHeight() || y >= chunk.getMaxBuildHeight()) continue;
+            LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
+            int ly = y & 15;
+            for (int x = 0; x < 16; x++) {
+                for (int z = 0; z < 16; z++) {
+                    section.setBlockState(x, ly, z, SUPERFLAT_LAYERS[i], false);
+                }
+            }
+        }
+        Heightmap.primeHeightmaps(chunk, EnumSet.of(Heightmap.Types.OCEAN_FLOOR_WG, Heightmap.Types.WORLD_SURFACE_WG));
     }
 
     /**

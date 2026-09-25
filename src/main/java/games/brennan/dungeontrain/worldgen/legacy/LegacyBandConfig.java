@@ -31,6 +31,7 @@ public final class LegacyBandConfig {
     public static final Defaults INFDEV_DEFAULTS = new Defaults(true, 8000, 480, 3000);
     public static final Defaults FLOATING_DEFAULTS = new Defaults(true, 6000, 480, 3000);
     public static final Defaults CLASSIC_DEFAULTS = new Defaults(true, 6000, 480, 3000);
+    public static final Defaults SUPERFLAT_DEFAULTS = new Defaults(true, 1000, 480, 3000);
     public static final Defaults VOID_DEFAULTS = new Defaults(true, 1000, 480, 3000);
     public static final Defaults FAR_LANDS_DEFAULTS = new Defaults(true, 4320, 480, 3000);
 
@@ -57,6 +58,7 @@ public final class LegacyBandConfig {
             case FLOATING -> FLOATING_DEFAULTS;
             case CLASSIC -> CLASSIC_DEFAULTS;
             case FAR_LANDS -> FAR_LANDS_DEFAULTS;
+            case SUPERFLAT -> SUPERFLAT_DEFAULTS;
             case VOID -> VOID_DEFAULTS;
         };
     }
@@ -73,6 +75,7 @@ public final class LegacyBandConfig {
             case FLOATING -> "Indev floating";
             case CLASSIC -> "Classic 0.30";
             case FAR_LANDS -> "Far Lands";
+            case SUPERFLAT -> "Superflat";
             case VOID -> "Void";
         };
     }

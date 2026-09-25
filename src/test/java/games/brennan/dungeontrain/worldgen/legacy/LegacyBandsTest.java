@@ -55,13 +55,14 @@ final class LegacyBandsTest {
     }
 
     @Test
-    @DisplayName("cycle order runs Beta, Far Lands, Caves of Chaos, Skylands, Alpha, Infdev, Indev floating, Classic, Void; chaos, Skylands, floating and void are void below")
+    @DisplayName("declaration order ends Classic, Superflat, Void; chaos, Skylands, floating, superflat and void are void below")
     void kindOrder() {
         assertArrayEquals(new LegacyBandKind[] {LegacyBandKind.LARGE_BIOMES, LegacyBandKind.AMPLIFIED, LegacyBandKind.BETA, LegacyBandKind.FAR_LANDS, LegacyBandKind.CAVES_OF_CHAOS, LegacyBandKind.SKYLANDS,
                         LegacyBandKind.ALPHA, LegacyBandKind.INFDEV, LegacyBandKind.FLOATING, LegacyBandKind.CLASSIC,
-                        LegacyBandKind.VOID},
+                        LegacyBandKind.SUPERFLAT, LegacyBandKind.VOID},
                 LegacyBandKind.values());
         assertTrue(LegacyBandKind.VOID.voidBelow());
+        assertTrue(LegacyBandKind.SUPERFLAT.voidBelow());
         assertTrue(LegacyBandKind.CAVES_OF_CHAOS.voidBelow());
         assertFalse(LegacyBandKind.BETA.voidBelow());
         assertTrue(LegacyBandKind.SKYLANDS.voidBelow());
@@ -84,6 +85,23 @@ final class LegacyBandsTest {
         for (int cx = -20; cx < 20; cx++) {
             assertEquals(LegacyBandKind.FLOATING, LegacyBands.classify(SEED, cx, -cx * 3, core));
         }
+    }
+
+    @Test
+    @DisplayName("superflat's grass sits one below the track bed, its bedrock never under the world floor")
+    void superflatYOffset() {
+        assertEquals(75, LegacyBands.superflatYOffset(76, -64));
+        assertEquals(-61, LegacyBands.superflatYOffset(-64, -64));   // grass, dirt, dirt, bedrock at -64
+    }
+
+    @Test
+    @DisplayName("superflat sinks one chunk per later loop, stopping with its bedrock on the world floor")
+    void superflatSinksPerLoop() {
+        assertEquals(75, LegacyBands.superflatGrassY(75, 0, -64));
+        assertEquals(59, LegacyBands.superflatGrassY(75, 1, -64));
+        assertEquals(27, LegacyBands.superflatGrassY(75, 3, -64));
+        assertEquals(75, LegacyBands.superflatGrassY(75, -1, -64));   // before the anchor reads as the first loop
+        assertEquals(-61, LegacyBands.superflatGrassY(75, 40, -64));  // clamped: bedrock at -64
     }
 
     @Test
