@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -62,7 +61,7 @@ public final class EditorPanelFacingEvents {
      * {@code Screen.hasShiftDown()} is unreliable here (see {@link MenuClickModifiers}). The caller
      * plays its own click sound, as it does for every other cell.
      */
-    public static void onButton(BlockPos key, Vec3 anchor, Vec3[] gridDefault) {
+    public static void onButton(Object key, Vec3 anchor, Vec3[] gridDefault) {
         Minecraft mc = Minecraft.getInstance();
         if (shiftDown(mc)) {
             EditorPanelFacing.reset(key, gridDefault);

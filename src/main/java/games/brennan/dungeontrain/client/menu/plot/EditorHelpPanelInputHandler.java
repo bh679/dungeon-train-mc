@@ -138,12 +138,12 @@ public final class EditorHelpPanelInputHandler {
             }
             case FACE_BUTTON -> {
                 click(mc);
-                // Turns the nav menu's held facing; the help panel reads the same key, so the pair
-                // turns together and the help panel's anchor swings round with it.
+                // Spins just the help panel about its own centre; the nav menu keeps its facing.
                 EditorTypeMenusPacket.Menu nav = EditorHelpPanelRenderer.firstNavMenu();
                 if (nav != null) {
-                    EditorPanelFacingEvents.onButton(nav.worldPos(),
-                        EditorHelpPanelRenderer.navAnchor(nav), EditorHelpPanelRenderer.gridDefault(nav));
+                    EditorPanelFacingEvents.onButton(EditorHelpPanelRenderer.facingKey(nav),
+                        EditorHelpPanelRenderer.helpAnchor(nav, mc.font),
+                        EditorHelpPanelRenderer.gridDefault(nav));
                 }
             }
             case NONE -> { }

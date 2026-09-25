@@ -17,9 +17,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * its reader — the shape {@link EditorPlotLabelsRenderer#basis} returns. Renderer and raycast of a
  * panel must ask with the same key, or clicks drift off the drawn cells.</p>
  *
- * <p>Keys are the panel's anchor block, and panels that must move as one board share a key: the
- * companion menus ride at their per-plot panel's anchor, and the Welcome panel asks with its nav
- * menu's key.</p>
+ * <p>Every panel has its own key, so {@code ↻} spins just that panel about its own centre — a
+ * panel's position never depends on another panel's facing. Most panels key on their anchor block;
+ * panels that share an anchor block (a plot panel's companions, the Welcome panel beside its nav
+ * menu) use a key of their own and are placed along their parent's grid axis instead.</p>
  *
  * <p>Grid defaults (what shift-click resets to):</p>
  * <ul>
@@ -44,8 +45,10 @@ public final class EditorPanelFacing {
     private static final Vec3[] DOOR_X_ROW = basisFacing(new Vec3(1, 0, 0));
     private static final Vec3[] DOOR_Z_ROW = basisFacing(new Vec3(0, 0, 1));
 
-    /** Anchor block → the basis that panel currently holds. Absent ⇒ face the camera on next ask. */
-    private static final Map<BlockPos, Vec3[]> HELD = new ConcurrentHashMap<>();
+    /** Panel key → the basis that panel currently holds. Absent ⇒ face the camera on next ask. */
+    private static final Map<Object, Vec3[]> HELD = new ConcurrentHashMap<>();
+    /** Panel key → the world centre it was last drawn at, so a button click can re-face it. */
+    private static final Map<Object, Vec3> CENTRES = new ConcurrentHashMap<>();
 
     private EditorPanelFacing() {}
 
@@ -53,23 +56,35 @@ public final class EditorPanelFacing {
      * The basis the panel at {@code key} holds, capturing one that faces {@code cam} if it has none
      * yet. Safe to call from both the render and the tick (raycast) paths.
      */
-    public static Vec3[] basis(BlockPos key, Vec3 anchor, Vec3 cam) {
-        return HELD.computeIfAbsent(key.immutable(), k -> facing(anchor, cam)).clone();
+    public static Vec3[] basis(Object key, Vec3 anchor, Vec3 cam) {
+        Object k = normalise(key);
+        CENTRES.put(k, anchor);
+        return HELD.computeIfAbsent(k, x -> facing(anchor, cam)).clone();
     }
 
-    /** Turn the panel at {@code key} to face {@code cam} now (the {@code ↻} button). */
-    public static void faceNow(BlockPos key, Vec3 anchor, Vec3 cam) {
-        HELD.put(key.immutable(), facing(anchor, cam));
+    /**
+     * Turn the panel at {@code key} to face {@code cam} now (the {@code ↻} button), about the centre
+     * it was last drawn at — {@code fallbackAnchor} only if it has not been drawn yet.
+     */
+    public static void faceNow(Object key, Vec3 fallbackAnchor, Vec3 cam) {
+        Object k = normalise(key);
+        HELD.put(k, facing(CENTRES.getOrDefault(k, fallbackAnchor), cam));
     }
 
     /** Snap the panel at {@code key} to {@code gridDefault} (shift + {@code ↻}). */
-    public static void reset(BlockPos key, Vec3[] gridDefault) {
-        HELD.put(key.immutable(), gridDefault.clone());
+    public static void reset(Object key, Vec3[] gridDefault) {
+        HELD.put(normalise(key), gridDefault.clone());
     }
 
     /** Forget every held facing, so each panel turns to face the player on its next frame. */
     public static void clearAll() {
         HELD.clear();
+        CENTRES.clear();
+    }
+
+    /** Mutable block positions would make unstable map keys. */
+    private static Object normalise(Object key) {
+        return key instanceof BlockPos pos ? pos.immutable() : key;
     }
 
     /** Grid default for a per-plot panel and its companions. */

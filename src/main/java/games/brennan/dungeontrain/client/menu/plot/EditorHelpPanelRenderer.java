@@ -32,10 +32,10 @@ import org.joml.Quaternionf;
  * world-space offset from the first nav menu in
  * {@link EditorTypeMenuRenderer#menus()}.
  *
- * <p>Shares the nav menu's facing ({@link #basis}) and sits beside it on the
- * reader's left, far enough out that the two never overlap however wide the
- * nav menu grows ({@link #helpAnchor}) — the pair turns as one board, and the
- * {@code ↻} button here turns both.</p>
+ * <p>Sits beside the nav menu on the reader's left, far enough out that the
+ * two never overlap however wide the nav menu grows ({@link #helpAnchor}), and
+ * holds its own facing ({@link #basis}) — its {@code ↻} spins just this panel
+ * about its own centre, never the nav menu beside it.</p>
  *
  * <p>Layout constants are package-private so {@link EditorHelpPanelRaycast}
  * shares the same numbers for the wiki-button hit test.</p>
@@ -143,12 +143,17 @@ public final class EditorHelpPanelRenderer {
         return null;
     }
 
-    /** The help panel's basis — whatever facing the nav menu it sits beside holds. */
-    public static Vec3[] basis(EditorTypeMenusPacket.Menu navMenu, Vec3 cam) {
-        return EditorPanelFacing.basis(navMenu.worldPos(), navAnchor(navMenu), cam);
+    /** The help panel's own basis, held under {@link #facingKey}. {@code anchor} is {@link #helpAnchor}. */
+    public static Vec3[] basis(EditorTypeMenusPacket.Menu navMenu, Vec3 anchor, Vec3 cam) {
+        return EditorPanelFacing.basis(facingKey(navMenu), anchor, cam);
     }
 
-    /** Grid default the {@code ↻} shift-click resets the nav + help pair to. */
+    /** The help panel's own facing key — apart from the nav menu's, so each spins alone. */
+    public static Object facingKey(EditorTypeMenusPacket.Menu navMenu) {
+        return "help|" + navMenu.worldPos().toShortString();
+    }
+
+    /** Grid default the {@code ↻} shift-click resets the help panel to. */
     public static Vec3[] gridDefault(EditorTypeMenusPacket.Menu navMenu) {
         return EditorPanelFacing.doorPanel(EditorPanelFacing.isZRow(navMenu.activeCategoryId()));
     }
@@ -160,15 +165,15 @@ public final class EditorHelpPanelRenderer {
 
     /**
      * Help panel's world-space anchor: the nav menu's anchor pushed along the reader's left (the
-     * shared basis's {@code -right}) by both panels' half-widths plus {@link #NAV_GAP}, so its right
-     * edge clears the nav menu's left edge. Scaled by the world-space scale because both panels are
-     * drawn scaled about their own anchors. Left is {@code +Z} for X-row categories and {@code -X}
-     * for the tracks / dimensional-carriage Z-rows.
+     * nav's <b>grid</b> {@code -right}, not its current facing — so spinning either panel never moves
+     * the other) by both panels' half-widths plus {@link #NAV_GAP}, so the two never overlap. Scaled
+     * by the world-space scale because both panels are drawn scaled about their own anchors. Left
+     * is {@code +Z} for X-row categories and {@code -X} for the tracks / dimensional-carriage Z-rows.
      */
-    public static Vec3 helpAnchor(EditorTypeMenusPacket.Menu navMenu, Font font, Vec3 cam) {
+    public static Vec3 helpAnchor(EditorTypeMenusPacket.Menu navMenu, Font font) {
         double spacing = EditorTypeMenuRenderer.halfWidth(navMenu, font) + NAV_GAP + HALF_W;
         spacing *= ClientDisplayConfig.getWorldspaceScale();
-        Vec3 right = basis(navMenu, cam)[0];
+        Vec3 right = gridDefault(navMenu)[0];
         return navAnchor(navMenu).subtract(right.scale(spacing));
     }
 
@@ -199,13 +204,13 @@ public final class EditorHelpPanelRenderer {
         Vec3 cam = event.getCamera().getPosition();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
-        Vec3 anchor = helpAnchor(navMenu, font, cam);
+        Vec3 anchor = helpAnchor(navMenu, font);
         // Auto culls the board once you have walked away from the door it sits beside.
         if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, cam)) {
             HOVERED = Hovered.NONE;
             return;
         }
-        drawPanel(ps, buffer, font, cam, anchor, basis(navMenu, cam), hovered());
+        drawPanel(ps, buffer, font, cam, anchor, basis(navMenu, anchor, cam), hovered());
 
         buffer.endBatch(PANEL_QUAD);
         buffer.endBatch();

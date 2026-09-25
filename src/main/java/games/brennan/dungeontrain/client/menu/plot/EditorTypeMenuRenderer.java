@@ -300,15 +300,37 @@ public final class EditorTypeMenuRenderer {
 
     /**
      * The basis {@code menu} is drawn in, from {@link EditorPanelFacing}: it faces the player when it
-     * first appears (and after each teleport), then holds still until its {@code ↻} is clicked.
-     * Keyed on the menu's anchor block — companions ride at their per-plot panel's anchor, so the
-     * plot panel and its companion column share one facing and turn as one board.
+     * first appears (and after each teleport), then holds still until its own {@code ↻} is clicked.
+     * {@code centre} is where the menu is drawn — {@link #centreFor}, not the raw anchor.
      *
      * <p>Shared by the renderer and {@link EditorTypeMenuRaycast} so the hit-test plane matches the
      * visible panel exactly.</p>
      */
-    public static Vec3[] basisFor(EditorTypeMenusPacket.Menu menu, Vec3 anchor, Vec3 cam) {
-        return EditorPanelFacing.basis(menu.worldPos(), anchor, cam);
+    public static Vec3[] basisFor(EditorTypeMenusPacket.Menu menu, Vec3 centre, Vec3 cam) {
+        return EditorPanelFacing.basis(facingKey(menu), centre, cam);
+    }
+
+    /**
+     * The key {@code menu}'s facing is held under. Companions share their per-plot panel's anchor
+     * block, so they key on that plus their type name — each spins on its own, apart from the plot
+     * panel and from each other.
+     */
+    public static Object facingKey(EditorTypeMenusPacket.Menu menu) {
+        if (!menu.isCompanion()) return menu.worldPos();
+        return "companion|" + menu.worldPos().toShortString() + "|" + menu.typeName();
+    }
+
+    /**
+     * World centre {@code menu} is drawn about. Companions sit beside their per-plot panel, stepped
+     * along the plot's <b>grid</b> right axis rather than its current facing — so spinning the plot
+     * panel leaves them where they are, and each companion spins about its own centre.
+     */
+    public static Vec3 centreFor(EditorTypeMenusPacket.Menu menu, Vec3 anchor, Font font,
+                                 double priorCompanionWidth) {
+        double shift = companionShiftX(menu, font, priorCompanionWidth);
+        if (shift == 0) return anchor;
+        Vec3 gridRight = EditorPanelFacing.plotPanel()[0];
+        return anchor.add(gridRight.scale(shift * ClientDisplayConfig.getWorldspaceScale()));
     }
 
     /** What shift + {@code ↻} resets {@code menu} to: the plot facing for companions, else the door facing. */
@@ -1077,6 +1099,7 @@ public final class EditorTypeMenuRenderer {
         EditorTypeMenusPacket.Menu menu, Hovered hovered,
         double priorCompanionWidth
     ) {
+        anchor = centreFor(menu, anchor, font, priorCompanionWidth);
         Vec3[] b = basisFor(menu, anchor, cam);
         Vec3 right = b[0], up = b[1], normal = b[2];
 
@@ -1096,16 +1119,6 @@ public final class EditorTypeMenuRenderer {
         float worldScale = (float) ClientDisplayConfig.getWorldspaceScale();
         if (worldScale != 1.0f) {
             ps.scale(worldScale, worldScale, worldScale);
-        }
-
-        // Companion menus share the per-plot panel's anchor + basis; shift
-        // them in panel-local +X so they sit beside the panel like a second
-        // column of a single extended UI. When multiple companions share an
-        // anchor, each shifts past its predecessors (priorCompanionWidth
-        // accumulated by the caller).
-        double shiftX = companionShiftX(menu, font, priorCompanionWidth);
-        if (shiftX != 0) {
-            ps.translate(shiftX, 0, 0);
         }
 
         if (menu.isPackageMenu()) {

@@ -67,14 +67,28 @@ class EditorPanelFacingTest {
     }
 
     @Test
-    @DisplayName("Panels sharing an anchor share a facing; other anchors are independent")
-    void keysShareOrNot() {
-        EditorPanelFacing.faceNow(KEY, ANCHOR, ANCHOR.add(0, 0, 9));
-        // A companion asks with the same anchor block and a different camera — it still matches.
-        assertVec(new Vec3(0, 0, 1), EditorPanelFacing.basis(KEY, ANCHOR, ANCHOR.add(-9, 0, 0))[2]);
-        BlockPos other = KEY.offset(0, 0, 40);
-        assertVec(new Vec3(-1, 0, 0),
-            EditorPanelFacing.basis(other, Vec3.atCenterOf(other), Vec3.atCenterOf(other).add(-4, 0, 0))[2]);
+    @DisplayName("Each key spins alone — re-facing one panel leaves its neighbours as they were")
+    void keysAreIndependent() {
+        String companion = "companion|" + KEY.toShortString() + "|Sub-Variants";
+        Vec3 companionCentre = ANCHOR.add(0, 0, 3);
+        EditorPanelFacing.basis(KEY, ANCHOR, ANCHOR.add(-5, 0, 0));
+        EditorPanelFacing.basis(companion, companionCentre, companionCentre.add(-5, 0, 0));
+
+        EditorPanelFacing.faceNow(companion, companionCentre, companionCentre.add(0, 0, 9));
+        assertVec(new Vec3(0, 0, 1), EditorPanelFacing.basis(companion, companionCentre, ANCHOR)[2]);
+        // The plot panel sharing the anchor block did not move.
+        assertVec(new Vec3(-1, 0, 0), EditorPanelFacing.basis(KEY, ANCHOR, ANCHOR.add(0, 0, 9))[2]);
+    }
+
+    @Test
+    @DisplayName("The face button turns a panel about the centre it was last drawn at")
+    void faceNowUsesTheDrawnCentre() {
+        Vec3 drawnAt = ANCHOR.add(0, 0, 10);
+        EditorPanelFacing.basis("help", drawnAt, drawnAt.add(-5, 0, 0));
+        // Camera level with the anchor block but beside the drawn centre: from the drawn centre it
+        // is due -Z; from the (stale) fallback it would be due -X.
+        EditorPanelFacing.faceNow("help", ANCHOR.add(10, 0, 10), drawnAt.add(0, 0, -4));
+        assertVec(new Vec3(0, 0, -1), EditorPanelFacing.basis("help", drawnAt, ANCHOR)[2]);
     }
 
     @Test
