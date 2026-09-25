@@ -3441,6 +3441,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "每列圖塊數。左鍵更多、更小；右鍵或 Shift+點擊更少、更大。",
   "key.dungeontrain.editor_undo": "編輯器：復原（Ctrl/Cmd+Z）",
   "key.dungeontrain.editor_redo": "編輯器：重做（Ctrl/Cmd+Y）",
+  "key.dungeontrain.editor_reseed": "編輯器：重新隨機測試車廂（Ctrl/Cmd+R）",
   "key.dungeontrain.cinematographer_cinematic": "重播開場動畫（僅限旁觀模式）",
   "key.dungeontrain.container_contents": "開啟容器內容選單（編輯器）",
   "key.dungeontrain.manual_spawn": "生成下一節車廂（手動生成模式）",

@@ -3470,6 +3470,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "Kacheln pro Reihe. Linksklick für mehr, kleinere Kacheln; Rechtsklick oder Umschalt-Klick für weniger, größere.",
   "key.dungeontrain.editor_undo": "Editor: Rückgängig (Strg/Cmd+Z)",
   "key.dungeontrain.editor_redo": "Editor: Wiederholen (Strg/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "Editor: Testwaggon neu würfeln (Strg/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "Intro-Sequenz erneut abspielen (nur Zuschauermodus)",
   "key.dungeontrain.container_contents": "Behälterinhalt-Menü öffnen (Editor)",
   "key.dungeontrain.manual_spawn": "Nächsten Waggon erzeugen (manueller Erzeugungsmodus)",

@@ -3470,6 +3470,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "Mosaicos por fila. Clique esquerdo para mais mosaicos, mais pequenos; clique direito ou Shift+clique para menos, maiores.",
   "key.dungeontrain.editor_undo": "Editor: anular (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "Editor: refazer (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "Editor: sortear de novo a carruagem de teste (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "Repetir Cinemática de Abertura (só em espetador)",
   "key.dungeontrain.container_contents": "Abrir Menu de Conteúdo de Recipientes (editor)",
   "key.dungeontrain.manual_spawn": "Gerar Próxima Carruagem (modo de geração manual)",
