@@ -19167,6 +19167,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stronghold-rings-stable-across-loads",
+      "version": "0.967.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Eyes of ender lead to the same stronghold every time",
+      "summary": "Strongholds could land in a slightly different place each time a world was loaded, so an eye of ender might lead you to a spot where no stronghold was ever built. Stronghold locations are now fixed for each world.",
+      "highlights": [
+        "Eyes of ender and /locate agree on every load of the same world"
+      ],
+      "pr": 1562,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
