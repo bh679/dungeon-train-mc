@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.worldgen.legacy;
 
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.density.OverworldBiomeSourceMark;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBiome;
 import games.brennan.dungeontrain.worldgen.legacy.farlands.FarLandsShift;
 import net.minecraft.core.Holder;
@@ -87,7 +88,7 @@ public final class LegacyBiomes {
      */
     public static Holder<Biome> override(Object source, int blockX, int blockZ) {
         Context c = current;
-        if (c == null || source != c.overworldSource()) return null;
+        if (c == null || !isOverworld(source, c)) return null;
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         LegacyBandKind kind = LegacyBands.kindOfChunk(c.seed(), cycle, blockX >> 4, blockZ >> 4);
         if (kind == null) return null;
@@ -108,5 +109,14 @@ public final class LegacyBiomes {
                         .biome(blockX + shift.dxBlocks(), blockZ + shift.dzBlocks()));
             }
         };
+    }
+
+    /**
+     * The published overworld source, or one of TerraBlender's per-chunk {@code Object.clone()}s of it —
+     * real chunk generation goes through the clone, so identity alone misses it; the mark field survives.
+     */
+    private static boolean isOverworld(Object source, Context c) {
+        return source == c.overworldSource()
+                || (source instanceof OverworldBiomeSourceMark mark && mark.dungeontrain$isOverworld());
     }
 }

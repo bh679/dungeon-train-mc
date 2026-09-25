@@ -69,8 +69,10 @@ public final class BetterNetherCoreBiomes<T> {
     }
 
     /**
-     * Alternate Nether bands use BetterNether: pass 1, 3, 5… (the 2nd, 4th, 6th band). Pass 0 and every
-     * even pass stay vanilla, as does {@code -1} (before the cycle anchor).
+     * The <b>classic</b> (blank-order) layout's rule: alternate Nether bands use BetterNether — pass 1,
+     * 3, 5… (the 2nd, 4th, 6th band). Pass 0 and every even pass stay vanilla, as does {@code -1} (before
+     * the cycle anchor). A {@code worldgenCycleOrder} layout instead follows each slot's own style — always
+     * ask {@link games.brennan.dungeontrain.worldgen.WorldGenCycle#isBetterNetherPass}, which picks the rule.
      */
     public static boolean isBetterNetherPass(long passIndex) {
         return passIndex > 0 && (passIndex & 1L) == 1L;

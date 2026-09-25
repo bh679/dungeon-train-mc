@@ -288,6 +288,11 @@ logoFile="logo.png"
 [[mixins]]
     config="${mod_id}.betterend.mixins.json"
 
+# TerraBlender (required via Biomes O' Plenty) — keeps DT's own surface rule, with its 1-thick
+# bedrock floor, in charge of vanilla biomes in DT's worlds (see DtSurfaceRules).
+[[mixins]]
+    config="${mod_id}.terrablender.mixins.json"
+
 [[mixins]]
     config="${mod_id}.vivecraft.mixins.json"
 

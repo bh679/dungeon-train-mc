@@ -31,7 +31,8 @@ import java.util.function.DoubleSupplier;
  * mob spawns all belong to the biome id and would apply on every lap. So for each live
  * {@code minecraft:} biome whose climate, effects or spawns differ from vanilla's, the vanilla
  * {@code Biome} (rebuilt from code by {@link VanillaWorldgenLookup#create()}, which datapacks can't
- * touch) is kept as its twin. {@code BiomeMixin} and {@code ChunkGeneratorSpawnsMixin} answer from the
+ * touch) is kept as its twin. {@code BiomeMixin}, {@code ChunkGeneratorSpawnsMixin} and
+ * {@code NaturalSpawnerChunkGenSpawnsMixin} (plus a dimensional carriage room's natives) answer from the
  * twin wherever the question has a position outside the WWOO stretch; inside it, WWOO answers.</p>
  *
  * <p>Built per side: the server at start, the client at login (a dedicated-server client has its own
@@ -73,6 +74,12 @@ public final class VanillaBiomeTwins {
         synchronized (SPAWNS) {
             return SPAWNS.get(live);
         }
+    }
+
+    /** The spawn list {@code live} answers with at world {@code x}: the twin's outside the WWOO stretch, else its own. */
+    public static MobSpawnSettings mobSettingsAt(Biome live, double x) {
+        MobSpawnSettings twin = spawnsFor(live, x);
+        return twin != null ? twin : live.getMobSettings();
     }
 
     /** True when the WWOO stretch is elsewhere: the twin answers. Pure apart from the cycle lookup. */

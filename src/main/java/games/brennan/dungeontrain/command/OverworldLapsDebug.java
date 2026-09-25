@@ -103,11 +103,11 @@ final class OverworldLapsDebug {
             for (int z : SAMPLE_Z) {
                 if (ctx.netherCoreBiomes() != null && cycle.isNetherCore(ix)) {
                     samples++;
-                    if (OverworldStretchBiomes.isBop(ctx.netherCoreBiomes().biomeAt(ix, z, cycle.netherPassIndex(ix)))) nether++;
+                    if (OverworldStretchBiomes.isBop(ctx.netherCoreBiomes().biomeAt(ix, z, cycle.isBetterNetherAt(ix)))) nether++;
                 }
                 if (ctx.endCoreBiomes() != null && cycle.isEndCore(ix)) {
                     samples++;
-                    if (OverworldStretchBiomes.isBop(ctx.endCoreBiomes().biomeAt(ix, z, cycle.endPassIndex(ix)))) end++;
+                    if (OverworldStretchBiomes.isBop(ctx.endCoreBiomes().biomeAt(ix, z, cycle.endPassIndex(ix), cycle.isBetterEndAt(ix)))) end++;
                 }
             }
         }
