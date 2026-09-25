@@ -18990,8 +18990,8 @@
         "compatibility",
         "ui"
       ],
-      "title": "No more 'incompatible world' prompt when loading a save",
-      "summary": "Reopening a saved run no longer stops on a warning screen asking you to back up the world and approve fixes. The needed fixes are applied automatically and you go straight back in.",
+      "title": "Removed an unnecessary compatibility warning screen",
+      "summary": "A compatibility warning screen that asked you to back up your world and approve fixes no longer appears. Any fixes it asked about are now applied automatically.",
       "highlights": [],
       "pr": 1551,
       "date": "2026-09-25",
