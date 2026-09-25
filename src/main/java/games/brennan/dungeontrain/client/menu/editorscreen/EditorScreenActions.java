@@ -236,7 +236,9 @@ public final class EditorScreenActions {
                 "dungeontrain editor whole label " + id, "", current);
             case WHOLE_GROUP -> new CommandMenuEntry.TypeArg(label, "name",
                 "dungeontrain editor whole group label " + id, "", current);
-            case PARTS, CHUNK_FRAMES, TRACKS, ARCHITECTURE -> null;
+            case CHUNK_FRAMES -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor chunkframe rename " + sel.modelName(), "", sel.modelName());
+            case PARTS, TRACKS, ARCHITECTURE -> null;
         };
     }
 
@@ -281,6 +283,9 @@ public final class EditorScreenActions {
             return new CommandMenuEntry.DrillIn(MenuLang.t("common.remove"),
                 new games.brennan.dungeontrain.client.menu.ConfirmScreen(
                     MenuLang.t("confirm.remove", sel.displayName()), resetCommand(sel)));
+        }
+        if (sel.category() == PlotCategory.CHUNK_FRAMES) {
+            return EditorMenuScreen.removeEntryFor(sel.category(), sel.modelId(), sel.modelName());
         }
         return EditorMenuScreen.removeEntryFor(sel.category(), sel.modelId(), sel.displayName());
     }

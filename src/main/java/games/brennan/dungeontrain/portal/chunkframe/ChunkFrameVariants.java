@@ -61,6 +61,17 @@ public final class ChunkFrameVariants {
         CACHE.remove(name);
     }
 
+    /** Delete {@code name}'s sidecar files; true when any existed. */
+    public static synchronized boolean delete(String name, boolean fromSource) throws IOException {
+        boolean deleted = Files.deleteIfExists(configPathFor(name));
+        if (fromSource) {
+            Path source = sourcePathFor(name);
+            if (source != null) deleted |= Files.deleteIfExists(source);
+        }
+        CACHE.remove(name);
+        return deleted;
+    }
+
     public static synchronized void clearCache() {
         CACHE.clear();
     }

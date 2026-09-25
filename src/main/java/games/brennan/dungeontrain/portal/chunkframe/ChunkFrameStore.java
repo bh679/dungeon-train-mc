@@ -119,6 +119,24 @@ public final class ChunkFrameStore {
         }
     }
 
+    /**
+     * Delete {@code name}'s user file — and its source-tree copy when {@code fromSource} — returning
+     * whether anything was deleted. A frame only the jar ships has nothing here to delete.
+     */
+    public static synchronized boolean deleteFiles(String name, boolean fromSource) throws IOException {
+        boolean deleted = false;
+        Path user = UserContentPaths.findFile(SUBDIR, name + EXT);
+        if (user != null) deleted = Files.deleteIfExists(user);
+        deleted |= Files.deleteIfExists(fileFor(name));
+        if (fromSource) {
+            Path source = sourceFileFor(name);
+            if (source != null) deleted |= Files.deleteIfExists(source);
+        }
+        CACHE.remove(name);
+        if (deleted) LOGGER.info("[DungeonTrain] Deleted chunk frame {}", name);
+        return deleted;
+    }
+
     /** True when the jar ships a frame named {@code name}. */
     public static boolean isBundled(String name) {
         try (InputStream in = ChunkFrameStore.class.getResourceAsStream(RESOURCE_PREFIX + name + EXT)) {

@@ -751,8 +751,12 @@ public final class EditorMenuScreen implements MenuScreen {
             case WHOLE_GROUP -> new CommandMenuEntry.DrillIn(
                 MenuLang.t("common.new"),
                 new NewSourcePickerScreen(NewSourcePickerScreen.Category.WHOLE_GROUP, null, modelId));
+            // A new frame is blank or a copy of the one in hand.
+            case CHUNK_FRAMES -> new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.new"),
+                new NewSourcePickerScreen(NewSourcePickerScreen.Category.CHUNK_FRAMES, modelId, model));
             // Parts are created through their own picker; architecture has no models yet.
-            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null;
+            case PARTS, ARCHITECTURE -> null;
         };
     }
 
@@ -795,8 +799,13 @@ public final class EditorMenuScreen implements MenuScreen {
                 MenuLang.t("common.remove"),
                 new ConfirmScreen(MenuLang.t("confirm.remove", model),
                     "dungeontrain editor whole group reset " + modelId));
+            // A frame is addressed by its name; modelId is the shared chunk_frame tag.
+            case CHUNK_FRAMES -> model == null || model.isEmpty() ? null : new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.remove"),
+                new ConfirmScreen(MenuLang.t("confirm.remove", model),
+                    "dungeontrain editor chunkframe delete " + model));
             // Parts have their own remove flow; architecture has no models yet.
-            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null;
+            case PARTS, ARCHITECTURE -> null;
         };
     }
 
@@ -837,6 +846,10 @@ public final class EditorMenuScreen implements MenuScreen {
             if (kindName == null) return null;
             return new CommandMenuEntry.TypeArg(
                 MenuLang.t("common.rename"), "new_name", "dungeontrain editor part rename", "", kindName[1]);
+        }
+        if (category == PlotCategory.CHUNK_FRAMES) {
+            return new CommandMenuEntry.TypeArg(
+                MenuLang.t("common.rename"), "new_name", "dungeontrain editor chunkframe rename " + model, "", model);
         }
         if (category == null) return null;
         return switch (category) {

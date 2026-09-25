@@ -65,6 +65,14 @@ final class ChunkFrameCommand {
                     .executes(ctx -> enter(ctx, null))
                     .then(Commands.argument("copyOf", StringArgumentType.word()).suggests(FRAMES)
                         .executes(ctx -> enter(ctx, StringArgumentType.getString(ctx, "copyOf"))))))
+            .then(Commands.literal("delete")
+                .then(Commands.argument("name", StringArgumentType.word()).suggests(FRAMES)
+                    .executes(ctx -> delete(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))
+            .then(Commands.literal("rename")
+                .then(Commands.argument("name", StringArgumentType.word()).suggests(FRAMES)
+                    .then(Commands.argument("newName", StringArgumentType.word())
+                        .executes(ctx -> rename(ctx.getSource(), StringArgumentType.getString(ctx, "name"),
+                            StringArgumentType.getString(ctx, "newName"))))))
             .then(Commands.literal("show")
                 .then(Commands.argument("room", StringArgumentType.word()).suggests(ROOMS)
                     .executes(ctx -> show(ctx.getSource(), StringArgumentType.getString(ctx, "room")))))
@@ -121,6 +129,39 @@ final class ChunkFrameCommand {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Chunk frame save failed", e);
             return fail(source, "Save failed: " + e.getMessage());
+        }
+    }
+
+    private static int delete(CommandSourceStack source, String name) {
+        if (!ChunkFrameRegistry.names().contains(name)) return fail(source, "No frame named " + name + ".");
+        try {
+            boolean gone = ChunkFrameEditor.delete(source.getServer().overworld(), name, EditorDevMode.isEnabled());
+            if (!gone) {
+                return fail(source, "'" + name + "' ships with the mod and can't be deleted — Reset puts it back instead.");
+            }
+            source.sendSuccess(() -> Component.literal("Deleted frame '" + name + "'."), true);
+            return 1;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] Chunk frame delete failed for {}", name, e);
+            return fail(source, "Delete failed: " + e.getMessage());
+        }
+    }
+
+    private static int rename(CommandSourceStack source, String name, String newName) {
+        if (!ChunkFrameRegistry.names().contains(name)) return fail(source, "No frame named " + name + ".");
+        if (!ChunkFrameRegistry.NAME.matcher(newName).matches()) {
+            return fail(source, "Frame names are lower-case letters, digits and _ (max 32).");
+        }
+        if (ChunkFrameRegistry.names().contains(newName)) return fail(source, "A frame named " + newName + " already exists.");
+        ServerPlayer player = EditorCommand.playerOrNull(source);
+        if (player == null) return 0;
+        try {
+            ChunkFrameEditor.rename(player, source.getServer().overworld(), name, newName, EditorDevMode.isEnabled());
+            source.sendSuccess(() -> Component.literal("Renamed frame '" + name + "' to '" + newName + "'."), true);
+            return 1;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] Chunk frame rename failed for {}", name, e);
+            return fail(source, "Rename failed: " + e.getMessage());
         }
     }
 

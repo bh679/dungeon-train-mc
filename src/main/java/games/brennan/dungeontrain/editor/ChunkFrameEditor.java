@@ -5,6 +5,9 @@ import games.brennan.dungeontrain.portal.chunkframe.ChunkFrame;
 import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry;
 import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore;
 import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameTemplate;
+import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants;
+import games.brennan.dungeontrain.portal.chunkframe.ChunkRoomFrames;
+import games.brennan.dungeontrain.portal.chunkframe.ChunkRoomFramesStore;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
@@ -161,6 +164,72 @@ public final class ChunkFrameEditor {
     public static void clearPlot(ServerLevel level, String name) {
         BlockPos origin = registeredPlotOrigin(name);
         if (origin != null) stampPlot(level, origin, null);
+    }
+
+    /**
+     * Delete {@code name}: its user files (and, in dev mode, its source-tree files), its entries in
+     * every room's frame list, and its plot — re-laying the row, since the slots after it move up.
+     *
+     * @return false when the frame is only bundled and there is nothing of the author's to delete
+     */
+    public static boolean delete(ServerLevel level, String name, boolean fromSource) throws IOException {
+        boolean deleted = ChunkFrameStore.deleteFiles(name, fromSource);
+        deleted |= ChunkFrameVariants.delete(name, fromSource);
+        // Nothing on disk and nothing shipped: a frame entered but never saved. Its plot still goes.
+        if (!deleted && ChunkFrameStore.isBundled(name)) return false;
+        relayRow(level, () -> {
+            ChunkFrameStore.invalidate(name);
+            forEachRoomNaming(name, frames -> frames.without(name), fromSource);
+        });
+        SESSIONS.values().removeIf(name::equals);
+        return true;
+    }
+
+    /**
+     * Rename {@code name} to {@code newName}: its files, its variant sidecar, and every room's frame
+     * list that names it. The player is put on the renamed plot.
+     */
+    public static void rename(ServerPlayer player, ServerLevel level, String name, String newName,
+                              boolean toSource) throws IOException {
+        CompoundTag tag = ChunkFrameStore.readTag(name)
+            .orElseThrow(() -> new IOException("'" + name + "' has no saved frame to rename — save it first."));
+        var variants = games.brennan.dungeontrain.track.variant.TrackVariantBlocks.copyOf(ChunkFrameVariants.loadFor(name));
+        ChunkFrameStore.save(newName, tag, toSource);
+        ChunkFrameVariants.save(newName, variants, toSource);
+        ChunkFrameStore.deleteFiles(name, toSource);
+        ChunkFrameVariants.delete(name, toSource);
+        relayRow(level, () -> {
+            ChunkFrameStore.invalidate(name);
+            forEachRoomNaming(name, frames -> {
+                int weight = frames.entries().stream().filter(e -> e.name().equals(name))
+                    .mapToInt(ChunkRoomFrames.Entry::weight).findFirst().orElse(ChunkRoomFrames.MIN_WEIGHT);
+                return frames.without(name).with(newName, weight);
+            }, toSource);
+        });
+        enter(player, level, newName, null);
+    }
+
+    /** Erase the whole row, run {@code change}, rescan the frame list from disk, and stamp the row again. */
+    private static void relayRow(ServerLevel level, Runnable change) {
+        clearAllPlots(level);
+        change.run();
+        ChunkFrameRegistry.reload();
+        for (EditorStampQueue.Job job : stampAllPlotJobs(level)) job.work().run();
+    }
+
+    /** Rewrite every dimensional carriage room's frame list that names {@code name}. */
+    private static void forEachRoomNaming(String name, java.util.function.UnaryOperator<ChunkRoomFrames> edit,
+                                          boolean toSource) {
+        for (String room : games.brennan.dungeontrain.track.variant.TrackVariantRegistry.namesFor(
+                games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM)) {
+            ChunkRoomFrames frames = ChunkRoomFramesStore.get(room);
+            if (frames.entries().stream().noneMatch(e -> e.name().equals(name))) continue;
+            try {
+                ChunkRoomFramesStore.save(room, edit.apply(frames), toSource);
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Could not update {}'s frame list after changing '{}': {}", room, name, e.toString());
+            }
+        }
     }
 
     /** Erase every frame plot and its cage. */
