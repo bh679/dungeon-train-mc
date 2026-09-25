@@ -3318,6 +3318,8 @@
   "gui.dungeontrain.builder.profile.saved": "%s 已保存到你的建筑中。",
   "gui.dungeontrain.builder.profile.upload_failed": "无法上传 %s——它仍保存在本地。",
   "gui.dungeontrain.builder.profile.too_big": "%s 太大，无法上传——它仍保存在本地。",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s 上传时缺少部分方块变体——它们太大，无法发送。所有内容仍保存在本地。",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s 上传时缺少箱子战利品和方块变体——它们太大，无法发送。所有内容仍保存在本地。",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "“%s”是内置名称，因此没有发送到我的建筑。请用你自己的名称保存，以便在中继上保留一份副本。",
   "gui.dungeontrain.builder.profile.full": "你的建筑已满（%s）。这个已保存在本地，但未上传——请在“我的建筑”中删除一个以腾出空间。",
   "gui.dungeontrain.builder.profile.gone": "%s 已不在中继上——下次保存时会重新上传。",

@@ -3347,6 +3347,8 @@
   "gui.dungeontrain.builder.profile.saved": "%s salvata nelle tue costruzioni.",
   "gui.dungeontrain.builder.profile.upload_failed": "Non è stato possibile caricare %s: resta salvata qui.",
   "gui.dungeontrain.builder.profile.too_big": "%s è troppo grande per essere caricata: resta salvata qui.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s è stata caricata senza alcune varianti di blocco: erano troppo grandi da inviare. Qui è ancora tutto salvato.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s è stata caricata senza il bottino dei forzieri e le varianti di blocco: erano troppo grandi da inviare. Qui è ancora tutto salvato.",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "'%s' ha un nome integrato, quindi NON è stata inviata a Le mie costruzioni. Salvala con un nome tuo per tenerne una copia sul relay.",
   "gui.dungeontrain.builder.profile.full": "Le tue costruzioni sono al completo (%s). Questa è salvata qui, ma non è stata caricata: rimuovine una da «Le mie costruzioni» per fare spazio.",
   "gui.dungeontrain.builder.profile.gone": "%s non è più sul relay: al prossimo salvataggio verrà ricaricata.",
