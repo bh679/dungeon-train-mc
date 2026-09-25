@@ -1778,6 +1778,7 @@
   "key.dungeontrain.template_blocks": "Open Template Blocks Menu (or /dungeontrain editor blocks)",
   "key.dungeontrain.editor_undo": "Editor: Undo (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "Editor: Redo (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "Editor: Reseed Test Carriage (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "Replay Intro Cinematic (spectator only)",
   "key.dungeontrain.container_contents": "Open Container Contents Menu (editor)",
   "key.dungeontrain.manual_spawn": "Spawn Next Carriage (manual spawn mode)",

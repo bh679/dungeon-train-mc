@@ -3470,6 +3470,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "Tegels per rij. Linksklik voor meer, kleinere tegels; rechtsklik of Shift+klik voor minder, grotere.",
   "key.dungeontrain.editor_undo": "Editor: ongedaan maken (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "Editor: opnieuw uitvoeren (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "Editor: testwagon opnieuw loten (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "Openingsfilm opnieuw afspelen (alleen toeschouwer)",
   "key.dungeontrain.container_contents": "Containerinhoudmenu openen (editor)",
   "key.dungeontrain.manual_spawn": "Volgende wagon spawnen (handmatige spawnmodus)",

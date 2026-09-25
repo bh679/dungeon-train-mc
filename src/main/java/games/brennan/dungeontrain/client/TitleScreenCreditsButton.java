@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.client.menu.DiscordIconButton;
 import games.brennan.dungeontrain.client.menu.ShareTabCloseButton;
 import games.brennan.dungeontrain.client.menu.VideosIconButton;
 import games.brennan.dungeontrain.client.videos.VideosScreen;
+import games.brennan.dungeontrain.compat.StreamDetectBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -121,7 +122,7 @@ public final class TitleScreenCreditsButton {
         // cached answer per frame, so the tag slides out whenever it arrives.
         startStreamingProbe();
         VideosIconButton videos = new VideosIconButton(x, y - SIZE - GAP, SIZE, VIDEOS_NARRATION,
-                b -> openVideos(titleScreen), StreamingSoftwareDetector::isRunningNow);
+                b -> openVideos(titleScreen), StreamDetectBridge::isRunningNow);
         videos.setTooltip(Tooltip.create(VIDEOS_NARRATION));
         event.addListener(videos);
         // The × above the tab's far end that folds it away for the session; it positions itself.
@@ -149,9 +150,9 @@ public final class TitleScreenCreditsButton {
 
     /** Hand the streaming-software probe to the IO pool, exactly once per session. */
     private static void startStreamingProbe() {
-        if (streamingProbeStarted || StreamingSoftwareDetector.hasResult()) return;
+        if (streamingProbeStarted || StreamDetectBridge.hasResult()) return;
         streamingProbeStarted = true;
-        Util.ioPool().execute(StreamingSoftwareDetector::detectNow);
+        Util.ioPool().execute(StreamDetectBridge::detectNow);
     }
 
     /** Open the Videos page — in-game, no link to confirm. */

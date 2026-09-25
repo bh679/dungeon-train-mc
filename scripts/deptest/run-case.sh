@@ -86,6 +86,11 @@ resolve() {
     kt)       cached "bh679/keeptrim"                "$(prop keeptrim_version)" ;;
     db)       cached "bh679/dungeonbackup"           "$(prop dungeonbackup_version)" ;;
     sff)      cached "bh679/sable_fence_trapdoor_fix" "$(prop sablefencetrapdoorfix_version)" ;;
+    # Stream Detect / DPI Bypass Detect — hybrid like kt/db/sff: ALSO jarJar'd inside the DT jar.
+    # Present (Case A) they model the CurseForge-app install (nested copy skipped); absent they
+    # model Modrinth/manual, loading from the nested copy.
+    sd)       cached "bh679/streamdetect"            "$(prop streamdetect_version)" ;;
+    dbd)      cached "bh679/dpibypassdetect"         "$(prop dpibypassdetect_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;
     # Above the floor: whatever the cascade has moved playermob_version to. When those two
