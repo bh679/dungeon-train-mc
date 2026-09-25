@@ -434,6 +434,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * {@link #remapForCore}. Same invoke-a-vanilla-feature technique as {@link DisintegrationFeature}'s
      * {@code Feature.CHORUS_PLANT.place}. Each feature is isolated in a try/catch so one bad placement
      * can never abort worldgen.
+     *
+     * <p>A vanilla ({@code minecraft:}) core biome places only vanilla and Dungeon Train features — see
+     * {@link NetherCoreFeatureFilter}. Other mods add their own ores to the vanilla Nether biomes, and the
+     * vanilla-style band must look like the vanilla Nether. BetterNether core biomes keep their full list.</p>
      */
     private void decorateCoreChunkWithNetherFeatures(WorldGenLevel level, ChunkGenerator generator,
                                                      MinecraftServer server, ChunkPos cp, int bedY,
@@ -455,12 +459,19 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         }
         int featureIndex = 0;
         int placed = 0;
+        int skipped = 0;
         for (int step = 0; step < maxSteps; step++) {
             Set<PlacedFeature> placedThisStep = new HashSet<>(); // a feature shared by biomes runs once/step
             for (Holder<Biome> biome : biomes) {
                 List<HolderSet<PlacedFeature>> steps = biome.value().getGenerationSettings().features();
                 if (step >= steps.size()) continue;
+                String biomeNamespace = namespaceOf(biome);
                 for (Holder<PlacedFeature> holder : steps.get(step)) {
+                    // Skipped before it takes a seed index, so the vanilla band seeds like a mod-free world.
+                    if (!NetherCoreFeatureFilter.allowed(biomeNamespace, namespaceOf(holder))) {
+                        skipped++;
+                        continue;
+                    }
                     PlacedFeature pf = holder.value();
                     if (!placedThisStep.add(pf)) continue;
                     random.setFeatureSeed(decoSeed, featureIndex++, step);
@@ -474,8 +485,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 }
             }
         }
-        LOGGER.debug("[DungeonTrain] Decorated Nether core chunk {} with {} biome(s) ({}/{} features placed, band y{}..{})",
-                cp, biomes.size(), placed, featureIndex, coreBottom, coreTop);
+        LOGGER.debug("[DungeonTrain] Decorated Nether core chunk {} with {} biome(s) ({}/{} features placed, "
+                        + "{} non-vanilla skipped, band y{}..{})",
+                cp, biomes.size(), placed, featureIndex, skipped, coreBottom, coreTop);
         if (GenDeterminismLog.ENABLED) {
             StringBuilder biomeKeys = new StringBuilder();
             for (Holder<Biome> b : biomes) {
@@ -518,6 +530,11 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             }
         }
         return new ArrayList<>(out);
+    }
+
+    /** Registry namespace of a holder's key, or {@code null} for an unkeyed (direct) holder. */
+    private static String namespaceOf(Holder<?> holder) {
+        return holder.unwrapKey().map(k -> k.location().getNamespace()).orElse(null);
     }
 
     /** The real-Nether biome KEY for a core column (drives the per-biome surface skin); nether_wastes fallback. */
