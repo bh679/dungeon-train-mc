@@ -1601,10 +1601,30 @@ public final class EditorCommand {
                         g -> g.withMaxLevel(IntegerArgumentType.getInteger(c, "value"))))));
     }
 
+    /**
+     * The {@code mask <n>} phase action — replace the whole band set at once ({@link TrainPhase#bit()}
+     * per band, {@code 1..ALL_MASK}). Sent by the type menu's band-group toggles and band picker so a
+     * group flip is one write, not one per band. A literal, so it wins over the {@code <phase>} word
+     * argument beside it.
+     */
+    @FunctionalInterface
+    interface PhaseMaskApply {
+        int apply(CommandContext<CommandSourceStack> c,
+                  java.util.function.UnaryOperator<TemplateGate> op);
+    }
+
+    static LiteralArgumentBuilder<CommandSourceStack> phaseMaskBranch(PhaseMaskApply apply) {
+        return Commands.literal("mask")
+            .then(Commands.argument("mask", IntegerArgumentType.integer(1, TrainPhase.ALL_MASK))
+                .executes(c -> apply.apply(c,
+                    g -> g.withPhaseMask(IntegerArgumentType.getInteger(c, "mask")))));
+    }
+
     static LiteralArgumentBuilder<CommandSourceStack> phaseSingle(
             SuggestionProvider<CommandSourceStack> sug, SingleGateOp run) {
         return Commands.literal("phase")
             .then(Commands.argument("id", StringArgumentType.word()).suggests(sug)
+                .then(phaseMaskBranch((c, op) -> run.run(c.getSource(), StringArgumentType.getString(c, "id"), op)))
                 .then(Commands.argument("phase", StringArgumentType.word()).suggests(PHASE_SUGGESTIONS)
                     .then(Commands.literal("on").executes(c -> run.run(c.getSource(), StringArgumentType.getString(c, "id"),
                         g -> togglePhase(g, StringArgumentType.getString(c, "phase"), true))))
@@ -2162,6 +2182,8 @@ public final class EditorCommand {
         return Commands.literal("phase")
             .then(Commands.argument("kind", StringArgumentType.word()).suggests(TRACK_KIND_SUGGESTIONS)
                 .then(Commands.argument("name", StringArgumentType.word()).suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                    .then(phaseMaskBranch((c, op) -> applyTrackGate(c.getSource(),
+                        StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"), op)))
                     .then(Commands.argument("phase", StringArgumentType.word()).suggests(PHASE_SUGGESTIONS)
                         .then(Commands.literal("on").executes(c -> applyTrackGate(c.getSource(),
                             StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
@@ -2449,6 +2471,8 @@ public final class EditorCommand {
         return Commands.literal("phase")
             .then(Commands.argument("parent", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
                 .then(Commands.argument("child", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
+                    .then(phaseMaskBranch((c, op) -> applyGroupMemberGate(c.getSource(),
+                        StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"), op)))
                     .then(Commands.argument("phase", StringArgumentType.word()).suggests(PHASE_SUGGESTIONS)
                         .then(Commands.literal("on").executes(c -> applyGroupMemberGate(c.getSource(),
                             StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),
@@ -5748,6 +5772,8 @@ public final class EditorCommand {
         return Commands.literal("phase")
             .then(Commands.argument("parent", StringArgumentType.word()).suggests(sug)
                 .then(Commands.argument("child", StringArgumentType.word()).suggests(sug)
+                    .then(phaseMaskBranch((c, op) -> applyTrackGroupMemberGate(c.getSource(), kind,
+                        StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"), op)))
                     .then(Commands.argument("phase", StringArgumentType.word()).suggests(PHASE_SUGGESTIONS)
                         .then(Commands.literal("on").executes(c -> applyTrackGroupMemberGate(c.getSource(), kind,
                             StringArgumentType.getString(c, "parent"), StringArgumentType.getString(c, "child"),

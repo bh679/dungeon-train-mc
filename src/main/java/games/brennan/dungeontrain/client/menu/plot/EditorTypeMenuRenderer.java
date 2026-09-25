@@ -13,7 +13,7 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.editor.PlotCategory;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.BandGroup;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
@@ -31,7 +31,6 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.slf4j.Logger;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -99,7 +98,11 @@ public final class EditorTypeMenuRenderer {
         MIN_LEVEL,
         /** Spawn-gate max Diff-Level cell — click +1, shift-click -1 (cycles through "all"). */
         MAX_LEVEL,
-        /** Spawn-gate phase cell — {@code slotIdx} = phase ordinal (0..3); click toggles that phase. */
+        /**
+         * Spawn-gate band cell — {@code slotIdx} = {@link games.brennan.dungeontrain.worldgen.BandGroup}
+         * ordinal (click toggles that group, shift solos it) or {@link BandGroupToggle#PICKER_SLOT}
+         * (opens the band picker).
+         */
         PHASE,
         /** Per-template Stage selector — click opens the Stage / Custom picker (chip when linked). */
         STAGE,
@@ -168,25 +171,12 @@ public final class EditorTypeMenuRenderer {
     /** Fraction of panel width allocated to the weight cell on rows that have one. */
     static final double WEIGHT_CELL_FRACTION = 0.25;
     /**
-     * Fraction of panel width allocated to the gate area (weight | [stage] | min | max | phase) on
+     * Fraction of panel width allocated to the gate area (weight | [stage] | min | max | bands) on
      * rows that carry a per-template spawn gate. Wider than {@link #WEIGHT_CELL_FRACTION} to fit
-     * the cells — including one letter per {@link TrainPhase}; the name fills the remaining
+     * the cells — including the {@link BandGroupToggle} band cell; the name fills the remaining
      * {@code 1 - GATE_AREA_FRACTION}.
      */
-    static final double GATE_AREA_FRACTION = 0.68;
-    /**
-     * Phase-cell letter labels, indexed by {@link TrainPhase} ordinal ({@code O N V E U C}) — derived
-     * from {@link TrainPhase#letter()} so a new phase shows up without touching the renderer.
-     */
-    static final String[] PHASE_LETTERS = Arrays.stream(TrainPhase.values())
-        .map(TrainPhase::letter).toArray(String[]::new);
-    /** Gate-area layout units per phase letter (the min/max cells are 1 unit each). */
-    static final double PHASE_LETTER_UNITS = 0.4;
-
-    /** Gate-area layout units of the whole phase cell — one {@link #PHASE_LETTER_UNITS} per phase. */
-    static double phaseUnits() {
-        return PHASE_LETTER_UNITS * PHASE_LETTERS.length;
-    }
+    static final double GATE_AREA_FRACTION = 0.60;
     /** Visible gap (panel-local units) between the per-plot panel and a companion type menu. */
     static final double COMPANION_GAP = 0.15;
     /** Minimum width of a collapsed tab column — keeps single-character type names readable. */
@@ -227,8 +217,9 @@ public final class EditorTypeMenuRenderer {
     private static final int WEIGHT_COLOR = 0xFFFFEEBB;
     /** Light-blue text for the min/max spawn-level cells, distinct from the warm weight colour. */
     private static final int LEVEL_COLOR = 0xFFBBD0FF;
-    /** Phase letter colours — bright green when the phase is enabled, dim grey when off. */
+    /** Band-group colours — bright green when the whole group is on, amber when partly, dim grey when off. */
     private static final int PHASE_ON_COLOR = 0xFF66FF66;
+    private static final int PHASE_SOME_COLOR = 0xFFFFCC44;
     private static final int PHASE_OFF_COLOR = 0xFF777777;
     /** Bright green text for the "+ New" label so it stands out from variant rows. */
     private static final int NEW_COLOR = 0xFFAAFFAA;
@@ -917,11 +908,7 @@ public final class EditorTypeMenuRenderer {
         if (rc.showStage() && hitX < rc.stageR()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE);
         if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
         if (hitX < rc.maxR()) return new Hovered(menuIdx, variantIdx, CellKind.MAX_LEVEL);
-        double subW = rc.phaseSubW(halfW);
-        int slot = subW > 0 ? (int) ((hitX - rc.maxR()) / subW) : 0;
-        if (slot < 0) slot = 0;
-        if (slot >= PHASE_LETTERS.length) slot = PHASE_LETTERS.length - 1;
-        return new Hovered(menuIdx, variantIdx, CellKind.PHASE, slot);
+        return new Hovered(menuIdx, variantIdx, CellKind.PHASE, BandGroupToggle.slotAt(hitX, rc.maxR(), halfW));
     }
 
     private static Hovered hitForNav(int menuIdx, EditorTypeMenusPacket.Menu menu, Font font,
@@ -1048,12 +1035,8 @@ public final class EditorTypeMenuRenderer {
         if (rc.showStage() && hitX < rc.stageR()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE);
         if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
         if (hitX < rc.maxR()) return new Hovered(menuIdx, variantIdx, CellKind.MAX_LEVEL);
-        // Phase cell — resolve which phase letter was hit.
-        double subW = rc.phaseSubW(colRight);
-        int slot = subW > 0 ? (int) ((hitX - rc.maxR()) / subW) : 0;
-        if (slot < 0) slot = 0;
-        if (slot >= PHASE_LETTERS.length) slot = PHASE_LETTERS.length - 1;
-        return new Hovered(menuIdx, variantIdx, CellKind.PHASE, slot);
+        // Band cell — resolve which group toggle (or the picker cell) was hit.
+        return new Hovered(menuIdx, variantIdx, CellKind.PHASE, BandGroupToggle.slotAt(hitX, rc.maxR(), colRight));
     }
 
 
@@ -1413,8 +1396,6 @@ public final class EditorTypeMenuRenderer {
     private record RightCells(boolean hasWeight, boolean showGate, boolean showStage, boolean linked,
                               double nameRight, double weightL, double weightR,
                               double stageR, double minR, double maxR) {
-        /** Sub-cell width of one phase letter within the phase cell [{@code maxR}, {@code rowRight}]. */
-        double phaseSubW(double rowRight) { return (rowRight - maxR) / PHASE_LETTERS.length; }
     }
 
     /**
@@ -1443,22 +1424,22 @@ public final class EditorTypeMenuRenderer {
         if (showStage && linked) {
             // weight | Stage chip (spans the rest). No min/max/phase cells; the weight cell keeps the
             // legacy gate row's width so it lines up with unlinked rows.
-            double unit = (rowRight - gateLeft) / (3.0 + phaseUnits());
+            double unit = (rowRight - gateLeft) / (3.0 + BandGroupToggle.UNITS);
             double weightR = gateLeft + unit;
             return new RightCells(true, true, true, true, gateLeft, gateLeft, weightR,
                 rowRight, rowRight, rowRight);
         }
         if (showStage) {
-            // weight | stage | min | max | phase. Units: 1 | 1.1 | 1 | 1 | phaseUnits().
-            double unit = (rowRight - gateLeft) / (4.1 + phaseUnits());
+            // weight | stage | min | max | phase. Units: 1 | 1.1 | 1 | 1 | BandGroupToggle.UNITS.
+            double unit = (rowRight - gateLeft) / (4.1 + BandGroupToggle.UNITS);
             double weightR = gateLeft + unit;
             double stageR = weightR + 1.1 * unit;
             double minR = stageR + unit;
             double maxR = minR + unit;
             return new RightCells(true, true, true, false, gateLeft, gateLeft, weightR, stageR, minR, maxR);
         }
-        // Legacy gate row (no stage selector): weight | min | max | phase = 1 | 1 | 1 | phaseUnits().
-        double unit = (rowRight - gateLeft) / (3.0 + phaseUnits());
+        // Legacy gate row (no stage selector): weight | min | max | phase = 1 | 1 | 1 | BandGroupToggle.UNITS.
+        double unit = (rowRight - gateLeft) / (3.0 + BandGroupToggle.UNITS);
         double weightR = gateLeft + unit;
         double minR = weightR + unit;
         double maxR = minR + unit;
@@ -1521,11 +1502,8 @@ public final class EditorTypeMenuRenderer {
                     rc.maxR() - 0.005, rowTop - 0.005, HOVER_COLOR);
             }
             case PHASE -> {
-                if (rc.showGate() && hoverSlot >= 0 && hoverSlot < PHASE_LETTERS.length) {
-                    double subW = rc.phaseSubW(rowRight);
-                    double l = rc.maxR() + hoverSlot * subW;
-                    drawQuad(ps, buffer, l + 0.005, rowBottom + 0.005,
-                        l + subW - 0.005, rowTop - 0.005, HOVER_COLOR);
+                if (rc.showGate() && hoverSlot >= 0) {
+                    drawBandHover(ps, buffer, hoverSlot, rc.maxR(), rowRight, rowBottom, rowTop);
                 }
             }
             default -> { }
@@ -1575,14 +1553,39 @@ public final class EditorTypeMenuRenderer {
         String maxLabel = variant.maxLevel() < 0 ? "≤∞" : "≤" + variant.maxLevel();
         drawCenteredText(ps, buffer, font, maxLabel, maxCX, rowCY, LEVEL_COLOR);
 
-        // Phase letters — one per phase, bright when enabled.
-        double subW = rc.phaseSubW(rowRight);
-        for (int slot = 0; slot < PHASE_LETTERS.length; slot++) {
-            boolean on = (variant.phaseMask() & TrainPhase.values()[slot].bit()) != 0;
-            double cx = rc.maxR() + (slot + 0.5) * subW;
-            drawCenteredText(ps, buffer, font, PHASE_LETTERS[slot], cx, rowCY,
-                on ? PHASE_ON_COLOR : PHASE_OFF_COLOR);
+        drawBandCells(ps, buffer, font, variant.phaseMask(), rc.maxR(), rowRight, rowCY);
+    }
+
+    /**
+     * The band cell over [{@code left}, {@code right}]: one tri-state label per
+     * {@link BandGroup} ({@code ●} all on, {@code ◐} some, {@code ○} none) and the "▸" picker cell.
+     * Labels shrink to fit their cell so long translations never spill into the neighbour.
+     */
+    private static void drawBandCells(PoseStack ps, MultiBufferSource buffer, Font font, int mask,
+                                      double left, double right, double rowCY) {
+        for (BandGroup group : BandGroup.values()) {
+            int slot = group.ordinal();
+            double l = BandGroupToggle.slotLeft(slot, left, right);
+            double r = BandGroupToggle.slotRight(slot, left, right);
+            BandGroup.State state = group.state(mask);
+            int colour = switch (state) {
+                case ALL -> PHASE_ON_COLOR;
+                case SOME -> PHASE_SOME_COLOR;
+                case NONE -> PHASE_OFF_COLOR;
+            };
+            String label = games.brennan.dungeontrain.client.menu.BandPickerScreen.glyph(state) + MenuLang.t("band_group." + group.token() + ".short");
+            drawFittedText(ps, buffer, font, label, (l + r) / 2.0, rowCY, r - l - 0.04, colour);
         }
+        double pl = BandGroupToggle.slotLeft(BandGroupToggle.PICKER_SLOT, left, right);
+        drawCenteredText(ps, buffer, font, "▸", (pl + right) / 2.0, rowCY, STAGE_COLOR);
+    }
+
+    /** Hover highlight behind band-cell {@code slot} within [{@code left}, {@code right}]. */
+    private static void drawBandHover(PoseStack ps, MultiBufferSource buffer, int slot,
+                                      double left, double right, double rowBottom, double rowTop) {
+        double l = BandGroupToggle.slotLeft(slot, left, right);
+        double r = BandGroupToggle.slotRight(slot, left, right);
+        drawQuad(ps, buffer, l + 0.005, rowBottom + 0.005, r - 0.005, rowTop - 0.005, HOVER_COLOR);
     }
 
     // ---------- Stages management panel ----------
@@ -1616,13 +1619,12 @@ public final class EditorTypeMenuRenderer {
 
     /** Cell boundaries for a Stages-panel row: name | icons | min | max | phase (no weight cell). */
     private record StageRowCells(double nameRight, double iconsRight, double minR, double maxR) {
-        double phaseSubW(double rowRight) { return (rowRight - maxR) / PHASE_LETTERS.length; }
     }
 
     private static StageRowCells stageRowCells(double rowLeft, double rowRight) {
         double colW = rowRight - rowLeft;
         double gateLeft = rowRight - colW * GATE_AREA_FRACTION;
-        double unit = (rowRight - gateLeft) / (2.0 + phaseUnits()); // min | max | phase = 1 | 1 | phaseUnits()
+        double unit = (rowRight - gateLeft) / (2.0 + BandGroupToggle.UNITS); // min | max | phase = 1 | 1 | BandGroupToggle.UNITS
         double minR = gateLeft + unit;
         double maxR = minR + unit;
         return new StageRowCells(gateLeft - STAGE_ICON_STRIP_W, gateLeft, minR, maxR);
@@ -1685,10 +1687,8 @@ public final class EditorTypeMenuRenderer {
                 case MIN_LEVEL -> drawQuad(ps, buffer, rc.iconsRight() + 0.005, rowBottom + 0.005, rc.minR() - 0.005, rowTop - 0.005, HOVER_COLOR);
                 case MAX_LEVEL -> drawQuad(ps, buffer, rc.minR() + 0.005, rowBottom + 0.005, rc.maxR() - 0.005, rowTop - 0.005, HOVER_COLOR);
                 case PHASE -> {
-                    if (hovered.slotIdx() >= 0 && hovered.slotIdx() < PHASE_LETTERS.length) {
-                        double subW = rc.phaseSubW(halfW);
-                        double l = rc.maxR() + hovered.slotIdx() * subW;
-                        drawQuad(ps, buffer, l + 0.005, rowBottom + 0.005, l + subW - 0.005, rowTop - 0.005, HOVER_COLOR);
+                    if (hovered.slotIdx() >= 0) {
+                        drawBandHover(ps, buffer, hovered.slotIdx(), rc.maxR(), halfW, rowBottom, rowTop);
                     }
                 }
                 default -> { }
@@ -1701,12 +1701,7 @@ public final class EditorTypeMenuRenderer {
             drawCenteredText(ps, buffer, font, "≥" + v.minLevel(), minCX, rowCY, LEVEL_COLOR);
             double maxCX = (rc.minR() + rc.maxR()) / 2.0;
             drawCenteredText(ps, buffer, font, v.maxLevel() < 0 ? "≤∞" : "≤" + v.maxLevel(), maxCX, rowCY, LEVEL_COLOR);
-            double subW = rc.phaseSubW(halfW);
-            for (int slot = 0; slot < PHASE_LETTERS.length; slot++) {
-                boolean on = (v.phaseMask() & TrainPhase.values()[slot].bit()) != 0;
-                double cx = rc.maxR() + (slot + 0.5) * subW;
-                drawCenteredText(ps, buffer, font, PHASE_LETTERS[slot], cx, rowCY, on ? PHASE_ON_COLOR : PHASE_OFF_COLOR);
-            }
+            drawBandCells(ps, buffer, font, v.phaseMask(), rc.maxR(), halfW, rowCY);
         }
     }
 
@@ -1815,11 +1810,7 @@ public final class EditorTypeMenuRenderer {
         if (hitX < rc.iconsRight()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE_BLOCKS);
         if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
         if (hitX < rc.maxR()) return new Hovered(menuIdx, variantIdx, CellKind.MAX_LEVEL);
-        double subW = rc.phaseSubW(halfW);
-        int slot = subW > 0 ? (int) ((hitX - rc.maxR()) / subW) : 0;
-        if (slot < 0) slot = 0;
-        if (slot >= PHASE_LETTERS.length) slot = PHASE_LETTERS.length - 1;
-        return new Hovered(menuIdx, variantIdx, CellKind.PHASE, slot);
+        return new Hovered(menuIdx, variantIdx, CellKind.PHASE, BandGroupToggle.slotAt(hitX, rc.maxR(), halfW));
     }
 
     /**
@@ -2034,6 +2025,24 @@ public final class EditorTypeMenuRenderer {
         // Enable cell on the unsaved pseudo-package is rendered as inert "—".
         if (isUnsaved) return Hovered.NONE;
         return new Hovered(menuIdx, pkgIdx, CellKind.PKG_ENABLE);
+    }
+
+    /** {@link #drawCenteredText}, shrunk (never grown) so the text fits {@code maxWidth} panel units. */
+    static void drawFittedText(
+        PoseStack ps, MultiBufferSource buffer, Font font,
+        String text, double worldX, double worldY, double maxWidth, int colour
+    ) {
+        double natural = font.width(text) * TEXT_SCALE;
+        if (natural <= maxWidth || maxWidth <= 0) {
+            drawCenteredText(ps, buffer, font, text, worldX, worldY, colour);
+            return;
+        }
+        float factor = (float) (maxWidth / natural);
+        ps.pushPose();
+        ps.translate(worldX, worldY, 0);
+        ps.scale(factor, factor, 1f);
+        drawCenteredText(ps, buffer, font, text, 0, 0, colour);
+        ps.popPose();
     }
 
     static void drawCenteredText(

@@ -154,6 +154,17 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
     }
 
     /**
+     * Replace the whole phase set with the bands in {@code mask} ({@link TrainPhase#bit()} per band)
+     * — the editor's group toggles and band picker. Rejects an empty mask rather than letting the
+     * "empty ⇒ all" normalisation silently turn "no bands" into "every band".
+     */
+    public TemplateGate withPhaseMask(int mask) {
+        EnumSet<TrainPhase> next = TrainPhase.fromMask(mask & TrainPhase.ALL_MASK);
+        if (next.isEmpty()) throw new IllegalArgumentException("phase mask selects no bands: " + mask);
+        return new TemplateGate(minLevel, maxLevel, next);
+    }
+
+    /**
      * Toggle every dimension <em>except</em> {@code keep} (whose membership is preserved) — the
      * editor's shift-click on a dimension letter, "toggle all but that one". From the all-on default
      * this solos {@code keep}; applied again it restores the rest. An empty result normalises back to

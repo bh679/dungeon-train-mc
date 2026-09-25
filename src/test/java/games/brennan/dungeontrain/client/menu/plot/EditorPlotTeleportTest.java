@@ -69,6 +69,11 @@ final class EditorPlotTeleportTest {
         assertEquals("dungeontrain editor phase std nether on",
             EditorPlotTeleport.phaseCommandFor(PlotCategory.CARRIAGES, "std", "ignored", "nether", "on"));
         assertNull(EditorPlotTeleport.phaseCommandFor(PlotCategory.PARTS, "floor", "checker", "nether", "on"));
+        // Band toggles send the whole set at once through the same builder: "phase <id> mask <n>".
+        assertEquals("dungeontrain editor phase std mask 7",
+            EditorPlotTeleport.phaseCommandFor(PlotCategory.CARRIAGES, "std", "ignored", "mask", "7"));
+        assertEquals("dungeontrain editor stage phase deep mask 3",
+            EditorPlotTeleport.stagePhaseCommandFor("deep", "mask", "3"));
     }
 
     @Test

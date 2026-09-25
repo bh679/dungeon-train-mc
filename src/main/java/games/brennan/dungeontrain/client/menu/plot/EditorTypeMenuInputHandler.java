@@ -15,7 +15,8 @@ import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer.Hovere
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.editor.PlotCategory;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.client.menu.BandPickerScreen;
+import games.brennan.dungeontrain.worldgen.BandGroup;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Direction;
@@ -32,6 +33,8 @@ import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 
 import java.util.List;
+import java.util.OptionalInt;
+import java.util.function.IntFunction;
 
 /**
  * Mouse wiring for the floating template-type menus. Mirrors
@@ -340,7 +343,12 @@ public final class EditorTypeMenuInputHandler {
             // silently detach. Custom rows edit the inline gate as before.
             case MIN_LEVEL -> { if (!openPickerIfLinked(menu, variant)) dispatchLevel(menu, variant, "minlevel", shift); }
             case MAX_LEVEL -> { if (!openPickerIfLinked(menu, variant)) dispatchLevel(menu, variant, "maxlevel", shift); }
-            case PHASE -> { if (!openPickerIfLinked(menu, variant)) dispatchPhase(menu, variant, hit.slotIdx(), shift); }
+            case PHASE -> {
+                if (!openPickerIfLinked(menu, variant)) {
+                    dispatchBands(variant.displayName(), variant.phaseMask(), hit.slotIdx(), shift,
+                        maskCommand(menu, variant));
+                }
+            }
             default -> {}
         }
     }
@@ -418,13 +426,10 @@ public final class EditorTypeMenuInputHandler {
             }
             case PHASE -> {
                 String id = stageIdAt(menu, hit);
-                int slot = hit.slotIdx();
-                if (id == null || slot < 0 || slot >= TrainPhase.values().length) return;
-                TrainPhase phase = TrainPhase.values()[slot];
-                int mask = menu.variants().get(hit.variantIdx()).phaseMask();
-                boolean on = (mask & phase.bit()) != 0;
-                String action = shift ? "others" : (on ? "off" : "on");
-                CommandRunner.run(EditorPlotTeleport.stagePhaseCommandFor(id, phase.token(), action));
+                if (id == null) return;
+                EditorTypeMenusPacket.Variant stage = menu.variants().get(hit.variantIdx());
+                dispatchBands(stage.displayName(), stage.phaseMask(), hit.slotIdx(), shift,
+                    m -> EditorPlotTeleport.stagePhaseCommandFor(id, MASK_TOKEN, String.valueOf(m)));
             }
             case STAGE_BLOCKS -> {
                 // The row's icon strip just SELECTS the stage (which auto-opens/closes its panel) —
@@ -469,34 +474,51 @@ public final class EditorTypeMenuInputHandler {
         CommandRunner.run(cmd);
     }
 
+    /** The {@code phase} sub-command's bulk form: {@code … phase <id> mask <n>} sets every band at once. */
+    private static final String MASK_TOKEN = "mask";
+
     /**
-     * Toggle the dimension identified by {@code slot} (TrainPhase ordinal) on the variant's gate.
-     * Plain click flips that one ({@code on}/{@code off}); shift-click sends the shared {@code others}
-     * action — "toggle all but that one" — so this matches the parts menu and the keyboard Phases menu.
+     * A band-cell click on a row whose bands are {@code mask}. A group slot flips that
+     * {@link BandGroup} (shift solos it) and sends the resulting mask; the picker slot opens the
+     * {@link BandPickerScreen}. A flip that would leave no band is refused with an action-bar note.
      */
-    private static void dispatchPhase(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant,
-                                      int slot, boolean shift) {
-        if (slot < 0 || slot >= TrainPhase.values().length) return;
-        TrainPhase phase = TrainPhase.values()[slot];
-        boolean on = (variant.phaseMask() & phase.bit()) != 0;
-        String action = shift ? "others" : (on ? "off" : "on");
-        if (isSubVariants(menu)) {
-            String parentId = menu.variants().get(0).modelId();
-            String cmd = isPortalRoom(variant)
-                ? EditorPlotTeleport.portalRoomGroupPhaseCommandFor(
-                    parentId, variant.modelId(), phase.token(), action)
-                : EditorPlotTeleport.groupMemberPhaseCommandFor(
-                    parentId, variant.modelId(), phase.token(), action);
-            LOGGER.debug("[DungeonTrain] EditorTypeMenu group phase {} {}: {}", phase.token(), action, cmd);
-            CommandRunner.run(cmd);
+    private static void dispatchBands(String name, int mask, int slot, boolean shift, IntFunction<String> maskCommand) {
+        if (maskCommand == null || slot < 0) return;
+        if (slot >= BandGroupToggle.PICKER_SLOT) {
+            CommandMenuState.openAt(new BandPickerScreen(name, mask, maskCommand));
             return;
         }
-        String cmd = EditorPlotTeleport.phaseCommandFor(
-            variant.plotCategory(), variant.modelId(), variant.modelName(),
-            phase.token(), action);
-        if (cmd == null) return;
-        LOGGER.debug("[DungeonTrain] EditorTypeMenu phase {} {}: {}", phase.token(), action, cmd);
+        OptionalInt next = BandGroupToggle.clickGroup(mask, BandGroup.values()[slot], shift);
+        if (next.isEmpty()) {
+            BandPickerScreen.notifyNeedOneBand();
+            return;
+        }
+        if (next.getAsInt() == mask) return;
+        String cmd = maskCommand.apply(next.getAsInt());
+        LOGGER.debug("[DungeonTrain] EditorTypeMenu bands: {}", cmd);
         CommandRunner.run(cmd);
+    }
+
+    /**
+     * Builds {@code variant}'s "set bands to mask" command. Sub-Variants rows target the group
+     * member's gate (parent = the companion's first row; portal rooms one template layer up);
+     * elsewhere the top-level template gate. Null when the category has no phase command.
+     */
+    private static IntFunction<String> maskCommand(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant) {
+        if (isSubVariants(menu)) {
+            String parentId = menu.variants().get(0).modelId();
+            return isPortalRoom(variant)
+                ? m -> EditorPlotTeleport.portalRoomGroupPhaseCommandFor(
+                    parentId, variant.modelId(), MASK_TOKEN, String.valueOf(m))
+                : m -> EditorPlotTeleport.groupMemberPhaseCommandFor(
+                    parentId, variant.modelId(), MASK_TOKEN, String.valueOf(m));
+        }
+        if (EditorPlotTeleport.phaseCommandFor(variant.plotCategory(), variant.modelId(),
+                variant.modelName(), MASK_TOKEN, "1") == null) {
+            return null;
+        }
+        return m -> EditorPlotTeleport.phaseCommandFor(variant.plotCategory(), variant.modelId(),
+            variant.modelName(), MASK_TOKEN, String.valueOf(m));
     }
 
     /** {@code value} unless it is null or blank, in which case {@code fallback}. */
