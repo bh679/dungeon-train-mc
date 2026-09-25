@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.StrongholdRingGate;
 import games.brennan.dungeontrain.worldgen.VanillaBiomeFeatures;
 import games.brennan.dungeontrain.worldgen.VanillaBiomeTwins;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
@@ -45,7 +46,9 @@ import org.slf4j.Logger;
  * All of this completes before the first chunk bakes, so no chunk ever generates against a null
  * context (the old {@code ServerStartedEvent}-only publish lost that race for spawn-region and
  * pregen chunks). A {@link ServerStartedEvent} refresh is kept as an idempotent last word for
- * dimensions registered late by other mods. Runs at {@link EventPriority#LOW} so
+ * dimensions registered late by other mods. The overworld's stronghold ring search starts from the
+ * first publish too ({@link StrongholdRingGate}), so the rings never sample a half-published context.
+ * Runs at {@link EventPriority#LOW} so
  * {@code WorldLifecycleEvents.onOverworldLoad} (HIGH, client-only) has already committed pending
  * world-creation choices into {@link DungeonTrainWorldData} (train geometry,
  * {@code startsWithTrain}) on the same event. Cleared on stop so a singleplayer world-switch in
@@ -155,6 +158,9 @@ public final class NetherBandContextEvents {
             games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.clear();
             OverworldStretchBiomes.clear();
             LOGGER.error("[DungeonTrain] Failed to publish nether-band terrain context; mountains stay flat this session", t);
+        } finally {
+            // Only now may the stronghold rings sample the overworld's biomes — see StrongholdRingGate.
+            StrongholdRingGate.start(server.overworld());
         }
     }
 
