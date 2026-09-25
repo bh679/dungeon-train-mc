@@ -17,8 +17,19 @@ import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import games.brennan.dungeontrain.worldgen.density.OverworldBiomeSourceMark;
 import games.brennan.dungeontrain.mixin.MultiNoiseBiomeSourceAccessor;
 import net.minecraft.world.level.biome.MultiNoiseBiomeSource;
+import net.minecraft.core.Registry;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
+import terrablender.api.Region;
+import terrablender.api.RegionType;
+import terrablender.api.Regions;
+import terrablender.api.SurfaceRuleManager;
+import terrablender.worldgen.IExtendedBiomeSource;
+import terrablender.worldgen.IExtendedNoiseGeneratorSettings;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -106,7 +117,13 @@ public final class PortalChunkSources {
                 MultiNoiseBiomeSource own = MultiNoiseBiomeSource.createFromList(
                     ((MultiNoiseBiomeSourceAccessor) shared).dungeontrain$parameters());
                 ((OverworldBiomeSourceMark) own).dungeontrain$markOverworld();
-                presetGenerator = new NoiseBasedChunkGenerator(own, presetGenerator.generatorSettings());
+                // The two things TerraBlender does to a live overworld and nothing does to this one.
+                // A generator decorates only with the features of the biomes its source says it can
+                // produce, so a BoP biome the stretch picker hands back came out with none of BoP's
+                // trees or plants on it — a BoP room with not one BoP block in it.
+                ((IExtendedBiomeSource) own).appendDeferredBiomesList(terraBlenderBiomes(host));
+                presetGenerator = new NoiseBasedChunkGenerator(own,
+                    Holder.direct(withModSurfaceRules(presetGenerator.generatorSettings().value())));
             }
             NoiseBasedChunkGenerator noise =
                 SampleGenerators.forStandIn(host.getServer(), source, presetGenerator, seed);
@@ -127,6 +144,37 @@ public final class PortalChunkSources {
                 source.levelKey().location(), e);
             return null;
         }
+    }
+
+    /** Every overworld biome a TerraBlender region adds — BoP's, in this pack. */
+    private static List<Holder<Biome>> terraBlenderBiomes(ServerLevel host) {
+        Registry<Biome> biomes = host.registryAccess().registryOrThrow(Registries.BIOME);
+        List<Holder<Biome>> out = new ArrayList<>();
+        for (Region region : Regions.get(RegionType.OVERWORLD)) {
+            region.addBiomes(biomes, point -> {
+                ResourceKey<Biome> key = point.getSecond();
+                if (key == Region.DEFERRED_PLACEHOLDER) return;
+                biomes.getHolder(key).ifPresent(out::add);
+            });
+        }
+        return out;
+    }
+
+    /**
+     * A copy of {@code settings} that answers with TerraBlender's namespaced surface rules — how a BoP
+     * biome gets its own ground rather than vanilla's grass-over-dirt. TerraBlender switches them on
+     * per settings instance, and only for the ones a live world loads; a copy keeps the switch off
+     * the registry's own.
+     */
+    private static NoiseGeneratorSettings withModSurfaceRules(NoiseGeneratorSettings settings) {
+        NoiseGeneratorSettings copy = new NoiseGeneratorSettings(settings.noiseSettings(),
+            settings.defaultBlock(), settings.defaultFluid(), settings.noiseRouter(),
+            settings.surfaceRule(), settings.spawnTarget(), settings.seaLevel(),
+            settings.disableMobGeneration(), settings.aquifersEnabled(), settings.oreVeinsEnabled(),
+            settings.useLegacyRandomSource());
+        ((IExtendedNoiseGeneratorSettings) (Object) copy)
+            .setRuleCategory(SurfaceRuleManager.RuleCategory.OVERWORLD);
+        return copy;
     }
 
     private static ResourceKey<LevelStem> stemFor(ResourceKey<Level> level) {
