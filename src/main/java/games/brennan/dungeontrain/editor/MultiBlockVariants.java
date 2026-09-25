@@ -36,6 +36,8 @@ public final class MultiBlockVariants {
 
     /** Salt so the "position R" coin never correlates with the cell's own pick. */
     private static final long POSITION_SALT = 0x5DEECE66DL;
+    /** Separate salt for the "How many R" coin, so it is independent of the position coin. */
+    private static final long COUNT_SALT = 0x2545F4914F6CDD1DL;
 
     private MultiBlockVariants() {}
 
@@ -97,18 +99,26 @@ public final class MultiBlockVariants {
         if (footprint == null) return List.of(here);
 
         BlockPos second = localPos.offset(footprint);
-        VariantSpan.Mode mode = (span == null ? VariantSpan.NONE : span)
+        VariantSpan s = (span == null ? VariantSpan.NONE : span)
             .resolve(MultiBlockFootprint.firstEntryIsMulti(cell));
-        if (mode == VariantSpan.Mode.ONE_RANDOM) {
-            mode = positionCoin(localPos, worldSeed, index)
-                ? VariantSpan.Mode.ONE_SECOND : VariantSpan.Mode.ONE_FIRST;
-        }
-        return switch (mode) {
-            case ONE_SECOND -> List.of(Write.air(localPos), new Write(second, picked, rotated));
-            case TWO_SAME -> List.of(here, new Write(second, picked, rotated));
-            case TWO_RANDOM -> List.of(here, reroll(cell, picked, second, worldSeed, index, rotator));
-            default -> List.of(here, Write.air(second));
+        boolean both = switch (s.count()) {
+            case ONE -> false;
+            case TWO -> true;
+            case RANDOM -> coin(localPos, worldSeed, index, COUNT_SALT);
         };
+        if (both) {
+            return s.fill() == VariantSpan.Fill.SAME
+                ? List.of(here, new Write(second, picked, rotated))
+                : List.of(here, reroll(cell, picked, second, worldSeed, index, rotator));
+        }
+        boolean secondSpace = switch (s.position()) {
+            case FIRST -> false;
+            case SECOND -> true;
+            case RANDOM -> coin(localPos, worldSeed, index, POSITION_SALT);
+        };
+        return secondSpace
+            ? List.of(Write.air(localPos), new Write(second, picked, rotated))
+            : List.of(here, Write.air(second));
     }
 
     /**
@@ -136,13 +146,13 @@ public final class MultiBlockVariants {
         return out;
     }
 
-    /** Seeded coin for {@code 1 / R}: {@code true} → the second space. */
-    static boolean positionCoin(BlockPos localPos, long worldSeed, int index) {
+    /** Seeded per-cell coin for the span's R options; {@code salt} keeps the two coins independent. */
+    static boolean coin(BlockPos localPos, long worldSeed, int index, long salt) {
         long posHash = (((long) localPos.getX() * 31L + localPos.getY()) * 31L + localPos.getZ());
         long seed = worldSeed
             ^ ((long) index * 0x9E3779B97F4A7C15L)
             ^ (posHash * 0xBF58476D1CE4E5B9L)
-            ^ POSITION_SALT;
+            ^ salt;
         return new Random(seed).nextBoolean();
     }
 }

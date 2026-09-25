@@ -364,7 +364,7 @@ public final class BlockVariantMenuController {
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
             (byte) plot.copyScopeAt(localPos).ordinal(),
-            (byte) plot.spanAt(localPos).mode().ordinal());
+            (byte) plot.spanAt(localPos).toByte());
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -1044,21 +1044,20 @@ public final class BlockVariantMenuController {
 
     /**
      * SET_SPAN_MODE: the cell-wide multi-space setting — how a single block fills the two spaces
-     * of a cell that also holds a door / bed / tall plant. {@code ordinal} is a
-     * {@link VariantSpan.Mode}; the menu only offers explicit modes, {@code AUTO} is the unset
-     * default. Not copied to lock-group siblings: each cell's footprint is its own.
+     * of a cell that also holds a door / bed / tall plant. {@code packed} is
+     * {@link VariantSpan#toByte}; the menu only sends explicit spans. Not copied to lock-group
+     * siblings: each cell's footprint is its own.
      */
-    private static void setSpan(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos, int ordinal) {
+    private static void setSpan(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos, int packed) {
         List<VariantState> states = plot.statesAt(localPos);
         if (states == null || MultiBlockFootprint.cellFootprint(states) == null) {
             actionBar(player, "Span only applies to a cell holding a door, bed or tall plant",
                 ChatFormatting.YELLOW);
             return;
         }
-        VariantSpan.Mode[] modes = VariantSpan.Mode.values();
-        if (ordinal <= VariantSpan.Mode.AUTO.ordinal() || ordinal >= modes.length) return;
-        VariantSpan.Mode next = modes[ordinal];
-        plot.setSpan(localPos, new VariantSpan(next));
+        VariantSpan next = VariantSpan.fromByte(packed);
+        if (next.isDefault()) return;
+        plot.setSpan(localPos, next);
         try {
             plot.save();
         } catch (IOException e) {
@@ -1066,15 +1065,29 @@ public final class BlockVariantMenuController {
                 plot.key(), e.toString());
             actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
         }
-        actionBar(player, switch (next) {
-            case ONE_FIRST -> "Single blocks fill the lower / first space only";
-            case ONE_SECOND -> "Single blocks fill the upper / second space only";
-            case ONE_RANDOM -> "Single blocks fill one space, picked at random";
-            case TWO_SAME -> "Single blocks fill both spaces with the same block";
-            case TWO_RANDOM -> "Single blocks fill both spaces, the second re-rolled";
-            case AUTO -> "Span follows the first entry";
-        }, ChatFormatting.AQUA);
+        actionBar(player, "Span: " + describe(next), ChatFormatting.AQUA);
         resyncSameFace(player, plot, localPos);
+    }
+
+    /** Action-bar wording for a span — only the sections that apply. */
+    private static String describe(VariantSpan s) {
+        String count = switch (s.count()) {
+            case ONE -> "1 space";
+            case TWO -> "both spaces";
+            case RANDOM -> "1 or both spaces (random)";
+        };
+        StringBuilder out = new StringBuilder(count);
+        if (s.usesPosition()) {
+            out.append(", position ").append(switch (s.position()) {
+                case FIRST -> "1";
+                case SECOND -> "2";
+                case RANDOM -> "random";
+            });
+        }
+        if (s.usesFill()) {
+            out.append(s.fill() == VariantSpan.Fill.SAME ? ", same block" : ", second re-rolled");
+        }
+        return out.toString();
     }
 
     /**

@@ -104,56 +104,6 @@ public final class BlockVariantMenuRenderer {
         return BlockVariantMenu.spanButtonShown() ? base + SPAN_EXTRA_PANEL_WIDTH : base;
     }
 
-    /** The five explicit span options, left to right, as the Span popup lists them. */
-    static final games.brennan.dungeontrain.editor.VariantSpan.Mode[] SPAN_OPTIONS = {
-        games.brennan.dungeontrain.editor.VariantSpan.Mode.ONE_FIRST,
-        games.brennan.dungeontrain.editor.VariantSpan.Mode.ONE_SECOND,
-        games.brennan.dungeontrain.editor.VariantSpan.Mode.ONE_RANDOM,
-        games.brennan.dungeontrain.editor.VariantSpan.Mode.TWO_SAME,
-        games.brennan.dungeontrain.editor.VariantSpan.Mode.TWO_RANDOM,
-    };
-    static final double SPAN_OPTION_WIDTH = 0.70;
-
-    /**
-     * The Span popup's rectangle {@code {left, right, bottom, top}}: one row of
-     * {@link #SPAN_OPTIONS} just <em>above</em> the panel — so it never covers the list rows —
-     * centred on the Span button and clamped to the panel's width. The renderer and the raycaster both read it, so a click can't land one option off.
-     */
-    static double[] spanPopupRect(double panelW, double halfH) {
-        List<BlockVariantMenu.CellKind> toolbar = BlockVariantMenu.toolbarCells();
-        double cellW = panelW / toolbar.size();
-        int idx = Math.max(0, toolbar.indexOf(BlockVariantMenu.CellKind.SPAN));
-        double buttonCX = -panelW / 2.0 + (idx + 0.5) * cellW;
-        double popupW = SPAN_OPTIONS.length * SPAN_OPTION_WIDTH + 0.04;
-        double left = buttonCX - popupW / 2.0;
-        left = Math.max(-panelW / 2.0 + 0.02, Math.min(left, panelW / 2.0 - 0.02 - popupW));
-        double bottom = halfH + 0.02;
-        double top = bottom + POPUP_BUTTON_SIZE + 0.04;
-        return new double[] {left, left + popupW, bottom, top};
-    }
-
-    /** Toolbar label for a resolved span: {@code 1·1}, {@code 1·2}, {@code 1·R}, {@code 2·S}, {@code 2·R}. */
-    static String spanShortLabel(games.brennan.dungeontrain.editor.VariantSpan.Mode mode) {
-        String random = MenuLang.t("block_variant.plane_random");
-        return switch (mode) {
-            case ONE_FIRST -> "1·1";
-            case ONE_SECOND -> "1·2";
-            case ONE_RANDOM -> "1·" + random;
-            case TWO_RANDOM -> "2·" + random;
-            default -> "2·" + MenuLang.t("block_variant.span_same");
-        };
-    }
-
-    /** The popup's full option label. */
-    static String spanOptionLabel(games.brennan.dungeontrain.editor.VariantSpan.Mode mode) {
-        return switch (mode) {
-            case ONE_FIRST -> MenuLang.t("block_variant.span_one_first");
-            case ONE_SECOND -> MenuLang.t("block_variant.span_one_second");
-            case ONE_RANDOM -> MenuLang.t("block_variant.span_one_random");
-            case TWO_RANDOM -> MenuLang.t("block_variant.span_two_random");
-            default -> MenuLang.t("block_variant.span_two_same");
-        };
-    }
     static final double X_CELL_WIDTH = 0.30;
     static final double WEIGHT_CELL_WIDTH = 0.40;
     /** Per-cell width for a mob row's difficulty min / max cells (matches the weight cell). */
@@ -359,7 +309,7 @@ public final class BlockVariantMenuRenderer {
                 // so the cell says whether it is following that or breaking from it.
                 case COPY_ROLL -> copyRoll.displayName();
                 case COPY_SCOPE -> copyScope.displayName();
-                case SPAN -> spanShortLabel(BlockVariantMenu.resolvedSpan());
+                case SPAN -> SpanPopupLayout.shortLabel(BlockVariantMenu.resolvedSpan());
                 case REMOVE -> MenuLang.t(removeMode ? "common.cancel" : "common.remove");
                 case CLEAR -> MenuLang.t("common.clear");
                 case CLOSE -> "X";
@@ -559,28 +509,32 @@ public final class BlockVariantMenuRenderer {
     }
 
     /**
-     * The Span button's option strip: every explicit span in one row, the cell's current
-     * (resolved) span highlighted. Geometry from {@link #spanPopupRect}.
+     * The Span popup: the visible sections of {@link SpanPopupLayout}, each a label and its
+     * buttons, the cell's current (resolved) choice highlighted in every section.
      */
     private static void drawSpanPopup(PoseStack ps, MultiBufferSource buffer, Font font,
                                       double panelW, double halfH, BlockVariantMenu.Hit hovered) {
-        double[] r = spanPopupRect(panelW, halfH);
+        List<SpanPopupLayout.Row> rows = SpanPopupLayout.rows(panelW, halfH);
+        double[] r = SpanPopupLayout.rect(rows);
         drawQuad(ps, buffer, r[0], r[2], r[1], r[3], 0xE0202020);
-        games.brennan.dungeontrain.editor.VariantSpan.Mode current = BlockVariantMenu.resolvedSpan();
-        double bBot = r[2] + 0.02;
-        double bTop = r[3] - 0.02;
-        double cy = (bBot + bTop) / 2.0;
-        for (int i = 0; i < SPAN_OPTIONS.length; i++) {
-            double bL = r[0] + 0.02 + i * SPAN_OPTION_WIDTH;
-            double bR = bL + SPAN_OPTION_WIDTH;
-            boolean selected = SPAN_OPTIONS[i] == current;
-            boolean hover = hovered.kind() == BlockVariantMenu.CellKind.SPAN_OPTION && hovered.secondary() == i;
-            int tint = selected
-                ? (hover ? 0xC0D98CFF : 0x808A4FB3)
-                : (hover ? 0x60AAAAAA : 0x30777777);
-            drawQuad(ps, buffer, bL + 0.005, bBot, bR - 0.005, bTop, tint);
-            drawCenteredText(ps, buffer, font, spanOptionLabel(SPAN_OPTIONS[i]), (bL + bR) / 2.0, cy,
-                selected || hover ? 0xFFFFFFFF : 0xFFAAAAAA);
+        for (SpanPopupLayout.Row row : rows) {
+            double bBot = row.bottom() + 0.02;
+            double bTop = row.top() - 0.02;
+            double cy = (bBot + bTop) / 2.0;
+            drawLeftText(ps, buffer, font, row.label(), row.left() + SpanPopupLayout.PAD + 0.03, cy, 0xFFCCCCCC);
+            for (int i = 0; i < row.buttons().length; i++) {
+                double bL = row.buttonLeft(i);
+                double bR = bL + row.buttonWidth();
+                boolean selected = i == row.selected();
+                boolean hover = hovered.kind() == BlockVariantMenu.CellKind.SPAN_OPTION
+                    && hovered.secondary() == SpanPopupLayout.encode(row.section(), i);
+                int tint = selected
+                    ? (hover ? 0xC0D98CFF : 0x808A4FB3)
+                    : (hover ? 0x60AAAAAA : 0x30777777);
+                drawQuad(ps, buffer, bL + 0.005, bBot, bR - 0.005, bTop, tint);
+                drawCenteredText(ps, buffer, font, row.buttons()[i], (bL + bR) / 2.0, cy,
+                    selected || hover ? 0xFFFFFFFF : 0xFFAAAAAA);
+            }
         }
     }
 

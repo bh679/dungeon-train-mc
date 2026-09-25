@@ -47,8 +47,11 @@ class MultiBlockVariantsTest {
         return VariantState.of(Blocks.OAK_DOOR.defaultBlockState());
     }
 
-    private static VariantSpan span(VariantSpan.Mode mode) {
-        return new VariantSpan(mode);
+    private static final VariantSpan.Count ONE = VariantSpan.Count.ONE;
+    private static final VariantSpan.Count TWO = VariantSpan.Count.TWO;
+
+    private static VariantSpan span(VariantSpan.Count c, VariantSpan.Position p, VariantSpan.Fill f) {
+        return VariantSpan.of(c, p, f);
     }
 
     @Test
@@ -114,20 +117,20 @@ class MultiBlockVariantsTest {
         VariantState stone = VariantState.of(Blocks.STONE.defaultBlockState());
         List<VariantState> cell = List.of(door(), stone);
 
-        List<MultiBlockVariants.Write> w1 = MultiBlockVariants.expand(cell, span(VariantSpan.Mode.ONE_FIRST),
+        List<MultiBlockVariants.Write> w1 = MultiBlockVariants.expand(cell, span(ONE, VariantSpan.Position.FIRST, VariantSpan.Fill.SAME),
             stone, CELL, SEED, 0, AS_AUTHORED);
         assertEquals(stone.state(), w1.get(0).state());
         assertTrue(w1.get(1).isAir());
         assertEquals(ABOVE, w1.get(1).localPos());
 
-        List<MultiBlockVariants.Write> w2 = MultiBlockVariants.expand(cell, span(VariantSpan.Mode.ONE_SECOND),
+        List<MultiBlockVariants.Write> w2 = MultiBlockVariants.expand(cell, span(ONE, VariantSpan.Position.SECOND, VariantSpan.Fill.SAME),
             stone, CELL, SEED, 0, AS_AUTHORED);
         assertTrue(w2.get(0).isAir());
         assertEquals(CELL, w2.get(0).localPos());
         assertEquals(stone.state(), w2.get(1).state());
         assertEquals(ABOVE, w2.get(1).localPos());
 
-        List<MultiBlockVariants.Write> w3 = MultiBlockVariants.expand(cell, span(VariantSpan.Mode.TWO_SAME),
+        List<MultiBlockVariants.Write> w3 = MultiBlockVariants.expand(cell, span(TWO, VariantSpan.Position.FIRST, VariantSpan.Fill.SAME),
             stone, CELL, SEED, 0, AS_AUTHORED);
         assertEquals(stone.state(), w3.get(0).state());
         assertEquals(stone.state(), w3.get(1).state());
@@ -140,7 +143,7 @@ class MultiBlockVariantsTest {
         VariantState dirt = VariantState.of(Blocks.DIRT.defaultBlockState());
         List<VariantState> cell = List.of(door(), stone, dirt);
         for (VariantState picked : List.of(stone, dirt)) {
-            List<MultiBlockVariants.Write> w = MultiBlockVariants.expand(cell, span(VariantSpan.Mode.ONE_SECOND),
+            List<MultiBlockVariants.Write> w = MultiBlockVariants.expand(cell, span(ONE, VariantSpan.Position.SECOND, VariantSpan.Fill.SAME),
                 picked, CELL, SEED, 0, AS_AUTHORED);
             assertTrue(w.get(0).isAir());
             assertEquals(picked.state(), w.get(1).state());
@@ -169,9 +172,9 @@ class MultiBlockVariantsTest {
         List<VariantState> cell = List.of(door(), stone);
         Set<BlockPos> seen = new HashSet<>();
         for (int i = 0; i < 64; i++) {
-            List<MultiBlockVariants.Write> a = MultiBlockVariants.expand(cell, span(VariantSpan.Mode.ONE_RANDOM),
+            List<MultiBlockVariants.Write> a = MultiBlockVariants.expand(cell, span(ONE, VariantSpan.Position.RANDOM, VariantSpan.Fill.SAME),
                 stone, CELL, SEED, i, AS_AUTHORED);
-            List<MultiBlockVariants.Write> b = MultiBlockVariants.expand(cell, span(VariantSpan.Mode.ONE_RANDOM),
+            List<MultiBlockVariants.Write> b = MultiBlockVariants.expand(cell, span(ONE, VariantSpan.Position.RANDOM, VariantSpan.Fill.SAME),
                 stone, CELL, SEED, i, AS_AUTHORED);
             assertEquals(a, b);
             for (MultiBlockVariants.Write w : a) if (!w.isAir()) seen.add(w.localPos());
@@ -187,7 +190,7 @@ class MultiBlockVariantsTest {
         List<VariantState> cell = List.of(door(), stone, dirt);
         Set<BlockState> seconds = new HashSet<>();
         for (int i = 0; i < 64; i++) {
-            List<MultiBlockVariants.Write> w = MultiBlockVariants.expand(cell, span(VariantSpan.Mode.TWO_RANDOM),
+            List<MultiBlockVariants.Write> w = MultiBlockVariants.expand(cell, span(TWO, VariantSpan.Position.FIRST, VariantSpan.Fill.RANDOM),
                 stone, CELL, SEED, i, AS_AUTHORED);
             assertEquals(stone.state(), w.get(0).state());
             seconds.add(w.get(1).state());
@@ -206,22 +209,77 @@ class MultiBlockVariantsTest {
     }
 
     @Test
-    @DisplayName("Cell span round-trips through the sidecar cell JSON; AUTO writes the cell exactly as before")
+    @DisplayName("How many R reaches both the one-space and the two-space path, deterministically")
+    void randomCountReachesBothPaths() {
+        VariantState stone = VariantState.of(Blocks.STONE.defaultBlockState());
+        List<VariantState> cell = List.of(door(), stone);
+        VariantSpan r = span(VariantSpan.Count.RANDOM, VariantSpan.Position.SECOND, VariantSpan.Fill.SAME);
+        boolean sawOne = false, sawTwo = false;
+        for (int i = 0; i < 64; i++) {
+            List<MultiBlockVariants.Write> w = MultiBlockVariants.expand(cell, r, stone, CELL, SEED, i, AS_AUTHORED);
+            assertEquals(w, MultiBlockVariants.expand(cell, r, stone, CELL, SEED, i, AS_AUTHORED));
+            if (w.get(0).isAir()) {
+                sawOne = true;                                 // 1 space, position 2
+                assertEquals(stone.state(), w.get(1).state());
+            } else {
+                sawTwo = true;                                 // both spaces, same block
+                assertEquals(stone.state(), w.get(1).state());
+            }
+        }
+        assertTrue(sawOne && sawTwo);
+    }
+
+    @Test
+    @DisplayName("Sections: Position applies for 1 and R, Repeat for 2 and R")
+    void sectionVisibility() {
+        VariantSpan base = span(ONE, VariantSpan.Position.FIRST, VariantSpan.Fill.SAME);
+        assertTrue(base.usesPosition());
+        assertFalse(base.usesFill());
+        assertFalse(base.withCount(TWO).usesPosition());
+        assertTrue(base.withCount(TWO).usesFill());
+        assertTrue(base.withCount(VariantSpan.Count.RANDOM).usesPosition());
+        assertTrue(base.withCount(VariantSpan.Count.RANDOM).usesFill());
+        assertFalse(VariantSpan.NONE.withFill(VariantSpan.Fill.RANDOM).isDefault(), "editing makes it explicit");
+    }
+
+    @Test
+    @DisplayName("Span token + wire byte round-trip every combination; old two-part tokens still read")
+    void spanCodecs() {
+        for (VariantSpan.Count c : VariantSpan.Count.values()) {
+            for (VariantSpan.Position p : VariantSpan.Position.values()) {
+                for (VariantSpan.Fill f : VariantSpan.Fill.values()) {
+                    VariantSpan v = span(c, p, f);
+                    assertEquals(v, VariantSpan.fromToken(v.toToken()), v.toToken());
+                    assertEquals(v, VariantSpan.fromByte(v.toByte()));
+                }
+            }
+        }
+        assertEquals(VariantSpan.NONE, VariantSpan.fromByte(VariantSpan.NONE.toByte()));
+        assertEquals(null, VariantSpan.NONE.toToken());
+        assertEquals(span(ONE, VariantSpan.Position.SECOND, VariantSpan.Fill.SAME), VariantSpan.fromToken("1/2"));
+        assertEquals(span(TWO, VariantSpan.Position.FIRST, VariantSpan.Fill.RANDOM), VariantSpan.fromToken("2/r"));
+        assertEquals(VariantSpan.NONE, VariantSpan.fromToken("nonsense"));
+    }
+
+    @Test
+    @DisplayName("Cell span round-trips through the sidecar cell JSON; auto writes the cell exactly as before")
     void cellSpanJsonRoundTrip() {
         var blocks = BuiltInRegistries.BLOCK.asLookup();
         List<VariantState> states = List.of(door(), VariantState.of(Blocks.STONE.defaultBlockState()));
-        for (VariantSpan.Mode mode : VariantSpan.Mode.values()) {
+        StringBuilder legacy = new StringBuilder();
+        CarriageVariantBlocks.appendCellJson(legacy, states, 0);
+        StringBuilder auto = new StringBuilder();
+        CarriageVariantBlocks.appendCellJson(auto, states, 0, VariantCopyRoll.DEFAULT, VariantCopyScope.BOTH,
+            VariantSpan.NONE);
+        assertEquals(legacy.toString(), auto.toString());
+        for (VariantSpan v : List.of(VariantSpan.NONE,
+                span(VariantSpan.Count.RANDOM, VariantSpan.Position.SECOND, VariantSpan.Fill.RANDOM),
+                span(TWO, VariantSpan.Position.FIRST, VariantSpan.Fill.SAME))) {
             StringBuilder sb = new StringBuilder();
-            CarriageVariantBlocks.appendCellJson(sb, states, 0, VariantCopyRoll.DEFAULT, VariantCopyScope.BOTH,
-                span(mode));
-            if (mode == VariantSpan.Mode.AUTO) {
-                StringBuilder legacy = new StringBuilder();
-                CarriageVariantBlocks.appendCellJson(legacy, states, 0);
-                assertEquals(legacy.toString(), sb.toString());
-            }
+            CarriageVariantBlocks.appendCellJson(sb, states, 0, VariantCopyRoll.DEFAULT, VariantCopyScope.BOTH, v);
             CarriageVariantBlocks.ParsedCell back = CarriageVariantBlocks.parseCellValue(
                 JsonParser.parseString(sb.toString()), blocks, "test", BlockPos.ZERO);
-            assertEquals(mode, back.span().mode(), sb.toString());
+            assertEquals(v, back.span(), sb.toString());
             assertEquals(2, back.states().size());
         }
     }
@@ -248,11 +306,12 @@ class MultiBlockVariantsTest {
     void sidecarSpanLifecycle() {
         CarriageVariantBlocks sidecar = CarriageVariantBlocks.empty();
         sidecar.put(CELL, List.of(door(), VariantState.of(Blocks.STONE.defaultBlockState())));
-        assertEquals(VariantSpan.Mode.AUTO, sidecar.spanAt(CELL).mode());
-        sidecar.setSpan(CELL, span(VariantSpan.Mode.ONE_SECOND));
-        assertEquals(VariantSpan.Mode.ONE_SECOND, sidecar.spanAt(CELL).mode());
-        assertEquals(VariantSpan.Mode.AUTO, sidecar.spanAt(ABOVE).mode());
+        assertEquals(VariantSpan.NONE, sidecar.spanAt(CELL));
+        VariantSpan v = span(ONE, VariantSpan.Position.SECOND, VariantSpan.Fill.SAME);
+        sidecar.setSpan(CELL, v);
+        assertEquals(v, sidecar.spanAt(CELL));
+        assertEquals(VariantSpan.NONE, sidecar.spanAt(ABOVE));
         sidecar.remove(CELL);
-        assertEquals(VariantSpan.Mode.AUTO, sidecar.spanAt(CELL).mode());
+        assertEquals(VariantSpan.NONE, sidecar.spanAt(CELL));
     }
 }

@@ -370,7 +370,7 @@ public final class VariantClipboardItem extends Item {
     /** Add the cell's multi-space span to an encoded clipboard tag (omitted when AUTO). */
     public static CompoundTag withSpan(CompoundTag root, games.brennan.dungeontrain.editor.VariantSpan span) {
         if (span != null && !span.isDefault()) {
-            root.putString(NBT_SPAN, games.brennan.dungeontrain.editor.VariantSpan.toToken(span.mode()));
+            root.putString(NBT_SPAN, span.toToken());
         }
         return root;
     }

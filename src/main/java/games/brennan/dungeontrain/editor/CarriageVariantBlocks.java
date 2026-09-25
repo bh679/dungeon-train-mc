@@ -1298,7 +1298,7 @@ public final class CarriageVariantBlocks {
                 sb.append('"').append(SCOPE_KEY).append("\": \"").append(scope.id()).append("\", ");
             }
             if (!span.isDefault()) {
-                sb.append('"').append(SPAN_KEY).append("\": \"").append(VariantSpan.toToken(span.mode())).append("\", ");
+                sb.append('"').append(SPAN_KEY).append("\": \"").append(span.toToken()).append("\", ");
             }
             sb.append("\"states\": [");
             boolean firstState = true;

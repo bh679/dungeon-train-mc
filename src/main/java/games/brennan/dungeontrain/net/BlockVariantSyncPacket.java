@@ -46,12 +46,13 @@ public record BlockVariantSyncPacket(
     byte spanMode
 ) implements CustomPacketPayload {
 
-    /** Pre-span shape: {@code spanMode} defaults to {@code VariantSpan.Mode.AUTO}. */
+    /** Pre-span shape: {@code spanMode} defaults to {@code VariantSpan.NONE} (auto). */
     public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
                                   int lockId, Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp,
                                   byte copyRoll, boolean copySettingsSupported, byte copyScope) {
         this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp,
-            copyRoll, copySettingsSupported, copyScope, (byte) 0);
+            copyRoll, copySettingsSupported, copyScope,
+            (byte) games.brennan.dungeontrain.editor.VariantSpan.NONE.toByte());
     }
 
     /**

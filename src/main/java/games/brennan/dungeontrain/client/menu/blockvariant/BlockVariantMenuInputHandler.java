@@ -178,14 +178,18 @@ public final class BlockVariantMenuInputHandler {
                 BlockVariantMenu.toggleSpanPopup();
             }
             case SPAN_OPTION -> {
-                // -2 = clicked elsewhere in the panel (close), -1 = the strip's own margin (ignore).
-                int opt = hit.secondary();
-                if (opt == -1) return;
-                BlockVariantMenu.closeSpanPopup();
-                if (opt < 0 || opt >= BlockVariantMenuRenderer.SPAN_OPTIONS.length) return;
+                // -2 = clicked elsewhere in the panel (close), -1 = the popup's own margin (ignore).
+                // A button sets that one section and leaves the popup open for the next choice.
+                int code = hit.secondary();
+                if (code == -1) return;
+                if (code < 0) {
+                    BlockVariantMenu.closeSpanPopup();
+                    return;
+                }
+                games.brennan.dungeontrain.editor.VariantSpan next = SpanPopupLayout.apply(
+                    BlockVariantMenu.resolvedSpan(), code / 10, code % 10);
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
-                    BlockVariantEditPacket.Op.SET_SPAN_MODE, variantId, local, -1, "",
-                    BlockVariantMenuRenderer.SPAN_OPTIONS[opt].ordinal()));
+                    BlockVariantEditPacket.Op.SET_SPAN_MODE, variantId, local, -1, "", next.toByte()));
             }
             case REMOVE -> BlockVariantMenu.toggleRemoveMode();
             case CLEAR -> DungeonTrainNet.sendToServer(

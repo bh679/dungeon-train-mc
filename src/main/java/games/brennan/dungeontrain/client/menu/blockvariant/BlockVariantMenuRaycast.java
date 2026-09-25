@@ -104,13 +104,16 @@ public final class BlockVariantMenuRaycast {
         // Span option strip (above the panel) — modal like the OPTIONS popup: an option is a pick,
         // anywhere else in the panel closes it (secondary -2), outside both does nothing.
         if (BlockVariantMenu.spanPopupOpen()) {
-            double[] r = BlockVariantMenuRenderer.spanPopupRect(panelW, halfH);
-            if (hitX >= r[0] + 0.02 && hitX <= r[1] - 0.02 && hitY >= r[2] && hitY <= r[3]) {
-                int opt = (int) Math.floor((hitX - r[0] - 0.02) / BlockVariantMenuRenderer.SPAN_OPTION_WIDTH);
-                if (opt >= 0 && opt < BlockVariantMenuRenderer.SPAN_OPTIONS.length) {
-                    return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.SPAN_OPTION, -1, opt);
-                }
+            java.util.List<SpanPopupLayout.Row> rows = SpanPopupLayout.rows(panelW, halfH);
+            for (SpanPopupLayout.Row row : rows) {
+                if (hitY < row.bottom() || hitY > row.top()) continue;
+                double rel = hitX - row.buttonsLeft();
+                if (rel < 0 || rel > SpanPopupLayout.BUTTONS_WIDTH) continue;
+                int opt = Math.min(row.buttons().length - 1, (int) Math.floor(rel / row.buttonWidth()));
+                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.SPAN_OPTION, -1,
+                    SpanPopupLayout.encode(row.section(), opt));
             }
+            double[] r = SpanPopupLayout.rect(rows);
             if (hitX >= r[0] && hitX <= r[1] && hitY >= r[2] && hitY <= r[3]) {
                 return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.SPAN_OPTION, -1, -1);
             }

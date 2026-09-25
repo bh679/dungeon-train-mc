@@ -200,7 +200,7 @@ public final class BlockVariantMenu {
     }
 
     /** The cell's span with {@code AUTO} resolved against its first row, the way spawn resolves it. */
-    public static games.brennan.dungeontrain.editor.VariantSpan.Mode resolvedSpan() {
+    public static games.brennan.dungeontrain.editor.VariantSpan resolvedSpan() {
         boolean firstIsMulti = !entries.isEmpty() && isMultiRow(entries.get(0));
         return spanMode.resolve(firstIsMulti);
     }
@@ -294,7 +294,7 @@ public final class BlockVariantMenu {
         copyRoll = VariantCopyRoll.fromOrdinal(packet.copyRoll());
         copySettingsSupported = packet.copySettingsSupported();
         copyScope = VariantCopyScope.fromOrdinal(packet.copyScope());
-        spanMode = games.brennan.dungeontrain.editor.VariantSpan.fromOrdinal(packet.spanMode() & 0xFF);
+        spanMode = games.brennan.dungeontrain.editor.VariantSpan.fromByte(packet.spanMode());
         anchorPos = packet.anchorPos();
         anchorRight = packet.anchorRight();
         anchorUp = packet.anchorUp();
