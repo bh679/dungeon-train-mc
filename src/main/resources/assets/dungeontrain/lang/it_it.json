@@ -3470,6 +3470,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "Riquadri per riga. Clic sinistro per più riquadri, più piccoli; clic destro o Maiusc+clic per meno riquadri, più grandi.",
   "key.dungeontrain.editor_undo": "Editor: annulla (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "Editor: ripristina (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "Editor: rigenera il vagone di prova (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "Rivedi il filmato introduttivo (solo spettatore)",
   "key.dungeontrain.container_contents": "Apri il menu Contenuto dei contenitori (editor)",
   "key.dungeontrain.manual_spawn": "Genera il prossimo vagone (modalità generazione manuale)",

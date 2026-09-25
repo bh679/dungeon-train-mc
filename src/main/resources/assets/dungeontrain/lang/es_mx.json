@@ -3470,6 +3470,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "Casillas por fila. Clic izquierdo para más casillas y más chicas; clic derecho o Shift+clic para menos y más grandes.",
   "key.dungeontrain.editor_undo": "Editor: deshacer (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "Editor: rehacer (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "Editor: resembrar el vagón de prueba (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "Repetir la cinemática de inicio (solo en espectador)",
   "key.dungeontrain.container_contents": "Abrir el menú de contenido de contenedores (editor)",
   "key.dungeontrain.manual_spawn": "Generar el siguiente vagón (modo de generación manual)",
