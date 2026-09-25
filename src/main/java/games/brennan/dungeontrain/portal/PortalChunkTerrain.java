@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.OfflineChunkSampler;
@@ -39,6 +40,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.BooleanSupplier;
 
 /**
  * Where a {@link PortalRoomMode#CHUNK_DIMENSION} room's terrain comes from: one chunk of ordinary
@@ -69,6 +71,7 @@ import java.util.concurrent.Executors;
 public final class PortalChunkTerrain {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final LogFirstN STRETCH_ERRORS = new LogFirstN(5);
 
     /** Footprint of the sampled column — one chunk, on both horizontal axes. */
     public static final int SIZE = 16;
@@ -538,6 +541,8 @@ public final class PortalChunkTerrain {
         NoiseBasedChunkGenerator noiseGenerator = resolved.fallback()
             ? resolved.generator()
             : SampleGenerators.forSource(level, source, resolved.generator());
+        // No vanilla-only generator to cut it with: the room stamps plain rather than modded.
+        if (noiseGenerator == null) return null;
         RandomState random = resolved.random();
         int minY = resolved.minY();
         int maxY = resolved.maxY();
@@ -874,13 +879,22 @@ public final class PortalChunkTerrain {
                 return false;
             }
             if (stretch == null) return true;
-            try {
-                return StretchSites.matches(cycle, stretch, site.getMinBlockX());
-            } catch (Throwable t) {
-                // Like voidedByBand: the cycle is the train's business, and a site it cannot place is
-                // judged the ordinary way rather than lost.
-                return true;
-            }
+            return stretchAccepts(() -> StretchSites.matches(cycle, stretch, site.getMinBlockX()));
+        }
+    }
+
+    /**
+     * Whether a stretch room takes a site, by {@code matches} — and rejects it when the cycle cannot
+     * place it. A room that must look like one stretch never takes a site it could not check: that
+     * site could lie in another stretch, a band or a legacy era. If no site passes, the room stamps
+     * as its plain template, as it does when no ground is found.
+     */
+    static boolean stretchAccepts(BooleanSupplier matches) {
+        try {
+            return matches.getAsBoolean();
+        } catch (Throwable t) {
+            STRETCH_ERRORS.error(LOGGER, "[DungeonTrain] Chunk dimension stretch check failed; site rejected", t);
+            return false;
         }
     }
 

@@ -19244,6 +19244,41 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dh-macos-native-crash",
+      "version": "0.970.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Distant Horizons no longer crashes the game on Mac",
+      "summary": "On macOS, playing with Distant Horizons installed could crash the whole game without warning, most often shortly after joining a world. That crash is fixed.",
+      "highlights": [],
+      "pr": 1571,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-fail-closed",
+      "version": "0.971.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "internal"
+      ],
+      "title": "Dimensional carriages never show the wrong look after an error",
+      "summary": "If a dimensional carriage can't confirm its terrain matches the look it's named for, it now shows its plain room instead of a mismatched one.",
+      "highlights": [],
+      "pr": 1569,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
