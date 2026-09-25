@@ -24,7 +24,33 @@
       "name": "Collapseofsmth"
     }
   },
-  "fire": 4,
+  "fire": {
+    "weight": 4,
+    "phases": [
+      "V_NETHER",
+      "M_NETHER",
+      "L_LARGE_BIOMES",
+      "L_AMPLIFIED",
+      "L_BETA",
+      "L_FAR_LANDS",
+      "L_CAVES_OF_CHAOS",
+      "L_SKYLANDS",
+      "L_FLOATING",
+      "L_ALPHA",
+      "L_INFDEV",
+      "L_CLASSIC",
+      "L_SUPERFLAT",
+      "L_VOID",
+      "C_OVERWORLD_1",
+      "C_CHUNCKS",
+      "C_OVERWORLD_2",
+      "C_STACKS"
+    ]
+  },
+  "icefeature": {
+    "weight": 1,
+    "name": "ice"
+  },
   "maze": 4,
   "mild_1": {
     "weight": 1,
@@ -127,10 +153,6 @@
   },
   "vase": 1,
   "very_dangerouds_1": 1,
-  "icefeature": {
-    "weight": 1,
-    "name": "ice"
-  },
   "zombieroom3": {
     "weight": 1,
     "name": "zombiesplit"
