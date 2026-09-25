@@ -18828,15 +18828,32 @@
       "released_at": null
     },
     {
-      "id": "better-band-style-single-rule",
-      "version": "0.956.0",
+      "id": "bop-shutdown-biome-leak",
+      "version": "0.955.0",
       "type": "fix",
       "tags": [
         "fix",
         "world"
       ],
-      "title": "Custom band orders generate the band style you chose",
-      "summary": "If you customise the world's band order, a band you mark with the alternate style now actually generates in that style. Its advancement and teleport target now match what you see. The default order is unchanged.",
+      "title": "Quitting mid-journey no longer mixes up the landscape",
+      "summary": "Land that was still loading when you quit or the server stopped could come back with biomes from a different part of the world. It now always matches the stretch it's in.",
+      "highlights": [],
+      "pr": 1543,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "better-band-style-single-rule",
+      "version": "0.956.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Custom world settings applied consistently",
+      "summary": "Worlds using customised generation settings now generate the way those settings describe. Default worlds are unchanged.",
       "highlights": [],
       "pr": 1545,
       "date": "2026-09-25",
