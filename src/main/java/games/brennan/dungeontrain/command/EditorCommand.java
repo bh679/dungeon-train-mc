@@ -546,6 +546,8 @@ public final class EditorCommand {
     public static LiteralArgumentBuilder<CommandSourceStack> build(CommandBuildContext buildContext) {
         return Commands.literal("editor")
             .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES))
+            // Test the Carriage for a carriage or contents template — see CarriageTestCommand.
+            .then(CarriageTestCommand.build())
             .then(Commands.literal("carriages")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES)))
             // Red ghosts over blocks left outside the plots. Its own toggle rather than a rider on
