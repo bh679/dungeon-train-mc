@@ -18980,6 +18980,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "skip-incompatible-world-prompt",
+      "version": "0.959.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "No more 'incompatible world' prompt when loading a save",
+      "summary": "Reopening a saved run no longer stops on a warning screen asking you to back up the world and approve fixes. The needed fixes are applied automatically and you go straight back in.",
+      "highlights": [],
+      "pr": 1551,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
