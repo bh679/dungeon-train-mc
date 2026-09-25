@@ -19083,6 +19083,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "cmd-r-reseed-test-carriage",
+      "version": "0.963.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Ctrl/Cmd+R re-rolls the carriage you're testing",
+      "summary": "While you're inside Test the Carriage, press Ctrl+R (Cmd+R on Mac) to re-roll the copy you're standing in without opening the editor menu. You can rebind it under Dungeon Train in Controls.",
+      "highlights": [],
+      "pr": 1557,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
