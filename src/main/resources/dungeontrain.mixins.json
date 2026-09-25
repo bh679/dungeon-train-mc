@@ -65,6 +65,8 @@
     "MergedMassTrackerPivotFreezeMixin",
     "SubLevelHoldingChunkFileMixin",
     "SubLevelHoldingChunkMapLoadMixin",
+    "SubLevelHoldingChunkMapSaveTimingMixin",
+    "SubLevelStorageFileNoDsyncMixin",
     "NetherFortressStructureMixin",
     "NetherFossilStructureMixin",
     "JigsawStructureMixin",
