@@ -25,7 +25,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class SprintFlyBoost {
 
-    public static final float DEV_DEFAULT = 5f;
+    public static final float DEV_DEFAULT = 3f;
     public static final float VANILLA = 1f;
     private static final String KEY = "dungeontrain_sprint_fly_multiplier";
 

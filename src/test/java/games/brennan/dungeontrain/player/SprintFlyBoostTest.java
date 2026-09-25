@@ -14,7 +14,7 @@ class SprintFlyBoostTest {
     }
 
     @Test
-    void unsetIsFiveTimesInDev() {
+    void unsetIsThreeTimesInDev() {
         assertEquals(SprintFlyBoost.DEV_DEFAULT, SprintFlyBoost.resolve(null, false));
     }
 
