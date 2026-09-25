@@ -3398,6 +3398,8 @@
   "gui.dungeontrain.builder.profile.saved": "%s сохранена в ваших постройках.",
   "gui.dungeontrain.builder.profile.upload_failed": "Не удалось загрузить %s — она по-прежнему сохранена здесь.",
   "gui.dungeontrain.builder.profile.too_big": "%s слишком велика для загрузки — она по-прежнему сохранена здесь.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s загружена без части вариантов блоков — они слишком велики для отправки. Здесь всё по-прежнему сохранено.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s загружена без добычи в сундуках и вариантов блоков — они слишком велики для отправки. Здесь всё по-прежнему сохранено.",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "«%s» — встроенное имя, поэтому постройка НЕ отправлена в «Мои постройки». Сохраните её под своим именем, чтобы копия осталась на ретрансляторе.",
   "gui.dungeontrain.builder.profile.full": "Ваши постройки заполнены (%s). Эта сохранена здесь, но не загружена — удалите одну в «Моих постройках», чтобы освободить место.",
   "gui.dungeontrain.builder.profile.gone": "%s больше нет на сервере — следующее сохранение загрузит её снова.",

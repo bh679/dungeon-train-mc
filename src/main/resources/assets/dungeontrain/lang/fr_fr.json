@@ -3355,6 +3355,8 @@
   "gui.dungeontrain.builder.profile.saved": "%s enregistrée dans tes constructions.",
   "gui.dungeontrain.builder.profile.upload_failed": "Impossible d'envoyer %s — elle reste enregistrée ici.",
   "gui.dungeontrain.builder.profile.too_big": "%s est trop volumineuse pour être envoyée — elle reste enregistrée ici.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s a été envoyée sans certaines de ses variantes de blocs — elles étaient trop volumineuses. Tout reste enregistré ici.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s a été envoyée sans le butin de ses coffres ni ses variantes de blocs — ils étaient trop volumineux. Tout reste enregistré ici.",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "« %s » porte un nom intégré, elle n'a donc PAS été envoyée dans Mes constructions. Enregistrez-la sous votre propre nom pour en garder une copie sur le relais.",
   "gui.dungeontrain.builder.profile.full": "Tes constructions sont pleines (%s). Celle-ci est enregistrée ici, mais n'a pas été envoyée : retire une construction depuis « Mes constructions » pour faire de la place.",
   "gui.dungeontrain.builder.profile.gone": "%s n'est plus sur le relais — le prochain enregistrement la renverra.",

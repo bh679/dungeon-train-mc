@@ -3355,6 +3355,8 @@
   "gui.dungeontrain.builder.profile.saved": "%s opgeslagen bij je bouwsels.",
   "gui.dungeontrain.builder.profile.upload_failed": "%s kon niet worden geüpload — het staat hier nog opgeslagen.",
   "gui.dungeontrain.builder.profile.too_big": "%s is te groot om te uploaden — het staat hier nog opgeslagen.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s is geüpload zonder een deel van de blokvarianten — die waren te groot om te versturen. Alles staat hier nog opgeslagen.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s is geüpload zonder de kistbuit en blokvarianten — die waren te groot om te versturen. Alles staat hier nog opgeslagen.",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "'%s' heeft een ingebouwde naam en is daarom NIET naar Mijn bouwsels gestuurd. Sla het op onder een eigen naam om een kopie op de relay te houden.",
   "gui.dungeontrain.builder.profile.full": "Je bouwsels zitten vol (%s). Deze is hier opgeslagen, maar niet geüpload — verwijder er een uit ‘Mijn bouwsels’ om ruimte te maken.",
   "gui.dungeontrain.builder.profile.gone": "%s staat niet meer op het relais — bij de volgende keer opslaan wordt het opnieuw geüpload.",

@@ -3312,6 +3312,8 @@
   "gui.dungeontrain.builder.profile.saved": "%s をあなたの建築に保存しました。",
   "gui.dungeontrain.builder.profile.upload_failed": "%s をアップロードできませんでした — ここには保存されたままです。",
   "gui.dungeontrain.builder.profile.too_big": "%s は大きすぎてアップロードできません — ここには保存されたままです。",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s は一部のブロックバリアントなしでアップロードされました — 大きすぎて送信できませんでした。ここにはすべて保存されたままです。",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s はチェストの戦利品とブロックバリアントなしでアップロードされました — 大きすぎて送信できませんでした。ここにはすべて保存されたままです。",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "「%s」は組み込みの名前なので、自分の建築には送信されませんでした。リレーにコピーを残すには、自分の名前で保存してください。",
   "gui.dungeontrain.builder.profile.full": "建築がいっぱいです（%s）。これはここに保存されましたが、アップロードはされていません。「マイビルド」から1つ削除して空きを作ってください。",
   "gui.dungeontrain.builder.profile.gone": "%s はもうリレー上にありません — 次の保存で再びアップロードされます。",

@@ -2488,6 +2488,8 @@
       "gui.dungeontrain.builder.profile.saved",
       "gui.dungeontrain.builder.profile.upload_failed",
       "gui.dungeontrain.builder.profile.too_big",
+      "gui.dungeontrain.builder.profile.sidecars_dropped",
+      "gui.dungeontrain.builder.profile.sidecars_dropped_loot",
       "gui.dungeontrain.builder.profile.builtin_not_uploaded",
       "gui.dungeontrain.builder.profile.full",
       "gui.dungeontrain.builder.profile.needs_signin",

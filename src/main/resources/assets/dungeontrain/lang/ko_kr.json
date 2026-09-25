@@ -3312,6 +3312,8 @@
   "gui.dungeontrain.builder.profile.saved": "%s을(를) 내 건축물에 저장했습니다.",
   "gui.dungeontrain.builder.profile.upload_failed": "%s을(를) 올리지 못했습니다 — 여기에는 그대로 저장되어 있습니다.",
   "gui.dungeontrain.builder.profile.too_big": "%s은(는) 너무 커서 올릴 수 없습니다 — 여기에는 그대로 저장되어 있습니다.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s이(가) 일부 블록 변형 없이 업로드되었습니다 — 너무 커서 보낼 수 없었습니다. 모든 것은 여기에 그대로 저장되어 있습니다.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s이(가) 상자 전리품과 블록 변형 없이 업로드되었습니다 — 너무 커서 보낼 수 없었습니다. 모든 것은 여기에 그대로 저장되어 있습니다.",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "'%s'은(는) 기본 제공 이름이라 내 건축물로 전송되지 않았습니다. 릴레이에 사본을 남기려면 직접 정한 이름으로 저장하세요.",
   "gui.dungeontrain.builder.profile.full": "건축물이 가득 찼습니다(%s). 이 건축물은 여기에 저장되었지만 업로드되지 않았습니다 — ‘내 건축물’에서 하나를 삭제해 공간을 만드세요.",
   "gui.dungeontrain.builder.profile.gone": "%s은(는) 더 이상 릴레이에 없습니다 — 다음 저장 때 다시 올라갑니다.",

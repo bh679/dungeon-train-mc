@@ -3090,6 +3090,24 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.sidecars_dropped": {
+    "1": {
+      "label": "the build that uploaded without some of its extra data",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": {
+    "1": {
+      "label": "the build that uploaded without its chest loot",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.too_big": {
     "1": {
       "label": "the build that is too large for the relay to accept",

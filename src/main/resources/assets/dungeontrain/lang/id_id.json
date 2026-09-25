@@ -3312,6 +3312,8 @@
   "gui.dungeontrain.builder.profile.saved": "%s tersimpan ke bangunanmu.",
   "gui.dungeontrain.builder.profile.upload_failed": "Tidak bisa mengunggah %s — ia tetap tersimpan di sini.",
   "gui.dungeontrain.builder.profile.too_big": "%s terlalu besar untuk diunggah — ia tetap tersimpan di sini.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s diunggah tanpa sebagian varian bloknya — ukurannya terlalu besar untuk dikirim. Semuanya masih tersimpan di sini.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s diunggah tanpa jarahan peti dan varian bloknya — ukurannya terlalu besar untuk dikirim. Semuanya masih tersimpan di sini.",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "'%s' memakai nama bawaan, jadi TIDAK dikirim ke Bangunanku. Simpan dengan nama milikmu sendiri agar salinannya tersimpan di relay.",
   "gui.dungeontrain.builder.profile.full": "Bangunanmu sudah penuh (%s). Yang ini tersimpan di sini, tetapi belum diunggah — hapus satu dari “Bangunanku” untuk memberi ruang.",
   "gui.dungeontrain.builder.profile.gone": "%s sudah tidak ada di relai — simpanan berikutnya akan mengunggahnya lagi.",

@@ -1383,6 +1383,8 @@
   "gui.dungeontrain.builder.profile.saved": "%s a fost salvată în construcțiile tale.",
   "gui.dungeontrain.builder.profile.upload_failed": "Nu s-a putut încărca %s — e tot salvată aici.",
   "gui.dungeontrain.builder.profile.too_big": "%s e prea mare ca să fie încărcată — e tot salvată aici.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s a fost încărcată fără unele variante de blocuri — erau prea mari pentru a fi trimise. Totul rămâne salvat aici.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s a fost încărcată fără prada din cufere și variantele de blocuri — erau prea mari pentru a fi trimise. Totul rămâne salvat aici.",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "„%s” are un nume integrat, așa că NU a fost trimisă în Construcțiile mele. Salveaz-o cu un nume propriu pentru a păstra o copie pe relay.",
   "gui.dungeontrain.builder.profile.full": "Construcțiile tale sunt pline (%s). Aceasta este salvată aici, dar nu a fost încărcată — elimină una din „Construcțiile mele” ca să faci loc.",
   "gui.dungeontrain.builder.profile.gone": "%s nu mai e pe relay — următoarea salvare o va încărca din nou.",

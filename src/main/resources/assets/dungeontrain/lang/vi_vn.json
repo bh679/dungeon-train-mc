@@ -3312,6 +3312,8 @@
   "gui.dungeontrain.builder.profile.saved": "Đã lưu %s vào các công trình của bạn.",
   "gui.dungeontrain.builder.profile.upload_failed": "Không tải lên được %s — nó vẫn được lưu ở đây.",
   "gui.dungeontrain.builder.profile.too_big": "%s quá lớn để tải lên — nó vẫn được lưu ở đây.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s đã được tải lên mà thiếu một số biến thể khối — chúng quá lớn để gửi. Mọi thứ vẫn được lưu tại đây.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s đã được tải lên mà thiếu chiến lợi phẩm trong rương và biến thể khối — chúng quá lớn để gửi. Mọi thứ vẫn được lưu tại đây.",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "'%s' dùng tên có sẵn, nên KHÔNG được gửi lên Công trình của tôi. Hãy lưu bằng tên của riêng bạn để giữ một bản trên relay.",
   "gui.dungeontrain.builder.profile.full": "Công trình của bạn đã đầy (%s). Công trình này đã lưu tại đây nhưng chưa được tải lên — hãy xóa một công trình trong “Công trình của tôi” để lấy chỗ.",
   "gui.dungeontrain.builder.profile.gone": "%s không còn trên bộ tiếp sóng — lần lưu sau sẽ tải nó lên lại.",

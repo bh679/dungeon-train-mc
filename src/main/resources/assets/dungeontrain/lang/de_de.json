@@ -3355,6 +3355,8 @@
   "gui.dungeontrain.builder.profile.saved": "%s in deinen Bauten gespeichert.",
   "gui.dungeontrain.builder.profile.upload_failed": "%s konnte nicht hochgeladen werden — er ist hier weiterhin gespeichert.",
   "gui.dungeontrain.builder.profile.too_big": "%s ist zu groß zum Hochladen — er ist hier weiterhin gespeichert.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s wurde ohne einige Blockvarianten hochgeladen — sie waren zu groß zum Senden. Hier ist weiterhin alles gespeichert.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s wurde ohne Truhenbeute und Blockvarianten hochgeladen — sie waren zu groß zum Senden. Hier ist weiterhin alles gespeichert.",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "„%s“ hat einen integrierten Namen und wurde daher NICHT an Meine Bauten gesendet. Speichere es unter einem eigenen Namen, um eine Kopie auf dem Relay zu behalten.",
   "gui.dungeontrain.builder.profile.full": "Deine Bauten sind voll (%s). Dieser ist hier gespeichert, wurde aber nicht hochgeladen – entferne einen Bau aus „Meine Bauten“, um Platz zu schaffen.",
   "gui.dungeontrain.builder.profile.gone": "%s liegt nicht mehr auf dem Relay — beim nächsten Speichern wird er erneut hochgeladen.",

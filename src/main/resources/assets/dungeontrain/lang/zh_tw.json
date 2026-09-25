@@ -3326,6 +3326,8 @@
   "gui.dungeontrain.builder.profile.saved": "%s 已儲存到你的建築中。",
   "gui.dungeontrain.builder.profile.upload_failed": "無法上傳 %s——它仍儲存在本機。",
   "gui.dungeontrain.builder.profile.too_big": "%s 太大，無法上傳——它仍儲存在本機。",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s 上傳時缺少部分方塊變體——它們太大，無法傳送。所有內容仍保存在本機。",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s 上傳時缺少箱子戰利品和方塊變體——它們太大，無法傳送。所有內容仍保存在本機。",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "「%s」是內建名稱，因此沒有傳送到我的建築。請用你自己的名稱儲存，以便在中繼上保留一份副本。",
   "gui.dungeontrain.builder.profile.full": "你的建築已滿（%s）。這個已儲存在本機，但未上傳——請在「我的建築」中刪除一個以騰出空間。",
   "gui.dungeontrain.builder.profile.gone": "%s 已不在中繼上——下次儲存時會重新上傳。",
