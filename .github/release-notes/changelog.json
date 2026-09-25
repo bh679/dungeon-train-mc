@@ -19045,8 +19045,28 @@
       "released_at": null
     },
     {
-      "id": "process-detection-addons",
+      "id": "modded-overworld-transition-bleed",
       "version": "0.960.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Smoother changes of scenery",
+      "summary": "Distinctive stretches of land no longer stop at a hard line. Where one meets a stranger part of the journey, its forests, colours and mountains carry on through the change of scenery.",
+      "highlights": [
+        "Forests and colours carry on into the transitions either side.",
+        "Mountain slopes take on the look of the land beside them."
+      ],
+      "pr": 1555,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "process-detection-addons",
+      "version": "0.961.0",
       "type": "refactor",
       "tags": [
         "compatibility",

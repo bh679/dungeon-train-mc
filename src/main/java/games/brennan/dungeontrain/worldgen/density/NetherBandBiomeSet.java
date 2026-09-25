@@ -6,6 +6,7 @@ import net.minecraft.core.HolderGetter;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.biome.Biome;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -16,10 +17,12 @@ import java.util.List;
 public final class NetherBandBiomeSet {
 
     private final Holder<Biome>[][] zones; // [zoneIndex][choice]
+    private final Holder<Biome>[][] bopZones; // same zones in BoP's look; a missing zone is the vanilla one
     private final long seed;
 
-    private NetherBandBiomeSet(Holder<Biome>[][] zones, long seed) {
+    private NetherBandBiomeSet(Holder<Biome>[][] zones, Holder<Biome>[][] bopZones, long seed) {
         this.zones = zones;
+        this.bopZones = bopZones;
         this.seed = seed;
     }
 
@@ -29,11 +32,21 @@ public final class NetherBandBiomeSet {
         return zone[NetherBandBiomes.pickWithinZone(seed, worldX, worldZ, zone.length)];
     }
 
-    /** Resolve {@link NetherBandBiomes#ZONES} keys to holders via the world's biome registry. */
+    /** As {@link #biomeFor}, in Biomes O' Plenty's look — for mountain stages bordering its stretch. */
+    public Holder<Biome> bopBiomeFor(int worldX, int worldY, int worldZ) {
+        Holder<Biome>[] zone = bopZones[NetherBandBiomes.zoneIndex(worldY)];
+        return zone[NetherBandBiomes.pickWithinZone(seed, worldX, worldZ, zone.length)];
+    }
+
+    /**
+     * Resolve {@link NetherBandBiomes#ZONES} keys to holders via the world's biome registry, and
+     * {@link NetherBandBiomes#BOP_ZONES} where present (a zone with none present falls back to vanilla).
+     */
     @SuppressWarnings("unchecked")
     public static NetherBandBiomeSet resolve(HolderGetter<Biome> biomes, long seed) {
         List<List<ResourceKey<Biome>>> keyZones = NetherBandBiomes.ZONES;
         Holder<Biome>[][] zones = new Holder[keyZones.size()][];
+        Holder<Biome>[][] bopZones = new Holder[keyZones.size()][];
         for (int z = 0; z < keyZones.size(); z++) {
             List<ResourceKey<Biome>> keys = keyZones.get(z);
             Holder<Biome>[] resolved = new Holder[keys.size()];
@@ -41,7 +54,10 @@ public final class NetherBandBiomeSet {
                 resolved[i] = biomes.getOrThrow(keys.get(i));
             }
             zones[z] = resolved;
+            List<Holder<Biome>> bop = new ArrayList<>();
+            for (ResourceKey<Biome> key : NetherBandBiomes.BOP_ZONES.get(z)) biomes.get(key).ifPresent(bop::add);
+            bopZones[z] = bop.isEmpty() ? resolved : bop.toArray(new Holder[0]);
         }
-        return new NetherBandBiomeSet(zones, seed);
+        return new NetherBandBiomeSet(zones, bopZones, seed);
     }
 }
