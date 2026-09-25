@@ -116,7 +116,7 @@ public final class StagePanelMenuRenderer {
         Vec3 anchor = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
         // Auto culls it once you have walked away from the door it sits beside.
         if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, cam)) return;
-        Vec3[] b = games.brennan.dungeontrain.client.menu.EditorPanelFacing.doorPanel(false);
+        Vec3[] b = games.brennan.dungeontrain.client.menu.EditorPanelFacing.basis(pos, anchor, cam);
         Vec3 right = b[0], up = b[1], normal = b[2];
 
         ps.pushPose();
@@ -188,6 +188,12 @@ public final class StagePanelMenuRenderer {
         double headerCY = topY - ROW_H / 2.0;
         drawQuad(ps, buffer, -halfW, topY - ROW_H, halfW, topY, HEADER_BG);
         drawCenteredText(ps, buffer, font, MenuLang.t("stage.title", StagePanelMenu.stageName()), 0, headerCY, HEADER_COLOR);
+        double faceL = halfW - games.brennan.dungeontrain.client.menu.EditorPanelFacing.BUTTON_W;
+        drawQuad(ps, buffer, faceL, topY - ROW_H, halfW, topY, games.brennan.dungeontrain.client.menu.EditorPanelFacing.BUTTON_BG);
+        if (hovered.kind() == StagePanelMenu.CellKind.FACE) {
+            drawQuad(ps, buffer, faceL + 0.005, topY - ROW_H + 0.005, halfW - 0.005, topY - 0.005, HOVER_COLOR);
+        }
+        drawCenteredText(ps, buffer, font, games.brennan.dungeontrain.client.menu.EditorPanelFacing.BUTTON_GLYPH, faceL + games.brennan.dungeontrain.client.menu.EditorPanelFacing.BUTTON_W / 2.0, headerCY, games.brennan.dungeontrain.client.menu.EditorPanelFacing.BUTTON_COLOR);
 
         // Toolbar: Duplicate | Hide unused | X.
         double tbTop = topY - ROW_H, tbBottom = tbTop - ROW_H, tbCY = (tbTop + tbBottom) / 2.0;
@@ -288,7 +294,10 @@ public final class StagePanelMenuRenderer {
         if (rowFromTop < 0 || rowFromTop >= rowCount()) return StagePanelMenu.Hit.NONE;
         double w = halfW * 2.0;
 
-        if (rowFromTop == 0) return StagePanelMenu.Hit.NONE; // header
+        if (rowFromTop == 0) { // header — only its top-right face button is live
+            return hitX >= halfW - games.brennan.dungeontrain.client.menu.EditorPanelFacing.BUTTON_W
+                ? new StagePanelMenu.Hit(StagePanelMenu.CellKind.FACE, -1, -1) : StagePanelMenu.Hit.NONE;
+        }
         if (rowFromTop == 1) {
             double dupR = -halfW + w * TOOLBAR_DUP_FRACTION;
             double hideR = dupR + w * TOOLBAR_HIDE_FRACTION;

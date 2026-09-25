@@ -125,7 +125,9 @@ public final class EditorPlotLabelsRenderer {
         /** The stepper for how often the base pair's exit is walled off. */
         EXIT_MOVE_DEC,
         EXIT_MOVE_INC,
-        EXIT_MOVE_TYPE
+        EXIT_MOVE_TYPE,
+        /** Top-right {@code ↻} on the name row — face the player; shift resets to the grid. */
+        FACE
     }
 
     /**
@@ -792,7 +794,9 @@ public final class EditorPlotLabelsRenderer {
      */
     public static double halfWidth(EditorPlotLabelsPacket.Entry entry,
                                    java.util.function.ToIntFunction<String> measure) {
-        double w = Math.max(MIN_HALF_W * 2.0, measure.applyAsInt(entry.name()) * TEXT_SCALE + 2 * PAD_X);
+        // The name stays centred, so the face button's square is reserved on both sides of it.
+        double w = Math.max(MIN_HALF_W * 2.0,
+            measure.applyAsInt(entry.name()) * TEXT_SCALE + 2 * PAD_X + 2 * EditorPanelFacing.BUTTON_W);
         if (hasModeRow(entry)) {
             w = Math.max(w, measure.applyAsInt(modeLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
@@ -918,6 +922,7 @@ public final class EditorPlotLabelsRenderer {
         // y range for row N: [halfH - (N+1)*ROW_H, halfH - N*ROW_H].
         int rowFromTop = (int) Math.floor((halfH - hitY) / ROW_H);
         if (rowFromTop < 0 || rowFromTop >= rows.length) return CellKind.NONE;
+        if (rowFromTop == 0 && hitX >= halfW - EditorPanelFacing.BUTTON_W) return CellKind.FACE;
 
         return switch (rows[rowFromTop]) {
             // Name — clickable teleport target, except on parts plots, which have an empty
@@ -1018,7 +1023,7 @@ public final class EditorPlotLabelsRenderer {
         Vec3 cam, Vec3 anchor,
         EditorPlotLabelsPacket.Entry entry, CellKind hovered
     ) {
-        Vec3[] b = EditorPanelFacing.plotPanel();
+        Vec3[] b = EditorPanelFacing.basis(entry.worldPos(), anchor, cam);
         Vec3 right = b[0], up = b[1], normal = b[2];
 
         ps.pushPose();
@@ -1088,11 +1093,19 @@ public final class EditorPlotLabelsRenderer {
                 case NAME -> {
                     // Hover-highlight when the player is aiming at it and the row is
                     // teleport-clickable (i.e. the entry has a category).
+                    double faceLeft = halfW - EditorPanelFacing.BUTTON_W;
                     if (hovered == CellKind.NAME) {
                         drawQuad(ps, buffer, -halfW + 0.005, rBot + 0.005,
-                            halfW - 0.005, rTop - 0.005, HOVER_COLOR);
+                            faceLeft - 0.005, rTop - 0.005, HOVER_COLOR);
                     }
                     drawCenteredText(ps, buffer, font, entry.name(), 0, rCY, NAME_COLOR);
+                    drawQuad(ps, buffer, faceLeft, rBot, halfW, rTop, EditorPanelFacing.BUTTON_BG);
+                    if (hovered == CellKind.FACE) {
+                        drawQuad(ps, buffer, faceLeft + 0.005, rBot + 0.005,
+                            halfW - 0.005, rTop - 0.005, HOVER_COLOR);
+                    }
+                    drawCenteredText(ps, buffer, font, EditorPanelFacing.BUTTON_GLYPH,
+                        faceLeft + EditorPanelFacing.BUTTON_W / 2.0, rCY, EditorPanelFacing.BUTTON_COLOR);
                 }
                 // Weight — display always when there's a weight pool; arrows only when inside
                 // the plot (the player has to step into the cage to edit).

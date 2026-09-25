@@ -125,7 +125,9 @@ public final class EditorTypeMenuRenderer {
         /** Top-row Open Packages cell — opens the dtpacks root. */
         PKG_OPEN_FOLDER,
         /** The WHOLE category's "whole group every N" settings row — click +1, shift-click -1, cmd-click types. */
-        WHOLE_EVERY
+        WHOLE_EVERY,
+        /** Top-right {@code ↻} on the top row — face the player; shift resets to the grid. */
+        FACE
     }
 
     /**
@@ -297,15 +299,20 @@ public final class EditorTypeMenuRenderer {
     private EditorTypeMenuRenderer() {}
 
     /**
-     * The fixed basis {@code menu} is drawn in — no longer a camera billboard. Companions ride
-     * beside the per-plot panel, so they share its facing; every other menu (nav, Stages) sits at
-     * the row start and takes the door facing for its category's row axis.
+     * The basis {@code menu} is drawn in, from {@link EditorPanelFacing}: it faces the player when it
+     * first appears (and after each teleport), then holds still until its {@code ↻} is clicked.
+     * Keyed on the menu's anchor block — companions ride at their per-plot panel's anchor, so the
+     * plot panel and its companion column share one facing and turn as one board.
      *
      * <p>Shared by the renderer and {@link EditorTypeMenuRaycast} so the hit-test plane matches the
-     * visible panel exactly. {@code anchor} and {@code cam} are unused now that nothing tracks the
-     * camera; kept so the two call sites stay unchanged.</p>
+     * visible panel exactly.</p>
      */
     public static Vec3[] basisFor(EditorTypeMenusPacket.Menu menu, Vec3 anchor, Vec3 cam) {
+        return EditorPanelFacing.basis(menu.worldPos(), anchor, cam);
+    }
+
+    /** What shift + {@code ↻} resets {@code menu} to: the plot facing for companions, else the door facing. */
+    public static Vec3[] gridDefault(EditorTypeMenusPacket.Menu menu) {
         if (menu.isCompanion()) return EditorPanelFacing.plotPanel();
         return EditorPanelFacing.doorPanel(EditorPanelFacing.isZRow(menu.activeCategoryId()));
     }
@@ -327,6 +334,8 @@ public final class EditorTypeMenuRenderer {
         games.brennan.dungeontrain.client.menu.editorscreen.EditorRosterClient.onTypeMenusChanged();
         if (packet.isEmpty()) {
             CACHE = List.of();
+            // Editor exited — the next entry's panels face the player afresh.
+            EditorPanelFacing.clearAll();
             SELECTED_STAGE = "";
             HELP_PANEL_DISMISSED = packet.helpPanelDismissed();
             WHOLE_GROUP_EVERY = packet.wholeGroupEvery();
@@ -464,6 +473,8 @@ public final class EditorTypeMenuRenderer {
      */
     private static double companionHalfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
         double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+        // The top row ends in the ↻ face button; the centred title keeps clear of it both sides.
+        headerW += 2 * EditorPanelFacing.BUTTON_W;
         // The Group companion's header also carries "Whole group every N" beside the title.
         if (EditorTypeMenuSettingsRow.headerEvery(menu)) {
             headerW += font.width(EditorTypeMenuSettingsRow.label()) * TEXT_SCALE + 2 * PAD_X;
@@ -504,6 +515,8 @@ public final class EditorTypeMenuRenderer {
      */
     private static double expandedColumnWidth(EditorTypeMenusPacket.Menu menu, Font font) {
         double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+        // The top row ends in the ↻ face button; the centred title keeps clear of it both sides.
+        headerW += 2 * EditorPanelFacing.BUTTON_W;
         double newW = font.width(newLabel()) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         boolean anyWeight = false;
@@ -555,7 +568,7 @@ public final class EditorTypeMenuRenderer {
         for (EditorTypeMenusPacket.CategoryButton b : menu.categoryBar()) {
             total += font.width(b.displayName()) * TEXT_SCALE + 2 * PAD_X;
         }
-        return total;
+        return total + EditorPanelFacing.BUTTON_W;
     }
 
     /** Maximum growth factor for accommodating wide sub-variant rows — beyond this the sub-variant row wraps to a new line. */
@@ -822,6 +835,7 @@ public final class EditorTypeMenuRenderer {
         if (menu.isPackageMenu()) {
             return hitForPackageMenu(menuIdx, menu, font, hitX, hitY);
         }
+        if (onFaceButton(menu, font, hitX, hitY)) return new Hovered(menuIdx, -1, CellKind.FACE);
         if (menu.isNavMenu()) {
             return hitForNav(menuIdx, menu, font, hitX, hitY);
         }
@@ -829,6 +843,30 @@ public final class EditorTypeMenuRenderer {
             return hitForStagesMenu(menuIdx, menu, font, hitX, hitY);
         }
         return hitForCompanion(menuIdx, menu, font, hitX, hitY);
+    }
+
+    /** True when a panel-local hit lands on the top-right {@code ↻} square of {@code menu}'s top row. */
+    static boolean onFaceButton(EditorTypeMenusPacket.Menu menu, Font font, double hitX, double hitY) {
+        double halfW = halfWidth(menu, font);
+        double halfH = halfHeight(menu, font);
+        return hitX >= halfW - EditorPanelFacing.BUTTON_W && hitX <= halfW
+            && hitY <= halfH && hitY >= halfH - ROW_H;
+    }
+
+    /** Draw the top-right {@code ↻} square over {@code menu}'s top row (every menu kind but packages). */
+    private static void drawFaceButton(PoseStack ps, MultiBufferSource buffer, Font font,
+                                       EditorTypeMenusPacket.Menu menu, Hovered hovered) {
+        double halfW = halfWidth(menu, font);
+        double top = halfHeight(menu, font);
+        double bottom = top - ROW_H;
+        double left = halfW - EditorPanelFacing.BUTTON_W;
+        drawQuad(ps, buffer, left, bottom, halfW, top, BACKDROP_COLOR);
+        drawQuad(ps, buffer, left, bottom, halfW, top, EditorPanelFacing.BUTTON_BG);
+        if (hovered.cell == CellKind.FACE) {
+            drawQuad(ps, buffer, left + 0.005, bottom + 0.005, halfW - 0.005, top - 0.005, HOVER_COLOR);
+        }
+        drawCenteredText(ps, buffer, font, EditorPanelFacing.BUTTON_GLYPH,
+            left + EditorPanelFacing.BUTTON_W / 2.0, (top + bottom) / 2.0, EditorPanelFacing.BUTTON_COLOR);
     }
 
     private static Hovered hitForCompanion(int menuIdx, EditorTypeMenusPacket.Menu menu, Font font,
@@ -912,7 +950,7 @@ public final class EditorTypeMenuRenderer {
         if (rowFromTop == 0) {
             int n = menu.categoryBar().size();
             if (n == 0) return Hovered.NONE;
-            double buttonW = (halfW * 2.0) / n;
+            double buttonW = (halfW * 2.0 - EditorPanelFacing.BUTTON_W) / n;
             int slot = (int) Math.floor((hitX + halfW) / buttonW);
             if (slot < 0) slot = 0;
             if (slot >= n) slot = n - 1;
@@ -1079,6 +1117,7 @@ public final class EditorTypeMenuRenderer {
         } else {
             drawCompanionMenu(ps, buffer, font, menu, hovered);
         }
+        if (!menu.isPackageMenu()) drawFaceButton(ps, buffer, font, menu, hovered);
 
         ps.popPose();
     }
@@ -1177,7 +1216,8 @@ public final class EditorTypeMenuRenderer {
         double catCY = (catTop + catBottom) / 2.0;
         int catN = menu.categoryBar().size();
         if (catN > 0) {
-            double buttonW = panelW / catN;
+            // The last square of the row is the ↻ face button.
+            double buttonW = (panelW - EditorPanelFacing.BUTTON_W) / catN;
             for (int i = 0; i < catN; i++) {
                 EditorTypeMenusPacket.CategoryButton btn = menu.categoryBar().get(i);
                 double btnLeft = -halfW + i * buttonW;
@@ -1575,6 +1615,8 @@ public final class EditorTypeMenuRenderer {
     /** Half-width for the Stages panel — fits the widest stage name + the icons band beside the gate cells. */
     private static double stagesHalfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
         double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+        // The top row ends in the ↻ face button; the centred title keeps clear of it both sides.
+        headerW += 2 * EditorPanelFacing.BUTTON_W;
         double toolbarW = font.width(MenuLang.t("type_menu.stage_add") + "    " + MenuLang.t("type_menu.stage_remove_on")) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {

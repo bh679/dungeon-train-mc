@@ -32,9 +32,10 @@ import org.joml.Quaternionf;
  * world-space offset from the first nav menu in
  * {@link EditorTypeMenuRenderer#menus()}.
  *
- * <p>Shares the nav menu's fixed facing ({@link #basis}) and sits beside it on
- * the reader's left, far enough out that the two never overlap however wide
- * the nav menu grows ({@link #helpAnchor}).</p>
+ * <p>Shares the nav menu's facing ({@link #basis}) and sits beside it on the
+ * reader's left, far enough out that the two never overlap however wide the
+ * nav menu grows ({@link #helpAnchor}) — the pair turns as one board, and the
+ * {@code ↻} button here turns both.</p>
  *
  * <p>Layout constants are package-private so {@link EditorHelpPanelRaycast}
  * shares the same numbers for the wiki-button hit test.</p>
@@ -46,7 +47,7 @@ import org.joml.Quaternionf;
 public final class EditorHelpPanelRenderer {
 
     /** Cell kinds the raycast / input handler need to identify. */
-    public enum CellKind { NONE, WIKI_BUTTON, CLOSE_BUTTON }
+    public enum CellKind { NONE, WIKI_BUTTON, CLOSE_BUTTON, FACE_BUTTON }
 
     /** Resolved hover state — set each tick by {@link EditorHelpPanelRaycast}. */
     public record Hovered(CellKind cell) {
@@ -142,9 +143,19 @@ public final class EditorHelpPanelRenderer {
         return null;
     }
 
-    /** The help panel's fixed basis — the same door facing as the nav menu it sits beside. */
-    public static Vec3[] basis(EditorTypeMenusPacket.Menu navMenu) {
+    /** The help panel's basis — whatever facing the nav menu it sits beside holds. */
+    public static Vec3[] basis(EditorTypeMenusPacket.Menu navMenu, Vec3 cam) {
+        return EditorPanelFacing.basis(navMenu.worldPos(), navAnchor(navMenu), cam);
+    }
+
+    /** Grid default the {@code ↻} shift-click resets the nav + help pair to. */
+    public static Vec3[] gridDefault(EditorTypeMenusPacket.Menu navMenu) {
         return EditorPanelFacing.doorPanel(EditorPanelFacing.isZRow(navMenu.activeCategoryId()));
+    }
+
+    /** Centre of the nav menu's anchor block. */
+    public static Vec3 navAnchor(EditorTypeMenusPacket.Menu navMenu) {
+        return Vec3.atCenterOf(navMenu.worldPos());
     }
 
     /**
@@ -154,13 +165,11 @@ public final class EditorHelpPanelRenderer {
      * drawn scaled about their own anchors. Left is {@code +Z} for X-row categories and {@code -X}
      * for the tracks / dimensional-carriage Z-rows.
      */
-    public static Vec3 helpAnchor(EditorTypeMenusPacket.Menu navMenu, Font font) {
-        BlockPos pos = navMenu.worldPos();
-        Vec3 navAnchor = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+    public static Vec3 helpAnchor(EditorTypeMenusPacket.Menu navMenu, Font font, Vec3 cam) {
         double spacing = EditorTypeMenuRenderer.halfWidth(navMenu, font) + NAV_GAP + HALF_W;
         spacing *= ClientDisplayConfig.getWorldspaceScale();
-        Vec3 right = basis(navMenu)[0];
-        return navAnchor.subtract(right.scale(spacing));
+        Vec3 right = basis(navMenu, cam)[0];
+        return navAnchor(navMenu).subtract(right.scale(spacing));
     }
 
     @SubscribeEvent
@@ -190,13 +199,13 @@ public final class EditorHelpPanelRenderer {
         Vec3 cam = event.getCamera().getPosition();
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
-        Vec3 anchor = helpAnchor(navMenu, font);
+        Vec3 anchor = helpAnchor(navMenu, font, cam);
         // Auto culls the board once you have walked away from the door it sits beside.
         if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, cam)) {
             HOVERED = Hovered.NONE;
             return;
         }
-        drawPanel(ps, buffer, font, cam, anchor, basis(navMenu), hovered());
+        drawPanel(ps, buffer, font, cam, anchor, basis(navMenu, cam), hovered());
 
         buffer.endBatch(PANEL_QUAD);
         buffer.endBatch();
@@ -256,6 +265,16 @@ public final class EditorHelpPanelRenderer {
         }
         drawCenteredText(ps, buffer, font, CLOSE_GLYPH,
             closeLeft + CLOSE_W / 2.0, headerCY, CLOSE_COLOR);
+
+        // Face (↻) — just left of the close cell.
+        double faceLeft = closeLeft - EditorPanelFacing.BUTTON_W;
+        drawQuad(ps, buffer, faceLeft, headerBottom, closeLeft, headerTop, EditorPanelFacing.BUTTON_BG);
+        if (hovered.cell == CellKind.FACE_BUTTON) {
+            drawQuad(ps, buffer, faceLeft + 0.005, headerBottom + 0.005,
+                closeLeft - 0.005, headerTop - 0.005, HOVER_COLOR);
+        }
+        drawCenteredText(ps, buffer, font, EditorPanelFacing.BUTTON_GLYPH,
+            faceLeft + EditorPanelFacing.BUTTON_W / 2.0, headerCY, EditorPanelFacing.BUTTON_COLOR);
 
         // Rows 1..3 — welcome body.
         drawBodyRow(ps, buffer, font, topY, 1, "gui.dungeontrain.editor_help.welcome_1", BODY_COLOR);
@@ -334,6 +353,9 @@ public final class EditorHelpPanelRenderer {
         if (hitX < -HALF_W || hitX > HALF_W || hitY < -halfH || hitY > halfH) return Hovered.NONE;
         int rowFromTop = (int) Math.floor((halfH - hitY) / ROW_H);
         if (rowFromTop == 0 && hitX >= HALF_W - CLOSE_W) return new Hovered(CellKind.CLOSE_BUTTON);
+        if (rowFromTop == 0 && hitX >= HALF_W - CLOSE_W - EditorPanelFacing.BUTTON_W) {
+            return new Hovered(CellKind.FACE_BUTTON);
+        }
         if (rowFromTop == ROW_WIKI_BUTTON) return new Hovered(CellKind.WIKI_BUTTON);
         return Hovered.NONE;
     }

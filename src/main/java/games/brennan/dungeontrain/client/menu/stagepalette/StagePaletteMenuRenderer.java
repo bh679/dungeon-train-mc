@@ -103,7 +103,7 @@ public final class StagePaletteMenuRenderer {
         BlockPos pos = StagePaletteMenu.anchor();
         Vec3 anchor = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
         if (!games.brennan.dungeontrain.client.EditorMenusModeState.withinRange(anchor, cam)) return;
-        Vec3[] b = games.brennan.dungeontrain.client.menu.EditorPanelFacing.doorPanel(false);
+        Vec3[] b = games.brennan.dungeontrain.client.menu.EditorPanelFacing.basis(pos, anchor, cam);
         Vec3 right = b[0], up = b[1], normal = b[2];
 
         ps.pushPose();
@@ -169,6 +169,12 @@ public final class StagePaletteMenuRenderer {
                     drawQuad(ps, buffer, -halfW, rowBottom, halfW, rowTop, HEADER_BG);
                     drawCenteredText(ps, buffer, font, MenuLang.t("palette.title", StagePaletteMenu.stageId()),
                         0, rowCY, HEADER_COLOR);
+                    double faceL = halfW - games.brennan.dungeontrain.client.menu.EditorPanelFacing.BUTTON_W;
+                    drawQuad(ps, buffer, faceL, rowBottom, halfW, rowTop, games.brennan.dungeontrain.client.menu.EditorPanelFacing.BUTTON_BG);
+                    if (hovered.kind() == CellKind.FACE) {
+                        drawQuad(ps, buffer, faceL + 0.005, rowBottom + 0.005, halfW - 0.005, rowTop - 0.005, HOVER_COLOR);
+                    }
+                    drawCenteredText(ps, buffer, font, games.brennan.dungeontrain.client.menu.EditorPanelFacing.BUTTON_GLYPH, faceL + games.brennan.dungeontrain.client.menu.EditorPanelFacing.BUTTON_W / 2.0, rowCY, games.brennan.dungeontrain.client.menu.EditorPanelFacing.BUTTON_COLOR);
                 }
                 case TOOLBAR -> {
                     double split = -halfW + halfW * 2.0 * TOOLBAR_REBAKE_FRACTION;
@@ -250,6 +256,8 @@ public final class StagePaletteMenuRenderer {
         if (r < 0 || r >= rows.size()) return Hit.NONE;
         Row row = rows.get(r);
         return switch (row.kind()) {
+            case HEADER -> hitX >= halfW - games.brennan.dungeontrain.client.menu.EditorPanelFacing.BUTTON_W
+                ? new Hit(CellKind.FACE, -1, -1) : Hit.NONE;
             case TOOLBAR -> hitX < -halfW + halfW * 2.0 * TOOLBAR_REBAKE_FRACTION
                 ? new Hit(CellKind.REBAKE, -1, -1) : new Hit(CellKind.CLOSE, -1, -1);
             case CELLS -> {
