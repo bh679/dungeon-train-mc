@@ -19224,6 +19224,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "bclib-feature-seed-per-thread",
+      "version": "0.969.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Distant scenery generates the same way every time",
+      "summary": "Some far-off scenery that the game builds in the background could come out slightly different on the same world seed, depending on server timing. It is now built consistently, so the same seed always gives the same scenery.",
+      "highlights": [
+        "Background-built scenery is now consistent for the same world seed"
+      ],
+      "pr": 1570,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
