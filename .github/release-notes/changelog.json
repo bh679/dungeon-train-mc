@@ -18663,6 +18663,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "block-variants-multi-space",
+      "version": "0.953.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Doors, beds and tall plants in block variants",
+      "summary": "Block variant cells can now hold doors, beds and tall plants, and they appear whole in carriages \u2014 no more floating door tops or half beds. When a cell mixes one of these with ordinary blocks, a new Span button in the Z menu decides how the ordinary block fills the two spaces.",
+      "highlights": [
+        "Doors, beds, tall grass and tall flowers in a block-variant cell spawn with both halves, even when randomly turned",
+        "Span button: choose whether a single block fills one space or both (or either, at random), which space it takes, and whether the second space repeats it or re-rolls",
+        "Looking at either half of a door or bed opens the same Z menu, right where you looked"
+      ],
+      "pr": 1534,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
