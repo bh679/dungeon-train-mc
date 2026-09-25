@@ -3347,6 +3347,8 @@
   "gui.dungeontrain.builder.profile.saved": "%s guardada en tus construcciones.",
   "gui.dungeontrain.builder.profile.upload_failed": "No se pudo subir %s: sigue guardada aquí.",
   "gui.dungeontrain.builder.profile.too_big": "%s es demasiado grande para subirla: sigue guardada aquí.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s se subió sin algunas de sus variantes de bloque: eran demasiado grandes para enviarlas. Todo sigue guardado aquí.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s se subió sin el botín de sus cofres ni sus variantes de bloque: eran demasiado grandes para enviarlos. Todo sigue guardado aquí.",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "«%s» tiene un nombre integrado, así que NO se envió a Mis construcciones. Guárdalo con un nombre propio para conservar una copia en el relay.",
   "gui.dungeontrain.builder.profile.full": "Tus construcciones están llenas (%s). Esta se guardó aquí, pero no se subió: elimina una en «Mis construcciones» para hacer espacio.",
   "gui.dungeontrain.builder.profile.gone": "%s ya no está en el relé: la próxima vez que guardes se va a subir de nuevo.",
