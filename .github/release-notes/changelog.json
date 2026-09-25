@@ -18749,6 +18749,83 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "vanilla-nether-band-pure-ores",
+      "version": "0.954.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Nether biome fixes",
+      "summary": "Fixes for some bonuses in the modified Nether.",
+      "highlights": [],
+      "pr": 1538,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "smooth-bedrock-floor",
+      "version": "0.954.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "A smooth bedrock floor again",
+      "summary": "The bottom of the world is once more a single flat layer of bedrock. Ordinary overworld terrain had been growing random bedrock bumps a few blocks above the floor; newly generated land no longer does.",
+      "highlights": [],
+      "pr": 1541,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "chunkgen-animals-match-biome",
+      "version": "0.955.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world",
+        "mobs"
+      ],
+      "title": "Animals fit their land again",
+      "summary": "Freshly explored land is home to the animals that belong there again, and dimensional carriage rooms are populated to match.",
+      "highlights": [
+        "Forests have their sheep, pigs, cows and chickens back.",
+        "Dimensional carriage rooms no longer turn up raiders where they don't belong."
+      ],
+      "pr": 1540,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "vanilla-tags-outside-overhauled-stretch",
+      "version": "0.955.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "The world plays by its usual rules again",
+      "summary": "A few odd rules had crept in everywhere. Snow, frogs, ores and leaves behave the way you expect again.",
+      "highlights": [
+        "Snow no longer settles on ice.",
+        "Frogs take their usual colour for each place again.",
+        "Leaves beside bamboo decay normally."
+      ],
+      "pr": 1539,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
