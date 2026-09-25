@@ -136,4 +136,17 @@ class RelayRetryTest {
         assertThrows(IllegalArgumentException.class,
                 () -> RelayRetry.run(List.of(), Duration.ZERO, b -> CompletableFuture.completedFuture(null)));
     }
+
+    @Test
+    @DisplayName("a connect that never lands is told apart from a relay that answered too slowly")
+    void connectFailureIsDistinctFromASlowAnswer() {
+        RelayRetry.Transport connect = RelayRetry.Transport.failed(
+                new java.net.http.HttpConnectTimeoutException("connect"));
+        RelayRetry.Transport slow = RelayRetry.Transport.failed(
+                new java.net.http.HttpTimeoutException("read"));
+        assertTrue(connect.connectFailed(), "a connect timeout is a connect failure");
+        assertTrue(connect.timedOut(), "and still a timeout — the player advice is the same");
+        assertFalse(slow.connectFailed(), "a read timeout reached the relay");
+        assertTrue(slow.timedOut());
+    }
 }

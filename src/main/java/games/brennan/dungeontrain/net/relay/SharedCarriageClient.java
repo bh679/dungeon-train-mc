@@ -913,12 +913,14 @@ public final class SharedCarriageClient {
             body.addProperty("serverId", proof.serverId());
         }
         FetchPatience p = patience == null ? FetchPatience.QUICK : patience;
+        long started = System.currentTimeMillis();
         return RelayRetry.run(p.budgets, p.pause,
                         budget -> postAttempt(baseUrl, "/carriages/fetch", body, budget))
                 .thenApply(outcome -> {
                     RelayRetry.Transport last = outcome.last();
                     if (!last.answered()) {
-                        logNoResponse("/carriages/fetch", p, outcome.attempts(), last);
+                        logNoResponse("/carriages/fetch", p, outcome.attempts(), last,
+                                System.currentTimeMillis() - started);
                         return FetchResult.failed(last.timedOut() ? CallStatus.TIMEOUT : CallStatus.ERROR);
                     }
                     return parseFetch(last.resp());
@@ -1385,14 +1387,20 @@ public final class SharedCarriageClient {
      * so a log line can tell "the relay was slow" from "the relay was gone" at a glance.
      */
     private static void logNoResponse(String path, FetchPatience patience, int attempts,
-                                      RelayRetry.Transport last) {
+                                      RelayRetry.Transport last, long elapsedMs) {
         StringBuilder budgets = new StringBuilder();
         for (int i = 0; i < attempts && i < patience.budgets.size(); i++) {
             if (i > 0) budgets.append(", ");
             budgets.append(patience.budgets.get(i).toSeconds()).append('s');
         }
-        LOGGER.warn("[DungeonTrain] relay {} failed after {} attempt(s) ({}): {}", path, attempts, budgets,
-                last.timedOut() ? "timed out" : "could not connect");
+        // The elapsed time is here because the budgets alone mislead: a connect that never lands
+        // dies on the HttpClient's connect timeout, well inside the budget, and a line reading
+        // "(20s, 30s): timed out" after 17s sends the reader hunting for a slow relay that was
+        // in fact never reached.
+        LOGGER.warn("[DungeonTrain] relay {} failed after {} attempt(s) (budgets {}) in {}ms: {}",
+                path, attempts, budgets, elapsedMs,
+                last.connectFailed() ? "could not connect"
+                        : last.timedOut() ? "timed out" : "no response");
     }
 
     /** POST that only cares about success/forbidden/unknown for save/heartbeat/return. */

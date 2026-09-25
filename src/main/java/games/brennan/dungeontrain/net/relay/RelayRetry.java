@@ -38,6 +38,19 @@ public final class RelayRetry {
                     || error.getCause() instanceof java.net.http.HttpTimeoutException);
         }
 
+        /**
+         * Whether the attempt never reached the relay at all — the connect timed out, rather than
+         * the relay taking too long to answer.
+         *
+         * <p>Worth telling apart in the log even though both read as {@link #timedOut()}: a connect
+         * that never lands dies on the client's connect timeout, not on the per-attempt budget, so a
+         * line that only named the budget would send the next reader looking in the wrong place.</p>
+         */
+        public boolean connectFailed() {
+            return error instanceof java.net.http.HttpConnectTimeoutException
+                    || (error != null && error.getCause() instanceof java.net.http.HttpConnectTimeoutException);
+        }
+
         public static Transport of(HttpResponse<String> resp) {
             return new Transport(resp, null);
         }
