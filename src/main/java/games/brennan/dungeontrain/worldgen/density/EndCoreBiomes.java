@@ -73,9 +73,10 @@ public final class EndCoreBiomes {
      * real End we sample: pass 0 (or earlier/unknown, {@code <= 0}) always resolves to the real End's
      * main island; later passes sweep further into the outer noise field. BetterEnd passes sample the
      * live (BetterEnd) End at the same spot {@code EndBandSampler} copies terrain from, so label and
-     * terrain agree; vanilla passes sample the vanilla layout.
+     * terrain agree; vanilla passes sample the vanilla layout. {@code betterPass} is the cycle's verdict
+     * for this pass ({@link games.brennan.dungeontrain.worldgen.WorldGenCycle#isBetterEndPass}).
      */
-    public Holder<Biome> biomeAt(int worldX, int worldZ, long passIndex) {
+    public Holder<Biome> biomeAt(int worldX, int worldZ, long passIndex, boolean betterPass) {
         if (endBiomeSource == null || vanilla == null || endSampler == null) return fallback;
         try {
             if (passIndex <= 0L) {
@@ -84,7 +85,7 @@ public final class EndCoreBiomes {
                 return vanilla.biomeAtQuart(0, SAMPLE_QUART_Y, 0);
             }
             int sampleX = (int) Math.min(Integer.MAX_VALUE, EndBandStyle.endSampleX(worldX, passIndex));
-            if (betterEndPasses && EndBandStyle.isBetterEndPass(passIndex)) {
+            if (betterEndPasses && betterPass) {
                 Holder<Biome> live = endBiomeSource.getNoiseBiome(
                         QuartPos.fromBlock(sampleX), SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ), endSampler);
                 // Biomes O' Plenty adds End biomes through TerraBlender; keep those to its overworld stretch.

@@ -1,10 +1,10 @@
 package games.brennan.dungeontrain.worldgen;
 
 /**
- * Which look an End-islands band pass gets. The band alternates: the 1st, 3rd, 5th… crossing (pass
- * index 0, 2, 4 — see {@link WorldGenCycle#endPassIndex}) is the vanilla End — end stone stamped in
- * the shape of the real End density, chorus and End cities ({@code DisintegrationFeature},
- * {@code BandEndCityStructure}). The 2nd, 4th, 6th… crossing is the <b>BetterEnd</b> End: real End
+ * Which look an End-islands band pass gets ({@link WorldGenCycle#isBetterEndPass} decides: the order's
+ * {@code end:better} slots, or alternate crossings in the classic layout). A vanilla pass is the End —
+ * end stone stamped in the shape of the real End density, chorus and End cities
+ * ({@code DisintegrationFeature}, {@code BandEndCityStructure}). A better pass is the <b>BetterEnd</b> End: real End
  * chunks — which BetterEnd: New Dawn fills with its biomes, terrain and plants — copied onto track
  * level off-thread ({@link EndBandSampler}, written in by {@code WorldEndBandEvents}).
  *
@@ -28,7 +28,11 @@ public final class EndBandStyle {
 
     private EndBandStyle() {}
 
-    /** True if End-band pass {@code passIndex} is a BetterEnd pass (odd: the 2nd, 4th, 6th… crossing). */
+    /**
+     * The <b>classic</b> (blank-order) layout's rule: odd passes (the 2nd, 4th, 6th… crossing) are BetterEnd.
+     * A {@code worldgenCycleOrder} layout follows each slot's own style instead — always ask
+     * {@link WorldGenCycle#isBetterEndPass}, which picks the rule.
+     */
     public static boolean isBetterEndPass(long passIndex) {
         return passIndex >= 0L && (passIndex & 1L) == 1L;
     }
