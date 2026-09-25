@@ -9,6 +9,8 @@ import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.DensityFunctions;
 
+import java.util.List;
+
 /**
  * Vanilla's End biome layout, reimplemented so no mod can change it. {@code TheEndBiomeSource} can't be
  * trusted for this once BetterEnd: New Dawn is installed: BCLib/WorldWeaver patch the class itself, so even
@@ -47,6 +49,11 @@ public final class VanillaEndBiomes {
     /** The vanilla End layout for a world with this seed. */
     public static VanillaEndBiomes create(long seed, HolderGetter<Biome> biomes) {
         return new VanillaEndBiomes(DensityFunctions.endIslands(seed), biomes);
+    }
+
+    /** Every biome this layout can pick — vanilla's five End biomes. */
+    public List<Holder<Biome>> all() {
+        return List.of(end, highlands, midlands, smallIslands, barrens);
     }
 
     /** The vanilla End biome at quart coordinates (the same arguments {@code getNoiseBiome} takes). */

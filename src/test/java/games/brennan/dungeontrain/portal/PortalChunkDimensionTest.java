@@ -95,6 +95,14 @@ class PortalChunkDimensionTest {
             PortalChunkTerrain.Source.of("chunk_dimension_nether"));
         assertSame(PortalChunkTerrain.Source.END,
             PortalChunkTerrain.Source.of("chunk_dimension_end"));
+        assertSame(PortalChunkTerrain.Source.NETHER_BETTER,
+            PortalChunkTerrain.Source.of("chunk_dimension_nether_better"));
+        assertSame(PortalChunkTerrain.Source.END_BETTER,
+            PortalChunkTerrain.Source.of("chunk_dimension_end_better"));
+        assertSame(PortalChunkTerrain.Source.OVERWORLD_WWOO,
+            PortalChunkTerrain.Source.of("chunk_dimension_wwoo"));
+        assertSame(PortalChunkTerrain.Source.OVERWORLD_BOP,
+            PortalChunkTerrain.Source.of("chunk_dimension_bop"));
 
         // Total: a hand-edited sidecar naming something this build does not ship stamps a field
         // rather than failing the pair's stamp.
