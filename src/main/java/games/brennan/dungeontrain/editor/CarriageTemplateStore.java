@@ -191,9 +191,11 @@ public final class CarriageTemplateStore {
         Path dir = directory();
         Files.createDirectories(dir);
         Path file = fileFor(variant);
-        CompoundTag tag = template.save(new CompoundTag());
+        CompoundTag tag = DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save");
         NbtIo.writeCompressed(tag, file);
-        CACHE.put(variant.id(), Optional.of(template));
+        // Dropped rather than replaced: the file on disk is the repaired copy
+        // (DoubleBlockTemplateRepair), and the next read picks that up.
+        CACHE.remove(variant.id());
         ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved template {} to {}", variant.id(), file);
     }
@@ -225,7 +227,7 @@ public final class CarriageTemplateStore {
         }
         Path file = sourceFileForVariant(variant);
         Files.createDirectories(file.getParent());
-        CompoundTag tag = template.save(new CompoundTag());
+        CompoundTag tag = DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save");
         NbtIo.writeCompressed(tag, file);
         LOGGER.info("[DungeonTrain] Wrote bundled template {} to {}", variant.id(), file);
     }
@@ -379,7 +381,7 @@ public final class CarriageTemplateStore {
     ) {
         StructureTemplate template = new StructureTemplate();
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-        template.load(blocks, tag);
+        template.load(blocks, DoubleBlockTemplateRepair.repair(tag, id));
 
         Vec3i size = template.getSize();
         LOGGER.info("[DungeonTrain] Loaded template {} from {} ({}x{}x{})",
