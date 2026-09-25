@@ -19146,6 +19146,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "effortless-building-breaks-clear-variants",
+      "version": "0.966.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "compatibility"
+      ],
+      "title": "Effortless Building can now delete block variants",
+      "summary": "Breaking blocks with an Effortless Building shape in the editor now removes their block variants too, just like breaking them by hand. Previously the blocks disappeared but their variants stayed behind and came back later.",
+      "highlights": [
+        "Line, wall, floor and cube breaks, including mirrored and arrayed ones, clear the variants of every block they remove",
+        "One Ctrl+Z brings back both the blocks and their variants"
+      ],
+      "pr": 1560,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
