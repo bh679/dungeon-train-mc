@@ -39,4 +39,19 @@ public final class SecondLapOverworld {
         if (!isModdedLap(cycle.cycleIndex(worldX))) return Stretch.VANILLA;
         return gap == WorldGenCycle.OverworldGap.LEAD ? Stretch.WWOO : Stretch.BOP;
     }
+
+    /**
+     * The look this world-X <b>wears</b>: its own stretch ({@link #at}), or — in a band transition that
+     * borders a modded stretch — that stretch's look carried on through the transition
+     * ({@link WorldGenCycle#bleedingOverworldStyleAt}). Drives decoration, biome choice and colours;
+     * {@link #at} stays the stretch itself (teleports, debug listings).
+     */
+    public static Stretch lookAt(WorldGenCycle cycle, int worldX) {
+        Stretch own = at(cycle, worldX);
+        if (own != Stretch.VANILLA || cycle == null) return own;
+        CycleLayout.Style bleed = cycle.bleedingOverworldStyleAt(worldX);
+        if (bleed == CycleLayout.Style.WWOO) return Stretch.WWOO;
+        if (bleed == CycleLayout.Style.BOP) return Stretch.BOP;
+        return Stretch.VANILLA;
+    }
 }

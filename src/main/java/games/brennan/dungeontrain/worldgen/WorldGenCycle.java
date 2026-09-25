@@ -594,6 +594,46 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * The look ({@code WWOO} / {@code BOP}) of a modded overworld gap that carries on into the band
+     * transition at {@code worldX}, or {@code null}. The overworld-looking part of a band's transition
+     * wears the look of the overworld gap it borders, so a modded stretch doesn't stop at a hard line:
+     * <ul>
+     *   <li>upside-down — the Reassembly and exit gap, from the gap after it (its entry is all mirror);</li>
+     *   <li>Nether — the beach, mountain stages and core crossfade on each side, from that side's gap;</li>
+     *   <li>End — the overworld→void erosion fade on each side, from that side's gap.</li>
+     * </ul>
+     * Layout only (classic cycles have no styled gaps). In base coordinates, so stretched runs scale.
+     */
+    public CycleLayout.Style bleedingOverworldStyleAt(int worldX) {
+        if (layout == null) return null;
+        int i = slotAt(worldX);
+        if (i < 0) return null;
+        CycleLayout.Slot slot = layout.slot(i);
+        long local = baseAt(worldX) - layout.start(i);
+        long len = layout.length(i);
+        long side;
+        switch (slot.type()) {
+            case UPSIDE_DOWN -> {
+                return local >= udBandLenAt(worldX) ? moddedOverworldStyle(i + 1) : null;
+            }
+            case NETHER -> side = (len - Math.max(0, slot.core())) / 2L;
+            case END -> side = Math.max(0, eFade);
+            default -> { return null; }
+        }
+        if (local < side) return moddedOverworldStyle(i - 1);
+        if (local >= len - side) return moddedOverworldStyle(i + 1);
+        return null;
+    }
+
+    /** Style of slot {@code i} when it is a WWOO / BoP overworld gap, else {@code null}. */
+    private CycleLayout.Style moddedOverworldStyle(int i) {
+        if (i < 0 || i >= layout.count()) return null;
+        CycleLayout.Slot s = layout.slot(i);
+        if (s.type() != CycleLayout.Type.OVERWORLD) return null;
+        return (s.style() == CycleLayout.Style.WWOO || s.style() == CycleLayout.Style.BOP) ? s.style() : null;
+    }
+
+    /**
      * 0-based occurrence pass of band {@code t} at {@code worldX}: {@code run × perRun + occurrence}, so the
      * second Nether of run 0 is pass 1 and the first Nether of run 1 is pass 2. Between occurrences it is
      * the last one started; {@code -1} before the anchor. Classic layouts (one occurrence per period) fall

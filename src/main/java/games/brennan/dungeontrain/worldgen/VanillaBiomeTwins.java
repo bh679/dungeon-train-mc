@@ -86,7 +86,7 @@ public final class VanillaBiomeTwins {
         } else {
             return true; // no train in this world: nothing is ever a WWOO stretch
         }
-        return SecondLapOverworld.at(cycle, (int) Math.floor(x)) != SecondLapOverworld.Stretch.WWOO;
+        return SecondLapOverworld.lookAt(cycle, (int) Math.floor(x)) != SecondLapOverworld.Stretch.WWOO;
     }
 
     public static void setCameraX(DoubleSupplier supplier) {

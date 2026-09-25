@@ -34,7 +34,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Any error falls back to the original biome — biome generation is never broken by this hook.</p>
  *
  * <p>Everywhere else on the overworld the biome comes from {@link OverworldStretchBiomes}: Biomes O'
- * Plenty in its second-lap stretch, vanilla elsewhere ({@link SecondLapOverworld}).</p>
+ * Plenty in its second-lap stretch and the band transitions bordering it, vanilla elsewhere
+ * ({@link SecondLapOverworld#lookAt}).</p>
  *
  * <p>A cancellable HEAD inject, not a return-value modifier: TerraBlender (Biomes O' Plenty's library)
  * answers this method from its own HEAD inject and cancels, so a RETURN hook never sees its answer. The
@@ -94,7 +95,7 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                                                          int x, int y, int z, Climate.Sampler sampler) {
         OverworldStretchBiomes stretchBiomes = OverworldStretchBiomes.current();
         if (stretchBiomes == null) return null;
-        return stretchBiomes.pick(SecondLapOverworld.at(ctx.cycle(), x << 2), source, x, y, z, sampler);
+        return stretchBiomes.pick(SecondLapOverworld.lookAt(ctx.cycle(), x << 2), source, x, y, z, sampler);
     }
 
     /** The forced Nether-core / End-core / highland biome, or {@code null} for an ordinary column. */
@@ -119,7 +120,10 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                 // End-band passes — see EndCoreBiomes) so world label, surface skin and decoration agree.
                 return ctx.endCoreBiomes().biomeAt(blockX, blockZ, ctx.cycle().endPassIndex(blockX));
             case HIGHLAND:
-                return ctx.highlandBiomes().biomeFor(blockX, blockY, blockZ);
+                // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.
+                return SecondLapOverworld.lookAt(ctx.cycle(), blockX) == SecondLapOverworld.Stretch.BOP
+                        ? ctx.highlandBiomes().bopBiomeFor(blockX, blockY, blockZ)
+                        : ctx.highlandBiomes().biomeFor(blockX, blockY, blockZ);
             default:
                 return null;
         }

@@ -34,6 +34,7 @@ final class OverworldLapsDebug {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final int LAPS = 4;
     private static final int SAMPLE_STEP_X = 250;
+    private static final int BLEED_STEP_X = 16;
     private static final int[] SAMPLE_Z = {-600, -200, 200, 600};
     private static final int[] SAMPLE_Y_ABOVE_SEA = {-40, 8};
 
@@ -55,6 +56,7 @@ final class OverworldLapsDebug {
                 + " wwooFeatures=" + VanillaBiomeFeatures.describe()
                 + " wwooTwins=" + VanillaBiomeTwins.count(), ChatFormatting.AQUA);
         send(source, "  decoration: " + WwooDecorationPass.describeCounters(), ChatFormatting.AQUA);
+        long scanEnd = cycle.startX();
         for (int lap = 0; lap < LAPS; lap++) {
             long[] nether = cycle.netherPassRange(lap);
             if (nether == null) break;
@@ -71,8 +73,29 @@ final class OverworldLapsDebug {
             send(source, "    Nether/End core BoP samples: " + bandCoreBop(ctx, cycle, leadEnd, postEnd + cycle.endLen())
                     + " | overworld source at cores: " + coreLabels(cycle, biomeSource, sampler, overworld.getSeaLevel(),
                     leadEnd, postEnd + cycle.endLen()), ChatFormatting.GRAY);
+            scanEnd = Math.max(scanEnd, postEnd + cycle.endLen());
         }
+        send(source, "  transitions wearing a modded look: " + bleedRuns(cycle, cycle.startX(), scanEnd), ChatFormatting.AQUA);
         return 1;
+    }
+
+    /** Runs of X (to {@link #BLEED_STEP_X}) where a band transition carries on a modded stretch's look. */
+    private static String bleedRuns(WorldGenCycle cycle, long from, long to) {
+        StringBuilder out = new StringBuilder();
+        SecondLapOverworld.Stretch run = null;
+        long runStart = 0L;
+        for (long x = from; x <= Math.min(to, Integer.MAX_VALUE); x += BLEED_STEP_X) {
+            int ix = (int) x;
+            SecondLapOverworld.Stretch look = SecondLapOverworld.at(cycle, ix) == SecondLapOverworld.Stretch.VANILLA
+                    ? SecondLapOverworld.lookAt(cycle, ix) : SecondLapOverworld.Stretch.VANILLA;
+            if (look == SecondLapOverworld.Stretch.VANILLA) look = null;
+            if (look == run) continue;
+            if (run != null) out.append(run).append(" x=").append(runStart).append("..").append(x - 1).append("  ");
+            run = look;
+            runStart = x;
+        }
+        if (run != null) out.append(run).append(" x=").append(runStart).append("..  ");
+        return out.length() == 0 ? "none" : out.toString().trim();
     }
 
     private static String describe(WorldGenCycle cycle, BiomeSource biomeSource, Climate.Sampler sampler, int seaLevel,
