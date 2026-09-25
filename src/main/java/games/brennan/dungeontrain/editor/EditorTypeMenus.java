@@ -485,39 +485,6 @@ public final class EditorTypeMenus {
         );
     }
 
-    /**
-     * Z offset from the carriages nav menu's centre — mirrors
-     * {@code EditorHelpPanelRenderer.WORLD_OFFSET_BLOCKS} on the opposite
-     * side, so the carriages nav menu sits between the help/welcome panel
-     * ({@code +Z}) and the package menu ({@code -Z}). Same distance, opposite
-     * side — visually balanced trio at the editor's entry door.
-     */
-    private static final int PACKAGE_MENU_Z_OFFSET = -5;
-
-    /**
-     * Anchor for the floating package menu — the worldspace mirror of the
-     * X-menu's "Package" drilldown. Shares the carriages nav menu's
-     * {@code -X} depth and {@code Y} lift so the two read as siblings on
-     * the same horizontal plane, but offset on {@code +Z} so they appear
-     * side-by-side rather than stacked along the player's view axis.
-     *
-     * <p>Returns {@code null} when no carriage variants are registered —
-     * same fallthrough the carriages nav menu uses (no anchor without a
-     * first plot).</p>
-     */
-    public static BlockPos packageMenuAnchor(CarriageDims dims) {
-        List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
-        if (variants.isEmpty()) return null;
-        BlockPos firstOrigin = CarriageEditor.plotOrigin(variants.get(0), dims);
-        if (firstOrigin == null) return null;
-        Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
-        return new BlockPos(
-            firstOrigin.getX() - MENU_GAP,
-            firstOrigin.getY() + footprint.getY() + Y_ANCHOR_LIFT,
-            firstOrigin.getZ() + footprint.getZ() / 2 + PACKAGE_MENU_Z_OFFSET
-        );
-    }
-
     // ---------- Stages management panel ----------
 
     /** Category token on stage rows — the input handler routes their clicks to {@code editor stage …}. */
@@ -526,10 +493,14 @@ public final class EditorTypeMenus {
     /** Sentinel modelId for the synthetic "+ New Stage" row (name-cell click opens the name dialog). */
     public static final String STAGE_NEW_SENTINEL = "__new_stage__";
 
-    /** Z offset for the Stages panel — one slot past the package menu, on the same {@code -Z} side. */
+    /**
+     * Z offset for the Stages panel — on the carriages nav menu's {@code -Z} side, which is the
+     * reader's right now the door panels hold a fixed {@code +X} facing (the Welcome panel takes the
+     * {@code +Z} side). Ten blocks clears the nav menu's half-width plus the Stages panel's.
+     */
     private static final int STAGES_MENU_Z_OFFSET = -10;
 
-    /** Anchor for the floating Stages panel — beside the carriages nav menu / package menu at the door. */
+    /** Anchor for the floating Stages panel — beside the carriages nav menu at the door. */
     public static BlockPos stagesMenuAnchor(CarriageDims dims) {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
         if (variants.isEmpty()) return null;
@@ -544,38 +515,27 @@ public final class EditorTypeMenus {
     }
 
     /**
-     * X offset for the Stage Blocks panel — it now sits at the <b>same Z</b> as the Stages panel
-     * ({@link #STAGES_MENU_Z_OFFSET}) but shifted this many blocks toward {@code +X}, so the two
-     * read as a side-by-side pair at the door rather than stacked along {@code -Z}. Tunable; the
-     * billboards face the player, so exact non-overlap is view-dependent — input handling is
-     * double-dispatch-guarded regardless.
+     * Z step from the Stages panel to the Stage Blocks panel (the "stage V menu"). The door panels
+     * hold a fixed {@code +X} facing, so siblings line up side by side along {@code -Z} — the
+     * reader's right. Must clear the Stages panel's half-width plus the Stage Blocks panel's (2.6).
      */
-    private static final int STAGE_PANEL_X_OFFSET = 6;
-    /** Stage Palette panel sits one more panel width to the {@code +X} of the Stage Blocks panel. */
-    private static final int STAGE_PALETTE_X_OFFSET = 7;
+    private static final int STAGE_PANEL_Z_STEP = -6;
+    /** Z step from the Stage Blocks panel to the Stage Palette — clears 2.6 + the palette's 3.2. */
+    private static final int STAGE_PALETTE_Z_STEP = -7;
 
-    /**
-     * Anchor for the Stage Blocks panel (the "stage V menu") — the sibling billboard beside the
-     * Stages panel: same Z, offset {@code +X}. Same fallthrough as {@link #stagesMenuAnchor}:
-     * {@code null} when no carriage variants are registered.
-     */
-    /** Stage Palette panel: the Stage Blocks panel shifted a further {@code +X}. */
+    /** Stage Palette panel: the Stage Blocks panel stepped a further {@code -Z}. */
     public static BlockPos stagePaletteAnchor(CarriageDims dims) {
         BlockPos stagePanel = stagePanelAnchor(dims);
-        return stagePanel == null ? null : stagePanel.offset(STAGE_PALETTE_X_OFFSET, 0, 0);
+        return stagePanel == null ? null : stagePanel.offset(0, 0, STAGE_PALETTE_Z_STEP);
     }
 
+    /**
+     * Anchor for the Stage Blocks panel — the Stages panel stepped {@code -Z}. Same fallthrough as
+     * {@link #stagesMenuAnchor}: {@code null} when no carriage variants are registered.
+     */
     public static BlockPos stagePanelAnchor(CarriageDims dims) {
-        List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
-        if (variants.isEmpty()) return null;
-        BlockPos firstOrigin = CarriageEditor.plotOrigin(variants.get(0), dims);
-        if (firstOrigin == null) return null;
-        Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
-        return new BlockPos(
-            firstOrigin.getX() - MENU_GAP + STAGE_PANEL_X_OFFSET,
-            firstOrigin.getY() + footprint.getY() + Y_ANCHOR_LIFT,
-            firstOrigin.getZ() + footprint.getZ() / 2 + STAGES_MENU_Z_OFFSET
-        );
+        BlockPos stages = stagesMenuAnchor(dims);
+        return stages == null ? null : stages.offset(0, 0, STAGE_PANEL_Z_STEP);
     }
 
     /**

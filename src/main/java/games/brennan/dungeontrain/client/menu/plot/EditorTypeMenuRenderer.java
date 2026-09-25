@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.menu.EditorPanelFacing;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -50,9 +51,9 @@ import java.util.List;
  * column anchored next to a per-plot panel) keep their pre-nav single
  * column layout — no category bar, no tab strip.</p>
  *
- * <p>Same world-space billboarded panel chrome as
- * {@link EditorPlotLabelsRenderer} — backdrop quad, cylindrical billboard
- * around world up, single SEE_THROUGH text pass. Layout constants are
+ * <p>Same world-space panel chrome as
+ * {@link EditorPlotLabelsRenderer} — backdrop quad at a fixed facing
+ * ({@link #basisFor}), single SEE_THROUGH text pass. Layout constants are
  * package-private so {@link EditorTypeMenuRaycast} shares the same numbers
  * for hit detection.</p>
  */
@@ -126,7 +127,9 @@ public final class EditorTypeMenuRenderer {
         /** Top-row Open Packages cell — opens the dtpacks root. */
         PKG_OPEN_FOLDER,
         /** The WHOLE category's "whole group every N" settings row — click +1, shift-click -1, cmd-click types. */
-        WHOLE_EVERY
+        WHOLE_EVERY,
+        /** Top-right {@code ↻} on the top row — face the player; shift resets to the grid. */
+        FACE
     }
 
     /**
@@ -279,37 +282,47 @@ public final class EditorTypeMenuRenderer {
     private static volatile int WHOLE_GROUP_EVERY = EditorTypeMenusPacket.NO_WHOLE_GROUP_EVERY;
     private static volatile Hovered HOVERED = Hovered.NONE;
 
-    /**
-     * Sticky billboard basis for the package menu — captured on the first
-     * render frame after the menu appears, reused every frame after. Unlike
-     * the cylindrical billboards used elsewhere, the package panel pins its
-     * initial orientation toward the player's spawn-in camera and stays
-     * fixed thereafter, so it reads as a stationary signpost rather than a
-     * follower panel. Cleared on editor exit (empty snapshot) so re-entry
-     * recaptures from the new camera.
-     */
-    private static volatile Vec3[] PACKAGE_BASIS = null;
-
     private EditorTypeMenuRenderer() {}
 
     /**
-     * Returns the billboard basis to use for {@code menu}. For the package
-     * menu this is sticky — captured on first call, reused thereafter.
-     * For every other menu kind this is the live cylindrical billboard.
+     * The basis {@code menu} is drawn in, from {@link EditorPanelFacing}: it faces the player when it
+     * first appears (and after each teleport), then holds still until its own {@code ↻} is clicked.
+     * {@code centre} is where the menu is drawn — {@link #centreFor}, not the raw anchor.
      *
-     * <p>Shared by the renderer and {@link EditorTypeMenuRaycast} so the
-     * hit-test plane matches the visible panel exactly even after the
-     * camera moves.</p>
+     * <p>Shared by the renderer and {@link EditorTypeMenuRaycast} so the hit-test plane matches the
+     * visible panel exactly.</p>
      */
-    public static Vec3[] basisFor(EditorTypeMenusPacket.Menu menu, Vec3 anchor, Vec3 cam) {
-        if (!menu.isPackageMenu()) {
-            return EditorPlotLabelsRenderer.basis(anchor, cam);
-        }
-        Vec3[] cached = PACKAGE_BASIS;
-        if (cached != null) return cached;
-        Vec3[] fresh = EditorPlotLabelsRenderer.basis(anchor, cam);
-        PACKAGE_BASIS = fresh;
-        return fresh;
+    public static Vec3[] basisFor(EditorTypeMenusPacket.Menu menu, Vec3 centre, Vec3 cam) {
+        return EditorPanelFacing.basis(facingKey(menu), centre, cam);
+    }
+
+    /**
+     * The key {@code menu}'s facing is held under. Companions share their per-plot panel's anchor
+     * block, so they key on that plus their type name — each spins on its own, apart from the plot
+     * panel and from each other.
+     */
+    public static Object facingKey(EditorTypeMenusPacket.Menu menu) {
+        if (!menu.isCompanion()) return menu.worldPos();
+        return "companion|" + menu.worldPos().toShortString() + "|" + menu.typeName();
+    }
+
+    /**
+     * World centre {@code menu} is drawn about. Companions sit beside their per-plot panel, stepped
+     * along the plot's <b>grid</b> right axis rather than its current facing — so spinning the plot
+     * panel leaves them where they are, and each companion spins about its own centre.
+     */
+    public static Vec3 centreFor(EditorTypeMenusPacket.Menu menu, Vec3 anchor, Font font,
+                                 double priorCompanionWidth) {
+        double shift = companionShiftX(menu, font, priorCompanionWidth);
+        if (shift == 0) return anchor;
+        Vec3 gridRight = EditorPanelFacing.plotPanel()[0];
+        return anchor.add(gridRight.scale(shift * ClientDisplayConfig.getWorldspaceScale()));
+    }
+
+    /** What shift + {@code ↻} resets {@code menu} to: the plot facing for companions, else the door facing. */
+    public static Vec3[] gridDefault(EditorTypeMenusPacket.Menu menu) {
+        if (menu.isCompanion()) return EditorPanelFacing.plotPanel();
+        return EditorPanelFacing.doorPanel(EditorPanelFacing.isZRow(menu.activeCategoryId()));
     }
 
     /**
@@ -329,11 +342,12 @@ public final class EditorTypeMenuRenderer {
         games.brennan.dungeontrain.client.menu.editorscreen.EditorRosterClient.onTypeMenusChanged();
         if (packet.isEmpty()) {
             CACHE = List.of();
+            // Editor exited — the next entry's panels face the player afresh.
+            EditorPanelFacing.clearAll();
             SELECTED_STAGE = "";
             HELP_PANEL_DISMISSED = packet.helpPanelDismissed();
             WHOLE_GROUP_EVERY = packet.wholeGroupEvery();
             HOVERED = Hovered.NONE;
-            PACKAGE_BASIS = null;
             stagesRemoveMode = false;
             StagesSort.clear();
             // Editor exited — drop the row icon strips and close the Stage Blocks panel too.
@@ -349,15 +363,6 @@ public final class EditorTypeMenuRenderer {
         SELECTED_STAGE = packet.selectedStageId();
         HELP_PANEL_DISMISSED = packet.helpPanelDismissed();
         WHOLE_GROUP_EVERY = packet.wholeGroupEvery();
-        // Keep PACKAGE_BASIS sticky across snapshots that still carry a
-        // package menu (so category switches don't reorient the panel); drop
-        // it if the new snapshot has no package menu, so the next appearance
-        // recaptures from the player's current camera.
-        boolean hasPackageMenu = false;
-        for (EditorTypeMenusPacket.Menu m : menus) {
-            if (m.isPackageMenu()) { hasPackageMenu = true; break; }
-        }
-        if (!hasPackageMenu) PACKAGE_BASIS = null;
         EditorTypeMenusPacket.Menu first = menus.get(0);
         LOGGER.info("[DungeonTrain] EditorTypeMenus: client received {} menus (first: '{}' with {} variants @ {})",
             menus.size(), first.typeName(), first.variants().size(), first.worldPos());
@@ -476,6 +481,8 @@ public final class EditorTypeMenuRenderer {
      */
     private static double companionHalfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
         double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+        // The top row ends in the ↻ face button; the centred title keeps clear of it both sides.
+        headerW += 2 * EditorPanelFacing.BUTTON_W;
         // The Group companion's header also carries "Whole group every N" beside the title.
         if (EditorTypeMenuSettingsRow.headerEvery(menu)) {
             headerW += font.width(EditorTypeMenuSettingsRow.label()) * TEXT_SCALE + 2 * PAD_X;
@@ -516,6 +523,8 @@ public final class EditorTypeMenuRenderer {
      */
     private static double expandedColumnWidth(EditorTypeMenusPacket.Menu menu, Font font) {
         double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+        // The top row ends in the ↻ face button; the centred title keeps clear of it both sides.
+        headerW += 2 * EditorPanelFacing.BUTTON_W;
         double newW = font.width(newLabel()) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         boolean anyWeight = false;
@@ -567,7 +576,7 @@ public final class EditorTypeMenuRenderer {
         for (EditorTypeMenusPacket.CategoryButton b : menu.categoryBar()) {
             total += font.width(b.displayName()) * TEXT_SCALE + 2 * PAD_X;
         }
-        return total;
+        return total + EditorPanelFacing.BUTTON_W;
     }
 
     /** Maximum growth factor for accommodating wide sub-variant rows — beyond this the sub-variant row wraps to a new line. */
@@ -834,6 +843,7 @@ public final class EditorTypeMenuRenderer {
         if (menu.isPackageMenu()) {
             return hitForPackageMenu(menuIdx, menu, font, hitX, hitY);
         }
+        if (onFaceButton(menu, font, hitX, hitY)) return new Hovered(menuIdx, -1, CellKind.FACE);
         if (menu.isNavMenu()) {
             return hitForNav(menuIdx, menu, font, hitX, hitY);
         }
@@ -841,6 +851,30 @@ public final class EditorTypeMenuRenderer {
             return hitForStagesMenu(menuIdx, menu, font, hitX, hitY);
         }
         return hitForCompanion(menuIdx, menu, font, hitX, hitY);
+    }
+
+    /** True when a panel-local hit lands on the top-right {@code ↻} square of {@code menu}'s top row. */
+    static boolean onFaceButton(EditorTypeMenusPacket.Menu menu, Font font, double hitX, double hitY) {
+        double halfW = halfWidth(menu, font);
+        double halfH = halfHeight(menu, font);
+        return hitX >= halfW - EditorPanelFacing.BUTTON_W && hitX <= halfW
+            && hitY <= halfH && hitY >= halfH - ROW_H;
+    }
+
+    /** Draw the top-right {@code ↻} square over {@code menu}'s top row (every menu kind but packages). */
+    private static void drawFaceButton(PoseStack ps, MultiBufferSource buffer, Font font,
+                                       EditorTypeMenusPacket.Menu menu, Hovered hovered) {
+        double halfW = halfWidth(menu, font);
+        double top = halfHeight(menu, font);
+        double bottom = top - ROW_H;
+        double left = halfW - EditorPanelFacing.BUTTON_W;
+        drawQuad(ps, buffer, left, bottom, halfW, top, BACKDROP_COLOR);
+        drawQuad(ps, buffer, left, bottom, halfW, top, EditorPanelFacing.BUTTON_BG);
+        if (hovered.cell == CellKind.FACE) {
+            drawQuad(ps, buffer, left + 0.005, bottom + 0.005, halfW - 0.005, top - 0.005, HOVER_COLOR);
+        }
+        drawCenteredText(ps, buffer, font, EditorPanelFacing.BUTTON_GLYPH,
+            left + EditorPanelFacing.BUTTON_W / 2.0, (top + bottom) / 2.0, EditorPanelFacing.BUTTON_COLOR);
     }
 
     private static Hovered hitForCompanion(int menuIdx, EditorTypeMenusPacket.Menu menu, Font font,
@@ -921,7 +955,7 @@ public final class EditorTypeMenuRenderer {
         if (rowFromTop == 0) {
             int n = menu.categoryBar().size();
             if (n == 0) return Hovered.NONE;
-            double buttonW = (halfW * 2.0) / n;
+            double buttonW = (halfW * 2.0 - EditorPanelFacing.BUTTON_W) / n;
             int slot = (int) Math.floor((hitX + halfW) / buttonW);
             if (slot < 0) slot = 0;
             if (slot >= n) slot = n - 1;
@@ -1045,6 +1079,7 @@ public final class EditorTypeMenuRenderer {
         EditorTypeMenusPacket.Menu menu, Hovered hovered,
         double priorCompanionWidth
     ) {
+        anchor = centreFor(menu, anchor, font, priorCompanionWidth);
         Vec3[] b = basisFor(menu, anchor, cam);
         Vec3 right = b[0], up = b[1], normal = b[2];
 
@@ -1066,16 +1101,6 @@ public final class EditorTypeMenuRenderer {
             ps.scale(worldScale, worldScale, worldScale);
         }
 
-        // Companion menus share the per-plot panel's anchor + basis; shift
-        // them in panel-local +X so they sit beside the panel like a second
-        // column of a single extended UI. When multiple companions share an
-        // anchor, each shifts past its predecessors (priorCompanionWidth
-        // accumulated by the caller).
-        double shiftX = companionShiftX(menu, font, priorCompanionWidth);
-        if (shiftX != 0) {
-            ps.translate(shiftX, 0, 0);
-        }
-
         if (menu.isPackageMenu()) {
             drawPackageMenu(ps, buffer, font, menu, hovered);
         } else if (menu.isNavMenu()) {
@@ -1085,6 +1110,7 @@ public final class EditorTypeMenuRenderer {
         } else {
             drawCompanionMenu(ps, buffer, font, menu, hovered);
         }
+        if (!menu.isPackageMenu()) drawFaceButton(ps, buffer, font, menu, hovered);
 
         ps.popPose();
     }
@@ -1183,7 +1209,8 @@ public final class EditorTypeMenuRenderer {
         double catCY = (catTop + catBottom) / 2.0;
         int catN = menu.categoryBar().size();
         if (catN > 0) {
-            double buttonW = panelW / catN;
+            // The last square of the row is the ↻ face button.
+            double buttonW = (panelW - EditorPanelFacing.BUTTON_W) / catN;
             for (int i = 0; i < catN; i++) {
                 EditorTypeMenusPacket.CategoryButton btn = menu.categoryBar().get(i);
                 double btnLeft = -halfW + i * buttonW;
@@ -1608,6 +1635,8 @@ public final class EditorTypeMenuRenderer {
     /** Half-width for the Stages panel — fits the widest stage name + the icons band beside the gate cells. */
     private static double stagesHalfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
         double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+        // The top row ends in the ↻ face button; the centred title keeps clear of it both sides.
+        headerW += 2 * EditorPanelFacing.BUTTON_W;
         double toolbarW = font.width(MenuLang.t("type_menu.stage_add") + "    " + MenuLang.t("type_menu.stage_remove_on")) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {

@@ -906,7 +906,6 @@ public final class VariantOverlayRenderer {
         java.util.List<EditorTypeMenusPacket.Menu> menus = appendSubVariantsCompanion(
             baseMenus, player, dims, category);
         menus = appendCompanionMenu(menus, player, dims, category);
-        menus = appendPackageMenu(menus, dims);
         menus = appendStagesMenu(menus, dims);
 
         // Whether this player has closed the world-space Welcome panel in this world. World state
@@ -1330,37 +1329,8 @@ public final class VariantOverlayRenderer {
     public static final String SUB_VARIANTS_TYPE_NAME = "Sub-Variants";
 
     /**
-     * Append the floating package menu — the worldspace mirror of the X-menu's
-     * "Package" drilldown. One menu per snapshot, anchored at
-     * {@link EditorTypeMenus#packageMenuAnchor(CarriageDims)} so it sits beside
-     * the carriages nav menu at the editor's main entry door.
-     *
-     * <p>Data (package name / isActive / enabled) is NOT included in the
-     * packet — the client renderer reads from {@code PackageListClient} which
-     * is fed by {@code PackageListSyncPacket} on a separate channel. The
-     * snapshot-key dedupe in {@link #pushTypeMenusSnapshot} keys on
-     * {@code (anchor, typeName, variants)}; with empty variants the package
-     * menu's contribution to the key is stable, which is what we want — the
-     * data channel handles re-renders on package state changes.</p>
-     */
-    private static java.util.List<EditorTypeMenusPacket.Menu> appendPackageMenu(
-        java.util.List<EditorTypeMenusPacket.Menu> baseMenus, CarriageDims dims
-    ) {
-        BlockPos anchor = EditorTypeMenus.packageMenuAnchor(dims);
-        if (anchor == null) return baseMenus;
-        java.util.List<EditorTypeMenusPacket.Menu> out = new java.util.ArrayList<>(baseMenus.size() + 1);
-        out.addAll(baseMenus);
-        out.add(new EditorTypeMenusPacket.Menu(
-            anchor, "Packages", java.util.List.of(),
-            false, "", java.util.List.of(), java.util.List.of(),
-            /*isPackageMenu*/ true));
-        return out;
-    }
-
-    /**
      * Append the global Stages management panel (a {@code isStagesMenu} {@link EditorTypeMenusPacket.Menu})
-     * beside the carriages nav menu / package menu, mirroring {@link #appendPackageMenu}. Unlike the
-     * package menu its variant rows carry real data (one gated row per Stage + a "+ New Stage" row),
+     * beside the carriages nav menu. Its variant rows carry real data (one gated row per Stage + a "+ New Stage" row),
      * built by {@link EditorTypeMenus#buildStagesMenu}. Shown in every category so the Stages list is
      * always reachable next to the template-type list. Unchanged list when there is no anchor.
      */

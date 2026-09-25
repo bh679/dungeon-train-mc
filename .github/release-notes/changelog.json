@@ -18804,6 +18804,200 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "vanilla-tags-outside-overhauled-stretch",
+      "version": "0.955.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "The world plays by its usual rules again",
+      "summary": "A few odd rules had crept in everywhere. Snow, frogs, ores and leaves behave the way you expect again.",
+      "highlights": [
+        "Snow no longer settles on ice.",
+        "Frogs take their usual colour for each place again.",
+        "Leaves beside bamboo decay normally."
+      ],
+      "pr": 1539,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "bop-shutdown-biome-leak",
+      "version": "0.955.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Quitting mid-journey no longer mixes up the landscape",
+      "summary": "Land that was still loading when you quit or the server stopped could come back with biomes from a different part of the world. It now always matches the stretch it's in.",
+      "highlights": [],
+      "pr": 1543,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "better-band-style-single-rule",
+      "version": "0.956.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Custom world settings applied consistently",
+      "summary": "Worlds using customised generation settings now generate the way those settings describe. Default worlds are unchanged.",
+      "highlights": [],
+      "pr": 1545,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "legacy-biomes-terrablender-clone",
+      "version": "0.957.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Old-style stretches keep their own biomes",
+      "summary": "The older-looking stretches of the world now keep their own grass colour, snowfall and wildlife. Before, they borrowed the surrounding landscape's biomes.",
+      "highlights": [],
+      "pr": 1544,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fly-double-tap-sprint",
+      "version": "0.958.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Double-tap forward to sprint while flying",
+      "summary": "In creative flight, double-tapping forward now starts sprinting, just like on the ground. You no longer need to hold the sprint key.",
+      "highlights": [],
+      "pr": 1546,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-looks",
+      "version": "0.958.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "world"
+      ],
+      "title": "Dimensional carriages show the world they promise",
+      "summary": "Overworld dimensional carriages now always open onto ordinary Overworld terrain, instead of sometimes showing a slice of somewhere stranger. Nether and End carriages show the classic Nether and End, and new dimensional carriages open onto wilder overworld lands and a reimagined Nether and End.",
+      "highlights": [
+        "Overworld dimensional carriages always show ordinary Overworld terrain",
+        "Nether and End dimensional carriages show the classic Nether and End",
+        "New dimensional carriages: two wilder overworld lands, plus a reimagined Nether and End"
+      ],
+      "pr": 1547,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tint-follows-the-land",
+      "version": "0.958.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Water and leaves keep their own colours",
+      "summary": "Water and leaves now always show the colours of the land they're in. Before, looking across from one stretch of the world into the next could paint the far side in the wrong colours, and those colours could stay stuck after you crossed over.",
+      "highlights": [
+        "No more patches of oddly coloured water hanging in view."
+      ],
+      "pr": 1549,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "server-dt-world-preset",
+      "version": "0.958.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "multiplayer",
+        "compatibility",
+        "world"
+      ],
+      "title": "Dedicated servers now create Dungeon Train worlds",
+      "summary": "New worlds on a dedicated server were quietly being generated as a different mod's default world instead of a Dungeon Train one, even when server.properties asked for a Dungeon Train preset. Servers now create the same world singleplayer does.",
+      "highlights": [
+        "A server with no level-type set now creates a Dungeon Train world, with the proper world floor",
+        "Floor presets chosen in server.properties (e.g. dungeontrain:dungeon_train_y80) now actually apply",
+        "Existing server worlds are unchanged; this applies to newly created worlds"
+      ],
+      "pr": 1548,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-menus-hold-still",
+      "version": "0.958.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor menus stay put",
+      "summary": "The floating menus in the Train Editor no longer spin to follow you around. They turn to face you when you arrive or teleport, then hold still so you can walk past and read them.",
+      "highlights": [
+        "Every editor menu has a new \u21bb button in its top-right corner: click it to turn that menu to face you, or shift-click to square it back up.",
+        "The Welcome board now sits clear of the template menu instead of overlapping it.",
+        "The floating Packages board is gone from the editor entrance \u2014 packages are still in the X menu."
+      ],
+      "pr": 1550,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "skip-incompatible-world-prompt",
+      "version": "0.959.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Removed an unnecessary compatibility warning screen",
+      "summary": "A compatibility warning screen that asked you to back up your world and approve fixes no longer appears. Any fixes it asked about are now applied automatically.",
+      "highlights": [],
+      "pr": 1551,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

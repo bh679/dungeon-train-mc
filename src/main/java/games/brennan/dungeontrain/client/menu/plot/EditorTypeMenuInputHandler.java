@@ -145,6 +145,16 @@ public final class EditorTypeMenuInputHandler {
             mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
         }
 
+        // ↻ on any menu's top row — turn it (and whatever shares its anchor) to face the player,
+        // or with shift snap it back to the grid.
+        if (hit.cell() == EditorTypeMenuRenderer.CellKind.FACE) {
+            games.brennan.dungeontrain.client.menu.EditorPanelFacingEvents.onButton(
+                EditorTypeMenuRenderer.facingKey(menu),
+                net.minecraft.world.phys.Vec3.atCenterOf(menu.worldPos()),
+                EditorTypeMenuRenderer.gridDefault(menu));
+            return;
+        }
+
         // Stages management panel — toolbar (Add / Remove) + inline-editable stage rows.
         if (menu.isStagesMenu()) {
             handleStagesMenu(hit, menu, shift);

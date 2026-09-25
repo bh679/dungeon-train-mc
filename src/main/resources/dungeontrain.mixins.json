@@ -35,6 +35,7 @@
     "StructureBasementMixin",
     "ChunkStatusSpawnMixin",
     "RandomStateMixin",
+    "TagLoaderWwooFilterMixin",
     "ServerGamePacketListenerImplSignBookMixin",
     "ServerGamePacketListenerImplDifficultyMixin",
     "ChiseledBookShelfBlockUnsignedBookMixin",
@@ -84,6 +85,8 @@
   ],
   "client": [
     "client.KeyboardHandlerDebugChordMixin",
+    "client.BiomeColorsTwinMixin",
+    "client.LocalPlayerFlyDoubleTapSprintMixin",
     "client.DebugScreenOverlayDepthMixin",
     "client.BookViewScreenAccessor",
     "client.BookEditScreenAccessor",
@@ -145,7 +148,9 @@
     "client.I18nAccessor",
     "client.LanguageManagerReapplyMixin"
   ],
-  "server": [],
+  "server": [
+    "DedicatedServerPropertiesLevelTypeMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

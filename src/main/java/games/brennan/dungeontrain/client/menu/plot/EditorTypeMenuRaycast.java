@@ -67,6 +67,8 @@ public final class EditorTypeMenuRaycast {
                 menuPriorCompanionWidth = 0;
             }
 
+            // Companions are drawn about their own centre beside the plot panel (centreFor).
+            anchor = EditorTypeMenuRenderer.centreFor(menu, anchor, font, menuPriorCompanionWidth);
             Vec3[] basis = EditorTypeMenuRenderer.basisFor(menu, anchor, rayOrigin);
             Vec3 right = basis[0], up = basis[1], normal = basis[2];
 
@@ -89,14 +91,6 @@ public final class EditorTypeMenuRaycast {
             if (worldScale != 1.0) {
                 hitX /= worldScale;
                 hitY /= worldScale;
-            }
-            // Companion menus are translated +X in panel-local space after
-            // the basis + scale (see EditorTypeMenuRenderer.drawMenu) — undo
-            // that shift here so the cell rects line up with the visible
-            // panel.
-            double shiftX = EditorTypeMenuRenderer.companionShiftX(menu, font, menuPriorCompanionWidth);
-            if (shiftX != 0) {
-                hitX -= shiftX;
             }
 
             Hovered hit = EditorTypeMenuRenderer.hitFor(i, menu, font, hitX, hitY);

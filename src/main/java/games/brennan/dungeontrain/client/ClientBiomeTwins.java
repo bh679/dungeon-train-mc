@@ -13,7 +13,8 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 /**
  * Client side of {@link VanillaBiomeTwins}: builds the twins from the client's own biome registry
  * at login (a dedicated-server client has its own biome objects), clears them at logout, and hands
- * the camera's world X to the position-less colour/sound questions. Off the overworld the camera
+ * the camera's world X to the position-less sky/fog/sound questions (foliage and water tint go by
+ * the block's X instead — see {@code BiomeColorsTwinMixin}). Off the overworld the camera
  * reports a far-negative X, which is "outside the WWOO stretch" — the twin (vanilla) answers, which
  * is what those biomes look like there anyway.
  */
