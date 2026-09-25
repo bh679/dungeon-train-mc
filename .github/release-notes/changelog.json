@@ -18749,6 +18749,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "vanilla-nether-band-pure-ores",
+      "version": "0.954.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Nether biome fixes",
+      "summary": "Fixes for some bonuses in the modified Nether.",
+      "highlights": [],
+      "pr": 1538,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
