@@ -18826,6 +18826,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "better-band-style-single-rule",
+      "version": "0.956.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Custom band orders generate the band style you chose",
+      "summary": "If you customise the world's band order, a band you mark with the alternate style now actually generates in that style. Its advancement and teleport target now match what you see. The default order is unchanged.",
+      "highlights": [],
+      "pr": 1545,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
