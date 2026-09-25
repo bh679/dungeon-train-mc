@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The overworld biome for a column, confined by stretch: Biomes O' Plenty only in the
@@ -46,8 +47,9 @@ import java.util.Map;
  * <p>The region layout is read from the source being asked — TerraBlender gives each chunk fill its
  * own clone of the source and layout, because the layout's cache isn't thread-safe.</p>
  *
- * <p>Published at the same moments as {@link NetherBandContext}; {@code null} before then, which
- * leaves the live source's pick untouched.</p>
+ * <p>Published at the same moments as {@link NetherBandContext}. While nothing is published, a source
+ * already marked as the overworld still gets a vanilla pick from {@link #vanillaFallback} rather than
+ * TerraBlender's — so a lost context can never put BoP biomes into a vanilla stretch.</p>
  */
 public final class OverworldStretchBiomes {
 
@@ -55,6 +57,14 @@ public final class OverworldStretchBiomes {
     private static final String BOP_NAMESPACE = "biomesoplenty";
 
     private static volatile OverworldStretchBiomes current;
+
+    /** Vanilla's overworld climate table ({@code minecraft:} keys only). Registry-free, so built once per JVM. */
+    private static volatile Climate.ParameterList<ResourceKey<Biome>> vanillaTable;
+
+    /** Key → holder for the last source {@link #vanillaFallback} served, cached against its biome set. */
+    private static volatile HolderLookup fallbackHolders;
+
+    private record HolderLookup(Set<Holder<Biome>> possible, Map<ResourceKey<Biome>, Holder<Biome>> byKey) {}
 
     private final Registry<Biome> biomes;
     private final Climate.ParameterList<ResourceKey<Biome>> vanilla;
@@ -133,9 +143,7 @@ public final class OverworldStretchBiomes {
             Registry<Biome> biomes = server.registryAccess().registryOrThrow(Registries.BIOME);
             Holder<Biome> fallback = biomes.getHolderOrThrow(Biomes.PLAINS);
 
-            Climate.ParameterList<ResourceKey<Biome>> vanilla = vanillaOnly(
-                    MultiNoiseBiomeSourceParameterList.knownPresets()
-                            .get(MultiNoiseBiomeSourceParameterList.Preset.OVERWORLD));
+            Climate.ParameterList<ResourceKey<Biome>> vanilla = vanillaTable();
 
             List<Climate.ParameterList<ResourceKey<Biome>>> bopRegions = new ArrayList<>();
             Map<ResourceLocation, Integer> bopRegionIndex = new HashMap<>();
@@ -157,6 +165,42 @@ public final class OverworldStretchBiomes {
             LOGGER.error("[DungeonTrain] Failed to build the second-lap overworld biome tables; overworld stays as generated", t);
             return null;
         }
+    }
+
+    /**
+     * The vanilla overworld biome for the quart, without any published context: the same table and
+     * sampler as {@link #pick}'s vanilla branch, resolved to a holder through the source's own biomes
+     * (TerraBlender's source still carries every vanilla one). {@code null} if the biome isn't there.
+     */
+    public static Holder<Biome> vanillaFallback(MultiNoiseBiomeSource source, int qx, int qy, int qz,
+                                                Climate.Sampler sampler) {
+        ResourceKey<Biome> key = vanillaTable().findValue(sampler.sample(qx, qy, qz));
+        return holdersOf(source).get(key);
+    }
+
+    /** Vanilla's overworld preset table filtered to {@code minecraft:} keys — cached, registry-free. */
+    public static Climate.ParameterList<ResourceKey<Biome>> vanillaTable() {
+        Climate.ParameterList<ResourceKey<Biome>> table = vanillaTable;
+        if (table == null) {
+            table = vanillaOnly(MultiNoiseBiomeSourceParameterList.knownPresets()
+                    .get(MultiNoiseBiomeSourceParameterList.Preset.OVERWORLD));
+            vanillaTable = table;
+        }
+        return table;
+    }
+
+    private static Map<ResourceKey<Biome>, Holder<Biome>> holdersOf(MultiNoiseBiomeSource source) {
+        // possibleBiomes() is memoised on the source and shared by TerraBlender's shallow clones,
+        // so its identity is a cheap cache key.
+        Set<Holder<Biome>> possible = source.possibleBiomes();
+        HolderLookup lookup = fallbackHolders;
+        if (lookup == null || lookup.possible() != possible) {
+            Map<ResourceKey<Biome>, Holder<Biome>> byKey = new HashMap<>();
+            for (Holder<Biome> h : possible) h.unwrapKey().ifPresent(k -> byKey.putIfAbsent(k, h));
+            lookup = new HolderLookup(possible, Map.copyOf(byKey));
+            fallbackHolders = lookup;
+        }
+        return lookup.byKey();
     }
 
     private static Climate.ParameterList<ResourceKey<Biome>> vanillaOnly(Climate.ParameterList<ResourceKey<Biome>> preset) {

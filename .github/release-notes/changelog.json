@@ -18749,6 +18749,135 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "vanilla-nether-band-pure-ores",
+      "version": "0.954.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Nether biome fixes",
+      "summary": "Fixes for some bonuses in the modified Nether.",
+      "highlights": [],
+      "pr": 1538,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "smooth-bedrock-floor",
+      "version": "0.954.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "A smooth bedrock floor again",
+      "summary": "The bottom of the world is once more a single flat layer of bedrock. Ordinary overworld terrain had been growing random bedrock bumps a few blocks above the floor; newly generated land no longer does.",
+      "highlights": [],
+      "pr": 1541,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "chunkgen-animals-match-biome",
+      "version": "0.955.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world",
+        "mobs"
+      ],
+      "title": "Animals fit their land again",
+      "summary": "Freshly explored land is home to the animals that belong there again, and dimensional carriage rooms are populated to match.",
+      "highlights": [
+        "Forests have their sheep, pigs, cows and chickens back.",
+        "Dimensional carriage rooms no longer turn up raiders where they don't belong."
+      ],
+      "pr": 1540,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "vanilla-tags-outside-overhauled-stretch",
+      "version": "0.955.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "The world plays by its usual rules again",
+      "summary": "A few odd rules had crept in everywhere. Snow, frogs, ores and leaves behave the way you expect again.",
+      "highlights": [
+        "Snow no longer settles on ice.",
+        "Frogs take their usual colour for each place again.",
+        "Leaves beside bamboo decay normally."
+      ],
+      "pr": 1539,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "bop-shutdown-biome-leak",
+      "version": "0.955.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Quitting mid-journey no longer mixes up the landscape",
+      "summary": "Land that was still loading when you quit or the server stopped could come back with biomes from a different part of the world. It now always matches the stretch it's in.",
+      "highlights": [],
+      "pr": 1543,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "better-band-style-single-rule",
+      "version": "0.956.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Custom world settings applied consistently",
+      "summary": "Worlds using customised generation settings now generate the way those settings describe. Default worlds are unchanged.",
+      "highlights": [],
+      "pr": 1545,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "legacy-biomes-terrablender-clone",
+      "version": "0.957.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Old-style stretches keep their own biomes",
+      "summary": "The older-looking stretches of the world now keep their own grass colour, snowfall and wildlife. Before, they borrowed the surrounding landscape's biomes.",
+      "highlights": [],
+      "pr": 1544,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

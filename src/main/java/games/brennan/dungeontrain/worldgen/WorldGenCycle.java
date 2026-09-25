@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.worldgen.density.BetterNetherCoreBiomes;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandConfig;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacySpan;
@@ -609,9 +610,42 @@ public record WorldGenCycle(long startX, int owGap,
         return (long) runAt(worldX) * layout.typeCount(t) + layout.occurrencesStarted(t, u);
     }
 
-    /** The Nether-band pass at {@code worldX} — see {@link #passIndex}. Odd passes are the BetterNether ones. */
+    /** The Nether-band pass at {@code worldX} — see {@link #passIndex} and {@link #isBetterNetherPass}. */
     public long netherPassIndex(int worldX) {
         return passIndex(CycleLayout.Type.NETHER, worldX);
+    }
+
+    /**
+     * True if Nether pass {@code pass} is a BetterNether one. The single rule worldgen, advancements and
+     * {@code /dtp} share: with a layout, the style the order gives that occurrence ({@code nether:better});
+     * the classic layout keeps its alternation ({@link BetterNetherCoreBiomes#isBetterNetherPass}).
+     */
+    public boolean isBetterNetherPass(long pass) {
+        if (layout == null) return BetterNetherCoreBiomes.isBetterNetherPass(pass);
+        return occurrenceStyle(CycleLayout.Type.NETHER, pass) == CycleLayout.Style.BETTER;
+    }
+
+    /** True if End pass {@code pass} is a BetterEnd one — the End twin of {@link #isBetterNetherPass}. */
+    public boolean isBetterEndPass(long pass) {
+        if (layout == null) return EndBandStyle.isBetterEndPass(pass);
+        return occurrenceStyle(CycleLayout.Type.END, pass) == CycleLayout.Style.BETTER;
+    }
+
+    /** {@link #isBetterNetherPass} of the Nether pass at {@code worldX} (the last one started between bands). */
+    public boolean isBetterNetherAt(int worldX) {
+        return isBetterNetherPass(netherPassIndex(worldX));
+    }
+
+    /** {@link #isBetterEndPass} of the End pass at {@code worldX} (the last one started between bands). */
+    public boolean isBetterEndAt(int worldX) {
+        return isBetterEndPass(endPassIndex(worldX));
+    }
+
+    /** Style of the occurrence behind {@code t}-pass {@code pass} ({@code run × perRun + occurrence}); {@code null} if none. */
+    private CycleLayout.Style occurrenceStyle(CycleLayout.Type t, long pass) {
+        int n = layout.typeCount(t);
+        if (n == 0 || pass < 0L) return null;
+        return layout.styleOfOccurrence(t, (int) (pass % n));
     }
 
     /**
