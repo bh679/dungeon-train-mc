@@ -29,6 +29,7 @@
     "BiomeFilterMixin",
     "BiomeMixin",
     "ChunkGeneratorSpawnsMixin",
+    "NaturalSpawnerChunkGenSpawnsMixin",
     "ChunkGeneratorStructureStateMixin",
     "WorldGenRegionFloorMixin",
     "StructureBasementMixin",
