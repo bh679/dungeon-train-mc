@@ -19043,6 +19043,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "process-detection-addons",
+      "version": "0.960.0",
+      "type": "refactor",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "Streaming and connection-blocker checks move into small optional add-ons",
+      "summary": "Dungeon Train no longer checks which programs are running on your PC. The two things that needed it \u2014 the Share stream! tab on the Videos button when OBS is open, and the warning when a connection blocker like zapret is stopping online features \u2014 now come from two small optional add-ons, Stream Detect and DPI Bypass Detect. Without them, Dungeon Train works exactly the same, just without those two prompts.",
+      "highlights": [
+        "Stream Detect and DPI Bypass Detect are small, separate, optional mods; the menus and wording stay in Dungeon Train",
+        "Dungeon Train itself no longer looks at the programs running on your PC"
+      ],
+      "pr": 1554,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
