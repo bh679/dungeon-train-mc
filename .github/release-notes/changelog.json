@@ -18766,6 +18766,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "no-train-world-stays-vanilla",
+      "version": "0.955.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Worlds without the train stay plain overworld everywhere",
+      "summary": "A world started without the train is meant to be ordinary Minecraft, but a few far-off stretches of it still grew the train journey's themed landscapes \u2014 different biomes, trees and animals \u2014 while the grass and sky colours stayed normal. Those stretches now generate as plain overworld like the rest of the world.",
+      "highlights": [
+        "No themed biomes or decorations appear in worlds created without the train",
+        "Terrain, colours and animals now match everywhere in those worlds",
+        "Worlds with the train are unchanged"
+      ],
+      "pr": 1542,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
