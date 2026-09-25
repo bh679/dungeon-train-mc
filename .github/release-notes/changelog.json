@@ -18980,6 +18980,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "skip-incompatible-world-prompt",
+      "version": "0.959.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Removed an unnecessary compatibility warning screen",
+      "summary": "A compatibility warning screen that asked you to back up your world and approve fixes no longer appears. Any fixes it asked about are now applied automatically.",
+      "highlights": [],
+      "pr": 1551,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
