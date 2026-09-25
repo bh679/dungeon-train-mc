@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.OfflineChunkSampler;
+import games.brennan.dungeontrain.worldgen.VanillaBiomeTwins;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
@@ -218,7 +219,8 @@ final class PortalChunkFeatures {
 
             Holder<Biome> biome = chunk.getNoiseBiome(
                 QuartPos.fromBlock(x), QuartPos.fromBlock(y), QuartPos.fromBlock(z));
-            MobSpawnSettings spawns = biome.value().getMobSettings();
+            // Vanilla's list at a vanilla site, as the world's own chunks get.
+            MobSpawnSettings spawns = VanillaBiomeTwins.mobSettingsAt(biome.value(), x);
             Optional<MobSpawnSettings.SpawnerData> pick =
                 spawns.getMobs(MobCategory.MONSTER).getRandom(random);
             if (pick.isEmpty()) {
