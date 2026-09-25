@@ -42,7 +42,9 @@ public enum PlotCategory {
     PORTALS(EditorCategory.PORTALS),
     ARCHITECTURE(EditorCategory.ARCHITECTURE),
     /** Carriage parts — addressable in its own right, but stamped as part of {@link #CARRIAGES}. */
-    PARTS(EditorCategory.CARRIAGES);
+    PARTS(EditorCategory.CARRIAGES),
+    /** Chunk parts — the two-thick frames a dimensional carriage stands in, browsed under Dimensions. */
+    CHUNK_PARTS(EditorCategory.PORTALS);
 
     private static final PlotCategory[] VALUES = values();
 
@@ -69,7 +71,7 @@ public enum PlotCategory {
     /** Human-readable label for the status HUD. Kept in step with {@link EditorCategory#displayName()}. */
     public String displayName() {
         return switch (this) {
-            case PARTS -> "Parts";
+            case PARTS, CHUNK_PARTS -> "Parts";
             case WHOLE_GROUP -> "Group";
             default -> owner.displayName();
         };
@@ -117,17 +119,17 @@ public enum PlotCategory {
      * from a handler that would have dropped it.</p>
      */
     public boolean hasActionRow() {
-        return this != PARTS && this != ARCHITECTURE;
+        return this != PARTS && this != CHUNK_PARTS && this != ARCHITECTURE;
     }
 
     /** Whether templates here have a spawn-weight pool to bump. False for parts and architecture. */
     public boolean hasWeightPool() {
-        return this != PARTS && this != ARCHITECTURE;
+        return this != PARTS && this != CHUNK_PARTS && this != ARCHITECTURE;
     }
 
     /** Whether templates here carry a spawn gate — min/max level, dimensions, stage link. */
     public boolean hasGate() {
-        return this != PARTS && this != ARCHITECTURE;
+        return this != PARTS && this != CHUNK_PARTS && this != ARCHITECTURE;
     }
 
     /**

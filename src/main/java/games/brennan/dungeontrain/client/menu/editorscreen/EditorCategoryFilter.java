@@ -44,7 +44,7 @@ public enum EditorCategoryFilter {
             case CARRIAGES, PARTS -> CARRIAGES;
             case CONTENTS -> CONTENTS;
             case TRACKS -> TRACKS;
-            case PORTALS -> DIMENSIONS;
+            case PORTALS, CHUNK_PARTS -> DIMENSIONS;
             case ARCHITECTURE -> null;
         };
     }

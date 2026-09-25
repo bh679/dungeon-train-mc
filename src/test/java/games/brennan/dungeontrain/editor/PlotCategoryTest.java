@@ -78,9 +78,12 @@ final class PlotCategoryTest {
         assertFalse(PlotCategory.PARTS.browsesUnder(PlotCategory.WHOLE));
         assertFalse(PlotCategory.CONTENTS.browsesUnder(null));
         for (PlotCategory c : PlotCategory.values()) {
-            if (c == PlotCategory.PARTS || c == PlotCategory.WHOLE_GROUP) continue;
+            if (c == PlotCategory.PARTS || c == PlotCategory.WHOLE_GROUP || c == PlotCategory.CHUNK_PARTS) continue;
             assertEquals(c.name(), c.owner().name(), c + " should own itself");
         }
+        // Chunk parts are browsed and stamped with the Dimensions rooms, as carriage parts are with carriages.
+        assertSame(EditorCategory.PORTALS, PlotCategory.CHUNK_PARTS.owner());
+        assertTrue(PlotCategory.CHUNK_PARTS.browsesUnder(PlotCategory.PORTALS));
     }
 
     @Test
@@ -91,9 +94,10 @@ final class PlotCategoryTest {
             assertSame(e, widened.owner());
             assertFalse(widened == PlotCategory.PARTS);
             assertFalse(widened == PlotCategory.WHOLE_GROUP);
+            assertFalse(widened == PlotCategory.CHUNK_PARTS);
         }
-        // PARTS and WHOLE_GROUP are exactly the two addressable values with no stamping counterpart.
-        assertEquals(EditorCategory.values().length + 2, PlotCategory.values().length);
+        // PARTS, CHUNK_PARTS and WHOLE_GROUP are exactly the addressable values with no stamping counterpart.
+        assertEquals(EditorCategory.values().length + 3, PlotCategory.values().length);
     }
 
     @Test

@@ -237,7 +237,7 @@ public final class EditorScreenActions {
                 "dungeontrain editor whole label " + id, "", current);
             case WHOLE_GROUP -> new CommandMenuEntry.TypeArg(label, "name",
                 "dungeontrain editor whole group label " + id, "", current);
-            case PARTS, TRACKS, ARCHITECTURE -> null;
+            case PARTS, CHUNK_PARTS, TRACKS, ARCHITECTURE -> null;
         };
     }
 

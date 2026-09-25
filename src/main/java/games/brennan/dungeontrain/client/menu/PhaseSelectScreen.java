@@ -75,7 +75,7 @@ public final class PhaseSelectScreen implements MenuScreen {
             // No per-template spawn gate to edit.
             case WHOLE -> "dungeontrain editor whole phase " + modelId;
             case WHOLE_GROUP -> "dungeontrain editor whole group phase " + modelId;
-            case PARTS, ARCHITECTURE -> null;
+            case PARTS, CHUNK_PARTS, ARCHITECTURE -> null;
         };
     }
 

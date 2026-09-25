@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.chunkparts.ChunkPart;
 import games.brennan.dungeontrain.portal.chunkparts.ChunkPartKind;
 import games.brennan.dungeontrain.portal.chunkparts.ChunkPartRegistry;
@@ -30,10 +29,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * Authoring chunk parts — the two-thick frames a dimensional carriage can stand in
  * ({@link ChunkPartKind}).
  *
- * <p>Laid out beside the Dimensions rooms, on the same plot layer: one row per kind along Z, one slot
- * per part along X, starting past the widest room a portal plot can hold so the two never meet. The
- * plots are stamped with the Dimensions category and erased with it, so like every other plot they
- * only stand while their category is resident.</p>
+ * <p>Laid out beside the Dimensions rooms, on the same plot layer, but on the <b>−Z</b> side of them:
+ * the rooms start at Z 0 and grow toward +Z as rooms are added and toward +X as they are lengthened,
+ * so nothing a room does can reach a part. One row per kind, stacked away from the rooms along −Z,
+ * one slot per part along +X. The plots are stamped with the Dimensions category and erased with it,
+ * so like every other plot they only stand while their category is resident.</p>
  *
  * <p>A plot is the part at its exact size in a bedrock cage. Which side is the <b>outer</b> layer is
  * fixed by {@link ChunkPartKind}: local x = 0 of a door, local z = 0 of a wall, the bottom layer of a
@@ -43,10 +43,10 @@ public final class ChunkPartEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Past the widest room a portal plot can be, and a gap. */
-    public static final int FIRST_PLOT_X = TrackSidePlots.X_PORTALS + PortalRoomLayout.MAX_LENGTH
-        + 2 * EditorLayout.GAP;
-    private static final int FIRST_PLOT_Z = 0;
+    /** The rooms' own column, so the parts read as belonging to them. */
+    public static final int FIRST_PLOT_X = TrackSidePlots.X_PORTALS;
+    /** The room rows start here and only grow toward +Z; parts stand a gap short of it. */
+    private static final int ROOMS_FIRST_Z = TrackSidePlots.Z_BASELINE;
     /** Plots are one block of cage on each side, then the gap. */
     private static final int STRIDE_PAD = EditorLayout.GAP + 2;
     private static final BlockState OUTLINE = Blocks.BEDROCK.defaultBlockState();
@@ -73,13 +73,20 @@ public final class ChunkPartEditor {
             EditorLayout.PLOT_Y, rowStartZ(kind));
     }
 
+    /** Rows stack toward −Z from the rooms: each row's max Z sits a gap (and a cage) below the last. */
     private static int rowStartZ(ChunkPartKind kind) {
-        int z = FIRST_PLOT_Z;
+        int nextMaxZ = ROOMS_FIRST_Z - STRIDE_PAD;
         for (ChunkPartKind k : ChunkPartKind.values()) {
-            if (k == kind) return z;
-            z += k.size().getZ() + STRIDE_PAD;
+            int start = nextMaxZ - k.size().getZ() + 1;
+            if (k == kind) return start;
+            nextMaxZ = start - STRIDE_PAD;
         }
-        return z;
+        return nextMaxZ;
+    }
+
+    /** The first slot of {@code kind}'s row — where its floating menu anchors. */
+    public static BlockPos rowOrigin(ChunkPartKind kind) {
+        return slotOrigin(kind, 0);
     }
 
     /** The part whose plot (cage included) holds {@code pos}, or empty. */
