@@ -1,10 +1,12 @@
 package games.brennan.dungeontrain.editor;
 
 /**
- * Per-{@link VariantState} footprint config for a <b>single-space</b> block that
- * shares a variant cell with a multi-space block (door, bed, tall plant — see
- * {@link MultiBlockFootprint}). A multi-space pick fills two spaces; this
- * setting decides how a single-space pick fills those same two spaces.
+ * Per-<b>cell</b> footprint setting for a variant cell that holds a multi-space
+ * block (door, bed, tall plant — see {@link MultiBlockFootprint}). A multi-space
+ * pick fills two spaces; this one setting decides how whichever single-space
+ * block the cell rolls fills those same two spaces. Stored beside the cell's
+ * lock-id in every variant sidecar ({@code "span"}), set from the Z menu's
+ * Span button.
  *
  * <ul>
  *   <li>{@link Mode#ONE_FIRST} — block in the cell, the partner space is air.</li>
@@ -50,22 +52,6 @@ public record VariantSpan(Mode mode) {
     public Mode resolve(boolean firstEntryIsMulti) {
         if (mode != Mode.AUTO) return mode;
         return firstEntryIsMulti ? Mode.TWO_SAME : Mode.ONE_FIRST;
-    }
-
-    /** Menu "How many" click: 1 ↔ 2, landing on Position 1 / Same. {@code resolved} must not be AUTO. */
-    public static Mode nextCount(Mode resolved) {
-        return resolved.isOne() ? Mode.TWO_SAME : Mode.ONE_FIRST;
-    }
-
-    /** Menu sub-option click: cycles 1 → 2 → R under "1", Same ↔ Random under "2". */
-    public static Mode nextSub(Mode resolved) {
-        return switch (resolved) {
-            case ONE_FIRST -> Mode.ONE_SECOND;
-            case ONE_SECOND -> Mode.ONE_RANDOM;
-            case ONE_RANDOM -> Mode.ONE_FIRST;
-            case TWO_SAME -> Mode.TWO_RANDOM;
-            case TWO_RANDOM, AUTO -> Mode.TWO_SAME;
-        };
     }
 
     /** Compact JSON token; {@code null} for {@link Mode#AUTO} (field omitted). */

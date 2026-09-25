@@ -160,7 +160,7 @@ public interface EditorPlotTransform {
             return new VariantState(
                 v.state().rotate(vanilla()), v.blockEntityNbt(), v.weight(),
                 rotateRotation(v.rotation()), v.linkedLootPrefabId(), v.entityId(),
-                v.half(), v.difficulty(), v.groupRef(), v.active(), v.span());
+                v.half(), v.difficulty(), v.groupRef(), v.active());
         }
 
         /**

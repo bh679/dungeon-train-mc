@@ -173,6 +173,20 @@ public final class BlockVariantMenuInputHandler {
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.CYCLE_COPY_ROLL, variantId, local, -1, "", 0));
             case COPY_SCOPE -> DungeonTrainNet.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.CYCLE_COPY_SCOPE, variantId, local, -1, "", 0));
+            case SPAN -> {
+                BlockVariantMenu.closeRotPopup();
+                BlockVariantMenu.toggleSpanPopup();
+            }
+            case SPAN_OPTION -> {
+                // -2 = clicked elsewhere in the panel (close), -1 = the strip's own margin (ignore).
+                int opt = hit.secondary();
+                if (opt == -1) return;
+                BlockVariantMenu.closeSpanPopup();
+                if (opt < 0 || opt >= BlockVariantMenuRenderer.SPAN_OPTIONS.length) return;
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_SPAN_MODE, variantId, local, -1, "",
+                    BlockVariantMenuRenderer.SPAN_OPTIONS[opt].ordinal()));
+            }
             case REMOVE -> BlockVariantMenu.toggleRemoveMode();
             case CLEAR -> DungeonTrainNet.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.CLEAR, variantId, local, -1, "", 0));
@@ -260,17 +274,6 @@ public final class BlockVariantMenuInputHandler {
                 int nextOrd = (currentOrd + 1) % modeCount;
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_ACTIVE_MODE, variantId, local, hit.index(), "", nextOrd));
-            }
-            case ENTRY_SPAN_COUNT, ENTRY_SPAN_SUB -> {
-                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
-                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
-                games.brennan.dungeontrain.editor.VariantSpan.Mode current = BlockVariantMenu.resolvedSpan(e);
-                games.brennan.dungeontrain.editor.VariantSpan.Mode next =
-                    hit.kind() == BlockVariantMenu.CellKind.ENTRY_SPAN_COUNT
-                        ? games.brennan.dungeontrain.editor.VariantSpan.nextCount(current)
-                        : games.brennan.dungeontrain.editor.VariantSpan.nextSub(current);
-                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
-                    BlockVariantEditPacket.Op.SET_SPAN_MODE, variantId, local, hit.index(), "", next.ordinal()));
             }
             case ENTRY_ROT_DIRS -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;

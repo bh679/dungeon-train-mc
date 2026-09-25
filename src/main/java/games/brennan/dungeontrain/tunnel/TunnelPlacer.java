@@ -390,7 +390,7 @@ public final class TunnelPlacer {
                 continue;
             }
             // A two-space cell (door / bed / tall plant) writes both of its spaces.
-            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), picked,
+            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
                     entry.localPos(), worldSeed, tileIndex, games.brennan.dungeontrain.editor.VariantState::state)) {
                 BlockPos wWorld = tunnelWorldPos(origin, w.localPos(), mirrorX);
                 if (w.isAir()) {
@@ -480,7 +480,7 @@ public final class TunnelPlacer {
                 continue;
             }
             // A two-space cell (door / bed / tall plant) writes both of its spaces.
-            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), picked,
+            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
                     entry.localPos(), worldSeed, tileIndex, games.brennan.dungeontrain.editor.VariantState::state)) {
                 BlockPos wWorld = tunnelWorldPos(origin, w.localPos(), mirrorX);
                 if (!wWorld.equals(wpos) && Shipyards.of(level).isInShip(wWorld)) continue;

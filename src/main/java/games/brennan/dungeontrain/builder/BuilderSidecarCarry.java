@@ -78,6 +78,7 @@ public final class BuilderSidecarCarry {
                     // what it went in with.
                     target.setCopyRoll(local, source.copyRollAt(pos));
                     target.setCopyScope(local, source.copyScopeAt(pos));
+                    target.setSpan(local, source.spanAt(pos));
                 }
                 BuilderVariantStore.save(level, target, footprint);
             } catch (Throwable t) {
@@ -124,6 +125,7 @@ public final class BuilderSidecarCarry {
                     if (lockId > 0) target.setLockId(local, lockId);
                     target.setCopyRoll(local, doc.copyRollAt(entry.localPos()));
                     target.setCopyScope(local, doc.copyScopeAt(entry.localPos()));
+                    target.setSpan(local, doc.spanAt(entry.localPos()));
                 }
                 target.save();
             } catch (Throwable t) {

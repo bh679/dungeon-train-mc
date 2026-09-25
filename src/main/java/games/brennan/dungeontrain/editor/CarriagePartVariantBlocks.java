@@ -93,6 +93,12 @@ public final class CarriagePartVariantBlocks {
      */
     private final CarriagePartVariantBlocks source;
 
+    /**
+     * pos → per-cell {@link VariantSpan} — how a single block fills a two-space cell (door /
+     * bed / tall plant). Only non-default values are stored; see {@link #spanAt}.
+     */
+    private final Map<BlockPos, VariantSpan> spans = new LinkedHashMap<>();
+
     private CarriagePartVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
         this(entries, lockIds, false, false, false, false);
     }
@@ -202,8 +208,8 @@ public final class CarriagePartVariantBlocks {
             LOGGER.warn("[DungeonTrain] Part variant sidecar {}: pos {} outside part footprint {}x{}x{}, skipping.",
                 contextId, pos, size.getX(), size.getY(), size.getZ());
         }
-        return new CarriagePartVariantBlocks(kept, keptLocks, mirrorX, mirrorY, mirrorZ,
-            mirrorVariants, this);
+        return withSpans(new CarriagePartVariantBlocks(kept, keptLocks, mirrorX, mirrorY, mirrorZ,
+            mirrorVariants, this), spans);
     }
 
     /** True when this instance is a bounded view — see {@link #cropped}. */
@@ -271,6 +277,7 @@ public final class CarriagePartVariantBlocks {
         JsonObject variants = obj.getAsJsonObject("variants");
         Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
         Map<BlockPos, Integer> outLocks = new LinkedHashMap<>();
+        Map<BlockPos, VariantSpan> outSpans = new LinkedHashMap<>();
         String contextId = kind.id() + ":" + name;
         for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
             BlockPos pos = parsePos(field.getKey());
@@ -289,11 +296,12 @@ public final class CarriagePartVariantBlocks {
             }
             BlockPos posI = pos.immutable();
             out.put(posI, List.copyOf(cell.states()));
+            if (!cell.span().isDefault()) outSpans.put(posI, cell.span());
             if (cell.lockId() > 0) outLocks.put(posI, cell.lockId());
         }
         LOGGER.info("[DungeonTrain] Loaded {} part variant entries for {} from {}",
             out.size(), contextId, origin);
-        return new CarriagePartVariantBlocks(out, outLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants);
+        return withSpans(new CarriagePartVariantBlocks(out, outLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants), outSpans);
     }
 
     static BlockPos parsePos(String key) {
@@ -352,7 +360,31 @@ public final class CarriagePartVariantBlocks {
         groupRefs.invalidate();
     }
 
+    /** The cell's multi-space {@link VariantSpan}; {@code AUTO} when unset or no cell. */
+    public synchronized VariantSpan spanAt(BlockPos localPos) {
+        return spans.getOrDefault(localPos, VariantSpan.NONE);
+    }
+
+    /** Set the cell's multi-space span (default clears it). Throws if no cell exists at {@code localPos}. */
+    public synchronized void setSpan(BlockPos localPos, VariantSpan span) {
+        if (source != null) source.setSpan(localPos, span);
+        if (!entries.containsKey(localPos)) {
+            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
+        }
+        if (span == null || span.isDefault()) spans.remove(localPos);
+        else spans.put(localPos.immutable(), span);
+    }
+
+    /** Copy {@code from}'s spans for the cells {@code target} holds — parse and crop both end here. */
+    private static CarriagePartVariantBlocks withSpans(CarriagePartVariantBlocks target, Map<BlockPos, VariantSpan> from) {
+        for (Map.Entry<BlockPos, VariantSpan> e : from.entrySet()) {
+            if (target.entries.containsKey(e.getKey())) target.spans.put(e.getKey(), e.getValue());
+        }
+        return target;
+    }
+
     public synchronized boolean remove(BlockPos localPos) {
+        spans.remove(localPos);
         if (source != null) source.remove(localPos);
         lockIds.remove(localPos);
         groupRefs.invalidate();
@@ -365,6 +397,7 @@ public final class CarriagePartVariantBlocks {
      * wipe doesn't leave orphaned variant metadata pointing at now-air cells.
      */
     public synchronized int clearAll() {
+        spans.clear();
         int n = entries.size();
         entries.clear();
         lockIds.clear();
@@ -493,7 +526,8 @@ public final class CarriagePartVariantBlocks {
             if (!first) sb.append(",");
             int lockId = lockIds.getOrDefault(e.getKey(), 0);
             sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
-            CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId);
+            CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId,
+                VariantCopyRoll.DEFAULT, VariantCopyScope.BOTH, spanAt(e.getKey()));
             first = false;
         }
         sb.append("\n  }\n}\n");

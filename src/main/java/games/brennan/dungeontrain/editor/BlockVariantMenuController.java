@@ -343,12 +343,12 @@ public final class BlockVariantMenuController {
                 (byte) s.half().mode().ordinal(),
                 s.difficulty().min(), s.difficulty().max(),
                 s.groupRef(), refLive,
-                (byte) s.active().mode().ordinal(),
-                (byte) s.span().mode().ordinal()));
+                (byte) s.active().mode().ordinal()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
-            (byte) plot.copyScopeAt(localPos).ordinal());
+            (byte) plot.copyScopeAt(localPos).ordinal(),
+            (byte) plot.spanAt(localPos).mode().ordinal());
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -402,6 +402,10 @@ public final class BlockVariantMenuController {
         }
         if (packet.op() == BlockVariantEditPacket.Op.CYCLE_COPY_SCOPE) {
             cycleCopyScope(player, plot, localPos);
+            return;
+        }
+        if (packet.op() == BlockVariantEditPacket.Op.SET_SPAN_MODE) {
+            setSpan(player, plot, localPos, packet.delta());
             return;
         }
         if (packet.op() == BlockVariantEditPacket.Op.COPY) {
@@ -761,19 +765,6 @@ public final class BlockVariantMenuController {
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
-            case SET_SPAN_MODE -> {
-                // Multi-space footprint for a single block sharing the cell with a door / bed /
-                // tall plant. The client only ever sends an explicit mode; AUTO is the unset default.
-                if (wasEmpty) return;
-                int idx = packet.entryIndex();
-                if (idx < 0 || idx >= mutated.size()) return;
-                int ord = packet.delta();
-                VariantSpan.Mode[] modes = VariantSpan.Mode.values();
-                if (ord <= VariantSpan.Mode.AUTO.ordinal() || ord >= modes.length) return;
-                mutated.set(idx, mutated.get(idx).withSpan(new VariantSpan(modes[ord])));
-                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
-                dirty = true;
-            }
             case BUMP_DIFF_MIN -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
@@ -1032,6 +1023,41 @@ public final class BlockVariantMenuController {
     }
 
     /**
+     * SET_SPAN_MODE: the cell-wide multi-space setting — how a single block fills the two spaces
+     * of a cell that also holds a door / bed / tall plant. {@code ordinal} is a
+     * {@link VariantSpan.Mode}; the menu only offers explicit modes, {@code AUTO} is the unset
+     * default. Not copied to lock-group siblings: each cell's footprint is its own.
+     */
+    private static void setSpan(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos, int ordinal) {
+        List<VariantState> states = plot.statesAt(localPos);
+        if (states == null || MultiBlockFootprint.cellFootprint(states) == null) {
+            actionBar(player, "Span only applies to a cell holding a door, bed or tall plant",
+                ChatFormatting.YELLOW);
+            return;
+        }
+        VariantSpan.Mode[] modes = VariantSpan.Mode.values();
+        if (ordinal <= VariantSpan.Mode.AUTO.ordinal() || ordinal >= modes.length) return;
+        VariantSpan.Mode next = modes[ordinal];
+        plot.setSpan(localPos, new VariantSpan(next));
+        try {
+            plot.save();
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] BlockVariantMenu span save failed for {}: {}",
+                plot.key(), e.toString());
+            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+        }
+        actionBar(player, switch (next) {
+            case ONE_FIRST -> "Single blocks fill the lower / first space only";
+            case ONE_SECOND -> "Single blocks fill the upper / second space only";
+            case ONE_RANDOM -> "Single blocks fill one space, picked at random";
+            case TWO_SAME -> "Single blocks fill both spaces with the same block";
+            case TWO_RANDOM -> "Single blocks fill both spaces, the second re-rolled";
+            case AUTO -> "Span follows the first entry";
+        }, ChatFormatting.AQUA);
+        resyncSameFace(player, plot, localPos);
+    }
+
+    /**
      * PREVIEW_ENTRY: replace the world block at {@code localPos} (and any
      * lock-group siblings) with the entry at {@code entryIndex}. The
      * sidecar — state list, weights, lockId — is untouched. Lock-group
@@ -1216,8 +1242,8 @@ public final class BlockVariantMenuController {
         VariantCopyRoll roll = plot.copyRollAt(localPos);
         VariantCopyScope scope = plot.copyScopeAt(localPos);
         ItemStack stack = new ItemStack(ModItems.VARIANT_CLIPBOARD.get());
-        CompoundTag tag = VariantClipboardItem.encodeStates(current, lockId,
-            poolCaptured ? pool : null, roll, scope);
+        CompoundTag tag = VariantClipboardItem.withSpan(VariantClipboardItem.encodeStates(current, lockId,
+            poolCaptured ? pool : null, roll, scope), plot.spanAt(localPos));
         VariantClipboardItem.writeClipboardTag(stack, tag);
         String lockSuffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
         String poolSuffix = poolCaptured ? " +pool(" + pool.size() + ")" : "";

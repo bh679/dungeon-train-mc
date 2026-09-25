@@ -148,7 +148,7 @@ public final class VariantEditorPreviewTicker {
 
     private static void previewMultiSpace(ServerLevel level, BlockVariantPlot plot, BlockPos localPos,
                                           List<VariantState> states, VariantState picked, long previewTick) {
-        for (MultiBlockVariants.Write w : MultiBlockVariants.expand(states, picked, localPos,
+        for (MultiBlockVariants.Write w : MultiBlockVariants.expand(states, plot.spanAt(localPos), picked, localPos,
                 previewTick, 0, v -> computePreviewState(v, previewTick))) {
             BlockPos worldPos = plot.origin().offset(w.localPos());
             if (w.isAir()) {

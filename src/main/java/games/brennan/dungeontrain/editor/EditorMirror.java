@@ -226,7 +226,7 @@ public final class EditorMirror {
             v.blockEntityNbt(), v.weight(),
             reflectRotation(v.rotation(), flipX, flipY, flipZ),
             v.linkedLootPrefabId(), v.entityId(),
-            reflectHalf(v.half(), flipY), v.difficulty(), v.groupRef(), v.active(), v.span());
+            reflectHalf(v.half(), flipY), v.difficulty(), v.groupRef(), v.active());
     }
 
     /** Reflect a whole candidate pool ({@link #reflectVariant} over each entry). */

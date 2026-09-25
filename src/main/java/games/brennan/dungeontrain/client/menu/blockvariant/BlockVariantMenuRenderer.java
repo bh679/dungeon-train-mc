@@ -92,9 +92,67 @@ public final class BlockVariantMenuRenderer {
      */
     static final double COPY_SETTINGS_MIN_PANEL_WIDTH = 4.6;
 
+    /**
+     * Extra minimum width while the Span button is on the toolbar (door / bed / tall-plant cells):
+     * one more toolbar cell, and room for the five-option strip it opens.
+     */
+    static final double SPAN_EXTRA_PANEL_WIDTH = 0.5;
+
     /** The minimum width this opening of the panel draws at — see {@link #COPY_SETTINGS_MIN_PANEL_WIDTH}. */
     static double minPanelWidth() {
-        return BlockVariantMenu.copySettingsSupported() ? COPY_SETTINGS_MIN_PANEL_WIDTH : MIN_PANEL_WIDTH;
+        double base = BlockVariantMenu.copySettingsSupported() ? COPY_SETTINGS_MIN_PANEL_WIDTH : MIN_PANEL_WIDTH;
+        return BlockVariantMenu.spanButtonShown() ? base + SPAN_EXTRA_PANEL_WIDTH : base;
+    }
+
+    /** The five explicit span options, left to right, as the Span popup lists them. */
+    static final games.brennan.dungeontrain.editor.VariantSpan.Mode[] SPAN_OPTIONS = {
+        games.brennan.dungeontrain.editor.VariantSpan.Mode.ONE_FIRST,
+        games.brennan.dungeontrain.editor.VariantSpan.Mode.ONE_SECOND,
+        games.brennan.dungeontrain.editor.VariantSpan.Mode.ONE_RANDOM,
+        games.brennan.dungeontrain.editor.VariantSpan.Mode.TWO_SAME,
+        games.brennan.dungeontrain.editor.VariantSpan.Mode.TWO_RANDOM,
+    };
+    static final double SPAN_OPTION_WIDTH = 0.70;
+
+    /**
+     * The Span popup's rectangle {@code {left, right, bottom, top}}: one row of
+     * {@link #SPAN_OPTIONS} just under the toolbar, centred on the Span button and clamped inside
+     * the panel. The renderer and the raycaster both read it, so a click can't land one option off.
+     */
+    static double[] spanPopupRect(double panelW, double halfH) {
+        List<BlockVariantMenu.CellKind> toolbar = BlockVariantMenu.toolbarCells();
+        double cellW = panelW / toolbar.size();
+        int idx = Math.max(0, toolbar.indexOf(BlockVariantMenu.CellKind.SPAN));
+        double buttonCX = -panelW / 2.0 + (idx + 0.5) * cellW;
+        double popupW = SPAN_OPTIONS.length * SPAN_OPTION_WIDTH + 0.04;
+        double left = buttonCX - popupW / 2.0;
+        left = Math.max(-panelW / 2.0 + 0.02, Math.min(left, panelW / 2.0 - 0.02 - popupW));
+        double top = halfH - HEADER_HEIGHT - TOOLBAR_HEIGHT - 0.02;
+        double bottom = top - POPUP_BUTTON_SIZE - 0.04;
+        return new double[] {left, left + popupW, bottom, top};
+    }
+
+    /** Toolbar label for a resolved span: {@code 1·1}, {@code 1·2}, {@code 1·R}, {@code 2·S}, {@code 2·R}. */
+    static String spanShortLabel(games.brennan.dungeontrain.editor.VariantSpan.Mode mode) {
+        String random = MenuLang.t("block_variant.plane_random");
+        return switch (mode) {
+            case ONE_FIRST -> "1·1";
+            case ONE_SECOND -> "1·2";
+            case ONE_RANDOM -> "1·" + random;
+            case TWO_RANDOM -> "2·" + random;
+            default -> "2·" + MenuLang.t("block_variant.span_same");
+        };
+    }
+
+    /** The popup's full option label. */
+    static String spanOptionLabel(games.brennan.dungeontrain.editor.VariantSpan.Mode mode) {
+        return switch (mode) {
+            case ONE_FIRST -> MenuLang.t("block_variant.span_one_first");
+            case ONE_SECOND -> MenuLang.t("block_variant.span_one_second");
+            case ONE_RANDOM -> MenuLang.t("block_variant.span_one_random");
+            case TWO_RANDOM -> MenuLang.t("block_variant.span_two_random");
+            default -> MenuLang.t("block_variant.span_two_same");
+        };
     }
     static final double X_CELL_WIDTH = 0.30;
     static final double WEIGHT_CELL_WIDTH = 0.40;
@@ -111,10 +169,6 @@ public final class BlockVariantMenuRenderer {
      * overran into the neighbouring pill (Gate 2 screenshot, v0.928.1).
      */
     static final double ACTIVE_MODE_CELL_WIDTH = 0.78;
-    /** Multi-space "How many" pill (1 | 2) — single blocks sharing a cell with a door / bed / tall plant. */
-    static final double SPAN_COUNT_CELL_WIDTH = 0.24;
-    /** Multi-space sub-option pill: 1 | 2 | R under "1", S | R under "2". Fixed width so the row doesn't jump. */
-    static final double SPAN_SUB_CELL_WIDTH = 0.34;
     static final double TEXT_SCALE = 0.012;
     static final double POPUP_BUTTON_SIZE = 0.20;
     static final double ICON_SIZE = 0.22;
@@ -276,6 +330,12 @@ public final class BlockVariantMenuRenderer {
                 tint = copyRoll.isDefault()
                     ? (isHover ? 0xC0AAAAAA : 0x60777777)
                     : (isHover ? 0xC066DDFF : 0x803388AA);
+            } else if (cellKind == BlockVariantMenu.CellKind.SPAN) {
+                // Lit once the author picks a span; grey while it follows the first row. Held lit
+                // while its option strip is open so the strip reads as coming from it.
+                tint = BlockVariantMenu.spanExplicit() || BlockVariantMenu.spanPopupOpen()
+                    ? (isHover ? 0xC0D98CFF : 0x808A4FB3)
+                    : (isHover ? 0xC0AAAAAA : 0x60777777);
             } else if (cellKind == BlockVariantMenu.CellKind.COPY_SCOPE) {
                 // Lit in either restricted scope — the cell is somewhere other than everywhere,
                 // which is the thing worth seeing at a glance from across the panel.
@@ -299,6 +359,7 @@ public final class BlockVariantMenuRenderer {
                 // so the cell says whether it is following that or breaking from it.
                 case COPY_ROLL -> copyRoll.displayName();
                 case COPY_SCOPE -> copyScope.displayName();
+                case SPAN -> spanShortLabel(BlockVariantMenu.resolvedSpan());
                 case REMOVE -> MenuLang.t(removeMode ? "common.cancel" : "common.remove");
                 case CLEAR -> MenuLang.t("common.clear");
                 case CLOSE -> "X";
@@ -347,7 +408,6 @@ public final class BlockVariantMenuRenderer {
             boolean rotatable = parsed != null && concrete && RotationApplier.canRotate(parsed);
             boolean halfable = parsed != null && concrete && RotationApplier.canFlip(parsed);
             boolean toggleable = parsed != null && concrete && RedstoneToggle.canToggle(parsed);
-            boolean spanable = BlockVariantMenu.spanApplies(entry);
             VariantRotation.Mode rowMode = decodeMode(entry.rotMode());
             boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
             double weightCellR = colXR - xCellW;
@@ -364,13 +424,8 @@ public final class BlockVariantMenuRenderer {
             // weight, reusing the space the rotation/half cells leave free on a
             // mob row. They collapse to zero width on block rows, so nameCellR
             // is unchanged there.
-            // Multi-space pills: [How many][Position | Same-Random], read left to right.
-            double spanSubCellR = activeModeCellL;
-            double spanSubCellL = spanable ? spanSubCellR - SPAN_SUB_CELL_WIDTH : spanSubCellR;
-            double spanCountCellR = spanSubCellL;
-            double spanCountCellL = spanable ? spanCountCellR - SPAN_COUNT_CELL_WIDTH : spanCountCellR;
             boolean showDiff = entry.isMob();
-            double diffMaxCellR = spanCountCellL;
+            double diffMaxCellR = activeModeCellL;
             double diffMaxCellL = showDiff ? diffMaxCellR - DIFF_CELL_WIDTH : diffMaxCellR;
             double diffMinCellR = diffMaxCellL;
             double diffMinCellL = showDiff ? diffMinCellR - DIFF_CELL_WIDTH : diffMinCellR;
@@ -461,12 +516,6 @@ public final class BlockVariantMenuRenderer {
                     activeModeCellL, activeModeCellR, rowBottom, rowTop, rowCY, hovered);
             }
 
-            // Multi-space pills (single blocks in a door / bed / tall-plant cell)
-            if (spanable) {
-                drawSpanCells(ps, buffer, font, i, entry, spanCountCellL, spanCountCellR,
-                    spanSubCellL, spanSubCellR, rowBottom, rowTop, rowCY, hovered);
-            }
-
             // Difficulty band cells (mob rows only)
             if (showDiff) {
                 drawDifficultyCells(ps, buffer, font, i, entry,
@@ -496,11 +545,42 @@ public final class BlockVariantMenuRenderer {
             }
         }
 
+        // Span option strip, drawn over the grid like the OPTIONS popup below.
+        if (BlockVariantMenu.spanPopupOpen()) {
+            drawSpanPopup(ps, buffer, font, panelW, halfH, hovered);
+        }
+
         // OPTIONS popup is drawn last so it shadows the row underneath.
         int popupRow = BlockVariantMenu.rotPopupRowIndex();
         if (popupRow >= 0 && popupRow < n) {
             drawRotationOptionsPopup(ps, buffer, font, popupRow, entries.get(popupRow),
                 colActualW, gridTop, halfW, hovered);
+        }
+    }
+
+    /**
+     * The Span button's option strip: every explicit span in one row, the cell's current
+     * (resolved) span highlighted. Geometry from {@link #spanPopupRect}.
+     */
+    private static void drawSpanPopup(PoseStack ps, MultiBufferSource buffer, Font font,
+                                      double panelW, double halfH, BlockVariantMenu.Hit hovered) {
+        double[] r = spanPopupRect(panelW, halfH);
+        drawQuad(ps, buffer, r[0], r[2], r[1], r[3], 0xE0202020);
+        games.brennan.dungeontrain.editor.VariantSpan.Mode current = BlockVariantMenu.resolvedSpan();
+        double bBot = r[2] + 0.02;
+        double bTop = r[3] - 0.02;
+        double cy = (bBot + bTop) / 2.0;
+        for (int i = 0; i < SPAN_OPTIONS.length; i++) {
+            double bL = r[0] + 0.02 + i * SPAN_OPTION_WIDTH;
+            double bR = bL + SPAN_OPTION_WIDTH;
+            boolean selected = SPAN_OPTIONS[i] == current;
+            boolean hover = hovered.kind() == BlockVariantMenu.CellKind.SPAN_OPTION && hovered.secondary() == i;
+            int tint = selected
+                ? (hover ? 0xC0D98CFF : 0x808A4FB3)
+                : (hover ? 0x60AAAAAA : 0x30777777);
+            drawQuad(ps, buffer, bL + 0.005, bBot, bR - 0.005, bTop, tint);
+            drawCenteredText(ps, buffer, font, spanOptionLabel(SPAN_OPTIONS[i]), (bL + bR) / 2.0, cy,
+                selected || hover ? 0xFFFFFFFF : 0xFFAAAAAA);
         }
     }
 
@@ -715,58 +795,6 @@ public final class BlockVariantMenuRenderer {
             drawCenteredText(ps, buffer, font, label,
                 (sL + sR) / 2.0, rowCY,
                 selected ? 0xFFFFFFFF : 0xFF888888);
-        }
-    }
-
-    /**
-     * Draw the multi-space pills for a single block sharing its cell with a door / bed / tall
-     * plant: "How many" (1 | 2), then which space (1 | 2 | R) when 1, or whether the second space
-     * repeats the block or re-rolls among the cell's singles (S | R) when 2. The selected segment
-     * shows the resolved mode, so an unset (AUTO) row shows what spawn will actually do.
-     */
-    private static void drawSpanCells(PoseStack ps, MultiBufferSource buffer, Font font,
-                                      int rowIndex, BlockVariantSyncPacket.Entry entry,
-                                      double countL, double countR, double subL, double subR,
-                                      double rowBottom, double rowTop, double rowCY,
-                                      BlockVariantMenu.Hit hovered) {
-        games.brennan.dungeontrain.editor.VariantSpan.Mode mode = BlockVariantMenu.resolvedSpan(entry);
-        boolean countHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_SPAN_COUNT && hovered.index() == rowIndex;
-        boolean subHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_SPAN_SUB && hovered.index() == rowIndex;
-        drawSegmentPill(ps, buffer, font, countL, countR, rowBottom, rowTop, rowCY, countHover,
-            new String[] {"1", "2"}, mode.isOne() ? 0 : 1);
-        String random = MenuLang.t("block_variant.plane_random");
-        if (mode.isOne()) {
-            int sel = switch (mode) {
-                case ONE_SECOND -> 1;
-                case ONE_RANDOM -> 2;
-                default -> 0;
-            };
-            drawSegmentPill(ps, buffer, font, subL, subR, rowBottom, rowTop, rowCY, subHover,
-                new String[] {"1", "2", random}, sel);
-        } else {
-            drawSegmentPill(ps, buffer, font, subL, subR, rowBottom, rowTop, rowCY, subHover,
-                new String[] {MenuLang.t("block_variant.span_same"), random},
-                mode == games.brennan.dungeontrain.editor.VariantSpan.Mode.TWO_RANDOM ? 1 : 0);
-        }
-    }
-
-    /** An N-segment pill with one selected segment — the shared-blue "R" tint for the last Random segment. */
-    private static void drawSegmentPill(PoseStack ps, MultiBufferSource buffer, Font font,
-                                        double cellL, double cellR, double rowBottom, double rowTop,
-                                        double rowCY, boolean hover, String[] labels, int selected) {
-        double pillBot = rowBottom + 0.02;
-        double pillTop = rowTop - 0.02;
-        double segW = (cellR - cellL - 0.02) / labels.length;
-        for (int seg = 0; seg < labels.length; seg++) {
-            double sL = cellL + 0.01 + seg * segW;
-            double sR = sL + segW - 0.005;
-            boolean isSelected = seg == selected;
-            int tint = isSelected
-                ? (hover ? 0xC0D98CFF : 0x808A4FB3) // violet — distinct from the half / toggle pills
-                : (hover ? 0x60AAAAAA : 0x30777777);
-            drawQuad(ps, buffer, sL, pillBot, sR, pillTop, tint);
-            drawCenteredText(ps, buffer, font, labels[seg], (sL + sR) / 2.0, rowCY,
-                isSelected ? 0xFFFFFFFF : 0xFF888888);
         }
     }
 

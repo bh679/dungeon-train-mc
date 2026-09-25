@@ -121,6 +121,12 @@ public final class TrackVariantBlocks {
      */
     private final TrackVariantBlocks source;
 
+    /**
+     * pos → per-cell {@link games.brennan.dungeontrain.editor.VariantSpan} — how a single block fills a two-space cell (door /
+     * bed / tall plant). Only non-default values are stored; see {@link #spanAt}.
+     */
+    private final Map<BlockPos, games.brennan.dungeontrain.editor.VariantSpan> spans = new LinkedHashMap<>();
+
     private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
                                TrackKind kind, boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
         this(entries, lockIds, new LinkedHashMap<>(), new LinkedHashMap<>(),
@@ -185,11 +191,11 @@ public final class TrackVariantBlocks {
      * both names aliased to one mutable sidecar.</p>
      */
     public static synchronized TrackVariantBlocks copyOf(TrackVariantBlocks source) {
-        return new TrackVariantBlocks(
+        return withSpans(new TrackVariantBlocks(
             new LinkedHashMap<>(source.entries), new LinkedHashMap<>(source.lockIds),
             new LinkedHashMap<>(source.copyRolls), new LinkedHashMap<>(source.copyScopes),
             source.kind, source.mirrorX, source.mirrorY, source.mirrorZ, source.mirrorVariants,
-            null);
+            null), source.spans);
     }
 
     /** Mirror X (length) axis. True unless the sidecar sets {@code mirror.x=false}. */
@@ -288,8 +294,8 @@ public final class TrackVariantBlocks {
             LOGGER.warn("[DungeonTrain] Track variant sidecar {}: pos {} outside footprint {}x{}x{}, skipping.",
                 contextId, pos, size.getX(), size.getY(), size.getZ());
         }
-        return new TrackVariantBlocks(kept, keptLocks, keptRolls, keptScopes, kind,
-            mirrorX, mirrorY, mirrorZ, mirrorVariants, this);
+        return withSpans(new TrackVariantBlocks(kept, keptLocks, keptRolls, keptScopes, kind,
+            mirrorX, mirrorY, mirrorZ, mirrorVariants, this), spans);
     }
 
     private static TrackVariantBlocks loadFromDisk(TrackKind kind, String name) {
@@ -363,6 +369,7 @@ public final class TrackVariantBlocks {
         JsonObject variants = obj.getAsJsonObject("variants");
         Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
         Map<BlockPos, Integer> outLocks = new LinkedHashMap<>();
+        Map<BlockPos, games.brennan.dungeontrain.editor.VariantSpan> outSpans = new LinkedHashMap<>();
         Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyRoll> outRolls = new LinkedHashMap<>();
         Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyScope> outScopes = new LinkedHashMap<>();
         String contextId = kindId + ":" + name;
@@ -383,14 +390,15 @@ public final class TrackVariantBlocks {
             }
             BlockPos posI = pos.immutable();
             out.put(posI, List.copyOf(cell.states()));
+            if (!cell.span().isDefault()) outSpans.put(posI, cell.span());
             if (cell.lockId() > 0) outLocks.put(posI, cell.lockId());
             if (!cell.roll().isDefault()) outRolls.put(posI, cell.roll());
             if (!cell.scope().isDefault()) outScopes.put(posI, cell.scope());
         }
         LOGGER.info("[DungeonTrain] Loaded {} track variant entries for {} from {}",
             out.size(), contextId, origin);
-        return new TrackVariantBlocks(out, outLocks, outRolls, outScopes, kind,
-            mirrorX, mirrorY, mirrorZ, mirrorVariants);
+        return withSpans(new TrackVariantBlocks(out, outLocks, outRolls, outScopes, kind,
+            mirrorX, mirrorY, mirrorZ, mirrorVariants), outSpans);
     }
 
     private static boolean inBounds(BlockPos p, Vec3i size) {
@@ -433,7 +441,31 @@ public final class TrackVariantBlocks {
         groupRefs.invalidate();
     }
 
+    /** The cell's multi-space {@link games.brennan.dungeontrain.editor.VariantSpan}; {@code AUTO} when unset or no cell. */
+    public synchronized games.brennan.dungeontrain.editor.VariantSpan spanAt(BlockPos localPos) {
+        return spans.getOrDefault(localPos, games.brennan.dungeontrain.editor.VariantSpan.NONE);
+    }
+
+    /** Set the cell's multi-space span (default clears it). Throws if no cell exists at {@code localPos}. */
+    public synchronized void setSpan(BlockPos localPos, games.brennan.dungeontrain.editor.VariantSpan span) {
+        if (source != null) source.setSpan(localPos, span);
+        if (!entries.containsKey(localPos)) {
+            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
+        }
+        if (span == null || span.isDefault()) spans.remove(localPos);
+        else spans.put(localPos.immutable(), span);
+    }
+
+    /** Copy {@code from}'s spans for the cells {@code target} holds — parse and crop both end here. */
+    private static TrackVariantBlocks withSpans(TrackVariantBlocks target, Map<BlockPos, games.brennan.dungeontrain.editor.VariantSpan> from) {
+        for (Map.Entry<BlockPos, games.brennan.dungeontrain.editor.VariantSpan> e : from.entrySet()) {
+            if (target.entries.containsKey(e.getKey())) target.spans.put(e.getKey(), e.getValue());
+        }
+        return target;
+    }
+
     public synchronized boolean remove(BlockPos localPos) {
+        spans.remove(localPos);
         if (source != null) source.remove(localPos);
         lockIds.remove(localPos);
         copyRolls.remove(localPos);
@@ -641,7 +673,7 @@ public final class TrackVariantBlocks {
             int lockId = lockIds.getOrDefault(e.getKey(), 0);
             sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
             CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId,
-                copyRollAt(e.getKey()), copyScopeAt(e.getKey()));
+                copyRollAt(e.getKey()), copyScopeAt(e.getKey()), spanAt(e.getKey()));
         }
         sb.append("\n  }\n}\n");
         return sb.toString();

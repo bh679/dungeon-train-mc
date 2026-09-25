@@ -42,8 +42,17 @@ public record BlockVariantSyncPacket(
     Vec3 anchorUp,
     byte copyRoll,
     boolean copySettingsSupported,
-    byte copyScope
+    byte copyScope,
+    byte spanMode
 ) implements CustomPacketPayload {
+
+    /** Pre-span shape: {@code spanMode} defaults to {@code VariantSpan.Mode.AUTO}. */
+    public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
+                                  int lockId, Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp,
+                                  byte copyRoll, boolean copySettingsSupported, byte copyScope) {
+        this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp,
+            copyRoll, copySettingsSupported, copyScope, (byte) 0);
+    }
 
     /**
      * The shape every call site had before the per-copy reroll flag — a cell in
@@ -99,21 +108,10 @@ public record BlockVariantSyncPacket(
     public record Entry(String stateString, @Nullable String beNbt, int weight,
                         byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
                         @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
-                        int groupRef, boolean groupRefLive, byte activeMode, byte spanMode) {
+                        int groupRef, boolean groupRefLive, byte activeMode) {
 
         /** Wire default for {@link #activeMode}: {@code VariantActive.Mode.INACTIVE}. */
         public static final byte ACTIVE_MODE_DEFAULT = (byte) 2;
-        /** Wire default for {@link #spanMode}: {@code VariantSpan.Mode.AUTO}. */
-        public static final byte SPAN_MODE_DEFAULT = (byte) 0;
-
-        /** Backward-compat constructor for call sites that don't carry a multi-space span mode (defaults to AUTO). */
-        public Entry(String stateString, @Nullable String beNbt, int weight,
-                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
-                     @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
-                     int groupRef, boolean groupRefLive, byte activeMode) {
-            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId,
-                halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode, SPAN_MODE_DEFAULT);
-        }
 
         /** Backward-compat constructor for call sites that don't carry a redstone-toggle mode (defaults to INACTIVE). */
         public Entry(String stateString, @Nullable String beNbt, int weight,
@@ -203,6 +201,8 @@ public record BlockVariantSyncPacket(
         buf.writeByte(copyRoll);
         buf.writeBoolean(copySettingsSupported);
         buf.writeByte(copyScope);
+        // The cell-wide multi-space span (door / bed / tall-plant cells), as an ordinal.
+        buf.writeByte(spanMode);
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
         writeVec3(buf, anchorUp);
@@ -227,7 +227,6 @@ public record BlockVariantSyncPacket(
             buf.writeVarInt(e.groupRef());
             buf.writeBoolean(e.groupRefLive());
             buf.writeByte(e.activeMode());
-            buf.writeByte(e.spanMode());
         }
     }
 
@@ -244,6 +243,7 @@ public record BlockVariantSyncPacket(
         byte copyRoll = buf.readByte();
         boolean copySettingsSupported = buf.readBoolean();
         byte copyScope = buf.readByte();
+        byte spanMode = buf.readByte();
         Vec3 anchor = readVec3(buf);
         Vec3 right = readVec3(buf);
         Vec3 up = readVec3(buf);
@@ -266,13 +266,11 @@ public record BlockVariantSyncPacket(
             int groupRef = buf.readVarInt();
             boolean groupRefLive = buf.readBoolean();
             byte activeMode = buf.readByte();
-            byte spanMode = buf.readByte();
             entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
-                linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode,
-                spanMode));
+                linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
-            copyRoll, copySettingsSupported, copyScope);
+            copyRoll, copySettingsSupported, copyScope, spanMode);
     }
 
     @Override

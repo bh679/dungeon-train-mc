@@ -24,7 +24,7 @@ import java.util.Random;
  *       somewhere other than the cell's footprint space, the footprint space
  *       is cleared so a template half left there doesn't float.</li>
  *   <li><b>Single-space pick</b> — the two footprint spaces filled per the
- *       entry's {@link VariantSpan}.</li>
+ *       cell's {@link VariantSpan} (one setting for the whole cell).</li>
  *   <li><b>Empty placeholder / mob</b> — both spaces cleared.</li>
  * </ul>
  *
@@ -64,11 +64,12 @@ public final class MultiBlockVariants {
      *
      * @param cell    the cell's full candidate list (for the footprint, the
      *                first-entry default and the {@code 2 / Random} re-roll)
+     * @param span    the cell's span setting ({@code AUTO} resolves against {@code cell})
      * @param picked  the resolved pick; {@code null} yields no writes
      * @param rotator rolls a concrete entry's final state — the placer's own
      *                {@code RotationApplier} call
      */
-    public static List<Write> expand(List<VariantState> cell, @Nullable VariantState picked,
+    public static List<Write> expand(List<VariantState> cell, VariantSpan span, @Nullable VariantState picked,
                                      BlockPos localPos, long worldSeed, int index, Rotator rotator) {
         if (picked == null) return List.of();
         BlockPos footprint = MultiBlockFootprint.cellFootprint(cell);
@@ -96,7 +97,8 @@ public final class MultiBlockVariants {
         if (footprint == null) return List.of(here);
 
         BlockPos second = localPos.offset(footprint);
-        VariantSpan.Mode mode = picked.span().resolve(MultiBlockFootprint.firstEntryIsMulti(cell));
+        VariantSpan.Mode mode = (span == null ? VariantSpan.NONE : span)
+            .resolve(MultiBlockFootprint.firstEntryIsMulti(cell));
         if (mode == VariantSpan.Mode.ONE_RANDOM) {
             mode = positionCoin(localPos, worldSeed, index)
                 ? VariantSpan.Mode.ONE_SECOND : VariantSpan.Mode.ONE_FIRST;

@@ -208,7 +208,7 @@ public final class CarriagePartPlacer {
             // on the final FACING/AXIS, regardless of how it was set).
             // A two-space cell (door / bed / tall plant) expands to both
             // spaces in local frame; each goes through the same mirror.
-            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), picked,
+            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
                     entry.localPos(), seed, carriageIndex,
                     v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
                         StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),

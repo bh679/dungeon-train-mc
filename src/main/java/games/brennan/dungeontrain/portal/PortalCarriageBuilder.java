@@ -1876,7 +1876,7 @@ public final class PortalCarriageBuilder {
                     || games.brennan.dungeontrain.editor.MultiBlockFootprint.cellFootprint(entry.states()) != null) {
                 // A two-space cell (door / bed / tall plant) writes both of its spaces; an empty
                 // pick clears them. Same no-cascade + eviction rules as the single write below.
-                for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), picked, local,
+                for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(local), picked, local,
                         worldSeed, cellIndex, VariantState::state)) {
                     BlockPos wWorld = roomOrigin.offset(w.localPos());
                     if (!wWorld.equals(world) && mask.covers(wWorld)) continue;

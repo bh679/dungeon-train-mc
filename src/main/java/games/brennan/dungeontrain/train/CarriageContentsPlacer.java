@@ -597,7 +597,7 @@ public final class CarriageContentsPlacer {
             int lockId = sidecar.lockIdAt(entry.localPos());
             // A two-space cell (door / bed / tall plant) expands to both spaces in the authored
             // local frame; each lands through the same flip as the cell itself.
-            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), picked,
+            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
                     entry.localPos(), seed, carriageIndex,
                     v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
                         StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),

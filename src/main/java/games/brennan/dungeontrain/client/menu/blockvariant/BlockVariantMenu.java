@@ -62,6 +62,8 @@ public final class BlockVariantMenu {
         LOCK,
         COPY_ROLL,
         COPY_SCOPE,
+        SPAN,
+        SPAN_OPTION,
         CLOSE,
         ENTRY_NAME,
         ENTRY_WEIGHT,
@@ -70,8 +72,6 @@ public final class BlockVariantMenu {
         ENTRY_ROT_DIRS,
         ENTRY_HALF_MODE,
         ENTRY_ACTIVE_MODE,
-        ENTRY_SPAN_COUNT,
-        ENTRY_SPAN_SUB,
         ENTRY_DIFF_MIN,
         ENTRY_DIFF_MAX,
         ROT_DIR_OPTION,
@@ -103,6 +103,10 @@ public final class BlockVariantMenu {
     private static VariantCopyRoll copyRoll = VariantCopyRoll.DEFAULT;
     private static boolean copySettingsSupported;
     private static VariantCopyScope copyScope = VariantCopyScope.BOTH;
+    private static games.brennan.dungeontrain.editor.VariantSpan spanMode =
+        games.brennan.dungeontrain.editor.VariantSpan.NONE;
+    /** True while the Span button's option strip is open. */
+    private static boolean spanPopupOpen;
     private static Vec3 anchorPos = Vec3.ZERO;
     private static Vec3 anchorRight = new Vec3(1, 0, 0);
     private static Vec3 anchorUp = new Vec3(0, 1, 0);
@@ -169,15 +173,48 @@ public final class BlockVariantMenu {
      * drift.
      */
     public static List<CellKind> toolbarCells() {
-        if (!copySettingsSupported) {
-            return List.of(CellKind.COPY, CellKind.SAVE, CellKind.ADD, CellKind.LOCK,
-                CellKind.REMOVE, CellKind.CLEAR, CellKind.CLOSE);
-        }
+        List<CellKind> cells = new java.util.ArrayList<>(List.of(
+            CellKind.COPY, CellKind.SAVE, CellKind.ADD, CellKind.LOCK));
         // Beside Lock, which is the other per-cell setting on this toolbar, and next to each
         // other because the two answer one question between them: where the cell is, and how it
         // rolls once it is there.
-        return List.of(CellKind.COPY, CellKind.SAVE, CellKind.ADD, CellKind.LOCK, CellKind.COPY_ROLL,
-            CellKind.COPY_SCOPE, CellKind.REMOVE, CellKind.CLEAR, CellKind.CLOSE);
+        if (copySettingsSupported) {
+            cells.add(CellKind.COPY_ROLL);
+            cells.add(CellKind.COPY_SCOPE);
+        }
+        // Another per-cell setting, so it joins them — only on a cell holding a door / bed /
+        // tall plant, the only cells it means anything for.
+        if (spanButtonShown()) cells.add(CellKind.SPAN);
+        cells.add(CellKind.REMOVE);
+        cells.add(CellKind.CLEAR);
+        cells.add(CellKind.CLOSE);
+        return List.copyOf(cells);
+    }
+
+    /** True when the cell holds a door / bed / tall plant — the only cells the Span setting applies to. */
+    public static boolean spanButtonShown() {
+        for (BlockVariantSyncPacket.Entry e : entries) {
+            if (isMultiRow(e)) return true;
+        }
+        return false;
+    }
+
+    /** The cell's span with {@code AUTO} resolved against its first row, the way spawn resolves it. */
+    public static games.brennan.dungeontrain.editor.VariantSpan.Mode resolvedSpan() {
+        boolean firstIsMulti = !entries.isEmpty() && isMultiRow(entries.get(0));
+        return spanMode.resolve(firstIsMulti);
+    }
+
+    /** True when the author has picked a span, rather than it following the first row. */
+    public static boolean spanExplicit() { return !spanMode.isDefault(); }
+
+    public static boolean spanPopupOpen() { return spanPopupOpen && spanButtonShown(); }
+    public static void toggleSpanPopup() { spanPopupOpen = !spanPopupOpen; }
+    public static void closeSpanPopup() { spanPopupOpen = false; }
+
+    private static boolean isMultiRow(BlockVariantSyncPacket.Entry e) {
+        if (e.isMob() || e.isGroupRef()) return false;
+        return games.brennan.dungeontrain.editor.MultiBlockFootprint.isMultiSpace(parseState(e.stateString()));
     }
     public static Vec3 anchorPos() { return anchorPos; }
     public static Vec3 anchorRight() { return anchorRight; }
@@ -199,35 +236,6 @@ public final class BlockVariantMenu {
 
     public static void closeRotPopup() {
         rotPopupRowIndex = -1;
-    }
-
-    /**
-     * True when {@code e} is a single-space block row in a cell that also holds a
-     * door / bed / tall plant — the rows that get the multi-space "How many" and
-     * "Position / Same-Random" pills. Renderer and raycaster both gate on this.
-     */
-    public static boolean spanApplies(BlockVariantSyncPacket.Entry e) {
-        if (e.isMob() || e.isGroupRef()) return false;
-        BlockState parsed = parseState(e.stateString());
-        if (parsed == null || games.brennan.dungeontrain.editor.MultiBlockFootprint.isMultiSpace(parsed)
-                || games.brennan.dungeontrain.editor.CarriageVariantBlocks.isEmptyPlaceholder(parsed)) {
-            return false;
-        }
-        for (BlockVariantSyncPacket.Entry other : entries) {
-            if (isMultiRow(other)) return true;
-        }
-        return false;
-    }
-
-    /** {@code e}'s span mode with AUTO resolved against the cell's first row, as spawn resolves it. */
-    public static games.brennan.dungeontrain.editor.VariantSpan.Mode resolvedSpan(BlockVariantSyncPacket.Entry e) {
-        boolean firstIsMulti = !entries.isEmpty() && isMultiRow(entries.get(0));
-        return games.brennan.dungeontrain.editor.VariantSpan.fromOrdinal(e.spanMode() & 0xFF).resolve(firstIsMulti);
-    }
-
-    private static boolean isMultiRow(BlockVariantSyncPacket.Entry e) {
-        if (e.isMob() || e.isGroupRef()) return false;
-        return games.brennan.dungeontrain.editor.MultiBlockFootprint.isMultiSpace(parseState(e.stateString()));
     }
 
     /**
@@ -269,6 +277,7 @@ public final class BlockVariantMenu {
             searchBuffer = "";
             hovered = Hit.NONE;
             rotPopupRowIndex = -1;
+            spanPopupOpen = false;
             return;
         }
         boolean newCell = !packet.variantId().equals(variantId)
@@ -285,6 +294,7 @@ public final class BlockVariantMenu {
         copyRoll = VariantCopyRoll.fromOrdinal(packet.copyRoll());
         copySettingsSupported = packet.copySettingsSupported();
         copyScope = VariantCopyScope.fromOrdinal(packet.copyScope());
+        spanMode = games.brennan.dungeontrain.editor.VariantSpan.fromOrdinal(packet.spanMode() & 0xFF);
         anchorPos = packet.anchorPos();
         anchorRight = packet.anchorRight();
         anchorUp = packet.anchorUp();
@@ -294,6 +304,7 @@ public final class BlockVariantMenu {
             removeMode = false;
             searchBuffer = "";
             rotPopupRowIndex = -1;
+            spanPopupOpen = false;
             // Drop the parse cache so old cells' states don't accumulate
             // (cache is cheap to rebuild — at most ~32 entries per cell).
             PARSED_STATE_CACHE.clear();

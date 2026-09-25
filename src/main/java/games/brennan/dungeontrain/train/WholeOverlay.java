@@ -33,7 +33,7 @@ public final class WholeOverlay {
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
             VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
             int lockId = sidecar.lockIdAt(e.localPos());
-            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(e.states(), picked, e.localPos(),
+            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(e.states(), sidecar.spanAt(e.localPos()), picked, e.localPos(),
                     seed, carriageIndex, v -> RotationApplier.apply(
                         StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
                         e.localPos(), seed, carriageIndex, lockId))) {

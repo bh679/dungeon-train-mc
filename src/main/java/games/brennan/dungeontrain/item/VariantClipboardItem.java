@@ -100,6 +100,8 @@ public final class VariantClipboardItem extends Item {
      * repurpose an old clipboard.
      */
     public static final String NBT_COPY_SCOPE = "dt_copyScope";
+    /** The cell's multi-space {@code VariantSpan} token. Absent when AUTO. */
+    public static final String NBT_SPAN = "dt_span";
 
     /**
      * Top-level NBT key carrying the source cell's container contents pool
@@ -128,8 +130,6 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_GROUP_REF = "gref";
     /** Per-entry redstone-toggle mode ordinal ({@code VariantActive}). Absent when default INACTIVE. */
     private static final String NBT_ACTIVE_MODE = "am";
-    /** Per-entry multi-space footprint mode ordinal ({@code VariantSpan}). Absent when default AUTO. */
-    private static final String NBT_SPAN_MODE = "sm";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -231,6 +231,7 @@ public final class VariantClipboardItem extends Item {
         ContainerContentsPool pool = decodePool(tag);
         VariantCopyRoll copyRoll = decodeCopyRoll(tag);
         VariantCopyScope copyScope = decodeCopyScope(tag);
+        games.brennan.dungeontrain.editor.VariantSpan span = decodeSpan(tag);
         if (states.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
             return PasteOutcome.fail("Clipboard needs at least "
                 + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " variants", ChatFormatting.YELLOW);
@@ -280,6 +281,7 @@ public final class VariantClipboardItem extends Item {
         // they mean there.
         plot.setCopyRoll(localPos, copyRoll);
         plot.setCopyScope(localPos, copyScope);
+        plot.setSpan(localPos, span);
         if (lockId > 0) {
             plot.setLockId(localPos, lockId);
             // Every cell in a lock group draws one index, so they must agree about how they roll:
@@ -365,6 +367,20 @@ public final class VariantClipboardItem extends Item {
         return tag.getBoolean(NBT_LEGACY_REROLL) ? VariantCopyRoll.VARY : VariantCopyRoll.DEFAULT;
     }
 
+    /** Add the cell's multi-space span to an encoded clipboard tag (omitted when AUTO). */
+    public static CompoundTag withSpan(CompoundTag root, games.brennan.dungeontrain.editor.VariantSpan span) {
+        if (span != null && !span.isDefault()) {
+            root.putString(NBT_SPAN, games.brennan.dungeontrain.editor.VariantSpan.toToken(span.mode()));
+        }
+        return root;
+    }
+
+    /** The captured multi-space span; AUTO for a clipboard that carries none. */
+    public static games.brennan.dungeontrain.editor.VariantSpan decodeSpan(@Nullable CompoundTag tag) {
+        if (tag == null || !tag.contains(NBT_SPAN)) return games.brennan.dungeontrain.editor.VariantSpan.NONE;
+        return games.brennan.dungeontrain.editor.VariantSpan.fromToken(tag.getString(NBT_SPAN));
+    }
+
     /** The captured copy scope; {@link VariantCopyScope#BOTH} for a clipboard that carries none. */
     public static VariantCopyScope decodeCopyScope(@Nullable CompoundTag tag) {
         if (tag == null || !tag.contains(NBT_COPY_SCOPE)) return VariantCopyScope.BOTH;
@@ -418,9 +434,6 @@ public final class VariantClipboardItem extends Item {
             }
             if (!s.active().isDefault()) {
                 entry.putByte(NBT_ACTIVE_MODE, (byte) s.active().mode().ordinal());
-            }
-            if (!s.span().isDefault()) {
-                entry.putByte(NBT_SPAN_MODE, (byte) s.span().mode().ordinal());
             }
             list.add(entry);
         }
@@ -578,11 +591,8 @@ public final class VariantClipboardItem extends Item {
                 if (!raw.isEmpty()) lootPrefab = raw;
             }
             int groupRef = entry.contains(NBT_GROUP_REF, Tag.TAG_INT) ? entry.getInt(NBT_GROUP_REF) : 0;
-            games.brennan.dungeontrain.editor.VariantSpan span = entry.contains(NBT_SPAN_MODE, Tag.TAG_BYTE)
-                ? games.brennan.dungeontrain.editor.VariantSpan.fromOrdinal(entry.getByte(NBT_SPAN_MODE) & 0xFF)
-                : games.brennan.dungeontrain.editor.VariantSpan.NONE;
             out.add(new VariantState(state, beNbt, weight, rotation, lootPrefab, null, half,
-                difficulty, groupRef, active, span));
+                difficulty, groupRef, active));
         }
         return out;
     }
