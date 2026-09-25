@@ -687,6 +687,7 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.portal.chunkparts.ChunkPartStore.clearCache();
         games.brennan.dungeontrain.portal.chunkparts.ChunkRoomPartsStore.clearCache();
         games.brennan.dungeontrain.portal.chunkparts.ChunkPartPlacer.clear();
+        games.brennan.dungeontrain.portal.chunkparts.ChunkPartRegistry.clear();
     }
 
     /**
