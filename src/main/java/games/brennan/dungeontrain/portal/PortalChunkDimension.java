@@ -143,7 +143,7 @@ public final class PortalChunkDimension {
                     // of a room differs from the first only where something grew, so all but a
                     // handful of these cells are already the block being written.
                     if (level.getBlockState(cursor) == state) continue;
-                    level.setBlock(cursor, state, Block.UPDATE_ALL);
+                    replaceQuietly(level, cursor, state);
                     applyBlockEntity(level, cursor, slice.blockEntityAt(x, y + shift, z));
                 }
             }
@@ -264,9 +264,23 @@ public final class PortalChunkDimension {
             for (int dy = 1; dy <= DOOR_HEIGHT; dy++) {
                 cursor.set(cx, floorY + dy, z);
                 if (mask.covers(cursor)) continue;
-                if (!level.getBlockState(cursor).isAir()) level.setBlock(cursor, air, Block.UPDATE_ALL);
+                if (!level.getBlockState(cursor).isAir()) replaceQuietly(level, cursor, air);
             }
         }
+    }
+
+    /**
+     * Overwrite one cell of the room without spilling what was in it.
+     *
+     * <p>A sampled structure's chest carries its loot table unrolled, and replacing a container rolls
+     * it and drops the lot on the floor: a ruined portal's chest standing in a doorway came out as a
+     * pile of gold nuggets and flint and steel in front of the door. Taking the block entity away
+     * first leaves nothing to roll. The room is being rewritten from the sample, so whatever the
+     * chest held belongs to the chunk being replaced, not to the player.</p>
+     */
+    private static void replaceQuietly(ServerLevel level, BlockPos pos, BlockState state) {
+        if (level.getBlockState(pos).hasBlockEntity()) level.removeBlockEntity(pos);
+        level.setBlock(pos, state, Block.UPDATE_ALL);
     }
 
     /** Whether a player could already stand in the walkway at {@code cx}: its door cells are open. */
