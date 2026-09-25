@@ -31,6 +31,8 @@ public final class StagePaletteMenu {
         REBAKE,
         /** Toolbar: closes the panel (deselects the stage). */
         CLOSE,
+        /** Header's top-right {@code ↻} — face the player; shift resets to the grid. */
+        FACE,
         /** A placeholder cell — {@code index} = layout row, {@code secondary} = {@link Column} ordinal. */
         CELL,
         /** The "Wood: <family>" header — click with a held wood block to set the family. */

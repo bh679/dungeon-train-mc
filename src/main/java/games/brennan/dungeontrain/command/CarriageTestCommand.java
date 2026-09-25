@@ -120,6 +120,9 @@ public final class CarriageTestCommand {
         // lose the way home. Send them back first, then in again, so the button is idempotent.
         if (CarriageTestSession.has(player.getUUID())) runBack(source);
         if (PortalTestSession.has(player.getUUID())) PortalTestCommand.runBack(source);
+        // And a dimensional-carriage press still waiting on its chunk sample is superseded by this
+        // one — the author should not be pulled into that room a moment later.
+        games.brennan.dungeontrain.portal.PortalTestPending.cancel(player.getUUID());
 
         BlockPos origin = new BlockPos(player.blockPosition().getX(),
             PortalTwinLanes.floorY(overworld.getMinBuildHeight()), TEST_Z_OFFSET);

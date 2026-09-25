@@ -677,6 +677,7 @@ public final class PortalCarriageEvents {
         // that is closing, and the structures they describe are not in the next one.
         games.brennan.dungeontrain.portal.PortalTestSession.clear();
         games.brennan.dungeontrain.train.CarriageTestSession.clear();
+        games.brennan.dungeontrain.portal.PortalTestPending.clear();
         // The sampled chunks. Pair-keyed like everything else here, so the next world opened must
         // not inherit them.
         games.brennan.dungeontrain.portal.PortalChunkTerrain.clear();

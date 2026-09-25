@@ -10991,6 +10991,33 @@
       ]
     }
   },
+  "chat.dungeontrain.portal.test_waiting_for_sample": {
+    "1": {
+      "label": "the dimensional carriage's name",
+      "examples": [
+        "chunk_dimension",
+        "chunk_dimension_nether"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.test_sample_failed": {
+    "1": {
+      "label": "the dimensional carriage's name",
+      "examples": [
+        "chunk_dimension",
+        "chunk_dimension_nether"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.test_sample_timed_out": {
+    "1": {
+      "label": "the dimensional carriage's name",
+      "examples": [
+        "chunk_dimension",
+        "chunk_dimension_nether"
+      ]
+    }
+  },
   "chat.dungeontrain.portal.you_re_doorway_corridor": {
     "1": {
       "label": "the dimensional carriage's name",

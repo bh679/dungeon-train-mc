@@ -103,6 +103,11 @@ public final class StagePaletteMenuInputHandler {
             // Same open/close axis as the stage panel: X deselects the stage, closing both.
             case CLOSE -> games.brennan.dungeontrain.client.menu.CommandRunner.run("dungeontrain editor stage deselect");
             case REBAKE -> send(StagePaletteEditPacket.Op.REBAKE, stageId, "");
+            case FACE -> {
+                net.minecraft.core.BlockPos pos = StagePaletteMenu.anchor();
+                games.brennan.dungeontrain.client.menu.EditorPanelFacingEvents.onButton(pos,
+                    net.minecraft.world.phys.Vec3.atCenterOf(pos), games.brennan.dungeontrain.client.menu.EditorPanelFacing.doorPanel(false));
+            }
             case WOOD_HEADER -> send(StagePaletteEditPacket.Op.SET_WOOD, stageId, "");
             case STONE_HEADER -> send(StagePaletteEditPacket.Op.SET_STONE, stageId, "");
             case CELL -> {
