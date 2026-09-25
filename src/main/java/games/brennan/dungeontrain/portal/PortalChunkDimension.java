@@ -174,12 +174,14 @@ public final class PortalChunkDimension {
      */
     private static void paintBiomes(ServerLevel level, BlockPos origin, Vec3i size, int shift,
                                     PortalChunkSlice slice) {
-        int minX = origin.getX() + 1;
-        int minY = origin.getY() + 1;
-        int minZ = origin.getZ() + 1;
-        int maxX = origin.getX() + size.getX() - 2;
-        int maxY = origin.getY() + size.getY() - 2;
-        int maxZ = origin.getZ() + size.getZ() - 2;
+        // The whole box: the terrain runs to its faces now, so the outermost grass is sampled grass
+        // too and wants the sample's tint.
+        int minX = origin.getX();
+        int minY = origin.getY();
+        int minZ = origin.getZ();
+        int maxX = origin.getX() + size.getX() - 1;
+        int maxY = origin.getY() + size.getY() - 1;
+        int maxZ = origin.getZ() + size.getZ() - 1;
         java.util.List<net.minecraft.world.level.chunk.ChunkAccess> changed = new java.util.ArrayList<>();
         net.minecraft.world.level.biome.Climate.Sampler sampler =
             level.getChunkSource().randomState().sampler();
@@ -194,7 +196,7 @@ public final class PortalChunkDimension {
                     int bx = net.minecraft.core.QuartPos.toBlock(qx);
                     int by = net.minecraft.core.QuartPos.toBlock(qy);
                     int bz = net.minecraft.core.QuartPos.toBlock(qz);
-                    // A quart counts when its middle is inside the room's interior.
+                    // A quart counts when its middle is inside the room's box.
                     int mx = bx + 2, my = by + 2, mz = bz + 2;
                     if (mx < minX || mx > maxX || my < minY || my > maxY || mz < minZ || mz > maxZ) {
                         return here;
