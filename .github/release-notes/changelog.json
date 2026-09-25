@@ -18685,6 +18685,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sable-save-no-dsync",
+      "version": "0.954.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "compatibility"
+      ],
+      "title": "Saving the world no longer freezes the game for seconds at a time",
+      "summary": "Autosaves and pausing could freeze the game while the train was being written to disk, from a few seconds up to minutes on slower or busy drives (especially with Distant Horizons running). The train is now saved without waiting on the disk for every piece, so saves finish quickly.",
+      "highlights": [
+        "Autosaves and pause saves no longer lock up the game while the train is saved",
+        "Biggest improvement on Windows and with Distant Horizons installed"
+      ],
+      "pr": 1536,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
