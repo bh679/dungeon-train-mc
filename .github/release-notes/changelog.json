@@ -19083,6 +19083,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "creative-prefab-cmd-delete",
+      "version": "0.963.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Delete saved prefabs from the creative menu",
+      "summary": "Cmd-click (Ctrl on Windows and Linux) a block variant or loot prefab you saved in the creative menu to delete it. You'll be asked to confirm first.",
+      "highlights": [
+        "Works in the Block Variants, Containers / Loot and Armor Stands / Item Frames tabs",
+        "Only prefabs you saved can be deleted, and their tooltips tell you so"
+      ],
+      "pr": 1558,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
