@@ -2911,7 +2911,6 @@
   "chat.dungeontrain.portal.you_aren_t_test": "Non sei in un vagone dimensionale di prova.",
   "chat.dungeontrain.portal.back_plot_test_has": "Di nuovo al lotto — la prova '%s' è stata rimossa.",
   "chat.dungeontrain.carriage_test.standing_in": "Sei dentro una copia di prova di '%s' (scocca %s, contenuto %s) — nessun treno collegato. Indietro nel menu ti riporta al lotto.",
-  "chat.dungeontrain.carriage_test.portal_part": "'%s' fa parte di un vagone dimensionale — prova invece quel vagone dimensionale.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Nessun vagone ha '%s' attivo al momento — attivalo nell'elenco Contenuto di un vagone per provarlo.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Questo mondo non usa il sistema del treno automatico (startsWithTrain è disattivato).",

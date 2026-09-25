@@ -2911,7 +2911,6 @@
   "chat.dungeontrain.portal.you_aren_t_test": "Vous n'êtes pas dans un wagon dimensionnel de test.",
   "chat.dungeontrain.portal.back_plot_test_has": "De retour à la parcelle — le test '%s' a été retiré.",
   "chat.dungeontrain.carriage_test.standing_in": "Vous êtes dans une copie de test de '%s' (coque %s, contenu %s) — aucun train attaché. Retour dans le menu vous ramène à la parcelle.",
-  "chat.dungeontrain.carriage_test.portal_part": "'%s' fait partie d'une voiture dimensionnelle — testez plutôt cette voiture dimensionnelle.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Aucun wagon n'a '%s' activé pour l'instant — activez-le dans la liste Contenu d'un wagon pour le tester.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s) :",
   "chat.dungeontrain.package.world_doesn_t_use": "Ce monde n'utilise pas le système de train automatique (startsWithTrain est désactivé).",

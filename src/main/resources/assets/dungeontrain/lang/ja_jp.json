@@ -2868,7 +2868,6 @@
   "chat.dungeontrain.portal.you_aren_t_test": "テスト用の次元車両内にいません。",
   "chat.dungeontrain.portal.back_plot_test_has": "プロットに戻りました — テスト '%s' は片付けられました。",
   "chat.dungeontrain.carriage_test.standing_in": "'%s' のテスト用コピーの中にいます（外殻 %s、中身 %s）— 列車は接続されていません。メニューの「戻る」でプロットに戻ります。",
-  "chat.dungeontrain.carriage_test.portal_part": "'%s' は次元車両の一部です — その次元車両をテストしてください。",
   "chat.dungeontrain.carriage_test.no_shell_allows": "'%s' を有効にしている車両が今はありません — テストするには、いずれかの車両の中身リストで有効にしてください。",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks（%s %s）:",
   "chat.dungeontrain.package.world_doesn_t_use": "このワールドは自動列車システムを使っていません（startsWithTrain がオフです）。",

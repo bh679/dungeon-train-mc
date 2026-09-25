@@ -451,6 +451,9 @@ public final class CarriagePlacer {
      * paintings would never hang: {@code relight=true} is what makes the stamp spawn template decor
      * where it lands, as an editor plot does.</p>
      *
+     * <p>Portal corridors and the cart between them stand up too — the shells a dimensional carriage
+     * is built from, tested as carriages in their own right.</p>
+     *
      * <p><b>No records.</b> The portal lottery, {@link PortalRegistry#noteStamped} and
      * {@link PlacedCarriageFacts} all describe the real train at a carriage index; a test copy is at
      * no place on the track, and writing it into them would tell the train something false about the
@@ -463,6 +466,18 @@ public final class CarriagePlacer {
                                     int carriageIndex) {
         int anchor = GateContext.WORLDX_FROM_PIDX;
         CarriageStampGuard.run(() -> StagePlacementScope.run(null, () -> {
+            // A portal corridor is built the way the train builds one — its own geometry, doors and
+            // rolled variants, keyed like a pair — with the requested contents laid in after, rather
+            // than the pair's own roll, so the author sees the contents they asked for.
+            for (PortalCorridorKind kind : PortalCorridorKind.values()) {
+                if (!variant.equals(PortalCarriageBuilder.portalVariant(kind))) continue;
+                PortalCarriageBuilder.stampCorridorFrom(level, origin, dims, kind, /*relight*/ true,
+                    /*withContents*/ false, carriageIndex, PortalCarriageRole.ENTRY);
+                if (contents != null) {
+                    CarriageContentsPlacer.placeAt(level, origin, contents, dims, seed, carriageIndex);
+                }
+                return;
+            }
             String base = stampBase(level, origin, variant, dims, seed, carriageIndex,
                 /*flatbedAtBack*/ false, /*flatbedAtFront*/ false, anchor, /*relight*/ true);
             String overlay = stampPartsOverlay(level, origin, variant, dims, seed, carriageIndex,

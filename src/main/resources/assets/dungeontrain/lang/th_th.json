@@ -2868,7 +2868,6 @@
   "chat.dungeontrain.portal.you_aren_t_test": "คุณไม่ได้อยู่ในตู้ข้ามมิติทดสอบ",
   "chat.dungeontrain.portal.back_plot_test_has": "กลับมาที่แปลงแล้ว — ตู้ทดสอบ '%s' ถูกเก็บกวาดแล้ว",
   "chat.dungeontrain.carriage_test.standing_in": "คุณอยู่ในสำเนาทดสอบของ '%s' (โครง %s ห้อง %s) — ไม่มีรถไฟต่ออยู่ กดย้อนกลับในเมนูจะพาคุณกลับไปยังแปลง",
-  "chat.dungeontrain.carriage_test.portal_part": "'%s' เป็นส่วนหนึ่งของตู้มิติ — ให้ทดสอบตู้มิตินั้นแทน",
   "chat.dungeontrain.carriage_test.no_shell_allows": "ตอนนี้ไม่มีตู้ใดเปิดใช้ '%s' — เปิดใช้ในรายการห้องของตู้ใดตู้หนึ่งเพื่อทดสอบ",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "โลกนี้ไม่ได้ใช้ระบบรถไฟอัตโนมัติ (startsWithTrain ปิดอยู่)",

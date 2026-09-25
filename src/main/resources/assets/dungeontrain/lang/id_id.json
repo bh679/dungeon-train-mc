@@ -2868,7 +2868,6 @@
   "chat.dungeontrain.portal.you_aren_t_test": "Kamu tidak berada di gerbong dimensi uji.",
   "chat.dungeontrain.portal.back_plot_test_has": "Kembali di petak — uji '%s' telah dibersihkan.",
   "chat.dungeontrain.carriage_test.standing_in": "Kamu berada di dalam salinan uji '%s' (rangka %s, isi %s) — tanpa kereta terpasang. Kembali di menu akan mengembalikanmu ke petak.",
-  "chat.dungeontrain.carriage_test.portal_part": "'%s' adalah bagian dari gerbong dimensi — uji gerbong dimensi itu saja.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Belum ada gerbong yang mengaktifkan '%s' — nyalakan di daftar Isi sebuah gerbong untuk mengujinya.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Dunia ini tidak memakai sistem kereta otomatis (startsWithTrain mati).",

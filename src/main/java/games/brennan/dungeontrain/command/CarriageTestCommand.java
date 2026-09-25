@@ -158,20 +158,16 @@ public final class CarriageTestCommand {
         if (kind == CarriageTestSession.Kind.CARRIAGE) {
             Optional<CarriageVariant> variant = CarriageVariantRegistry.find(id);
             if (variant.isEmpty()) return fail(source, "chat.dungeontrain.editor.unknown_carriage", id);
-            if (ContentsShellPicker.isPortalPart(variant.get())) return fail(source, "chat.dungeontrain.carriage_test.portal_part", id);
-            // The train's own pick for this shell — allow-list, weights and groups — ungated, since
-            // a test is at no place on the track for a band gate to read.
-            // A flatbed has no interior, and the train furnishes none.
-            CarriageContents contents = ContentsShellPicker.isFlatbed(variant.get()) ? null
-                : CarriageContentsRegistry.pick(seed, CarriageTestSession.TEST_INDEX, variant.get(), null);
-            return new Plan(variant.get(), contents);
+            return new Plan(variant.get(), contentsFor(variant.get(), seed));
         }
         Optional<CarriageContents> contents = CarriageContentsRegistry.find(id);
         if (contents.isEmpty()) return fail(source, "chat.dungeontrain.editor.unknown_contents", id);
-        // A corridor's furnishing is authored to the corridor's box and only ever stands in one; the
-        // dimensional-carriage test is where it is seen as a player meets it.
+        // A corridor's furnishing is authored to the corridor's box and only ever stands in one, so
+        // it is tested in its corridor — the shell its editor plot uses.
         if (CarriageContentsPlacer.portalCorridorKindOf(contents.get()) != null) {
-            return fail(source, "chat.dungeontrain.carriage_test.portal_part", id);
+            CarriageContents rolled = CarriageContentsRegistry.resolveSubVariant(
+                contents.get(), seed ^ CarriageTestSession.TEST_INDEX, null);
+            return new Plan(games.brennan.dungeontrain.editor.CarriageContentsEditor.shellFor(rolled), rolled);
         }
         // Only a carriage that would actually carry these contents on the train stands around them:
         // one whose allow-list has them enabled and that spawns at all. A member is allowed through
@@ -183,6 +179,25 @@ public final class CarriageTestCommand {
         CarriageContents rolled = CarriageContentsRegistry.resolveSubVariant(
             contents.get(), seed ^ CarriageTestSession.TEST_INDEX, null);
         return new Plan(shell, rolled);
+    }
+
+    /**
+     * What the train would furnish {@code shell} with. An ordinary carriage runs the train's own
+     * pick — allow-list, weights and groups — ungated, since a test is at no place on the track for
+     * a band gate to read. A portal corridor holds its kind's corridor contents, rolled through its
+     * group; the cart between the corridors and a flatbed hold none.
+     */
+    private static CarriageContents contentsFor(CarriageVariant shell, long seed) {
+        if (ContentsShellPicker.isFlatbed(shell)) return null;
+        for (games.brennan.dungeontrain.portal.PortalCorridorKind k
+                : games.brennan.dungeontrain.portal.PortalCorridorKind.values()) {
+            if (!shell.equals(games.brennan.dungeontrain.portal.PortalCarriageBuilder.portalVariant(k))) continue;
+            return CarriageContentsRegistry.resolveSubVariant(
+                games.brennan.dungeontrain.portal.PortalCarriageBuilder.portalContents(k),
+                seed ^ CarriageTestSession.TEST_INDEX, null);
+        }
+        if (ContentsShellPicker.isPortalPart(shell)) return null;
+        return CarriageContentsRegistry.pick(seed, CarriageTestSession.TEST_INDEX, shell, null);
     }
 
     private static Plan fail(CommandSourceStack source, String key, String id) {

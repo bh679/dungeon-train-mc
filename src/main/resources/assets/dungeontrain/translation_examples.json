@@ -11032,15 +11032,6 @@
       ]
     }
   },
-  "chat.dungeontrain.carriage_test.portal_part": {
-    "1": {
-      "label": "the template's name",
-      "examples": [
-        "portal",
-        "portal_middle"
-      ]
-    }
-  },
   "chat.dungeontrain.carriage_test.no_shell_allows": {
     "1": {
       "label": "the contents template's name",

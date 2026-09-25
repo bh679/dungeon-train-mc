@@ -2911,7 +2911,6 @@
   "chat.dungeontrain.portal.you_aren_t_test": "No estás en un vagón dimensional de prueba.",
   "chat.dungeontrain.portal.back_plot_test_has": "De vuelta en la parcela: la prueba de '%s' se ha retirado.",
   "chat.dungeontrain.carriage_test.standing_in": "Estás dentro de una copia de prueba de '%s' (carcasa %s, contenido %s), sin tren enganchado. Atrás en el menú te devuelve a la parcela.",
-  "chat.dungeontrain.carriage_test.portal_part": "'%s' forma parte de un vagón dimensional: prueba ese vagón dimensional.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Ningún vagón tiene '%s' activado ahora mismo: actívalo en la lista de Contenido de un vagón para probarlo.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Este mundo no usa el sistema de tren automático (startsWithTrain está desactivado).",

@@ -2911,7 +2911,6 @@
   "chat.dungeontrain.portal.you_aren_t_test": "Je bent niet in een dimensionale testwagon.",
   "chat.dungeontrain.portal.back_plot_test_has": "Terug bij het perceel — de test '%s' is opgeruimd.",
   "chat.dungeontrain.carriage_test.standing_in": "Je staat in een testkopie van '%s' (romp %s, inhoud %s) — geen trein eraan. Terug in het menu brengt je terug naar het perceel.",
-  "chat.dungeontrain.carriage_test.portal_part": "'%s' hoort bij een dimensiewagon — test die dimensiewagon in plaats daarvan.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Geen enkele wagon heeft '%s' nu aanstaan — zet het aan in de Inhoud-lijst van een wagon om het te testen.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Deze wereld gebruikt het automatische treinsysteem niet (startsWithTrain staat uit).",
