@@ -19124,6 +19124,89 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "relay-build-chest-loot",
+      "version": "0.965.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "community"
+      ],
+      "title": "Big shared builds keep their chest loot",
+      "summary": "Large builds \u2014 especially dimensional carriage rooms \u2014 now keep their chest loot and block variants when you share them. Before, a big build could arrive on someone else's world with its chests unset and its variants missing.",
+      "highlights": [
+        "Downloading a large build from builder search now brings its chest loot and block variants with it",
+        "If a build still has too much to send, you'll get a message saying what was left out \u2014 chest loot is always kept longest",
+        "Builds shared before this update need to be saved again by their builder to pick up their chest loot"
+      ],
+      "pr": 1561,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "effortless-building-breaks-clear-variants",
+      "version": "0.966.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "compatibility"
+      ],
+      "title": "Effortless Building can now delete block variants",
+      "summary": "Breaking blocks with an Effortless Building shape in the editor now removes their block variants too, just like breaking them by hand. Previously the blocks disappeared but their variants stayed behind and came back later.",
+      "highlights": [
+        "Line, wall, floor and cube breaks, including mirrored and arrayed ones, clear the variants of every block they remove",
+        "One Ctrl+Z brings back both the blocks and their variants"
+      ],
+      "pr": 1560,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stronghold-rings-stable-across-loads",
+      "version": "0.967.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Eyes of ender lead to the same stronghold every time",
+      "summary": "Strongholds could land in a slightly different place each time a world was loaded, so an eye of ender might lead you to a spot where no stronghold was ever built. Stronghold locations are now fixed for each world.",
+      "highlights": [
+        "Eyes of ender and /locate agree on every load of the same world"
+      ],
+      "pr": 1562,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "creative-prefab-cmd-delete",
+      "version": "0.967.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Delete saved prefabs from the creative menu",
+      "summary": "Cmd-click (Ctrl on Windows and Linux) a block variant or loot prefab you saved in the creative menu to delete it. You'll be asked to confirm first.",
+      "highlights": [
+        "Works in the Block Variants, Containers / Loot and Armor Stands / Item Frames tabs",
+        "Only prefabs you saved can be deleted, and their tooltips tell you so"
+      ],
+      "pr": 1558,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

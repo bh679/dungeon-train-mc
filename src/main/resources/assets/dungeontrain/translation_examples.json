@@ -3090,6 +3090,24 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.sidecars_dropped": {
+    "1": {
+      "label": "the build that uploaded without some of its extra data",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": {
+    "1": {
+      "label": "the build that uploaded without its chest loot",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.too_big": {
     "1": {
       "label": "the build that is too large for the relay to accept",
@@ -12303,6 +12321,60 @@
       "examples": [
         "0",
         "37"
+      ]
+    }
+  },
+  "gui.dungeontrain.prefab_delete.title.variant": {
+    "1": {
+      "label": "the prefab's saved name",
+      "examples": [
+        "gold_chest",
+        "mossy_stone"
+      ]
+    }
+  },
+  "gui.dungeontrain.prefab_delete.title.loot": {
+    "1": {
+      "label": "the prefab's saved name",
+      "examples": [
+        "gold_chest",
+        "mossy_stone"
+      ]
+    }
+  },
+  "gui.dungeontrain.prefab_delete.hint": {
+    "1": {
+      "label": "the modifier key: Cmd on macOS, Ctrl elsewhere",
+      "examples": [
+        "Cmd",
+        "Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.prefab_delete.not_yours": {
+    "1": {
+      "label": "the prefab's saved name",
+      "examples": [
+        "gold_chest",
+        "mossy_stone"
+      ]
+    }
+  },
+  "chat.dungeontrain.prefab_delete.done": {
+    "1": {
+      "label": "the prefab's saved name",
+      "examples": [
+        "gold_chest",
+        "mossy_stone"
+      ]
+    }
+  },
+  "chat.dungeontrain.prefab_delete.failed": {
+    "1": {
+      "label": "the prefab's saved name",
+      "examples": [
+        "gold_chest",
+        "mossy_stone"
       ]
     }
   }

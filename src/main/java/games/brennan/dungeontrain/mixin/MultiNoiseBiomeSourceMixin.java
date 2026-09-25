@@ -109,8 +109,8 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
 
     /**
      * A vanilla pick needing no published context — never TerraBlender's, which could be BoP. Debug-level:
-     * vanilla's stronghold-ring search legitimately lands here on every boot, while {@code publish()} runs
-     * between marking the source and publishing the context.
+     * a failed publish sends every overworld query here for the session. (The stronghold-ring search no
+     * longer does: it waits for the publish — see {@code StrongholdRingGate}.)
      */
     private static Holder<Biome> dungeontrain$vanillaFallback(MultiNoiseBiomeSource source, int x, int y, int z,
                                                             Climate.Sampler sampler, String why) {
