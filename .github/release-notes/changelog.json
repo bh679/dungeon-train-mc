@@ -18766,6 +18766,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "smooth-bedrock-floor",
+      "version": "0.954.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "A smooth bedrock floor again",
+      "summary": "The bottom of the world is once more a single flat layer of bedrock. Ordinary overworld terrain had been growing random bedrock bumps a few blocks above the floor; newly generated land no longer does.",
+      "highlights": [],
+      "pr": 1541,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
