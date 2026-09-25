@@ -126,6 +126,10 @@ public final class PortalTestCommand {
         if (PortalTestSession.has(player.getUUID())) {
             runBack(source);
         }
+        // Or inside a carriage/contents test: the same rule, the other command's way home.
+        if (games.brennan.dungeontrain.train.CarriageTestSession.has(player.getUUID())) {
+            CarriageTestCommand.runBack(source);
+        }
 
         String roomName;
         if (roomArg != null && !roomArg.isBlank()) {
@@ -305,6 +309,11 @@ public final class PortalTestCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
+        // The client's Reseed button sends this command whatever kind of test is running; a carriage
+        // or contents test is re-rolled by its own command.
+        if (games.brennan.dungeontrain.train.CarriageTestSession.has(player.getUUID())) {
+            return CarriageTestCommand.runReseedNow(source);
+        }
         PortalTestSession.Session session = PortalTestSession.get(player.getUUID());
         if (session == null) {
             source.sendFailure(Component.translatable("chat.dungeontrain.portal.not_test_carriage_test")
@@ -361,13 +370,19 @@ public final class PortalTestCommand {
             structure.tiledMaxZ(dims, layout), sky.ordinal()));
     }
 
-    private static int runBack(CommandSourceStack source) {
+    static int runBack(CommandSourceStack source) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
             source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
+        }
+        // The client's Exit button and Back row send this command whatever kind of test is running;
+        // a carriage or contents test goes home by its own command.
+        if (!PortalTestSession.has(player.getUUID())
+            && games.brennan.dungeontrain.train.CarriageTestSession.has(player.getUUID())) {
+            return CarriageTestCommand.runBack(source);
         }
 
         PortalTestSession.Session session = PortalTestSession.take(player.getUUID());

@@ -11002,10 +11002,42 @@
   },
   "chat.dungeontrain.portal.back_plot_test_has": {
     "1": {
-      "label": "the dimensional carriage's name",
+      "label": "the tested carriage's name",
       "examples": [
         "house",
         "library"
+      ]
+    }
+  },
+  "chat.dungeontrain.carriage_test.standing_in": {
+    "1": {
+      "label": "the carriage or contents template's name",
+      "examples": [
+        "library",
+        "brass_dining"
+      ]
+    },
+    "2": {
+      "label": "the carriage shell's name",
+      "examples": [
+        "standard",
+        "windowed"
+      ]
+    },
+    "3": {
+      "label": "the contents' name, or none",
+      "examples": [
+        "library",
+        "none"
+      ]
+    }
+  },
+  "chat.dungeontrain.carriage_test.portal_part": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "portal",
+        "portal_middle"
       ]
     }
   },
