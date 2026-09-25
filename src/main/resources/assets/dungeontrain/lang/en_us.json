@@ -1350,6 +1350,8 @@
   "gui.dungeontrain.builder.profile.saved": "%s saved to your builds.",
   "gui.dungeontrain.builder.profile.upload_failed": "Couldn't upload %s — it's still saved here.",
   "gui.dungeontrain.builder.profile.too_big": "%s is too large to upload — it's still saved here.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s uploaded without some of its block variants — they were too large to send. Everything is still saved here.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s uploaded without its chest loot and block variants — they were too large to send. Everything is still saved here.",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "'%s' has a built-in name, so it was NOT sent to My Builds. Save it under a name of your own to keep a copy on the relay.",
   "gui.dungeontrain.builder.profile.full": "Your builds are full (%s). Saved here but not uploaded — delete a build from My Builds to make room.",
   "gui.dungeontrain.builder.profile.gone": "%s is no longer on the relay — the next save will upload it again.",
