@@ -18880,8 +18880,24 @@
       "released_at": null
     },
     {
+      "id": "fly-double-tap-sprint",
+      "version": "0.958.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Double-tap forward to sprint while flying",
+      "summary": "In creative flight, double-tapping forward now starts sprinting, just like on the ground. You no longer need to hold the sprint key.",
+      "highlights": [],
+      "pr": 1546,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "dimensional-carriage-looks",
-      "version": "0.957.0",
+      "version": "0.958.0",
       "type": "feat",
       "tags": [
         "feature",
