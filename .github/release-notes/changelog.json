@@ -18783,6 +18783,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "chunkgen-animals-match-biome",
+      "version": "0.955.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world",
+        "mobs"
+      ],
+      "title": "Animals fit their land again",
+      "summary": "Freshly explored land is home to the animals that belong there again, and dimensional carriage rooms are populated to match.",
+      "highlights": [
+        "Forests have their sheep, pigs, cows and chickens back.",
+        "Dimensional carriage rooms no longer turn up raiders where they don't belong."
+      ],
+      "pr": 1540,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
