@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.track.variant.TrackVariantGroup;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -56,7 +56,7 @@ final class TrackVariantGroupTest {
     void json_roundTrip_gatedAndLinked() {
         TrackVariantGroup g = new TrackVariantGroup(1, List.of(
             new TrackVariantGroup.Member("library_nether", 2,
-                new TemplateGate(4, 9, EnumSet.of(TrainPhase.NETHER)), List.of()),
+                new TemplateGate(4, 9, EnumSet.of(LapBand.V_NETHER)), List.of()),
             new TrackVariantGroup.Member("library_late", 1,
                 TemplateGate.DEFAULT, List.of("late", "endgame"))));
 

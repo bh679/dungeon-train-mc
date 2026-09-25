@@ -2,12 +2,13 @@ package games.brennan.dungeontrain.template;
 
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
+import games.brennan.dungeontrain.worldgen.LapBandLocator;
 import net.minecraft.server.level.ServerLevel;
 
 /**
- * The resolved spawn context at a template-selection site: the Diff-Level and worldgen
- * {@link TrainPhase} of the column a template is being placed in. The generator builds one of these
+ * The resolved spawn context at a template-selection site: the Diff-Level and the
+ * {@link LapBand} (per-lap band occurrence) of the column a template is being placed in. The generator builds one of these
  * per carriage / track tile and uses {@link #allows(TemplateGate)} to drop out-of-band /
  * out-of-phase candidates from the weighted pool <b>before</b> the weighted pick — the same shape
  * as the mob difficulty-band drop, one layer up.
@@ -17,10 +18,10 @@ import net.minecraft.server.level.ServerLevel;
  * pass of the same carriage resolve an identical context without sharing extra state. The Diff-Level
  * axis additionally folds in the {@code /dungeontrain difficulty} offset (via
  * {@link DifficultyProgression#positionTier}), so an admin difficulty shift re-themes the carriage
- * stage generated ahead; the {@link TrainPhase phase} axis is offset-free (dimension bands never
+ * stage generated ahead; the {@link LapBand band} axis is offset-free (dimension bands never
  * move). A {@code null} {@code GateContext} (passed by editor previews / tests) means "no gating".</p>
  */
-public record GateContext(int level, TrainPhase phase) {
+public record GateContext(int level, LapBand phase) {
 
     /** True iff {@code gate} admits this context's Diff-Level and phase. */
     public boolean allows(TemplateGate gate) {
@@ -43,14 +44,14 @@ public record GateContext(int level, TrainPhase phase) {
      * Resolve the context for the column at {@code worldX}. {@code carriageLength} maps the world-X
      * to the carriage-equivalent index for the Diff-Level (see
      * {@link DifficultyProgression#levelAtWorldX}); the phase is taken straight from the world-X
-     * band classifiers ({@link TrainPhase#phaseAt}). The Overworld↔Nether <em>block-level</em> fade
+     * band classifier ({@link LapBandLocator#at}). The Overworld↔Nether <em>block-level</em> fade
      * for tunnels/tracks is applied later, at stamp time, via
      * {@link games.brennan.dungeontrain.worldgen.NetherFade} — not by softening this phase.
      */
     public static GateContext atWorldX(ServerLevel level, int worldX, int carriageLength) {
         ServerLevel overworld = level.getServer().overworld();
         int diffLevel = DifficultyProgression.levelAtWorldX(worldX, carriageLength);
-        return new GateContext(diffLevel, TrainPhase.phaseAt(overworld, worldX));
+        return new GateContext(diffLevel, LapBandLocator.at(overworld, worldX));
     }
 
     /**
@@ -106,7 +107,7 @@ public record GateContext(int level, TrainPhase phase) {
      *   <li><b>Diff-Level</b> from the group's <em>carriage-index</em> anchor
      *       ({@link #groupAnchorPIdx}) — stays consistent with the boarding HUD / mob / contents
      *       difficulty, all of which key on the carriage index.</li>
-     *   <li><b>{@link TrainPhase Dimension}</b> from the group's <em>real overworld</em> X
+     *   <li><b>{@link LapBand band}</b> from the group's <em>real overworld</em> X
      *       ({@link #groupRealStartX}) — the same frame the track / tunnel gates and the band terrain
      *       use, so a carriage's dimension flips at the same world-X as the track beneath it (the
      *       pad-free {@code pIdx × length} frame lagged the real frame by the inter-group pads).</li>
@@ -117,7 +118,7 @@ public record GateContext(int level, TrainPhase phase) {
     public static GateContext forCarriage(ServerLevel level, int carriagePIdx, int carriageLength) {
         int groupSize = DungeonTrainWorldData.get(level.getServer().overworld()).getGenerationConfig().groupSize();
         int diffLevel = DifficultyProgression.positionTier(groupAnchorPIdx(carriagePIdx, groupSize));
-        TrainPhase phase = TrainPhase.phaseAt(level.getServer().overworld(),
+        LapBand phase = LapBandLocator.at(level.getServer().overworld(),
             groupRealStartX(carriagePIdx, groupSize, carriageLength));
         return new GateContext(diffLevel, phase);
     }
@@ -131,7 +132,7 @@ public record GateContext(int level, TrainPhase phase) {
     public static final int WORLDX_FROM_PIDX = Integer.MIN_VALUE;
 
     /**
-     * Like {@link #forCarriage} but resolves the {@link TrainPhase Dimension} from the carriage
+     * Like {@link #forCarriage} but resolves the {@link LapBand band} from the carriage
      * group's <b>actual placed world-X</b> ({@code groupAnchorWorldX}) instead of the static
      * {@link #groupRealStartX} formula. The static formula assumes every group sits at exactly
      * {@code groupIdx × subLevelStride} from a train origin at X = 0, but the appender places each
@@ -153,7 +154,7 @@ public record GateContext(int level, TrainPhase phase) {
         }
         int groupSize = DungeonTrainWorldData.get(level.getServer().overworld()).getGenerationConfig().groupSize();
         int diffLevel = DifficultyProgression.positionTier(groupAnchorPIdx(carriagePIdx, groupSize));
-        TrainPhase phase = TrainPhase.phaseAt(level.getServer().overworld(), groupAnchorWorldX);
+        LapBand phase = LapBandLocator.at(level.getServer().overworld(), groupAnchorWorldX);
         return new GateContext(diffLevel, phase);
     }
 }

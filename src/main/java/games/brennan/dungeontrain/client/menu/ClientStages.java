@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 
 import java.util.ArrayList;
@@ -71,16 +71,8 @@ public final class ClientStages {
         return MenuLang.t("stages.gate_summary", s.minLevel(), max, dims(s.phaseMask()));
     }
 
-    /**
-     * Compact dimension letters for a {@link TrainPhase#bit()} mask — one {@link TrainPhase#letter()}
-     * per set phase in ordinal order (e.g. {@code "VUC"}); "all" when every bit set, an em dash when none.
-     */
+    /** Compact per-lap band letters for a {@link LapBand#bit()} mask — see {@link BandLabels#summary}. */
     public static String dims(int mask) {
-        if ((mask & TrainPhase.ALL_MASK) == TrainPhase.ALL_MASK) return MenuLang.t("stages.all");
-        StringBuilder sb = new StringBuilder();
-        for (TrainPhase p : TrainPhase.values()) {
-            if ((mask & p.bit()) != 0) sb.append(p.letter());
-        }
-        return sb.length() == 0 ? "—" : sb.toString();
+        return BandLabels.summary(mask);
     }
 }

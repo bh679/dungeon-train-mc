@@ -25,7 +25,7 @@ import games.brennan.dungeontrain.worldgen.GenDeterminismLog;
 import games.brennan.dungeontrain.worldgen.StampRandom;
 import games.brennan.dungeontrain.worldgen.NetherFade;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBandLocator;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.train.CarriageStampGuard;
@@ -495,7 +495,7 @@ public final class TrackGenerator {
 
     /**
      * Build the per-tile paint for track tile {@code idx}. Outside the Nether crossfade this is the
-     * classic single registry-weighted variant (hard {@link TrainPhase} pick). Inside the crossfade it
+     * classic single registry-weighted variant (hard {@link LapBand} pick). Inside the crossfade it
      * also resolves the Nether variant ({@code nethertracks}) so {@link TilePaint#resolveComposite}
      * can dither the two per block. Shared by the runtime ({@code ensureTracksForChunk}) and worldgen
      * painters so both blend identically.
@@ -508,9 +508,9 @@ public final class TrackGenerator {
         if (NetherFade.intersectsCrossfade(overworld, tileX, tileX + TrackPlacer.TILE_LENGTH - 1)) {
             long genSeed = DungeonTrainWorldData.get(overworld).getGenerationSeed();
             String owName = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
-                new GateContext(baseCtx.level(), TrainPhase.OVERWORLD));
+                new GateContext(baseCtx.level(), LapBandLocator.overworldBesideNetherAt(overworld, tileX)));
             String ntName = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
-                new GateContext(baseCtx.level(), TrainPhase.NETHER));
+                new GateContext(baseCtx.level(), LapBandLocator.netherAt(overworld, tileX)));
             return new TilePaint(
                 TrackTemplateStore.getCellsFor(level, dims, owName),
                 TrackVariantBlocks.loadFor(TrackKind.TILE, owName, tileFootprint),

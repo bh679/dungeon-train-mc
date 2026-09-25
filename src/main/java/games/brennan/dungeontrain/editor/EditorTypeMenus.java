@@ -8,7 +8,7 @@ import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
@@ -222,7 +222,7 @@ public final class EditorTypeMenus {
             String stageId = weights.stageIdFor(v.id());
             rows.add(new EditorTypeMenusPacket.Variant(
                 v.id(), weights.weightFor(v.id()),
-                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                g.minLevel(), g.maxLevel(), LapBand.toMask(g.phases()),
                 cat, v.id(), v.id(), p.isUser(), p.isImported(),
                 stageId == null ? "" : stageId).withDisplayName(weights.nameFor(v.id()))
                 .withBuilder(builderUuid(TemplateBuilderLookup.carriage(weights, v.id())),
@@ -268,7 +268,7 @@ public final class EditorTypeMenus {
             String stageId = weights.stageIdFor(c.id());
             rows.add(new EditorTypeMenusPacket.Variant(
                 c.id(), weights.weightFor(c.id()),
-                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                g.minLevel(), g.maxLevel(), LapBand.toMask(g.phases()),
                 cat, c.id(), c.id(), p.isUser(), p.isImported(),
                 subVariantsFor(c.id(), cat), stageId == null ? "" : stageId)
                 .withDisplayName(weights.nameFor(c.id()))
@@ -291,7 +291,7 @@ public final class EditorTypeMenus {
             String stageId = TrackVariantWeights.stageIdFor(kind, name);
             rows.add(new EditorTypeMenusPacket.Variant(
                 name, TrackVariantWeights.weightFor(kind, name),
-                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                g.minLevel(), g.maxLevel(), LapBand.toMask(g.phases()),
                 cat, modelId, name, p.isUser(), p.isImported(),
                 subVariantsFor(kind, name, cat, modelId), stageId == null ? "" : stageId)
                 .withDisplayName(TrackVariantWeights.nameFor(kind, name))
@@ -415,7 +415,7 @@ public final class EditorTypeMenus {
             TemplateGate g = StageStore.effectiveGate(m.gate(), primaryStage);
             out.add(new EditorTypeMenusPacket.Variant(
                 m.id(), m.weight(),
-                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                g.minLevel(), g.maxLevel(), LapBand.toMask(g.phases()),
                 category, m.id(), m.id(),
                 prov.isUser(), prov.isImported(),
                 java.util.List.of(), m.stageIds()).withDisplayName(weights.nameFor(m.id()))
@@ -453,7 +453,7 @@ public final class EditorTypeMenus {
             out.add(new EditorTypeMenusPacket.Variant(
                 m.id(), m.weight(),
                 g.minLevel(), g.maxLevel(),
-                games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
+                games.brennan.dungeontrain.worldgen.LapBand.toMask(g.phases()),
                 category, modelId, m.id(),
                 prov.isUser(), prov.isImported(),
                 java.util.List.of(), m.stageIds()).withDisplayName(TrackVariantWeights.nameFor(kind, m.id()))
@@ -606,7 +606,7 @@ public final class EditorTypeMenus {
         // the row reads as (name + level/dimension) and the client edit screen can show values.
         EditorTypeMenusPacket.Variant row = new EditorTypeMenusPacket.Variant(
             s.name(), EditorPlotLabelsPacket.NO_WEIGHT,
-            g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+            g.minLevel(), g.maxLevel(), LapBand.toMask(g.phases()),
             STAGES_CATEGORY, s.id(), s.id(), true, false);
         return s.builder() == null ? row : row.withBuilder(s.builder().uuid(), s.builder().name());
     }

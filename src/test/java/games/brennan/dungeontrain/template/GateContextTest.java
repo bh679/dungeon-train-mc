@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.template;
 
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -98,8 +98,8 @@ final class GateContextTest {
     @DisplayName("levelAllows ignores phase: a quartz-band gate admits level 67 even in the UPSIDE_DOWN phase it doesn't list")
     void levelAllowsIgnoresPhase() {
         // A gate like the pre-fix quartz stage: level band 51..70, OVERWORLD/VOID phases only.
-        TemplateGate quartzish = new TemplateGate(51, 70, EnumSet.of(TrainPhase.OVERWORLD, TrainPhase.VOID));
-        GateContext upsideDownInBand = new GateContext(67, TrainPhase.UPSIDE_DOWN);
+        TemplateGate quartzish = new TemplateGate(51, 70, EnumSet.of(LapBand.V_OVERWORLD_1, LapBand.L_VOID));
+        GateContext upsideDownInBand = new GateContext(67, LapBand.V_UPSIDE_DOWN);
 
         // Strict allows() rejects the uncovered phase — this is what empties the pool...
         assertFalse(upsideDownInBand.allows(quartzish), "phase gate excludes UPSIDE_DOWN");
@@ -107,8 +107,8 @@ final class GateContextTest {
         assertTrue(upsideDownInBand.levelAllows(quartzish), "level 67 is inside the 51..70 band regardless of phase");
 
         // Out of the level band, the relaxation still rejects (it never widens to all stages).
-        assertFalse(new GateContext(80, TrainPhase.UPSIDE_DOWN).levelAllows(quartzish), "level 80 is outside 51..70");
-        assertFalse(new GateContext(50, TrainPhase.UPSIDE_DOWN).levelAllows(quartzish), "level 50 is below 51");
+        assertFalse(new GateContext(80, LapBand.V_UPSIDE_DOWN).levelAllows(quartzish), "level 80 is outside 51..70");
+        assertFalse(new GateContext(50, LapBand.V_UPSIDE_DOWN).levelAllows(quartzish), "level 50 is below 51");
     }
 
     @Test

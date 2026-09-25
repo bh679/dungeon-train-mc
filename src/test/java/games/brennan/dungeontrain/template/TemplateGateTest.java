@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.template;
 
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,9 +18,9 @@ final class TemplateGateTest {
     void defaultEligibleEverywhere() {
         TemplateGate g = TemplateGate.DEFAULT;
         assertTrue(g.isDefault());
-        assertTrue(g.eligible(0, TrainPhase.OVERWORLD));
-        assertTrue(g.eligible(999, TrainPhase.END));
-        assertTrue(g.eligible(7, TrainPhase.NETHER));
+        assertTrue(g.eligible(0, LapBand.V_OVERWORLD_1));
+        assertTrue(g.eligible(999, LapBand.V_END));
+        assertTrue(g.eligible(7, LapBand.V_NETHER));
     }
 
     @Test
@@ -83,16 +83,16 @@ final class TemplateGateTest {
     @Test
     @DisplayName("phase set gates the phase; empty/null normalises to all phases")
     void phaseGate() {
-        TemplateGate nether = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER));
-        assertTrue(nether.eligible(0, TrainPhase.NETHER));
-        assertFalse(nether.eligible(0, TrainPhase.OVERWORLD));
+        TemplateGate nether = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(LapBand.V_NETHER));
+        assertTrue(nether.eligible(0, LapBand.V_NETHER));
+        assertFalse(nether.eligible(0, LapBand.V_OVERWORLD_1));
         assertFalse(nether.isDefault());
 
         // null phases == all phases (back-compat default)
         assertEquals(TemplateGate.ALL_PHASES, new TemplateGate(0, TemplateGate.ALL, null).phases());
         // empty phases also normalises to all (can't gate to "no phase")
         assertEquals(TemplateGate.ALL_PHASES,
-            new TemplateGate(0, TemplateGate.ALL, EnumSet.noneOf(TrainPhase.class)).phases());
+            new TemplateGate(0, TemplateGate.ALL, EnumSet.noneOf(LapBand.class)).phases());
     }
 
     @Test
@@ -116,13 +116,13 @@ final class TemplateGateTest {
     @Test
     @DisplayName("withPhase toggles; removing the last phase normalises back to all")
     void withPhase() {
-        TemplateGate g = TemplateGate.DEFAULT.withPhase(TrainPhase.OVERWORLD, false);
-        assertFalse(g.phases().contains(TrainPhase.OVERWORLD));
-        assertTrue(g.phases().contains(TrainPhase.NETHER));
+        TemplateGate g = TemplateGate.DEFAULT.withPhase(LapBand.V_OVERWORLD_1, false);
+        assertFalse(g.phases().contains(LapBand.V_OVERWORLD_1));
+        assertTrue(g.phases().contains(LapBand.V_NETHER));
 
         // turn every phase off one by one — final removal normalises to all phases
-        TemplateGate only = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.END));
-        TemplateGate cleared = only.withPhase(TrainPhase.END, false);
+        TemplateGate only = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(LapBand.V_END));
+        TemplateGate cleared = only.withPhase(LapBand.V_END, false);
         assertEquals(TemplateGate.ALL_PHASES, cleared.phases());
         assertTrue(cleared.isDefault());
     }
@@ -131,19 +131,19 @@ final class TemplateGateTest {
     @DisplayName("toggleOtherPhases flips all but the kept dimension; solos from all-on, restores from solo, keeps the level band")
     void toggleOtherPhasesBehaviour() {
         // all-on → solo the kept one
-        assertEquals(EnumSet.of(TrainPhase.NETHER),
-            TemplateGate.DEFAULT.toggleOtherPhases(TrainPhase.NETHER).phases());
+        assertEquals(EnumSet.of(LapBand.V_NETHER),
+            TemplateGate.DEFAULT.toggleOtherPhases(LapBand.V_NETHER).phases());
         // solo → restore all (a second shift-click on the same letter)
-        TemplateGate solo = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER));
-        assertEquals(TemplateGate.ALL_PHASES, solo.toggleOtherPhases(TrainPhase.NETHER).phases());
+        TemplateGate solo = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(LapBand.V_NETHER));
+        assertEquals(TemplateGate.ALL_PHASES, solo.toggleOtherPhases(LapBand.V_NETHER).phases());
         // mixed: the kept dimension stays, every other flips
         TemplateGate mixed = new TemplateGate(0, TemplateGate.ALL,
-            EnumSet.of(TrainPhase.OVERWORLD, TrainPhase.NETHER));
-        assertEquals(EnumSet.of(TrainPhase.NETHER, TrainPhase.VOID, TrainPhase.END, TrainPhase.UPSIDE_DOWN, TrainPhase.CHUNCKS, TrainPhase.SPHERES, TrainPhase.STACKS, TrainPhase.BETA, TrainPhase.ALPHA, TrainPhase.SKYLANDS, TrainPhase.INFDEV, TrainPhase.FLOATING, TrainPhase.FAR_LANDS, TrainPhase.CLASSIC, TrainPhase.CAVES_OF_CHAOS, TrainPhase.LARGE_BIOMES, TrainPhase.AMPLIFIED),
-            mixed.toggleOtherPhases(TrainPhase.NETHER).phases());
+            EnumSet.of(LapBand.V_OVERWORLD_1, LapBand.V_NETHER));
+        assertEquals(EnumSet.complementOf(EnumSet.of(LapBand.V_OVERWORLD_1)),
+            mixed.toggleOtherPhases(LapBand.V_NETHER).phases());
         // the Diff-Level band is untouched
-        TemplateGate banded = new TemplateGate(3, 9, EnumSet.of(TrainPhase.OVERWORLD));
-        TemplateGate after = banded.toggleOtherPhases(TrainPhase.OVERWORLD);
+        TemplateGate banded = new TemplateGate(3, 9, EnumSet.of(LapBand.V_OVERWORLD_1));
+        TemplateGate after = banded.toggleOtherPhases(LapBand.V_OVERWORLD_1);
         assertEquals(3, after.minLevel());
         assertEquals(9, after.maxLevel());
         assertEquals(TemplateGate.ALL_PHASES, after.phases(), "OVERWORLD kept + others flipped on = all");
@@ -152,31 +152,31 @@ final class TemplateGateTest {
     @Test
     @DisplayName("overlaps: true only when level bands AND phase sets both intersect")
     void overlaps() {
-        TemplateGate nether = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER));
+        TemplateGate nether = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(LapBand.V_NETHER));
         // Same dimension, overlapping level bands → overlap.
-        assertTrue(nether.overlaps(new TemplateGate(5, 15, EnumSet.of(TrainPhase.NETHER))));
+        assertTrue(nether.overlaps(new TemplateGate(5, 15, EnumSet.of(LapBand.V_NETHER))));
         assertTrue(nether.overlaps(TemplateGate.DEFAULT), "DEFAULT (all phases, 0..ALL) overlaps any gate");
         // Same dimension, disjoint level bands → no overlap.
-        TemplateGate low = new TemplateGate(0, 10, EnumSet.of(TrainPhase.NETHER));
-        assertFalse(low.overlaps(new TemplateGate(50, 60, EnumSet.of(TrainPhase.NETHER))), "0..10 vs 50..60 disjoint");
+        TemplateGate low = new TemplateGate(0, 10, EnumSet.of(LapBand.V_NETHER));
+        assertFalse(low.overlaps(new TemplateGate(50, 60, EnumSet.of(LapBand.V_NETHER))), "0..10 vs 50..60 disjoint");
         // Overlapping level bands, disjoint dimensions → no overlap.
-        assertFalse(nether.overlaps(new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.OVERWORLD))),
+        assertFalse(nether.overlaps(new TemplateGate(0, TemplateGate.ALL, EnumSet.of(LapBand.V_OVERWORLD_1))),
             "NETHER vs OVERWORLD share levels but not a dimension");
         // Shares one of several dimensions → overlap.
         assertTrue(nether.overlaps(new TemplateGate(0, TemplateGate.ALL,
-            EnumSet.of(TrainPhase.OVERWORLD, TrainPhase.NETHER))));
+            EnumSet.of(LapBand.V_OVERWORLD_1, LapBand.V_NETHER))));
         // Symmetric, and null-safe.
-        assertTrue(new TemplateGate(5, 15, EnumSet.of(TrainPhase.NETHER)).overlaps(nether));
+        assertTrue(new TemplateGate(5, 15, EnumSet.of(LapBand.V_NETHER)).overlaps(nether));
         assertFalse(nether.overlaps(null));
     }
 
     @Test
     @DisplayName("overlaps: ALL (unbounded max) extends the band to +infinity")
     void overlapsUnbounded() {
-        TemplateGate open = new TemplateGate(20, TemplateGate.ALL, EnumSet.of(TrainPhase.END));
-        assertTrue(open.overlaps(new TemplateGate(100, TemplateGate.ALL, EnumSet.of(TrainPhase.END))),
+        TemplateGate open = new TemplateGate(20, TemplateGate.ALL, EnumSet.of(LapBand.V_END));
+        assertTrue(open.overlaps(new TemplateGate(100, TemplateGate.ALL, EnumSet.of(LapBand.V_END))),
             "both unbounded above and share END → overlap at high levels");
-        assertFalse(open.overlaps(new TemplateGate(0, 10, EnumSet.of(TrainPhase.END))),
+        assertFalse(open.overlaps(new TemplateGate(0, 10, EnumSet.of(LapBand.V_END))),
             "20..ALL doesn't reach 0..10");
     }
 }

@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.template;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,36 +47,36 @@ final class StageResolverTest {
         stages = out;
     }
 
-    private static String at(int level, TrainPhase phase) {
+    private static String at(int level, LapBand phase) {
         return StageResolver.stageIdFor(level, phase, stages);
     }
 
     @Test
     @DisplayName("each overworld level band resolves to its own stage")
     void levelBandsMapToTheirStage() {
-        assertEquals("stone", at(0, TrainPhase.OVERWORLD));
-        assertEquals("stone", at(10, TrainPhase.OVERWORLD));
-        assertEquals("desert", at(11, TrainPhase.OVERWORLD));
-        assertEquals("desert", at(35, TrainPhase.OVERWORLD));
-        assertEquals("copper", at(36, TrainPhase.OVERWORLD));
-        assertEquals("quartz", at(51, TrainPhase.OVERWORLD));
-        assertEquals("obsidian", at(71, TrainPhase.OVERWORLD));
-        assertEquals("deepdark", at(87, TrainPhase.OVERWORLD));
-        assertEquals("mud", at(121, TrainPhase.OVERWORLD));
-        assertEquals("wood_oak", at(131, TrainPhase.OVERWORLD));
+        assertEquals("stone", at(0, LapBand.V_OVERWORLD_1));
+        assertEquals("stone", at(10, LapBand.V_OVERWORLD_1));
+        assertEquals("desert", at(11, LapBand.V_OVERWORLD_1));
+        assertEquals("desert", at(35, LapBand.V_OVERWORLD_1));
+        assertEquals("copper", at(36, LapBand.V_OVERWORLD_1));
+        assertEquals("quartz", at(51, LapBand.V_OVERWORLD_1));
+        assertEquals("obsidian", at(71, LapBand.V_OVERWORLD_1));
+        assertEquals("deepdark", at(87, LapBand.V_OVERWORLD_1));
+        assertEquals("mud", at(121, LapBand.V_OVERWORLD_1));
+        assertEquals("wood_oak", at(131, LapBand.V_OVERWORLD_1));
         // The wood stages run on from oak in the author's order and lengths, up to the open-ended top.
-        assertEquals("wood_oak", at(160, TrainPhase.OVERWORLD));
-        assertEquals("birch", at(161, TrainPhase.OVERWORLD));
-        assertEquals("acacia", at(176, TrainPhase.OVERWORLD));
-        assertEquals("jungle", at(206, TrainPhase.OVERWORLD));
-        assertEquals("mangrove", at(226, TrainPhase.OVERWORLD));
-        assertEquals("cherry", at(266, TrainPhase.OVERWORLD));
-        assertEquals("crimson", at(286, TrainPhase.OVERWORLD));
-        assertEquals("warped", at(321, TrainPhase.OVERWORLD));
-        assertEquals("bamboo", at(356, TrainPhase.OVERWORLD));
-        assertEquals("darkwood", at(376, TrainPhase.OVERWORLD));
-        assertEquals("bamboo_mosaic", at(416, TrainPhase.OVERWORLD));
-        assertEquals("spruce", at(436, TrainPhase.OVERWORLD));
+        assertEquals("wood_oak", at(160, LapBand.V_OVERWORLD_1));
+        assertEquals("birch", at(161, LapBand.V_OVERWORLD_1));
+        assertEquals("acacia", at(176, LapBand.V_OVERWORLD_1));
+        assertEquals("jungle", at(206, LapBand.V_OVERWORLD_1));
+        assertEquals("mangrove", at(226, LapBand.V_OVERWORLD_1));
+        assertEquals("cherry", at(266, LapBand.V_OVERWORLD_1));
+        assertEquals("crimson", at(286, LapBand.V_OVERWORLD_1));
+        assertEquals("warped", at(321, LapBand.V_OVERWORLD_1));
+        assertEquals("bamboo", at(356, LapBand.V_OVERWORLD_1));
+        assertEquals("darkwood", at(376, LapBand.V_OVERWORLD_1));
+        assertEquals("bamboo_mosaic", at(416, LapBand.V_OVERWORLD_1));
+        assertEquals("spruce", at(436, LapBand.V_OVERWORLD_1));
     }
 
     /**
@@ -88,9 +88,9 @@ final class StageResolverTest {
     @Test
     @DisplayName("the END phase resolves to nether at every level — no overworld tier reaches the End")
     void endPhaseResolvesToNether() {
-        assertEquals("nether", at(5, TrainPhase.END));
-        assertEquals("nether", at(20, TrainPhase.END));
-        assertEquals("nether", at(140, TrainPhase.END));
+        assertEquals("nether", at(5, LapBand.V_END));
+        assertEquals("nether", at(20, LapBand.V_END));
+        assertEquals("nether", at(140, LapBand.V_END));
     }
 
     /**
@@ -107,17 +107,17 @@ final class StageResolverTest {
                         "{\"name\":\"Catch All\",\"phases\":[\"END\"]}")),
                 Stage.fromJson("narrow", JsonParser.parseString(
                         "{\"name\":\"Narrow\",\"minLevel\":10,\"maxLevel\":20,\"phases\":[\"END\"]}")));
-        assertEquals("narrow", StageResolver.stageIdFor(15, TrainPhase.END, synthetic));
+        assertEquals("narrow", StageResolver.stageIdFor(15, LapBand.V_END, synthetic));
         // Outside the narrow band the unbounded stage is the only eligible one.
-        assertEquals("catch_all", StageResolver.stageIdFor(50, TrainPhase.END, synthetic));
+        assertEquals("catch_all", StageResolver.stageIdFor(50, LapBand.V_END, synthetic));
     }
 
     @Test
     @DisplayName("the NETHER phase resolves to nether at every level")
     void netherPhaseResolvesToNether() {
-        assertEquals("nether", at(0, TrainPhase.NETHER));
-        assertEquals("nether", at(60, TrainPhase.NETHER));
-        assertEquals("nether", at(500, TrainPhase.NETHER));
+        assertEquals("nether", at(0, LapBand.V_NETHER));
+        assertEquals("nether", at(60, LapBand.V_NETHER));
+        assertEquals("nether", at(500, LapBand.V_NETHER));
     }
 
     /**
@@ -129,19 +129,19 @@ final class StageResolverTest {
     @Test
     @DisplayName("a level above every named band still resolves — the top band runs open-ended")
     void aboveAllBandsResolvesToTheTopStage() {
-        assertEquals("spruce", at(436, TrainPhase.OVERWORLD));
-        assertEquals("spruce", at(5000, TrainPhase.OVERWORLD));
+        assertEquals("spruce", at(436, LapBand.V_OVERWORLD_1));
+        assertEquals("spruce", at(5000, LapBand.V_OVERWORLD_1));
         // The top band runs open-ended in every phase it lists — but not END, which it no longer lists.
-        assertEquals("spruce", at(5000, TrainPhase.CHUNCKS));
+        assertEquals("spruce", at(5000, LapBand.C_CHUNCKS));
     }
 
     /** The chuncks band is on by default; a slot there must belong to its level's stage, not to nothing. */
     @Test
     @DisplayName("the CHUNCKS phase resolves to the level's stage")
     void chuncksPhaseResolvesToTheLevelBand() {
-        assertEquals("stone", at(5, TrainPhase.CHUNCKS));
-        assertEquals("copper", at(40, TrainPhase.CHUNCKS));
-        assertEquals("crimson", at(300, TrainPhase.CHUNCKS));
+        assertEquals("stone", at(5, LapBand.C_CHUNCKS));
+        assertEquals("copper", at(40, LapBand.C_CHUNCKS));
+        assertEquals("crimson", at(300, LapBand.C_CHUNCKS));
     }
 
     /** A genuinely uncovered {@code (level, phase)} still resolves to null rather than guessing. */
@@ -149,22 +149,22 @@ final class StageResolverTest {
     @DisplayName("an uncovered phase resolves to null")
     void uncoveredPhaseIsNull() {
         List<Stage> netherOnly = stages.stream().filter(s -> s.id().equals("nether")).toList();
-        assertNull(StageResolver.stageIdFor(5, TrainPhase.OVERWORLD, netherOnly));
+        assertNull(StageResolver.stageIdFor(5, LapBand.V_OVERWORLD_1, netherOnly));
     }
 
     @Test
     @DisplayName("resolution is deterministic — repeated calls agree")
     void resolutionIsStable() {
         for (int i = 0; i < 5; i++) {
-            assertEquals("copper", at(40, TrainPhase.OVERWORLD));
-            assertEquals("nether", at(40, TrainPhase.NETHER));
+            assertEquals("copper", at(40, LapBand.V_OVERWORLD_1));
+            assertEquals("nether", at(40, LapBand.V_NETHER));
         }
     }
 
     @Test
     @DisplayName("an empty or null stage set resolves to null rather than throwing")
     void emptyStageSetIsNull() {
-        assertNull(StageResolver.stageIdFor(5, TrainPhase.OVERWORLD, List.of()));
-        assertNull(StageResolver.stageIdFor(5, TrainPhase.OVERWORLD, null));
+        assertNull(StageResolver.stageIdFor(5, LapBand.V_OVERWORLD_1, List.of()));
+        assertNull(StageResolver.stageIdFor(5, LapBand.V_OVERWORLD_1, null));
     }
 }

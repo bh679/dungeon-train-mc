@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.command;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.CycleLayout;
+import games.brennan.dungeontrain.worldgen.LapBandLocator;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
@@ -45,8 +46,9 @@ final class CycleLayoutDebug {
                 long mid = (from + to) / 2L;
                 String phase = mid > Integer.MAX_VALUE ? "?" : TrainPhase.phaseAt(overworld, (int) mid).token();
                 String style = slot.style() == CycleLayout.Style.VANILLA ? "" : " " + slot.style().name().toLowerCase();
-                send(source, String.format("    %2d %-11s%-7s core=%-6d X %d..%d  phase@mid=%s", i,
-                        slot.type().name().toLowerCase(), style, slot.core(), from, to, phase), ChatFormatting.WHITE);
+                String band = mid > Integer.MAX_VALUE ? "?" : LapBandLocator.at(overworld, (int) mid).token();
+                send(source, String.format("    %2d %-11s%-7s core=%-6d X %d..%d  phase@mid=%s band@mid=%s", i,
+                        slot.type().name().toLowerCase(), style, slot.core(), from, to, phase, band), ChatFormatting.WHITE);
                 if (slot.type() == CycleLayout.Type.LEGACY_RUN) {
                     for (int e = 0; e < layout.eras().length; e++) {
                         LegacyBandKind kind = layout.eras()[e].kind();
@@ -54,7 +56,9 @@ final class CycleLayoutDebug {
                         long ce = cs + (layout.eraCoreLen(e) << k);
                         long emid = (cs + ce) / 2L;
                         String ephase = emid > Integer.MAX_VALUE ? "?" : TrainPhase.phaseAt(overworld, (int) emid).token();
-                        send(source, String.format("         era %-10s core X %d..%d  phase@mid=%s", kind.token(), cs, ce, ephase),
+                        String eband = emid > Integer.MAX_VALUE ? "?" : LapBandLocator.at(overworld, (int) emid).token();
+                        send(source, String.format("         era %-10s core X %d..%d  phase@mid=%s band@mid=%s",
+                                kind.token(), cs, ce, ephase, eband),
                                 ChatFormatting.GRAY);
                     }
                 }

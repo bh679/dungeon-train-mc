@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.track.variant.TrackVariantGroup;
 import games.brennan.dungeontrain.train.CarriageContentsGroup;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 final class ParentDeletesTest {
 
-    private static final TemplateGate GATE = new TemplateGate(5, 30, EnumSet.of(TrainPhase.NETHER));
+    private static final TemplateGate GATE = new TemplateGate(5, 30, EnumSet.of(LapBand.V_NETHER));
 
     @Test
     @DisplayName("mode literals round-trip and anything else is empty")

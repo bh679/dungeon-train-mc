@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.template;
 
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 
 import java.util.Collections;
 import java.util.EnumSet;
@@ -8,7 +8,7 @@ import java.util.Set;
 
 /**
  * Per-template spawn gate: the inclusive difficulty-<em>level</em> band <b>and</b> the set of
- * worldgen {@link TrainPhase phases} in which a weighted {@link Template} is allowed to spawn. The
+ * per-lap {@link LapBand band occurrences} in which a weighted {@link Template} is allowed to spawn. The
  * generator drops out-of-band / out-of-phase templates from the candidate pool <b>before</b> the
  * weighted pick, exactly as
  * {@link games.brennan.dungeontrain.editor.VariantDifficulty} drops out-of-band mob eggs from a
@@ -19,7 +19,7 @@ import java.util.Set;
  * ({@link games.brennan.dungeontrain.difficulty.DifficultyProgression#tierForTravelled}).
  * {@link #minLevel} is a plain level (default 0 — "from the start"); {@link #maxLevel} is either a
  * level or the {@link #ALL} sentinel (default — "no upper bound"). {@link #phases} defaults to all
- * four phases. The {@link #DEFAULT} gate is eligible at every level and phase, so templates that
+ * bands. The {@link #DEFAULT} gate is eligible at every level and phase, so templates that
  * predate this field behave identically (full backward compatibility), and {@link #isDefault()}
  * drives JSON-emission skipping in the weight stores.</p>
  *
@@ -27,7 +27,7 @@ import java.util.Set;
  * empty set means "all phases" (you cannot express "eligible in zero phases" — a template that
  * should never spawn is removed or given weight 0, not gated to no phase).</p>
  */
-public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
+public record TemplateGate(int minLevel, int maxLevel, Set<LapBand> phases) {
 
     /** Sentinel for {@link #maxLevel}: "no upper bound — eligible at every level ≥ minLevel". */
     public static final int ALL = -1;
@@ -40,8 +40,8 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
     public static final int MAX_LEVEL = 1000;
 
     /** Every phase — the default phase set. Unmodifiable. */
-    public static final Set<TrainPhase> ALL_PHASES =
-        Collections.unmodifiableSet(EnumSet.allOf(TrainPhase.class));
+    public static final Set<LapBand> ALL_PHASES =
+        Collections.unmodifiableSet(EnumSet.allOf(LapBand.class));
 
     /** Default gate: level {@code 0..ALL}, all phases — eligible everywhere. */
     public static final TemplateGate DEFAULT = new TemplateGate(0, ALL, ALL_PHASES);
@@ -70,7 +70,7 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
 
     /** True when this is the no-op default (level 0..ALL, all phases) — drives JSON-emission skipping. */
     public boolean isDefault() {
-        return minLevel == 0 && maxLevel == ALL && phases.size() == TrainPhase.values().length;
+        return minLevel == 0 && maxLevel == ALL && phases.size() == LapBand.values().length;
     }
 
     /** True when {@code level} falls inside the band; an {@link #ALL} max is unbounded above. */
@@ -80,7 +80,7 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
     }
 
     /** True when both {@code level} and {@code phase} are eligible for this gate. */
-    public boolean eligible(int level, TrainPhase phase) {
+    public boolean eligible(int level, LapBand phase) {
         return levelEligible(level) && phases.contains(phase);
     }
 
@@ -96,7 +96,7 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
         int myMax = (maxLevel == ALL) ? Integer.MAX_VALUE : maxLevel;
         int otherMax = (other.maxLevel == ALL) ? Integer.MAX_VALUE : other.maxLevel;
         if (minLevel > otherMax || other.minLevel > myMax) return false;   // level bands disjoint
-        for (TrainPhase p : phases) {
+        for (LapBand p : phases) {
             if (other.phases.contains(p)) return true;                     // shared dimension
         }
         return false;
@@ -147,19 +147,27 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
      * to all phases (the canonical constructor's "empty ⇒ all" rule), so the gate never becomes
      * "eligible in zero phases".
      */
-    public TemplateGate withPhase(TrainPhase phase, boolean on) {
-        EnumSet<TrainPhase> next = EnumSet.copyOf(phases);
-        if (on) next.add(phase); else next.remove(phase);
+    public TemplateGate withPhase(LapBand phase, boolean on) {
+        return withPhases(EnumSet.of(phase), on);
+    }
+
+    /**
+     * {@link #withPhase} for several bands at once — an old {@code TrainPhase} token such as
+     * {@code nether} names both Nether occurrences ({@link LapBand#resolve}).
+     */
+    public TemplateGate withPhases(Set<LapBand> bands, boolean on) {
+        EnumSet<LapBand> next = EnumSet.copyOf(phases);
+        if (on) next.addAll(bands); else next.removeAll(bands);
         return new TemplateGate(minLevel, maxLevel, next);
     }
 
     /**
-     * Replace the whole phase set with the bands in {@code mask} ({@link TrainPhase#bit()} per band)
+     * Replace the whole phase set with the bands in {@code mask} ({@link LapBand#bit()} per band)
      * — the editor's group toggles and band picker. Rejects an empty mask rather than letting the
      * "empty ⇒ all" normalisation silently turn "no bands" into "every band".
      */
     public TemplateGate withPhaseMask(int mask) {
-        EnumSet<TrainPhase> next = TrainPhase.fromMask(mask & TrainPhase.ALL_MASK);
+        EnumSet<LapBand> next = LapBand.fromMask(mask & LapBand.ALL_MASK);
         if (next.isEmpty()) throw new IllegalArgumentException("phase mask selects no bands: " + mask);
         return new TemplateGate(minLevel, maxLevel, next);
     }
@@ -170,12 +178,17 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
      * this solos {@code keep}; applied again it restores the rest. An empty result normalises back to
      * all dimensions (the gate's "empty ⇒ all" invariant).
      */
-    public TemplateGate toggleOtherPhases(TrainPhase keep) {
-        EnumSet<TrainPhase> next = EnumSet.noneOf(TrainPhase.class);
-        for (TrainPhase p : TrainPhase.values()) {
+    public TemplateGate toggleOtherPhases(LapBand keep) {
+        return toggleOtherPhases(EnumSet.of(keep));
+    }
+
+    /** {@link #toggleOtherPhases(LapBand)} keeping several bands (an old token naming more than one). */
+    public TemplateGate toggleOtherPhases(Set<LapBand> keep) {
+        EnumSet<LapBand> next = EnumSet.noneOf(LapBand.class);
+        for (LapBand p : LapBand.values()) {
             boolean on = phases.contains(p);
             // keep: unchanged; others: flipped.
-            if (p == keep ? on : !on) next.add(p);
+            if (keep.contains(p) ? on : !on) next.add(p);
         }
         return new TemplateGate(minLevel, maxLevel, next);
     }

@@ -6,7 +6,7 @@ import games.brennan.dungeontrain.train.CarriagePartAssignment.EndMode;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.SideMode;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.WeightedName;
 import games.brennan.dungeontrain.train.CarriagePartKind;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -79,7 +79,7 @@ public record PartAssignmentSyncPacket(
             // Per-entry spawn gate: Diff-Level band + dimension mask (maxLevel == ALL is -1).
             buf.writeVarInt(e.gate().minLevel());
             buf.writeVarInt(e.gate().maxLevel());
-            buf.writeVarInt(TrainPhase.toMask(e.gate().phases()));
+            buf.writeVarInt(LapBand.toMask(e.gate().phases()));
             // Optional Stage link — empty when Custom (inline gate).
             buf.writeUtf(e.stageId() == null ? "" : e.stageId());
         }
@@ -116,7 +116,7 @@ public record PartAssignmentSyncPacket(
             int minLevel = buf.readVarInt();
             int maxLevel = buf.readVarInt();
             int phaseMask = buf.readVarInt();
-            TemplateGate gate = new TemplateGate(minLevel, maxLevel, TrainPhase.fromMask(phaseMask));
+            TemplateGate gate = new TemplateGate(minLevel, maxLevel, LapBand.fromMask(phaseMask));
             String stageId = buf.readUtf(64);
             entries.add(new WeightedName(name, weight, mode, endMode, gate, stageId));
         }

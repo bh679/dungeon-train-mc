@@ -109,24 +109,26 @@
       "id": "crystal",
       "weight": 1,
       "phases": [
-        "VOID",
-        "END"
+        "V_END",
+        "M_END",
+        "L_VOID"
       ]
     },
     {
       "id": "endtower",
       "weight": 1,
       "phases": [
-        "VOID",
-        "END"
+        "V_END",
+        "M_END",
+        "L_VOID"
       ]
     },
     {
       "id": "tnt",
       "weight": 1,
       "phases": [
-        "VOID",
-        "UPSIDE_DOWN"
+        "V_UPSIDE_DOWN",
+        "L_VOID"
       ]
     },
     {

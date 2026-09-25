@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.template;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +27,7 @@ final class StageTest {
     @DisplayName("toJson emits the name + (non-default) gate fields in the shared codec shape")
     void toJsonShape() {
         Stage s = new Stage("nether", "Deep Nether",
-            new TemplateGate(10, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER)));
+            new TemplateGate(10, TemplateGate.ALL, EnumSet.of(LapBand.V_NETHER)));
         JsonObject o = s.toJson();
         assertEquals("Deep Nether", o.get("name").getAsString());
         assertEquals(10, o.get("minLevel").getAsInt());
@@ -40,13 +40,13 @@ final class StageTest {
     @DisplayName("fromJson(key,value) round-trips id + name + gate; a non-object value is a default Stage")
     void roundTrip() {
         Stage original = new Stage("endgame", "Endgame",
-            new TemplateGate(40, 80, EnumSet.of(TrainPhase.END, TrainPhase.VOID)));
+            new TemplateGate(40, 80, EnumSet.of(LapBand.V_END, LapBand.L_VOID)));
         Stage back = Stage.fromJson("endgame", original.toJson());
         assertEquals("endgame", back.id());
         assertEquals("Endgame", back.name());
         assertEquals(40, back.gate().minLevel());
         assertEquals(80, back.gate().maxLevel());
-        assertEquals(EnumSet.of(TrainPhase.END, TrainPhase.VOID), back.gate().phases());
+        assertEquals(EnumSet.of(LapBand.V_END, LapBand.L_VOID), back.gate().phases());
 
         Stage bare = Stage.fromJson("loose", JsonParser.parseString("\"junk\""));
         assertEquals("loose", bare.id());

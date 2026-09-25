@@ -282,7 +282,7 @@ final class CarriageContentsGroupTest {
     @DisplayName("withWeight keeps the member's gate (levels + phases) and Stage links — only the weight moves")
     void withWeight_preservesGateAndStages() {
         TemplateGate gate = TemplateGate.ofLevels(3, 12)
-            .withPhase(games.brennan.dungeontrain.worldgen.TrainPhase.NETHER, false);
+            .withPhase(games.brennan.dungeontrain.worldgen.LapBand.V_NETHER, false);
         CarriageContentsGroup.Member m = new CarriageContentsGroup.Member(
             "trapeasy2", 1, gate, List.of("early"));
 

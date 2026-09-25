@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.template;
 
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 final class TemplateMetaCopyTest {
 
     private static final TemplateGate NETHER_GATE =
-        new TemplateGate(3, 40, EnumSet.of(TrainPhase.NETHER));
+        new TemplateGate(3, 40, EnumSet.of(LapBand.V_NETHER));
 
     /** A portal room's full boundary tag — sky, walls, copies, exits, books, door wall, offsets. */
     private static final String ROOM_MODE = "bedrock_lock/exact/off/off/off/none/sealed/-1";

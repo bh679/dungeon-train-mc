@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.template.Stage;
 import games.brennan.dungeontrain.template.TemplateGate;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -30,12 +30,12 @@ final class StageStoreDeltaTest {
     @DisplayName("delta omits untouched bundled defaults, keeps added + modified stages")
     void deltaKeepsOnlyChanges() {
         Map<String, Stage> bundled = new LinkedHashMap<>();
-        bundled.put("nether", stage("nether", new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER))));
+        bundled.put("nether", stage("nether", new TemplateGate(0, TemplateGate.ALL, EnumSet.of(LapBand.V_NETHER))));
         bundled.put("stone", stage("stone", TemplateGate.DEFAULT));
 
         Map<String, Stage> current = new LinkedHashMap<>(bundled);
         // Modify 'stone', add a brand-new 'custom', leave 'nether' identical to bundled.
-        current.put("stone", stage("stone", new TemplateGate(5, TemplateGate.ALL, EnumSet.of(TrainPhase.VOID))));
+        current.put("stone", stage("stone", new TemplateGate(5, TemplateGate.ALL, EnumSet.of(LapBand.L_VOID))));
         current.put("custom", stage("custom", TemplateGate.DEFAULT));
 
         Map<String, Stage> delta = StageStore.configDelta(current, bundled);

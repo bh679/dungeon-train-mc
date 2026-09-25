@@ -16,7 +16,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.NetherFade;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBandLocator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
@@ -152,7 +152,7 @@ public final class TunnelPlacer {
 
     /**
      * Shared worldgen stamp for both tunnel variants. Outside the Nether crossfade this is the
-     * classic single-variant stamp (hard {@link TrainPhase} pick). <b>Inside</b> the crossfade it
+     * classic single-variant stamp (hard {@link LapBand} pick). <b>Inside</b> the crossfade it
      * composites the Overworld and Nether-dark variants <em>per block</em>: it stamps the Overworld
      * variant in full, then overlays the Nether variant through a {@link NetherFadeMaskProcessor}
      * (and a fade-gated sidecar) so each cell takes the Nether block only where
@@ -182,7 +182,7 @@ public final class TunnelPlacer {
 
         // Inside the crossfade: Overworld base, then a per-block-masked Nether overlay.
         String owName = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex,
-            new GateContext(baseCtx.level(), TrainPhase.OVERWORLD));
+            new GateContext(baseCtx.level(), LapBandLocator.overworldBesideNetherAt(overworld, tileIndex)));
         Optional<StructureTemplate> owTemplate = TunnelTemplateStore.getFor(serverLevel, variant, owName);
         if (owTemplate.isEmpty()) return false;
         eraseInteriorAirspaceWorldgen(level, origin);
@@ -191,7 +191,7 @@ public final class TunnelPlacer {
 
         long genSeed = DungeonTrainWorldData.get(overworld).getGenerationSeed();
         String netherName = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex,
-            new GateContext(baseCtx.level(), TrainPhase.NETHER));
+            new GateContext(baseCtx.level(), LapBandLocator.netherAt(overworld, tileIndex)));
         Optional<StructureTemplate> netherTemplate = TunnelTemplateStore.getFor(serverLevel, variant, netherName);
         if (netherTemplate.isPresent()) {
             stampTemplateWorldgen(level, stampOrigin, netherTemplate.get(), mirrorX,

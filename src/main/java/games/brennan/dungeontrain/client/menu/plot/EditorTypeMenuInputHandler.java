@@ -15,8 +15,6 @@ import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer.Hovere
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.editor.PlotCategory;
-import games.brennan.dungeontrain.client.menu.BandPickerScreen;
-import games.brennan.dungeontrain.worldgen.BandGroup;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Direction;
@@ -33,7 +31,6 @@ import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 
 import java.util.List;
-import java.util.OptionalInt;
 import java.util.function.IntFunction;
 
 /**
@@ -345,8 +342,8 @@ public final class EditorTypeMenuInputHandler {
             case MAX_LEVEL -> { if (!openPickerIfLinked(menu, variant)) dispatchLevel(menu, variant, "maxlevel", shift); }
             case PHASE -> {
                 if (!openPickerIfLinked(menu, variant)) {
-                    dispatchBands(variant.displayName(), variant.phaseMask(), hit.slotIdx(), shift,
-                        maskCommand(menu, variant));
+                    dispatchBands(EditorTypeMenuRenderer.bandRowKey(menu, variant), variant.phaseMask(),
+                        hit.slotIdx(), shift, maskCommand(menu, variant));
                 }
             }
             default -> {}
@@ -428,7 +425,7 @@ public final class EditorTypeMenuInputHandler {
                 String id = stageIdAt(menu, hit);
                 if (id == null) return;
                 EditorTypeMenusPacket.Variant stage = menu.variants().get(hit.variantIdx());
-                dispatchBands(stage.displayName(), stage.phaseMask(), hit.slotIdx(), shift,
+                dispatchBands(EditorTypeMenuRenderer.bandRowKey(menu, stage), stage.phaseMask(), hit.slotIdx(), shift,
                     m -> EditorPlotTeleport.stagePhaseCommandFor(id, MASK_TOKEN, String.valueOf(m)));
             }
             case STAGE_BLOCKS -> {
@@ -478,25 +475,28 @@ public final class EditorTypeMenuInputHandler {
     private static final String MASK_TOKEN = "mask";
 
     /**
-     * A band-cell click on a row whose bands are {@code mask}. A group slot flips that
-     * {@link BandGroup} (shift solos it) and sends the resulting mask; the picker slot opens the
-     * {@link BandPickerScreen}. A flip that would leave no band is refused with an action-bar note.
+     * A band-cell click ({@link LapBandCells}) on the row {@code rowKey} whose bands are {@code mask}.
+     * A lap opens that lap's letters (shift: toggles the whole lap); the back cell returns to the laps;
+     * a band flips (shift: flips every other band). Edits send the whole new mask; one that would leave
+     * no band is refused with an action-bar note.
      */
-    private static void dispatchBands(String name, int mask, int slot, boolean shift, IntFunction<String> maskCommand) {
-        if (maskCommand == null || slot < 0) return;
-        if (slot >= BandGroupToggle.PICKER_SLOT) {
-            CommandMenuState.openAt(new BandPickerScreen(name, mask, maskCommand));
-            return;
+    private static void dispatchBands(String rowKey, int mask, int slot, boolean shift, IntFunction<String> maskCommand) {
+        if (maskCommand == null) return;
+        LapBandCells.click(rowKey, mask, slot, shift, m -> {
+            String cmd = maskCommand.apply(m);
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu bands: {}", cmd);
+            CommandRunner.run(cmd);
+        }, EditorTypeMenuInputHandler::notifyNeedOneBand);
+    }
+
+    /** Action-bar note shown when a band edit would leave a template with no bands. */
+    public static void notifyNeedOneBand() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null) {
+            mc.player.displayClientMessage(
+                net.minecraft.network.chat.Component.literal(
+                    games.brennan.dungeontrain.client.menu.MenuLang.t("bands.need_one")), true);
         }
-        OptionalInt next = BandGroupToggle.clickGroup(mask, BandGroup.values()[slot], shift);
-        if (next.isEmpty()) {
-            BandPickerScreen.notifyNeedOneBand();
-            return;
-        }
-        if (next.getAsInt() == mask) return;
-        String cmd = maskCommand.apply(next.getAsInt());
-        LOGGER.debug("[DungeonTrain] EditorTypeMenu bands: {}", cmd);
-        CommandRunner.run(cmd);
     }
 
     /**

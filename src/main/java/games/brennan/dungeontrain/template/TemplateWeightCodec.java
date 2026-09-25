@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
@@ -238,7 +238,7 @@ public final class TemplateWeightCodec {
     public static TemplateGate parseGate(JsonObject o) {
         int min = numberOr(o.get(K_MIN), 0);
         int max = parseMax(o.get(K_MAX));
-        EnumSet<TrainPhase> phases = parsePhases(o.get(K_PHASES));
+        EnumSet<LapBand> phases = parsePhases(o.get(K_PHASES));
         return new TemplateGate(min, max, phases);
     }
 
@@ -258,24 +258,20 @@ public final class TemplateWeightCodec {
         return TemplateGate.ALL;
     }
 
-    /** Absent / non-array / unparseable ⇒ {@code null} (the gate ctor treats that as "all phases"). */
-    private static EnumSet<TrainPhase> parsePhases(JsonElement el) {
+    /**
+     * Absent / non-array / unparseable ⇒ {@code null} (the gate ctor treats that as "all bands").
+     * Each entry is a {@link LapBand} name, or a pre-lap {@code TrainPhase} name that expands to every
+     * band it used to cover ({@link LapBand#resolve}) — so older saves, packages and relay uploads read
+     * unchanged.
+     */
+    private static EnumSet<LapBand> parsePhases(JsonElement el) {
         if (el == null || !el.isJsonArray()) return null;
-        EnumSet<TrainPhase> set = EnumSet.noneOf(TrainPhase.class);
+        EnumSet<LapBand> set = EnumSet.noneOf(LapBand.class);
         for (JsonElement e : el.getAsJsonArray()) {
             if (!e.isJsonPrimitive() || !e.getAsJsonPrimitive().isString()) continue;
-            TrainPhase ph = phaseByName(e.getAsString());
-            if (ph != null) set.add(ph);
+            set.addAll(LapBand.resolve(e.getAsString()));
         }
         return set.isEmpty() ? null : set;
-    }
-
-    private static TrainPhase phaseByName(String s) {
-        try {
-            return TrainPhase.valueOf(s.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
-            return null;
-        }
     }
 
     /**
@@ -321,10 +317,10 @@ public final class TemplateWeightCodec {
     public static void writeGateFields(JsonObject o, TemplateGate g) {
         if (g.minLevel() != 0) o.addProperty(K_MIN, g.minLevel());
         if (g.maxLevel() != TemplateGate.ALL) o.addProperty(K_MAX, g.maxLevel());
-        if (g.phases().size() != TrainPhase.values().length) {
+        if (g.phases().size() != LapBand.values().length) {
             JsonArray arr = new JsonArray();
             // Emit in enum order for stable diffs.
-            for (TrainPhase ph : TrainPhase.values()) {
+            for (LapBand ph : LapBand.values()) {
                 if (g.phases().contains(ph)) arr.add(ph.name());
             }
             o.add(K_PHASES, arr);

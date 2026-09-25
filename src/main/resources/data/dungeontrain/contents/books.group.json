@@ -83,8 +83,9 @@
       "id": "enderbooks",
       "weight": 4,
       "phases": [
-        "END",
-        "UPSIDE_DOWN"
+        "V_END",
+        "V_UPSIDE_DOWN",
+        "M_END"
       ]
     },
     {

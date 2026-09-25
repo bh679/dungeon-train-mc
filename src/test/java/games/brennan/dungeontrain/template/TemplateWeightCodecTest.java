@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.template;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +38,8 @@ final class TemplateWeightCodecTest {
         assertEquals(5, m.weight());
         assertEquals(3, m.gate().minLevel());
         assertEquals(TemplateGate.ALL, m.gate().maxLevel());
-        assertEquals(EnumSet.of(TrainPhase.NETHER, TrainPhase.VOID), m.gate().phases());
+        // Pre-lap names: NETHER covers both Nether occurrences, VOID the legacy void era.
+        assertEquals(EnumSet.of(LapBand.V_NETHER, LapBand.M_NETHER, LapBand.L_VOID), m.gate().phases());
     }
 
     @Test
@@ -53,7 +54,7 @@ final class TemplateWeightCodecTest {
     void emitForm() {
         JsonObject out = TemplateWeightCodec.toJson(Map.of(
             "plain", TemplateMeta.of(20),
-            "gated", new TemplateMeta(5, new TemplateGate(3, 40, EnumSet.of(TrainPhase.NETHER)))));
+            "gated", new TemplateMeta(5, new TemplateGate(3, 40, EnumSet.of(LapBand.V_NETHER)))));
         // plain → bare int
         assertTrue(out.get("plain").isJsonPrimitive());
         assertEquals(20, out.get("plain").getAsInt());
@@ -69,7 +70,7 @@ final class TemplateWeightCodecTest {
     @Test
     @DisplayName("a full round-trip preserves weight + gate")
     void roundTrip() {
-        TemplateMeta original = new TemplateMeta(7, new TemplateGate(2, TemplateGate.ALL, EnumSet.of(TrainPhase.END)));
+        TemplateMeta original = new TemplateMeta(7, new TemplateGate(2, TemplateGate.ALL, EnumSet.of(LapBand.V_END)));
         JsonObject json = TemplateWeightCodec.toJson(Map.of("x", original));
         TemplateMeta back = TemplateWeightCodec.parseEntry(json.get("x"), CLAMP);
         assertEquals(original.weight(), back.weight());
@@ -122,13 +123,13 @@ final class TemplateWeightCodecTest {
     @DisplayName("round-trip preserves the stage link alongside the inline snapshot gate")
     void roundTripLinked() {
         TemplateMeta original = new TemplateMeta(
-            9, new TemplateGate(5, 30, EnumSet.of(TrainPhase.NETHER)), "endgame");
+            9, new TemplateGate(5, 30, EnumSet.of(LapBand.V_NETHER)), "endgame");
         JsonObject json = TemplateWeightCodec.toJson(Map.of("x", original));
         TemplateMeta back = TemplateWeightCodec.parseEntry(json.get("x"), CLAMP);
         assertEquals("endgame", back.stageId());
         assertEquals(5, back.gate().minLevel());
         assertEquals(30, back.gate().maxLevel());
-        assertEquals(EnumSet.of(TrainPhase.NETHER), back.gate().phases());
+        assertEquals(EnumSet.of(LapBand.V_NETHER), back.gate().phases());
     }
 
     // ---- Per-kind mode tag (v4 — optional "mode" field; today only portal rooms) ----
@@ -178,21 +179,21 @@ final class TemplateWeightCodecTest {
     @DisplayName("round-trip preserves the mode alongside gate and stage link")
     void roundTripMode() {
         TemplateMeta original = new TemplateMeta(
-            6, new TemplateGate(1, 12, EnumSet.of(TrainPhase.VOID)), "endgame", "bedrock_lock");
+            6, new TemplateGate(1, 12, EnumSet.of(LapBand.L_VOID)), "endgame", "bedrock_lock");
         JsonObject json = TemplateWeightCodec.toJson(Map.of("x", original));
         TemplateMeta back = TemplateWeightCodec.parseEntry(json.get("x"), CLAMP);
         assertEquals("bedrock_lock", back.mode());
         assertEquals("endgame", back.stageId());
         assertEquals(1, back.gate().minLevel());
         assertEquals(12, back.gate().maxLevel());
-        assertEquals(EnumSet.of(TrainPhase.VOID), back.gate().phases());
+        assertEquals(EnumSet.of(LapBand.L_VOID), back.gate().phases());
     }
 
     @Test
     @DisplayName("withMode keeps weight, gate and stage link; null clears the tag")
     void withModeKeepsTheRest() {
         TemplateMeta base = new TemplateMeta(
-            8, new TemplateGate(2, 20, EnumSet.of(TrainPhase.NETHER)), "deep");
+            8, new TemplateGate(2, 20, EnumSet.of(LapBand.V_NETHER)), "deep");
         TemplateMeta moded = base.withMode("endless_open");
         assertEquals("endless_open", moded.mode());
         assertEquals(8, moded.weight());
@@ -240,7 +241,7 @@ final class TemplateWeightCodecTest {
     @DisplayName("round-trip preserves the name alongside gate, stage link and mode")
     void roundTripName() {
         TemplateMeta original = new TemplateMeta(
-            6, new TemplateGate(1, 12, EnumSet.of(TrainPhase.VOID)), "endgame", "bedrock_lock")
+            6, new TemplateGate(1, 12, EnumSet.of(LapBand.L_VOID)), "endgame", "bedrock_lock")
             .withName("Endgame Library");
         JsonObject json = TemplateWeightCodec.toJson(Map.of("x", original));
         TemplateMeta back = TemplateWeightCodec.parseEntry(json.get("x"), CLAMP);

@@ -201,15 +201,14 @@ public final class PartPositionMenuInputHandler {
             case ENTRY_PHASE -> {
                 List<WeightedName> entries = PartPositionMenu.entries();
                 if (hit.index() < 0 || hit.index() >= entries.size()) return;
-                if (hit.phaseSlot() < 0) return;
-                String name = entries.get(hit.index()).name();
-                // delta carries the TrainPhase ordinal (see PartAssignmentEditPacket).
-                // Plain click toggles that dimension; shift-click toggles all but that one.
-                PartAssignmentEditPacket.Op op = shift
-                    ? PartAssignmentEditPacket.Op.TOGGLE_OTHER_PHASES
-                    : PartAssignmentEditPacket.Op.TOGGLE_PHASE;
-                DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
-                    op, variantId, kind, name, hit.phaseSlot()));
+                WeightedName e = entries.get(hit.index());
+                int mask = games.brennan.dungeontrain.worldgen.LapBand.toMask(e.gate().phases());
+                // Lap / band selector (see LapBandCells): edits send the whole new band mask.
+                games.brennan.dungeontrain.client.menu.plot.LapBandCells.click(
+                    PartPositionMenuRenderer.bandRowKey(kind, e.name()), mask, hit.phaseSlot(), shift,
+                    m -> DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
+                        PartAssignmentEditPacket.Op.SET_PHASE_MASK, variantId, kind, e.name(), m)),
+                    games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuInputHandler::notifyNeedOneBand);
             }
             case ENTRY_REMOVE_X -> {
                 List<WeightedName> entries = PartPositionMenu.entries();

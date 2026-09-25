@@ -14,7 +14,7 @@ import games.brennan.dungeontrain.editor.TemplateLoot;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
@@ -432,7 +432,7 @@ public final class TemplateDataSheet {
             // A linked Stage owns the gate: its bounds and letters are read-only and fit beside the name.
             List<Cell> cells = prepend(stage, levels);
             cells.add(Cell.plain("·"));
-            cells.addAll(bandCells(v.phaseMask(), null));
+            cells.add(Cell.plain(games.brennan.dungeontrain.client.menu.BandLabels.summary(v.phaseMask())));
             return List.of(new Line(label, cells));
         }
         // Custom means every bound and letter is live, which is too much for one line — so the
@@ -441,9 +441,18 @@ public final class TemplateDataSheet {
         return List.of(new Line(label, first), bandsLine(v.phaseMask(), phases));
     }
 
-    /** {@code Bands  O N V E U C}: every band its own letter button (or plain when read-only). */
+    /**
+     * {@code Bands  V O N O E U R  M O N O E S O  L …  C O C O S}: every band its own letter button (or
+     * plain when read-only), each lap's letters after its plain lap letter. Letters repeat, so each
+     * carries its lap-qualified name as a tooltip.
+     */
     static Line bandsLine(int phaseMask, PhaseCommand phaseCommand) {
-        return new Line(EditorScreenLang.text(EditorScreenLang.STAGES_BANDS), bandCells(phaseMask, phaseCommand));
+        List<Cell> cells = new ArrayList<>();
+        for (LapBand.Lap lap : LapBand.Lap.values()) {
+            cells.add(Cell.plain(lap.letter()).withTooltip(games.brennan.dungeontrain.client.menu.BandLabels.lap(lap)));
+            cells.addAll(bandCells(lap, phaseMask, phaseCommand));
+        }
+        return new Line(EditorScreenLang.text(EditorScreenLang.STAGES_BANDS), cells);
     }
 
     /** {@code first} followed by {@code rest} — one line's worth of cells. */
@@ -454,16 +463,10 @@ public final class TemplateDataSheet {
         return all;
     }
 
-    /** A dimension's name, capitalised and un-underscored: {@code UPSIDE_DOWN} → "Upside down". */
-    static String phaseName(TrainPhase p) {
-        String n = p.name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
-        return Character.toUpperCase(n.charAt(0)) + n.substring(1);
-    }
-
     /** The command a phase letter sends: {@code on} is the letter's state before the click. */
     @FunctionalInterface
     interface PhaseCommand {
-        String of(TrainPhase phase, boolean on);
+        String of(LapBand phase, boolean on);
     }
 
     /**
@@ -482,17 +485,16 @@ public final class TemplateDataSheet {
         return cells;
     }
 
-    /** {@code O N V E U C}: one letter per band, lit when set; a null command makes them plain. */
-    static List<Cell> bandCells(int phaseMask, PhaseCommand phaseCommand) {
-        List<Cell> cells = new ArrayList<>(TrainPhase.values().length);
-        for (TrainPhase p : TrainPhase.values()) {
+    /** {@code O N O E U R}: one letter per band of {@code lap}, lit when set; a null command makes them plain. */
+    static List<Cell> bandCells(LapBand.Lap lap, int phaseMask, PhaseCommand phaseCommand) {
+        List<Cell> cells = new ArrayList<>();
+        for (LapBand p : lap.members()) {
             boolean on = (phaseMask & p.bit()) != 0;
-            String letter = String.valueOf(Character.toUpperCase(p.name().charAt(0)));
             String command = phaseCommand == null ? null : phaseCommand.of(p, on);
             Cell cell = command == null
-                ? new Cell(letter, null, on)
-                : new Cell(letter, new Action.Run(command), on);
-            cells.add(cell.withTooltip(phaseName(p)));
+                ? new Cell(p.letter(), null, on)
+                : new Cell(p.letter(), new Action.Run(command), on);
+            cells.add(cell.withTooltip(games.brennan.dungeontrain.client.menu.BandLabels.qualified(p)));
         }
         return cells;
     }

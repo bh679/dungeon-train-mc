@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.template;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -61,8 +61,8 @@ final class BundledStagesTest {
     /**
      * Regression guard for the "all stages combine" bug: every Diff-Level in the shipped overworld
      * range must be covered by <b>some</b> bundled Stage in each non-Nether phase — including
-     * {@link TrainPhase#UPSIDE_DOWN} (the upside-down band, which reported the bug at level 67-69) and
-     * {@link TrainPhase#END} (the end-islands band). An uncovered {@code (level, phase)} is exactly
+     * {@link LapBand#UPSIDE_DOWN} (the upside-down band, which reported the bug at level 67-69) and
+     * {@link LapBand#END} (the end-islands band). An uncovered {@code (level, phase)} is exactly
      * what empties every gated pool and makes the carriage/contents/part selectors fall back to the
      * full ungated pool (all stages). Also catches level gaps like the old 131 hole between
      * {@code mud} (…130) and {@code wood_oak} (132…).
@@ -72,10 +72,10 @@ final class BundledStagesTest {
     void bundledStagesCoverAllOverworldPhases() {
         Map<String, Stage> parsed = loadBundled();
 
-        TrainPhase[] overworldPhases = {
-            TrainPhase.OVERWORLD, TrainPhase.VOID, TrainPhase.END, TrainPhase.UPSIDE_DOWN
+        LapBand[] overworldPhases = {
+            LapBand.V_OVERWORLD_1, LapBand.L_VOID, LapBand.V_END, LapBand.V_UPSIDE_DOWN
         };
-        for (TrainPhase phase : overworldPhases) {
+        for (LapBand phase : overworldPhases) {
             for (int level = 0; level <= 200; level++) {
                 boolean covered = false;
                 for (Stage s : parsed.values()) {
@@ -89,10 +89,10 @@ final class BundledStagesTest {
     }
 
     /**
-     * Every {@link TrainPhase} must be covered, at every level a run can reach — not just the four
+     * Every {@link LapBand} must be covered, at every level a run can reach — not just the four
      * phases the test above walks.
      *
-     * <p>This exists because two real gaps shipped: {@link TrainPhase#CHUNCKS} (a band that is ON by
+     * <p>This exists because two real gaps shipped: {@link LapBand#CHUNCKS} (a band that is ON by
      * default) was listed by no Stage at all, and {@code wood_oak} capped at level 200 so anything
      * past it fell through. Both are invisible in normal play — the selectors quietly fall back to the
      * ungated all-stages pool — but they are fatal to shared carriages, whose slots are SKIPPED
@@ -100,11 +100,11 @@ final class BundledStagesTest {
      * a community build can neither be leased into nor uploaded from an uncovered stretch of track.</p>
      */
     @Test
-    @DisplayName("every TrainPhase is covered at every level 0..400 (CHUNCKS included, no level cap)")
+    @DisplayName("every LapBand is covered at every level 0..400 (CHUNCKS included, no level cap)")
     void bundledStagesCoverEveryPhaseAndHighLevels() {
         Map<String, Stage> parsed = loadBundled();
 
-        for (TrainPhase phase : TrainPhase.values()) {
+        for (LapBand phase : LapBand.values()) {
             for (int level = 0; level <= 400; level++) {
                 boolean covered = false;
                 for (Stage s : parsed.values()) {

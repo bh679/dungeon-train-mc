@@ -20,9 +20,10 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * targeted ({@code ""} for {@link Op#CLEAR}); {@code delta} carries the
  * step for {@link Op#BUMP_WEIGHT} / {@link Op#BUMP_MIN_LEVEL} /
  * {@link Op#BUMP_MAX_LEVEL} (typically +1 or -1), and the
- * {@link games.brennan.dungeontrain.worldgen.TrainPhase} ordinal to flip
+ * {@link games.brennan.dungeontrain.worldgen.LapBand} ordinal to flip
  * for {@link Op#TOGGLE_PHASE} / {@link Op#TOGGLE_OTHER_PHASES} (the latter
- * flips every dimension <em>except</em> the carried one — shift-click).
+ * flips every band <em>except</em> the carried one — shift-click), and the
+ * whole {@code LapBand} mask for {@link Op#SET_PHASE_MASK} (a lap toggle).
  * {@link Op#PREVIEW_ENTRY} re-stamps the named variant's template
  * at the placement under the player's crosshair — assignment list,
  * weights, and side-mode chips are untouched (transient world-only
@@ -38,7 +39,9 @@ public record PartAssignmentEditPacket(Op op, String variantId, CarriagePartKind
         ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_SIDE_MODE, PREVIEW_ENTRY, CYCLE_END_MODE,
         BUMP_MIN_LEVEL, BUMP_MAX_LEVEL, TOGGLE_PHASE, TOGGLE_OTHER_PHASES,
         /** Link the entry {@code name} to Stage {@code stageId} (empty = detach to Custom). */
-        SET_STAGE
+        SET_STAGE,
+        /** Replace the entry's band set with the {@code LapBand} mask in {@code delta} (non-zero). */
+        SET_PHASE_MASK
     }
 
     /** Back-compat constructor for the non-stage ops — leaves {@code stageId} empty. */

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,15 +14,15 @@ final class ClientStagesDimsTest {
     @Test
     @DisplayName("every phase set reads 'all'")
     void allPhases() {
-        assertEquals("all", ClientStages.dims(TrainPhase.ALL_MASK));
+        assertEquals("all", ClientStages.dims(LapBand.ALL_MASK));
     }
 
     @Test
-    @DisplayName("subset lists one letter per phase in ordinal order, including U and C")
+    @DisplayName("subset lists each lap's letters in cycle order, laps without a set band left out")
     void subset() {
-        int mask = TrainPhase.VOID.bit() | TrainPhase.UPSIDE_DOWN.bit() | TrainPhase.CHUNCKS.bit();
-        assertEquals("VUC", ClientStages.dims(mask));
-        assertEquals("ON", ClientStages.dims(TrainPhase.OVERWORLD.bit() | TrainPhase.NETHER.bit()));
+        int mask = LapBand.L_VOID.bit() | LapBand.V_UPSIDE_DOWN.bit() | LapBand.C_CHUNCKS.bit();
+        assertEquals("V:U L:V C:C", ClientStages.dims(mask));
+        assertEquals("V:ON", ClientStages.dims(LapBand.V_OVERWORLD_1.bit() | LapBand.V_NETHER.bit()));
     }
 
     @Test

@@ -11,7 +11,9 @@ import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.WeightedName;
 import games.brennan.dungeontrain.train.CarriagePartKind;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.client.menu.plot.LapBandCells;
+import games.brennan.dungeontrain.client.menu.plot.LapBandView;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
@@ -90,10 +92,8 @@ public final class PartPositionMenuRenderer {
     static final double MIN_LEVEL_CELL_WIDTH = 0.34;
     /** Width of the max-level gate cell (≤N / ≤∞) — all kinds. */
     static final double MAX_LEVEL_CELL_WIDTH = 0.34;
-    /** Width of one phase toggle letter within the dimension (phase) gate cell. */
-    static final double PHASE_LETTER_WIDTH = 0.14;
-    /** Width of the dimension (phase) gate cell — one toggle letter per {@link TrainPhase} (O N V E U C) — all kinds. */
-    static final double PHASE_CELL_WIDTH = PHASE_LETTER_WIDTH * TrainPhase.values().length;
+    /** Width of the band gate cell — the {@link LapBandCells} lap / band selector — all kinds. */
+    static final double PHASE_CELL_WIDTH = 1.9;
     /** Width of the side-mode cell (walls/doors only) — fits "(1|2)" with padding. */
     static final double SIDE_MODE_CELL_WIDTH = 0.50;
     /** Width of the end-mode cell (doors only) — fits "end+mid" with padding. */
@@ -101,15 +101,8 @@ public final class PartPositionMenuRenderer {
     /** Text scale matches CommandMenuRenderer's. */
     static final double TEXT_SCALE = 0.012;
 
-    /** Phase letters, indexed by {@link TrainPhase} ordinal — derived from {@link TrainPhase#letter()}. */
-    static final String[] PHASE_LETTERS = Arrays.stream(TrainPhase.values())
-        .map(TrainPhase::letter).toArray(String[]::new);
     /** Min/max-level text colour — matches the template-type editor's LEVEL_COLOR. */
     static final int LEVEL_COLOR = 0xFFBBD0FF;
-    /** Phase letter colour when the dimension is enabled. */
-    static final int PHASE_ON_COLOR = 0xFF66FF66;
-    /** Phase letter colour when the dimension is disabled. */
-    static final int PHASE_OFF_COLOR = 0xFF777777;
     /** Stage chip colour (linked) — matches the template-type editor's STAGE_COLOR. */
     static final int STAGE_COLOR = 0xFF66E0FF;
     /** Dim marker colour for the Custom (unlinked) Stage selector. */
@@ -259,7 +252,7 @@ public final class PartPositionMenuRenderer {
             //   [X] (rightmost, in remove-mode only)
             //   end-mode cell (only for doors)
             //   side-mode cell (only for walls/doors)
-            //   phase cell    (O N V E — all kinds)
+            //   band cell     (V M L C lap selector — all kinds)
             //   max-level cell (≤N / ≤∞ — all kinds)
             //   min-level cell (≥N — all kinds)
             //   weight cell
@@ -342,22 +335,20 @@ public final class PartPositionMenuRenderer {
             drawCenteredText(ps, buffer, font, maxLabel,
                 (maxCellL + maxCellR) / 2.0, rowCY, maxHover ? 0xFF000000 : LEVEL_COLOR);
 
-            // Phase cell: one letter per TrainPhase (O N V E U C); click a letter to toggle that dimension.
-            double phaseLetterW = (phaseCellR - phaseCellL) / PHASE_LETTERS.length;
-            TrainPhase[] phases = TrainPhase.values();
-            for (int slot = 0; slot < PHASE_LETTERS.length; slot++) {
-                boolean on = slot < phases.length && gate.phases().contains(phases[slot]);
-                boolean phaseHover = hovered.kind() == PartPositionMenu.CellKind.ENTRY_PHASE
-                    && hovered.index() == i && hovered.phaseSlot() == slot;
-                double lx = phaseCellL + slot * phaseLetterW;
-                if (phaseHover) {
-                    drawQuad(ps, buffer, lx + 0.004, rowBottom + 0.005,
-                        lx + phaseLetterW - 0.004, rowTop - 0.005, 0x90FFFFFF);
+            // Band cell: the lap / band selector shared with the type menus (see LapBandCells).
+            int bandHover = hovered.kind() == PartPositionMenu.CellKind.ENTRY_PHASE && hovered.index() == i
+                ? hovered.phaseSlot() : -1;
+            LapBandCells.Painter painter = new LapBandCells.Painter() {
+                @Override public void quad(double l, double b, double r, double t, int argb) {
+                    drawQuad(ps, buffer, l, b, r, t, argb);
                 }
-                drawCenteredText(ps, buffer, font, PHASE_LETTERS[slot],
-                    lx + phaseLetterW / 2.0, rowCY,
-                    phaseHover ? 0xFF000000 : (on ? PHASE_ON_COLOR : PHASE_OFF_COLOR));
-            }
+
+                @Override public void text(String text, double cx, double cy, int argb) {
+                    drawCenteredText(ps, buffer, font, text, cx, cy, argb);
+                }
+            };
+            LapBandCells.draw(painter, LapBand.toMask(gate.phases()), phaseCellL, phaseCellR, rowBottom, rowTop,
+                LapBandView.openLap(bandRowKey(kind, entry.name())), bandHover);
             } // end if (!stageLinked) — gate cells hidden behind the Stage chip while linked
 
             // Side-mode cell (walls/doors only) — click cycles BOTH→ONE→EITHER.
@@ -497,6 +488,11 @@ public final class PartPositionMenuRenderer {
         font.drawInBatch(text, 0, y, colour, false, mat, buffer,
             Font.DisplayMode.SEE_THROUGH, 0, LightTexture.FULL_BRIGHT);
         ps.popPose();
+    }
+
+    /** {@link LapBandView} key for a parts-menu entry row. */
+    static String bandRowKey(CarriagePartKind kind, String name) {
+        return LapBandView.rowKey("parts:" + PartPositionMenu.variantId(), kind == null ? "" : kind.id(), name);
     }
 
     static void drawQuad(PoseStack ps, MultiBufferSource buffer,

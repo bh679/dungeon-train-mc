@@ -5,7 +5,7 @@ import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ final class EditorStageActionsTest {
 
     private static EditorRosterPacket.StageEntry desert() {
         EditorTypeMenusPacket.Variant v = new EditorTypeMenusPacket.Variant(
-            "Desert", EditorPlotLabelsPacket.NO_WEIGHT, 10, 40, TrainPhase.OVERWORLD.bit() | TrainPhase.VOID.bit(),
+            "Desert", EditorPlotLabelsPacket.NO_WEIGHT, 10, 40, LapBand.V_OVERWORLD_1.bit() | LapBand.L_VOID.bit(),
             "stages", "desert", "desert", true, false);
         return new EditorRosterPacket.StageEntry(v, List.of(), 0, List.of("floor:sand"));
     }
@@ -86,15 +86,16 @@ final class EditorStageActionsTest {
         assertEquals("dungeontrain editor stage minlevel desert inc", min.inc());
         TemplateDataSheet.Action.Step max = assertInstanceOf(TemplateDataSheet.Action.Step.class, levels.get(3).action());
         assertEquals("dungeontrain editor stage maxlevel desert inc", max.inc());
-        List<TemplateDataSheet.Cell> bands = lines.get(2).cells();
-        assertEquals(TrainPhase.values().length, bands.size(), "one button per band");
+        // Every band a button; the plain lap letters between the groups are labels.
+        List<TemplateDataSheet.Cell> bands = lines.get(2).cells().stream().filter(c -> c.action() != null).toList();
+        assertEquals(LapBand.values().length, bands.size(), "one button per band");
         TemplateDataSheet.Cell overworld = bands.get(0);
         assertTrue(overworld.on());
-        assertEquals("dungeontrain editor stage phase desert overworld off",
+        assertEquals("dungeontrain editor stage phase desert v_overworld_1 off",
             assertInstanceOf(TemplateDataSheet.Action.Run.class, overworld.action()).command());
         TemplateDataSheet.Cell nether = bands.get(1);
         assertFalse(nether.on());
-        assertEquals("dungeontrain editor stage phase desert nether on",
+        assertEquals("dungeontrain editor stage phase desert v_nether on",
             assertInstanceOf(TemplateDataSheet.Action.Run.class, nether.action()).command());
         assertEquals("1", lines.get(3).cells().get(0).text(), "one linked part");
         assertEquals("4", lines.get(4).cells().get(0).text(), "templates as counted by the caller");

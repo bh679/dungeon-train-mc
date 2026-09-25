@@ -2,23 +2,33 @@
   "darktunnel": {
     "weight": 1,
     "phases": [
-      "NETHER"
+      "V_NETHER",
+      "M_NETHER"
     ]
   },
   "default": {
     "weight": 1,
     "phases": [
-      "OVERWORLD",
-      "VOID",
-      "END",
-      "BETA",
-      "ALPHA",
-      "INFDEV",
-      "CLASSIC",
-      "FAR_LANDS",
-      "LARGE_BIOMES",
-      "AMPLIFIED",
-      "CAVES_OF_CHAOS"
+      "V_OVERWORLD_1",
+      "V_OVERWORLD_2",
+      "V_END",
+      "V_REASSEMBLY",
+      "M_OVERWORLD_1",
+      "M_OVERWORLD_2",
+      "M_END",
+      "M_OVERWORLD_3",
+      "L_LARGE_BIOMES",
+      "L_AMPLIFIED",
+      "L_BETA",
+      "L_FAR_LANDS",
+      "L_CAVES_OF_CHAOS",
+      "L_ALPHA",
+      "L_INFDEV",
+      "L_CLASSIC",
+      "L_SUPERFLAT",
+      "L_VOID",
+      "C_OVERWORLD_1",
+      "C_OVERWORLD_2"
     ]
   }
 }

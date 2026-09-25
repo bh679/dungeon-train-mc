@@ -5,7 +5,7 @@ import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.EndMode;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.SideMode;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.WeightedName;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -27,8 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 final class CarriagePartStagePreviewTest {
 
-    private static final TemplateGate NETHER = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER));
-    private static final TemplateGate OVERWORLD = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.OVERWORLD));
+    private static final TemplateGate NETHER = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(LapBand.V_NETHER));
+    private static final TemplateGate OVERWORLD = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(LapBand.V_OVERWORLD_1));
 
     /** Default-gate floor entry with an optional explicit stage link. */
     private static WeightedName floor(String name, String stageId) {
@@ -63,10 +63,10 @@ final class CarriagePartStagePreviewTest {
     @DisplayName("tier 1 match is case-insensitive and ignores the entry's inline gate")
     void linkMatchCaseInsensitiveGateIgnored() {
         WeightedName linkedButGated = new WeightedName("lavafloor", 1, SideMode.BOTH, EndMode.BOTH,
-            new TemplateGate(50, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER)), "Nether");
+            new TemplateGate(50, TemplateGate.ALL, EnumSet.of(LapBand.V_NETHER)), "Nether");
         CarriagePartAssignment a = withFloor(linkedButGated);
         // Linked to 'nether' → shown for 'NETHER' regardless of the restrictive inline gate or stage gate.
-        assertEquals(List.of("lavafloor"), floorPick(a, "NETHER", new TemplateGate(0, 0, EnumSet.of(TrainPhase.NETHER))));
+        assertEquals(List.of("lavafloor"), floorPick(a, "NETHER", new TemplateGate(0, 0, EnumSet.of(LapBand.V_NETHER))));
     }
 
     @Test
@@ -98,14 +98,14 @@ final class CarriagePartStagePreviewTest {
     @Test
     @DisplayName("tier 2: level bands must intersect (disjoint → air, overlapping → shown)")
     void overlapLevelBand() {
-        TemplateGate stageGate = new TemplateGate(0, 10, EnumSet.of(TrainPhase.NETHER));
+        TemplateGate stageGate = new TemplateGate(0, 10, EnumSet.of(LapBand.V_NETHER));
 
         CarriagePartAssignment disjoint = withFloor(
-            floorGated("highfloor", 1, new TemplateGate(50, 60, EnumSet.of(TrainPhase.NETHER))));
+            floorGated("highfloor", 1, new TemplateGate(50, 60, EnumSet.of(LapBand.V_NETHER))));
         assertTrue(floorPick(disjoint, "nether", stageGate).isEmpty(), "level 50..60 doesn't intersect the stage's 0..10");
 
         CarriagePartAssignment overlapping = withFloor(
-            floorGated("midfloor", 1, new TemplateGate(5, 15, EnumSet.of(TrainPhase.NETHER))));
+            floorGated("midfloor", 1, new TemplateGate(5, 15, EnumSet.of(LapBand.V_NETHER))));
         assertEquals(List.of("midfloor"), floorPick(overlapping, "nether", stageGate), "level 5..15 intersects 0..10");
     }
 

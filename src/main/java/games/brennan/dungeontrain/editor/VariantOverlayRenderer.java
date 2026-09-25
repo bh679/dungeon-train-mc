@@ -9,7 +9,7 @@ import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorStrayBlocksPacket;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.template.TemplateGate;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.net.VariantHoverPacket;
 import games.brennan.dungeontrain.template.Template;
@@ -519,7 +519,7 @@ public final class VariantOverlayRenderer {
         TemplateGate gate = l.model().gate();
         int minLevel = gate.minLevel();
         int maxLevel = gate.maxLevel();
-        int phaseMask = TrainPhase.toMask(gate.phases());
+        int phaseMask = LapBand.toMask(gate.phases());
         // Stage link for the standing model — the keyboard gate controls render the Stage chip
         // instead of the editable steppers when this is non-empty.
         String stageId = l.model().stageId();
@@ -1455,7 +1455,7 @@ public final class VariantOverlayRenderer {
                 rows.add(new EditorTypeMenusPacket.Variant(
                     m.id(), m.weight(),
                     g.minLevel(), g.maxLevel(),
-                    games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
+                    games.brennan.dungeontrain.worldgen.LapBand.toMask(g.phases()),
                     cat, m.id(), m.id(),
                     memberProv.isUser(), memberProv.isImported(),
                     java.util.List.of(), m.stageIds()).withDisplayName(weights.nameFor(m.id())));
@@ -1536,7 +1536,7 @@ public final class VariantOverlayRenderer {
                 rows.add(new EditorTypeMenusPacket.Variant(
                     m.id(), m.weight(),
                     g.minLevel(), g.maxLevel(),
-                    games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
+                    games.brennan.dungeontrain.worldgen.LapBand.toMask(g.phases()),
                     cat, m.id(), m.id(),
                     prov.isUser(), prov.isImported(),
                     java.util.List.of(), m.stageIds())

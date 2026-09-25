@@ -1,13 +1,4 @@
 {
-  "gui.dungeontrain.editor_menu.band_picker.title": {
-    "1": {
-      "label": "the name of the template or stage whose bands are being picked",
-      "examples": [
-        "chunk_dimension_nether",
-        "Nether Depths"
-      ]
-    }
-  },
   "gui.dungeontrain.editor_screen.stages.delete_confirm": {
     "1": {
       "label": "the display name of the stage about to be deleted",

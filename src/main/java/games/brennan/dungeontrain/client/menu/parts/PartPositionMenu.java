@@ -66,9 +66,9 @@ public final class PartPositionMenu {
     }
 
     /**
-     * A specific cell hit by the raycast. {@code phaseSlot} identifies which phase letter
-     * (O N V E U C — the {@link games.brennan.dungeontrain.worldgen.TrainPhase} ordinal)
-     * an {@link CellKind#ENTRY_PHASE} hit landed on; it is {@code -1} for every other cell.
+     * A specific cell hit by the raycast. {@code phaseSlot} is the
+     * {@link games.brennan.dungeontrain.client.menu.plot.LapBandCells} slot (lap, back or band) an
+     * {@link CellKind#ENTRY_PHASE} hit landed on; it is {@code -1} for every other cell.
      */
     public record Hit(CellKind kind, int index, int phaseSlot) {
         public static final Hit NONE = new Hit(CellKind.NONE, -1, -1);

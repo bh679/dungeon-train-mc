@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,22 +32,25 @@ public final class StageEditScreen implements MenuScreen {
         ClientStages.Info s = ClientStages.byId(stageId);
         int minLevel = s == null ? 0 : s.minLevel();
         int maxLevel = s == null ? -1 : s.maxLevel();
-        int phaseMask = s == null ? TrainPhase.ALL_MASK : s.phaseMask();
+        int phaseMask = s == null ? LapBand.ALL_MASK : s.phaseMask();
 
         // Min / Max Diff-Level steppers — [-] / value (typeable) / [+].
         out.add(levelTriple("minlevel", MenuLang.t("editor.min_level", minLevel), "0-1000"));
         out.add(levelTriple("maxlevel", MenuLang.t("editor.max_level", maxLevel < 0 ? MenuLang.t("editor.max_level_all") : Integer.toString(maxLevel)), "-1..1000"));
 
-        // Dimension toggles — one per TrainPhase; plain click flips one, shift-click "toggle all
+        // Band toggles — one per LapBand under its lap; plain click flips one, shift-click "toggle all
         // but that one".
-        for (TrainPhase p : TrainPhase.values()) {
-            boolean on = (phaseMask & p.bit()) != 0;
-            out.add(new CommandMenuEntry.Toggle(
-                MenuLang.named("phase", p.token(), p.displayName()), on,
-                EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "on"),
-                EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "off"),
-                true,
-                EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "others")));
+        for (LapBand.Lap lap : LapBand.Lap.values()) {
+            out.add(new CommandMenuEntry.Label(BandLabels.lap(lap)));
+            for (LapBand p : lap.members()) {
+                boolean on = (phaseMask & p.bit()) != 0;
+                out.add(new CommandMenuEntry.Toggle(
+                    BandLabels.band(p), on,
+                    EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "on"),
+                    EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "off"),
+                    true,
+                    EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "others")));
+            }
         }
 
         out.add(new CommandMenuEntry.DrillIn(MenuLang.t("stage.delete"),

@@ -550,19 +550,27 @@ public final class PartPositionMenuController {
             case BUMP_MIN_LEVEL -> current.withMinLevel(packet.kind(), packet.name(), packet.delta());
             case BUMP_MAX_LEVEL -> current.withMaxLevel(packet.kind(), packet.name(), packet.delta());
             case TOGGLE_PHASE, TOGGLE_OTHER_PHASES -> {
-                // delta carries the TrainPhase ordinal (see PartAssignmentEditPacket). TOGGLE_PHASE
-                // flips that one dimension; TOGGLE_OTHER_PHASES (shift-click) flips all but it.
-                games.brennan.dungeontrain.worldgen.TrainPhase[] phases =
-                    games.brennan.dungeontrain.worldgen.TrainPhase.values();
+                // delta carries the LapBand ordinal (see PartAssignmentEditPacket). TOGGLE_PHASE
+                // flips that one band; TOGGLE_OTHER_PHASES (shift-click) flips all but it.
+                games.brennan.dungeontrain.worldgen.LapBand[] bands =
+                    games.brennan.dungeontrain.worldgen.LapBand.values();
                 int idx = packet.delta();
-                if (idx < 0 || idx >= phases.length) {
-                    LOGGER.warn("[DungeonTrain] PartMenu {} rejected: bad phase ordinal {}", packet.op(), idx);
+                if (idx < 0 || idx >= bands.length) {
+                    LOGGER.warn("[DungeonTrain] PartMenu {} rejected: bad band ordinal {}", packet.op(), idx);
                     yield current;
                 }
-                games.brennan.dungeontrain.worldgen.TrainPhase phase = phases[idx];
+                games.brennan.dungeontrain.worldgen.LapBand band = bands[idx];
                 yield packet.op() == PartAssignmentEditPacket.Op.TOGGLE_OTHER_PHASES
-                    ? current.toggleOtherPhases(packet.kind(), packet.name(), phase)
-                    : current.togglePhase(packet.kind(), packet.name(), phase);
+                    ? current.toggleOtherPhases(packet.kind(), packet.name(), band)
+                    : current.togglePhase(packet.kind(), packet.name(), band);
+            }
+            case SET_PHASE_MASK -> {
+                int mask = packet.delta() & games.brennan.dungeontrain.worldgen.LapBand.ALL_MASK;
+                if (mask == 0) {
+                    LOGGER.warn("[DungeonTrain] PartMenu SET_PHASE_MASK rejected: empty mask {}", packet.delta());
+                    yield current;
+                }
+                yield current.withPhaseMask(packet.kind(), packet.name(), mask);
             }
             // Link the entry to a Stage (empty stageId = detach to Custom). Unknown stage ids are
             // tolerated — the entry's effective gate then falls back to its inline snapshot.

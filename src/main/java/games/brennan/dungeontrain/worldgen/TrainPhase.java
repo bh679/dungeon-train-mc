@@ -111,16 +111,6 @@ public enum TrainPhase {
         };
     }
 
-    /** The editor family this band is grouped under. Exhaustive on purpose: a new phase must pick a group here. */
-    public BandGroup group() {
-        return switch (this) {
-            case OVERWORLD, NETHER, VOID, END, UPSIDE_DOWN -> BandGroup.CORE;
-            case CHUNCKS, SPHERES, STACKS -> BandGroup.FRAGMENTS;
-            case BETA, ALPHA, SKYLANDS, INFDEV, FLOATING, FAR_LANDS, CLASSIC, CAVES_OF_CHAOS -> BandGroup.LEGACY;
-            case LARGE_BIOMES, AMPLIFIED -> BandGroup.PRESETS;
-        };
-    }
-
     /**
      * Short command aliases beside each {@link #token()} — one table shared by {@link #byToken} and
      * {@code /dtp}'s literals so the two can't drift apart. Insertion-ordered and unmodifiable.

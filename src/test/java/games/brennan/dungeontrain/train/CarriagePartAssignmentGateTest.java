@@ -8,7 +8,7 @@ import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.EndMode;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.SideMode;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.WeightedName;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,7 @@ final class CarriagePartAssignmentGateTest {
     }
 
     private static TemplateGate netherOnly() {
-        return new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER));
+        return new TemplateGate(0, TemplateGate.ALL, EnumSet.of(LapBand.V_NETHER));
     }
 
     /** Build a floor-only assignment with the given list; other kinds are inert NONE entries. */
@@ -54,14 +54,14 @@ final class CarriagePartAssignmentGateTest {
             gated("ow_floor", 1, TemplateGate.DEFAULT),
             gated("nether_floor", 1, netherOnly())
         ));
-        GateContext ow = new GateContext(0, TrainPhase.OVERWORLD);
+        GateContext ow = new GateContext(0, LapBand.V_OVERWORLD_1);
         for (long seed = 0; seed < 200; seed++) {
             assertEquals("ow_floor", a.pick(CarriagePartKind.FLOOR, seed, 0, ow),
                 "nether_floor must never be picked in the Overworld dimension (seed=" + seed + ")");
         }
         // Once the Nether dimension is active both are eligible — reachable across seeds.
         boolean sawNether = false;
-        GateContext nether = new GateContext(0, TrainPhase.NETHER);
+        GateContext nether = new GateContext(0, LapBand.V_NETHER);
         for (long seed = 0; seed < 200 && !sawNether; seed++) {
             if (a.pick(CarriagePartKind.FLOOR, seed, 0, nether).equals("nether_floor")) sawNether = true;
         }
@@ -75,8 +75,8 @@ final class CarriagePartAssignmentGateTest {
             gated("early", 1, TemplateGate.ofLevels(0, 9)),
             gated("late",  1, TemplateGate.ofLevels(10, TemplateGate.ALL))
         ));
-        GateContext lvl5  = new GateContext(5, TrainPhase.OVERWORLD);
-        GateContext lvl20 = new GateContext(20, TrainPhase.OVERWORLD);
+        GateContext lvl5  = new GateContext(5, LapBand.V_OVERWORLD_1);
+        GateContext lvl20 = new GateContext(20, LapBand.V_OVERWORLD_1);
         for (long seed = 0; seed < 100; seed++) {
             assertEquals("early", a.pick(CarriagePartKind.FLOOR, seed, 0, lvl5),
                 "only the early-band entry is eligible at Diff-Level 5");
@@ -91,7 +91,7 @@ final class CarriagePartAssignmentGateTest {
         CarriagePartAssignment a = floorOnly(List.of(gated("nether_only", 1, netherOnly())));
         // Overworld context excludes the only entry — the fallback must still return it.
         assertEquals("nether_only",
-            a.pick(CarriagePartKind.FLOOR, 7L, 0, new GateContext(0, TrainPhase.OVERWORLD)));
+            a.pick(CarriagePartKind.FLOOR, 7L, 0, new GateContext(0, LapBand.V_OVERWORLD_1)));
     }
 
     @Test
@@ -102,7 +102,7 @@ final class CarriagePartAssignmentGateTest {
             gated("b", 1, TemplateGate.DEFAULT),
             gated("c", 2, TemplateGate.DEFAULT)
         ));
-        GateContext ctx = new GateContext(42, TrainPhase.END);
+        GateContext ctx = new GateContext(42, LapBand.V_END);
         for (long seed = 0; seed < 300; seed++) {
             assertEquals(
                 a.pick(CarriagePartKind.FLOOR, seed, 0, (GateContext) null),
@@ -123,7 +123,7 @@ final class CarriagePartAssignmentGateTest {
             List.of(WeightedName.of(CarriagePartKind.NONE)),
             List.of(WeightedName.of(CarriagePartKind.NONE))
         );
-        GateContext ow = new GateContext(0, TrainPhase.OVERWORLD);
+        GateContext ow = new GateContext(0, LapBand.V_OVERWORLD_1);
         for (long seed = 0; seed < 100; seed++) {
             for (String p : a.pickPerPlacement(CarriagePartKind.WALLS, seed, 0, false, false, ow)) {
                 assertEquals(CarriagePartKind.NONE, p,
@@ -148,8 +148,8 @@ final class CarriagePartAssignmentGateTest {
         CarriagePartAssignment max = a.withMaxLevel(CarriagePartKind.FLOOR, "x", +1);
         assertEquals(0, entry(max, "x").gate().maxLevel());
 
-        CarriagePartAssignment ph = a.togglePhase(CarriagePartKind.FLOOR, "x", TrainPhase.OVERWORLD);
-        assertFalse(entry(ph, "x").gate().phases().contains(TrainPhase.OVERWORLD));
+        CarriagePartAssignment ph = a.togglePhase(CarriagePartKind.FLOOR, "x", LapBand.V_OVERWORLD_1);
+        assertFalse(entry(ph, "x").gate().phases().contains(LapBand.V_OVERWORLD_1));
         assertTrue(entry(ph, "y").gate().isDefault(), "other entry untouched");
 
         assertSame(a, a.withMinLevel(CarriagePartKind.FLOOR, "missing", 5), "no match → this unchanged");
@@ -158,7 +158,7 @@ final class CarriagePartAssignmentGateTest {
     @Test
     @DisplayName("JSON round-trips the gate; a default gate stays compact (back-compat)")
     void jsonRoundTrip() {
-        TemplateGate g = new TemplateGate(3, 20, EnumSet.of(TrainPhase.NETHER, TrainPhase.END));
+        TemplateGate g = new TemplateGate(3, 20, EnumSet.of(LapBand.V_NETHER, LapBand.V_END));
         CarriagePartAssignment a = floorOnly(List.of(
             gated("plain", 5, TemplateGate.DEFAULT),
             gated("fancy", 2, g)
@@ -170,7 +170,7 @@ final class CarriagePartAssignmentGateTest {
         assertTrue(entry(loaded, "plain").gate().isDefault());
         assertEquals(3, entry(loaded, "fancy").gate().minLevel());
         assertEquals(20, entry(loaded, "fancy").gate().maxLevel());
-        assertEquals(EnumSet.of(TrainPhase.NETHER, TrainPhase.END), entry(loaded, "fancy").gate().phases());
+        assertEquals(EnumSet.of(LapBand.V_NETHER, LapBand.V_END), entry(loaded, "fancy").gate().phases());
 
         // The default-gate entry emits no gate keys — it round-trips exactly like a v2 file.
         JsonObject plainObj = findEntryObject(json, "floor", "plain");

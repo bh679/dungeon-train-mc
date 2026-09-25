@@ -6,7 +6,7 @@ import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -69,10 +69,10 @@ public final class EditorStatusHudOverlay {
     private static int roomHeight = EditorStatusPacket.NO_SIZE;
     /** What that room does at its walls, or {@link EditorStatusPacket#NO_MODE} outside a portal plot. */
     private static String roomMode = EditorStatusPacket.NO_MODE;
-    /** Active model's spawn gate: min Diff-Level (default 0), max Diff-Level ({@code -1} = no upper bound), and a {@link TrainPhase#bit()} phase mask (default {@link TrainPhase#ALL_MASK}). */
+    /** Active model's spawn gate: min Diff-Level (default 0), max Diff-Level ({@code -1} = no upper bound), and a {@link LapBand#bit()} phase mask (default {@link LapBand#ALL_MASK}). */
     private static int minLevel = 0;
     private static int maxLevel = -1;
-    private static int phaseMask = TrainPhase.ALL_MASK;
+    private static int phaseMask = LapBand.ALL_MASK;
     /** Stage id the active model is linked to ({@code ""} = Custom / unlinked). Drives the chip-vs-cells choice in the keyboard gate controls. */
     private static String stageId = "";
     /** Server-reported per-player part-position auto-open menu flag. Defaults true for fresh sessions. */
@@ -193,7 +193,7 @@ public final class EditorStatusHudOverlay {
         weight = NO_WEIGHT;
         minLevel = 0;
         maxLevel = -1;
-        phaseMask = TrainPhase.ALL_MASK;
+        phaseMask = LapBand.ALL_MASK;
         stageId = "";
         partMenuEnabled = true;
         mirrorX = false;
@@ -261,7 +261,7 @@ public final class EditorStatusHudOverlay {
         return maxLevel;
     }
 
-    /** Active model's worldgen-phase mask (one {@link TrainPhase#bit()} per phase). */
+    /** Active model's worldgen-phase mask (one {@link LapBand#bit()} per phase). */
     public static int phaseMask() {
         return phaseMask;
     }

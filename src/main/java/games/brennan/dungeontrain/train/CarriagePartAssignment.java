@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.worldgen.LapBand;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -7,7 +8,6 @@ import com.google.gson.JsonPrimitive;
 import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.template.TemplateWeightCodec;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +33,7 @@ import java.util.function.UnaryOperator;
  * {@code walls=[{none, 1}]} leaves the sides open).</p>
  *
  * <p>Each entry also carries an optional per-entry spawn {@link TemplateGate} (Diff-Level band +
- * {@link TrainPhase dimension} set), mirroring the per-template gate on carriage / contents / track
+ * {@link LapBand band} set), mirroring the per-template gate on carriage / contents / track
  * variants. At spawn the picker drops out-of-band / out-of-dimension entries <b>before</b> the
  * weighted draw via {@link #applyGate}, falling back to the ungated pool if that empties the slot so
  * a part is never left unfillable. The gate is (de)serialised with the shared
@@ -760,8 +760,13 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
      * rule), so a gate never becomes "eligible in zero dimensions". Returns {@code this} unchanged
      * if the name isn't in the list.
      */
-    public CarriagePartAssignment togglePhase(CarriagePartKind kind, String name, TrainPhase phase) {
+    public CarriagePartAssignment togglePhase(CarriagePartKind kind, String name, LapBand phase) {
         return mutateGate(kind, name, g -> g.withPhase(phase, !g.phases().contains(phase)));
+    }
+
+    /** Replace the band set of {@code name}'s gate with {@code mask} (non-zero {@link LapBand} mask). */
+    public CarriagePartAssignment withPhaseMask(CarriagePartKind kind, String name, int mask) {
+        return mutateGate(kind, name, g -> g.withPhaseMask(mask));
     }
 
     /**
@@ -769,7 +774,7 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
      * shift-click on a dimension letter ("toggle all but that one"). Returns {@code this} unchanged
      * if the name isn't in the list.
      */
-    public CarriagePartAssignment toggleOtherPhases(CarriagePartKind kind, String name, TrainPhase phase) {
+    public CarriagePartAssignment toggleOtherPhases(CarriagePartKind kind, String name, LapBand phase) {
         return mutateGate(kind, name, g -> g.toggleOtherPhases(phase));
     }
 

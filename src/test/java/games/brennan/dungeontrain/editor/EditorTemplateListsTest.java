@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.portal.PortalRoomMode;
 import games.brennan.dungeontrain.template.Stage;
 import games.brennan.dungeontrain.template.TemplateGate;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -134,6 +134,6 @@ final class EditorTemplateListsTest {
     }
 
     private static Stage stage(String id, int minLevel) {
-        return new Stage(id, id, new TemplateGate(minLevel, TemplateGate.ALL, Set.of(TrainPhase.values())));
+        return new Stage(id, id, new TemplateGate(minLevel, TemplateGate.ALL, Set.of(LapBand.values())));
     }
 }

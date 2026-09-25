@@ -13,7 +13,7 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.editor.PlotCategory;
-import games.brennan.dungeontrain.worldgen.BandGroup;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
@@ -99,9 +99,8 @@ public final class EditorTypeMenuRenderer {
         /** Spawn-gate max Diff-Level cell — click +1, shift-click -1 (cycles through "all"). */
         MAX_LEVEL,
         /**
-         * Spawn-gate band cell — {@code slotIdx} = {@link games.brennan.dungeontrain.worldgen.BandGroup}
-         * ordinal (click toggles that group, shift solos it) or {@link BandGroupToggle#PICKER_SLOT}
-         * (opens the band picker).
+         * Spawn-gate band cell — {@code slotIdx} is a {@link LapBandCells} slot: a lap (click opens it,
+         * shift-click toggles it), the back cell, or a band (click flips it, shift-click flips the rest).
          */
         PHASE,
         /** Per-template Stage selector — click opens the Stage / Custom picker (chip when linked). */
@@ -173,7 +172,7 @@ public final class EditorTypeMenuRenderer {
     /**
      * Fraction of panel width allocated to the gate area (weight | [stage] | min | max | bands) on
      * rows that carry a per-template spawn gate. Wider than {@link #WEIGHT_CELL_FRACTION} to fit
-     * the cells — including the {@link BandGroupToggle} band cell; the name fills the remaining
+     * the cells — including the {@link LapBandCells} band cell; the name fills the remaining
      * {@code 1 - GATE_AREA_FRACTION}.
      */
     static final double GATE_AREA_FRACTION = 0.60;
@@ -217,10 +216,6 @@ public final class EditorTypeMenuRenderer {
     private static final int WEIGHT_COLOR = 0xFFFFEEBB;
     /** Light-blue text for the min/max spawn-level cells, distinct from the warm weight colour. */
     private static final int LEVEL_COLOR = 0xFFBBD0FF;
-    /** Band-group colours — bright green when the whole group is on, amber when partly, dim grey when off. */
-    private static final int PHASE_ON_COLOR = 0xFF66FF66;
-    private static final int PHASE_SOME_COLOR = 0xFFFFCC44;
-    private static final int PHASE_OFF_COLOR = 0xFF777777;
     /** Bright green text for the "+ New" label so it stands out from variant rows. */
     private static final int NEW_COLOR = 0xFFAAFFAA;
     /** Cyan-ish text for a Stage chip / the Stage selector marker. */
@@ -908,7 +903,8 @@ public final class EditorTypeMenuRenderer {
         if (rc.showStage() && hitX < rc.stageR()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE);
         if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
         if (hitX < rc.maxR()) return new Hovered(menuIdx, variantIdx, CellKind.MAX_LEVEL);
-        return new Hovered(menuIdx, variantIdx, CellKind.PHASE, BandGroupToggle.slotAt(hitX, rc.maxR(), halfW));
+        return new Hovered(menuIdx, variantIdx, CellKind.PHASE,
+            LapBandCells.slotAt(hitX, rc.maxR(), halfW, LapBandView.openLap(bandRowKey(menu, variant))));
     }
 
     private static Hovered hitForNav(int menuIdx, EditorTypeMenusPacket.Menu menu, Font font,
@@ -1036,7 +1032,8 @@ public final class EditorTypeMenuRenderer {
         if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
         if (hitX < rc.maxR()) return new Hovered(menuIdx, variantIdx, CellKind.MAX_LEVEL);
         // Band cell — resolve which group toggle (or the picker cell) was hit.
-        return new Hovered(menuIdx, variantIdx, CellKind.PHASE, BandGroupToggle.slotAt(hitX, rc.maxR(), colRight));
+        return new Hovered(menuIdx, variantIdx, CellKind.PHASE,
+            LapBandCells.slotAt(hitX, rc.maxR(), colRight, LapBandView.openLap(bandRowKey(menu, variant))));
     }
 
 
@@ -1148,7 +1145,7 @@ public final class EditorTypeMenuRenderer {
             // "(default)" self-row has NO_GATE, so drawVariantRow collapses it to name|weight anyway.
             boolean gated = games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
                 .equals(menu.typeName());
-            drawVariantRow(ps, buffer, font, variant, -halfW, rowBottom, halfW, rowTop,
+            drawVariantRow(ps, buffer, font, variant, bandRowKey(menu, variant), -halfW, rowBottom, halfW, rowTop,
                 rowCY, hasWeight, gated, gated, hoverCell, hovered.slotIdx(),
                 activeModelId, activeModelName);
         }
@@ -1308,7 +1305,7 @@ public final class EditorTypeMenuRenderer {
 
             // Nav (top-level template) rows carry the per-template spawn gate + a Stage selector —
             // allowGate=true, showStage=true.
-            drawVariantRow(ps, buffer, font, variant, expColLeft, rowBottom, expColRight, rowTop,
+            drawVariantRow(ps, buffer, font, variant, bandRowKey(menu, variant), expColLeft, rowBottom, expColRight, rowTop,
                 rowCY, hasWeight, true, true, hoverCell, hovered.slotIdx(),
                 activeModelId, activeModelName);
 
@@ -1424,22 +1421,22 @@ public final class EditorTypeMenuRenderer {
         if (showStage && linked) {
             // weight | Stage chip (spans the rest). No min/max/phase cells; the weight cell keeps the
             // legacy gate row's width so it lines up with unlinked rows.
-            double unit = (rowRight - gateLeft) / (3.0 + BandGroupToggle.UNITS);
+            double unit = (rowRight - gateLeft) / (3.0 + LapBandCells.UNITS);
             double weightR = gateLeft + unit;
             return new RightCells(true, true, true, true, gateLeft, gateLeft, weightR,
                 rowRight, rowRight, rowRight);
         }
         if (showStage) {
-            // weight | stage | min | max | phase. Units: 1 | 1.1 | 1 | 1 | BandGroupToggle.UNITS.
-            double unit = (rowRight - gateLeft) / (4.1 + BandGroupToggle.UNITS);
+            // weight | stage | min | max | phase. Units: 1 | 1.1 | 1 | 1 | LapBandCells.UNITS.
+            double unit = (rowRight - gateLeft) / (4.1 + LapBandCells.UNITS);
             double weightR = gateLeft + unit;
             double stageR = weightR + 1.1 * unit;
             double minR = stageR + unit;
             double maxR = minR + unit;
             return new RightCells(true, true, true, false, gateLeft, gateLeft, weightR, stageR, minR, maxR);
         }
-        // Legacy gate row (no stage selector): weight | min | max | phase = 1 | 1 | 1 | BandGroupToggle.UNITS.
-        double unit = (rowRight - gateLeft) / (3.0 + BandGroupToggle.UNITS);
+        // Legacy gate row (no stage selector): weight | min | max | phase = 1 | 1 | 1 | LapBandCells.UNITS.
+        double unit = (rowRight - gateLeft) / (3.0 + LapBandCells.UNITS);
         double weightR = gateLeft + unit;
         double minR = weightR + unit;
         double maxR = minR + unit;
@@ -1448,7 +1445,7 @@ public final class EditorTypeMenuRenderer {
 
     private static void drawVariantRow(
         PoseStack ps, MultiBufferSource buffer, Font font,
-        EditorTypeMenusPacket.Variant variant,
+        EditorTypeMenusPacket.Variant variant, String bandKey,
         double rowLeft, double rowBottom, double rowRight, double rowTop,
         double rowCY, boolean hasWeight, boolean allowGate, boolean showStage,
         CellKind hoverCell, int hoverSlot,
@@ -1501,13 +1498,12 @@ public final class EditorTypeMenuRenderer {
                 if (rc.showGate()) drawQuad(ps, buffer, rc.minR() + 0.005, rowBottom + 0.005,
                     rc.maxR() - 0.005, rowTop - 0.005, HOVER_COLOR);
             }
-            case PHASE -> {
-                if (rc.showGate() && hoverSlot >= 0) {
-                    drawBandHover(ps, buffer, hoverSlot, rc.maxR(), rowRight, rowBottom, rowTop);
-                }
-            }
             default -> { }
         }
+        // While a band / lap is hovered its full name stands in for the row name — letters repeat.
+        String nameText = hoverCell == CellKind.PHASE && rc.showGate() && !rc.linked()
+            ? bandHoverLabel(hoverSlot, variant.phaseMask(), variant.displayName())
+            : variant.displayName();
 
         // Name (centred within its cell). PARTS rows draw a dedicated [x]/[ ] visibility checkbox in
         // its own leading column [rowLeft, visR] (its own clickable cell — CellKind.PART_VISIBLE) and
@@ -1519,9 +1515,11 @@ public final class EditorTypeMenuRenderer {
             boolean shown = pk == null
                 || games.brennan.dungeontrain.client.menu.ClientPartVisibility.isDisplayed(pk, variant.name());
             drawCenteredText(ps, buffer, font, shown ? "[x]" : "[ ]", (rowLeft + visR) / 2.0, rowCY, NAME_COLOR);
-            drawCenteredText(ps, buffer, font, variant.displayName(), (visR + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
+            drawFittedText(ps, buffer, font, nameText, (visR + rc.nameRight()) / 2.0, rowCY,
+                rc.nameRight() - visR - 0.04, NAME_COLOR);
         } else {
-            drawCenteredText(ps, buffer, font, variant.displayName(), (rowLeft + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
+            drawFittedText(ps, buffer, font, nameText, (rowLeft + rc.nameRight()) / 2.0, rowCY,
+                rc.nameRight() - rowLeft - 0.04, NAME_COLOR);
         }
 
         if (!rc.hasWeight()) return;
@@ -1553,39 +1551,45 @@ public final class EditorTypeMenuRenderer {
         String maxLabel = variant.maxLevel() < 0 ? "≤∞" : "≤" + variant.maxLevel();
         drawCenteredText(ps, buffer, font, maxLabel, maxCX, rowCY, LEVEL_COLOR);
 
-        drawBandCells(ps, buffer, font, variant.phaseMask(), rc.maxR(), rowRight, rowCY);
+        drawBandCells(ps, buffer, font, variant.phaseMask(), bandKey, rc.maxR(), rowRight, rowBottom, rowTop,
+            hoverCell == CellKind.PHASE ? hoverSlot : -1);
+    }
+
+    /** The lap / band selector over [{@code left}, {@code right}] — see {@link LapBandCells}. */
+    private static void drawBandCells(PoseStack ps, MultiBufferSource buffer, Font font, int mask, String bandKey,
+                                      double left, double right, double rowBottom, double rowTop, int hoverSlot) {
+        LapBandCells.Painter painter = new LapBandCells.Painter() {
+            @Override public void quad(double l, double b, double r, double t, int argb) {
+                drawQuad(ps, buffer, l, b, r, t, argb);
+            }
+
+            @Override public void text(String text, double cx, double cy, int argb) {
+                drawCenteredText(ps, buffer, font, text, cx, cy, argb);
+            }
+        };
+        LapBandCells.draw(painter, mask, left, right, rowBottom, rowTop, LapBandView.openLap(bandKey), hoverSlot);
+    }
+
+    /** {@link LapBandView} key for a type-menu row. */
+    static String bandRowKey(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant) {
+        return LapBandView.rowKey(menu.typeName(), variant.modelId(), variant.modelName());
     }
 
     /**
-     * The band cell over [{@code left}, {@code right}]: one tri-state label per
-     * {@link BandGroup} ({@code ●} all on, {@code ◐} some, {@code ○} none) and the "▸" picker cell.
-     * Labels shrink to fit their cell so long translations never spill into the neighbour.
+     * Full name for a hovered band-cell slot: "Mod · BetterNether" for a band, "Mod 2/6" for a lap;
+     * {@code fallback} for the back cell.
      */
-    private static void drawBandCells(PoseStack ps, MultiBufferSource buffer, Font font, int mask,
-                                      double left, double right, double rowCY) {
-        for (BandGroup group : BandGroup.values()) {
-            int slot = group.ordinal();
-            double l = BandGroupToggle.slotLeft(slot, left, right);
-            double r = BandGroupToggle.slotRight(slot, left, right);
-            BandGroup.State state = group.state(mask);
-            int colour = switch (state) {
-                case ALL -> PHASE_ON_COLOR;
-                case SOME -> PHASE_SOME_COLOR;
-                case NONE -> PHASE_OFF_COLOR;
-            };
-            String label = games.brennan.dungeontrain.client.menu.BandPickerScreen.glyph(state) + MenuLang.t("band_group." + group.token() + ".short");
-            drawFittedText(ps, buffer, font, label, (l + r) / 2.0, rowCY, r - l - 0.04, colour);
+    static String bandHoverLabel(int slot, int mask, String fallback) {
+        if (LapBandCells.isBandSlot(slot)) {
+            LapBand band = LapBandCells.bandOf(slot);
+            return games.brennan.dungeontrain.client.menu.BandLabels.qualified(band);
         }
-        double pl = BandGroupToggle.slotLeft(BandGroupToggle.PICKER_SLOT, left, right);
-        drawCenteredText(ps, buffer, font, "▸", (pl + right) / 2.0, rowCY, STAGE_COLOR);
-    }
-
-    /** Hover highlight behind band-cell {@code slot} within [{@code left}, {@code right}]. */
-    private static void drawBandHover(PoseStack ps, MultiBufferSource buffer, int slot,
-                                      double left, double right, double rowBottom, double rowTop) {
-        double l = BandGroupToggle.slotLeft(slot, left, right);
-        double r = BandGroupToggle.slotRight(slot, left, right);
-        drawQuad(ps, buffer, l + 0.005, rowBottom + 0.005, r - 0.005, rowTop - 0.005, HOVER_COLOR);
+        if (LapBandCells.isLapSlot(slot)) {
+            LapBand.Lap lap = LapBandCells.lapOf(slot);
+            int on = Integer.bitCount(mask & lap.mask());
+            return games.brennan.dungeontrain.client.menu.BandLabels.lap(lap) + " " + on + "/" + lap.members().size();
+        }
+        return fallback;
     }
 
     // ---------- Stages management panel ----------
@@ -1624,7 +1628,7 @@ public final class EditorTypeMenuRenderer {
     private static StageRowCells stageRowCells(double rowLeft, double rowRight) {
         double colW = rowRight - rowLeft;
         double gateLeft = rowRight - colW * GATE_AREA_FRACTION;
-        double unit = (rowRight - gateLeft) / (2.0 + BandGroupToggle.UNITS); // min | max | phase = 1 | 1 | BandGroupToggle.UNITS
+        double unit = (rowRight - gateLeft) / (2.0 + LapBandCells.UNITS); // min | max | phase = 1 | 1 | LapBandCells.UNITS
         double minR = gateLeft + unit;
         double maxR = minR + unit;
         return new StageRowCells(gateLeft - STAGE_ICON_STRIP_W, gateLeft, minR, maxR);
@@ -1686,22 +1690,21 @@ public final class EditorTypeMenuRenderer {
                 case STAGE_BLOCKS -> drawQuad(ps, buffer, rc.nameRight() + 0.005, rowBottom + 0.005, rc.iconsRight() - 0.005, rowTop - 0.005, HOVER_COLOR);
                 case MIN_LEVEL -> drawQuad(ps, buffer, rc.iconsRight() + 0.005, rowBottom + 0.005, rc.minR() - 0.005, rowTop - 0.005, HOVER_COLOR);
                 case MAX_LEVEL -> drawQuad(ps, buffer, rc.minR() + 0.005, rowBottom + 0.005, rc.maxR() - 0.005, rowTop - 0.005, HOVER_COLOR);
-                case PHASE -> {
-                    if (hovered.slotIdx() >= 0) {
-                        drawBandHover(ps, buffer, hovered.slotIdx(), rc.maxR(), halfW, rowBottom, rowTop);
-                    }
-                }
                 default -> { }
             }
 
             double nameCX = (-halfW + rc.nameRight()) / 2.0;
-            drawCenteredText(ps, buffer, font, v.displayName(), nameCX, rowCY, removeMode ? STAGE_REMOVE_COLOR : NAME_COLOR);
+            String nameText = hoverCell == CellKind.PHASE
+                ? bandHoverLabel(hovered.slotIdx(), v.phaseMask(), v.displayName()) : v.displayName();
+            drawFittedText(ps, buffer, font, nameText, nameCX, rowCY, rc.nameRight() + halfW - 0.04,
+                removeMode ? STAGE_REMOVE_COLOR : NAME_COLOR);
             drawStageBlockStrip(ps, buffer, font, v.modelId(), rc.nameRight(), rowCY);
             double minCX = (rc.iconsRight() + rc.minR()) / 2.0;
             drawCenteredText(ps, buffer, font, "≥" + v.minLevel(), minCX, rowCY, LEVEL_COLOR);
             double maxCX = (rc.minR() + rc.maxR()) / 2.0;
             drawCenteredText(ps, buffer, font, v.maxLevel() < 0 ? "≤∞" : "≤" + v.maxLevel(), maxCX, rowCY, LEVEL_COLOR);
-            drawBandCells(ps, buffer, font, v.phaseMask(), rc.maxR(), halfW, rowCY);
+            drawBandCells(ps, buffer, font, v.phaseMask(), bandRowKey(menu, v), rc.maxR(), halfW, rowBottom, rowTop,
+                hoverCell == CellKind.PHASE ? hovered.slotIdx() : -1);
         }
     }
 
@@ -1810,7 +1813,8 @@ public final class EditorTypeMenuRenderer {
         if (hitX < rc.iconsRight()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE_BLOCKS);
         if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
         if (hitX < rc.maxR()) return new Hovered(menuIdx, variantIdx, CellKind.MAX_LEVEL);
-        return new Hovered(menuIdx, variantIdx, CellKind.PHASE, BandGroupToggle.slotAt(hitX, rc.maxR(), halfW));
+        return new Hovered(menuIdx, variantIdx, CellKind.PHASE, LapBandCells.slotAt(hitX, rc.maxR(), halfW,
+            LapBandView.openLap(bandRowKey(menu, menu.variants().get(variantIdx)))));
     }
 
     /**

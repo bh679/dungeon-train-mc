@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.train;
 import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.template.TemplateGate;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -243,13 +243,13 @@ final class CarriageContentsRegistryGroupResolveTest {
         registerCustom("mobs");
         registerCustom("piglin");   // nether-only via inline gate
         registerCustom("zombie");   // ungated member
-        TemplateGate netherOnly = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER));
+        TemplateGate netherOnly = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(LapBand.V_NETHER));
         CarriageContentsGroupStore.injectForTesting("mobs", new CarriageContentsGroup(List.of(
             new CarriageContentsGroup.Member("piglin", 5, netherOnly, List.of()),
             new CarriageContentsGroup.Member("zombie", 5, TemplateGate.DEFAULT, List.of()))));
 
         // OVERWORLD context: the nether-only member must be filtered out; self + ungated stay.
-        GateContext overworld = new GateContext(0, TrainPhase.OVERWORLD);
+        GateContext overworld = new GateContext(0, LapBand.V_OVERWORLD_1);
         boolean sawPiglin = false, sawZombie = false, sawSelf = false;
         for (int idx = 0; idx < 500; idx++) {
             String id = CarriageContentsRegistry.pick(0L, idx, CarriageContentsAllowList.EMPTY, overworld).id();
@@ -262,7 +262,7 @@ final class CarriageContentsRegistryGroupResolveTest {
         assertTrue(sawSelf, "synthetic self is always kept even when a member is filtered");
 
         // NETHER context: the same member is now eligible.
-        GateContext nether = new GateContext(0, TrainPhase.NETHER);
+        GateContext nether = new GateContext(0, LapBand.V_NETHER);
         boolean sawPiglinNether = false;
         for (int idx = 0; idx < 500; idx++) {
             if ("piglin".equals(CarriageContentsRegistry.pick(0L, idx, CarriageContentsAllowList.EMPTY, nether).id())) {

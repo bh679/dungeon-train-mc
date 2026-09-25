@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.template;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.slf4j.Logger;
 
 import java.util.List;
@@ -42,7 +42,7 @@ public final class StageResolver {
      * or null. Package-visible overload so tests can pin behaviour against a fixed stage set instead of
      * whatever the install happens to have loaded.
      */
-    public static String stageIdFor(int level, TrainPhase phase, List<Stage> stages) {
+    public static String stageIdFor(int level, LapBand phase, List<Stage> stages) {
         if (stages == null || stages.isEmpty()) return null;
         Stage best = null;
         long bestWidth = Long.MAX_VALUE;

@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import games.brennan.dungeontrain.editor.PlotCategory;
 
 import java.util.ArrayList;
@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * Drilldown reached from the Editor menu's "Phases" row. One
- * {@link CommandMenuEntry.Toggle} row per {@link TrainPhase} — Overworld … Chuncks — lets the author pick
+ * {@link CommandMenuEntry.Toggle} row per {@link LapBand}, grouped by lap — lets the author pick
  * which worldgen phases the active weighted template may spawn in. Toggling a row dispatches
  * {@code /dungeontrain editor [contents|tracks] phase <id> [<name>] <phase> on|off} and the server
  * pushes a fresh {@link games.brennan.dungeontrain.net.EditorStatusPacket} carrying the updated
@@ -37,21 +37,24 @@ public final class PhaseSelectScreen implements MenuScreen {
 
     @Override
     public List<CommandMenuEntry> entries() {
-        List<CommandMenuEntry> out = new ArrayList<>(TrainPhase.values().length + 1);
+        List<CommandMenuEntry> out = new ArrayList<>();
         String prefix = phaseCommandPrefix();
         if (prefix != null) {
             int mask = EditorStatusHudOverlay.phaseMask();
-            for (TrainPhase p : TrainPhase.values()) {
-                boolean on = (mask & p.bit()) != 0;
-                // Plain click toggles this dimension on/off; shift-click sends the shared "others"
-                // action — "toggle all but that one" — matching the world-space dimension menus.
-                out.add(new CommandMenuEntry.Toggle(
-                    displayName(p), on,
-                    prefix + " " + p.token() + " on",
-                    prefix + " " + p.token() + " off",
-                    true,
-                    prefix + " " + p.token() + " others"
-                ));
+            for (LapBand.Lap lap : LapBand.Lap.values()) {
+                out.add(new CommandMenuEntry.Label(BandLabels.lap(lap)));
+                for (LapBand p : lap.members()) {
+                    boolean on = (mask & p.bit()) != 0;
+                    // Plain click toggles this band on/off; shift-click sends the shared "others"
+                    // action — "toggle all but that one" — matching the world-space band menus.
+                    out.add(new CommandMenuEntry.Toggle(
+                        BandLabels.band(p), on,
+                        prefix + " " + p.token() + " on",
+                        prefix + " " + p.token() + " off",
+                        true,
+                        prefix + " " + p.token() + " others"
+                    ));
+                }
             }
         }
         out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
@@ -77,10 +80,6 @@ public final class PhaseSelectScreen implements MenuScreen {
             case WHOLE_GROUP -> "dungeontrain editor whole group phase " + modelId;
             case PARTS, ARCHITECTURE -> null;
         };
-    }
-
-    private static String displayName(TrainPhase p) {
-        return MenuLang.named("phase", p.token(), p.displayName());
     }
 
     /** Visible-for-test accessor. */

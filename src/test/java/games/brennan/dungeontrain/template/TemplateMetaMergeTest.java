@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.template;
 
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class TemplateMetaMergeTest {
 
     private static final TemplateGate NETHER_GATE =
-        new TemplateGate(3, 40, EnumSet.of(TrainPhase.NETHER));
+        new TemplateGate(3, 40, EnumSet.of(LapBand.V_NETHER));
 
     // ---------- mergeName ----------
 

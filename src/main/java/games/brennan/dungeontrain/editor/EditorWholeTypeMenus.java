@@ -9,7 +9,7 @@ import games.brennan.dungeontrain.train.WholeCarriage;
 import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 import games.brennan.dungeontrain.train.WholeKind;
 import games.brennan.dungeontrain.train.WholeWeights;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 
@@ -103,7 +103,7 @@ public final class EditorWholeTypeMenus {
         games.brennan.dungeontrain.template.BuilderCredit credit = TemplateBuilderLookup.whole(kind, id);
         return new EditorTypeMenusPacket.Variant(
             id, WholeWeights.weightFor(kind, id),
-            g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+            g.minLevel(), g.maxLevel(), LapBand.toMask(g.phases()),
             category, id, id, p.isUser(), p.isImported(), List.of(),
             stageId == null || stageId.isEmpty() ? List.of() : List.of(stageId))
             .withDisplayName(WholeWeights.nameFor(kind, id))

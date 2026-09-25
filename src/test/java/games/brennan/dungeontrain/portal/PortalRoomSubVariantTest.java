@@ -8,7 +8,7 @@ import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantGroup;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -145,14 +145,14 @@ final class PortalRoomSubVariantTest {
         TrackVariantRegistry.register(KIND, "library_nether");
         TrackVariantGroupStore.injectForTesting(KIND, "library", new TrackVariantGroup(1, List.of(
             new TrackVariantGroup.Member("library_nether", 50,
-                new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER)), List.of()))));
+                new TemplateGate(0, TemplateGate.ALL, EnumSet.of(LapBand.V_NETHER)), List.of()))));
 
-        GateContext overworld = new GateContext(1, TrainPhase.OVERWORLD);
+        GateContext overworld = new GateContext(1, LapBand.V_OVERWORLD_1);
         Set<String> seenOverworld = namesPickedOver(5L, overworld);
         assertEquals(Set.of("library"), seenOverworld,
             "a NETHER-only sub-variant must not be drawn in the overworld");
 
-        GateContext nether = new GateContext(1, TrainPhase.NETHER);
+        GateContext nether = new GateContext(1, LapBand.V_NETHER);
         assertTrue(namesPickedOver(5L, nether).contains("library_nether"),
             "and must be drawn where its gate allows");
     }
@@ -164,11 +164,11 @@ final class PortalRoomSubVariantTest {
         TrackVariantRegistry.register(KIND, "hellhall");
         TrackVariantWeights.injectForTesting(KIND, "library", TemplateMeta.of(1));
         TrackVariantWeights.injectForTesting(KIND, "hellhall", new TemplateMeta(1,
-            new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER))));
+            new TemplateGate(0, TemplateGate.ALL, EnumSet.of(LapBand.V_NETHER))));
 
-        assertEquals(Set.of("library"), namesPickedOver(31L, new GateContext(1, TrainPhase.OVERWORLD)),
+        assertEquals(Set.of("library"), namesPickedOver(31L, new GateContext(1, LapBand.V_OVERWORLD_1)),
             "a NETHER-only room must not be drawn in the overworld");
-        assertTrue(namesPickedOver(31L, new GateContext(1, TrainPhase.NETHER)).contains("hellhall"),
+        assertTrue(namesPickedOver(31L, new GateContext(1, LapBand.V_NETHER)).contains("hellhall"),
             "and must be drawn where its gate allows");
     }
 
@@ -177,14 +177,14 @@ final class PortalRoomSubVariantTest {
     void allGatedOutFallsBackToUngatedPool() {
         TrackVariantRegistry.register(KIND, "hellhall");
         TrackVariantWeights.injectForTesting(KIND, "hellhall", new TemplateMeta(1,
-            new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER))));
+            new TemplateGate(0, TemplateGate.ALL, EnumSet.of(LapBand.V_NETHER))));
         // 'default' is in the pool too and is ungated, so gate it out as well to empty the pool.
         TrackVariantWeights.injectForTesting(KIND, TrackKind.DEFAULT_NAME, new TemplateMeta(1,
-            new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER))));
+            new TemplateGate(0, TemplateGate.ALL, EnumSet.of(LapBand.V_NETHER))));
 
         for (int pair = 0; pair < 20; pair++) {
             String picked = TrackVariantRegistry.pickName(KIND, 77L, pair,
-                new GateContext(1, TrainPhase.OVERWORLD));
+                new GateContext(1, LapBand.V_OVERWORLD_1));
             assertTrue("hellhall".equals(picked) || TrackKind.DEFAULT_NAME.equals(picked),
                 "an emptied pool falls back to the ungated one rather than failing, got " + picked);
         }

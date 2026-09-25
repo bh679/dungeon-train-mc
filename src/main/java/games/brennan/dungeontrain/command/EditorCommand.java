@@ -40,7 +40,7 @@ import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.template.FlipOptions;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateGate;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
+import games.brennan.dungeontrain.worldgen.LapBand;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackEditor;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
@@ -322,7 +322,7 @@ public final class EditorCommand {
     /** Suggests the four spawn-phase tokens for {@code /dt editor ... phase <id> <phase> on|off}. */
     private static final SuggestionProvider<CommandSourceStack> PHASE_SUGGESTIONS =
         (ctx, builder) -> {
-            for (TrainPhase p : TrainPhase.values()) builder.suggest(p.token());
+            for (LapBand p : LapBand.values()) builder.suggest(p.token());
             return builder.buildFuture();
         };
 
@@ -1525,10 +1525,10 @@ public final class EditorCommand {
                                     String linkedStage) {
         String maxStr = g.maxLevel() == TemplateGate.ALL ? "all" : Integer.toString(g.maxLevel());
         StringBuilder phases = new StringBuilder();
-        if (g.phases().size() == TrainPhase.values().length) {
+        if (g.phases().size() == LapBand.values().length) {
             phases.append("all");
         } else {
-            for (TrainPhase p : TrainPhase.values()) {
+            for (LapBand p : LapBand.values()) {
                 if (!g.phases().contains(p)) continue;
                 if (phases.length() > 0) phases.append(',');
                 phases.append(p.token());
@@ -1557,9 +1557,13 @@ public final class EditorCommand {
         return g.decMaxLevel();
     }
 
+    /**
+     * {@code <token> on|off}. The token is a {@link LapBand} token, or an old {@code TrainPhase} token
+     * that names every band it used to cover ({@code nether} = both Nether occurrences).
+     */
     private static TemplateGate togglePhase(TemplateGate g, String phaseToken, boolean on) {
-        TrainPhase p = TrainPhase.byToken(phaseToken);
-        return p == null ? g : g.withPhase(p, on);
+        java.util.EnumSet<LapBand> bands = LapBand.resolve(phaseToken);
+        return bands.isEmpty() ? g : g.withPhases(bands, on);
     }
 
     /**
@@ -1569,8 +1573,8 @@ public final class EditorCommand {
      * through (parts menu, template-type menu, keyboard Phases menu, and this slash command).
      */
     private static TemplateGate toggleOtherPhases(TemplateGate g, String phaseToken) {
-        TrainPhase p = TrainPhase.byToken(phaseToken);
-        return p == null ? g : g.toggleOtherPhases(p);
+        java.util.EnumSet<LapBand> bands = LapBand.resolve(phaseToken);
+        return bands.isEmpty() ? g : g.toggleOtherPhases(bands);
     }
 
     // ---- Brigadier subtree builders (single-id categories: carriages, contents) ----
@@ -1602,7 +1606,7 @@ public final class EditorCommand {
     }
 
     /**
-     * The {@code mask <n>} phase action — replace the whole band set at once ({@link TrainPhase#bit()}
+     * The {@code mask <n>} phase action — replace the whole band set at once ({@link LapBand#bit()}
      * per band, {@code 1..ALL_MASK}). Sent by the type menu's band-group toggles and band picker so a
      * group flip is one write, not one per band. A literal, so it wins over the {@code <phase>} word
      * argument beside it.
@@ -1615,7 +1619,7 @@ public final class EditorCommand {
 
     static LiteralArgumentBuilder<CommandSourceStack> phaseMaskBranch(PhaseMaskApply apply) {
         return Commands.literal("mask")
-            .then(Commands.argument("mask", IntegerArgumentType.integer(1, TrainPhase.ALL_MASK))
+            .then(Commands.argument("mask", IntegerArgumentType.integer(1, LapBand.ALL_MASK))
                 .executes(c -> apply.apply(c,
                     g -> g.withPhaseMask(IntegerArgumentType.getInteger(c, "mask")))));
     }
@@ -1836,7 +1840,7 @@ public final class EditorCommand {
         for (games.brennan.dungeontrain.template.Stage s : stages) {
             TemplateGate g = s.gate();
             String maxStr = g.maxLevel() == TemplateGate.ALL ? "all" : Integer.toString(g.maxLevel());
-            String phaseStr = g.phases().size() == TrainPhase.values().length ? "all" : phaseTokens(g);
+            String phaseStr = g.phases().size() == LapBand.values().length ? "all" : phaseTokens(g);
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.level_phases", s.id(), g.minLevel(), maxStr, phaseStr).withStyle(ChatFormatting.GRAY), false);
         }
         return stages.size();
@@ -2065,7 +2069,7 @@ public final class EditorCommand {
 
     private static String phaseTokens(TemplateGate g) {
         StringBuilder sb = new StringBuilder();
-        for (TrainPhase p : TrainPhase.values()) {
+        for (LapBand p : LapBand.values()) {
             if (!g.phases().contains(p)) continue;
             if (sb.length() > 0) sb.append(',');
             sb.append(p.token());

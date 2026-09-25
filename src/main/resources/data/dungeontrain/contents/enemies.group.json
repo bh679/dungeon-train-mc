@@ -78,9 +78,10 @@
       "id": "breeze",
       "weight": 4,
       "phases": [
-        "VOID",
-        "END",
-        "UPSIDE_DOWN"
+        "V_END",
+        "V_UPSIDE_DOWN",
+        "M_END",
+        "L_VOID"
       ],
       "stages": [
         "copper",
@@ -118,10 +119,11 @@
       "id": "blaze",
       "weight": 4,
       "phases": [
-        "NETHER",
-        "CHUNCKS",
-        "SPHERES",
-        "FLOATING"
+        "V_NETHER",
+        "M_NETHER",
+        "M_SPHERES",
+        "L_FLOATING",
+        "C_CHUNCKS"
       ]
     },
     {
