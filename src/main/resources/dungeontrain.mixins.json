@@ -24,6 +24,7 @@
     "MultiNoiseBiomeSourceAccessor",
     "NoiseBasedChunkGeneratorMixin",
     "NoiseRouterDataAccessor",
+    "NoiseGeneratorSettingsAccessor",
     "ChunkGeneratorDecorationMixin",
     "BiomeFilterMixin",
     "BiomeMixin",
