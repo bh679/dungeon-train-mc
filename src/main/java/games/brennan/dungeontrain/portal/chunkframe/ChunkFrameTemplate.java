@@ -1,4 +1,4 @@
-package games.brennan.dungeontrain.portal.chunkparts;
+package games.brennan.dungeontrain.portal.chunkframe;
 
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
@@ -11,19 +11,19 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * A chunk part template, decoded to a flat grid of block states and block entities.
+ * A frame template, decoded to a flat grid of block states and block entities.
  *
  * <p>Read straight off the structure NBT rather than through a {@code StructureTemplate}, because
- * {@link ChunkPartPlacer} needs every cell — air included, since air means something different in each
- * layer — and a template's palette is not something it will hand over. The file itself is an ordinary
+ * {@link ChunkFramePlacer} needs every cell — air included, since air means "leave what is there" —
+ * and a template's palette is not something it will hand over. The file itself is an ordinary
  * structure file, so the editor saves it the way it saves every other.</p>
  *
- * @param size         the template's extent
- * @param states       one per cell, index {@code (y * size.z + z) * size.x + x}; air where the file had
- *                     nothing
+ * @param size          the template's extent
+ * @param states        one per cell, index {@code (y * size.z + z) * size.x + x}; air where the file had
+ *                      nothing
  * @param blockEntities the saved block entity at each cell, or null
  */
-public record ChunkPart(Vec3i size, BlockState[] states, CompoundTag[] blockEntities) {
+public record ChunkFrameTemplate(Vec3i size, BlockState[] states, CompoundTag[] blockEntities) {
 
     /** The state at local {@code (x, y, z)}. Never null. */
     public BlockState at(int x, int y, int z) {
@@ -40,10 +40,10 @@ public record ChunkPart(Vec3i size, BlockState[] states, CompoundTag[] blockEnti
     }
 
     /**
-     * Decode a structure NBT, or null when it is not one. Only the first palette is read — parts are
-     * not authored with palette variants — and a cell whose state is out of range reads as air.
+     * Decode a structure NBT, or null when it is not one. Only the first palette is read, and a cell
+     * whose state is out of range reads as air.
      */
-    public static ChunkPart decode(CompoundTag tag, HolderGetter<Block> blocks) {
+    public static ChunkFrameTemplate decode(CompoundTag tag, HolderGetter<Block> blocks) {
         ListTag sizeTag = tag.getList("size", Tag.TAG_INT);
         if (sizeTag.size() != 3) return null;
         Vec3i size = new Vec3i(sizeTag.getInt(0), sizeTag.getInt(1), sizeTag.getInt(2));
@@ -61,7 +61,7 @@ public record ChunkPart(Vec3i size, BlockState[] states, CompoundTag[] blockEnti
         BlockState[] states = new BlockState[cells];
         java.util.Arrays.fill(states, Blocks.AIR.defaultBlockState());
         CompoundTag[] blockEntities = new CompoundTag[cells];
-        ChunkPart part = new ChunkPart(size, states, blockEntities);
+        ChunkFrameTemplate template = new ChunkFrameTemplate(size, states, blockEntities);
 
         ListTag blocksTag = tag.getList("blocks", Tag.TAG_COMPOUND);
         for (int i = 0; i < blocksTag.size(); i++) {
@@ -72,10 +72,10 @@ public record ChunkPart(Vec3i size, BlockState[] states, CompoundTag[] blockEnti
             if (x < 0 || y < 0 || z < 0 || x >= size.getX() || y >= size.getY() || z >= size.getZ()) continue;
             int state = entry.getInt("state");
             if (state < 0 || state >= palette.length) continue;
-            int index = part.index(x, y, z);
+            int index = template.index(x, y, z);
             states[index] = palette[state];
             if (entry.contains("nbt", Tag.TAG_COMPOUND)) blockEntities[index] = entry.getCompound("nbt");
         }
-        return part;
+        return template;
     }
 }

@@ -500,18 +500,18 @@ public final class VariantOverlayRenderer {
             return;
         }
 
-        // Chunk part plots, the same synthetic way: they have no Template either. Only while
+        // Chunk frame plots, the same synthetic way: they have no Template either. Only while
         // Dimensions is resident, which is the only time they stand.
         if (EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) {
-            Optional<ChunkPartEditor.Session> chunk = ChunkPartEditor.plotContaining(player.blockPosition());
+            Optional<String> chunk = ChunkFrameEditor.plotContaining(player.blockPosition());
             if (chunk.isPresent()) {
-                ChunkPartEditor.Session s = chunk.get();
+                String frame = chunk.get();
                 boolean chunkDevmode = EditorDevMode.isEnabled();
-                String chunkKey = "CHUNK_PARTS|" + s.kind().id() + ":" + s.name() + "|" + chunkDevmode;
+                String chunkKey = "CHUNK_FRAMES|" + frame + "|" + chunkDevmode;
                 if (chunkKey.equals(prev)) return;
                 LAST_STATUS.put(uuid, chunkKey);
                 DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-                    PlotCategory.CHUNK_PARTS.id(), s.kind().id() + ":" + s.name(), s.kind().id(), s.name(),
+                    PlotCategory.CHUNK_FRAMES.id(), frame, ChunkFrameEditor.MODEL_ID, frame,
                     chunkDevmode, EditorStatusPacket.NO_WEIGHT,
                     0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
                     false, false, false, false, false, Collections.emptySet(), ""));

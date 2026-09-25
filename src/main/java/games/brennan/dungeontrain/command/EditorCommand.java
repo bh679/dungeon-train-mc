@@ -591,7 +591,7 @@ public final class EditorCommand {
                 // Sub-variants: one named room standing for several designs, drawn by weight.
                 .then(portalRoomGroupNode()))
             .then(WholeEditorCommand.build())
-            .then(ChunkPartCommand.build())
+            .then(ChunkFrameCommand.build())
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -3190,10 +3190,10 @@ public final class EditorCommand {
         if (category == EditorCategory.CARRIAGES) {
             queued.addAll(CarriagePartEditor.stampAllPlotJobs(overworld, dims));
         }
-        // DIMENSIONS likewise paints the chunk part plots beside its rooms — the frames a
-        // dimensional carriage can stand in.
+        // DIMENSIONS likewise paints the chunk frame plots beside its rooms — what a dimensional
+        // carriage can be dressed in.
         if (category == EditorCategory.PORTALS) {
-            queued.addAll(games.brennan.dungeontrain.editor.ChunkPartEditor.stampAllPlotJobs(overworld));
+            queued.addAll(games.brennan.dungeontrain.editor.ChunkFrameEditor.stampAllPlotJobs(overworld));
         }
         EditorStampQueue.start(queued, category.id());
 

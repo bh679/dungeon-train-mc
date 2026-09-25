@@ -1000,8 +1000,8 @@ public final class PortalCarriageBuilder {
                 PortalCarriageRole.EXIT, roomOrigin, roomSize, lock);
         }
 
-        // Last of all: a framed chunk dimension's outer layer stands where the skin, the mouth seals
-        // and the corridor rings were just laid, and replaces them — see ChunkPartPlacer.
+        // Last of all: a chunk dimension's frame stands where the skin, the mouth seals and the
+        // corridor rings were just laid, and dresses them — see ChunkFramePlacer.
         if (structure.mode().generatesTerrain()) {
             PortalChunkDimension.frame(level, structure, dims, pairKey);
         }

@@ -430,8 +430,8 @@ public enum EditorCategory {
             jobs.add(new EditorStampQueue.Job("erase portal rooms",
                 () -> PortalRoomEditor.clearAllPlots(overworld, dims),
                 PortalRoomEditor.allPlotsBox(overworld, dims)));
-            jobs.add(new EditorStampQueue.Job("erase chunk parts",
-                () -> ChunkPartEditor.clearAllPlots(overworld)));
+            jobs.add(new EditorStampQueue.Job("erase chunk frames",
+                () -> ChunkFrameEditor.clearAllPlots(overworld)));
         }
         return jobs;
     }

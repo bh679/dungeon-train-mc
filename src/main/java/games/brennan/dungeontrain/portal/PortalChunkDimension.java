@@ -1,7 +1,8 @@
 package games.brennan.dungeontrain.portal;
 
-import games.brennan.dungeontrain.portal.chunkparts.ChunkPartKind;
-import games.brennan.dungeontrain.portal.chunkparts.ChunkPartPlacer;
+import games.brennan.dungeontrain.portal.chunkframe.ChunkFrame;
+import games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer;
+import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameTemplate;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -110,20 +111,20 @@ public final class PortalChunkDimension {
     }
 
     /**
-     * Frame {@code structure}'s room in the chunk parts its {@code .parts.json} names, when it names
-     * any — see {@link ChunkPartPlacer}. A room with no frame, or one that is not a chunk box, is left
-     * in its lock skin.
+     * Dress {@code structure}'s room in the frame its {@code .frames.json} picks for this pair, when it
+     * names any — see {@link ChunkFramePlacer}. A room with no frame, or one that is not a chunk box,
+     * is left as its terrain in its lock skin.
      */
     public static void frame(ServerLevel level, PortalStructure structure, CarriageDims dims, int pairKey) {
-        if (!structure.roomSize().equals(ChunkPartKind.ROOM_SIZE)) return;
-        ChunkPartPlacer.Frame frame = ChunkPartPlacer.frameFor(level, structure.roomName(), pairKey);
-        if (frame == null) return;
+        if (!structure.roomSize().equals(ChunkFrame.ROOM_SIZE)) return;
+        java.util.Optional<ChunkFrameTemplate> frame =
+            ChunkFramePlacer.frameFor(level, structure.roomName(), pairKey);
+        if (frame.isEmpty()) return;
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
-        // Without the seal planes: the door part IS the seal, so it may write the mouth's plane, and
-        // only the corridor and its plug are kept — which is what cuts the doorway through the part.
-        ChunkPartPlacer.place(level, frame, structure.roomOrigin(dims, layout),
-            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false),
-            PortalCarriageBuilder.lockStateFor(structure));
+        // Without the seal planes: the frame may dress the mouth's plane, and only the corridor and
+        // its plug are kept — which is what cuts the doorway through it.
+        ChunkFramePlacer.place(level, frame.get(), structure.roomOrigin(dims, layout),
+            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false));
     }
 
     // ---- writing -------------------------------------------------------------

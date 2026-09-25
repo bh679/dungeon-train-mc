@@ -22,7 +22,7 @@ import java.util.List;
 public final class NewSourcePickerScreen implements MenuScreen {
 
     public enum Category {
-        CARRIAGES, CONTENTS, PARTS, CHUNK_PARTS, TRACKS,
+        CARRIAGES, CONTENTS, PARTS, CHUNK_FRAMES, TRACKS,
         /**
          * Portal pocket room. Same single-name shape as {@link #TRACKS} — no source choice — but
          * dispatches through the {@code portals} command prefix.
@@ -80,7 +80,7 @@ public final class NewSourcePickerScreen implements MenuScreen {
 
     @Override public String title() {
         return switch (category) {
-            case PARTS, CHUNK_PARTS -> MenuLang.t("new_source.title_kind_source", kind);
+            case PARTS, CHUNK_FRAMES -> MenuLang.t("new_source.title_kind_source", kind);
             case CONTENTS -> MenuLang.t("new_source.title_contents");
             case CARRIAGES -> MenuLang.t("new_source.title_carriage");
             // Tracks have no source picker today — only a name. Title still
@@ -133,10 +133,10 @@ public final class NewSourcePickerScreen implements MenuScreen {
                 out.add(new CommandMenuEntry.TypeArg(
                     MenuLang.t("new_source.standard"), "name", prefix + " standard"));
             }
-            case CHUNK_PARTS -> {
-                // Blank, or a copy of the chunk part being stood in. `enter` with a new name makes
-                // it; the optional trailing name is the part it is copied from.
-                String prefix = "dungeontrain editor chunkpart enter " + kind;
+            case CHUNK_FRAMES -> {
+                // Blank, or a copy of the frame being stood in. `enter` with a new name makes it;
+                // the optional trailing name is the frame it is copied from.
+                String prefix = "dungeontrain editor chunkframe enter";
                 out.add(new CommandMenuEntry.TypeArg(MenuLang.t("new_source.blank"), "name", prefix));
                 if (!currentId.isEmpty()) {
                     out.add(new CommandMenuEntry.TypeArg(

@@ -38,7 +38,7 @@ public record TemplateArt(BuilderPhotoPaths.Kind kind, String id, CarriagePartKi
             }
             case PORTALS -> new TemplateArt(BuilderPhotoPaths.Kind.PORTAL_ROOM, key.modelName(), null, null);
             // Chunk parts have no photo kind yet.
-            case ARCHITECTURE, CHUNK_PARTS -> null;
+            case ARCHITECTURE, CHUNK_FRAMES -> null;
         };
     }
 

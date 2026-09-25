@@ -126,7 +126,7 @@ public final class EditorScreenActions {
         boolean here = ctx.standingInSelection();
         PlotCategory cat = ctx.category();
         String model = ctx.hasSelection() ? ctx.selection().displayName() : "";
-        boolean parts = cat == PlotCategory.PARTS || cat == PlotCategory.CHUNK_PARTS;
+        boolean parts = cat == PlotCategory.PARTS || cat == PlotCategory.CHUNK_FRAMES;
 
         out.add(new Icon("save", EditorScreenLang.ICON_SAVE,
             here ? new CommandMenuEntry.Stay(MenuLang.t("common.save"), EditorMenuScreen.saveCommandFor(cat))
@@ -237,7 +237,7 @@ public final class EditorScreenActions {
                 "dungeontrain editor whole label " + id, "", current);
             case WHOLE_GROUP -> new CommandMenuEntry.TypeArg(label, "name",
                 "dungeontrain editor whole group label " + id, "", current);
-            case PARTS, CHUNK_PARTS, TRACKS, ARCHITECTURE -> null;
+            case PARTS, CHUNK_FRAMES, TRACKS, ARCHITECTURE -> null;
         };
     }
 

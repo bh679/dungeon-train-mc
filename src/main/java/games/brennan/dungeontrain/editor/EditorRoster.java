@@ -56,7 +56,7 @@ public final class EditorRoster {
             addContents(out);
             addTracks(out);
             addPortals(out);
-            addChunkParts(out);
+            addChunkFrames(out);
             return out;
         } finally {
             RELAY_ROWS.set(null);
@@ -243,15 +243,12 @@ public final class EditorRoster {
             v -> trackSelfWeight(TrackKind.PORTAL_ROOM, v)));
     }
 
-    /** The chunk parts, one group per kind, browsed under Dimensions beside the rooms they frame. */
-    private static void addChunkParts(List<EditorRosterPacket.Group> out) {
-        for (games.brennan.dungeontrain.portal.chunkparts.ChunkPartKind kind
-                : games.brennan.dungeontrain.portal.chunkparts.ChunkPartKind.values()) {
-            List<String> names = games.brennan.dungeontrain.portal.chunkparts.ChunkPartRegistry.names(kind);
-            if (names.isEmpty()) continue;
-            out.add(group(PlotCategory.CHUNK_PARTS.id(), EditorTypeMenus.chunkPartTypeName(kind), kind.id(),
-                EditorTypeMenus.chunkPartRows(kind, names), null));
-        }
+    /** The chunk frames, one group, browsed under Dimensions beside the rooms they dress. */
+    private static void addChunkFrames(List<EditorRosterPacket.Group> out) {
+        List<String> names = games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names();
+        if (names.isEmpty()) return;
+        out.add(group(PlotCategory.CHUNK_FRAMES.id(), EditorTypeMenus.FRAMES_TYPE_NAME, ChunkFrameEditor.MODEL_ID,
+            EditorTypeMenus.chunkFrameRows(names), null));
     }
 
     private static EditorRosterPacket.Group group(

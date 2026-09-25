@@ -1,8 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.portal.chunkparts.ChunkPartKind;
-import games.brennan.dungeontrain.portal.chunkparts.ChunkPartRegistry;
-import games.brennan.dungeontrain.portal.chunkparts.ChunkPartStore;
+import games.brennan.dungeontrain.portal.chunkframe.ChunkFrame;
+import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry;
+import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.track.PillarAdjunct;
@@ -162,39 +162,26 @@ public final class EditorTypeMenus {
 
         addTrackKindMenu(out, TrackKind.PORTAL_ROOM, "Dimensional Carriage", dims, activeId,
             categoryBar, typeStrip, EditorCategory.PORTALS);
-        // Chunk part rows, stamped alongside the rooms the way carriage parts are alongside carriages.
-        for (ChunkPartKind kind : ChunkPartKind.values()) {
-            addChunkPartMenu(out, kind, activeId, categoryBar, typeStrip);
+        // The frame row, stamped alongside the rooms the way carriage parts are alongside carriages.
+        List<String> frames = ChunkFrameRegistry.names();
+        if (!frames.isEmpty()) {
+            out.add(new EditorTypeMenusPacket.Menu(
+                anchorForXRow(ChunkFrameEditor.rowOrigin(), ChunkFrame.SIZE), FRAMES_TYPE_NAME,
+                chunkFrameRows(frames), false, activeId, categoryBar, typeStrip));
         }
         return out;
     }
 
-    private static void addChunkPartMenu(
-        List<EditorTypeMenusPacket.Menu> out, ChunkPartKind kind, String activeId,
-        List<EditorTypeMenusPacket.CategoryButton> categoryBar,
-        List<EditorTypeMenusPacket.TypeTab> typeStrip
-    ) {
-        List<String> names = ChunkPartRegistry.names(kind);
-        if (names.isEmpty()) return;
-        BlockPos anchor = anchorForXRow(ChunkPartEditor.rowOrigin(kind), kind.size());
-        out.add(new EditorTypeMenusPacket.Menu(
-            anchor, chunkPartTypeName(kind), chunkPartRows(kind, names), false,
-            activeId, categoryBar, typeStrip));
-    }
+    /** The type label chunk frames go by in the Dimensions menus and the roster. */
+    static final String FRAMES_TYPE_NAME = "Frames";
 
-    /** "Floor Part", "Walls Part"… — distinct from the carriage part tabs' "Floor", "Walls". */
-    static String chunkPartTypeName(ChunkPartKind kind) {
-        String n = kind.name();
-        return n.charAt(0) + n.substring(1).toLowerCase(java.util.Locale.ROOT) + " Part";
-    }
-
-    static List<EditorTypeMenusPacket.Variant> chunkPartRows(ChunkPartKind kind, List<String> names) {
+    static List<EditorTypeMenusPacket.Variant> chunkFrameRows(List<String> names) {
         List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
         for (String name : names) {
-            EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(ChunkPartStore.fileFor(kind, name));
+            EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(ChunkFrameStore.fileFor(name));
             rows.add(new EditorTypeMenusPacket.Variant(
-                name, EditorPlotLabelsPacket.NO_WEIGHT, PlotCategory.CHUNK_PARTS.name(), kind.id(), name,
-                p.isUser(), p.isImported()));
+                name, EditorPlotLabelsPacket.NO_WEIGHT, PlotCategory.CHUNK_FRAMES.name(),
+                ChunkFrameEditor.MODEL_ID, name, p.isUser(), p.isImported()));
         }
         return rows;
     }
@@ -210,11 +197,10 @@ public final class EditorTypeMenus {
         strip.add(new EditorTypeMenusPacket.TypeTab(
             "Dimensional Carriage", EditorCategory.PORTALS.name(),
             TrackKind.PORTAL_ROOM.id(), names.get(0)));
-        for (ChunkPartKind kind : ChunkPartKind.values()) {
-            List<String> parts = ChunkPartRegistry.names(kind);
-            if (parts.isEmpty()) continue;
+        List<String> frames = ChunkFrameRegistry.names();
+        if (!frames.isEmpty()) {
             strip.add(new EditorTypeMenusPacket.TypeTab(
-                chunkPartTypeName(kind), PlotCategory.CHUNK_PARTS.name(), kind.id(), parts.get(0)));
+                FRAMES_TYPE_NAME, PlotCategory.CHUNK_FRAMES.name(), ChunkFrameEditor.MODEL_ID, frames.get(0)));
         }
         return strip;
     }
