@@ -18749,6 +18749,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "vanilla-tags-outside-overhauled-stretch",
+      "version": "0.955.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Vanilla block and frog rules restored across the world",
+      "summary": "A few world-wide rule changes from the overhauled overworld stretch had leaked everywhere else, including the Nether and the End. They now apply only where they're needed.",
+      "highlights": [
+        "Snow no longer settles on ice or packed ice",
+        "Frogs hatch in their usual colour for each biome again",
+        "Ores no longer grow into the smooth basalt shell of geodes",
+        "Leaves next to bamboo and mangrove roots decay normally"
+      ],
+      "pr": 1539,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
