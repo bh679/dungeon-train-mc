@@ -238,7 +238,7 @@ public final class WholeCarriageEditor {
         CarriageEditor.rememberReturn(player);
         if (stamp) stampPlot(overworld, model, dims);
         Vec3i footprint = model.plotSize(dims);
-        BlockPos door = CarriageDoorCells.doorBases(origin, dims).get(0);
+        BlockPos door = EditorPlotArrival.firstOrNull(CarriageDoorCells.doorBases(origin, dims));
         EditorPlotArrival.land(player, overworld, origin, footprint, onTop, inside, door);
         LOGGER.info("[DungeonTrain] Whole editor enter: {} -> {} at {} ({})",
             player.getName().getString(), model.displayName(), origin, onTop ? "top" : "inside");

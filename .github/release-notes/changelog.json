@@ -18621,6 +18621,48 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-walls-netherrack",
+      "version": "0.951.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "No more grey walls where the heat begins",
+      "summary": "Look back from the burning depths and the rock around you now belongs there too. The mountain keeps its own stone right up to the edge.",
+      "highlights": [
+        "The cliffs and ceilings facing the red caverns are netherrack."
+      ],
+      "pr": 1531,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "journey-rhythm-older-worlds-in-order",
+      "version": "0.951.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "The journey finds its rhythm",
+      "summary": "The first leg of the line reaches the strange places sooner, and the long third leg now flows in a better order from one stretch to the next. Something new waits near the very end of it, too.",
+      "highlights": [
+        "Less waiting on the first leg before things get strange.",
+        "The third leg's stretches follow on from each other more naturally.",
+        "Something new near the end of the line.",
+        "Worlds started before this update may show a seam where the new layout meets land you have already seen."
+      ],
+      "pr": 1533,
+      "date": "2026-09-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

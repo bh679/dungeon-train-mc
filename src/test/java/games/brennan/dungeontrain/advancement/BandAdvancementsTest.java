@@ -39,8 +39,8 @@ final class BandAdvancementsTest {
         assertEquals(List.of(
                 "reached_nether", "reached_void", "reached_end_islands", "the_upside_down", "reassembly_required",
                 "reached_wwoo", "reached_better_nether", "reached_bop", "reached_better_end", "reached_spheres",
-                "reached_amplified", "reached_beta", "reached_far_lands", "reached_caves_of_chaos", "reached_skylands", "reached_alpha", "reached_infdev",
-                "reached_floating", "reached_classic", "reached_legacy_void",
+                "reached_amplified", "reached_beta", "reached_far_lands", "reached_caves_of_chaos", "reached_skylands", "reached_floating",
+                "reached_alpha", "reached_infdev", "reached_classic", "reached_superflat", "reached_legacy_void",
                 "reached_chuncks", "reached_stacks", "reached_overworld_again"), chain);
     }
 
@@ -51,9 +51,9 @@ final class BandAdvancementsTest {
                 "ow:1000, stacks:5000, chuncks:5000, legacy:classic=2000:beta=5000, nether:4000, end:4000"));
         assertEquals("reached_stacks", chain.get(0));
         assertEquals("reached_chuncks", chain.get(1));
-        // legacy eras are always kind order inside the run, whichever way the token names them
-        assertEquals("reached_beta", chain.get(2));
-        assertEquals("reached_classic", chain.get(3));
+        // legacy eras run in the order the token names them
+        assertEquals("reached_classic", chain.get(2));
+        assertEquals("reached_beta", chain.get(3));
         assertEquals("reached_nether", chain.get(4));
         assertEquals("reached_void", chain.get(5));
         assertEquals("reached_end_islands", chain.get(6));

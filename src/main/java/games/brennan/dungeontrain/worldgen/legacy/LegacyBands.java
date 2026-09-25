@@ -288,7 +288,32 @@ public final class LegacyBands {
                 int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();
                 yield skyYOffset(bedY, level.getMinBuildHeight());
             }
+            case SUPERFLAT -> {
+                DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+                int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();
+                yield superflatYOffset(bedY, level.getMinBuildHeight());
+            }
         };
+    }
+
+    /**
+     * Pure form of the Superflat {@link #yOffset}: the world Y of the grass layer, one below the track bed so
+     * the train runs along the plain, kept high enough that the bedrock layer beneath stays in the world.
+     */
+    static int superflatYOffset(int bedY, int minBuildY) {
+        return superflatGrassY(bedY - 1, 0L, minBuildY);
+    }
+
+    /** How far Superflat sinks each time a later loop of the cycle revisits it: one chunk. */
+    static final int SUPERFLAT_SINK_PER_LOOP = 16;
+
+    /**
+     * World Y of Superflat's grass on cycle loop {@code loop} (0 = first pass): {@code firstLoopGrassY}, one
+     * {@link #SUPERFLAT_SINK_PER_LOOP} lower per loop after it, never so low that the bedrock layer leaves the world.
+     */
+    public static int superflatGrassY(int firstLoopGrassY, long loop, int minBuildY) {
+        long sunk = (long) firstLoopGrassY - SUPERFLAT_SINK_PER_LOOP * Math.max(0L, loop);
+        return (int) Math.max(minBuildY + LegacyChunkWriter.SUPERFLAT_LAYERS.length - 1, sunk);
     }
 
     /** Pure form of the Indev floating {@link #yOffset}: bed-anchored, the whole level kept in the world. */
