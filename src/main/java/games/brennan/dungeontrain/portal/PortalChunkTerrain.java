@@ -18,7 +18,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
@@ -333,7 +332,7 @@ public final class PortalChunkTerrain {
                 Cached decorated = READY.get(pairKey);
                 LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} ({}) at {}: "
                         + "ground in {} ms, decoration in {} ms, {} mob(s) generated with it",
-                    pairKey, source, sample.level().dimension().location(), sample.pos(), ground,
+                    pairKey, source, source.levelKey().location(), sample.pos(), ground,
                     System.currentTimeMillis() - decoratingFrom,
                     decorated == null ? 0 : decorated.slice().occupants().size());
             } catch (Throwable t) {
@@ -354,6 +353,7 @@ public final class PortalChunkTerrain {
         IN_FLIGHT.clear();
         FAILED.clear();
         DECORATED.clear();
+        PortalChunkSources.clear();
         cacheSeed = Long.MIN_VALUE;
     }
 
@@ -409,18 +409,15 @@ public final class PortalChunkTerrain {
      */
     private static Sample sampleTerrain(MinecraftServer server, Source source, long worldSeed,
                                         int pairKey) {
-        ServerLevel level = server.getLevel(source.levelKey());
-        if (level == null) level = server.overworld();
-        if (level == null) return null;
-        ChunkGenerator generator = level.getChunkSource().getGenerator();
-        if (!(generator instanceof NoiseBasedChunkGenerator noiseGenerator)) return null;
-        RandomState random = level.getChunkSource().randomState();
-
-        int minY = level.getMinBuildHeight();
-        // Under the Nether's bedrock roof rather than over it: the logical height is where a
-        // dimension stops being somewhere a player can be.
-        int maxY = Math.min(level.getMaxBuildHeight() - 1,
-            minY + level.dimensionType().logicalHeight() - 1);
+        // The source dimension's own generator — or, in a world that has none to sample (an editor
+        // world is superflat with no Nether or End), the vanilla preset's. See PortalChunkSources.
+        PortalChunkSources.Resolved resolved = PortalChunkSources.resolve(server, source, worldSeed);
+        if (resolved == null) return null;
+        ServerLevel level = resolved.host();
+        NoiseBasedChunkGenerator noiseGenerator = resolved.generator();
+        RandomState random = resolved.random();
+        int minY = resolved.minY();
+        int maxY = resolved.maxY();
 
         // Somewhere worth standing in, rather than the first place the hash pointed at. A site is
         // taken when most of its columns have standable ground at about one height: that one rule
@@ -442,7 +439,8 @@ public final class PortalChunkTerrain {
             // of the overworld, and a sample that lands in one comes back empty however long it is
             // generated for. Asked before the work rather than after it — this used to be most of
             // what a candidate cost.
-            if (voidedByBand(level, site)) continue;
+            // Only a live dimension has DT's bands in it; a stand-in preset has nothing to dodge.
+            if (!resolved.fallback() && voidedByBand(level, site)) continue;
             tried++;
             Sample candidate = groundAt(level, noiseGenerator, random, site, source, minY, maxY);
             if (candidate == null) continue;

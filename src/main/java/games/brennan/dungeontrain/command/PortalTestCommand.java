@@ -369,6 +369,18 @@ public final class PortalTestCommand {
         return 1;
     }
 
+    /** Remove every entity but a player from a test window — nothing else lives in the test band. */
+    private static int discardMobs(ServerLevel level, BoundingBox box) {
+        int removed = 0;
+        for (net.minecraft.world.entity.Entity entity : level.getEntities(
+                (net.minecraft.world.entity.Entity) null, net.minecraft.world.phys.AABB.of(box),
+                entity -> !(entity instanceof net.minecraft.world.entity.player.Player))) {
+            entity.discard();
+            removed++;
+        }
+        return removed;
+    }
+
     /** The same lift the live path sends — {@code PortalCarriageEvents.sendSkyFor} — for this one player. */
     private static void sendSky(ServerPlayer player, CarriageDims dims, PortalCarriageLayout layout,
                                 PortalStructure structure) {
@@ -433,11 +445,16 @@ public final class PortalTestCommand {
         // that box would leave every copy the ticker grew standing under the world. The structure
         // knows its own tiled bounds; union them with the footprint and clear the lot. Blunt is
         // right here: the test band holds nothing else to protect.
-        int cleared = PortalClear.clearBox(overworld, windowBox(overworld, session.structure(), dims),
-            PortalCorridorMask.NONE);
+        BoundingBox window = windowBox(overworld, session.structure(), dims);
+        int cleared = PortalClear.clearBox(overworld, window, PortalCorridorMask.NONE);
+        // And the room's mobs. A live room's are carried to its next site, so the clear leaves them;
+        // a test room has no next site, and the next test is stamped on this same spot — so a chunk
+        // dimension's villagers used to turn up in the Nether room tested after it.
+        int removed = discardMobs(overworld, window);
 
-        LOGGER.info("[DungeonTrain] portal test back: returned {} to {} and cleared {} block(s) of '{}'",
-            player.getName().getString(), fmt(session.pos()), cleared, session.roomName());
+        LOGGER.info("[DungeonTrain] portal test back: returned {} to {} and cleared {} block(s) and {} "
+                + "mob(s) of '{}'",
+            player.getName().getString(), fmt(session.pos()), cleared, removed, session.roomName());
 
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.back_plot_test_has", session.roomName()).withStyle(ChatFormatting.GRAY), false);
         return 1;
