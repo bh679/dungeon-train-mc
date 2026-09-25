@@ -18758,8 +18758,8 @@
         "fix",
         "world"
       ],
-      "title": "A truer Nether",
-      "summary": "The first Nether the train crosses on each lap now holds only the ores the real Nether does. Stray ores that didn't belong there no longer show up in its rock.",
+      "title": "Nether biome fixes",
+      "summary": "Fixes for some bonuses in the modified Nether.",
       "highlights": [],
       "pr": 1538,
       "date": "2026-09-25",
