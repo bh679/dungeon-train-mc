@@ -111,14 +111,16 @@ public final class CarriageTestCommand {
         DungeonTrainWorldData worldData = DungeonTrainWorldData.get(overworld);
         CarriageDims dims = worldData.dims();
 
+        // Resolved before anything else moves: a request that is refused (an unknown id, a portal
+        // part) must leave the author standing in whatever test they are already in.
+        long seed = seedFor(worldData, overworld, freshRoll);
+        Plan plan = planFor(source, kind, id, seed);
+        if (plan == null) return 0;
+
         // Already inside a test — of either kind: stamping a second would leave the first standing and
         // lose the way home. Send them back first, then in again, so the button is idempotent.
         if (CarriageTestSession.has(player.getUUID())) runBack(source);
         if (PortalTestSession.has(player.getUUID())) PortalTestCommand.runBack(source);
-
-        long seed = seedFor(worldData, overworld, freshRoll);
-        Plan plan = planFor(source, kind, id, seed);
-        if (plan == null) return 0;
 
         BlockPos origin = new BlockPos(player.blockPosition().getX(),
             PortalTwinLanes.floorY(overworld.getMinBuildHeight()), TEST_Z_OFFSET);
