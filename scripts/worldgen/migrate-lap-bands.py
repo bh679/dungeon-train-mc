@@ -29,35 +29,33 @@ ORDER = [
     "C_OVERWORLD_1", "C_CHUNCKS", "C_OVERWORLD_2", "C_STACKS",
 ]
 
+# Each old value turns on every band of its editor option (BandOption); VOID turns on nothing.
 FROM_LEGACY = {
-    "OVERWORLD": ["V_OVERWORLD_1", "V_OVERWORLD_2", "M_OVERWORLD_1", "M_OVERWORLD_2", "M_OVERWORLD_3",
-                  "C_OVERWORLD_1", "C_OVERWORLD_2"],
+    "OVERWORLD": ["V_OVERWORLD_1", "V_OVERWORLD_2", "M_OVERWORLD_1", "M_OVERWORLD_2", "M_OVERWORLD_3", "C_OVERWORLD_1", "C_OVERWORLD_2"],
     "NETHER": ["V_NETHER", "M_NETHER"],
     "END": ["V_END", "M_END"],
     "VOID": [],
-    "UPSIDE_DOWN": ["V_UPSIDE_DOWN", "V_REASSEMBLY"],
-    "CHUNCKS": ["C_CHUNCKS", "L_LARGE_BIOMES", "L_AMPLIFIED", "L_BETA", "L_FAR_LANDS"],
-    "STACKS": ["C_STACKS", "L_CAVES_OF_CHAOS", "L_SKYLANDS", "L_FLOATING", "L_ALPHA"],
-    "SPHERES": ["M_SPHERES", "L_INFDEV", "L_CLASSIC", "L_SUPERFLAT", "L_VOID"],
-    "BETA": [],
-    "ALPHA": [],
-    "SKYLANDS": [],
-    "INFDEV": [],
-    "FLOATING": [],
-    "FAR_LANDS": [],
-    "CLASSIC": [],
-    "CAVES_OF_CHAOS": [],
-    "LARGE_BIOMES": [],
-    "AMPLIFIED": [],
+    "UPSIDE_DOWN": ["V_UPSIDE_DOWN", "V_REASSEMBLY", "M_SPHERES"],
+    "CHUNCKS": ["C_CHUNCKS"],
+    "SPHERES": ["V_UPSIDE_DOWN", "V_REASSEMBLY", "M_SPHERES"],
+    "STACKS": ["C_STACKS"],
+    "BETA": ["L_LARGE_BIOMES", "L_AMPLIFIED", "L_BETA"],
+    "ALPHA": ["L_ALPHA", "L_INFDEV", "L_CLASSIC", "L_SUPERFLAT", "L_VOID"],
+    "SKYLANDS": ["L_FAR_LANDS", "L_CAVES_OF_CHAOS", "L_SKYLANDS", "L_FLOATING"],
+    "INFDEV": ["L_ALPHA", "L_INFDEV", "L_CLASSIC", "L_SUPERFLAT", "L_VOID"],
+    "FLOATING": ["L_FAR_LANDS", "L_CAVES_OF_CHAOS", "L_SKYLANDS", "L_FLOATING"],
+    "FAR_LANDS": ["L_FAR_LANDS", "L_CAVES_OF_CHAOS", "L_SKYLANDS", "L_FLOATING"],
+    "CLASSIC": ["L_ALPHA", "L_INFDEV", "L_CLASSIC", "L_SUPERFLAT", "L_VOID"],
+    "CAVES_OF_CHAOS": ["L_FAR_LANDS", "L_CAVES_OF_CHAOS", "L_SKYLANDS", "L_FLOATING"],
+    "LARGE_BIOMES": ["L_LARGE_BIOMES", "L_AMPLIFIED", "L_BETA"],
+    "AMPLIFIED": ["L_LARGE_BIOMES", "L_AMPLIFIED", "L_BETA"],
 }
 
-# Same-named bands: the fallback when a whole old gate migrates to nothing (LapBand.directOf).
+# A gate whose only value was VOID becomes the End (LapBand.directOf).
 DIRECT = {
-    "CHUNCKS": ["C_CHUNCKS"], "STACKS": ["C_STACKS"], "SPHERES": ["M_SPHERES"], "VOID": ["L_VOID"],
-    "BETA": ["L_BETA"], "ALPHA": ["L_ALPHA"], "SKYLANDS": ["L_SKYLANDS"], "INFDEV": ["L_INFDEV"],
-    "FLOATING": ["L_FLOATING"], "FAR_LANDS": ["L_FAR_LANDS"], "CLASSIC": ["L_CLASSIC"],
-    "CAVES_OF_CHAOS": ["L_CAVES_OF_CHAOS"], "LARGE_BIOMES": ["L_LARGE_BIOMES"], "AMPLIFIED": ["L_AMPLIFIED"],
+    "VOID": ["V_END", "M_END"],
 }
+
 
 ARRAY = re.compile(r'("phases"\s*:\s*\[)([^\]]*)(\])')
 ITEM = re.compile(r'"([^"]*)"')
@@ -76,7 +74,7 @@ def migrate_tokens(tokens: list[str], where: str) -> list[str]:
             raise SystemExit(f"{where}: unknown phase token {t!r}")
     migrated = {b for u in legacy for b in FROM_LEGACY[u]}
     if legacy and not migrated:
-        # An old gate of only VOID / legacy eras: keep it narrow (LapBand.migrateLegacyGate).
+        # A gate whose only value was VOID becomes the End (LapBand.migrateLegacyGate).
         migrated = {b for u in legacy for b in DIRECT.get(u, FROM_LEGACY[u])}
     out |= migrated
     return [b for b in ORDER if b in out]

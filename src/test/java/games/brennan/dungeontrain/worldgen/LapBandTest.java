@@ -57,9 +57,9 @@ final class LapBandTest {
         assertEquals(EnumSet.of(LapBand.M_NETHER), LapBand.resolve("m_nether"));
         assertEquals(EnumSet.of(LapBand.M_NETHER), LapBand.resolve("M_NETHER"));
         assertEquals(EnumSet.of(LapBand.V_NETHER, LapBand.M_NETHER), LapBand.resolve("NETHER"));
-        assertEquals(EnumSet.of(LapBand.V_UPSIDE_DOWN, LapBand.V_REASSEMBLY), LapBand.resolve("ud"));
-        assertEquals(EnumSet.of(LapBand.L_BETA), LapBand.resolve("beta"), "a typed old era is its own band");
-        assertEquals(EnumSet.of(LapBand.L_VOID), LapBand.resolve("void"));
+        assertEquals(BandOption.CUSTOM.bands(), LapBand.resolve("ud"));
+        assertEquals(BandOption.PRE_FAR_LANDS.bands(), LapBand.resolve("beta"), "a typed old era is its option");
+        assertEquals(BandOption.END.bands(), LapBand.resolve("void"), "old Void on its own is the End");
         assertTrue(LapBand.resolve("nowhere").isEmpty());
         assertNull(LapBand.byToken("nether"));
     }
@@ -78,27 +78,28 @@ final class LapBandTest {
     @Test
     @DisplayName("migration: kinds fan out to every occurrence; the Legacy lap comes from Chuncks/Stacks/Spheres")
     void migrationTable() {
-        assertEquals(7, LapBand.fromLegacy(TrainPhase.OVERWORLD).size());
-        assertEquals(EnumSet.of(LapBand.V_UPSIDE_DOWN, LapBand.V_REASSEMBLY), LapBand.fromLegacy(TrainPhase.UPSIDE_DOWN));
+        assertEquals(BandOption.OVERWORLD.bands(), LapBand.fromLegacy(TrainPhase.OVERWORLD));
+        assertEquals(BandOption.CUSTOM.bands(), LapBand.fromLegacy(TrainPhase.UPSIDE_DOWN));
+        assertEquals(BandOption.CUSTOM.bands(), LapBand.fromLegacy(TrainPhase.SPHERES));
+        assertEquals(BandOption.FAR_LANDS.bands(), LapBand.fromLegacy(TrainPhase.SKYLANDS));
+        assertEquals(BandOption.OLD.bands(), LapBand.fromLegacy(TrainPhase.CLASSIC));
         assertTrue(LapBand.fromLegacy(TrainPhase.VOID).isEmpty(), "the End's void edges are part of the End now");
-        assertTrue(LapBand.fromLegacy(TrainPhase.BETA).isEmpty(), "old era values are not sourced");
-        EnumSet<LapBand> legacyLap = EnumSet.noneOf(LapBand.class);
-        for (TrainPhase p : new TrainPhase[] {TrainPhase.CHUNCKS, TrainPhase.STACKS, TrainPhase.SPHERES}) {
-            EnumSet<LapBand> l = LapBand.fromLegacy(p);
-            l.removeIf(b -> b.lap() != LapBand.Lap.LEGACY);
-            assertEquals(4, l.size(), p.name());
-            legacyLap.addAll(l);
+        // Every old value lands on whole options, never part of one.
+        for (TrainPhase p : TrainPhase.values()) {
+            int mask = LapBand.toMask(LapBand.fromLegacy(p));
+            for (BandOption o : BandOption.values()) {
+                assertTrue(o.state(mask) != BandOption.State.SOME, p + " splits " + o);
+            }
         }
-        assertEquals(EnumSet.copyOf(LapBand.Lap.LEGACY.members()), legacyLap);
     }
 
     @Test
     @DisplayName("a whole old gate that migrates to nothing falls back to its direct matches, never to all bands")
     void migrateGateFallback() {
-        assertEquals(EnumSet.of(LapBand.L_BETA, LapBand.L_VOID),
-            LapBand.migrateLegacyGate(EnumSet.of(TrainPhase.BETA, TrainPhase.VOID)));
-        assertEquals(EnumSet.of(LapBand.V_NETHER, LapBand.M_NETHER),
-            LapBand.migrateLegacyGate(EnumSet.of(TrainPhase.NETHER, TrainPhase.VOID, TrainPhase.BETA)));
+        assertEquals(BandOption.END.bands(), LapBand.migrateLegacyGate(EnumSet.of(TrainPhase.VOID)),
+            "Void alone becomes the End");
+        assertEquals(BandOption.NETHER.bands(), LapBand.migrateLegacyGate(EnumSet.of(TrainPhase.NETHER, TrainPhase.VOID)),
+            "Void beside anything else adds nothing");
     }
 
     @Test

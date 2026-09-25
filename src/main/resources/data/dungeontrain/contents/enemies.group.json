@@ -81,7 +81,8 @@
         "V_END",
         "V_UPSIDE_DOWN",
         "V_REASSEMBLY",
-        "M_END"
+        "M_END",
+        "M_SPHERES"
       ],
       "stages": [
         "copper",
@@ -120,16 +121,14 @@
       "weight": 4,
       "phases": [
         "V_NETHER",
+        "V_UPSIDE_DOWN",
+        "V_REASSEMBLY",
         "M_NETHER",
         "M_SPHERES",
-        "L_LARGE_BIOMES",
-        "L_AMPLIFIED",
-        "L_BETA",
         "L_FAR_LANDS",
-        "L_INFDEV",
-        "L_CLASSIC",
-        "L_SUPERFLAT",
-        "L_VOID",
+        "L_CAVES_OF_CHAOS",
+        "L_SKYLANDS",
+        "L_FLOATING",
         "C_CHUNCKS"
       ]
     },

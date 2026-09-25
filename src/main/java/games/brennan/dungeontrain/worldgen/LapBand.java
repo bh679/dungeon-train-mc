@@ -180,9 +180,8 @@ public enum LapBand {
     }
 
     /**
-     * Translate a whole pre-lap gate (old {@link TrainPhase} values) with {@link #fromLegacy}. When that
-     * yields no band (a gate of only {@code VOID} and / or old legacy eras) it falls back to the
-     * {@link #directOf direct matches}, so the gate never widens to "every band".
+     * Translate a whole pre-lap gate (old {@link TrainPhase} values) with {@link #fromLegacy}. {@code VOID}
+     * counts only when it was the gate's only value: then the gate becomes the End ({@link #directOf}).
      */
     public static EnumSet<LapBand> migrateLegacyGate(Set<TrainPhase> old) {
         EnumSet<LapBand> out = EnumSet.noneOf(LapBand.class);
@@ -193,52 +192,35 @@ public enum LapBand {
     }
 
     /**
-     * The bands an old gate value turns on when an old gate is migrated. Each value turns on every
-     * occurrence of its kind; the Upside Down takes its Reassembly. {@code VOID} (the empty stretch
-     * around the End islands) turns on nothing: that stretch is now part of the End band, and old
-     * gates that listed VOID but not END (the overworld stages) must stay off the End. The Legacy lap
-     * is new, so it is sourced from the old void-type bands, split evenly in cycle order — Chuncks the
-     * first four eras, Stacks the next four, Spheres the last four — and the old per-era values
-     * ({@code BETA}, {@code ALPHA}, …) turn on nothing. Keep in step with
+     * The bands an old gate value turns on: every band of the {@link BandOption} it belongs to (an option
+     * is on if any of its old values was). Upside Down and Spheres feed Custom; the legacy eras feed
+     * Pre Far Lands (Large Biomes, Amplified, Beta), Far Lands (+ Caves of Chaos, Skylands, Floating)
+     * and Old (Alpha, Infdev, Classic). {@code VOID} — the empty stretch around the End islands, now part
+     * of the End band — turns on nothing here; see {@link #migrateLegacyGate}. Keep in step with
      * {@code scripts/worldgen/migrate-lap-bands.py}.
      */
     public static EnumSet<LapBand> fromLegacy(TrainPhase phase) {
-        return switch (phase) {
-            case OVERWORLD -> EnumSet.of(V_OVERWORLD_1, V_OVERWORLD_2, M_OVERWORLD_1, M_OVERWORLD_2,
-                M_OVERWORLD_3, C_OVERWORLD_1, C_OVERWORLD_2);
-            case NETHER -> EnumSet.of(V_NETHER, M_NETHER);
-            case END -> EnumSet.of(V_END, M_END);
-            case UPSIDE_DOWN -> EnumSet.of(V_UPSIDE_DOWN, V_REASSEMBLY);
-            case CHUNCKS -> EnumSet.of(C_CHUNCKS, L_LARGE_BIOMES, L_AMPLIFIED, L_BETA, L_FAR_LANDS);
-            case STACKS -> EnumSet.of(C_STACKS, L_CAVES_OF_CHAOS, L_SKYLANDS, L_FLOATING, L_ALPHA);
-            case SPHERES -> EnumSet.of(M_SPHERES, L_INFDEV, L_CLASSIC, L_SUPERFLAT, L_VOID);
-            case VOID, BETA, ALPHA, SKYLANDS, INFDEV, FLOATING, FAR_LANDS, CLASSIC, CAVES_OF_CHAOS,
-                LARGE_BIOMES, AMPLIFIED -> EnumSet.noneOf(LapBand.class);
+        BandOption option = switch (phase) {
+            case OVERWORLD -> BandOption.OVERWORLD;
+            case NETHER -> BandOption.NETHER;
+            case END -> BandOption.END;
+            case UPSIDE_DOWN, SPHERES -> BandOption.CUSTOM;
+            case LARGE_BIOMES, AMPLIFIED, BETA -> BandOption.PRE_FAR_LANDS;
+            case FAR_LANDS, CAVES_OF_CHAOS, SKYLANDS, FLOATING -> BandOption.FAR_LANDS;
+            case ALPHA, INFDEV, CLASSIC -> BandOption.OLD;
+            case CHUNCKS -> BandOption.CHUNCKS;
+            case STACKS -> BandOption.STACKS;
+            case VOID -> null;
         };
+        return option == null ? EnumSet.noneOf(LapBand.class) : option.bands();
     }
 
     /**
-     * The same-named band(s) of an old value — what a typed old token means, and the fallback when a
-     * whole old gate migrates to nothing. {@code VOID} is the legacy void era.
+     * What an old value means on its own — a typed old token, and a gate whose only value was it:
+     * {@link #fromLegacy}, except {@code VOID}, which is the End.
      */
     public static EnumSet<LapBand> directOf(TrainPhase phase) {
-        return switch (phase) {
-            case OVERWORLD, NETHER, END, UPSIDE_DOWN -> fromLegacy(phase);
-            case CHUNCKS -> EnumSet.of(C_CHUNCKS);
-            case STACKS -> EnumSet.of(C_STACKS);
-            case SPHERES -> EnumSet.of(M_SPHERES);
-            case VOID -> EnumSet.of(L_VOID);
-            case BETA -> EnumSet.of(L_BETA);
-            case ALPHA -> EnumSet.of(L_ALPHA);
-            case SKYLANDS -> EnumSet.of(L_SKYLANDS);
-            case INFDEV -> EnumSet.of(L_INFDEV);
-            case FLOATING -> EnumSet.of(L_FLOATING);
-            case FAR_LANDS -> EnumSet.of(L_FAR_LANDS);
-            case CLASSIC -> EnumSet.of(L_CLASSIC);
-            case CAVES_OF_CHAOS -> EnumSet.of(L_CAVES_OF_CHAOS);
-            case LARGE_BIOMES -> EnumSet.of(L_LARGE_BIOMES);
-            case AMPLIFIED -> EnumSet.of(L_AMPLIFIED);
-        };
+        return phase == TrainPhase.VOID ? BandOption.END.bands() : fromLegacy(phase);
     }
 
     /** The single band a classic-mode {@link TrainPhase} column falls back to (first vanilla occurrence). */
