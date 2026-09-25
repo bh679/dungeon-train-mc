@@ -19261,6 +19261,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-fail-closed",
+      "version": "0.971.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "internal"
+      ],
+      "title": "Dimensional carriages never show the wrong look after an error",
+      "summary": "If a dimensional carriage can't confirm its terrain matches the look it's named for, it now shows its plain room instead of a mismatched one.",
+      "highlights": [],
+      "pr": 1569,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
