@@ -166,7 +166,13 @@ class PortalChunkDimensionTest {
             net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
         net.minecraft.world.level.block.state.BlockState[] states =
             new net.minecraft.world.level.block.state.BlockState[width * width * height];
-        java.util.Arrays.fill(states, stone);   // solid to the ceiling, everywhere
+        // A hill: solid up past what the box can spend, open sky over its top.
+        int hillTop = PortalRoomLayout.maxDoorHeightOffset(DEFAULT_DIMS, height) + 2;
+        for (int i = 0; i < states.length; i++) {
+            int y = i / (width * width);
+            states[i] = y <= hillTop ? stone
+                : net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+        }
         PortalChunkSlice slice =
             new PortalChunkSlice(PortalChunkTerrain.Source.OVERWORLD, width, height, states,
                 java.util.Map.of(), java.util.List.of());
@@ -179,6 +185,63 @@ class PortalChunkDimensionTest {
         int max = PortalRoomLayout.maxDoorHeightOffset(DEFAULT_DIMS, height);
         assertEquals(max, fitted.doorHeightOffset().value());
         assertEquals(max, fitted.exitDoorHeightOffset().value());
+    }
+
+    @Test
+    @DisplayName("In a cavern the doors stand on the cave floor, not up in the ceiling rock")
+    void doors_standOnTheCavernFloorNotItsCeiling() {
+        int width = PortalChunkTerrain.SIZE;
+        int height = PortalChunkTerrain.HEIGHT;
+        int floorTop = PortalChunkTerrain.SURFACE_ROW - 1;   // the ground the sample was anchored on
+        int ceilingFrom = 19;                                // a Nether roof inside the cut
+        net.minecraft.world.level.block.state.BlockState rock =
+            net.minecraft.world.level.block.Blocks.NETHERRACK.defaultBlockState();
+        net.minecraft.world.level.block.state.BlockState air =
+            net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+        net.minecraft.world.level.block.state.BlockState[] states =
+            new net.minecraft.world.level.block.state.BlockState[width * width * height];
+        for (int y = 0; y < height; y++) {
+            for (int z = 0; z < width; z++) {
+                for (int x = 0; x < width; x++) {
+                    states[(y * width + z) * width + x] = (y <= floorTop || y >= ceilingFrom) ? rock : air;
+                }
+            }
+        }
+        PortalChunkSlice slice =
+            new PortalChunkSlice(PortalChunkTerrain.Source.NETHER, width, height, states,
+                java.util.Map.of(), java.util.List.of());
+
+        PortalRoomSettings fitted = PortalChunkDoors.fit(
+            PortalRoomSettings.parse(SHIPPED_TAG), slice, DEFAULT_DIMS,
+            PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.DEFAULT),
+            new net.minecraft.core.Vec3i(width, height, width));
+
+        // Read top-down, the first solid cell is the roof: both doors used to open into rock.
+        assertEquals(floorTop, fitted.doorHeightOffset().value(), "the entry door stands on the cave floor");
+        assertEquals(floorTop, fitted.exitDoorHeightOffset().value(), "the exit door stands on the cave floor");
+    }
+
+    @Test
+    @DisplayName("A mouth buried in rock stands on the room's anchored floor, not the top of the rock")
+    void doors_buriedMouthStandsOnTheAnchoredFloor() {
+        int width = PortalChunkTerrain.SIZE;
+        int height = PortalChunkTerrain.HEIGHT;
+        net.minecraft.world.level.block.state.BlockState rock =
+            net.minecraft.world.level.block.Blocks.NETHERRACK.defaultBlockState();
+        net.minecraft.world.level.block.state.BlockState[] states =
+            new net.minecraft.world.level.block.state.BlockState[width * width * height];
+        java.util.Arrays.fill(states, rock);   // no cave reaches either mouth
+        PortalChunkSlice slice =
+            new PortalChunkSlice(PortalChunkTerrain.Source.NETHER, width, height, states,
+                java.util.Map.of(), java.util.List.of());
+
+        PortalRoomSettings fitted = PortalChunkDoors.fit(
+            PortalRoomSettings.parse(SHIPPED_TAG), slice, DEFAULT_DIMS,
+            PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.DEFAULT),
+            new net.minecraft.core.Vec3i(width, height, width));
+
+        assertEquals(PortalChunkTerrain.SURFACE_ROW - 1, fitted.doorHeightOffset().value());
+        assertEquals(PortalChunkTerrain.SURFACE_ROW - 1, fitted.exitDoorHeightOffset().value());
     }
 
     @Test

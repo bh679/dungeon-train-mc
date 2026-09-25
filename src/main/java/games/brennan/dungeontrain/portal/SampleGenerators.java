@@ -54,6 +54,32 @@ final class SampleGenerators {
         return own != null ? own : live;
     }
 
+    /**
+     * The stand-in generator for {@code source} in a world with no dimension of its own to sample:
+     * {@code standIn} (the vanilla preset's) for every room but the vanilla Nether and End, which get
+     * the same vanilla-only biome layouts {@link #forSource} gives them in a live world. The preset's
+     * own Nether and End sources carry the Better mods' biomes just as the live ones do.
+     */
+    static NoiseBasedChunkGenerator forStandIn(MinecraftServer server, PortalChunkTerrain.Source source,
+                                               NoiseBasedChunkGenerator standIn, long seed) {
+        try {
+            if (source == PortalChunkTerrain.Source.NETHER) {
+                return new NoiseBasedChunkGenerator(NetherCoreBiomes.vanillaNetherSource(server, null),
+                    standIn.generatorSettings());
+            }
+            if (source == PortalChunkTerrain.Source.END) {
+                VanillaEndBiomes layout = VanillaEndBiomes.create(seed,
+                    server.registryAccess().lookupOrThrow(Registries.BIOME));
+                return new NoiseBasedChunkGenerator(new VanillaEndBiomeSource(layout),
+                    Holder.direct(unmarkedCopy(standIn.generatorSettings().value())));
+            }
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] Vanilla {} stand-in generator unavailable; it samples the preset as is",
+                source, t);
+        }
+        return standIn;
+    }
+
     /** Drop the generators — the server stopped, or the seed they were built for is gone. */
     static void clear() {
         built = null;
