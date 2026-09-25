@@ -19101,6 +19101,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "vanilla-end-carriage-only-vanilla",
+      "version": "0.964.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Dimensional carriages stay true to their worlds",
+      "summary": "Some dimensional carriages were picking up ores, ruins and buildings that belong to stranger places. Each one now shows only what its own world grows, and no room is left without a building to find.",
+      "highlights": [
+        "The plainer dimensional carriages no longer show ores or buildings borrowed from stranger places.",
+        "The sparsest dimensional carriage now usually has its own world's towering city in it.",
+        "A room whose world has nothing that fits borrows a building from another world instead of standing empty.",
+        "In the editor, Test the Carriage now shows the occasional building from another world, just as a real ride does."
+      ],
+      "pr": 1559,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
