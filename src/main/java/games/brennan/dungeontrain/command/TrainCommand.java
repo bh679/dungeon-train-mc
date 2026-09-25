@@ -122,6 +122,8 @@ public final class TrainCommand {
             .then(SaveCommand.build())
             .then(ResetCommand.build())
             .then(DebugCommand.build())
+            // /dt flyspeed <multiplier> — creative fly speed as a multiple of vanilla.
+            .then(FlySpeedCommand.build())
             .then(PackageCommand.build())
             .then(NarrativeCommand.build())
             .then(SharedBookCommand.build())
