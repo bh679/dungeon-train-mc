@@ -18759,13 +18759,12 @@
         "compatibility",
         "world"
       ],
-      "title": "Vanilla block and frog rules restored across the world",
-      "summary": "A few world-wide rule changes from the overhauled overworld stretch had leaked everywhere else, including the Nether and the End. They now apply only where they're needed.",
+      "title": "The world plays by its usual rules again",
+      "summary": "A few odd rules had crept in everywhere. Snow, frogs, ores and leaves behave the way you expect again.",
       "highlights": [
-        "Snow no longer settles on ice or packed ice",
-        "Frogs hatch in their usual colour for each biome again",
-        "Ores no longer grow into the smooth basalt shell of geodes",
-        "Leaves next to bamboo and mangrove roots decay normally"
+        "Snow no longer settles on ice.",
+        "Frogs take their usual colour for each place again.",
+        "Leaves beside bamboo decay normally."
       ],
       "pr": 1539,
       "date": "2026-09-25",
