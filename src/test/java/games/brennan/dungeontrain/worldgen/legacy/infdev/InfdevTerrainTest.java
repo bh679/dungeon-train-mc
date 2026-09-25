@@ -139,15 +139,15 @@ final class InfdevTerrainTest {
     }
 
     @Test
-    @DisplayName("versions split the band 40/20/20/20; out-of-range progress clamps to the ends")
+    @DisplayName("versions run newest first, 20/20/20/40; out-of-range progress clamps to the ends")
     void versionSplit() {
-        assertEquals(InfdevVersion.V227, InfdevVersion.at(-1.0));
-        assertEquals(InfdevVersion.V227, InfdevVersion.at(0.0));
-        assertEquals(InfdevVersion.V227, InfdevVersion.at(0.399));
+        assertEquals(InfdevVersion.V611, InfdevVersion.at(-1.0));
+        assertEquals(InfdevVersion.V611, InfdevVersion.at(0.0));
+        assertEquals(InfdevVersion.V611, InfdevVersion.at(0.199));
+        assertEquals(InfdevVersion.V420, InfdevVersion.at(0.2));
         assertEquals(InfdevVersion.V415, InfdevVersion.at(0.4));
-        assertEquals(InfdevVersion.V420, InfdevVersion.at(0.6));
-        assertEquals(InfdevVersion.V611, InfdevVersion.at(0.8));
-        assertEquals(InfdevVersion.V611, InfdevVersion.at(2.0));
+        assertEquals(InfdevVersion.V227, InfdevVersion.at(0.6));
+        assertEquals(InfdevVersion.V227, InfdevVersion.at(2.0));
     }
 
     @Test
