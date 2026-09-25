@@ -1,41 +1,49 @@
 package games.brennan.dungeontrain.client.menu;
 
+import games.brennan.dungeontrain.worldgen.BandOption;
 import games.brennan.dungeontrain.worldgen.LapBand;
 
-/** Localised names for {@link LapBand} bands and laps — {@code editor_menu.band.*} / {@code editor_menu.lap.*}. */
+/**
+ * Localised names for the editor's {@link BandOption band options} and their groups —
+ * {@code editor_menu.band_option.*} / {@code editor_menu.band_group.*}.
+ */
 public final class BandLabels {
 
     private BandLabels() {}
 
-    public static String lap(LapBand.Lap lap) {
-        return MenuLang.named("lap", lap.token(), lap.displayName());
+    public static String group(BandOption.Group group) {
+        return MenuLang.named("band_group", group.token(), group.displayName());
     }
 
-    /** The band's own name ("BetterNether"). */
-    public static String band(LapBand band) {
-        return MenuLang.named("band", band.token(), band.displayName());
+    /** The option's own name ("Pre Far Lands"). */
+    public static String option(BandOption option) {
+        return MenuLang.named("band_option", option.token(), option.displayName());
     }
 
-    /** Lap-qualified name ("Mod · BetterNether") — letters and names repeat across laps. */
-    public static String qualified(LapBand band) {
-        return lap(band.lap()) + " · " + band(band);
+    /** Group-qualified name ("Legacy · Pre Far Lands") — letters repeat across groups. */
+    public static String qualified(BandOption option) {
+        return group(option.group()) + " · " + option(option);
     }
 
     /**
-     * Compact per-lap letters of a mask's bands ({@code "V:NE M:N"}); "all" when every band is on, an
-     * em dash when none.
+     * Compact per-group letters of the options a band mask turns on ({@code "O N E · P F · C"}); a
+     * partly-on option gets a trailing {@code ~}. "all" when every band is on, an em dash when none.
      */
     public static String summary(int mask) {
         if ((mask & LapBand.ALL_MASK) == LapBand.ALL_MASK) return MenuLang.t("stages.all");
         StringBuilder sb = new StringBuilder();
-        for (LapBand.Lap lap : LapBand.Lap.values()) {
+        for (BandOption.Group group : BandOption.Group.values()) {
             StringBuilder letters = new StringBuilder();
-            for (LapBand b : lap.members()) {
-                if ((mask & b.bit()) != 0) letters.append(b.letter());
+            for (BandOption o : group.options()) {
+                BandOption.State state = o.state(mask);
+                if (state == BandOption.State.NONE) continue;
+                if (letters.length() > 0) letters.append(' ');
+                letters.append(o.letter());
+                if (state == BandOption.State.SOME) letters.append('~');
             }
             if (letters.length() == 0) continue;
-            if (sb.length() > 0) sb.append(' ');
-            sb.append(lap.letter()).append(':').append(letters);
+            if (sb.length() > 0) sb.append(" · ");
+            sb.append(letters);
         }
         return sb.length() == 0 ? "—" : sb.toString();
     }

@@ -14,7 +14,7 @@ import games.brennan.dungeontrain.editor.TemplateLoot;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
-import games.brennan.dungeontrain.worldgen.LapBand;
+import games.brennan.dungeontrain.worldgen.BandOption;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
@@ -426,8 +426,8 @@ public final class TemplateDataSheet {
             v.minLevel(), linked ? null : Stepper.of(EditorScreenActions.levelRow(key, "minlevel", Integer.toString(v.minLevel()))),
             v.maxLevel(), linked ? null : Stepper.of(EditorScreenActions.levelRow(key, "maxlevel",
                 v.maxLevel() < 0 ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(v.maxLevel()))));
-        PhaseCommand phases = linked ? null : (p, on) -> EditorPlotTeleport.phaseCommandFor(key.category(),
-            key.modelId(), key.modelName(), p.token(), on ? "off" : "on");
+        java.util.function.IntFunction<String> phases = linked ? null : m -> EditorPlotTeleport.phaseCommandFor(
+            key.category(), key.modelId(), key.modelName(), "mask", String.valueOf(m));
         if (linked) {
             // A linked Stage owns the gate: its bounds and letters are read-only and fit beside the name.
             List<Cell> cells = prepend(stage, levels);
@@ -442,15 +442,15 @@ public final class TemplateDataSheet {
     }
 
     /**
-     * {@code Bands  V O N O E U R  M O N O E S O  L …  C O C O S}: every band its own letter button (or
-     * plain when read-only), each lap's letters after its plain lap letter. Letters repeat, so each
-     * carries its lap-qualified name as a tooltip.
+     * {@code Bands  O N E C · P F O · C S}: every {@link BandOption band option} its own button (or plain
+     * when read-only), a dot between the groups. Letters repeat across groups, so each carries its
+     * group-qualified name as a tooltip; a partly-on option shows a trailing {@code ~}.
      */
-    static Line bandsLine(int phaseMask, PhaseCommand phaseCommand) {
+    static Line bandsLine(int phaseMask, java.util.function.IntFunction<String> maskCommand) {
         List<Cell> cells = new ArrayList<>();
-        for (LapBand.Lap lap : LapBand.Lap.values()) {
-            cells.add(Cell.plain(lap.letter()).withTooltip(games.brennan.dungeontrain.client.menu.BandLabels.lap(lap)));
-            cells.addAll(bandCells(lap, phaseMask, phaseCommand));
+        for (BandOption.Group group : BandOption.Group.values()) {
+            if (!cells.isEmpty()) cells.add(Cell.plain("·"));
+            cells.addAll(bandCells(group, phaseMask, maskCommand));
         }
         return new Line(EditorScreenLang.text(EditorScreenLang.STAGES_BANDS), cells);
     }
@@ -461,12 +461,6 @@ public final class TemplateDataSheet {
         all.add(first);
         all.addAll(rest);
         return all;
-    }
-
-    /** The command a phase letter sends: {@code on} is the letter's state before the click. */
-    @FunctionalInterface
-    interface PhaseCommand {
-        String of(LapBand phase, boolean on);
     }
 
     /**
@@ -485,16 +479,20 @@ public final class TemplateDataSheet {
         return cells;
     }
 
-    /** {@code O N O E U R}: one letter per band of {@code lap}, lit when set; a null command makes them plain. */
-    static List<Cell> bandCells(LapBand.Lap lap, int phaseMask, PhaseCommand phaseCommand) {
+    /**
+     * One button per option of {@code group}, lit when fully on; a click toggles the option (sending the
+     * whole new band mask). A null command makes them plain.
+     */
+    static List<Cell> bandCells(BandOption.Group group, int phaseMask, java.util.function.IntFunction<String> maskCommand) {
         List<Cell> cells = new ArrayList<>();
-        for (LapBand p : lap.members()) {
-            boolean on = (phaseMask & p.bit()) != 0;
-            String command = phaseCommand == null ? null : phaseCommand.of(p, on);
-            Cell cell = command == null
-                ? new Cell(p.letter(), null, on)
-                : new Cell(p.letter(), new Action.Run(command), on);
-            cells.add(cell.withTooltip(games.brennan.dungeontrain.client.menu.BandLabels.qualified(p)));
+        for (BandOption o : group.options()) {
+            BandOption.State state = o.state(phaseMask);
+            String text = state == BandOption.State.SOME ? o.letter() + "~" : o.letter();
+            java.util.OptionalInt next = games.brennan.dungeontrain.client.menu.plot.LapBandCells.toggle(phaseMask, o.mask());
+            Cell cell = maskCommand == null || next.isEmpty()
+                ? new Cell(text, null, state == BandOption.State.ALL)
+                : new Cell(text, new Action.Run(maskCommand.apply(next.getAsInt())), state == BandOption.State.ALL);
+            cells.add(cell.withTooltip(games.brennan.dungeontrain.client.menu.BandLabels.qualified(o)));
         }
         return cells;
     }

@@ -110,18 +110,18 @@ final class TemplateDataSheetTest {
         assertEquals("60", cells.get(4).text());
         assertEquals("dungeontrain editor maxlevel pen", stepPrefix(cells.get(4)));
 
-        // Phase mask 1 is the vanilla lap's first overworld only: it turns off, and every other band
-        // turns on — each band its own button on the Bands line (after its plain lap letter).
+        // Phase mask 1 is one overworld band only, so the Overworld option is partly on ("O~") and a
+        // click turns the whole option on; Nether is off and a click adds it. One button per option.
         List<TemplateDataSheet.Cell> bands = bandCells(carriageSheet(15, List.of()));
-        assertEquals(games.brennan.dungeontrain.worldgen.LapBand.values().length, bands.size());
+        assertEquals(games.brennan.dungeontrain.worldgen.BandOption.values().length, bands.size());
         TemplateDataSheet.Cell overworld = bands.get(0);
-        assertEquals("O", overworld.text());
-        assertTrue(overworld.on());
-        assertEquals("dungeontrain editor phase pen v_overworld_1 off", runCommand(overworld));
-        assertEquals("Vanilla · Overworld", overworld.tooltip());
+        assertEquals("O~", overworld.text());
+        assertFalse(overworld.on());
+        assertEquals("dungeontrain editor phase pen mask " + games.brennan.dungeontrain.worldgen.BandOption.OVERWORLD.mask(), runCommand(overworld));
+        assertEquals("Main · Overworld", overworld.tooltip());
         TemplateDataSheet.Cell nether = bands.get(1);
         assertFalse(nether.on());
-        assertEquals("dungeontrain editor phase pen v_nether on", runCommand(nether));
+        assertEquals("dungeontrain editor phase pen mask " + (1 | games.brennan.dungeontrain.worldgen.BandOption.NETHER.mask()), runCommand(nether));
     }
 
     @Test
@@ -151,8 +151,7 @@ final class TemplateDataSheetTest {
         assertEquals(5, lines.get(stageAt).cells().size(), "Custom · Lv · min · — · max");
         TemplateDataSheet.Line bands = lines.get(stageAt + 1);
         assertEquals(EditorScreenLang.text(EditorScreenLang.STAGES_BANDS), bands.label());
-        assertEquals("V", bands.cells().get(0).text(), "each lap's letters follow its plain lap letter");
-        assertEquals("O", bands.cells().get(1).text());
+        assertEquals("O~", bands.cells().get(0).text(), "the options start with Main's Overworld");
         assertFalse(carriageSheet(15, List.of("desert")).stream()
             .anyMatch(l -> l.label().equals(EditorScreenLang.text(EditorScreenLang.STAGES_BANDS))),
             "a linked Stage owns its bands; they stay read-only on the Stage line");
@@ -214,9 +213,9 @@ final class TemplateDataSheetTest {
         List<TemplateDataSheet.Placed> gatePlaced = TemplateDataSheet.place(withGate, r, new FixedFont());
         List<TemplateDataSheet.Placed> letters = gatePlaced.stream()
             .filter(p -> p.cell().action() instanceof TemplateDataSheet.Action.Run
-                && p.cell().text().length() == 1 && Character.isUpperCase(p.cell().text().charAt(0))).toList();
-        assertEquals(games.brennan.dungeontrain.worldgen.LapBand.values().length, letters.size(),
-            "every band's letter must be placed, none cut by the width");
+                && p.cell().text().matches("[A-Z]~?")).toList();
+        assertEquals(games.brennan.dungeontrain.worldgen.BandOption.values().length, letters.size(),
+            "every option's button must be placed, none cut by the width");
         assertEquals(1, letters.stream().map(p -> p.rect().y()).distinct().count(), "all on one row");
 
         TemplateDataSheet.Placed clickable = placed.stream().filter(p -> p.cell().action() != null)

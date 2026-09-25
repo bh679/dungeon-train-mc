@@ -203,9 +203,9 @@ public final class PartPositionMenuInputHandler {
                 if (hit.index() < 0 || hit.index() >= entries.size()) return;
                 WeightedName e = entries.get(hit.index());
                 int mask = games.brennan.dungeontrain.worldgen.LapBand.toMask(e.gate().phases());
-                // Lap / band selector (see LapBandCells): edits send the whole new band mask.
+                // Band option row (see LapBandCells): edits send the whole new band mask.
                 games.brennan.dungeontrain.client.menu.plot.LapBandCells.click(
-                    PartPositionMenuRenderer.bandRowKey(kind, e.name()), mask, hit.phaseSlot(), shift,
+                    mask, hit.phaseSlot(), shift,
                     m -> DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
                         PartAssignmentEditPacket.Op.SET_PHASE_MASK, variantId, kind, e.name(), m)),
                     games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuInputHandler::notifyNeedOneBand);

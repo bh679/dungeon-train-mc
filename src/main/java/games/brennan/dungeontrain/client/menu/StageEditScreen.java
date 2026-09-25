@@ -38,20 +38,9 @@ public final class StageEditScreen implements MenuScreen {
         out.add(levelTriple("minlevel", MenuLang.t("editor.min_level", minLevel), "0-1000"));
         out.add(levelTriple("maxlevel", MenuLang.t("editor.max_level", maxLevel < 0 ? MenuLang.t("editor.max_level_all") : Integer.toString(maxLevel)), "-1..1000"));
 
-        // Band toggles — one per LapBand under its lap; plain click flips one, shift-click "toggle all
-        // but that one".
-        for (LapBand.Lap lap : LapBand.Lap.values()) {
-            out.add(new CommandMenuEntry.Label(BandLabels.lap(lap)));
-            for (LapBand p : lap.members()) {
-                boolean on = (phaseMask & p.bit()) != 0;
-                out.add(new CommandMenuEntry.Toggle(
-                    BandLabels.band(p), on,
-                    EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "on"),
-                    EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "off"),
-                    true,
-                    EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "others")));
-            }
-        }
+        // Band options under their groups; click toggles one, shift-click its whole group.
+        out.addAll(BandOptionEntries.of(phaseMask,
+            m -> EditorPlotTeleport.stagePhaseCommandFor(stageId, "mask", String.valueOf(m))));
 
         out.add(new CommandMenuEntry.DrillIn(MenuLang.t("stage.delete"),
             new ConfirmScreen(MenuLang.t("stage.delete_confirm", stageId),

@@ -97,7 +97,7 @@ public final class EditorStageActions {
                         max < 0 ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(max)),
                     "-1..1000")))));
         out.add(TemplateDataSheet.bandsLine(stage.stage().phaseMask(),
-            (p, on) -> EditorPlotTeleport.stagePhaseCommandFor(id, p.token(), on ? "off" : "on")));
+            m -> EditorPlotTeleport.stagePhaseCommandFor(id, "mask", String.valueOf(m))));
         out.add(TemplateDataSheet.Line.of(EditorScreenLang.text(EditorScreenLang.STAGES_PARTS_LABEL),
             Integer.toString(stage.partCount())));
         out.add(TemplateDataSheet.Line.of(EditorScreenLang.text(EditorScreenLang.STAGES_TEMPLATES_LABEL),

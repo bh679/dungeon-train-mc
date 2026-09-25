@@ -174,10 +174,7 @@ public final class PartPositionMenuRaycast {
             return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_STAGE, idx);
         }
         if (!stageLinked && hitX >= phaseCellL && hitX <= phaseCellR) {
-            String rowName = stageEntry == null ? "" : stageEntry.name();
-            int slot = games.brennan.dungeontrain.client.menu.plot.LapBandCells.slotAt(hitX, phaseCellL, phaseCellR,
-                games.brennan.dungeontrain.client.menu.plot.LapBandView.openLap(
-                    PartPositionMenuRenderer.bandRowKey(PartPositionMenu.kind(), rowName)));
+            int slot = games.brennan.dungeontrain.client.menu.plot.LapBandCells.slotAt(hitX, phaseCellL, phaseCellR);
             return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_PHASE, idx, slot);
         }
         if (!stageLinked && hitX >= maxCellL && hitX <= maxCellR) {

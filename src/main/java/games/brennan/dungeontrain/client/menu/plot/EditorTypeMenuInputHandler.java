@@ -352,8 +352,7 @@ public final class EditorTypeMenuInputHandler {
             case MAX_LEVEL -> { if (!openPickerIfLinked(menu, variant)) dispatchLevel(menu, variant, "maxlevel", shift); }
             case PHASE -> {
                 if (!openPickerIfLinked(menu, variant)) {
-                    dispatchBands(EditorTypeMenuRenderer.bandRowKey(menu, variant), variant.phaseMask(),
-                        hit.slotIdx(), shift, maskCommand(menu, variant));
+                    dispatchBands(variant.phaseMask(), hit.slotIdx(), shift, maskCommand(menu, variant));
                 }
             }
             default -> {}
@@ -435,7 +434,7 @@ public final class EditorTypeMenuInputHandler {
                 String id = stageIdAt(menu, hit);
                 if (id == null) return;
                 EditorTypeMenusPacket.Variant stage = menu.variants().get(hit.variantIdx());
-                dispatchBands(EditorTypeMenuRenderer.bandRowKey(menu, stage), stage.phaseMask(), hit.slotIdx(), shift,
+                dispatchBands(stage.phaseMask(), hit.slotIdx(), shift,
                     m -> EditorPlotTeleport.stagePhaseCommandFor(id, MASK_TOKEN, String.valueOf(m)));
             }
             case STAGE_BLOCKS -> {
@@ -485,14 +484,13 @@ public final class EditorTypeMenuInputHandler {
     private static final String MASK_TOKEN = "mask";
 
     /**
-     * A band-cell click ({@link LapBandCells}) on the row {@code rowKey} whose bands are {@code mask}.
-     * A lap opens that lap's letters (shift: toggles the whole lap); the back cell returns to the laps;
-     * a band flips (shift: flips every other band). Edits send the whole new mask; one that would leave
-     * no band is refused with an action-bar note.
+     * A band-option click ({@link LapBandCells}) on a row whose bands are {@code mask}: plain toggles the
+     * option, shift its whole group. Edits send the whole new mask; one that would leave no band is
+     * refused with an action-bar note.
      */
-    private static void dispatchBands(String rowKey, int mask, int slot, boolean shift, IntFunction<String> maskCommand) {
+    private static void dispatchBands(int mask, int slot, boolean shift, IntFunction<String> maskCommand) {
         if (maskCommand == null) return;
-        LapBandCells.click(rowKey, mask, slot, shift, m -> {
+        LapBandCells.click(mask, slot, shift, m -> {
             String cmd = maskCommand.apply(m);
             LOGGER.debug("[DungeonTrain] EditorTypeMenu bands: {}", cmd);
             CommandRunner.run(cmd);

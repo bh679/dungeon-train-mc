@@ -86,16 +86,17 @@ final class EditorStageActionsTest {
         assertEquals("dungeontrain editor stage minlevel desert inc", min.inc());
         TemplateDataSheet.Action.Step max = assertInstanceOf(TemplateDataSheet.Action.Step.class, levels.get(3).action());
         assertEquals("dungeontrain editor stage maxlevel desert inc", max.inc());
-        // Every band a button; the plain lap letters between the groups are labels.
+        // Every option a button; the dots between the groups are labels.
         List<TemplateDataSheet.Cell> bands = lines.get(2).cells().stream().filter(c -> c.action() != null).toList();
-        assertEquals(LapBand.values().length, bands.size(), "one button per band");
+        assertEquals(games.brennan.dungeontrain.worldgen.BandOption.values().length, bands.size(), "one button per option");
         TemplateDataSheet.Cell overworld = bands.get(0);
-        assertTrue(overworld.on());
-        assertEquals("dungeontrain editor stage phase desert v_overworld_1 off",
+        assertFalse(overworld.on(), "one overworld band of seven is only partly on");
+        int desertMask = LapBand.V_OVERWORLD_1.bit() | LapBand.L_VOID.bit();
+        assertEquals("dungeontrain editor stage phase desert mask " + (desertMask | games.brennan.dungeontrain.worldgen.BandOption.OVERWORLD.mask()),
             assertInstanceOf(TemplateDataSheet.Action.Run.class, overworld.action()).command());
         TemplateDataSheet.Cell nether = bands.get(1);
         assertFalse(nether.on());
-        assertEquals("dungeontrain editor stage phase desert v_nether on",
+        assertEquals("dungeontrain editor stage phase desert mask " + (desertMask | games.brennan.dungeontrain.worldgen.BandOption.NETHER.mask()),
             assertInstanceOf(TemplateDataSheet.Action.Run.class, nether.action()).command());
         assertEquals("1", lines.get(3).cells().get(0).text(), "one linked part");
         assertEquals("4", lines.get(4).cells().get(0).text(), "templates as counted by the caller");

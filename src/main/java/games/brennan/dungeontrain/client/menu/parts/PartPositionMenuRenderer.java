@@ -12,7 +12,6 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.WeightedName;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.client.menu.plot.LapBandCells;
-import games.brennan.dungeontrain.client.menu.plot.LapBandView;
 import games.brennan.dungeontrain.worldgen.LapBand;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -335,7 +334,7 @@ public final class PartPositionMenuRenderer {
             drawCenteredText(ps, buffer, font, maxLabel,
                 (maxCellL + maxCellR) / 2.0, rowCY, maxHover ? 0xFF000000 : LEVEL_COLOR);
 
-            // Band cell: the lap / band selector shared with the type menus (see LapBandCells).
+            // Band cell: the band option row shared with the type menus (see LapBandCells).
             int bandHover = hovered.kind() == PartPositionMenu.CellKind.ENTRY_PHASE && hovered.index() == i
                 ? hovered.phaseSlot() : -1;
             LapBandCells.Painter painter = new LapBandCells.Painter() {
@@ -348,7 +347,7 @@ public final class PartPositionMenuRenderer {
                 }
             };
             LapBandCells.draw(painter, LapBand.toMask(gate.phases()), phaseCellL, phaseCellR, rowBottom, rowTop,
-                LapBandView.openLap(bandRowKey(kind, entry.name())), bandHover);
+                bandHover);
             } // end if (!stageLinked) — gate cells hidden behind the Stage chip while linked
 
             // Side-mode cell (walls/doors only) — click cycles BOTH→ONE→EITHER.
@@ -488,11 +487,6 @@ public final class PartPositionMenuRenderer {
         font.drawInBatch(text, 0, y, colour, false, mat, buffer,
             Font.DisplayMode.SEE_THROUGH, 0, LightTexture.FULL_BRIGHT);
         ps.popPose();
-    }
-
-    /** {@link LapBandView} key for a parts-menu entry row. */
-    static String bandRowKey(CarriagePartKind kind, String name) {
-        return LapBandView.rowKey("parts:" + PartPositionMenu.variantId(), kind == null ? "" : kind.id(), name);
     }
 
     static void drawQuad(PoseStack ps, MultiBufferSource buffer,

@@ -18,11 +18,12 @@ final class ClientStagesDimsTest {
     }
 
     @Test
-    @DisplayName("subset lists each lap's letters in cycle order, laps without a set band left out")
+    @DisplayName("subset lists each group's on options, partly-on ones marked ~, empty groups left out")
     void subset() {
         int mask = LapBand.L_VOID.bit() | LapBand.V_UPSIDE_DOWN.bit() | LapBand.C_CHUNCKS.bit();
-        assertEquals("V:U L:V C:C", ClientStages.dims(mask));
-        assertEquals("V:ON", ClientStages.dims(LapBand.V_OVERWORLD_1.bit() | LapBand.V_NETHER.bit()));
+        assertEquals("C~ · O~ · C", ClientStages.dims(mask));
+        assertEquals("O~ N~", ClientStages.dims(LapBand.V_OVERWORLD_1.bit() | LapBand.V_NETHER.bit()));
+        assertEquals("N", ClientStages.dims(LapBand.V_NETHER.bit() | LapBand.M_NETHER.bit()));
     }
 
     @Test
