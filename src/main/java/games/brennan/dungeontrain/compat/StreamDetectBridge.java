@@ -12,8 +12,8 @@ import org.slf4j.Logger;
  * <p><b>Why the detection is not in DT.</b> It reads the running-process table. That is the kind of
  * thing that can send a mod into CurseForge's manual review, and DT releases many times a week — so
  * the reading lives in its own small mod, reviewed once on its own listing, and DT only shows the UI
- * when it answers yes. Both modpacks ship it on; a manual install without it simply never sees the
- * share tab.</p>
+ * when it answers yes. For now it is jarJar'd inside DT on every platform (hybrid, like Keep Trim);
+ * once its CurseForge listing is live, CurseForge installs it as its own mod instead.</p>
  *
  * <p>Same method names as the add-on's API. Without the add-on (or with one whose API no longer
  * links) every answer is "probe done, nothing found": {@link #hasResult()} is true and

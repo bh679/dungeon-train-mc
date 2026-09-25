@@ -11,7 +11,8 @@ import org.slf4j.Logger;
  * that the relay may be silently blocked.
  *
  * <p>The detection reads the running-process table, so — like {@link StreamDetectBridge} — it lives
- * in its own small mod to keep DT's CurseForge reviews quick. Both modpacks ship it on.</p>
+ * in its own small mod. For now it is jarJar'd inside DT on every platform (hybrid, like Keep Trim);
+ * once its CurseForge listing is live, CurseForge installs it as its own mod instead.</p>
  *
  * <p>Without the add-on (or with one whose API no longer links) every answer is "probe done,
  * nothing found": {@link #hasResult()} is true and {@link #detectNow()} is null. Hard imports are
