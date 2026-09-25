@@ -235,6 +235,9 @@ public final class PortalChunkTerrain {
         }
     }
 
+    /** The namespace a BoP room's site must have its biome from. */
+    private static final String BOP_NAMESPACE = "biomesoplenty";
+
     /** What a Nether chunk-dimension variant's name ends with. */
     private static final String NETHER_SUFFIX = "_nether";
 
@@ -419,9 +422,11 @@ public final class PortalChunkTerrain {
                 // so it is the one worth watching; the second is only how long the room takes to
                 // grow afterwards.
                 Cached decorated = READY.get(pairKey);
-                LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} ({}) at {}: "
+                // The biome too: it is what says whether a WWOO, BoP or Better room actually landed
+                // in its mod's world generation or quietly came back vanilla.
+                LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} ({}) at {} in {}: "
                         + "ground in {} ms, decoration in {} ms, {} mob(s) generated with it",
-                    pairKey, source, source.levelKey().location(), sample.pos(), ground,
+                    pairKey, source, source.levelKey().location(), sample.pos(), biomeAt(sample), ground,
                     System.currentTimeMillis() - decoratingFrom,
                     decorated == null ? 0 : decorated.slice().occupants().size());
             } catch (Throwable t) {
@@ -434,6 +439,18 @@ public final class PortalChunkTerrain {
                 IN_FLIGHT.remove(pairKey);
             }
         });
+    }
+
+    /** The biome at the middle of a sample's surface row, by id — for the log. */
+    private static String biomeAt(Sample sample) {
+        try {
+            return sample.generator().getBiomeSource().getNoiseBiome(
+                    QuartPos.fromBlock(sample.pos().getMiddleBlockX()), QuartPos.fromBlock(sample.anchor()),
+                    QuartPos.fromBlock(sample.pos().getMiddleBlockZ()), sample.random().sampler())
+                .unwrapKey().map(k -> k.location().toString()).orElse("?");
+        } catch (Throwable t) {
+            return "?";
+        }
     }
 
     /** Drop every sampled cube — the next world's pair keys mean different rooms. */
@@ -529,7 +546,7 @@ public final class PortalChunkTerrain {
         // a portal carriage used to wait ten seconds for its room.
         Sample best = null;
         int tried = 0;
-        SitePlan plan = SitePlan.of(level, source);
+        SitePlan plan = SitePlan.of(level, source, noiseGenerator.getBiomeSource(), random.sampler());
         for (int attempt = 0; attempt < SITE_ATTEMPTS; attempt++) {
             // A re-roll walks on past every site the earlier rolls could have tried.
             ChunkPos site = plan.site(worldSeed, pairKey, roll * SITE_ATTEMPTS + attempt);
@@ -540,9 +557,10 @@ public final class PortalChunkTerrain {
             // overworld room plain: a site in a band, a legacy era or a modded stretch would wear
             // that look under the train wherever the room turned up.
             //
-            // Both describe this world's live overworld, so a stand-in preset skips them: an editor
-            // world has no bands and no stretches, and asking would only turn good sites away.
-            if (!resolved.fallback() && (voidedByBand(level, site) || !plan.accepts(site))) continue;
+            // The stretch test still applies to a stand-in preset: an editor world has no bands to
+            // void a site, but its configured cycle still says where WWOO and BoP grow, and a WWOO
+            // or BoP room sampled outside its stretch comes back vanilla.
+            if ((!resolved.fallback() && voidedByBand(level, site)) || !plan.accepts(site)) continue;
             tried++;
             Sample candidate = groundAt(level, noiseGenerator, random, site, source, minY, maxY);
             if (candidate == null) continue;
@@ -772,12 +790,19 @@ public final class PortalChunkTerrain {
         }
 
         static SitePlan of(ServerLevel level, Source source) {
+            return of(level, source, level.getChunkSource().getGenerator().getBiomeSource(),
+                level.getChunkSource().randomState().sampler());
+        }
+
+        /**
+         * The plan for sampling {@code source} out of {@code biomes} — the generator actually being
+         * sampled, which in a world with nothing to sample is a stand-in rather than the level's own.
+         */
+        static SitePlan of(ServerLevel level, Source source, BiomeSource biomes, Climate.Sampler sampler) {
             if (source.biomeNamespace() != null) {
-                // A Better room: any site will do, as long as the live dimension puts one of its
-                // mod's biomes there.
-                return new SitePlan(null, null, List.of(), source.biomeNamespace(),
-                    level.getChunkSource().getGenerator().getBiomeSource(),
-                    level.getChunkSource().randomState().sampler());
+                // A Better room: any site will do, as long as the dimension puts one of its mod's
+                // biomes there.
+                return new SitePlan(null, null, List.of(), source.biomeNamespace(), biomes, sampler);
             }
             if (source.stretch() == null || !level.dimension().equals(Level.OVERWORLD)) {
                 return new SitePlan(null, null, List.of());
@@ -792,6 +817,12 @@ public final class PortalChunkTerrain {
                     source.stretch(), source);
                 return new SitePlan(cycle, SecondLapOverworld.Stretch.VANILLA, List.of());
             }
+            if (source.stretch() == SecondLapOverworld.Stretch.BOP) {
+                // In the BoP stretch and on a BoP biome. BoP leaves rivers and shores to vanilla, and
+                // a flat river valley is exactly the level, standable ground a site is judged on — so
+                // without asking for the biome too, a BoP room kept landing on a vanilla river.
+                return new SitePlan(cycle, source.stretch(), ranges, BOP_NAMESPACE, biomes, sampler);
+            }
             return new SitePlan(cycle, source.stretch(), ranges);
         }
 
@@ -805,7 +836,9 @@ public final class PortalChunkTerrain {
         }
 
         boolean accepts(ChunkPos site) {
-            if (biomeNamespace != null) return biomeNamespace.equals(biomeNamespaceAt(biomes, sampler, site));
+            if (biomeNamespace != null && !biomeNamespace.equals(biomeNamespaceAt(biomes, sampler, site))) {
+                return false;
+            }
             if (stretch == null) return true;
             try {
                 return StretchSites.matches(cycle, stretch, site.getMinBlockX());

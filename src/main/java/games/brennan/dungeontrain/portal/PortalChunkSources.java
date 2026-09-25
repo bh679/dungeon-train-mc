@@ -14,6 +14,9 @@ import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.presets.WorldPreset;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import games.brennan.dungeontrain.worldgen.density.OverworldBiomeSourceMark;
+import games.brennan.dungeontrain.mixin.MultiNoiseBiomeSourceAccessor;
+import net.minecraft.world.level.biome.MultiNoiseBiomeSource;
 import org.slf4j.Logger;
 
 import java.util.Map;
@@ -91,7 +94,22 @@ public final class PortalChunkSources {
             LevelStem stem = preset.createWorldDimensions().dimensions().get(stemFor(source.levelKey()));
             if (stem == null) return null;
             ChunkGenerator generator = stem.generator();
-            if (!(generator instanceof NoiseBasedChunkGenerator noise)) return null;
+            if (!(generator instanceof NoiseBasedChunkGenerator presetGenerator)) return null;
+            // An overworld stand-in is marked as the overworld's source, so DT's own biome choice
+            // applies to it as it does to a live world: BoP only in the BoP stretch, vanilla
+            // elsewhere. Unmarked, it is plain vanilla everywhere and a BoP room has no BoP in it.
+            //
+            // Marked on a copy of its own: the preset hands back the stems the registry holds, so
+            // marking the preset's source would mark a registry object for the rest of the session.
+            if (source.levelKey().equals(Level.OVERWORLD)
+                    && presetGenerator.getBiomeSource() instanceof MultiNoiseBiomeSource shared) {
+                MultiNoiseBiomeSource own = MultiNoiseBiomeSource.createFromList(
+                    ((MultiNoiseBiomeSourceAccessor) shared).dungeontrain$parameters());
+                ((OverworldBiomeSourceMark) own).dungeontrain$markOverworld();
+                presetGenerator = new NoiseBasedChunkGenerator(own, presetGenerator.generatorSettings());
+            }
+            NoiseBasedChunkGenerator noise =
+                SampleGenerators.forStandIn(host.getServer(), source, presetGenerator, seed);
             RandomState random = RandomState.create(noise.generatorSettings().value(),
                 host.registryAccess().lookupOrThrow(Registries.NOISE), seed);
             Holder<DimensionType> type = stem.type();
