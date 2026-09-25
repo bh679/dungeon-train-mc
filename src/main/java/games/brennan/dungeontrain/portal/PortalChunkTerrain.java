@@ -656,7 +656,7 @@ public final class PortalChunkTerrain {
             if (source.stretch() == SecondLapOverworld.Stretch.VANILLA) {
                 return new SitePlan(cycle, SecondLapOverworld.Stretch.VANILLA, List.of());
             }
-            List<int[]> ranges = StretchSites.chunkRanges(cycle, source.stretch());
+            List<int[]> ranges = StretchSites.chunkRanges(cycle, source.stretch(), (long) SAMPLE_SPREAD * SIZE);
             if (ranges.isEmpty()) {
                 LOGGER.debug("[DungeonTrain] No {} stretch in this world; {} samples plain overworld",
                     source.stretch(), source);

@@ -47,17 +47,22 @@ public final class StretchSites {
 
     /**
      * Chunk-X ranges {@code [from, to)} a {@code stretch} room can be cut from, margin already taken
-     * off both ends, in X order. Empty when this world has no such stretch (its band is switched off).
+     * off both ends, no further out than {@code maxBlockX}, in X order. Empty when this world has no
+     * such stretch within reach (its band is switched off).
+     *
+     * <p>The cap keeps modded rooms as near the origin as the plain room's scattered sites: the
+     * doubling laps put later stretches billions of blocks out, far past the world border, where
+     * generation is nothing a player could ever stand on.</p>
      */
-    public static List<int[]> chunkRanges(WorldGenCycle cycle, SecondLapOverworld.Stretch stretch) {
+    public static List<int[]> chunkRanges(WorldGenCycle cycle, SecondLapOverworld.Stretch stretch, long maxBlockX) {
         List<int[]> out = new ArrayList<>();
         if (cycle == null) return out;
         for (long[] gap : cycle.overworldGapRanges(LAPS)) {
+            if (gap[0] >= maxBlockX) break;
             long mid = (gap[0] + gap[1]) / 2;
-            if (mid > Integer.MAX_VALUE) break;
-            if (SecondLapOverworld.at(cycle, (int) mid) != stretch) continue;
+            if (SecondLapOverworld.at(cycle, (int) Math.min(mid, Integer.MAX_VALUE)) != stretch) continue;
             long from = Math.floorDiv(gap[0] + MARGIN + CHUNK - 1, CHUNK);
-            long to = Math.floorDiv(Math.min(gap[1] - MARGIN, (long) Integer.MAX_VALUE - MARGIN), CHUNK);
+            long to = Math.floorDiv(Math.min(gap[1] - MARGIN, maxBlockX), CHUNK);
             if (from < to) out.add(new int[] {(int) from, (int) to});
         }
         return out;

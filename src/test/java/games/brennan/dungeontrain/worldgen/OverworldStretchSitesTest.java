@@ -24,6 +24,9 @@ final class OverworldStretchSitesTest {
             new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);
     private static final int PERIOD = 1940;
 
+    /** How far out the dimensional carriages reach — {@code PortalChunkTerrain}'s 60 000-chunk spread. */
+    private static final long REACH = 960_000L;
+
     private static final long START = 10_000L;
     private static final CycleLayout LAYOUT = CycleLayoutTest.shipped();
     private static final WorldGenCycle SHIPPED = new WorldGenCycle(START, 10_000, 40, new int[] {1, 2, 4, 8, 15}, 32, 0, 300, 5000,
@@ -87,13 +90,14 @@ final class OverworldStretchSitesTest {
     void moddedSitesStayInTheirStretch() {
         for (WorldGenCycle cycle : List.of(CLASSIC, SHIPPED)) {
             for (Stretch stretch : List.of(Stretch.WWOO, Stretch.BOP)) {
-                List<int[]> ranges = StretchSites.chunkRanges(cycle, stretch);
+                List<int[]> ranges = StretchSites.chunkRanges(cycle, stretch, REACH);
                 assertFalse(ranges.isEmpty(), stretch + " has somewhere to sample");
                 SplittableRandom rnd = new SplittableRandom(42);
                 for (int i = 0; i < 5000; i++) {
                     int chunkX = StretchSites.chunkXIn(ranges, rnd.nextDouble(), rnd.nextDouble());
                     assertTrue(StretchSites.matches(cycle, stretch, chunkX * 16),
                             stretch + " site at chunk " + chunkX + " is outside its stretch");
+                    assertTrue((long) chunkX * 16 + 15 <= REACH, "site past the reach cap");
                 }
             }
         }
@@ -127,8 +131,8 @@ final class OverworldStretchSitesTest {
     @Test
     @DisplayName("with no cycle there is no modded stretch to sample, and everything is vanilla")
     void noCycleNoModdedStretch() {
-        assertTrue(StretchSites.chunkRanges(null, Stretch.WWOO).isEmpty());
-        assertTrue(StretchSites.chunkRanges(null, Stretch.BOP).isEmpty());
+        assertTrue(StretchSites.chunkRanges(null, Stretch.WWOO, REACH).isEmpty());
+        assertTrue(StretchSites.chunkRanges(null, Stretch.BOP, REACH).isEmpty());
         assertTrue(StretchSites.matches(null, Stretch.VANILLA, 12345));
         assertFalse(StretchSites.matches(null, Stretch.WWOO, 12345));
     }
