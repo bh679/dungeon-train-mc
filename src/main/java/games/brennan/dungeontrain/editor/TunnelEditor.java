@@ -132,12 +132,7 @@ public final class TunnelEditor {
      * only when the player is not already standing in it.
      */
     public static void walkTo(ServerPlayer player, TunnelVariant variant, boolean onTop) {
-        enter(player, variant, onTop, !standingIn(player, variant));
-    }
-
-    /** Already inside {@code variant}'s default-named plot — see {@link EditorPlotScope#standingIn}. */
-    private static boolean standingIn(ServerPlayer player, TunnelVariant variant) {
-        return EditorPlotScope.standingIn(player, new Template.Tunnel(variant));
+        enter(player, variant, onTop, !EditorPlotScope.standingIn(player, new Template.Tunnel(variant)));
     }
 
     /**

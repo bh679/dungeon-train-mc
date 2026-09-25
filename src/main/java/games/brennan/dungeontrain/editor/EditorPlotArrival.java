@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.function.Predicate;
 
 /**
@@ -88,6 +89,14 @@ public record EditorPlotArrival(double x, double y, double z, float yaw, float p
     private static BlockPos centreOf(BlockPos origin, Vec3i footprint) {
         return new BlockPos(origin.getX() + footprint.getX() / 2, origin.getY() + 1,
             origin.getZ() + footprint.getZ() / 2);
+    }
+
+    /**
+     * The plot's -X door from a {@code doorBases} list (front door first), or {@code null} when
+     * there is none — which {@link #land} takes as a centre landing.
+     */
+    static @Nullable BlockPos firstOrNull(List<BlockPos> doorBases) {
+        return doorBases.isEmpty() ? null : doorBases.get(0);
     }
 
     /**

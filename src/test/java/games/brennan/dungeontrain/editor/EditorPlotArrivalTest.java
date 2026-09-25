@@ -11,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -18,6 +19,7 @@ import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class EditorPlotArrivalTest {
@@ -321,5 +323,15 @@ final class EditorPlotArrivalTest {
     void landing_blockedDoorStepsInside() {
         EditorPlotArrival a = landing(false, EditorPlotArrival.Inside.FRONT_DOOR, DOOR, blocked(DOOR));
         assertEquals(new EditorPlotArrival(1.5, 231, 3.5, EditorPlotArrival.FACING_POSITIVE_X, 0f), a);
+    }
+
+    @Test
+    void firstOrNull_emptyIsNull() {
+        assertNull(EditorPlotArrival.firstOrNull(List.of()));
+    }
+
+    @Test
+    void firstOrNull_takesTheFrontDoor() {
+        assertEquals(DOOR, EditorPlotArrival.firstOrNull(List.of(DOOR, new BlockPos(8, 231, 3))));
     }
 }
