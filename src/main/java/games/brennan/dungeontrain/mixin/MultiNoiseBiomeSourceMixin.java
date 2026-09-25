@@ -94,7 +94,7 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                                                          int x, int y, int z, Climate.Sampler sampler) {
         OverworldStretchBiomes stretchBiomes = OverworldStretchBiomes.current();
         if (stretchBiomes == null) return null;
-        return stretchBiomes.pick(SecondLapOverworld.at(ctx.cycle(), x << 2), source, x, y, z, sampler);
+        return stretchBiomes.pick(SecondLapOverworld.at(ctx.cycle(), ctx.hasTrain(), x << 2), source, x, y, z, sampler);
     }
 
     /** The forced Nether-core / End-core / highland biome, or {@code null} for an ordinary column. */

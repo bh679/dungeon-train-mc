@@ -5,7 +5,9 @@ package games.brennan.dungeontrain.worldgen;
  * of the {@link WorldGenCycle} (cycle index 1, 3, 5, …) — the same parity the BetterNether and
  * BetterEnd laps use — the overworld gap <b>before</b> the Nether band is William Wythers' Overhauled
  * Overworld and the gap <b>after</b> it is Biomes O' Plenty. Lap 0, even laps and every other stretch
- * stay vanilla.
+ * stay vanilla. A world created without the train has no DT bands at all, so every stretch is vanilla
+ * there — this class is the one gate for that, and every caller (server worldgen and client twins
+ * alike) passes the world's train flag so both sides agree.
  *
  * <p>Pure (no Minecraft types) so the lap/gap rules are unit-testable. The two mods are confined in
  * different places because they work differently: BoP adds its own biomes, so it is confined at
@@ -24,9 +26,12 @@ public final class SecondLapOverworld {
         return lap > 0L && (lap & 1L) == 1L;
     }
 
-    /** The stretch at this world-X; {@link Stretch#VANILLA} when the cycle is missing. */
-    public static Stretch at(WorldGenCycle cycle, int worldX) {
-        if (cycle == null) return Stretch.VANILLA;
+    /**
+     * The stretch at this world-X; {@link Stretch#VANILLA} when the cycle is missing or the world was
+     * created without the train ({@code worldHasTrain == false}).
+     */
+    public static Stretch at(WorldGenCycle cycle, boolean worldHasTrain, int worldX) {
+        if (cycle == null || !worldHasTrain) return Stretch.VANILLA;
         if (cycle.hasLayout()) {
             // Ordered layout: the gap's own style label says which mod owns it (lap 2's WWOO / BoP slots).
             CycleLayout.Style style = cycle.overworldStyleAt(worldX);

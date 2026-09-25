@@ -45,20 +45,33 @@ final class SecondLapOverworldTest {
     @DisplayName("stretches: WWOO before and BoP after the Nether band on odd laps only")
     void stretches() {
         // Lap 0 — all vanilla.
-        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, 1100));
-        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, 2000));
+        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, true, 1100));
+        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, true, 2000));
         // Lap 1 — lead gap [2940,3240) is WWOO, post-Nether gap [3900,4200) is BoP.
-        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, 2939));
-        assertEquals(SecondLapOverworld.Stretch.WWOO, SecondLapOverworld.at(C, 2940));
-        assertEquals(SecondLapOverworld.Stretch.WWOO, SecondLapOverworld.at(C, 3239));
-        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, 3240)); // Nether band
-        assertEquals(SecondLapOverworld.Stretch.BOP, SecondLapOverworld.at(C, 3900));
-        assertEquals(SecondLapOverworld.Stretch.BOP, SecondLapOverworld.at(C, 4199));
-        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, 4200)); // End band
+        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, true, 2939));
+        assertEquals(SecondLapOverworld.Stretch.WWOO, SecondLapOverworld.at(C, true, 2940));
+        assertEquals(SecondLapOverworld.Stretch.WWOO, SecondLapOverworld.at(C, true, 3239));
+        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, true, 3240)); // Nether band
+        assertEquals(SecondLapOverworld.Stretch.BOP, SecondLapOverworld.at(C, true, 3900));
+        assertEquals(SecondLapOverworld.Stretch.BOP, SecondLapOverworld.at(C, true, 4199));
+        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, true, 4200)); // End band
         // Lap 2 — vanilla again; lap 3 — modded again.
-        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, 2940 + PERIOD));
-        assertEquals(SecondLapOverworld.Stretch.WWOO, SecondLapOverworld.at(C, 2940 + 2 * PERIOD));
-        assertEquals(SecondLapOverworld.Stretch.BOP, SecondLapOverworld.at(C, 3900 + 2 * PERIOD));
-        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(null, 3000));
+        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, true, 2940 + PERIOD));
+        assertEquals(SecondLapOverworld.Stretch.WWOO, SecondLapOverworld.at(C, true, 2940 + 2 * PERIOD));
+        assertEquals(SecondLapOverworld.Stretch.BOP, SecondLapOverworld.at(C, true, 3900 + 2 * PERIOD));
+        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(null, true, 3000));
+    }
+
+    @Test
+    @DisplayName("no train: every stretch is vanilla, including the WWOO and BoP gaps of every odd lap")
+    void noTrainIsAllVanilla() {
+        for (int lap = 0; lap < 6; lap++) {
+            for (int x = 1000 + lap * PERIOD; x < 1000 + (lap + 1) * PERIOD; x += 10) {
+                assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, false, x), "x=" + x);
+            }
+        }
+        // Sanity: the same X ranges are modded when the world has the train.
+        assertEquals(SecondLapOverworld.Stretch.WWOO, SecondLapOverworld.at(C, true, 2940));
+        assertEquals(SecondLapOverworld.Stretch.BOP, SecondLapOverworld.at(C, true, 3900));
     }
 }

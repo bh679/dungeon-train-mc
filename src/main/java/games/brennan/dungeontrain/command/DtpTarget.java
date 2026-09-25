@@ -55,7 +55,7 @@ record DtpTarget(String token, String displayName, ColumnTest test) {
     }
 
     private static SecondLapOverworld.Stretch overworldStretch(ServerLevel overworld, int worldX) {
-        if (!DungeonTrainWorldData.get(overworld).startsWithTrain()) return SecondLapOverworld.Stretch.VANILLA;
-        return SecondLapOverworld.at(WorldGenCycle.fromConfig(), worldX);
+        return SecondLapOverworld.at(WorldGenCycle.fromConfig(),
+                DungeonTrainWorldData.get(overworld).startsWithTrain(), worldX);
     }
 }

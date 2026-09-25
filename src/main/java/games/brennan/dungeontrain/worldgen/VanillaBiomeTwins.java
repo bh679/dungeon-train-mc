@@ -79,14 +79,15 @@ public final class VanillaBiomeTwins {
     static boolean outsideWwoo(double x) {
         NetherBandContext ctx = NetherBandContext.current();
         WorldGenCycle cycle;
+        boolean hasTrain;
         if (ctx != null && ctx.cycle() != null) {
-            cycle = ctx.cycle();
-        } else if (clientWorldHasTrain) {
-            cycle = WorldGenCycle.fromConfig();
+            cycle = ctx.cycle(); // server: the world's published snapshot
+            hasTrain = ctx.hasTrain();
         } else {
-            return true; // no train in this world: nothing is ever a WWOO stretch
+            cycle = WorldGenCycle.fromConfig(); // client: synced train flag, same gate as the server
+            hasTrain = clientWorldHasTrain;
         }
-        return SecondLapOverworld.at(cycle, (int) Math.floor(x)) != SecondLapOverworld.Stretch.WWOO;
+        return SecondLapOverworld.at(cycle, hasTrain, (int) Math.floor(x)) != SecondLapOverworld.Stretch.WWOO;
     }
 
     public static void setCameraX(DoubleSupplier supplier) {

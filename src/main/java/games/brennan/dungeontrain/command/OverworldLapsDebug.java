@@ -50,7 +50,8 @@ final class OverworldLapsDebug {
         BiomeSource biomeSource = overworld.getChunkSource().getGenerator().getBiomeSource();
         Climate.Sampler sampler = overworld.getChunkSource().randomState().sampler();
         WorldGenCycle cycle = ctx.cycle();
-        send(source, "[DungeonTrain] overworld-laps: period=" + cycle.period()
+        boolean hasTrain = ctx.hasTrain();
+        send(source, "[DungeonTrain] overworld-laps: period=" + cycle.period() + " hasTrain=" + hasTrain
                 + " bopRegions=" + (stretchBiomes == null ? "none" : stretchBiomes.bopRegionCount())
                 + " wwooFeatures=" + VanillaBiomeFeatures.describe()
                 + " wwooTwins=" + VanillaBiomeTwins.count(), ChatFormatting.AQUA);
@@ -64,10 +65,10 @@ final class OverworldLapsDebug {
             long leadEnd = nether[0];
             long postStart = nether[1];
             long postEnd = postStart + cycle.overworldGapAfter(lap);
-            send(source, describe(cycle, biomeSource, sampler, overworld.getSeaLevel(), lap, "lead", leadStart, leadEnd),
-                    colour(cycle, leadStart));
-            send(source, describe(cycle, biomeSource, sampler, overworld.getSeaLevel(), lap, "post-Nether", postStart, postEnd),
-                    colour(cycle, postStart));
+            send(source, describe(cycle, hasTrain, biomeSource, sampler, overworld.getSeaLevel(), lap, "lead", leadStart, leadEnd),
+                    colour(cycle, hasTrain, leadStart));
+            send(source, describe(cycle, hasTrain, biomeSource, sampler, overworld.getSeaLevel(), lap, "post-Nether", postStart, postEnd),
+                    colour(cycle, hasTrain, postStart));
             send(source, "    Nether/End core BoP samples: " + bandCoreBop(ctx, cycle, leadEnd, postEnd + cycle.endLen())
                     + " | overworld source at cores: " + coreLabels(cycle, biomeSource, sampler, overworld.getSeaLevel(),
                     leadEnd, postEnd + cycle.endLen()), ChatFormatting.GRAY);
@@ -75,7 +76,7 @@ final class OverworldLapsDebug {
         return 1;
     }
 
-    private static String describe(WorldGenCycle cycle, BiomeSource biomeSource, Climate.Sampler sampler, int seaLevel,
+    private static String describe(WorldGenCycle cycle, boolean hasTrain, BiomeSource biomeSource, Climate.Sampler sampler, int seaLevel,
                                    int lap, String label, long from, long to) {
         if (from >= to || to > Integer.MAX_VALUE) return "  lap " + lap + " " + label + ": empty";
         Map<String, Integer> census = new TreeMap<>();
@@ -89,7 +90,7 @@ final class OverworldLapsDebug {
                 }
             }
         }
-        return "  lap " + lap + " " + label + " (" + SecondLapOverworld.at(cycle, (int) from) + "): x="
+        return "  lap " + lap + " " + label + " (" + SecondLapOverworld.at(cycle, hasTrain, (int) from) + "): x="
                 + from + ".." + (to - 1) + " centre=" + ((from + to) / 2) + " biomes=" + census;
     }
 
@@ -131,8 +132,8 @@ final class OverworldLapsDebug {
         return "nether " + netherTagged + "/" + nether + ", end " + endTagged + "/" + end;
     }
 
-    private static ChatFormatting colour(WorldGenCycle cycle, long x) {
-        return SecondLapOverworld.at(cycle, (int) Math.min(Integer.MAX_VALUE, x)) == SecondLapOverworld.Stretch.VANILLA
+    private static ChatFormatting colour(WorldGenCycle cycle, boolean hasTrain, long x) {
+        return SecondLapOverworld.at(cycle, hasTrain, (int) Math.min(Integer.MAX_VALUE, x)) == SecondLapOverworld.Stretch.VANILLA
                 ? ChatFormatting.GOLD : ChatFormatting.GREEN;
     }
 

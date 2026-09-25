@@ -134,7 +134,7 @@ public final class NetherBandContextEvents {
             games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.publish(overworld);
             games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.publish(overworld);
             NetherBandContext.publish(new NetherBandContext(
-                    enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
+                    enabled, data.startsWithTrain(), data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
                     overworldBiomeSource, highlandBiomes, netherCoreBiomes, endCoreBiomes, endIslands,
                     netherCore));
             // Second-lap overworld stretches: BoP only in its stretch, vanilla elsewhere. Published
@@ -143,8 +143,8 @@ public final class NetherBandContextEvents {
             // Intermediate per-dimension-load republishes log at debug to avoid 3+ identical
             // info lines per start; the ServerStarted refresh logs the final snapshot at info.
             if (logInfo) {
-                LOGGER.info("[DungeonTrain] Nether-band terrain context published: enabled={} seaLevel={} worldCeiling={} netherTop={} baseRelief={}",
-                        enabled, seaLevel, worldCeiling, netherTop, baseRelief);
+                LOGGER.info("[DungeonTrain] Nether-band terrain context published: enabled={} hasTrain={} seaLevel={} worldCeiling={} netherTop={} baseRelief={}",
+                        enabled, data.startsWithTrain(), seaLevel, worldCeiling, netherTop, baseRelief);
             } else {
                 LOGGER.debug("[DungeonTrain] Nether-band terrain context (re)published on level load: enabled={}", enabled);
             }

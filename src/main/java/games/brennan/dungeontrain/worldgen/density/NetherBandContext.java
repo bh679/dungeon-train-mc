@@ -20,6 +20,9 @@ import net.minecraft.world.level.biome.BiomeSource;
  * byte-identical to vanilla.</p>
  *
  * @param enabled        nether band active for this world ({@code NetherBand.startX != OFF})
+ * @param hasTrain       the world was created with the train ({@code startsWithTrain}). Unlike
+ *                       {@code enabled} it stays true when only the Nether phase is config-disabled;
+ *                       gates the second-lap overworld stretches ({@code SecondLapOverworld.at})
  * @param generationSeed per-world DT seed driving {@link games.brennan.dungeontrain.worldgen.feature.MountainNoise}
  * @param seaLevel       overworld sea level (mountain base)
  * @param worldCeiling   highest world-Y the mountain may reach (target-top clamp)
@@ -45,7 +48,7 @@ import net.minecraft.world.level.biome.BiomeSource;
  *                       worldgen thread pool and must not touch the server. {@code null} when the world has
  *                       no Nether dimension (so no core terrain, and no structures).
  */
-public record NetherBandContext(boolean enabled, long generationSeed, int seaLevel, int worldCeiling,
+public record NetherBandContext(boolean enabled, boolean hasTrain, long generationSeed, int seaLevel, int worldCeiling,
                                 int netherTop, int baseRelief, WorldGenCycle cycle,
                                 BiomeSource overworldBiomeSource, NetherBandBiomeSet highlandBiomes,
                                 NetherCoreBiomes netherCoreBiomes, EndCoreBiomes endCoreBiomes,
