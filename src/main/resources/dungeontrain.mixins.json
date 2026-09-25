@@ -85,6 +85,7 @@
   ],
   "client": [
     "client.KeyboardHandlerDebugChordMixin",
+    "client.BiomeColorsTwinMixin",
     "client.LocalPlayerFlyDoubleTapSprintMixin",
     "client.DebugScreenOverlayDepthMixin",
     "client.BookViewScreenAccessor",
@@ -147,7 +148,9 @@
     "client.I18nAccessor",
     "client.LanguageManagerReapplyMixin"
   ],
-  "server": [],
+  "server": [
+    "DedicatedServerPropertiesLevelTypeMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

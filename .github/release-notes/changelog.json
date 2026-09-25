@@ -18916,6 +18916,48 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "tint-follows-the-land",
+      "version": "0.958.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Water and leaves keep their own colours",
+      "summary": "Water and leaves now always show the colours of the land they're in. Before, looking across from one stretch of the world into the next could paint the far side in the wrong colours, and those colours could stay stuck after you crossed over.",
+      "highlights": [
+        "No more patches of oddly coloured water hanging in view."
+      ],
+      "pr": 1549,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "server-dt-world-preset",
+      "version": "0.958.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "multiplayer",
+        "compatibility",
+        "world"
+      ],
+      "title": "Dedicated servers now create Dungeon Train worlds",
+      "summary": "New worlds on a dedicated server were quietly being generated as a different mod's default world instead of a Dungeon Train one, even when server.properties asked for a Dungeon Train preset. Servers now create the same world singleplayer does.",
+      "highlights": [
+        "A server with no level-type set now creates a Dungeon Train world, with the proper world floor",
+        "Floor presets chosen in server.properties (e.g. dungeontrain:dungeon_train_y80) now actually apply",
+        "Existing server worlds are unchanged; this applies to newly created worlds"
+      ],
+      "pr": 1548,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
