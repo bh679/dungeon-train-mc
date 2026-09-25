@@ -126,10 +126,10 @@ public final class EditorScreenActions {
         boolean here = ctx.standingInSelection();
         PlotCategory cat = ctx.category();
         String model = ctx.hasSelection() ? ctx.selection().displayName() : "";
-        boolean parts = cat == PlotCategory.PARTS;
+        boolean parts = cat == PlotCategory.PARTS || cat == PlotCategory.CHUNK_PARTS;
 
         out.add(new Icon("save", EditorScreenLang.ICON_SAVE,
-            here ? new CommandMenuEntry.Stay(MenuLang.t("common.save"), parts ? EditorMenuScreen.PART_SAVE_COMMAND : EditorMenuScreen.SAVE_COMMAND)
+            here ? new CommandMenuEntry.Stay(MenuLang.t("common.save"), EditorMenuScreen.saveCommandFor(cat))
                  : packetAction(ctx, EditorPlotActionPacket.Action.SAVE, sendPacket),
             EditorScreenLang.DISABLED_STAND_HERE));
 

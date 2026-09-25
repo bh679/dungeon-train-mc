@@ -322,6 +322,21 @@ public final class EditorMenuPortalRows {
         return roomFogRowFor(currentMode, STOOD_IN_PREFIX);
     }
 
+    /**
+     * The Chunk Parts row — a drill-in to the frame a dimensional carriage stands in — or null unless
+     * the room's walls are {@code chunk_dimension}. The room is named in {@code prefix} when the
+     * author is previewing it, and is the stood-in model otherwise.
+     */
+    public static CommandMenuEntry chunkPartsRowFor(String currentMode, String prefix) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        if (!PortalRoomSettings.parse(currentMode).mode().generatesTerrain()) return null;
+        String marker = STOOD_IN_PREFIX + " room ";
+        String room = prefix.startsWith(marker) ? prefix.substring(marker.length())
+            : games.brennan.dungeontrain.client.EditorStatusHudOverlay.modelName();
+        if (room == null || room.isEmpty()) return null;
+        return new CommandMenuEntry.DrillIn("Chunk Parts…", new ChunkRoomPartsScreen(room));
+    }
+
     /** {@link #exitsRowFor(String, String)} for the room the author is standing in. */
     public static CommandMenuEntry exitsRowFor(String currentMode) {
         return exitsRowFor(currentMode, STOOD_IN_PREFIX);

@@ -194,6 +194,12 @@ final class ChunkPartCommand {
             LOGGER.error("[DungeonTrain] Chunk room parts save failed for {}", room, e);
             return fail(source, "Save failed: " + e.getMessage());
         }
+        // Push the new assignment to the author's Chunk Parts screen, so it updates on the next frame.
+        ServerPlayer player = source.getPlayer();
+        if (player != null) {
+            games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.ChunkRoomPartsRequestPacket.build(room));
+        }
         return show(source, room);
     }
 

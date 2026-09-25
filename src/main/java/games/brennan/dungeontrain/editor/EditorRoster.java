@@ -56,6 +56,7 @@ public final class EditorRoster {
             addContents(out);
             addTracks(out);
             addPortals(out);
+            addChunkParts(out);
             return out;
         } finally {
             RELAY_ROWS.set(null);
@@ -240,6 +241,17 @@ public final class EditorRoster {
         out.add(group(EditorCategory.PORTALS.id(), "Dimensional Carriage", TrackKind.PORTAL_ROOM.id(),
             EditorTypeMenus.trackKindRows(TrackKind.PORTAL_ROOM, names, EditorCategory.PORTALS),
             v -> trackSelfWeight(TrackKind.PORTAL_ROOM, v)));
+    }
+
+    /** The chunk parts, one group per kind, browsed under Dimensions beside the rooms they frame. */
+    private static void addChunkParts(List<EditorRosterPacket.Group> out) {
+        for (games.brennan.dungeontrain.portal.chunkparts.ChunkPartKind kind
+                : games.brennan.dungeontrain.portal.chunkparts.ChunkPartKind.values()) {
+            List<String> names = games.brennan.dungeontrain.portal.chunkparts.ChunkPartRegistry.names(kind);
+            if (names.isEmpty()) continue;
+            out.add(group(PlotCategory.CHUNK_PARTS.id(), EditorTypeMenus.chunkPartTypeName(kind), kind.id(),
+                EditorTypeMenus.chunkPartRows(kind, names), null));
+        }
     }
 
     private static EditorRosterPacket.Group group(

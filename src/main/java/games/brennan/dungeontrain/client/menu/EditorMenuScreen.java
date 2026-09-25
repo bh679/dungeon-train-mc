@@ -49,6 +49,8 @@ public final class EditorMenuScreen implements MenuScreen {
      */
     public static final String SAVE_COMMAND = "dungeontrain save";
     public static final String PART_SAVE_COMMAND = "dungeontrain editor part save";
+    /** Chunk parts save through their own subcommand, for the same reason carriage parts do. */
+    public static final String CHUNK_PART_SAVE_COMMAND = "dungeontrain editor chunkpart save";
 
     private static final ResourceLocation SAVE_ICON =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/save");
@@ -83,6 +85,7 @@ public final class EditorMenuScreen implements MenuScreen {
         }
 
         boolean isParts()   { return category == PlotCategory.PARTS; }
+        boolean isChunkParts() { return category == PlotCategory.CHUNK_PARTS; }
         boolean isPortals() { return category == PlotCategory.PORTALS; }
     }
 
@@ -195,8 +198,10 @@ public final class EditorMenuScreen implements MenuScreen {
         out.add(myBuildsEntry());
 
         // Parts have their own Save — `dungeontrain save` dispatches via EditorCategory.locate,
-        // which doesn't see part plots.
-        out.add(new CommandMenuEntry.Split(
+        // which doesn't see part plots. Chunk parts save alone: there is no "save all" for them.
+        if (ctx.isChunkParts()) {
+            out.add(new CommandMenuEntry.Run(MenuLang.t("common.save"), CHUNK_PART_SAVE_COMMAND));
+        } else out.add(new CommandMenuEntry.Split(
             new CommandMenuEntry.Run(MenuLang.t("common.save"),
                 ctx.isParts() ? PART_SAVE_COMMAND : SAVE_COMMAND),
             new CommandMenuEntry.Run(MenuLang.t("editor.save_all"),
@@ -217,7 +222,7 @@ public final class EditorMenuScreen implements MenuScreen {
         // wipes interior blocks to air. Parts have no Reset, and the categories without a Clear
         // (tracks / architecture) fall back to a solo Reset.
         CommandMenuEntry clear = clearEntryFor(ctx.category(), ctx.model());
-        if (ctx.isParts()) {
+        if (ctx.isParts() || ctx.isChunkParts()) {
             if (clear != null) out.add(clear);
         } else {
             CommandMenuEntry reset = new CommandMenuEntry.Run(MenuLang.t("editor.reset"), "dungeontrain reset");
@@ -348,6 +353,7 @@ public final class EditorMenuScreen implements MenuScreen {
         addIfPresent(out, EditorMenuPortalRows.roomBooksRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.roomSkyRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.roomFogRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.chunkPartsRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.exitsRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.exitEveryTripleFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.exitMoveTripleFor(mode, prefix));
@@ -664,11 +670,18 @@ public final class EditorMenuScreen implements MenuScreen {
             EditorSaveStatus.currentPlotDirty(), System.currentTimeMillis());
     }
 
+    /** The save command a category's plot is saved with. */
+    public static String saveCommandFor(PlotCategory category) {
+        if (category == PlotCategory.PARTS) return PART_SAVE_COMMAND;
+        if (category == PlotCategory.CHUNK_PARTS) return CHUNK_PART_SAVE_COMMAND;
+        return SAVE_COMMAND;
+    }
+
     /** The header Save for a category: parts route through the part-aware subcommand. */
     public static MenuHeaderAction saveHeaderAction(PlotCategory category, boolean dirty, long nowMillis) {
         return new MenuHeaderAction(SAVE_ICON,
             dirty ? MenuLang.t("editor.save_unsaved") : MenuLang.t("common.save"),
-            category == PlotCategory.PARTS ? PART_SAVE_COMMAND : SAVE_COMMAND,
+            saveCommandFor(category),
             EditorSaveStatus.tint(dirty, nowMillis));
     }
 
