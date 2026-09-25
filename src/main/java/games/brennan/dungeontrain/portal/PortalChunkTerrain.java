@@ -192,8 +192,26 @@ public final class PortalChunkTerrain {
     // dropped when the server stops (#clear, called from PortalCarriageEvents.onServerStopped) and
     // whenever the world seed changes under them, for the reason every other pair-keyed map here is:
     // the next world's pair 12 is a different room in a different place.
-    private static final Map<Integer, PortalChunkSlice> READY = new ConcurrentHashMap<>();
+    //
+    // Each cube carries the room it was sampled for. A live pair's room never changes under its key,
+    // but Test the Carriage files every room under the one PortalTestSession.PAIR_KEY — and without
+    // the name, testing the Nether room after the Overworld one stamped the Overworld's ground into it.
+    private static final Map<Integer, Cached> READY = new ConcurrentHashMap<>();
     private static final Set<Integer> IN_FLIGHT = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Pairs whose last sample found nowhere worth standing in any of its sites.
+     *
+     * <p>Their room stamps as its plain template, as it always did — but a caller waiting on the
+     * sample (Test the Carriage) needs to know it is not coming, rather than waiting forever for a
+     * cube that no amount of asking again will produce. Keyed to the room that failed, so a test
+     * switched to another room mid-sample is never told the previous one's failure. Cleared by the
+     * next request.</p>
+     */
+    private static final Map<Integer, String> FAILED = new ConcurrentHashMap<>();
+
+    /** A sampled cube and the room it was sampled for. */
+    private record Cached(String roomName, PortalChunkSlice slice) {}
 
     /**
      * Pairs whose cube has since grown its structure and its features, and whose room is therefore a
@@ -240,12 +258,33 @@ public final class PortalChunkTerrain {
         if (seed != cacheSeed) {
             READY.clear();
             IN_FLIGHT.clear();
+            FAILED.clear();
             cacheSeed = seed;
         }
-        PortalChunkSlice ready = READY.get(pairKey);
-        if (ready != null) return ready;
+        Cached ready = READY.get(pairKey);
+        if (ready != null) {
+            if (sameRoom(ready.roomName(), roomName)) return ready.slice();
+            // A different room under the same key — only the test rig does this. Its cube is not
+            // this room's ground, so it goes, and this room's is sampled in its place.
+            READY.remove(pairKey, ready);
+        }
         request(level, pairKey, roomName);
         return null;
+    }
+
+    /** Whether a cube sampled for {@code cachedRoom} is the ground for {@code roomName}. */
+    static boolean sameRoom(String cachedRoom, String roomName) {
+        return java.util.Objects.equals(cachedRoom, roomName);
+    }
+
+    /**
+     * True when this pair's last sample of {@code roomName} came back with nowhere to stand in any
+     * of its sites (or threw), and nothing has asked again since. Asking again ({@link #slice})
+     * clears it and retries.
+     */
+    public static boolean failed(int pairKey, String roomName) {
+        String failedRoom = FAILED.get(pairKey);
+        return failedRoom != null && failedRoom.equals(java.util.Objects.toString(roomName, ""));
     }
 
     /**
@@ -260,6 +299,7 @@ public final class PortalChunkTerrain {
         if (server == null) return;
         if (READY.containsKey(pairKey)) return;
         if (!IN_FLIGHT.add(pairKey)) return;
+        FAILED.remove(pairKey);
         Source source = Source.of(roomName);
         SAMPLER.execute(() -> {
             try {
@@ -270,27 +310,34 @@ public final class PortalChunkTerrain {
                 // from the first and rewritten when the second lands.
                 long startedAt = System.currentTimeMillis();
                 Sample sample = sampleTerrain(server, source, seed, pairKey);
-                if (sample == null) return;
+                if (sample == null) {
+                    FAILED.put(pairKey, java.util.Objects.toString(roomName, ""));
+                    LOGGER.warn("[DungeonTrain] Chunk dimension pair {} ('{}', {}) found no ground in "
+                        + "{} site(s); the room stamps as its plain template", pairKey, roomName, source,
+                        SITE_ATTEMPTS);
+                    return;
+                }
                 if (READY.size() >= MAX_CACHE) READY.clear();
-                READY.put(pairKey, sample.read());
+                READY.put(pairKey, new Cached(roomName, sample.read()));
                 long ground = System.currentTimeMillis() - startedAt;
 
                 long decoratingFrom = System.currentTimeMillis();
                 PortalChunkFeatures.decorate(sample.generator(), sample.level(), sample.random(),
                     sample.chunk(), sample.workspace(), sample.window(), sample.level().getSeed(),
                     pairKey);
-                READY.put(pairKey, sample.read());
+                READY.put(pairKey, new Cached(roomName, sample.read()));
                 DECORATED.add(pairKey);
                 // The first number is what a portal carriage waits out before it can cross at all,
                 // so it is the one worth watching; the second is only how long the room takes to
                 // grow afterwards.
-                PortalChunkSlice decorated = READY.get(pairKey);
+                Cached decorated = READY.get(pairKey);
                 LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} ({}) at {}: "
                         + "ground in {} ms, decoration in {} ms, {} mob(s) generated with it",
                     pairKey, source, sample.level().dimension().location(), sample.pos(), ground,
                     System.currentTimeMillis() - decoratingFrom,
-                    decorated == null ? 0 : decorated.occupants().size());
+                    decorated == null ? 0 : decorated.slice().occupants().size());
             } catch (Throwable t) {
+                FAILED.put(pairKey, java.util.Objects.toString(roomName, ""));
                 // A failed sample is a room that stamps as its plain template — never a crashed
                 // worker, and never a pair that retries the same failure every tick.
                 LOGGER.warn("[DungeonTrain] Chunk dimension sample failed for pair {} ({})",
@@ -305,13 +352,15 @@ public final class PortalChunkTerrain {
     public static void clear() {
         READY.clear();
         IN_FLIGHT.clear();
+        FAILED.clear();
         DECORATED.clear();
         cacheSeed = Long.MIN_VALUE;
     }
 
     /** This pair's cube if one has been sampled, without asking for one that has not. */
     static PortalChunkSlice peek(int pairKey) {
-        return READY.get(pairKey);
+        Cached cached = READY.get(pairKey);
+        return cached == null ? null : cached.slice();
     }
 
     /** The pairs whose rooms are a decoration pass behind their cube, as a snapshot. */

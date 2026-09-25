@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalStructure;
+import games.brennan.dungeontrain.portal.PortalTestPending;
 import games.brennan.dungeontrain.portal.PortalTestSession;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import games.brennan.dungeontrain.portal.PortalTwinRegion;
@@ -121,6 +122,10 @@ public final class PortalTestCommand {
         DungeonTrainWorldData worldData = DungeonTrainWorldData.get(overworld);
         CarriageDims dims = worldData.dims();
 
+        // This press supersedes any earlier one still waiting on its sample — the author asked for
+        // this room now, and should not be pulled into the other one a second later.
+        PortalTestPending.cancel(player.getUUID());
+
         // Already inside one: stamping a second would leave the first standing and lose the way home
         // to the plot. Send them back first, then in again, so the button is idempotent.
         if (PortalTestSession.has(player.getUUID())) {
@@ -142,6 +147,23 @@ public final class PortalTestCommand {
             if (roomName == null) {
                 source.sendFailure(Component.translatable("chat.dungeontrain.portal.name_dimensional_carriage_test").withStyle(ChatFormatting.RED));
                 return 0;
+            }
+        }
+
+        // A chunk dimension stands its doorways on the ground its sample landed, so there is nothing
+        // to stamp until that sample is in hand. It is sampled on a worker and lands a moment later,
+        // so the press waits for it: PortalTestTicker finishes this same test the tick it arrives.
+        // Asked here, before anything is said to the author, so the re-run does not say it twice.
+        games.brennan.dungeontrain.portal.PortalChunkSlice slice = null;
+        if (PortalRoomSettings.of(roomName).mode().generatesTerrain()) {
+            slice = games.brennan.dungeontrain.portal.PortalChunkTerrain.slice(
+                overworld, PortalTestSession.PAIR_KEY, roomName);
+            if (slice == null) {
+                PortalTestPending.put(player.getUUID(), roomName, freshRoll, overworld.getGameTime());
+                source.sendSuccess(() -> Component.translatable(
+                    "chat.dungeontrain.portal.test_waiting_for_sample", roomName)
+                    .withStyle(ChatFormatting.YELLOW), false);
+                return 1;
             }
         }
 
@@ -189,19 +211,9 @@ public final class PortalTestCommand {
             int held = roomSize.getY();
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.tall_and_world_can", roomName, authoredSize.getY(), held).withStyle(ChatFormatting.YELLOW), false);
         }
-        // A chunk dimension stands its doorways on the ground its sample landed, so there is nothing
-        // to stamp until that sample is in hand. In play the pair simply waits a tick; an author who
-        // asked out loud gets told, and the sampling they just started is finished by the time they
-        // read the message.
+        // The doorways onto the sampled ground, fetched above.
         PortalRoomSettings settings = authored;
-        if (authored.mode().generatesTerrain()) {
-            games.brennan.dungeontrain.portal.PortalChunkSlice slice =
-                games.brennan.dungeontrain.portal.PortalChunkTerrain.slice(
-                    overworld, PortalTestSession.PAIR_KEY, roomName);
-            if (slice == null) {
-                source.sendFailure(Component.translatable("chat.dungeontrain.portal.still_sampling_its_chunk", roomName).withStyle(ChatFormatting.YELLOW));
-                return 0;
-            }
+        if (slice != null) {
             settings = games.brennan.dungeontrain.portal.PortalChunkDoors.fit(authored, slice, dims,
                 PortalCarriageBuilder.layoutFor(dims, PortalCorridorKind.DEFAULT), roomSize);
         }
@@ -274,6 +286,14 @@ public final class PortalTestCommand {
 
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.you_re_doorway_corridor", roomName).withStyle(ChatFormatting.AQUA), false);
         return 1;
+    }
+
+    /**
+     * Finish a press that was waiting on its room's chunk sample — called by
+     * {@code PortalTestTicker} the tick the sample lands, with what the press asked for.
+     */
+    public static void runPending(ServerPlayer player, String roomName, boolean freshRoll) {
+        runTest(player.createCommandSourceStack(), roomName, freshRoll);
     }
 
     /**
@@ -370,8 +390,12 @@ public final class PortalTestCommand {
             return 0;
         }
 
+        // Back also withdraws a press still waiting on its sample: an author who changed their mind
+        // should not be pulled in a second later.
+        boolean withdrew = PortalTestPending.cancel(player.getUUID());
         PortalTestSession.Session session = PortalTestSession.take(player.getUUID());
         if (session == null) {
+            if (withdrew) return 1;
             source.sendFailure(Component.translatable("chat.dungeontrain.portal.you_aren_t_test"));
             return 0;
         }
