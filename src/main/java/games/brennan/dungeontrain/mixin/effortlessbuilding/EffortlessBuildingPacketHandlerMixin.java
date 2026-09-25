@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.effortlessbuilding;
 
 import games.brennan.dungeontrain.compat.EffortlessBuildingGate;
 import games.brennan.dungeontrain.compat.EffortlessBuildingHistory;
+import games.brennan.dungeontrain.compat.EffortlessBuildingVariantBreaks;
 import games.brennan.dungeontrain.compat.EffortlessBuildingVariants;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -11,10 +12,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Three jobs on one set of seams: gates Effortless Building's creative features behind the Free
- * Play confirmation, records what they change into the editor's undo history, and — with a
- * variant clipboard in hand — turns a shape placement into a bulk clipboard paste
- * ({@link EffortlessBuildingVariants}).
+ * Four jobs on one set of seams: gates Effortless Building's creative features behind the Free
+ * Play confirmation, records what they change into the editor's undo history, with a
+ * variant clipboard in hand turns a shape placement into a bulk clipboard paste
+ * ({@link EffortlessBuildingVariants}), and clears the variant pools of the cells a shape break
+ * empties ({@link EffortlessBuildingVariantBreaks}), as a hand break does.
  *
  * <p>Effortless Building drives every build through its own server-bound packets — it fires no
  * NeoForge block events and registers no commands, so neither {@code CheatDetectionEvents.onCommand}
@@ -81,12 +83,17 @@ public abstract class EffortlessBuildingPacketHandlerMixin {
             ci.cancel();
             return;
         }
-        EffortlessBuildingHistory.begin(player, EffortlessBuildingHistory.BREAK);
+        // Noted before the capture opens so the capture can include this plot's sidecar: the
+        // pools the break clears then come back with its blocks on one Ctrl+Z.
+        String variantPlotKey = EffortlessBuildingVariantBreaks.begin(player);
+        EffortlessBuildingHistory.begin(player, EffortlessBuildingHistory.BREAK, variantPlotKey);
     }
 
     @Inject(method = "handleBreakBuildMode", at = @At("RETURN"), remap = false)
     private static void dungeontrain$afterBreakBuildMode(
             @Coerce Object packet, ServerPlayer player, CallbackInfo ci) {
+        // Pools cleared before the capture closes, so the removal lands in the same undo step.
+        EffortlessBuildingVariantBreaks.end(player);
         EffortlessBuildingHistory.end(player);
     }
 

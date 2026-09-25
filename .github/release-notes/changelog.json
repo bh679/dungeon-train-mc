@@ -19148,8 +19148,48 @@
       "released_at": null
     },
     {
+      "id": "effortless-building-breaks-clear-variants",
+      "version": "0.966.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "compatibility"
+      ],
+      "title": "Effortless Building can now delete block variants",
+      "summary": "Breaking blocks with an Effortless Building shape in the editor now removes their block variants too, just like breaking them by hand. Previously the blocks disappeared but their variants stayed behind and came back later.",
+      "highlights": [
+        "Line, wall, floor and cube breaks, including mirrored and arrayed ones, clear the variants of every block they remove",
+        "One Ctrl+Z brings back both the blocks and their variants"
+      ],
+      "pr": 1560,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stronghold-rings-stable-across-loads",
+      "version": "0.967.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Eyes of ender lead to the same stronghold every time",
+      "summary": "Strongholds could land in a slightly different place each time a world was loaded, so an eye of ender might lead you to a spot where no stronghold was ever built. Stronghold locations are now fixed for each world.",
+      "highlights": [
+        "Eyes of ender and /locate agree on every load of the same world"
+      ],
+      "pr": 1562,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "creative-prefab-cmd-delete",
-      "version": "0.965.0",
+      "version": "0.967.0",
       "type": "feat",
       "tags": [
         "feature",
