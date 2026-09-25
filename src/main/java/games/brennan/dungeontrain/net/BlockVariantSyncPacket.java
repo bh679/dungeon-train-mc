@@ -42,8 +42,18 @@ public record BlockVariantSyncPacket(
     Vec3 anchorUp,
     byte copyRoll,
     boolean copySettingsSupported,
-    byte copyScope
+    byte copyScope,
+    byte spanMode
 ) implements CustomPacketPayload {
+
+    /** Pre-span shape: {@code spanMode} defaults to {@code VariantSpan.NONE} (auto). */
+    public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
+                                  int lockId, Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp,
+                                  byte copyRoll, boolean copySettingsSupported, byte copyScope) {
+        this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp,
+            copyRoll, copySettingsSupported, copyScope,
+            (byte) games.brennan.dungeontrain.editor.VariantSpan.NONE.toByte());
+    }
 
     /**
      * The shape every call site had before the per-copy reroll flag — a cell in
@@ -192,6 +202,8 @@ public record BlockVariantSyncPacket(
         buf.writeByte(copyRoll);
         buf.writeBoolean(copySettingsSupported);
         buf.writeByte(copyScope);
+        // The cell-wide multi-space span (door / bed / tall-plant cells), as an ordinal.
+        buf.writeByte(spanMode);
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
         writeVec3(buf, anchorUp);
@@ -232,6 +244,7 @@ public record BlockVariantSyncPacket(
         byte copyRoll = buf.readByte();
         boolean copySettingsSupported = buf.readBoolean();
         byte copyScope = buf.readByte();
+        byte spanMode = buf.readByte();
         Vec3 anchor = readVec3(buf);
         Vec3 right = readVec3(buf);
         Vec3 up = readVec3(buf);
@@ -258,7 +271,7 @@ public record BlockVariantSyncPacket(
                 linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
-            copyRoll, copySettingsSupported, copyScope);
+            copyRoll, copySettingsSupported, copyScope, spanMode);
     }
 
     @Override

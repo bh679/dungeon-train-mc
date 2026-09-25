@@ -100,6 +100,8 @@ public final class VariantClipboardItem extends Item {
      * repurpose an old clipboard.
      */
     public static final String NBT_COPY_SCOPE = "dt_copyScope";
+    /** The cell's multi-space {@code VariantSpan} token. Absent when AUTO. */
+    public static final String NBT_SPAN = "dt_span";
 
     /**
      * Top-level NBT key carrying the source cell's container contents pool
@@ -229,6 +231,7 @@ public final class VariantClipboardItem extends Item {
         ContainerContentsPool pool = decodePool(tag);
         VariantCopyRoll copyRoll = decodeCopyRoll(tag);
         VariantCopyScope copyScope = decodeCopyScope(tag);
+        games.brennan.dungeontrain.editor.VariantSpan span = decodeSpan(tag);
         if (states.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
             return PasteOutcome.fail("Clipboard needs at least "
                 + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " variants", ChatFormatting.YELLOW);
@@ -258,6 +261,17 @@ public final class VariantClipboardItem extends Item {
                 be.setChanged();
             }
         }
+        // A door / bed / tall plant placeholder is only one half on its own — add the partner
+        // half so the pasted cell reads as the whole block (only into an empty space; never over
+        // a build).
+        if (!firstIsSentinel && games.brennan.dungeontrain.editor.MultiBlockFootprint.isMultiSpace(first.state())) {
+            BlockPos partnerPos = placePos.offset(
+                games.brennan.dungeontrain.editor.MultiBlockFootprint.partnerOffset(first.state()));
+            if (serverLevel.getBlockState(partnerPos).canBeReplaced()) {
+                games.brennan.dungeontrain.worldgen.SilentBlockOps.setBlockSilent(serverLevel, partnerPos,
+                    games.brennan.dungeontrain.editor.MultiBlockFootprint.partnerState(first.state()));
+            }
+        }
 
         // Write to the sidecar (states first, then lockId so setLockId's
         // "cell must exist" precondition is satisfied).
@@ -267,6 +281,7 @@ public final class VariantClipboardItem extends Item {
         // they mean there.
         plot.setCopyRoll(localPos, copyRoll);
         plot.setCopyScope(localPos, copyScope);
+        plot.setSpan(localPos, span);
         if (lockId > 0) {
             plot.setLockId(localPos, lockId);
             // Every cell in a lock group draws one index, so they must agree about how they roll:
@@ -350,6 +365,20 @@ public final class VariantClipboardItem extends Item {
         if (tag.contains(NBT_COPY_ROLL)) return VariantCopyRoll.parse(tag.getString(NBT_COPY_ROLL));
         // The superseded boolean, still honoured so an older clipboard pastes what it captured.
         return tag.getBoolean(NBT_LEGACY_REROLL) ? VariantCopyRoll.VARY : VariantCopyRoll.DEFAULT;
+    }
+
+    /** Add the cell's multi-space span to an encoded clipboard tag (omitted when AUTO). */
+    public static CompoundTag withSpan(CompoundTag root, games.brennan.dungeontrain.editor.VariantSpan span) {
+        if (span != null && !span.isDefault()) {
+            root.putString(NBT_SPAN, span.toToken());
+        }
+        return root;
+    }
+
+    /** The captured multi-space span; AUTO for a clipboard that carries none. */
+    public static games.brennan.dungeontrain.editor.VariantSpan decodeSpan(@Nullable CompoundTag tag) {
+        if (tag == null || !tag.contains(NBT_SPAN)) return games.brennan.dungeontrain.editor.VariantSpan.NONE;
+        return games.brennan.dungeontrain.editor.VariantSpan.fromToken(tag.getString(NBT_SPAN));
     }
 
     /** The captured copy scope; {@link VariantCopyScope#BOTH} for a clipboard that carries none. */

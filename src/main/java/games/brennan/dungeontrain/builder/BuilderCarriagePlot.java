@@ -228,6 +228,16 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
     }
 
     @Override
+    public games.brennan.dungeontrain.editor.VariantSpan spanAt(BlockPos localPos) {
+        return doc().spanAt(localPos);
+    }
+
+    @Override
+    public void setSpan(BlockPos localPos, games.brennan.dungeontrain.editor.VariantSpan span) {
+        doc().setSpan(localPos, span);
+    }
+
+    @Override
     public Set<BlockPos> positionsWithLockId(int lockId) {
         return doc().positionsWithLockId(lockId);
     }

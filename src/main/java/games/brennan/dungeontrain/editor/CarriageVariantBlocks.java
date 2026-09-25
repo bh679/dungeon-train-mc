@@ -170,6 +170,13 @@ public final class CarriageVariantBlocks {
     /** The v10 per-cell {@link VariantCopyScope} field's key. Absent means {@code both}. */
     static final String SCOPE_KEY = "scope";
 
+    /**
+     * Per-cell {@link VariantSpan} field's key (additive, no schema bump): how a single block
+     * fills the two spaces of a cell that also holds a door / bed / tall plant. Absent means
+     * {@code AUTO}; tokens are {@link VariantSpan#toToken}.
+     */
+    static final String SPAN_KEY = "span";
+
     static final String SUBDIR = "templates";
     static final String EXT = ".variants.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/templates/";
@@ -275,6 +282,12 @@ public final class CarriageVariantBlocks {
      * write paths go through to it, so a bounded read can never become a truncated write.
      */
     private final CarriageVariantBlocks source;
+
+    /**
+     * pos → per-cell {@link VariantSpan} — how a single block fills a two-space cell (door /
+     * bed / tall plant). Only non-default values are stored; see {@link #spanAt}.
+     */
+    private final Map<BlockPos, VariantSpan> spans = new LinkedHashMap<>();
 
     private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
         this(entries, lockIds, false, false, false, false);
@@ -406,7 +419,7 @@ public final class CarriageVariantBlocks {
             LOGGER.warn("[DungeonTrain] Variant sidecar {}: position {} outside dims {}x{}x{}, skipping.",
                 id, pos, dims.length(), dims.height(), dims.width());
         }
-        return new CarriageVariantBlocks(kept, keptLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants, this);
+        return withSpans(new CarriageVariantBlocks(kept, keptLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants, this), spans);
     }
 
     /** True when this instance is a bounded view — see {@link #cropped}. */
@@ -479,6 +492,7 @@ public final class CarriageVariantBlocks {
         JsonObject variants = obj.getAsJsonObject("variants");
         Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
         Map<BlockPos, Integer> outLocks = new LinkedHashMap<>();
+        Map<BlockPos, VariantSpan> outSpans = new LinkedHashMap<>();
         for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
             BlockPos pos = parsePos(field.getKey());
             if (pos == null) {
@@ -487,6 +501,7 @@ public final class CarriageVariantBlocks {
             }
             JsonArray arr;
             int lockId = 0;
+            VariantSpan span = VariantSpan.NONE;
             JsonElement value = field.getValue();
             if (value.isJsonArray()) {
                 arr = value.getAsJsonArray();
@@ -503,6 +518,7 @@ public final class CarriageVariantBlocks {
                     int raw = cellObj.get("lockId").getAsInt();
                     lockId = raw < 0 ? 0 : raw;
                 }
+                span = parseSpan(cellObj);
             } else {
                 LOGGER.warn("[DungeonTrain] Variant sidecar {}: value for {} is neither array nor object, skipping.",
                     id, pos);
@@ -521,9 +537,10 @@ public final class CarriageVariantBlocks {
             BlockPos posI = pos.immutable();
             out.put(posI, List.copyOf(states));
             if (lockId > 0) outLocks.put(posI, lockId);
+            if (!span.isDefault()) outSpans.put(posI, span);
         }
         LOGGER.info("[DungeonTrain] Loaded {} variant entries for {} from {}", out.size(), id, origin);
-        return new CarriageVariantBlocks(out, outLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants);
+        return withSpans(new CarriageVariantBlocks(out, outLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants), outSpans);
     }
 
     /**
@@ -738,7 +755,31 @@ public final class CarriageVariantBlocks {
     }
 
     /** Remove the entry at {@code localPos}. Returns true if one was present. */
+    /** The cell's multi-space {@link VariantSpan}; {@code AUTO} when unset or no cell. */
+    public synchronized VariantSpan spanAt(BlockPos localPos) {
+        return spans.getOrDefault(localPos, VariantSpan.NONE);
+    }
+
+    /** Set the cell's multi-space span (default clears it). Throws if no cell exists at {@code localPos}. */
+    public synchronized void setSpan(BlockPos localPos, VariantSpan span) {
+        if (source != null) source.setSpan(localPos, span);
+        if (!entries.containsKey(localPos)) {
+            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
+        }
+        if (span == null || span.isDefault()) spans.remove(localPos);
+        else spans.put(localPos.immutable(), span);
+    }
+
+    /** Copy {@code from}'s spans for the cells {@code target} holds — parse and crop both end here. */
+    private static CarriageVariantBlocks withSpans(CarriageVariantBlocks target, Map<BlockPos, VariantSpan> from) {
+        for (Map.Entry<BlockPos, VariantSpan> e : from.entrySet()) {
+            if (target.entries.containsKey(e.getKey())) target.spans.put(e.getKey(), e.getValue());
+        }
+        return target;
+    }
+
     public synchronized boolean remove(BlockPos localPos) {
+        spans.remove(localPos);
         if (source != null) source.remove(localPos);
         lockIds.remove(localPos);
         invalidateGroupRefCache();
@@ -751,6 +792,7 @@ public final class CarriageVariantBlocks {
      * wipe doesn't leave orphaned variant metadata pointing at now-air cells.
      */
     public synchronized int clearAll() {
+        spans.clear();
         int n = entries.size();
         entries.clear();
         lockIds.clear();
@@ -1074,18 +1116,10 @@ public final class CarriageVariantBlocks {
             if (!first) sb.append(",");
             int lockId = lockIds.getOrDefault(e.getKey(), 0);
             sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
-            if (lockId > 0) {
-                // Cell-object form for v4 locked cells.
-                sb.append("{ \"lockId\": ").append(lockId).append(", \"states\": [");
-                appendStateArray(sb, e.getValue());
-                sb.append("] }");
-            } else {
-                // Bare-array form (v3-shape) for unlocked cells — keeps
-                // pre-v4 sidecars diff-clean on a no-op resave.
-                sb.append("[");
-                appendStateArray(sb, e.getValue());
-                sb.append("]");
-            }
+            // Cell-object form for locked / spanned cells, bare array (v3 shape) otherwise —
+            // byte-identical to the old writer for every cell without a span.
+            appendCellJson(sb, e.getValue(), lockId, VariantCopyRoll.DEFAULT, VariantCopyScope.BOTH,
+                spanAt(e.getKey()));
             first = false;
         }
         sb.append("\n  }\n}\n");
@@ -1110,11 +1144,17 @@ public final class CarriageVariantBlocks {
      * cell authored before v10.
      */
     public record ParsedCell(List<VariantState> states, int lockId, VariantCopyRoll roll,
-                             VariantCopyScope scope) {
+                             VariantCopyScope scope, VariantSpan span) {
 
         public ParsedCell {
             if (roll == null) roll = VariantCopyRoll.DEFAULT;
             if (scope == null) scope = VariantCopyScope.BOTH;
+            if (span == null) span = VariantSpan.NONE;
+        }
+
+        /** Four-arg form for callers that predate the per-cell {@link VariantSpan}. */
+        public ParsedCell(List<VariantState> states, int lockId, VariantCopyRoll roll, VariantCopyScope scope) {
+            this(states, lockId, roll, scope, VariantSpan.NONE);
         }
 
         /** Two-arg form for the cells that cannot repeat — every sidecar but a portal room's. */
@@ -1150,6 +1190,7 @@ public final class CarriageVariantBlocks {
         int lockId = 0;
         VariantCopyRoll roll = VariantCopyRoll.DEFAULT;
         VariantCopyScope scope = VariantCopyScope.BOTH;
+        VariantSpan span = VariantSpan.NONE;
         if (value.isJsonArray()) {
             arr = value.getAsJsonArray();
         } else if (value.isJsonObject()) {
@@ -1181,6 +1222,7 @@ public final class CarriageVariantBlocks {
                 // the way it always did rather than dropping the cell.
                 scope = VariantCopyScope.parse(cellObj.get(SCOPE_KEY).getAsString());
             }
+            span = parseSpan(cellObj);
         } else {
             LOGGER.warn("[DungeonTrain] Variant sidecar {}: value for {} is neither array nor object, skipping.",
                 contextId, contextPos);
@@ -1191,7 +1233,16 @@ public final class CarriageVariantBlocks {
             VariantState parsed = parseVariantElement(el, blocks, contextId, contextPos);
             if (parsed != null) states.add(parsed);
         }
-        return new ParsedCell(states, lockId, roll, scope);
+        return new ParsedCell(states, lockId, roll, scope, span);
+    }
+
+    /** The cell object's {@link #SPAN_KEY}, or {@link VariantSpan#NONE} when absent / malformed. */
+    static VariantSpan parseSpan(JsonObject cellObj) {
+        if (cellObj.has(SPAN_KEY) && cellObj.get(SPAN_KEY).isJsonPrimitive()
+            && cellObj.get(SPAN_KEY).getAsJsonPrimitive().isString()) {
+            return VariantSpan.fromToken(cellObj.get(SPAN_KEY).getAsString());
+        }
+        return VariantSpan.NONE;
     }
 
     /**
@@ -1225,9 +1276,19 @@ public final class CarriageVariantBlocks {
      */
     public static void appendCellJson(StringBuilder sb, List<VariantState> states, int lockId,
                                       VariantCopyRoll roll, VariantCopyScope scope) {
+        appendCellJson(sb, states, lockId, roll, scope, VariantSpan.NONE);
+    }
+
+    /**
+     * The full cell writer: the v10 fields plus the per-cell {@link VariantSpan}, which follows
+     * the same rule — object form when set, omitted at its {@code AUTO} default.
+     */
+    public static void appendCellJson(StringBuilder sb, List<VariantState> states, int lockId,
+                                      VariantCopyRoll roll, VariantCopyScope scope, VariantSpan span) {
         if (roll == null) roll = VariantCopyRoll.DEFAULT;
         if (scope == null) scope = VariantCopyScope.BOTH;
-        if (lockId > 0 || !roll.isDefault() || !scope.isDefault()) {
+        if (span == null) span = VariantSpan.NONE;
+        if (lockId > 0 || !roll.isDefault() || !scope.isDefault() || !span.isDefault()) {
             sb.append("{ ");
             if (lockId > 0) sb.append("\"lockId\": ").append(lockId).append(", ");
             if (!roll.isDefault()) {
@@ -1235,6 +1296,9 @@ public final class CarriageVariantBlocks {
             }
             if (!scope.isDefault()) {
                 sb.append('"').append(SCOPE_KEY).append("\": \"").append(scope.id()).append("\", ");
+            }
+            if (!span.isDefault()) {
+                sb.append('"').append(SPAN_KEY).append("\": \"").append(span.toToken()).append("\", ");
             }
             sb.append("\"states\": [");
             boolean firstState = true;
