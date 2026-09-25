@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "89";
+    public static final String PROTOCOL_VERSION = "90";
 
     private DungeonTrainNet() {}
 
@@ -338,6 +338,8 @@ public final class DungeonTrainNet {
         registrar.playToClient(BuilderUploadStatusPacket.TYPE, BuilderUploadStatusPacket.STREAM_CODEC, BuilderUploadStatusPacket::handle);
         registrar.playToClient(EditorSaveAsPromptPacket.TYPE, EditorSaveAsPromptPacket.STREAM_CODEC, EditorSaveAsPromptPacket::handle);
         registrar.playToServer(EditorSaveAsPacket.TYPE, EditorSaveAsPacket.STREAM_CODEC, EditorSaveAsPacket::handle);
+        // /dt flyspeed: the local player's creative sprint-fly multiplier. See player/SprintFlyBoost.
+        registrar.playToClient(SprintFlyBoostPacket.TYPE, SprintFlyBoostPacket.STREAM_CODEC, SprintFlyBoostPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

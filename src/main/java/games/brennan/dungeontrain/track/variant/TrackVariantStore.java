@@ -308,7 +308,7 @@ public final class TrackVariantStore {
     ) {
         StructureTemplate template = new StructureTemplate();
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-        template.load(blocks, tag);
+        template.load(blocks, games.brennan.dungeontrain.editor.DoubleBlockTemplateRepair.repair(tag, kind + ":" + name));
 
         Vec3i bounds = acceptableBounds(kind, dims);
         Vec3i size = template.getSize();

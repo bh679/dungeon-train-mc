@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
@@ -24,6 +25,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.train.CarriageVariant;
+import games.brennan.dungeontrain.train.StagePlacementScope;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -51,6 +53,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntPredicate;
 import java.util.Set;
 
 /**
@@ -111,6 +114,12 @@ public final class PortalCarriageBuilder {
 
     /** Corridor shell — walls, floor, ceiling, door planes and baffles. */
     private static final BlockState SHELL = Blocks.STONE_BRICKS.defaultBlockState();
+    /**
+     * The stage placeholder the cart between a pair's corridors is built from — see
+     * {@link #middleShell}.
+     */
+    private static final String MIDDLE_SHELL_PLACEHOLDER = "stage_stone_bricks";
+
     /** Crossing-zone floor. Light 15 at source, which is what makes external leakage irrelevant. */
     private static final BlockState CROSSING_LIGHT = Blocks.SEA_LANTERN.defaultBlockState();
 
@@ -611,38 +620,64 @@ public final class PortalCarriageBuilder {
         } else {
             placed = stampMiddleBuiltIn(level, origin, dims, relight);
         }
-        if (!severed) return placed;
+        if (!severed) {
+            // The cells directly behind each dummy door are the plate, not the cart's masonry —
+            // the same black concrete the LONG branch's centre wall carries, so the seam reads the
+            // same whichever corridor kind the pair rolled. Written over an authored template too.
+            return writeDoorwayCells(level, origin, dims, kind, relight, placed,
+                CENTRE_WALL_DOORWAY, dx -> dx == 0 || dx == dims.length() - 1);
+        }
         // The whole-cart branch writes a SEALED carriage, so unlike stampCentreWall it has no
         // doorway column of its own to leave open — the opening has to be cut back out afterwards.
         // Without this a severed SHORT pair is three carriages of dead end, which is precisely the
         // outcome PortalCentreWall exists to prevent; the branch was previously unreachable outside
         // MAX_LENGTH carriages, so the gap never showed.
-        return openSeveredColumn(level, origin, dims, kind, relight, placed);
+        return writeDoorwayCells(level, origin, dims, kind, relight, placed,
+            Blocks.AIR.defaultBlockState(), dx -> true);
     }
 
     /**
-     * Cut {@link PortalCentreWall}'s doorway column out of an already-stamped cart, for a pair that
-     * has been severed.
+     * Write {@code state} into {@link PortalCentreWall}'s doorway column of an already-stamped
+     * cart, at the cells whose X {@code includeX} accepts — air to open it for a severed pair, the
+     * black concrete plate to seal the end planes of a working one.
      *
      * <p>Returns a new set rather than adding to the one it was handed: the caller's may be
      * immutable ({@code Set.of()} on the template branch), and the placed-position set is a value
      * the footprint sweep reads, not a buffer to accumulate into.</p>
      */
-    private static Set<BlockPos> openSeveredColumn(ServerLevel level, BlockPos origin,
+    private static Set<BlockPos> writeDoorwayCells(ServerLevel level, BlockPos origin,
                                                    CarriageDims dims, PortalCorridorKind kind,
-                                                   boolean relight, Set<BlockPos> placed) {
+                                                   boolean relight, Set<BlockPos> placed,
+                                                   BlockState state, IntPredicate includeX) {
         Set<BlockPos> out = new HashSet<>(placed);
-        BlockState air = Blocks.AIR.defaultBlockState();
         for (int[] cell : PortalCentreWall.doorwayCells(dims, kind)) {
+            if (!includeX.test(cell[0])) continue;
             BlockPos pos = origin.offset(cell[0], cell[1], cell[2]);
             if (relight) {
-                level.setBlock(pos, air, Block.UPDATE_ALL);
-            } else {
+                level.setBlock(pos, state, Block.UPDATE_ALL);
+            } else if (state.isAir()) {
                 SilentBlockOps.clearBlockSilent(level, pos);
+            } else {
+                SilentBlockOps.setBlockSectionLocal(level, pos, state);
             }
             out.add(pos.immutable());
         }
         return out;
+    }
+
+    /**
+     * What the cart between a pair's corridors is built from: the stage's stone bricks.
+     *
+     * <p>Resolved through {@link StagePlacementScope}, which the spawn path holds open for this
+     * carriage's stage — so the cart follows the stage palette (deepslate bricks, nether bricks, …)
+     * like every templated carriage, and falls to the default palette's plain stone bricks when no
+     * stage claims it. Outside any scope — the editor's {@code portal_middle} plot — the placeholder
+     * itself is placed, which is what an authored template should capture.</p>
+     */
+    private static BlockState middleShell() {
+        BlockState placeholder = StagePlaceholderBlocks.defaultState(MIDDLE_SHELL_PLACEHOLDER);
+        if (placeholder == null) return SHELL;
+        return StagePlacementScope.resolve(placeholder);
     }
 
     /**
@@ -673,13 +708,14 @@ public final class PortalCarriageBuilder {
                                                  CarriageDims dims, PortalCorridorKind kind,
                                                  boolean relight, boolean severed) {
         Set<BlockPos> placed = new HashSet<>();
+        BlockState shell = middleShell();
         int from = PortalCentreWall.minX(dims, kind);
         int to = PortalCentreWall.maxXExclusive(dims, kind);
 
         for (int dx = from; dx < to; dx++) {
             for (int dz = 0; dz < dims.width(); dz++) {
                 for (int dy = 0; dy < dims.height(); dy++) {
-                    BlockState state = SHELL;
+                    BlockState state = shell;
                     if (PortalCentreWall.isDoorwayColumn(dims, kind, dx, dy, dz)) {
                         state = severed ? Blocks.AIR.defaultBlockState() : CENTRE_WALL_DOORWAY;
                     }
@@ -710,6 +746,7 @@ public final class PortalCarriageBuilder {
     private static Set<BlockPos> stampMiddleBuiltIn(ServerLevel level, BlockPos origin,
                                                     CarriageDims dims, boolean relight) {
         Set<BlockPos> placed = new HashSet<>();
+        BlockState shellState = middleShell();
 
         for (int dx = 0; dx < dims.length(); dx++) {
             for (int dz = 0; dz < dims.width(); dz++) {
@@ -721,9 +758,9 @@ public final class PortalCarriageBuilder {
 
                     BlockPos pos = origin.offset(dx, dy, dz);
                     if (relight) {
-                        level.setBlock(pos, SHELL, Block.UPDATE_ALL);
+                        level.setBlock(pos, shellState, Block.UPDATE_ALL);
                     } else {
-                        SilentBlockOps.setBlockSectionLocal(level, pos, SHELL);
+                        SilentBlockOps.setBlockSectionLocal(level, pos, shellState);
                     }
                     placed.add(pos.immutable());
                 }
