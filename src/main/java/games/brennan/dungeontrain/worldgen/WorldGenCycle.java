@@ -6,6 +6,9 @@ import games.brennan.dungeontrain.worldgen.legacy.LegacyBandConfig;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacySpan;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * The single repeating world-gen cycle the train crosses, laying out ALL special
  * phases in one fixed order along +X from a shared anchor:
@@ -678,6 +681,40 @@ public record WorldGenCycle(long startX, int owGap,
         return overworldGapBeside(pass, +1);
     }
 
+    /**
+     * World-X ranges {@code [start, end)} of the overworld gaps in the first {@code laps} laps, in X
+     * order — every overworld slot of runs {@code 0..laps-1} (layout), or each period's lead and
+     * post-Nether gap (classic, the only gaps a stretch style can sit in). Clamped to the anchor;
+     * empty gaps dropped. Pair with {@link SecondLapOverworld#at} to find a given look's stretches.
+     */
+    public List<long[]> overworldGapRanges(int laps) {
+        List<long[]> out = new ArrayList<>();
+        if (layout != null) {
+            for (int k = 0; k < laps; k++) {
+                long runStart = startX + CycleLayout.runStart(k, layout.period());
+                for (int i = 0; i < layout.count(); i++) {
+                    if (layout.slot(i).type() != CycleLayout.Type.OVERWORLD) continue;
+                    addRange(out, runStart + (layout.start(i) << k),
+                            runStart + ((layout.start(i) + layout.length(i)) << k));
+                }
+            }
+            return out;
+        }
+        long p = period();
+        if (p <= 0L) return out;
+        for (int lap = 0; lap < laps; lap++) {
+            long base = startX - phaseShift + (long) lap * p;
+            addRange(out, base, base + netherStart());
+            addRange(out, base + netherStart() + netherLen(), base + endStart());
+        }
+        return out;
+    }
+
+    private void addRange(List<long[]> out, long start, long end) {
+        long s = Math.max(start, startX);
+        if (s < end) out.add(new long[] {s, end});
+    }
+
     private long overworldGapBeside(int pass, int dir) {
         if (layout == null) return Math.max(0, owGap);
         int n = layout.typeCount(CycleLayout.Type.NETHER);
@@ -1045,6 +1082,23 @@ public record WorldGenCycle(long startX, int owGap,
         long postStart = netherStart() + netherLen();
         if (o >= postStart && o < endStart()) return OverworldGap.POST_NETHER;
         return OverworldGap.NONE;
+    }
+
+    /**
+     * True when this world-X is ordinary overworld — no band (fades included) and no legacy era over
+     * it. Before the anchor counts: the cycle has not started there. Says nothing about which look the
+     * stretch wears; pair with {@link SecondLapOverworld#at} for that.
+     */
+    public boolean isOverworldGapAt(int worldX) {
+        if (layout != null) {
+            int i = slotAt(worldX);
+            return i < 0 || layout.slot(i).type() == CycleLayout.Type.OVERWORLD;
+        }
+        for (CycleLayout.Type t : CycleLayout.Type.values()) {
+            if (t == CycleLayout.Type.OVERWORLD || t == CycleLayout.Type.LEGACY_RUN) continue;
+            if (spanLocal(t, worldX) >= 0L) return false;
+        }
+        return legacyAt(worldX) == null;
     }
 
     /**
