@@ -146,6 +146,10 @@ public final class DebugCommand {
             // carriage's sample site sits in, old scattered rule vs the stretch rules. INFO-logged too.
             .then(Commands.literal("portal-sites")
                 .executes(ctx -> PortalSitesDebug.report(ctx.getSource(), PortalSitesDebug.DEFAULT_COUNT))
+                .then(Commands.literal("probe-end")
+                    .executes(ctx -> PortalSitesDebug.probeEnd(ctx.getSource(), 3))
+                    .then(Commands.argument("count", IntegerArgumentType.integer(1, 20))
+                        .executes(ctx -> PortalSitesDebug.probeEnd(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))))
                 .then(Commands.argument("count", IntegerArgumentType.integer(1, 100_000))
                     .executes(ctx -> PortalSitesDebug.report(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))))
             .then(Commands.literal("pair")

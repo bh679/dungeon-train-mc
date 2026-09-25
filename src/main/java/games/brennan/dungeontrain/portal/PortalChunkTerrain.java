@@ -11,6 +11,8 @@ import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.QuartPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
@@ -19,6 +21,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -133,6 +138,9 @@ public final class PortalChunkTerrain {
     private static final int SITE_Z_SALT = 13;
     private static final int SITE_RANGE_SALT = 14;
 
+    /** Where a Better room asks which biome a site is — about where the ground in the Nether and End sits. */
+    private static final int BIOME_PROBE_Y = 64;
+
     /** How far apart consecutive attempts' salts sit, so the X and Z streams never collide. */
     private static final int SALT_STRIDE = 977;
 
@@ -150,17 +158,38 @@ public final class PortalChunkTerrain {
         OVERWORLD_WWOO(Level.OVERWORLD, "minecraft:stone", SecondLapOverworld.Stretch.WWOO),
         /** The overworld as the added-biomes stretch dresses it — see {@link SecondLapOverworld}. */
         OVERWORLD_BOP(Level.OVERWORLD, "minecraft:stone", SecondLapOverworld.Stretch.BOP),
+        /** The Nether as vanilla generates it — cut with {@link SampleGenerators}' vanilla-biome generator. */
         NETHER(Level.NETHER, "minecraft:netherrack", null),
-        END(Level.END, "minecraft:end_stone", null);
+        /** The Nether's BetterNether biomes — sites taken only where the live Nether places one. */
+        NETHER_BETTER(Level.NETHER, "minecraft:netherrack", null, "betternether"),
+        /** The End as vanilla generates it — cut with {@link SampleGenerators}' vanilla-island generator. */
+        END(Level.END, "minecraft:end_stone", null),
+        /** The End as BetterEnd generates it — sites taken only where the live End places one of its biomes. */
+        END_BETTER(Level.END, "minecraft:end_stone", null, "betterend");
 
         private final ResourceKey<Level> levelKey;
         private final String groundId;
         private final SecondLapOverworld.Stretch stretch;
+        private final String biomeNamespace;
 
         Source(ResourceKey<Level> levelKey, String groundId, SecondLapOverworld.Stretch stretch) {
+            this(levelKey, groundId, stretch, null);
+        }
+
+        Source(ResourceKey<Level> levelKey, String groundId, SecondLapOverworld.Stretch stretch,
+               String biomeNamespace) {
             this.levelKey = levelKey;
             this.groundId = groundId;
             this.stretch = stretch;
+            this.biomeNamespace = biomeNamespace;
+        }
+
+        /**
+         * The biome namespace a site's centre must be in for this room to take it, or {@code null}
+         * when any biome will do — how a Better room keeps to its mod's biomes.
+         */
+        public String biomeNamespace() {
+            return biomeNamespace;
         }
 
         public ResourceKey<Level> levelKey() {
@@ -185,8 +214,9 @@ public final class PortalChunkTerrain {
         }
 
         /**
-         * The dimension a portal room variant samples: {@link #NETHER}, {@link #END},
-         * {@link #OVERWORLD_WWOO} and {@link #OVERWORLD_BOP} for the named sub-variants,
+         * The dimension a portal room variant samples: {@link #NETHER}, {@link #NETHER_BETTER},
+         * {@link #END}, {@link #END_BETTER}, {@link #OVERWORLD_WWOO} and {@link #OVERWORLD_BOP} for
+         * the named sub-variants,
          * {@link #OVERWORLD} for the parent and for anything unrecognised.
          *
          * <p>Total rather than throwing, for the reason every other reader of authored text in this
@@ -196,6 +226,8 @@ public final class PortalChunkTerrain {
         public static Source of(String roomName) {
             if (roomName == null) return OVERWORLD;
             String key = roomName.trim().toLowerCase(Locale.ROOT);
+            if (key.endsWith(NETHER_SUFFIX + BETTER_SUFFIX)) return NETHER_BETTER;
+            if (key.endsWith(END_SUFFIX + BETTER_SUFFIX)) return END_BETTER;
             if (key.endsWith(NETHER_SUFFIX)) return NETHER;
             if (key.endsWith(END_SUFFIX)) return END;
             if (key.endsWith(WWOO_SUFFIX)) return OVERWORLD_WWOO;
@@ -209,6 +241,9 @@ public final class PortalChunkTerrain {
 
     /** What an End one's does. */
     private static final String END_SUFFIX = "_end";
+
+    /** What follows a Nether or End variant's suffix to make it the Better one's. */
+    private static final String BETTER_SUFFIX = "_better";
 
     /** What the overhauled-vanilla overworld variant's name ends with. */
     private static final String WWOO_SUFFIX = "_wwoo";
@@ -331,6 +366,7 @@ public final class PortalChunkTerrain {
 
     /** Drop every sampled cube — the next world's pair keys mean different rooms. */
     public static void clear() {
+        SampleGenerators.clear();
         READY.clear();
         IN_FLIGHT.clear();
         DECORATED.clear();
@@ -392,7 +428,10 @@ public final class PortalChunkTerrain {
         if (level == null) level = server.overworld();
         if (level == null) return null;
         ChunkGenerator generator = level.getChunkSource().getGenerator();
-        if (!(generator instanceof NoiseBasedChunkGenerator noiseGenerator)) return null;
+        if (!(generator instanceof NoiseBasedChunkGenerator liveGenerator)) return null;
+        // The vanilla Nether and End rooms are cut with a private generator that leaves the Better
+        // mods out; every other room with the dimension's own.
+        NoiseBasedChunkGenerator noiseGenerator = SampleGenerators.forSource(level, source, liveGenerator);
         RandomState random = level.getChunkSource().randomState();
 
         int minY = level.getMinBuildHeight();
@@ -646,9 +685,21 @@ public final class PortalChunkTerrain {
      * one would almost never land there; in a world with no such stretch (its band switched off) it
      * falls back to the plain room's sites rather than to an empty room.</p>
      */
-    record SitePlan(WorldGenCycle cycle, SecondLapOverworld.Stretch stretch, List<int[]> ranges) {
+    record SitePlan(WorldGenCycle cycle, SecondLapOverworld.Stretch stretch, List<int[]> ranges,
+                    String biomeNamespace, BiomeSource biomes, Climate.Sampler sampler) {
+
+        SitePlan(WorldGenCycle cycle, SecondLapOverworld.Stretch stretch, List<int[]> ranges) {
+            this(cycle, stretch, ranges, null, null, null);
+        }
 
         static SitePlan of(ServerLevel level, Source source) {
+            if (source.biomeNamespace() != null) {
+                // A Better room: any site will do, as long as the live dimension puts one of its
+                // mod's biomes there.
+                return new SitePlan(null, null, List.of(), source.biomeNamespace(),
+                    level.getChunkSource().getGenerator().getBiomeSource(),
+                    level.getChunkSource().randomState().sampler());
+            }
             if (source.stretch() == null || !level.dimension().equals(Level.OVERWORLD)) {
                 return new SitePlan(null, null, List.of());
             }
@@ -675,6 +726,7 @@ public final class PortalChunkTerrain {
         }
 
         boolean accepts(ChunkPos site) {
+            if (biomeNamespace != null) return biomeNamespace.equals(biomeNamespaceAt(biomes, sampler, site));
             if (stretch == null) return true;
             try {
                 return StretchSites.matches(cycle, stretch, site.getMinBlockX());
@@ -683,6 +735,20 @@ public final class PortalChunkTerrain {
                 // judged the ordinary way rather than lost.
                 return true;
             }
+        }
+    }
+
+    /**
+     * The namespace of the biome {@code biomes} places at the middle of {@code site}, at
+     * {@link #BIOME_PROBE_Y} — one noise lookup, no generation. {@code null} if the source cannot say.
+     */
+    public static String biomeNamespaceAt(BiomeSource biomes, Climate.Sampler sampler, ChunkPos site) {
+        try {
+            Holder<Biome> biome = biomes.getNoiseBiome(QuartPos.fromBlock(site.getMiddleBlockX()),
+                QuartPos.fromBlock(BIOME_PROBE_Y), QuartPos.fromBlock(site.getMiddleBlockZ()), sampler);
+            return biome.unwrapKey().map(k -> k.location().getNamespace()).orElse(null);
+        } catch (Throwable t) {
+            return null;
         }
     }
 
