@@ -210,7 +210,7 @@ public final class WholeCarriageTemplateStore {
     private static Optional<StructureTemplate> load(ServerLevel level, String id, CompoundTag tag, String origin) {
         StructureTemplate template = new StructureTemplate();
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-        template.load(blocks, tag);
+        template.load(blocks, DoubleBlockTemplateRepair.repair(tag, id));
         LOGGER.info("[DungeonTrain] Loaded whole carriage {} from {}", id, origin);
         return Optional.of(template);
     }

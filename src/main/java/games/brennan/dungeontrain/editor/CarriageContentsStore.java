@@ -336,7 +336,7 @@ public final class CarriageContentsStore {
     ) {
         StructureTemplate template = new StructureTemplate();
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-        template.load(blocks, tag);
+        template.load(blocks, DoubleBlockTemplateRepair.repair(tag, id));
 
         Vec3i size = template.getSize();
         LOGGER.info("[DungeonTrain] Loaded contents template {} from {} ({}x{}x{})",
