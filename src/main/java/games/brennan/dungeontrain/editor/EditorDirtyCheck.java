@@ -586,7 +586,8 @@ public final class EditorDirtyCheck {
                 : model.id() + "." + model.variantName();
             // Whole rows are keyed by the bare id under their own category ids — see scanWhole.
             case WHOLE_CARRIAGE, CARRIAGE_GROUP -> model.id();
-            case PART -> null;
+            // Neither is covered by a scan pass yet.
+            case PART, CHUNK_FRAME -> null;
         };
     }
 

@@ -67,6 +67,12 @@ public final class ChunkFrameEditor {
         return slotOrigin(index < 0 ? names.size() : index);
     }
 
+    /** The plot origin of registered frame {@code name}, or null when no such frame is registered. */
+    public static BlockPos registeredPlotOrigin(String name) {
+        int index = ChunkFrameRegistry.names().indexOf(name);
+        return index < 0 ? null : slotOrigin(index);
+    }
+
     private static BlockPos slotOrigin(int index) {
         return new BlockPos(FIRST_PLOT_X + index * (ChunkFrame.SIZE.getX() + STRIDE_PAD), EditorLayout.PLOT_Y, ROW_Z);
     }
@@ -124,6 +130,9 @@ public final class ChunkFrameEditor {
         boolean toSource = EditorDevMode.isEnabled();
         ChunkFrameStore.save(name, template.save(new CompoundTag()), toSource);
         ChunkFrameRegistry.register(name);
+        // The variant sidecar travels with its frame, as every other template's does.
+        ChunkFramePlot plot = ChunkFramePlot.of(name);
+        if (plot != null) plot.save();
         SESSIONS.put(player.getUUID(), name);
         return toSource;
     }
@@ -138,6 +147,20 @@ public final class ChunkFrameEditor {
                 () -> stampPlot(level, plotOrigin(name), ChunkFrameStore.get(level, name).orElse(null))));
         }
         return jobs;
+    }
+
+    /** Put {@code name}'s plot back to what is saved — {@code /dt reset}. */
+    public static void restamp(ServerLevel level, String name) {
+        BlockPos origin = registeredPlotOrigin(name);
+        if (origin == null) return;
+        ChunkFrameStore.invalidate(name);
+        stampPlot(level, origin, ChunkFrameStore.get(level, name).orElse(null));
+    }
+
+    /** Erase {@code name}'s plot back to an empty cage — {@code editor clear}. */
+    public static void clearPlot(ServerLevel level, String name) {
+        BlockPos origin = registeredPlotOrigin(name);
+        if (origin != null) stampPlot(level, origin, null);
     }
 
     /** Erase every frame plot and its cage. */

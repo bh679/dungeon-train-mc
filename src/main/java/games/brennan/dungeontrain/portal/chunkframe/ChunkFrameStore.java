@@ -63,6 +63,11 @@ public final class ChunkFrameStore {
         CACHE.clear();
     }
 
+    /** Drop {@code name}'s loaded copy, so the next read comes from disk. */
+    public static synchronized void invalidate(String name) {
+        CACHE.remove(name);
+    }
+
     /** {@code name}'s template — config first, then bundled — or empty. */
     public static synchronized Optional<ChunkFrameTemplate> get(ServerLevel level, String name) {
         if (name == null || name.isBlank()) return Optional.empty();
@@ -108,6 +113,32 @@ public final class ChunkFrameStore {
         try (InputStream in = ChunkFrameStore.class.getResourceAsStream(resource)) {
             if (in == null) return Optional.empty();
             return Optional.of(NbtIo.readCompressed(in, NbtAccounter.unlimitedHeap()));
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] Failed to read bundled chunk frame {}: {}", resource, e.toString());
+            return Optional.empty();
+        }
+    }
+
+    /** True when the jar ships a frame named {@code name}. */
+    public static boolean isBundled(String name) {
+        try (InputStream in = ChunkFrameStore.class.getResourceAsStream(RESOURCE_PREFIX + name + EXT)) {
+            return in != null;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /** The bundled frame as a vanilla structure — what a reset to the shipped version stamps. */
+    public static Optional<net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate>
+            bundledStructure(ServerLevel level, String name) {
+        String resource = RESOURCE_PREFIX + name + EXT;
+        try (InputStream in = ChunkFrameStore.class.getResourceAsStream(resource)) {
+            if (in == null) return Optional.empty();
+            CompoundTag tag = NbtIo.readCompressed(in, NbtAccounter.unlimitedHeap());
+            var template = new net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate();
+            template.load(level.registryAccess().lookupOrThrow(Registries.BLOCK),
+                DoubleBlockTemplateRepair.repair(tag, "chunk_frame:" + name));
+            return Optional.of(template);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled chunk frame {}: {}", resource, e.toString());
             return Optional.empty();

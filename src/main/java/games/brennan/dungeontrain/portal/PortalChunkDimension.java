@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.portal.chunkframe.ChunkFrame;
 import games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer;
-import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameTemplate;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -117,14 +116,14 @@ public final class PortalChunkDimension {
      */
     public static void frame(ServerLevel level, PortalStructure structure, CarriageDims dims, int pairKey) {
         if (!structure.roomSize().equals(ChunkFrame.ROOM_SIZE)) return;
-        java.util.Optional<ChunkFrameTemplate> frame =
+        java.util.Optional<ChunkFramePlacer.Picked> frame =
             ChunkFramePlacer.frameFor(level, structure.roomName(), pairKey);
         if (frame.isEmpty()) return;
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         // Without the seal planes: the frame may dress the mouth's plane, and only the corridor and
         // its plug are kept — which is what cuts the doorway through it.
         ChunkFramePlacer.place(level, frame.get(), structure.roomOrigin(dims, layout),
-            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false));
+            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), pairKey);
     }
 
     // ---- writing -------------------------------------------------------------

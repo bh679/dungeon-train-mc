@@ -126,7 +126,6 @@ public final class EditorScreenActions {
         boolean here = ctx.standingInSelection();
         PlotCategory cat = ctx.category();
         String model = ctx.hasSelection() ? ctx.selection().displayName() : "";
-        boolean parts = cat == PlotCategory.PARTS || cat == PlotCategory.CHUNK_FRAMES;
 
         out.add(new Icon("save", EditorScreenLang.ICON_SAVE,
             here ? new CommandMenuEntry.Stay(MenuLang.t("common.save"), EditorMenuScreen.saveCommandFor(cat))
@@ -150,7 +149,7 @@ public final class EditorScreenActions {
             EditorHistoryState.redoLabel(), EditorScreenLang.REDO_NOTHING));
 
         out.add(new Icon("reset", EditorScreenLang.ICON_RESET,
-            here && !parts ? new CommandMenuEntry.Stay(MenuLang.t("editor.reset"), "dungeontrain reset")
+            here && cat != PlotCategory.PARTS ? new CommandMenuEntry.Stay(MenuLang.t("editor.reset"), "dungeontrain reset")
                  : packetAction(ctx, EditorPlotActionPacket.Action.RESET, sendPacket),
             EditorScreenLang.DISABLED_STAND_HERE));
 

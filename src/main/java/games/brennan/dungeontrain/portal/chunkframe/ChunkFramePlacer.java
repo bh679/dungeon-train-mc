@@ -1,7 +1,10 @@
 package games.brennan.dungeontrain.portal.chunkframe;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
+import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
@@ -45,33 +48,54 @@ public final class ChunkFramePlacer {
         WARNED.clear();
     }
 
+    /** The frame a pair's room is dressed in: its template and its variant sidecar. */
+    public record Picked(String name, ChunkFrameTemplate template, TrackVariantBlocks variants) {}
+
     /** {@code roomName}'s frame for pair {@code pairKey}, or empty when it has none that loads. */
-    public static Optional<ChunkFrameTemplate> frameFor(ServerLevel level, String roomName, int pairKey) {
+    public static Optional<Picked> frameFor(ServerLevel level, String roomName, int pairKey) {
         String name = ChunkRoomFramesStore.get(roomName).pick(level.getSeed() ^ FRAME_SALT ^ ((long) pairKey << 20));
         if (name == null) return Optional.empty();
         Optional<ChunkFrameTemplate> template = ChunkFrameStore.get(level, name);
-        if (template.isEmpty() && WARNED.add(roomName + "/" + name)) {
-            LOGGER.warn("[DungeonTrain] Chunk room {} names frame '{}', which does not load; it stays unframed",
-                roomName, name);
+        if (template.isEmpty()) {
+            if (WARNED.add(roomName + "/" + name)) {
+                LOGGER.warn("[DungeonTrain] Chunk room {} names frame '{}', which does not load; it stays unframed",
+                    roomName, name);
+            }
+            return Optional.empty();
         }
-        return template;
+        return Optional.of(new Picked(name, template.get(), ChunkFrameVariants.loadFor(name)));
     }
 
     /**
-     * Write {@code frame} around and into the room at {@code roomOrigin}.
+     * Write {@code picked} around and into the room at {@code roomOrigin}.
+     *
+     * <p>A cell with block variants rolls one — per pair, so a room keeps its roll every time it is
+     * re-stamped — and the roll stands in for the template's own block there. An empty roll is air,
+     * which here as anywhere in a frame means "leave what is there".</p>
      *
      * @param mask the pair's corridors and plugs, never written
      * @return cells changed
      */
-    public static int place(ServerLevel level, ChunkFrameTemplate frame, BlockPos roomOrigin, PortalCorridorMask mask) {
+    public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int pairKey) {
+        ChunkFrameTemplate frame = picked.template();
+        TrackVariantBlocks variants = picked.variants();
+        long seed = level.getSeed();
         int changed = 0;
         Vec3i size = frame.size();
+        BlockPos.MutableBlockPos local = new BlockPos.MutableBlockPos();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int y = 0; y < size.getY(); y++) {
             for (int z = 0; z < size.getZ(); z++) {
                 for (int x = 0; x < size.getX(); x++) {
                     BlockState state = frame.at(x, y, z);
-                    if (state.isAir()) continue;
+                    CompoundTag blockEntity = frame.blockEntityAt(x, y, z);
+                    if (variants.statesAt(local.set(x, y, z)) != null) {
+                        VariantState roll = variants.resolve(local.immutable(), seed, pairKey);
+                        if (roll == null || roll.isMob()) continue;
+                        state = CarriageVariantBlocks.isEmptyPlaceholder(roll.state()) ? null : roll.state();
+                        blockEntity = roll.blockEntityNbt();
+                    }
+                    if (state == null || state.isAir()) continue;
                     cursor.set(roomOrigin.getX() + ChunkFrame.OFFSET.getX() + x,
                         roomOrigin.getY() + ChunkFrame.OFFSET.getY() + y,
                         roomOrigin.getZ() + ChunkFrame.OFFSET.getZ() + z);
@@ -80,7 +104,7 @@ public final class ChunkFramePlacer {
                     if (current == state) continue;
                     if (current.hasBlockEntity()) level.removeBlockEntity(cursor);
                     level.setBlock(cursor, state, Block.UPDATE_ALL);
-                    applyBlockEntity(level, cursor, frame.blockEntityAt(x, y, z));
+                    applyBlockEntity(level, cursor, blockEntity);
                     changed++;
                 }
             }

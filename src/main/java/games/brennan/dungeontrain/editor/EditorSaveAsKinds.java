@@ -77,6 +77,7 @@ public final class EditorSaveAsKinds {
             case Template.Pillar ignored -> TRACK_SIDE;
             case Template.Adjunct ignored -> TRACK_SIDE;
             case Template.Tunnel ignored -> TRACK_SIDE;
+            case Template.ChunkFrame ignored -> CHUNK_FRAME;
         };
     }
 
@@ -489,6 +490,51 @@ public final class EditorSaveAsKinds {
             // edited size.
             games.brennan.dungeontrain.portal.PortalRoomSizes.forget(name);
             PortalRoomEditor.resetToSaved(level, name, dims);
+        }
+    };
+
+    /** A frame is one structure plus its variant sidecar, both under {@code chunk_frames/}. */
+    private static final Adapter CHUNK_FRAME = new Adapter() {
+        @Override public String categoryId(Template source) { return null; }
+
+        @Override public Optional<Component> validate(Template source, String name) {
+            if (!games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.NAME.matcher(name).matches()) {
+                return invalid(name);
+            }
+            if (games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names().contains(name)) {
+                return taken(name);
+            }
+            return Optional.empty();
+        }
+
+        @Override public List<Template> reloaded(Template source, String name) {
+            return List.of();
+        }
+
+        @Override public List<Path> userFiles(Template source) {
+            String name = ((Template.ChunkFrame) source).name();
+            return List.of(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.fileFor(name),
+                games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.configPathFor(name));
+        }
+
+        @Override public Template copy(ServerPlayer player, Template source, String name) throws IOException {
+            String from = ((Template.ChunkFrame) source).name();
+            ServerLevel level = player.serverLevel().getServer().overworld();
+            var tag = games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.readTag(from)
+                .orElseThrow(() -> new IOException("'" + from + "' has no saved frame to copy."));
+            boolean toSource = EditorDevMode.isEnabled();
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.save(name, tag, toSource);
+            var variants = games.brennan.dungeontrain.track.variant.TrackVariantBlocks.copyOf(
+                games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.loadFor(from));
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.save(name, variants, toSource);
+            ChunkFrameEditor.enter(player, level, name, null);
+            return new Template.ChunkFrame(name);
+        }
+
+        @Override public void restoreAndRestamp(ServerLevel level, Template source, CarriageDims dims) {
+            String name = ((Template.ChunkFrame) source).name();
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.clearCache();
+            ChunkFrameEditor.restamp(level, name);
         }
     };
 }

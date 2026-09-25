@@ -185,7 +185,8 @@ public enum EditorCategory {
         if (roomName != null) {
             return Optional.of(new Located(PORTALS, new Template.PortalRoom(roomName)));
         }
-        return Optional.empty();
+        // The frame row, on the other side of the rooms' origin.
+        return ChunkFrameEditor.plotContaining(pos).map(name -> new Located(PORTALS, new Template.ChunkFrame(name)));
     }
 
     /** Rooms first (the landing plot), then groups — the order the two rows sit in the world. */
@@ -300,6 +301,8 @@ public enum EditorCategory {
             case Template.Adjunct a -> TRACKS;
             case Template.Tunnel t -> TRACKS;
             case Template.PortalRoom r -> PORTALS;
+            // Frames stand beside the rooms and are stamped with them.
+            case Template.ChunkFrame f -> PORTALS;
         };
     }
 

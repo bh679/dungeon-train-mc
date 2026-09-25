@@ -25,7 +25,9 @@ public enum TemplateKind {
     STAIRS_ENTRANCE,
     TUNNEL,
     /** The pocket room a portal carriage group's two corridors open into. */
-    PORTAL_ROOM;
+    PORTAL_ROOM,
+    /** The frame that dresses a dimensional carriage room — see {@code portal.chunkframe.ChunkFrame}. */
+    CHUNK_FRAME;
 
     public String id() {
         return name().toLowerCase(Locale.ROOT);

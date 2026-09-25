@@ -222,7 +222,7 @@ public final class EditorMenuScreen implements MenuScreen {
         // wipes interior blocks to air. Parts have no Reset, and the categories without a Clear
         // (tracks / architecture) fall back to a solo Reset.
         CommandMenuEntry clear = clearEntryFor(ctx.category(), ctx.model());
-        if (ctx.isParts() || ctx.isChunkFrames()) {
+        if (ctx.isParts()) {
             if (clear != null) out.add(clear);
         } else {
             CommandMenuEntry reset = new CommandMenuEntry.Run(MenuLang.t("editor.reset"), "dungeontrain reset");
@@ -809,12 +809,12 @@ public final class EditorMenuScreen implements MenuScreen {
     public static CommandMenuEntry clearEntryFor(PlotCategory category, String model) {
         if (model == null || model.isEmpty() || category == null) return null;
         return switch (category) {
-            case CARRIAGES, CONTENTS, PARTS, PORTALS, WHOLE, WHOLE_GROUP -> new CommandMenuEntry.DrillIn(
+            case CARRIAGES, CONTENTS, PARTS, CHUNK_FRAMES, PORTALS, WHOLE, WHOLE_GROUP -> new CommandMenuEntry.DrillIn(
                 MenuLang.t("common.clear"),
                 new ConfirmScreen(MenuLang.t("confirm.clear_blocks", model),
                     "dungeontrain editor clear"));
             // No single addressable plot to clear.
-            case TRACKS, CHUNK_FRAMES, ARCHITECTURE -> null;
+            case TRACKS, ARCHITECTURE -> null;
         };
     }
 

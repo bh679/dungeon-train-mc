@@ -507,14 +507,17 @@ public final class VariantOverlayRenderer {
             if (chunk.isPresent()) {
                 String frame = chunk.get();
                 boolean chunkDevmode = EditorDevMode.isEnabled();
-                String chunkKey = "CHUNK_FRAMES|" + frame + "|" + chunkDevmode;
+                boolean[] chunkMirror = mirrorAxesAt(player, dims);
+                String chunkKey = "CHUNK_FRAMES|" + frame + "|" + chunkDevmode
+                    + "|" + chunkMirror[0] + chunkMirror[1] + chunkMirror[2] + chunkMirror[3];
                 if (chunkKey.equals(prev)) return;
                 LAST_STATUS.put(uuid, chunkKey);
                 DungeonTrainNet.sendTo(player, new EditorStatusPacket(
                     PlotCategory.CHUNK_FRAMES.id(), frame, ChunkFrameEditor.MODEL_ID, frame,
                     chunkDevmode, EditorStatusPacket.NO_WEIGHT,
                     0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
-                    false, false, false, false, false, Collections.emptySet(), ""));
+                    false, chunkMirror[0], chunkMirror[1], chunkMirror[2], chunkMirror[3],
+                    Collections.emptySet(), ""));
                 return;
             }
         }
