@@ -818,8 +818,11 @@ class EditorPlotLabelsRendererTest {
         EditorPlotLabelsPacket.Entry withMode = entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition");
         EditorPlotLabelsPacket.Entry without =
             entry("PORTALS", true, 1, 11, 13, 7, EditorPlotLabelsPacket.NO_MODE);
-        assertEquals(EditorPlotLabelsRenderer.MIN_HALF_W,
-            EditorPlotLabelsRenderer.halfWidth(without, SIX_PX));
+        // Name + padding + the face button's square reserved either side of the centred name.
+        double nameSized = (SIX_PX.applyAsInt(without.name()) * 0.025 + 2 * 0.10
+            + 2 * EditorPanelFacing.BUTTON_W) / 2.0;
+        assertEquals(Math.max(EditorPlotLabelsRenderer.MIN_HALF_W, nameSized),
+            EditorPlotLabelsRenderer.halfWidth(without, SIX_PX), 1.0e-9);
         assertTrue(EditorPlotLabelsRenderer.halfWidth(withMode, SIX_PX)
             > EditorPlotLabelsRenderer.halfWidth(without, SIX_PX));
     }
@@ -832,6 +835,46 @@ class EditorPlotLabelsRendererTest {
             "portal_room", "default", true, false, false, 11, 13, 7, "bedrock_lock");
         double halfW = EditorPlotLabelsRenderer.halfWidth(longName, SIX_PX);
         assertTrue(halfW >= SIX_PX.applyAsInt(longName.name()) * 0.025 / 2.0);
+    }
+
+    @Test
+    @DisplayName("The name row's top-right square is the face button; the rest still teleports")
+    void nameRowEndsInTheFaceButton() {
+        EditorPlotLabelsPacket.Entry e = entry("PORTALS", true, 1, 11, 13, 7);
+        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
+        double y = rowCentreY(e, 0);
+        assertEquals(CellKind.FACE,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - EditorPanelFacing.BUTTON_W / 2.0, y));
+        assertEquals(CellKind.NAME, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, y));
+        assertEquals(CellKind.NAME, EditorPlotLabelsRenderer.cellAt(e, halfW,
+            halfW - EditorPanelFacing.BUTTON_W - 0.01, y));
+        // Only the top row: the row under it keeps its full width.
+        assertNotEquals(CellKind.FACE, EditorPlotLabelsRenderer.cellAt(e, halfW,
+            halfW - EditorPanelFacing.BUTTON_W / 2.0, rowCentreY(e, 1)));
+    }
+
+    @Test
+    @DisplayName("A parts plot's inert name row still offers the face button")
+    void partsNameRowStillHasFaceButton() {
+        EditorPlotLabelsPacket.Entry parts = new EditorPlotLabelsPacket.Entry(
+            POS, "default", EditorPlotLabelsPacket.NO_WEIGHT, "", "floor", "default",
+            false, false, false, 11, 13, 7, "bedrock_lock");
+        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
+        double y = rowCentreY(parts, 0);
+        assertEquals(CellKind.NONE, EditorPlotLabelsRenderer.cellAt(parts, halfW, 0.0, y));
+        assertEquals(CellKind.FACE,
+            EditorPlotLabelsRenderer.cellAt(parts, halfW, halfW - 0.01, y));
+    }
+
+    @Test
+    @DisplayName("A long name is sized to clear the face button on both sides")
+    void longNameClearsTheFaceButton() {
+        EditorPlotLabelsPacket.Entry longName = new EditorPlotLabelsPacket.Entry(
+            POS, "a_very_long_portal_room_variant_name_indeed", 1, "PORTALS",
+            "portal_room", "default", true, false, false, 11, 13, 7, "bedrock_lock");
+        double halfW = EditorPlotLabelsRenderer.halfWidth(longName, SIX_PX);
+        double nameHalfW = SIX_PX.applyAsInt(longName.name()) * 0.025 / 2.0;
+        assertTrue(halfW - EditorPanelFacing.BUTTON_W >= nameHalfW);
     }
 
     private static int indexOf(RowKind[] rows, RowKind kind) {

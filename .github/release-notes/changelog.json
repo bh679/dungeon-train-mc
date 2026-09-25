@@ -18958,6 +18958,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-menus-hold-still",
+      "version": "0.958.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor menus stay put",
+      "summary": "The floating menus in the Train Editor no longer spin to follow you around. They turn to face you when you arrive or teleport, then hold still so you can walk past and read them.",
+      "highlights": [
+        "Every editor menu has a new \u21bb button in its top-right corner: click it to turn that menu to face you, or shift-click to square it back up.",
+        "The Welcome board now sits clear of the template menu instead of overlapping it.",
+        "The floating Packages board is gone from the editor entrance \u2014 packages are still in the X menu."
+      ],
+      "pr": 1550,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
