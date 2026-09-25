@@ -19124,6 +19124,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "relay-build-chest-loot",
+      "version": "0.965.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "community"
+      ],
+      "title": "Big shared builds keep their chest loot",
+      "summary": "Large builds \u2014 especially dimensional carriage rooms \u2014 now keep their chest loot and block variants when you share them. Before, a big build could arrive on someone else's world with its chests unset and its variants missing.",
+      "highlights": [
+        "Downloading a large build from builder search now brings its chest loot and block variants with it",
+        "If a build still has too much to send, you'll get a message saying what was left out \u2014 chest loot is always kept longest",
+        "Builds shared before this update need to be saved again by their builder to pick up their chest loot"
+      ],
+      "pr": 1561,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
