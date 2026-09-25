@@ -151,6 +151,66 @@ public final class PortalChunkDimension {
 
         openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.ENTRY);
         openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.EXIT);
+
+        if (slice.source().levelKey().equals(net.minecraft.world.level.Level.OVERWORLD)) {
+            paintBiomes(level, origin, size, shift, slice);
+        }
+    }
+
+    /**
+     * Give the room the sampled chunk's biomes, so it is tinted as the place it was cut from.
+     *
+     * <p>Grass, leaves and water take their colour from the biome of the cell they stand in, and the
+     * cells a room is stamped into belong to the world it is stamped into — an editor world's plains,
+     * or whatever the live world has down there. So a BoP redwood forest came out plains green. The
+     * room's interior is painted with the sample's own biomes, the way {@code /fillbiome} does it,
+     * and the chunks are resent so a player already standing there sees it change.</p>
+     *
+     * <p>Overworld rooms only. A Nether or End room is lit and fogged by the sky its variant
+     * authors, and a Nether biome in a sealed dark room would also bring the Nether's spawns with it.
+     * A room shares a quart (4×4×4) with whatever is beside its walls, so a biome edge can reach a
+     * block past them — the price of painting at the grain biomes are stored at.</p>
+     */
+    private static void paintBiomes(ServerLevel level, BlockPos origin, Vec3i size, int shift,
+                                    PortalChunkSlice slice) {
+        int minX = origin.getX() + 1;
+        int minY = origin.getY() + 1;
+        int minZ = origin.getZ() + 1;
+        int maxX = origin.getX() + size.getX() - 2;
+        int maxY = origin.getY() + size.getY() - 2;
+        int maxZ = origin.getZ() + size.getZ() - 2;
+        java.util.List<net.minecraft.world.level.chunk.ChunkAccess> changed = new java.util.ArrayList<>();
+        net.minecraft.world.level.biome.Climate.Sampler sampler =
+            level.getChunkSource().randomState().sampler();
+        for (int cx = minX >> 4; cx <= maxX >> 4; cx++) {
+            for (int cz = minZ >> 4; cz <= maxZ >> 4; cz++) {
+                net.minecraft.world.level.chunk.LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
+                if (chunk == null) continue;
+                boolean[] touched = {false};
+                chunk.fillBiomesFromNoise((qx, qy, qz, s) -> {
+                    net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> here =
+                        chunk.getNoiseBiome(qx, qy, qz);
+                    int bx = net.minecraft.core.QuartPos.toBlock(qx);
+                    int by = net.minecraft.core.QuartPos.toBlock(qy);
+                    int bz = net.minecraft.core.QuartPos.toBlock(qz);
+                    // A quart counts when its middle is inside the room's interior.
+                    int mx = bx + 2, my = by + 2, mz = bz + 2;
+                    if (mx < minX || mx > maxX || my < minY || my > maxY || mz < minZ || mz > maxZ) {
+                        return here;
+                    }
+                    net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> sampled =
+                        slice.biomeAt(mx - origin.getX(), my - origin.getY() + shift, mz - origin.getZ());
+                    if (sampled == null || sampled.equals(here)) return here;
+                    touched[0] = true;
+                    return sampled;
+                }, sampler);
+                if (touched[0]) {
+                    chunk.setUnsaved(true);
+                    changed.add(chunk);
+                }
+            }
+        }
+        if (!changed.isEmpty()) level.getChunkSource().chunkMap.resendBiomesForChunks(changed);
     }
 
     /**

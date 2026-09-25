@@ -640,7 +640,31 @@ public final class PortalChunkTerrain {
             }
         }
         return new PortalChunkSlice(source, SIZE, HEIGHT, states,
-            blockEntitiesIn(level, chunk, pos, anchor), occupantsIn(chunk, pos, anchor));
+            blockEntitiesIn(level, chunk, pos, anchor), occupantsIn(chunk, pos, anchor), biomesIn(chunk, pos, anchor, minY, maxY));
+    }
+
+    /**
+     * The sampled chunk's biome at each quart of the window, bottom row first — sampled at the middle
+     * of each quart, and held to the dimension's own height where the cut runs past it.
+     */
+    @SuppressWarnings("unchecked")
+    private static Holder<Biome>[] biomesIn(ProtoChunk chunk, ChunkPos pos, int anchor, int minY,
+                                            int maxY) {
+        int qw = PortalChunkSlice.quarts(SIZE);
+        int qh = PortalChunkSlice.quarts(HEIGHT);
+        Holder<Biome>[] out = new Holder[qw * qh * qw];
+        for (int qy = 0; qy < qh; qy++) {
+            int worldY = Math.max(minY, Math.min(maxY, anchor - SURFACE_ROW + qy * 4 + 2));
+            for (int qz = 0; qz < qw; qz++) {
+                for (int qx = 0; qx < qw; qx++) {
+                    out[(qy * qw + qz) * qw + qx] = chunk.getNoiseBiome(
+                        QuartPos.fromBlock(pos.getMinBlockX() + qx * 4),
+                        QuartPos.fromBlock(worldY),
+                        QuartPos.fromBlock(pos.getMinBlockZ() + qz * 4));
+                }
+            }
+        }
+        return out;
     }
 
     /**
