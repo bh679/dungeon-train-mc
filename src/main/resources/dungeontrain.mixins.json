@@ -85,6 +85,7 @@
   ],
   "client": [
     "client.KeyboardHandlerDebugChordMixin",
+    "client.BiomeColorsTwinMixin",
     "client.LocalPlayerFlyDoubleTapSprintMixin",
     "client.DebugScreenOverlayDepthMixin",
     "client.BookViewScreenAccessor",
