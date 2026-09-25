@@ -24,6 +24,9 @@ import java.util.stream.Stream;
  * "differs from vanilla": other mods rewrite vanilla biomes too — BetterNether patches the vanilla
  * Nether biomes and BetterEnd the End ones through WorldWeaver — and those edits must stay
  * everywhere. Only WWOO's are stretch-bound.</p>
+ *
+ * <p>WWOO's {@code minecraft:} tag edits are global and can't be stretch-bound; the ones its
+ * features don't need are dropped at load by {@link WwooTagFilter}.</p>
  */
 public final class WwooDatapack {
 
