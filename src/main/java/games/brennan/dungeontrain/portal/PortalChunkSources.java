@@ -127,6 +127,8 @@ public final class PortalChunkSources {
             }
             NoiseBasedChunkGenerator noise =
                 SampleGenerators.forStandIn(host.getServer(), source, presetGenerator, seed);
+            // A vanilla room whose vanilla-only stand-in could not be built: nothing to sample.
+            if (noise == null) return null;
             RandomState random = RandomState.create(noise.generatorSettings().value(),
                 host.registryAccess().lookupOrThrow(Registries.NOISE), seed);
             Holder<DimensionType> type = stem.type();
