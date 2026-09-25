@@ -5,9 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalTestSessionPacket;
-import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalClear;
-import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalTestSession;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
@@ -19,6 +17,7 @@ import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageTestSession;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
+import games.brennan.dungeontrain.train.ContentsShellPicker;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -159,12 +158,12 @@ public final class CarriageTestCommand {
         if (kind == CarriageTestSession.Kind.CARRIAGE) {
             Optional<CarriageVariant> variant = CarriageVariantRegistry.find(id);
             if (variant.isEmpty()) return fail(source, "chat.dungeontrain.editor.unknown_carriage", id);
-            if (isPortalShell(variant.get())) return fail(source, "chat.dungeontrain.carriage_test.portal_part", id);
+            if (ContentsShellPicker.isPortalPart(variant.get())) return fail(source, "chat.dungeontrain.carriage_test.portal_part", id);
             // The train's own pick for this shell — allow-list, weights and groups — ungated, since
             // a test is at no place on the track for a band gate to read.
             // A flatbed has no interior, and the train furnishes none.
-            CarriageContents contents = isFlatbed(variant.get()) ? null : CarriageContentsRegistry.pick(
-                seed, CarriageTestSession.TEST_INDEX, variant.get(), null);
+            CarriageContents contents = ContentsShellPicker.isFlatbed(variant.get()) ? null
+                : CarriageContentsRegistry.pick(seed, CarriageTestSession.TEST_INDEX, variant.get(), null);
             return new Plan(variant.get(), contents);
         }
         Optional<CarriageContents> contents = CarriageContentsRegistry.find(id);
@@ -177,8 +176,8 @@ public final class CarriageTestCommand {
         // Only a carriage that would actually carry these contents on the train stands around them:
         // one whose allow-list has them enabled and that spawns at all. A member is allowed through
         // its group's top parent — the allow-list is only ever consulted at the top-level pick.
-        String topId = topParentOf(contents.get().id());
-        CarriageVariant shell = shellAllowing(topId, seed);
+        String topId = ContentsShellPicker.topParentOf(contents.get().id());
+        CarriageVariant shell = ContentsShellPicker.pick(topId, seed).orElse(null);
         if (shell == null) return fail(source, "chat.dungeontrain.carriage_test.no_shell_allows", topId);
         // A group parent rolls a member, as it would in a carriage; a member named outright is used.
         CarriageContents rolled = CarriageContentsRegistry.resolveSubVariant(
@@ -186,62 +185,9 @@ public final class CarriageTestCommand {
         return new Plan(shell, rolled);
     }
 
-    /** The group chain's root: the id the carriage allow-lists name. */
-    private static String topParentOf(String id) {
-        String cur = id;
-        java.util.Set<String> seen = new java.util.HashSet<>();
-        while (seen.add(cur)) {
-            Optional<String> parent =
-                games.brennan.dungeontrain.editor.CarriageContentsGroupStore.findParentOf(cur);
-            if (parent.isEmpty()) return cur;
-            cur = parent.get();
-        }
-        return cur;
-    }
-
-    /**
-     * A carriage template that currently has {@code contentsId} enabled, drawn by carriage weight
-     * the way the train draws its shells — or {@code null} when none does. Portal parts, flatbeds and
-     * weight-0 carriages are out: none of them ever holds contents on the train.
-     */
-    static CarriageVariant shellAllowing(String contentsId, long seed) {
-        games.brennan.dungeontrain.train.CarriageWeights weights =
-            games.brennan.dungeontrain.train.CarriageWeights.current();
-        java.util.List<CarriageVariant> eligible = new java.util.ArrayList<>();
-        int total = 0;
-        for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
-            if (isPortalShell(v) || isFlatbed(v) || weights.weightFor(v.id()) <= 0) continue;
-            boolean allowed = games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore.get(v)
-                .map(a -> a.isAllowed(contentsId)).orElse(true);
-            if (!allowed) continue;
-            eligible.add(v);
-            total += weights.weightFor(v.id());
-        }
-        if (eligible.isEmpty()) return null;
-        int roll = new java.util.Random(seed).nextInt(total);
-        for (CarriageVariant v : eligible) {
-            roll -= weights.weightFor(v.id());
-            if (roll < 0) return v;
-        }
-        return eligible.get(eligible.size() - 1);
-    }
-
     private static Plan fail(CommandSourceStack source, String key, String id) {
         source.sendFailure(Component.translatable(key, id).withStyle(ChatFormatting.RED));
         return null;
-    }
-
-    private static boolean isFlatbed(CarriageVariant variant) {
-        return variant instanceof CarriageVariant.Builtin b && b.type() == CarriagePlacer.CarriageType.FLATBED;
-    }
-
-    /** The corridor and the cart between a portal's corridors: parts of a dimensional carriage. */
-    private static boolean isPortalShell(CarriageVariant variant) {
-        if (variant.equals(PortalCarriageBuilder.middleVariant())) return true;
-        for (PortalCorridorKind k : PortalCorridorKind.values()) {
-            if (variant.equals(PortalCarriageBuilder.portalVariant(k))) return true;
-        }
-        return false;
     }
 
     /**
