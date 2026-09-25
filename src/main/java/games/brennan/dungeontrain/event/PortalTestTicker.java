@@ -2,15 +2,20 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.command.PortalTestCommand;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageLayout;
+import games.brennan.dungeontrain.portal.PortalChunkTerrain;
 import games.brennan.dungeontrain.portal.PortalRoomTiler;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalStructure;
+import games.brennan.dungeontrain.portal.PortalTestPending;
 import games.brennan.dungeontrain.portal.PortalTestSession;
 import games.brennan.dungeontrain.portal.PortalTestWindow;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -54,6 +59,8 @@ public final class PortalTestTicker {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (level.dimension() != Level.OVERWORLD) return;
 
+        drainPending(level);
+
         Set<Map.Entry<UUID, PortalTestSession.Session>> trips = PortalTestSession.entries();
         if (trips.isEmpty()) return;
 
@@ -91,6 +98,47 @@ public final class PortalTestTicker {
             // through the same senders — a room inspected under different light is a room inspected
             // wrong.
             PortalCarriageEvents.sendRoomAmbience(dims, layout, next, groundY, List.of(player));
+        }
+    }
+
+    /**
+     * Finish every Test the Carriage press whose chunk sample has landed, and let go of any that
+     * never will — the player left, the sample found no ground, or it has taken far too long.
+     *
+     * <p>Asks {@link PortalChunkTerrain#slice} rather than peeking, so a press whose sample was
+     * displaced from the shared test key (another room tested meanwhile) asks for it again.</p>
+     */
+    private static void drainPending(ServerLevel level) {
+        if (PortalTestPending.isEmpty()) return;
+        MinecraftServer server = level.getServer();
+        long now = level.getGameTime();
+        for (Map.Entry<UUID, PortalTestPending.Pending> entry : List.copyOf(PortalTestPending.entries())) {
+            UUID id = entry.getKey();
+            PortalTestPending.Pending pending = entry.getValue();
+            ServerPlayer player = server.getPlayerList().getPlayer(id);
+            if (player == null) {
+                PortalTestPending.remove(id, pending);
+                continue;
+            }
+            String room = pending.roomName();
+            if (PortalChunkTerrain.failed(PortalTestSession.PAIR_KEY, room)) {
+                PortalTestPending.remove(id, pending);
+                player.sendSystemMessage(Component.translatable(
+                    "chat.dungeontrain.portal.test_sample_failed", room).withStyle(ChatFormatting.RED));
+                continue;
+            }
+            if (PortalChunkTerrain.slice(level, PortalTestSession.PAIR_KEY, room) != null) {
+                PortalTestPending.remove(id, pending);
+                PortalTestCommand.runPending(player, room, pending.freshRoll());
+                continue;
+            }
+            if (pending.expired(now)) {
+                PortalTestPending.remove(id, pending);
+                LOGGER.warn("[DungeonTrain] portal test: gave up waiting on the chunk sample for '{}' ({})",
+                    room, player.getName().getString());
+                player.sendSystemMessage(Component.translatable(
+                    "chat.dungeontrain.portal.test_sample_timed_out", room).withStyle(ChatFormatting.RED));
+            }
         }
     }
 

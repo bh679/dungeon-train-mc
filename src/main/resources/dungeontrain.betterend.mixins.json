@@ -9,6 +9,7 @@
     "betterend.BetterEndDebugItemsMixin"
   ],
   "client": [
+    "bclib.BclibFixPromptMixin",
     "wover.WoverStartupScreensMixin"
   ],
   "server": [],

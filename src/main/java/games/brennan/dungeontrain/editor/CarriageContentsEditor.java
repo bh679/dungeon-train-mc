@@ -108,10 +108,24 @@ public final class CarriageContentsEditor {
      * {@link CarriageContentsPlacer#isPortalContents} rather than comparing ids: those two are the
      * same question, and when the shell asked it separately a sub-variant got a corridor-sized plot
      * with a carriage built around it.</p>
+     *
+     * <p>Everything else stands in a carriage the train would really put it in: one whose contents
+     * list has it enabled, drawn by carriage weight — the rule Test the Carriage follows too, via
+     * {@link games.brennan.dungeontrain.train.ContentsShellPicker}. Fixed per template, so the plot
+     * shows the same carriage every visit. The standard carriage only when no carriage enables it
+     * (the plot still needs a shell to stand in).</p>
      */
     public static CarriageVariant shellFor(CarriageContents contents) {
         PortalCorridorKind kind = CarriageContentsPlacer.portalCorridorKindOf(contents);
-        return kind == null ? DEFAULT_SHELL : PortalCarriageBuilder.portalVariant(kind);
+        if (kind != null) return PortalCarriageBuilder.portalVariant(kind);
+        try {
+            return games.brennan.dungeontrain.train.ContentsShellPicker.stableFor(contents.id())
+                .orElse(DEFAULT_SHELL);
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Contents plot shell for '{}' fell back to standard: {}",
+                contents.id(), e.toString());
+            return DEFAULT_SHELL;
+        }
     }
 
     /**

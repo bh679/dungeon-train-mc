@@ -12,7 +12,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
- * S2C: whether this player is currently standing in a test dimensional carriage, so the worldspace
+ * S2C: whether this player is currently standing in a test carriage (a dimensional one, or a
+ * carriage/contents template's test copy), so the worldspace
  * menu can offer the way back out of it.
  *
  * <p>A state rather than a place, unlike {@link PortalRoomSkyPacket} — and safe as one because the
@@ -37,7 +38,12 @@ public record PortalTestSessionPacket(boolean active, String roomName, boolean r
     public static PortalTestSessionPacket of(ServerPlayer player) {
         boolean reseed = DungeonTrainWorldData.get(player.getServer().overworld()).isPortalTestReseed();
         PortalTestSession.Session trip = PortalTestSession.get(player.getUUID());
-        return trip == null ? none(reseed) : new PortalTestSessionPacket(true, trip.roomName(), reseed);
+        if (trip != null) return new PortalTestSessionPacket(true, trip.roomName(), reseed);
+        // A carriage or contents test drives the same Exit / Reseed controls, so it rides the same
+        // packet: the client only needs to know a test is running and what to call it.
+        games.brennan.dungeontrain.train.CarriageTestSession.Session carriage =
+            games.brennan.dungeontrain.train.CarriageTestSession.get(player.getUUID());
+        return carriage == null ? none(reseed) : new PortalTestSessionPacket(true, carriage.templateId(), reseed);
     }
 
     public static final Type<PortalTestSessionPacket> TYPE =

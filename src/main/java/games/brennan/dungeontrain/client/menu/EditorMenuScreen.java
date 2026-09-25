@@ -462,16 +462,17 @@ public final class EditorMenuScreen implements MenuScreen {
         List<CommandMenuEntry> out = new ArrayList<>();
         out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.enter"), new EnterCategoryMenuScreen()));
 
-        // Go and stand in one. Portals only, because that is the only category where "the carriage"
-        // names something you can walk into. It stamps the room the player is standing in — under
-        // the world, corridor each side, no train — so there is nothing to pick.
+        // Go and stand in one: a dimensional carriage, a carriage or a contents template — the
+        // categories where "the carriage" names something you can walk into. It stamps a copy under
+        // the world, no train, so there is nothing to pick.
         //
         // It stamps it from the SAVED template, though, so an unsaved edit would be silently absent
         // from what the author walked in to look at. PortalTestSaveCheckScreen asks first when this
         // room is dirty, and dispatches straight through when it isn't.
-        if (ctx.isPortals()) {
-            out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.test_carriage"),
-                new PortalTestSaveCheckScreen(ctx.modelName())));
+        MenuScreen testCheck = games.brennan.dungeontrain.client.menu.editorscreen.EditorScreenActions
+            .testCheckFor(ctx.category(), ctx.modelName());
+        if (testCheck != null) {
+            out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.test_carriage"), testCheck));
         }
 
         // Exit unwinds the active editor session, clears the editor plots, and teleports the player

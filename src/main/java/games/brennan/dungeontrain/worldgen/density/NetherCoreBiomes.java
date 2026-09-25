@@ -72,19 +72,19 @@ public final class NetherCoreBiomes {
     }
 
     /**
-     * The Nether biome for a core column at this world XZ on Nether pass {@code passIndex} (the same
-     * biome the world is labelled with). Odd passes pick BetterNether biomes; even passes (and
-     * {@code -1}, before the anchor) sample vanilla. If no BetterNether biomes are registered, every
-     * pass is vanilla.
+     * The Nether biome for a core column at this world XZ (the same biome the world is labelled with).
+     * {@code betterPass} — the cycle's verdict for this column's pass
+     * ({@link games.brennan.dungeontrain.worldgen.WorldGenCycle#isBetterNetherAt}) — picks BetterNether
+     * biomes; otherwise vanilla is sampled. If no BetterNether biomes are registered, every pass is vanilla.
      */
-    public Holder<Biome> biomeAt(int worldX, int worldZ, long passIndex) {
-        if (betterNether != null && BetterNetherCoreBiomes.isBetterNetherPass(passIndex)) {
+    public Holder<Biome> biomeAt(int worldX, int worldZ, boolean betterPass) {
+        if (betterNether != null && betterPass) {
             return betterNether.biomeAt(worldX, worldZ);
         }
         return vanillaBiomeAt(worldX, worldZ);
     }
 
-    /** True when BetterNether biomes were found at server start (odd passes will use them). */
+    /** True when BetterNether biomes were found at server start (the better passes will use them). */
     public boolean hasBetterNether() {
         return betterNether != null;
     }
@@ -136,7 +136,7 @@ public final class NetherCoreBiomes {
      * preset, so neither can be sampled directly. Falls back to the live Nether source if the table
      * can't be resolved.
      */
-    private static BiomeSource vanillaNetherSource(MinecraftServer server, ServerLevel nether) {
+    public static BiomeSource vanillaNetherSource(MinecraftServer server, ServerLevel nether) {
         try {
             HolderGetter<Biome> biomes = server.registryAccess().lookupOrThrow(Registries.BIOME);
             List<Pair<Climate.ParameterPoint, Holder<Biome>>> points = MultiNoiseBiomeSourceParameterList

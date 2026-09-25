@@ -366,7 +366,7 @@ public final class EditorScreenActions {
     }
 
     /**
-     * Test the Carriage: dimensions only, from anywhere.
+     * Test the Carriage: dimensional carriages, carriages and contents, from anywhere.
      *
      * <p>It used to require standing in the room, because the command could only name the plot the
      * author was in. The room is stamped in its own band in the basement either way, so where they
@@ -381,9 +381,24 @@ public final class EditorScreenActions {
             return new CommandMenuEntry.Run(EditorScreenLang.text(EditorScreenLang.EXIT_TEST),
                 EXIT_TEST_COMMAND);
         }
-        if (!ctx.hasSelection() || ctx.category() != PlotCategory.PORTALS) return null;
-        return new CommandMenuEntry.DrillIn(EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE),
-            new PortalTestSaveCheckScreen(ctx.selection().modelName()));
+        if (!ctx.hasSelection()) return null;
+        MenuScreen check = testCheckFor(ctx.category(), ctx.selection().modelName());
+        return check == null ? null
+            : new CommandMenuEntry.DrillIn(EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE), check);
+    }
+
+    /**
+     * The save-then-test screen for a template, or {@code null} for a category that has nothing to
+     * stand up: a dimensional carriage, a carriage and a contents template can be walked into; a
+     * part, a track tile or a whole-carriage group is only ever a piece of one of those.
+     */
+    public static MenuScreen testCheckFor(PlotCategory category, String modelName) {
+        if (category == null || modelName == null || modelName.isEmpty()) return null;
+        return switch (category) {
+            case PORTALS -> new PortalTestSaveCheckScreen(modelName);
+            case CARRIAGES, CONTENTS -> PortalTestSaveCheckScreen.forTemplate(category.id(), modelName);
+            default -> null;
+        };
     }
 
     /** The world's reseed-on-test switch, the same command either way the server holds it. */

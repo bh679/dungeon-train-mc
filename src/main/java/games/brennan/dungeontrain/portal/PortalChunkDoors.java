@@ -39,6 +39,21 @@ public final class PortalChunkDoors {
      */
     private static final int MOUTH_DEPTH = 2;
 
+    /**
+     * Open rows a floor needs over it to take a doorway — a player's height and one more, so a
+     * mouth under a low overhang is passed over for the cavern floor below it.
+     */
+    private static final int DOORWAY_HEADROOM = 3;
+
+    /**
+     * The row of the ground the sample was anchored on: the air row the room is cut around is
+     * {@link PortalChunkTerrain#SURFACE_ROW}, and this is the block under it.
+     */
+    private static final int GROUND_ROW = PortalChunkTerrain.SURFACE_ROW - 1;
+
+    /** {@link #surfaceOf}'s answer for a column that is rock with no floor in it anywhere. */
+    static final int BURIED = -1;
+
     private PortalChunkDoors() {}
 
     /**
@@ -94,17 +109,35 @@ public final class PortalChunkDoors {
         int[] rows = new int[Math.max(1, (xTo - xFrom + 1) * (zTo - zFrom + 1))];
         for (int x = Math.max(0, xFrom); x <= xTo && x < slice.width(); x++) {
             for (int z = zFrom; z <= zTo && z < slice.width(); z++) {
-                rows[count++] = surfaceOf(slice, x, z, max);
+                int row = surfaceOf(slice, x, z, max);
+                // A buried column says nothing about where the ground is; the others decide.
+                if (row != BURIED) rows[count++] = row;
             }
         }
-        if (count == 0) return Math.min(PortalChunkTerrain.SURFACE_ROW, max);
+        // Every column buried — a mouth cut straight into rock. The door goes on the row the room is
+        // anchored on, and the doorway is dug through to the open cave from there
+        // (PortalChunkDimension#openDoorway).
+        if (count == 0) return Math.max(0, Math.min(max, GROUND_ROW));
         int[] found = Arrays.copyOf(rows, count);
         Arrays.sort(found);
         return Math.max(0, Math.min(max, found[count / 2]));
     }
 
     /**
-     * One column's surface: its highest cell a player would stand on, capped at {@code max}.
+     * One column's surface: the floor a doorway there should stand on, capped at {@code max}.
+     *
+     * <p><b>The floor nearest the room's own ground, not the highest solid block.</b> Above an
+     * overworld hillside there is only sky, so the highest solid cell and the ground are the same
+     * block. In a Nether cavern the highest solid cell is the <i>ceiling</i>: read top-down, every
+     * mouth was stood up in the rock over the cave, the apron cleared its two columns of it, and a
+     * player arrived facing a wall of netherrack. So a floor is a solid cell with
+     * {@link #DOORWAY_HEADROOM} open rows over it, and of those, the one closest to the row the
+     * sample was anchored on — the cavern floor the room is actually cut around.</p>
+     *
+     * <p>A column whose only floor is above the cap is ground rising past what the box can spend, and
+     * clamps to {@code max}. One with no floor anywhere but rock under the cap is {@link #BURIED} and
+     * left out of the median. One with nothing solid at all is open sky down to the template's
+     * floor, {@code 0}.</p>
      *
      * <p><b>The block, not the air above it.</b> A door-height offset places the corridor's own
      * <i>floor row</i> — {@code PortalTestCommand} puts an arriving player at {@code origin + 1} —
@@ -113,17 +146,46 @@ public final class PortalChunkDoors {
      * itself lays the corridor floor flush with the terrain, and the apron has almost nothing left
      * to clear.</p>
      */
-    private static int surfaceOf(PortalChunkSlice slice, int x, int z, int max) {
+    static int surfaceOf(PortalChunkSlice slice, int x, int z, int max) {
+        int best = -1;
+        boolean aboveCap = false;
+        for (int y = slice.height() - 1; y > 0; y--) {
+            if (!isGround(slice.at(x, y, z)) || !openAbove(slice, x, y, z)) continue;
+            if (y > max) {
+                aboveCap = true;
+                continue;
+            }
+            if (best < 0 || Math.abs(y - GROUND_ROW) < Math.abs(best - GROUND_ROW)) best = y;
+        }
+        if (best >= 0) return best;
+        // Ground rising past what the box can spend: the doorway stands as high as it can.
+        if (aboveCap) return max;
         for (int y = Math.min(max, slice.height() - 1); y > 0; y--) {
-            BlockState here = slice.at(x, y, z);
-            // What a player can stand on, not merely what is not air. Now that the sample is
-            // decorated, "not air" is grass, a flower, a snow layer or a sapling as readily as it is
-            // the ground under them — and standing the doorway on a tuft of grass puts its floor one
-            // block above the dirt beside it, which is a step down out of every door it happens to.
-            if (here != null && here.blocksMotion()) return y;
+            if (isGround(slice.at(x, y, z))) return BURIED;
         }
         // A column with nothing solid under the cap at all — open sky down to the room's floor. The
         // floor is the template's own, so the doorway stands on that.
         return 0;
+    }
+
+    /**
+     * What a player can stand on, not merely what is not air. Now that the sample is decorated, "not
+     * air" is grass, a flower, a snow layer or a sapling as readily as it is the ground under them —
+     * and standing the doorway on a tuft of grass puts its floor one block above the dirt beside it,
+     * which is a step down out of every door it happens to.
+     */
+    private static boolean isGround(BlockState state) {
+        return state != null && state.blocksMotion();
+    }
+
+    /**
+     * Whether the {@link #DOORWAY_HEADROOM} rows over {@code y} are open. Past the top of the cut is
+     * not known to be open — over a Nether floor it is as likely the roof — so it does not count.
+     */
+    private static boolean openAbove(PortalChunkSlice slice, int x, int y, int z) {
+        for (int h = 1; h <= DOORWAY_HEADROOM; h++) {
+            if (y + h >= slice.height() || isGround(slice.at(x, y + h, z))) return false;
+        }
+        return true;
     }
 }
