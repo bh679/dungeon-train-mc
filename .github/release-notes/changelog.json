@@ -18826,6 +18826,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "legacy-biomes-terrablender-clone",
+      "version": "0.956.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Old-style stretches keep their own biomes",
+      "summary": "The older-looking stretches of the world now keep their own grass colour, snowfall and wildlife. Before, they borrowed the surrounding landscape's biomes.",
+      "highlights": [],
+      "pr": 1544,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
