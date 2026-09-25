@@ -20,7 +20,9 @@ import java.util.function.Function;
  *
  * <p>Kept on purpose, because WWOO's own features need them inside its stretch:
  * {@code sand} (+packed mud, its badlands), {@code mushroom_grow_block} (+mushroom stem) and the
- * two {@code mangrove_*_can_grow_through} tags (its jungle/bayou trees).</p>
+ * two {@code mangrove_*_can_grow_through} tags (its jungle/bayou trees), and {@code mangrove_logs}
+ * (+mangrove roots/bamboo → {@code #logs}): its scrub bushes, stick plants and bamboo palms use those
+ * as trunks, and without it their leaves decay on the first neighbour update.</p>
  *
  * <p>WWOO's packs are Cristel Lib built-ins registered at {@code Pack.Position.TOP} with ids like
  * {@code wwoo:resources/wwoo_main} — above DT's own resources, which is why a plain override file
@@ -39,9 +41,7 @@ public final class WwooTagFilter {
             tagFile("worldgen/biome/spawns_warm_variant_frogs"),
             tagFile("worldgen/biome/spawns_cold_variant_frogs"),
             // +smooth_basalt; deepslate ores would eat geode shells
-            tagFile("block/deepslate_ore_replaceables"),
-            // +bamboo/bamboo blocks/mangrove roots → #logs; leaves beside them would never decay
-            tagFile("block/mangrove_logs"));
+            tagFile("block/deepslate_ore_replaceables"));
 
     private WwooTagFilter() {
     }
