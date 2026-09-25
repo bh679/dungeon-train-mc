@@ -295,6 +295,14 @@ public final class CycleLayout {
         return typeCounts.getOrDefault(t, 0);
     }
 
+    /** Style of the {@code occ}-th (0-based) {@code t} slot of a run, or {@code null} when the run has no such slot. */
+    public Style styleOfOccurrence(Type t, int occ) {
+        for (int i = 0; i < slots.length; i++) {
+            if (slots[i].type() == t && occurrence[i] == occ) return slots[i].style();
+        }
+        return null;
+    }
+
     public Fades fades() {
         return fades;
     }

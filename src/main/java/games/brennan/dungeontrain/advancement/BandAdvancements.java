@@ -178,10 +178,10 @@ public final class BandAdvancements {
         t.add(new Trigger(REASSEMBLY, REASSEMBLY_DEPTH_BLOCKS, UpsideDownBand::isInExitFade));
         t.add(entry(WWOO, (l, x) -> overworldStyle(l, x) == CycleLayout.Style.WWOO));
         t.add(entry(BETTER_NETHER, (l, x) -> NetherBand.isInNetherBiome(l, x)
-                && cycle(l).netherStyleAt(x) == CycleLayout.Style.BETTER));
+                && cycle(l).isBetterNetherAt(x)));
         t.add(entry(BOP, (l, x) -> overworldStyle(l, x) == CycleLayout.Style.BOP));
         t.add(entry(BETTER_END, (l, x) -> isInEndIslands(l, x)
-                && cycle(l).endStyleAt(x) == CycleLayout.Style.BETTER));
+                && cycle(l).isBetterEndAt(x)));
         t.add(entry(SPHERES, SpheresBand::isInBand));
         for (LegacyBandKind kind : LegacyBandKind.values()) {
             if (kind == LegacyBandKind.LARGE_BIOMES) continue;   // built, not shipped — see LegacyBandKind
