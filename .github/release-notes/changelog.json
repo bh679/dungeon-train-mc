@@ -18685,6 +18685,30 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-stage-bricks-whole-doors",
+      "version": "0.954.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Dimensional carriages match their stage, and doors come whole",
+      "summary": "The cart between a dimensional carriage's two halves is now built from the stage's own bricks, with black concrete behind every door. Doors, beds and tall grass that some carriages only ever showed half of now appear whole.",
+      "highlights": [
+        "The cart between a dimensional carriage's corridors takes on the stage's bricks \u2014 cut sandstone in the desert rather than plain stone bricks everywhere.",
+        "Short dimensional carriages now show black concrete behind their doors, just like the long ones.",
+        "Doors no longer appear with their top half missing \u2014 short dimensional carriages, fire carriages and copper doors are fixed.",
+        "Tall grass in some carriages now shows up instead of vanishing.",
+        "Builds saved in the editor keep both halves of doors, beds and tall plants."
+      ],
+      "pr": 1537,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
