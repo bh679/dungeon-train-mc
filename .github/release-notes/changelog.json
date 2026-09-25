@@ -18749,6 +18749,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "vanilla-nether-band-pure-ores",
+      "version": "0.954.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "A truer Nether",
+      "summary": "The first Nether the train crosses on each lap now holds only the ores the real Nether does. Stray ores that didn't belong there no longer show up in its rock.",
+      "highlights": [],
+      "pr": 1538,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
