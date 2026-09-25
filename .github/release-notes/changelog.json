@@ -18804,6 +18804,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "vanilla-tags-outside-overhauled-stretch",
+      "version": "0.955.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "The world plays by its usual rules again",
+      "summary": "A few odd rules had crept in everywhere. Snow, frogs, ores and leaves behave the way you expect again.",
+      "highlights": [
+        "Snow no longer settles on ice.",
+        "Frogs take their usual colour for each place again.",
+        "Leaves beside bamboo decay normally."
+      ],
+      "pr": 1539,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

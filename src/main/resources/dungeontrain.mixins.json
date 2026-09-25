@@ -35,6 +35,7 @@
     "StructureBasementMixin",
     "ChunkStatusSpawnMixin",
     "RandomStateMixin",
+    "TagLoaderWwooFilterMixin",
     "ServerGamePacketListenerImplSignBookMixin",
     "ServerGamePacketListenerImplDifficultyMixin",
     "ChiseledBookShelfBlockUnsignedBookMixin",
