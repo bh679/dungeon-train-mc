@@ -1,9 +1,16 @@
 package games.brennan.dungeontrain.client.menu;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.PrefabDeletes;
+import games.brennan.dungeontrain.event.PrefabUseHandler;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -71,6 +78,40 @@ public final class PrefabTabState {
         if (prefabId == null) return Optional.empty();
         for (PrefabRegistrySyncPacket.LootEntry e : lootEntries) {
             if (e.id().equals(prefabId)) return Optional.of(e.items());
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Whether the viewing player may Cmd-click-delete this prefab: the server synced it as
+     * deletable and the player has the OP level the delete packet requires.
+     */
+    public static boolean deletableByViewer(PrefabDeletes.Kind kind, String prefabId) {
+        Minecraft mc = Minecraft.getInstance();
+        if (prefabId == null || mc.player == null || !mc.player.hasPermissions(2)) return false;
+        return switch (kind) {
+            case VARIANT -> variantEntries.stream()
+                .anyMatch(e -> e.id().equals(prefabId) && e.deletable());
+            case LOOT -> lootEntries.stream()
+                .anyMatch(e -> e.id().equals(prefabId) && e.deletable());
+        };
+    }
+
+    /** A prefab stack's library + id, read off the discriminator tag the creative tabs stamp. */
+    public record PrefabRef(PrefabDeletes.Kind kind, String id) {}
+
+    public static Optional<PrefabRef> refOf(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return Optional.empty();
+        CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+        if (cd == null) return Optional.empty();
+        CompoundTag tag = cd.copyTag();
+        if (tag.contains(PrefabUseHandler.NBT_BV_PREFAB_ID, Tag.TAG_STRING)) {
+            return Optional.of(new PrefabRef(PrefabDeletes.Kind.VARIANT,
+                tag.getString(PrefabUseHandler.NBT_BV_PREFAB_ID)));
+        }
+        if (tag.contains(PrefabUseHandler.NBT_LOOT_PREFAB_ID, Tag.TAG_STRING)) {
+            return Optional.of(new PrefabRef(PrefabDeletes.Kind.LOOT,
+                tag.getString(PrefabUseHandler.NBT_LOOT_PREFAB_ID)));
         }
         return Optional.empty();
     }
