@@ -84,12 +84,13 @@ public final class EndBandSampler {
     }
 
     /**
-     * True if End-band pass {@code passIndex} gets BetterEnd terrain on this server — the single gate
+     * True if an End-band pass the cycle calls BetterEnd ({@code betterPass} —
+     * {@link WorldGenCycle#isBetterEndPass}) gets BetterEnd terrain on this server — the single gate
      * {@code DisintegrationFeature}, {@code BandEndCityStructure} and {@code WorldEndBandEvents} share, so
      * a pass is either fully vanilla-stamped or fully sampled, never both or neither.
      */
-    public static boolean appliesTo(MinecraftServer server, long passIndex) {
-        return EndBandStyle.isBetterEndPass(passIndex) && available(server);
+    public static boolean appliesTo(MinecraftServer server, boolean betterPass) {
+        return betterPass && available(server);
     }
 
     /**
