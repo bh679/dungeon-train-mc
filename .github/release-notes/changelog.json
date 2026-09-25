@@ -19073,12 +19073,30 @@
         "internal"
       ],
       "title": "OBS and connection-blocker support moves to sibling mods",
-      "summary": "Dungeon Train no longer works directly with OBS, Streamlabs, zapret or GoodbyeDPI. That is now handled by two small optional sibling mods, Stream Detect and DPI Bypass Detect. They power the Share stream! tab on the Videos button and the warning when zapret or GoodbyeDPI is blocking online features. Without them, Dungeon Train works exactly the same, just without those two prompts.",
+      "summary": "Dungeon Train no longer works directly with OBS, Streamlabs, zapret or GoodbyeDPI. That is now handled by two small sibling mods, Stream Detect and DPI Bypass Detect, which come bundled with Dungeon Train. They power the Share stream! tab on the Videos button and the warning when zapret or GoodbyeDPI is blocking online features.",
       "highlights": [
-        "Stream Detect and DPI Bypass Detect are small, separate, optional sibling mods; the menus and wording stay in Dungeon Train",
+        "Stream Detect and DPI Bypass Detect are small, separate sibling mods, bundled with Dungeon Train; the menus and wording stay in Dungeon Train",
         "Dungeon Train itself no longer works directly with OBS, Streamlabs, zapret or GoodbyeDPI"
       ],
       "pr": 1554,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cmd-r-reseed-test-carriage",
+      "version": "0.963.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Ctrl/Cmd+R re-rolls the carriage you're testing",
+      "summary": "While you're inside Test the Carriage, press Ctrl+R (Cmd+R on Mac) to re-roll the copy you're standing in without opening the editor menu. You can rebind it under Dungeon Train in Controls.",
+      "highlights": [],
+      "pr": 1557,
       "date": "2026-09-25",
       "released": false,
       "released_in": null,

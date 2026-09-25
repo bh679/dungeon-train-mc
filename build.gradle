@@ -444,15 +444,17 @@ dependencies {
     implementation "bh679:keeptrim:${keeptrim_version}"
     jarJar(group: 'bh679', name: 'keeptrim', version: keeptrim_version)
 
-    // Stream Detect + DPI Bypass Detect — OPTIONAL client-side add-ons holding the process-name
-    // detection (OBS/Streamlabs; zapret/GoodbyeDPI) that used to live in DT. Deliberately NOT
-    // jarJar'd: the point of the split is that DT's own jar never reads the process table, so its
-    // CurseForge reviews aren't held up by it. `implementation` puts them on the compile classpath
-    // (compat/StreamDetectBridge + DpiBypassDetectBridge name their API behind a ModList check) and
-    // on the dev run classpath so runClient exercises the real UI. Players get them from the
-    // optional relations / both modpacks (shipped ON).
+    // Stream Detect + DPI Bypass Detect — client-side sibling add-ons holding the process-name
+    // detection (OBS/Streamlabs; zapret/GoodbyeDPI) that used to live in DT's own classes.
+    // compat/StreamDetectBridge + DpiBypassDetectBridge name their API behind a ModList check.
+    // HYBRID contract (same as Keep Trim / Dungeon Backup): jarJar'd so every platform has them
+    // built in while their CurseForge listings (1711267 / 1711272) are in review. TEMPORARY for
+    // CurseForge: once approved, declare them CF-only siblings (NeoForge's JarSelector drops the
+    // nested copy when the CF app installs a top-level one). Modrinth stays embedded.
     implementation "bh679:streamdetect:${streamdetect_version}"
+    jarJar(group: 'bh679', name: 'streamdetect', version: streamdetect_version)
     implementation "bh679:dpibypassdetect:${dpibypassdetect_version}"
+    jarJar(group: 'bh679', name: 'dpibypassdetect', version: dpibypassdetect_version)
 
     // Dungeon Backup — sibling mod: the player-data protection system (migration out of
     // config/, rolling zip restore points inside + outside the instance, title-screen recovery)

@@ -3427,6 +3427,7 @@
   "gui.dungeontrain.builder.open.tiles_per_row.tooltip": "Số ô mỗi hàng. Nhấp chuột trái để có nhiều ô hơn, nhỏ hơn; nhấp chuột phải hoặc Shift+nhấp để có ít ô hơn, lớn hơn.",
   "key.dungeontrain.editor_undo": "Trình sửa: hoàn tác (Ctrl/Cmd+Z)",
   "key.dungeontrain.editor_redo": "Trình sửa: làm lại (Ctrl/Cmd+Y)",
+  "key.dungeontrain.editor_reseed": "Trình sửa: gieo lại toa thử nghiệm (Ctrl/Cmd+R)",
   "key.dungeontrain.cinematographer_cinematic": "Xem lại Đoạn Phim Mở Đầu (chỉ chế độ khán giả)",
   "key.dungeontrain.container_contents": "Mở Menu Rương Chứa (trình chỉnh sửa)",
   "key.dungeontrain.manual_spawn": "Sinh Toa Tiếp Theo (chế độ sinh thủ công)",
