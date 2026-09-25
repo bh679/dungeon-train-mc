@@ -26,7 +26,6 @@ import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
@@ -236,6 +235,9 @@ public final class PortalChunkTerrain {
         }
     }
 
+    /** The namespace a BoP room's site must have its biome from. */
+    private static final String BOP_NAMESPACE = "biomesoplenty";
+
     /** What a Nether chunk-dimension variant's name ends with. */
     private static final String NETHER_SUFFIX = "_nether";
 
@@ -255,8 +257,35 @@ public final class PortalChunkTerrain {
     // dropped when the server stops (#clear, called from PortalCarriageEvents.onServerStopped) and
     // whenever the world seed changes under them, for the reason every other pair-keyed map here is:
     // the next world's pair 12 is a different room in a different place.
-    private static final Map<Integer, PortalChunkSlice> READY = new ConcurrentHashMap<>();
+    //
+    // Each cube carries the room it was sampled for. A live pair's room never changes under its key,
+    // but Test the Carriage files every room under the one PortalTestSession.PAIR_KEY — and without
+    // the name, testing the Nether room after the Overworld one stamped the Overworld's ground into it.
+    private static final Map<Integer, Cached> READY = new ConcurrentHashMap<>();
     private static final Set<Integer> IN_FLIGHT = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Pairs whose last sample found nowhere worth standing in any of its sites.
+     *
+     * <p>Their room stamps as its plain template, as it always did — but a caller waiting on the
+     * sample (Test the Carriage) needs to know it is not coming, rather than waiting forever for a
+     * cube that no amount of asking again will produce. Keyed to the room that failed, so a test
+     * switched to another room mid-sample is never told the previous one's failure. Cleared by the
+     * next request.</p>
+     */
+    private static final Map<Integer, String> FAILED = new ConcurrentHashMap<>();
+
+    /** A sampled cube, the room it was sampled for, and the roll it was sampled at. */
+    private record Cached(String roomName, int roll, PortalChunkSlice slice) {}
+
+    /**
+     * How many times each pair's chunk has been re-rolled — Test the Carriage's reseed.
+     *
+     * <p>A roll moves the pair on to a fresh run of candidate sites, so a reseed lands on different
+     * ground. Absent means zero, the sequence every pair walks in play, so nothing a player meets is
+     * changed by it.</p>
+     */
+    private static final Map<Integer, Integer> ROLLS = new ConcurrentHashMap<>();
 
     /**
      * Pairs whose cube has since grown its structure and its features, and whose room is therefore a
@@ -303,12 +332,49 @@ public final class PortalChunkTerrain {
         if (seed != cacheSeed) {
             READY.clear();
             IN_FLIGHT.clear();
+            FAILED.clear();
             cacheSeed = seed;
         }
-        PortalChunkSlice ready = READY.get(pairKey);
-        if (ready != null) return ready;
+        Cached ready = READY.get(pairKey);
+        if (ready != null) {
+            if (sameRoom(ready.roomName(), roomName) && ready.roll() == rollOf(pairKey)) {
+                return ready.slice();
+            }
+            // A different room under the same key, or a re-roll — only the test rig does either. Its
+            // cube is not the ground being asked for, so it goes, and that is sampled in its place.
+            READY.remove(pairKey, ready);
+        }
         request(level, pairKey, roomName);
         return null;
+    }
+
+    /**
+     * Move this pair on to a fresh chunk: the next {@link #slice} samples a new site. Test the
+     * Carriage's reseed — the terrain is a chunk dimension's contents, so a fresh roll is a fresh
+     * chunk.
+     */
+    public static void reroll(int pairKey) {
+        ROLLS.merge(pairKey, 1, Integer::sum);
+        FAILED.remove(pairKey);
+    }
+
+    static int rollOf(int pairKey) {
+        return ROLLS.getOrDefault(pairKey, 0);
+    }
+
+    /** Whether a cube sampled for {@code cachedRoom} is the ground for {@code roomName}. */
+    static boolean sameRoom(String cachedRoom, String roomName) {
+        return java.util.Objects.equals(cachedRoom, roomName);
+    }
+
+    /**
+     * True when this pair's last sample of {@code roomName} came back with nowhere to stand in any
+     * of its sites (or threw), and nothing has asked again since. Asking again ({@link #slice})
+     * clears it and retries.
+     */
+    public static boolean failed(int pairKey, String roomName) {
+        String failedRoom = FAILED.get(pairKey);
+        return failedRoom != null && failedRoom.equals(java.util.Objects.toString(roomName, ""));
     }
 
     /**
@@ -323,7 +389,9 @@ public final class PortalChunkTerrain {
         if (server == null) return;
         if (READY.containsKey(pairKey)) return;
         if (!IN_FLIGHT.add(pairKey)) return;
+        FAILED.remove(pairKey);
         Source source = Source.of(roomName);
+        int roll = rollOf(pairKey);
         SAMPLER.execute(() -> {
             try {
                 // Two passes, and the split is what keeps a portal carriage crossable. The first is
@@ -332,28 +400,37 @@ public final class PortalChunkTerrain {
                 // grows on that ground, which costs seconds and moves nothing, so the room is built
                 // from the first and rewritten when the second lands.
                 long startedAt = System.currentTimeMillis();
-                Sample sample = sampleTerrain(server, source, seed, pairKey);
-                if (sample == null) return;
+                Sample sample = sampleTerrain(server, source, seed, pairKey, roll);
+                if (sample == null) {
+                    FAILED.put(pairKey, java.util.Objects.toString(roomName, ""));
+                    LOGGER.warn("[DungeonTrain] Chunk dimension pair {} ('{}', {}) found no ground in "
+                        + "{} site(s); the room stamps as its plain template", pairKey, roomName, source,
+                        SITE_ATTEMPTS);
+                    return;
+                }
                 if (READY.size() >= MAX_CACHE) READY.clear();
-                READY.put(pairKey, sample.read());
+                READY.put(pairKey, new Cached(roomName, roll, sample.read()));
                 long ground = System.currentTimeMillis() - startedAt;
 
                 long decoratingFrom = System.currentTimeMillis();
                 PortalChunkFeatures.decorate(sample.generator(), sample.level(), sample.random(),
                     sample.chunk(), sample.workspace(), sample.window(), sample.level().getSeed(),
                     pairKey);
-                READY.put(pairKey, sample.read());
+                READY.put(pairKey, new Cached(roomName, roll, sample.read()));
                 DECORATED.add(pairKey);
                 // The first number is what a portal carriage waits out before it can cross at all,
                 // so it is the one worth watching; the second is only how long the room takes to
                 // grow afterwards.
-                PortalChunkSlice decorated = READY.get(pairKey);
-                LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} ({}) at {}: "
+                Cached decorated = READY.get(pairKey);
+                // The biome too: it is what says whether a WWOO, BoP or Better room actually landed
+                // in its mod's world generation or quietly came back vanilla.
+                LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} ({}) at {} in {}: "
                         + "ground in {} ms, decoration in {} ms, {} mob(s) generated with it",
-                    pairKey, source, sample.level().dimension().location(), sample.pos(), ground,
+                    pairKey, source, source.levelKey().location(), sample.pos(), biomeAt(sample), ground,
                     System.currentTimeMillis() - decoratingFrom,
-                    decorated == null ? 0 : decorated.occupants().size());
+                    decorated == null ? 0 : decorated.slice().occupants().size());
             } catch (Throwable t) {
+                FAILED.put(pairKey, java.util.Objects.toString(roomName, ""));
                 // A failed sample is a room that stamps as its plain template — never a crashed
                 // worker, and never a pair that retries the same failure every tick.
                 LOGGER.warn("[DungeonTrain] Chunk dimension sample failed for pair {} ({})",
@@ -364,18 +441,34 @@ public final class PortalChunkTerrain {
         });
     }
 
+    /** The biome at the middle of a sample's surface row, by id — for the log. */
+    private static String biomeAt(Sample sample) {
+        try {
+            return sample.generator().getBiomeSource().getNoiseBiome(
+                    QuartPos.fromBlock(sample.pos().getMiddleBlockX()), QuartPos.fromBlock(sample.anchor()),
+                    QuartPos.fromBlock(sample.pos().getMiddleBlockZ()), sample.random().sampler())
+                .unwrapKey().map(k -> k.location().toString()).orElse("?");
+        } catch (Throwable t) {
+            return "?";
+        }
+    }
+
     /** Drop every sampled cube — the next world's pair keys mean different rooms. */
     public static void clear() {
         SampleGenerators.clear();
         READY.clear();
         IN_FLIGHT.clear();
+        FAILED.clear();
         DECORATED.clear();
+        ROLLS.clear();
+        PortalChunkSources.clear();
         cacheSeed = Long.MIN_VALUE;
     }
 
     /** This pair's cube if one has been sampled, without asking for one that has not. */
     static PortalChunkSlice peek(int pairKey) {
-        return READY.get(pairKey);
+        Cached cached = READY.get(pairKey);
+        return cached == null ? null : cached.slice();
     }
 
     /** The pairs whose rooms are a decoration pass behind their cube, as a snapshot. */
@@ -423,22 +516,21 @@ public final class PortalChunkTerrain {
      * but the generator, its random state and a {@link ProtoChunk} of its own.
      */
     private static Sample sampleTerrain(MinecraftServer server, Source source, long worldSeed,
-                                        int pairKey) {
-        ServerLevel level = server.getLevel(source.levelKey());
-        if (level == null) level = server.overworld();
-        if (level == null) return null;
-        ChunkGenerator generator = level.getChunkSource().getGenerator();
-        if (!(generator instanceof NoiseBasedChunkGenerator liveGenerator)) return null;
+                                        int pairKey, int roll) {
+        // The source dimension's own generator — or, in a world that has none to sample (an editor
+        // world is superflat with no Nether or End), the vanilla preset's. See PortalChunkSources.
+        PortalChunkSources.Resolved resolved = PortalChunkSources.resolve(server, source, worldSeed);
+        if (resolved == null) return null;
+        ServerLevel level = resolved.host();
         // The vanilla Nether and End rooms are cut with a private generator that leaves the Better
-        // mods out; every other room with the dimension's own.
-        NoiseBasedChunkGenerator noiseGenerator = SampleGenerators.forSource(level, source, liveGenerator);
-        RandomState random = level.getChunkSource().randomState();
-
-        int minY = level.getMinBuildHeight();
-        // Under the Nether's bedrock roof rather than over it: the logical height is where a
-        // dimension stops being somewhere a player can be.
-        int maxY = Math.min(level.getMaxBuildHeight() - 1,
-            minY + level.dimensionType().logicalHeight() - 1);
+        // mods out; every other room with the dimension's own. Only a live dimension has a live
+        // generator to build that from — a stand-in preset is already vanilla's.
+        NoiseBasedChunkGenerator noiseGenerator = resolved.fallback()
+            ? resolved.generator()
+            : SampleGenerators.forSource(level, source, resolved.generator());
+        RandomState random = resolved.random();
+        int minY = resolved.minY();
+        int maxY = resolved.maxY();
 
         // Somewhere worth standing in, rather than the first place the hash pointed at. A site is
         // taken when most of its columns have standable ground at about one height: that one rule
@@ -454,16 +546,21 @@ public final class PortalChunkTerrain {
         // a portal carriage used to wait ten seconds for its room.
         Sample best = null;
         int tried = 0;
-        SitePlan plan = SitePlan.of(level, source);
+        SitePlan plan = SitePlan.of(level, source, noiseGenerator.getBiomeSource(), random.sampler());
         for (int attempt = 0; attempt < SITE_ATTEMPTS; attempt++) {
-            ChunkPos site = plan.site(worldSeed, pairKey, attempt);
+            // A re-roll walks on past every site the earlier rolls could have tried.
+            ChunkPos site = plan.site(worldSeed, pairKey, roll * SITE_ATTEMPTS + attempt);
             // Free, and it saves generating a chunk to find out: DT's own bands void whole stretches
             // of the overworld, and a sample that lands in one comes back empty however long it is
             // generated for. Asked before the work rather than after it — this used to be most of
             // what a candidate cost. The stretch test is free too, and is what keeps the plain
             // overworld room plain: a site in a band, a legacy era or a modded stretch would wear
             // that look under the train wherever the room turned up.
-            if (voidedByBand(level, site) || !plan.accepts(site)) continue;
+            //
+            // The stretch test still applies to a stand-in preset: an editor world has no bands to
+            // void a site, but its configured cycle still says where WWOO and BoP grow, and a WWOO
+            // or BoP room sampled outside its stretch comes back vanilla.
+            if ((!resolved.fallback() && voidedByBand(level, site)) || !plan.accepts(site)) continue;
             tried++;
             Sample candidate = groundAt(level, noiseGenerator, random, site, source, minY, maxY);
             if (candidate == null) continue;
@@ -543,7 +640,31 @@ public final class PortalChunkTerrain {
             }
         }
         return new PortalChunkSlice(source, SIZE, HEIGHT, states,
-            blockEntitiesIn(level, chunk, pos, anchor), occupantsIn(chunk, pos, anchor));
+            blockEntitiesIn(level, chunk, pos, anchor), occupantsIn(chunk, pos, anchor), biomesIn(chunk, pos, anchor, minY, maxY));
+    }
+
+    /**
+     * The sampled chunk's biome at each quart of the window, bottom row first — sampled at the middle
+     * of each quart, and held to the dimension's own height where the cut runs past it.
+     */
+    @SuppressWarnings("unchecked")
+    private static Holder<Biome>[] biomesIn(ProtoChunk chunk, ChunkPos pos, int anchor, int minY,
+                                            int maxY) {
+        int qw = PortalChunkSlice.quarts(SIZE);
+        int qh = PortalChunkSlice.quarts(HEIGHT);
+        Holder<Biome>[] out = new Holder[qw * qh * qw];
+        for (int qy = 0; qy < qh; qy++) {
+            int worldY = Math.max(minY, Math.min(maxY, anchor - SURFACE_ROW + qy * 4 + 2));
+            for (int qz = 0; qz < qw; qz++) {
+                for (int qx = 0; qx < qw; qx++) {
+                    out[(qy * qw + qz) * qw + qx] = chunk.getNoiseBiome(
+                        QuartPos.fromBlock(pos.getMinBlockX() + qx * 4),
+                        QuartPos.fromBlock(worldY),
+                        QuartPos.fromBlock(pos.getMinBlockZ() + qz * 4));
+                }
+            }
+        }
+        return out;
     }
 
     /**
@@ -693,12 +814,19 @@ public final class PortalChunkTerrain {
         }
 
         static SitePlan of(ServerLevel level, Source source) {
+            return of(level, source, level.getChunkSource().getGenerator().getBiomeSource(),
+                level.getChunkSource().randomState().sampler());
+        }
+
+        /**
+         * The plan for sampling {@code source} out of {@code biomes} — the generator actually being
+         * sampled, which in a world with nothing to sample is a stand-in rather than the level's own.
+         */
+        static SitePlan of(ServerLevel level, Source source, BiomeSource biomes, Climate.Sampler sampler) {
             if (source.biomeNamespace() != null) {
-                // A Better room: any site will do, as long as the live dimension puts one of its
-                // mod's biomes there.
-                return new SitePlan(null, null, List.of(), source.biomeNamespace(),
-                    level.getChunkSource().getGenerator().getBiomeSource(),
-                    level.getChunkSource().randomState().sampler());
+                // A Better room: any site will do, as long as the dimension puts one of its mod's
+                // biomes there.
+                return new SitePlan(null, null, List.of(), source.biomeNamespace(), biomes, sampler);
             }
             if (source.stretch() == null || !level.dimension().equals(Level.OVERWORLD)) {
                 return new SitePlan(null, null, List.of());
@@ -713,6 +841,12 @@ public final class PortalChunkTerrain {
                     source.stretch(), source);
                 return new SitePlan(cycle, SecondLapOverworld.Stretch.VANILLA, List.of());
             }
+            if (source.stretch() == SecondLapOverworld.Stretch.BOP) {
+                // In the BoP stretch and on a BoP biome. BoP leaves rivers and shores to vanilla, and
+                // a flat river valley is exactly the level, standable ground a site is judged on — so
+                // without asking for the biome too, a BoP room kept landing on a vanilla river.
+                return new SitePlan(cycle, source.stretch(), ranges, BOP_NAMESPACE, biomes, sampler);
+            }
             return new SitePlan(cycle, source.stretch(), ranges);
         }
 
@@ -726,7 +860,9 @@ public final class PortalChunkTerrain {
         }
 
         boolean accepts(ChunkPos site) {
-            if (biomeNamespace != null) return biomeNamespace.equals(biomeNamespaceAt(biomes, sampler, site));
+            if (biomeNamespace != null && !biomeNamespace.equals(biomeNamespaceAt(biomes, sampler, site))) {
+                return false;
+            }
             if (stretch == null) return true;
             try {
                 return StretchSites.matches(cycle, stretch, site.getMinBlockX());

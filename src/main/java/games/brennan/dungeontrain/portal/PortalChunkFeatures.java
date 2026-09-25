@@ -290,12 +290,22 @@ final class PortalChunkFeatures {
         StructureStart fallback = null;
         for (int attempt = 0; attempt < STRUCTURE_ATTEMPTS && !candidates.isEmpty(); attempt++) {
             Structure structure = candidates.remove(rng.nextInt(candidates.size()));
-            StructureStart start = structure.generate(
-                level.registryAccess(), generator, generator.getBiomeSource(), random,
-                level.getStructureManager(), worldSeed, chunk.getPos(), /*references*/ 0, chunk,
-                // Every candidate already admits this biome; asked again per piece, a jigsaw's
-                // outlying pieces can veto the whole start for landing one chunk over.
-                biome -> true);
+            StructureStart start;
+            try {
+                start = structure.generate(
+                    level.registryAccess(), generator, generator.getBiomeSource(), random,
+                    level.getStructureManager(), worldSeed, chunk.getPos(), /*references*/ 0, chunk,
+                    // Every candidate already admits this biome; asked again per piece, a jigsaw's
+                    // outlying pieces can veto the whole start for landing one chunk over.
+                    biome -> true);
+            } catch (RuntimeException e) {
+                // A modded structure can assume a live level behind it — BetterNether's city reads a
+                // generator it only builds once a real Nether loads — and throws here. That is one
+                // candidate that cannot plant, not a reason to lose the room's whole decoration pass.
+                LOGGER.warn("[DungeonTrain] Chunk dimension pair {} skipped {}: it could not generate "
+                    + "in a sampled chunk ({})", pairKey, nameOf(level, structure), e.toString());
+                continue;
+            }
             if (!start.isValid()) continue;
             if (spanOf(start).intersects(window)) {
                 register(chunk, start);

@@ -10,12 +10,16 @@ import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer.CellKind;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer.Hovered;
+import games.brennan.dungeontrain.client.menu.EditorPanelFacing;
+import games.brennan.dungeontrain.client.menu.EditorPanelFacingEvents;
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorPlotActionPacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.BlockPos;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
@@ -141,6 +145,12 @@ public final class EditorPlotPanelInputHandler {
 
         switch (hit.cell()) {
             case NAME -> dispatchTeleport(entry);
+            case FACE -> {
+                BlockPos pos = entry.worldPos();
+                EditorPanelFacingEvents.onButton(pos,
+                    new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5),
+                    EditorPanelFacing.plotPanel());
+            }
             // Cmd-click either arrow types the weight instead of stepping it — a walk from 1 to
             // 40 is otherwise thirty-nine clicks. Both arrows open the same pad.
             case WEIGHT_DEC -> { if (!openWeightEntry(entry)) dispatchWeight(entry, "dec"); }

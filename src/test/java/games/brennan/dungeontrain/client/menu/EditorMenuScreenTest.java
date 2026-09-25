@@ -470,10 +470,14 @@ final class EditorMenuScreenTest {
     }
 
     @Test
-    @DisplayName("Nav carries Enter and Exit; Test the Carriage only for portals")
+    @DisplayName("Nav carries Enter and Exit; Test the Carriage for portals, carriages and contents")
     void nav_tab_holdsNavigationRows() {
         List<String> carriages = labelsIn(tabsFor(PlotCategory.CARRIAGES, "brass_dining").get(EditorMenuTab.NAV));
-        assertEquals(List.of("Enter", "Exit"), carriages);
+        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), carriages);
+        List<String> contents = labelsIn(tabsFor(PlotCategory.CONTENTS, "library").get(EditorMenuTab.NAV));
+        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), contents);
+        List<String> parts = labelsIn(tabsFor(PlotCategory.PARTS, "oak").get(EditorMenuTab.NAV));
+        assertEquals(List.of("Enter", "Exit"), parts);
 
         List<CommandMenuEntry> portalNav = tabsFor(PlotCategory.PORTALS, "crypt_hall").get(EditorMenuTab.NAV);
         assertEquals(List.of("Enter", "Test the Carriage", "Exit"), labelsIn(portalNav));
