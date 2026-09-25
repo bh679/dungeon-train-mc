@@ -31,13 +31,39 @@ public final class DhHorizon {
     private DhHorizon() {}
 
     /**
+     * The stretch of world X that may be seen from {@code camX}: nothing past a void (when {@code voids})
+     * and nothing beyond the next legacy band (when {@code legacy}). Either edge may be infinite; both
+     * are infinite when nothing narrows the view. Only X is limited — the view across the track is not.
+     */
+    public record XWindow(double lo, double hi) {
+        public static final XWindow OPEN = new XWindow(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
+
+        public boolean isOpen() {
+            return Double.isInfinite(lo) && Double.isInfinite(hi);
+        }
+
+        /** Whether the whole X span {@code [minX, maxX]} lies inside the window. */
+        public boolean contains(double minX, double maxX) {
+            return minX >= lo && maxX <= hi;
+        }
+    }
+
+    /**
      * Largest render radius in blocks that shows nothing past a void (when {@code voids}) and nothing
      * beyond the next legacy band (when {@code legacy}), or empty when nothing narrows the view.
      */
     public static OptionalLong capBlocks(WorldGenCycle cycle, double camX, boolean voids, boolean legacy) {
+        XWindow w = window(cycle, camX, voids, legacy);
+        double r = Math.min(camX - w.lo(), w.hi() - camX);
+        if (Double.isInfinite(r) || Double.isNaN(r)) return OptionalLong.empty();
+        return OptionalLong.of(Math.max(0L, (long) Math.floor(r)));
+    }
+
+    /** See {@link XWindow}. */
+    public static XWindow window(WorldGenCycle cycle, double camX, boolean voids, boolean legacy) {
         CycleLayout layout = cycle.layout();
         if (layout == null || layout.count() == 0 || layout.period() <= 0L || !(voids || legacy)) {
-            return OptionalLong.empty();
+            return XWindow.OPEN;
         }
         Window w = new Window(camX);
         int k = runOf(cycle, layout, camX);
@@ -53,7 +79,7 @@ public final class DhHorizon {
                 }
             }
         }
-        return w.radius();
+        return new XWindow(w.lo, w.hi);
     }
 
     /** Doubling run the camera is in (0 before the anchor). */
@@ -147,12 +173,6 @@ public final class DhHorizon {
                     return;
                 }
             }
-        }
-
-        OptionalLong radius() {
-            double r = Math.min(x - lo, hi - x);
-            if (Double.isInfinite(r) || Double.isNaN(r)) return OptionalLong.empty();
-            return OptionalLong.of(Math.max(0L, (long) Math.floor(r)));
         }
     }
 }

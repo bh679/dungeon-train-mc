@@ -204,15 +204,15 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue PORTAL_ROOM_HIDE_DISTANT_HORIZONS;
 
     /**
-     * Whether Distant Horizons' render distance is lowered near a void so it never draws what lies past
-     * the void's far side (the End islands across the first void, the overworld across the second).
-     * Only ever lowers DH below the player's own setting, and restores it when the view is clear.
+     * Whether Distant Horizons skips terrain past a void's far side along the track (the End islands
+     * across the first void, the overworld across the second). Only the track axis is cut — the view out
+     * to either side is untouched — and DH's own settings and render distance are never changed.
      */
     public static final ModConfigSpec.BooleanValue DISTANT_HORIZONS_LIMIT_PAST_VOIDS;
 
     /**
-     * Whether Distant Horizons' render distance is lowered in the legacy eras so it shows the next era
-     * but never the one after it. Same ceiling contract as {@link #DISTANT_HORIZONS_LIMIT_PAST_VOIDS}.
+     * Whether Distant Horizons skips terrain beyond the next legacy era along the track, so it shows the
+     * next era but never the one after it. Same contract as {@link #DISTANT_HORIZONS_LIMIT_PAST_VOIDS}.
      */
     public static final ModConfigSpec.BooleanValue DISTANT_HORIZONS_LIMIT_LEGACY_ERAS;
 
@@ -506,10 +506,10 @@ public final class ClientDisplayConfig {
                 .comment("Stop Distant Horizons drawing while you are inside a dimensional carriage - a portal room, or the corridor leading into one. A room is stamped in twin space at the coordinates of the carriage it stands in for, and DH draws its own LODs of the overworld around exactly those coordinates, so the room's sky comes with the surface world's horizon behind it. Worst in a Chunk Dimension room, which is itself a sampled slice of terrain that DH then contradicts. Set false to let DH draw inside rooms anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
                 .define("hideInPortalRooms", true);
         ModConfigSpec.BooleanValue distantHorizonsLimitPastVoids = b
-                .comment("Lower Distant Horizons' render distance as you approach a void so it never draws what lies past the void's far side - you can see into the void, never across it. Only ever lowers DH below your own render distance setting, never above it, and puts your setting back as soon as the view is clear. Nothing is written to DH's config file. Does nothing if Distant Horizons is not installed.")
+                .comment("Stop Distant Horizons drawing terrain past the far side of a void along the track - you can see into the void, never across it. Only the direction of the track is cut: the view out to either side is untouched. DH's render distance and settings are never changed, so nothing reloads. Does nothing if Distant Horizons is not installed.")
                 .define("limitPastVoids", true);
         ModConfigSpec.BooleanValue distantHorizonsLimitLegacyEras = b
-                .comment("Lower Distant Horizons' render distance in the legacy eras so it shows the next era but never the one after it. Only ever lowers DH below your own render distance setting, never above it, and puts your setting back as soon as the view is clear. Nothing is written to DH's config file. Does nothing if Distant Horizons is not installed.")
+                .comment("Stop Distant Horizons drawing more than one legacy era ahead or behind along the track - you can see the next era, never the one after it. Only the direction of the track is cut: the view out to either side is untouched. DH's render distance and settings are never changed, so nothing reloads. Does nothing if Distant Horizons is not installed.")
                 .define("limitLegacyEras", true);
         b.pop();
 

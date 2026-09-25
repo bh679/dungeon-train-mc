@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.OptionalLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -126,6 +127,30 @@ final class DhHorizonTest {
     void legacyOnlyIgnoresVoid() {
         OptionalLong c = DhHorizon.capBlocks(C, x(END1 + F + 100), false, true);
         assertTrue(c.isEmpty() || c.getAsLong() > 10_000L);
+    }
+
+    @Test
+    @DisplayName("the window approaching the End void ends at the void's far side and is open behind")
+    void windowApproachingVoid() {
+        DhHorizon.XWindow w = DhHorizon.window(C, x(END1) - 500, true, true);
+        assertEquals(x(END1 + F + VH), w.hi(), 1e-9);
+        assertTrue(Double.isInfinite(w.lo()));
+        assertTrue(w.contains(x(END1), x(END1 + F + VH)));             // the void itself: drawn
+        assertFalse(w.contains(x(END1 + F + VH) - 64, x(END1 + F + VH) + 64)); // straddles the far side: cut
+    }
+
+    @Test
+    @DisplayName("inside a void the window is just the void")
+    void windowInsideVoid() {
+        DhHorizon.XWindow w = DhHorizon.window(C, x(END1 + F + 100), true, true);
+        assertEquals(x(END1 + F), w.lo(), 1e-9);
+        assertEquals(x(END1 + F + VH), w.hi(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("nothing narrows the view with both rules off: the window is open")
+    void windowOpen() {
+        assertTrue(DhHorizon.window(C, x(END1 + F + 100), false, false).isOpen());
     }
 
     @Test

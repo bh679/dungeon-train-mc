@@ -79,9 +79,6 @@ public final class DistantHorizonsSuppression {
         if (camera == null) return false;
         Vec3 pos = camera.getPosition();
 
-        // Closer to a void than DH's shortest render distance: any radius DH accepts would draw past it.
-        if (DistantHorizonsRenderCap.belowFloor()) return true;
-
         // The structure box is a real box, so this needs the camera's Y as well — unlike the band,
         // which is a slab of world X and asks about that alone.
         if (ClientDisplayConfig.PORTAL_ROOM_HIDE_DISTANT_HORIZONS.get()
