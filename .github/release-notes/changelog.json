@@ -18828,6 +18828,23 @@
       "released_at": null
     },
     {
+      "id": "bop-shutdown-biome-leak",
+      "version": "0.955.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Quitting mid-journey no longer mixes up the landscape",
+      "summary": "Land that was still loading when you quit or the server stopped could come back with biomes from a different part of the world. It now always matches the stretch it's in.",
+      "highlights": [],
+      "pr": 1543,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "legacy-biomes-terrablender-clone",
       "version": "0.956.0",
       "type": "fix",
