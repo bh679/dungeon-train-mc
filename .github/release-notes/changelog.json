@@ -19207,6 +19207,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "wwoo-shrubs-keep-leaves",
+      "version": "0.968.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Shrubs keep their leaves",
+      "summary": "Small shrubs and bamboo palms in some overworld stretches no longer wither away when you break a block next to them.",
+      "highlights": [],
+      "pr": 1568,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
