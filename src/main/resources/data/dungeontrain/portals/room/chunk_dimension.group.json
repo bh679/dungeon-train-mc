@@ -13,40 +13,27 @@
       "minLevel": 5
     },
     {
-      "id": "chunk_dimension_nether_better",
-      "weight": 8,
-      "minLevel": 4
-    },
-    {
-      "id": "chunk_dimension_end_better",
-      "weight": 2,
-      "minLevel": 5
-    },
-    {
       "id": "chunk_dimension_wwoo",
-      "weight": 11
+      "weight": 40
     },
     {
       "id": "chunk_dimension_bop",
-      "weight": 6,
-      "minLevel": 2,
-      "phases": [
-        "STACKS",
-        "BETA",
-        "ALPHA",
-        "SKYLANDS",
-        "INFDEV",
-        "FLOATING",
-        "FAR_LANDS",
-        "CLASSIC",
-        "CAVES_OF_CHAOS",
-        "LARGE_BIOMES",
-        "AMPLIFIED"
-      ]
+      "weight": 40,
+      "minLevel": 15
     },
     {
       "id": "superflat",
       "weight": 1
+    },
+    {
+      "id": "chunk_dimension_nether_better",
+      "weight": 29,
+      "minLevel": 11
+    },
+    {
+      "id": "chunk_dimension_end_better",
+      "weight": 8,
+      "minLevel": 13
     }
   ]
 }
