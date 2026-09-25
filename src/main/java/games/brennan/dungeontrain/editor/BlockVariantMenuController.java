@@ -160,7 +160,8 @@ public final class BlockVariantMenuController {
             actionBar(player, "Block is outside the editor plot", ChatFormatting.YELLOW);
             return;
         }
-        BlockPos clampedLocal = clampToFootprint(localPos, plot);
+        // Either space of a door / bed / tall-plant cell opens that cell's menu.
+        BlockPos clampedLocal = MultiBlockFootprint.ownerCell(plot, clampToFootprint(localPos, plot));
         BlockPos clampedWorld = plot.origin().offset(clampedLocal);
 
         Direction face = bhit.getDirection();
@@ -1206,6 +1207,8 @@ public final class BlockVariantMenuController {
             actionBar(player, "Block is outside the editor plot", ChatFormatting.YELLOW);
             return;
         }
+        // Copying from a door's top half copies the door's cell, as the menu opens on it.
+        localPos = MultiBlockFootprint.ownerCell(plot, localPos);
 
         Clipboard clip = buildClipboardStack(player, plot, localPos);
         if (clip == null) return;

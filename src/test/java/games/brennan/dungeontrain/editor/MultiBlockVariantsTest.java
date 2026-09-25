@@ -227,6 +227,23 @@ class MultiBlockVariantsTest {
     }
 
     @Test
+    @DisplayName("Either space of a door cell resolves to the door cell (same Z menu); others stay put")
+    void ownerCellCoversTheWholeFootprint() {
+        java.util.Map<BlockPos, List<VariantState>> cells = new java.util.HashMap<>();
+        cells.put(CELL, List.of(door(), VariantState.of(Blocks.STONE.defaultBlockState())));
+        BlockPos plain = new BlockPos(10, 1, 2);
+        cells.put(plain, List.of(VariantState.of(Blocks.STONE.defaultBlockState()),
+            VariantState.of(Blocks.DIRT.defaultBlockState())));
+
+        assertEquals(CELL, MultiBlockFootprint.ownerCell(cells::get, CELL));
+        assertEquals(CELL, MultiBlockFootprint.ownerCell(cells::get, ABOVE));
+        assertEquals(CELL.below(), MultiBlockFootprint.ownerCell(cells::get, CELL.below()));
+        assertEquals(CELL.east(), MultiBlockFootprint.ownerCell(cells::get, CELL.east()));
+        // A single-block cell never claims its neighbours.
+        assertEquals(plain.above(), MultiBlockFootprint.ownerCell(cells::get, plain.above()));
+    }
+
+    @Test
     @DisplayName("A sidecar stores the span per cell, and removing the cell clears it")
     void sidecarSpanLifecycle() {
         CarriageVariantBlocks sidecar = CarriageVariantBlocks.empty();

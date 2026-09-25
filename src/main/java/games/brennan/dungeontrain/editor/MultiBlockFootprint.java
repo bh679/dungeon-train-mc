@@ -100,6 +100,30 @@ public final class MultiBlockFootprint {
         return null;
     }
 
+    /**
+     * The variant cell that owns {@code local}: {@code local} itself when it is a cell, otherwise
+     * the neighbouring cell whose two-space footprint reaches into it (a door cell's top half), so
+     * the whole two-space area opens the same Z menu. {@code local} unchanged when neither.
+     */
+    public static BlockPos ownerCell(java.util.function.Function<BlockPos, List<VariantState>> statesAt,
+                                     BlockPos local) {
+        List<VariantState> own = statesAt.apply(local);
+        if (own != null && !own.isEmpty()) return local;
+        for (net.minecraft.core.Direction d : net.minecraft.core.Direction.values()) {
+            BlockPos candidate = local.relative(d);
+            List<VariantState> states = statesAt.apply(candidate);
+            if (states == null || states.isEmpty()) continue;
+            BlockPos footprint = cellFootprint(states);
+            if (footprint != null && candidate.offset(footprint).equals(local)) return candidate;
+        }
+        return local;
+    }
+
+    /** {@link #ownerCell(java.util.function.Function, BlockPos)} over a plot's cells. */
+    public static BlockPos ownerCell(BlockVariantPlot plot, BlockPos local) {
+        return ownerCell(plot::statesAt, local);
+    }
+
     /** True when the cell's first entry is multi-space — drives {@link VariantSpan#resolve}. */
     public static boolean firstEntryIsMulti(List<VariantState> states) {
         return !states.isEmpty() && isMultiEntry(states.get(0));
