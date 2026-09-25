@@ -120,8 +120,10 @@ public final class CarriageGroupTemplateStore {
         Path dir = directory();
         Files.createDirectories(dir);
         Path file = fileFor(group);
-        NbtIo.writeCompressed(template.save(new CompoundTag()), file);
-        CACHE.put(group.id(), Optional.of(template));
+        NbtIo.writeCompressed(DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save"), file);
+        // Dropped rather than replaced: the file on disk is the repaired copy
+        // (DoubleBlockTemplateRepair), and the next read picks that up.
+        CACHE.remove(group.id());
         ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved carriage group {} to {}", group.id(), file);
     }
@@ -173,7 +175,7 @@ public final class CarriageGroupTemplateStore {
         }
         Path file = sourceFileForId(group.id());
         Files.createDirectories(file.getParent());
-        NbtIo.writeCompressed(template.save(new CompoundTag()), file);
+        NbtIo.writeCompressed(DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save"), file);
         LOGGER.info("[DungeonTrain] Wrote bundled carriage group {} to {}", group.id(), file);
     }
 

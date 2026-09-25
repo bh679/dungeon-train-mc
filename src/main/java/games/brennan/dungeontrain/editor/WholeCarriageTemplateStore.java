@@ -115,8 +115,10 @@ public final class WholeCarriageTemplateStore {
         Path dir = directory();
         Files.createDirectories(dir);
         Path file = fileFor(wholeCarriage);
-        NbtIo.writeCompressed(template.save(new CompoundTag()), file);
-        CACHE.put(wholeCarriage.id(), Optional.of(template));
+        NbtIo.writeCompressed(DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save"), file);
+        // Dropped rather than replaced: the file on disk is the repaired copy
+        // (DoubleBlockTemplateRepair), and the next read picks that up.
+        CACHE.remove(wholeCarriage.id());
         ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved whole carriage {} to {}", wholeCarriage.id(), file);
     }
@@ -164,7 +166,7 @@ public final class WholeCarriageTemplateStore {
         }
         Path file = sourceFileForId(wholeCarriage.id());
         Files.createDirectories(file.getParent());
-        NbtIo.writeCompressed(template.save(new CompoundTag()), file);
+        NbtIo.writeCompressed(DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save"), file);
         LOGGER.info("[DungeonTrain] Wrote bundled whole carriage {} to {}", wholeCarriage.id(), file);
     }
 

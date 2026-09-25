@@ -220,9 +220,11 @@ public final class CarriageContentsStore {
         Path dir = directory();
         Files.createDirectories(dir);
         Path file = fileFor(contents);
-        CompoundTag tag = template.save(new CompoundTag());
+        CompoundTag tag = DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save");
         NbtIo.writeCompressed(tag, file);
-        CACHE.put(contents.id(), Optional.of(template));
+        // Dropped rather than replaced: the file on disk is the repaired copy
+        // (DoubleBlockTemplateRepair), and the next read picks that up.
+        CACHE.remove(contents.id());
         ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved contents template {} to {}", contents.id(), file);
     }
@@ -238,7 +240,7 @@ public final class CarriageContentsStore {
         }
         Path file = sourceFileFor(contents);
         Files.createDirectories(file.getParent());
-        CompoundTag tag = template.save(new CompoundTag());
+        CompoundTag tag = DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save");
         NbtIo.writeCompressed(tag, file);
         LOGGER.info("[DungeonTrain] Wrote bundled contents template {} to {}", contents.id(), file);
     }

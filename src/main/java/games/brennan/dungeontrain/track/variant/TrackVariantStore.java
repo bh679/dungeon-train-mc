@@ -194,9 +194,11 @@ public final class TrackVariantStore {
         Path dir = directory(kind);
         Files.createDirectories(dir);
         Path file = fileFor(kind, name);
-        CompoundTag tag = template.save(new CompoundTag());
+        CompoundTag tag = games.brennan.dungeontrain.editor.DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save");
         NbtIo.writeCompressed(tag, file);
-        CACHE.put(key(kind, name), Optional.of(template));
+        // Dropped rather than replaced: the file on disk is the repaired copy
+        // (DoubleBlockTemplateRepair), and the next read picks that up.
+        CACHE.remove(key(kind, name));
         games.brennan.dungeontrain.editor.ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved track template {}:{} to {}", kind.id(), name, file);
     }
@@ -207,7 +209,7 @@ public final class TrackVariantStore {
         }
         Path file = sourceFileFor(kind, name);
         Files.createDirectories(file.getParent());
-        CompoundTag tag = template.save(new CompoundTag());
+        CompoundTag tag = games.brennan.dungeontrain.editor.DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save");
         NbtIo.writeCompressed(tag, file);
         LOGGER.info("[DungeonTrain] Wrote bundled track template {}:{} to {}", kind.id(), name, file);
     }
