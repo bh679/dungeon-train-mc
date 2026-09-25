@@ -1001,7 +1001,7 @@ public final class CarriageContentsPlacer {
                 // Gentle onboarding: suppress a (rare) baked hostile in the no-hostiles stage, or
                 // replace it with a small slime/magma cube in the slimes stage; else spawn authored.
                 if (tryHandleOnboardingHostile(level, entity, new Vec3(worldX, worldY, worldZ), carriagePIdx,
-                        /*asAuthored*/ false) != OnboardingOutcome.AS_AUTHORED) continue;
+                        CarriageTestSession.isTestStamp(carriagePIdx)) != OnboardingOutcome.AS_AUTHORED) continue;
                 entity.moveTo(worldX, worldY, worldZ, entity.getYRot(), entity.getXRot());
                 // Diagnostic spawn-coords + tick on the persistent-data
                 // subtree (the standard cross-mod-safe location for custom
@@ -1421,7 +1421,10 @@ public final class CarriageContentsPlacer {
      */
     public static boolean spawnVariantMob(ServerLevel level, BlockPos worldPos,
                                            VariantState picked, int carriagePIdx, long seed) {
-        return spawnVariantMob(level, worldPos, picked, carriagePIdx, seed, /*asAuthored*/ false);
+        // A Test-the-Carriage copy is the one carriage stamp that spawns its hostiles as authored —
+        // the onboarding ramp would otherwise empty the build the author is there to check.
+        return spawnVariantMob(level, worldPos, picked, carriagePIdx, seed,
+            CarriageTestSession.isTestStamp(carriagePIdx));
     }
 
     /**

@@ -28,4 +28,14 @@ public final class LogFirstN {
                     n == max ? "; suppressing further reports" : "", t);
         }
     }
+
+    /** Debug-log the first {@code max} occurrences ({@code format} is an SLF4J pattern); then silent. */
+    public void debug(Logger logger, String format, Object... args) {
+        if (count.get() >= max) return; // per-quart hot path: no counting (or overflow) once silent
+        int n = count.incrementAndGet();
+        if (n <= max) {
+            logger.debug(format + " (occurrence " + n + "/" + max
+                    + (n == max ? "; suppressing further reports)" : ")"), args);
+        }
+    }
 }

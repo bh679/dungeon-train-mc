@@ -31,7 +31,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
-import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
 
 /**
@@ -51,8 +51,12 @@ import org.slf4j.Logger;
  * Runs at {@link EventPriority#LOW} so
  * {@code WorldLifecycleEvents.onOverworldLoad} (HIGH, client-only) has already committed pending
  * world-creation choices into {@link DungeonTrainWorldData} (train geometry,
- * {@code startsWithTrain}) on the same event. Cleared on stop so a singleplayer world-switch in
- * the same JVM never reuses a stale seed/layout.</p>
+ * {@code startsWithTrain}) on the same event. Cleared once the server has <b>stopped</b> so a
+ * singleplayer world-switch in the same JVM never reuses a stale seed/layout — not on
+ * {@link net.neoforged.neoforge.event.server.ServerStoppingEvent}, which fires before
+ * {@code stopServer()} drains the in-flight chunk generation and saves it: clearing there would
+ * bake those final chunks without DT's worldgen state (e.g. Biomes O' Plenty biomes leaking into
+ * vanilla stretches) and write them to disk for good.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NetherBandContextEvents {
@@ -165,7 +169,8 @@ public final class NetherBandContextEvents {
     }
 
     @SubscribeEvent
-    public static void onServerStopping(ServerStoppingEvent event) {
+    public static void onServerStopped(ServerStoppedEvent event) {
+        // After stopServer(): the last generated chunks have been baked and saved against a live context.
         NetherBandContext.clear();
         games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.clear();
         games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.clear();

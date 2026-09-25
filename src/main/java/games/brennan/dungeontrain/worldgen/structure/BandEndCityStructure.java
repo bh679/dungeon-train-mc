@@ -99,8 +99,8 @@ public class BandEndCityStructure extends Structure {
             int spanZ = (rotation == Rotation.CLOCKWISE_180 || rotation == Rotation.COUNTERCLOCKWISE_90) ? -span : span;
 
             WorldGenCycle cycle = ctx.cycle();
-            // BetterEnd End bands (every even pass) aren't vanilla islands — no city to stand on them.
-            if (EndBandSampler.appliesTo(ServerLifecycleHooks.getCurrentServer(), cycle.endPassIndex(anchorX))) {
+            // BetterEnd End bands aren't vanilla islands — no city to stand on them.
+            if (EndBandSampler.appliesTo(ServerLifecycleHooks.getCurrentServer(), cycle.isBetterEndAt(anchorX))) {
                 return Optional.empty();
             }
             // Bottom of the island geometry is the world's floor, not the level's — a city has to

@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.worldgen;
 
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 
@@ -36,6 +38,21 @@ public final class NetherBandBiomes {
             List.of(Biomes.GROVE, Biomes.OLD_GROWTH_PINE_TAIGA, Biomes.WINDSWEPT_FOREST),
             List.of(Biomes.SNOWY_SLOPES),
             List.of(Biomes.JAGGED_PEAKS, Biomes.FROZEN_PEAKS, Biomes.STONY_PEAKS));
+
+    /**
+     * The same altitude zones in Biomes O' Plenty's look, for mountain stages that border its stretch
+     * (see {@code SecondLapOverworld.lookAt}). Keys missing from the registry are dropped; an empty zone
+     * (the peaks — BoP has no bare-peak biome) uses the {@link #ZONES} zone instead.
+     */
+    public static final List<List<ResourceKey<Biome>>> BOP_ZONES = List.of(
+            List.of(bop("seasonal_forest"), bop("maple_woods"), bop("woodland"), bop("aspen_glade"), bop("redwood_forest")),
+            List.of(bop("coniferous_forest"), bop("highland"), bop("fir_clearing")),
+            List.of(bop("snowy_coniferous_forest"), bop("snowy_fir_clearing"), bop("snowy_maple_woods")),
+            List.of());
+
+    private static ResourceKey<Biome> bop(String path) {
+        return ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("biomesoplenty", path));
+    }
 
     /** Altitude zone index (0 base → 3 peak) for a world-Y. */
     public static int zoneIndex(int worldY) {

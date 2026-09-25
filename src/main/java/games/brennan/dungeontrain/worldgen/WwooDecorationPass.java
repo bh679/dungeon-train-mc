@@ -82,7 +82,7 @@ public final class WwooDecorationPass {
             ChunkPos pos = chunk.getPos();
             NetherBandContext ctx = NetherBandContext.current();
             WorldGenCycle cycle = ctx != null ? ctx.cycle() : null;
-            if (SecondLapOverworld.at(cycle, pos.getMiddleBlockX()) == SecondLapOverworld.Stretch.WWOO) {
+            if (SecondLapOverworld.lookAt(cycle, pos.getMiddleBlockX()) == SecondLapOverworld.Stretch.WWOO) {
                 WWOO_CHUNKS.incrementAndGet();
                 return;
             }

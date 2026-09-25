@@ -5,6 +5,8 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
+import games.brennan.dungeontrain.client.menu.EditorPanelFacingEvents;
+import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
 import games.brennan.dungeontrain.client.menu.plot.EditorHelpPanelRenderer.CellKind;
 import games.brennan.dungeontrain.client.menu.plot.EditorHelpPanelRenderer.Hovered;
@@ -133,6 +135,16 @@ public final class EditorHelpPanelInputHandler {
                 // snapshot — one tick, and no client-side guess to reconcile if the write fails.
                 EditorHelpPanelRenderer.setHovered(Hovered.NONE);
                 CommandRunner.run(CLOSE_COMMAND);
+            }
+            case FACE_BUTTON -> {
+                click(mc);
+                // Spins just the help panel about its own centre; the nav menu keeps its facing.
+                EditorTypeMenusPacket.Menu nav = EditorHelpPanelRenderer.firstNavMenu();
+                if (nav != null) {
+                    EditorPanelFacingEvents.onButton(EditorHelpPanelRenderer.facingKey(nav),
+                        EditorHelpPanelRenderer.helpAnchor(nav, mc.font),
+                        EditorHelpPanelRenderer.gridDefault(nav));
+                }
             }
             case NONE -> { }
         }

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
+import games.brennan.dungeontrain.client.menu.editorscreen.EditorScreenActions;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -14,7 +15,8 @@ import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.client.settings.KeyModifier;
 
 /**
- * Ctrl+Z / Ctrl+Y (⌘Z / ⌘Y on macOS) for the in-world editor.
+ * Ctrl+Z / Ctrl+Y (⌘Z / ⌘Y on macOS) for the in-world editor, and Ctrl+R (⌘R)
+ * to re-roll the Test the Carriage copy the author is standing in.
  *
  * <p>{@link KeyModifier#CONTROL} is what makes one binding cover both
  * platforms: NeoForge resolves it to the Super keys under
@@ -32,6 +34,12 @@ import net.neoforged.neoforge.client.settings.KeyModifier;
  * <p>Works from anywhere — the history is keyed per player, not per plot, so an
  * author can change a weight, walk away, and still take it back. Only survival
  * is gated out.</p>
+ *
+ * <p>Reseed is the exception to "works from anywhere": it only fires inside a test
+ * ({@link PortalTestSessionState#active()}), where it runs the same
+ * {@link EditorScreenActions#RESEED_NOW_COMMAND} as the X menu's Reseed button. Outside
+ * a test that button is the world's reseed switch instead, and a shortcut that silently
+ * flipped a setting would be a trap — so there the key does nothing.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class EditorUndoHotkeyClient {
@@ -39,6 +47,7 @@ public final class EditorUndoHotkeyClient {
     public static final String CATEGORY = "key.categories." + DungeonTrain.MOD_ID;
     public static final String UNDO_NAME = "key." + DungeonTrain.MOD_ID + ".editor_undo";
     public static final String REDO_NAME = "key." + DungeonTrain.MOD_ID + ".editor_redo";
+    public static final String RESEED_NAME = "key." + DungeonTrain.MOD_ID + ".editor_reseed";
 
     private static final KeyMapping UNDO = new KeyMapping(
         UNDO_NAME,
@@ -58,12 +67,22 @@ public final class EditorUndoHotkeyClient {
         CATEGORY
     );
 
+    private static final KeyMapping RESEED = new KeyMapping(
+        RESEED_NAME,
+        KeyConflictContext.IN_GAME,
+        KeyModifier.CONTROL,
+        InputConstants.Type.KEYSYM,
+        InputConstants.KEY_R,
+        CATEGORY
+    );
+
     private EditorUndoHotkeyClient() {}
 
     @SubscribeEvent
     public static void onRegister(RegisterKeyMappingsEvent event) {
         event.register(UNDO);
         event.register(REDO);
+        event.register(RESEED);
     }
 
     /**
@@ -91,6 +110,11 @@ public final class EditorUndoHotkeyClient {
             }
             while (REDO.consumeClick()) {
                 CommandRunner.run("dungeontrain editor redo");
+            }
+            while (RESEED.consumeClick()) {
+                if (PortalTestSessionState.active()) {
+                    CommandRunner.run(EditorScreenActions.RESEED_NOW_COMMAND);
+                }
             }
         }
     }

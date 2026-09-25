@@ -18804,6 +18804,326 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "vanilla-tags-outside-overhauled-stretch",
+      "version": "0.955.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "The world plays by its usual rules again",
+      "summary": "A few odd rules had crept in everywhere. Snow, frogs, ores and leaves behave the way you expect again.",
+      "highlights": [
+        "Snow no longer settles on ice.",
+        "Frogs take their usual colour for each place again.",
+        "Leaves beside bamboo decay normally."
+      ],
+      "pr": 1539,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "bop-shutdown-biome-leak",
+      "version": "0.955.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Quitting mid-journey no longer mixes up the landscape",
+      "summary": "Land that was still loading when you quit or the server stopped could come back with biomes from a different part of the world. It now always matches the stretch it's in.",
+      "highlights": [],
+      "pr": 1543,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "better-band-style-single-rule",
+      "version": "0.956.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Custom world settings applied consistently",
+      "summary": "Worlds using customised generation settings now generate the way those settings describe. Default worlds are unchanged.",
+      "highlights": [],
+      "pr": 1545,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "legacy-biomes-terrablender-clone",
+      "version": "0.957.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Old-style stretches keep their own biomes",
+      "summary": "The older-looking stretches of the world now keep their own grass colour, snowfall and wildlife. Before, they borrowed the surrounding landscape's biomes.",
+      "highlights": [],
+      "pr": 1544,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fly-double-tap-sprint",
+      "version": "0.958.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Double-tap forward to sprint while flying",
+      "summary": "In creative flight, double-tapping forward now starts sprinting, just like on the ground. You no longer need to hold the sprint key.",
+      "highlights": [],
+      "pr": 1546,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-looks",
+      "version": "0.958.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "world"
+      ],
+      "title": "Dimensional carriages show the world they promise",
+      "summary": "Overworld dimensional carriages now always open onto ordinary Overworld terrain, instead of sometimes showing a slice of somewhere stranger. Nether and End carriages show the classic Nether and End, and new dimensional carriages open onto wilder overworld lands and a reimagined Nether and End.",
+      "highlights": [
+        "Overworld dimensional carriages always show ordinary Overworld terrain",
+        "Nether and End dimensional carriages show the classic Nether and End",
+        "New dimensional carriages: two wilder overworld lands, plus a reimagined Nether and End"
+      ],
+      "pr": 1547,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tint-follows-the-land",
+      "version": "0.958.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Water and leaves keep their own colours",
+      "summary": "Water and leaves now always show the colours of the land they're in. Before, looking across from one stretch of the world into the next could paint the far side in the wrong colours, and those colours could stay stuck after you crossed over.",
+      "highlights": [
+        "No more patches of oddly coloured water hanging in view."
+      ],
+      "pr": 1549,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "server-dt-world-preset",
+      "version": "0.958.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "multiplayer",
+        "compatibility",
+        "world"
+      ],
+      "title": "Dedicated servers now create Dungeon Train worlds",
+      "summary": "New worlds on a dedicated server were quietly being generated as a different mod's default world instead of a Dungeon Train one, even when server.properties asked for a Dungeon Train preset. Servers now create the same world singleplayer does.",
+      "highlights": [
+        "A server with no level-type set now creates a Dungeon Train world, with the proper world floor",
+        "Floor presets chosen in server.properties (e.g. dungeontrain:dungeon_train_y80) now actually apply",
+        "Existing server worlds are unchanged; this applies to newly created worlds"
+      ],
+      "pr": 1548,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-menus-hold-still",
+      "version": "0.958.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor menus stay put",
+      "summary": "The floating menus in the Train Editor no longer spin to follow you around. They turn to face you when you arrive or teleport, then hold still so you can walk past and read them.",
+      "highlights": [
+        "Every editor menu has a new \u21bb button in its top-right corner: click it to turn that menu to face you, or shift-click to square it back up.",
+        "The Welcome board now sits clear of the template menu instead of overlapping it.",
+        "The floating Packages board is gone from the editor entrance \u2014 packages are still in the X menu."
+      ],
+      "pr": 1550,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "skip-incompatible-world-prompt",
+      "version": "0.959.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Removed an unnecessary compatibility warning screen",
+      "summary": "A compatibility warning screen that asked you to back up your world and approve fixes no longer appears. Any fixes it asked about are now applied automatically.",
+      "highlights": [],
+      "pr": 1551,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriages-open-onto-their-worlds",
+      "version": "0.959.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Dimensional carriages open onto their worlds",
+      "summary": "Stepping through a dimensional carriage now brings you out onto the ground of the place it was cut from, not into its rock, and the scenery it borrows grows its own plants and wears its own colours.",
+      "highlights": [
+        "Doorways in the darker, deeper carriages open onto the cave floor.",
+        "Borrowed scenery has its own plants, ground and colours.",
+        "In the editor, Test the Carriage works for these carriages in one press, and Reseed rolls fresh ground."
+      ],
+      "pr": 1552,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "test-carriage-contents-templates",
+      "version": "0.959.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Test the Carriage works for every carriage and interior",
+      "summary": "Test the Carriage used to work only for dimensional carriages. Now you can press it on any carriage or contents template in the editor and stand inside a full copy of it, rolled the way the train rolls one \u2014 block variants, loot, mobs and all. A carriage is tested with the contents it's allowed to carry, and a contents template is tested inside a carriage that actually has it enabled, so you see exactly what a player would meet. Reseed rolls it again; Exit Test takes you back.",
+      "highlights": [
+        "Test the Carriage on any carriage or contents template, not just dimensional carriages",
+        "Contents are tested inside a carriage that has them enabled, picked the way the train picks",
+        "Portal corridors and their contents can be tested like any other carriage",
+        "Hostile mobs in the build spawn during a test, so you can check them",
+        "Contents plots in the editor now stand in a carriage that has those contents enabled"
+      ],
+      "pr": 1553,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "modded-overworld-transition-bleed",
+      "version": "0.960.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Smoother changes of scenery",
+      "summary": "Distinctive stretches of land no longer stop at a hard line. Where one meets a stranger part of the journey, its forests, colours and mountains carry on through the change of scenery.",
+      "highlights": [
+        "Forests and colours carry on into the transitions either side.",
+        "Mountain slopes take on the look of the land beside them."
+      ],
+      "pr": 1555,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "process-detection-addons",
+      "version": "0.961.0",
+      "type": "refactor",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "OBS and connection-blocker support moves to sibling mods",
+      "summary": "Dungeon Train no longer works directly with OBS, Streamlabs, zapret or GoodbyeDPI. That is now handled by two small sibling mods, Stream Detect and DPI Bypass Detect, which come bundled with Dungeon Train. They power the Share stream! tab on the Videos button and the warning when zapret or GoodbyeDPI is blocking online features.",
+      "highlights": [
+        "Stream Detect and DPI Bypass Detect are small, separate sibling mods, bundled with Dungeon Train; the menus and wording stay in Dungeon Train",
+        "Dungeon Train itself no longer works directly with OBS, Streamlabs, zapret or GoodbyeDPI"
+      ],
+      "pr": 1554,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cmd-r-reseed-test-carriage",
+      "version": "0.963.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Ctrl/Cmd+R re-rolls the carriage you're testing",
+      "summary": "While you're inside Test the Carriage, press Ctrl+R (Cmd+R on Mac) to re-roll the copy you're standing in without opening the editor menu. You can rebind it under Dungeon Train in Controls.",
+      "highlights": [],
+      "pr": 1557,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "vanilla-end-carriage-only-vanilla",
+      "version": "0.964.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Dimensional carriages stay true to their worlds",
+      "summary": "Some dimensional carriages were picking up ores, ruins and buildings that belong to stranger places. Each one now shows only what its own world grows, and no room is left without a building to find.",
+      "highlights": [
+        "The plainer dimensional carriages no longer show ores or buildings borrowed from stranger places.",
+        "The sparsest dimensional carriage now usually has its own world's towering city in it.",
+        "A room whose world has nothing that fits borrows a building from another world instead of standing empty.",
+        "In the editor, Test the Carriage now shows the occasional building from another world, just as a real ride does."
+      ],
+      "pr": 1559,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.command;
 
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.worldgen.CycleLayout;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
@@ -41,9 +40,9 @@ record DtpTarget(String token, String displayName, ColumnTest test) {
             out.add(ofPhase(alias.getKey(), alias.getValue()));
         }
         out.add(new DtpTarget("better_nether", "Better Nether", (l, x) -> NetherBand.isInNetherBand(l, x)
-                && WorldGenCycle.fromConfig().netherStyleAt(x) == CycleLayout.Style.BETTER));
+                && WorldGenCycle.fromConfig().isBetterNetherAt(x)));
         out.add(new DtpTarget("better_end", "Better End", (l, x) -> TrainPhase.phaseAt(l, x) == TrainPhase.END
-                && WorldGenCycle.fromConfig().endStyleAt(x) == CycleLayout.Style.BETTER));
+                && WorldGenCycle.fromConfig().isBetterEndAt(x)));
         out.add(new DtpTarget("wwoo", "WWOO Overworld", (l, x) -> overworldStretch(l, x) == SecondLapOverworld.Stretch.WWOO));
         out.add(new DtpTarget("bop", "Biomes O' Plenty Overworld", (l, x) -> overworldStretch(l, x) == SecondLapOverworld.Stretch.BOP));
         out.add(new DtpTarget("reassembly", "Reassembly", UpsideDownBand::isInExitFade));

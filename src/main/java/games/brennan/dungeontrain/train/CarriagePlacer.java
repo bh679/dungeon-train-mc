@@ -441,6 +441,58 @@ public final class CarriagePlacer {
     }
 
     /**
+     * Stand one whole carriage up as ordinary world blocks for Test the Carriage — shell, parts,
+     * variant blocks, then {@code contents} — rolled at {@code (seed, carriageIndex)} the way the
+     * train rolls a carriage.
+     *
+     * <p><b>Relit, unlike the spawn path.</b> {@link #placeAtGuarded} writes section-local because
+     * Sable lifts those blocks into a sub-level the same tick and relights them there. Nothing lifts
+     * a test copy, so written that way its lanterns would stand dark and its item frames and
+     * paintings would never hang: {@code relight=true} is what makes the stamp spawn template decor
+     * where it lands, as an editor plot does.</p>
+     *
+     * <p>Portal corridors and the cart between them stand up too — the shells a dimensional carriage
+     * is built from, tested as carriages in their own right.</p>
+     *
+     * <p><b>No records.</b> The portal lottery, {@link PortalRegistry#noteStamped} and
+     * {@link PlacedCarriageFacts} all describe the real train at a carriage index; a test copy is at
+     * no place on the track, and writing it into them would tell the train something false about the
+     * carriage that really is at that index.</p>
+     *
+     * @param contents the interior to furnish it with, or {@code null} for none (a flatbed)
+     */
+    public static void placeForTest(ServerLevel level, BlockPos origin, CarriageVariant variant,
+                                    CarriageContents contents, CarriageDims dims, long seed,
+                                    int carriageIndex) {
+        int anchor = GateContext.WORLDX_FROM_PIDX;
+        CarriageStampGuard.run(() -> StagePlacementScope.run(null, () -> {
+            // A portal corridor is built the way the train builds one — its own geometry, doors and
+            // rolled variants, keyed like a pair — with the requested contents laid in after, rather
+            // than the pair's own roll, so the author sees the contents they asked for.
+            for (PortalCorridorKind kind : PortalCorridorKind.values()) {
+                if (!variant.equals(PortalCarriageBuilder.portalVariant(kind))) continue;
+                PortalCarriageBuilder.stampCorridorFrom(level, origin, dims, kind, /*relight*/ true,
+                    /*withContents*/ false, carriageIndex, PortalCarriageRole.ENTRY);
+                if (contents != null) {
+                    CarriageContentsPlacer.placeAt(level, origin, contents, dims, seed, carriageIndex);
+                }
+                return;
+            }
+            String base = stampBase(level, origin, variant, dims, seed, carriageIndex,
+                /*flatbedAtBack*/ false, /*flatbedAtFront*/ false, anchor, /*relight*/ true);
+            String overlay = stampPartsOverlay(level, origin, variant, dims, seed, carriageIndex,
+                false, false, anchor, /*stageFilter*/ null, /*relight*/ true);
+            if ("stored".equals(base) || overlay != null) {
+                applyVariantBlocks(level, origin, variant, dims, seed, carriageIndex);
+            }
+            spawnShellAndPartsVariantMobs(level, origin, variant, dims, seed, carriageIndex, anchor);
+            if (contents != null) {
+                CarriageContentsPlacer.placeAt(level, origin, contents, dims, seed, carriageIndex);
+            }
+        }));
+    }
+
+    /**
      * Public wrapper around the private {@code applyContents} method — exposes
      * the contents pass so {@code TrainAssembler} can call it in a second pass
      * after {@code ShipAssembler.assembleToShip}. Passes the variant so
