@@ -272,8 +272,17 @@ public final class PortalChunkTerrain {
      */
     private static final Map<Integer, String> FAILED = new ConcurrentHashMap<>();
 
-    /** A sampled cube and the room it was sampled for. */
-    private record Cached(String roomName, PortalChunkSlice slice) {}
+    /** A sampled cube, the room it was sampled for, and the roll it was sampled at. */
+    private record Cached(String roomName, int roll, PortalChunkSlice slice) {}
+
+    /**
+     * How many times each pair's chunk has been re-rolled — Test the Carriage's reseed.
+     *
+     * <p>A roll moves the pair on to a fresh run of candidate sites, so a reseed lands on different
+     * ground. Absent means zero, the sequence every pair walks in play, so nothing a player meets is
+     * changed by it.</p>
+     */
+    private static final Map<Integer, Integer> ROLLS = new ConcurrentHashMap<>();
 
     /**
      * Pairs whose cube has since grown its structure and its features, and whose room is therefore a
@@ -325,13 +334,29 @@ public final class PortalChunkTerrain {
         }
         Cached ready = READY.get(pairKey);
         if (ready != null) {
-            if (sameRoom(ready.roomName(), roomName)) return ready.slice();
-            // A different room under the same key — only the test rig does this. Its cube is not
-            // this room's ground, so it goes, and this room's is sampled in its place.
+            if (sameRoom(ready.roomName(), roomName) && ready.roll() == rollOf(pairKey)) {
+                return ready.slice();
+            }
+            // A different room under the same key, or a re-roll — only the test rig does either. Its
+            // cube is not the ground being asked for, so it goes, and that is sampled in its place.
             READY.remove(pairKey, ready);
         }
         request(level, pairKey, roomName);
         return null;
+    }
+
+    /**
+     * Move this pair on to a fresh chunk: the next {@link #slice} samples a new site. Test the
+     * Carriage's reseed — the terrain is a chunk dimension's contents, so a fresh roll is a fresh
+     * chunk.
+     */
+    public static void reroll(int pairKey) {
+        ROLLS.merge(pairKey, 1, Integer::sum);
+        FAILED.remove(pairKey);
+    }
+
+    static int rollOf(int pairKey) {
+        return ROLLS.getOrDefault(pairKey, 0);
     }
 
     /** Whether a cube sampled for {@code cachedRoom} is the ground for {@code roomName}. */
@@ -363,6 +388,7 @@ public final class PortalChunkTerrain {
         if (!IN_FLIGHT.add(pairKey)) return;
         FAILED.remove(pairKey);
         Source source = Source.of(roomName);
+        int roll = rollOf(pairKey);
         SAMPLER.execute(() -> {
             try {
                 // Two passes, and the split is what keeps a portal carriage crossable. The first is
@@ -371,7 +397,7 @@ public final class PortalChunkTerrain {
                 // grows on that ground, which costs seconds and moves nothing, so the room is built
                 // from the first and rewritten when the second lands.
                 long startedAt = System.currentTimeMillis();
-                Sample sample = sampleTerrain(server, source, seed, pairKey);
+                Sample sample = sampleTerrain(server, source, seed, pairKey, roll);
                 if (sample == null) {
                     FAILED.put(pairKey, java.util.Objects.toString(roomName, ""));
                     LOGGER.warn("[DungeonTrain] Chunk dimension pair {} ('{}', {}) found no ground in "
@@ -380,14 +406,14 @@ public final class PortalChunkTerrain {
                     return;
                 }
                 if (READY.size() >= MAX_CACHE) READY.clear();
-                READY.put(pairKey, new Cached(roomName, sample.read()));
+                READY.put(pairKey, new Cached(roomName, roll, sample.read()));
                 long ground = System.currentTimeMillis() - startedAt;
 
                 long decoratingFrom = System.currentTimeMillis();
                 PortalChunkFeatures.decorate(sample.generator(), sample.level(), sample.random(),
                     sample.chunk(), sample.workspace(), sample.window(), sample.level().getSeed(),
                     pairKey);
-                READY.put(pairKey, new Cached(roomName, sample.read()));
+                READY.put(pairKey, new Cached(roomName, roll, sample.read()));
                 DECORATED.add(pairKey);
                 // The first number is what a portal carriage waits out before it can cross at all,
                 // so it is the one worth watching; the second is only how long the room takes to
@@ -417,6 +443,7 @@ public final class PortalChunkTerrain {
         IN_FLIGHT.clear();
         FAILED.clear();
         DECORATED.clear();
+        ROLLS.clear();
         PortalChunkSources.clear();
         cacheSeed = Long.MIN_VALUE;
     }
@@ -472,7 +499,7 @@ public final class PortalChunkTerrain {
      * but the generator, its random state and a {@link ProtoChunk} of its own.
      */
     private static Sample sampleTerrain(MinecraftServer server, Source source, long worldSeed,
-                                        int pairKey) {
+                                        int pairKey, int roll) {
         // The source dimension's own generator — or, in a world that has none to sample (an editor
         // world is superflat with no Nether or End), the vanilla preset's. See PortalChunkSources.
         PortalChunkSources.Resolved resolved = PortalChunkSources.resolve(server, source, worldSeed);
@@ -504,7 +531,8 @@ public final class PortalChunkTerrain {
         int tried = 0;
         SitePlan plan = SitePlan.of(level, source);
         for (int attempt = 0; attempt < SITE_ATTEMPTS; attempt++) {
-            ChunkPos site = plan.site(worldSeed, pairKey, attempt);
+            // A re-roll walks on past every site the earlier rolls could have tried.
+            ChunkPos site = plan.site(worldSeed, pairKey, roll * SITE_ATTEMPTS + attempt);
             // Free, and it saves generating a chunk to find out: DT's own bands void whole stretches
             // of the overworld, and a sample that lands in one comes back empty however long it is
             // generated for. Asked before the work rather than after it — this used to be most of

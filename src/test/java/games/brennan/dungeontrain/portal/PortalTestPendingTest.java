@@ -65,6 +65,19 @@ class PortalTestPendingTest {
     }
 
     @Test
+    @DisplayName("A reseed moves the test key on to a fresh roll; play's keys stay at zero")
+    void reroll_advancesOnlyTheRerolledKey() {
+        PortalChunkTerrain.clear();
+        assertEquals(0, PortalChunkTerrain.rollOf(PortalTestSession.PAIR_KEY));
+        PortalChunkTerrain.reroll(PortalTestSession.PAIR_KEY);
+        PortalChunkTerrain.reroll(PortalTestSession.PAIR_KEY);
+        assertEquals(2, PortalChunkTerrain.rollOf(PortalTestSession.PAIR_KEY));
+        assertEquals(0, PortalChunkTerrain.rollOf(PortalTestSession.PAIR_KEY + 1));
+        PortalChunkTerrain.clear();
+        assertEquals(0, PortalChunkTerrain.rollOf(PortalTestSession.PAIR_KEY));
+    }
+
+    @Test
     @DisplayName("Nothing has failed before anything is sampled")
     void failed_isFalseForAnUnsampledPair() {
         PortalChunkTerrain.clear();

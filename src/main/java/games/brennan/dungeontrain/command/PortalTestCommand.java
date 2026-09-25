@@ -110,6 +110,16 @@ public final class PortalTestCommand {
      *                  author is already standing in
      */
     private static int runTest(CommandSourceStack source, String roomArg, boolean freshRoll) {
+        return runTest(source, roomArg, freshRoll, true);
+    }
+
+    /**
+     * @param mayResample whether a fresh roll may also cut a chunk dimension a fresh chunk — false
+     *                    only for a press finishing after its sample landed, which must stamp the
+     *                    chunk it waited for rather than start waiting on another
+     */
+    private static int runTest(CommandSourceStack source, String roomArg, boolean freshRoll,
+                               boolean mayResample) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -126,12 +136,7 @@ public final class PortalTestCommand {
         // this room now, and should not be pulled into the other one a second later.
         PortalTestPending.cancel(player.getUUID());
 
-        // Already inside one: stamping a second would leave the first standing and lose the way home
-        // to the plot. Send them back first, then in again, so the button is idempotent.
-        if (PortalTestSession.has(player.getUUID())) {
-            runBack(source);
-        }
-
+        PortalTestSession.Session current = PortalTestSession.get(player.getUUID());
         String roomName;
         if (roomArg != null && !roomArg.isBlank()) {
             roomName = games.brennan.dungeontrain.track.variant.TrackVariantRegistry
@@ -142,6 +147,10 @@ public final class PortalTestCommand {
                     .withStyle(ChatFormatting.RED));
                 return 0;
             }
+        } else if (current != null) {
+            // Standing in a test with nothing named: that test's room, the one Back would have
+            // returned them to the plot of.
+            roomName = current.roomName();
         } else {
             roomName = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
             if (roomName == null) {
@@ -154,8 +163,14 @@ public final class PortalTestCommand {
         // to stamp until that sample is in hand. It is sampled on a worker and lands a moment later,
         // so the press waits for it: PortalTestTicker finishes this same test the tick it arrives.
         // Asked here, before anything is said to the author, so the re-run does not say it twice.
+        //
+        // A fresh roll of a chunk dimension is a fresh chunk: its contents ARE the terrain, so
+        // re-salting the contents alone stamped the same ground back every time.
         games.brennan.dungeontrain.portal.PortalChunkSlice slice = null;
         if (PortalRoomSettings.of(roomName).mode().generatesTerrain()) {
+            if (mayResample && (freshRoll || worldData.isPortalTestReseed())) {
+                games.brennan.dungeontrain.portal.PortalChunkTerrain.reroll(PortalTestSession.PAIR_KEY);
+            }
             slice = games.brennan.dungeontrain.portal.PortalChunkTerrain.slice(
                 overworld, PortalTestSession.PAIR_KEY, roomName);
             if (slice == null) {
@@ -165,6 +180,14 @@ public final class PortalTestCommand {
                     .withStyle(ChatFormatting.YELLOW), false);
                 return 1;
             }
+        }
+
+        // Already inside one: stamping a second would leave the first standing and lose the way home
+        // to the plot. Send them back first, then in again, so the button is idempotent. After the
+        // sample check rather than before it, so an author waiting on a fresh chunk keeps standing
+        // in the room they have until the new one is ready.
+        if (current != null) {
+            runBack(source);
         }
 
         // The room as authored, so what is tested is what was built: its own size and its own
@@ -293,7 +316,7 @@ public final class PortalTestCommand {
      * {@code PortalTestTicker} the tick the sample lands, with what the press asked for.
      */
     public static void runPending(ServerPlayer player, String roomName, boolean freshRoll) {
-        runTest(player.createCommandSourceStack(), roomName, freshRoll);
+        runTest(player.createCommandSourceStack(), roomName, freshRoll, false);
     }
 
     /**
