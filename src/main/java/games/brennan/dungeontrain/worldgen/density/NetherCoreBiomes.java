@@ -136,7 +136,7 @@ public final class NetherCoreBiomes {
      * preset, so neither can be sampled directly. Falls back to the live Nether source if the table
      * can't be resolved.
      */
-    private static BiomeSource vanillaNetherSource(MinecraftServer server, ServerLevel nether) {
+    public static BiomeSource vanillaNetherSource(MinecraftServer server, ServerLevel nether) {
         try {
             HolderGetter<Biome> biomes = server.registryAccess().lookupOrThrow(Registries.BIOME);
             List<Pair<Climate.ParameterPoint, Holder<Biome>>> points = MultiNoiseBiomeSourceParameterList
