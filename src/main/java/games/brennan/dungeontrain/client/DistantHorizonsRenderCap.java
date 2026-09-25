@@ -2,8 +2,14 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import com.seibel.distanthorizons.api.DhApi;
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiFogFalloff;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfig;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
+import com.seibel.distanthorizons.api.methods.events.DhApiEventRegister;
+import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeFogRenderEvent;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiCancelableEventParam;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiFogRenderParam;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiMutableFogRenderParam;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.worldgen.DhHorizon;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
@@ -18,78 +24,109 @@ import org.slf4j.Logger;
 import java.util.OptionalLong;
 
 /**
- * Lowers <b>Distant Horizons</b>' render distance where its full horizon would give away what lies
- * ahead: past the far side of a void, or more than one legacy era away. {@link DhHorizon} decides
- * how far is allowed; this class only applies it.
+ * Keeps <b>Distant Horizons</b> from showing what lies ahead: past the far side of a void, or more than
+ * one legacy era away. {@link DhHorizon} decides how far is allowed; this class makes DH respect it.
  *
- * <p><b>The player's setting is the ceiling.</b> The cap goes through DH's API override
- * ({@link IDhApiConfigValue#setValue}), which DH keeps apart from the value in its config file
- * ({@link IDhApiConfigValue#getTrueValue}) and never saves. The override is always
- * {@code min(cap, trueValue)}, read fresh every tick so a change made in DH's own menu is honoured,
- * and wherever the view is clear the override is dropped ({@link IDhApiConfigValue#clearValue}) rather
- * than set — DH is back on exactly the player's setting, never above it. Nothing persists, so a crash
- * mid-cap cannot leave DH shortened.</p>
+ * <p><b>Fog wall (the normal path).</b> DH re-reads its far fog every frame, and API 7's
+ * {@link DhApiBeforeFogRenderEvent} lets a mod reshape it. The fog is pulled in so it turns fully opaque
+ * exactly at the allowed distance ({@link DhFogWall}); DH keeps the player's own render distance, so its
+ * LOD tree is never rebuilt and the boundary slides smoothly as the train moves.</p>
  *
- * <p><b>Reload cost.</b> A new DH render distance rebuilds DH's LOD tree — visibly — so which
- * distance to apply is left to {@link DhCapPolicy}: a few coarse tiers, lowered at once but raised only
- * with headroom, and held still while DH is hidden. Checked per client tick, not per frame.</p>
+ * <p><b>Render-distance tiers (the fallback).</b> When DH's fog is not being drawn — the player turned it
+ * off, or a shader pack draws its own — a fog wall hides nothing, so DH's render distance is lowered
+ * through its API override instead ({@link DhCapPolicy}: coarse tiers, lowered at once, raised with
+ * headroom, never above the player's setting, never saved), and DH skips its frame entirely below its
+ * 32-chunk minimum ({@link #belowFloor()}).</p>
  *
  * <p><b>Loading.</b> Like {@link DistantHorizonsSuppression}, this names DH types and is reached only
  * behind the {@code ModList} check in {@link DungeonTrainClient}. Any failure disables the cap and
- * leaves DH on the player's setting.</p>
+ * leaves DH on the player's settings.</p>
  */
 public final class DistantHorizonsRenderCap {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** The override currently applied, or {@link DhCapPolicy#RELEASED} when DH is on the player's own setting. */
+    /** Shown in DH's config screen beside the render distance while DT overrides it. */
+    private static final String API_USER = "Dungeon Train";
+
+    /** Allowed distance in blocks at the camera, or {@code -1} when nothing narrows the view. */
+    private static volatile long capBlocks = -1L;
+    /** DH has fired its fog event at least once — proof the fog wall is bound and DH draws fog. */
+    private static volatile boolean fogEventSeen = false;
+
+    /** The render-distance override applied, or {@link DhCapPolicy#RELEASED} for the player's setting. */
     private static int applied = DhCapPolicy.RELEASED;
     private static boolean failed = false;
-    /** The cap is below DH's minimum render distance — no radius DH accepts is safe, so it must not draw. */
+    /** Fallback path only: the cap is below DH's minimum render distance, so DH must not draw at all. */
     private static volatile boolean belowFloor = false;
 
     private DistantHorizonsRenderCap() {}
 
     /**
-     * Whether the allowed radius is smaller than DH's own minimum render distance (32 chunks), so even
-     * the shortest distance DH accepts would draw past a void. {@link DistantHorizonsSuppression} skips
-     * DH's frame while this holds — deep in or right at the edge of a void, where there is nothing for
-     * DH to show anyway.
+     * Whether DH must skip its frame: on the render-distance fallback, when the allowed radius is shorter
+     * than DH's minimum render distance (32 chunks). Read by {@link DistantHorizonsSuppression}.
      */
     static boolean belowFloor() {
         return belowFloor;
     }
 
-    /** Bind the per-tick update and the logout reset. Call once, on the client, only when DH is loaded. */
+    /** Bind the fog wall, the per-tick update and the logout reset. Call once, only when DH is loaded. */
     public static void register() {
+        try {
+            DhApiEventRegister.on(DhApiBeforeFogRenderEvent.class, new FogWallEvent());
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Could not bind the Distant Horizons fog wall; "
+                    + "falling back to lowering DH's render distance: {}", t.toString());
+        }
         NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post e) -> tick());
         NeoForge.EVENT_BUS.addListener((ClientPlayerNetworkEvent.LoggingOut e) -> release());
-        LOGGER.info("[DungeonTrain] Distant Horizons' render distance will be capped at voids and legacy eras");
+        LOGGER.info("[DungeonTrain] Distant Horizons will not draw past voids or beyond the next legacy era");
     }
 
     private static void tick() {
         if (failed) return;
         try {
+            OptionalLong cap = capBlocksHere();
+            capBlocks = cap.orElse(-1L);
             IDhApiConfigValue<Integer> distance = renderDistance();
             if (distance == null) return;
-            OptionalLong cap = capBlocksHere();
+
+            if (cap.isEmpty() || fogWallWorking()) {
+                belowFloor = false;
+                release(distance);
+                return;
+            }
             Integer minValue = distance.getMinValue();
             int min = minValue == null ? 1 : minValue;
-            long capChunks = cap.isPresent() ? cap.getAsLong() / 16L : Long.MAX_VALUE;
+            long capChunks = cap.getAsLong() / 16L;
             belowFloor = capChunks < min;
             int target = DhCapPolicy.next(applied, capChunks, distance.getTrueValue(), min);
             if (target == DhCapPolicy.RELEASED) {
                 release(distance);
-            } else if (target != applied && distance.setValue(target)) {
+            } else if (target != applied && distance.setValue(target, API_USER)) {
                 applied = target;
             }
         } catch (Throwable t) {
             failed = true;
+            capBlocks = -1L;
             belowFloor = false;
             LOGGER.warn("[DungeonTrain] Distant Horizons render cap disabled after an error; "
-                    + "DH stays on your own render distance: {}", t.toString());
+                    + "DH stays on your own settings: {}", t.toString());
             release();
         }
+    }
+
+    /**
+     * Whether the fog wall can hide what the cap hides: DH's fog has fired at all, is switched on in
+     * DH's settings, and no shader pack is drawing its own fog in its place. Decided from settings rather
+     * than from recent fog events, because DH fires none while its frame is suppressed (upside-down band,
+     * portal rooms) — a freshness test would flip to the render-distance fallback exactly then and cost a
+     * reload on the way back out.
+     */
+    private static boolean fogWallWorking() {
+        if (!fogEventSeen || GraphicsCapabilities.shaderPackActive()) return false;
+        IDhApiConfig configs = DhApi.Delayed.configs;
+        return configs != null && Boolean.TRUE.equals(configs.graphics().fog().enableDhFog().getValue());
     }
 
     /** The allowed radius at the camera, or empty when this world or position has nothing to hide. */
@@ -111,7 +148,7 @@ public final class DistantHorizonsRenderCap {
         return configs == null ? null : configs.graphics().chunkRenderDistance();
     }
 
-    /** Drop the override so DH is back on the player's own setting. */
+    /** Drop the render-distance override so DH is back on the player's own setting. */
     private static void release() {
         try {
             IDhApiConfigValue<Integer> distance = renderDistance();
@@ -125,5 +162,31 @@ public final class DistantHorizonsRenderCap {
         if (applied == DhCapPolicy.RELEASED) return;
         distance.clearValue();
         applied = DhCapPolicy.RELEASED;
+    }
+
+    /** Reshape DH's far fog into a wall at the allowed distance, every frame. */
+    private static final class FogWallEvent extends DhApiBeforeFogRenderEvent {
+        @Override
+        public void beforeRender(DhApiCancelableEventParam<DhApiBeforeFogRenderEvent.EventParam> event) {
+            fogEventSeen = true;
+            long cap = capBlocks;
+            if (cap < 0L || failed) return;
+            try {
+                IDhApiConfigValue<Integer> distance = renderDistance();
+                if (distance == null) return;
+                DhApiFogRenderParam user = event.value.getOriginalFogRenderParam();
+                DhFogWall.Fog fog = DhFogWall.wall(cap, distance.getValue() * 16.0,
+                        user.getFarFogStartPercent(), user.getFarFogEndPercent(), user.getFarFogMaxThickness());
+                if (fog == null) return;
+                DhApiMutableFogRenderParam out = event.value.getFogRenderParam();
+                out.setFarFogStartPercent(fog.startPercent());
+                out.setFarFogEndPercent(fog.endPercent());
+                out.setFarFogMaxThickness(1.0f);
+                out.setFarFogFalloff(EDhApiFogFalloff.LINEAR);
+            } catch (Throwable t) {
+                failed = true;
+                LOGGER.warn("[DungeonTrain] Distant Horizons fog wall disabled after an error: {}", t.toString());
+            }
+        }
     }
 }
