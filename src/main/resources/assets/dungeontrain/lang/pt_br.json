@@ -3347,6 +3347,8 @@
   "gui.dungeontrain.builder.profile.saved": "%s salva nas suas construções.",
   "gui.dungeontrain.builder.profile.upload_failed": "Não foi possível enviar %s — ela continua salva aqui.",
   "gui.dungeontrain.builder.profile.too_big": "%s é grande demais para enviar — ela continua salva aqui.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped": "%s foi enviada sem algumas das variantes de bloco — eram grandes demais para enviar. Tudo continua salvo aqui.",
+  "gui.dungeontrain.builder.profile.sidecars_dropped_loot": "%s foi enviada sem o saque dos baús e as variantes de bloco — eram grandes demais para enviar. Tudo continua salvo aqui.",
   "gui.dungeontrain.builder.profile.builtin_not_uploaded": "'%s' tem um nome embutido, então NÃO foi enviada para Minhas construções. Salve com um nome seu para manter uma cópia no relay.",
   "gui.dungeontrain.builder.profile.full": "Suas construções estão cheias (%s). Esta foi salva aqui, mas não foi enviada — remova uma em “Minhas construções” para abrir espaço.",
   "gui.dungeontrain.builder.profile.gone": "%s não está mais no relay — o próximo save vai enviá-la de novo.",
