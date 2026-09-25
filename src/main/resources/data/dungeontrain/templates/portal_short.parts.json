@@ -3,29 +3,43 @@
   "floor": [
     {
       "name": "wood",
-      "weight": 1,
-      "stage": "copper"
+      "weight": 1
     }
   ],
   "walls": [
     {
       "name": "woodnice",
-      "weight": 1,
-      "stage": "copper"
+      "weight": 1
     }
   ],
   "roof": [
     {
       "name": "mud_wood",
       "weight": 1,
-      "stage": "copper"
+      "phases": [
+        "OVERWORLD",
+        "NETHER",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED"
+      ]
     }
   ],
   "doors": [
     {
       "name": "woodwooddoor",
-      "weight": 1,
-      "stage": "copper"
+      "weight": 1
     }
   ]
 }
