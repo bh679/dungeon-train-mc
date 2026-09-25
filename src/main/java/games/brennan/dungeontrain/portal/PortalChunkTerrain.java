@@ -425,7 +425,7 @@ public final class PortalChunkTerrain {
                 long decoratingFrom = System.currentTimeMillis();
                 PortalChunkFeatures.decorate(sample.generator(), sample.level(), sample.random(),
                     sample.chunk(), sample.workspace(), sample.window(), sample.level().getSeed(),
-                    pairKey, sample.source().vanillaOnly());
+                    pairKey, sample.source());
                 READY.put(pairKey, new Cached(roomName, roll, sample.read()));
                 DECORATED.add(pairKey);
                 // The first number is what a portal carriage waits out before it can cross at all,
