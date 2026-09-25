@@ -173,6 +173,24 @@ public final class BlockVariantMenuInputHandler {
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.CYCLE_COPY_ROLL, variantId, local, -1, "", 0));
             case COPY_SCOPE -> DungeonTrainNet.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.CYCLE_COPY_SCOPE, variantId, local, -1, "", 0));
+            case SPAN -> {
+                BlockVariantMenu.closeRotPopup();
+                BlockVariantMenu.toggleSpanPopup();
+            }
+            case SPAN_OPTION -> {
+                // -2 = clicked elsewhere in the panel (close), -1 = the popup's own margin (ignore).
+                // A button sets that one section and leaves the popup open for the next choice.
+                int code = hit.secondary();
+                if (code == -1) return;
+                if (code < 0) {
+                    BlockVariantMenu.closeSpanPopup();
+                    return;
+                }
+                games.brennan.dungeontrain.editor.VariantSpan next = SpanPopupLayout.apply(
+                    BlockVariantMenu.resolvedSpan(), code / 10, code % 10);
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_SPAN_MODE, variantId, local, -1, "", next.toByte()));
+            }
             case REMOVE -> BlockVariantMenu.toggleRemoveMode();
             case CLEAR -> DungeonTrainNet.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.CLEAR, variantId, local, -1, "", 0));

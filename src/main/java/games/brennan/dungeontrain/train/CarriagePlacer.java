@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
@@ -875,19 +876,21 @@ public final class CarriagePlacer {
         if (sidecar.isEmpty()) return;
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
             VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
-            if (picked == null) continue;
-            BlockPos world = origin.offset(e.localPos());
-            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
-                SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
-            } else {
-                BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
-                    StagePlacementScope.resolve(picked.state()), picked.rotation(), picked.half(), picked.active(),
-                    e.localPos(), seed, carriageIndex,
-                    sidecar.lockIdAt(e.localPos()));
-                games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
-                    level, world, rotated, picked.blockEntityNbt(),
-                    "carriage:" + variant.id(), e.localPos(), seed, carriageIndex,
-                    picked.linkedLootPrefabId());
+            int lockId = sidecar.lockIdAt(e.localPos());
+            // One write per space: a door / bed / tall plant cell owns two (MultiBlockVariants).
+            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(e.states(), sidecar.spanAt(e.localPos()), picked, e.localPos(),
+                    seed, carriageIndex, v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
+                        StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                        e.localPos(), seed, carriageIndex, lockId))) {
+                BlockPos world = origin.offset(w.localPos());
+                if (w.isAir()) {
+                    SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
+                } else {
+                    games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
+                        level, world, w.state(), w.entry().blockEntityNbt(),
+                        "carriage:" + variant.id(), w.localPos(), seed, carriageIndex,
+                        w.entry().linkedLootPrefabId());
+                }
             }
         }
     }

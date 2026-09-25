@@ -175,6 +175,19 @@ public interface BlockVariantPlot {
     }
 
     /**
+     * How a single block fills the two spaces of the cell at {@code localPos} when the cell also
+     * holds a door / bed / tall plant ({@link VariantSpan}). {@code AUTO} on plots that don't store
+     * it (portal-room plane palettes — one layer, no second space).
+     */
+    default VariantSpan spanAt(BlockPos localPos) {
+        return VariantSpan.NONE;
+    }
+
+    /** Set the cell's span. A no-op on plots that don't store it. */
+    default void setSpan(BlockPos localPos, VariantSpan span) {
+    }
+
+    /**
      * This plot's v9 lock-group reference resolver. The menu uses it to tell
      * live references from dead ones when composing a sync, to reject an Add
      * that would close a cycle, and to preview what a reference row actually
@@ -513,6 +526,8 @@ public interface BlockVariantPlot {
         }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
+        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
+        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
         @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
@@ -572,6 +587,8 @@ public interface BlockVariantPlot {
         }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int lockId) { sidecar.setLockId(l, lockId); }
+        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
+        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int lockId) { return sidecar.positionsWithLockId(lockId); }
         @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
@@ -627,6 +644,8 @@ public interface BlockVariantPlot {
         }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
+        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
+        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
         @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
@@ -686,6 +705,8 @@ public interface BlockVariantPlot {
         }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
+        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
+        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
         @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
@@ -750,6 +771,8 @@ public interface BlockVariantPlot {
         }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
+        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
+        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
         @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }

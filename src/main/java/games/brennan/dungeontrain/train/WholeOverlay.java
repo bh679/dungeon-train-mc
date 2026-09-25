@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsPlacement;
@@ -31,17 +32,19 @@ public final class WholeOverlay {
         String plotKey = BlockVariantPlot.wholeKey(kind, id);
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
             VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
-            if (picked == null) continue;
-            BlockPos world = origin.offset(e.localPos());
-            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
-                SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
-                continue;
+            int lockId = sidecar.lockIdAt(e.localPos());
+            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(e.states(), sidecar.spanAt(e.localPos()), picked, e.localPos(),
+                    seed, carriageIndex, v -> RotationApplier.apply(
+                        StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                        e.localPos(), seed, carriageIndex, lockId))) {
+                BlockPos world = origin.offset(w.localPos());
+                if (w.isAir()) {
+                    SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
+                    continue;
+                }
+                ContainerContentsPlacement.place(level, world, w.state(), w.entry().blockEntityNbt(),
+                    plotKey, w.localPos(), seed, carriageIndex, w.entry().linkedLootPrefabId());
             }
-            BlockState rotated = RotationApplier.apply(
-                StagePlacementScope.resolve(picked.state()), picked.rotation(), picked.half(), picked.active(),
-                e.localPos(), seed, carriageIndex, sidecar.lockIdAt(e.localPos()));
-            ContainerContentsPlacement.place(level, world, rotated, picked.blockEntityNbt(),
-                plotKey, e.localPos(), seed, carriageIndex, picked.linkedLootPrefabId());
         }
     }
 }

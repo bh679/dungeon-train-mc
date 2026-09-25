@@ -82,10 +82,23 @@ public final class BlockVariantMenuController {
      * track the player's current look angle.
      */
     private record OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up,
-                           @Nullable Vec3 anchor, @Nullable Vec3 right) {
+                           @Nullable Vec3 anchor, @Nullable Vec3 right, @Nullable BlockPos anchorWorld) {
         /** A panel hung off a cell's face — the anchor is re-derived from that face on every re-sync. */
         OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up) {
-            this(variantId, localPos, face, up, null, null);
+            this(variantId, localPos, face, up, null, null, null);
+        }
+
+        /**
+         * A panel hung off {@code anchorWorld}'s face while editing {@code localPos} — the half of
+         * a door / bed / tall-plant cell the player aimed at, which may not be the owning cell.
+         */
+        OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up, BlockPos anchorWorld) {
+            this(variantId, localPos, face, up, null, null, anchorWorld);
+        }
+
+        /** A floating panel with a remembered basis. */
+        OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up, Vec3 anchor, Vec3 right) {
+            this(variantId, localPos, face, up, anchor, right, null);
         }
 
         /** True for a panel with no cell in the world, whose basis has to be remembered rather than recomputed. */
@@ -160,13 +173,16 @@ public final class BlockVariantMenuController {
             actionBar(player, "Block is outside the editor plot", ChatFormatting.YELLOW);
             return;
         }
-        BlockPos clampedLocal = clampToFootprint(localPos, plot);
-        BlockPos clampedWorld = plot.origin().offset(clampedLocal);
+        // Either space of a door / bed / tall-plant cell opens that cell's menu, but the panel
+        // hangs off the half the player actually aimed at.
+        BlockPos lookedLocal = clampToFootprint(localPos, plot);
+        BlockPos clampedLocal = MultiBlockFootprint.ownerCell(plot, lookedLocal);
+        BlockPos anchorWorld = plot.origin().offset(lookedLocal);
 
         Direction face = bhit.getDirection();
         Vec3 up = computeUp(face, player);
-        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up));
-        sendSync(player, plot, clampedLocal, clampedWorld, face, up);
+        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up, anchorWorld));
+        sendSync(player, plot, clampedLocal, anchorWorld, face, up);
     }
 
     /**
@@ -347,7 +363,8 @@ public final class BlockVariantMenuController {
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
-            (byte) plot.copyScopeAt(localPos).ordinal());
+            (byte) plot.copyScopeAt(localPos).ordinal(),
+            (byte) plot.spanAt(localPos).toByte());
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -401,6 +418,10 @@ public final class BlockVariantMenuController {
         }
         if (packet.op() == BlockVariantEditPacket.Op.CYCLE_COPY_SCOPE) {
             cycleCopyScope(player, plot, localPos);
+            return;
+        }
+        if (packet.op() == BlockVariantEditPacket.Op.SET_SPAN_MODE) {
+            setSpan(player, plot, localPos, packet.delta());
             return;
         }
         if (packet.op() == BlockVariantEditPacket.Op.COPY) {
@@ -893,7 +914,11 @@ public final class BlockVariantMenuController {
             face = Direction.UP;
             up = computeUp(face, player);
         }
-        BlockPos worldPos = plot.origin().offset(localPos);
+        // Stay on the half the menu was opened from — for a two-space cell that may not be the
+        // owning cell itself.
+        BlockPos worldPos = sameMenu && open.anchorWorld() != null
+            ? open.anchorWorld()
+            : plot.origin().offset(localPos);
         sendSync(player, plot, localPos, worldPos, face, up);
     }
 
@@ -1015,6 +1040,54 @@ public final class BlockVariantMenuController {
             case NOT_COPIES -> "Cell applies in this room only, not its copies";
         }, ChatFormatting.AQUA);
         resyncSameFace(player, plot, localPos);
+    }
+
+    /**
+     * SET_SPAN_MODE: the cell-wide multi-space setting — how a single block fills the two spaces
+     * of a cell that also holds a door / bed / tall plant. {@code packed} is
+     * {@link VariantSpan#toByte}; the menu only sends explicit spans. Not copied to lock-group
+     * siblings: each cell's footprint is its own.
+     */
+    private static void setSpan(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos, int packed) {
+        List<VariantState> states = plot.statesAt(localPos);
+        if (states == null || MultiBlockFootprint.cellFootprint(states) == null) {
+            actionBar(player, "Span only applies to a cell holding a door, bed or tall plant",
+                ChatFormatting.YELLOW);
+            return;
+        }
+        VariantSpan next = VariantSpan.fromByte(packed);
+        if (next.isDefault()) return;
+        plot.setSpan(localPos, next);
+        try {
+            plot.save();
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] BlockVariantMenu span save failed for {}: {}",
+                plot.key(), e.toString());
+            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+        }
+        actionBar(player, "Span: " + describe(next), ChatFormatting.AQUA);
+        resyncSameFace(player, plot, localPos);
+    }
+
+    /** Action-bar wording for a span — only the sections that apply. */
+    private static String describe(VariantSpan s) {
+        String count = switch (s.count()) {
+            case ONE -> "1 space";
+            case TWO -> "both spaces";
+            case RANDOM -> "1 or both spaces (random)";
+        };
+        StringBuilder out = new StringBuilder(count);
+        if (s.usesPosition()) {
+            out.append(", position ").append(switch (s.position()) {
+                case FIRST -> "1";
+                case SECOND -> "2";
+                case RANDOM -> "random";
+            });
+        }
+        if (s.usesFill()) {
+            out.append(s.fill() == VariantSpan.Fill.SAME ? ", same block" : ", second re-rolled");
+        }
+        return out.toString();
     }
 
     /**
@@ -1166,6 +1239,8 @@ public final class BlockVariantMenuController {
             actionBar(player, "Block is outside the editor plot", ChatFormatting.YELLOW);
             return;
         }
+        // Copying from a door's top half copies the door's cell, as the menu opens on it.
+        localPos = MultiBlockFootprint.ownerCell(plot, localPos);
 
         Clipboard clip = buildClipboardStack(player, plot, localPos);
         if (clip == null) return;
@@ -1202,8 +1277,8 @@ public final class BlockVariantMenuController {
         VariantCopyRoll roll = plot.copyRollAt(localPos);
         VariantCopyScope scope = plot.copyScopeAt(localPos);
         ItemStack stack = new ItemStack(ModItems.VARIANT_CLIPBOARD.get());
-        CompoundTag tag = VariantClipboardItem.encodeStates(current, lockId,
-            poolCaptured ? pool : null, roll, scope);
+        CompoundTag tag = VariantClipboardItem.withSpan(VariantClipboardItem.encodeStates(current, lockId,
+            poolCaptured ? pool : null, roll, scope), plot.spanAt(localPos));
         VariantClipboardItem.writeClipboardTag(stack, tag);
         String lockSuffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
         String poolSuffix = poolCaptured ? " +pool(" + pool.size() + ")" : "";

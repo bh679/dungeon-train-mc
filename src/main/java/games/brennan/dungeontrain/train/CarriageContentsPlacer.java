@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
@@ -593,27 +594,33 @@ public final class CarriageContentsPlacer {
                 }
                 continue;
             }
-            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
-                SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
-            } else {
-                net.minecraft.world.level.block.state.BlockState rotated =
-                    games.brennan.dungeontrain.editor.RotationApplier.apply(
-                        StagePlacementScope.resolve(picked.state()), picked.rotation(), picked.half(), picked.active(),
-                        entry.localPos(), seed, carriageIndex,
-                        sidecar.lockIdAt(entry.localPos()));
+            int lockId = sidecar.lockIdAt(entry.localPos());
+            // A two-space cell (door / bed / tall plant) expands to both spaces in the authored
+            // local frame; each lands through the same flip as the cell itself.
+            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
+                    entry.localPos(), seed, carriageIndex,
+                    v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
+                        StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                        entry.localPos(), seed, carriageIndex, lockId))) {
+                BlockPos wWorld = origin.offset(ContentsFlip.mapLocal(w.localPos(), size, flip));
+                if (!wWorld.equals(world) && mask.covers(wWorld)) continue;
+                if (w.isAir()) {
+                    SilentBlockOps.setBlockSilent(level, wWorld, Blocks.AIR.defaultBlockState());
+                    continue;
+                }
                 // Reflect AFTER the authored rotation roll, so the cell reads as the mirror image of
                 // what an unflipped stamp would have put there.
-                rotated = ContentsFlip.reflect(rotated, flip);
+                net.minecraft.world.level.block.state.BlockState rotated = ContentsFlip.reflect(w.state(), flip);
                 // First-band starter loot: swap rich loot/loot_irongold chests for the starter
                 // prefab while in the peaceful opening band. Skip the player scan for non-chest
                 // cells (null id) and never downgrade editor previews (sentinel pIdx).
-                String lootId = picked.linkedLootPrefabId();
+                String lootId = w.entry().linkedLootPrefabId();
                 if (lootId != null && carriageIndex != EDITOR_SENTINEL_PIDX) {
                     lootId = DifficultyProgression.effectiveLootPrefabId(level, lootId);
                 }
                 games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
-                    level, world, rotated, picked.blockEntityNbt(),
-                    "contents:" + contents.id(), entry.localPos(), seed, carriageIndex,
+                    level, wWorld, rotated, w.entry().blockEntityNbt(),
+                    "contents:" + contents.id(), w.localPos(), seed, carriageIndex,
                     lootId);
             }
         }

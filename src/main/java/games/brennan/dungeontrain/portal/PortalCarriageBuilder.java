@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks;
+import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
@@ -1908,9 +1909,24 @@ public final class PortalCarriageBuilder {
                 }
                 continue;
             }
-            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
-                // No-cascade, for the same reason as the mob branch above.
-                SilentBlockOps.setBlockSilentNoCascade(level, world, Blocks.AIR.defaultBlockState(), null);
+            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())
+                    || games.brennan.dungeontrain.editor.MultiBlockFootprint.cellFootprint(entry.states()) != null) {
+                // A two-space cell (door / bed / tall plant) writes both of its spaces; an empty
+                // pick clears them. Same no-cascade + eviction rules as the single write below.
+                for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(local), picked, local,
+                        worldSeed, cellIndex, VariantState::state)) {
+                    BlockPos wWorld = roomOrigin.offset(w.localPos());
+                    if (!wWorld.equals(world) && mask.covers(wWorld)) continue;
+                    if (w.isAir()) {
+                        // No-cascade, for the same reason as the mob branch above.
+                        SilentBlockOps.setBlockSilentNoCascade(level, wWorld, Blocks.AIR.defaultBlockState(), null);
+                        continue;
+                    }
+                    SilentBlockOps.evictBlockEntity(level.getChunkAt(wWorld), wWorld);
+                    ContainerContentsPlacement.place(level, wWorld, w.state(), w.entry().blockEntityNbt(),
+                        plotKey, w.localPos(), worldSeed, cellIndex, /*diffIndex*/ pairKey,
+                        w.entry().linkedLootPrefabId());
+                }
                 continue;
             }
             // The contents pass may have put a filled chest in this cell a moment ago. Writing over a

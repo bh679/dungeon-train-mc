@@ -101,6 +101,28 @@ public final class BlockVariantMenuRaycast {
 
         double gridTopAbs = halfH - BlockVariantMenuRenderer.HEADER_HEIGHT - BlockVariantMenuRenderer.TOOLBAR_HEIGHT;
 
+        // Span option strip (above the panel) — modal like the OPTIONS popup: an option is a pick,
+        // anywhere else in the panel closes it (secondary -2), outside both does nothing.
+        if (BlockVariantMenu.spanPopupOpen()) {
+            java.util.List<SpanPopupLayout.Row> rows = SpanPopupLayout.rows(panelW, halfH);
+            for (SpanPopupLayout.Row row : rows) {
+                if (hitY < row.bottom() || hitY > row.top()) continue;
+                double rel = hitX - row.buttonsLeft();
+                if (rel < 0 || rel > SpanPopupLayout.BUTTONS_WIDTH) continue;
+                int opt = Math.min(row.buttons().length - 1, (int) Math.floor(rel / row.buttonWidth()));
+                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.SPAN_OPTION, -1,
+                    SpanPopupLayout.encode(row.section(), opt));
+            }
+            double[] r = SpanPopupLayout.rect(rows);
+            if (hitX >= r[0] && hitX <= r[1] && hitY >= r[2] && hitY <= r[3]) {
+                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.SPAN_OPTION, -1, -1);
+            }
+            if (hitX >= -halfW && hitX <= halfW && hitY >= -halfH && hitY <= halfH) {
+                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.SPAN_OPTION, -1, -2);
+            }
+            return BlockVariantMenu.Hit.NONE;
+        }
+
         // Popup modal — when open, the popup absorbs every hit inside the
         // menu panel. Buttons toggle directions; anywhere else inside the
         // panel closes the popup. The underlying toolbar / row cells

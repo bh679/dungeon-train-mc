@@ -92,10 +92,18 @@ public final class BlockVariantMenuRenderer {
      */
     static final double COPY_SETTINGS_MIN_PANEL_WIDTH = 4.6;
 
+    /**
+     * Extra minimum width while the Span button is on the toolbar (door / bed / tall-plant cells):
+     * one more toolbar cell, and room for the five-option strip it opens.
+     */
+    static final double SPAN_EXTRA_PANEL_WIDTH = 0.5;
+
     /** The minimum width this opening of the panel draws at — see {@link #COPY_SETTINGS_MIN_PANEL_WIDTH}. */
     static double minPanelWidth() {
-        return BlockVariantMenu.copySettingsSupported() ? COPY_SETTINGS_MIN_PANEL_WIDTH : MIN_PANEL_WIDTH;
+        double base = BlockVariantMenu.copySettingsSupported() ? COPY_SETTINGS_MIN_PANEL_WIDTH : MIN_PANEL_WIDTH;
+        return BlockVariantMenu.spanButtonShown() ? base + SPAN_EXTRA_PANEL_WIDTH : base;
     }
+
     static final double X_CELL_WIDTH = 0.30;
     static final double WEIGHT_CELL_WIDTH = 0.40;
     /** Per-cell width for a mob row's difficulty min / max cells (matches the weight cell). */
@@ -272,6 +280,12 @@ public final class BlockVariantMenuRenderer {
                 tint = copyRoll.isDefault()
                     ? (isHover ? 0xC0AAAAAA : 0x60777777)
                     : (isHover ? 0xC066DDFF : 0x803388AA);
+            } else if (cellKind == BlockVariantMenu.CellKind.SPAN) {
+                // Lit once the author picks a span; grey while it follows the first row. Held lit
+                // while its option strip is open so the strip reads as coming from it.
+                tint = BlockVariantMenu.spanExplicit() || BlockVariantMenu.spanPopupOpen()
+                    ? (isHover ? 0xC0D98CFF : 0x808A4FB3)
+                    : (isHover ? 0xC0AAAAAA : 0x60777777);
             } else if (cellKind == BlockVariantMenu.CellKind.COPY_SCOPE) {
                 // Lit in either restricted scope — the cell is somewhere other than everywhere,
                 // which is the thing worth seeing at a glance from across the panel.
@@ -295,6 +309,7 @@ public final class BlockVariantMenuRenderer {
                 // so the cell says whether it is following that or breaking from it.
                 case COPY_ROLL -> copyRoll.displayName();
                 case COPY_SCOPE -> copyScope.displayName();
+                case SPAN -> SpanPopupLayout.shortLabel(BlockVariantMenu.resolvedSpan());
                 case REMOVE -> MenuLang.t(removeMode ? "common.cancel" : "common.remove");
                 case CLEAR -> MenuLang.t("common.clear");
                 case CLOSE -> "X";
@@ -480,11 +495,46 @@ public final class BlockVariantMenuRenderer {
             }
         }
 
+        // Span option strip, floating just above the panel.
+        if (BlockVariantMenu.spanPopupOpen()) {
+            drawSpanPopup(ps, buffer, font, panelW, halfH, hovered);
+        }
+
         // OPTIONS popup is drawn last so it shadows the row underneath.
         int popupRow = BlockVariantMenu.rotPopupRowIndex();
         if (popupRow >= 0 && popupRow < n) {
             drawRotationOptionsPopup(ps, buffer, font, popupRow, entries.get(popupRow),
                 colActualW, gridTop, halfW, hovered);
+        }
+    }
+
+    /**
+     * The Span popup: the visible sections of {@link SpanPopupLayout}, each a label and its
+     * buttons, the cell's current (resolved) choice highlighted in every section.
+     */
+    private static void drawSpanPopup(PoseStack ps, MultiBufferSource buffer, Font font,
+                                      double panelW, double halfH, BlockVariantMenu.Hit hovered) {
+        List<SpanPopupLayout.Row> rows = SpanPopupLayout.rows(panelW, halfH);
+        double[] r = SpanPopupLayout.rect(rows);
+        drawQuad(ps, buffer, r[0], r[2], r[1], r[3], 0xE0202020);
+        for (SpanPopupLayout.Row row : rows) {
+            double bBot = row.bottom() + 0.02;
+            double bTop = row.top() - 0.02;
+            double cy = (bBot + bTop) / 2.0;
+            drawLeftText(ps, buffer, font, row.label(), row.left() + SpanPopupLayout.PAD + 0.03, cy, 0xFFCCCCCC);
+            for (int i = 0; i < row.buttons().length; i++) {
+                double bL = row.buttonLeft(i);
+                double bR = bL + row.buttonWidth();
+                boolean selected = i == row.selected();
+                boolean hover = hovered.kind() == BlockVariantMenu.CellKind.SPAN_OPTION
+                    && hovered.secondary() == SpanPopupLayout.encode(row.section(), i);
+                int tint = selected
+                    ? (hover ? 0xC0D98CFF : 0x808A4FB3)
+                    : (hover ? 0x60AAAAAA : 0x30777777);
+                drawQuad(ps, buffer, bL + 0.005, bBot, bR - 0.005, bTop, tint);
+                drawCenteredText(ps, buffer, font, row.buttons()[i], (bL + bR) / 2.0, cy,
+                    selected || hover ? 0xFFFFFFFF : 0xFFAAAAAA);
+            }
         }
     }
 

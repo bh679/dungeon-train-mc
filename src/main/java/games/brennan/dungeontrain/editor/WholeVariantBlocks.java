@@ -87,6 +87,12 @@ public final class WholeVariantBlocks {
      */
     private final WholeVariantBlocks source;
 
+    /**
+     * pos → per-cell {@link VariantSpan} — how a single block fills a two-space cell (door /
+     * bed / tall plant). Only non-default values are stored; see {@link #spanAt}.
+     */
+    private final Map<BlockPos, VariantSpan> spans = new LinkedHashMap<>();
+
     private WholeVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
         this(entries, lockIds, false, false, false, false);
     }
@@ -191,8 +197,8 @@ public final class WholeVariantBlocks {
             LOGGER.warn("[DungeonTrain] Whole variant sidecar {}: pos {} outside plot {}x{}x{}, skipping.",
                 id, pos, size.getX(), size.getY(), size.getZ());
         }
-        return new WholeVariantBlocks(kept, keptLocks, mirrorX, mirrorY, mirrorZ,
-            mirrorVariants, this);
+        return withSpans(new WholeVariantBlocks(kept, keptLocks, mirrorX, mirrorY, mirrorZ,
+            mirrorVariants, this), spans);
     }
 
     /** True when this instance is a bounded view — see {@link #cropped}. */
@@ -260,6 +266,7 @@ public final class WholeVariantBlocks {
         JsonObject variants = obj.getAsJsonObject("variants");
         Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
         Map<BlockPos, Integer> outLocks = new LinkedHashMap<>();
+        Map<BlockPos, VariantSpan> outSpans = new LinkedHashMap<>();
         for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
             BlockPos pos = parsePos(field.getKey());
             if (pos == null) {
@@ -277,11 +284,12 @@ public final class WholeVariantBlocks {
             }
             BlockPos posI = pos.immutable();
             out.put(posI, List.copyOf(cell.states()));
+            if (!cell.span().isDefault()) outSpans.put(posI, cell.span());
             if (cell.lockId() > 0) outLocks.put(posI, cell.lockId());
         }
         LOGGER.info("[DungeonTrain] Loaded {} whole variant entries for {} from {}",
             out.size(), contextId, origin);
-        return new WholeVariantBlocks(out, outLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants);
+        return withSpans(new WholeVariantBlocks(out, outLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants), outSpans);
     }
 
     static BlockPos parsePos(String key) {
@@ -340,7 +348,31 @@ public final class WholeVariantBlocks {
         groupRefs.invalidate();
     }
 
+    /** The cell's multi-space {@link VariantSpan}; {@code AUTO} when unset or no cell. */
+    public synchronized VariantSpan spanAt(BlockPos localPos) {
+        return spans.getOrDefault(localPos, VariantSpan.NONE);
+    }
+
+    /** Set the cell's multi-space span (default clears it). Throws if no cell exists at {@code localPos}. */
+    public synchronized void setSpan(BlockPos localPos, VariantSpan span) {
+        if (source != null) source.setSpan(localPos, span);
+        if (!entries.containsKey(localPos)) {
+            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
+        }
+        if (span == null || span.isDefault()) spans.remove(localPos);
+        else spans.put(localPos.immutable(), span);
+    }
+
+    /** Copy {@code from}'s spans for the cells {@code target} holds — parse and crop both end here. */
+    private static WholeVariantBlocks withSpans(WholeVariantBlocks target, Map<BlockPos, VariantSpan> from) {
+        for (Map.Entry<BlockPos, VariantSpan> e : from.entrySet()) {
+            if (target.entries.containsKey(e.getKey())) target.spans.put(e.getKey(), e.getValue());
+        }
+        return target;
+    }
+
     public synchronized boolean remove(BlockPos localPos) {
+        spans.remove(localPos);
         if (source != null) source.remove(localPos);
         lockIds.remove(localPos);
         groupRefs.invalidate();
@@ -354,6 +386,7 @@ public final class WholeVariantBlocks {
      * now-air cells.
      */
     public synchronized int clearAll() {
+        spans.clear();
         int n = entries.size();
         entries.clear();
         lockIds.clear();
@@ -509,7 +542,8 @@ public final class WholeVariantBlocks {
             if (!first) sb.append(",");
             int lockId = lockIds.getOrDefault(e.getKey(), 0);
             sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
-            CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId);
+            CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId,
+                VariantCopyRoll.DEFAULT, VariantCopyScope.BOTH, spanAt(e.getKey()));
             first = false;
         }
         sb.append("\n  }\n}\n");
