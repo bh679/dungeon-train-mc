@@ -2183,6 +2183,7 @@
       "chat.dungeontrain.portal.back_plot_test_has",
       "chat.dungeontrain.carriage_test.standing_in",
       "chat.dungeontrain.carriage_test.portal_part",
+      "chat.dungeontrain.carriage_test.no_shell_allows",
       "chat.dungeontrain.package.dtpacks_package",
       "chat.dungeontrain.package.world_doesn_t_use",
       "chat.dungeontrain.package.spawntrain_failed",

@@ -2912,6 +2912,7 @@
   "chat.dungeontrain.portal.back_plot_test_has": "De volta ao lote — o teste '%s' foi removido.",
   "chat.dungeontrain.carriage_test.standing_in": "Estás dentro de uma cópia de teste de '%s' (casco %s, conteúdo %s) — sem comboio ligado. Voltar no menu devolve-te ao lote.",
   "chat.dungeontrain.carriage_test.portal_part": "'%s' faz parte de um vagão dimensional — testa antes esse vagão dimensional.",
+  "chat.dungeontrain.carriage_test.no_shell_allows": "Nenhuma carruagem tem '%s' ativado neste momento — ativa-o na lista de Conteúdo de uma carruagem para o testar.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Este mundo não usa o sistema de comboio automático (startsWithTrain está desligado).",
   "chat.dungeontrain.package.spawntrain_failed": "falha em spawnTrain: %s: %s",

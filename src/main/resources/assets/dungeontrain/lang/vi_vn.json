@@ -2869,6 +2869,7 @@
   "chat.dungeontrain.portal.back_plot_test_has": "Đã về lô — bản thử '%s' đã được dọn đi.",
   "chat.dungeontrain.carriage_test.standing_in": "Bạn đang ở trong bản thử của '%s' (vỏ %s, phòng %s) — không gắn tàu. Nhấn Quay lại trong menu để về lô.",
   "chat.dungeontrain.carriage_test.portal_part": "'%s' là một phần của toa không gian — hãy thử toa không gian đó.",
+  "chat.dungeontrain.carriage_test.no_shell_allows": "Hiện chưa toa nào bật '%s' — hãy bật nó trong danh sách Phòng của một toa để thử.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Thế giới này không dùng hệ thống tàu tự động (startsWithTrain đang tắt).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain thất bại: %s: %s",

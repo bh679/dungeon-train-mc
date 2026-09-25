@@ -2869,6 +2869,7 @@
   "chat.dungeontrain.portal.back_plot_test_has": "플롯으로 돌아왔습니다 — 테스트 '%s'은(는) 정리되었습니다.",
   "chat.dungeontrain.carriage_test.standing_in": "'%s'의 테스트 사본 안에 있습니다 (외곽 %s, 내용물 %s) — 열차는 연결되지 않았습니다. 메뉴의 '뒤로'로 플롯에 돌아갑니다.",
   "chat.dungeontrain.carriage_test.portal_part": "'%s'은(는) 차원 객차의 일부입니다 — 대신 그 차원 객차를 테스트하세요.",
+  "chat.dungeontrain.carriage_test.no_shell_allows": "현재 '%s'을(를) 켜 둔 객차가 없습니다 — 테스트하려면 객차의 내용물 목록에서 켜세요.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "이 월드는 자동 열차 시스템을 사용하지 않습니다 (startsWithTrain이 꺼져 있음).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain 실패: %s: %s",

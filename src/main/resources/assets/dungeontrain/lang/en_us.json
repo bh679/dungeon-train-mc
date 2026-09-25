@@ -3426,6 +3426,7 @@
   "chat.dungeontrain.portal.back_plot_test_has": "Back at the plot — the test '%s' has been cleared away.",
   "chat.dungeontrain.carriage_test.standing_in": "You're inside a test copy of '%s' (shell %s, contents %s) — no train attached. Back in the menu returns you to the plot.",
   "chat.dungeontrain.carriage_test.portal_part": "'%s' is part of a dimensional carriage — test that dimensional carriage instead.",
+  "chat.dungeontrain.carriage_test.no_shell_allows": "No carriage currently has '%s' enabled — turn it on in a carriage's Contents list to test it.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "This world doesn't use the auto-train system (startsWithTrain is off).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain failed: %s: %s",

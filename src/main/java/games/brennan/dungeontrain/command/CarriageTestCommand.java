@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.editor.CarriageContentsEditor;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalTestSessionPacket;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
@@ -52,7 +51,8 @@ import java.util.Optional;
  *   <li><b>A carriage</b> is stood up with whatever contents the train would put in it: the pick
  *       runs through its own contents allow-list and the template weights, so a shell that only ever
  *       carries a library is tested holding a library.</li>
- *   <li><b>Contents</b> are stood up inside the shell their editor plot wraps them in. A group parent
+ *   <li><b>Contents</b> are stood up inside a carriage that has them enabled, drawn by carriage
+ *       weight — never a shell the train would not put them in. A group parent
  *       rolls one of its members exactly as a carriage would; naming a member tests that member.</li>
  * </ul>
  *
@@ -174,10 +174,56 @@ public final class CarriageTestCommand {
         if (CarriageContentsPlacer.portalCorridorKindOf(contents.get()) != null) {
             return fail(source, "chat.dungeontrain.carriage_test.portal_part", id);
         }
+        // Only a carriage that would actually carry these contents on the train stands around them:
+        // one whose allow-list has them enabled and that spawns at all. A member is allowed through
+        // its group's top parent — the allow-list is only ever consulted at the top-level pick.
+        String topId = topParentOf(contents.get().id());
+        CarriageVariant shell = shellAllowing(topId, seed);
+        if (shell == null) return fail(source, "chat.dungeontrain.carriage_test.no_shell_allows", topId);
         // A group parent rolls a member, as it would in a carriage; a member named outright is used.
         CarriageContents rolled = CarriageContentsRegistry.resolveSubVariant(
             contents.get(), seed ^ CarriageTestSession.TEST_INDEX, null);
-        return new Plan(CarriageContentsEditor.shellFor(rolled), rolled);
+        return new Plan(shell, rolled);
+    }
+
+    /** The group chain's root: the id the carriage allow-lists name. */
+    private static String topParentOf(String id) {
+        String cur = id;
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        while (seen.add(cur)) {
+            Optional<String> parent =
+                games.brennan.dungeontrain.editor.CarriageContentsGroupStore.findParentOf(cur);
+            if (parent.isEmpty()) return cur;
+            cur = parent.get();
+        }
+        return cur;
+    }
+
+    /**
+     * A carriage template that currently has {@code contentsId} enabled, drawn by carriage weight
+     * the way the train draws its shells — or {@code null} when none does. Portal parts, flatbeds and
+     * weight-0 carriages are out: none of them ever holds contents on the train.
+     */
+    static CarriageVariant shellAllowing(String contentsId, long seed) {
+        games.brennan.dungeontrain.train.CarriageWeights weights =
+            games.brennan.dungeontrain.train.CarriageWeights.current();
+        java.util.List<CarriageVariant> eligible = new java.util.ArrayList<>();
+        int total = 0;
+        for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
+            if (isPortalShell(v) || isFlatbed(v) || weights.weightFor(v.id()) <= 0) continue;
+            boolean allowed = games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore.get(v)
+                .map(a -> a.isAllowed(contentsId)).orElse(true);
+            if (!allowed) continue;
+            eligible.add(v);
+            total += weights.weightFor(v.id());
+        }
+        if (eligible.isEmpty()) return null;
+        int roll = new java.util.Random(seed).nextInt(total);
+        for (CarriageVariant v : eligible) {
+            roll -= weights.weightFor(v.id());
+            if (roll < 0) return v;
+        }
+        return eligible.get(eligible.size() - 1);
     }
 
     private static Plan fail(CommandSourceStack source, String key, String id) {

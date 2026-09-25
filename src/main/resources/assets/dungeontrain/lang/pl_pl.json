@@ -2955,6 +2955,7 @@
   "chat.dungeontrain.portal.back_plot_test_has": "Z powrotem na działce — test '%s' został usunięty.",
   "chat.dungeontrain.carriage_test.standing_in": "Jesteś w testowej kopii '%s' (poszycie %s, zawartość %s) — bez pociągu. Wstecz w menu wraca na działkę.",
   "chat.dungeontrain.carriage_test.portal_part": "'%s' jest częścią wagonu wymiarowego — przetestuj zamiast tego ten wagon wymiarowy.",
+  "chat.dungeontrain.carriage_test.no_shell_allows": "Żaden wagon nie ma teraz włączonego '%s' — włącz to na liście Zawartość wybranego wagonu, aby przetestować.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Ten świat nie używa systemu automatycznego pociągu (startsWithTrain jest wyłączone).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain nie powiódł się: %s: %s",

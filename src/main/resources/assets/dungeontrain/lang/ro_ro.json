@@ -3467,6 +3467,7 @@
   "chat.dungeontrain.portal.back_plot_test_has": "Înapoi la parcelă — testul '%s' a fost curățat.",
   "chat.dungeontrain.carriage_test.standing_in": "Ești într-o copie de test a lui '%s' (carcasă %s, conținut %s) — fără tren atașat. Înapoi din meniu te readuce la parcelă.",
   "chat.dungeontrain.carriage_test.portal_part": "'%s' face parte dintr-un vagon dimensional — testează în schimb acel vagon dimensional.",
+  "chat.dungeontrain.carriage_test.no_shell_allows": "Niciun vagon nu are '%s' activat acum — activează-l în lista Conținut a unui vagon ca să-l testezi.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Această lume nu folosește sistemul de tren automat (startsWithTrain este oprit).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain a eșuat: %s: %s",

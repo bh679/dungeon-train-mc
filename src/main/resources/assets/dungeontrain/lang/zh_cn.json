@@ -2883,6 +2883,7 @@
   "chat.dungeontrain.portal.back_plot_test_has": "已回到地块——测试的 '%s' 已被清理。",
   "chat.dungeontrain.carriage_test.standing_in": "你正在 '%s' 的测试副本里（外壳 %s，房间 %s）——没有连接列车。在菜单中点“返回”即可回到地块。",
   "chat.dungeontrain.carriage_test.portal_part": "'%s' 是维度车厢的一部分——请改为测试那节维度车厢。",
+  "chat.dungeontrain.carriage_test.no_shell_allows": "目前没有车厢启用了 '%s'——在某节车厢的房间列表中启用它即可测试。",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks（%s 个%s）：",
   "chat.dungeontrain.package.world_doesn_t_use": "本世界未使用自动列车系统（startsWithTrain 已关闭）。",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain 失败：%s：%s",
