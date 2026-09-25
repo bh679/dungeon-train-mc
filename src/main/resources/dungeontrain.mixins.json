@@ -103,6 +103,7 @@
     "client.CreateWorldScreenInvoker",
     "client.CreativeModeInventoryScreenPrefabMixin",
     "client.CreativeShiftToHotbarMixin",
+    "client.CreativePrefabDeleteMixin",
     "client.CreativeModeInventoryScreenAccessor",
     "client.AbstractContainerScreenPrefabTintMixin",
     "client.MainMenuLogoMixin",
