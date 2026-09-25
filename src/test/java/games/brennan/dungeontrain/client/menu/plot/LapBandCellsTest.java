@@ -75,6 +75,13 @@ final class LapBandCellsTest {
         LapBandCells.click("row", LapBand.L_BETA.bit(), LapBandCells.bandSlot(LapBand.L_BETA), false, sent::add,
             () -> refused[0]++);
         assertEquals(1, refused[0]);
+        // Shift on the open lap's own cell toggles the whole lap and keeps its letters showing.
+        LapBandCells.click("row", ALL, LapBandCells.BACK_SLOT, true, sent::add, () -> refused[0]++);
+        assertEquals(ALL & ~LapBand.Lap.LEGACY.mask(), sent.get(sent.size() - 1));
+        assertEquals(LapBand.Lap.LEGACY, LapBandView.openLap("row"));
+        LapBandCells.click("row", ALL & ~LapBand.Lap.LEGACY.mask(), LapBandCells.BACK_SLOT, true, sent::add,
+            () -> refused[0]++);
+        assertEquals(ALL, sent.get(sent.size() - 1));
         LapBandCells.click("row", ALL, LapBandCells.BACK_SLOT, false, sent::add, () -> refused[0]++);
         assertNull(LapBandView.openLap("row"));
         LapBandCells.click("row", ALL, LapBand.Lap.MOD.ordinal(), true, sent::add, () -> refused[0]++);

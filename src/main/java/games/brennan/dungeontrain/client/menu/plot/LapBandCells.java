@@ -13,7 +13,8 @@ import java.util.OptionalInt;
  *       (Mod lit only at its right-hand end = only its last bands). Click opens the lap; shift-click
  *       toggles the whole lap.</li>
  *   <li><b>Band view</b> — a {@code ‹} back cell carrying the lap letter, then that lap's band letters.
- *       Click flips a band; shift-click flips every other band (the long-standing "others" idiom).</li>
+ *       Click the back cell to return to the laps; shift-click it to toggle the whole lap. Click flips a
+ *       band; shift-click flips every other band (the long-standing "others" idiom).</li>
  * </ul>
  * Holds the geometry every hit-test and draw path shares (so they can't drift apart) and the pure mask
  * arithmetic. Every edit produces a whole new mask, or {@link OptionalInt#empty()} when it would
@@ -143,7 +144,8 @@ public final class LapBandCells {
 
     /**
      * Route a click on {@code slot} of the row {@code rowKey} whose bands are {@code mask}: a lap
-     * opens its letters (shift: toggles the whole lap), the back cell returns to the laps, a band flips
+     * opens its letters (shift: toggles the whole lap), the back cell returns to the laps (shift: toggles
+     * the open lap, staying on its letters), a band flips
      * (shift: flips every other band). A changed mask goes to {@code send}; one that would leave no
      * band calls {@code refused} instead.
      */
@@ -158,8 +160,15 @@ public final class LapBandCells {
             next = toggleLap(mask, lapOf(slot));
         } else if (isBandSlot(slot)) {
             next = clickBand(mask, bandOf(slot), shift);
+        } else if (slot == BACK_SLOT) {
+            LapBand.Lap open = LapBandView.openLap(rowKey);
+            if (!shift || open == null) {
+                LapBandView.close();
+                return;
+            }
+            // The open lap's own cell: shift toggles the whole lap, and its letters stay showing.
+            next = toggleLap(mask, open);
         } else {
-            if (slot == BACK_SLOT) LapBandView.close();
             return;
         }
         if (next.isEmpty()) {
