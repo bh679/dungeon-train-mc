@@ -19440,6 +19440,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "spheres-band-shorter-no-nether-sky",
+      "version": "0.974.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "A tighter stretch of the journey",
+      "summary": "One of the stranger stretches of the ride is now less than half as long, so its wonders arrive faster. Its sky no longer turns hellish on the way out; instead it drifts gently back to normal as you leave.",
+      "highlights": [],
+      "pr": 1581,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
