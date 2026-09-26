@@ -16,9 +16,9 @@ final class SpheresSegmentsTest {
 
     private static final double EPS = 1e-9;
 
-    /** The shipped defaults: 750 OW sky, End sky after, Nether mix from 1250, End from 1750, boost over 2250–5250. */
+    /** The shipped defaults: 1000 OW sky, End sky after, Nether mix from 1750, End from 2500, boost over 3250–6250. */
     private static SpheresSegments defaults() {
-        return SpheresSegments.of(750,
+        return SpheresSegments.of(1000,
                 SpheresProgressionConfig.DEFAULT_NETHER_MIX_START_BLOCKS,
                 SpheresProgressionConfig.DEFAULT_END_MIX_START_BLOCKS,
                 SpheresProgressionConfig.DEFAULT_STRUCTURE_BOOST_START_BLOCKS,
@@ -38,14 +38,14 @@ final class SpheresSegmentsTest {
     }
 
     @Test
-    @DisplayName("the defaults lay the 5250-block band out as 750 OW sky / 500 End / 500 +Nether / 500 +End / 3k structure boost")
+    @DisplayName("the defaults lay the 6250-block band out as 1k OW sky / 750 End / 750 +Nether / 750 +End / 3k structure boost")
     void defaultLayout() {
         SpheresSegments seg = defaults();
-        assertEquals(750, seg.endSkyStart());
-        assertEquals(1250, seg.netherMixStart());
-        assertEquals(1750, seg.endMixStart());
-        assertEquals(2250, seg.structureBoostStart());
-        assertEquals(5250, seg.structureBoostEnd());
+        assertEquals(1000, seg.endSkyStart());
+        assertEquals(1750, seg.netherMixStart());
+        assertEquals(2500, seg.endMixStart());
+        assertEquals(3250, seg.structureBoostStart());
+        assertEquals(6250, seg.structureBoostEnd());
         assertEquals(DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS, seg.structureBoostEnd(),
                 "the structure boost runs to the band's end");
     }
@@ -55,14 +55,14 @@ final class SpheresSegmentsTest {
     void sourcesBySegment() {
         SpheresSegments seg = defaults();
         assertEquals(Map.of(SphereSource.OVERWORLD, 3000), tally(seg, -1));      // entry fade
-        assertEquals(Map.of(SphereSource.OVERWORLD, 3000), tally(seg, 1249));
+        assertEquals(Map.of(SphereSource.OVERWORLD, 3000), tally(seg, 1749));
 
-        Map<SphereSource, Integer> two = tally(seg, 1250);
+        Map<SphereSource, Integer> two = tally(seg, 1750);
         assertEquals(1500, two.get(SphereSource.OVERWORLD));
         assertEquals(1500, two.get(SphereSource.NETHER));
         assertEquals(null, two.get(SphereSource.END));
 
-        for (long offset : new long[] {1750, 3000, 5249}) {
+        for (long offset : new long[] {2500, 4000, 6249}) {
             Map<SphereSource, Integer> three = tally(seg, offset);
             assertEquals(1000, three.get(SphereSource.OVERWORLD));
             assertEquals(1000, three.get(SphereSource.NETHER));
@@ -87,24 +87,24 @@ final class SpheresSegmentsTest {
     @DisplayName("structure boost ramps 5x -> 20x at the window's midpoint -> 5x, only inside the window, capped at 1")
     void structureBoost() {
         SpheresSegments seg = defaults();
-        assertEquals(1.0, seg.structureMultiplierAt(2249), EPS);
-        assertEquals(5.0, seg.structureMultiplierAt(2250), EPS);
-        assertEquals(12.5, seg.structureMultiplierAt(3000), EPS);
-        assertEquals(20.0, seg.structureMultiplierAt(3750), EPS);
-        assertEquals(12.5, seg.structureMultiplierAt(4500), EPS);
-        assertEquals(5.0 + 15.0 * 2 / 3000.0, seg.structureMultiplierAt(5249), EPS);
-        assertEquals(1.0, seg.structureMultiplierAt(5250), EPS);
-        for (long o = 2250; o < 5250; o++) {
+        assertEquals(1.0, seg.structureMultiplierAt(3249), EPS);
+        assertEquals(5.0, seg.structureMultiplierAt(3250), EPS);
+        assertEquals(12.5, seg.structureMultiplierAt(4000), EPS);
+        assertEquals(20.0, seg.structureMultiplierAt(4750), EPS);
+        assertEquals(12.5, seg.structureMultiplierAt(5500), EPS);
+        assertEquals(5.0 + 15.0 * 2 / 3000.0, seg.structureMultiplierAt(6249), EPS);
+        assertEquals(1.0, seg.structureMultiplierAt(6250), EPS);
+        for (long o = 3250; o < 6250; o++) {
             double m = seg.structureMultiplierAt(o);
             org.junit.jupiter.api.Assertions.assertTrue(m >= 5.0 - EPS && m <= 20.0 + EPS, "multiplier " + m + " at " + o);
         }
 
         assertEquals(0.0, seg.structureChanceAt(-1), EPS);
         assertEquals(0.08, seg.structureChanceAt(0), EPS);
-        assertEquals(0.08, seg.structureChanceAt(2249), EPS);
-        assertEquals(0.40, seg.structureChanceAt(2250), EPS);
-        assertEquals(1.0, seg.structureChanceAt(3750), EPS);     // 0.08 × 20 = 1.6, capped
-        assertEquals(0.08, seg.structureChanceAt(5250), EPS);
+        assertEquals(0.08, seg.structureChanceAt(3249), EPS);
+        assertEquals(0.40, seg.structureChanceAt(3250), EPS);
+        assertEquals(1.0, seg.structureChanceAt(4750), EPS);     // 0.08 × 20 = 1.6, capped
+        assertEquals(0.08, seg.structureChanceAt(6250), EPS);
     }
 
     @Test

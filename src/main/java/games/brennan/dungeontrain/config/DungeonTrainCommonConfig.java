@@ -276,7 +276,7 @@ public final class DungeonTrainCommonConfig {
     /** Blocks of spheres-band world-gen (the whole void-with-spheres stretch). 0 drops the band from the cycle. */
     public static final int MIN_SPHERES_HOLD_BLOCKS = 0;
     public static final int MAX_SPHERES_HOLD_BLOCKS = 100_000_000;
-    public static final int DEFAULT_SPHERES_HOLD_BLOCKS = 5250;
+    public static final int DEFAULT_SPHERES_HOLD_BLOCKS = 6250;
     /** Entry fade before the band: the natural terrain outside the spheres dissolves into void across this span. */
     public static final int MIN_SPHERES_FADE_BLOCKS = 0;
     public static final int MAX_SPHERES_FADE_BLOCKS = 100_000_000;
@@ -312,7 +312,7 @@ public final class DungeonTrainCommonConfig {
     /** Blocks into the spheres core that keep the normal overworld sky before the End sky takes over. */
     public static final int MIN_SPHERES_END_SKY_START_BLOCKS = 0;
     public static final int MAX_SPHERES_END_SKY_START_BLOCKS = 100_000_000;
-    public static final int DEFAULT_SPHERES_END_SKY_START_BLOCKS = 750;
+    public static final int DEFAULT_SPHERES_END_SKY_START_BLOCKS = 1000;
     /** Crossfade span (blocks) at each edge of the spheres End-sky second half. */
     public static final int MIN_SPHERES_END_SKY_FADE_BLOCKS = 0;
     public static final int MAX_SPHERES_END_SKY_FADE_BLOCKS = 2000;
@@ -414,7 +414,7 @@ public final class DungeonTrainCommonConfig {
 
     /**
      * The spheres band v5 shipped — 14000 core, 1500 entry fade, End sky from 3000, Nether sky for the
-     * last stretch — before v6 shrank it to 5250 and dropped the Nether sky. The v5 -> v6 migration
+     * last stretch — before v6 shrank it to 6250 and dropped the Nether sky. The v5 -> v6 migration
      * moves only values still at these (the progression offsets live in {@link SpheresProgressionConfig}).
      */
     public static final int SPHERES_V5_HOLD_BLOCKS = 14000;
@@ -882,7 +882,7 @@ public final class DungeonTrainCommonConfig {
                         "Set false to drop the spheres phase from the cycle.")
                 .define("spheresEnabled", DEFAULT_SPHERES_ENABLED);
         ModConfigSpec.IntValue spheresHoldBlocks = b
-                .comment("Blocks of spheres-band world-gen (the whole void-with-spheres stretch). Default 5250.")
+                .comment("Blocks of spheres-band world-gen (the whole void-with-spheres stretch). Default 6250.")
                 .defineInRange("spheresHoldBlocks", DEFAULT_SPHERES_HOLD_BLOCKS,
                         MIN_SPHERES_HOLD_BLOCKS, MAX_SPHERES_HOLD_BLOCKS);
         ModConfigSpec.IntValue spheresFadeBlocks = b
@@ -940,7 +940,7 @@ public final class DungeonTrainCommonConfig {
                 .define("spheresEndSky", DEFAULT_SPHERES_END_SKY);
         ModConfigSpec.IntValue spheresEndSkyStartBlocks = b
                 .comment("Blocks into the spheres band (counted from the end of the entry fade) that keep the normal",
-                        "overworld sky before the End sky takes over. Default 750 — the End sky then holds to the",
+                        "overworld sky before the End sky takes over. Default 1000 — the End sky then holds to the",
                         "band's end and fades back to overworld over spheresEndSkyExitFadeBlocks.")
                 .defineInRange("spheresEndSkyStartBlocks", DEFAULT_SPHERES_END_SKY_START_BLOCKS,
                         MIN_SPHERES_END_SKY_START_BLOCKS, MAX_SPHERES_END_SKY_START_BLOCKS);
@@ -1148,7 +1148,7 @@ public final class DungeonTrainCommonConfig {
             WorldGenCycle.invalidateCache();
         }
 
-        // v5 -> v6: the spheres band shrank to 5250 (entry fade 750) with its progression moved earlier, and
+        // v5 -> v6: the spheres band shrank to 6250 (entry fade 750) with its progression moved earlier, and
         // lost its Nether-sky stretch. Only values still at v5's shipped defaults move.
         if (from < 6) {
             migrateBandHold("spheresHoldBlocks", SPHERES_HOLD_BLOCKS, SPHERES_V5_HOLD_BLOCKS, DEFAULT_SPHERES_HOLD_BLOCKS, from);

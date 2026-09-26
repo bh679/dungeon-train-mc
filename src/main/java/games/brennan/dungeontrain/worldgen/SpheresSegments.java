@@ -3,14 +3,14 @@ package games.brennan.dungeontrain.worldgen;
 /**
  * The spheres band's <b>progression</b>: where, counted in blocks into the band core (from the end of
  * the entry fade), the sky changes, other dimensions join the sphere mix and structures run denser.
- * With the defaults ({@code SpheresProgressionConfig}) the 5250-block band reads:
+ * With the defaults ({@code SpheresProgressionConfig}) the 6250-block band reads:
  *
  * <pre>
- *   0 ─ 750       overworld sky   overworld spheres
- *   750 ─ 1250    End sky         overworld spheres
- *   1250 ─ 1750   End sky         overworld / Nether
- *   1750 ─ 2250   End sky         overworld / Nether / End
- *   2250 ─ 5250   End sky         overworld / Nether / End, structures ×5 → ×20 → ×5
+ *   0 ─ 1000      overworld sky   overworld spheres
+ *   1000 ─ 1750   End sky         overworld spheres
+ *   1750 ─ 2500   End sky         overworld / Nether
+ *   2500 ─ 3250   End sky         overworld / Nether / End
+ *   3250 ─ 6250   End sky         overworld / Nether / End, structures ×5 → ×20 → ×5
  * </pre>
  *
  * <p>The End sky fades back to the overworld sky over the band's last blocks ({@link SpheresSky}).</p>
