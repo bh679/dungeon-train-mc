@@ -142,4 +142,35 @@ final class PortalSealPlaneTest {
             .cutFor(Integer.MIN_VALUE, Integer.MAX_VALUE, true, ON_THE_TRAIN).sealed());
         assertFalse(PortalSealPlane.Cut.NONE.hides(0, 400));
     }
+
+    /** Sunk Amplified at stock: the band's bedrock at -48 (the old floor was 32), barrier lid at 224. */
+    private static final int AMP_FLOOR_Y = -48;
+    private static final int AMP_LID_Y = 224;
+
+    @Test
+    @DisplayName("sunk Amplified: from the train, the valleys under the old floor are drawn")
+    void amplifiedValleysUnderTheOldFloorStay() {
+        PortalSealPlane.Cut onTrain = PortalSealPlane.cutForAmplified(AMP_FLOOR_Y, AMP_LID_Y, true, ON_THE_TRAIN);
+        assertFalse(onTrain.hides(0, 16), "a valley section under y32 must not be culled");
+        assertFalse(onTrain.hides(AMP_FLOOR_Y, AMP_FLOOR_Y + 16));
+        assertTrue(onTrain.hides(AMP_FLOOR_Y - 16, AMP_FLOOR_Y));
+    }
+
+    @Test
+    @DisplayName("sunk Amplified: no plane over the lid from the world, so fade peaks keep their tops")
+    void amplifiedNoCutAboveTheLidFromTheWorld() {
+        PortalSealPlane.Cut onTrain = PortalSealPlane.cutForAmplified(AMP_FLOOR_Y, AMP_LID_Y, true, ON_THE_TRAIN);
+        assertFalse(onTrain.hides(AMP_LID_Y + 16, AMP_LID_Y + 32));
+    }
+
+    @Test
+    @DisplayName("sunk Amplified: a camera in an attic twin sees nothing of the world below the lid")
+    void amplifiedAtticHidesTheWorld() {
+        PortalSealPlane.Cut inAttic = PortalSealPlane.cutForAmplified(AMP_FLOOR_Y, AMP_LID_Y, true, AMP_LID_Y + 40);
+        assertTrue(inAttic.hides(AMP_LID_Y - 32, AMP_LID_Y - 16));
+        assertFalse(inAttic.hides(AMP_LID_Y, AMP_LID_Y + 16), "the lid is the attic's floor");
+        // Outside the slot the lid isn't there, so the same height is just sky.
+        PortalSealPlane.Cut offSlot = PortalSealPlane.cutForAmplified(AMP_FLOOR_Y, AMP_LID_Y, false, AMP_LID_Y + 40);
+        assertFalse(offSlot.hides(AMP_LID_Y - 32, AMP_LID_Y - 16));
+    }
 }

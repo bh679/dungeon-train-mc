@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.portal.PortalSealPlane;
+import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
@@ -38,6 +39,13 @@ public final class ClientPortalSeal {
             cut = PortalSealPlane.Cut.NONE;
             return;
         }
+        int camX = Mth.floor(cameraX);
+        AmplifiedDrop drop = ClientUpsideDownBand.amplifiedDrop();
+        if (drop != null && ClientUpsideDownBand.isAmplifiedSlotWithin(camX, viewReach())) {
+            cut = PortalSealPlane.cutForAmplified(drop.floorY(ClientUpsideDownBand.bedrockY()), drop.lidY(),
+                ClientUpsideDownBand.isInAmplifiedSlot(camX), cameraY);
+            return;
+        }
         cut = PortalSealPlane.cutFor(
             ClientUpsideDownBand.bedrockY(),
             ClientUpsideDownBand.roofY(),
@@ -58,6 +66,11 @@ public final class ClientPortalSeal {
     private static boolean inTheSyncedWorld() {
         ClientLevel level = Minecraft.getInstance().level;
         return level != null && level.dimension().equals(Level.OVERWORLD);
+    }
+
+    /** How far along X this client can see — the window in which the sunk band's valleys can show. */
+    private static int viewReach() {
+        return (Minecraft.getInstance().options.getEffectiveRenderDistance() + 1) * 16;
     }
 
     /** Forget the cut. Wired to logging out, so a seal never leaks into the next world. */
