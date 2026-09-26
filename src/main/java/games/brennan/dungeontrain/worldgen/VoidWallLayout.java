@@ -85,7 +85,7 @@ public final class VoidWallLayout {
             for (int i = 0; i < layout.count(); i++) {
                 CycleLayout.Type type = layout.slot(i).type();
                 if (voids && type == CycleLayout.Type.END) {
-                    endVoids(cycle, layout, i, runStart, run, skyOffset, c);
+                    endVoids(cycle, layout, i, runStart, run, skyOffset, clamp01(fadeFraction), c);
                 }
                 if (type == CycleLayout.Type.LEGACY_RUN) {
                     legacyRun(layout, i, runStart, run, c, voids, legacy);
@@ -117,12 +117,15 @@ public final class VoidWallLayout {
      * trailing hold stops short of the upside-down entry lead where that band follows (lap 1), because
      * the lead already shows mirrored terrain.
      *
-     * <p>The first hold's wall starts to fade only once the void sky has fully risen — the same point
-     * {@link Disintegration#skyRamp} reaches 1, {@code offset + fade} into the slot. The second hold is
-     * entered from the End with the sky already full, so it fades from its own start.</p>
+     * <p>Each wall starts to fade only once the sky has finished changing — the End sky coming in on the
+     * way into the band ({@link Disintegration#skyRamp} reaching 1, {@code offset + fade} into the slot),
+     * the overworld sky coming back on the way out ({@code skyRamp} back at 0, {@code offset} before the
+     * slot's end). On the way out that point is at, or past, the far edge of the second hold, so that
+     * wall stands further out — one fade past the sky's return — over the ground reforming beyond the
+     * hold, never past the slot (or the upside-down lead where that band follows).</p>
      */
     private static void endVoids(WorldGenCycle cycle, CycleLayout layout, int i, long runStart, int run,
-                                 int skyOffset, Collector c) {
+                                 int skyOffset, double fadeFraction, Collector c) {
         long f = Math.max(0, cycle.eFade());
         long vh = Math.max(0, cycle.eVoid());
         long eh = Math.max(0, layout.slot(i).core());
@@ -132,14 +135,22 @@ public final class VoidWallLayout {
         long secondEnd = slotStart + 3L * f + 2L * vh + eh;
         boolean udFollows = i + 1 < layout.count()
                 && layout.slot(i + 1).type() == CycleLayout.Type.UPSIDE_DOWN;
-        if (udFollows) secondEnd = Math.min(secondEnd, slotEnd - cycle.udEntryLeadLen());
+        long wallLimit = udFollows ? slotEnd - cycle.udEntryLeadLen() : slotEnd;
+        secondEnd = Math.min(secondEnd, wallLimit);
 
         long band = Disintegration.bandLength((int) f, (int) vh, (int) eh);
-        long skyFull = f + Math.min(Math.max(0, skyOffset), Math.max(0L, (band - 2L * f) / 2L));
+        long o = Math.min(Math.max(0, skyOffset), Math.max(0L, (band - 2L * f) / 2L));
+        long skyFull = f + o;
         c.screen(world(runStart, run, slotStart + f), world(runStart, run, slotStart + Math.max(f, skyFull)),
                 world(runStart, run, slotStart + f + vh));
+
         long second = slotStart + 3L * f + vh + eh;
-        c.screen(world(runStart, run, second), world(runStart, run, second), world(runStart, run, secondEnd));
+        long skyBack = slotStart + band - o;
+        long fadeLen = (long) Math.ceil(fadeFraction * Math.max(0L, secondEnd - second));
+        long secondWall = Math.min(wallLimit, Math.max(secondEnd, skyBack + fadeLen));
+        long secondFade = Math.min(Math.max(second, skyBack), secondWall);
+        c.screen(world(runStart, run, second), world(runStart, run, secondFade), world(runStart, run, secondWall),
+                fadeLen << run);
     }
 
     /**
@@ -186,9 +197,14 @@ public final class VoidWallLayout {
          * until {@code fadeFrom} (where the void has faded in) and fading over {@code fade} of its length.
          */
         void screen(double from, double fadeFrom, double wallX) {
+            screen(from, fadeFrom, wallX, fade * (wallX - from));
+        }
+
+        /** As {@link #screen(double, double, double)}, fading over {@code fadeBlocks} rather than a share. */
+        void screen(double from, double fadeFrom, double wallX, double fadeBlocks) {
             if (wallX <= from || x >= wallX) return;
             double start = Math.min(Math.max(from, fadeFrom), wallX);
-            double fadeLen = Math.min(fade * (wallX - from), wallX - start);
+            double fadeLen = Math.min(fadeBlocks, wallX - start);
             double s = strength(x - start, fadeLen);
             if (s >= 1.0) {
                 cullX = Math.min(cullX, wallX);

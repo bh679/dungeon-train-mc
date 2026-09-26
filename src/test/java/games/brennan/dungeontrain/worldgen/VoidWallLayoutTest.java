@@ -105,6 +105,31 @@ final class VoidWallLayoutTest {
     }
 
     @Test
+    @DisplayName("leaving the End: the wall holds until the overworld sky is back, then fades past the hold")
+    void waitsForOverworldSkyOnTheWayOut() {
+        int sky = 120;
+        long end2 = LAYOUT.start(8);                           // end:better — spheres follows, no upside-down lead
+        assertEquals(CycleLayout.Type.END, LAYOUT.slot(8).type());
+        long eh = LAYOUT.slot(8).core();
+        long band = Disintegration.bandLength(F, VH, (int) eh);
+        long skyBack = x(end2 + band - sky);                  // overworld sky fully back
+        long fadeLen = (long) Math.ceil(FADE * VH);
+        long wall = skyBack + fadeLen;
+
+        VoidWallLayout.Result inHold = VoidWallLayout.wallAt(C, skyBack - 60, FADE, sky, true, false);
+        assertEquals(wall, inHold.cullX(), 1e-9, "still standing while the End sky gives way");
+        assertFalse(inHold.hasVeil());
+
+        VoidWallLayout.Result mid = VoidWallLayout.wallAt(C, skyBack + fadeLen / 2.0, FADE, sky, true, false);
+        assertEquals(wall, mid.veilX(), 1e-9);
+        assertEquals(0.5, mid.veilStrength(), 1e-9);
+
+        VoidWallLayout.Result past = VoidWallLayout.wallAt(C, wall + 1, FADE, sky, true, false);
+        assertFalse(past.hasVeil());
+        assertTrue(past.cullX() > wall);
+    }
+
+    @Test
     @DisplayName("the veil only ever thins as the camera rides on")
     void veilIsMonotonic() {
         long from = x(END1 + F);
