@@ -41,13 +41,11 @@ import java.nio.ByteBuffer;
  *       sections — a Distant Horizons LOD section off to the side can be thousands of blocks wide and
  *       reach back past the camera, so it is kept whole — and this catches whatever such a section lets
  *       through past the wall.</li>
- *   <li><b>Past a fading wall</b> ({@link VoidWallLayout.Result#fading}), by its strength: nothing past
+ *   <li><b>Past a fading wall</b> ({@link VoidWallLayout.Result#hasVeil}), by its strength: nothing past
  *       it is culled, so the far side comes into view out of the actual skybox (the End sky in a void)
  *       rather than a flat fog colour — and at strength 1 this is exactly what a culled frame shows, so
  *       the hand-off has no seam.</li>
  * </ul>
- * <p>Both directions: the walls ahead ({@code x} past them) and the walls behind ({@code x} before them)
- * are painted alike, so as one fades out the other fades in out of the same sky.</p>
  *
  * <h2>How</h2>
  * <ul>
@@ -135,14 +133,14 @@ public final class VoidWallFadePass {
         return at != 0L && System.nanoTime() - at < DH_FRESH_NANOS;
     }
 
-    /** Whether a wall is fading, or standing within sight either way — vanilla's, or DH's when it is drawing. */
+    /** Whether a wall is fading, or standing within sight — vanilla's, or DH's when it is drawing. */
     private static boolean wanted(Vec3 cam) {
         VoidWallLayout.Result wall = ClientVoidWall.result();
-        if (wall.fading()) return true;
+        if (wall.hasVeil()) return true;
+        if (!wall.hasCull()) return false;
         double reach = Minecraft.getInstance().options.getEffectiveRenderDistance() * 16.0 + 16.0;
         if (dhFresh()) reach = Math.max(reach, dhReach);
-        return (wall.hasCull() && wall.cullX() - cam.x < reach)
-                || (wall.hasBackCull() && cam.x - wall.backCullX() < reach);
+        return wall.cullX() - cam.x < reach;
     }
 
     @SubscribeEvent
@@ -193,9 +191,6 @@ public final class VoidWallFadePass {
         shader.getUniform("DhZeroToOne").set(dhZeroToOne ? 1 : 0);
         shader.getUniform("CullX").set(wall.hasCull() ? (float) (wall.cullX() - cam.x) : NONE);
         shader.getUniform("VeilX").set(wall.hasVeil() ? (float) (wall.veilX() - cam.x) : NONE);
-        shader.getUniform("BackCullX").set(wall.hasBackCull() ? (float) (wall.backCullX() - cam.x) : -NONE);
-        shader.getUniform("BackVeilX").set(wall.hasBackVeil() ? (float) (wall.backVeilX() - cam.x) : -NONE);
-        shader.getUniform("BackStrength").set((float) wall.backStrength());
         shader.getUniform("Strength").set((float) wall.veilStrength());
         shader.getUniform("Corridor").set(
             (float) (trainY - 2 - cam.y), (float) (trainY + CORRIDOR_HEADROOM - cam.y),

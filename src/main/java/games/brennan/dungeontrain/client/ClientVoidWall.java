@@ -20,11 +20,11 @@ import net.minecraft.world.level.Level;
  * height came with the join packet) — and <b>once a frame, not once a call</b>, so
  * {@code Frustum#isVisible} pays one volatile read and a comparison.</p>
  *
- * <p>Only a wall at full strength culls — the one ahead at a void's far edge, and, once the camera is
- * through, the one behind at its near edge. While the two hand over they are both fading: neither is
- * culled, and {@code VoidWallFadePass} paints the sky over whatever lies past each at its strength, so
- * one side comes into view out of the real sky as the other goes. Where that pass cannot run (a shader
- * pack owns the frame), the hand-over is a cut at its halfway point instead.</p>
+ * <p>Only a wall at full strength culls. While the camera is in the first stretch of a void its wall
+ * is fading: nothing past it is culled, and {@code VoidWallFadePass} paints the sky back over whatever
+ * lies past it, thinning as the wall fades, so the far side comes into view out of the real sky rather
+ * than all at once. Where that pass cannot run (a shader pack owns the frame), the fading wall keeps
+ * culling until it is half gone and then drops.</p>
  */
 public final class ClientVoidWall {
 
@@ -47,30 +47,22 @@ public final class ClientVoidWall {
      */
     public static void beginFrame(double cameraX) {
         VoidWallLayout.Result next = compute(cameraX);
-        VoidWallPlane nextPlane = VoidWallPlane.at(cullX(next), backCullX(next), cameraX,
-                ClientUpsideDownBand.trainY(), CORRIDOR_WIDTH);
+        VoidWallPlane nextPlane = VoidWallPlane.at(cullX(next), cameraX, ClientUpsideDownBand.trainY(), CORRIDOR_WIDTH);
         VoidWallPlane before = plane;
         result = next;
         plane = nextPlane;
         // Only a wall appearing, going or moving re-derives the visible set — not the camera X the plane
         // also carries, which changes every frame.
-        if (before.active() != nextPlane.active() || before.wallX() != nextPlane.wallX()
-                || before.backX() != nextPlane.backX()) {
+        if (before.active() != nextPlane.active() || before.wallX() != nextPlane.wallX()) {
             Minecraft mc = Minecraft.getInstance();
             if (mc.levelRenderer != null) mc.levelRenderer.needsUpdate();
         }
     }
 
-    /** The X culled ahead this frame: the full-strength wall, or a fading one still over half strength with no sky pass. */
+    /** The X culled this frame: the full-strength wall, or a fading one still over half strength with no fade pass. */
     private static double cullX(VoidWallLayout.Result r) {
         if (r.hasVeil() && r.veilStrength() >= HALF && !VoidWallFadePass.available()) return r.veilX();
         return r.cullX();
-    }
-
-    /** The X culled behind this frame — as {@link #cullX}, for the wall at the near edge. */
-    private static double backCullX(VoidWallLayout.Result r) {
-        if (r.hasBackVeil() && r.backStrength() > HALF && !VoidWallFadePass.available()) return r.backVeilX();
-        return r.backCullX();
     }
 
     private static VoidWallLayout.Result compute(double cameraX) {

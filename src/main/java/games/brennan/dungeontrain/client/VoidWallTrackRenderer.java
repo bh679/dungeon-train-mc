@@ -25,16 +25,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The track past the void walls, in the vanilla world — ahead of the wall in front and behind the wall
- * at the back. A wall hides every chunk section reaching past it — the track's own included, because
- * keeping those kept the End islands sitting in them too — so the track's blocks are drawn here instead,
- * one by one, straight from the client level (they are loaded; only their sections are culled). The
- * rails therefore look exactly as they do on the near side and carry on out to the vanilla render
- * distance; past that, Distant Horizons' boxes take over ({@code DistantHorizonsVoidWall}).
+ * The track past the void wall, in the vanilla world. The wall hides every chunk section reaching past
+ * it — the ones the track runs through included, because keeping those kept the End islands sitting in
+ * them too — so the track's own blocks are drawn here instead, one by one, straight from the client
+ * level (they are loaded; only their sections are culled). The rails therefore look exactly as they
+ * do on the near side and carry on up to the vanilla render distance; past that, Distant Horizons'
+ * boxes take over ({@code DistantHorizonsVoidWall}).
  *
- * <p>Only the track corridor's two rows — the bed and the rails — are drawn, and only in the hidden
- * sections within the render distance. That is nothing whenever both walls are further away than the
- * render distance, which is most of the time.</p>
+ * <p>Only the track corridor's two rows — the bed and the rails — are drawn, and only from the first
+ * hidden section to the render distance. That stretch is empty whenever the wall is further away than
+ * the render distance, which is most of the approach to a void.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class VoidWallTrackRenderer {
@@ -63,7 +63,7 @@ public final class VoidWallTrackRenderer {
         Vec3 cam = event.getCamera().getPosition();
         if (++framesSinceRefresh >= REFRESH_FRAMES) {
             framesSinceRefresh = 0;
-            blocks = collect(level, wall, cam.x, mc.options.getEffectiveRenderDistance() * 16.0);
+            blocks = collect(level, wall, cam.x + mc.options.getEffectiveRenderDistance() * 16.0);
         }
         if (blocks.isEmpty()) return;
 
@@ -84,27 +84,13 @@ public final class VoidWallTrackRenderer {
         buffer.endBatch(RenderType.cutout());
     }
 
-    /**
-     * The corridor's non-air bed and rail blocks in the hidden sections within {@code reach} of the
-     * camera: from the first section reaching past the wall ahead, and up to the last one reaching back
-     * past the wall behind.
-     */
-    private static List<TrackBlock> collect(ClientLevel level, VoidWallPlane wall, double camX, double reach) {
-        List<TrackBlock> out = new ArrayList<>();
-        if (!Double.isInfinite(wall.wallX())) {
-            int from = Math.floorDiv((int) Math.floor(wall.wallX()), 16) * 16;
-            collectRange(level, from, (int) Math.ceil(camX + reach), out);
-        }
-        if (!Double.isInfinite(wall.backX())) {
-            int to = (Math.floorDiv((int) Math.floor(wall.backX()), 16) + 1) * 16;
-            collectRange(level, (int) Math.floor(camX - reach), to, out);
-        }
-        return List.copyOf(out);
-    }
-
-    private static void collectRange(ClientLevel level, int from, int to, List<TrackBlock> out) {
-        if (from >= to) return;
+    /** The corridor's non-air bed and rail blocks from the first hidden section up to {@code toX}. */
+    private static List<TrackBlock> collect(ClientLevel level, VoidWallPlane wall, double toX) {
+        int from = Math.floorDiv((int) Math.floor(wall.wallX()), 16) * 16;
+        int to = (int) Math.ceil(toX);
+        if (from >= to) return List.of();
         int railY = ClientUpsideDownBand.trainY() - 1;
+        List<TrackBlock> out = new ArrayList<>();
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         for (int x = from; x < to; x++) {
             for (int y = railY - 1; y <= railY; y++) {
@@ -117,6 +103,7 @@ public final class VoidWallTrackRenderer {
                 }
             }
         }
+        return List.copyOf(out);
     }
 
     @SubscribeEvent

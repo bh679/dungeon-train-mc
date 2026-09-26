@@ -10,9 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * {@link VoidWallLayout} on the shipped {@link CycleLayout}: a wall at a void's far side while the
- * camera is before it, handing over to one at its near side as the camera crosses the fade (the one
- * fading out as the other fades in), and legacy eras showing one era ahead — with every distance
- * doubling a run later.
+ * camera is before it, fading over the first fifth of the void, none inside or past it, and legacy
+ * eras showing one era ahead — with every distance doubling a run later.
  */
 final class VoidWallLayoutTest {
 
@@ -131,6 +130,30 @@ final class VoidWallLayoutTest {
     }
 
     @Test
+    @DisplayName("before the upside-down band: the trailing hold fades from 65% of the way through")
+    void upsideDownHoldFadesPartWay() {
+        int sky = 120;
+        long slotEnd = END1 + LAYOUT.length(3);
+        long holdFrom = x(END1 + 3L * F + VH + LAYOUT.slot(3).core());
+        long wall = x(slotEnd - C.udEntryLeadLen());
+        long len = wall - holdFrom;
+        long fadeFrom = holdFrom + Math.round(0.65 * len);
+        double fadeLen = Math.ceil(FADE * len);
+
+        VoidWallLayout.Result before = VoidWallLayout.wallAt(C, fadeFrom - 10, FADE, sky, true, false);
+        assertEquals(wall, before.cullX(), 1e-9, "still standing at 64%");
+        assertFalse(before.hasVeil());
+
+        VoidWallLayout.Result mid = VoidWallLayout.wallAt(C, fadeFrom + fadeLen / 2, FADE, sky, true, false);
+        assertEquals(wall, mid.veilX(), 1e-9);
+        assertEquals(0.5, mid.veilStrength(), 1e-9);
+
+        VoidWallLayout.Result done = VoidWallLayout.wallAt(C, fadeFrom + fadeLen + 1, FADE, sky, true, false);
+        assertFalse(done.hasVeil());
+        assertTrue(done.cullX() > wall, "gone by 85%, still short of the lead");
+    }
+
+    @Test
     @DisplayName("the veil only ever thins as the camera rides on")
     void veilIsMonotonic() {
         long from = x(END1 + F);
@@ -143,54 +166,20 @@ final class VoidWallLayoutTest {
     }
 
     @Test
-    @DisplayName("deep in the void: clear ahead, and the overworld behind is walled off at the void's near edge")
+    @DisplayName("deep in the void: both ways are clear — no wall at the far side, none behind")
     void insideVoid() {
         VoidWallLayout.Result r = voidsOnly(x(END1 + F + VH - 50));
         assertFalse(r.hasVeil());
         assertTrue(r.cullX() > x(END1 + F + VH));
-        assertEquals(x(END1 + F), r.backCullX(), 1e-9);
-        assertFalse(r.hasBackVeil());
     }
 
     @Test
-    @DisplayName("on the End islands past the first void: the view back stops at that void's near edge")
-    void pastVoidWallsBehind() {
+    @DisplayName("on the End islands past the first void: looking back is unrestricted, the next void still walls")
+    void pastVoidLooksBackFreely() {
         long at = x(END1 + 2L * F + VH + 100);
         VoidWallLayout.Result r = voidsOnly(at);
-        assertTrue(r.cullX() > at, "the next wall is ahead");
-        assertEquals(x(END1 + F), r.backCullX(), 1e-9);
-    }
-
-    @Test
-    @DisplayName("crossing the fade, the wall ahead fades out exactly as the wall behind fades in")
-    void handOver() {
-        long from = x(END1 + F);
-        for (int d = 1; d < FADE * VH; d += 7) {
-            VoidWallLayout.Result r = voidsOnly(from + d);
-            assertTrue(r.hasVeil() && r.hasBackVeil(), "both fading at +" + d);
-            assertEquals(from, r.backVeilX(), 1e-9);
-            assertEquals(1.0, r.veilStrength() + r.backStrength(), 1e-9);
-        }
-        VoidWallLayout.Result before = voidsOnly(from - 1);
-        assertFalse(before.hasBackVeil() || before.backCullX() >= from, "no wall behind before the void");
-    }
-
-    @Test
-    @DisplayName("before the upside-down band the hand-over starts 65% of the way through the hold")
-    void upsideDownHandsOverAt65Percent() {
-        long slotEnd = END1 + LAYOUT.length(3);
-        long holdFrom = slotEnd - F - VH;
-        long holdEnd = slotEnd - C.udEntryLeadLen();
-        long len = holdEnd - holdFrom;
-        long fadeAt = holdFrom + Math.round(0.65 * len);
-        double fadeLen = Math.ceil(FADE * len);
-        int sky = 120;
-
-        VoidWallLayout.Result early = VoidWallLayout.wallAt(C, x(fadeAt) - 5, FADE, sky, true, false);
-        assertEquals(x(holdEnd), early.cullX(), 1e-9, "still standing at 64%");
-        VoidWallLayout.Result mid = VoidWallLayout.wallAt(C, x(fadeAt) + fadeLen / 2, FADE, sky, true, false);
-        assertEquals(0.5, mid.veilStrength(), 1e-9);
-        assertEquals(0.5, mid.backStrength(), 1e-9);
+        assertTrue(r.cullX() > at, "every wall is ahead");
+        assertFalse(r.hasVeil());
     }
 
     @Test
@@ -235,7 +224,6 @@ final class VoidWallLayoutTest {
         assertTrue(r.hasVeil());
         assertEquals(eraCoreEnd(e), r.veilX(), 1e-9);
         assertEquals(eraCoreEnd(e + 1), r.cullX(), 1e-9);
-        assertEquals(eraCoreStart(e), r.backVeilX(), 1e-9, "the era behind fades out as this one opens");
     }
 
     @Test
