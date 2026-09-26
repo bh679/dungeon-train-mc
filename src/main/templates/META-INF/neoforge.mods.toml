@@ -184,6 +184,16 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Pigman Villagers — sibling mod, jarJar'd INSIDE this jar until its CurseForge/Modrinth listings
+# exist. Adds a synced entity-data flag to Villager, so it must be on BOTH sides. Range keys off the
+# FLOOR so a separately installed copy is checked like the other siblings.
+[[dependencies.${mod_id}]]
+    modId="pigmanvillagers"
+    type="required"
+    versionRange="[${pigmanvillagers_min_version},)"
+    ordering="NONE"
+    side="BOTH"
+
 # Dungeon Backup — hybrid sibling: jarJar'd INSIDE this jar (Modrinth / manual installs) AND a
 # required external download on CurseForge, where the CF app's top-level copy replaces the nested
 # one. Range keys off the FLOOR so a CF-installed copy is checked like the other siblings. AFTER

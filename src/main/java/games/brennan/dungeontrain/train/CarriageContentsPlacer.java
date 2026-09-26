@@ -518,6 +518,9 @@ public final class CarriageContentsPlacer {
      *   <li>The {@link games.brennan.dungeontrain.event.VillagerTrainSpawnEvents#REROLLED_TAG}
      *       marker — removed from {@code Tags} so the reroll handler actually fires
      *       (a captured template freezes this tag in, which would suppress the reroll).</li>
+     *   <li>The Pigman Villagers roll ({@code PigmanVillager} / {@code PigmanRolled}) — cleared
+     *       via {@link games.brennan.dungeontrain.compat.PigmanVillagersBridge#freshRoll} so each
+     *       spawn rolls its own pigman chance instead of copying the captured villager's.</li>
      * </ul>
      *
      * <p>{@code VillagerData} (profession + type) is deliberately kept: it is the
@@ -533,6 +536,7 @@ public final class CarriageContentsPlacer {
         entityNbt.remove("CustomName");
         entityNbt.remove("Offers");
         entityNbt.remove("Xp");
+        games.brennan.dungeontrain.compat.PigmanVillagersBridge.freshRoll(entityNbt);
         if (entityNbt.contains("Tags", Tag.TAG_LIST)) {
             ListTag tags = entityNbt.getList("Tags", Tag.TAG_STRING);
             tags.removeIf(t -> games.brennan.dungeontrain.event.VillagerTrainSpawnEvents.REROLLED_TAG
