@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.portal.PortalTwinRegion;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.client.Minecraft;
@@ -127,6 +129,32 @@ public final class ClientUpsideDownBand {
     public static boolean isInTwinSpace(int y) {
         if (bedrockY == Integer.MIN_VALUE) return false;
         return y < bedrockY || y > roofY();
+    }
+
+    /**
+     * The client's copy of the server's {@code PortalTwinSpace.isInside} — narrower than
+     * {@link #isInTwinSpace}, which counts everything over the lid height whether or not the band is
+     * there. This one counts the attic only inside the band's core, as the server does, because its
+     * caller ({@code CropBlockCarriageSurviveMixin}) must answer identically on both sides: a crop the
+     * server keeps and the client deletes flickers out and back in.
+     */
+    public static boolean isInPortalTwinSpace(int worldX, int y) {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null || bedrockY == Integer.MIN_VALUE) return false;
+        PortalTwinRegion basement = PortalTwinRegion.basement(level.getMinBuildHeight(), bedrockY);
+        if (basement.contains(y)) return true;
+        boolean atticApplies = DungeonTrainCommonConfig.isUpsideDownBedrockRoof() && isInCoreBand(worldX);
+        return atticApplies && PortalTwinRegion.twinSpaceContains(y, basement, true,
+            PortalTwinRegion.attic(roofY(), level.getMaxBuildHeight(), PortalTwinSpace.CEILING_MARGIN));
+    }
+
+    /** Client mirror of {@code UpsideDownBand.isInBand}: the core band only, no lead-in or fade. */
+    private static boolean isInCoreBand(int worldX) {
+        if (!startsWithTrain) return false;
+        if (!DungeonTrainCommonConfig.isUpsideDownEnabled()) return false;
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        if (cycle.period() <= 0L || cycle.upsideDownLen() <= 0L) return false;
+        return cycle.isInUpsideDownBand(worldX);
     }
 
     /**

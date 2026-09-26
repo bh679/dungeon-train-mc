@@ -81,9 +81,11 @@ public final class PortalTwinSpace {
      * new twin would go.</p>
      */
     public static boolean isInside(ServerLevel level, int worldX, double y) {
-        if (basementOf(level).contains(y)) return true;
-        return DungeonTrainCommonConfig.isUpsideDownBedrockRoof()
-            && UpsideDownBand.isInBand(level, worldX)
-            && atticOf(level).contains(y);
+        PortalTwinRegion basement = basementOf(level);
+        if (basement.contains(y)) return true;
+        // Short-circuits before atticOf, which reads the world data for the train height.
+        boolean atticApplies = DungeonTrainCommonConfig.isUpsideDownBedrockRoof()
+            && UpsideDownBand.isInBand(level, worldX);
+        return atticApplies && PortalTwinRegion.twinSpaceContains(y, basement, true, atticOf(level));
     }
 }
