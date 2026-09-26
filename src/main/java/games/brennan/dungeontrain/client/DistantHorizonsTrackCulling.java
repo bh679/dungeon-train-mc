@@ -5,7 +5,6 @@ import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiCullin
 import com.seibel.distanthorizons.api.objects.math.DhApiMat4f;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
-import games.brennan.dungeontrain.worldgen.VoidWallPlane;
 
 /**
  * Distant Horizons' culling frustum with one extra test: a LOD section reaching past this frame's void
@@ -40,10 +39,13 @@ final class DistantHorizonsTrackCulling implements IDhApiCullingFrustum {
 
     @Override
     public boolean intersects(int lodBlockPosMinX, int lodBlockPosMinZ, int lodBlockWidth, int lodDetailLevel) {
-        VoidWallPlane wall = ClientVoidWall.plane();
-        if (wall.hidesTerrain(lodBlockPosMinX, (double) lodBlockPosMinX + lodBlockWidth)
-                && ClientDisplayConfig.isDistantHorizonsAdjustmentsEnabled()) {
-            return false;
+        if (ClientDisplayConfig.isDistantHorizonsAdjustmentsEnabled()) {
+            double maxX = (double) lodBlockPosMinX + lodBlockWidth;
+            boolean hide = ShaderCompat.active()
+                    ? ClientVoidWall.hidesDistantHorizonsUnderPack(lodBlockPosMinX, maxX,
+                            lodBlockPosMinZ, (double) lodBlockPosMinZ + lodBlockWidth)
+                    : ClientVoidWall.plane().hidesTerrain(lodBlockPosMinX, maxX);
+            if (hide) return false;
         }
         IDhApiCullingFrustum d = delegate();
         return d == null || d.intersects(lodBlockPosMinX, lodBlockPosMinZ, lodBlockWidth, lodDetailLevel);

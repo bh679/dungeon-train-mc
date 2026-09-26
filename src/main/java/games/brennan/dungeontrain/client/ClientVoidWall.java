@@ -36,6 +36,8 @@ public final class ClientVoidWall {
     /** Volatile: written on the render thread, read from chunk-build threads through the frustum. */
     private static volatile VoidWallPlane plane = VoidWallPlane.NONE;
     private static volatile VoidWallLayout.Result result = VoidWallLayout.Result.NONE;
+    private static volatile double camX;
+    private static volatile double camZ;
 
     private ClientVoidWall() {}
 
@@ -47,6 +49,8 @@ public final class ClientVoidWall {
      */
     public static void beginFrame(double cameraX) {
         VoidWallLayout.Result next = compute(cameraX);
+        camX = cameraX;
+        camZ = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition().z;
         VoidWallPlane nextPlane = VoidWallPlane.at(cullX(next), cameraX, ClientUpsideDownBand.trainY(), CORRIDOR_WIDTH);
         VoidWallPlane before = plane;
         result = next;
@@ -103,6 +107,21 @@ public final class ClientVoidWall {
     /** Whether a body (sub-level, entity) is past the wall and off the track corridor. */
     public static boolean hidesBody(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
         return plane.hidesBody(minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    /**
+     * Whether Distant Horizons should skip a LOD section under a shader pack. There the pack has DH draw
+     * into its own buffers, so DH's depth texture goes stale and the sky pass cannot use it — culling
+     * does all of DH's hiding: anything reaching past the standing wall, or past a fading one until it is
+     * half gone, is skipped, and only the section the camera itself is in is spared (a wide section off
+     * to the side would otherwise carry the far side into view).
+     */
+    public static boolean hidesDistantHorizonsUnderPack(double minX, double maxX, double minZ, double maxZ) {
+        VoidWallLayout.Result r = result;
+        double wall = r.hasVeil() && r.veilStrength() >= HALF ? Math.min(r.veilX(), r.cullX()) : r.cullX();
+        if (Double.isInfinite(wall) || maxX <= wall) return false;
+        boolean holdsCamera = minX <= camX && camX <= maxX && minZ <= camZ && camZ <= maxZ;
+        return !holdsCamera;
     }
 
     /** The culling plane in force this frame. */

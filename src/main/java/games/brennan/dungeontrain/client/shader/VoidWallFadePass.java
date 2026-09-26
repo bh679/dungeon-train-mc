@@ -165,7 +165,9 @@ public final class VoidWallFadePass {
             skyCaptured = false;
             depthCaptured = false;
             if (ready && packFrame) ready = copyBound(sky);
-            if (ready) draw(event, dhFresh());
+            // Under a pack DH draws into the pack's buffers and its own depth texture goes stale — reading
+            // it would paint a ghost of an earlier view. DH is culled instead (ClientVoidWall).
+            if (ready) draw(event, dhFresh() && !packFrame);
         }
     }
 
