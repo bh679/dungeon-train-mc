@@ -114,6 +114,8 @@ public final class TrainDebugHudOverlay {
         // /dtp <band> <distance> <lap> takes, so a report can be jumped straight back to.
         String band = TrainDebugState.band();
         lines.add(new Line("Band: " + (band.isEmpty() ? NONE : band), COLOR_BODY));
+        String stage = TrainDebugState.stage();
+        lines.add(new Line("Stage: " + (stage.isEmpty() ? NONE : stage), COLOR_BODY));
         lines.add(new Line("Lap: " + (band.isEmpty() ? NONE : Long.toString(TrainDebugState.lap())), COLOR_BODY));
 
         boolean onTrain = TrainDebugState.carriagePresent();

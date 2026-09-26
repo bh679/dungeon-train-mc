@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen;
 
+import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
 
@@ -15,19 +16,26 @@ import net.minecraft.server.level.ServerLevel;
 public final class BandLabel {
 
     /** No band to report — the world has no train, so there is no cycle to be in. */
-    public static final BandLabel NONE = new BandLabel("", -1L);
+    public static final BandLabel NONE = new BandLabel("", "", -1L);
 
     private final String band;
+    private final String stage;
     private final long lap;
 
-    private BandLabel(String band, long lap) {
+    private BandLabel(String band, String stage, long lap) {
         this.band = band;
+        this.stage = stage;
         this.lap = lap;
     }
 
     /** {@code "Nether (Better Nether)"}, or empty for {@link #NONE}. */
     public String band() {
         return band;
+    }
+
+    /** {@code "6/7 Structure boost (42%)"} — see {@link BandStages}; empty on the classic order or for {@link #NONE}. */
+    public String stage() {
+        return stage;
     }
 
     /** 0-based {@link WorldGenCycle#cycleIndex}, the numbering {@code /dtp <band> <distance> <lap>} takes; {@code -1} for {@link #NONE}. */
@@ -41,7 +49,19 @@ public final class BandLabel {
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         TrainPhase phase = TrainPhase.phaseAt(overworld, worldX);
         return new BandLabel(format(phase.displayName(), styleOf(overworld, cycle, phase, worldX)),
-            cycle.cycleIndex(worldX));
+            stageAt(cycle, worldX), cycle.cycleIndex(worldX));
+    }
+
+    /** The stage within the layout slot at {@code worldX}; empty on the classic single-period order. */
+    private static String stageAt(WorldGenCycle cycle, int worldX) {
+        int slot = cycle.slotIndexAt(worldX);
+        if (slot < 0) return "";
+        int[] mults = cycle.stageMultipliers();
+        java.util.List<BandStages.Stage> stages = BandStages.of(cycle.layout(), slot,
+            mults == null ? 1 : mults.length, cycle.stageBlocks(), cycle.beachBlocks(),
+            SpheresProgressionConfig.segments());
+        BandStages.Position at = BandStages.locate(stages, cycle.slotLocal(worldX));
+        return at == null ? "" : at.describe();
     }
 
     /** The styled occurrence at {@code worldX} within {@code phase}, or empty when it is the plain look. */
@@ -66,11 +86,12 @@ public final class BandLabel {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof BandLabel other && other.lap == lap && other.band.equals(band);
+        return o instanceof BandLabel other && other.lap == lap && other.band.equals(band)
+            && other.stage.equals(stage);
     }
 
     @Override
     public int hashCode() {
-        return 31 * band.hashCode() + Long.hashCode(lap);
+        return 31 * (31 * band.hashCode() + stage.hashCode()) + Long.hashCode(lap);
     }
 }

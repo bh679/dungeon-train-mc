@@ -85,6 +85,6 @@ public final class DebugBandEvents {
         BandLabel label = BandLabel.at(overworld, player.getBlockX());
         if (label.equals(LAST_SENT.get(uuid))) return;
         LAST_SENT.put(uuid, label);
-        DungeonTrainNet.sendTo(player, new TrainDebugBandPacket(label.band(), label.lap()));
+        DungeonTrainNet.sendTo(player, new TrainDebugBandPacket(label.band(), label.stage(), label.lap()));
     }
 }
