@@ -279,7 +279,9 @@ are hard deps too — every second Nether band's core uses BetterNether biomes
 (`worldgen/density/BetterNetherCoreBiomes`; `/dungeontrain debug nether-passes` lists each band's biomes). **BetterEnd: New
 Dawn** (`betterend-neoforge(required)`, same libraries) is a hard dep on the same contract — every second
 End-islands band copies real BetterEnd End chunks (`worldgen/EndBandStyle` + `EndBandSampler`); vanilla bands
-read `worldgen/density/VanillaEndBiomes` because BCLib patches `TheEndBiomeSource` itself. **William Wythers' Overhauled
+read `worldgen/density/VanillaEndBiomes`. DT's presets give the End WorldWeaver's `wover:end_biome_source` — the
+vanilla `minecraft:the_end` source yields no BetterEnd biomes (TerraBlender's patch wins `getNoiseBiome`) — and
+`data/wover/config/biome_config.json` keeps BoP out of the End (`EndPresetBiomeSourceTest` pins both). **William Wythers' Overhauled
 Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too: on odd laps the
 overworld gap before the Nether band is WWOO and the gap after it is BoP (`worldgen/SecondLapOverworld`;
 `/dungeontrain debug overworld-laps` lists each lap's stretches and biomes). WWOO is confined at feature placement plus vanilla

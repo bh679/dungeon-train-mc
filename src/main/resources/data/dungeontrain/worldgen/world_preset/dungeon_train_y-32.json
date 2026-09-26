@@ -25,10 +25,21 @@
     "minecraft:the_end": {
       "type": "minecraft:the_end",
       "generator": {
-        "type": "minecraft:noise",
+        "type": "wover:betterx",
         "settings": "minecraft:end",
         "biome_source": {
-          "type": "minecraft:the_end"
+          "type": "wover:end_biome_source",
+          "seed": 0,
+          "config": {
+            "generator_version": "vanilla",
+            "map_type": "hex",
+            "inner_void_radius_squared": 1048576,
+            "barrens_biomes_size": 256,
+            "land_biomes_size": 256,
+            "with_void_biomes": true,
+            "center_biomes_size": 256,
+            "void_biomes_size": 256
+          }
         }
       }
     }
