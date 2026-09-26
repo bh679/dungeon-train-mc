@@ -13,10 +13,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BandHoldDefaultsTest {
 
     @Test
-    @DisplayName("the chuncks and stacks bands default to 8000 blocks, the spheres band to 7000")
+    @DisplayName("the chuncks and stacks bands default to 8000 blocks, the spheres band to 5250")
     void bandHoldDefaults() {
         assertEquals(8000, DungeonTrainCommonConfig.DEFAULT_CHUNCKS_HOLD_BLOCKS);
-        assertEquals(7000, DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS);
+        assertEquals(5250, DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS);
         assertEquals(8000, DungeonTrainCommonConfig.DEFAULT_STACKS_HOLD_BLOCKS);
     }
 
@@ -48,7 +48,7 @@ class BandHoldDefaultsTest {
         assertEquals(12000, SpheresProgressionConfig.V5_STRUCTURE_BOOST_END_BLOCKS);
 
         assertEquals(750, DungeonTrainCommonConfig.DEFAULT_SPHERES_FADE_BLOCKS);
-        assertEquals(1000, DungeonTrainCommonConfig.DEFAULT_SPHERES_END_SKY_START_BLOCKS);
+        assertEquals(750, DungeonTrainCommonConfig.DEFAULT_SPHERES_END_SKY_START_BLOCKS);
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 6,
                 "CURRENT_CONFIG_VERSION must be at least 6, or the v5 -> v6 spheres step never runs");
     }
@@ -57,7 +57,7 @@ class BandHoldDefaultsTest {
     @DisplayName("the v5 cycle order differs from the shipped default only in its spheres slot")
     void v5CycleOrderDiffersOnlyInSpheres() {
         assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
-                DungeonTrainCommonConfig.V5_WORLDGEN_CYCLE_ORDER.replace("spheres:15000", "spheres:7000"),
+                DungeonTrainCommonConfig.V5_WORLDGEN_CYCLE_ORDER.replace("spheres:15000", "spheres:5250"),
                 "the v5 -> v6 migration matches a file still holding the v5 order string exactly");
         assertTrue(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER.contains("spheres:"
                 + DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS + ","));

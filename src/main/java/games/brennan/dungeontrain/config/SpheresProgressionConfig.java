@@ -18,14 +18,14 @@ public final class SpheresProgressionConfig {
 
     public static final int MIN_OFFSET_BLOCKS = 0;
     public static final int MAX_OFFSET_BLOCKS = 100_000_000;
-    public static final int DEFAULT_NETHER_MIX_START_BLOCKS = 2000;
-    public static final int DEFAULT_END_MIX_START_BLOCKS = 3000;
-    public static final int DEFAULT_STRUCTURE_BOOST_START_BLOCKS = 4000;
-    public static final int DEFAULT_STRUCTURE_BOOST_END_BLOCKS = 7000;
+    public static final int DEFAULT_NETHER_MIX_START_BLOCKS = 1250;
+    public static final int DEFAULT_END_MIX_START_BLOCKS = 1750;
+    public static final int DEFAULT_STRUCTURE_BOOST_START_BLOCKS = 2250;
+    public static final int DEFAULT_STRUCTURE_BOOST_END_BLOCKS = 5250;
 
     /**
      * The offsets v5 shipped (Nether mix / End mix / boost start / boost end) before the band shrank to
-     * 7000. The v5 -> v6 migration moves only values still at these — see {@link #migrateV5Offsets}.
+     * 5250. The v5 -> v6 migration moves only values still at these — see {@link #migrateV5Offsets}.
      */
     public static final int V5_NETHER_MIX_START_BLOCKS = 5000;
     public static final int V5_END_MIX_START_BLOCKS = 6000;
@@ -69,20 +69,20 @@ public final class SpheresProgressionConfig {
                         MIN_END_SKY_EXIT_FADE_BLOCKS, MAX_END_SKY_EXIT_FADE_BLOCKS);
         netherMixStart = b
                 .comment("Blocks into the spheres band where spheres start being cut from the Nether as well as the",
-                        "overworld. Default 2000.")
+                        "overworld. Default 1250.")
                 .defineInRange("spheresNetherMixStartBlocks", DEFAULT_NETHER_MIX_START_BLOCKS,
                         MIN_OFFSET_BLOCKS, MAX_OFFSET_BLOCKS);
         endMixStart = b
-                .comment("Blocks into the spheres band where spheres can also be cut from the End. Default 3000.")
+                .comment("Blocks into the spheres band where spheres can also be cut from the End. Default 1750.")
                 .defineInRange("spheresEndMixStartBlocks", DEFAULT_END_MIX_START_BLOCKS,
                         MIN_OFFSET_BLOCKS, MAX_OFFSET_BLOCKS);
         structureBoostStart = b
                 .comment("Blocks into the spheres band where the structure-chance boost starts (ramping from",
-                        "spheresStructureBoostMultiplier up to the peak and back). Default 4000.")
+                        "spheresStructureBoostMultiplier up to the peak and back). Default 2250.")
                 .defineInRange("spheresStructureBoostStartBlocks", DEFAULT_STRUCTURE_BOOST_START_BLOCKS,
                         MIN_OFFSET_BLOCKS, MAX_OFFSET_BLOCKS);
         structureBoostEnd = b
-                .comment("Blocks into the spheres band where the structure boost ends. Default 7000.")
+                .comment("Blocks into the spheres band where the structure boost ends. Default 5250.")
                 .defineInRange("spheresStructureBoostEndBlocks", DEFAULT_STRUCTURE_BOOST_END_BLOCKS,
                         MIN_OFFSET_BLOCKS, MAX_OFFSET_BLOCKS);
         structureChance = b
@@ -135,7 +135,7 @@ public final class SpheresProgressionConfig {
     }
 
     /**
-     * v5 -> v6: the band shrank to 7000 and its progression moved earlier. Each offset still at v5's
+     * v5 -> v6: the band shrank to 5250 and its progression moved earlier. Each offset still at v5's
      * shipped default moves to the new one; a chosen offset is left alone. Called from
      * {@link DungeonTrainCommonConfig#runPendingMigrations()}.
      */
