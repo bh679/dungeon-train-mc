@@ -398,6 +398,20 @@ public final class VariantOverlayRenderer {
                 continue;
             }
 
+            // Chunk frame plot — beside the Dimensions rooms, and only while that category is
+            // resident; same order as BlockVariantPlot.resolveAtPos.
+            if (EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) {
+                java.util.Optional<String> frameName = ChunkFrameEditor.plotContaining(playerPos);
+                if (frameName.isPresent()) {
+                    ChunkFramePlot framePlot = ChunkFramePlot.of(frameName.get());
+                    Vec3i frameSize = framePlot.footprint();
+                    updateHoverPacket(player, framePlot.origin(),
+                        pos -> inBounds(pos, frameSize),
+                        framePlot::statesAt);
+                    continue;
+                }
+            }
+
             // Track-side plot (track tile / pillar section / stairs adjunct
             // / tunnel kind) — icon HUD for the kind's own variants.json
             // sidecar. {@code TrackVariantBlocks.entries()} returns the same
