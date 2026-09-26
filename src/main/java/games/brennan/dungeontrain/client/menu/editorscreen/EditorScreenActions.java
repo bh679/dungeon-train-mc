@@ -351,6 +351,11 @@ public final class EditorScreenActions {
         String command = EditorPlotTeleport.commandFor(sel.category(), sel.modelId(), sel.modelName());
         if (command == null) return null;
         String label = EditorScreenLang.text(EditorScreenLang.ENTER);
+        // A frame walks to its plot as it stands — its enter command restamps, which would throw
+        // away unsaved edits — and brings its category in itself when it has to.
+        if (sel.category() == PlotCategory.CHUNK_FRAMES) {
+            return new CommandMenuEntry.Run(label, CHUNK_FRAME_GOTO + sel.modelName());
+        }
         if (ctx.stampedCategory() != null && sel.category().owner() == ctx.stampedCategory().owner()) {
             if (ctx.standingInSelection() && sel.category().hasActionRow()) {
                 EditorPlotActionPacket walk = new EditorPlotActionPacket(
@@ -369,6 +374,8 @@ public final class EditorScreenActions {
         });
     }
 
+    private static final String CHUNK_FRAME_GOTO = "dungeontrain editor chunkframe goto ";
+
     /**
      * Go here with Shift held: Enter — into the middle of the selection's plot rather than to the
      * front of its menu or its doorway. The per-plot panel's Enter with Shift, reached from the X
@@ -378,6 +385,10 @@ public final class EditorScreenActions {
     public static CommandMenuEntry enterCentreEntry(Ctx ctx, Consumer<EditorPlotActionPacket> sendPacket) {
         if (!ctx.hasSelection()) return null;
         VariantKey sel = ctx.selection();
+        if (sel.category() == PlotCategory.CHUNK_FRAMES) {
+            return new CommandMenuEntry.Run(EditorScreenLang.text(EditorScreenLang.ENTER),
+                CHUNK_FRAME_GOTO + sel.modelName() + " centre");
+        }
         if (!sel.category().hasActionRow()) return null;
         EditorPlotActionPacket enter = new EditorPlotActionPacket(sel.category().id(), sel.modelId(),
             sel.modelName(), EditorPlotActionPacket.Action.ENTER_INSIDE, /*centre*/ true);

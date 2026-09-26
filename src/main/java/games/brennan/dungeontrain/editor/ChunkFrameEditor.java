@@ -123,6 +123,17 @@ public final class ChunkFrameEditor {
     }
 
     /**
+     * Put {@code player} at {@code name}'s plot as it stands — nothing restamped, so unsaved edits
+     * stay: on the roof in front of its menu, or in the middle of it when {@code centre}.
+     */
+    public static void walkTo(ServerPlayer player, ServerLevel level, String name, boolean centre) {
+        CarriageEditor.rememberReturn(player);
+        SESSIONS.put(player.getUUID(), name);
+        EditorPlotArrival.land(player, level, plotOrigin(name), ChunkFrame.SIZE, !centre,
+            EditorPlotArrival.Inside.CENTRE, null);
+    }
+
+    /**
      * Capture {@code name}'s plot and save it — to the source tree too in dev mode.
      *
      * @return true when the source tree was also written

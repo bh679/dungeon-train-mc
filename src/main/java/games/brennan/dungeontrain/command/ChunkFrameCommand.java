@@ -66,6 +66,13 @@ final class ChunkFrameCommand {
                     .executes(ctx -> enter(ctx, null))
                     .then(Commands.argument("copyOf", StringArgumentType.word()).suggests(FRAMES)
                         .executes(ctx -> enter(ctx, StringArgumentType.getString(ctx, "copyOf"))))))
+            // Go here / Enter: walk to a frame's plot as it stands, without restamping it — unsaved
+            // edits stay. In front of its menu, or into the middle with "centre".
+            .then(Commands.literal("goto")
+                .then(Commands.argument("name", StringArgumentType.word()).suggests(FRAMES)
+                    .executes(ctx -> walkTo(ctx.getSource(), StringArgumentType.getString(ctx, "name"), false))
+                    .then(Commands.literal("centre")
+                        .executes(ctx -> walkTo(ctx.getSource(), StringArgumentType.getString(ctx, "name"), true)))))
             .then(Commands.literal("delete")
                 .then(Commands.argument("name", StringArgumentType.word()).suggests(FRAMES)
                     .executes(ctx -> delete(ctx.getSource(), StringArgumentType.getString(ctx, "name")))))
@@ -117,6 +124,15 @@ final class ChunkFrameCommand {
         ChunkFrameEditor.enter(player, source.getServer().overworld(), name, copyOf);
         source.sendSuccess(() -> Component.literal("Editing frame '" + name + "'. The outermost layer is the "
             + "shell where the skybox would be; everything inside it is the room."), false);
+        return 1;
+    }
+
+    private static int walkTo(CommandSourceStack source, String name, boolean centre) {
+        ServerPlayer player = EditorCommand.playerOrNull(source);
+        if (player == null) return 0;
+        if (!ChunkFrameRegistry.names().contains(name)) return fail(source, "No frame named " + name + ".");
+        if (!EditorCommand.ensureCategoryResident(source, EditorCategory.PORTALS)) return 0;
+        ChunkFrameEditor.walkTo(player, source.getServer().overworld(), name, centre);
         return 1;
     }
 
