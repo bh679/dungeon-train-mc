@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.event.VillagerTrainSpawnEvents;
+import games.brennan.pigmanvillagers.api.PigmanVillagersApi;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -65,6 +66,18 @@ final class VillagerBakedStateStripTest {
         // Authored profession is preserved.
         assertTrue(nbt.contains("VillagerData"), "VillagerData (authored profession) must be kept");
         assertEquals("minecraft:armorer", nbt.getCompound("VillagerData").getString("profession"));
+    }
+
+    @Test
+    void clearsBakedPigmanRollSoEachSpawnRollsItsOwn() {
+        CompoundTag nbt = villagerWithBakedState();
+        nbt.putBoolean(PigmanVillagersApi.NBT_PIGMAN, true);
+        nbt.putBoolean(PigmanVillagersApi.NBT_ROLLED, true);
+
+        CarriageContentsPlacer.stripBakedVillagerState(nbt);
+
+        assertFalse(nbt.contains(PigmanVillagersApi.NBT_PIGMAN), "captured pigman flag must not be copied");
+        assertFalse(nbt.contains(PigmanVillagersApi.NBT_ROLLED), "captured roll marker must be cleared");
     }
 
     @Test
