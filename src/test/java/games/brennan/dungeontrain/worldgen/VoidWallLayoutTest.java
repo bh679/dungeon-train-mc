@@ -135,7 +135,7 @@ final class VoidWallLayoutTest {
         int sky = 120;
         long slotEnd = END1 + LAYOUT.length(3);
         long holdFrom = x(END1 + 3L * F + VH + LAYOUT.slot(3).core());
-        long wall = x(slotEnd - C.udEntryLeadLen());
+        long wall = x(slotEnd - C.udEntryLeadLen() - 16);
         long len = wall - holdFrom;
         long fadeFrom = holdFrom + Math.round(0.65 * len);
         double fadeLen = Math.ceil(FADE * len);
@@ -183,12 +183,12 @@ final class VoidWallLayoutTest {
     }
 
     @Test
-    @DisplayName("the trailing hold's wall stops at the upside-down entry lead")
+    @DisplayName("the trailing hold's wall stands a chunk short of the upside-down entry lead")
     void trailingHoldStopsAtUpsideDownLead() {
         long slotEnd = END1 + LAYOUT.length(3);
         long holdFrom = slotEnd - F - VH;
         long at = x(holdFrom) - 10;
-        assertEquals(x(slotEnd - C.udEntryLeadLen()), voidsOnly(at).cullX(), 1e-9);
+        assertEquals(x(slotEnd - C.udEntryLeadLen() - 16), voidsOnly(at).cullX(), 1e-9);
     }
 
     @Test

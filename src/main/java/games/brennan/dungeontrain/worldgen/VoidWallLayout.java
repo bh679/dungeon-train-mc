@@ -37,6 +37,12 @@ public final class VoidWallLayout {
     /** How far through the hold before the upside-down band its wall starts to fade. */
     static final double UPSIDE_DOWN_FADE_AT = 0.65;
 
+    /**
+     * How far short of the upside-down lead that hold's wall stands — a chunk, so the stray blocks the
+     * lead's edge chunk carries are behind the wall rather than just past it.
+     */
+    static final long UPSIDE_DOWN_WALL_INSET = 16L;
+
     private VoidWallLayout() {}
 
     /**
@@ -127,7 +133,7 @@ public final class VoidWallLayout {
      * wall stands further out — one fade past the sky's return — over the ground reforming beyond the
      * hold, never past the slot. Where the upside-down band follows, its sky changes past the lead,
      * so that hold instead starts fading {@link #UPSIDE_DOWN_FADE_AT} of the way through, ahead of the
-     * sky, with its wall at the lead's edge.</p>
+     * sky, with its wall {@link #UPSIDE_DOWN_WALL_INSET} short of the lead's edge.</p>
      */
     private static void endVoids(WorldGenCycle cycle, CycleLayout layout, int i, long runStart, int run,
                                  int skyOffset, double fadeFraction, Collector c) {
@@ -140,8 +146,8 @@ public final class VoidWallLayout {
         long secondEnd = slotStart + 3L * f + 2L * vh + eh;
         boolean udFollows = i + 1 < layout.count()
                 && layout.slot(i + 1).type() == CycleLayout.Type.UPSIDE_DOWN;
-        long wallLimit = udFollows ? slotEnd - cycle.udEntryLeadLen() : slotEnd;
-        secondEnd = Math.min(secondEnd, wallLimit);
+        long wallLimit = udFollows ? slotEnd - cycle.udEntryLeadLen() - UPSIDE_DOWN_WALL_INSET : slotEnd;
+        secondEnd = Math.max(slotStart + 3L * f + vh + eh + 1L, Math.min(secondEnd, wallLimit));
 
         long band = Disintegration.bandLength((int) f, (int) vh, (int) eh);
         long o = Math.min(Math.max(0, skyOffset), Math.max(0L, (band - 2L * f) / 2L));
