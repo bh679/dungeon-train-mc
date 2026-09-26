@@ -23,6 +23,7 @@ import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.StagePlacementScope;
@@ -1727,6 +1728,21 @@ public final class PortalCarriageBuilder {
                                    int liveMobCount, PortalRoomContents contents,
                                    PortalRoomBooks books,
                                    java.util.function.Predicate<BlockPos> keepFluid) {
+        // The contents and variant passes below cascade over the crops the stamp just laid, so the
+        // guard spans them too, not just the stamp.
+        CarriageStampGuard.run(() -> stampRoomAtWithPasses(level, roomOrigin, dims, roomName, size,
+            relight, clearMask, writeMask, variantIndex, exactIndex, pairKey, tile, liveMobCount,
+            contents, books, keepFluid));
+    }
+
+    private static void stampRoomAtWithPasses(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
+                                              String roomName, Vec3i size, boolean relight,
+                                              PortalCorridorMask clearMask, PortalCorridorMask writeMask,
+                                              int variantIndex, int exactIndex, int pairKey,
+                                              PortalRoomTiling.Tile tile,
+                                              int liveMobCount, PortalRoomContents contents,
+                                              PortalRoomBooks books,
+                                              java.util.function.Predicate<BlockPos> keepFluid) {
         stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask, keepFluid);
         // Claim the pictures that stamp just hung, before anything else can walk in and be mistaken
         // for one. A dimensional carriage REPEATS — the tiling window is 121 copies and it has no
@@ -2008,6 +2024,17 @@ public final class PortalCarriageBuilder {
                                    String roomName, Vec3i size, boolean relight,
                                    PortalCorridorMask clearMask, PortalCorridorMask writeMask,
                                    java.util.function.Predicate<BlockPos> keepFluid) {
+        // Under the stamp guard so a crop the room carries survives its own construction — the room
+        // is dark until the light engine next runs. CropBlockCarriageSurviveMixin covers twin space by
+        // position anyway; this is what covers a Compatible Terrain room, which stands in the rock.
+        CarriageStampGuard.run(() -> stampRoomAtGuarded(
+            level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask, keepFluid));
+    }
+
+    private static void stampRoomAtGuarded(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
+                                           String roomName, Vec3i size, boolean relight,
+                                           PortalCorridorMask clearMask, PortalCorridorMask writeMask,
+                                           java.util.function.Predicate<BlockPos> keepFluid) {
         // Clear first, for the same reason a twin does: the room lands in solid rock at the world
         // floor, and a template stamp only writes its own cells — anything the author left as
         // STRUCTURE_VOID would otherwise show deepslate through the wall. This is the CLEAR mask
@@ -2086,13 +2113,16 @@ public final class PortalCarriageBuilder {
     public static void stampRoomFromLive(ServerLevel level, BlockPos roomOrigin, Vec3i size,
                                          StructureTemplate live, Vec3i shift, boolean relight,
                                          PortalCorridorMask blank) {
-        clearRoomBox(level, roomOrigin, size, PortalCorridorMask.NONE, relight);
-        clearIntruders(level, roomOrigin, size);
-        plugFluidsAround(level, roomOrigin, size, PLUG_EVERY_FLUID);
+        // Guarded for the same reason as stampRoomAt.
+        CarriageStampGuard.run(() -> {
+            clearRoomBox(level, roomOrigin, size, PortalCorridorMask.NONE, relight);
+            clearIntruders(level, roomOrigin, size);
+            plugFluidsAround(level, roomOrigin, size, PLUG_EVERY_FLUID);
 
-        stampRoomBuiltIn(level, roomOrigin, size, relight, blank);
-        CarriagePlacer.stampTemplateAt(level, roomOrigin.offset(shift), live,
-            clipTo(roomOrigin, size, blank), relight, boxOf(roomOrigin, size), TemplateDecor.Rule.ROOM);
+            stampRoomBuiltIn(level, roomOrigin, size, relight, blank);
+            CarriagePlacer.stampTemplateAt(level, roomOrigin.offset(shift), live,
+                clipTo(roomOrigin, size, blank), relight, boxOf(roomOrigin, size), TemplateDecor.Rule.ROOM);
+        });
     }
 
     /**
