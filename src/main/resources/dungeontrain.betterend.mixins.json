@@ -7,7 +7,14 @@
   "mixins": [
     "betterend.BetterEndChorusCosmeticMixin",
     "betterend.BetterEndDebugItemsMixin",
-    "wover.WoverBiomePickerOrderMixin"
+    "betterend.BetterEndDirPerThreadMixin",
+    "betterend.BetterEndDirectionsPerThreadMixin",
+    "betterend.BetterEndHorizontalPerThreadMixin",
+    "betterend.BetterEndStaticShuffleMixin",
+    "betterend.BetterEndWallScatterShuffleMixin",
+    "wover.WoverBiomePickerOrderMixin",
+    "wover.WoverPossibleBiomesCompatOrderMixin",
+    "wover.WoverPossibleBiomesOrderMixin"
   ],
   "client": [
     "bclib.BclibFixPromptMixin",
