@@ -120,6 +120,14 @@ public final class SphereField {
         /** End surface Y at a column (island top), or {@link #NO_SURFACE} over the End void. */
         int endSurfaceY(int x, int z);
 
+        /**
+         * Exit taper {@code 0..1} at world-X {@code cx}: scales both the chance a cube holds a sphere and
+         * the sphere's radius, so spheres thin out and shrink toward the band's end. {@code 1} = untouched.
+         */
+        default double taperAt(int cx) {
+            return 1.0;
+        }
+
         Mixer OVERWORLD_ONLY = new Mixer() {
             @Override public SphereSource sourceAt(int cx, double u) { return SphereSource.OVERWORLD; }
             @Override public double structureChanceAt(int cx) { return 0.0; }
@@ -136,6 +144,8 @@ public final class SphereField {
     private static final int JITTER_Y_SALT = 13;
     private static final int JITTER_Z_SALT = 14;
     private static final int RADIUS_SALT = 15;
+    /** Smallest radius a tapered sphere shrinks to — below this a ball is a few stray blocks. */
+    static final int MIN_TAPERED_RADIUS = 3;
     private static final int SOURCE_SALT = 16;
     private static final int STRUCTURE_SALT = 17;
     private static final int NETHER_Y_SALT = 18;
@@ -226,9 +236,11 @@ public final class SphereField {
     /** Pure per-cell roll (no memo): presence, centre jitter, radius, then the surface-anchored lift. */
     private Sphere roll(int cellX, int cellY, int cellZ) {
         long seed = p.seed();
-        if (hash01(seed, cellX, cellY, cellZ, PRESENCE_SALT) >= p.density()) return null;
         int cell = Math.max(1, p.cell());
         int cx = cellX * cell + (int) Math.floor(hash01(seed, cellX, cellY, cellZ, JITTER_X_SALT) * cell);
+        // Hashes are pure, so rolling cx first changes nothing where the taper is 1.
+        double taper = Math.max(0.0, Math.min(1.0, mixer.taperAt(cx)));
+        if (hash01(seed, cellX, cellY, cellZ, PRESENCE_SALT) >= p.density() * taper) return null;
         int cz = cellZ * cell + (int) Math.floor(hash01(seed, cellX, cellY, cellZ, JITTER_Z_SALT) * cell);
         // Jitter Y inside the cube ∩ [centerMinY, centerMaxY] so edge layers never spill out of range.
         int lo = Math.max(cellY * cell, p.centerMinY());
@@ -240,6 +252,7 @@ public final class SphereField {
         int rMax = Math.max(rMin, p.rMax());
         int r = rMin + (int) Math.floor((rMax - rMin + 1) * u * u);  // biased small: most spheres are little
         if (r > rMax) r = rMax;
+        if (taper < 1.0) r = Math.max(Math.min(r, MIN_TAPERED_RADIUS), (int) Math.round(r * taper));
         SphereSource source = mixer.sourceAt(cx, hash01(seed, cellX, cellY, cellZ, SOURCE_SALT));
         boolean structure = hash01(seed, cellX, cellY, cellZ, STRUCTURE_SALT) < mixer.structureChanceAt(cx);
         int sourceCenterY;

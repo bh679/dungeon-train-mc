@@ -25,7 +25,7 @@ public final class SpheresProgressionConfig {
 
     /**
      * The offsets v5 shipped (Nether mix / End mix / boost start / boost end) before the band shrank to
-     * 6250. The v5 -> v6 migration moves only values still at these — see {@link #migrateV5Offsets}.
+     * 6550. The v5 -> v6 migration moves only values still at these — see {@link #migrateV5Offsets}.
      */
     public static final int V5_NETHER_MIX_START_BLOCKS = 5000;
     public static final int V5_END_MIX_START_BLOCKS = 6000;
@@ -39,7 +39,11 @@ public final class SpheresProgressionConfig {
     public static final int DEFAULT_WEIGHT = 1;
     public static final int MIN_END_SKY_EXIT_FADE_BLOCKS = 0;
     public static final int MAX_END_SKY_EXIT_FADE_BLOCKS = 2000;
-    public static final int DEFAULT_END_SKY_EXIT_FADE_BLOCKS = 350;
+    public static final int DEFAULT_END_SKY_EXIT_FADE_BLOCKS = 550;
+    public static final int MIN_EXIT_BLOCKS = 0;
+    public static final int MAX_EXIT_BLOCKS = 100_000;
+    public static final int DEFAULT_EXIT_TAPER_BLOCKS = 550;
+    public static final int DEFAULT_EXIT_VOID_BLOCKS = 100;
     public static final int DEFAULT_APPLY_PER_TICK = 4;
     public static final int DEFAULT_SAMPLER_THREADS = 2;
 
@@ -48,6 +52,8 @@ public final class SpheresProgressionConfig {
     private static ModConfigSpec.IntValue structureBoostStart;
     private static ModConfigSpec.IntValue structureBoostEnd;
     private static ModConfigSpec.IntValue endSkyExitFade;
+    private static ModConfigSpec.IntValue exitTaper;
+    private static ModConfigSpec.IntValue exitVoid;
     private static ModConfigSpec.DoubleValue structureChance;
     private static ModConfigSpec.DoubleValue structureBoostMultiplier;
     private static ModConfigSpec.DoubleValue structureBoostPeakMultiplier;
@@ -64,9 +70,16 @@ public final class SpheresProgressionConfig {
         endSkyExitFade = b
                 .comment("Crossfade span (blocks) from the End sky back to the overworld sky over the last blocks of",
                         "the spheres band. Clamped to a quarter of the band. 0 = hard switch. Client-side visual only.",
-                        "Default 350.")
+                        "It ends where the spheres run out (before spheresExitVoidBlocks). Default 550.")
                 .defineInRange("spheresEndSkyExitFadeBlocks", DEFAULT_END_SKY_EXIT_FADE_BLOCKS,
                         MIN_END_SKY_EXIT_FADE_BLOCKS, MAX_END_SKY_EXIT_FADE_BLOCKS);
+        exitTaper = b
+                .comment("Blocks over which spheres thin out and shrink to nothing near the end of the spheres band,",
+                        "ending where spheresExitVoidBlocks begin. 0 = full spheres to the end. Default 550.")
+                .defineInRange("spheresExitTaperBlocks", DEFAULT_EXIT_TAPER_BLOCKS, MIN_EXIT_BLOCKS, MAX_EXIT_BLOCKS);
+        exitVoid = b
+                .comment("Blocks of empty void (no spheres, overworld sky) closing the spheres band. Default 100.")
+                .defineInRange("spheresExitVoidBlocks", DEFAULT_EXIT_VOID_BLOCKS, MIN_EXIT_BLOCKS, MAX_EXIT_BLOCKS);
         netherMixStart = b
                 .comment("Blocks into the spheres band where spheres start being cut from the Nether as well as the",
                         "overworld. Default 1750.")
@@ -135,7 +148,7 @@ public final class SpheresProgressionConfig {
     }
 
     /**
-     * v5 -> v6: the band shrank to 6250 and its progression moved earlier. Each offset still at v5's
+     * v5 -> v6: the band shrank to 6550 and its progression moved earlier. Each offset still at v5's
      * shipped default moves to the new one; a chosen offset is left alone. Called from
      * {@link DungeonTrainCommonConfig#runPendingMigrations()}.
      */
@@ -154,6 +167,16 @@ public final class SpheresProgressionConfig {
     /** End-sky exit crossfade span in blocks; hardcoded default pre-load. */
     public static int endSkyExitFadeBlocks() {
         return DungeonTrainCommonConfig.isLoaded() && endSkyExitFade != null ? endSkyExitFade.get() : DEFAULT_END_SKY_EXIT_FADE_BLOCKS;
+    }
+
+    /** Exit taper span in blocks; hardcoded default pre-load. */
+    public static int exitTaperBlocks() {
+        return DungeonTrainCommonConfig.isLoaded() && exitTaper != null ? exitTaper.get() : DEFAULT_EXIT_TAPER_BLOCKS;
+    }
+
+    /** Closing empty-void span in blocks; hardcoded default pre-load. */
+    public static int exitVoidBlocks() {
+        return DungeonTrainCommonConfig.isLoaded() && exitVoid != null ? exitVoid.get() : DEFAULT_EXIT_VOID_BLOCKS;
     }
 
     /** Chunks of foreign sphere terrain applied per server tick. */

@@ -46,8 +46,6 @@ final class SpheresSegmentsTest {
         assertEquals(2500, seg.endMixStart());
         assertEquals(3250, seg.structureBoostStart());
         assertEquals(6250, seg.structureBoostEnd());
-        assertEquals(DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS, seg.structureBoostEnd(),
-                "the structure boost runs to the band's end");
     }
 
     @Test
@@ -105,6 +103,27 @@ final class SpheresSegmentsTest {
         assertEquals(0.40, seg.structureChanceAt(3250), EPS);
         assertEquals(1.0, seg.structureChanceAt(4750), EPS);     // 0.08 × 20 = 1.6, capped
         assertEquals(0.08, seg.structureChanceAt(6250), EPS);
+    }
+
+    @Test
+    @DisplayName("exit taper: full until 550 before the closing void, linear down to 0, 0 across the 100 void blocks")
+    void exitTaper() {
+        long len = 6550;
+        assertEquals(1.0, SpheresSegments.exitTaper(-1, len, 550, 100), EPS);     // entry fade
+        assertEquals(1.0, SpheresSegments.exitTaper(0, len, 550, 100), EPS);
+        assertEquals(1.0, SpheresSegments.exitTaper(5899, len, 550, 100), EPS);
+        assertEquals(1.0, SpheresSegments.exitTaper(5900, len, 550, 100), EPS);  // taper starts
+        assertEquals(0.5, SpheresSegments.exitTaper(6175, len, 550, 100), EPS);
+        assertEquals(200.0 / 550, SpheresSegments.exitTaper(6250, len, 550, 100), EPS); // structure boost ends
+        assertEquals(1.0 / 550, SpheresSegments.exitTaper(6449, len, 550, 100), EPS);
+        assertEquals(0.0, SpheresSegments.exitTaper(6450, len, 550, 100), EPS);  // void
+        assertEquals(0.0, SpheresSegments.exitTaper(6549, len, 550, 100), EPS);
+        assertEquals(1.0, SpheresSegments.exitTaper(6000, len, 0, 0), EPS);      // disabled
+        assertEquals(0.0, SpheresSegments.exitTaper(6500, len, 0, 100), EPS);    // void only
+        assertEquals(DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS,
+                SpheresProgressionConfig.DEFAULT_STRUCTURE_BOOST_END_BLOCKS + 200 + SpheresProgressionConfig.DEFAULT_EXIT_VOID_BLOCKS,
+                "the core runs 200 past the structure boost, then the closing void");
+        assertEquals(550, SpheresProgressionConfig.DEFAULT_EXIT_TAPER_BLOCKS);
     }
 
     @Test
