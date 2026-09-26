@@ -28,6 +28,10 @@ uniform int DhZeroToOne;
 uniform float CullX;
 uniform float VeilX;
 uniform float Strength;
+// The same for the walls behind: hide what lies before them (a hugely negative value when there is none).
+uniform float BackCullX;
+uniform float BackVeilX;
+uniform float BackStrength;
 uniform vec4 Corridor;
 // Camera-relative height at and above which nothing is faded — the cloud layer, which is never culled.
 uniform float MaxY;
@@ -58,10 +62,11 @@ void main() {
     }
 
     if (world.y >= MaxY) discard;
-    float alpha;
-    if (world.x > CullX) alpha = 1.0;
+    float alpha = 0.0;
+    if (world.x > CullX || world.x < BackCullX) alpha = 1.0;
     else if (world.x > VeilX) alpha = clamp(Strength, 0.0, 1.0);
-    else discard;
+    else if (world.x < BackVeilX) alpha = clamp(BackStrength, 0.0, 1.0);
+    if (alpha <= 0.0) discard;
     if (world.y >= Corridor.x && world.y <= Corridor.y && world.z >= Corridor.z && world.z <= Corridor.w) {
         discard;
     }

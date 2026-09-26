@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class VoidWallPlaneTest {
 
     private static final int TRAIN_Y = 100;
-    private static final VoidWallPlane WALL = VoidWallPlane.at(1000, 700, TRAIN_Y, 7);
+    private static final VoidWallPlane WALL = VoidWallPlane.at(1000, Double.NEGATIVE_INFINITY, 700, TRAIN_Y, 7);
 
     @Test
     @DisplayName("a chunk section wholly past the wall is hidden")
@@ -56,9 +56,21 @@ final class VoidWallPlaneTest {
     }
 
     @Test
+    @DisplayName("a wall behind hides what reaches back before it, straddling included, never the camera's side")
+    void wallBehind() {
+        VoidWallPlane back = VoidWallPlane.at(Double.POSITIVE_INFINITY, 500, 700, TRAIN_Y, 7);
+        assertTrue(back.hidesTerrain(400, 416));
+        assertTrue(back.hidesTerrain(496, 512));
+        assertFalse(back.hidesTerrain(600, 616));
+        assertFalse(back.hidesTerrain(256, 768), "reaches the camera");
+        assertFalse(back.hidesTerrain(1000, 1016), "ahead, with no wall ahead");
+        assertFalse(back.hidesBody(400, TRAIN_Y - 1, 0, 409, TRAIN_Y + 6, 7), "the train's tail on the track");
+    }
+
+    @Test
     @DisplayName("an infinite wall is no wall")
     void infiniteIsNone() {
-        assertFalse(VoidWallPlane.at(Double.POSITIVE_INFINITY, 0, TRAIN_Y, 7).active());
+        assertFalse(VoidWallPlane.at(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0, TRAIN_Y, 7).active());
         assertFalse(VoidWallPlane.NONE.hidesTerrain(1e9, 1e9 + 16));
     }
 }

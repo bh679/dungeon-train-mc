@@ -43,8 +43,8 @@ import java.util.List;
  *
  * <ul>
  *   <li><b>The cull</b> — DH stops drawing at the wall ({@link DistantHorizonsTrackCulling}).</li>
- *   <li><b>The track past the wall</b> — a bed and two rails as DH boxes, from where the vanilla world
- *       ends to the edge of DH's view, while a wall stands. The LODs the real track is part of are
+ *   <li><b>The track past the walls</b> — a bed and two rails as DH boxes, from where the vanilla world
+ *       ends to the edge of DH's view, on each side a wall stands. The LODs the real track is part of are
  *       culled with everything else past the wall; without these the rails would stop dead at it. Short
  *       of the vanilla edge the real blocks are drawn instead ({@link VoidWallTrackRenderer}).</li>
  *   <li><b>The sky pass</b> — DH's depth texture and projection are handed to {@link VoidWallFadePass}
@@ -75,6 +75,8 @@ public final class DistantHorizonsVoidWall {
     private static IDhApiLevelWrapper level;
     private static IDhApiRenderableBoxGroup track;
     private static double trackFromBuilt = Double.NaN;
+    /** Which sides the track was last built for: 1 ahead, 2 behind. */
+    private static int trackSidesBuilt = 0;
 
     private DistantHorizonsVoidWall() {}
 
@@ -214,33 +216,44 @@ public final class DistantHorizonsVoidWall {
     }
 
     /**
-     * The bed and two rails from the end of the vanilla world outwards, while a wall stands within DH's
-     * view. It starts at the vanilla edge rather than at the wall because the culled LOD section that
-     * straddles the wall can begin hundreds of blocks before it, taking the real track's LODs with it;
+     * The bed and two rails beyond the vanilla world, on whichever side a wall stands within DH's view.
+     * Each stretch starts at the vanilla edge rather than at its wall because the culled LOD section that
+     * straddles a wall can reach hundreds of blocks back from it, taking the real track's LODs with it;
      * short of the wall the boxes simply lie over the real track, a hair above it.
      */
     private static void updateTrack(VoidWallLayout.Result wall, Vec3 cam, double vanillaReach, double dhReach) {
-        double from = Math.floor(cam.x + vanillaReach);
-        double to = cam.x + dhReach;
-        if (!wall.hasCull() || from >= to || wall.cullX() > to + MAX_LOD_WIDTH) {
+        double reach = dhReach + MAX_LOD_WIDTH;
+        boolean ahead = wall.hasCull() && wall.cullX() - cam.x < reach && vanillaReach < dhReach;
+        boolean behind = wall.hasBackCull() && cam.x - wall.backCullX() < reach && vanillaReach < dhReach;
+        int sides = (ahead ? 1 : 0) | (behind ? 2 : 0);
+        if (sides == 0) {
             track.setActive(false);
             trackFromBuilt = Double.NaN;
             return;
         }
-        if (Double.isNaN(trackFromBuilt) || Math.abs(from - trackFromBuilt) >= REBUILD_STEP) {
-            int trainY = ClientUpsideDownBand.trainY();
-            int w = CarriageDims.DEFAULT_WIDTH;
-            double end = from + dhReach + REBUILD_STEP;
-            List<DhApiRenderableBox> boxes = new ArrayList<>(3);
-            boxes.add(box(from, trainY - 2, 0, end, trainY - 1 + LIFT, w, BED_COLOR, EDhApiBlockMaterial.STONE));
-            boxes.add(box(from, trainY - 1, 1, end, trainY - 0.8 + LIFT, 2, RAIL_COLOR, EDhApiBlockMaterial.METAL));
-            boxes.add(box(from, trainY - 1, w - 2, end, trainY - 0.8 + LIFT, w - 1, RAIL_COLOR, EDhApiBlockMaterial.METAL));
+        if (sides != trackSidesBuilt || Double.isNaN(trackFromBuilt)
+                || Math.abs(cam.x - trackFromBuilt) >= REBUILD_STEP) {
+            List<DhApiRenderableBox> boxes = new ArrayList<>(6);
+            double near = Math.floor(vanillaReach);
+            double far = dhReach + REBUILD_STEP;
+            if (ahead) addTrack(boxes, Math.floor(cam.x) + near, Math.floor(cam.x) + far);
+            if (behind) addTrack(boxes, Math.floor(cam.x) - far, Math.floor(cam.x) - near);
             track.clear();
             track.addAll(boxes);
             track.triggerBoxChange();
-            trackFromBuilt = from;
+            trackFromBuilt = cam.x;
+            trackSidesBuilt = sides;
         }
         track.setActive(true);
+    }
+
+    /** A bed and two rails along {@code [x0, x1]}. */
+    private static void addTrack(List<DhApiRenderableBox> out, double x0, double x1) {
+        int trainY = ClientUpsideDownBand.trainY();
+        int w = CarriageDims.DEFAULT_WIDTH;
+        out.add(box(x0, trainY - 2, 0, x1, trainY - 1 + LIFT, w, BED_COLOR, EDhApiBlockMaterial.STONE));
+        out.add(box(x0, trainY - 1, 1, x1, trainY - 0.8 + LIFT, 2, RAIL_COLOR, EDhApiBlockMaterial.METAL));
+        out.add(box(x0, trainY - 1, w - 2, x1, trainY - 0.8 + LIFT, w - 1, RAIL_COLOR, EDhApiBlockMaterial.METAL));
     }
 
     private static DhApiRenderableBox box(double x0, double y0, double z0, double x1, double y1, double z1,
