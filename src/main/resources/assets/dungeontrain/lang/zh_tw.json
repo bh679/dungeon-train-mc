@@ -2898,7 +2898,7 @@
   "chat.dungeontrain.package.world_doesn_t_use": "這個世界沒有使用自動列車系統（startsWithTrain 已關閉）。",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain 失敗：%s：%s",
   "chat.dungeontrain.package.teleporting_x_spawning_train": "正在傳送到 X=%s——現在在那裡生成一列列車；等它穩定後你會落在平板車上。難度已設為第 %s 級以配合。",
-  "chat.dungeontrain.package.dtp_band_not_found": "前方沒有%s地帶 — 它可能已在設定中關閉。",
+  "chat.dungeontrain.package.dtp_band_not_found_in_lap": "%s地帶不在第%s圈 — 該圈可能沒有，或已在設定中關閉。",
   "chat.dungeontrain.train.spawned_fresh_train_track": "已在軌道 X=%s 處生成一列全新的列車（船隻 ID %s，初始 %s 節車廂／%s 個方塊，速度 +X %s m/s）——等它穩定後你會落在平板車上。先前的列車已刪除；難度恢復為自動調整，且 %s 個記住的社群車廂可以再次出現。使用 '/dungeontrain carriages <count>' 可變更車廂視窗。",
   "chat.dungeontrain.train.train_speed_set_m": "列車速度已設為 %s m/s（已更新 %s 列進行中的%s）",
   "chat.dungeontrain.train.default_carriages_set_appender": "預設車廂數已設為 %s。附加器會在下一個 tick、玩家跨越 pIdx 邊界時延伸或裁減所需的視窗。",

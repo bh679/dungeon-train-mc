@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -29,8 +30,10 @@ import java.util.OptionalInt;
  * Registers {@code /dtp <x>} (OP-only, permission level 2): teleports the
  * player to world-X {@code x} and guarantees a train is there to land on.
  * {@code /dtp <band>} (every phase token and alias, plus the styled occurrences — see
- * {@link DtpTarget}) does the same for the next occurrence of that band ahead of the player — see
- * {@link BandLocator}.
+ * {@link DtpTarget}) does the same for that band's occurrence in a lap — see {@link BandLocator}:
+ * {@code /dtp <band> <distance> <lap>}, where {@code lap} is 0-based
+ * {@link games.brennan.dungeontrain.worldgen.WorldGenCycle#cycleIndex} (the same numbering
+ * {@code /dungeontrain debug overworld-laps} prints) and defaults to lap 0, wherever the player is.
  *
  * <p>Vanilla {@code /tp} (and a bare walk) can outrun the train —
  * {@link games.brennan.dungeontrain.train.TrainCarriageAppender} only
@@ -78,6 +81,9 @@ public final class DtpCommand {
     /** Default blocks past a band's entry column for {@code /dtp <band>} (override with {@code /dtp <band> <distance>}) — just inside, not on the boundary. */
     private static final int BAND_ENTRY_INSET = 32;
 
+    /** Lap {@code /dtp <band>} jumps to when none is given — the first. */
+    private static final int DEFAULT_LAP = 0;
+
     private DtpCommand() {}
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -94,13 +100,16 @@ public final class DtpCommand {
     /** {@code /dtp <band>}: literal children win over the {@code x} double argument, so numeric use is unaffected. */
     private static LiteralArgumentBuilder<CommandSourceStack> bandLiteral(DtpTarget target) {
         return Commands.literal(target.token())
-            .executes(ctx -> runBand(ctx.getSource(), target, BAND_ENTRY_INSET))
+            .executes(ctx -> runBand(ctx.getSource(), target, BAND_ENTRY_INSET, DEFAULT_LAP))
             .then(Commands.argument("distance", DoubleArgumentType.doubleArg())
-                .executes(ctx -> runBand(ctx.getSource(), target, DoubleArgumentType.getDouble(ctx, "distance"))));
+                .executes(ctx -> runBand(ctx.getSource(), target, DoubleArgumentType.getDouble(ctx, "distance"), DEFAULT_LAP))
+                .then(Commands.argument("lap", IntegerArgumentType.integer(0))
+                    .executes(ctx -> runBand(ctx.getSource(), target, DoubleArgumentType.getDouble(ctx, "distance"),
+                        IntegerArgumentType.getInteger(ctx, "lap")))));
     }
 
-    /** Teleport {@code distance} blocks past the entry of the next {@code target} band ahead of the player, via the normal {@link #run} path. */
-    private static int runBand(CommandSourceStack source, DtpTarget target, double distance) {
+    /** Teleport {@code distance} blocks past the entry of the {@code target} band's occurrence in {@code lap}, via the normal {@link #run} path. */
+    private static int runBand(CommandSourceStack source, DtpTarget target, double distance, int lap) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -108,9 +117,9 @@ public final class DtpCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
-        OptionalInt entry = BandLocator.nextBandStartX(source.getServer().overworld(), target, player.getBlockX());
+        OptionalInt entry = BandLocator.bandStartXInLap(source.getServer().overworld(), target, lap);
         if (entry.isEmpty()) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.package.dtp_band_not_found", target.displayName()));
+            source.sendFailure(Component.translatable("chat.dungeontrain.package.dtp_band_not_found_in_lap", target.displayName(), lap));
             return 0;
         }
         return run(source, entry.getAsInt() + distance);

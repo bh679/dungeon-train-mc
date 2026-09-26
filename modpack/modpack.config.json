@@ -601,6 +601,15 @@
       "required": true,
       "modrinth_project": "particle-effects",
       "modrinth_version": "AH6BZ7jO"
+    },
+    {
+      "name": "Advanced Shulkerboxes",
+      "slug": "advanced-shulkerboxes",
+      "project_id": 253861,
+      "file_id": 5610975,
+      "required": true,
+      "modrinth_project": "advanced-shulkerboxes",
+      "modrinth_version": "TFonUZnY"
     }
   ],
   "curseforge_relations": [

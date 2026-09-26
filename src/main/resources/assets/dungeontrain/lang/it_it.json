@@ -2927,7 +2927,7 @@
   "chat.dungeontrain.package.world_doesn_t_use": "Questo mondo non usa il sistema del treno automatico (startsWithTrain è disattivato).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain non riuscito: %s: %s",
   "chat.dungeontrain.package.teleporting_x_spawning_train": "Teletrasporto a X=%s — sto generando un treno lì; atterrerai sul pianale una volta che si sarà assestato. Difficoltà impostata al livello %s per corrispondere.",
-  "chat.dungeontrain.package.dtp_band_not_found": "Nessuna fascia %s davanti a te — potrebbe essere disattivata nella configurazione.",
+  "chat.dungeontrain.package.dtp_band_not_found_in_lap": "Nessuna fascia %s nel giro %s — quel giro potrebbe non averne una, oppure è disattivata nella configurazione.",
   "chat.dungeontrain.train.spawned_fresh_train_track": "Generato un nuovo treno sul binario a X=%s (id nave %s, avviato con %s vagoni / %s blocchi, velocità +X %s m/s) — atterrerai sul pianale una volta che si sarà assestato. Il treno precedente è stato eliminato; la difficoltà torna alla scala automatica e %s vagone/i della community ricordati possono ricomparire. Usa '/dungeontrain carriages <count>' per cambiare la finestra dei vagoni.",
   "chat.dungeontrain.train.train_speed_set_m": "Velocità del treno impostata a %s m/s (%s %s attivi aggiornati)",
   "chat.dungeontrain.train.default_carriages_set_appender": "Vagoni predefiniti impostati a %s. L'appender estenderà o ridurrà la finestra necessaria al prossimo tick, quando il giocatore attraversa i confini di pIdx.",
