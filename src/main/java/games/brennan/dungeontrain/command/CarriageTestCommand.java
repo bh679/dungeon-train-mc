@@ -91,7 +91,8 @@ public final class CarriageTestCommand {
                     .executes(ctx -> runTest(ctx.getSource(), CarriageTestSession.Kind.CONTENTS,
                         StringArgumentType.getString(ctx, "name"), false))))
             .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())))
-            .then(Commands.literal("reseed").executes(ctx -> runReseedNow(ctx.getSource())));
+            .then(Commands.literal("reseed").executes(ctx -> runReseedNow(ctx.getSource(), false))
+                .then(Commands.literal("focus").executes(ctx -> runReseedNow(ctx.getSource(), true))));
     }
 
     /** What a test stands up: the shell, and what goes in it. */
@@ -103,6 +104,15 @@ public final class CarriageTestCommand {
      */
     static int runTest(CommandSourceStack source, CarriageTestSession.Kind kind, String id,
                        boolean freshRoll) {
+        return runTest(source, kind, id, freshRoll, false);
+    }
+
+    /**
+     * @param focus re-roll only the template under test, keeping the rest of the copy: a carriage
+     *              test keeps its contents' seed, a contents test keeps its carriage's
+     */
+    static int runTest(CommandSourceStack source, CarriageTestSession.Kind kind, String id,
+                       boolean freshRoll, boolean focus) {
         ServerPlayer player = playerOf(source);
         if (player == null) return 0;
 
@@ -112,8 +122,15 @@ public final class CarriageTestCommand {
 
         // Resolved before anything else moves: a request that is refused (an unknown id, a portal
         // part) must leave the author standing in whatever test they are already in.
-        long seed = seedFor(worldData, overworld, freshRoll);
-        Plan plan = planFor(source, kind, id, seed);
+        long shellSeed = seedFor(worldData, overworld, freshRoll);
+        long contentsSeed = seedFor(worldData, overworld, freshRoll);
+        CarriageTestSession.Session current = CarriageTestSession.get(player.getUUID());
+        if (focus && current != null) {
+            // The other half keeps the seed it stood on; only the tested template rolls afresh.
+            if (kind == CarriageTestSession.Kind.CARRIAGE) contentsSeed = current.contentsSeed();
+            else shellSeed = current.shellSeed();
+        }
+        Plan plan = planFor(source, kind, id, shellSeed, contentsSeed);
         if (plan == null) return 0;
 
         // Already inside a test — of either kind: stamping a second would leave the first standing and
@@ -135,10 +152,10 @@ public final class CarriageTestCommand {
         // are placed, and a test is the one carriage stamp that spawns its hostiles as authored.
         CarriageTestSession.put(player.getUUID(), new CarriageTestSession.Session(
             player.level().dimension(), player.position(), player.getYRot(), player.getXRot(),
-            previous, kind, id, box));
+            previous, kind, id, box, shellSeed, contentsSeed));
 
-        CarriagePlacer.placeForTest(overworld, origin, plan.shell(), plan.contents(), dims, seed,
-            CarriageTestSession.TEST_INDEX);
+        CarriagePlacer.placeForTest(overworld, origin, plan.shell(), plan.contents(), dims, shellSeed,
+            contentsSeed, CarriageTestSession.TEST_INDEX);
 
         BlockPos arrival = findArrival(overworld, player, origin, shellDims);
         if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);
@@ -148,8 +165,9 @@ public final class CarriageTestCommand {
             worldData.isPortalTestReseed()));
 
         String contentsId = plan.contents() == null ? "none" : plan.contents().id();
-        LOGGER.info("[DungeonTrain] carriage test: stamped {} '{}' (shell={}, contents={}) at {} for {}, seed={}",
-            kind.literal(), id, plan.shell().id(), contentsId, origin, player.getName().getString(), seed);
+        LOGGER.info("[DungeonTrain] carriage test: stamped {} '{}' (shell={}, contents={}) at {} for {}, seeds={}/{}",
+            kind.literal(), id, plan.shell().id(), contentsId, origin, player.getName().getString(),
+            shellSeed, contentsSeed);
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.carriage_test.standing_in",
             id, plan.shell().id(), contentsId).withStyle(ChatFormatting.AQUA), false);
         return 1;
@@ -157,7 +175,7 @@ public final class CarriageTestCommand {
 
     /** Resolve the shell and the contents to stamp, or tell the author why there is none. */
     private static Plan planFor(CommandSourceStack source, CarriageTestSession.Kind kind, String id,
-                                long seed) {
+                                long shellSeed, long seed) {
         if (kind == CarriageTestSession.Kind.CARRIAGE) {
             Optional<CarriageVariant> variant = CarriageVariantRegistry.find(id);
             if (variant.isEmpty()) return fail(source, "chat.dungeontrain.editor.unknown_carriage", id);
@@ -176,7 +194,7 @@ public final class CarriageTestCommand {
         // one whose allow-list has them enabled and that spawns at all. A member is allowed through
         // its group's top parent — the allow-list is only ever consulted at the top-level pick.
         String topId = ContentsShellPicker.topParentOf(contents.get().id());
-        CarriageVariant shell = ContentsShellPicker.pick(topId, seed).orElse(null);
+        CarriageVariant shell = ContentsShellPicker.pick(topId, shellSeed).orElse(null);
         if (shell == null) return fail(source, "chat.dungeontrain.carriage_test.no_shell_allows", topId);
         // A group parent rolls a member, as it would in a carriage; a member named outright is used.
         CarriageContents rolled = CarriageContentsRegistry.resolveSubVariant(
@@ -250,7 +268,7 @@ public final class CarriageTestCommand {
      * they stood, if the new roll left that spot open. The same rule
      * {@code PortalTestCommand.runReseedNow} follows.
      */
-    static int runReseedNow(CommandSourceStack source) {
+    static int runReseedNow(CommandSourceStack source, boolean focus) {
         ServerPlayer player = playerOf(source);
         if (player == null) return 0;
         CarriageTestSession.Session session = CarriageTestSession.get(player.getUUID());
@@ -265,7 +283,7 @@ public final class CarriageTestCommand {
         float yaw = player.getYRot();
         float pitch = player.getXRot();
 
-        int result = runTest(source, session.kind(), session.templateId(), true);
+        int result = runTest(source, session.kind(), session.templateId(), true, focus);
         if (result == 0 || !wasHere) return result;
 
         CarriageTestSession.Session fresh = CarriageTestSession.get(player.getUUID());

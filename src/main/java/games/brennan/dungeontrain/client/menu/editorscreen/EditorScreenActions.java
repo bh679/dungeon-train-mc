@@ -412,6 +412,16 @@ public final class EditorScreenActions {
     static final String RESEED_OFF_COMMAND = "dungeontrain portal test reseed off";
     /** Re-roll the test carriage the author is standing in, now. */
     public static final String RESEED_NOW_COMMAND = "dungeontrain portal test reseed";
+    /**
+     * Re-roll only the template under test (Shift): the frame on the same ground, the room on the
+     * same chunk, a carriage around the same contents or contents in the same carriage.
+     */
+    public static final String RESEED_FOCUS_COMMAND = "dungeontrain portal test reseed focus";
+
+    /** The reseed a press inside a test runs — focused while Shift is held. */
+    public static String reseedNowCommand() {
+        return net.minecraft.client.gui.screens.Screen.hasShiftDown() ? RESEED_FOCUS_COMMAND : RESEED_NOW_COMMAND;
+    }
 
     /**
      * Reseed, beside Test the Carriage. Outside a test it is the world switch: on, each test rolls

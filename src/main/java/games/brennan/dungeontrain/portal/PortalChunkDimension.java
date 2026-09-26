@@ -119,9 +119,9 @@ public final class PortalChunkDimension {
      */
     public static void frame(ServerLevel level, PortalStructure structure, CarriageDims dims, int pairKey) {
         if (!structure.roomSize().equals(ChunkFrame.ROOM_SIZE)) return;
-        // The room's own variant index, so a test's reseed (the structure's salt) re-rolls the frame
-        // too; unsalted it is a pure function of the pair, as in play.
-        int rollIndex = structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey);
+        // The frame's own roll, salted apart from the room's so a test can re-roll either alone;
+        // unsalted it is a pure function of the pair, as in play.
+        int rollIndex = ChunkFramePlacer.rollIndex(structure.roomName(), pairKey);
         java.util.Optional<ChunkFramePlacer.Picked> frame =
             ChunkFramePlacer.frameFor(level, structure.roomName(), pairKey, rollIndex);
         if (frame.isEmpty()) return;

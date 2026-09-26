@@ -47,6 +47,7 @@ public final class ChunkFramePlacer {
     public static void clear() {
         WARNED.clear();
         FORCED.clear();
+        SALTS.clear();
     }
 
     /** The frame a pair's room is dressed in: its template and its variant sidecar. */
@@ -62,6 +63,34 @@ public final class ChunkFramePlacer {
     /** Dress pair {@code pairKey} in {@code frameName} (or its normal pick when null). */
     public static void force(int pairKey, String frameName) {
         if (frameName == null) FORCED.remove(pairKey); else FORCED.put(pairKey, frameName);
+    }
+
+    /** The frame forced onto {@code pairKey}, or null — what tells a reseed it is in a frame test. */
+    public static String forced(int pairKey) {
+        return FORCED.get(pairKey);
+    }
+
+    /**
+     * Test the Carriage's reseed of the frame alone: a salt folded into the pair's frame roll, kept
+     * apart from the room's own so the frame and the room it dresses can be re-rolled separately.
+     * Absent (zero) is the roll every pair makes in play.
+     */
+    private static final java.util.Map<Integer, Integer> SALTS = new ConcurrentHashMap<>();
+
+    /** Set {@code pairKey}'s frame salt; zero drops it back to the unsalted roll. */
+    public static void salt(int pairKey, int salt) {
+        if (salt == 0) SALTS.remove(pairKey); else SALTS.put(pairKey, salt);
+    }
+
+    /**
+     * The index {@code roomName}'s frame at {@code pairKey} rolls on — its pick among frames and its
+     * block variants. Unsalted it is the room's own base variant index, a pure function of the pair.
+     */
+    public static int rollIndex(String roomName, int pairKey) {
+        Integer salt = SALTS.get(pairKey);
+        return salt == null
+            ? java.util.Objects.hash(roomName.hashCode(), pairKey)
+            : java.util.Objects.hash(roomName.hashCode(), pairKey, salt);
     }
 
     /**
