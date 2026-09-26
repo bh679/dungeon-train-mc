@@ -25,7 +25,7 @@ final class WorldGenCycleLayoutTest {
 
     /** The shipped defaults: stage 40 × {1,2,4,8,15}, beach 32, core fade 300; End 120/500; UD 600, exit 600, exit fade 10 000. */
     private static final WorldGenCycle C = new WorldGenCycle(START, 10_000, 40, new int[] {1, 2, 4, 8, 15}, 32, 0, 300, 5000,
-            120, 500, 5000, 600, 5000, 600, 10_000, 8000, 1500, 5000, 0.3, 0.4, 12_000, 1500, 5000, 8000, 1500, 10_000, 0.08,
+            120, 500, 5000, 600, 5000, 600, 10_000, 8000, 1500, 5000, 0.3, 0.4, 6550, 750, 5000, 8000, 1500, 10_000, 0.08,
             CycleLayoutTest.eraDefaults(), LAYOUT, 0);
 
     /** World X of base coordinate {@code u} on run {@code k}. */
@@ -41,7 +41,7 @@ final class WorldGenCycleLayoutTest {
     @DisplayName("period is the run-1 length and the layout is reported")
     void period() {
         assertTrue(C.hasLayout());
-        assertEquals(137_418L, C.period());
+        assertEquals(128_218L, C.period());
         assertEquals(232, C.riseLen());
     }
 
@@ -130,15 +130,15 @@ final class WorldGenCycleLayoutTest {
     }
 
     @Test
-    @DisplayName("spheres, chuncks and stacks fade in over 1500 then hold their cores")
+    @DisplayName("spheres fade in over 750, chuncks and stacks over 1500, then hold their cores")
     void fadeInBands() {
         long s = LAYOUT.start(9);
         assertEquals(0.0, C.spheresVoidRamp(x(s - 1)));
-        assertEquals(0.5, C.spheresVoidRamp(x(s + 750)), 1e-9);
-        assertTrue(C.isInSpheresBand(x(s + 1500)));
-        assertEquals(15_000L, C.spheresLen());
-        assertEquals(14_999L, C.spheresCoreOffset(x(s + 1500 + 14_999)));
-        assertFalse(C.isInSpheresBand(x(s + 1500 + 15_000)));
+        assertEquals(0.5, C.spheresVoidRamp(x(s + 375)), 1e-9);
+        assertTrue(C.isInSpheresBand(x(s + 750)));
+        assertEquals(6_550L, C.spheresLen());
+        assertEquals(6_549L, C.spheresCoreOffset(x(s + 750 + 6_549)));
+        assertFalse(C.isInSpheresBand(x(s + 750 + 6_550)));
         long c = LAYOUT.start(13);
         assertEquals(1.0, C.chuncksKeepDensityAt(x(c - 1)));
         assertEquals(0.3, C.chuncksKeepDensityAt(x(c + 1500 + 10)), 1e-9);

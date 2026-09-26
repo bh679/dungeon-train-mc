@@ -59,7 +59,8 @@ public final class BandLabel {
         int[] mults = cycle.stageMultipliers();
         java.util.List<BandStages.Stage> stages = BandStages.of(cycle.layout(), slot,
             mults == null ? 1 : mults.length, cycle.stageBlocks(), cycle.beachBlocks(),
-            SpheresProgressionConfig.segments());
+            SpheresProgressionConfig.segments(), SpheresProgressionConfig.exitTaperBlocks(),
+            SpheresProgressionConfig.exitVoidBlocks());
         BandStages.Position at = BandStages.locate(stages, cycle.slotLocal(worldX));
         return at == null ? "" : at.describe();
     }

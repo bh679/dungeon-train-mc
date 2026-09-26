@@ -17,8 +17,9 @@ class BandStagesTest {
     /** riseLen 232 = beach 32 + 5 stages × 40, so the Nether splits cleanly. */
     private static final CycleLayout.Fades FADES =
         new CycleLayout.Fades(232, 0, 300, 120, 500, 600, 600, 10_000, 1500, 1500, 1500, 480);
+    /** The shipped spheres progression: End sky 1000, Nether 1750, End 2500, boost 3250–6250 (core 6550). */
     private static final SpheresSegments SPHERES =
-        SpheresSegments.of(3000, 5000, 6000, 9000, 12000, 12000, 0.1, 5, 20, 1, 1, 1);
+        SpheresSegments.of(1000, 1750, 2500, 3250, 6250, 0.1, 5, 20, 1, 1, 1);
 
     private static CycleLayout defaultLayout() {
         List<LegacySpan> eras = new ArrayList<>();
@@ -28,7 +29,7 @@ class BandStagesTest {
     }
 
     private static List<BandStages.Stage> stagesOf(CycleLayout layout, int i) {
-        return BandStages.of(layout, i, 5, 40, 32, SPHERES);
+        return BandStages.of(layout, i, 5, 40, 32, SPHERES, 550, 100);
     }
 
     @Test
@@ -41,12 +42,22 @@ class BandStagesTest {
     }
 
     @Test
-    void spheresHasTransitionThenSixProgressionStages() {
+    void spheresHasTransitionThenProgressionThenThinningAndVoid() {
         CycleLayout layout = defaultLayout();
         List<BandStages.Stage> s = stagesOf(layout, layout.firstIndexOf(CycleLayout.Type.SPHERES));
         assertEquals(List.of("Transition in", "Overworld sky", "End sky", "Nether spheres join",
-                "End spheres join", "Structure boost", "Nether sky"),
+                "End spheres join", "Structure boost", "Thinning out", "Closing void"),
             s.stream().map(BandStages.Stage::name).toList());
+        assertEquals(List.of(1500L, 1000L, 750L, 750L, 750L, 2650L, 550L, 100L),
+            s.stream().map(BandStages.Stage::length).toList());
+    }
+
+    @Test
+    void spheresWithoutExitStretchEndsWithBoostOver() {
+        CycleLayout layout = defaultLayout();
+        List<String> names = BandStages.of(layout, layout.firstIndexOf(CycleLayout.Type.SPHERES), 5, 40, 32, SPHERES)
+            .stream().map(BandStages.Stage::name).toList();
+        assertEquals("Boost over", names.get(names.size() - 1));
     }
 
     @Test

@@ -193,6 +193,42 @@ final class SphereFieldTest {
         assertEquals(3, seen.size(), "all three sources should roll: " + seen);
     }
 
+    /** An overworld-only mixer with a fixed exit taper. */
+    private static SphereField tapered(double density, double taper) {
+        return new SphereField(new SphereField.Params(SEED, 64, density, 6, 40, 0, 200, 0.65), (x, z) -> SURFACE,
+                new SphereField.Mixer() {
+                    @Override public SphereSource sourceAt(int cx, double u) { return SphereSource.OVERWORLD; }
+                    @Override public double structureChanceAt(int cx) { return 0.0; }
+                    @Override public int endSurfaceY(int x, int z) { return SphereField.NO_SURFACE; }
+                    @Override public double taperAt(int cx) { return taper; }
+                });
+    }
+
+    @Test
+    @DisplayName("exit taper: 1 leaves every sphere identical, 0.5 rolls fewer and smaller ones, 0 rolls none")
+    void exitTaper() {
+        SphereField plain = field(0.5), full = tapered(0.5, 1.0), half = tapered(0.5, 0.5), none = tapered(0.5, 0.0);
+        int plainCount = 0, halfCount = 0;
+        for (int cx = -20; cx < 20; cx++) {
+            for (int cz = -20; cz < 20; cz++) {
+                SphereField.Sphere p = plain.sphereInCell(cx, 1, cz);
+                assertEquals(p, full.sphereInCell(cx, 1, cz));
+                org.junit.jupiter.api.Assertions.assertNull(none.sphereInCell(cx, 1, cz));
+                SphereField.Sphere h = half.sphereInCell(cx, 1, cz);
+                if (p != null) plainCount++;
+                if (h != null) {
+                    halfCount++;
+                    org.junit.jupiter.api.Assertions.assertNotNull(p, "a tapered sphere only rolls where the untapered one does");
+                    assertEquals(p.cx(), h.cx());
+                    assertTrue(h.r() < p.r() || h.r() <= SphereField.MIN_TAPERED_RADIUS,
+                            "tapered radius " + h.r() + " vs " + p.r());
+                    assertTrue(h.r() >= Math.min(p.r(), SphereField.MIN_TAPERED_RADIUS));
+                }
+            }
+        }
+        assertTrue(halfCount > 0 && halfCount < plainCount, "half taper keeps some: " + halfCount + " of " + plainCount);
+    }
+
     @Test
     @DisplayName("End spheres anchor to the island surface; over the End void they turn Nether; Nether centres sit in [40,100]")
     void foreignAnchors() {
