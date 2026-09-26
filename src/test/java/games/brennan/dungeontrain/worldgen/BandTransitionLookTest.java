@@ -86,6 +86,16 @@ final class BandTransitionLookTest {
     }
 
     @Test
+    @DisplayName("upside-down: the WWOO start is a fraction of that Reassembly's own length, not a fixed X")
+    void upsideDownStartFollowsReassemblyLength() {
+        // Same band, Reassembly 3000 instead of 2000: mirror [1000, 2700), Reassembly [2700, 5700).
+        WorldGenCycle longer = cycle("ow:1000, upside_down:500:3000, ow:wwoo:3000, ow:1000");
+        long start = 2700L + Math.round(3000 * WorldGenCycle.UD_BLEED_REASSEMBLY_FRACTION);
+        assertEquals(Stretch.VANILLA, SecondLapOverworld.lookAt(longer, (int) (START + start - 1)));
+        assertEquals(Stretch.WWOO, SecondLapOverworld.lookAt(longer, (int) (START + start)));
+    }
+
+    @Test
     @DisplayName("Nether: the entry side wears WWOO, the exit side BoP, the core neither")
     void netherSides() {
         assertEquals(Stretch.WWOO, look(8300));
