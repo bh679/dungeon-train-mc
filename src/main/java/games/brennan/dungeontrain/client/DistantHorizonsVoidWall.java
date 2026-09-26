@@ -57,8 +57,7 @@ public final class DistantHorizonsVoidWall {
     /** How far the ghost track or the veil must drift before its boxes are rebuilt. */
     private static final double REBUILD_STEP = 16.0;
     /** Veil opacity steps as it thins towards the top of the world — DH boxes are one colour each. */
-    private static final float[] SKY_STEPS = {0.6f, 0.3f, 0.1f};
-    private static final int FULL_HEIGHT_ABOVE_TRACK = 48;
+    private static final float[] SKY_STEPS = {0.75f, 0.5f, 0.25f};
 
     /** The client overworld DH is drawing, and our groups in it. Client thread only. */
     private static IDhApiLevelWrapper level;
@@ -166,7 +165,7 @@ public final class DistantHorizonsVoidWall {
             double vanillaReach = mc.options.getEffectiveRenderDistance() * 16.0;
             double dhReach = dhReach(vanillaReach);
             updateTrack(wall, cam, vanillaReach, dhReach);
-            updateVeil(wall, cam, vanillaReach, dhReach, mc.level.getMinBuildHeight(), mc.level.getMaxBuildHeight());
+            updateVeil(wall, cam, dhReach, mc.level.getMinBuildHeight(), mc.level.getMaxBuildHeight());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Distant Horizons void-wall update failed; hiding its boxes: {}", t.toString());
             detach();
@@ -206,11 +205,12 @@ public final class DistantHorizonsVoidWall {
     }
 
     /**
-     * The fading sheet at the veil's X, split around the track. Within vanilla range the vanilla veil
-     * already covers the middle ±vanilla-reach of it, so only the flanks are DH's there.
+     * The fading sheet at the veil's X, split around the track, across DH's whole view. DH composites
+     * its LODs over the vanilla frame after the vanilla veil ({@link VoidWallVeilRenderer}) is drawn, so
+     * that one covers vanilla chunks and this one DH's LODs; both thin out low above the track so where
+     * they overlap — open sky — the stacking stays faint.
      */
-    private static void updateVeil(VoidWallLayout.Result wall, Vec3 cam, double vanillaReach, double dhReach,
-                                   int minY, int maxY) {
+    private static void updateVeil(VoidWallLayout.Result wall, Vec3 cam, double dhReach, int minY, int maxY) {
         if (!wall.hasVeil()) {
             veil.setActive(false);
             veilXBuilt = Double.NaN;
@@ -226,23 +226,21 @@ public final class DistantHorizonsVoidWall {
             double x1 = x0 + 1.0;
             double z0 = cam.z - dhReach;
             double z1 = cam.z + dhReach;
-            boolean vanillaCovers = x0 - cam.x <= vanillaReach;
-            List<DhApiRenderableBox> boxes = new ArrayList<>();
             int trainY = ClientUpsideDownBand.trainY();
             double holeLo = trainY - 2;
             double holeHi = trainY + 1;
-            double fullTop = Math.min(maxY, holeHi + FULL_HEIGHT_ABOVE_TRACK);
-            double innerZ0 = vanillaCovers ? cam.z - vanillaReach : Double.NaN;
-            double innerZ1 = vanillaCovers ? cam.z + vanillaReach : Double.NaN;
+            double fullTop = Math.min(maxY, holeHi + VoidWallVeilRenderer.FULL_HEIGHT_ABOVE_TRACK);
+            double clearTop = Math.min(maxY, holeHi + VoidWallVeilRenderer.CLEAR_HEIGHT_ABOVE_TRACK);
             Color full = fogColor(fog, alpha);
 
-            sheet(boxes, x0, x1, z0, z1, innerZ0, innerZ1, minY, holeLo, full);
-            sheet(boxes, x0, x1, z0, 0, innerZ0, innerZ1, holeLo, holeHi, full);
-            sheet(boxes, x0, x1, CarriageDims.DEFAULT_WIDTH, z1, innerZ0, innerZ1, holeLo, holeHi, full);
-            sheet(boxes, x0, x1, z0, z1, innerZ0, innerZ1, holeHi, fullTop, full);
-            double band = (maxY - fullTop) / SKY_STEPS.length;
+            List<DhApiRenderableBox> boxes = new ArrayList<>();
+            sheet(boxes, x0, x1, z0, z1, minY, holeLo, full);
+            sheet(boxes, x0, x1, z0, 0, holeLo, holeHi, full);
+            sheet(boxes, x0, x1, CarriageDims.DEFAULT_WIDTH, z1, holeLo, holeHi, full);
+            sheet(boxes, x0, x1, z0, z1, holeHi, fullTop, full);
+            double band = (clearTop - fullTop) / SKY_STEPS.length;
             for (int i = 0; i < SKY_STEPS.length; i++) {
-                sheet(boxes, x0, x1, z0, z1, innerZ0, innerZ1, fullTop + i * band, fullTop + (i + 1) * band,
+                sheet(boxes, x0, x1, z0, z1, fullTop + i * band, fullTop + (i + 1) * band,
                         fogColor(fog, alpha * SKY_STEPS[i]));
             }
             replace(veil, boxes);
@@ -253,16 +251,10 @@ public final class DistantHorizonsVoidWall {
         veil.setActive(true);
     }
 
-    /** One rectangle of the sheet, minus the Z span {@code [innerZ0, innerZ1]} the vanilla veil covers. */
     private static void sheet(List<DhApiRenderableBox> out, double x0, double x1, double z0, double z1,
-                              double innerZ0, double innerZ1, double y0, double y1, Color color) {
+                              double y0, double y1, Color color) {
         if (y1 <= y0 || z1 <= z0) return;
-        if (Double.isNaN(innerZ0)) {
-            out.add(box(x0, y0, z0, x1, y1, z1, color, EDhApiBlockMaterial.UNKNOWN));
-            return;
-        }
-        if (innerZ0 > z0) out.add(box(x0, y0, z0, x1, y1, Math.min(z1, innerZ0), color, EDhApiBlockMaterial.UNKNOWN));
-        if (innerZ1 < z1) out.add(box(x0, y0, Math.max(z0, innerZ1), x1, y1, z1, color, EDhApiBlockMaterial.UNKNOWN));
+        out.add(box(x0, y0, z0, x1, y1, z1, color, EDhApiBlockMaterial.UNKNOWN));
     }
 
     private static DhApiRenderableBox box(double x0, double y0, double z0, double x1, double y1, double z1,

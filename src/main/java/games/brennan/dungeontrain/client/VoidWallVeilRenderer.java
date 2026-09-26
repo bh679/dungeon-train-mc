@@ -28,18 +28,22 @@ import org.joml.Matrix4f;
  *
  * <p>The veil is a vertical sheet across the track at the wall's X, depth-tested against the world so
  * anything nearer than the wall stays in front of it. It has a hole where the track runs, so the rails
- * carry on through it, and it thins towards the top of the world so the open sky over the far side is
+ * carry on through it, and it thins out a little above the track so the open sky over the far side is
  * barely tinted.</p>
  *
- * <p><b>Vanilla range only.</b> Beyond the vanilla render distance the world is Distant Horizons',
- * whose depth this pass cannot see, so there the veil is DH's own box ({@code DistantHorizonsVoidWall})
- * and this one is not drawn.</p>
+ * <p><b>Vanilla chunks only.</b> Distant Horizons composites its LODs over this frame afterwards, so
+ * this veil cannot cover them; DH draws its own ({@code DistantHorizonsVoidWall}). The two overlap only
+ * over open sky, where both have thinned out low above the track, so the stacking stays faint.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class VoidWallVeilRenderer {
 
-    /** Rows above the rails before the veil starts thinning out towards the build limit. */
-    private static final int FULL_HEIGHT_ABOVE_TRACK = 48;
+    /** Rows above the rails the veil holds its full strength — about the height of what it hides. */
+    static final int FULL_HEIGHT_ABOVE_TRACK = 24;
+    /** Rows above the rails by which the veil has thinned to nothing, so open sky is barely tinted. */
+    static final int CLEAR_HEIGHT_ABOVE_TRACK = 120;
+    /** Sheet half-width across the track, in render distances. */
+    private static final double SIDE_REACH_FACTOR = 8.0;
 
     private VoidWallVeilRenderer() {}
 
@@ -74,13 +78,15 @@ public final class VoidWallVeilRenderer {
             BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
             Sheet sheet = new Sheet(b, m, (float) wall.veilX(), fog[0], fog[1], fog[2], alpha);
             int trainY = ClientUpsideDownBand.trainY();
-            float z0 = (float) (cam.z - reach);
-            float z1 = (float) (cam.z + reach);
+            // Wide enough that the sheet's own ends never come into view against the sky.
+            float z0 = (float) (cam.z - SIDE_REACH_FACTOR * reach);
+            float z1 = (float) (cam.z + SIDE_REACH_FACTOR * reach);
             float bottom = level.getMinBuildHeight();
             float top = level.getMaxBuildHeight();
             float holeLo = trainY - 2;
             float holeHi = trainY + 1;
             float fullTop = Math.min(top, holeHi + FULL_HEIGHT_ABOVE_TRACK);
+            float clearTop = Math.min(top, holeHi + CLEAR_HEIGHT_ABOVE_TRACK);
             float holeZ0 = 0;
             float holeZ1 = CarriageDims.DEFAULT_WIDTH;
 
@@ -88,7 +94,7 @@ public final class VoidWallVeilRenderer {
             sheet.rect(z0, holeZ0, holeLo, holeHi, 1f, 1f);             // either side of the hole
             sheet.rect(holeZ1, z1, holeLo, holeHi, 1f, 1f);
             sheet.rect(z0, z1, holeHi, fullTop, 1f, 1f);                // over the track
-            sheet.rect(z0, z1, fullTop, top, 1f, 0f);                   // thinning into the sky
+            sheet.rect(z0, z1, fullTop, clearTop, 1f, 0f);              // thinning into the sky
             BufferUploader.drawWithShader(b.buildOrThrow());
         } finally {
             RenderSystem.enableCull();
