@@ -13,10 +13,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BandHoldDefaultsTest {
 
     @Test
-    @DisplayName("the chuncks and stacks bands default to 8000 blocks, the spheres band to 14000")
+    @DisplayName("the chuncks and stacks bands default to 8000 blocks, the spheres band to 6550")
     void bandHoldDefaults() {
         assertEquals(8000, DungeonTrainCommonConfig.DEFAULT_CHUNCKS_HOLD_BLOCKS);
-        assertEquals(14000, DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS);
+        assertEquals(6550, DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS);
         assertEquals(8000, DungeonTrainCommonConfig.DEFAULT_STACKS_HOLD_BLOCKS);
     }
 
@@ -32,9 +32,35 @@ class BandHoldDefaultsTest {
     void spheresV3IsWhatV3Shipped() {
         assertEquals(12000, DungeonTrainCommonConfig.SPHERES_V3_HOLD_BLOCKS);
         assertEquals(4000, DungeonTrainCommonConfig.SPHERES_V3_END_SKY_START_BLOCKS);
-        assertEquals(3000, DungeonTrainCommonConfig.DEFAULT_SPHERES_END_SKY_START_BLOCKS);
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 4,
                 "CURRENT_CONFIG_VERSION must be at least 4, or the v3 -> v4 spheres step never runs");
+    }
+
+    @Test
+    @DisplayName("the v5 -> v6 migration moves exactly what v5 shipped to the shorter spheres band")
+    void spheresV5IsWhatV5Shipped() {
+        assertEquals(14000, DungeonTrainCommonConfig.SPHERES_V5_HOLD_BLOCKS);
+        assertEquals(1500, DungeonTrainCommonConfig.SPHERES_V5_FADE_BLOCKS);
+        assertEquals(3000, DungeonTrainCommonConfig.SPHERES_V5_END_SKY_START_BLOCKS);
+        assertEquals(5000, SpheresProgressionConfig.V5_NETHER_MIX_START_BLOCKS);
+        assertEquals(6000, SpheresProgressionConfig.V5_END_MIX_START_BLOCKS);
+        assertEquals(9000, SpheresProgressionConfig.V5_STRUCTURE_BOOST_START_BLOCKS);
+        assertEquals(12000, SpheresProgressionConfig.V5_STRUCTURE_BOOST_END_BLOCKS);
+
+        assertEquals(750, DungeonTrainCommonConfig.DEFAULT_SPHERES_FADE_BLOCKS);
+        assertEquals(1000, DungeonTrainCommonConfig.DEFAULT_SPHERES_END_SKY_START_BLOCKS);
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 6,
+                "CURRENT_CONFIG_VERSION must be at least 6, or the v5 -> v6 spheres step never runs");
+    }
+
+    @Test
+    @DisplayName("the v5 cycle order differs from the shipped default only in its spheres slot")
+    void v5CycleOrderDiffersOnlyInSpheres() {
+        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+                DungeonTrainCommonConfig.V5_WORLDGEN_CYCLE_ORDER.replace("spheres:15000", "spheres:6550"),
+                "the v5 -> v6 migration matches a file still holding the v5 order string exactly");
+        assertTrue(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER.contains("spheres:"
+                + DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS + ","));
     }
 
     @Test

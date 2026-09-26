@@ -1546,6 +1546,15 @@ public record WorldGenCycle(long startX, int owGap,
      * crossfade when one ends at {@code B + fade/2} and the other starts at {@code B − fade/2}.
      */
     public double spheresSkyWindowRamp(int worldX, long startBlocks, long endBlocks, int fade) {
+        return spheresSkyWindowRamp(worldX, startBlocks, endBlocks, fade, fade);
+    }
+
+    /**
+     * {@link #spheresSkyWindowRamp(int, long, long, int)} with separate spans: climbs over {@code fadeIn}
+     * blocks from {@code startBlocks} and falls over the {@code fadeOut} blocks before {@code endBlocks}.
+     * Each is clamped to a quarter of the core; {@code 0} is a hard switch on that edge.
+     */
+    public double spheresSkyWindowRamp(int worldX, long startBlocks, long endBlocks, int fadeIn, int fadeOut) {
         long len = spheresLen();
         if (len <= 0L) return 0.0;
         long ls = spheresOffset(worldX);
@@ -1553,10 +1562,10 @@ public record WorldGenCycle(long startX, int owGap,
         long start = Math.max(0L, startBlocks);
         long end = Math.min(len, endBlocks);
         if (ls < start || ls >= end) return 0.0;
-        long f = Math.max(0L, Math.min(fade, len / 4L));
-        if (f == 0L) return 1.0;
-        double in = (double) (ls - start + 1L) / f;           // entering: reaches 1 after f blocks
-        double out = (double) (end - ls) / f;                 // leaving: 1/f on the window's last column
+        long fi = Math.max(0L, Math.min(fadeIn, len / 4L));
+        long fo = Math.max(0L, Math.min(fadeOut, len / 4L));
+        double in = fi == 0L ? 1.0 : (double) (ls - start + 1L) / fi;   // entering: reaches 1 after fi blocks
+        double out = fo == 0L ? 1.0 : (double) (end - ls) / fo;         // leaving: 1/fo on the window's last column
         return Math.min(1.0, Math.min(in, out));
     }
 
