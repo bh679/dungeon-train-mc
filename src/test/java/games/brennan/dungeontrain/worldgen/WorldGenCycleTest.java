@@ -548,32 +548,25 @@ final class WorldGenCycleTest {
     }
 
     @Test
-    @DisplayName("spheres skies: End window hands over to the Nether window as a crossfade, Nether holds to the band's end")
-    void spheresSkyWindowsCrossfade() {
-        // Core [4690,5090), len 400. End sky from 100, Nether sky from 300, fade 40.
+    @DisplayName("spheres sky: End sky fades in at its start and back to overworld over a separate exit span at the band's end")
+    void spheresEndSkyEntryAndExitFades() {
+        // Core [4690,5090), len 400. End sky from 100, fade in 40, fade out 70.
         WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
                 100, 40, 200, 50, 200, 150, 0, 500, 200, 300, 0.12, 0.5, 400, 200, 100, 0);
-        SpheresSegments seg = SpheresSegments.of(100, 200, 250, 0, 0, 300, 0.0, 1.0, 1.0, 1, 1, 1);
+        SpheresSegments seg = SpheresSegments.of(100, 200, 250, 0, 0, 0.0, 1.0, 1.0, 1, 1, 1);
 
-        assertEquals(0.0, SpheresSky.endSky(c, seg, 4789, 40), EPS);      // overworld sky
-        assertEquals(1.0, SpheresSky.endSky(c, seg, 4940, 40), EPS);      // End sky held
-        assertEquals(0.0, SpheresSky.netherSky(c, seg, 4940, 40), EPS);
+        assertEquals(0.0, SpheresSky.endSky(c, seg, 4600, 40, 70), EPS);        // entry fade
+        assertEquals(0.0, SpheresSky.endSky(c, seg, 4789, 40, 70), EPS);        // overworld sky
+        assertEquals(1.0 / 40, SpheresSky.endSky(c, seg, 4790, 40, 70), EPS);   // fading in
+        assertEquals(1.0, SpheresSky.endSky(c, seg, 4829, 40, 70), EPS);        // full after 40
+        assertEquals(1.0, SpheresSky.endSky(c, seg, 5020, 40, 70), EPS);        // held up to the exit fade
+        assertEquals(69.0 / 70, SpheresSky.endSky(c, seg, 5021, 40, 70), EPS);  // exit fade starts 70 from the end
+        assertEquals(1.0 / 70, SpheresSky.endSky(c, seg, 5089, 40, 70), EPS);   // last core column
+        assertEquals(0.0, SpheresSky.endSky(c, seg, 5090, 40, 70), EPS);        // back to plain overworld
 
-        // At the handover both skies are about half-way — no dip back to overworld between them.
-        double end = SpheresSky.endSky(c, seg, 4990, 40);
-        double nether = SpheresSky.netherSky(c, seg, 4990, 40);
-        assertEquals(0.5, end, EPS);
-        assertEquals(21.0 / 40, nether, EPS);
-        for (int x = 4940; x < 5040; x++) {
-            double sum = SpheresSky.endSky(c, seg, x, 40) + SpheresSky.netherSky(c, seg, x, 40);
-            org.junit.jupiter.api.Assertions.assertTrue(sum >= 0.97, "sky coverage dips at x=" + x + ": " + sum);
-        }
-
-        assertEquals(0.0, SpheresSky.endSky(c, seg, 5040, 40), EPS);     // Nether only
-        assertEquals(1.0, SpheresSky.netherSky(c, seg, 5040, 40), EPS);
-        assertEquals(1.0 / 40, SpheresSky.netherSky(c, seg, 5089, 40), EPS); // last core column
-        assertEquals(0.0, SpheresSky.netherSky(c, seg, 5090, 40), EPS);      // back to plain overworld
-        assertEquals(0.0, SpheresSky.netherSky(c, seg, 4600, 40), EPS);      // entry fade
+        // Exit fade 0 = hard switch; oversized exit clamps to a quarter of the core (100).
+        assertEquals(1.0, SpheresSky.endSky(c, seg, 5089, 40, 0), EPS);
+        assertEquals(1.0 / 100, SpheresSky.endSky(c, seg, 5089, 40, 5000), EPS);
     }
 
     @Test

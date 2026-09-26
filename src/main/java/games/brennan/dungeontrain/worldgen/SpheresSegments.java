@@ -3,28 +3,29 @@ package games.brennan.dungeontrain.worldgen;
 /**
  * The spheres band's <b>progression</b>: where, counted in blocks into the band core (from the end of
  * the entry fade), the sky changes, other dimensions join the sphere mix and structures run denser.
- * With the defaults ({@code SpheresProgressionConfig}) the 14000-block band reads:
+ * With the defaults ({@code SpheresProgressionConfig}) the 7000-block band reads:
  *
  * <pre>
- *   0 ─ 3000   overworld sky   overworld spheres
- *   3000 ─ 5000   End sky         overworld spheres
- *   5000 ─ 6000   End sky         overworld / Nether
- *   6000 ─ 9000   End sky         overworld / Nether / End
- *   9000 ─ 12000  End sky         overworld / Nether / End, structures ×5 → ×20 → ×5
- *   12000 ─ end   Nether sky      overworld / Nether / End
+ *   0 ─ 1000      overworld sky   overworld spheres
+ *   1000 ─ 2000   End sky         overworld spheres
+ *   2000 ─ 3000   End sky         overworld / Nether
+ *   3000 ─ 4000   End sky         overworld / Nether / End
+ *   4000 ─ 7000   End sky         overworld / Nether / End, structures ×5 → ×20 → ×5
  * </pre>
+ *
+ * <p>The End sky fades back to the overworld sky over the band's last blocks ({@link SpheresSky}).</p>
  *
  * <p>Pure and immutable; build it with {@link #of}, which clamps the offsets monotonic.</p>
  */
 public record SpheresSegments(long endSkyStart, long netherMixStart, long endMixStart,
-                              long structureBoostStart, long structureBoostEnd, long netherSkyStart,
+                              long structureBoostStart, long structureBoostEnd,
                               double structureChance, double structureBoostMultiplier,
                               double structureBoostPeakMultiplier,
                               int overworldWeight, int netherWeight, int endWeight) {
 
     /** Build from raw (config) values, clamping every offset and weight non-negative and in order. */
     public static SpheresSegments of(long endSkyStart, long netherMixStart, long endMixStart,
-                                     long structureBoostStart, long structureBoostEnd, long netherSkyStart,
+                                     long structureBoostStart, long structureBoostEnd,
                                      double structureChance, double structureBoostMultiplier,
                                      double structureBoostPeakMultiplier,
                                      int overworldWeight, int netherWeight, int endWeight) {
@@ -32,7 +33,7 @@ public record SpheresSegments(long endSkyStart, long netherMixStart, long endMix
         long netherMix = Math.max(0L, netherMixStart);
         long boostStart = Math.max(0L, structureBoostStart);
         return new SpheresSegments(endSky, netherMix, Math.max(netherMix, endMixStart),
-                boostStart, Math.max(boostStart, structureBoostEnd), Math.max(endSky, netherSkyStart),
+                boostStart, Math.max(boostStart, structureBoostEnd),
                 clamp01(structureChance), Math.max(0.0, structureBoostMultiplier),
                 Math.max(0.0, structureBoostPeakMultiplier),
                 Math.max(0, overworldWeight), Math.max(0, netherWeight), Math.max(0, endWeight));
