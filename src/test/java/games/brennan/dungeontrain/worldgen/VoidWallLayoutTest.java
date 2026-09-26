@@ -130,18 +130,18 @@ final class VoidWallLayoutTest {
     }
 
     @Test
-    @DisplayName("before the upside-down band: the trailing hold fades from 65% of the way through")
+    @DisplayName("before the upside-down band: the trailing hold fades from 45% of the way through")
     void upsideDownHoldFadesPartWay() {
         int sky = 120;
         long slotEnd = END1 + LAYOUT.length(3);
         long holdFrom = x(END1 + 3L * F + VH + LAYOUT.slot(3).core());
         long wall = x(slotEnd - C.udEntryLeadLen() - 16);
         long len = wall - holdFrom;
-        long fadeFrom = holdFrom + Math.round(0.65 * len);
+        long fadeFrom = holdFrom + Math.round(0.45 * len);
         double fadeLen = Math.ceil(FADE * len);
 
         VoidWallLayout.Result before = VoidWallLayout.wallAt(C, fadeFrom - 10, FADE, sky, true, false);
-        assertEquals(wall, before.cullX(), 1e-9, "still standing at 64%");
+        assertEquals(wall, before.cullX(), 1e-9, "still standing just short of 45%");
         assertFalse(before.hasVeil());
 
         VoidWallLayout.Result mid = VoidWallLayout.wallAt(C, fadeFrom + fadeLen / 2, FADE, sky, true, false);
@@ -151,6 +151,14 @@ final class VoidWallLayoutTest {
         VoidWallLayout.Result done = VoidWallLayout.wallAt(C, fadeFrom + fadeLen + 1, FADE, sky, true, false);
         assertFalse(done.hasVeil());
         assertTrue(done.cullX() > wall, "gone by 85%, still short of the lead");
+    }
+
+    @Test
+    @DisplayName("the first End's trailing void — the gap before the upside-down band — is 675, the second's stays 500")
+    void upsideDownGapIsLonger() {
+        assertEquals(675, LAYOUT.endTrailingHold(LAYOUT.slot(3)));
+        assertEquals(VH, LAYOUT.endTrailingHold(LAYOUT.slot(8)));
+        assertEquals(4L * F + VH + LAYOUT.slot(3).core() + 675, LAYOUT.length(3));
     }
 
     @Test
@@ -186,7 +194,7 @@ final class VoidWallLayoutTest {
     @DisplayName("the trailing hold's wall stands a chunk short of the upside-down entry lead")
     void trailingHoldStopsAtUpsideDownLead() {
         long slotEnd = END1 + LAYOUT.length(3);
-        long holdFrom = slotEnd - F - VH;
+        long holdFrom = slotEnd - F - LAYOUT.endTrailingHold(LAYOUT.slot(3));
         long at = x(holdFrom) - 10;
         assertEquals(x(slotEnd - C.udEntryLeadLen() - 16), voidsOnly(at).cullX(), 1e-9);
     }

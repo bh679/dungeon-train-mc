@@ -59,7 +59,7 @@ public final class CycleLayout {
 
     /** The default three-lap order (see the plan): the layout {@code build()} uses when the key is blank. */
     public static final String DEFAULT_ORDER =
-            "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
+            "ow:2750, nether:3000, ow:3000, end:3000:675, upside_down:2500:6000, "
             + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:15000, ow:5000, "
             + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
@@ -242,13 +242,21 @@ public final class CycleLayout {
         return switch (s.type()) {
             case OVERWORLD -> Math.max(0, s.core());
             case NETHER -> NetherTransition.bandLength(fades.riseLen(), fades.megaHold(), fades.coreFade(), s.core());
-            case END -> Disintegration.bandLength(fades.eFade(), fades.eVoid(), s.core());
+            case END -> Disintegration.bandLength(fades.eFade(), fades.eVoid(), s.core(), endTrailingHold(s));
             case UPSIDE_DOWN -> 2L * Math.max(0, fades.udFade()) + s.core() + udReassembly(s) + Math.max(0, fades.udExit());
             case CHUNCKS -> Math.max(0, fades.chuncksFade()) + s.core();
             case SPHERES -> Math.max(0, fades.spheresFade()) + s.core();
             case STACKS -> Math.max(0, fades.stacksFade()) + s.core();
             case LEGACY_RUN -> legacyRunLength();
         };
+    }
+
+    /**
+     * An End slot's trailing void hold — the gap after its core ({@code end:<core>:<trailing>}), or the
+     * cycle's {@code eVoid} when the slot does not set one. The leading hold is always {@code eVoid}.
+     */
+    public int endTrailingHold(Slot s) {
+        return Math.max(0, s.extra() >= 0 ? s.extra() : fades.eVoid());
     }
 
     /** The upside-down slot's Reassembly (exit crossfade) length — its own, or the cycle default. */

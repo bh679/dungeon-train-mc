@@ -556,6 +556,18 @@ public record WorldGenCycle(long startX, int owGap,
         return (l < 0L || l >= len) ? -1L : l;
     }
 
+    /**
+     * Trailing void hold of the End occurrence at {@code worldX} — its slot's own
+     * ({@link CycleLayout#endTrailingHold}), or {@code eVoid} (classic, or outside an End slot).
+     */
+    private int endTrailingHold(int worldX) {
+        if (layout != null) {
+            int i = slotAt(worldX);
+            if (i >= 0 && layout.slot(i).type() == CycleLayout.Type.END) return layout.endTrailingHold(layout.slot(i));
+        }
+        return Math.max(0, eVoid);
+    }
+
     /** Core length of the {@code t} occurrence at {@code worldX} (layout), or the classic single core. */
     private int spanCore(CycleLayout.Type t, int worldX) {
         if (layout != null) {
@@ -1059,14 +1071,16 @@ public record WorldGenCycle(long startX, int owGap,
     public double endMiddleRamp(int worldX) {
         long le = spanLocal(CycleLayout.Type.END, worldX);
         if (le < 0L) return 0.0;
-        return Disintegration.middleRamp((int) le, 0L, eFade, eVoid, spanCore(CycleLayout.Type.END, worldX), 0);
+        return Disintegration.middleRamp((int) le, 0L, 0, eFade, eVoid, spanCore(CycleLayout.Type.END, worldX),
+                endTrailingHold(worldX), 0);
     }
 
     /** End-island fill ramp at a world-X (0 outside the End segment). */
     public double endIslandRamp(int worldX) {
         long le = spanLocal(CycleLayout.Type.END, worldX);
         if (le < 0L) return 0.0;
-        return Disintegration.endRamp((int) le, 0L, eFade, eVoid, spanCore(CycleLayout.Type.END, worldX), 0);
+        return Disintegration.endRamp((int) le, 0L, 0, eFade, eVoid, spanCore(CycleLayout.Type.END, worldX),
+                endTrailingHold(worldX), 0);
     }
 
     /**
@@ -1162,7 +1176,8 @@ public record WorldGenCycle(long startX, int owGap,
     public double endSkyRamp(int worldX, int skyOffset) {
         long le = spanLocal(CycleLayout.Type.END, worldX);
         if (le < 0L) return 0.0;
-        return Disintegration.skyRamp((int) le, 0L, eFade, eVoid, spanCore(CycleLayout.Type.END, worldX), 0, skyOffset);
+        return Disintegration.skyRamp((int) le, 0L, 0, eFade, eVoid, spanCore(CycleLayout.Type.END, worldX),
+                endTrailingHold(worldX), 0, skyOffset);
     }
 
     /** Offset into the upside-down band at a world-X, or {@code -1} outside it. */

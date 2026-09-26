@@ -412,7 +412,17 @@ public final class DungeonTrainCommonConfig {
     public static final int NETHER_V4_CORE_FADE_BLOCKS = 600;
     public static final int SPHERES_V3_END_SKY_START_BLOCKS = 4000;
 
-    public static final int CURRENT_CONFIG_VERSION = 5;
+    /**
+     * The band order v5 shipped, before the first End band's trailing void (the gap before the
+     * upside-down band) grew to 675 blocks. The v5 -> v6 migration moves only an order still at this.
+     */
+    public static final String WORLDGEN_CYCLE_ORDER_V5 =
+            "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:15000, ow:5000, "
+            + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
+
+    public static final int CURRENT_CONFIG_VERSION = 6;
 
     /** The shipped band order — see {@link games.brennan.dungeontrain.worldgen.CycleLayout#DEFAULT_ORDER}. */
     public static final String DEFAULT_WORLDGEN_CYCLE_ORDER = games.brennan.dungeontrain.worldgen.CycleLayout.DEFAULT_ORDER;
@@ -971,7 +981,7 @@ public final class DungeonTrainCommonConfig {
                 .comment("The order the bands come in, as one run of the cycle: comma-separated slots, each",
                         "  ow[:style]:<blocks>            an overworld gap (style: vanilla | wwoo | bop)",
                         "  nether[:style]:<core>          a Nether band (style: vanilla | better = BetterNether)",
-                        "  end[:style]:<core>             an End-islands band (style: vanilla | better = BetterEnd)",
+                        "  end[:style]:<core>[:<void>]    an End-islands band (style: vanilla | better = BetterEnd); <void> sets the gap after it",
                         "  upside_down:<core>:<reassembly> the upside-down band and its Reassembly crossfade",
                         "  chuncks:<core>  spheres:<core>  stacks:<core>",
                         "  legacy:<era>=<core>:...        the old-generator eras, back to back, crossfading into each other",
@@ -1130,6 +1140,15 @@ public final class DungeonTrainCommonConfig {
             migrateBandHold("netherStageBlocks", NETHER_STAGE_BLOCKS, NETHER_V4_STAGE_BLOCKS, DEFAULT_NETHER_STAGE_BLOCKS, from);
             migrateBandHold("netherBeachBlocks", NETHER_BEACH_BLOCKS, NETHER_V4_BEACH_BLOCKS, DEFAULT_NETHER_BEACH_BLOCKS, from);
             migrateBandHold("netherCoreFadeBlocks", NETHER_CORE_FADE_BLOCKS, NETHER_V4_CORE_FADE_BLOCKS, DEFAULT_NETHER_CORE_FADE_BLOCKS, from);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v5 -> v6: the void between the first End band and the upside-down band grew (its trailing hold
+        // 500 -> 675). Only an order still at v5's shipped string moves; an edited order is left alone.
+        if (from < 6 && WORLDGEN_CYCLE_ORDER_V5.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> the End -> upside-down gap is 675.",
+                    from, CURRENT_CONFIG_VERSION);
             WorldGenCycle.invalidateCache();
         }
 

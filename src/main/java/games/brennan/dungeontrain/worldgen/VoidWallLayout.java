@@ -35,7 +35,7 @@ import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 public final class VoidWallLayout {
 
     /** How far through the hold before the upside-down band its wall starts to fade. */
-    static final double UPSIDE_DOWN_FADE_AT = 0.65;
+    static final double UPSIDE_DOWN_FADE_AT = 0.45;
 
     /**
      * How far short of the upside-down lead that hold's wall stands — a chunk, so the stray blocks the
@@ -143,13 +143,14 @@ public final class VoidWallLayout {
         long slotStart = layout.start(i);
         long slotEnd = slotStart + layout.length(i);
 
-        long secondEnd = slotStart + 3L * f + 2L * vh + eh;
+        long th = layout.endTrailingHold(layout.slot(i));
+        long secondEnd = slotStart + 3L * f + vh + eh + th;
         boolean udFollows = i + 1 < layout.count()
                 && layout.slot(i + 1).type() == CycleLayout.Type.UPSIDE_DOWN;
         long wallLimit = udFollows ? slotEnd - cycle.udEntryLeadLen() - UPSIDE_DOWN_WALL_INSET : slotEnd;
         secondEnd = Math.max(slotStart + 3L * f + vh + eh + 1L, Math.min(secondEnd, wallLimit));
 
-        long band = Disintegration.bandLength((int) f, (int) vh, (int) eh);
+        long band = Disintegration.bandLength((int) f, (int) vh, (int) eh, (int) th);
         long o = Math.min(Math.max(0, skyOffset), Math.max(0L, (band - 2L * f) / 2L));
         long skyFull = f + o;
         c.screen(world(runStart, run, slotStart + f), world(runStart, run, slotStart + Math.max(f, skyFull)),

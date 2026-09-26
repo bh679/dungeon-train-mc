@@ -41,11 +41,12 @@ final class CycleLayoutTest {
     void shippedGeometry() {
         CycleLayout l = shipped();
         assertEquals(16, l.count());
-        // Lap 1: 2750 + (232+300+3000+300+232) + 3000 + (740+3000+740) + (600+2500+600+6000+600) = 24,594
+        // Lap 1: 2750 + (232+300+3000+300+232) + 3000 + (740+3000+915) + (600+2500+600+6000+600) = 24,769
+        //         (the first End's trailing void is 675 — the gap before the upside-down band)
         // Lap 2: 8000 + 9064 + 8000 + 9480 + (1500+15000) + 5000 = 56,044
         // Lap 3: legacy (480·12 + 5000 + 5000 + 4320 + 4000 + 5000 + 2000·4 + 1000 + 200 = 38,280)
         //        + 2000 + 6500 + 5000 + 6500 = 58,280
-        assertEquals(138_918L, l.period());
+        assertEquals(139_093L, l.period());
         assertEquals(2, l.typeCount(Type.NETHER));
         assertEquals(2, l.typeCount(Type.END));
         assertEquals(1, l.typeCount(Type.LEGACY_RUN));
@@ -55,15 +56,15 @@ final class CycleLayoutTest {
         assertEquals(2750L, l.start(1));                        // Nether
         assertEquals(2750L + 4064L, l.start(2));                // OW after the Nether
         assertEquals(9814L, l.start(3));                        // End
-        assertEquals(9814L + 4480L, l.start(4));                // Upside-down
-        assertEquals(24_594L, l.start(5));                      // OW·WWOO opens lap 2
+        assertEquals(9814L + 4655L, l.start(4));                // Upside-down
+        assertEquals(24_769L, l.start(5));                      // OW·WWOO opens lap 2
         assertEquals(Style.WWOO, l.slot(5).style());
         assertEquals(Style.BETTER, l.slot(6).style());
         assertEquals(Style.BOP, l.slot(7).style());
         assertEquals(Style.BETTER, l.slot(8).style());
         assertEquals(Type.SPHERES, l.slot(9).type());
         assertEquals(Type.LEGACY_RUN, l.slot(11).type());
-        assertEquals(24_594L + 56_044L, l.start(11));
+        assertEquals(24_769L + 56_044L, l.start(11));
         assertEquals(Type.STACKS, l.slot(15).type());
         assertEquals(1, l.occurrence(6));                       // the BetterNether slot is Nether occurrence 1
         assertEquals(0, l.occurrence(1));

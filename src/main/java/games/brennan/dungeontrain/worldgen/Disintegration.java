@@ -57,7 +57,16 @@ public final class Disintegration {
 
     /** Width of one active band (the void+End+void with its fades): {@code 4·fade + 2·voidHold + endHold}. */
     public static long bandLength(int fade, int voidHold, int endHold) {
-        return 4L * Math.max(0, fade) + 2L * Math.max(0, voidHold) + Math.max(0, endHold);
+        return bandLength(fade, voidHold, endHold, voidHold);
+    }
+
+    /**
+     * {@link #bandLength(int, int, int)} with the trailing void hold (End → void → overworld) its own
+     * length: {@code 4·fade + voidHold + endHold + trailingHold}. A layout's End slot can lengthen that
+     * hold alone — the gap before the upside-down band.
+     */
+    public static long bandLength(int fade, int voidHold, int endHold, int trailingHold) {
+        return 4L * Math.max(0, fade) + Math.max(0, voidHold) + Math.max(0, endHold) + Math.max(0, trailingHold);
     }
 
     /**
@@ -80,9 +89,10 @@ public final class Disintegration {
      * is shorter (the player spawns partway through it). The {@code worldX < startX} region is
      * always pure overworld regardless of the shift.
      */
-    private static long cycleOffset(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold) {
+    private static long cycleOffset(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold,
+                                    int trailingHold, int owHold) {
         if (worldX < startX) return -1L;
-        long period = cyclePeriod(fade, voidHold, endHold, owHold);
+        long period = bandLength(fade, voidHold, endHold, trailingHold) + Math.max(0, owHold);
         if (period <= 0L) return -1L;
         return Math.floorMod((long) worldX - startX + phaseShift, period);
     }
@@ -99,12 +109,18 @@ public final class Disintegration {
 
     /** {@link #middleRamp(int, long, int, int, int, int)} with a {@code phaseShift} into the cycle (see {@link #cycleOffset}). */
     public static double middleRamp(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold) {
-        long d = cycleOffset(worldX, startX, phaseShift, fade, voidHold, endHold, owHold);
+        return middleRamp(worldX, startX, phaseShift, fade, voidHold, endHold, voidHold, owHold);
+    }
+
+    /** {@link #middleRamp(int, long, int, int, int, int, int)} with its own trailing void hold (see {@link #bandLength(int, int, int, int)}). */
+    public static double middleRamp(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold,
+                                    int trailingHold, int owHold) {
+        long d = cycleOffset(worldX, startX, phaseShift, fade, voidHold, endHold, trailingHold, owHold);
         if (d < 0L) return 0.0;
         int oh = Math.max(0, owHold);
         if (d < oh) return 0.0;                            // overworld phase (start of each cycle)
         long dd = d - oh;                                  // offset within the active band
-        long band = bandLength(fade, voidHold, endHold);
+        long band = bandLength(fade, voidHold, endHold, trailingHold);
         int f = Math.max(0, fade);
         if (dd < f) return (double) dd / f;                // overworld → void
         long holdEnd = band - f;
@@ -157,12 +173,18 @@ public final class Disintegration {
 
     /** {@link #skyRamp(int, long, int, int, int, int, int)} with a {@code phaseShift} into the cycle (see {@link #cycleOffset}). */
     public static double skyRamp(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold, int skyOffset) {
-        long d = cycleOffset(worldX, startX, phaseShift, fade, voidHold, endHold, owHold);
+        return skyRamp(worldX, startX, phaseShift, fade, voidHold, endHold, voidHold, owHold, skyOffset);
+    }
+
+    /** {@link #skyRamp(int, long, int, int, int, int, int, int)} with its own trailing void hold (see {@link #bandLength(int, int, int, int)}). */
+    public static double skyRamp(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold,
+                                 int trailingHold, int owHold, int skyOffset) {
+        long d = cycleOffset(worldX, startX, phaseShift, fade, voidHold, endHold, trailingHold, owHold);
         if (d < 0L) return 0.0;
         int oh = Math.max(0, owHold);
         if (d < oh) return 0.0;                            // overworld phase (start of each cycle)
         long dd = d - oh;                                  // offset within the active band
-        long band = bandLength(fade, voidHold, endHold);
+        long band = bandLength(fade, voidHold, endHold, trailingHold);
         int f = Math.max(0, fade);
         long maxOffset = Math.max(0L, (band - 2L * f) / 2L);
         long o = Math.min(Math.max(0, skyOffset), maxOffset);
@@ -187,7 +209,17 @@ public final class Disintegration {
 
     /** {@link #endRamp(int, long, int, int, int, int)} with a {@code phaseShift} into the cycle (see {@link #cycleOffset}). */
     public static double endRamp(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold) {
-        long d = cycleOffset(worldX, startX, phaseShift, fade, voidHold, endHold, owHold);
+        return endRamp(worldX, startX, phaseShift, fade, voidHold, endHold, voidHold, owHold);
+    }
+
+    /**
+     * {@link #endRamp(int, long, int, int, int, int, int)} with its own trailing void hold (see
+     * {@link #bandLength(int, int, int, int)}) — which only lengthens the band past the End core, so the
+     * island ramp itself is unchanged.
+     */
+    public static double endRamp(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold,
+                                 int trailingHold, int owHold) {
+        long d = cycleOffset(worldX, startX, phaseShift, fade, voidHold, endHold, trailingHold, owHold);
         if (d < 0L) return 0.0;
         int oh = Math.max(0, owHold);
         if (d < oh) return 0.0;                            // overworld phase
