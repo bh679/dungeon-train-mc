@@ -8,14 +8,14 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.worldgen.VoidWallPlane;
 
 /**
- * Distant Horizons' culling frustum with one extra test: a LOD section wholly past this frame's void
- * wall ({@link ClientVoidWall}) is not drawn. Only X — the direction the train runs — is cut, and DH's
- * render distance never changes, so its LODs are never rebuilt; the wall moves and DH simply stops or
- * starts drawing the sections behind it.
+ * Distant Horizons' culling frustum with one extra test: a LOD section reaching past this frame's void
+ * wall ({@link ClientVoidWall}) is not drawn — straddling ones included, since a LOD section can be
+ * hundreds of blocks wide and its far part would carry what lies past the void. Only X — the direction
+ * the train runs — is cut, and DH's render distance never changes, so its LODs are never rebuilt; the
+ * wall moves and DH simply stops or starts drawing the sections behind it.
  *
- * <p>Unlike the vanilla hooks, the track corridor is not spared here: a LOD column is hundreds of
- * blocks wide, so keeping the ones the track runs through would keep whole swathes of the far side.
- * The track past the wall is drawn by {@code DistantHorizonsVoidWall} instead.</p>
+ * <p>The track's LODs go with everything else past the wall; the track there is drawn by
+ * {@code DistantHorizonsVoidWall} instead.</p>
  *
  * <p>Bound above DH's core frustum, which it wraps rather than replaces: DH's own view-frustum test
  * still runs ({@link #delegate()}), so off-screen sections are still culled as before.</p>
@@ -41,7 +41,7 @@ final class DistantHorizonsTrackCulling implements IDhApiCullingFrustum {
     @Override
     public boolean intersects(int lodBlockPosMinX, int lodBlockPosMinZ, int lodBlockWidth, int lodDetailLevel) {
         VoidWallPlane wall = ClientVoidWall.plane();
-        if (wall.active() && lodBlockPosMinX >= wall.wallX()
+        if (wall.hidesTerrain(lodBlockPosMinX, (double) lodBlockPosMinX + lodBlockWidth)
                 && ClientDisplayConfig.isDistantHorizonsAdjustmentsEnabled()) {
             return false;
         }

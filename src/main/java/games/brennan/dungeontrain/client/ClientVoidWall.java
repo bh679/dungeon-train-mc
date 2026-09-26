@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.worldgen.VoidWallLayout;
 import games.brennan.dungeontrain.worldgen.VoidWallPlane;
@@ -24,7 +25,7 @@ import net.minecraft.world.level.Level;
  */
 public final class ClientVoidWall {
 
-    /** Wide enough for any configured carriage — the corridor is kept whole past the wall. */
+    /** Wide enough for any configured carriage — the train's own corridor carries on past the wall. */
     private static final int CORRIDOR_WIDTH = CarriageDims.MAX_WIDTH;
 
     /** Volatile: written on the render thread, read from chunk-build threads through the frustum. */
@@ -41,10 +42,12 @@ public final class ClientVoidWall {
      */
     public static void beginFrame(double cameraX) {
         VoidWallLayout.Result next = compute(cameraX);
-        VoidWallPlane nextPlane = VoidWallPlane.at(next.cullX(), ClientUpsideDownBand.trainY(), CORRIDOR_WIDTH);
+        VoidWallPlane nextPlane = VoidWallPlane.at(next.cullX(), cameraX, ClientUpsideDownBand.trainY(), CORRIDOR_WIDTH);
         VoidWallPlane before = plane;
         result = next;
         plane = nextPlane;
+        // Only a wall appearing, going or moving re-derives the visible set — not the camera X the plane
+        // also carries, which changes every frame.
         if (before.active() != nextPlane.active() || before.wallX() != nextPlane.wallX()) {
             Minecraft mc = Minecraft.getInstance();
             if (mc.levelRenderer != null) mc.levelRenderer.needsUpdate();
@@ -56,7 +59,9 @@ public final class ClientVoidWall {
             return VoidWallLayout.Result.NONE;
         }
         return VoidWallLayout.wallAt(WorldGenCycle.fromConfig(), cameraX,
-                ClientDisplayConfig.getVoidWallFadeFraction(), true, ClientDisplayConfig.isVoidWallLegacyEras());
+                ClientDisplayConfig.getVoidWallFadeFraction(),
+                DungeonTrainCommonConfig.getDisintegrationSkyFadeOffsetBlocks(),
+                true, ClientDisplayConfig.isVoidWallLegacyEras());
     }
 
     /**
@@ -79,9 +84,14 @@ public final class ClientVoidWall {
         return plane.active();
     }
 
-    /** Whether a box is wholly past this frame's full-strength wall and clear of the track. */
-    public static boolean hides(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
-        return plane.hides(minX, minY, minZ, maxX, maxY, maxZ);
+    /** Whether terrain spanning {@code [minX, maxX]} reaches past this frame's full-strength wall. */
+    public static boolean hidesTerrain(double minX, double maxX) {
+        return plane.hidesTerrain(minX, maxX);
+    }
+
+    /** Whether a body (sub-level, entity) is past the wall and off the track corridor. */
+    public static boolean hidesBody(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+        return plane.hidesBody(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     /** The culling plane in force this frame. */

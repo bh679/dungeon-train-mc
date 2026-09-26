@@ -36,7 +36,8 @@ import java.util.List;
  * <ul>
  *   <li><b>The track past the wall</b> — a bed and two rails in DH's box style, from where the vanilla
  *       world ends to the edge of DH's view, while a wall stands. The LODs the real track is part of are
- *       culled with everything else past the wall; without these the rails would stop dead at it.</li>
+ *       culled with everything else past the wall; without these the rails would stop dead at it. Short
+ *       of the vanilla edge the real blocks are drawn instead ({@link VoidWallTrackRenderer}).</li>
  *   <li><b>The veil</b> — while a wall fades, a translucent sheet at its X in the fog colour, with a hole
  *       for the track. It is DH's box so DH depth-tests it against its own LODs, which the vanilla veil
  *       ({@link VoidWallVeilRenderer}) cannot see.</li>
@@ -54,6 +55,10 @@ public final class DistantHorizonsVoidWall {
 
     private static final Color BED_COLOR = new Color(0x55, 0x55, 0x5A);
     private static final Color RAIL_COLOR = new Color(0x8C, 0x8C, 0x94);
+    /** Widest LOD section DH culls whole — how far before the wall the real track's LODs can vanish. */
+    private static final double MAX_LOD_WIDTH = 1024.0;
+    /** Ghost track sits this far over the real track's LODs, so the two never z-fight. */
+    private static final double LIFT = 0.05;
     /** How far the ghost track or the veil must drift before its boxes are rebuilt. */
     private static final double REBUILD_STEP = 16.0;
     /** Veil opacity steps as it thins towards the top of the world — DH boxes are one colour each. */
@@ -181,11 +186,16 @@ public final class DistantHorizonsVoidWall {
         }
     }
 
-    /** The bed and two rails from the wall (or the end of the vanilla world, whichever is further) outwards. */
+    /**
+     * The bed and two rails from the end of the vanilla world outwards, while a wall stands within DH's
+     * view. It starts at the vanilla edge rather than at the wall because the culled LOD section that
+     * straddles the wall can begin hundreds of blocks before it, taking the real track's LODs with it;
+     * short of the wall the boxes simply lie over the real track, a hair above it.
+     */
     private static void updateTrack(VoidWallLayout.Result wall, Vec3 cam, double vanillaReach, double dhReach) {
-        double from = Math.max(wall.cullX(), Math.floor(cam.x + vanillaReach));
+        double from = Math.floor(cam.x + vanillaReach);
         double to = cam.x + dhReach;
-        if (!wall.hasCull() || from >= to) {
+        if (!wall.hasCull() || from >= to || wall.cullX() > to + MAX_LOD_WIDTH) {
             track.setActive(false);
             trackFromBuilt = Double.NaN;
             return;
@@ -195,9 +205,9 @@ public final class DistantHorizonsVoidWall {
             int w = CarriageDims.DEFAULT_WIDTH;
             double end = from + dhReach + REBUILD_STEP;
             List<DhApiRenderableBox> boxes = new ArrayList<>(3);
-            boxes.add(box(from, trainY - 2, 0, end, trainY - 1, w, BED_COLOR, EDhApiBlockMaterial.STONE));
-            boxes.add(box(from, trainY - 1, 1, end, trainY - 0.8, 2, RAIL_COLOR, EDhApiBlockMaterial.METAL));
-            boxes.add(box(from, trainY - 1, w - 2, end, trainY - 0.8, w - 1, RAIL_COLOR, EDhApiBlockMaterial.METAL));
+            boxes.add(box(from, trainY - 2, 0, end, trainY - 1 + LIFT, w, BED_COLOR, EDhApiBlockMaterial.STONE));
+            boxes.add(box(from, trainY - 1, 1, end, trainY - 0.8 + LIFT, 2, RAIL_COLOR, EDhApiBlockMaterial.METAL));
+            boxes.add(box(from, trainY - 1, w - 2, end, trainY - 0.8 + LIFT, w - 1, RAIL_COLOR, EDhApiBlockMaterial.METAL));
             replace(track, boxes);
             trackFromBuilt = from;
         }

@@ -38,11 +38,11 @@ final class VoidWallLayoutTest {
     }
 
     private static VoidWallLayout.Result voidsOnly(double at) {
-        return VoidWallLayout.wallAt(C, at, FADE, true, false);
+        return VoidWallLayout.wallAt(C, at, FADE, 0, true, false);
     }
 
     private static VoidWallLayout.Result both(double at) {
-        return VoidWallLayout.wallAt(C, at, FADE, true, true);
+        return VoidWallLayout.wallAt(C, at, FADE, 0, true, true);
     }
 
     private static long eraCoreStart(int e) {
@@ -80,6 +80,28 @@ final class VoidWallLayoutTest {
         VoidWallLayout.Result done = voidsOnly(from + fadeLen + 1);
         assertFalse(done.hasVeil());
         assertTrue(done.cullX() > wall, "the void's own wall is gone");
+    }
+
+    @Test
+    @DisplayName("with the End sky lagging the terrain, the wall holds until the void sky has fully risen")
+    void waitsForVoidToFadeIn() {
+        int sky = 120;                                        // sky full at slot + sky + F = hold start + 120
+        long from = x(END1 + F);
+        long skyFull = from + sky;
+        long wall = x(END1 + F + VH);
+        double fadeLen = FADE * VH;
+
+        VoidWallLayout.Result early = VoidWallLayout.wallAt(C, from + 60, FADE, sky, true, false);
+        assertEquals(wall, early.cullX(), 1e-9, "still culling while the void sky rises");
+        assertFalse(early.hasVeil());
+
+        VoidWallLayout.Result mid = VoidWallLayout.wallAt(C, skyFull + fadeLen / 2, FADE, sky, true, false);
+        assertEquals(wall, mid.veilX(), 1e-9);
+        assertEquals(0.5, mid.veilStrength(), 1e-9);
+
+        VoidWallLayout.Result done = VoidWallLayout.wallAt(C, skyFull + fadeLen + 1, FADE, sky, true, false);
+        assertFalse(done.hasVeil());
+        assertTrue(done.cullX() > wall);
     }
 
     @Test
@@ -169,13 +191,13 @@ final class VoidWallLayoutTest {
     @Test
     @DisplayName("both rules off: no wall at all")
     void rulesOff() {
-        assertTrue(VoidWallLayout.wallAt(C, x(END1) - 500, FADE, false, false).isNone());
+        assertTrue(VoidWallLayout.wallAt(C, x(END1) - 500, FADE, 0, false, false).isNone());
     }
 
     @Test
     @DisplayName("a fade of 0 drops the wall the moment the camera enters")
     void zeroFade() {
-        VoidWallLayout.Result r = VoidWallLayout.wallAt(C, x(END1 + F) + 1, 0.0, true, false);
+        VoidWallLayout.Result r = VoidWallLayout.wallAt(C, x(END1 + F) + 1, 0.0, 0, true, false);
         assertFalse(r.hasVeil());
         assertTrue(r.cullX() > x(END1 + F + VH));
     }

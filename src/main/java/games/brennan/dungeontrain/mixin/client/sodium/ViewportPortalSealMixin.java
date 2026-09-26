@@ -54,8 +54,7 @@ public abstract class ViewportPortalSealMixin {
             cir.setReturnValue(false);
             return;
         }
-        if (ClientVoidWall.active() && ClientVoidWall.hides(centreX - r, centreY - r, centreZ - r,
-                                                            centreX + r, centreY + r, centreZ + r)) {
+        if (ClientVoidWall.active() && ClientVoidWall.hidesTerrain(centreX - r, centreX + r)) {
             cir.setReturnValue(false);
         }
     }

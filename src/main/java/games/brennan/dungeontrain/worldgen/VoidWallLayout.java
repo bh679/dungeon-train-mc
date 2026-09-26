@@ -21,10 +21,12 @@ import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
  * screen, looking back across it is allowed.</p>
  *
  * <h2>The fade</h2>
- * <p>A screen does not switch off the instant the camera enters it. Over the first
- * {@code fadeFraction} of its length its wall becomes a translucent veil whose strength eases from 1
- * to 0 ({@link Result#veilStrength}). Only a wall at full strength is culled ({@link Result#cullX});
- * the veil is drawn over whatever lies behind a fading one.</p>
+ * <p>A screen does not switch off the instant the camera enters it. Once the void itself has faded
+ * in — the End band's sky lags its terrain by {@code skyOffset} blocks, so the first hold only reads
+ * as void once that sky has finished rising — its wall becomes a translucent veil whose strength eases
+ * from 1 to 0 ({@link Result#veilStrength}) over {@code fadeFraction} of the screen's length. Only a
+ * wall at full strength is culled ({@link Result#cullX}); the veil is drawn over whatever lies behind a
+ * fading one.</p>
  *
  * <p>Only a {@link CycleLayout} cycle is handled (the shipped shape); the classic single-period order
  * has no wall. Runs double in length, so the camera's run and both neighbours are consulted — a void
@@ -63,12 +65,14 @@ public final class VoidWallLayout {
     /**
      * The walls for a camera at {@code camX}.
      *
-     * @param fadeFraction share of a screen's length over which its wall fades once entered, in
-     *                     {@code [0, 1]}; 0 switches it off at the entry edge
+     * @param fadeFraction share of a screen's length over which its wall fades once the void has faded
+     *                     in, in {@code [0, 1]}; 0 switches it off at that point
+     * @param skyOffset    {@code disintegrationSkyFadeOffsetBlocks}: how far the End band's sky lags its
+     *                     terrain, which is how long the first void takes to fade in
      * @param voids        whether voids are screens
      * @param legacy       whether legacy eras are screens
      */
-    public static Result wallAt(WorldGenCycle cycle, double camX, double fadeFraction,
+    public static Result wallAt(WorldGenCycle cycle, double camX, double fadeFraction, int skyOffset,
                                 boolean voids, boolean legacy) {
         CycleLayout layout = cycle.layout();
         if (layout == null || layout.count() == 0 || layout.period() <= 0L || !(voids || legacy)) {
@@ -81,7 +85,7 @@ public final class VoidWallLayout {
             for (int i = 0; i < layout.count(); i++) {
                 CycleLayout.Type type = layout.slot(i).type();
                 if (voids && type == CycleLayout.Type.END) {
-                    endVoids(cycle, layout, i, runStart, run, c);
+                    endVoids(cycle, layout, i, runStart, run, skyOffset, c);
                 }
                 if (type == CycleLayout.Type.LEGACY_RUN) {
                     legacyRun(layout, i, runStart, run, c, voids, legacy);
@@ -112,9 +116,13 @@ public final class VoidWallLayout {
      * The End slot's two empty holds — offsets as {@link Disintegration#endRamp} lays them out. The
      * trailing hold stops short of the upside-down entry lead where that band follows (lap 1), because
      * the lead already shows mirrored terrain.
+     *
+     * <p>The first hold's wall starts to fade only once the void sky has fully risen — the same point
+     * {@link Disintegration#skyRamp} reaches 1, {@code offset + fade} into the slot. The second hold is
+     * entered from the End with the sky already full, so it fades from its own start.</p>
      */
     private static void endVoids(WorldGenCycle cycle, CycleLayout layout, int i, long runStart, int run,
-                                 Collector c) {
+                                 int skyOffset, Collector c) {
         long f = Math.max(0, cycle.eFade());
         long vh = Math.max(0, cycle.eVoid());
         long eh = Math.max(0, layout.slot(i).core());
@@ -126,8 +134,12 @@ public final class VoidWallLayout {
                 && layout.slot(i + 1).type() == CycleLayout.Type.UPSIDE_DOWN;
         if (udFollows) secondEnd = Math.min(secondEnd, slotEnd - cycle.udEntryLeadLen());
 
-        c.screen(world(runStart, run, slotStart + f), world(runStart, run, slotStart + f + vh));
-        c.screen(world(runStart, run, slotStart + 3L * f + vh + eh), world(runStart, run, secondEnd));
+        long band = Disintegration.bandLength((int) f, (int) vh, (int) eh);
+        long skyFull = f + Math.min(Math.max(0, skyOffset), Math.max(0L, (band - 2L * f) / 2L));
+        c.screen(world(runStart, run, slotStart + f), world(runStart, run, slotStart + Math.max(f, skyFull)),
+                world(runStart, run, slotStart + f + vh));
+        long second = slotStart + 3L * f + vh + eh;
+        c.screen(world(runStart, run, second), world(runStart, run, second), world(runStart, run, secondEnd));
     }
 
     /**
@@ -142,7 +154,8 @@ public final class VoidWallLayout {
             boolean isVoid = layout.eras()[e].kind() == LegacyBandKind.VOID;
             if (!(legacy || (voids && isVoid))) continue;
             long cs = slotStart + layout.eraCoreStart(e);
-            c.screen(world(runStart, run, cs), world(runStart, run, cs + layout.eraCoreLen(e)));
+            double from = world(runStart, run, cs);
+            c.screen(from, from, world(runStart, run, cs + layout.eraCoreLen(e)));
         }
     }
 
@@ -168,10 +181,15 @@ public final class VoidWallLayout {
             this.fade = fade;
         }
 
-        /** A screen {@code [from, wallX]}: its wall hides what is past {@code wallX}. */
-        void screen(double from, double wallX) {
+        /**
+         * A screen {@code [from, wallX]}: its wall hides what is past {@code wallX}, holding full strength
+         * until {@code fadeFrom} (where the void has faded in) and fading over {@code fade} of its length.
+         */
+        void screen(double from, double fadeFrom, double wallX) {
             if (wallX <= from || x >= wallX) return;
-            double s = strength(x - from, fade * (wallX - from));
+            double start = Math.min(Math.max(from, fadeFrom), wallX);
+            double fadeLen = Math.min(fade * (wallX - from), wallX - start);
+            double s = strength(x - start, fadeLen);
             if (s >= 1.0) {
                 cullX = Math.min(cullX, wallX);
             } else if (s > 0.0 && wallX < veilX) {

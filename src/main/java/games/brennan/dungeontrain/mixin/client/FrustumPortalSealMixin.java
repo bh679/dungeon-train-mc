@@ -49,9 +49,17 @@ public abstract class FrustumPortalSealMixin {
             cir.setReturnValue(false);
             return;
         }
-        if (ClientVoidWall.active()
-                && ClientVoidWall.hides(aabb.minX, aabb.minY, aabb.minZ, aabb.maxX, aabb.maxY, aabb.maxZ)) {
-            cir.setReturnValue(false);
+        if (ClientVoidWall.active() && dungeontrain$pastVoidWall(aabb)) cir.setReturnValue(false);
+    }
+
+    /**
+     * Chunk sections (16 wide) are terrain — hidden whole past the wall, the track's included; anything
+     * narrower is an entity or block entity, kept when it rides the track corridor.
+     */
+    private static boolean dungeontrain$pastVoidWall(AABB aabb) {
+        if (aabb.maxX - aabb.minX >= 16.0 && aabb.maxZ - aabb.minZ >= 16.0) {
+            return ClientVoidWall.hidesTerrain(aabb.minX, aabb.maxX);
         }
+        return ClientVoidWall.hidesBody(aabb.minX, aabb.minY, aabb.minZ, aabb.maxX, aabb.maxY, aabb.maxZ);
     }
 }

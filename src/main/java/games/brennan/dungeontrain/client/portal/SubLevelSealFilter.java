@@ -45,7 +45,7 @@ public final class SubLevelSealFilter {
             BoundingBox3dc bounds = subLevel.boundingBox();
             if (bounds != null && sealed && ClientPortalSeal.hides(bounds.minY(), bounds.maxY())) continue;
             // Past the void wall: another train out beyond it is as hidden as the terrain there.
-            if (bounds != null && walled && ClientVoidWall.hides(bounds.minX(), bounds.minY(), bounds.minZ(),
+            if (bounds != null && walled && ClientVoidWall.hidesBody(bounds.minX(), bounds.minY(), bounds.minZ(),
                     bounds.maxX(), bounds.maxY(), bounds.maxZ())) continue;
             kept.add(subLevel);
         }
