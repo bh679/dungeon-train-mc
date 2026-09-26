@@ -210,6 +210,8 @@ public final class BuilderRelayInstall {
             case PART -> installPart(id, subKind, template);
             case TRACK -> installTrack(id, subKind, template);
             case PORTAL_ROOM -> installPortalRoom(id, template);
+            // Frames have no relay kind yet: nothing is ever offered for one.
+            case CHUNK_FRAME -> Outcome.UNSUPPORTED;
         };
         if (outcome == Outcome.INSTALLED) TemplateSidecars.apply(kind, subKind, id, sidecars);
         return outcome;
@@ -269,6 +271,7 @@ public final class BuilderRelayInstall {
                 yield trackKind != null && TrackVariantStore.exists(trackKind, id);
             }
             case PORTAL_ROOM -> PortalRoomTemplateStore.exists(id);
+            case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names().contains(id);
         };
     }
 
@@ -304,6 +307,7 @@ public final class BuilderRelayInstall {
                 yield trackKind == null ? List.<String>of() : TrackVariantRegistry.namesFor(trackKind);
             }
             case PORTAL_ROOM -> TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM);
+            case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names();
         };
 
         List<String> out = new ArrayList<>();
@@ -342,6 +346,7 @@ public final class BuilderRelayInstall {
                 yield trackKind != null && TrackVariantStore.bundled(trackKind, id);
             }
             case PORTAL_ROOM -> TrackVariantStore.bundled(TrackKind.PORTAL_ROOM, id);
+            case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.isBundled(id);
         };
     }
 

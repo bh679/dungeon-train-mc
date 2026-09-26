@@ -39,10 +39,13 @@ public final class CarriageTestSession {
      *
      * @param templateId the carriage or contents id asked for — a group parent, not the member it rolled
      * @param box        everything that was stamped, so Back can sweep exactly that
+     * @param shellSeed    what the carriage rolled on — its pick for contents, its block variants
+     * @param contentsSeed what the contents rolled on — their pick, member and block variants; kept
+     *                     apart so a focused reseed can re-roll one and leave the other standing
      */
     public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch,
                           GameType previousGameType, Kind kind, String templateId,
-                          BoundingBox box) {}
+                          BoundingBox box, long shellSeed, long contentsSeed) {}
 
     /**
      * The carriage index every test copy is rolled at.

@@ -398,6 +398,20 @@ public final class VariantOverlayRenderer {
                 continue;
             }
 
+            // Chunk frame plot — beside the Dimensions rooms, and only while that category is
+            // resident; same order as BlockVariantPlot.resolveAtPos.
+            if (EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) {
+                java.util.Optional<String> frameName = ChunkFrameEditor.plotContaining(playerPos);
+                if (frameName.isPresent()) {
+                    ChunkFramePlot framePlot = ChunkFramePlot.of(frameName.get());
+                    Vec3i frameSize = framePlot.footprint();
+                    updateHoverPacket(player, framePlot.origin(),
+                        pos -> inBounds(pos, frameSize),
+                        framePlot::statesAt);
+                    continue;
+                }
+            }
+
             // Track-side plot (track tile / pillar section / stairs adjunct
             // / tunnel kind) — icon HUD for the kind's own variants.json
             // sidecar. {@code TrackVariantBlocks.entries()} returns the same
@@ -498,6 +512,28 @@ public final class VariantOverlayRenderer {
                 partMenuEnabled, partMirror[0], partMirror[1], partMirror[2], partMirror[3],
                 Collections.emptySet(), ""));
             return;
+        }
+
+        // Chunk frame plots, the same synthetic way: they have no Template either. Only while
+        // Dimensions is resident, which is the only time they stand.
+        if (EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) {
+            Optional<String> chunk = ChunkFrameEditor.plotContaining(player.blockPosition());
+            if (chunk.isPresent()) {
+                String frame = chunk.get();
+                boolean chunkDevmode = EditorDevMode.isEnabled();
+                boolean[] chunkMirror = mirrorAxesAt(player, dims);
+                String chunkKey = "CHUNK_FRAMES|" + frame + "|" + chunkDevmode
+                    + "|" + chunkMirror[0] + chunkMirror[1] + chunkMirror[2] + chunkMirror[3];
+                if (chunkKey.equals(prev)) return;
+                LAST_STATUS.put(uuid, chunkKey);
+                DungeonTrainNet.sendTo(player, new EditorStatusPacket(
+                    PlotCategory.CHUNK_FRAMES.id(), frame, ChunkFrameEditor.MODEL_ID, frame,
+                    chunkDevmode, EditorStatusPacket.NO_WEIGHT,
+                    0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
+                    false, chunkMirror[0], chunkMirror[1], chunkMirror[2], chunkMirror[3],
+                    Collections.emptySet(), ""));
+                return;
+            }
         }
 
         Optional<EditorCategory.Located> located = EditorCategory.locate(player, dims);

@@ -1139,6 +1139,11 @@ public final class EditorGuiScreen extends Screen {
                 return true;
             }
             case RESEED -> {
+                // Inside a test, Shift re-rolls only the template under test.
+                if (games.brennan.dungeontrain.client.PortalTestSessionState.active() && Screen.hasShiftDown()) {
+                    CommandRunner.run(EditorScreenActions.RESEED_FOCUS_COMMAND);
+                    return true;
+                }
                 dispatch(detail.reseedEntry());
                 return true;
             }

@@ -74,6 +74,7 @@ public final class BuilderBuiltins {
                 yield trackKind != null && TrackVariantStore.bundled(trackKind, id);
             }
             case PORTAL_ROOM -> TrackVariantStore.bundled(TrackKind.PORTAL_ROOM, id);
+            case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.isBundled(id);
         };
     }
 }

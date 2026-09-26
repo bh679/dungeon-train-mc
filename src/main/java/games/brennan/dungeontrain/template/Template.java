@@ -96,7 +96,8 @@ public sealed interface Template
             Template.Pillar,
             Template.Adjunct,
             Template.Tunnel,
-            Template.PortalRoom {
+            Template.PortalRoom,
+            Template.ChunkFrame {
 
     /** Stable command-token identifier — used by EditorMenuScreen + commands. */
     String id();
@@ -970,6 +971,61 @@ public sealed interface Template
         }
         @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
             PortalCarriageBuilder.stampRoomAt(level, origin, dims, name, plotSize(dims), /*relight*/ true);
+        }
+    }
+
+    /**
+     * A chunk frame — the one template that dresses a dimensional carriage room: the room's box plus
+     * the one-block shell around it ({@link games.brennan.dungeontrain.portal.chunkframe.ChunkFrame}).
+     *
+     * <p>Named by name alone and browsed under Dimensions, like {@link PortalRoom}. It has no weight
+     * of its own: a room weights the frames it draws from in its {@code .frames.json}.</p>
+     */
+    record ChunkFrame(String name) implements Template {
+        public ChunkFrame {
+            Objects.requireNonNull(name, "name");
+        }
+
+        @Override public String id() { return games.brennan.dungeontrain.editor.ChunkFrameEditor.MODEL_ID; }
+
+        @Override public String displayName() { return "frame / " + name; }
+
+        @Override public TemplateKind kind() { return TemplateKind.CHUNK_FRAME; }
+
+        @Override public boolean isBuiltin() {
+            return games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.isBundled(name);
+        }
+
+        @Override public boolean canPromote() { return false; }
+
+        @Override public TemplateStore<ChunkFrame> store() {
+            return games.brennan.dungeontrain.editor.ChunkFrameTemplates.store();
+        }
+        @Override public TemplateRegistry<ChunkFrame> registry() {
+            return games.brennan.dungeontrain.editor.ChunkFrameTemplates.registry();
+        }
+
+        @Override public int weight() { return games.brennan.dungeontrain.net.EditorStatusPacket.NO_WEIGHT; }
+
+        @Override public String variantName() { return name; }
+
+        @Override public boolean hasBundledTier() { return isBuiltin(); }
+
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            games.brennan.dungeontrain.editor.ChunkFrameEditor.restamp(level, name);
+        }
+
+        /** The bundled frame as a structure — what {@code /dt reset default} puts back. */
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.bundledStructure(level, name);
+        }
+
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return games.brennan.dungeontrain.editor.ChunkFrameEditor.registeredPlotOrigin(name);
+        }
+
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.SIZE;
         }
     }
 }

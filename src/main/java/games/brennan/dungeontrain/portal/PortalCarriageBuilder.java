@@ -157,7 +157,7 @@ public final class PortalCarriageBuilder {
      * Here air is a value an author can only reach by emptying their hand on the row, and it means
      * exactly what it says — no shell at all. See {@link PortalRoomLock}.</p>
      */
-    private static BlockState lockStateFor(PortalStructure structure) {
+    static BlockState lockStateFor(PortalStructure structure) {
         PortalRoomLock lock = structure.lock();
         if (lock.isAir()) return Blocks.AIR.defaultBlockState();
         return PortalRoomSinglePlanes.stateFor(lock.blockId()).orElse(LOCK);
@@ -1000,6 +1000,12 @@ public final class PortalCarriageBuilder {
             bedrockSkinCorridor(level, structure.exitOrigin(dims), dims, layout,
                 PortalCarriageRole.EXIT, roomOrigin, roomSize, lock);
         }
+
+        // Last of all: a chunk dimension's frame stands where the skin, the mouth seals and the
+        // corridor rings were just laid, and dresses them — see ChunkFramePlacer.
+        if (structure.mode().generatesTerrain()) {
+            PortalChunkDimension.frame(level, structure, dims, pairKey);
+        }
     }
 
     /**
@@ -1138,7 +1144,11 @@ public final class PortalCarriageBuilder {
         int sealX = PortalCorridorMask.sealPlaneX(corridorOrigin, layout, role);
         sealCorridorMouth(level, sealX, corridorOrigin, dims, roomOrigin, roomSize,
             sealSource.roomOrigin(dims, layout), role,
-            /*wallOnly*/ base.settings().effectiveDoorWall().repeats());
+            /*wallOnly*/ base.settings().effectiveDoorWall().repeats(),
+            // A chunk dimension has no floor row of its own to fall back on — its bottom row is
+            // sampled terrain — so an open cell of its end column seals with its lock skin, the sky
+            // the whole chunk stands in, rather than with a slab of stone across open air.
+            base.mode().generatesTerrain() ? lockStateFor(base) : null);
 
         // Dead space behind the door that leads nowhere, at the other end. Unbreakable under Bedrock
         // Lock: the room's own skin stops at its ±X ends, so the plugs are what closes off the two
@@ -1939,7 +1949,8 @@ public final class PortalCarriageBuilder {
                         continue;
                     }
                     SilentBlockOps.evictBlockEntity(level.getChunkAt(wWorld), wWorld);
-                    ContainerContentsPlacement.place(level, wWorld, w.state(), w.entry().blockEntityNbt(),
+                    ContainerContentsPlacement.place(level, wWorld,
+                        games.brennan.dungeontrain.train.StagePlacementScope.resolve(w.state()), w.entry().blockEntityNbt(),
                         plotKey, w.localPos(), worldSeed, cellIndex, /*diffIndex*/ pairKey,
                         w.entry().linkedLootPrefabId());
                 }
@@ -1965,7 +1976,8 @@ public final class PortalCarriageBuilder {
             // The same index the block was picked at, so a flagged chest's contents vary with the
             // block rather than the block changing over identical loot. Still the pair-and-copy
             // frame, never the difficulty one — pairKey stays that, see the javadoc above.
-            ContainerContentsPlacement.place(level, world, picked.state(), picked.blockEntityNbt(),
+            ContainerContentsPlacement.place(level, world,
+                games.brennan.dungeontrain.train.StagePlacementScope.resolve(picked.state()), picked.blockEntityNbt(),
                 plotKey, local, worldSeed, cellIndex, /*diffIndex*/ pairKey,
                 picked.linkedLootPrefabId());
         }
@@ -2343,7 +2355,7 @@ public final class PortalCarriageBuilder {
     private static void sealCorridorMouth(ServerLevel level, int planeX, BlockPos corridorOrigin,
                                           CarriageDims dims, BlockPos roomOrigin, Vec3i roomSize,
                                           BlockPos baseRoomOrigin, PortalCarriageRole role,
-                                          boolean wallOnly) {
+                                          boolean wallOnly, BlockState openFill) {
         int floorY = roomOrigin.getY();
         int ceilingY = floorY + roomSize.getY() - 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -2362,7 +2374,7 @@ public final class PortalCarriageBuilder {
                     && y < corridorOrigin.getY() + dims.height();
                 if (coveredByCorridor) continue;
                 BlockState fill = sealFillFor(level, baseRoomOrigin, roomOrigin, roomSize, role,
-                    y, z, floorY, wallOnly);
+                    y, z, floorY, wallOnly, openFill);
                 if (fill == null) continue;
                 level.setBlock(pos.set(planeX, y, z), fill, Block.UPDATE_ALL);
             }
@@ -2394,15 +2406,20 @@ public final class PortalCarriageBuilder {
     /**
      * As documented above, or — with {@code wallOnly} — tier 1 alone: the wall carried on where the
      * room has one, and {@code null} where it does not, which the caller leaves untouched.
+     *
+     * <p>A non-null {@code openFill} replaces tiers 2 and 3: where the wall has nothing usable, the
+     * cell is that block. A chunk dimension passes its lock skin here — see
+     * {@code stampCorridorHalf}.</p>
      */
     static BlockState sealFillFor(ServerLevel level, BlockPos baseRoomOrigin,
                                           BlockPos roomOrigin, Vec3i roomSize,
                                           PortalCarriageRole role, int y, int z, int floorY,
-                                          boolean wallOnly) {
+                                          boolean wallOnly, BlockState openFill) {
         BlockPos wall = sealFillSource(baseRoomOrigin, roomOrigin, roomSize, role, y, z);
         BlockState wallState = level.getBlockState(wall);
         if (PortalRoomTiler.usableAsFill(level, wall, wallState)) return wallState;
         if (wallOnly) return null;
+        if (openFill != null) return openFill;
 
         BlockPos floor = wall.atY(baseRoomOrigin.getY());
         BlockState floorState = level.getBlockState(floor);

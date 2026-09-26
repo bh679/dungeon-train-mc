@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "91";
+    public static final String PROTOCOL_VERSION = "94";
 
     private DungeonTrainNet() {}
 
@@ -137,6 +137,8 @@ public final class DungeonTrainNet {
         // Package menu V2 — client requests a snapshot, server pushes back with
         // package list + flags + per-package content basenames.
         registrar.playToServer(PackageListRequestPacket.TYPE, PackageListRequestPacket.STREAM_CODEC, PackageListRequestPacket::handle);
+        registrar.playToServer(ChunkFrameRoomsRequestPacket.TYPE, ChunkFrameRoomsRequestPacket.STREAM_CODEC, ChunkFrameRoomsRequestPacket::handle);
+        registrar.playToClient(ChunkFrameRoomsSyncPacket.TYPE, ChunkFrameRoomsSyncPacket.STREAM_CODEC, ChunkFrameRoomsSyncPacket::handle);
         registrar.playToClient(PackageListSyncPacket.TYPE, PackageListSyncPacket.STREAM_CODEC, PackageListSyncPacket::handle);
 
         // Starting-book close-detection: client ScreenEvent.Closing → server burn flow.

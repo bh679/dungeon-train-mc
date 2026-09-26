@@ -49,6 +49,8 @@ public final class EditorMenuScreen implements MenuScreen {
      */
     public static final String SAVE_COMMAND = "dungeontrain save";
     public static final String PART_SAVE_COMMAND = "dungeontrain editor part save";
+    /** Chunk frames save through their own subcommand, for the same reason carriage parts do. */
+    public static final String CHUNK_FRAME_SAVE_COMMAND = "dungeontrain editor chunkframe save";
 
     private static final ResourceLocation SAVE_ICON =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/save");
@@ -83,6 +85,7 @@ public final class EditorMenuScreen implements MenuScreen {
         }
 
         boolean isParts()   { return category == PlotCategory.PARTS; }
+        boolean isChunkFrames() { return category == PlotCategory.CHUNK_FRAMES; }
         boolean isPortals() { return category == PlotCategory.PORTALS; }
     }
 
@@ -195,8 +198,10 @@ public final class EditorMenuScreen implements MenuScreen {
         out.add(myBuildsEntry());
 
         // Parts have their own Save — `dungeontrain save` dispatches via EditorCategory.locate,
-        // which doesn't see part plots.
-        out.add(new CommandMenuEntry.Split(
+        // which doesn't see part plots. Chunk frames save alone: there is no "save all" for them.
+        if (ctx.isChunkFrames()) {
+            out.add(new CommandMenuEntry.Run(MenuLang.t("common.save"), CHUNK_FRAME_SAVE_COMMAND));
+        } else out.add(new CommandMenuEntry.Split(
             new CommandMenuEntry.Run(MenuLang.t("common.save"),
                 ctx.isParts() ? PART_SAVE_COMMAND : SAVE_COMMAND),
             new CommandMenuEntry.Run(MenuLang.t("editor.save_all"),
@@ -258,6 +263,11 @@ public final class EditorMenuScreen implements MenuScreen {
             && PortalRoomSettings.parse(EditorStatusHudOverlay.roomMode()).contents().furnishes()) {
             out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.contents"),
                 CarriageContentsAllowScreen.forPortalRoom(ctx.modelName())));
+        }
+
+        // A frame says which chunk dimensions it dresses, and its weight among the frames there.
+        if (ctx.isChunkFrames() && notEmpty(ctx.modelName())) {
+            out.add(new CommandMenuEntry.DrillIn("Chunk dimensions…", new ChunkFrameRoomsScreen(ctx.modelName())));
         }
 
         // Weight — Triple row: [-] / Weight (N) / [+] for every category that has a weight pool.
@@ -641,7 +651,7 @@ public final class EditorMenuScreen implements MenuScreen {
             case CONTENTS -> "dungeontrain editor contents weight " + modelId;
             case WHOLE -> "dungeontrain editor whole weight " + modelId;
             case WHOLE_GROUP -> "dungeontrain editor whole group weight " + modelId;
-            case PARTS, ARCHITECTURE -> null; // no weight pool
+            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null; // no weight pool
         };
         if (prefix == null) return null;
         String label = currentWeight >= 0 ? MenuLang.t("editor.weight_n", currentWeight) : MenuLang.t("editor.weight");
@@ -664,11 +674,18 @@ public final class EditorMenuScreen implements MenuScreen {
             EditorSaveStatus.currentPlotDirty(), System.currentTimeMillis());
     }
 
+    /** The save command a category's plot is saved with. */
+    public static String saveCommandFor(PlotCategory category) {
+        if (category == PlotCategory.PARTS) return PART_SAVE_COMMAND;
+        if (category == PlotCategory.CHUNK_FRAMES) return CHUNK_FRAME_SAVE_COMMAND;
+        return SAVE_COMMAND;
+    }
+
     /** The header Save for a category: parts route through the part-aware subcommand. */
     public static MenuHeaderAction saveHeaderAction(PlotCategory category, boolean dirty, long nowMillis) {
         return new MenuHeaderAction(SAVE_ICON,
             dirty ? MenuLang.t("editor.save_unsaved") : MenuLang.t("common.save"),
-            category == PlotCategory.PARTS ? PART_SAVE_COMMAND : SAVE_COMMAND,
+            saveCommandFor(category),
             EditorSaveStatus.tint(dirty, nowMillis));
     }
 
@@ -690,7 +707,7 @@ public final class EditorMenuScreen implements MenuScreen {
             case CONTENTS -> "dungeontrain editor contents " + sub + " " + modelId;
             case WHOLE -> "dungeontrain editor whole " + sub + " " + modelId;
             case WHOLE_GROUP -> "dungeontrain editor whole group " + sub + " " + modelId;
-            case PARTS, ARCHITECTURE -> null; // no spawn gate
+            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null; // no spawn gate
         };
         if (prefix == null) return null;
         CommandMenuEntry minus  = new CommandMenuEntry.Stay("-", prefix + " dec");
@@ -738,6 +755,10 @@ public final class EditorMenuScreen implements MenuScreen {
             case WHOLE_GROUP -> new CommandMenuEntry.DrillIn(
                 MenuLang.t("common.new"),
                 new NewSourcePickerScreen(NewSourcePickerScreen.Category.WHOLE_GROUP, null, modelId));
+            // A new frame is blank or a copy of the one in hand.
+            case CHUNK_FRAMES -> new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.new"),
+                new NewSourcePickerScreen(NewSourcePickerScreen.Category.CHUNK_FRAMES, modelId, model));
             // Parts are created through their own picker; architecture has no models yet.
             case PARTS, ARCHITECTURE -> null;
         };
@@ -782,6 +803,11 @@ public final class EditorMenuScreen implements MenuScreen {
                 MenuLang.t("common.remove"),
                 new ConfirmScreen(MenuLang.t("confirm.remove", model),
                     "dungeontrain editor whole group reset " + modelId));
+            // A frame is addressed by its name; modelId is the shared chunk_frame tag.
+            case CHUNK_FRAMES -> model == null || model.isEmpty() ? null : new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.remove"),
+                new ConfirmScreen(MenuLang.t("confirm.remove", model),
+                    "dungeontrain editor chunkframe delete " + model));
             // Parts have their own remove flow; architecture has no models yet.
             case PARTS, ARCHITECTURE -> null;
         };
@@ -796,7 +822,7 @@ public final class EditorMenuScreen implements MenuScreen {
     public static CommandMenuEntry clearEntryFor(PlotCategory category, String model) {
         if (model == null || model.isEmpty() || category == null) return null;
         return switch (category) {
-            case CARRIAGES, CONTENTS, PARTS, PORTALS, WHOLE, WHOLE_GROUP -> new CommandMenuEntry.DrillIn(
+            case CARRIAGES, CONTENTS, PARTS, CHUNK_FRAMES, PORTALS, WHOLE, WHOLE_GROUP -> new CommandMenuEntry.DrillIn(
                 MenuLang.t("common.clear"),
                 new ConfirmScreen(MenuLang.t("confirm.clear_blocks", model),
                     "dungeontrain editor clear"));
@@ -825,6 +851,10 @@ public final class EditorMenuScreen implements MenuScreen {
             return new CommandMenuEntry.TypeArg(
                 MenuLang.t("common.rename"), "new_name", "dungeontrain editor part rename", "", kindName[1]);
         }
+        if (category == PlotCategory.CHUNK_FRAMES) {
+            return new CommandMenuEntry.TypeArg(
+                MenuLang.t("common.rename"), "new_name", "dungeontrain editor chunkframe rename " + model, "", model);
+        }
         if (category == null) return null;
         return switch (category) {
             case CARRIAGES -> isReservedCarriageBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
@@ -836,7 +866,7 @@ public final class EditorMenuScreen implements MenuScreen {
                 "dungeontrain editor contents save",
                 "", model);
             // Parts are handled above; the rest have no rename subcommand.
-            case TRACKS, PORTALS, PARTS, ARCHITECTURE, WHOLE, WHOLE_GROUP -> null;
+            case TRACKS, PORTALS, PARTS, CHUNK_FRAMES, ARCHITECTURE, WHOLE, WHOLE_GROUP -> null;
         };
     }
 

@@ -363,6 +363,9 @@ public interface BlockVariantPlot {
             net.minecraft.core.Vec3i partSize = kind.dims(dims);
             return new PartPlot(kind, name, origin, partSize);
         }
+        if (key.startsWith(ChunkFramePlot.KEY_PREFIX)) {
+            return ChunkFramePlot.of(key.substring(ChunkFramePlot.KEY_PREFIX.length()));
+        }
         if (key.startsWith("whole:") || key.startsWith("whole_group:")) {
             boolean group = key.startsWith("whole_group:");
             String id = key.substring(group ? "whole_group:".length() : "whole:".length());
@@ -464,6 +467,11 @@ public interface BlockVariantPlot {
             if (origin == null) return null;
             Vec3i partSize = partLoc.kind().dims(dims);
             return new PartPlot(partLoc.kind(), partLoc.name(), origin, partSize);
+        }
+        // Chunk frames stand beside the Dimensions rooms, and only while that category is resident.
+        if (EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) {
+            java.util.Optional<String> frame = ChunkFrameEditor.plotContaining(pos);
+            if (frame.isPresent()) return ChunkFramePlot.of(frame.get());
         }
         TrackPlotLocator.PlotInfo trackLoc = TrackSidePlots.locate(pos, dims);
         if (trackLoc != null) {

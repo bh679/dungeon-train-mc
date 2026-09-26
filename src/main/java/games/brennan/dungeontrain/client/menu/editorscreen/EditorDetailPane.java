@@ -101,6 +101,7 @@ public final class EditorDetailPane {
     private int iconCell = ICON_CELL;
     private InventoryEditorLayout.Rect goHereRect;
     private CommandMenuEntry goHere;
+    private CommandMenuEntry enterCentre;
 
     public Hit hovered() { return hovered; }
     public List<EditorScreenActions.Icon> icons() { return icons; }
@@ -113,7 +114,10 @@ public final class EditorDetailPane {
     /** Where the Reseed cell sits: the right end of the test row. Null before the first layout. */
     private InventoryEditorLayout.Rect reseedRect;
     /** The teleport button in the header, or null when the author is already standing there. */
-    public CommandMenuEntry goHereEntry() { return goHere; }
+    /** Go here, or Enter (into the plot's middle) while Shift is held and the plot has one. */
+    public CommandMenuEntry goHereEntry() {
+        return enterCentre != null && net.minecraft.client.gui.screens.Screen.hasShiftDown() ? enterCentre : goHere;
+    }
     public EditorScreenActions.Ctx ctx() { return ctx; }
 
     /** Build this frame's rows and icons from the selection. */
@@ -134,6 +138,7 @@ public final class EditorDetailPane {
         // while standing in the plot too: the walk lands in front of the plot's menu, which is
         // somewhere to want to be from anywhere inside it.
         goHere = ctx.hasSelection() ? EditorScreenActions.enterEntry(ctx, DungeonTrainNet::sendToServer) : null;
+        enterCentre = goHere != null ? EditorScreenActions.enterCentreEntry(ctx, DungeonTrainNet::sendToServer) : null;
         // A new selection starts on its first page; a shorter list clamps the page it was on.
         if (ctx.selection() == null || !ctx.selection().equals(pagedFor)) page = 0;
         pagedFor = ctx.selection();
@@ -434,8 +439,11 @@ public final class EditorDetailPane {
         }
         int saveX = h.right() - 1;
         goHereRect = null;
-        String label = EditorScreenLang.text(EditorScreenLang.GO_HERE);
-        int w = font.width(label) + 8;
+        String label = EditorScreenLang.text(goHereEntry() == enterCentre && enterCentre != null
+            ? EditorScreenLang.ENTER : EditorScreenLang.GO_HERE);
+        // As wide as the wider label, so holding Shift swaps the word without moving the button.
+        int w = Math.max(font.width(EditorScreenLang.text(EditorScreenLang.GO_HERE)),
+            font.width(EditorScreenLang.text(EditorScreenLang.ENTER))) + 8;
         if (!onModelPage()) {
             // The model box carries the note on the model page; on the others the header does,
             // cut to whatever the Go here button leaves so the two never overlap.

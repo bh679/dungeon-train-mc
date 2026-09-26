@@ -119,7 +119,12 @@ public final class UnsavedCheckScreen implements MenuScreen {
             boolean saved = savedThisSession.contains(r.modelId());
             if (!saved) anyOutstanding = true;
 
-            String saveCmd = "dungeontrain save model " + r.categoryId() + " " + r.modelId()
+            // A chunk frame row is keyed "chunk_frame.<name>"; frames save and open by name through
+            // their own subcommand, which needs no teleport.
+            boolean frameRow = "chunk_frames".equals(r.categoryId()) && r.modelId().startsWith("chunk_frame.");
+            String frameName = frameRow ? r.modelId().substring("chunk_frame.".length()) : null;
+            String saveCmd = frameRow ? "dungeontrain editor chunkframe save " + frameName
+                : "dungeontrain save model " + r.categoryId() + " " + r.modelId()
                 + (devmode ? " default" : "");
             // Track-side save methods (TrackEditor / PillarEditor / TunnelEditor)
             // resolve the plot from the player's position, so saving a row whose
@@ -129,8 +134,9 @@ public final class UnsavedCheckScreen implements MenuScreen {
             // directly and don't need the teleport.
             // PortalRoomEditor.save resolves its plot the same way the track-side editors do, so
             // it needs the same teleport-first chain.
-            boolean needsTeleport = "tracks".equals(r.categoryId()) || "portals".equals(r.categoryId());
-            String viewCmd = "dungeontrain editor view " + r.categoryId() + " " + r.modelId();
+            boolean needsTeleport = !frameRow && ("tracks".equals(r.categoryId()) || "portals".equals(r.categoryId()));
+            String viewCmd = frameRow ? "dungeontrain editor chunkframe enter " + frameName
+                : "dungeontrain editor view " + r.categoryId() + " " + r.modelId();
 
             // The Save closure captures the model id locally so the next-tick
             // rebuild picks up the grey state without needing a server round-trip.
