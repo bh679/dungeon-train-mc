@@ -370,6 +370,29 @@ public final class EditorScreenActions {
     }
 
     /**
+     * Go here with Shift held: Enter — into the middle of the selection's plot rather than to the
+     * front of its menu or its doorway. The per-plot panel's Enter with Shift, reached from the X
+     * menu; from another category it switches first, as Go here does. Null where the plot has no
+     * such landing (a category without an action row), leaving Go here as it is.
+     */
+    public static CommandMenuEntry enterCentreEntry(Ctx ctx, Consumer<EditorPlotActionPacket> sendPacket) {
+        if (!ctx.hasSelection()) return null;
+        VariantKey sel = ctx.selection();
+        if (!sel.category().hasActionRow()) return null;
+        EditorPlotActionPacket enter = new EditorPlotActionPacket(sel.category().id(), sel.modelId(),
+            sel.modelName(), EditorPlotActionPacket.Action.ENTER_INSIDE, /*centre*/ true);
+        String label = EditorScreenLang.text(EditorScreenLang.ENTER);
+        if (ctx.stampedCategory() != null && sel.category().owner() == ctx.stampedCategory().owner()) {
+            return new CommandMenuEntry.ClientAction(label, () -> sendPacket.accept(enter));
+        }
+        String switchTo = "dungeontrain editor " + sel.category().owner().id();
+        return new CommandMenuEntry.ClientAction(label, () -> {
+            CommandRunner.run(switchTo);
+            sendPacket.accept(enter);
+        });
+    }
+
+    /**
      * Test the Carriage: dimensional carriages, carriages and contents, from anywhere.
      *
      * <p>It used to require standing in the room, because the command could only name the plot the
