@@ -67,6 +67,23 @@ public final class LegacyBands {
     }
 
     /**
+     * True if the column at {@code worldX} lies in legacy band {@code kind}'s fades or core — everywhere a
+     * chunk may roll {@code kind} (see {@link WorldGenCycle#legacyCoreStartX}). Wider than {@link #isInBand},
+     * narrower than {@link #isInApproachOrBand}.
+     */
+    public static boolean isInSlot(ServerLevel overworld, LegacyBandKind kind, int worldX) {
+        if (!overworld.dimension().equals(Level.OVERWORLD)) return false;
+        if (!isInSlot(WorldGenCycle.fromConfig(), kind, worldX)) return false;
+        return DungeonTrainWorldData.get(overworld).startsWithTrain();
+    }
+
+    /** Pure form of {@link #isInSlot(ServerLevel, LegacyBandKind, int)}, for the client and tests. */
+    public static boolean isInSlot(WorldGenCycle cycle, LegacyBandKind kind, int worldX) {
+        return cycle.legacyLen(kind) > 0L
+            && cycle.legacyCoreStartX(kind, worldX) != WorldGenCycle.NOT_IN_LEGACY_SLOT;
+    }
+
+    /**
      * True from the start of {@code kind}'s lead gap through the end of its exit fade — see
      * {@link WorldGenCycle#isInLegacyApproachOrBand}. Gates {@code reached_overworld_again}.
      */

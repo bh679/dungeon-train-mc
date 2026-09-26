@@ -3,11 +3,16 @@ package games.brennan.dungeontrain.portal;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
+import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.server.level.ServerLevel;
 
 /**
  * Which sealed region of a given world a portal twin belongs in at a given world-X — the basement
- * under the bedrock everywhere, the attic above the inverted bedrock lid inside the upside-down band.
+ * under the bedrock everywhere, the attic above the inverted bedrock lid inside the upside-down band,
+ * and the attic above a barrier lid across the sunk Amplified band (whose terrain fills the basement —
+ * see {@link AmplifiedDrop}).
  *
  * <p><b>Why the band is different.</b> A twin's hiding place is not a depth, it is a seal: world that
  * generation never fills and a player can never reach. The band inverts which end of the world that
@@ -43,6 +48,10 @@ public final class PortalTwinSpace {
      * a world falls back to the basement, which is what it did before the band knew about portals.</p>
      */
     public static PortalTwinRegion regionFor(ServerLevel level, int worldX, int structureHeight) {
+        // No fallback to the basement here: under the sunk Amplified band the basement is terrain. An
+        // attic too shallow for the room leaves the pair to fail the fit gate — no portal, no burial.
+        PortalTwinRegion amplified = amplifiedAtticAt(level, worldX);
+        if (amplified != null) return amplified;
         PortalTwinRegion basement = basementOf(level);
         if (!DungeonTrainCommonConfig.isUpsideDownBedrockRoof()) return basement;
         if (!UpsideDownBand.isInBand(level, worldX)) return basement;
@@ -81,11 +90,49 @@ public final class PortalTwinSpace {
      * new twin would go.</p>
      */
     public static boolean isInside(ServerLevel level, int worldX, double y) {
+        AmplifiedDrop drop = amplifiedDropAt(level, worldX);
+        if (drop != null) {
+            return amplifiedTwinSpaceContains(y, drop, WorldFloor.bedrockY(level), level.getMinBuildHeight(),
+                level.getMaxBuildHeight());
+        }
         PortalTwinRegion basement = basementOf(level);
         if (basement.contains(y)) return true;
         // Short-circuits before atticOf, which reads the world data for the train height.
         boolean atticApplies = DungeonTrainCommonConfig.isUpsideDownBedrockRoof()
             && UpsideDownBand.isInBand(level, worldX);
         return atticApplies && PortalTwinRegion.twinSpaceContains(y, basement, true, atticOf(level));
+    }
+
+    /**
+     * The attic over the sunk Amplified band's barrier lid ({@link AmplifiedDrop#lidY}), or {@code null}
+     * where the band's slot does not reach {@code worldX} or nothing is sunk. The slot includes both fades,
+     * because a fade chunk that rolls Amplified sinks into the basement just as a core chunk does.
+     */
+    public static PortalTwinRegion amplifiedAtticAt(ServerLevel level, int worldX) {
+        AmplifiedDrop drop = amplifiedDropAt(level, worldX);
+        return drop == null ? null : amplifiedAttic(drop, level.getMaxBuildHeight());
+    }
+
+    /** The attic region for {@code drop}: floor on the lid, ceiling {@link #CEILING_MARGIN} under the build top. */
+    public static PortalTwinRegion amplifiedAttic(AmplifiedDrop drop, int maxBuildY) {
+        return PortalTwinRegion.attic(drop.lidY(), maxBuildY, CEILING_MARGIN);
+    }
+
+    /**
+     * Twin space inside the sunk Amplified band's slot: the attic, plus whatever sealed world is left
+     * under the sunk floor (none at stock settings, where the drop is the whole basement). Pure — the
+     * server's {@link #isInside} and the client's {@code ClientUpsideDownBand.isInPortalTwinSpace} both
+     * answer from it.
+     */
+    public static boolean amplifiedTwinSpaceContains(double y, AmplifiedDrop drop, int bedrockY,
+                                                     int minBuildY, int maxBuildY) {
+        if (amplifiedAttic(drop, maxBuildY).contains(y)) return true;
+        return PortalTwinRegion.basement(minBuildY, drop.floorY(bedrockY)).contains(y);
+    }
+
+    private static AmplifiedDrop amplifiedDropAt(ServerLevel level, int worldX) {
+        if (!LegacyBands.isInSlot(level, LegacyBandKind.AMPLIFIED, worldX)) return null;
+        AmplifiedDrop drop = AmplifiedDrop.of(level);
+        return drop.active() ? drop : null;
     }
 }

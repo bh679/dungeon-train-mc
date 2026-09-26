@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.worldgen.WorldFloor;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.level.ChunkPos;
@@ -49,6 +51,12 @@ public abstract class StructureBasementMixin {
             return;
         }
         int floorY = WorldFloor.bedrockY(heightAccessor, chunkGenerator);
+        // The sunk Amplified band's terrain reaches into the basement, so a deep start there is real.
+        if (heightAccessor instanceof ChunkAccess chunk
+                && ((ChunkAccessAccessor) chunk).dungeontrain$getLevelHeightAccessor() instanceof ServerLevel level
+                && level.getChunkSource().getGenerator() == chunkGenerator) {
+            floorY = Math.min(floorY, WorldFloor.terrainFloorY(level, chunkPos.x, chunkPos.z));
+        }
         if (WorldFloor.entirelyBelowFloor(start.getBoundingBox().maxY(), floorY)) {
             cir.setReturnValue(StructureStart.INVALID_START);
         }

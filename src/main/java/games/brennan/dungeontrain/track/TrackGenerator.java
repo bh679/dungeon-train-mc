@@ -300,7 +300,7 @@ public final class TrackGenerator {
     private static int probeGroundY(ServerLevel level, int x, int z, int bedY) {
         Shipyard shipyard = Shipyards.of(level);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, x, z) + 1;
         for (int py = bedY - 1; py >= minY; py--) {
             pos.set(x, py, z);
             if (shipyard.isInShip(pos)) {
@@ -349,7 +349,7 @@ public final class TrackGenerator {
         int deepest = bedY;                            // bedSentinel = "no useful ground"
         int currentIdx = N / 2;                        // anchor = centre column
         int currentY = bedY - 1;
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, worldX, zMin) + 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         while (unresolved > 0) {
@@ -843,7 +843,7 @@ public final class TrackGenerator {
      */
     private static int probeGroundYWorldgen(WorldGenLevel level, int x, int z, int bedY) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, x, z) + 1;
         for (int py = bedY - 1; py >= minY; py--) {
             pos.set(x, py, z);
             BlockState state = level.getBlockState(pos);
@@ -869,7 +869,7 @@ public final class TrackGenerator {
         int deepest = bedY;
         int currentIdx = N / 2;
         int currentY = bedY - 1;
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, worldX, zMin) + 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         while (unresolved > 0) {
@@ -959,7 +959,6 @@ public final class TrackGenerator {
         if (probeZ < chunkMinZ || probeZ > chunkMaxZ) return;
 
         long worldSeed = level.getSeed();
-        int voidSentinel = WorldFloor.bedrockY(level) + 1;
 
         // Pre-compute pillar positions + heights in [chunkMinX - MIN_STAIRS_SPACING,
         // chunkMaxX + MIN_STAIRS_SPACING]. Used to apply the cross-chunk
@@ -974,7 +973,7 @@ public final class TrackGenerator {
         for (int x = scanMinX; x <= scanMaxX; x++) {
             int gy = probeGroundYWorldgen(level, x, probeZ, g.bedY());
             if (gy >= g.bedY()) continue;
-            if (gy == voidSentinel) continue;
+            if (gy == WorldFloor.terrainFloorAt(level, x, probeZ) + 1) continue; // void: no ground found
             int h = g.bedY() - 1 - gy;
             if (h < 0) continue;
             int sp = computeSpacing(h);
@@ -1386,7 +1385,7 @@ public final class TrackGenerator {
         // Walk up if terrain is solid at that level (hill rising past the
         // pillar) or down if air (cliff edge / down-slope).
         int centerStairsZ = originZ + (STAIRS_Z - 1) / 2;
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, centerX, centerStairsZ) + 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int deepestGroundY;
         pos.set(centerX, pillarBaseY, centerStairsZ);

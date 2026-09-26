@@ -10,6 +10,9 @@ import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
+import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -80,6 +83,9 @@ public final class BedrockFloorEvents {
         ChunkAccess chunk = event.getChunk();
         int chunkMinX = chunk.getPos().getMinBlockX();
 
+        // Before any of the floor skips below: the lid is independent of whether this chunk gets a floor.
+        stampAmplifiedLid(level, chunk);
+
         // Chuncks band: a VOID chunk is pure void and a SLICE chunk is a floating slab (flat cut-off
         // bottom) — neither gets a bedrock floor at minY. A FULL (vertically complete) chuncks chunk
         // keeps its floor like normal overworld. Per-chunk + deterministic, so this stays independent of
@@ -136,7 +142,8 @@ public final class BedrockFloorEvents {
         // The floor of TERRAIN, not of the level: a DT overworld's dimension type runs below its
         // noise settings so the portal system has an empty basement to work in, and the bedrock
         // belongs at the top of that basement — under the world, not under the basement.
-        int floorY = WorldFloor.bedrockY(level);
+        // A sunk Amplified chunk's terrain runs down into the basement, so its floor is lower too.
+        int floorY = WorldFloor.terrainFloorY(level, chunk.getPos().x, chunk.getPos().z);
         int sectionIdx = chunk.getSectionIndex(floorY);
         LevelChunkSection section = chunk.getSection(sectionIdx);
         int sectionBaseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sectionIdx));
@@ -160,5 +167,37 @@ public final class BedrockFloorEvents {
             }
         }
         chunk.setUnsaved(true);
+    }
+
+    /**
+     * The sunk Amplified band's attic seal: a row of barrier at {@link AmplifiedDrop#lidY} over every
+     * column of the band's slot (fades included — a fade chunk that rolls Amplified fills the basement,
+     * so twins there use the attic too). Barrier rather than bedrock so the sky stays open overhead.
+     *
+     * <p>Only air is replaced: a fade chunk that rolled ordinary overworld can carry a peak through the
+     * lid height, and a barrier sheet through that peak would be a wall a player walks into. Same raw
+     * section writes as the floor, for the same Sable reason.</p>
+     */
+    private static void stampAmplifiedLid(ServerLevel level, ChunkAccess chunk) {
+        int chunkMinX = chunk.getPos().getMinBlockX();
+        boolean anyInSlot = LegacyBands.isInSlot(level, LegacyBandKind.AMPLIFIED, chunkMinX)
+                || LegacyBands.isInSlot(level, LegacyBandKind.AMPLIFIED, chunkMinX + 15);
+        if (!anyInSlot) return;
+        AmplifiedDrop drop = AmplifiedDrop.of(level);
+        if (!drop.active() || drop.lidY() >= level.getMaxBuildHeight()) return;
+        int sectionIdx = chunk.getSectionIndex(drop.lidY());
+        LevelChunkSection section = chunk.getSection(sectionIdx);
+        int localY = drop.lidY() - SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sectionIdx));
+        BlockState barrier = Blocks.BARRIER.defaultBlockState();
+        boolean wrote = false;
+        for (int dx = 0; dx < 16; dx++) {
+            if (!LegacyBands.isInSlot(level, LegacyBandKind.AMPLIFIED, chunkMinX + dx)) continue;
+            for (int dz = 0; dz < 16; dz++) {
+                if (!section.getBlockState(dx, localY, dz).isAir()) continue;
+                section.setBlockState(dx, localY, dz, barrier, false);
+                wrote = true;
+            }
+        }
+        if (wrote) chunk.setUnsaved(true);
     }
 }

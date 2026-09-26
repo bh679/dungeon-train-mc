@@ -1746,7 +1746,9 @@ public final class PortalCarriageEvents {
                         region.base(), region.ceiling(), pairKey, groupSize,
                         laneStructureHeight(dims, region))
                         + " region=" + (PortalTwinSpace.isAttic(level, region)
-                            ? "attic (upside-down band)" : "basement")
+                            ? "attic (upside-down band)"
+                            : region.equals(PortalTwinSpace.amplifiedAtticAt(level, Mth.floor(originX)))
+                                ? "attic (amplified band)" : "basement")
                         + " floor=" + region.base() + " ceiling=" + region.ceiling()
                         + " carriageY=" + fmt(originY)
                         + " — the pair's room does not fit between that floor and that ceiling");

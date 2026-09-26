@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen.legacy.preset;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.mixin.NoiseRouterDataAccessor;
 import games.brennan.dungeontrain.worldgen.density.NetherBandHooks;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
@@ -10,11 +11,14 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.DensityFunctions;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.NoiseRouter;
+import net.minecraft.world.level.levelgen.NoiseSettings;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.synth.NormalNoise;
+import org.slf4j.Logger;
 
 /**
  * The two <em>modern-preset</em> legacy bands — Large Biomes and Amplified. Unlike the older eras these
@@ -30,8 +34,30 @@ import net.minecraft.world.level.levelgen.synth.NormalNoise;
  */
 public final class PresetTerrain {
 
-    /** A preset's generator and the random state its router was seeded into. */
-    public record Preset(NoiseBasedChunkGenerator generator, RandomState randomState) {}
+    /**
+     * A preset's generator, the random state its router was seeded into, and how far its terrain is
+     * sunk ({@link AmplifiedDrop#NONE} for Large Biomes).
+     */
+    public record Preset(NoiseBasedChunkGenerator generator, RandomState randomState, AmplifiedDrop drop) {
+
+        /**
+         * True when the preset's surface and carver passes must run on its own generator too. Both are
+         * anchored on the generator's floor ({@code above_bottom} bedrock and carver lava levels), so on
+         * the overworld's generator a sunk band would get a bedrock sheet and lava lakes at the
+         * <em>stock</em> floor, halfway up its valleys.
+         */
+        public boolean ownsSurfaceAndCarvers() {
+            return drop.active();
+        }
+    }
+
+    /**
+     * Vanilla's overworld depth gradient — {@code NoiseRouterData.overworld}'s {@code depth} is this plus
+     * the (Y-independent) offset spline. Records compare by value, so the router can be searched for it.
+     */
+    private static final DensityFunction DEPTH_GRADIENT = DensityFunctions.yClampedGradient(-64, 320, 1.5D, -1.5D);
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     private static volatile PresetTerrain current;
 
@@ -87,16 +113,22 @@ public final class PresetTerrain {
         BiomeSource biomes = generator.getBiomeSource();
         long seed = overworld.getSeed();
         return new PresetTerrain(
-                build(base, densityFunctions, noises, biomes, seed, true, false),
-                build(base, densityFunctions, noises, biomes, seed, false, true));
+                build(base, densityFunctions, noises, biomes, seed, true, false, AmplifiedDrop.NONE),
+                build(base, densityFunctions, noises, biomes, seed, false, true, AmplifiedDrop.of(overworld)));
     }
 
     private static Preset build(NoiseGeneratorSettings base, HolderGetter<DensityFunction> densityFunctions,
                                 HolderGetter<NormalNoise.NoiseParameters> noises, BiomeSource biomes, long seed,
-                                boolean largeBiomes, boolean amplified) {
-        NoiseRouter router = NoiseRouterDataAccessor.dungeontrain$overworld(densityFunctions, noises, largeBiomes, amplified);
-        NoiseGeneratorSettings settings = new NoiseGeneratorSettings(base.noiseSettings(), base.defaultBlock(),
-                base.defaultFluid(), router, base.surfaceRule(), base.spawnTarget(), base.seaLevel(),
+                                boolean largeBiomes, boolean amplified, AmplifiedDrop drop) {
+        NoiseRouter router = sink(
+                NoiseRouterDataAccessor.dungeontrain$overworld(densityFunctions, noises, largeBiomes, amplified), drop);
+        NoiseSettings noise = base.noiseSettings();
+        if (drop.active()) {
+            noise = NoiseSettings.create(drop.noiseMinY(noise.minY()), drop.noiseHeight(noise.minY(), noise.height()),
+                    noise.noiseSizeHorizontal(), noise.noiseSizeVertical());
+        }
+        NoiseGeneratorSettings settings = new NoiseGeneratorSettings(noise, base.defaultBlock(),
+                base.defaultFluid(), router, base.surfaceRule(), base.spawnTarget(), drop.seaLevel(base.seaLevel()),
                 base.disableMobGeneration(), base.isAquifersEnabled(), base.oreVeinsEnabled(), base.useLegacyRandomSource());
         // Seed it the way ChunkMap seeds the overworld's own state, so RandomStateMixin's router wrap
         // (and anything else keyed on "this is the overworld") treats the preset router the same way.
@@ -107,6 +139,28 @@ public final class PresetTerrain {
         } finally {
             NetherBandHooks.CONSTRUCTING_OVERWORLD.set(Boolean.FALSE);
         }
-        return new Preset(new NoiseBasedChunkGenerator(biomes, Holder.direct(settings)), randomState);
+        return new Preset(new NoiseBasedChunkGenerator(biomes, Holder.direct(settings)), randomState, drop);
+    }
+
+    /**
+     * Lower {@code router}'s terrain by {@code drop.drop()} blocks: its depth gradient is swapped for the
+     * same gradient {@code drop} blocks lower, so {@code depth(y)} reads what it used to at {@code y + drop}.
+     * Everything built on depth — sloped cheese, the preliminary surface the aquifers read, the cave-biome
+     * depth parameter — moves with it; nothing else in the router is anchored to it. Cheaper than a
+     * Y-shifted wrapper, which would fight {@code NoiseChunk}'s cell interpolation.
+     */
+    static NoiseRouter sink(NoiseRouter router, AmplifiedDrop drop) {
+        if (!drop.active()) return router;
+        DensityFunction sunk = DensityFunctions.yClampedGradient(-64 - drop.drop(), 320 - drop.drop(), 1.5D, -1.5D);
+        int[] hits = {0};
+        NoiseRouter out = router.mapAll(f -> {
+            if (!DEPTH_GRADIENT.equals(f)) return f;
+            hits[0]++;
+            return sunk;
+        });
+        // A datapack that rewrites overworld_amplified/depth would leave the band at its stock height —
+        // with the attic lid still placed for a sunk one. Say so rather than fail quietly.
+        if (hits[0] == 0) LOGGER.warn("[DungeonTrain] Amplified depth gradient not found; band terrain is not sunk");
+        return out;
     }
 }

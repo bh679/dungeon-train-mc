@@ -5,6 +5,9 @@ import games.brennan.dungeontrain.portal.PortalTwinRegion;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
+import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 
@@ -141,6 +144,15 @@ public final class ClientUpsideDownBand {
     public static boolean isInPortalTwinSpace(int worldX, int y) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null || bedrockY == Integer.MIN_VALUE) return false;
+        if (startsWithTrain
+                && LegacyBands.isInSlot(WorldGenCycle.fromConfig(), LegacyBandKind.AMPLIFIED, worldX)) {
+            AmplifiedDrop drop = AmplifiedDrop.compute(bedrockY, level.getMinBuildHeight(),
+                level.getMaxBuildHeight(), PortalTwinSpace.CEILING_MARGIN);
+            if (drop.active()) {
+                return PortalTwinSpace.amplifiedTwinSpaceContains(y, drop, bedrockY,
+                    level.getMinBuildHeight(), level.getMaxBuildHeight());
+            }
+        }
         PortalTwinRegion basement = PortalTwinRegion.basement(level.getMinBuildHeight(), bedrockY);
         if (basement.contains(y)) return true;
         boolean atticApplies = DungeonTrainCommonConfig.isUpsideDownBedrockRoof() && isInCoreBand(worldX);

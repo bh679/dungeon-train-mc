@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.worldgen;
 
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
+import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.WorldGenLevel;
@@ -52,6 +55,29 @@ public final class WorldFloor {
     /** The maths on its own, so it unit-tests without a NeoForge bootstrap. */
     public static int bedrockY(int minBuildHeight, int generatorMinY) {
         return Math.max(minBuildHeight, generatorMinY);
+    }
+
+    /**
+     * The terrain floor under chunk {@code (chunkX, chunkZ)} — {@link #bedrockY} everywhere except a chunk
+     * the sunk Amplified band owns, whose terrain runs {@link AmplifiedDrop#drop} blocks down into what is
+     * elsewhere the basement (and whose twins live in an attic instead — see {@code PortalTwinSpace}).
+     * The cheap config gate in {@link LegacyBands#kindOfChunk} keeps this at {@link #bedrockY}'s cost for
+     * every chunk outside the legacy run.
+     */
+    public static int terrainFloorY(ServerLevel level, int chunkX, int chunkZ) {
+        int bedrock = bedrockY(level);
+        if (LegacyBands.kindOfChunk(level, chunkX, chunkZ) != LegacyBandKind.AMPLIFIED) return bedrock;
+        return AmplifiedDrop.of(level).floorY(bedrock);
+    }
+
+    /** {@link #terrainFloorY} for the column at block {@code (blockX, blockZ)}. */
+    public static int terrainFloorAt(ServerLevel level, int blockX, int blockZ) {
+        return terrainFloorY(level, blockX >> 4, blockZ >> 4);
+    }
+
+    /** Worldgen-side variant of {@link #terrainFloorAt}. */
+    public static int terrainFloorAt(WorldGenLevel level, int blockX, int blockZ) {
+        return terrainFloorAt(level.getLevel(), blockX, blockZ);
     }
 
     /**

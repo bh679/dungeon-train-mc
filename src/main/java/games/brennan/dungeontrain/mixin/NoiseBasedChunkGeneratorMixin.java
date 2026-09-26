@@ -70,7 +70,9 @@ import java.util.concurrent.CompletableFuture;
  * A <b>modern-preset</b> band (Large Biomes, Amplified — {@link LegacyBandKind#isPreset}) instead hands the
  * chunk to its own vanilla generator ({@link PresetTerrain}): first at {@code createBiomes}, which is where the
  * chunk's {@code NoiseChunk} is created (so the NOISE, SURFACE and CARVER steps all read the preset router),
- * then at {@code fillFromNoise}; vanilla's surface, carvers and decoration then run unchanged.</p>
+ * then at {@code fillFromNoise}; vanilla's surface, carvers and decoration then run unchanged — except that a
+ * preset whose terrain is sunk ({@link PresetTerrain.Preset#ownsSurfaceAndCarvers}) has its surface and carver
+ * passes run on its own generator too, since both anchor on the generator's floor.</p>
  *
  * <p>Scope: only the overworld dimension (both bands' home). Fade-zone / straddle / kept chunks fall
  * through to vanilla so their terrain is byte-identical to before. The floating track bed + rails are
@@ -149,6 +151,13 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             ChunkAccess chunk, CallbackInfo ci) {
         try {
             ServerLevel level = region.getLevel();
+            PresetTerrain.Preset preset = dungeontrain$preset(level, chunk, this);
+            if (preset != null && preset.ownsSurfaceAndCarvers()) {
+                // Sunk Amplified: its surface rules must anchor on its own floor, not the overworld's.
+                preset.generator().buildSurface(region, structureManager, preset.randomState(), chunk);
+                ci.cancel();
+                return;
+            }
             if (dungeontrain$isVoidChunk(level, chunk) || dungeontrain$oldGeneratorKind(level, chunk) != null) {
                 ci.cancel(); // void: nothing to surface; legacy: the old generator laid its own surface
             }
@@ -215,6 +224,13 @@ public abstract class NoiseBasedChunkGeneratorMixin {
                                                 BiomeManager biomeManager, StructureManager structureManager,
                                                 ChunkAccess chunk, GenerationStep.Carving step, CallbackInfo ci) {
         try {
+            PresetTerrain.Preset preset = dungeontrain$preset(region.getLevel(), chunk, this);
+            if (preset != null && preset.ownsSurfaceAndCarvers()) {
+                // Sunk Amplified: carver Y ranges and lava level anchor on its own floor, not the overworld's.
+                preset.generator().applyCarvers(region, seed, preset.randomState(), biomeManager, structureManager, chunk, step);
+                ci.cancel();
+                return;
+            }
             if (dungeontrain$oldGeneratorKind(region.getLevel(), chunk) != null) ci.cancel();
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] legacy carver skip failed at {}; running vanilla carvers", chunk.getPos(), t);
