@@ -602,7 +602,7 @@ public record WorldGenCycle(long startX, int owGap,
      * transition at {@code worldX}, or {@code null}. The overworld-looking part of a band's transition
      * wears the look of the overworld gap it borders, so a modded stretch doesn't stop at a hard line:
      * <ul>
-     *   <li>upside-down — the second half of the Reassembly ({@link #UD_BLEED_REASSEMBLY_FRACTION}) and
+     *   <li>upside-down — the last sixth of the Reassembly ({@link #UD_BLEED_REASSEMBLY_FRACTION}) and
      *       the exit gap, from the gap after it (its entry is all mirror);</li>
      *   <li>Nether — the beach, mountain stages and core crossfade on each side, from that side's gap;</li>
      *   <li>End — the overworld→void erosion fade on each side, from that side's gap.</li>
@@ -633,11 +633,11 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
-     * How far into the upside-down Reassembly the next gap's modded look begins. The first half is
-     * still visibly reassembling, so the look waits until the world has mostly settled (shipped
-     * layout: X ≈ 20 994 instead of the Reassembly's start at 17 994).
+     * How far into the upside-down Reassembly the next gap's modded look begins. Most of it is still
+     * visibly reassembling, so the look waits until the world has nearly settled (shipped layout:
+     * X ≈ 22 994 instead of the Reassembly's start at 17 994).
      */
-    static final double UD_BLEED_REASSEMBLY_FRACTION = 0.5;
+    static final double UD_BLEED_REASSEMBLY_FRACTION = 5.0 / 6.0;
 
     /** Style of slot {@code i} when it is a WWOO / BoP overworld gap, else {@code null}. */
     private CycleLayout.Style moddedOverworldStyle(int i) {

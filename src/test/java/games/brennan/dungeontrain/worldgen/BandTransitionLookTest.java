@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * {@link SecondLapOverworld#lookAt}: the overworld-looking part of a band transition wears the look of
  * the modded overworld stretch it borders ({@link WorldGenCycle#bleedingOverworldStyleAt}); the
- * upside-down's only from halfway through its Reassembly (u = 3700).
+ * upside-down's only for the last sixth of its Reassembly (u = 4367).
  *
  * <p>Base layout (u = blocks past the anchor, run 0), fades as {@code FADES}:</p>
  * <pre>
@@ -73,13 +73,13 @@ final class BandTransitionLookTest {
     }
 
     @Test
-    @DisplayName("upside-down: the second half of the Reassembly and the exit gap wear WWOO; the mirror does not")
+    @DisplayName("upside-down: the last sixth of the Reassembly and the exit gap wear WWOO; the mirror does not")
     void upsideDownExit() {
         assertEquals(Stretch.VANILLA, look(1000));
         assertEquals(Stretch.VANILLA, look(2699));
-        assertEquals(Stretch.VANILLA, look(2700)); // first half of the Reassembly stays vanilla
-        assertEquals(Stretch.VANILLA, look(3699));
-        assertEquals(Stretch.WWOO, look(3700));
+        assertEquals(Stretch.VANILLA, look(2700)); // most of the Reassembly stays vanilla
+        assertEquals(Stretch.VANILLA, look(4366));
+        assertEquals(Stretch.WWOO, look(4367));
         assertEquals(Stretch.WWOO, look(4700));
         assertEquals(Stretch.WWOO, look(5299));
         assertEquals(Stretch.VANILLA, own(2700)); // the stretch itself is unchanged
@@ -125,8 +125,8 @@ final class BandTransitionLookTest {
         long p = C.period();
         assertEquals(20_844L, p);
         long run1 = START + CycleLayout.runStart(1, p);
-        assertEquals(Stretch.VANILLA, SecondLapOverworld.lookAt(C, (int) (run1 + (3699L << 1))));
-        assertEquals(Stretch.WWOO, SecondLapOverworld.lookAt(C, (int) (run1 + (3700L << 1))));
+        assertEquals(Stretch.VANILLA, SecondLapOverworld.lookAt(C, (int) (run1 + (4366L << 1))));
+        assertEquals(Stretch.WWOO, SecondLapOverworld.lookAt(C, (int) (run1 + (4367L << 1))));
         assertEquals(Stretch.WWOO, SecondLapOverworld.lookAt(C, (int) (run1 + (8831L << 1))));
         assertEquals(Stretch.VANILLA, SecondLapOverworld.lookAt(C, (int) (run1 + (8832L << 1))));
         assertEquals(Stretch.BOP, SecondLapOverworld.lookAt(C, (int) (run1 + (11832L << 1))));
