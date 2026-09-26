@@ -23,8 +23,8 @@ import net.minecraft.world.level.Level;
  * <p>Only a wall at full strength culls. While the camera is in the first stretch of a void its wall
  * is fading: nothing past it is culled, and {@code VoidWallFadePass} paints the sky back over whatever
  * lies past it, thinning as the wall fades, so the far side comes into view out of the real sky rather
- * than all at once. Where that pass cannot run (a shader pack owns the frame), the fading wall keeps
- * culling until it is half gone and then drops.</p>
+ * than all at once. Should that pass's shader fail to load, the fading wall keeps culling until
+ * it is half gone and then drops.</p>
  */
 public final class ClientVoidWall {
 

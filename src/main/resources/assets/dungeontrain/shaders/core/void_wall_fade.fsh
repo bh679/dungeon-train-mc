@@ -33,10 +33,43 @@ uniform vec4 Corridor;
 // never culled, so they are left alone. Only the slab: anything else up high — the upside-down band's
 // mirrored terrain hangs far above the track — is painted like any other surface past the wall.
 uniform float CloudY;
+// 1 under a shader pack: Sampler0 is then the pack's finished frame, and the sky behind a pixel is
+// found by walking up (then down) its column to the nearest pixel nothing was drawn at.
+uniform int SearchSky;
+uniform float TexelY;
+uniform vec4 FogColor;
 
 in vec2 texCoord;
 
 out vec4 fragColor;
+
+bool dhDrawnAt(vec2 uv) {
+    if (HasDh != 1) return false;
+    float d = texture(Sampler2, uv).r;
+    return DhReverseZ == 1 ? d > 0.0 : d < 1.0;
+}
+
+bool skyAt(vec2 uv) {
+    return texture(Sampler1, uv).r >= 1.0 && !dhDrawnAt(uv);
+}
+
+const int SEARCH_STEPS = 96;
+const float SEARCH_STRIDE = 6.0;
+
+vec3 skyBehind() {
+    if (SearchSky == 0) return texture(Sampler0, texCoord).rgb;
+    for (int i = 1; i <= SEARCH_STEPS; i++) {
+        vec2 uv = vec2(texCoord.x, texCoord.y + float(i) * SEARCH_STRIDE * TexelY);
+        if (uv.y > 1.0) break;
+        if (skyAt(uv)) return texture(Sampler0, uv).rgb;
+    }
+    for (int i = 1; i <= SEARCH_STEPS; i++) {
+        vec2 uv = vec2(texCoord.x, texCoord.y - float(i) * SEARCH_STRIDE * TexelY);
+        if (uv.y < 0.0) break;
+        if (skyAt(uv)) return texture(Sampler0, uv).rgb;
+    }
+    return FogColor.rgb;
+}
 
 vec3 toWorld(mat4 invProj, float ndcZ) {
     vec4 view = invProj * vec4(texCoord * 2.0 - 1.0, ndcZ, 1.0);
@@ -67,5 +100,5 @@ void main() {
     if (world.y >= Corridor.x && world.y <= Corridor.y && world.z >= Corridor.z && world.z <= Corridor.w) {
         discard;
     }
-    fragColor = vec4(texture(Sampler0, texCoord).rgb, alpha);
+    fragColor = vec4(skyBehind(), alpha);
 }

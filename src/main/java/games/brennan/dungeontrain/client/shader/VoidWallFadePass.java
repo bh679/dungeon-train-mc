@@ -57,9 +57,11 @@ import java.nio.ByteBuffer;
  *       it is past the wall and off the track corridor.</li>
  * </ul>
  *
- * <p><b>Not under a shader pack.</b> A pack owns the frame between those stages, so the sky copy is not
- * the sky it shows; {@link #available()} is false there and {@link ClientVoidWall} falls back to cutting
- * the wall at half strength instead of fading it.</p>
+ * <p><b>Under a shader pack</b> the sky is the pack's, drawn in its own passes, so there is no clean
+ * copy of it to take. The pass instead copies the pack's finished frame at {@code AFTER_LEVEL} — the
+ * first point a mod's own program may draw — and, for each pixel past a wall, walks up the screen to the
+ * nearest pixel that is sky and uses that colour: a pack's sky varies mostly with height, so the column
+ * above is its closest match. Failing that it walks down, and failing both uses the fog colour.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class VoidWallFadePass {
@@ -84,6 +86,8 @@ public final class VoidWallFadePass {
     /** Set this frame once the sky has been copied; the later stages draw only when it is. */
     private static boolean skyCaptured;
     private static boolean depthCaptured;
+    /** Whether this frame is a shader pack's — the sky is then searched for in the finished frame. */
+    private static boolean packFrame;
 
     // --- Distant Horizons: its depth texture and projection, published from DH's before-render event.
     private static volatile int dhDepthTexture = 0;
@@ -106,9 +110,9 @@ public final class VoidWallFadePass {
         }
     }
 
-    /** Whether the sky fade can run — the shader loaded and no shader pack owns the frame. */
+    /** Whether the sky pass can run — its shader loaded. It runs with or without a shader pack. */
     public static boolean available() {
-        return shader != null && !ShaderCompat.active();
+        return shader != null;
     }
 
     /**
@@ -149,14 +153,18 @@ public final class VoidWallFadePass {
         if (stage == RenderLevelStageEvent.Stage.AFTER_SKY) {
             skyCaptured = false;
             depthCaptured = false;
+            packFrame = ShaderCompat.active();
             if (!available() || !wanted(event.getCamera().getPosition())) return;
-            skyCaptured = copyBound(sky);
+            // Under a pack the sky is the pack's, drawn later in its own passes — the finished frame is
+            // copied at AFTER_LEVEL instead, and the shader finds the sky in it.
+            skyCaptured = packFrame || copyBound(sky);
         } else if (stage == RenderLevelStageEvent.Stage.AFTER_WEATHER) {
             if (skyCaptured) depthCaptured = copyBound(depth);
         } else if (stage == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
             boolean ready = skyCaptured && depthCaptured;
             skyCaptured = false;
             depthCaptured = false;
+            if (ready && packFrame) ready = copyBound(sky);
             if (ready) draw(event, dhFresh());
         }
     }
@@ -196,6 +204,10 @@ public final class VoidWallFadePass {
             (float) (trainY - 2 - cam.y), (float) (trainY + CORRIDOR_HEADROOM - cam.y),
             (float) (0 - cam.z), (float) (CarriageDims.DEFAULT_WIDTH - cam.z));
         shader.getUniform("CloudY").set((float) (level.effects().getCloudHeight() - cam.y));
+        shader.getUniform("SearchSky").set(packFrame ? 1 : 0);
+        shader.getUniform("TexelY").set(1.0F / Math.max(1, mc.getMainRenderTarget().height));
+        float[] fog = RenderSystem.getShaderFogColor();
+        shader.getUniform("FogColor").set(fog[0], fog[1], fog[2], 1.0F);
 
         RenderSystem.setShader(() -> shader);
         RenderSystem.setShaderTexture(0, sky.id);
