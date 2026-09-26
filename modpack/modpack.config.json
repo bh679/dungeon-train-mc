@@ -603,6 +603,17 @@
       "modrinth_version": "AH6BZ7jO"
     },
     {
+      "name": "Sable Pathfinder",
+      "slug": "sable-pathfinder",
+      "required": true,
+      "dependency_type": "required",
+      "version": "1.4.0",
+      "gradle_property": "sablepathfinder_min_version",
+      "modrinth_only": true,
+      "modrinth_project": "sable-pathfinder",
+      "modrinth_version": "U5bZr5zH"
+    },
+    {
       "name": "Advanced Shulkerboxes",
       "slug": "advanced-shulkerboxes",
       "project_id": 253861,

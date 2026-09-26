@@ -115,7 +115,15 @@ repositories {
 }
 
 neoForge {
-    version = project.neo_version
+    // disableRecompilation: run dev against Mojang's ORIGINAL bytecode (remapped), not a
+    // decompile→recompile. Recompiling reorders lambda captures, which breaks third-party
+    // @Redirect handlers that capture lambda locals — Sable Pathfinder's
+    // SetWalkTargetFromBlockMemorySubLevelMixin crashed the dev server on the first villager
+    // tick. Production players never recompile, so dev must match them. Cost: no MC sources jar.
+    enable {
+        version = project.neo_version
+        disableRecompilation = true
+    }
 
     parchment {
         mappingsVersion = project.parchment_mappings_version
@@ -505,6 +513,10 @@ dependencies {
     implementation "maven.modrinth:fast-paintings:${fastpaintings_version}"
     implementation "maven.modrinth:moonlight:${moonlight_version}"
 
+    // Sable Pathfinder — third-party mob pathing across Sable sub-levels (see gradle.properties).
+    // Nothing compiles against it; on the dev classpath so runClient/runServer behave like players.
+    implementation "maven.modrinth:sable-pathfinder:${sablepathfinder_version}"
+
     // Second-lap overworld mods (WWOO + Biomes O' Plenty) and their libraries — REQUIRED third-party
     // deps (see gradle.properties). Not bundled. DT names their biomes/features only by registry id,
     // except TerraBlender, whose Regions API builds the BoP-only biome source.
@@ -796,6 +808,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         // Third-party required deps (Fast Paintings + its Moonlight library) — floors only.
         fastpaintings_min_version         : fastpaintings_min_version,
         moonlight_min_version             : moonlight_min_version,
+        sablepathfinder_min_version       : sablepathfinder_min_version,
         // Second-lap overworld mods — floors only.
         wwoo_min_version                  : wwoo_min_version,
         biomesoplenty_min_version         : biomesoplenty_min_version,
