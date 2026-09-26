@@ -19279,6 +19279,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "patient-relay-fetch",
+      "version": "0.972.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Loading a build survives a busy relay",
+      "summary": "Loading one of your builds no longer gives up after ten seconds when the server is busy. It waits longer and tries a second time, tells you when things are being slow rather than leaving you watching a frozen line, and if it does give up it says so plainly so you can press Load again.",
+      "highlights": [
+        "Waits longer, and tries again, before giving up on a build",
+        "Says when the wait is just slowness, and when it has actually given up"
+      ],
+      "pr": 1572,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
