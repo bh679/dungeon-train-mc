@@ -240,6 +240,17 @@ public final class EditorStrayBlocks {
             if (size == null || size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) continue;
             found.add(new PlotBox(origin, size));
         }
+        // Chunk frames stand beside the rooms but are not among the category's models (that list also
+        // drives save-all and the category fill). Their boxes count as plots all the same, cage included.
+        if (category.get() == EditorCategory.PORTALS) {
+            for (String name : games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names()) {
+                BlockPos o = ChunkFrameEditor.registeredPlotOrigin(name);
+                if (o != null) {
+                    found.add(new PlotBox(o.offset(-1, -1, -1),
+                        games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.SIZE.offset(2, 2, 2)));
+                }
+            }
+        }
         boxes = found;
         if (found.isEmpty()) {
             queue = Collections.emptyList();

@@ -113,7 +113,7 @@ public final class EditorUndoHotkeyClient {
             }
             while (RESEED.consumeClick()) {
                 if (PortalTestSessionState.active()) {
-                    CommandRunner.run(EditorScreenActions.RESEED_NOW_COMMAND);
+                    CommandRunner.run(EditorScreenActions.reseedNowCommand());
                 }
             }
         }

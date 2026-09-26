@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
+import games.brennan.dungeontrain.portal.chunkframe.ChunkFrame;
+import games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -21,10 +23,11 @@ import java.util.function.IntFunction;
  * the other half of {@link PortalChunkTerrain}, which is where the terrain comes from.
  *
  * <h2>Over the room's own template, never instead of it</h2>
- * <p>The variant is stamped first, exactly as any other room is: it clears the box and lays the
- * shell — the skybox floor, ceiling and side walls a chunk dimension is framed in. That shell is
- * what a room keeps if a sample ever fails, and it is what the seal ring at each mouth copies its
- * blocks from, so the terrain is poured into the box's <b>interior</b> and leaves it standing.</p>
+ * <p>The variant is stamped first, exactly as any other room is: it clears the box and lays a plain
+ * floor of ground — what a room keeps if a sample ever fails. The terrain is then poured into the
+ * <b>whole</b> box. There is no skybox frame inside it: the sky a chunk dimension stands in is its
+ * lock skin, one block outside the box ({@link PortalRoomLock}, set to the variant's skybox block
+ * in {@code weights.json}), so the chunk is all sixteen blocks wide.</p>
 
  * <p>The cube is always in hand by the time anything is stamped: a pair is not planned at all until
  * its terrain has been sampled, because the doorways are stood on that terrain — see
@@ -86,7 +89,10 @@ public final class PortalChunkDimension {
                 PortalChunkTerrain.decorationApplied(pairKey);
                 continue;
             }
-            write(level, structure, dims, slice);
+            // The decoration pass runs from the level tick, outside the stamp's stage scope — open it
+            // again so the frame's stage placeholders resolve as they did on the first write.
+            games.brennan.dungeontrain.train.StagePlacementScope.run(
+                PortalCarriageBuilder.stageIdFor(level, pairKey, dims), () -> write(level, structure, dims, slice, pairKey));
             spawnOccupants(level, structure, dims, slice, pairKey);
             PortalChunkTerrain.decorationApplied(pairKey);
         }
@@ -103,13 +109,33 @@ public final class PortalChunkDimension {
                             int pairKey) {
         PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, structure.roomName());
         if (slice == null) return;
-        write(level, structure, dims, slice);
+        write(level, structure, dims, slice, pairKey);
+    }
+
+    /**
+     * Dress {@code structure}'s room in a frame — one of the frames whose selection names this room,
+     * picked by weight for this pair (see {@link ChunkFramePlacer}). A room no frame dresses, or one
+     * that is not a chunk box, is left as its terrain in its lock skin.
+     */
+    public static void frame(ServerLevel level, PortalStructure structure, CarriageDims dims, int pairKey) {
+        if (!structure.roomSize().equals(ChunkFrame.ROOM_SIZE)) return;
+        // The frame's own roll, salted apart from the room's so a test can re-roll either alone;
+        // unsalted it is a pure function of the pair, as in play.
+        int rollIndex = ChunkFramePlacer.rollIndex(structure.roomName(), pairKey);
+        java.util.Optional<ChunkFramePlacer.Picked> frame =
+            ChunkFramePlacer.frameFor(level, structure.roomName(), pairKey, rollIndex);
+        if (frame.isEmpty()) return;
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+        // Without the seal planes: the frame may dress the mouth's plane, and only the corridor and
+        // its plug are kept — which is what cuts the doorway through it.
+        ChunkFramePlacer.place(level, frame.get(), structure.roomOrigin(dims, layout),
+            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), rollIndex);
     }
 
     // ---- writing -------------------------------------------------------------
 
     private static void write(ServerLevel level, PortalStructure structure, CarriageDims dims,
-                              PortalChunkSlice slice) {
+                              PortalChunkSlice slice, int pairKey) {
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         BlockPos origin = structure.roomOrigin(dims, layout);
         Vec3i size = structure.roomSize();
@@ -126,12 +152,12 @@ public final class PortalChunkDimension {
         int shift = copyShift(structure, dims, size);
 
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        // The interior only: the ±Z walls, the floor and the ceiling are the template's, because the
-        // seal ring at each mouth is a copy of the room's own wall (PortalCarriageBuilder#sealFillFor)
-        // and a wall of open sky would seal a mouth with nothing. The ±X ends are not walls — they
-        // are the door planes — so terrain runs the full length.
-        for (int y = 1; y < size.getY() - 1; y++) {
-            for (int z = 1; z < size.getZ() - 1 && z < slice.width(); z++) {
+        // The whole box, faces included: the room has no shell of its own — its skybox is the lock
+        // skin one block outside it — so the chunk runs all 16 blocks to the sky. Where the end
+        // column is open, the mouth's seal ring falls back to that same skin rather than to the
+        // floor row (PortalCarriageBuilder#sealFillFor), so an open face still seals with sky.
+        for (int y = 0; y < size.getY(); y++) {
+            for (int z = 0; z < size.getZ() && z < slice.width(); z++) {
                 for (int x = 0; x < size.getX() && x < slice.width(); x++) {
                     // Null for a row the cube does not reach. Those rows keep whatever the template
                     // put there, which is a room rather than a hole.
@@ -148,6 +174,10 @@ public final class PortalChunkDimension {
                 }
             }
         }
+
+        // Before the doorways: the frame's inner layer is written over the terrain's edge row, and
+        // a rewrite of the terrain (the decoration pass) would otherwise bury it.
+        frame(level, structure, dims, pairKey);
 
         openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.ENTRY);
         openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.EXIT);
@@ -173,12 +203,14 @@ public final class PortalChunkDimension {
      */
     private static void paintBiomes(ServerLevel level, BlockPos origin, Vec3i size, int shift,
                                     PortalChunkSlice slice) {
-        int minX = origin.getX() + 1;
-        int minY = origin.getY() + 1;
-        int minZ = origin.getZ() + 1;
-        int maxX = origin.getX() + size.getX() - 2;
-        int maxY = origin.getY() + size.getY() - 2;
-        int maxZ = origin.getZ() + size.getZ() - 2;
+        // The whole box: the terrain runs to its faces now, so the outermost grass is sampled grass
+        // too and wants the sample's tint.
+        int minX = origin.getX();
+        int minY = origin.getY();
+        int minZ = origin.getZ();
+        int maxX = origin.getX() + size.getX() - 1;
+        int maxY = origin.getY() + size.getY() - 1;
+        int maxZ = origin.getZ() + size.getZ() - 1;
         java.util.List<net.minecraft.world.level.chunk.ChunkAccess> changed = new java.util.ArrayList<>();
         net.minecraft.world.level.biome.Climate.Sampler sampler =
             level.getChunkSource().randomState().sampler();
@@ -193,7 +225,7 @@ public final class PortalChunkDimension {
                     int bx = net.minecraft.core.QuartPos.toBlock(qx);
                     int by = net.minecraft.core.QuartPos.toBlock(qy);
                     int bz = net.minecraft.core.QuartPos.toBlock(qz);
-                    // A quart counts when its middle is inside the room's interior.
+                    // A quart counts when its middle is inside the room's box.
                     int mx = bx + 2, my = by + 2, mz = bz + 2;
                     if (mx < minX || mx > maxX || my < minY || my > maxY || mz < minZ || mz > maxZ) {
                         return here;
@@ -248,9 +280,12 @@ public final class PortalChunkDimension {
             // taller than a shallow world can stand up, and a sheep in the rows that were cut is a
             // sheep in the bedrock.
             if (y < origin.getY() + 1 || y > origin.getY() + size.getY() - 2) continue;
+            // Copy: the slice's occupant tag is shared. A sampled villager rolls its own pigman chance.
+            CompoundTag occupantNbt = occupant.nbt().copy();
+            games.brennan.dungeontrain.compat.PigmanVillagersBridge.freshRoll(occupantNbt);
             Entity entity = EntityType.loadEntityRecursive(
                 games.brennan.dungeontrain.editor.FrozenMobs.prepareForSpawn(
-                    occupant.nbt(), level, BlockPos.containing(x, y, z)),
+                    occupantNbt, level, BlockPos.containing(x, y, z)),
                 level, spawning -> {
                 spawning.moveTo(x, y, z, spawning.getYRot(), spawning.getXRot());
                 return spawning;

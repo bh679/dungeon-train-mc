@@ -67,7 +67,16 @@ def load_config(path: Path) -> dict:
     # Each becomes a CurseForge manifest file whose "required" flag is taken from the entry's
     # own "required" field (default False): True => bundled & ENABLED by default; False =>
     # bundled but DISABLED by default (CurseForge's opt-in "Include"). See modpack/README.md.
+    # A ``modrinth_only`` entry (not listed on CurseForge, e.g. Sable Pathfinder) has no CF ids
+    # and is left out of this manifest entirely.
     for i, opt in enumerate(config.get("optional_mods", [])):
+        if "modrinth_only" in opt and not isinstance(opt["modrinth_only"], bool):
+            raise ValueError(
+                f"{path} optional_mods[{i}] 'modrinth_only' must be a boolean, got "
+                f"{opt['modrinth_only']!r}"
+            )
+        if opt.get("modrinth_only"):
+            continue
         opt_missing = [k for k in ("project_id", "file_id") if k not in opt]
         if opt_missing:
             raise ValueError(
@@ -111,6 +120,8 @@ def build_manifest(
     #                    Building). NOTE: in the CurseForge app required=False means the
     #                    mod ships OFF — see modpack/README.md. Pins maintained like Sable.
     for opt in config.get("optional_mods", []):
+        if opt.get("modrinth_only"):
+            continue
         files.append(
             {
                 "projectID": int(opt["project_id"]),

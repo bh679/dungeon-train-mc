@@ -351,8 +351,11 @@ public final class TemplateDecor {
 
         // An editor-frozen mob (Settings → Mobs | Blocks) stays a statue when stamped back into a plot
         // and is thawed into a live mob everywhere else — the flags ride the template's NBT.
+        CompoundTag stamped = rebase(entry, at, anchor);
+        // A villager stamped from a template rolls its own pigman chance (rebase already copied).
+        games.brennan.dungeontrain.compat.PigmanVillagersBridge.freshRoll(stamped);
         CompoundTag nbt = games.brennan.dungeontrain.editor.FrozenMobs.prepareForSpawn(
-            rebase(entry, at, anchor), level.getLevel(), BlockPos.containing(at));
+            stamped, level.getLevel(), BlockPos.containing(at));
         Optional<Entity> created = EntityType.create(nbt, level.getLevel());
         if (created.isEmpty()) {
             LOGGER.debug("[DungeonTrain] template decor: could not create id={}", nbt.getString("id"));

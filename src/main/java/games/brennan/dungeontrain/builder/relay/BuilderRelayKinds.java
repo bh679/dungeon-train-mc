@@ -36,6 +36,8 @@ public final class BuilderRelayKinds {
     public static final String PART = "part";
     public static final String TRACK = "track";
     public static final String PORTAL_ROOM = "portal_room";
+    /** A chunk frame. No relay kind of its own yet — frames are never uploaded (EditorRelayWrite.namingOf). */
+    public static final String CHUNK_FRAME = "chunk_frame";
 
     private BuilderRelayKinds() {}
 
@@ -49,6 +51,7 @@ public final class BuilderRelayKinds {
             case PART -> PART;
             case TRACK -> TRACK;
             case PORTAL_ROOM -> PORTAL_ROOM;
+            case CHUNK_FRAME -> CHUNK_FRAME;
         };
     }
 
@@ -72,6 +75,7 @@ public final class BuilderRelayKinds {
             case PART -> BuilderPhotoPaths.Kind.PART;
             case TRACK -> BuilderPhotoPaths.Kind.TRACK;
             case PORTAL_ROOM -> BuilderPhotoPaths.Kind.PORTAL_ROOM;
+            case CHUNK_FRAME -> BuilderPhotoPaths.Kind.CHUNK_FRAME;
             default -> null;
         };
     }
@@ -92,7 +96,7 @@ public final class BuilderRelayKinds {
             case CARRIAGE, CARRIAGE_GROUP -> BuilderMode.TRAIN_OUTSIDE;
             case CONTENTS, PART -> BuilderMode.INSIDE_CARRIAGE;
             case TRACK -> BuilderMode.TRACKS_TUNNELS;
-            case PORTAL_ROOM -> BuilderMode.TRAIN_DIMENSIONS;
+            case PORTAL_ROOM, CHUNK_FRAME -> BuilderMode.TRAIN_DIMENSIONS;
         };
     }
 
@@ -167,6 +171,7 @@ public final class BuilderRelayKinds {
                     ? PlotCategory.PORTALS.id()
                     : PlotCategory.TRACKS.id();
             case PORTAL_ROOM -> PlotCategory.PORTALS.id();
+            case CHUNK_FRAME -> PlotCategory.CHUNK_FRAMES.id();
             case CARRIAGE_GROUP -> null;
         };
     }

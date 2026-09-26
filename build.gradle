@@ -115,7 +115,15 @@ repositories {
 }
 
 neoForge {
-    version = project.neo_version
+    // disableRecompilation: run dev against Mojang's ORIGINAL bytecode (remapped), not a
+    // decompile→recompile. Recompiling reorders lambda captures, which breaks third-party
+    // @Redirect handlers that capture lambda locals — Sable Pathfinder's
+    // SetWalkTargetFromBlockMemorySubLevelMixin crashed the dev server on the first villager
+    // tick. Production players never recompile, so dev must match them. Cost: no MC sources jar.
+    enable {
+        version = project.neo_version
+        disableRecompilation = true
+    }
 
     parchment {
         mappingsVersion = project.parchment_mappings_version
@@ -456,6 +464,14 @@ dependencies {
     implementation "bh679:dpibypassdetect:${dpibypassdetect_version}"
     jarJar(group: 'bh679', name: 'dpibypassdetect', version: dpibypassdetect_version)
 
+    // Pigman Villagers — 1% of villagers are pigmen (player model + pigman skin + pig sounds).
+    // DT calls PigmanVillagersApi.clearRoll (compat/PigmanVillagersBridge) so villagers stamped from
+    // templates roll their own chance. jarJar'd on every platform until its
+    // CurseForge/Modrinth listings exist (see gradle.properties). Flat bh679 Ivy asset
+    // pigmanvillagers-neoforge-<v>.jar.
+    implementation "bh679:pigmanvillagers:${pigmanvillagers_version}"
+    jarJar(group: 'bh679', name: 'pigmanvillagers', version: pigmanvillagers_version)
+
     // Dungeon Backup — sibling mod: the player-data protection system (migration out of
     // config/, rolling zip restore points inside + outside the instance, title-screen recovery)
     // extracted from DT in v0.862.0. DT registers its data root once in
@@ -504,6 +520,10 @@ dependencies {
     // either jar — `runtimeOnly` would do, `implementation` keeps the sibling convention.
     implementation "maven.modrinth:fast-paintings:${fastpaintings_version}"
     implementation "maven.modrinth:moonlight:${moonlight_version}"
+
+    // Sable Pathfinder — third-party mob pathing across Sable sub-levels (see gradle.properties).
+    // Nothing compiles against it; on the dev classpath so runClient/runServer behave like players.
+    implementation "maven.modrinth:sable-pathfinder:${sablepathfinder_version}"
 
     // Second-lap overworld mods (WWOO + Biomes O' Plenty) and their libraries — REQUIRED third-party
     // deps (see gradle.properties). Not bundled. DT names their biomes/features only by registry id,
@@ -780,6 +800,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         ediblebackpacks_version          : ediblebackpacks_version,
         keeptrim_version                 : keeptrim_version,
         keeptrim_min_version             : keeptrim_min_version,
+        pigmanvillagers_min_version      : pigmanvillagers_min_version,
         dungeonbackup_min_version        : dungeonbackup_min_version,
         sablefencetrapdoorfix_min_version : sablefencetrapdoorfix_min_version,
         // The DH build the modpack pins — VersionInfo reads it so DT can silence DH's own
@@ -796,6 +817,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         // Third-party required deps (Fast Paintings + its Moonlight library) — floors only.
         fastpaintings_min_version         : fastpaintings_min_version,
         moonlight_min_version             : moonlight_min_version,
+        sablepathfinder_min_version       : sablepathfinder_min_version,
         // Second-lap overworld mods — floors only.
         wwoo_min_version                  : wwoo_min_version,
         biomesoplenty_min_version         : biomesoplenty_min_version,

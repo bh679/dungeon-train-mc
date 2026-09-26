@@ -1,11 +1,16 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.client.ClientUpsideDownBand;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.train.CarriageStampGuard;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.CropBlock;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -69,6 +74,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * this mixin belongs in the common list rather than the client one. ({@code CarriageStampGuard} is
  * always {@code false} on the client, correctly — the client never runs DT's placement.)</p>
  *
+ * <p><b>Dimensional carriages — twin space.</b> A dimensional carriage's room is not a Sable
+ * sub-level: it is stamped once into <em>twin space</em> (the sealed basement under the bedrock, or
+ * the attic over the upside-down band's lid — {@link PortalTwinSpace}) and stands there at ordinary
+ * world coordinates, so neither clause above sees it. It is pitch dark down there — no sky, and the
+ * room's own lanterns are not propagated until the light engine next runs, well after
+ * {@code placeInWorld}'s per-cell and final {@code updateFromNeighbourShapes} passes have asked every
+ * crop whether it survives. Every crop in the room popped on load; any that were left died to the
+ * next neighbour update (harvesting the crop beside it) unless the author had lit the room — which
+ * nothing prompted them to, since the editor plot sits in daylight at y≈250. A room is long-lived and
+ * never lifted, so a stamp-time guard alone would only move the failure to the first harvest; the
+ * position test covers its whole life, exactly as the shipyard test does for a train carriage.
+ * Twin space is unreachable except through a portal, so no vanilla farm can be affected. Server and
+ * client resolve it from the same rule ({@code PortalTwinRegion.twinSpaceContains}) for the
+ * no-ghost-break reason above; the client half only runs when {@code isClientSide()}, so a dedicated
+ * server never loads it.</p>
+ *
  * <p>Ordinary overworld farms are untouched: outside the shipyard and outside a stamp both clauses
  * are false and the vanilla path runs unchanged, so a crop in a sealed dark room still dies as it
  * should.</p>
@@ -84,8 +105,24 @@ public abstract class CropBlockCarriageSurviveMixin {
     private static void dungeontrain$carriageCropsNeedNoLight(
             LevelReader level, BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
         if (CarriageStampGuard.isActive()
-                || TrackGenerator.isShipyardChunk(pos.getX() >> 4, pos.getZ() >> 4)) {
+                || TrackGenerator.isShipyardChunk(pos.getX() >> 4, pos.getZ() >> 4)
+                || dungeontrain$inPortalTwinSpace(level, pos)) {
             cir.setReturnValue(true);
         }
+    }
+
+    /**
+     * Whether {@code pos} is in a dimensional carriage's twin space. Overworld only — the only level
+     * with a basement or a band — and only for real levels; a {@code WorldGenRegion} or any other
+     * reader keeps the vanilla rule.
+     */
+    @Unique
+    private static boolean dungeontrain$inPortalTwinSpace(LevelReader level, BlockPos pos) {
+        if (!(level instanceof Level real) || !real.dimension().equals(Level.OVERWORLD)) return false;
+        if (real.isClientSide()) {
+            return ClientUpsideDownBand.isInPortalTwinSpace(pos.getX(), pos.getY());
+        }
+        return real instanceof ServerLevel server
+            && PortalTwinSpace.isInside(server, pos.getX(), pos.getY());
     }
 }

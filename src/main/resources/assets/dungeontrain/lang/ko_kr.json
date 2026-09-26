@@ -2884,7 +2884,7 @@
   "chat.dungeontrain.package.world_doesn_t_use": "이 월드는 자동 열차 시스템을 사용하지 않습니다 (startsWithTrain이 꺼져 있음).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain 실패: %s: %s",
   "chat.dungeontrain.package.teleporting_x_spawning_train": "X=%s(으)로 순간이동합니다 — 그곳에 열차를 생성하는 중이며, 자리 잡으면 평판 화차 위에 내려섭니다. 난이도를 티어 %s(으)로 맞췄습니다.",
-  "chat.dungeontrain.package.dtp_band_not_found": "앞쪽에 %s 구간이 없습니다 — 설정에서 꺼져 있을 수 있습니다.",
+  "chat.dungeontrain.package.dtp_band_not_found_in_lap": "%s 구간이 %s바퀴에 없습니다 — 그 바퀴에는 없거나 설정에서 꺼져 있을 수 있습니다.",
   "chat.dungeontrain.train.spawned_fresh_train_track": "선로 위 X=%s에 새 열차를 생성했습니다 (선박 id %s, 객차 %s개 / 블록 %s개로 시작, 속도 +X %s m/s) — 자리 잡으면 평판 화차 위에 내려섭니다. 이전 열차는 삭제되었고, 난이도는 자동 조절로 돌아갔으며 기억된 커뮤니티 객차 %s개가 다시 등장할 수 있습니다. 객차 창을 바꾸려면 '/dungeontrain carriages <count>'를 사용하세요.",
   "chat.dungeontrain.train.train_speed_set_m": "열차 속도를 %s m/s로 설정했습니다 (활성 %s %s 갱신됨)",
   "chat.dungeontrain.train.default_carriages_set_appender": "기본 객차 수를 %s(으)로 설정했습니다. 플레이어가 pIdx 경계를 넘을 때 어펜더가 다음 틱에 필요한 창을 늘리거나 줄입니다.",

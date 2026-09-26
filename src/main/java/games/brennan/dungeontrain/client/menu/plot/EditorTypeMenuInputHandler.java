@@ -660,6 +660,11 @@ public final class EditorTypeMenuInputHandler {
             // entry, so leave currentId blank.
             case PARTS -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.PARTS, first.modelId(), "");
+            // Chunk parts: modelId is the kind id; "Current" copies the chunk part plot the player
+            // stands in, when it is one of this kind.
+            case CHUNK_FRAMES -> new NewSourcePickerScreen(
+                NewSourcePickerScreen.Category.CHUNK_FRAMES, first.modelId(),
+                first.modelId().equals(EditorStatusHudOverlay.modelId()) ? EditorStatusHudOverlay.modelName() : "");
             // Tracks have no source choice today — picker collapses to a
             // single name TypeArg row. Kind tag is the variant's modelId
             // (the server's track-new parser expects the prefixed forms,

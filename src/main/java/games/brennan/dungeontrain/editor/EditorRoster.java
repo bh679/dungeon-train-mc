@@ -56,6 +56,7 @@ public final class EditorRoster {
             addContents(out);
             addTracks(out);
             addPortals(out);
+            addChunkFrames(out);
             return out;
         } finally {
             RELAY_ROWS.set(null);
@@ -240,6 +241,14 @@ public final class EditorRoster {
         out.add(group(EditorCategory.PORTALS.id(), "Dimensional Carriage", TrackKind.PORTAL_ROOM.id(),
             EditorTypeMenus.trackKindRows(TrackKind.PORTAL_ROOM, names, EditorCategory.PORTALS),
             v -> trackSelfWeight(TrackKind.PORTAL_ROOM, v)));
+    }
+
+    /** The chunk frames, one group, browsed under Dimensions beside the rooms they dress. */
+    private static void addChunkFrames(List<EditorRosterPacket.Group> out) {
+        List<String> names = games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names();
+        if (names.isEmpty()) return;
+        out.add(group(PlotCategory.CHUNK_FRAMES.id(), EditorTypeMenus.FRAMES_TYPE_NAME, ChunkFrameEditor.MODEL_ID,
+            EditorTypeMenus.chunkFrameRows(names), null));
     }
 
     private static EditorRosterPacket.Group group(

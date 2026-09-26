@@ -116,6 +116,9 @@ public final class EditorRelayWrite {
             // what they do at their walls, never by the eight track kinds. See BuilderPhotoPaths.
             case Template.PortalRoom room ->
                     new Naming(BuilderPhotoPaths.Kind.PORTAL_ROOM, "", room.name());
+
+            // Frames have no relay kind yet, so nothing to file.
+            case Template.ChunkFrame ignored -> null;
         };
     }
 

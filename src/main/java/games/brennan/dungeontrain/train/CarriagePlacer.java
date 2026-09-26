@@ -463,7 +463,7 @@ public final class CarriagePlacer {
      */
     public static void placeForTest(ServerLevel level, BlockPos origin, CarriageVariant variant,
                                     CarriageContents contents, CarriageDims dims, long seed,
-                                    int carriageIndex) {
+                                    long contentsSeed, int carriageIndex) {
         int anchor = GateContext.WORLDX_FROM_PIDX;
         CarriageStampGuard.run(() -> StagePlacementScope.run(null, () -> {
             // A portal corridor is built the way the train builds one — its own geometry, doors and
@@ -474,7 +474,7 @@ public final class CarriagePlacer {
                 PortalCarriageBuilder.stampCorridorFrom(level, origin, dims, kind, /*relight*/ true,
                     /*withContents*/ false, carriageIndex, PortalCarriageRole.ENTRY);
                 if (contents != null) {
-                    CarriageContentsPlacer.placeAt(level, origin, contents, dims, seed, carriageIndex);
+                    CarriageContentsPlacer.placeAt(level, origin, contents, dims, contentsSeed, carriageIndex);
                 }
                 return;
             }
@@ -487,7 +487,7 @@ public final class CarriagePlacer {
             }
             spawnShellAndPartsVariantMobs(level, origin, variant, dims, seed, carriageIndex, anchor);
             if (contents != null) {
-                CarriageContentsPlacer.placeAt(level, origin, contents, dims, seed, carriageIndex);
+                CarriageContentsPlacer.placeAt(level, origin, contents, dims, contentsSeed, carriageIndex);
             }
         }));
     }

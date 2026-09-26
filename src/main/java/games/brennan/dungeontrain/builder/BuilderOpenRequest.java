@@ -122,6 +122,7 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
             case CONTENTS -> BuilderNewOptions.SubType.CARRIAGE_ROOM.id();
             case PART -> BuilderNewOptions.SubType.PARTS.id();
             case PORTAL_ROOM -> PORTAL_ROOM_SUB_TYPE;
+            case CHUNK_FRAME -> null;
             // A track build records no sub type — see subType(), and BuilderWorldSetup's track arm,
             // which sets the field itself.
             case TRACK -> "";
@@ -150,7 +151,7 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
             case CARRIAGE, CARRIAGE_GROUP -> BuilderNewOptions.SubType.WHOLE_CARRIAGE;
             case CONTENTS -> BuilderNewOptions.SubType.CARRIAGE_ROOM;
             case PART -> BuilderNewOptions.SubType.PARTS;
-            case TRACK, PORTAL_ROOM -> null;
+            case TRACK, PORTAL_ROOM, CHUNK_FRAME -> null;
         };
     }
 
@@ -208,6 +209,7 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
             case PART -> partKind == null ? null : BlockVariantPlot.partKey(partKind, id);
             case TRACK -> trackKind == null ? null : BlockVariantPlot.trackKey(trackKind, id);
             case PORTAL_ROOM -> BlockVariantPlot.trackKey(TrackKind.PORTAL_ROOM, id);
+            case CHUNK_FRAME -> games.brennan.dungeontrain.editor.ChunkFramePlot.KEY_PREFIX + id;
             case CARRIAGE_GROUP -> null;
         };
     }

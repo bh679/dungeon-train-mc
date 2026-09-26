@@ -112,6 +112,9 @@ def find_drift(config: dict, relations: dict[str, str]) -> list[str]:
     errors: list[str] = []
     for i, opt in enumerate(config.get("optional_mods", [])):
         name = opt.get("name", f"optional_mods[{i}]")
+        if opt.get("modrinth_only"):
+            # Not on CurseForge: never a CF Include, so no CF relation to check.
+            continue
         slug = opt.get("slug")
         if not slug:
             errors.append(

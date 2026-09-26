@@ -522,6 +522,17 @@ public record WorldGenCycle(long startX, int owGap,
         return u < 0L ? -1 : layout.indexAt(u);
     }
 
+    /** Public read of {@link #slotAt}: the layout slot at {@code worldX}, or {@code -1} (no layout, or before the anchor). */
+    public int slotIndexAt(int worldX) {
+        return layout == null ? -1 : slotAt(worldX);
+    }
+
+    /** Base-coordinate offset into the slot {@link #slotIndexAt} reports, or {@code -1} when there is none. */
+    public long slotLocal(int worldX) {
+        int i = slotIndexAt(worldX);
+        return i < 0 ? -1L : baseAt(worldX) - layout.start(i);
+    }
+
     /** World X of base coordinate {@code u} in the run {@code worldX} is in — the inverse of {@link #baseAt}. */
     private long worldOf(int worldX, long u) {
         int k = runAt(worldX);
@@ -602,7 +613,8 @@ public record WorldGenCycle(long startX, int owGap,
      * transition at {@code worldX}, or {@code null}. The overworld-looking part of a band's transition
      * wears the look of the overworld gap it borders, so a modded stretch doesn't stop at a hard line:
      * <ul>
-     *   <li>upside-down — the Reassembly and exit gap, from the gap after it (its entry is all mirror);</li>
+     *   <li>upside-down — the last ~28% of the Reassembly ({@link #UD_BLEED_REASSEMBLY_FRACTION}) and
+     *       the exit gap, from the gap after it (its entry is all mirror);</li>
      *   <li>Nether — the beach, mountain stages and core crossfade on each side, from that side's gap;</li>
      *   <li>End — the overworld→void erosion fade on each side, from that side's gap.</li>
      * </ul>
@@ -618,7 +630,9 @@ public record WorldGenCycle(long startX, int owGap,
         long side;
         switch (slot.type()) {
             case UPSIDE_DOWN -> {
-                return local >= udBandLenAt(worldX) ? moddedOverworldStyle(i + 1) : null;
+                long bleedStart = udBandLenAt(worldX)
+                        + Math.round(udExitFadeLenAt(worldX) * UD_BLEED_REASSEMBLY_FRACTION);
+                return local >= bleedStart ? moddedOverworldStyle(i + 1) : null;
             }
             case NETHER -> side = (len - Math.max(0, slot.core())) / 2L;
             case END -> side = Math.max(0, eFade);
@@ -628,6 +642,13 @@ public record WorldGenCycle(long startX, int owGap,
         if (local >= len - side) return moddedOverworldStyle(i + 1);
         return null;
     }
+
+    /**
+     * How far into the upside-down Reassembly the next gap's modded look begins. Most of it is still
+     * visibly reassembling, so the look waits until the world has nearly settled (shipped layout:
+     * X ≈ 22 294 instead of the Reassembly's start at 17 994).
+     */
+    static final double UD_BLEED_REASSEMBLY_FRACTION = 43.0 / 60.0;
 
     /** Style of slot {@code i} when it is a WWOO / BoP overworld gap, else {@code null}. */
     private CycleLayout.Style moddedOverworldStyle(int i) {
@@ -1098,6 +1119,18 @@ public record WorldGenCycle(long startX, int owGap,
         return Math.floorDiv((long) worldX - startX + phaseShift, p);
     }
 
+    /**
+     * First world-X of lap {@code lap} — the inverse of {@link #cycleIndex}: the start of doubling run
+     * {@code lap} (layout), or of period {@code lap} (classic, lap 0 clamped to the anchor since
+     * {@code phaseShift} starts it part-way in). {@code -1} when the cycle is empty or {@code lap < 0}.
+     */
+    public long lapStartX(int lap) {
+        long p = period();
+        if (p <= 0L || lap < 0) return -1L;
+        if (layout != null) return startX + CycleLayout.runStart(Math.min(lap, 62), p);
+        return Math.max(startX, startX + (long) lap * p - phaseShift);
+    }
+
     /** Which plain-overworld gap a world-X sits in — see {@link #overworldGapAt}. */
     public enum OverworldGap { LEAD, POST_NETHER, NONE }
 
@@ -1513,6 +1546,15 @@ public record WorldGenCycle(long startX, int owGap,
      * crossfade when one ends at {@code B + fade/2} and the other starts at {@code B − fade/2}.
      */
     public double spheresSkyWindowRamp(int worldX, long startBlocks, long endBlocks, int fade) {
+        return spheresSkyWindowRamp(worldX, startBlocks, endBlocks, fade, fade);
+    }
+
+    /**
+     * {@link #spheresSkyWindowRamp(int, long, long, int)} with separate spans: climbs over {@code fadeIn}
+     * blocks from {@code startBlocks} and falls over the {@code fadeOut} blocks before {@code endBlocks}.
+     * Each is clamped to a quarter of the core; {@code 0} is a hard switch on that edge.
+     */
+    public double spheresSkyWindowRamp(int worldX, long startBlocks, long endBlocks, int fadeIn, int fadeOut) {
         long len = spheresLen();
         if (len <= 0L) return 0.0;
         long ls = spheresOffset(worldX);
@@ -1520,10 +1562,10 @@ public record WorldGenCycle(long startX, int owGap,
         long start = Math.max(0L, startBlocks);
         long end = Math.min(len, endBlocks);
         if (ls < start || ls >= end) return 0.0;
-        long f = Math.max(0L, Math.min(fade, len / 4L));
-        if (f == 0L) return 1.0;
-        double in = (double) (ls - start + 1L) / f;           // entering: reaches 1 after f blocks
-        double out = (double) (end - ls) / f;                 // leaving: 1/f on the window's last column
+        long fi = Math.max(0L, Math.min(fadeIn, len / 4L));
+        long fo = Math.max(0L, Math.min(fadeOut, len / 4L));
+        double in = fi == 0L ? 1.0 : (double) (ls - start + 1L) / fi;   // entering: reaches 1 after fi blocks
+        double out = fo == 0L ? 1.0 : (double) (end - ls) / fo;         // leaving: 1/fo on the window's last column
         return Math.min(1.0, Math.min(in, out));
     }
 

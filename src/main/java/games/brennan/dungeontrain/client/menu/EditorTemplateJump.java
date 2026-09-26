@@ -72,6 +72,7 @@ public final class EditorTemplateJump {
             case CARRIAGE -> "dungeontrain editor enter " + id;
             case CONTENTS -> "dungeontrain editor contents enter " + id;
             case PORTAL_ROOM -> "dungeontrain editor portals enter " + id;
+            case CHUNK_FRAME -> "dungeontrain editor chunkframe enter " + id;
             case TRACK -> trackEnterCommandFor(TrackKind.fromId(subKind), id);
             case PART, CARRIAGE_GROUP -> null;
         };

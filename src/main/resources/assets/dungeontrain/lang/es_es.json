@@ -2927,7 +2927,7 @@
   "chat.dungeontrain.package.world_doesn_t_use": "Este mundo no usa el sistema de tren automático (startsWithTrain está desactivado).",
   "chat.dungeontrain.package.spawntrain_failed": "error en spawnTrain: %s: %s",
   "chat.dungeontrain.package.teleporting_x_spawning_train": "Teletransportando a X=%s; se está generando un tren allí ahora mismo. Aterrizarás en la plataforma cuando se asiente. Dificultad fijada en el nivel %s para que coincida.",
-  "chat.dungeontrain.package.dtp_band_not_found": "No hay ninguna franja %s por delante — puede que esté desactivada en la configuración.",
+  "chat.dungeontrain.package.dtp_band_not_found_in_lap": "No hay ninguna franja %s en la vuelta %s — puede que esa vuelta no tenga ninguna o que esté desactivada en la configuración.",
   "chat.dungeontrain.train.spawned_fresh_train_track": "Generado un tren nuevo en la vía en X=%s (id de nave %s, sembrado con %s vagones / %s bloques, velocidad +X %s m/s). Aterrizarás en la plataforma cuando se asiente. El tren anterior se ha eliminado; la dificultad vuelve al escalado automático y %s vagón(es) de la comunidad recordado(s) pueden volver a aparecer. Usa '/dungeontrain carriages <count>' para cambiar la ventana de vagones.",
   "chat.dungeontrain.train.train_speed_set_m": "Velocidad del tren fijada en %s m/s (%s %s activos actualizados)",
   "chat.dungeontrain.train.default_carriages_set_appender": "Vagones por defecto fijados en %s. El generador ampliará o recortará la ventana necesaria en el próximo tick a medida que el jugador cruce los límites de pIdx.",

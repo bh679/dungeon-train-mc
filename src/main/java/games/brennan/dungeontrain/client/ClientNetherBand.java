@@ -1,8 +1,6 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
-import games.brennan.dungeontrain.config.SpheresProgressionConfig;
-import games.brennan.dungeontrain.worldgen.SpheresSky;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 
 /**
@@ -39,17 +37,12 @@ public final class ClientNetherBand {
      * cycle along +X.
      */
     public static double netherIntensityAt(double worldX) {
-        if (!startsWithTrain) return 0.0;
-        int x = (int) Math.floor(worldX);
-        WorldGenCycle cycle = WorldGenCycle.fromConfig();
-        // The two bands never overlap, so max() just picks whichever one the camera is in.
-        return Math.max(netherBandRampAt(cycle, x), spheresNetherSkyIntensity(cycle, x));
+        return netherBandIntensityAt(worldX);
     }
 
     /**
-     * The real Nether transition band's ramp alone — without the spheres band's Nether-sky stretch,
-     * which is atmosphere only. For gameplay rules that belong to the real Nether (water evaporating
-     * from a bucket), so they don't follow the sky into the spheres.
+     * The real Nether transition band's ramp. For gameplay rules that belong to the real Nether (water
+     * evaporating from a bucket). Today identical to {@link #netherIntensityAt}, which is atmosphere.
      */
     public static double netherBandIntensityAt(double worldX) {
         if (!startsWithTrain) return 0.0;
@@ -59,15 +52,6 @@ public final class ClientNetherBand {
     private static double netherBandRampAt(WorldGenCycle cycle, int worldX) {
         if (!DungeonTrainCommonConfig.isNetherTransitionEnabled()) return 0.0;
         return cycle.netherRamp(worldX);
-    }
-
-    /** Nether-sky intensity over the spheres band's last stretch ({@link SpheresSky#netherSky}). */
-    private static double spheresNetherSkyIntensity(WorldGenCycle cycle, int worldX) {
-        if (!DungeonTrainCommonConfig.isSpheresEnabled() || !DungeonTrainCommonConfig.isSpheresEndSkyEnabled()) {
-            return 0.0;
-        }
-        return SpheresSky.netherSky(cycle, SpheresProgressionConfig.segments(), worldX,
-                DungeonTrainCommonConfig.getSpheresEndSkyFadeBlocks());
     }
 
     /** Nether intensity {@code n} crosses this point: below it the Overworld track plays, above it the Nether track. */

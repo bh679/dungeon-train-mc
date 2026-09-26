@@ -13,6 +13,7 @@
 #   be         BetterEnd: New Dawn (shares BetterNether's three libraries)
 #   wwoo cristel bop tb glitch  WWOO + Cristel Lib, Biomes O' Plenty + TerraBlender + GlitchCore
 #              (second-lap overworld mods, third-party required deps)
+#   sp         Sable Pathfinder (Modrinth-required, `optional` in mods.toml — absent on CurseForge)
 #   pmob-new   PlayerMob ABOVE the declared floor (uses playermob_version)
 #   pmob-old   PlayerMob BELOW the declared floor (downloaded, see README)
 #
@@ -71,6 +72,7 @@ resolve() {
     # Third-party required deps, keyed by Modrinth VERSION ID (see gradle.properties).
     fp)       cached "maven.modrinth/fast-paintings" "$(prop fastpaintings_version)" ;;
     moon)     cached "maven.modrinth/moonlight"      "$(prop moonlight_version)" ;;
+    sp)       cached "maven.modrinth/sable-pathfinder" "$(prop sablepathfinder_version)" ;;
     bn)       cached "maven.modrinth/betternether-neoforge" "$(prop betternether_version)" ;;
     bclib)    cached "maven.modrinth/bclib-neoforge"        "$(prop bclib_version)" ;;
     wover)    cached "maven.modrinth/worldweaver-neoforge"  "$(prop worldweaver_version)" ;;
@@ -91,6 +93,9 @@ resolve() {
     # model Modrinth/manual, loading from the nested copy.
     sd)       cached "bh679/streamdetect"            "$(prop streamdetect_version)" ;;
     dbd)      cached "bh679/dpibypassdetect"         "$(prop dpibypassdetect_version)" ;;
+    # Pigman Villagers — jarJar'd inside the DT jar; present (Case A) proves the nested copy is
+    # skipped in favour of a top-level one.
+    pv)       cached "bh679/pigmanvillagers"         "$(prop pigmanvillagers_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;
     # Above the floor: whatever the cascade has moved playermob_version to. When those two

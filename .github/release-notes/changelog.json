@@ -19300,6 +19300,179 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-crops-survive",
+      "version": "0.972.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Crops in dimensional carriages no longer break when the carriage loads",
+      "summary": "Farms built into a dimensional carriage now arrive intact. Wheat, carrots, potatoes and beetroot used to pop off their farmland the moment the carriage appeared, and any that survived were knocked loose when you harvested the crop beside them.",
+      "highlights": [
+        "Crops in dimensional carriages stay planted when the carriage loads",
+        "Harvesting one crop no longer breaks the crops around it"
+      ],
+      "pr": 1573,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "chunk-carriages-framed-in-sky",
+      "version": "0.972.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Terrain dimensional carriages are sealed in sky and dressed in frames",
+      "summary": "Dimensional carriages that hold a slice of real terrain now fill their whole room with that ground, sealed in by the sky itself rather than a second skin of blocks around it. They can also be dressed in a frame of columns, beams and walls built around and into the terrain, and the first one, a stone frame, arrives with this update. Builders can make their own frames in the editor, choose which of these carriages each one dresses, and test them straight away.",
+      "highlights": [
+        "The terrain fills the whole room, sealed in by the sky",
+        "A new stone frame dresses these carriages",
+        "Build your own frames in the editor and choose where they appear",
+        "Shift-Reseed re-rolls only what you are testing, and Shift turns Go here into Enter",
+        "Editing a template with thousands of block variants no longer lags"
+      ],
+      "pr": 1574,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dtp-band-lap",
+      "version": "0.973.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Testing tools improvements",
+      "summary": "A few more ways to get around when testing.",
+      "highlights": [],
+      "pr": 1576,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "modpack-advanced-shulkerboxes",
+      "version": "0.973.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Open Shulker Boxes from your hand (Advanced Shulkerboxes joins the modpack)",
+      "summary": "Right-click a Shulker Box you're holding to open it on the spot. No more placing it on the carriage floor and mining it back up mid-run. Advanced Shulkerboxes ships enabled in both the CurseForge and Modrinth modpacks. It runs on the server, so multiplayer servers need it installed too.",
+      "highlights": [
+        "Advanced Shulkerboxes 2.0.5 bundled on by default in both modpacks",
+        "Right-click a held Shulker Box to open its inventory without placing it",
+        "Server-side mod: add it to your server as well as your client"
+      ],
+      "pr": 1578,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "late-wwoo-after-upside-down",
+      "version": "0.973.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "A gentler arrival",
+      "summary": "After one of the stranger stretches of the journey, the land now settles back into place before the next stretch's new look takes over.",
+      "highlights": [
+        "The world finishes pulling itself together before it changes again."
+      ],
+      "pr": 1575,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sable-pathfinder-dependency",
+      "version": "0.973.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "mobs"
+      ],
+      "title": "Mobs can follow you onto the train",
+      "summary": "Dungeon Train now installs Sable Pathfinder, so mobs and villagers find their way onto and along the moving train instead of giving up at the edge. For now this is Modrinth only: CurseForge players won't get it until B34tingH34rt publishes Sable Pathfinder to CurseForge ([request here](https://github.com/B34tingH34rt/sable_pathfinder/issues/5)). If you install the mod manually, you now need NeoForge 21.1.230 or newer.",
+      "highlights": [],
+      "pr": 1577,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "rare-villager-variant",
+      "version": "0.973.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Not every villager is quite what they seem",
+      "summary": "Keep an eye on the villagers you meet. Once in a while, one of them isn't like the others.",
+      "highlights": [
+        "Rare, and not just on the train",
+        "They still trade like any villager",
+        "Each carriage keeps you guessing"
+      ],
+      "pr": 1579,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "f3-4-debug-panel-band-readout",
+      "version": "0.973.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Debug panel improvements",
+      "summary": "Small improvements to internal debugging tools.",
+      "highlights": [],
+      "pr": 1580,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "spheres-band-shorter-no-nether-sky",
+      "version": "0.974.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "A tighter stretch of the journey",
+      "summary": "One of the stranger stretches of the ride is now less than half as long, so its wonders arrive faster. Its sky no longer turns hellish on the way out; instead it drifts gently back to normal as you leave.",
+      "highlights": [],
+      "pr": 1581,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -32,8 +32,25 @@ public final class TrainDebugState {
     private static volatile String contentsId = "";
     private static volatile String subVariantId = "";
     private static volatile String flip = "";
+    /** Band label at the player's X, as {@code BandLabel} renders it; empty = not known. */
+    private static volatile String band = "";
+    /** Stage within the band, e.g. {@code "6/7 Structure boost (42%)"}; empty = not known. */
+    private static volatile String stage = "";
+    private static volatile long lap = -1L;
 
     private TrainDebugState() {}
+
+    public static String band() {
+        return band;
+    }
+
+    public static String stage() {
+        return stage;
+    }
+
+    public static long lap() {
+        return lap;
+    }
 
     public static boolean permitted() {
         return permitted;
@@ -119,6 +136,13 @@ public final class TrainDebugState {
         flip = present ? orEmpty(carriageFlip) : "";
     }
 
+    /** Fed by {@code TrainDebugBandPacket.handle} whenever the player's band or lap changes. */
+    public static void setBand(String bandLabel, String bandStage, long bandLap) {
+        band = orEmpty(bandLabel);
+        stage = band.isEmpty() ? "" : orEmpty(bandStage);
+        lap = band.isEmpty() ? -1L : bandLap;
+    }
+
     private static String orEmpty(String s) {
         return s == null ? "" : s;
     }
@@ -138,5 +162,8 @@ public final class TrainDebugState {
         contentsId = "";
         subVariantId = "";
         flip = "";
+        band = "";
+        stage = "";
+        lap = -1L;
     }
 }

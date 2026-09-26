@@ -77,4 +77,17 @@ public record PortalTwinRegion(int base, int ceiling) {
     public boolean contains(double y) {
         return y >= base && y < ceiling;
     }
+
+    /**
+     * Whether {@code y} is in twin space: always the basement, the attic only where a lid is actually
+     * stamped over it ({@code atticApplies}). The one rule both sides answer from —
+     * {@code PortalTwinSpace.isInside} on the server, {@code ClientUpsideDownBand.isInPortalTwinSpace}
+     * on the client — so a test that must agree across the two (the carriage crop light rule) cannot
+     * drift apart.
+     */
+    public static boolean twinSpaceContains(double y, PortalTwinRegion basement,
+                                            boolean atticApplies, PortalTwinRegion attic) {
+        if (basement.contains(y)) return true;
+        return atticApplies && attic.contains(y);
+    }
 }

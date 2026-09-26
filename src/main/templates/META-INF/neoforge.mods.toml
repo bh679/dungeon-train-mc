@@ -26,6 +26,16 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Sable Pathfinder — mobs path across Sable sub-levels. Required on Modrinth (listing relation +
+# .mrpack) but `optional` here: it isn't on CurseForge, and a hard dep would stop CF players
+# launching. The floor still applies whenever it is installed.
+[[dependencies.${mod_id}]]
+    modId="sable_pathfinder"
+    type="optional"
+    versionRange="[${sablepathfinder_min_version},)"
+    ordering="NONE"
+    side="BOTH"
+
 # Fast Paintings (+ its Moonlight library) — third-party, REQUIRED. It replaces painting
 # entities with blocks; templates and shared carriages carry those blocks, which are air
 # without the mod. Floors, not exact pins: the block's three state properties are all DT
@@ -172,6 +182,16 @@ logoFile="logo.png"
     type="required"
     versionRange="[${keeptrim_min_version},)"
     ordering="AFTER"
+    side="BOTH"
+
+# Pigman Villagers — sibling mod, jarJar'd INSIDE this jar until its CurseForge/Modrinth listings
+# exist. Adds a synced entity-data flag to Villager, so it must be on BOTH sides. Range keys off the
+# FLOOR so a separately installed copy is checked like the other siblings.
+[[dependencies.${mod_id}]]
+    modId="pigmanvillagers"
+    type="required"
+    versionRange="[${pigmanvillagers_min_version},)"
+    ordering="NONE"
     side="BOTH"
 
 # Dungeon Backup — hybrid sibling: jarJar'd INSIDE this jar (Modrinth / manual installs) AND a

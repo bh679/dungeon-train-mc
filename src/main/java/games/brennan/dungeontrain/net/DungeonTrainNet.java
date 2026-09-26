@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "91";
+    public static final String PROTOCOL_VERSION = "95";
 
     private DungeonTrainNet() {}
 
@@ -137,6 +137,8 @@ public final class DungeonTrainNet {
         // Package menu V2 — client requests a snapshot, server pushes back with
         // package list + flags + per-package content basenames.
         registrar.playToServer(PackageListRequestPacket.TYPE, PackageListRequestPacket.STREAM_CODEC, PackageListRequestPacket::handle);
+        registrar.playToServer(ChunkFrameRoomsRequestPacket.TYPE, ChunkFrameRoomsRequestPacket.STREAM_CODEC, ChunkFrameRoomsRequestPacket::handle);
+        registrar.playToClient(ChunkFrameRoomsSyncPacket.TYPE, ChunkFrameRoomsSyncPacket.STREAM_CODEC, ChunkFrameRoomsSyncPacket::handle);
         registrar.playToClient(PackageListSyncPacket.TYPE, PackageListSyncPacket.STREAM_CODEC, PackageListSyncPacket::handle);
 
         // Starting-book close-detection: client ScreenEvent.Closing → server burn flow.
@@ -334,6 +336,7 @@ public final class DungeonTrainNet {
         registrar.playToClient(FreePlayCausePacket.TYPE, FreePlayCausePacket.STREAM_CODEC, FreePlayCausePacket::handle);
         registrar.playToClient(TrainDebugSyncPacket.TYPE, TrainDebugSyncPacket.STREAM_CODEC, TrainDebugSyncPacket::handle);
         registrar.playToClient(TrainDebugCarriagePacket.TYPE, TrainDebugCarriagePacket.STREAM_CODEC, TrainDebugCarriagePacket::handle);
+        registrar.playToClient(TrainDebugBandPacket.TYPE, TrainDebugBandPacket.STREAM_CODEC, TrainDebugBandPacket::handle);
         // Where a save's relay upload has got to — drives the editor screen's "Uploading…" note and
         // its refresh once the build lands. See BuilderUploadStatusPacket.
         registrar.playToClient(BuilderUploadStatusPacket.TYPE, BuilderUploadStatusPacket.STREAM_CODEC, BuilderUploadStatusPacket::handle);

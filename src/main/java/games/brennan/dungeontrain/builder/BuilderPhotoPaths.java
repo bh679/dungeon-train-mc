@@ -44,7 +44,9 @@ public final class BuilderPhotoPaths {
          * rather than a {@link #TRACK} with a kind attached, because the Open grid browses rooms by
          * what they do at their walls and never by the eight track kinds.
          */
-        PORTAL_ROOM("portal_room");
+        PORTAL_ROOM("portal_room"),
+        /** A chunk frame — its own directory, {@code chunk_frames/}, and no relay kind yet. */
+        CHUNK_FRAME("chunk_frame");
 
         private final String id;
 
@@ -102,6 +104,8 @@ public final class BuilderPhotoPaths {
                     : Optional.of(withPng(TrackVariantStore.fileFor(trackKind, id)));
             case PORTAL_ROOM -> Optional.of(withPng(
                     TrackVariantStore.fileFor(TrackKind.PORTAL_ROOM, id)));
+            case CHUNK_FRAME -> Optional.of(withPng(
+                    games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.fileFor(id)));
         };
     }
 
@@ -136,6 +140,9 @@ public final class BuilderPhotoPaths {
             case PORTAL_ROOM -> TrackVariantStore.sourceTreeAvailable()
                     ? Optional.of(withPng(TrackVariantStore.sourceFileFor(TrackKind.PORTAL_ROOM, id)))
                     : Optional.empty();
+            case CHUNK_FRAME -> Optional.ofNullable(
+                    games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.sourceFileFor(id))
+                    .map(BuilderPhotoPaths::withPng);
         };
     }
 

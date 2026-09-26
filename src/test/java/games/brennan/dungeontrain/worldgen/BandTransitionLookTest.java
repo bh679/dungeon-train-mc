@@ -14,7 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * {@link SecondLapOverworld#lookAt}: the overworld-looking part of a band transition wears the look of
- * the modded overworld stretch it borders ({@link WorldGenCycle#bleedingOverworldStyleAt}).
+ * the modded overworld stretch it borders ({@link WorldGenCycle#bleedingOverworldStyleAt}); the
+ * upside-down's only for the last ~28% of its Reassembly (u = 4133).
  *
  * <p>Base layout (u = blocks past the anchor, run 0), fades as {@code FADES}:</p>
  * <pre>
@@ -72,14 +73,26 @@ final class BandTransitionLookTest {
     }
 
     @Test
-    @DisplayName("upside-down: Reassembly and exit gap wear WWOO; the mirror does not")
+    @DisplayName("upside-down: the last ~28% of the Reassembly and the exit gap wear WWOO; the mirror does not")
     void upsideDownExit() {
         assertEquals(Stretch.VANILLA, look(1000));
         assertEquals(Stretch.VANILLA, look(2699));
-        assertEquals(Stretch.WWOO, look(2700));
+        assertEquals(Stretch.VANILLA, look(2700)); // most of the Reassembly stays vanilla
+        assertEquals(Stretch.VANILLA, look(4132));
+        assertEquals(Stretch.WWOO, look(4133));
         assertEquals(Stretch.WWOO, look(4700));
         assertEquals(Stretch.WWOO, look(5299));
         assertEquals(Stretch.VANILLA, own(2700)); // the stretch itself is unchanged
+    }
+
+    @Test
+    @DisplayName("upside-down: the WWOO start is a fraction of that Reassembly's own length, not a fixed X")
+    void upsideDownStartFollowsReassemblyLength() {
+        // Same band, Reassembly 3000 instead of 2000: mirror [1000, 2700), Reassembly [2700, 5700).
+        WorldGenCycle longer = cycle("ow:1000, upside_down:500:3000, ow:wwoo:3000, ow:1000");
+        long start = 2700L + Math.round(3000 * WorldGenCycle.UD_BLEED_REASSEMBLY_FRACTION);
+        assertEquals(Stretch.VANILLA, SecondLapOverworld.lookAt(longer, (int) (START + start - 1)));
+        assertEquals(Stretch.WWOO, SecondLapOverworld.lookAt(longer, (int) (START + start)));
     }
 
     @Test
@@ -122,8 +135,8 @@ final class BandTransitionLookTest {
         long p = C.period();
         assertEquals(20_844L, p);
         long run1 = START + CycleLayout.runStart(1, p);
-        assertEquals(Stretch.VANILLA, SecondLapOverworld.lookAt(C, (int) (run1 + (2699L << 1))));
-        assertEquals(Stretch.WWOO, SecondLapOverworld.lookAt(C, (int) (run1 + (2700L << 1))));
+        assertEquals(Stretch.VANILLA, SecondLapOverworld.lookAt(C, (int) (run1 + (4132L << 1))));
+        assertEquals(Stretch.WWOO, SecondLapOverworld.lookAt(C, (int) (run1 + (4133L << 1))));
         assertEquals(Stretch.WWOO, SecondLapOverworld.lookAt(C, (int) (run1 + (8831L << 1))));
         assertEquals(Stretch.VANILLA, SecondLapOverworld.lookAt(C, (int) (run1 + (8832L << 1))));
         assertEquals(Stretch.BOP, SecondLapOverworld.lookAt(C, (int) (run1 + (11832L << 1))));

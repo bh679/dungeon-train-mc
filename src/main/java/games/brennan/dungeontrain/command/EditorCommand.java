@@ -591,6 +591,7 @@ public final class EditorCommand {
                 // Sub-variants: one named room standing for several designs, drawn by weight.
                 .then(portalRoomGroupNode()))
             .then(WholeEditorCommand.build())
+            .then(ChunkFrameCommand.build())
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -3189,6 +3190,11 @@ public final class EditorCommand {
         if (category == EditorCategory.CARRIAGES) {
             queued.addAll(CarriagePartEditor.stampAllPlotJobs(overworld, dims));
         }
+        // DIMENSIONS likewise paints the chunk frame plots beside its rooms — what a dimensional
+        // carriage can be dressed in.
+        if (category == EditorCategory.PORTALS) {
+            queued.addAll(games.brennan.dungeontrain.editor.ChunkFrameEditor.stampAllPlotJobs(overworld));
+        }
         EditorStampQueue.start(queued, category.id());
 
         final int pending = queued.size();
@@ -3871,6 +3877,34 @@ public final class EditorCommand {
         // a contents or tracks plot. Check first anyway so a part name
         // resolution beats the (unrelated) carriage plot lookup if the
         // player wandered between rows.
+        // A chunk frame plot: empty the frame and drop its variant cells, as a part's clear does.
+        if (games.brennan.dungeontrain.editor.EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) {
+            java.util.Optional<String> frame = games.brennan.dungeontrain.editor.ChunkFrameEditor.plotContaining(pos);
+            if (frame.isPresent()) {
+                try {
+                    games.brennan.dungeontrain.editor.ChunkFrameEditor.clearPlot(overworld, frame.get());
+                    games.brennan.dungeontrain.editor.BlockVariantPlot plot =
+                        games.brennan.dungeontrain.editor.BlockVariantPlot.resolveByKey(
+                            games.brennan.dungeontrain.editor.ChunkFramePlot.KEY_PREFIX + frame.get(), dims);
+                    int cleared = 0;
+                    if (plot != null) {
+                        for (BlockPos local : plot.allFlaggedPositions()) {
+                            if (plot.remove(local)) cleared++;
+                        }
+                        if (cleared > 0) plot.save();
+                    }
+                    final String id = "frame:" + frame.get();
+                    final int n = cleared;
+                    source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.cleared_all_blocks", id, (n > 0 ? Component.translatable("chat.dungeontrain.editor.cleared_and_entries", n, Component.translatable(n == 1 ? "chat.dungeontrain.common.noun.entry.singular" : "chat.dungeontrain.common.noun.entry.plural")) : Component.literal("."))).withStyle(ChatFormatting.GREEN), true);
+                    return 1;
+                } catch (Throwable t) {
+                    LOGGER.error("[DungeonTrain] editor clear (chunk frame) failed", t);
+                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.clear_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
+                    return 0;
+                }
+            }
+        }
+
         CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(pos, dims);
         if (partLoc != null) {
             try {

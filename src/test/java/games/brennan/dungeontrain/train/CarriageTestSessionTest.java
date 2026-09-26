@@ -22,7 +22,7 @@ final class CarriageTestSessionTest {
 
     private static CarriageTestSession.Session session() {
         return new CarriageTestSession.Session(Level.OVERWORLD, Vec3.ZERO, 0f, 0f, GameType.SURVIVAL,
-            CarriageTestSession.Kind.CARRIAGE, "pen", new BoundingBox(0, 0, 0, 8, 6, 4));
+            CarriageTestSession.Kind.CARRIAGE, "pen", new BoundingBox(0, 0, 0, 8, 6, 4), 1L, 1L);
     }
 
     @AfterEach

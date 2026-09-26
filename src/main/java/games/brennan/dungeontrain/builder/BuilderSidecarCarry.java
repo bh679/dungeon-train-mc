@@ -183,7 +183,7 @@ public final class BuilderSidecarCarry {
         return switch (kind) {
             case CONTENTS -> CONTENTS_OFFSET;
             case PART -> partOffset(partKind, dims);
-            case CARRIAGE, CARRIAGE_GROUP, TRACK, PORTAL_ROOM -> Vec3i.ZERO;
+            case CARRIAGE, CARRIAGE_GROUP, TRACK, PORTAL_ROOM, CHUNK_FRAME -> Vec3i.ZERO;
         };
     }
 
