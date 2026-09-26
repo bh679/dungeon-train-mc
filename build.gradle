@@ -464,6 +464,14 @@ dependencies {
     implementation "bh679:dpibypassdetect:${dpibypassdetect_version}"
     jarJar(group: 'bh679', name: 'dpibypassdetect', version: dpibypassdetect_version)
 
+    // Pigman Villagers — 1% of villagers are pigmen (player model + pigman skin + pig sounds).
+    // DT calls PigmanVillagersApi.clearRoll (compat/PigmanVillagersBridge) so villagers stamped from
+    // templates roll their own chance. jarJar'd on every platform until its
+    // CurseForge/Modrinth listings exist (see gradle.properties). Flat bh679 Ivy asset
+    // pigmanvillagers-neoforge-<v>.jar.
+    implementation "bh679:pigmanvillagers:${pigmanvillagers_version}"
+    jarJar(group: 'bh679', name: 'pigmanvillagers', version: pigmanvillagers_version)
+
     // Dungeon Backup — sibling mod: the player-data protection system (migration out of
     // config/, rolling zip restore points inside + outside the instance, title-screen recovery)
     // extracted from DT in v0.862.0. DT registers its data root once in
@@ -792,6 +800,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         ediblebackpacks_version          : ediblebackpacks_version,
         keeptrim_version                 : keeptrim_version,
         keeptrim_min_version             : keeptrim_min_version,
+        pigmanvillagers_min_version      : pigmanvillagers_min_version,
         dungeonbackup_min_version        : dungeonbackup_min_version,
         sablefencetrapdoorfix_min_version : sablefencetrapdoorfix_min_version,
         // The DH build the modpack pins — VersionInfo reads it so DT can silence DH's own
