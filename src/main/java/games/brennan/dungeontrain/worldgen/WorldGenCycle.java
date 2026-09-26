@@ -602,7 +602,8 @@ public record WorldGenCycle(long startX, int owGap,
      * transition at {@code worldX}, or {@code null}. The overworld-looking part of a band's transition
      * wears the look of the overworld gap it borders, so a modded stretch doesn't stop at a hard line:
      * <ul>
-     *   <li>upside-down — the Reassembly and exit gap, from the gap after it (its entry is all mirror);</li>
+     *   <li>upside-down — the second half of the Reassembly ({@link #UD_BLEED_REASSEMBLY_FRACTION}) and
+     *       the exit gap, from the gap after it (its entry is all mirror);</li>
      *   <li>Nether — the beach, mountain stages and core crossfade on each side, from that side's gap;</li>
      *   <li>End — the overworld→void erosion fade on each side, from that side's gap.</li>
      * </ul>
@@ -618,7 +619,9 @@ public record WorldGenCycle(long startX, int owGap,
         long side;
         switch (slot.type()) {
             case UPSIDE_DOWN -> {
-                return local >= udBandLenAt(worldX) ? moddedOverworldStyle(i + 1) : null;
+                long bleedStart = udBandLenAt(worldX)
+                        + Math.round(udExitFadeLenAt(worldX) * UD_BLEED_REASSEMBLY_FRACTION);
+                return local >= bleedStart ? moddedOverworldStyle(i + 1) : null;
             }
             case NETHER -> side = (len - Math.max(0, slot.core())) / 2L;
             case END -> side = Math.max(0, eFade);
@@ -628,6 +631,13 @@ public record WorldGenCycle(long startX, int owGap,
         if (local >= len - side) return moddedOverworldStyle(i + 1);
         return null;
     }
+
+    /**
+     * How far into the upside-down Reassembly the next gap's modded look begins. The first half is
+     * still visibly reassembling, so the look waits until the world has mostly settled (shipped
+     * layout: X ≈ 20 994 instead of the Reassembly's start at 17 994).
+     */
+    static final double UD_BLEED_REASSEMBLY_FRACTION = 0.5;
 
     /** Style of slot {@code i} when it is a WWOO / BoP overworld gap, else {@code null}. */
     private CycleLayout.Style moddedOverworldStyle(int i) {
