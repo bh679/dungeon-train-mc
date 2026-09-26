@@ -3,8 +3,7 @@ package games.brennan.dungeontrain.portal;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
-import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
-import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
+import games.brennan.dungeontrain.worldgen.SunkZone;
 import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.server.level.ServerLevel;
 
@@ -104,9 +103,9 @@ public final class PortalTwinSpace {
     }
 
     /**
-     * The attic over the sunk Amplified band's barrier lid ({@link AmplifiedDrop#lidY}), or {@code null}
-     * where the band's slot does not reach {@code worldX} or nothing is sunk. The slot includes both fades,
-     * because a fade chunk that rolls Amplified sinks into the basement just as a core chunk does.
+     * The attic over the sunk zone's barrier lid ({@link AmplifiedDrop#lidY}), or {@code null} outside the
+     * {@link SunkZone} or when nothing is sunk. The zone covers the gap leading into Amplified and both of
+     * Amplified's fades, because every chunk there sinks into the basement.
      */
     public static PortalTwinRegion amplifiedAtticAt(ServerLevel level, int worldX) {
         AmplifiedDrop drop = amplifiedDropAt(level, worldX);
@@ -131,7 +130,7 @@ public final class PortalTwinSpace {
     }
 
     private static AmplifiedDrop amplifiedDropAt(ServerLevel level, int worldX) {
-        if (!LegacyBands.isInSlot(level, LegacyBandKind.AMPLIFIED, worldX)) return null;
+        if (!SunkZone.contains(level, worldX)) return null;
         AmplifiedDrop drop = AmplifiedDrop.of(level);
         return drop.active() ? drop : null;
     }

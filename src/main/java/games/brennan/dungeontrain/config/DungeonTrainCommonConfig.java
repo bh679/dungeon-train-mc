@@ -412,7 +412,18 @@ public final class DungeonTrainCommonConfig {
     public static final int NETHER_V4_CORE_FADE_BLOCKS = 600;
     public static final int SPHERES_V3_END_SKY_START_BLOCKS = 4000;
 
-    public static final int CURRENT_CONFIG_VERSION = 5;
+    /**
+     * The band order v5 shipped, before the overworld gap into Amplified became the short sunk approach
+     * ({@code ow:5000} → {@code ow:sunk:500}). The v5 -> v6 migration moves only a file still holding
+     * exactly this string; any edited order is left alone.
+     */
+    public static final String WORLDGEN_CYCLE_ORDER_V5 =
+            "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:15000, ow:5000, "
+            + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
+
+    public static final int CURRENT_CONFIG_VERSION = 6;
 
     /** The shipped band order — see {@link games.brennan.dungeontrain.worldgen.CycleLayout#DEFAULT_ORDER}. */
     public static final String DEFAULT_WORLDGEN_CYCLE_ORDER = games.brennan.dungeontrain.worldgen.CycleLayout.DEFAULT_ORDER;
@@ -969,7 +980,7 @@ public final class DungeonTrainCommonConfig {
         games.brennan.dungeontrain.worldgen.legacy.LegacyBandConfig.define(b);
         ModConfigSpec.ConfigValue<String> worldgenCycleOrder = b
                 .comment("The order the bands come in, as one run of the cycle: comma-separated slots, each",
-                        "  ow[:style]:<blocks>            an overworld gap (style: vanilla | wwoo | bop)",
+                        "  ow[:style]:<blocks>            an overworld gap (style: vanilla | wwoo | bop | sunk = at Amplified's lowered height)",
                         "  nether[:style]:<core>          a Nether band (style: vanilla | better = BetterNether)",
                         "  end[:style]:<core>             an End-islands band (style: vanilla | better = BetterEnd)",
                         "  upside_down:<core>:<reassembly> the upside-down band and its Reassembly crossfade",
@@ -1130,6 +1141,15 @@ public final class DungeonTrainCommonConfig {
             migrateBandHold("netherStageBlocks", NETHER_STAGE_BLOCKS, NETHER_V4_STAGE_BLOCKS, DEFAULT_NETHER_STAGE_BLOCKS, from);
             migrateBandHold("netherBeachBlocks", NETHER_BEACH_BLOCKS, NETHER_V4_BEACH_BLOCKS, DEFAULT_NETHER_BEACH_BLOCKS, from);
             migrateBandHold("netherCoreFadeBlocks", NETHER_CORE_FADE_BLOCKS, NETHER_V4_CORE_FADE_BLOCKS, DEFAULT_NETHER_CORE_FADE_BLOCKS, from);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v5 -> v6: the overworld gap into Amplified shrank to 500 blocks and sinks with the band. Only the
+        // exact shipped order moves; an edited order is a choice and stays.
+        if (from < 6 && WORLDGEN_CYCLE_ORDER_V5.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> sunk Amplified approach.",
+                    from, CURRENT_CONFIG_VERSION);
             WorldGenCycle.invalidateCache();
         }
 

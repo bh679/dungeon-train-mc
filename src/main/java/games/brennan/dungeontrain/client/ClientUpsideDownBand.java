@@ -5,8 +5,7 @@ import games.brennan.dungeontrain.portal.PortalTwinRegion;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
-import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
-import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
+import games.brennan.dungeontrain.worldgen.SunkZone;
 import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -144,7 +143,7 @@ public final class ClientUpsideDownBand {
     public static boolean isInPortalTwinSpace(int worldX, int y) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null || bedrockY == Integer.MIN_VALUE) return false;
-        AmplifiedDrop drop = isInAmplifiedSlot(worldX) ? amplifiedDrop() : null;
+        AmplifiedDrop drop = isInSunkZone(worldX) ? amplifiedDrop() : null;
         if (drop != null) {
             return PortalTwinSpace.amplifiedTwinSpaceContains(y, drop, bedrockY,
                 level.getMinBuildHeight(), level.getMaxBuildHeight());
@@ -169,24 +168,23 @@ public final class ClientUpsideDownBand {
         return drop.active() ? drop : null;
     }
 
-    /** Client mirror of {@code LegacyBands.isInSlot(level, AMPLIFIED, x)}: the band's fades and core. */
-    public static boolean isInAmplifiedSlot(int worldX) {
-        return startsWithTrain
-            && LegacyBands.isInSlot(WorldGenCycle.fromConfig(), LegacyBandKind.AMPLIFIED, worldX);
+    /** Client mirror of {@code SunkZone.contains(level, x)}: the gap into Amplified, and Amplified's slot. */
+    public static boolean isInSunkZone(int worldX) {
+        return startsWithTrain && SunkZone.contains(WorldGenCycle.fromConfig(), worldX);
     }
 
     /**
-     * Whether the Amplified slot reaches anywhere in {@code [worldX - margin, worldX + margin]} — so a
+     * Whether the sunk zone reaches anywhere in {@code [worldX - margin, worldX + margin]} — so a
      * camera on the approach, looking in, already sees the band's valleys. Same 64-block sampling as
-     * {@link #isFlipZoneWithin}; the slot is thousands of blocks long, so no step can skip it.
+     * {@link #isFlipZoneWithin}; the zone is hundreds of blocks long at least, so no step can skip it.
      */
-    public static boolean isAmplifiedSlotWithin(int worldX, int margin) {
+    public static boolean isSunkZoneWithin(int worldX, int margin) {
         if (!startsWithTrain) return false;
         int span = Math.max(0, margin);
         for (int x = worldX - span; x < worldX + span; x += FLIP_ZONE_SAMPLE_STEP) {
-            if (isInAmplifiedSlot(x)) return true;
+            if (isInSunkZone(x)) return true;
         }
-        return isInAmplifiedSlot(worldX + span);
+        return isInSunkZone(worldX + span);
     }
 
     /** Client mirror of {@code UpsideDownBand.isInBand}: the core band only, no lead-in or fade. */

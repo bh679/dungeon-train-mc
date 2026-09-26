@@ -364,7 +364,8 @@ public final class TrackGenerator {
             }
             int currentZ = zMin + currentIdx;
 
-            int groundBlockY = -1;
+            // MIN_VALUE, not -1: ground below y 0 is real ground (the sunk Amplified band).
+            int groundBlockY = NO_GROUND;
             boolean shipAbort = false;
             for (int y = currentY; y >= minY; y--) {
                 pos.set(worldX, y, currentZ);
@@ -374,7 +375,7 @@ public final class TrackGenerator {
             resolved[currentIdx] = true;
             unresolved--;
 
-            if (shipAbort || groundBlockY < 0) {
+            if (shipAbort || groundBlockY == NO_GROUND) {
                 // Ship intercept or void — column doesn't contribute. Pick the
                 // next unresolved column from full bedY-1; can't reuse currentY
                 // because it was scoped to a different (now-skipped) column.
@@ -884,7 +885,8 @@ public final class TrackGenerator {
             }
             int currentZ = zMin + currentIdx;
 
-            int groundBlockY = -1;
+            // MIN_VALUE, not -1: ground below y 0 is real ground (the sunk Amplified band).
+            int groundBlockY = NO_GROUND;
             for (int y = currentY; y >= minY; y--) {
                 pos.set(worldX, y, currentZ);
                 if (!isPassable(level.getBlockState(pos))) { groundBlockY = y; break; }
@@ -892,7 +894,7 @@ public final class TrackGenerator {
             resolved[currentIdx] = true;
             unresolved--;
 
-            if (groundBlockY < 0) {
+            if (groundBlockY == NO_GROUND) {
                 currentY = bedY - 1;
                 continue;
             }
@@ -1123,6 +1125,9 @@ public final class TrackGenerator {
      * in that stretch and let them land on a more substantial pillar.
      */
     private static final int SHORT_PILLAR_THRESHOLD = 3;
+
+    /** Probe result for a column with no ground above the floor. Not -1: terrain can sit below y 0. */
+    private static final int NO_GROUND = Integer.MIN_VALUE;
 
     /** Pillar position metadata cached during the worldgen scan. */
     private record PillarInfo(int groundY, int height) {}

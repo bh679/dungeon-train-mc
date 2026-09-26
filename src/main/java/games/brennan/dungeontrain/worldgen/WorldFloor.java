@@ -1,7 +1,5 @@
 package games.brennan.dungeontrain.worldgen;
 
-import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
-import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LevelHeightAccessor;
@@ -59,14 +57,14 @@ public final class WorldFloor {
 
     /**
      * The terrain floor under chunk {@code (chunkX, chunkZ)} — {@link #bedrockY} everywhere except a chunk
-     * the sunk Amplified band owns, whose terrain runs {@link AmplifiedDrop#drop} blocks down into what is
+     * of the {@link SunkZone} (Amplified and the gap leading into it), whose terrain runs {@link AmplifiedDrop#drop} blocks down into what is
      * elsewhere the basement (and whose twins live in an attic instead — see {@code PortalTwinSpace}).
      * The cheap config gate in {@link LegacyBands#kindOfChunk} keeps this at {@link #bedrockY}'s cost for
      * every chunk outside the legacy run.
      */
     public static int terrainFloorY(ServerLevel level, int chunkX, int chunkZ) {
         int bedrock = bedrockY(level);
-        if (LegacyBands.kindOfChunk(level, chunkX, chunkZ) != LegacyBandKind.AMPLIFIED) return bedrock;
+        if (!SunkZone.isSunkChunk(level, chunkX, chunkZ)) return bedrock;
         return AmplifiedDrop.of(level).floorY(bedrock);
     }
 

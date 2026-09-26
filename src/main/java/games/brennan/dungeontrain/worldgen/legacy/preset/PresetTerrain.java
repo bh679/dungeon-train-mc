@@ -2,6 +2,10 @@ package games.brennan.dungeontrain.worldgen.legacy.preset;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.mixin.NoiseRouterDataAccessor;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.SunkZone;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.density.NetherBandHooks;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import net.minecraft.core.Holder;
@@ -21,7 +25,9 @@ import net.minecraft.world.level.levelgen.synth.NormalNoise;
 import org.slf4j.Logger;
 
 /**
- * The two <em>modern-preset</em> legacy bands — Large Biomes and Amplified. Unlike the older eras these
+ * The two <em>modern-preset</em> legacy bands — Large Biomes and Amplified — plus the <em>sunk
+ * overworld</em>: the plain overworld router lowered with Amplified ({@link AmplifiedDrop}), which fills the
+ * ordinary chunks of the {@link SunkZone} (the gap leading into Amplified and its fades). Unlike the older eras these
  * are not ports: the terrain is vanilla's own overworld noise router with the preset flag flipped, so
  * each band is a second {@link NoiseBasedChunkGenerator} built from the live overworld's settings
  * (Dungeon Train's {@code overworld*} noise settings are vanilla's router verbatim; only the noise
@@ -63,10 +69,21 @@ public final class PresetTerrain {
 
     private final Preset largeBiomes;
     private final Preset amplified;
+    /** The ordinary overworld router sunk with Amplified — fills plain chunks of the {@link SunkZone}. */
+    private final Preset sunkOverworld;
+    /** The live overworld generator these presets stand in for, and its world's train facts. */
+    private final Object overworldGenerator;
+    private final long generationSeed;
+    private final boolean trainWorld;
 
-    private PresetTerrain(Preset largeBiomes, Preset amplified) {
+    private PresetTerrain(Preset largeBiomes, Preset amplified, Preset sunkOverworld,
+                          Object overworldGenerator, long generationSeed, boolean trainWorld) {
         this.largeBiomes = largeBiomes;
         this.amplified = amplified;
+        this.sunkOverworld = sunkOverworld;
+        this.overworldGenerator = overworldGenerator;
+        this.generationSeed = generationSeed;
+        this.trainWorld = trainWorld;
     }
 
     /** The published presets, or {@code null} outside a train world / before publish. */
@@ -94,10 +111,35 @@ public final class PresetTerrain {
         };
     }
 
+    /** The sunk-overworld preset, or {@code null} when none is published or nothing is sunk. */
+    public static Preset sunkOverworld() {
+        PresetTerrain t = current;
+        return t == null || !t.sunkOverworld.drop().active() ? null : t.sunkOverworld;
+    }
+
     /** True if {@code generator} is one of the published preset generators (the hooks must not re-enter them). */
     public static boolean isPresetGenerator(Object generator) {
         PresetTerrain t = current;
-        return t != null && (generator == t.largeBiomes.generator() || generator == t.amplified.generator());
+        return t != null && (generator == t.largeBiomes.generator() || generator == t.amplified.generator()
+                || generator == t.sunkOverworld.generator());
+    }
+
+    /**
+     * The sunk preset owning the column at block {@code (blockX, blockZ)} when {@code self} is the
+     * overworld's own generator, else {@code null}. Level-free, for the height queries structure placement
+     * makes ({@code getBaseHeight}) with only a height accessor in hand — without it a village in the sunk
+     * zone is sited on stock-height terrain and hangs 80 blocks over the real ground.
+     */
+    public static Preset sunkForColumn(Object self, int blockX, int blockZ) {
+        PresetTerrain t = current;
+        if (t == null || !t.trainWorld || self != t.overworldGenerator) return null;
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        int chunkX = blockX >> 4;
+        LegacyBandKind kind = LegacyBands.kindOfChunk(t.generationSeed, cycle, chunkX, blockZ >> 4);
+        if (kind == LegacyBandKind.AMPLIFIED) return t.amplified.drop().active() ? t.amplified : null;
+        if (kind != null) return null;
+        if (!t.sunkOverworld.drop().active()) return null;
+        return SunkZone.contains(cycle, SunkZone.chunkColumn(chunkX)) ? t.sunkOverworld : null;
     }
 
     /**
@@ -112,9 +154,13 @@ public final class PresetTerrain {
         HolderGetter<NormalNoise.NoiseParameters> noises = overworld.registryAccess().lookupOrThrow(Registries.NOISE);
         BiomeSource biomes = generator.getBiomeSource();
         long seed = overworld.getSeed();
+        AmplifiedDrop drop = AmplifiedDrop.of(overworld);
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
         return new PresetTerrain(
                 build(base, densityFunctions, noises, biomes, seed, true, false, AmplifiedDrop.NONE),
-                build(base, densityFunctions, noises, biomes, seed, false, true, AmplifiedDrop.of(overworld)));
+                build(base, densityFunctions, noises, biomes, seed, false, true, drop),
+                build(base, densityFunctions, noises, biomes, seed, false, false, drop),
+                generator, data.getGenerationSeed(), data.startsWithTrain());
     }
 
     private static Preset build(NoiseGeneratorSettings base, HolderGetter<DensityFunction> densityFunctions,
@@ -160,7 +206,7 @@ public final class PresetTerrain {
         });
         // A datapack that rewrites overworld_amplified/depth would leave the band at its stock height —
         // with the attic lid still placed for a sunk one. Say so rather than fail quietly.
-        if (hits[0] == 0) LOGGER.warn("[DungeonTrain] Amplified depth gradient not found; band terrain is not sunk");
+        if (hits[0] == 0) LOGGER.warn("[DungeonTrain] Overworld depth gradient not found; sunk terrain is not sunk");
         return out;
     }
 }

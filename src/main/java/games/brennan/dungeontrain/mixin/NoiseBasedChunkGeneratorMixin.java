@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.StacksBand;
+import games.brennan.dungeontrain.worldgen.SunkZone;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyChunkWriter;
@@ -20,6 +21,7 @@ import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.GenerationStep;
+import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
@@ -218,6 +220,38 @@ public abstract class NoiseBasedChunkGeneratorMixin {
         return true;
     }
 
+    /**
+     * Sunk-zone column: answer height queries from the sunk preset. Structure placement sites villages,
+     * outposts and the like with {@code getBaseHeight} on the overworld's own generator — which would
+     * put them on stock-height terrain, hanging {@code AmplifiedDrop.drop} blocks over the real ground.
+     */
+    @Inject(method = "getBaseHeight", at = @At("HEAD"), cancellable = true)
+    private void dungeontrain$sunkBaseHeight(int x, int z, Heightmap.Types type, LevelHeightAccessor level,
+                                             RandomState random, CallbackInfoReturnable<Integer> cir) {
+        try {
+            PresetTerrain.Preset preset = PresetTerrain.sunkForColumn(this, x, z);
+            if (preset != null) {
+                cir.setReturnValue(preset.generator().getBaseHeight(x, z, type, level, preset.randomState()));
+            }
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] sunk base-height lookup failed at {},{}; using the overworld's", x, z, t);
+        }
+    }
+
+    /** {@link #dungeontrain$sunkBaseHeight}'s twin for the full column (structure pieces probe it too). */
+    @Inject(method = "getBaseColumn", at = @At("HEAD"), cancellable = true)
+    private void dungeontrain$sunkBaseColumn(int x, int z, LevelHeightAccessor level, RandomState random,
+                                             CallbackInfoReturnable<NoiseColumn> cir) {
+        try {
+            PresetTerrain.Preset preset = PresetTerrain.sunkForColumn(this, x, z);
+            if (preset != null) {
+                cir.setReturnValue(preset.generator().getBaseColumn(x, z, level, preset.randomState()));
+            }
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] sunk base-column lookup failed at {},{}; using the overworld's", x, z, t);
+        }
+    }
+
     /** Skip vanilla caves and ravines in legacy chunks — the old generator carved its own. */
     @Inject(method = "applyCarvers", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$skipLegacyCarvers(WorldGenRegion region, long seed, RandomState random,
@@ -253,6 +287,9 @@ public abstract class NoiseBasedChunkGeneratorMixin {
     private static PresetTerrain.Preset dungeontrain$preset(ServerLevel level, ChunkAccess chunk, Object self) {
         if (PresetTerrain.isPresetGenerator(self)) return null;
         LegacyBandKind kind = LegacyBands.kindOfChunk(level, chunk.getPos().x, chunk.getPos().z);
-        return kind == null || !kind.isPreset() ? null : PresetTerrain.of(kind);
+        if (kind != null) return kind.isPreset() ? PresetTerrain.of(kind) : null;
+        // A plain chunk of the sunk zone: the ordinary overworld, lowered with Amplified.
+        return SunkZone.isSunkOverworldChunk(level, chunk.getPos().x, chunk.getPos().z)
+                ? PresetTerrain.sunkOverworld() : null;
     }
 }

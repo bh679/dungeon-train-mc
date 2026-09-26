@@ -39,9 +39,11 @@ public final class CycleLayout {
 
     /**
      * Which look an occurrence wears. A label the band's own code reads
-     * ({@code WorldGenCycle#netherStyleAt} etc.); the layout itself is style-agnostic.
+     * ({@code WorldGenCycle#netherStyleAt} etc.); the layout itself is style-agnostic. {@code SUNK} is an
+     * overworld gap generated at the sunk Amplified band's height ({@code worldgen.SunkZone}), so the
+     * approach to that band is already low.
      */
-    public enum Style { VANILLA, WWOO, BOP, BETTER }
+    public enum Style { VANILLA, WWOO, BOP, BETTER, SUNK }
 
     /**
      * One parsed slot. {@code core} is the band's full-strength length; {@code extra} is the
@@ -60,7 +62,7 @@ public final class CycleLayout {
     /** The default three-lap order (see the plan): the layout {@code build()} uses when the key is blank. */
     public static final String DEFAULT_ORDER =
             "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
-            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:15000, ow:5000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:15000, ow:sunk:500, "
             + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
 
@@ -226,6 +228,7 @@ public final class CycleLayout {
             case "wwoo" -> Style.WWOO;
             case "bop" -> Style.BOP;
             case "better" -> Style.BETTER;
+            case "sunk" -> Style.SUNK;
             default -> null;
         };
     }

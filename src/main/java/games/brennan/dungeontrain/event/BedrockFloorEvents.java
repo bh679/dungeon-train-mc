@@ -10,8 +10,7 @@ import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
-import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
-import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
+import games.brennan.dungeontrain.worldgen.SunkZone;
 import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
@@ -84,7 +83,7 @@ public final class BedrockFloorEvents {
         int chunkMinX = chunk.getPos().getMinBlockX();
 
         // Before any of the floor skips below: the lid is independent of whether this chunk gets a floor.
-        stampAmplifiedLid(level, chunk);
+        stampSunkLid(level, chunk);
 
         // Chuncks band: a VOID chunk is pure void and a SLICE chunk is a floating slab (flat cut-off
         // bottom) — neither gets a bedrock floor at minY. A FULL (vertically complete) chuncks chunk
@@ -170,18 +169,17 @@ public final class BedrockFloorEvents {
     }
 
     /**
-     * The sunk Amplified band's attic seal: a row of barrier at {@link AmplifiedDrop#lidY} over every
-     * column of the band's slot (fades included — a fade chunk that rolls Amplified fills the basement,
-     * so twins there use the attic too). Barrier rather than bedrock so the sky stays open overhead.
+     * The sunk zone's attic seal: a row of barrier at {@link AmplifiedDrop#lidY} over every column of the
+     * {@link SunkZone} (the gap leading into Amplified, and Amplified's fades and core — sunk terrain fills
+     * the basement there, so twins use the attic). Barrier rather than bedrock so the sky stays open.
      *
      * <p>Only air is replaced: a fade chunk that rolled ordinary overworld can carry a peak through the
      * lid height, and a barrier sheet through that peak would be a wall a player walks into. Same raw
      * section writes as the floor, for the same Sable reason.</p>
      */
-    private static void stampAmplifiedLid(ServerLevel level, ChunkAccess chunk) {
+    private static void stampSunkLid(ServerLevel level, ChunkAccess chunk) {
         int chunkMinX = chunk.getPos().getMinBlockX();
-        boolean anyInSlot = LegacyBands.isInSlot(level, LegacyBandKind.AMPLIFIED, chunkMinX)
-                || LegacyBands.isInSlot(level, LegacyBandKind.AMPLIFIED, chunkMinX + 15);
+        boolean anyInSlot = SunkZone.contains(level, chunkMinX) || SunkZone.contains(level, chunkMinX + 15);
         if (!anyInSlot) return;
         AmplifiedDrop drop = AmplifiedDrop.of(level);
         if (!drop.active() || drop.lidY() >= level.getMaxBuildHeight()) return;
@@ -191,7 +189,7 @@ public final class BedrockFloorEvents {
         BlockState barrier = Blocks.BARRIER.defaultBlockState();
         boolean wrote = false;
         for (int dx = 0; dx < 16; dx++) {
-            if (!LegacyBands.isInSlot(level, LegacyBandKind.AMPLIFIED, chunkMinX + dx)) continue;
+            if (!SunkZone.contains(level, chunkMinX + dx)) continue;
             for (int dz = 0; dz < 16; dz++) {
                 if (!section.getBlockState(dx, localY, dz).isAir()) continue;
                 section.setBlockState(dx, localY, dz, barrier, false);

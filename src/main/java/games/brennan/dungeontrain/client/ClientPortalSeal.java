@@ -41,9 +41,9 @@ public final class ClientPortalSeal {
         }
         int camX = Mth.floor(cameraX);
         AmplifiedDrop drop = ClientUpsideDownBand.amplifiedDrop();
-        if (drop != null && ClientUpsideDownBand.isAmplifiedSlotWithin(camX, viewReach())) {
+        if (drop != null && ClientUpsideDownBand.isSunkZoneWithin(camX, viewReach())) {
             cut = PortalSealPlane.cutForAmplified(drop.floorY(ClientUpsideDownBand.bedrockY()), drop.lidY(),
-                ClientUpsideDownBand.isInAmplifiedSlot(camX), cameraY);
+                ClientUpsideDownBand.isInSunkZone(camX), cameraY);
             return;
         }
         cut = PortalSealPlane.cutFor(

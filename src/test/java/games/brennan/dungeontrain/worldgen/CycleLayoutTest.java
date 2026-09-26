@@ -42,10 +42,10 @@ final class CycleLayoutTest {
         CycleLayout l = shipped();
         assertEquals(16, l.count());
         // Lap 1: 2750 + (232+300+3000+300+232) + 3000 + (740+3000+740) + (600+2500+600+6000+600) = 24,594
-        // Lap 2: 8000 + 9064 + 8000 + 9480 + (1500+15000) + 5000 = 56,044
+        // Lap 2: 8000 + 9064 + 8000 + 9480 + (1500+15000) + 500 (the sunk approach) = 51,544
         // Lap 3: legacy (480·12 + 5000 + 5000 + 4320 + 4000 + 5000 + 2000·4 + 1000 + 200 = 38,280)
         //        + 2000 + 6500 + 5000 + 6500 = 58,280
-        assertEquals(138_918L, l.period());
+        assertEquals(134_418L, l.period());
         assertEquals(2, l.typeCount(Type.NETHER));
         assertEquals(2, l.typeCount(Type.END));
         assertEquals(1, l.typeCount(Type.LEGACY_RUN));
@@ -63,7 +63,8 @@ final class CycleLayoutTest {
         assertEquals(Style.BETTER, l.slot(8).style());
         assertEquals(Type.SPHERES, l.slot(9).type());
         assertEquals(Type.LEGACY_RUN, l.slot(11).type());
-        assertEquals(24_594L + 56_044L, l.start(11));
+        assertEquals(24_594L + 51_544L, l.start(11));
+        assertEquals(Style.SUNK, l.slot(10).style());            // the short approach into Amplified
         assertEquals(Type.STACKS, l.slot(15).type());
         assertEquals(1, l.occurrence(6));                       // the BetterNether slot is Nether occurrence 1
         assertEquals(0, l.occurrence(1));
