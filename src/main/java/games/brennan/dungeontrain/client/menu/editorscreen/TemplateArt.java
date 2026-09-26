@@ -37,6 +37,8 @@ public record TemplateArt(BuilderPhotoPaths.Kind kind, String id, CarriagePartKi
                 yield tk == null ? null : new TemplateArt(BuilderPhotoPaths.Kind.TRACK, key.modelName(), null, tk);
             }
             case PORTALS -> new TemplateArt(BuilderPhotoPaths.Kind.PORTAL_ROOM, key.modelName(), null, null);
+            // Chunk parts have no photo kind yet.
+            case CHUNK_FRAMES -> new TemplateArt(BuilderPhotoPaths.Kind.CHUNK_FRAME, key.modelName(), null, null);
             case ARCHITECTURE -> null;
         };
     }

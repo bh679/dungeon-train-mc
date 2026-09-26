@@ -78,14 +78,25 @@ public final class PortalTestCommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("test")
-            .executes(ctx -> runTest(ctx.getSource(), null, false))
+            .executes(ctx -> runTest(ctx.getSource(), unforced(null), false))
             .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())))
+            // A chunk frame, shown on a chunk dimension picked by the dimensions group's weights
+            // among the ones the frame dresses. A literal, like reseed, so it can't shadow a room.
+            .then(Commands.literal("frame")
+                .then(Commands.argument("frame", StringArgumentType.word())
+                    .suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
+                        games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names(), builder))
+                    .executes(ctx -> runFrameTest(ctx.getSource(), StringArgumentType.getString(ctx, "frame")))))
             // Reseed — bare, it re-rolls the test the author is standing in, right now. With on|off
             // it is the world switch: on, each test rolls the room's contents afresh; off, every
             // test stands up the same roll, which is what it always did. A literal, so a room that
             // happens to be called "reseed" is reached by the argument below, never here.
+            // Reseed focus (Shift) — re-roll only the template under test and keep what it stands in:
+            // a frame test re-rolls the frame on the same ground, a room test the room on the same
+            // chunk. A carriage or contents test does the same with its shell and its contents.
             .then(Commands.literal("reseed")
-                .executes(ctx -> runReseedNow(ctx.getSource()))
+                .executes(ctx -> runReseedNow(ctx.getSource(), false))
+                .then(Commands.literal("focus").executes(ctx -> runReseedNow(ctx.getSource(), true)))
                 .then(Commands.literal("on").executes(ctx -> runReseed(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runReseed(ctx.getSource(), false))))
             // Naming the room tests one the author is not standing in — what the X menu's button
@@ -94,7 +105,72 @@ public final class PortalTestCommand {
                 .suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
                     games.brennan.dungeontrain.track.variant.TrackVariantRegistry.namesFor(
                         games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM), builder))
-                .executes(ctx -> runTest(ctx.getSource(), StringArgumentType.getString(ctx, "room"), false)));
+                .executes(ctx -> runTest(ctx.getSource(), unforced(StringArgumentType.getString(ctx, "room")), false)));
+    }
+
+    /** A room test of the room itself: whatever frame an earlier frame test forced is dropped. */
+    private static String unforced(String room) {
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.force(PortalTestSession.PAIR_KEY, null);
+        return room;
+    }
+
+    /**
+     * What a focused reseed re-rolls, keeping the rest of the test as it stands: the room (its
+     * contents, on the same chunk and under the same frame roll) or the frame (on the same chunk and
+     * room roll). Null is every other press — the terrain, the room and the frame all follow
+     * {@code freshRoll} and the world switch.
+     */
+    private enum Focus { ROOM, FRAME }
+
+    /** The parent every chunk dimension sub-variant hangs under. */
+    private static final String CHUNK_DIMENSIONS_GROUP = "chunk_dimension";
+
+    /**
+     * Test {@code frame}: pick a chunk dimension by the dimensions group's weights — the parent's own
+     * and each member's — among the ones the frame dresses, force the frame onto the test pair, and
+     * stand the room up as any room test would. A reseed, or a press that has to wait for its sample,
+     * keeps the frame: the force lives on the pair until Back or a plain room test.
+     */
+    private static int runFrameTest(CommandSourceStack source, String frame) {
+        if (!games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names().contains(frame)) {
+            source.sendFailure(Component.literal("No frame named " + frame + "."));
+            return 0;
+        }
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMeta meta =
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.get(frame);
+        java.util.List<String> chunkRooms = games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.chunkRooms();
+        var group = games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(
+            games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, CHUNK_DIMENSIONS_GROUP)
+            .orElse(games.brennan.dungeontrain.track.variant.TrackVariantGroup.EMPTY);
+        java.util.List<String> ids = new java.util.ArrayList<>();
+        java.util.List<Integer> weights = new java.util.ArrayList<>();
+        java.util.function.BiConsumer<String, Integer> offer = (id, weight) -> {
+            if (weight > 0 && chunkRooms.contains(id) && meta.appliesTo(id)) { ids.add(id); weights.add(weight); }
+        };
+        offer.accept(CHUNK_DIMENSIONS_GROUP, group.selfWeight());
+        for (var member : group.members()) offer.accept(member.id(), member.weight());
+        // Chunk dimensions outside the group (an author's own) still count, at weight 1.
+        for (String room : chunkRooms) {
+            if (!ids.contains(room) && room != null && meta.appliesTo(room)
+                    && !CHUNK_DIMENSIONS_GROUP.equals(room) && group.member(room).isEmpty()) {
+                ids.add(room); weights.add(1);
+            }
+        }
+        if (ids.isEmpty()) {
+            source.sendFailure(Component.literal("Frame '" + frame + "' dresses no chunk dimension — pick some under Chunk dimensions."));
+            return 0;
+        }
+        int total = weights.stream().mapToInt(Integer::intValue).sum();
+        int roll = java.util.concurrent.ThreadLocalRandom.current().nextInt(total);
+        String room = ids.get(ids.size() - 1);
+        for (int i = 0; i < ids.size(); i++) {
+            roll -= weights.get(i);
+            if (roll < 0) { room = ids.get(i); break; }
+        }
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.force(PortalTestSession.PAIR_KEY, frame);
+        final String picked = room;
+        source.sendSuccess(() -> Component.literal("Testing frame '" + frame + "' on " + picked + "."), false);
+        return runTest(source, picked, true);
     }
 
     /**
@@ -120,6 +196,11 @@ public final class PortalTestCommand {
      */
     private static int runTest(CommandSourceStack source, String roomArg, boolean freshRoll,
                                boolean mayResample) {
+        return runTest(source, roomArg, freshRoll, mayResample, null);
+    }
+
+    private static int runTest(CommandSourceStack source, String roomArg, boolean freshRoll,
+                               boolean mayResample, Focus focus) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -168,7 +249,7 @@ public final class PortalTestCommand {
         // re-salting the contents alone stamped the same ground back every time.
         games.brennan.dungeontrain.portal.PortalChunkSlice slice = null;
         if (PortalRoomSettings.of(roomName).mode().generatesTerrain()) {
-            if (mayResample && (freshRoll || worldData.isPortalTestReseed())) {
+            if (focus == null && mayResample && (freshRoll || worldData.isPortalTestReseed())) {
                 games.brennan.dungeontrain.portal.PortalChunkTerrain.reroll(PortalTestSession.PAIR_KEY);
             }
             slice = games.brennan.dungeontrain.portal.PortalChunkTerrain.slice(
@@ -186,8 +267,15 @@ public final class PortalTestCommand {
         // to the plot. Send them back first, then in again, so the button is idempotent. After the
         // sample check rather than before it, so an author waiting on a fresh chunk keeps standing
         // in the room they have until the new one is ready.
+        // The room's salt a frame-only reseed keeps, read before Back takes the session.
+        int keptSalt = current != null ? current.structure().seedSalt() : PortalStructure.NO_SALT;
         if (current != null) {
+            // Back drops a frame test's force — right for the Back button, wrong for this trip
+            // straight back in, which is the same frame test re-rolled.
+            String frame = games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.forced(
+                PortalTestSession.PAIR_KEY);
             runBack(source);
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.force(PortalTestSession.PAIR_KEY, frame);
         }
         // Or inside a carriage/contents test: the same rule, the other command's way home.
         if (games.brennan.dungeontrain.train.CarriageTestSession.has(player.getUUID())) {
@@ -262,7 +350,15 @@ public final class PortalTestCommand {
             // on the train, block variants and all.
             PortalRoomTiling.base(), games.brennan.dungeontrain.portal.PortalExitCopies.NONE,
             PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT,
-            saltFor(worldData, overworld, freshRoll));
+            focus == Focus.FRAME ? keptSalt
+                : focus == Focus.ROOM ? freshSalt(overworld)
+                : saltFor(worldData, overworld, freshRoll));
+        // The frame's roll: a frame reseed alone re-rolls it, a room reseed alone keeps it, and every
+        // other press rolls it with the room.
+        if (focus != Focus.ROOM) {
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.salt(PortalTestSession.PAIR_KEY,
+                focus == Focus.FRAME ? freshSalt(overworld) : saltFor(worldData, overworld, freshRoll));
+        }
 
         // In the ENTRY DOORWAY looking down the room, not dropped in the middle of it — the same
         // view an author gets walking in off the train, which is the one they are building for.
@@ -330,6 +426,11 @@ public final class PortalTestCommand {
      */
     private static int saltFor(DungeonTrainWorldData worldData, ServerLevel level, boolean freshRoll) {
         if (!freshRoll && !worldData.isPortalTestReseed()) return PortalStructure.NO_SALT;
+        return freshSalt(level);
+    }
+
+    /** A salt no roll has used — never zero, which is the unsalted roll. */
+    private static int freshSalt(ServerLevel level) {
         return level.random.nextInt() | 1;
     }
 
@@ -344,7 +445,11 @@ public final class PortalTestCommand {
      * left it open. A spot the reseed filled (a wall variant, a bookcase where there was floor)
      * would suffocate them, and they are left in the doorway instead.</p>
      */
-    private static int runReseedNow(CommandSourceStack source) {
+    /**
+     * @param focus re-roll only the template under test (Shift): see {@link Focus}. Without it a
+     *              frame test re-rolls everything, down to which chunk dimension the frame dresses
+     */
+    private static int runReseedNow(CommandSourceStack source, boolean focus) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -355,7 +460,7 @@ public final class PortalTestCommand {
         // The client's Reseed button sends this command whatever kind of test is running; a carriage
         // or contents test is re-rolled by its own command.
         if (games.brennan.dungeontrain.train.CarriageTestSession.has(player.getUUID())) {
-            return CarriageTestCommand.runReseedNow(source);
+            return CarriageTestCommand.runReseedNow(source, focus);
         }
         PortalTestSession.Session session = PortalTestSession.get(player.getUUID());
         if (session == null) {
@@ -369,7 +474,17 @@ public final class PortalTestCommand {
         float yaw = player.getYRot();
         float pitch = player.getXRot();
 
-        int result = runTest(source, session.roomName(), true);
+        String frame = games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.forced(
+            PortalTestSession.PAIR_KEY);
+        int result;
+        if (focus) {
+            result = runTest(source, session.roomName(), false, false, frame != null ? Focus.FRAME : Focus.ROOM);
+        } else if (frame != null) {
+            // The whole frame test again: a fresh pick of the chunk dimension, its ground and both rolls.
+            result = runFrameTest(source, frame);
+        } else {
+            result = runTest(source, session.roomName(), true);
+        }
         if (result == 0 || !wasHere) return result;
 
         PortalTestSession.Session fresh = PortalTestSession.get(player.getUUID());
@@ -442,6 +557,7 @@ public final class PortalTestCommand {
             && games.brennan.dungeontrain.train.CarriageTestSession.has(player.getUUID())) {
             return CarriageTestCommand.runBack(source);
         }
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.force(PortalTestSession.PAIR_KEY, null);
         PortalTestSession.Session session = PortalTestSession.take(player.getUUID());
         if (session == null) {
             if (withdrew) return 1;

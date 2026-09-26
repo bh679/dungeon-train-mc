@@ -340,6 +340,7 @@ public final class TemplateLoot {
                     yield track == null ? List.of() : TrackVariantBlocks.loadFor(track, id, null).entries();
                 }
                 case PORTAL_ROOM -> TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, id, null).entries();
+                case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.loadFor(id).entries();
                 case CARRIAGE_GROUP -> List.of();
             };
         } catch (RuntimeException e) {

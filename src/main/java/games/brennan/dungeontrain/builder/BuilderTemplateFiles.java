@@ -37,6 +37,7 @@ public final class BuilderTemplateFiles {
                     ? Optional.empty()
                     : TrackVariantStore.rawTag(trackKind, id);
             case PORTAL_ROOM -> TrackVariantStore.rawTag(TrackKind.PORTAL_ROOM, id);
+            case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.readTag(id);
         };
     }
 

@@ -46,6 +46,7 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
     private final String dirtyKey;
     /** The test command, naming the template — the author need not be standing in it. */
     private final String testCommand;
+    private final String saveCommand;
     private boolean requestSent = false;
     private boolean bypassDispatched = false;
 
@@ -56,9 +57,23 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
     }
 
     private PortalTestSaveCheckScreen(String categoryId, String dirtyKey, String testCommand) {
+        this(categoryId, dirtyKey, testCommand, SAVE_COMMAND);
+    }
+
+    private PortalTestSaveCheckScreen(String categoryId, String dirtyKey, String testCommand, String saveCommand) {
         this.categoryId = categoryId;
         this.dirtyKey = dirtyKey;
         this.testCommand = testCommand;
+        this.saveCommand = saveCommand;
+    }
+
+    /**
+     * Test a chunk frame: the server picks a chunk dimension it dresses and shows the frame on it.
+     * Saved by name, so it works from a tile selected anywhere in the browser.
+     */
+    public static PortalTestSaveCheckScreen forFrame(String frame) {
+        return new PortalTestSaveCheckScreen("chunk_frames", "chunk_frame." + frame,
+            TEST_COMMAND + " frame " + frame, "dungeontrain editor chunkframe save " + frame);
     }
 
     /**
@@ -104,7 +119,7 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
 
         return List.of(
             new CommandMenuEntry.ClientAction(MenuLang.t("portal_test.save_and_test"), () -> {
-                CommandRunner.run(SAVE_COMMAND);
+                CommandRunner.run(saveCommand);
                 CommandRunner.run(testCommand);
                 CommandMenuState.close();
             }, true),

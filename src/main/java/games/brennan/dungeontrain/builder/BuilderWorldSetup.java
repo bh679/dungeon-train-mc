@@ -1206,7 +1206,7 @@ public final class BuilderWorldSetup {
             // Unreachable, both of them: applyOpen branches to applyOpenTrack and openPortalRoom
             // before it resolves anything, because neither needs a carriage to sit in. Empty rather
             // than a throw — a refusal is what every other unresolvable arm answers.
-            case TRACK, PORTAL_ROOM -> Optional.empty();
+            case TRACK, PORTAL_ROOM, CHUNK_FRAME -> Optional.empty();
         };
     }
 

@@ -126,10 +126,9 @@ public final class EditorScreenActions {
         boolean here = ctx.standingInSelection();
         PlotCategory cat = ctx.category();
         String model = ctx.hasSelection() ? ctx.selection().displayName() : "";
-        boolean parts = cat == PlotCategory.PARTS;
 
         out.add(new Icon("save", EditorScreenLang.ICON_SAVE,
-            here ? new CommandMenuEntry.Stay(MenuLang.t("common.save"), parts ? EditorMenuScreen.PART_SAVE_COMMAND : EditorMenuScreen.SAVE_COMMAND)
+            here ? new CommandMenuEntry.Stay(MenuLang.t("common.save"), EditorMenuScreen.saveCommandFor(cat))
                  : packetAction(ctx, EditorPlotActionPacket.Action.SAVE, sendPacket),
             EditorScreenLang.DISABLED_STAND_HERE));
 
@@ -150,7 +149,7 @@ public final class EditorScreenActions {
             EditorHistoryState.redoLabel(), EditorScreenLang.REDO_NOTHING));
 
         out.add(new Icon("reset", EditorScreenLang.ICON_RESET,
-            here && !parts ? new CommandMenuEntry.Stay(MenuLang.t("editor.reset"), "dungeontrain reset")
+            here && cat != PlotCategory.PARTS ? new CommandMenuEntry.Stay(MenuLang.t("editor.reset"), "dungeontrain reset")
                  : packetAction(ctx, EditorPlotActionPacket.Action.RESET, sendPacket),
             EditorScreenLang.DISABLED_STAND_HERE));
 
@@ -237,6 +236,8 @@ public final class EditorScreenActions {
                 "dungeontrain editor whole label " + id, "", current);
             case WHOLE_GROUP -> new CommandMenuEntry.TypeArg(label, "name",
                 "dungeontrain editor whole group label " + id, "", current);
+            case CHUNK_FRAMES -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor chunkframe rename " + sel.modelName(), "", sel.modelName());
             case PARTS, TRACKS, ARCHITECTURE -> null;
         };
     }
@@ -282,6 +283,9 @@ public final class EditorScreenActions {
             return new CommandMenuEntry.DrillIn(MenuLang.t("common.remove"),
                 new games.brennan.dungeontrain.client.menu.ConfirmScreen(
                     MenuLang.t("confirm.remove", sel.displayName()), resetCommand(sel)));
+        }
+        if (sel.category() == PlotCategory.CHUNK_FRAMES) {
+            return EditorMenuScreen.removeEntryFor(sel.category(), sel.modelId(), sel.modelName());
         }
         return EditorMenuScreen.removeEntryFor(sel.category(), sel.modelId(), sel.displayName());
     }
@@ -347,6 +351,11 @@ public final class EditorScreenActions {
         String command = EditorPlotTeleport.commandFor(sel.category(), sel.modelId(), sel.modelName());
         if (command == null) return null;
         String label = EditorScreenLang.text(EditorScreenLang.ENTER);
+        // A frame walks to its plot as it stands — its enter command restamps, which would throw
+        // away unsaved edits — and brings its category in itself when it has to.
+        if (sel.category() == PlotCategory.CHUNK_FRAMES) {
+            return new CommandMenuEntry.Run(label, CHUNK_FRAME_GOTO + sel.modelName());
+        }
         if (ctx.stampedCategory() != null && sel.category().owner() == ctx.stampedCategory().owner()) {
             if (ctx.standingInSelection() && sel.category().hasActionRow()) {
                 EditorPlotActionPacket walk = new EditorPlotActionPacket(
@@ -362,6 +371,35 @@ public final class EditorScreenActions {
         return new CommandMenuEntry.ClientAction(label, () -> {
             CommandRunner.run(switchTo);
             CommandRunner.run(command);
+        });
+    }
+
+    private static final String CHUNK_FRAME_GOTO = "dungeontrain editor chunkframe goto ";
+
+    /**
+     * Go here with Shift held: Enter — into the middle of the selection's plot rather than to the
+     * front of its menu or its doorway. The per-plot panel's Enter with Shift, reached from the X
+     * menu; from another category it switches first, as Go here does. Null where the plot has no
+     * such landing (a category without an action row), leaving Go here as it is.
+     */
+    public static CommandMenuEntry enterCentreEntry(Ctx ctx, Consumer<EditorPlotActionPacket> sendPacket) {
+        if (!ctx.hasSelection()) return null;
+        VariantKey sel = ctx.selection();
+        if (sel.category() == PlotCategory.CHUNK_FRAMES) {
+            return new CommandMenuEntry.Run(EditorScreenLang.text(EditorScreenLang.ENTER),
+                CHUNK_FRAME_GOTO + sel.modelName() + " centre");
+        }
+        if (!sel.category().hasActionRow()) return null;
+        EditorPlotActionPacket enter = new EditorPlotActionPacket(sel.category().id(), sel.modelId(),
+            sel.modelName(), EditorPlotActionPacket.Action.ENTER_INSIDE, /*centre*/ true);
+        String label = EditorScreenLang.text(EditorScreenLang.ENTER);
+        if (ctx.stampedCategory() != null && sel.category().owner() == ctx.stampedCategory().owner()) {
+            return new CommandMenuEntry.ClientAction(label, () -> sendPacket.accept(enter));
+        }
+        String switchTo = "dungeontrain editor " + sel.category().owner().id();
+        return new CommandMenuEntry.ClientAction(label, () -> {
+            CommandRunner.run(switchTo);
+            sendPacket.accept(enter);
         });
     }
 
@@ -396,6 +434,8 @@ public final class EditorScreenActions {
         if (category == null || modelName == null || modelName.isEmpty()) return null;
         return switch (category) {
             case PORTALS -> new PortalTestSaveCheckScreen(modelName);
+            case CHUNK_FRAMES -> modelName == null || modelName.isEmpty() ? null
+                : PortalTestSaveCheckScreen.forFrame(modelName);
             case CARRIAGES, CONTENTS -> PortalTestSaveCheckScreen.forTemplate(category.id(), modelName);
             default -> null;
         };
@@ -406,6 +446,16 @@ public final class EditorScreenActions {
     static final String RESEED_OFF_COMMAND = "dungeontrain portal test reseed off";
     /** Re-roll the test carriage the author is standing in, now. */
     public static final String RESEED_NOW_COMMAND = "dungeontrain portal test reseed";
+    /**
+     * Re-roll only the template under test (Shift): the frame on the same ground, the room on the
+     * same chunk, a carriage around the same contents or contents in the same carriage.
+     */
+    public static final String RESEED_FOCUS_COMMAND = "dungeontrain portal test reseed focus";
+
+    /** The reseed a press inside a test runs — focused while Shift is held. */
+    public static String reseedNowCommand() {
+        return net.minecraft.client.gui.screens.Screen.hasShiftDown() ? RESEED_FOCUS_COMMAND : RESEED_NOW_COMMAND;
+    }
 
     /**
      * Reseed, beside Test the Carriage. Outside a test it is the world switch: on, each test rolls
@@ -447,6 +497,10 @@ public final class EditorScreenActions {
             for (CommandMenuEntry row : portalRows.get()) {
                 if (!isRoomSizeRow(row)) out.add(row);
             }
+        }
+        if (ctx.category() == PlotCategory.CHUNK_FRAMES) {
+            out.add(new CommandMenuEntry.DrillIn("Chunk dimensions…",
+                new games.brennan.dungeontrain.client.menu.ChunkFrameRoomsScreen(ctx.selection().modelName())));
         }
         out.addAll(flipRows(ctx));
         addIfPresent(out, contentsAllowEntry(ctx, roomMode));
