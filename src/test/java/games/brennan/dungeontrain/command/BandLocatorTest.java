@@ -121,6 +121,51 @@ final class BandLocatorTest {
     }
 
     @Test
+    @DisplayName("/dtp <band> <distance> <lap>: every band is found inside the lap asked for, laps 0-3")
+    void bandInLap() {
+        WorldGenCycle c = cycle(CycleLayout.DEFAULT_ORDER);
+        for (int lap = 0; lap <= 3; lap++) {
+            for (Map.Entry<String, IntPredicate> band : bands(c).entrySet()) {
+                OptionalInt entry = BandLocator.bandStartXInLap(c, band.getValue(), lap);
+                assertTrue(entry.isPresent(), band.getKey() + " not found in lap " + lap);
+                int x = entry.getAsInt();
+                assertEquals(lap, c.cycleIndex(x), band.getKey() + " entry " + x + " is not in lap " + lap);
+                assertTrue(band.getValue().test(x), band.getKey() + " entry " + x + " not in band");
+                assertFalse(band.getValue().test(x - 1), band.getKey() + " entry " + x + " is not the first column");
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("lapStartX inverts cycleIndex — layout runs and a phase-shifted classic cycle")
+    void lapStartInvertsCycleIndex() {
+        WorldGenCycle layout = cycle(CycleLayout.DEFAULT_ORDER);
+        WorldGenCycle classic = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0, 0, 0, 120);
+        for (WorldGenCycle c : List.of(layout, classic)) {
+            assertEquals(c.startX(), c.lapStartX(0));
+            for (int lap = 1; lap <= 4; lap++) {
+                int x = (int) c.lapStartX(lap);
+                assertEquals(lap, c.cycleIndex(x), "lap " + lap + " start " + x);
+                assertEquals(lap - 1, c.cycleIndex(x - 1), "column before lap " + lap + " start");
+            }
+            assertEquals(-1L, c.lapStartX(-1));
+        }
+    }
+
+    @Test
+    @DisplayName("a band a lap doesn't carry reports not found — BetterNether on the classic cycle's even laps")
+    void bandAbsentFromLap() {
+        WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0, 0, 0, 120);
+        IntPredicate nether = c::isNetherCore;
+        IntPredicate betterNether = x -> c.isNetherCore(x) && c.isBetterNetherAt(x);
+        for (int lap = 0; lap <= 3; lap++) {
+            assertTrue(BandLocator.bandStartXInLap(c, nether, lap).isPresent(), "nether lap " + lap);
+            assertEquals(c.isBetterNetherPass(lap), BandLocator.bandStartXInLap(c, betterNether, lap).isPresent(),
+                    "better_nether lap " + lap);
+        }
+    }
+
+    @Test
     @DisplayName("/dtp registers every phase token and alias once, plus the styled targets")
     void targetTokens() {
         Set<String> tokens = new HashSet<>();
