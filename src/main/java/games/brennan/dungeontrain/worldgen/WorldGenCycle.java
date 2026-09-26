@@ -1098,6 +1098,18 @@ public record WorldGenCycle(long startX, int owGap,
         return Math.floorDiv((long) worldX - startX + phaseShift, p);
     }
 
+    /**
+     * First world-X of lap {@code lap} — the inverse of {@link #cycleIndex}: the start of doubling run
+     * {@code lap} (layout), or of period {@code lap} (classic, lap 0 clamped to the anchor since
+     * {@code phaseShift} starts it part-way in). {@code -1} when the cycle is empty or {@code lap < 0}.
+     */
+    public long lapStartX(int lap) {
+        long p = period();
+        if (p <= 0L || lap < 0) return -1L;
+        if (layout != null) return startX + CycleLayout.runStart(Math.min(lap, 62), p);
+        return Math.max(startX, startX + (long) lap * p - phaseShift);
+    }
+
     /** Which plain-overworld gap a world-X sits in — see {@link #overworldGapAt}. */
     public enum OverworldGap { LEAD, POST_NETHER, NONE }
 

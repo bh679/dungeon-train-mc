@@ -19344,6 +19344,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dtp-band-lap",
+      "version": "0.973.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Testing tools improvements",
+      "summary": "A few more ways to get around when testing.",
+      "highlights": [],
+      "pr": 1576,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
