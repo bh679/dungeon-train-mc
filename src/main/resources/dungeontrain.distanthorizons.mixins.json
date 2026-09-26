@@ -1,0 +1,16 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "games.brennan.dungeontrain.mixin",
+  "plugin": "games.brennan.dungeontrain.mixin.DistantHorizonsMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "dungeontrain.refmap.json",
+  "mixins": [],
+  "client": [
+    "client.distanthorizons.DhGlStateSaveMixin"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

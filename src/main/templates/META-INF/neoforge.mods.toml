@@ -219,6 +219,26 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Stream Detect + DPI Bypass Detect — client-side sibling add-ons, jarJar'd INSIDE this jar (hybrid,
+# like Keep Trim) until their CurseForge listings are live; then the CF app installs them as their
+# own mods and NeoForge drops the nested copy. They answer "is OBS/Streamlabs open?" and "is
+# zapret/GoodbyeDPI running?" for DT's Videos share tab and relay-blocked warning.
+# `optional` (not required): the nested copy is always there, and DT degrades to "nothing found"
+# without them (compat/StreamDetectBridge, DpiBypassDetectBridge). Fixed floor: DT calls their 0.1.0 API.
+[[dependencies.${mod_id}]]
+    modId="streamdetect"
+    type="optional"
+    versionRange="[0.1.0,)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${mod_id}]]
+    modId="dpibypassdetect"
+    type="optional"
+    versionRange="[0.1.0,)"
+    ordering="NONE"
+    side="CLIENT"
+
 # tectonic (terrain mod; pulls lithostitched). Generates only when the in-game
 # "Compatible Terrain" option is on (Dungeon Train then uses vanilla overworld noise).
 [[dependencies.${mod_id}]]
@@ -301,6 +321,13 @@ logoFile="logo.png"
 
 [[mixins]]
     config="${mod_id}.betteradvancements.mixins.json"
+
+# Distant Horizons (optional) reads GL_POLYGON_MODE through LWJGL's one-int glGetInteger; Apple's GL
+# driver writes two ints, corrupting the native heap just past the render thread's stack every frame
+# (random C2 / Metal crashes on macOS). dungeontrain.distanthorizons.mixins.json, gated by
+# DistantHorizonsMixinPlugin, gives the query room. No-op when DH is absent.
+[[mixins]]
+    config="${mod_id}.distanthorizons.mixins.json"
 
 # Sodium replaces chunk meshing wholesale, so the upside-down band's per-block flip needs a second
 # copy of itself on Sodium's pipeline (dungeontrain.sodium.mixins.json, gated by SodiumMixinPlugin).

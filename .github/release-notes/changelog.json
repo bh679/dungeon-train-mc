@@ -19043,6 +19043,263 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "modded-overworld-transition-bleed",
+      "version": "0.960.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Smoother changes of scenery",
+      "summary": "Distinctive stretches of land no longer stop at a hard line. Where one meets a stranger part of the journey, its forests, colours and mountains carry on through the change of scenery.",
+      "highlights": [
+        "Forests and colours carry on into the transitions either side.",
+        "Mountain slopes take on the look of the land beside them."
+      ],
+      "pr": 1555,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "process-detection-addons",
+      "version": "0.961.0",
+      "type": "refactor",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "OBS and connection-blocker support moves to sibling mods",
+      "summary": "Dungeon Train no longer works directly with OBS, Streamlabs, zapret or GoodbyeDPI. That is now handled by two small sibling mods, Stream Detect and DPI Bypass Detect, which come bundled with Dungeon Train. They power the Share stream! tab on the Videos button and the warning when zapret or GoodbyeDPI is blocking online features.",
+      "highlights": [
+        "Stream Detect and DPI Bypass Detect are small, separate sibling mods, bundled with Dungeon Train; the menus and wording stay in Dungeon Train",
+        "Dungeon Train itself no longer works directly with OBS, Streamlabs, zapret or GoodbyeDPI"
+      ],
+      "pr": 1554,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cmd-r-reseed-test-carriage",
+      "version": "0.963.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Ctrl/Cmd+R re-rolls the carriage you're testing",
+      "summary": "While you're inside Test the Carriage, press Ctrl+R (Cmd+R on Mac) to re-roll the copy you're standing in without opening the editor menu. You can rebind it under Dungeon Train in Controls.",
+      "highlights": [],
+      "pr": 1557,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "vanilla-end-carriage-only-vanilla",
+      "version": "0.964.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Dimensional carriages stay true to their worlds",
+      "summary": "Some dimensional carriages were picking up ores, ruins and buildings that belong to stranger places. Each one now shows only what its own world grows, and no room is left without a building to find.",
+      "highlights": [
+        "The plainer dimensional carriages no longer show ores or buildings borrowed from stranger places.",
+        "The sparsest dimensional carriage now usually has its own world's towering city in it.",
+        "A room whose world has nothing that fits borrows a building from another world instead of standing empty.",
+        "In the editor, Test the Carriage now shows the occasional building from another world, just as a real ride does."
+      ],
+      "pr": 1559,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "relay-build-chest-loot",
+      "version": "0.965.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "community"
+      ],
+      "title": "Big shared builds keep their chest loot",
+      "summary": "Large builds \u2014 especially dimensional carriage rooms \u2014 now keep their chest loot and block variants when you share them. Before, a big build could arrive on someone else's world with its chests unset and its variants missing.",
+      "highlights": [
+        "Downloading a large build from builder search now brings its chest loot and block variants with it",
+        "If a build still has too much to send, you'll get a message saying what was left out \u2014 chest loot is always kept longest",
+        "Builds shared before this update need to be saved again by their builder to pick up their chest loot"
+      ],
+      "pr": 1561,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "effortless-building-breaks-clear-variants",
+      "version": "0.966.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "compatibility"
+      ],
+      "title": "Effortless Building can now delete block variants",
+      "summary": "Breaking blocks with an Effortless Building shape in the editor now removes their block variants too, just like breaking them by hand. Previously the blocks disappeared but their variants stayed behind and came back later.",
+      "highlights": [
+        "Line, wall, floor and cube breaks, including mirrored and arrayed ones, clear the variants of every block they remove",
+        "One Ctrl+Z brings back both the blocks and their variants"
+      ],
+      "pr": 1560,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stronghold-rings-stable-across-loads",
+      "version": "0.967.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Eyes of ender lead to the same stronghold every time",
+      "summary": "Strongholds could land in a slightly different place each time a world was loaded, so an eye of ender might lead you to a spot where no stronghold was ever built. Stronghold locations are now fixed for each world.",
+      "highlights": [
+        "Eyes of ender and /locate agree on every load of the same world"
+      ],
+      "pr": 1562,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "creative-prefab-cmd-delete",
+      "version": "0.967.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Delete saved prefabs from the creative menu",
+      "summary": "Cmd-click (Ctrl on Windows and Linux) a block variant or loot prefab you saved in the creative menu to delete it. You'll be asked to confirm first.",
+      "highlights": [
+        "Works in the Block Variants, Containers / Loot and Armor Stands / Item Frames tabs",
+        "Only prefabs you saved can be deleted, and their tooltips tell you so"
+      ],
+      "pr": 1558,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "wwoo-shrubs-keep-leaves",
+      "version": "0.968.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Shrubs keep their leaves",
+      "summary": "Small shrubs and bamboo palms in some overworld stretches no longer wither away when you break a block next to them.",
+      "highlights": [],
+      "pr": 1568,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "bclib-feature-seed-per-thread",
+      "version": "0.969.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Distant scenery generates the same way every time",
+      "summary": "Some far-off scenery that the game builds in the background could come out slightly different on the same world seed, depending on server timing. It is now built consistently, so the same seed always gives the same scenery.",
+      "highlights": [
+        "Background-built scenery is now consistent for the same world seed"
+      ],
+      "pr": 1570,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dh-macos-native-crash",
+      "version": "0.970.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Distant Horizons no longer crashes the game on Mac",
+      "summary": "On macOS, playing with Distant Horizons installed could crash the whole game without warning, most often shortly after joining a world. That crash is fixed.",
+      "highlights": [],
+      "pr": 1571,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-fail-closed",
+      "version": "0.971.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "internal"
+      ],
+      "title": "Dimensional carriages never show the wrong look after an error",
+      "summary": "If a dimensional carriage can't confirm its terrain matches the look it's named for, it now shows its plain room instead of a mismatched one.",
+      "highlights": [],
+      "pr": 1569,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "patient-relay-fetch",
+      "version": "0.972.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Loading a build survives a busy relay",
+      "summary": "Loading one of your builds no longer gives up after ten seconds when the server is busy. It waits longer and tries a second time, tells you when things are being slow rather than leaving you watching a frozen line, and if it does give up it says so plainly so you can press Load again.",
+      "highlights": [
+        "Waits longer, and tries again, before giving up on a build",
+        "Says when the wait is just slowness, and when it has actually given up"
+      ],
+      "pr": 1572,
+      "date": "2026-09-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

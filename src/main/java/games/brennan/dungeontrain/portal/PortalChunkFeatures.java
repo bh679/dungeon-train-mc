@@ -2,10 +2,12 @@ package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.OfflineChunkSampler;
+import games.brennan.dungeontrain.worldgen.VanillaOnlySample;
 import games.brennan.dungeontrain.worldgen.VanillaBiomeTwins;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
@@ -89,6 +91,21 @@ final class PortalChunkFeatures {
     private static final float FOREIGN_STRUCTURE_CHANCE = 0.10F;
 
     /**
+     * How often a vanilla End room's structure is the End's own — an End city — rather than one
+     * from another dimension. Set rather than left to the draw: the End city is the vanilla End's
+     * only structure and turns down most of the islands a sample lands on, so left alone about four
+     * rooms in five fell through to another dimension's structure and the End barely read as itself.
+     */
+    private static final float VANILLA_END_NATIVE_CHANCE = 0.60F;
+
+    /** How many other End islands an End city is tried on when the sampled one turns it down. */
+    private static final int RELOCATE_ATTEMPTS = 64;
+
+    /** Where those islands are looked for: past the main island, out across the outer End. */
+    private static final int RELOCATE_MIN_BLOCKS = 1_536;
+    private static final int RELOCATE_SPREAD_BLOCKS = 40_000;
+
+    /**
      * How many times the biome's own creature pass is rolled before a room settles for having no
      * animals — see {@link #decorate}.
      *
@@ -141,17 +158,20 @@ final class PortalChunkFeatures {
      *
      * @param window the rows of {@code chunk} the room will actually show, so a structure that lands
      *               entirely outside them can be rejected in favour of one that does not
+     * @param source which room this is; the vanilla Nether and End rooms plant only {@code minecraft:}
+     *               structures and place only {@code minecraft:} features — see {@link VanillaOnlySample}
      */
     static void decorate(NoiseBasedChunkGenerator generator, ServerLevel level, RandomState random,
                          ProtoChunk chunk, OfflineChunkSampler.Workspace workspace, BoundingBox window, long worldSeed,
-                         int pairKey) {
+                         int pairKey, PortalChunkTerrain.Source source) {
+        boolean vanillaOnly = source.vanillaOnly();
         try {
-            plantStructure(level, generator, random, chunk, window, worldSeed, pairKey);
+            plantStructure(level, generator, random, chunk, window, worldSeed, pairKey, source);
             // Places the structure registered above along with everything else the biome grows —
             // and, with it, whatever that structure is inhabited by: a village's villagers, an
             // outpost's pillagers, a bastion's piglins all come through this same region and land in
             // the same throwaway chunk the room is read out of.
-            OfflineChunkSampler.decorate(generator, workspace, chunk);
+            OfflineChunkSampler.decorate(generator, workspace, chunk, vanillaOnly);
 
             // The pass that puts a fresh chunk's animals in it — the herd of sheep on the hillside,
             // the pigs in the wood.
@@ -265,28 +285,129 @@ final class PortalChunkFeatures {
      */
     private static void plantStructure(ServerLevel level, NoiseBasedChunkGenerator generator,
                                        RandomState random, ProtoChunk chunk, BoundingBox window,
-                                       long worldSeed, int pairKey) {
+                                       long worldSeed, int pairKey, PortalChunkTerrain.Source source) {
         // Deterministic in the seed and the pair, like every other choice a pair makes.
         Random rng = new Random(worldSeed ^ ((long) pairKey * 0x9E3779B97F4A7C15L));
-        boolean foreign = rng.nextFloat() < FOREIGN_STRUCTURE_CHANCE;
-        List<Structure> candidates = foreign
-            ? foreignStructures(level, chunk, window)
-            : fittingStructures(level, chunk, window);
-        // A dimension whose biomes admit everything in the registry has nothing foreign to offer,
-        // and a sample nothing admits has nothing native to — either way the other list stands in
-        // rather than the room going without.
-        if (candidates.isEmpty()) {
-            candidates = foreign
-                ? fittingStructures(level, chunk, window)
-                : foreignStructures(level, chunk, window);
+        boolean vanillaEnd = source == PortalChunkTerrain.Source.END;
+        boolean foreign = vanillaEnd
+            ? rng.nextFloat() >= VANILLA_END_NATIVE_CHANCE
+            : rng.nextFloat() < FOREIGN_STRUCTURE_CHANCE;
+        // The drawn list first, then the other one. A dimension whose biomes admit everything in the
+        // registry has nothing foreign to offer, a sample nothing admits has nothing native to, and
+        // a native list can have nothing that generates here at all. In each case the other list
+        // stands in rather than the room going without.
+        Planting planting = plantFrom(foreign, level, generator, random, chunk, window, worldSeed,
+            pairKey, rng, source);
+        if (planting.start() == null) {
             foreign = !foreign;
+            planting = plantFrom(foreign, level, generator, random, chunk, window, worldSeed,
+                pairKey, rng, source);
         }
-        if (candidates.isEmpty()) {
-            LOGGER.warn("[DungeonTrain] Chunk dimension pair {} has no structure to plant — nothing "
-                + "in the registry admits the biome it sampled", pairKey);
+        if (planting.start() == null) {
+            LOGGER.warn("[DungeonTrain] Chunk dimension pair {} planted nothing — no candidate in either "
+                + "list generated a valid start", pairKey);
+            return;
+        }
+        StructureStart start = planting.start();
+        if (planting.inWindow()) {
+            register(chunk, start);
+            LOGGER.info("[DungeonTrain] Chunk dimension pair {} planted {}{} where it generated",
+                pairKey, nameOf(level, start.getStructure()), foreign ? " (from another dimension)" : "");
             return;
         }
 
+        // Nothing generated where the room can see it. That is the ordinary case in the Nether and
+        // the End rather than a rarity: a fortress or a bastion sits at the Y its own placement
+        // wants, and an End city stands on an island, while the cube is cut around whichever cavern
+        // floor or ledge the sample was anchored on — so the two rarely meet by luck. The structure
+        // is moved onto the room's ground instead of being thrown away, which is what makes "always
+        // at least one structure" true in all three dimensions rather than mostly true in one.
+        BoundingBox span = spanOf(start);
+        int lift = window.minY() + PortalChunkTerrain.SURFACE_ROW - span.minY();
+        start.getPieces().forEach(piece -> piece.move(0, lift, 0));
+        register(chunk, start);
+        LOGGER.info("[DungeonTrain] Chunk dimension pair {} planted {}{}, moved {} blocks onto the "
+            + "room's ground", pairKey, nameOf(level, start.getStructure()),
+            foreign ? " (from another dimension)" : "", lift);
+    }
+
+    /**
+     * What one list of candidates came to: a start that reaches the room's rows, else the first
+     * valid start that did not (to be moved onto them), else nothing.
+     */
+    private record Planting(StructureStart start, boolean inWindow) {}
+
+    /**
+     * Try the foreign list or the native one. The vanilla End room's native list is every structure
+     * the End itself generates, and an End city the sampled island turns down is grown on another
+     * island and brought here — see {@link #relocated}.
+     */
+    private static Planting plantFrom(boolean foreign, ServerLevel level,
+                                      NoiseBasedChunkGenerator generator, RandomState random,
+                                      ProtoChunk chunk, BoundingBox window, long worldSeed, int pairKey,
+                                      Random rng, PortalChunkTerrain.Source source) {
+        if (foreign) {
+            return tryPlant(level, generator, random, chunk, window, worldSeed, pairKey, rng,
+                foreignStructures(level, chunk, window, source));
+        }
+        if (source != PortalChunkTerrain.Source.END) {
+            return tryPlant(level, generator, random, chunk, window, worldSeed, pairKey, rng,
+                fittingStructures(level, chunk, window, source.vanillaOnly()));
+        }
+        List<Structure> native_ = dimensionStructures(level, source);
+        Planting here = tryPlant(level, generator, random, chunk, window, worldSeed, pairKey, rng,
+            new ArrayList<>(native_));
+        return here.start() != null ? here
+            : relocated(level, generator, random, chunk, worldSeed, pairKey, rng, native_);
+    }
+
+    /**
+     * Generate one of {@code candidates} on another island of the same End and move it onto this
+     * sample's chunk — the answer when the sampled island is one an End city will not stand on.
+     *
+     * <p>An End city wants ground at least sixty blocks up under its whole footprint, and most of the
+     * islands a room is cut from are lower or smaller than that. The structure is the End's own and
+     * so is the island it grew on; only where it stands has changed, which the room already does to
+     * any structure that generated above or below the rows it shows.</p>
+     */
+    private static Planting relocated(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                      RandomState random, ProtoChunk chunk, long worldSeed, int pairKey,
+                                      Random rng, List<Structure> candidates) {
+        for (Structure structure : candidates) {
+            for (int attempt = 0; attempt < RELOCATE_ATTEMPTS; attempt++) {
+                double angle = rng.nextDouble() * Math.PI * 2.0;
+                int radius = RELOCATE_MIN_BLOCKS + rng.nextInt(RELOCATE_SPREAD_BLOCKS);
+                ChunkPos at = new ChunkPos(new BlockPos((int) (Math.cos(angle) * radius), 0,
+                    (int) (Math.sin(angle) * radius)));
+                StructureStart start;
+                try {
+                    start = structure.generate(level.registryAccess(), generator,
+                        generator.getBiomeSource(), random, level.getStructureManager(), worldSeed, at,
+                        /*references*/ 0, chunk, biome -> true);
+                } catch (RuntimeException e) {
+                    LOGGER.warn("[DungeonTrain] Chunk dimension pair {} could not grow {} on another "
+                        + "island ({})", pairKey, nameOf(level, structure), e.toString());
+                    break;
+                }
+                if (!start.isValid()) continue;
+                int dx = chunk.getPos().getMinBlockX() - at.getMinBlockX();
+                int dz = chunk.getPos().getMinBlockZ() - at.getMinBlockZ();
+                start.getPieces().forEach(piece -> piece.move(dx, 0, dz));
+                LOGGER.debug("[DungeonTrain] Chunk dimension pair {} grew {} at {} after {} island(s)",
+                    pairKey, nameOf(level, structure), at, attempt + 1);
+                return new Planting(start, false);
+            }
+        }
+        return new Planting(null, false);
+    }
+
+    /**
+     * Draw up to {@link #STRUCTURE_ATTEMPTS} of {@code candidates} and generate each at the sample,
+     * stopping at the first whose pieces reach {@code window}.
+     */
+    private static Planting tryPlant(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                     RandomState random, ProtoChunk chunk, BoundingBox window,
+                                     long worldSeed, int pairKey, Random rng, List<Structure> candidates) {
         StructureStart fallback = null;
         for (int attempt = 0; attempt < STRUCTURE_ATTEMPTS && !candidates.isEmpty(); attempt++) {
             Structure structure = candidates.remove(rng.nextInt(candidates.size()));
@@ -307,33 +428,10 @@ final class PortalChunkFeatures {
                 continue;
             }
             if (!start.isValid()) continue;
-            if (spanOf(start).intersects(window)) {
-                register(chunk, start);
-                LOGGER.info("[DungeonTrain] Chunk dimension pair {} planted {}{} where it generated",
-                    pairKey, nameOf(level, structure), foreign ? " (from another dimension)" : "");
-                return;
-            }
+            if (spanOf(start).intersects(window)) return new Planting(start, true);
             if (fallback == null) fallback = start;
         }
-
-        // Nothing generated where the room can see it. That is the ordinary case in the Nether and
-        // the End rather than a rarity: a fortress or a bastion sits at the Y its own placement
-        // wants, and an End city stands on an island, while the cube is cut around whichever cavern
-        // floor or ledge the sample was anchored on — so the two rarely meet by luck. The structure
-        // is moved onto the room's ground instead of being thrown away, which is what makes "always
-        // at least one structure" true in all three dimensions rather than mostly true in one.
-        if (fallback == null) {
-            LOGGER.warn("[DungeonTrain] Chunk dimension pair {} planted nothing — {} candidate(s), "
-                + "none of them generated a valid start", pairKey, STRUCTURE_ATTEMPTS);
-            return;
-        }
-        BoundingBox span = spanOf(fallback);
-        int lift = window.minY() + PortalChunkTerrain.SURFACE_ROW - span.minY();
-        fallback.getPieces().forEach(piece -> piece.move(0, lift, 0));
-        register(chunk, fallback);
-        LOGGER.info("[DungeonTrain] Chunk dimension pair {} planted {}{}, moved {} blocks onto the "
-            + "room's ground", pairKey, nameOf(level, fallback.getStructure()),
-            foreign ? " (from another dimension)" : "", lift);
+        return new Planting(fallback, false);
     }
 
     /** What a structure is called, for the log — its registry id, or its class when unregistered. */
@@ -372,13 +470,33 @@ final class PortalChunkFeatures {
      * answer.</p>
      */
     private static List<Structure> fittingStructures(ServerLevel level, ProtoChunk chunk,
-                                                     BoundingBox window) {
+                                                     BoundingBox window, boolean vanillaOnly) {
         Set<Holder<Biome>> present = biomesIn(chunk, window);
         List<Structure> fitting = new ArrayList<>();
-        for (Structure structure : level.registryAccess().registryOrThrow(Registries.STRUCTURE)) {
+        Registry<Structure> registry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        for (Structure structure : registry) {
+            if (vanillaOnly && !VanillaOnlySample.allows(registry.getKey(structure))) continue;
             if (admitsAny(structure, present)) fitting.add(structure);
         }
         return fitting;
+    }
+
+    /**
+     * Every structure {@code source}'s own dimension generates anywhere — admitted by any biome its
+     * generator can place, not just the ones in this sample.
+     */
+    private static List<Structure> dimensionStructures(ServerLevel level, PortalChunkTerrain.Source source) {
+        List<Structure> out = new ArrayList<>();
+        if (level.getServer() == null) return out;
+        PortalChunkSources.Resolved own = PortalChunkSources.resolve(level.getServer(), source, level.getSeed());
+        if (own == null) return out;
+        Set<Holder<Biome>> biomes = Set.copyOf(own.generator().getBiomeSource().possibleBiomes());
+        Registry<Structure> registry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        for (Structure structure : registry) {
+            if (source.vanillaOnly() && !VanillaOnlySample.allows(registry.getKey(structure))) continue;
+            if (admitsAny(structure, biomes)) out.add(structure);
+        }
+        return out;
     }
 
     /**
@@ -397,12 +515,15 @@ final class PortalChunkFeatures {
      * traveller in the one place it lives.</p>
      */
     private static List<Structure> foreignStructures(ServerLevel level, ProtoChunk chunk,
-                                                     BoundingBox window) {
+                                                     BoundingBox window, PortalChunkTerrain.Source source) {
+        boolean vanillaOnly = source.vanillaOnly();
         Set<Holder<Biome>> present = biomesIn(chunk, window);
-        Set<Holder<Biome>> elsewhere = otherDimensionBiomes(level);
+        Set<Holder<Biome>> elsewhere = otherDimensionBiomes(level, source);
         if (elsewhere.isEmpty()) return List.of();
         List<Structure> foreign = new ArrayList<>();
-        for (Structure structure : level.registryAccess().registryOrThrow(Registries.STRUCTURE)) {
+        Registry<Structure> registry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        for (Structure structure : registry) {
+            if (vanillaOnly && !VanillaOnlySample.allows(registry.getKey(structure))) continue;
             if (admitsAny(structure, elsewhere) && !admitsAny(structure, present)) {
                 foreign.add(structure);
             }
@@ -410,15 +531,25 @@ final class PortalChunkFeatures {
         return foreign;
     }
 
-    /** Every biome the <b>other</b> dimensions can generate, read off their own biome sources. */
-    private static Set<Holder<Biome>> otherDimensionBiomes(ServerLevel level) {
+    /**
+     * Every biome the dimensions {@code own} was <b>not</b> sampled from can generate.
+     *
+     * <p>Keyed off the room's own dimension rather than {@code level}'s, and read through
+     * {@link PortalChunkSources} rather than the live levels alone: an editor world is a superflat
+     * overworld with no Nether or End, so every room there is hosted in the overworld and the other
+     * two dimensions exist only as stand-in generators. Asking the live levels found nothing foreign
+     * at all there, and Test the Carriage never showed what a real world's rooms get.</p>
+     */
+    private static Set<Holder<Biome>> otherDimensionBiomes(ServerLevel level,
+                                                           PortalChunkTerrain.Source own) {
         Set<Holder<Biome>> out = new java.util.LinkedHashSet<>();
         if (level.getServer() == null) return out;
         for (PortalChunkTerrain.Source source : PortalChunkTerrain.Source.values()) {
-            if (source.levelKey().equals(level.dimension())) continue;
-            ServerLevel other = level.getServer().getLevel(source.levelKey());
+            if (source.levelKey().equals(own.levelKey())) continue;
+            PortalChunkSources.Resolved other =
+                PortalChunkSources.resolve(level.getServer(), source, level.getSeed());
             if (other == null) continue;
-            out.addAll(other.getChunkSource().getGenerator().getBiomeSource().possibleBiomes());
+            out.addAll(other.generator().getBiomeSource().possibleBiomes());
         }
         return out;
     }

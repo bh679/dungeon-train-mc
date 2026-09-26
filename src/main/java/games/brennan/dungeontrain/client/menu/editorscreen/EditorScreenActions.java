@@ -411,7 +411,7 @@ public final class EditorScreenActions {
     static final String RESEED_ON_COMMAND = "dungeontrain portal test reseed on";
     static final String RESEED_OFF_COMMAND = "dungeontrain portal test reseed off";
     /** Re-roll the test carriage the author is standing in, now. */
-    static final String RESEED_NOW_COMMAND = "dungeontrain portal test reseed";
+    public static final String RESEED_NOW_COMMAND = "dungeontrain portal test reseed";
 
     /**
      * Reseed, beside Test the Carriage. Outside a test it is the world switch: on, each test rolls

@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.editor;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
@@ -70,9 +69,10 @@ public final class TemplateSidecars {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /**
-     * Refuse to carry a document past this. Sidecars are id lists and small maps — a document near
-     * this size is a runaway store, not a build, and the relay caps the field at its own end anyway.
-     * Skipping is safe in a way truncating never is: the build still uploads, with no sidecars.
+     * The most a document may be on the wire — the relay caps the field here and truncates past it,
+     * which would corrupt the JSON. A bigger document is compressed ({@link SidecarDocCodec}); one
+     * still too big sheds its largest files, never the chests' loot, until it fits. Skipping is safe
+     * in a way truncating never is: the build still uploads, with less.
      */
     static final int MAX_DOC_CHARS = 200_000;
 
@@ -177,7 +177,7 @@ public final class TemplateSidecars {
     public static Optional<String> containersTextOf(String doc) {
         if (doc == null || doc.isBlank()) return Optional.empty();
         try {
-            JsonObject root = JsonParser.parseString(doc).getAsJsonObject();
+            JsonObject root = SidecarDocCodec.parse(doc);
             if (!root.has(K_FILES) || !root.get(K_FILES).isJsonObject()) return Optional.empty();
             JsonElement text = root.getAsJsonObject(K_FILES).get(ROLE_CONTAINERS);
             return text != null && text.isJsonPrimitive() ? Optional.of(text.getAsString()) : Optional.empty();
@@ -189,18 +189,40 @@ public final class TemplateSidecars {
     // ---- collect (upload side) ----
 
     /**
-     * The document for template {@code id}, or {@code ""} when it has nothing to say.
+     * A collected document and the roles that had to be left out of it to fit.
+     *
+     * @param doc     the wire document, or {@code ""} when there is nothing to say
+     * @param dropped roles that exist locally but were shed to fit {@link #MAX_DOC_CHARS}, largest
+     *                first — what the uploader is told about
+     */
+    public record Collected(String doc, List<String> dropped) {
+        public Collected {
+            dropped = List.copyOf(dropped);
+        }
+
+        public boolean lostContainers() {
+            return dropped.contains(ROLE_CONTAINERS);
+        }
+    }
+
+    /** {@link #collectReport}'s document alone — for the callers with nobody to tell. */
+    public static String collect(BuilderPhotoPaths.Kind kind, String subKind, String id) {
+        return collectReport(kind, subKind, id).doc();
+    }
+
+    /**
+     * The document for template {@code id}, with what had to be dropped to fit.
      *
      * <p>Never throws: a sidecar this install cannot read is one the download will do without, and
      * failing the upload over it would cost the build. Same posture as the oversize case.</p>
      */
-    public static String collect(BuilderPhotoPaths.Kind kind, String subKind, String id) {
-        JsonObject files = new JsonObject();
+    public static Collected collectReport(BuilderPhotoPaths.Kind kind, String subKind, String id) {
+        Map<String, String> files = new LinkedHashMap<>();
         for (Sidecar sidecar : filesFor(kind, subKind, id)) {
             Path path = UserContentPaths.findFile(sidecar.subdir(), sidecar.basename());
             if (path == null) continue;
             try {
-                files.add(sidecar.role(), new JsonPrimitive(Files.readString(path, StandardCharsets.UTF_8)));
+                files.put(sidecar.role(), Files.readString(path, StandardCharsets.UTF_8));
             } catch (Exception e) {
                 LOGGER.warn("[DungeonTrain] Template sidecars: could not read {} for '{}': {}",
                         path, id, e.toString());
@@ -208,22 +230,77 @@ public final class TemplateSidecars {
         }
         JsonElement weights = weightsEntry(kind, subKind, id);
         BuildCredits.Credit credit = BuildCredits.get(kind, subKind, id);
-
-        JsonObject doc = new JsonObject();
-        if (files.size() > 0) doc.add(K_FILES, files);
-        if (weights != null) doc.add(K_WEIGHTS, weights);
         // Whose work this is, when it is not this install's. Carried so attribution survives a
         // second hop: without it, a build downloaded and re-uploaded by somebody else arrives at a
         // third player credited to the middle one.
-        if (credit != null) doc.add(K_CREDIT, BuildCredits.encode(credit));
-        if (doc.size() == 0) return "";
-        String text = doc.toString();
-        if (text.length() > MAX_DOC_CHARS) {
-            LOGGER.info("[DungeonTrain] Template sidecars: '{}' is {} chars, over the {} limit — "
-                    + "uploading the build without them.", id, text.length(), MAX_DOC_CHARS);
-            return "";
+        return fit(id, files, weights, credit == null ? null : BuildCredits.encode(credit));
+    }
+
+    /**
+     * The smallest faithful wire document for these parts: plain when it fits, compressed when only
+     * that fits, and otherwise shedding the largest file — the containers store last, since it is
+     * what carries the chests' loot and is small next to a variants file — until it fits.
+     * Package-private for tests.
+     */
+    static Collected fit(String id, Map<String, String> files, JsonElement weights, JsonElement credit) {
+        Map<String, String> kept = new LinkedHashMap<>(files);
+        List<String> dropped = new ArrayList<>();
+        while (true) {
+            JsonObject doc = document(kept, weights, credit);
+            if (doc.size() == 0) return new Collected("", dropped);
+            String wire = wireForm(id, doc);
+            if (wire != null) {
+                if (!dropped.isEmpty()) {
+                    LOGGER.info("[DungeonTrain] Template sidecars: '{}' uploaded without {} to fit the "
+                            + "{} char limit.", id, dropped, MAX_DOC_CHARS);
+                }
+                return new Collected(wire, dropped);
+            }
+            String victim = largestRole(kept);
+            if (victim == null) {
+                LOGGER.info("[DungeonTrain] Template sidecars: '{}' has no files left and still does "
+                        + "not fit — uploading the build without them.", id);
+                return new Collected("", dropped);
+            }
+            kept.remove(victim);
+            dropped.add(victim);
         }
-        return text;
+    }
+
+    private static JsonObject document(Map<String, String> files, JsonElement weights, JsonElement credit) {
+        JsonObject doc = new JsonObject();
+        if (!files.isEmpty()) {
+            JsonObject filesJson = new JsonObject();
+            files.forEach((role, text) -> filesJson.add(role, new JsonPrimitive(text)));
+            doc.add(K_FILES, filesJson);
+        }
+        if (weights != null) doc.add(K_WEIGHTS, weights);
+        if (credit != null) doc.add(K_CREDIT, credit);
+        return doc;
+    }
+
+    /** {@code doc} as plain or compressed text within the limit, or null when neither fits. */
+    private static String wireForm(String id, JsonObject doc) {
+        String plain = doc.toString();
+        if (plain.length() <= MAX_DOC_CHARS) return plain;
+        try {
+            String packed = SidecarDocCodec.compress(plain);
+            return packed.length() <= MAX_DOC_CHARS ? packed : null;
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Template sidecars: could not compress '{}': {}", id, e.toString());
+            return null;
+        }
+    }
+
+    /** The largest file to shed next — any role before the containers store — or null for none. */
+    private static String largestRole(Map<String, String> files) {
+        String best = null;
+        for (Map.Entry<String, String> e : files.entrySet()) {
+            if (e.getKey().equals(ROLE_CONTAINERS)) continue;
+            if (best == null || e.getValue().length() > files.get(best).length()) best = e.getKey();
+        }
+        if (best == null && files.containsKey(ROLE_CONTAINERS)) return ROLE_CONTAINERS;
+        return best;
     }
 
     /**
@@ -308,7 +385,7 @@ public final class TemplateSidecars {
         if (doc == null || doc.isBlank()) return;
         JsonObject root;
         try {
-            root = JsonParser.parseString(doc).getAsJsonObject();
+            root = SidecarDocCodec.parse(doc);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Template sidecars: '{}' came with a document that would not "
                     + "parse — installed without them: {}", id, e.toString());
@@ -454,9 +531,8 @@ public final class TemplateSidecars {
     public static boolean hasCredit(String doc) {
         if (doc == null || doc.isBlank()) return false;
         try {
-            JsonElement root = JsonParser.parseString(doc);
-            return root.isJsonObject() && root.getAsJsonObject().has(K_CREDIT)
-                    && BuildCredits.decode(root.getAsJsonObject().get(K_CREDIT)) != null;
+            JsonObject root = SidecarDocCodec.parse(doc);
+            return root.has(K_CREDIT) && BuildCredits.decode(root.get(K_CREDIT)) != null;
         } catch (Exception e) {
             return false;
         }

@@ -36,7 +36,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * — which would bake Biomes O' Plenty biomes into vanilla stretches for good.</p>
  *
  * <p>Everywhere else on the overworld the biome comes from {@link OverworldStretchBiomes}: Biomes O'
- * Plenty in its second-lap stretch, vanilla elsewhere ({@link SecondLapOverworld}).</p>
+ * Plenty in its second-lap stretch and the band transitions bordering it, vanilla elsewhere
+ * ({@link SecondLapOverworld#lookAt}).</p>
  *
  * <p>A cancellable HEAD inject, not a return-value modifier: TerraBlender (Biomes O' Plenty's library)
  * answers this method from its own HEAD inject and cancels, so a RETURN hook never sees its answer. The
@@ -108,8 +109,8 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
 
     /**
      * A vanilla pick needing no published context — never TerraBlender's, which could be BoP. Debug-level:
-     * vanilla's stronghold-ring search legitimately lands here on every boot, while {@code publish()} runs
-     * between marking the source and publishing the context.
+     * a failed publish sends every overworld query here for the session. (The stronghold-ring search no
+     * longer does: it waits for the publish — see {@code StrongholdRingGate}.)
      */
     private static Holder<Biome> dungeontrain$vanillaFallback(MultiNoiseBiomeSource source, int x, int y, int z,
                                                             Climate.Sampler sampler, String why) {
@@ -123,7 +124,7 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                                                          int x, int y, int z, Climate.Sampler sampler) {
         OverworldStretchBiomes stretchBiomes = OverworldStretchBiomes.current();
         if (stretchBiomes == null) return null;
-        return stretchBiomes.pick(SecondLapOverworld.at(ctx.cycle(), x << 2), source, x, y, z, sampler);
+        return stretchBiomes.pick(SecondLapOverworld.lookAt(ctx.cycle(), x << 2), source, x, y, z, sampler);
     }
 
     /** The forced Nether-core / End-core / highland biome, or {@code null} for an ordinary column. */
@@ -149,7 +150,10 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                 long endPass = ctx.cycle().endPassIndex(blockX);
                 return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, ctx.cycle().isBetterEndPass(endPass));
             case HIGHLAND:
-                return ctx.highlandBiomes().biomeFor(blockX, blockY, blockZ);
+                // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.
+                return SecondLapOverworld.lookAt(ctx.cycle(), blockX) == SecondLapOverworld.Stretch.BOP
+                        ? ctx.highlandBiomes().bopBiomeFor(blockX, blockY, blockZ)
+                        : ctx.highlandBiomes().biomeFor(blockX, blockY, blockZ);
             default:
                 return null;
         }

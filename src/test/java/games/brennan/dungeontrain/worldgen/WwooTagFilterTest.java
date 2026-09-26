@@ -38,24 +38,24 @@ class WwooTagFilterTest {
                 file("block/sand"), List.of("vanilla", WWOO),
                 file("block/mushroom_grow_block"), List.of("vanilla", WWOO),
                 file("block/mangrove_roots_can_grow_through"), List.of("vanilla", WWOO),
-                file("block/mangrove_logs_can_grow_through"), List.of("vanilla", WWOO));
+                file("block/mangrove_logs_can_grow_through"), List.of("vanilla", WWOO),
+                file("block/mangrove_logs"), List.of("vanilla", WWOO));
 
         assertSame(in, WwooTagFilter.filter(in, PACK_ID));
     }
 
     @Test
-    void coversAllFiveUndoneTags() {
+    void coversAllFourUndoneTags() {
         for (String path : List.of("block/snow_layer_cannot_survive_on", "worldgen/biome/spawns_warm_variant_frogs",
-                "worldgen/biome/spawns_cold_variant_frogs", "block/deepslate_ore_replaceables",
-                "block/mangrove_logs")) {
+                "worldgen/biome/spawns_cold_variant_frogs", "block/deepslate_ore_replaceables")) {
             assertTrue(WwooTagFilter.shouldDrop(file(path), WWOO), path);
         }
     }
 
     @Test
     void ignoresNonWwooPacksAndOtherNamespaces() {
-        assertFalse(WwooTagFilter.shouldDrop(file("block/mangrove_logs"), "vanilla"));
-        assertFalse(WwooTagFilter.shouldDrop(file("block/mangrove_logs"), null));
+        assertFalse(WwooTagFilter.shouldDrop(file("block/snow_layer_cannot_survive_on"), "vanilla"));
+        assertFalse(WwooTagFilter.shouldDrop(file("block/snow_layer_cannot_survive_on"), null));
         assertFalse(WwooTagFilter.shouldDrop(
                 ResourceLocation.fromNamespaceAndPath("wythers", "tags/block/dirt.json"), WWOO));
     }

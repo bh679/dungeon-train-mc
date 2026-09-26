@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.StacksBand;
 import games.brennan.dungeontrain.worldgen.OfflineChunkSampler;
+import games.brennan.dungeontrain.worldgen.VanillaOnlySample;
+import net.minecraft.core.registries.Registries;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.WwooDecorationPass;
 import games.brennan.dungeontrain.worldgen.feature.DeferredStructurePlacement;
@@ -114,6 +116,9 @@ public abstract class ChunkGeneratorDecorationMixin {
         if (OfflineChunkSampler.isSampling() && dungeontrain$isDtNamespaceFeature(feature)) {
             return false; // offline sample: DT's corridor and band features belong to the display world only
         }
+        if (VanillaOnlySample.isActive() && !dungeontrain$isVanillaPlacedFeature(level, feature)) {
+            return false; // vanilla Nether/End carriage: BetterEnd/BetterNether inject into vanilla biomes
+        }
         if (dungeontrain$skipDecoration.get() && !dungeontrain$isDtFeature(feature)) {
             return false; // fully-eroded core: skip the vanilla feature (it would be erased anyway)
         }
@@ -207,6 +212,17 @@ public abstract class ChunkGeneratorDecorationMixin {
             return key != null && DungeonTrain.MOD_ID.equals(key.getNamespace());
         } catch (Throwable t) {
             return false;
+        }
+    }
+
+    /** A {@code minecraft:} placed feature, by its registry key. Unreadable → kept (never drop blind). */
+    @Unique
+    private static boolean dungeontrain$isVanillaPlacedFeature(WorldGenLevel level, PlacedFeature feature) {
+        try {
+            return VanillaOnlySample.allows(
+                level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE).getKey(feature));
+        } catch (Throwable t) {
+            return true;
         }
     }
 

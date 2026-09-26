@@ -116,7 +116,17 @@ public final class BuilderRelayUpload {
         // files on disk rather than plumbed through BuilderSave.Written and the save packet: those
         // files are the source of truth for both the builder and the editor call site, and the save
         // that just ran has already written them.
-        String sidecars = TemplateSidecars.collect(written.kind(), written.subKind(), written.id());
+        TemplateSidecars.Collected collected =
+                TemplateSidecars.collectReport(written.kind(), written.subKind(), written.id());
+        String sidecars = collected.doc();
+        if (!collected.dropped().isEmpty()) {
+            // Said out loud: a build that went up without its chest loot or variant pools looks
+            // complete here and arrives hollow everywhere else, and nobody would know why.
+            tell(player, collected.lostContainers()
+                            ? "gui.dungeontrain.builder.profile.sidecars_dropped_loot"
+                            : "gui.dungeontrain.builder.profile.sidecars_dropped",
+                    ChatFormatting.YELLOW, written.id());
+        }
         // And the loot prefabs those sidecars' chest links name — the ones this install authored.
         // Read from the same files, for the same reason; see TemplateLootPrefabs.
         String lootPrefabs = TemplateLootPrefabs.collect(written.kind(), written.subKind(), written.id());

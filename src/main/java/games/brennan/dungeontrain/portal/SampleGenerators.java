@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.density.NetherCoreBiomes;
 import games.brennan.dungeontrain.worldgen.density.VanillaEndBiomeSource;
 import games.brennan.dungeontrain.worldgen.density.VanillaEndBiomes;
@@ -29,12 +30,14 @@ import org.slf4j.Logger;
  *       that mark when each noise chunk is made, so an unmarked copy generates vanilla islands.</li>
  * </ul>
  *
- * <p>Built once per world seed and reused; if either cannot be built, the room falls back to the live
- * generator rather than going without terrain.</p>
+ * <p>Built once per world seed and reused; if either cannot be built, that room has no generator and
+ * stamps as its plain template — never the live generator, which would show the modded look the room
+ * is named against.</p>
  */
 final class SampleGenerators {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final LogFirstN STAND_IN_ERRORS = new LogFirstN(5);
 
     private record Built(long seed, NoiseBasedChunkGenerator nether, NoiseBasedChunkGenerator end) {}
 
@@ -43,22 +46,34 @@ final class SampleGenerators {
     private SampleGenerators() {}
 
     /**
-     * The generator {@code source} samples {@code level} with — {@code live} unless the source is the
-     * vanilla Nether or End and its private generator could be built.
+     * The generator {@code source} samples {@code level} with — {@code live}, except for the vanilla
+     * Nether and End, which get their private generator, or {@code null} when it could not be built.
      */
     static NoiseBasedChunkGenerator forSource(ServerLevel level, PortalChunkTerrain.Source source,
                                               NoiseBasedChunkGenerator live) {
-        if (source != PortalChunkTerrain.Source.NETHER && source != PortalChunkTerrain.Source.END) return live;
+        if (!vanillaOnly(source)) return live;
         Built b = builtFor(level.getServer(), level.getSeed());
-        NoiseBasedChunkGenerator own = source == PortalChunkTerrain.Source.NETHER ? b.nether() : b.end();
-        return own != null ? own : live;
+        return pick(true, source == PortalChunkTerrain.Source.NETHER ? b.nether() : b.end(), live);
+    }
+
+    private static boolean vanillaOnly(PortalChunkTerrain.Source source) {
+        return source == PortalChunkTerrain.Source.NETHER || source == PortalChunkTerrain.Source.END;
+    }
+
+    /**
+     * {@code own} for a vanilla-only room — even when it is {@code null}, since {@code live} would
+     * show the modded look — else {@code live}.
+     */
+    static <T> T pick(boolean vanillaOnly, T own, T live) {
+        return vanillaOnly ? own : live;
     }
 
     /**
      * The stand-in generator for {@code source} in a world with no dimension of its own to sample:
      * {@code standIn} (the vanilla preset's) for every room but the vanilla Nether and End, which get
      * the same vanilla-only biome layouts {@link #forSource} gives them in a live world. The preset's
-     * own Nether and End sources carry the Better mods' biomes just as the live ones do.
+     * own Nether and End sources carry the Better mods' biomes just as the live ones do — so if the
+     * vanilla-only generator cannot be built, {@code null}, never the preset.
      */
     static NoiseBasedChunkGenerator forStandIn(MinecraftServer server, PortalChunkTerrain.Source source,
                                                NoiseBasedChunkGenerator standIn, long seed) {
@@ -74,8 +89,9 @@ final class SampleGenerators {
                     Holder.direct(unmarkedCopy(standIn.generatorSettings().value())));
             }
         } catch (Throwable t) {
-            LOGGER.error("[DungeonTrain] Vanilla {} stand-in generator unavailable; it samples the preset as is",
-                source, t);
+            STAND_IN_ERRORS.error(LOGGER, "[DungeonTrain] Vanilla " + source
+                + " stand-in generator unavailable; the room stamps as its plain template", t);
+            return null;
         }
         return standIn;
     }
@@ -107,7 +123,7 @@ final class SampleGenerators {
             return new NoiseBasedChunkGenerator(NetherCoreBiomes.vanillaNetherSource(server, nether),
                 live.generatorSettings());
         } catch (Throwable t) {
-            LOGGER.error("[DungeonTrain] Vanilla Nether sample generator unavailable; Nether rooms sample the live Nether", t);
+            LOGGER.error("[DungeonTrain] Vanilla Nether sample generator unavailable; vanilla Nether rooms stamp as their plain template", t);
             return null;
         }
     }
@@ -123,7 +139,7 @@ final class SampleGenerators {
             return new NoiseBasedChunkGenerator(new VanillaEndBiomeSource(layout),
                 Holder.direct(unmarkedCopy(live.generatorSettings().value())));
         } catch (Throwable t) {
-            LOGGER.error("[DungeonTrain] Vanilla End sample generator unavailable; End rooms sample the live End", t);
+            LOGGER.error("[DungeonTrain] Vanilla End sample generator unavailable; vanilla End rooms stamp as their plain template", t);
             return null;
         }
     }

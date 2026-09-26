@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.DpiBypassDetectBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -14,7 +15,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 
 /**
- * Surfaces {@link DpiBypassPromptScreen} on the title screen when {@link DpiBypassDetector} finds a
+ * Surfaces {@link DpiBypassPromptScreen} on the title screen when {@link DpiBypassDetectBridge} (the optional DPI Bypass Detect add-on) finds a
  * DPI-bypass tool running — the thing most likely to be standing between this client and the relay.
  *
  * <p>On the TITLE screen for the same reason the sibling prompts are: it is the one place a player
@@ -92,7 +93,7 @@ public final class DpiBypassPromptHandler {
         // Re-check: the player could have opted out from another surface during the delay.
         if (parent == null || mc.screen != parent || !shouldPrompt()) return;
 
-        String tool = DpiBypassDetector.detectNow();
+        String tool = DpiBypassDetectBridge.detectNow();
         if (tool == null) return;
         openedThisSession = true;
         LOGGER.info("[DungeonTrain] DPI-bypass: warning the player about {}", tool);
@@ -104,10 +105,10 @@ public final class DpiBypassPromptHandler {
         if (ClientDisplayConfig.isDpiBypassWarningOptedOut()) return;
         if (!DiscordPresenceClientConfig.isGranted()) return;
 
-        if (!DpiBypassDetector.hasResult()) {
+        if (!DpiBypassDetectBridge.hasResult()) {
             if (!probeStarted) {
                 probeStarted = true;
-                Util.ioPool().execute(DpiBypassDetector::detectNow);
+                Util.ioPool().execute(DpiBypassDetectBridge::detectNow);
             }
             return; // Nothing to decide until the probe lands; the next tick asks again.
         }
@@ -119,12 +120,12 @@ public final class DpiBypassPromptHandler {
 
     /**
      * Whether there is a warning to give. Safe to call from the client thread once
-     * {@link DpiBypassDetector#hasResult()} is true — the probe is cached by then.
+     * {@link DpiBypassDetectBridge#hasResult()} is true — the probe is cached by then.
      */
     private static boolean shouldPrompt() {
         return !ClientDisplayConfig.isDpiBypassWarningOptedOut()
                 && DiscordPresenceClientConfig.isGranted()
-                && DpiBypassDetector.hasResult()
-                && DpiBypassDetector.detectNow() != null;
+                && DpiBypassDetectBridge.hasResult()
+                && DpiBypassDetectBridge.detectNow() != null;
     }
 }

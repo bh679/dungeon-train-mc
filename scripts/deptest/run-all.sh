@@ -10,7 +10,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 # Positive control first: if A fails, every later "failed" result is meaningless.
-"$HERE/run-case.sh" "A - full set (positive control)"                  dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch
+"$HERE/run-case.sh" "A - full set (positive control)"                  dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dbd
 "$HERE/run-case.sh" "B - missing AIN only"                             dt sable ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch
 "$HERE/run-case.sh" "C - missing all five siblings (upgrade path)"      dt sable fp moon bn bclib wover wunder be wwoo cristel bop tb glitch
 "$HERE/run-case.sh" "D - PlayerMob above floor (cascade tolerance)"    dt sable ain ais pmob-new ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch

@@ -76,7 +76,9 @@ public final class BuilderNoteEdits {
             case OK -> Component.translatable("gui.dungeontrain.builder.profile.note.saved").withStyle(ChatFormatting.GREEN);
             case UNKNOWN -> Component.translatable("gui.dungeontrain.builder.profile.gone_short").withStyle(ChatFormatting.YELLOW);
             case FORBIDDEN -> Component.translatable("gui.dungeontrain.builder.profile.not_yours").withStyle(ChatFormatting.YELLOW);
-            case ERROR -> Component.translatable("gui.dungeontrain.builder.profile.action_failed").withStyle(ChatFormatting.RED);
+            // TIMEOUT is only ever produced by fetchBuild, never by a note write — listed so the
+            // switch stays exhaustive, and folded into ERROR because both mean "it didn't save".
+            case ERROR, TIMEOUT -> Component.translatable("gui.dungeontrain.builder.profile.action_failed").withStyle(ChatFormatting.RED);
         };
     }
 
