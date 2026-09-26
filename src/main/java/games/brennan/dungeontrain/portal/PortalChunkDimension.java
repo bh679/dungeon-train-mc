@@ -280,9 +280,12 @@ public final class PortalChunkDimension {
             // taller than a shallow world can stand up, and a sheep in the rows that were cut is a
             // sheep in the bedrock.
             if (y < origin.getY() + 1 || y > origin.getY() + size.getY() - 2) continue;
+            // Copy: the slice's occupant tag is shared. A sampled villager rolls its own pigman chance.
+            CompoundTag occupantNbt = occupant.nbt().copy();
+            games.brennan.dungeontrain.compat.PigmanVillagersBridge.freshRoll(occupantNbt);
             Entity entity = EntityType.loadEntityRecursive(
                 games.brennan.dungeontrain.editor.FrozenMobs.prepareForSpawn(
-                    occupant.nbt(), level, BlockPos.containing(x, y, z)),
+                    occupantNbt, level, BlockPos.containing(x, y, z)),
                 level, spawning -> {
                 spawning.moveTo(x, y, z, spawning.getYRot(), spawning.getXRot());
                 return spawning;

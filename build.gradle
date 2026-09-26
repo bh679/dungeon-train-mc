@@ -465,7 +465,8 @@ dependencies {
     jarJar(group: 'bh679', name: 'dpibypassdetect', version: dpibypassdetect_version)
 
     // Pigman Villagers — 1% of villagers are pigmen (player model + pigman skin + pig sounds).
-    // DT does not compile against it; it is pure mixins. jarJar'd on every platform until its
+    // DT calls PigmanVillagersApi.clearRoll (compat/PigmanVillagersBridge) so villagers stamped from
+    // templates roll their own chance. jarJar'd on every platform until its
     // CurseForge/Modrinth listings exist (see gradle.properties). Flat bh679 Ivy asset
     // pigmanvillagers-neoforge-<v>.jar.
     implementation "bh679:pigmanvillagers:${pigmanvillagers_version}"
