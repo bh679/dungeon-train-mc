@@ -19419,6 +19419,43 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "rare-villager-variant",
+      "version": "0.973.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Not every villager is quite what they seem",
+      "summary": "Keep an eye on the villagers you meet. Once in a while, one of them isn't like the others.",
+      "highlights": [
+        "Rare, and not just on the train",
+        "They still trade like any villager",
+        "Each carriage keeps you guessing"
+      ],
+      "pr": 1579,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "f3-4-debug-panel-band-readout",
+      "version": "0.973.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Debug panel improvements",
+      "summary": "Small improvements to internal debugging tools.",
+      "highlights": [],
+      "pr": 1580,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -297,6 +297,8 @@ public final class CarriageEntitySnapshot {
     private static boolean spawnOne(ServerLevel level, BlockPos shipyardOrigin, CompoundTag entry, int carriagePIdx) {
         CompoundTag nbt = entry.getCompound("n").copy();
         if (nbt.isEmpty()) return false;
+        // A leased build is a template in another world: its villagers roll their own pigman chance.
+        games.brennan.dungeontrain.compat.PigmanVillagersBridge.freshRoll(nbt);
         ListTag p = entry.getList("p", Tag.TAG_DOUBLE);
         if (p.size() < 3) return false;
         Vec3 at = new Vec3(
