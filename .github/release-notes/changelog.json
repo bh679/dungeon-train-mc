@@ -19473,6 +19473,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "end-scenery-as-intended",
+      "version": "0.974.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "The far stretches look as they should",
+      "summary": "Some of the stranger places the line runs through were missing the scenery they borrow, showing plainer ground and a few things that didn't belong. They now look as intended, and a world grows the same way each time you ride through it. The End itself is richer in new worlds.",
+      "highlights": [
+        "Borrowed scenery shows up as intended.",
+        "The same world, the same view, every ride.",
+        "Applies to new worlds."
+      ],
+      "pr": 1583,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
