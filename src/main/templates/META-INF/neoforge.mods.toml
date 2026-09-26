@@ -26,6 +26,16 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Sable Pathfinder — mobs path across Sable sub-levels. Required on Modrinth (listing relation +
+# .mrpack) but `optional` here: it isn't on CurseForge, and a hard dep would stop CF players
+# launching. The floor still applies whenever it is installed.
+[[dependencies.${mod_id}]]
+    modId="sable_pathfinder"
+    type="optional"
+    versionRange="[${sablepathfinder_min_version},)"
+    ordering="NONE"
+    side="BOTH"
+
 # Fast Paintings (+ its Moonlight library) — third-party, REQUIRED. It replaces painting
 # entities with blocks; templates and shared carriages carry those blocks, which are air
 # without the mod. Floors, not exact pins: the block's three state properties are all DT

@@ -601,6 +601,17 @@
       "required": true,
       "modrinth_project": "particle-effects",
       "modrinth_version": "AH6BZ7jO"
+    },
+    {
+      "name": "Sable Pathfinder",
+      "slug": "sable-pathfinder",
+      "required": true,
+      "dependency_type": "required",
+      "version": "1.4.0",
+      "gradle_property": "sablepathfinder_min_version",
+      "modrinth_only": true,
+      "modrinth_project": "sable-pathfinder",
+      "modrinth_version": "U5bZr5zH"
     }
   ],
   "curseforge_relations": [
