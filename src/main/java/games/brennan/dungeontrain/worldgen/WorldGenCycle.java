@@ -522,6 +522,17 @@ public record WorldGenCycle(long startX, int owGap,
         return u < 0L ? -1 : layout.indexAt(u);
     }
 
+    /** Public read of {@link #slotAt}: the layout slot at {@code worldX}, or {@code -1} (no layout, or before the anchor). */
+    public int slotIndexAt(int worldX) {
+        return layout == null ? -1 : slotAt(worldX);
+    }
+
+    /** Base-coordinate offset into the slot {@link #slotIndexAt} reports, or {@code -1} when there is none. */
+    public long slotLocal(int worldX) {
+        int i = slotIndexAt(worldX);
+        return i < 0 ? -1L : baseAt(worldX) - layout.start(i);
+    }
+
     /** World X of base coordinate {@code u} in the run {@code worldX} is in — the inverse of {@link #baseAt}. */
     private long worldOf(int worldX, long u) {
         int k = runAt(worldX);

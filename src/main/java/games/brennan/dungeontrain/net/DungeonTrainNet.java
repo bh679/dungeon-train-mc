@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "94";
+    public static final String PROTOCOL_VERSION = "95";
 
     private DungeonTrainNet() {}
 
@@ -336,6 +336,7 @@ public final class DungeonTrainNet {
         registrar.playToClient(FreePlayCausePacket.TYPE, FreePlayCausePacket.STREAM_CODEC, FreePlayCausePacket::handle);
         registrar.playToClient(TrainDebugSyncPacket.TYPE, TrainDebugSyncPacket.STREAM_CODEC, TrainDebugSyncPacket::handle);
         registrar.playToClient(TrainDebugCarriagePacket.TYPE, TrainDebugCarriagePacket.STREAM_CODEC, TrainDebugCarriagePacket::handle);
+        registrar.playToClient(TrainDebugBandPacket.TYPE, TrainDebugBandPacket.STREAM_CODEC, TrainDebugBandPacket::handle);
         // Where a save's relay upload has got to — drives the editor screen's "Uploading…" note and
         // its refresh once the build lands. See BuilderUploadStatusPacket.
         registrar.playToClient(BuilderUploadStatusPacket.TYPE, BuilderUploadStatusPacket.STREAM_CODEC, BuilderUploadStatusPacket::handle);
