@@ -93,6 +93,9 @@ resolve() {
     # model Modrinth/manual, loading from the nested copy.
     sd)       cached "bh679/streamdetect"            "$(prop streamdetect_version)" ;;
     dbd)      cached "bh679/dpibypassdetect"         "$(prop dpibypassdetect_version)" ;;
+    # Pigman Villagers — jarJar'd inside the DT jar; present (Case A) proves the nested copy is
+    # skipped in favour of a top-level one.
+    pv)       cached "bh679/pigmanvillagers"         "$(prop pigmanvillagers_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;
     # Above the floor: whatever the cascade has moved playermob_version to. When those two
