@@ -1907,6 +1907,8 @@
   "gui.dungeontrain.options.backpack_button.tip": "Mostra o botão de abrir/fechar do Edible Backpacks na tela do inventário, acima do slot da mão secundária. Desligar só esconde o botão — os painéis da mochila continuam abrindo com a tecla do Edible Backpacks, que você pode vincular em Controles. Onde o botão fica é definido em config/ediblebackpacks-client.toml.",
   "gui.dungeontrain.options.snapshot_chat_log": "Registro de fotos no chat",
   "gui.dungeontrain.options.snapshot_chat_log.tip": "Escreve uma linha no chat cada vez que uma foto de viagem é capturada automaticamente, mostrando a tag e o motivo. Um auxílio de depuração; desligado por padrão.",
+  "gui.dungeontrain.options.dh_adjustments": "Ajustar Distant Horizons",
+  "gui.dungeontrain.options.dh_adjustments.tip": "Permite que o Dungeon Train esconda o terreno distante do Distant Horizons onde ele contradiria o mundo ao seu redor ou revelaria o que há mais adiante nos trilhos. Desligado deixa o Distant Horizons exatamente como você configurou. Não faz nada se o Distant Horizons não estiver instalado.",
   "gui.dungeontrain.options.snapshot_max_res": "Resolução máx. da foto",
   "gui.dungeontrain.options.snapshot_max_res.tip": "Limite superior da resolução das fotos de viagem. AUTO usa 1080p, subindo para 1440p/2160p com Distant Horizons + shaders ou gráficos Fabulosos.",
   "gui.dungeontrain.options.snapshot_max_res.auto": "AUTO",

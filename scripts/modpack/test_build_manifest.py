@@ -170,12 +170,13 @@ def test_real_config_ships_ambientsounds_enabled_by_default():
 def test_real_config_ships_optins_disabled_by_default():
     """Guard: Mouse Tweaks / Distant Horizons ship OFF by default (opt-in).
 
-    Distant Horizons is pinned to a 2.x file (file 7350266) — 3.x crashes on DT world entry.
+    Distant Horizons is pinned to 3.3.2 (file 8943824). 3.0.x crashed the JVM on DT world entry;
+    3.3.2 boots and enters a DT world clean, and DT's fog wall needs its API 7.2.
     Jade is no longer opt-in — see test_real_config_ships_jade_with_sable_compat_enabled.
     """
     files = _render_real_config()
     assert {"projectID": 60089, "fileID": 5637846, "required": False} in files, files   # Mouse Tweaks
-    assert {"projectID": 508933, "fileID": 7350266, "required": False} in files, files  # Distant Horizons 2.x
+    assert {"projectID": 508933, "fileID": 8943824, "required": False} in files, files  # Distant Horizons 3.3.2
 
 
 def test_real_config_ships_enchantment_descriptions_enabled_on_a_clearable_floor():

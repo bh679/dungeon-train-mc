@@ -866,6 +866,8 @@
       "gui.dungeontrain.options.cinematic_hotkey.tip",
       "gui.dungeontrain.options.backpack_button",
       "gui.dungeontrain.options.backpack_button.tip",
+      "gui.dungeontrain.options.dh_adjustments",
+      "gui.dungeontrain.options.dh_adjustments.tip",
       "gui.dungeontrain.editor_settings.command_menu",
       "gui.dungeontrain.editor_settings.command_menu.tip",
       "gui.dungeontrain.editor_settings.template_blocks_menu",

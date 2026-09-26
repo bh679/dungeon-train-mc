@@ -1869,6 +1869,8 @@
   "gui.dungeontrain.options.backpack_button.tip": "在你的物品欄畫面上、副手格位上方顯示 Edible Backpacks 的開關按鈕。關閉只會隱藏按鈕——你的背包面板仍可用 Edible Backpacks 的按鍵開啟，該按鍵可在「控制」中綁定。按鈕的位置在 config/ediblebackpacks-client.toml 中設定。",
   "gui.dungeontrain.options.snapshot_chat_log": "照片紀錄聊天提示",
   "gui.dungeontrain.options.snapshot_chat_log.tip": "每次自動拍下旅程照片時，在聊天欄輸出一行，顯示它的標籤和原因。除錯用途，預設關閉。",
+  "gui.dungeontrain.options.dh_adjustments": "調整 Distant Horizons",
+  "gui.dungeontrain.options.dh_adjustments.tip": "允許 Dungeon Train 在 Distant Horizons 的遠景地形會與你周圍的世界矛盾、或會提前洩露鐵軌前方景象的地方將其隱藏。關閉後 Distant Horizons 將完全保持你的設定。未安裝 Distant Horizons 時無效。",
   "gui.dungeontrain.options.snapshot_max_res": "照片最高解析度",
   "gui.dungeontrain.options.snapshot_max_res.tip": "旅程照片解析度的上限。自動模式使用 1080p，在啟用 Distant Horizons 搭配光影或「華麗」畫質時會升到 1440p/2160p。",
   "gui.dungeontrain.options.snapshot_max_res.auto": "自動",

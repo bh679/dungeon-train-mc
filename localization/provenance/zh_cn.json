@@ -1869,6 +1869,8 @@
   "gui.dungeontrain.options.backpack_button.tip": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "09901e1e891ac138"},
   "gui.dungeontrain.options.snapshot_chat_log": {"author": "老本願", "reviewer": "老本願", "source_hash": "b4df149dbfd851d0"},
   "gui.dungeontrain.options.snapshot_chat_log.tip": {"author": "老本願", "reviewer": "老本願", "source_hash": "30eaac101173a876"},
+  "gui.dungeontrain.options.dh_adjustments": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "21a31594f8fc9c90"},
+  "gui.dungeontrain.options.dh_adjustments.tip": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "e4a85494ce1b0790"},
   "gui.dungeontrain.options.snapshot_max_res": {"author": "老本願", "reviewer": "老本願", "source_hash": "5dc46e83d5a9398d"},
   "gui.dungeontrain.options.snapshot_max_res.tip": {"author": "老本願", "reviewer": "老本願", "source_hash": "2c7eca633dc8536c"},
   "gui.dungeontrain.options.snapshot_max_res.auto": {"author": "Opus 5 (Claude)", "reviewer": "老本願", "source_hash": "6ea56fae9eacbb0e"},

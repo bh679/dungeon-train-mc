@@ -34,6 +34,11 @@ public final class ClientVoidBand {
         games.brennan.dungeontrain.worldgen.VanillaBiomeTwins.setClientWorldHasTrain(starts);
     }
 
+    /** Whether the connected world runs the train system (and so its bands) — false until synced. */
+    public static boolean startsWithTrain() {
+        return startsWithTrain;
+    }
+
     /** Reset to safe defaults on disconnect so a band never leaks into the next world. */
     public static void reset() {
         carriageLength = CarriageDims.DEFAULT_LENGTH;

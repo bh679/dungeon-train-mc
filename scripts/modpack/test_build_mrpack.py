@@ -354,7 +354,7 @@ def test_real_config_every_mod_has_modrinth_pins():
     assert sable["modrinth_version"] == "U678xqle", sable  # Sable 2.0.5+mc1.21.1
     by_slug = {o["slug"]: o for o in cfg["optional_mods"]}
     assert by_slug["jade"]["modrinth_version"] == "yd8FKCmx"            # Jade 15.10.5 (Sable compat)
-    assert by_slug["distant-horizons"]["modrinth_version"] == "75PXmyqH"  # DH 2.4.3-b (2.x only)
+    assert by_slug["distant-horizons"]["modrinth_version"] == "Ez3cx7Yd"  # DH 3.3.2 (fog-wall API 7.2)
     # the two slugs whose Modrinth project differs from the CurseForge slug
     assert by_slug["ferritecore"]["modrinth_project"] == "ferrite-core"
     assert by_slug["distant-horizons"]["modrinth_project"] == "distanthorizons"

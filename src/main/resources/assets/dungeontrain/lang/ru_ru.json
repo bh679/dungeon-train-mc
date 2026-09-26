@@ -1950,6 +1950,8 @@
   "gui.dungeontrain.options.backpack_button.tip": "Отображать кнопку в инвентаре для скрытия/открытия съедобного рюкзака над слотом для второй руки. Выключение спрячет кнопку, но инвентарь рюкзака всё ещё можно открыть при нажатии на кнопку Edible Backpacks, которую можно найти в Управлении. Расположение кнопки можно поменять в файле config/ediblebackpacks-client.toml.",
   "gui.dungeontrain.options.snapshot_chat_log": "Сообщения о фото в чате",
   "gui.dungeontrain.options.snapshot_chat_log.tip": "Выводит в чат строку при каждом автоматическом снимке поездки, с его тегом и причиной. Отладочная функция; по умолчанию выключена.",
+  "gui.dungeontrain.options.dh_adjustments": "Настраивать Distant Horizons",
+  "gui.dungeontrain.options.dh_adjustments.tip": "Разрешает Dungeon Train скрывать дальний ландшафт Distant Horizons там, где он противоречил бы окружающему миру или выдавал бы, что ждёт дальше по путям. Выключено — Distant Horizons остаётся ровно таким, как вы его настроили. Ничего не делает, если Distant Horizons не установлен.",
   "gui.dungeontrain.options.snapshot_max_res": "Макс. разрешение фото",
   "gui.dungeontrain.options.snapshot_max_res.tip": "Верхний предел разрешения фотографий поездки. АВТО использует 1080p и поднимается до 1440p/2160p при Distant Horizons + шейдерах или графике «Роскошная».",
   "gui.dungeontrain.options.snapshot_max_res.auto": "АВТО",
