@@ -119,14 +119,17 @@ public final class PortalChunkDimension {
      */
     public static void frame(ServerLevel level, PortalStructure structure, CarriageDims dims, int pairKey) {
         if (!structure.roomSize().equals(ChunkFrame.ROOM_SIZE)) return;
+        // The room's own variant index, so a test's reseed (the structure's salt) re-rolls the frame
+        // too; unsalted it is a pure function of the pair, as in play.
+        int rollIndex = structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey);
         java.util.Optional<ChunkFramePlacer.Picked> frame =
-            ChunkFramePlacer.frameFor(level, structure.roomName(), pairKey);
+            ChunkFramePlacer.frameFor(level, structure.roomName(), pairKey, rollIndex);
         if (frame.isEmpty()) return;
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
         // Without the seal planes: the frame may dress the mouth's plane, and only the corridor and
         // its plug are kept — which is what cuts the doorway through it.
         ChunkFramePlacer.place(level, frame.get(), structure.roomOrigin(dims, layout),
-            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), pairKey);
+            PortalCarriageBuilder.corridorMask(structure, dims, /*withSeals*/ false), rollIndex);
     }
 
     // ---- writing -------------------------------------------------------------

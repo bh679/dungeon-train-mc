@@ -68,12 +68,12 @@ public final class ChunkFramePlacer {
      * {@code roomName}'s frame for pair {@code pairKey}, or empty when no frame dresses it.
      *
      * <p>The candidates are every frame whose {@link ChunkFrameMeta} names this room (or every room),
-     * picked by their weights on a per-pair roll, so a room keeps its frame every time it is
-     * re-stamped.</p>
+     * picked by their weights on {@code rollIndex} — the room's variant index, fixed for a live pair
+     * so a room keeps its frame every time it is re-stamped, and salted by a test's reseed.</p>
      */
-    public static Optional<Picked> frameFor(ServerLevel level, String roomName, int pairKey) {
+    public static Optional<Picked> frameFor(ServerLevel level, String roomName, int pairKey, int rollIndex) {
         String name = FORCED.get(pairKey);
-        if (name == null) name = pick(roomName, level.getSeed() ^ FRAME_SALT ^ ((long) pairKey << 20));
+        if (name == null) name = pick(roomName, level.getSeed() ^ FRAME_SALT ^ ((long) rollIndex << 20));
         if (name == null) return Optional.empty();
         Optional<ChunkFrameTemplate> template = ChunkFrameStore.get(level, name);
         if (template.isEmpty()) {
@@ -111,14 +111,15 @@ public final class ChunkFramePlacer {
     /**
      * Write {@code picked} around and into the room at {@code roomOrigin}.
      *
-     * <p>A cell with block variants rolls one — per pair, so a room keeps its roll every time it is
-     * re-stamped — and the roll stands in for the template's own block there. An empty roll is air,
-     * which here as anywhere in a frame means "leave what is there".</p>
+     * <p>A cell with block variants rolls one on {@code rollIndex} — the room's variant index, so a
+     * live room keeps its roll every time it is re-stamped and a test's reseed rolls afresh — and the
+     * roll stands in for the template's own block there. An empty roll is air, which here as anywhere
+     * in a frame means "leave what is there".</p>
      *
      * @param mask the pair's corridors and plugs, never written
      * @return cells changed
      */
-    public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int pairKey) {
+    public static int place(ServerLevel level, Picked picked, BlockPos roomOrigin, PortalCorridorMask mask, int rollIndex) {
         ChunkFrameTemplate frame = picked.template();
         TrackVariantBlocks variants = picked.variants();
         long seed = level.getSeed();
@@ -132,7 +133,7 @@ public final class ChunkFramePlacer {
                     BlockState state = frame.at(x, y, z);
                     CompoundTag blockEntity = frame.blockEntityAt(x, y, z);
                     if (variants.statesAt(local.set(x, y, z)) != null) {
-                        VariantState roll = variants.resolve(local.immutable(), seed, pairKey);
+                        VariantState roll = variants.resolve(local.immutable(), seed, rollIndex);
                         if (roll == null || roll.isMob()) continue;
                         state = CarriageVariantBlocks.isEmptyPlaceholder(roll.state()) ? null : roll.state();
                         blockEntity = roll.blockEntityNbt();
