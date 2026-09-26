@@ -37,6 +37,25 @@ final class BandLocator {
         return nextBandStartX(WorldGenCycle.fromConfig(), x -> target.test().test(overworld, x), fromX);
     }
 
+    /**
+     * Entry X of the {@code target} band's occurrence in lap {@code lap} ({@link WorldGenCycle#cycleIndex}),
+     * for {@code /dtp <band> <distance> <lap>}. Empty when that lap has no such band (e.g. BetterNether on
+     * an even lap) or the lap starts beyond int world-X.
+     */
+    static OptionalInt bandStartXInLap(ServerLevel overworld, DtpTarget target, int lap) {
+        return bandStartXInLap(WorldGenCycle.fromConfig(), x -> target.test().test(overworld, x), lap);
+    }
+
+    /** Pure form of {@link #bandStartXInLap(ServerLevel, DtpTarget, int)} over any column test. */
+    static OptionalInt bandStartXInLap(WorldGenCycle cycle, IntPredicate inBand, int lap) {
+        long lapStart = cycle.lapStartX(lap);
+        if (lapStart < 0L || lapStart > Integer.MAX_VALUE) return OptionalInt.empty();
+        // One column back, so a band opening exactly on the lap boundary counts as this lap's.
+        OptionalInt entry = nextBandStartX(cycle, inBand, (int) lapStart - 1);
+        if (entry.isEmpty() || cycle.cycleIndex(entry.getAsInt()) != lap) return OptionalInt.empty();
+        return entry;
+    }
+
     /** Pure form of {@link #nextBandStartX(ServerLevel, DtpTarget, int)} over any column test. */
     static OptionalInt nextBandStartX(WorldGenCycle cycle, IntPredicate inBand, int fromX) {
         long period = cycle.period();

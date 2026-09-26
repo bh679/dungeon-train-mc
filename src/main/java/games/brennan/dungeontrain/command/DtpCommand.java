@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -30,7 +31,9 @@ import java.util.OptionalInt;
  * player to world-X {@code x} and guarantees a train is there to land on.
  * {@code /dtp <band>} (every phase token and alias, plus the styled occurrences — see
  * {@link DtpTarget}) does the same for the next occurrence of that band ahead of the player — see
- * {@link BandLocator}.
+ * {@link BandLocator}; {@code /dtp <band> <distance> <lap>} instead picks that band's occurrence in
+ * lap {@code lap} (0-based {@link games.brennan.dungeontrain.worldgen.WorldGenCycle#cycleIndex}, the
+ * same numbering {@code /dungeontrain debug overworld-laps} prints), wherever the player is.
  *
  * <p>Vanilla {@code /tp} (and a bare walk) can outrun the train —
  * {@link games.brennan.dungeontrain.train.TrainCarriageAppender} only
@@ -94,13 +97,19 @@ public final class DtpCommand {
     /** {@code /dtp <band>}: literal children win over the {@code x} double argument, so numeric use is unaffected. */
     private static LiteralArgumentBuilder<CommandSourceStack> bandLiteral(DtpTarget target) {
         return Commands.literal(target.token())
-            .executes(ctx -> runBand(ctx.getSource(), target, BAND_ENTRY_INSET))
+            .executes(ctx -> runBand(ctx.getSource(), target, BAND_ENTRY_INSET, OptionalInt.empty()))
             .then(Commands.argument("distance", DoubleArgumentType.doubleArg())
-                .executes(ctx -> runBand(ctx.getSource(), target, DoubleArgumentType.getDouble(ctx, "distance"))));
+                .executes(ctx -> runBand(ctx.getSource(), target, DoubleArgumentType.getDouble(ctx, "distance"), OptionalInt.empty()))
+                .then(Commands.argument("lap", IntegerArgumentType.integer(0))
+                    .executes(ctx -> runBand(ctx.getSource(), target, DoubleArgumentType.getDouble(ctx, "distance"),
+                        OptionalInt.of(IntegerArgumentType.getInteger(ctx, "lap"))))));
     }
 
-    /** Teleport {@code distance} blocks past the entry of the next {@code target} band ahead of the player, via the normal {@link #run} path. */
-    private static int runBand(CommandSourceStack source, DtpTarget target, double distance) {
+    /**
+     * Teleport {@code distance} blocks past the entry of a {@code target} band, via the normal {@link #run}
+     * path: the next one ahead of the player, or — with {@code lap} — that lap's occurrence.
+     */
+    private static int runBand(CommandSourceStack source, DtpTarget target, double distance, OptionalInt lap) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -108,9 +117,14 @@ public final class DtpCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
-        OptionalInt entry = BandLocator.nextBandStartX(source.getServer().overworld(), target, player.getBlockX());
+        ServerLevel overworld = source.getServer().overworld();
+        OptionalInt entry = lap.isPresent()
+            ? BandLocator.bandStartXInLap(overworld, target, lap.getAsInt())
+            : BandLocator.nextBandStartX(overworld, target, player.getBlockX());
         if (entry.isEmpty()) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.package.dtp_band_not_found", target.displayName()));
+            source.sendFailure(lap.isPresent()
+                ? Component.translatable("chat.dungeontrain.package.dtp_band_not_found_in_lap", target.displayName(), lap.getAsInt())
+                : Component.translatable("chat.dungeontrain.package.dtp_band_not_found", target.displayName()));
             return 0;
         }
         return run(source, entry.getAsInt() + distance);

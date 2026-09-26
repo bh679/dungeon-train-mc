@@ -2928,6 +2928,7 @@
   "chat.dungeontrain.package.spawntrain_failed": "falha no spawnTrain: %s: %s",
   "chat.dungeontrain.package.teleporting_x_spawning_train": "Teletransportando para X=%s — gerando um trem lá agora; você vai cair na prancha assim que ele se assentar. Dificuldade definida no nível %s para combinar.",
   "chat.dungeontrain.package.dtp_band_not_found": "Nenhuma faixa %s à frente — ela pode estar desativada na configuração.",
+  "chat.dungeontrain.package.dtp_band_not_found_in_lap": "Nenhuma faixa %s na volta %s — essa volta pode não ter uma, ou ela pode estar desativada na configuração.",
   "chat.dungeontrain.train.spawned_fresh_train_track": "Um trem novo foi gerado no trilho em X=%s (id do navio %s, semeado com %s vagões / %s blocos, velocidade +X %s m/s) — você vai cair na prancha assim que ele se assentar. O trem anterior foi excluído; a dificuldade voltou à escala automática e %s vagão(ões) da comunidade lembrado(s) podem aparecer de novo. Use '/dungeontrain carriages <count>' para mudar a janela de vagões.",
   "chat.dungeontrain.train.train_speed_set_m": "Velocidade do trem definida em %s m/s (%s %s ativo(s) atualizado(s))",
   "chat.dungeontrain.train.default_carriages_set_appender": "Vagões padrão definidos em %s. O anexador vai estender ou reduzir sua janela necessária no próximo tick conforme o jogador cruza os limites de pIdx.",

@@ -2928,6 +2928,7 @@
   "chat.dungeontrain.package.spawntrain_failed": "échec de spawnTrain : %s : %s",
   "chat.dungeontrain.package.teleporting_x_spawning_train": "Téléportation à X=%s — un train y apparaît maintenant ; vous atterrirez sur le plateau une fois qu'il sera stabilisé. Difficulté réglée au palier %s en conséquence.",
   "chat.dungeontrain.package.dtp_band_not_found": "Aucune bande %s devant toi — elle est peut-être désactivée dans la configuration.",
+  "chat.dungeontrain.package.dtp_band_not_found_in_lap": "Aucune bande %s au tour %s — ce tour n'en a peut-être pas, ou elle est désactivée dans la configuration.",
   "chat.dungeontrain.train.spawned_fresh_train_track": "Nouveau train apparu sur la voie à X=%s (id de vaisseau %s, amorcé avec %s wagons / %s blocs, vitesse +X %s m/s) — vous atterrirez sur le plateau une fois qu'il sera stabilisé. Le train précédent a été supprimé ; la difficulté est de retour en échelle automatique et %s wagon(s) communautaire(s) mémorisé(s) peuvent réapparaître. Utilisez '/dungeontrain carriages <count>' pour changer la fenêtre de wagons.",
   "chat.dungeontrain.train.train_speed_set_m": "Vitesse du train réglée à %s m/s (%s %s actif(s) mis à jour)",
   "chat.dungeontrain.train.default_carriages_set_appender": "Nombre de wagons par défaut réglé à %s. L'appender étendra ou réduira sa fenêtre nécessaire au prochain tick lorsque le joueur franchira les limites de pIdx.",
