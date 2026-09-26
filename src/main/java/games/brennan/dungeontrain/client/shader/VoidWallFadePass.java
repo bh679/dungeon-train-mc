@@ -50,7 +50,8 @@ import java.nio.ByteBuffer;
  * <h2>How</h2>
  * <ul>
  *   <li>{@code AFTER_SKY}: the colour buffer is copied — the sky, and nothing drawn over it yet.</li>
- *   <li>{@code AFTER_WEATHER}: the scene depth is copied, as {@link PostFogPass} does.</li>
+ *   <li>{@code AFTER_WEATHER}: the scene depth is copied, as {@link PostFogPass} does (under a shader
+ *       pack it is copied from the main target at {@code AFTER_LEVEL} instead).</li>
  *   <li>{@code AFTER_LEVEL}: a full-screen quad rebuilds each pixel's camera-relative position from the
  *       vanilla depth, or from Distant Horizons' own depth texture where vanilla drew nothing (DH writes
  *       its LODs over the frame without touching vanilla depth), and paints the saved sky over it when
@@ -96,6 +97,10 @@ public final class VoidWallFadePass {
     private static final Matrix4f dhInvProj = new Matrix4f();
     private static volatile double dhReach;
     private static volatile long dhPublishedAt;
+    /** Under a pack: the projection Iris draws DH with, inverted. */
+    private static final Matrix4f packDhInvProj = new Matrix4f();
+    /** Whether the last pack frame could read DH's depth — read from DH's culling threads, hence volatile. */
+    private static volatile boolean packDhReadable;
 
     private VoidWallFadePass() {}
 
@@ -132,6 +137,14 @@ public final class VoidWallFadePass {
         dhPublishedAt = depthTexture != 0 ? System.nanoTime() : 0L;
     }
 
+    /**
+     * Whether DH is hidden by the sky pass under a shader pack — DH is drawing and Iris' projection for it
+     * was found. When not, the pass cannot place DH's pixels and {@code ClientVoidWall} culls DH instead.
+     */
+    public static boolean readsDistantHorizonsUnderPack() {
+        return packDhReadable;
+    }
+
     private static boolean dhFresh() {
         long at = dhPublishedAt;
         return at != 0L && System.nanoTime() - at < DH_FRESH_NANOS;
@@ -159,15 +172,26 @@ public final class VoidWallFadePass {
             // copied at AFTER_LEVEL instead, and the shader finds the sky in it.
             skyCaptured = packFrame || copyBound(sky);
         } else if (stage == RenderLevelStageEvent.Stage.AFTER_WEATHER) {
-            if (skyCaptured) depthCaptured = copyBound(depth);
+            // Under a pack the framebuffer bound here is one of the pack's, often with no depth attachment,
+            // so a copy silently fails and leaves the last good depth in place — a ghost of an old view.
+            // The pack's scene depth is copied from the main target at AFTER_LEVEL instead.
+            if (skyCaptured) depthCaptured = packFrame || copyBound(depth);
         } else if (stage == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
             boolean ready = skyCaptured && depthCaptured;
             skyCaptured = false;
             depthCaptured = false;
-            if (ready && packFrame) ready = copyBound(sky);
-            // Under a pack DH draws into the pack's buffers and its own depth texture goes stale — reading
-            // it would paint a ghost of an earlier view. DH is culled instead (ClientVoidWall).
-            if (ready) draw(event, dhFresh() && !packFrame);
+            if (ready && packFrame) {
+                Minecraft.getInstance().getMainRenderTarget().bindWrite(false);
+                ready = copyBound(sky) && copyBound(depth);
+            }
+            // Under a pack DH still fills its own depth texture, but draws it with Iris' projection (forward
+            // Z) rather than the one it publishes. Without that projection DH is culled (ClientVoidWall).
+            boolean dh = dhFresh();
+            if (packFrame) {
+                packDhReadable = available() && dh && IrisDhDepth.inverseProjection(packDhInvProj);
+                dh = packDhReadable;
+            }
+            if (ready) draw(event, dh);
         }
     }
 
@@ -191,25 +215,30 @@ public final class VoidWallFadePass {
 
         Matrix4f invProj = new Matrix4f(event.getProjectionMatrix()).invert();
         Matrix4f invView = new Matrix4f(event.getModelViewMatrix()).invert();
-        shader.getUniform("InvProj").set(invProj);
-        shader.getUniform("InvView").set(invView);
-        synchronized (dhInvProj) {
-            shader.getUniform("DhInvProj").set(dhInvProj);
+        shader.safeGetUniform("InvProj").set(invProj);
+        shader.safeGetUniform("InvView").set(invView);
+        if (packFrame) {
+            shader.safeGetUniform("DhInvProj").set(packDhInvProj);
+        } else {
+            synchronized (dhInvProj) {
+                shader.safeGetUniform("DhInvProj").set(dhInvProj);
+            }
         }
-        shader.getUniform("HasDh").set(dh ? 1 : 0);
-        shader.getUniform("DhReverseZ").set(dhReverseZ ? 1 : 0);
-        shader.getUniform("DhZeroToOne").set(dhZeroToOne ? 1 : 0);
-        shader.getUniform("CullX").set(wall.hasCull() ? (float) (wall.cullX() - cam.x) : NONE);
-        shader.getUniform("VeilX").set(wall.hasVeil() ? (float) (wall.veilX() - cam.x) : NONE);
-        shader.getUniform("Strength").set((float) wall.veilStrength());
-        shader.getUniform("Corridor").set(
+        shader.safeGetUniform("HasDh").set(dh ? 1 : 0);
+        // Iris draws DH with an ordinary perspective: forward Z, -1..1.
+        shader.safeGetUniform("DhReverseZ").set(!packFrame && dhReverseZ ? 1 : 0);
+        shader.safeGetUniform("DhZeroToOne").set(!packFrame && dhZeroToOne ? 1 : 0);
+        shader.safeGetUniform("CullX").set(wall.hasCull() ? (float) (wall.cullX() - cam.x) : NONE);
+        shader.safeGetUniform("VeilX").set(wall.hasVeil() ? (float) (wall.veilX() - cam.x) : NONE);
+        shader.safeGetUniform("Strength").set((float) wall.veilStrength());
+        shader.safeGetUniform("Corridor").set(
             (float) (trainY - 2 - cam.y), (float) (trainY + CORRIDOR_HEADROOM - cam.y),
             (float) (0 - cam.z), (float) (CarriageDims.DEFAULT_WIDTH - cam.z));
-        shader.getUniform("CloudY").set((float) (level.effects().getCloudHeight() - cam.y));
-        shader.getUniform("SearchSky").set(packFrame ? 1 : 0);
-        shader.getUniform("TexelY").set(1.0F / Math.max(1, mc.getMainRenderTarget().height));
+        shader.safeGetUniform("CloudY").set((float) (level.effects().getCloudHeight() - cam.y));
+        shader.safeGetUniform("SearchSky").set(packFrame ? 1 : 0);
+        shader.safeGetUniform("TexelY").set(1.0F / Math.max(1, mc.getMainRenderTarget().height));
         float[] fog = RenderSystem.getShaderFogColor();
-        shader.getUniform("FogColor").set(fog[0], fog[1], fog[2], 1.0F);
+        shader.safeGetUniform("FogColor").set(fog[0], fog[1], fog[2], 1.0F);
 
         RenderSystem.setShader(() -> shader);
         RenderSystem.setShaderTexture(0, sky.id);

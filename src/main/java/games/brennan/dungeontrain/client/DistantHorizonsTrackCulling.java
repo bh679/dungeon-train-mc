@@ -4,6 +4,7 @@ import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.interfaces.override.rendering.IDhApiCullingFrustum;
 import com.seibel.distanthorizons.api.objects.math.DhApiMat4f;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
+import games.brennan.dungeontrain.client.shader.VoidWallFadePass;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 
 /**
@@ -41,7 +42,7 @@ final class DistantHorizonsTrackCulling implements IDhApiCullingFrustum {
     public boolean intersects(int lodBlockPosMinX, int lodBlockPosMinZ, int lodBlockWidth, int lodDetailLevel) {
         if (ClientDisplayConfig.isDistantHorizonsAdjustmentsEnabled()) {
             double maxX = (double) lodBlockPosMinX + lodBlockWidth;
-            boolean hide = ShaderCompat.active()
+            boolean hide = ShaderCompat.active() && !VoidWallFadePass.readsDistantHorizonsUnderPack()
                     ? ClientVoidWall.hidesDistantHorizonsUnderPack(lodBlockPosMinX, maxX,
                             lodBlockPosMinZ, (double) lodBlockPosMinZ + lodBlockWidth)
                     : ClientVoidWall.plane().hidesTerrain(lodBlockPosMinX, maxX);
