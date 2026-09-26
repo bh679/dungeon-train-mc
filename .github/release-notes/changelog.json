@@ -19344,6 +19344,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dtp-band-lap",
+      "version": "0.973.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Jump to a stretch on any lap",
+      "summary": "Operators pointing /dtp at a kind of stretch by name can now say which lap of the line they want it on, and without one it takes you to the first lap's \u2014 the same place wherever you run it from.",
+      "highlights": [],
+      "pr": 1576,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
