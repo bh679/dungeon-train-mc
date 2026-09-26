@@ -1,0 +1,22 @@
+{
+  "vertex": "dungeontrain:post_fog",
+  "fragment": "dungeontrain:void_wall_fade",
+  "samplers": [
+    { "name": "Sampler0" },
+    { "name": "Sampler1" },
+    { "name": "Sampler2" }
+  ],
+  "uniforms": [
+    { "name": "InvProj", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+    { "name": "DhInvProj", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+    { "name": "InvView", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+    { "name": "HasDh", "type": "int", "count": 1, "values": [ 0 ] },
+    { "name": "DhReverseZ", "type": "int", "count": 1, "values": [ 0 ] },
+    { "name": "DhZeroToOne", "type": "int", "count": 1, "values": [ 0 ] },
+    { "name": "CullX", "type": "float", "count": 1, "values": [ 1.0e9 ] },
+    { "name": "VeilX", "type": "float", "count": 1, "values": [ 1.0e9 ] },
+    { "name": "Strength", "type": "float", "count": 1, "values": [ 0.0 ] },
+    { "name": "Corridor", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+    { "name": "MaxY", "type": "float", "count": 1, "values": [ 1000.0 ] }
+  ]
+}

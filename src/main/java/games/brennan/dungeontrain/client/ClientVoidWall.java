@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.client.shader.VoidWallFadePass;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -20,13 +21,17 @@ import net.minecraft.world.level.Level;
  * {@code Frustum#isVisible} pays one volatile read and a comparison.</p>
  *
  * <p>Only a wall at full strength culls. While the camera is in the first stretch of a void its wall
- * is fading: nothing past it is culled, and {@code VoidWallVeilRenderer} draws a translucent veil there
- * instead, so the far side comes into view gradually rather than all at once.</p>
+ * is fading: nothing past it is culled, and {@code VoidWallFadePass} paints the sky back over whatever
+ * lies past it, thinning as the wall fades, so the far side comes into view out of the real sky rather
+ * than all at once. Where that pass cannot run (a shader pack owns the frame), the fading wall keeps
+ * culling until it is half gone and then drops.</p>
  */
 public final class ClientVoidWall {
 
     /** Wide enough for any configured carriage — the train's own corridor carries on past the wall. */
     private static final int CORRIDOR_WIDTH = CarriageDims.MAX_WIDTH;
+    /** Strength a fading wall drops at when the sky fade cannot run. */
+    private static final double HALF = 0.5;
 
     /** Volatile: written on the render thread, read from chunk-build threads through the frustum. */
     private static volatile VoidWallPlane plane = VoidWallPlane.NONE;
@@ -42,7 +47,7 @@ public final class ClientVoidWall {
      */
     public static void beginFrame(double cameraX) {
         VoidWallLayout.Result next = compute(cameraX);
-        VoidWallPlane nextPlane = VoidWallPlane.at(next.cullX(), cameraX, ClientUpsideDownBand.trainY(), CORRIDOR_WIDTH);
+        VoidWallPlane nextPlane = VoidWallPlane.at(cullX(next), cameraX, ClientUpsideDownBand.trainY(), CORRIDOR_WIDTH);
         VoidWallPlane before = plane;
         result = next;
         plane = nextPlane;
@@ -52,6 +57,12 @@ public final class ClientVoidWall {
             Minecraft mc = Minecraft.getInstance();
             if (mc.levelRenderer != null) mc.levelRenderer.needsUpdate();
         }
+    }
+
+    /** The X culled this frame: the full-strength wall, or a fading one still over half strength with no fade pass. */
+    private static double cullX(VoidWallLayout.Result r) {
+        if (r.hasVeil() && r.veilStrength() >= HALF && !VoidWallFadePass.available()) return r.veilX();
+        return r.cullX();
     }
 
     private static VoidWallLayout.Result compute(double cameraX) {
