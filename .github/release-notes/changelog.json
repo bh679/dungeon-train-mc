@@ -19320,6 +19320,30 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "chunk-carriages-framed-in-sky",
+      "version": "0.972.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Terrain dimensional carriages are sealed in sky and dressed in frames",
+      "summary": "Dimensional carriages that hold a slice of real terrain now fill their whole room with that ground, sealed in by the sky itself rather than a second skin of blocks around it. They can also be dressed in a frame of columns, beams and walls built around and into the terrain, and the first one, a stone frame, arrives with this update. Builders can make their own frames in the editor, choose which of these carriages each one dresses, and test them straight away.",
+      "highlights": [
+        "The terrain fills the whole room, sealed in by the sky",
+        "A new stone frame dresses these carriages",
+        "Build your own frames in the editor and choose where they appear",
+        "Shift-Reseed re-rolls only what you are testing, and Shift turns Go here into Enter",
+        "Editing a template with thousands of block variants no longer lags"
+      ],
+      "pr": 1574,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
