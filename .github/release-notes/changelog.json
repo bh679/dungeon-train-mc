@@ -19419,6 +19419,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "pigman-villagers",
+      "version": "0.973.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Pigmen have moved in",
+      "summary": "Every now and then a villager turns out to be a pigman: a pig-headed villager who oinks, squeals when hit and grunts through a trade. About one villager in a hundred is a pigman, on the train and off it, and every villager in a carriage rolls for itself, so the same carriage won't always hold the same faces.",
+      "highlights": [
+        "Roughly 1 in 100 villagers is a pigman",
+        "Pigmen trade, work and breed like any other villager, with pig sounds instead of villager sounds",
+        "Each villager on a carriage gets its own roll, so the same carriage won't always hold a pigman"
+      ],
+      "pr": 1579,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
