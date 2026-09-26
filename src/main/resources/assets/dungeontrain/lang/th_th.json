@@ -2884,7 +2884,6 @@
   "chat.dungeontrain.package.world_doesn_t_use": "โลกนี้ไม่ได้ใช้ระบบรถไฟอัตโนมัติ (startsWithTrain ปิดอยู่)",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain ไม่สำเร็จ: %s: %s",
   "chat.dungeontrain.package.teleporting_x_spawning_train": "กำลังเทเลพอร์ตไป X=%s — กำลังเกิดรถไฟที่นั่น คุณจะลงบนตู้พื้นเรียบเมื่อมันนิ่งแล้ว ตั้งความยากเป็นระดับ %s ให้สอดคล้อง",
-  "chat.dungeontrain.package.dtp_band_not_found": "ไม่มีแถบ %s อยู่ข้างหน้า — อาจถูกปิดไว้ในการตั้งค่า",
   "chat.dungeontrain.package.dtp_band_not_found_in_lap": "ไม่มีแถบ %s ในรอบที่ %s — รอบนั้นอาจไม่มีแถบนี้ หรืออาจถูกปิดไว้ในการตั้งค่า",
   "chat.dungeontrain.train.spawned_fresh_train_track": "เกิดรถไฟขบวนใหม่บนรางที่ X=%s แล้ว (ship id %s เริ่มด้วย %s ตู้ / %s บล็อก ความเร็ว +X %s ม./วิ) — คุณจะลงบนตู้พื้นเรียบเมื่อมันนิ่งแล้ว รถไฟขบวนก่อนถูกลบ ความยากกลับเป็นการปรับอัตโนมัติ และตู้ชุมชนที่จำไว้ %s ตู้สามารถปรากฏได้อีกครั้ง ใช้ '/dungeontrain carriages <count>' เพื่อเปลี่ยนหน้าต่างตู้",
   "chat.dungeontrain.train.train_speed_set_m": "ตั้งความเร็วรถไฟเป็น %s ม./วิ แล้ว (อัปเดต %s ที่ใช้งานอยู่ %s)",

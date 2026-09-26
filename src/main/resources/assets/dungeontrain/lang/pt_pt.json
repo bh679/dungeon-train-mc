@@ -2927,7 +2927,6 @@
   "chat.dungeontrain.package.world_doesn_t_use": "Este mundo não usa o sistema de comboio automático (startsWithTrain está desligado).",
   "chat.dungeontrain.package.spawntrain_failed": "falha em spawnTrain: %s: %s",
   "chat.dungeontrain.package.teleporting_x_spawning_train": "A teletransportar para X=%s — a gerar um comboio lá agora; vais aterrar na plataforma assim que ele assentar. Dificuldade definida no nível %s para corresponder.",
-  "chat.dungeontrain.package.dtp_band_not_found": "Nenhuma faixa %s à tua frente — pode estar desativada na configuração.",
   "chat.dungeontrain.package.dtp_band_not_found_in_lap": "Nenhuma faixa %s na volta %s — essa volta pode não ter uma, ou pode estar desativada na configuração.",
   "chat.dungeontrain.train.spawned_fresh_train_track": "Comboio novo gerado na via em X=%s (id da nave %s, semeado com %s carruagens / %s blocos, velocidade +X %s m/s) — vais aterrar na plataforma assim que ele assentar. O comboio anterior foi eliminado; a dificuldade voltou à escala automática e %s carruagem(ns) da comunidade lembrada(s) podem voltar a aparecer. Usa '/dungeontrain carriages <count>' para alterar a janela de carruagens.",
   "chat.dungeontrain.train.train_speed_set_m": "Velocidade do comboio definida em %s m/s (%s %s ativo(s) atualizado(s))",

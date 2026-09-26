@@ -2887,7 +2887,6 @@
       "chat.dungeontrain.package.world_doesn_t_use",
       "chat.dungeontrain.package.spawntrain_failed",
       "chat.dungeontrain.package.teleporting_x_spawning_train",
-      "chat.dungeontrain.package.dtp_band_not_found",
       "chat.dungeontrain.package.dtp_band_not_found_in_lap",
       "chat.dungeontrain.train.spawned_fresh_train_track",
       "chat.dungeontrain.train.train_speed_set_m",

@@ -2970,7 +2970,6 @@
   "chat.dungeontrain.package.world_doesn_t_use": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "d918d74dfbc54bcb"},
   "chat.dungeontrain.package.spawntrain_failed": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "ef6f5a85d20696f2"},
   "chat.dungeontrain.package.teleporting_x_spawning_train": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "efefe7b1f94b6c67"},
-  "chat.dungeontrain.package.dtp_band_not_found": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "fc937a74e6bb2b69"},
   "chat.dungeontrain.package.dtp_band_not_found_in_lap": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "1688c9ada9eb6b86"},
   "chat.dungeontrain.train.spawned_fresh_train_track": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "f6bad678b87cb020"},
   "chat.dungeontrain.train.train_speed_set_m": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "f38df22b38f7589b"},
