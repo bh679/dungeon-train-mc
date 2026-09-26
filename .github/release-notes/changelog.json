@@ -19382,6 +19382,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "late-wwoo-after-upside-down",
+      "version": "0.973.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "A gentler arrival",
+      "summary": "After one of the stranger stretches of the journey, the land now settles back into place before the next stretch's new look takes over.",
+      "highlights": [
+        "The world finishes pulling itself together before it changes again."
+      ],
+      "pr": 1575,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
