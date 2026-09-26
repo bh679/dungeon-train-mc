@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 
 /**
  * Picks the real-End biome for a Dungeon-Train End-<b>core</b> column the exact way the End itself
- * does: by sampling the live End dimension's {@link BiomeSource} ({@code TheEndBiomeSource}) with the
+ * does: by sampling the live End dimension's {@link BiomeSource} with the
  * End's own {@link Climate.Sampler}. Unlike the Nether ({@link NetherCoreBiomes}, climate-based), End
  * biome selection is radius-from-the-End's-origin based, so successive core passes are swept outward
  * from the real End's origin instead of sampled at a single fixed offset: pass 0 lands on the main
@@ -31,11 +31,14 @@ import org.slf4j.Logger;
  * <p>Resolved once at server start and stored in {@link NetherBandContext}; the biome-source mixin
  * calls {@link #biomeAt} so the world label, the surface skin, and the decoration always agree.</p>
  *
- * <p><b>BetterEnd.</b> With BetterEnd: New Dawn installed the live End biome source is BCLib's, which
- * mixes BetterEnd biomes into the outer End. Only the BetterEnd End-band passes (every even crossing —
- * {@link EndBandStyle}) read it; the vanilla passes, and the island field that decides chorus and End
- * cities, read {@link VanillaEndBiomes} — vanilla's End layout reimplemented, since BCLib patches
- * {@code TheEndBiomeSource} itself — so a vanilla band's labels, chorus and cities match plain vanilla.</p>
+ * <p><b>BetterEnd.</b> DT's world presets give the End WorldWeaver's own biome source
+ * ({@code wover:end_biome_source}, BetterEnd's layout; Biomes O' Plenty excluded by
+ * {@code data/wover/config/biome_config.json}). The vanilla {@code TheEndBiomeSource} can't be used: WorldWeaver
+ * and TerraBlender both patch it, and TerraBlender's patch picks every biome, so it yields no BetterEnd
+ * biomes. Only the BetterEnd End-band passes (every even crossing — {@link EndBandStyle}) read the live
+ * source; the vanilla passes, and the island field that decides chorus and End cities, read
+ * {@link VanillaEndBiomes} — vanilla's End layout reimplemented — so a vanilla band's labels, chorus and
+ * cities match plain vanilla.</p>
  *
  * <p>A missing End dimension or any sampling error falls back to the {@code the_end} holder — biome
  * generation is never broken.</p>
