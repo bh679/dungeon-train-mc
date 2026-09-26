@@ -19494,6 +19494,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "train-rides-high-wilder-country",
+      "version": "0.974.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The train rides high over the wilder country",
+      "summary": "Through one of the wilder stretches of the journey the land now falls away beneath the track, so the train rides high above the valleys instead of burrowing through the hillsides. The supports and stairs under the track reach all the way down to the ground.",
+      "highlights": [
+        "Ride high above the valleys instead of through the hills.",
+        "Track supports and stairs reach the ground, however far below it is.",
+        "Nothing from the deep surfaces out of place along the way."
+      ],
+      "pr": 1584,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
