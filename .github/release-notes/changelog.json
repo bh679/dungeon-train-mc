@@ -19456,6 +19456,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "shorter-old-terrain-stretch",
+      "version": "0.973.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "A quicker trip through the old country",
+      "summary": "One of the older-looking stretches of the line now passes a little sooner, so the journey keeps moving.",
+      "highlights": [
+        "One stretch of the line is shorter."
+      ],
+      "pr": 1582,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
