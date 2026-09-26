@@ -44,6 +44,16 @@ public final class BandStages {
      */
     public static List<Stage> of(CycleLayout layout, int i, int stageCount, int stageBlocks, int beachBlocks,
                                  SpheresSegments spheres) {
+        return of(layout, i, stageCount, stageBlocks, beachBlocks, spheres, 0, 0);
+    }
+
+    /**
+     * {@link #of(CycleLayout, int, int, int, int, SpheresSegments)} with the spheres band's closing stretch:
+     * the last {@code exitTaperBlocks} before the final {@code exitVoidBlocks} are "Thinning out", the
+     * final ones "Closing void".
+     */
+    public static List<Stage> of(CycleLayout layout, int i, int stageCount, int stageBlocks, int beachBlocks,
+                                 SpheresSegments spheres, int exitTaperBlocks, int exitVoidBlocks) {
         CycleLayout.Slot slot = layout.slot(i);
         CycleLayout.Fades f = layout.fades();
         List<Stage> out = new ArrayList<>();
@@ -74,7 +84,7 @@ public final class BandStages {
             case STACKS -> transitionThenCore(out, f.stacksFade(), core);
             case SPHERES -> {
                 add(out, "Transition in", Math.max(0, f.spheresFade()));
-                spheres(out, core, spheres);
+                spheres(out, core, spheres, exitTaperBlocks, exitVoidBlocks);
             }
             case LEGACY_RUN -> legacy(out, layout);
         }
@@ -139,15 +149,21 @@ public final class BandStages {
      * The spheres core cut at each progression breakpoint, in offset order. Breakpoints past the core or
      * on top of one another collapse, so a shortened band shows only the stages it actually reaches.
      */
-    private static void spheres(List<Stage> out, long core, SpheresSegments seg) {
+    private static void spheres(List<Stage> out, long core, SpheresSegments seg, int exitTaper, int exitVoid) {
+        long voidStart = core - Math.max(0, Math.min(exitVoid, core));
+        long taperStart = voidStart - Math.max(0, Math.min(exitTaper, voidStart));
         List<Breakpoint> points = new ArrayList<>();
         points.add(new Breakpoint(0L, "Overworld sky"));
         points.add(new Breakpoint(seg.endSkyStart(), "End sky"));
         points.add(new Breakpoint(seg.netherMixStart(), "Nether spheres join"));
         points.add(new Breakpoint(seg.endMixStart(), "End spheres join"));
         points.add(new Breakpoint(seg.structureBoostStart(), "Structure boost"));
-        points.add(new Breakpoint(seg.structureBoostEnd(), "Boost over"));
-        points.add(new Breakpoint(seg.netherSkyStart(), "Nether sky"));
+        // Inside the taper the stretch still reads as thinning out, not "boost over".
+        if (seg.structureBoostEnd() < taperStart || seg.structureBoostEnd() >= voidStart) {
+            points.add(new Breakpoint(seg.structureBoostEnd(), "Boost over"));
+        }
+        if (taperStart < voidStart) points.add(new Breakpoint(taperStart, "Thinning out"));
+        if (voidStart < core) points.add(new Breakpoint(voidStart, "Closing void"));
         points.sort((a, b) -> Long.compare(a.offset(), b.offset()));
 
         // Several breakpoints at one offset: the last one listed there names the stage that follows.

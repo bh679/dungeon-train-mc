@@ -236,6 +236,12 @@ public final class SpheresBand {
             }
 
             @Override
+            public double taperAt(int cx) {
+                return SpheresSegments.exitTaper(cycle.spheresCoreOffset(cx), cycle.spheresLen(),
+                        SpheresProgressionConfig.exitTaperBlocks(), SpheresProgressionConfig.exitVoidBlocks());
+            }
+
+            @Override
             public int endSurfaceY(int x, int z) {
                 if (end == null) return SphereField.NO_SURFACE;
                 var source = end.getChunkSource();

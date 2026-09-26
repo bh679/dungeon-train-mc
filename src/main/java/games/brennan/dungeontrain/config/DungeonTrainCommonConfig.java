@@ -276,11 +276,11 @@ public final class DungeonTrainCommonConfig {
     /** Blocks of spheres-band world-gen (the whole void-with-spheres stretch). 0 drops the band from the cycle. */
     public static final int MIN_SPHERES_HOLD_BLOCKS = 0;
     public static final int MAX_SPHERES_HOLD_BLOCKS = 100_000_000;
-    public static final int DEFAULT_SPHERES_HOLD_BLOCKS = 14000;
+    public static final int DEFAULT_SPHERES_HOLD_BLOCKS = 6550;
     /** Entry fade before the band: the natural terrain outside the spheres dissolves into void across this span. */
     public static final int MIN_SPHERES_FADE_BLOCKS = 0;
     public static final int MAX_SPHERES_FADE_BLOCKS = 100_000_000;
-    public static final int DEFAULT_SPHERES_FADE_BLOCKS = 1500;
+    public static final int DEFAULT_SPHERES_FADE_BLOCKS = 750;
     /** Plain-overworld gap before the spheres band (after the chuncks core), before the entry fade. */
     public static final int MIN_SPHERES_LEAD_GAP_BLOCKS = 0;
     public static final int MAX_SPHERES_LEAD_GAP_BLOCKS = 100_000_000;
@@ -312,7 +312,7 @@ public final class DungeonTrainCommonConfig {
     /** Blocks into the spheres core that keep the normal overworld sky before the End sky takes over. */
     public static final int MIN_SPHERES_END_SKY_START_BLOCKS = 0;
     public static final int MAX_SPHERES_END_SKY_START_BLOCKS = 100_000_000;
-    public static final int DEFAULT_SPHERES_END_SKY_START_BLOCKS = 3000;
+    public static final int DEFAULT_SPHERES_END_SKY_START_BLOCKS = 1000;
     /** Crossfade span (blocks) at each edge of the spheres End-sky second half. */
     public static final int MIN_SPHERES_END_SKY_FADE_BLOCKS = 0;
     public static final int MAX_SPHERES_END_SKY_FADE_BLOCKS = 2000;
@@ -412,7 +412,22 @@ public final class DungeonTrainCommonConfig {
     public static final int NETHER_V4_CORE_FADE_BLOCKS = 600;
     public static final int SPHERES_V3_END_SKY_START_BLOCKS = 4000;
 
-    public static final int CURRENT_CONFIG_VERSION = 5;
+    /**
+     * The spheres band v5 shipped — 14000 core, 1500 entry fade, End sky from 3000, Nether sky for the
+     * last stretch — before v6 shrank it to 6550 and dropped the Nether sky. The v5 -> v6 migration
+     * moves only values still at these (the progression offsets live in {@link SpheresProgressionConfig}).
+     */
+    public static final int SPHERES_V5_HOLD_BLOCKS = 14000;
+    public static final int SPHERES_V5_FADE_BLOCKS = 1500;
+    public static final int SPHERES_V5_END_SKY_START_BLOCKS = 3000;
+    /** The {@code worldgenCycleOrder} v5 shipped; v6 changed only its {@code spheres:15000} slot. */
+    public static final String V5_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:15000, ow:5000, "
+            + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
+
+    public static final int CURRENT_CONFIG_VERSION = 6;
 
     /** The shipped band order — see {@link games.brennan.dungeontrain.worldgen.CycleLayout#DEFAULT_ORDER}. */
     public static final String DEFAULT_WORLDGEN_CYCLE_ORDER = games.brennan.dungeontrain.worldgen.CycleLayout.DEFAULT_ORDER;
@@ -867,13 +882,13 @@ public final class DungeonTrainCommonConfig {
                         "Set false to drop the spheres phase from the cycle.")
                 .define("spheresEnabled", DEFAULT_SPHERES_ENABLED);
         ModConfigSpec.IntValue spheresHoldBlocks = b
-                .comment("Blocks of spheres-band world-gen (the whole void-with-spheres stretch). Default 14000.")
+                .comment("Blocks of spheres-band world-gen (the whole void-with-spheres stretch). Default 6550.")
                 .defineInRange("spheresHoldBlocks", DEFAULT_SPHERES_HOLD_BLOCKS,
                         MIN_SPHERES_HOLD_BLOCKS, MAX_SPHERES_HOLD_BLOCKS);
         ModConfigSpec.IntValue spheresFadeBlocks = b
                 .comment("Entry fade before the spheres band: the natural terrain outside the spheres dissolves into",
                         "void across this span (noise-dithered, 0 → 1), so the void arrives gradually instead of at a",
-                        "hard wall. Spheres are present at full strength across the fade. 0 = hard edge. Default 1500.")
+                        "hard wall. Spheres are present at full strength across the fade. 0 = hard edge. Default 750.")
                 .defineInRange("spheresFadeBlocks", DEFAULT_SPHERES_FADE_BLOCKS,
                         MIN_SPHERES_FADE_BLOCKS, MAX_SPHERES_FADE_BLOCKS);
         ModConfigSpec.IntValue spheresLeadGapBlocks = b
@@ -925,13 +940,13 @@ public final class DungeonTrainCommonConfig {
                 .define("spheresEndSky", DEFAULT_SPHERES_END_SKY);
         ModConfigSpec.IntValue spheresEndSkyStartBlocks = b
                 .comment("Blocks into the spheres band (counted from the end of the entry fade) that keep the normal",
-                        "overworld sky before the End sky takes over. Default 3000 — the End sky then holds until",
-                        "spheresNetherSkyStartBlocks, where the Nether sky takes the band's last stretch.")
+                        "overworld sky before the End sky takes over. Default 1000 — the End sky then holds to the",
+                        "band's end and fades back to overworld over spheresEndSkyExitFadeBlocks.")
                 .defineInRange("spheresEndSkyStartBlocks", DEFAULT_SPHERES_END_SKY_START_BLOCKS,
                         MIN_SPHERES_END_SKY_START_BLOCKS, MAX_SPHERES_END_SKY_START_BLOCKS);
         ModConfigSpec.IntValue spheresEndSkyFadeBlocks = b
-                .comment("Crossfade span (blocks) between the overworld and End sky at spheresEndSkyStartBlocks, and",
-                        "back again over the last blocks of the band. Clamped to a quarter of spheresHoldBlocks.",
+                .comment("Crossfade span (blocks) from the overworld to the End sky at spheresEndSkyStartBlocks",
+                        "(the way back out is spheresEndSkyExitFadeBlocks). Clamped to a quarter of the band.",
                         "0 = hard switch. Default 150.")
                 .defineInRange("spheresEndSkyFadeBlocks", DEFAULT_SPHERES_END_SKY_FADE_BLOCKS,
                         MIN_SPHERES_END_SKY_FADE_BLOCKS, MAX_SPHERES_END_SKY_FADE_BLOCKS);
@@ -1133,13 +1148,29 @@ public final class DungeonTrainCommonConfig {
             WorldGenCycle.invalidateCache();
         }
 
+        // v5 -> v6: the spheres band shrank to 6550 (entry fade 750) with its progression moved earlier, and
+        // lost its Nether-sky stretch. Only values still at v5's shipped defaults move.
+        if (from < 6) {
+            migrateBandHold("spheresHoldBlocks", SPHERES_HOLD_BLOCKS, SPHERES_V5_HOLD_BLOCKS, DEFAULT_SPHERES_HOLD_BLOCKS, from);
+            migrateBandHold("spheresFadeBlocks", SPHERES_FADE_BLOCKS, SPHERES_V5_FADE_BLOCKS, DEFAULT_SPHERES_FADE_BLOCKS, from);
+            migrateBandHold("spheresEndSkyStartBlocks", SPHERES_END_SKY_START_BLOCKS, SPHERES_V5_END_SKY_START_BLOCKS,
+                    DEFAULT_SPHERES_END_SKY_START_BLOCKS, from);
+            SpheresProgressionConfig.migrateV5Offsets(from);
+            if (V5_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+                WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+                LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
+                        from, CURRENT_CONFIG_VERSION);
+            }
+            WorldGenCycle.invalidateCache();
+        }
+
         CONFIG_VERSION.set(CURRENT_CONFIG_VERSION);
         CONFIG_VERSION.save();
         CatchUpBurstAuto.invalidate();
     }
 
     /** One band-hold migration step: a hold still at the shipped {@code legacy} length becomes {@code target}. */
-    private static void migrateBandHold(String key, ModConfigSpec.IntValue hold, int legacy, int target, int from) {
+    static void migrateBandHold(String key, ModConfigSpec.IntValue hold, int legacy, int target, int from) {
         if (hold.get() != legacy) return;
         hold.set(target);
         LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: {} {} -> {}.",

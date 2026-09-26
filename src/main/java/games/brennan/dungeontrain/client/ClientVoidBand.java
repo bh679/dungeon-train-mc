@@ -66,15 +66,16 @@ public final class ClientVoidBand {
     /**
      * End-sky intensity over the spheres band's End-sky window ({@link SpheresSky#endSky}), so the whole
      * End atmosphere keyed off {@link #endSkyIntensityAt} — sky, fog, lighting, clouds, music — takes
-     * over {@code spheresEndSkyStartBlocks} into the spheres and crossfades into the Nether sky at
-     * {@code spheresNetherSkyStartBlocks}.
+     * over {@code spheresEndSkyStartBlocks} into the spheres and fades back to the overworld sky over the
+     * {@code spheresEndSkyExitFadeBlocks} before its closing void.
      */
     private static double spheresEndSkyIntensity(WorldGenCycle cycle, int worldX) {
         if (!DungeonTrainCommonConfig.isSpheresEnabled() || !DungeonTrainCommonConfig.isSpheresEndSkyEnabled()) {
             return 0.0;
         }
         return SpheresSky.endSky(cycle, SpheresProgressionConfig.segments(), worldX,
-                DungeonTrainCommonConfig.getSpheresEndSkyFadeBlocks());
+                DungeonTrainCommonConfig.getSpheresEndSkyFadeBlocks(), SpheresProgressionConfig.endSkyExitFadeBlocks(),
+                SpheresProgressionConfig.exitVoidBlocks());
     }
 
     /** End-sky intensity {@code t} crosses this point: below it the Overworld track plays, above it the End track. */
