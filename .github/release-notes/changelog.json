@@ -19440,6 +19440,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "f3-4-debug-panel-band-readout",
+      "version": "0.974.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Debug panel improvements",
+      "summary": "Small improvements to internal debugging tools.",
+      "highlights": [],
+      "pr": 1580,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
