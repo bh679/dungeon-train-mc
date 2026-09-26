@@ -19300,6 +19300,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-crops-survive",
+      "version": "0.972.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Crops in dimensional carriages no longer break when the carriage loads",
+      "summary": "Farms built into a dimensional carriage now arrive intact. Wheat, carrots, potatoes and beetroot used to pop off their farmland the moment the carriage appeared, and any that survived were knocked loose when you harvested the crop beside them.",
+      "highlights": [
+        "Crops in dimensional carriages stay planted when the carriage loads",
+        "Harvesting one crop no longer breaks the crops around it"
+      ],
+      "pr": 1573,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
