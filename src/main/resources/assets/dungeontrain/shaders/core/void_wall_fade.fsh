@@ -29,8 +29,10 @@ uniform float CullX;
 uniform float VeilX;
 uniform float Strength;
 uniform vec4 Corridor;
-// Camera-relative height at and above which nothing is faded — the cloud layer, which is never culled.
-uniform float MaxY;
+// Camera-relative bottom of the cloud layer. Vanilla pixels in that thin slab are clouds, which are
+// never culled, so they are left alone. Only the slab: anything else up high — the upside-down band's
+// mirrored terrain hangs far above the track — is painted like any other surface past the wall.
+uniform float CloudY;
 
 in vec2 texCoord;
 
@@ -46,6 +48,7 @@ void main() {
     float depth = texture(Sampler1, texCoord).r;
     if (depth < 1.0) {
         world = toWorld(InvProj, depth * 2.0 - 1.0);
+        if (world.y >= CloudY - 1.0 && world.y <= CloudY + 5.0) discard;
     } else if (HasDh == 1) {
         // DH clears to its far value (0 under reverse-Z, 1 otherwise); its projection is built for the
         // same convention, so the raw depth goes straight into its inverse.
@@ -57,7 +60,6 @@ void main() {
         discard;
     }
 
-    if (world.y >= MaxY) discard;
     float alpha;
     if (world.x > CullX) alpha = 1.0;
     else if (world.x > VeilX) alpha = clamp(Strength, 0.0, 1.0);

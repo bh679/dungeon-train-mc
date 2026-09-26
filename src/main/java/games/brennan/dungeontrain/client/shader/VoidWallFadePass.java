@@ -195,7 +195,7 @@ public final class VoidWallFadePass {
         shader.getUniform("Corridor").set(
             (float) (trainY - 2 - cam.y), (float) (trainY + CORRIDOR_HEADROOM - cam.y),
             (float) (0 - cam.z), (float) (CarriageDims.DEFAULT_WIDTH - cam.z));
-        shader.getUniform("MaxY").set((float) (level.effects().getCloudHeight() - 2 - cam.y));
+        shader.getUniform("CloudY").set((float) (level.effects().getCloudHeight() - cam.y));
 
         RenderSystem.setShader(() -> shader);
         RenderSystem.setShaderTexture(0, sky.id);
