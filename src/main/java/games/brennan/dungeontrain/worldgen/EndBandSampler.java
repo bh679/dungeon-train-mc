@@ -26,11 +26,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Generates the terrain of a <b>BetterEnd</b> End-band pass ({@link EndBandStyle#isBetterEndPass}) one
- * display chunk at a time, off the server thread.
+ * Generates the terrain of a <b>BetterEnd</b> or <b>Biomes O' Plenty</b> End-band pass
+ * ({@link WorldGenCycle#endStyleOfPass}) one display chunk at a time, off the server thread.
  *
- * <p>Each job runs the real End's generator — which BetterEnd: New Dawn drives with its own biomes —
- * into a throwaway chunk in the outer End ({@link EndBandStyle#endChunkOffsetX}): noise, surface rules,
+ * <p>Each job runs a real End generator — the live End's, which BetterEnd: New Dawn drives with its own
+ * biomes, or for a BoP pass {@link BopEnd}'s vanilla-island End with BoP's End biomes — into a
+ * throwaway chunk in the outer End ({@link EndBandStyle#endChunkOffsetX}): noise, surface rules,
  * carvers, then the biome's full decoration (BetterEnd's trees, plants, crystals, lakes). The End's
  * island Y band is copied out shifted onto track level ({@link EndBandStyle#displayY}), with any
  * block-entity NBT re-keyed to display positions. Finished {@link Result}s wait in a queue for
@@ -84,13 +85,15 @@ public final class EndBandSampler {
     }
 
     /**
-     * True if an End-band pass the cycle calls BetterEnd ({@code betterPass} —
-     * {@link WorldGenCycle#isBetterEndPass}) gets BetterEnd terrain on this server — the single gate
+     * True if an End-band pass of look {@code style} ({@link WorldGenCycle#endStyleOfPass}) gets sampled
+     * terrain on this server — BetterEnd from the live End, BoP from {@link BopEnd} — the single gate
      * {@code DisintegrationFeature}, {@code BandEndCityStructure} and {@code WorldEndBandEvents} share, so
      * a pass is either fully vanilla-stamped or fully sampled, never both or neither.
      */
-    public static boolean appliesTo(MinecraftServer server, boolean betterPass) {
-        return betterPass && available(server);
+    public static boolean appliesTo(MinecraftServer server, CycleLayout.Style style) {
+        if (style == CycleLayout.Style.BETTER) return available(server);
+        if (style == CycleLayout.Style.BOP) return available(server) && BopEnd.get(server) != null;
+        return false;
     }
 
     /**
@@ -154,7 +157,14 @@ public final class EndBandSampler {
         ServerLevel end = server.getLevel(Level.END);
         if (end == null) return null;
         ChunkGenerator generator = end.getChunkSource().getGenerator();
-        if (!(generator instanceof NoiseBasedChunkGenerator noise)) return null;
+        if (!(generator instanceof NoiseBasedChunkGenerator live)) return null;
+        NoiseBasedChunkGenerator noise = live;
+        if (WorldGenCycle.fromConfig().endStyleOfPass(passIndex) == CycleLayout.Style.BOP) {
+            BopEnd.Built bop = BopEnd.get(server);
+            if (bop == null) return null;
+            noise = bop.generator();
+        }
+        // The live End's noise: the BoP generator's settings are a copy of the same End settings.
         RandomState random = end.getChunkSource().randomState();
 
         ChunkPos endPos = new ChunkPos(pos.x + EndBandStyle.endChunkOffsetX(passIndex), pos.z);

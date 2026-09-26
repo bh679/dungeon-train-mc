@@ -142,6 +142,18 @@ public final class DebugCommand {
             // which second-lap mod owns each (WWOO before, Biomes O' Plenty after, odd laps) and a biome
             // census sampled from the overworld source. Also logged at INFO for RCON runs.
             .then(Commands.literal("overworld-laps").executes(ctx -> OverworldLapsDebug.report(ctx.getSource())))
+            // /dungeontrain debug lap-themes — each theme lap's decided look (vanilla / bop / better) and X
+            // range, plus online players' cross-world progress. `progress <theme> <0..1>` overwrites your own.
+            .then(Commands.literal("lap-themes")
+                .executes(ctx -> LapThemesDebug.report(ctx.getSource()))
+                .then(Commands.literal("progress")
+                    .then(Commands.argument("theme", StringArgumentType.word())
+                        .suggests((c, b) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
+                                java.util.List.of("vanilla", "bop", "better"), b))
+                        .then(Commands.argument("fraction", DoubleArgumentType.doubleArg(0.0, 1.0))
+                            .executes(ctx -> LapThemesDebug.setProgress(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "theme"),
+                                    DoubleArgumentType.getDouble(ctx, "fraction")))))))
             // /dungeontrain debug portal-sites [count] — which stretch each overworld dimensional
             // carriage's sample site sits in, old scattered rule vs the stretch rules. INFO-logged too.
             .then(Commands.literal("portal-sites")

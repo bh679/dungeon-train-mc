@@ -100,7 +100,7 @@ public class BandEndCityStructure extends Structure {
 
             WorldGenCycle cycle = ctx.cycle();
             // BetterEnd End bands aren't vanilla islands — no city to stand on them.
-            if (EndBandSampler.appliesTo(ServerLifecycleHooks.getCurrentServer(), cycle.isBetterEndAt(anchorX))) {
+            if (EndBandSampler.appliesTo(ServerLifecycleHooks.getCurrentServer(), cycle.endLookAt(anchorX))) {
                 return Optional.empty();
             }
             // Bottom of the island geometry is the world's floor, not the level's — a city has to

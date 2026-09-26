@@ -54,11 +54,17 @@ class BandHoldDefaultsTest {
     }
 
     @Test
-    @DisplayName("the v5 cycle order differs from the shipped default only in its spheres slot")
+    @DisplayName("the v5 cycle order differs from v6's only in its spheres slot, and v6's from the shipped one only in its theme laps")
     void v5CycleOrderDiffersOnlyInSpheres() {
-        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+        assertEquals(DungeonTrainCommonConfig.V6_WORLDGEN_CYCLE_ORDER,
                 DungeonTrainCommonConfig.V5_WORLDGEN_CYCLE_ORDER.replace("spheres:15000", "spheres:6550"),
                 "the v5 -> v6 migration matches a file still holding the v5 order string exactly");
+        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+                DungeonTrainCommonConfig.V6_WORLDGEN_CYCLE_ORDER
+                        .replace("ow:2750, nether:3000, ow:3000, end:3000,", "ow:t1:2750, nether:t1:3000, ow:t1:3000, end:t1:3000,")
+                        .replace("ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000,",
+                                "ow:t2:8000, nether:t2:8000, ow:t2:8000, end:t2:8000,"),
+                "the v6 -> v7 migration matches a file still holding the v6 order string exactly");
         assertTrue(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER.contains("spheres:"
                 + DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS + ","));
     }

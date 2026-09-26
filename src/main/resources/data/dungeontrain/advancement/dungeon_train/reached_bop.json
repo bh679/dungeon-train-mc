@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_better_nether",
+  "parent": "dungeontrain:dungeon_train/reached_wwoo",
   "display": {
     "icon": { "id": "minecraft:sunflower" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_bop.title" },

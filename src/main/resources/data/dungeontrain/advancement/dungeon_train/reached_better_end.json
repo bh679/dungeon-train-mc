@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_bop",
+  "parent": "dungeontrain:dungeon_train/reached_bop_nether",
   "display": {
     "icon": { "id": "minecraft:chorus_flower" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_better_end.title" },

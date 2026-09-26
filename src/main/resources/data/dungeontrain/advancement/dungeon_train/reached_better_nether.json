@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_wwoo",
+  "parent": "dungeontrain:dungeon_train/reached_bop",
   "display": {
     "icon": { "id": "minecraft:crimson_fungus" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_better_nether.title" },

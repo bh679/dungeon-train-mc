@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/reached_better_end",
+  "display": {
+    "icon": { "id": "minecraft:popped_chorus_fruit" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_bop_end.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.reached_bop_end.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "reached_bop_end" }
+    }
+  },
+  "requirements": [["reached"]]
+}

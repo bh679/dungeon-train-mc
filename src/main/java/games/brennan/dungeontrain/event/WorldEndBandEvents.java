@@ -151,13 +151,14 @@ public final class WorldEndBandEvents {
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
         EndBandSampler.clear();
+        games.brennan.dungeontrain.worldgen.BopEnd.clear();
         STASH.clear();
         DUE.clear();
         tickCounter = 0;
     }
 
     /**
-     * The End-band pass index of {@code pos} if it's a BetterEnd pass with any band column in it, else
+     * The End-band pass index of {@code pos} if it's a sampled (BetterEnd / BoP) pass with any band column in it, else
      * {@code -1}. Every column of one chunk shares a pass: the End band sits mid-cycle, never on a
      * cycle boundary.
      */
@@ -167,7 +168,7 @@ public final class WorldEndBandEvents {
         int minX = pos.getMinBlockX();
         if (cycle.endIslandRamp(minX) <= 0.0 && cycle.endIslandRamp(minX + 15) <= 0.0) return -1L;
         long pass = cycle.endPassIndex(minX + 8);
-        return EndBandSampler.appliesTo(level.getServer(), cycle.isBetterEndPass(pass)) ? pass : -1L;
+        return EndBandSampler.appliesTo(level.getServer(), cycle.endStyleOfPass(pass)) ? pass : -1L;
     }
 
     /** Request the not-yet-generated band chunks just beyond each player's view, ahead in +X. */

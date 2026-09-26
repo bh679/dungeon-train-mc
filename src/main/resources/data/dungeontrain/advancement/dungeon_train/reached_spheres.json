@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_better_end",
+  "parent": "dungeontrain:dungeon_train/reached_bop_end",
   "display": {
     "icon": { "id": "minecraft:heart_of_the_sea" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_spheres.title" },

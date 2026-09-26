@@ -99,7 +99,7 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             if (end == null) return false;
             // A BetterEnd End band (end:better in the order) gets real End chunks copied in by
             // WorldEndBandEvents instead, so no end stone or chorus is stamped here.
-            if (EndBandSampler.appliesTo(server, WorldGenCycle.fromConfig().isBetterEndAt(chunkMinX + 8))) return false;
+            if (EndBandSampler.appliesTo(server, WorldGenCycle.fromConfig().endLookAt(chunkMinX + 8))) return false;
 
             DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
             CarriageDims dims = data.dims();

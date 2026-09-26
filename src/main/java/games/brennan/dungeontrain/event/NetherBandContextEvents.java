@@ -5,7 +5,9 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.world.LapThemeData;
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
+import games.brennan.dungeontrain.worldgen.LapThemes;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.StrongholdRingGate;
@@ -100,6 +102,9 @@ public final class NetherBandContextEvents {
         try {
             ServerLevel overworld = server.overworld();
             DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+            // This world's theme-lap decisions, before anything below (or the first chunk) resolves a
+            // themed slot. The same plan instance every republish — decisions are never rebuilt.
+            LapThemes.publish(LapThemeData.get(overworld).plan(server, data.getGenerationSeed()));
 
             boolean enabled = NetherBand.startX(overworld) != NetherBand.OFF;
             WorldGenCycle cycle = WorldGenCycle.fromConfig();
@@ -157,6 +162,7 @@ public final class NetherBandContextEvents {
             }
         } catch (Throwable t) {
             // Never block server start on the band snapshot — a missing context just leaves terrain vanilla.
+            // LapThemes stays: the plan was published first and is independent of the rest of the snapshot.
             NetherBandContext.clear();
             games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.clear();
             games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.clear();
@@ -172,6 +178,7 @@ public final class NetherBandContextEvents {
     public static void onServerStopped(ServerStoppedEvent event) {
         // After stopServer(): the last generated chunks have been baked and saved against a live context.
         NetherBandContext.clear();
+        LapThemes.clear();
         games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.clear();
         games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.clear();
         games.brennan.dungeontrain.worldgen.legacy.LegacyBands.releaseGenerators();

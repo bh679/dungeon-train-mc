@@ -590,7 +590,82 @@ public record WorldGenCycle(long startX, int owGap,
         if (layout == null) return null;
         int i = slotAt(worldX);
         if (i < 0 || layout.slot(i).type() != t) return null;
-        return layout.slot(i).style();
+        return resolveStyle(i, runAt(worldX));
+    }
+
+    /**
+     * The concrete style of slot {@code i} in doubling run {@code run}: its own label, or — for a
+     * {@code :t1} / {@code :t2} slot — the style its theme lap's {@link LapTheme} gives it (decided now
+     * if this is the first time that lap is asked about; see {@link LapThemes}).
+     */
+    private CycleLayout.Style resolveStyle(int i, long run) {
+        CycleLayout.Slot slot = layout.slot(i);
+        if (slot.style() != CycleLayout.Style.THEMED) return slot.style();
+        long n = run * layout.themeGroupCount() + slot.themeGroup();
+        return LapThemes.resolve(n, layout.themeKinds()).styleFor(slot.type());
+    }
+
+    // ---- theme laps ---------------------------------------------------------------------------
+
+    /** Theme groups per run ({@code :t1} / {@code :t2}); {@code 0} for the classic layout or an unthemed order. */
+    public int themeGroupsPerRun() {
+        return layout == null ? 0 : layout.themeGroupCount();
+    }
+
+    /**
+     * Global index of the theme lap whose span (first themed slot to last) holds {@code worldX} —
+     * {@code run × groupsPerRun + group} — or {@code -1} outside every theme lap.
+     */
+    public long themeLapIndexAt(int worldX) {
+        if (layout == null || layout.themeGroupCount() == 0) return -1L;
+        long u = baseAt(worldX);
+        if (u < 0L) return -1L;
+        int g = layout.themeGroupAt(u);
+        return g < 0 ? -1L : (long) runAt(worldX) * layout.themeGroupCount() + g;
+    }
+
+    /**
+     * How far through its theme lap {@code worldX} is, {@code [0, 1)}, or {@code -1} outside one. In
+     * base coordinates, so a stretched later run reports the same fraction at the same relative spot.
+     */
+    public double themeLapProgressAt(int worldX) {
+        if (layout == null || layout.themeGroupCount() == 0) return -1.0;
+        long u = baseAt(worldX);
+        if (u < 0L) return -1.0;
+        int g = layout.themeGroupAt(u);
+        if (g < 0) return -1.0;
+        long start = layout.themeGroupStart(g);
+        long len = layout.themeGroupEnd(g) - start;
+        return len <= 0L ? -1.0 : (double) (u - start) / (double) len;
+    }
+
+    /** World-X range {@code [start, end)} of theme lap {@code n}, or {@code null}. */
+    public long[] themeLapRange(long n) {
+        if (layout == null || n < 0L) return null;
+        int groups = layout.themeGroupCount();
+        if (groups == 0) return null;
+        int k = (int) Math.min(62L, n / groups);
+        int g = (int) (n % groups);
+        long runStart = startX + CycleLayout.runStart(k, layout.period());
+        return new long[] {runStart + (layout.themeGroupStart(g) << k), runStart + (layout.themeGroupEnd(g) << k)};
+    }
+
+    /** The theme of lap {@code n}, deciding it if needed ({@link LapThemes#resolve}); {@code null} with no theme groups. */
+    public LapTheme themeOfLap(long n) {
+        if (themeGroupsPerRun() == 0 || n < 0L) return null;
+        return LapThemes.resolve(n, layout.themeKinds());
+    }
+
+    /** The theme of lap {@code n} if already decided — never decides; {@code null} when undecided. */
+    public LapTheme peekThemeOfLap(long n) {
+        if (themeGroupsPerRun() == 0 || n < 0L) return null;
+        return LapThemes.peek(n, layout.themeKinds());
+    }
+
+    /** The picker rule of lap {@code n}, or {@code null} with no theme groups. */
+    public LapThemePicker.Kind themeKindOfLap(long n) {
+        if (themeGroupsPerRun() == 0 || n < 0L) return null;
+        return layout.themeGroupKind((int) (n % layout.themeGroupCount()));
     }
 
     /** Which look the Nether band at {@code worldX} wears ({@code BETTER} = BetterNether); {@code null} outside one. */
@@ -632,14 +707,14 @@ public record WorldGenCycle(long startX, int owGap,
             case UPSIDE_DOWN -> {
                 long bleedStart = udBandLenAt(worldX)
                         + Math.round(udExitFadeLenAt(worldX) * UD_BLEED_REASSEMBLY_FRACTION);
-                return local >= bleedStart ? moddedOverworldStyle(i + 1) : null;
+                return local >= bleedStart ? moddedOverworldStyle(i + 1, runAt(worldX)) : null;
             }
             case NETHER -> side = (len - Math.max(0, slot.core())) / 2L;
             case END -> side = Math.max(0, eFade);
             default -> { return null; }
         }
-        if (local < side) return moddedOverworldStyle(i - 1);
-        if (local >= len - side) return moddedOverworldStyle(i + 1);
+        if (local < side) return moddedOverworldStyle(i - 1, runAt(worldX));
+        if (local >= len - side) return moddedOverworldStyle(i + 1, runAt(worldX));
         return null;
     }
 
@@ -651,11 +726,12 @@ public record WorldGenCycle(long startX, int owGap,
     static final double UD_BLEED_REASSEMBLY_FRACTION = 43.0 / 60.0;
 
     /** Style of slot {@code i} when it is a WWOO / BoP overworld gap, else {@code null}. */
-    private CycleLayout.Style moddedOverworldStyle(int i) {
+    private CycleLayout.Style moddedOverworldStyle(int i, long run) {
         if (i < 0 || i >= layout.count()) return null;
         CycleLayout.Slot s = layout.slot(i);
         if (s.type() != CycleLayout.Type.OVERWORLD) return null;
-        return (s.style() == CycleLayout.Style.WWOO || s.style() == CycleLayout.Style.BOP) ? s.style() : null;
+        CycleLayout.Style style = resolveStyle(i, run);
+        return (style == CycleLayout.Style.WWOO || style == CycleLayout.Style.BOP) ? style : null;
     }
 
     /**
@@ -686,6 +762,43 @@ public record WorldGenCycle(long startX, int owGap,
         return occurrenceStyle(CycleLayout.Type.NETHER, pass) == CycleLayout.Style.BETTER;
     }
 
+    /**
+     * The look of Nether pass {@code pass}: {@code VANILLA}, {@code BETTER} (BetterNether) or {@code BOP}
+     * (vanilla + Biomes O' Plenty Nether). Classic layouts keep their alternation (never BoP).
+     */
+    public CycleLayout.Style netherStyleOfPass(long pass) {
+        if (layout == null) return BetterNetherCoreBiomes.isBetterNetherPass(pass) ? CycleLayout.Style.BETTER : CycleLayout.Style.VANILLA;
+        CycleLayout.Style s = occurrenceStyle(CycleLayout.Type.NETHER, pass);
+        return s == null ? CycleLayout.Style.VANILLA : s;
+    }
+
+    /** The End twin of {@link #netherStyleOfPass}: {@code VANILLA}, {@code BETTER} (BetterEnd) or {@code BOP}. */
+    public CycleLayout.Style endStyleOfPass(long pass) {
+        if (layout == null) return EndBandStyle.isBetterEndPass(pass) ? CycleLayout.Style.BETTER : CycleLayout.Style.VANILLA;
+        CycleLayout.Style s = occurrenceStyle(CycleLayout.Type.END, pass);
+        return s == null ? CycleLayout.Style.VANILLA : s;
+    }
+
+    /** {@link #netherStyleOfPass} of the Nether pass at {@code worldX} (the last one started between bands). */
+    public CycleLayout.Style netherLookAt(int worldX) {
+        return netherStyleOfPass(netherPassIndex(worldX));
+    }
+
+    /** {@link #endStyleOfPass} of the End pass at {@code worldX} (the last one started between bands). */
+    public CycleLayout.Style endLookAt(int worldX) {
+        return endStyleOfPass(endPassIndex(worldX));
+    }
+
+    /** True if the Nether pass at {@code worldX} is a Biomes O' Plenty one. */
+    public boolean isBopNetherAt(int worldX) {
+        return netherLookAt(worldX) == CycleLayout.Style.BOP;
+    }
+
+    /** True if the End pass at {@code worldX} is a Biomes O' Plenty one. */
+    public boolean isBopEndAt(int worldX) {
+        return endLookAt(worldX) == CycleLayout.Style.BOP;
+    }
+
     /** True if End pass {@code pass} is a BetterEnd one — the End twin of {@link #isBetterNetherPass}. */
     public boolean isBetterEndPass(long pass) {
         if (layout == null) return EndBandStyle.isBetterEndPass(pass);
@@ -706,7 +819,8 @@ public record WorldGenCycle(long startX, int owGap,
     private CycleLayout.Style occurrenceStyle(CycleLayout.Type t, long pass) {
         int n = layout.typeCount(t);
         if (n == 0 || pass < 0L) return null;
-        return layout.styleOfOccurrence(t, (int) (pass % n));
+        int i = layout.indexOfOccurrence(t, (int) (pass % n));
+        return i < 0 ? null : resolveStyle(i, pass / n);
     }
 
     /**

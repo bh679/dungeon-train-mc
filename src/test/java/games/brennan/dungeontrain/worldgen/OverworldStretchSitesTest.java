@@ -19,6 +19,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 final class OverworldStretchSitesTest {
 
+    @org.junit.jupiter.api.BeforeEach
+    void publishThemes() {
+        LapThemes.publish(TestLapPlans.bopThenBetter());
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void clearThemes() {
+        LapThemes.clear();
+    }
+
     /** {@link SecondLapOverworldTest}'s classic geometry: lead [0,300), Nether [300,960), post [960,1260), End [1260,1940). */
     private static final WorldGenCycle CLASSIC =
             new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);

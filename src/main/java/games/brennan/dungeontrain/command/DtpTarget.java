@@ -43,6 +43,10 @@ record DtpTarget(String token, String displayName, ColumnTest test) {
                 && WorldGenCycle.fromConfig().isBetterNetherAt(x)));
         out.add(new DtpTarget("better_end", "Better End", (l, x) -> TrainPhase.phaseAt(l, x) == TrainPhase.END
                 && WorldGenCycle.fromConfig().isBetterEndAt(x)));
+        out.add(new DtpTarget("bop_nether", "Biomes O' Plenty Nether", (l, x) -> NetherBand.isInNetherBand(l, x)
+                && WorldGenCycle.fromConfig().isBopNetherAt(x)));
+        out.add(new DtpTarget("bop_end", "Biomes O' Plenty End", (l, x) -> TrainPhase.phaseAt(l, x) == TrainPhase.END
+                && WorldGenCycle.fromConfig().isBopEndAt(x)));
         out.add(new DtpTarget("wwoo", "WWOO Overworld", (l, x) -> overworldStretch(l, x) == SecondLapOverworld.Stretch.WWOO));
         out.add(new DtpTarget("bop", "Biomes O' Plenty Overworld", (l, x) -> overworldStretch(l, x) == SecondLapOverworld.Stretch.BOP));
         out.add(new DtpTarget("reassembly", "Reassembly", UpsideDownBand::isInExitFade));

@@ -143,12 +143,12 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
             case NETHER_CORE:
                 // Per-biome fog/ambient/music + the Nether decoration features' own biome filter
                 // pass so they place in NetherTransitionFeature. The order's :better passes are BetterNether.
-                return ctx.netherCoreBiomes().biomeAt(blockX, blockZ, ctx.cycle().isBetterNetherAt(blockX));
+                return ctx.netherCoreBiomes().biomeAt(blockX, blockZ, ctx.cycle().netherLookAt(blockX));
             case END_CORE:
                 // Sample the real End's biome source (all five End biomes, swept across successive
                 // End-band passes — see EndCoreBiomes) so world label, surface skin and decoration agree.
                 long endPass = ctx.cycle().endPassIndex(blockX);
-                return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, ctx.cycle().isBetterEndPass(endPass));
+                return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, ctx.cycle().endStyleOfPass(endPass));
             case HIGHLAND:
                 // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.
                 return SecondLapOverworld.lookAt(ctx.cycle(), blockX) == SecondLapOverworld.Stretch.BOP

@@ -29,6 +29,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 final class BandLocatorTest {
 
+    @org.junit.jupiter.api.BeforeEach
+    void publishThemes() {
+        games.brennan.dungeontrain.worldgen.LapThemes.publish(games.brennan.dungeontrain.worldgen.TestLapPlans.bopThenBetter());
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void clearThemes() {
+        games.brennan.dungeontrain.worldgen.LapThemes.clear();
+    }
+
     private static final long START = 10_000L;
     private static final CycleLayout.Fades FADES = new CycleLayout.Fades(232, 0, 300, 120, 500, 600, 600, 10_000, 1500, 1500, 1500, 480);
 
@@ -56,6 +66,10 @@ final class BandLocatorTest {
         m.put("better_end", x -> c.endStyleAt(x) == Style.BETTER);
         m.put("wwoo", x -> c.overworldStyleAt(x) == Style.WWOO);
         m.put("bop", x -> c.overworldStyleAt(x) == Style.BOP);
+        if (c.themeGroupsPerRun() > 0) {
+            m.put("bop_nether", x -> c.isNetherCore(x) && c.netherStyleAt(x) == Style.BOP);
+            m.put("bop_end", x -> c.endStyleAt(x) == Style.BOP);
+        }
         m.put("upside_down", c::isInUpsideDownBand);
         m.put("reassembly", c::isInUpsideDownExitFade);
         m.put("spheres", c::isInSpheresBand);
@@ -172,7 +186,7 @@ final class BandLocatorTest {
         for (DtpTarget t : DtpTarget.all()) assertTrue(tokens.add(t.token()), "duplicate /dtp token " + t.token());
         for (TrainPhase p : TrainPhase.values()) assertTrue(tokens.contains(p.token()), p.token());
         for (String alias : TrainPhase.aliases().keySet()) assertTrue(tokens.contains(alias), alias);
-        for (String styled : List.of("better_nether", "better_end", "wwoo", "bop", "reassembly")) {
+        for (String styled : List.of("better_nether", "better_end", "bop_nether", "bop_end", "wwoo", "bop", "reassembly")) {
             assertTrue(tokens.contains(styled), styled);
         }
         assertEquals(TrainPhase.CAVES_OF_CHAOS, TrainPhase.byToken("chaos"));

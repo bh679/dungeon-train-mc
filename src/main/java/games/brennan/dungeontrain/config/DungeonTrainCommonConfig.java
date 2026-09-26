@@ -427,7 +427,17 @@ public final class DungeonTrainCommonConfig {
             + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
 
-    public static final int CURRENT_CONFIG_VERSION = 6;
+    /**
+     * The {@code worldgenCycleOrder} v6 shipped: Lap 2 fixed to WWOO → BetterNether → BoP → BetterEnd.
+     * v7 made both laps theme groups ({@code :t1} / {@code :t2}); the v6 -> v7 migration moves only this value.
+     */
+    public static final String V6_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:5000, "
+            + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
+
+    public static final int CURRENT_CONFIG_VERSION = 7;
 
     /** The shipped band order — see {@link games.brennan.dungeontrain.worldgen.CycleLayout#DEFAULT_ORDER}. */
     public static final String DEFAULT_WORLDGEN_CYCLE_ORDER = games.brennan.dungeontrain.worldgen.CycleLayout.DEFAULT_ORDER;
@@ -985,8 +995,11 @@ public final class DungeonTrainCommonConfig {
         ModConfigSpec.ConfigValue<String> worldgenCycleOrder = b
                 .comment("The order the bands come in, as one run of the cycle: comma-separated slots, each",
                         "  ow[:style]:<blocks>            an overworld gap (style: vanilla | wwoo | bop)",
-                        "  nether[:style]:<core>          a Nether band (style: vanilla | better = BetterNether)",
-                        "  end[:style]:<core>             an End-islands band (style: vanilla | better = BetterEnd)",
+                        "  nether[:style]:<core>          a Nether band (style: vanilla | better = BetterNether | bop)",
+                        "  end[:style]:<core>             an End-islands band (style: vanilla | better = BetterEnd | bop)",
+                        "  style t1 / t2 on ow, nether and end: a theme lap. Every t1 slot (Lap 1) and every t2 slot",
+                        "    (Lap 2) share one look per cycle, picked per world: vanilla, Biomes O' Plenty, or WWOO with",
+                        "    BetterNether and BetterEnd — leaning toward the look the players have got least far in.",
                         "  upside_down:<core>:<reassembly> the upside-down band and its Reassembly crossfade",
                         "  chuncks:<core>  spheres:<core>  stacks:<core>",
                         "  legacy:<era>=<core>:...        the old-generator eras, back to back, crossfading into each other",
@@ -1159,6 +1172,17 @@ public final class DungeonTrainCommonConfig {
             if (V5_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
                 WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
                 LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
+                        from, CURRENT_CONFIG_VERSION);
+            }
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v6 -> v7: Lap 1 and Lap 2 became theme groups, each lap's look chosen per world. Only an order
+        // still at v6's shipped default moves; a customised order keeps its explicit styles.
+        if (from < 7) {
+            if (V6_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+                WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+                LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> themed laps.",
                         from, CURRENT_CONFIG_VERSION);
             }
             WorldGenCycle.invalidateCache();

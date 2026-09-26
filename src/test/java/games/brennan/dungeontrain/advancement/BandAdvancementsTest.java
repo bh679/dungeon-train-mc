@@ -38,7 +38,8 @@ final class BandAdvancementsTest {
         List<String> chain = BandAdvancements.chain(parse(CycleLayout.DEFAULT_ORDER));
         assertEquals(List.of(
                 "reached_nether", "reached_void", "reached_end_islands", "the_upside_down", "reassembly_required",
-                "reached_wwoo", "reached_better_nether", "reached_bop", "reached_better_end", "reached_spheres",
+                "reached_wwoo", "reached_bop", "reached_better_nether", "reached_bop_nether", "reached_better_end",
+                "reached_bop_end", "reached_spheres",
                 "reached_amplified", "reached_beta", "reached_far_lands", "reached_caves_of_chaos", "reached_skylands", "reached_floating",
                 "reached_alpha", "reached_infdev", "reached_classic", "reached_superflat", "reached_legacy_void",
                 "reached_chuncks", "reached_stacks", "reached_overworld_again"), chain);

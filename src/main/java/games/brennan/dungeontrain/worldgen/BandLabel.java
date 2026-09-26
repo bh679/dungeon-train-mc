@@ -68,9 +68,16 @@ public final class BandLabel {
     /** The styled occurrence at {@code worldX} within {@code phase}, or empty when it is the plain look. */
     private static String styleOf(ServerLevel overworld, WorldGenCycle cycle, TrainPhase phase, int worldX) {
         return switch (phase) {
-            case NETHER -> NetherBand.isInNetherBand(overworld, worldX) && cycle.isBetterNetherAt(worldX)
-                ? "Better Nether" : "";
-            case END -> cycle.isBetterEndAt(worldX) ? "Better End" : "";
+            case NETHER -> !NetherBand.isInNetherBand(overworld, worldX) ? "" : switch (cycle.netherLookAt(worldX)) {
+                case BETTER -> "Better Nether";
+                case BOP -> "Biomes O' Plenty Nether";
+                default -> "";
+            };
+            case END -> switch (cycle.endLookAt(worldX)) {
+                case BETTER -> "Better End";
+                case BOP -> "Biomes O' Plenty End";
+                default -> "";
+            };
             case OVERWORLD -> switch (SecondLapOverworld.at(cycle, worldX)) {
                 case WWOO -> "WWOO";
                 case BOP -> "Biomes O' Plenty";
