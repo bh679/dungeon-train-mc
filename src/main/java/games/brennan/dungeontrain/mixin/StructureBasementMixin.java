@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.worldgen.LegacyUnderground;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.biome.Biome;
@@ -17,7 +17,6 @@ import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -42,17 +41,6 @@ import java.util.function.Predicate;
 @Mixin(Structure.class)
 public abstract class StructureBasementMixin {
 
-    /**
-     * Structures the sunk zone (the Amplified band and its approach) never gets. Both are pinned to
-     * absolute depths that only reached the basement before the band sank; sunk, they would surface in
-     * its valleys — and they belong to the ordinary overworld's depths, not to this band.
-     */
-    @Unique
-    private static boolean dungeontrain$excludedFromSunkZone(ResourceLocation id) {
-        String s = id.toString();
-        return s.equals("minecraft:ancient_city") || s.equals("minecraft:trial_chambers");
-    }
-
     @Inject(method = "generate", at = @At("RETURN"), cancellable = true)
     private void dungeontrain$dropBasementStarts(RegistryAccess registryAccess, ChunkGenerator chunkGenerator,
                                                  BiomeSource biomeSource, RandomState randomState,
@@ -65,21 +53,18 @@ public abstract class StructureBasementMixin {
             return;
         }
         int floorY = WorldFloor.bedrockY(heightAccessor, chunkGenerator);
-        // The sunk zone's terrain reaches into the basement, so a deep start there is real — except the
-        // deep-dark and trial-chamber structures, which are left out of the sunk bands on purpose.
         if (heightAccessor instanceof ChunkAccess chunk
                 && ((ChunkAccessAccessor) chunk).dungeontrain$getLevelHeightAccessor() instanceof ServerLevel level
                 && level.getChunkSource().getGenerator() == chunkGenerator) {
-            int sunkFloor = WorldFloor.terrainFloorY(level, chunkPos.x, chunkPos.z);
-            if (sunkFloor < floorY) {
-                ResourceLocation id = registryAccess.registryOrThrow(Registries.STRUCTURE)
-                        .getKey((Structure) (Object) this);
-                if (id != null && dungeontrain$excludedFromSunkZone(id)) {
-                    cir.setReturnValue(StructureStart.INVALID_START);
-                    return;
-                }
-                floorY = sunkFloor;
+            // Legacy bands and the sunk zone never get the underground set (LegacyUnderground).
+            if (LegacyUnderground.appliesTo(level, chunkPos.x, chunkPos.z)
+                    && LegacyUnderground.excludesStructure(registryAccess.registryOrThrow(Registries.STRUCTURE)
+                            .getKey((Structure) (Object) this))) {
+                cir.setReturnValue(StructureStart.INVALID_START);
+                return;
             }
+            // The sunk zone's terrain reaches into the basement, so a deep start there is real.
+            floorY = Math.min(floorY, WorldFloor.terrainFloorY(level, chunkPos.x, chunkPos.z));
         }
         if (WorldFloor.entirelyBelowFloor(start.getBoundingBox().maxY(), floorY)) {
             cir.setReturnValue(StructureStart.INVALID_START);

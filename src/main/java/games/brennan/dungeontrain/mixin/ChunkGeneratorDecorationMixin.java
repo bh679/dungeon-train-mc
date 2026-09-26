@@ -4,10 +4,12 @@ import games.brennan.dungeontrain.DungeonTrain;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.LegacyUnderground;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.StacksBand;
 import games.brennan.dungeontrain.worldgen.OfflineChunkSampler;
 import games.brennan.dungeontrain.worldgen.VanillaOnlySample;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.WwooDecorationPass;
@@ -80,10 +82,20 @@ public abstract class ChunkGeneratorDecorationMixin {
     @Unique
     private static final ThreadLocal<Boolean> dungeontrain$deferStructures = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
+    /**
+     * Per-decoration-call registry access while decorating a legacy or sunk chunk, else {@code null} —
+     * the {@link LegacyUnderground} veto reads feature / structure ids through it. Same lifecycle as the
+     * flags above.
+     */
+    @Unique
+    private static final ThreadLocal<RegistryAccess> dungeontrain$legacyUnderground = new ThreadLocal<>();
+
     @Inject(method = "applyBiomeDecoration", at = @At("HEAD"))
     private void dungeontrain$computeSkip(WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager, CallbackInfo ci) {
         boolean skip = dungeontrain$isFullyErodedBandChunk(level, chunk);
         dungeontrain$skipDecoration.set(skip);
+        dungeontrain$legacyUnderground.set(dungeontrain$appliesLegacyUnderground(level, chunk)
+                ? level.registryAccess() : null);
         dungeontrain$deferStructures.set(DeferredStructurePlacement.isDeferred(level, chunk.getPos()));
         WwooDecorationPass.begin(level, chunk, skip);
     }
@@ -125,6 +137,11 @@ public abstract class ChunkGeneratorDecorationMixin {
         if (WwooDecorationPass.vetoes(feature)) {
             return false; // outside the WWOO stretch: WWOO-only or overridden (vanilla version places later)
         }
+        RegistryAccess legacy = dungeontrain$legacyUnderground.get();
+        if (legacy != null && LegacyUnderground.excludesFeature(
+                legacy.registryOrThrow(Registries.PLACED_FEATURE).getKey(feature))) {
+            return false; // legacy / sunk chunk: no geodes, dungeons or fossils at vanilla's absolute depths
+        }
         return feature.placeWithBiomeCheck(level, generator, random, origin);
     }
 
@@ -157,6 +174,12 @@ public abstract class ChunkGeneratorDecorationMixin {
             return List.of();
         }
         if (dungeontrain$skipDecoration.get() && !dungeontrain$isDtStructure(structure)) {
+            return List.of();
+        }
+        // Legacy / sunk chunk: no pieces of the underground set, even from a start just outside the band.
+        RegistryAccess legacy = dungeontrain$legacyUnderground.get();
+        if (legacy != null && LegacyUnderground.excludesStructure(
+                legacy.registryOrThrow(Registries.STRUCTURE).getKey(structure))) {
             return List.of();
         }
         return structureManager.startsForStructure(sectionPos, structure);
@@ -223,6 +246,20 @@ public abstract class ChunkGeneratorDecorationMixin {
                 level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE).getKey(feature));
         } catch (Throwable t) {
             return true;
+        }
+    }
+
+    /** A legacy or sunk overworld chunk — see {@link LegacyUnderground}. Unresolvable → no veto. */
+    @Unique
+    private static boolean dungeontrain$appliesLegacyUnderground(WorldGenLevel level, ChunkAccess chunk) {
+        try {
+            ServerLevel serverLevel = level.getLevel();
+            if (!serverLevel.dimension().equals(Level.OVERWORLD)) return false;
+            return LegacyUnderground.appliesTo(serverLevel, chunk.getPos().x, chunk.getPos().z);
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] legacy-underground resolve failed at {}; decorating as vanilla",
+                    chunk.getPos(), t);
+            return false;
         }
     }
 
