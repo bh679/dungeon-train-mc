@@ -612,6 +612,15 @@
       "modrinth_only": true,
       "modrinth_project": "sable-pathfinder",
       "modrinth_version": "U5bZr5zH"
+    },
+    {
+      "name": "Advanced Shulkerboxes",
+      "slug": "advanced-shulkerboxes",
+      "project_id": 253861,
+      "file_id": 5610975,
+      "required": true,
+      "modrinth_project": "advanced-shulkerboxes",
+      "modrinth_version": "TFonUZnY"
     }
   ],
   "curseforge_relations": [

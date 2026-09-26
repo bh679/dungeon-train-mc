@@ -7,7 +7,7 @@ import java.util.OptionalInt;
 import java.util.function.IntPredicate;
 
 /**
- * Finds the world-X where the next occurrence of a band begins, for {@code /dtp <band>}. Walks +X with
+ * Finds the world-X where a band's occurrence in a given lap begins, for {@code /dtp <band>}. Walks +X with
  * the band's own column test (see {@link DtpTarget}) so it stays correct whatever the band layout config
  * is, then binary-searches the exact entry column.
  *
@@ -29,15 +29,29 @@ final class BandLocator {
     private BandLocator() {}
 
     /**
-     * Entry X of the next {@code target} band strictly ahead of {@code fromX} — if {@code fromX} is
-     * already inside one, that band is skipped. Empty when the cycle is empty, the band is disabled,
-     * or the world has no train (every column test then reads false).
+     * Entry X of the {@code target} band's occurrence in lap {@code lap} ({@link WorldGenCycle#cycleIndex}),
+     * for {@code /dtp <band> <distance> <lap>}. Empty when that lap has no such band (e.g. BetterNether on
+     * an even lap) or the lap starts beyond int world-X.
      */
-    static OptionalInt nextBandStartX(ServerLevel overworld, DtpTarget target, int fromX) {
-        return nextBandStartX(WorldGenCycle.fromConfig(), x -> target.test().test(overworld, x), fromX);
+    static OptionalInt bandStartXInLap(ServerLevel overworld, DtpTarget target, int lap) {
+        return bandStartXInLap(WorldGenCycle.fromConfig(), x -> target.test().test(overworld, x), lap);
     }
 
-    /** Pure form of {@link #nextBandStartX(ServerLevel, DtpTarget, int)} over any column test. */
+    /** Pure form of {@link #bandStartXInLap(ServerLevel, DtpTarget, int)} over any column test. */
+    static OptionalInt bandStartXInLap(WorldGenCycle cycle, IntPredicate inBand, int lap) {
+        long lapStart = cycle.lapStartX(lap);
+        if (lapStart < 0L || lapStart > Integer.MAX_VALUE) return OptionalInt.empty();
+        // One column back, so a band opening exactly on the lap boundary counts as this lap's.
+        OptionalInt entry = nextBandStartX(cycle, inBand, (int) lapStart - 1);
+        if (entry.isEmpty() || cycle.cycleIndex(entry.getAsInt()) != lap) return OptionalInt.empty();
+        return entry;
+    }
+
+    /**
+     * Entry X of the next band strictly ahead of {@code fromX} — if {@code fromX} is already inside one,
+     * that band is skipped. Empty when the cycle is empty, the band is disabled, or the world has no train
+     * (every column test then reads false).
+     */
     static OptionalInt nextBandStartX(WorldGenCycle cycle, IntPredicate inBand, int fromX) {
         long period = cycle.period();
         if (period <= 0L) return OptionalInt.empty();

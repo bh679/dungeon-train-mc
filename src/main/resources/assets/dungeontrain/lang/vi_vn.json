@@ -2884,7 +2884,7 @@
   "chat.dungeontrain.package.world_doesn_t_use": "Thế giới này không dùng hệ thống tàu tự động (startsWithTrain đang tắt).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain thất bại: %s: %s",
   "chat.dungeontrain.package.teleporting_x_spawning_train": "Đang dịch chuyển đến X=%s — sinh một đoàn tàu ở đó ngay bây giờ; bạn sẽ đáp xuống toa sàn phẳng khi nó ổn định. Độ khó đặt ở bậc %s cho tương xứng.",
-  "chat.dungeontrain.package.dtp_band_not_found": "Không có dải %s phía trước — có thể nó đã bị tắt trong cấu hình.",
+  "chat.dungeontrain.package.dtp_band_not_found_in_lap": "Không có dải %s ở vòng %s — vòng đó có thể không có, hoặc nó đã bị tắt trong cấu hình.",
   "chat.dungeontrain.train.spawned_fresh_train_track": "Đã sinh một đoàn tàu mới trên đường ray tại X=%s (id tàu %s, khởi tạo với %s toa / %s khối, vận tốc +X %s m/s) — bạn sẽ đáp xuống toa sàn phẳng khi nó ổn định. Đoàn tàu trước đã bị xóa; độ khó trở lại tự động tăng theo tiến trình và %s toa cộng đồng đã ghi nhớ có thể xuất hiện lại. Dùng '/dungeontrain carriages <count>' để đổi cửa sổ toa.",
   "chat.dungeontrain.train.train_speed_set_m": "Tốc độ tàu đặt thành %s m/s (đã cập nhật %s %s đang hoạt động)",
   "chat.dungeontrain.train.default_carriages_set_appender": "Số toa mặc định đặt thành %s. Appender sẽ mở rộng hoặc cắt bớt cửa sổ cần thiết ở tick tiếp theo khi người chơi vượt qua ranh giới pIdx.",

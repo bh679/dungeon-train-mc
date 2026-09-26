@@ -339,6 +339,7 @@ jobs:
             supermartijn642s-config-lib(optional)
             crash-assistant(optional)
             particle-effects(optional)
+            advanced-shulkerboxes(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
