@@ -30,6 +30,9 @@ public final class BopEnd {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /** The namespace a BoP End sample's decoration admits alongside vanilla. */
+    public static final String NAMESPACE = "biomesoplenty";
+
     public record Built(long seed, BopEndBiomeSource source, NoiseBasedChunkGenerator generator) {}
 
     private static volatile Built built;

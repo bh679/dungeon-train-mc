@@ -159,10 +159,11 @@ public final class EndBandSampler {
         ChunkGenerator generator = end.getChunkSource().getGenerator();
         if (!(generator instanceof NoiseBasedChunkGenerator live)) return null;
         NoiseBasedChunkGenerator noise = live;
-        if (WorldGenCycle.fromConfig().endStyleOfPass(passIndex) == CycleLayout.Style.BOP) {
-            BopEnd.Built bop = BopEnd.get(server);
-            if (bop == null) return null;
-            noise = bop.generator();
+        boolean bop = WorldGenCycle.fromConfig().endStyleOfPass(passIndex) == CycleLayout.Style.BOP;
+        if (bop) {
+            BopEnd.Built built = BopEnd.get(server);
+            if (built == null) return null;
+            noise = built.generator();
         }
         // The live End's noise: the BoP generator's settings are a copy of the same End settings.
         RandomState random = end.getChunkSource().randomState();
@@ -178,7 +179,10 @@ public final class EndBandSampler {
             LOGGER.debug("[DungeonTrain] End-band carvers failed at {} — keeping uncarved terrain", endPos, t);
         }
         try {
-            OfflineChunkSampler.decorate(noise, workspace, ground);
+            // A BoP pass keeps vanilla + BoP features only: BetterEnd injects its ores into the vanilla
+            // End biomes, which the BoP End shares.
+            if (bop) OfflineChunkSampler.decorate(noise, workspace, ground, true, BopEnd.NAMESPACE);
+            else OfflineChunkSampler.decorate(noise, workspace, ground);
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] End-band decoration failed at {} — keeping bare terrain", endPos, t);
         }

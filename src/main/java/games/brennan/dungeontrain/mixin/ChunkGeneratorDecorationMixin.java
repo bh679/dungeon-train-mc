@@ -219,7 +219,7 @@ public abstract class ChunkGeneratorDecorationMixin {
     @Unique
     private static boolean dungeontrain$isVanillaPlacedFeature(WorldGenLevel level, PlacedFeature feature) {
         try {
-            return VanillaOnlySample.allows(
+            return VanillaOnlySample.allowsHere(
                 level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE).getKey(feature));
         } catch (Throwable t) {
             return true;

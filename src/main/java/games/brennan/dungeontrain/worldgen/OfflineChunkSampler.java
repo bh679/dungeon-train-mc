@@ -100,8 +100,17 @@ public final class OfflineChunkSampler {
      */
     public static void decorate(NoiseBasedChunkGenerator generator, Workspace workspace, ProtoChunk chunk,
                                 boolean vanillaOnly) {
+        decorate(generator, workspace, chunk, vanillaOnly, null);
+    }
+
+    /**
+     * {@link #decorate(NoiseBasedChunkGenerator, Workspace, ProtoChunk, boolean)} with one more namespace's
+     * features let through the vanilla-only veto ({@link VanillaOnlySample#allowsHere}).
+     */
+    public static void decorate(NoiseBasedChunkGenerator generator, Workspace workspace, ProtoChunk chunk,
+                                boolean vanillaOnly, String alsoNamespace) {
         SAMPLING.set(Boolean.TRUE);
-        VanillaOnlySample.set(vanillaOnly);
+        VanillaOnlySample.set(vanillaOnly, alsoNamespace);
         try {
             generator.applyBiomeDecoration(workspace.region(), chunk, workspace.structures());
         } finally {
