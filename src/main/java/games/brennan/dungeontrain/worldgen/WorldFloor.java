@@ -79,6 +79,17 @@ public final class WorldFloor {
     }
 
     /**
+     * The sea level of the column at block {@code (blockX, blockZ)} — the level's own, except in a
+     * {@link SunkZone} chunk, whose sea was lowered with its land ({@link AmplifiedDrop#seaLevel}).
+     */
+    public static int seaLevelAt(WorldGenLevel level, int blockX, int blockZ) {
+        int sea = level.getSeaLevel();
+        ServerLevel server = level.getLevel();
+        if (!SunkZone.isSunkChunk(server, blockX >> 4, blockZ >> 4)) return sea;
+        return AmplifiedDrop.of(server).seaLevel(sea);
+    }
+
+    /**
      * How much empty world sits under the bedrock — 0 in a world whose generator reaches the build
      * floor. The portal system spends this space; nothing else should.
      */
