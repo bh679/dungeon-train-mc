@@ -414,7 +414,7 @@ public final class DungeonTrainCommonConfig {
 
     /**
      * The band order v5 shipped, before the first End band's trailing void (the gap before the
-     * upside-down band) grew to 675 blocks. The v5 -> v6 migration moves only an order still at this.
+     * upside-down band) grew to 625 blocks. The v5 -> v6 migration moves only an order still at this.
      */
     public static final String WORLDGEN_CYCLE_ORDER_V5 =
             "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
@@ -1144,10 +1144,10 @@ public final class DungeonTrainCommonConfig {
         }
 
         // v5 -> v6: the void between the first End band and the upside-down band grew (its trailing hold
-        // 500 -> 675). Only an order still at v5's shipped string moves; an edited order is left alone.
+        // 500 -> 625). Only an order still at v5's shipped string moves; an edited order is left alone.
         if (from < 6 && WORLDGEN_CYCLE_ORDER_V5.equals(WORLDGEN_CYCLE_ORDER.get())) {
             WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
-            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> the End -> upside-down gap is 675.",
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> the End -> upside-down gap is 625.",
                     from, CURRENT_CONFIG_VERSION);
             WorldGenCycle.invalidateCache();
         }

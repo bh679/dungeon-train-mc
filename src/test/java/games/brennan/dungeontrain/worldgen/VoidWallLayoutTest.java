@@ -154,11 +154,11 @@ final class VoidWallLayoutTest {
     }
 
     @Test
-    @DisplayName("the first End's trailing void — the gap before the upside-down band — is 675, the second's stays 500")
+    @DisplayName("the first End's trailing void — the gap before the upside-down band — is 625, the second's stays 500")
     void upsideDownGapIsLonger() {
-        assertEquals(675, LAYOUT.endTrailingHold(LAYOUT.slot(3)));
+        assertEquals(625, LAYOUT.endTrailingHold(LAYOUT.slot(3)));
         assertEquals(VH, LAYOUT.endTrailingHold(LAYOUT.slot(8)));
-        assertEquals(4L * F + VH + LAYOUT.slot(3).core() + 675, LAYOUT.length(3));
+        assertEquals(4L * F + VH + LAYOUT.slot(3).core() + 625, LAYOUT.length(3));
     }
 
     @Test
