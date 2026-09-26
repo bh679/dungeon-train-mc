@@ -1933,7 +1933,8 @@ public final class PortalCarriageBuilder {
                         continue;
                     }
                     SilentBlockOps.evictBlockEntity(level.getChunkAt(wWorld), wWorld);
-                    ContainerContentsPlacement.place(level, wWorld, w.state(), w.entry().blockEntityNbt(),
+                    ContainerContentsPlacement.place(level, wWorld,
+                        games.brennan.dungeontrain.train.StagePlacementScope.resolve(w.state()), w.entry().blockEntityNbt(),
                         plotKey, w.localPos(), worldSeed, cellIndex, /*diffIndex*/ pairKey,
                         w.entry().linkedLootPrefabId());
                 }
@@ -1959,7 +1960,8 @@ public final class PortalCarriageBuilder {
             // The same index the block was picked at, so a flagged chest's contents vary with the
             // block rather than the block changing over identical loot. Still the pair-and-copy
             // frame, never the difficulty one — pairKey stays that, see the javadoc above.
-            ContainerContentsPlacement.place(level, world, picked.state(), picked.blockEntityNbt(),
+            ContainerContentsPlacement.place(level, world,
+                games.brennan.dungeontrain.train.StagePlacementScope.resolve(picked.state()), picked.blockEntityNbt(),
                 plotKey, local, worldSeed, cellIndex, /*diffIndex*/ pairKey,
                 picked.linkedLootPrefabId());
         }

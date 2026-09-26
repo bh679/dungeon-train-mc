@@ -33,6 +33,19 @@ public final class ChunkFrame {
 
     private ChunkFrame() {}
 
+    /**
+     * Every dimensional carriage room a frame can dress — the room variants whose walls are
+     * {@code chunk_dimension} — in the room registry's order.
+     */
+    public static java.util.List<String> chunkRooms() {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (String room : games.brennan.dungeontrain.track.variant.TrackVariantRegistry.namesFor(
+                games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM)) {
+            if (games.brennan.dungeontrain.portal.PortalRoomSettings.of(room).mode().generatesTerrain()) out.add(room);
+        }
+        return out;
+    }
+
     /** True when template-local {@code (x, y, z)} is in the shell, outside the room box. */
     public static boolean isShell(int x, int y, int z) {
         return x == 0 || y == 0 || z == 0

@@ -99,6 +99,7 @@ public final class EditorDirtyCheck {
         scanAdjuncts(overworld, dims, devmode, out);
         scanTunnels(overworld, dims, devmode, out);
         scanPortalRooms(overworld, dims, devmode, out);
+        scanChunkFrames(overworld, out);
 
         return out;
     }
@@ -302,6 +303,26 @@ public final class EditorDirtyCheck {
                     out.add(new DirtyEntry("tracks",
                         "tunnel_" + tunnelLabel + "." + name, display, true, false));
                 }
+            }
+        }
+    }
+
+    /** Frame plots: the live blocks against the baseline taken at stamp and at save, plus sidecar edits. */
+    private static void scanChunkFrames(ServerLevel level, List<DirtyEntry> out) {
+        Vec3i size = games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.SIZE;
+        for (String name : games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names()) {
+            String key = ChunkFrameEditor.snapshotKey(name);
+            if (!EditorPlotSnapshots.has(key) && !EditorPlotSnapshots.sidecarEdited(key)) continue;
+            BlockPos origin = ChunkFrameEditor.registeredPlotOrigin(name);
+            if (origin == null) continue;
+            Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
+            Set<BlockPos> skip = variantCellPositions(
+                games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.loadFor(name).entries());
+            boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                || (snapshot != null && !regionMatchesSnapshot(key, level, origin, size.getX(), size.getY(), size.getZ(), snapshot, skip));
+            if (unsaved) {
+                out.add(new DirtyEntry(PlotCategory.CHUNK_FRAMES.id(), ChunkFrameEditor.MODEL_ID + "." + name,
+                    "frame / " + name, true, false));
             }
         }
     }
@@ -587,7 +608,8 @@ public final class EditorDirtyCheck {
             // Whole rows are keyed by the bare id under their own category ids — see scanWhole.
             case WHOLE_CARRIAGE, CARRIAGE_GROUP -> model.id();
             // Neither is covered by a scan pass yet.
-            case PART, CHUNK_FRAME -> null;
+            case CHUNK_FRAME -> ChunkFrameEditor.MODEL_ID + "." + model.variantName();
+            case PART -> null;
         };
     }
 
@@ -612,6 +634,7 @@ public final class EditorDirtyCheck {
             case CARRIAGE, CONTENTS -> id;
             case PORTAL_ROOM -> "portal_room." + id;
             case TRACK -> trackDirtyKeyFor(TrackKind.fromId(subKind), id);
+            case CHUNK_FRAME -> ChunkFrameEditor.MODEL_ID + "." + id;
             case PART, CARRIAGE_GROUP -> null;
         };
     }

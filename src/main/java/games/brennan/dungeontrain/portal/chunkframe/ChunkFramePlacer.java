@@ -46,24 +46,66 @@ public final class ChunkFramePlacer {
     /** Forget the per-session warnings — a new world may have the missing frames. */
     public static void clear() {
         WARNED.clear();
+        FORCED.clear();
     }
 
     /** The frame a pair's room is dressed in: its template and its variant sidecar. */
     public record Picked(String name, ChunkFrameTemplate template, TrackVariantBlocks variants) {}
 
-    /** {@code roomName}'s frame for pair {@code pairKey}, or empty when it has none that loads. */
+    /**
+     * Frames forced onto particular pairs — what Test the Carriage uses to show one frame on a
+     * chunk dimension it picked, whatever the frames' own selection says. Pair-keyed, cleared with
+     * the world.
+     */
+    private static final java.util.Map<Integer, String> FORCED = new ConcurrentHashMap<>();
+
+    /** Dress pair {@code pairKey} in {@code frameName} (or its normal pick when null). */
+    public static void force(int pairKey, String frameName) {
+        if (frameName == null) FORCED.remove(pairKey); else FORCED.put(pairKey, frameName);
+    }
+
+    /**
+     * {@code roomName}'s frame for pair {@code pairKey}, or empty when no frame dresses it.
+     *
+     * <p>The candidates are every frame whose {@link ChunkFrameMeta} names this room (or every room),
+     * picked by their weights on a per-pair roll, so a room keeps its frame every time it is
+     * re-stamped.</p>
+     */
     public static Optional<Picked> frameFor(ServerLevel level, String roomName, int pairKey) {
-        String name = ChunkRoomFramesStore.get(roomName).pick(level.getSeed() ^ FRAME_SALT ^ ((long) pairKey << 20));
+        String name = FORCED.get(pairKey);
+        if (name == null) name = pick(roomName, level.getSeed() ^ FRAME_SALT ^ ((long) pairKey << 20));
         if (name == null) return Optional.empty();
         Optional<ChunkFrameTemplate> template = ChunkFrameStore.get(level, name);
         if (template.isEmpty()) {
             if (WARNED.add(roomName + "/" + name)) {
-                LOGGER.warn("[DungeonTrain] Chunk room {} names frame '{}', which does not load; it stays unframed",
+                LOGGER.warn("[DungeonTrain] Chunk room {} picked frame '{}', which does not load; it stays unframed",
                     roomName, name);
             }
             return Optional.empty();
         }
         return Optional.of(new Picked(name, template.get(), ChunkFrameVariants.loadFor(name)));
+    }
+
+    /** The frame {@code seed} lands on among those that dress {@code roomName}, or null. */
+    static String pick(String roomName, long seed) {
+        java.util.List<String> names = new java.util.ArrayList<>();
+        java.util.List<Integer> weights = new java.util.ArrayList<>();
+        int total = 0;
+        for (String name : ChunkFrameRegistry.names()) {
+            ChunkFrameMeta meta = ChunkFrameMetaStore.get(name);
+            if (!meta.appliesTo(roomName)) continue;
+            names.add(name);
+            weights.add(meta.weight());
+            total += meta.weight();
+        }
+        if (total == 0) return null;
+        long mixed = seed * 0x9E3779B97F4A7C15L;
+        int roll = (int) Math.floorMod(mixed ^ (mixed >>> 31), (long) total);
+        for (int i = 0; i < names.size(); i++) {
+            roll -= weights.get(i);
+            if (roll < 0) return names.get(i);
+        }
+        return names.get(names.size() - 1);
     }
 
     /**
@@ -96,6 +138,8 @@ public final class ChunkFramePlacer {
                         blockEntity = roll.blockEntityNbt();
                     }
                     if (state == null || state.isAir()) continue;
+                    // Stage placeholders become the stage's real blocks, as in every other stamp.
+                    state = games.brennan.dungeontrain.train.StagePlacementScope.resolve(state);
                     cursor.set(roomOrigin.getX() + ChunkFrame.OFFSET.getX() + x,
                         roomOrigin.getY() + ChunkFrame.OFFSET.getY() + y,
                         roomOrigin.getZ() + ChunkFrame.OFFSET.getZ() + z);

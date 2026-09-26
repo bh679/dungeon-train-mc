@@ -4,12 +4,9 @@ import net.minecraft.core.Vec3i;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ChunkFrameTest {
@@ -41,25 +38,30 @@ class ChunkFrameTest {
     }
 
     @Test
-    @DisplayName("A room's pick is by weight, the same for the same seed, and none when it has none")
-    void pickIsWeightedAndStable() {
-        assertNull(ChunkRoomFrames.EMPTY.pick(42));
-        ChunkRoomFrames frames = ChunkRoomFrames.EMPTY.with("a", 1).with("b", 3);
-        Map<String, Integer> counts = new HashMap<>();
-        for (long seed = 0; seed < 4000; seed++) counts.merge(frames.pick(seed), 1, Integer::sum);
-        assertTrue(counts.get("b") > 2 * counts.get("a"), "b should come up about three times as often: " + counts);
-        assertEquals(frames.pick(7), frames.pick(7));
+    @DisplayName("A frame dresses every chunk dimension until told otherwise, and toggles keep that")
+    void metaDefaultsAndToggles() {
+        java.util.List<String> all = java.util.List.of("chunk_dimension", "chunk_dimension_nether", "chunk_dimension_end");
+        ChunkFrameMeta meta = ChunkFrameMeta.DEFAULT;
+        assertTrue(meta.allRooms());
+        assertTrue(meta.appliesTo("chunk_dimension_end"));
+
+        ChunkFrameMeta noNether = meta.toggled("chunk_dimension_nether", false, all);
+        assertFalse(noNether.allRooms());
+        assertFalse(noNether.appliesTo("chunk_dimension_nether"));
+        assertTrue(noNether.appliesTo("chunk_dimension"));
+
+        // Turning the last one back on returns to "every room", so a later chunk dimension joins too.
+        assertTrue(noNether.toggled("chunk_dimension_nether", true, all).allRooms());
+        assertTrue(meta.withNoRooms().rooms().isEmpty());
+        assertFalse(meta.withNoRooms().appliesTo("chunk_dimension"));
     }
 
     @Test
-    @DisplayName("Editing a room's list keeps order, sets weights in place, and round-trips through JSON")
-    void editsAndJson() {
-        ChunkRoomFrames frames = ChunkRoomFrames.EMPTY.with("a", 1).with("b", 2).with("a", 5);
-        assertEquals("a", frames.entries().get(0).name());
-        assertEquals(5, frames.entries().get(0).weight());
-        assertEquals(2, frames.entries().size());
-        assertEquals(frames, ChunkRoomFrames.fromJson(frames.toJson()));
-        assertFalse(frames.without("a").entries().stream().anyMatch(e -> e.name().equals("a")));
-        assertEquals(ChunkRoomFrames.MAX_WEIGHT, ChunkRoomFrames.EMPTY.with("c", 999).entries().get(0).weight());
+    @DisplayName("Frame meta round-trips through JSON and clamps its weight")
+    void metaJson() {
+        ChunkFrameMeta meta = new ChunkFrameMeta(java.util.Set.of("chunk_dimension_end"), 7);
+        assertEquals(meta, ChunkFrameMeta.fromJson(meta.toJson()));
+        assertEquals(ChunkFrameMeta.DEFAULT, ChunkFrameMeta.fromJson(ChunkFrameMeta.DEFAULT.toJson()));
+        assertEquals(ChunkFrameMeta.MAX_WEIGHT, ChunkFrameMeta.DEFAULT.withWeight(999).weight());
     }
 }

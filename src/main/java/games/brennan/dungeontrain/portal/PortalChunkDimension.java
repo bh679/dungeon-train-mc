@@ -89,7 +89,10 @@ public final class PortalChunkDimension {
                 PortalChunkTerrain.decorationApplied(pairKey);
                 continue;
             }
-            write(level, structure, dims, slice, pairKey);
+            // The decoration pass runs from the level tick, outside the stamp's stage scope — open it
+            // again so the frame's stage placeholders resolve as they did on the first write.
+            games.brennan.dungeontrain.train.StagePlacementScope.run(
+                PortalCarriageBuilder.stageIdFor(level, pairKey, dims), () -> write(level, structure, dims, slice, pairKey));
             spawnOccupants(level, structure, dims, slice, pairKey);
             PortalChunkTerrain.decorationApplied(pairKey);
         }
@@ -110,9 +113,9 @@ public final class PortalChunkDimension {
     }
 
     /**
-     * Dress {@code structure}'s room in the frame its {@code .frames.json} picks for this pair, when it
-     * names any — see {@link ChunkFramePlacer}. A room with no frame, or one that is not a chunk box,
-     * is left as its terrain in its lock skin.
+     * Dress {@code structure}'s room in a frame — one of the frames whose selection names this room,
+     * picked by weight for this pair (see {@link ChunkFramePlacer}). A room no frame dresses, or one
+     * that is not a chunk box, is left as its terrain in its lock skin.
      */
     public static void frame(ServerLevel level, PortalStructure structure, CarriageDims dims, int pairKey) {
         if (!structure.roomSize().equals(ChunkFrame.ROOM_SIZE)) return;

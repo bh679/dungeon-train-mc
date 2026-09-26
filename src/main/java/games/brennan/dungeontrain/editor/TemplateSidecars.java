@@ -157,6 +157,7 @@ public final class TemplateSidecars {
                 yield trackKind == null ? null : ContainerContentsStore.trackPlotKey(trackKind, id);
             }
             case PORTAL_ROOM -> ContainerContentsStore.trackPlotKey(TrackKind.PORTAL_ROOM, id);
+            case CHUNK_FRAME -> ChunkFramePlot.KEY_PREFIX + id;
             case CARRIAGE_GROUP -> null;
         };
     }

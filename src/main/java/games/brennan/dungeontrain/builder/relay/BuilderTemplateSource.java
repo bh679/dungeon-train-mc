@@ -94,6 +94,7 @@ public final class BuilderTemplateSource {
                         : Optional.of(TrackVariantStore.fileFor(trackKind, id));
             }
             case PORTAL_ROOM -> Optional.of(TrackVariantStore.fileFor(TrackKind.PORTAL_ROOM, id));
+            case CHUNK_FRAME -> Optional.of(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.fileFor(id));
         };
     }
 

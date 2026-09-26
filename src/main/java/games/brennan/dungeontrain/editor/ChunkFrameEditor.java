@@ -6,8 +6,8 @@ import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry;
 import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore;
 import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameTemplate;
 import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants;
-import games.brennan.dungeontrain.portal.chunkframe.ChunkRoomFrames;
-import games.brennan.dungeontrain.portal.chunkframe.ChunkRoomFramesStore;
+import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMeta;
+import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
@@ -116,7 +116,7 @@ public final class ChunkFrameEditor {
         ChunkFrameRegistry.register(name);
         SESSIONS.put(player.getUUID(), name);
         BlockPos origin = plotOrigin(name);
-        stampPlot(level, origin, ChunkFrameStore.get(level, copyOf != null ? copyOf : name).orElse(null));
+        stampPlot(level, name, origin, ChunkFrameStore.get(level, copyOf != null ? copyOf : name).orElse(null));
         EditorPlotArrival.land(player, level, origin, ChunkFrame.SIZE, true, EditorPlotArrival.Inside.CENTRE, null);
         LOGGER.info("[DungeonTrain] Chunk frame editor: {} entered {} at {}{}", player.getName().getString(),
             name, origin, copyOf != null ? " (copy of " + copyOf + ")" : "");
@@ -136,6 +136,8 @@ public final class ChunkFrameEditor {
         // The variant sidecar travels with its frame, as every other template's does.
         ChunkFramePlot plot = ChunkFramePlot.of(name);
         if (plot != null) plot.save();
+        // After the sidecar save, which marks the sidecar edited: this is the new clean baseline.
+        captureSnapshot(level, name, plotOrigin(name));
         SESSIONS.put(player.getUUID(), name);
         return toSource;
     }
@@ -147,7 +149,7 @@ public final class ChunkFrameEditor {
         List<EditorStampQueue.Job> jobs = new ArrayList<>();
         for (String name : ChunkFrameRegistry.names()) {
             jobs.add(new EditorStampQueue.Job("stamp chunk frame " + name,
-                () -> stampPlot(level, plotOrigin(name), ChunkFrameStore.get(level, name).orElse(null))));
+                () -> stampPlot(level, name, plotOrigin(name), ChunkFrameStore.get(level, name).orElse(null))));
         }
         return jobs;
     }
@@ -157,55 +159,49 @@ public final class ChunkFrameEditor {
         BlockPos origin = registeredPlotOrigin(name);
         if (origin == null) return;
         ChunkFrameStore.invalidate(name);
-        stampPlot(level, origin, ChunkFrameStore.get(level, name).orElse(null));
+        stampPlot(level, name, origin, ChunkFrameStore.get(level, name).orElse(null));
     }
 
     /** Erase {@code name}'s plot back to an empty cage — {@code editor clear}. */
     public static void clearPlot(ServerLevel level, String name) {
         BlockPos origin = registeredPlotOrigin(name);
-        if (origin != null) stampPlot(level, origin, null);
+        if (origin != null) stampBlocks(level, origin, null);
     }
 
     /**
-     * Delete {@code name}: its user files (and, in dev mode, its source-tree files), its entries in
-     * every room's frame list, and its plot — re-laying the row, since the slots after it move up.
+     * Delete {@code name}: its user files (and, in dev mode, its source-tree files) — structure,
+     * variant sidecar and meta — and its plot, re-laying the row since the slots after it move up.
      *
      * @return false when the frame is only bundled and there is nothing of the author's to delete
      */
     public static boolean delete(ServerLevel level, String name, boolean fromSource) throws IOException {
         boolean deleted = ChunkFrameStore.deleteFiles(name, fromSource);
         deleted |= ChunkFrameVariants.delete(name, fromSource);
+        deleted |= ChunkFrameMetaStore.delete(name, fromSource);
         // Nothing on disk and nothing shipped: a frame entered but never saved. Its plot still goes.
         if (!deleted && ChunkFrameStore.isBundled(name)) return false;
-        relayRow(level, () -> {
-            ChunkFrameStore.invalidate(name);
-            forEachRoomNaming(name, frames -> frames.without(name), fromSource);
-        });
+        relayRow(level, () -> ChunkFrameStore.invalidate(name));
         SESSIONS.values().removeIf(name::equals);
         return true;
     }
 
     /**
-     * Rename {@code name} to {@code newName}: its files, its variant sidecar, and every room's frame
-     * list that names it. The player is put on the renamed plot.
+     * Rename {@code name} to {@code newName}: its structure, variant sidecar and meta (which rooms it
+     * dresses, and its weight) all move with it. The player is put on the renamed plot.
      */
     public static void rename(ServerPlayer player, ServerLevel level, String name, String newName,
                               boolean toSource) throws IOException {
         CompoundTag tag = ChunkFrameStore.readTag(name)
             .orElseThrow(() -> new IOException("'" + name + "' has no saved frame to rename — save it first."));
         var variants = games.brennan.dungeontrain.track.variant.TrackVariantBlocks.copyOf(ChunkFrameVariants.loadFor(name));
+        ChunkFrameMeta meta = ChunkFrameMetaStore.get(name);
         ChunkFrameStore.save(newName, tag, toSource);
         ChunkFrameVariants.save(newName, variants, toSource);
+        ChunkFrameMetaStore.save(newName, meta, toSource);
         ChunkFrameStore.deleteFiles(name, toSource);
         ChunkFrameVariants.delete(name, toSource);
-        relayRow(level, () -> {
-            ChunkFrameStore.invalidate(name);
-            forEachRoomNaming(name, frames -> {
-                int weight = frames.entries().stream().filter(e -> e.name().equals(name))
-                    .mapToInt(ChunkRoomFrames.Entry::weight).findFirst().orElse(ChunkRoomFrames.MIN_WEIGHT);
-                return frames.without(name).with(newName, weight);
-            }, toSource);
-        });
+        ChunkFrameMetaStore.delete(name, toSource);
+        relayRow(level, () -> ChunkFrameStore.invalidate(name));
         enter(player, level, newName, null);
     }
 
@@ -217,30 +213,33 @@ public final class ChunkFrameEditor {
         for (EditorStampQueue.Job job : stampAllPlotJobs(level)) job.work().run();
     }
 
-    /** Rewrite every dimensional carriage room's frame list that names {@code name}. */
-    private static void forEachRoomNaming(String name, java.util.function.UnaryOperator<ChunkRoomFrames> edit,
-                                          boolean toSource) {
-        for (String room : games.brennan.dungeontrain.track.variant.TrackVariantRegistry.namesFor(
-                games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM)) {
-            ChunkRoomFrames frames = ChunkRoomFramesStore.get(room);
-            if (frames.entries().stream().noneMatch(e -> e.name().equals(name))) continue;
-            try {
-                ChunkRoomFramesStore.save(room, edit.apply(frames), toSource);
-            } catch (IOException e) {
-                LOGGER.warn("[DungeonTrain] Could not update {}'s frame list after changing '{}': {}", room, name, e.toString());
-            }
-        }
-    }
-
     /** Erase every frame plot and its cage. */
     public static void clearAllPlots(ServerLevel level) {
         for (String name : ChunkFrameRegistry.names()) {
             BlockPos o = plotOrigin(name);
             fillBox(level, o.offset(-1, -1, -1), o.offset(ChunkFrame.SIZE), Blocks.AIR.defaultBlockState());
+            // Nothing stands to compare against any more.
+            EditorPlotSnapshots.clear(snapshotKey(name));
         }
     }
 
-    private static void stampPlot(ServerLevel level, BlockPos origin, ChunkFrameTemplate frame) {
+    /** The dirty-check baseline key for {@code name}'s plot. */
+    public static String snapshotKey(String name) {
+        return EditorPlotSnapshots.key(PlotCategory.CHUNK_FRAMES.id(), MODEL_ID + ":" + name);
+    }
+
+    /** Stamp {@code frame} on {@code name}'s plot and take that as the plot's saved baseline. */
+    private static void stampPlot(ServerLevel level, String name, BlockPos origin, ChunkFrameTemplate frame) {
+        stampBlocks(level, origin, frame);
+        captureSnapshot(level, name, origin);
+    }
+
+    private static void captureSnapshot(ServerLevel level, String name, BlockPos origin) {
+        EditorPlotSnapshots.capture(snapshotKey(name), level, origin,
+            ChunkFrame.SIZE.getX(), ChunkFrame.SIZE.getY(), ChunkFrame.SIZE.getZ());
+    }
+
+    private static void stampBlocks(ServerLevel level, BlockPos origin, ChunkFrameTemplate frame) {
         Vec3i size = ChunkFrame.SIZE;
         fillBox(level, origin.offset(-1, -1, -1), origin.offset(size), Blocks.AIR.defaultBlockState());
         drawCage(level, origin, size);

@@ -685,7 +685,7 @@ public final class PortalCarriageEvents {
         // Chunk room frames: the templates and room lists are re-read from disk by the next world,
         // which may be another pack's or have had them edited.
         games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.clearCache();
-        games.brennan.dungeontrain.portal.chunkframe.ChunkRoomFramesStore.clearCache();
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.clearCache();
         games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.clear();
         games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.clear();
         games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.clearCache();

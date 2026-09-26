@@ -78,8 +78,15 @@ public final class PortalTestCommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("test")
-            .executes(ctx -> runTest(ctx.getSource(), null, false))
+            .executes(ctx -> runTest(ctx.getSource(), unforced(null), false))
             .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())))
+            // A chunk frame, shown on a chunk dimension picked by the dimensions group's weights
+            // among the ones the frame dresses. A literal, like reseed, so it can't shadow a room.
+            .then(Commands.literal("frame")
+                .then(Commands.argument("frame", StringArgumentType.word())
+                    .suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
+                        games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names(), builder))
+                    .executes(ctx -> runFrameTest(ctx.getSource(), StringArgumentType.getString(ctx, "frame")))))
             // Reseed — bare, it re-rolls the test the author is standing in, right now. With on|off
             // it is the world switch: on, each test rolls the room's contents afresh; off, every
             // test stands up the same roll, which is what it always did. A literal, so a room that
@@ -94,7 +101,64 @@ public final class PortalTestCommand {
                 .suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
                     games.brennan.dungeontrain.track.variant.TrackVariantRegistry.namesFor(
                         games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM), builder))
-                .executes(ctx -> runTest(ctx.getSource(), StringArgumentType.getString(ctx, "room"), false)));
+                .executes(ctx -> runTest(ctx.getSource(), unforced(StringArgumentType.getString(ctx, "room")), false)));
+    }
+
+    /** A room test of the room itself: whatever frame an earlier frame test forced is dropped. */
+    private static String unforced(String room) {
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.force(PortalTestSession.PAIR_KEY, null);
+        return room;
+    }
+
+    /** The parent every chunk dimension sub-variant hangs under. */
+    private static final String CHUNK_DIMENSIONS_GROUP = "chunk_dimension";
+
+    /**
+     * Test {@code frame}: pick a chunk dimension by the dimensions group's weights — the parent's own
+     * and each member's — among the ones the frame dresses, force the frame onto the test pair, and
+     * stand the room up as any room test would. A reseed, or a press that has to wait for its sample,
+     * keeps the frame: the force lives on the pair until Back or a plain room test.
+     */
+    private static int runFrameTest(CommandSourceStack source, String frame) {
+        if (!games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names().contains(frame)) {
+            source.sendFailure(Component.literal("No frame named " + frame + "."));
+            return 0;
+        }
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMeta meta =
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.get(frame);
+        java.util.List<String> chunkRooms = games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.chunkRooms();
+        var group = games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(
+            games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, CHUNK_DIMENSIONS_GROUP)
+            .orElse(games.brennan.dungeontrain.track.variant.TrackVariantGroup.EMPTY);
+        java.util.List<String> ids = new java.util.ArrayList<>();
+        java.util.List<Integer> weights = new java.util.ArrayList<>();
+        java.util.function.BiConsumer<String, Integer> offer = (id, weight) -> {
+            if (weight > 0 && chunkRooms.contains(id) && meta.appliesTo(id)) { ids.add(id); weights.add(weight); }
+        };
+        offer.accept(CHUNK_DIMENSIONS_GROUP, group.selfWeight());
+        for (var member : group.members()) offer.accept(member.id(), member.weight());
+        // Chunk dimensions outside the group (an author's own) still count, at weight 1.
+        for (String room : chunkRooms) {
+            if (!ids.contains(room) && room != null && meta.appliesTo(room)
+                    && !CHUNK_DIMENSIONS_GROUP.equals(room) && group.member(room).isEmpty()) {
+                ids.add(room); weights.add(1);
+            }
+        }
+        if (ids.isEmpty()) {
+            source.sendFailure(Component.literal("Frame '" + frame + "' dresses no chunk dimension — pick some under Chunk dimensions."));
+            return 0;
+        }
+        int total = weights.stream().mapToInt(Integer::intValue).sum();
+        int roll = java.util.concurrent.ThreadLocalRandom.current().nextInt(total);
+        String room = ids.get(ids.size() - 1);
+        for (int i = 0; i < ids.size(); i++) {
+            roll -= weights.get(i);
+            if (roll < 0) { room = ids.get(i); break; }
+        }
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.force(PortalTestSession.PAIR_KEY, frame);
+        final String picked = room;
+        source.sendSuccess(() -> Component.literal("Testing frame '" + frame + "' on " + picked + "."), false);
+        return runTest(source, picked, true);
     }
 
     /**
@@ -442,6 +506,7 @@ public final class PortalTestCommand {
             && games.brennan.dungeontrain.train.CarriageTestSession.has(player.getUUID())) {
             return CarriageTestCommand.runBack(source);
         }
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.force(PortalTestSession.PAIR_KEY, null);
         PortalTestSession.Session session = PortalTestSession.take(player.getUUID());
         if (session == null) {
             if (withdrew) return 1;

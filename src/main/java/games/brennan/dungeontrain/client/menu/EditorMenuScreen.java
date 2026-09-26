@@ -265,6 +265,11 @@ public final class EditorMenuScreen implements MenuScreen {
                 CarriageContentsAllowScreen.forPortalRoom(ctx.modelName())));
         }
 
+        // A frame says which chunk dimensions it dresses, and its weight among the frames there.
+        if (ctx.isChunkFrames() && notEmpty(ctx.modelName())) {
+            out.add(new CommandMenuEntry.DrillIn("Chunk dimensions…", new ChunkFrameRoomsScreen(ctx.modelName())));
+        }
+
         // Weight — Triple row: [-] / Weight (N) / [+] for every category that has a weight pool.
         // Side cells nudge by 1 server-side and stay open so the player can tap-tap-tap; middle
         // cell drops into typing mode for an exact value.
@@ -353,7 +358,6 @@ public final class EditorMenuScreen implements MenuScreen {
         addIfPresent(out, EditorMenuPortalRows.roomBooksRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.roomSkyRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.roomFogRowFor(mode, prefix));
-        addIfPresent(out, EditorMenuPortalRows.chunkFramesRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.exitsRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.exitEveryTripleFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.exitMoveTripleFor(mode, prefix));

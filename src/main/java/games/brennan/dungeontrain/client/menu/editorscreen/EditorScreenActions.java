@@ -400,6 +400,8 @@ public final class EditorScreenActions {
         if (category == null || modelName == null || modelName.isEmpty()) return null;
         return switch (category) {
             case PORTALS -> new PortalTestSaveCheckScreen(modelName);
+            case CHUNK_FRAMES -> modelName == null || modelName.isEmpty() ? null
+                : PortalTestSaveCheckScreen.forFrame(modelName);
             case CARRIAGES, CONTENTS -> PortalTestSaveCheckScreen.forTemplate(category.id(), modelName);
             default -> null;
         };
@@ -451,6 +453,10 @@ public final class EditorScreenActions {
             for (CommandMenuEntry row : portalRows.get()) {
                 if (!isRoomSizeRow(row)) out.add(row);
             }
+        }
+        if (ctx.category() == PlotCategory.CHUNK_FRAMES) {
+            out.add(new CommandMenuEntry.DrillIn("Chunk dimensions…",
+                new games.brennan.dungeontrain.client.menu.ChunkFrameRoomsScreen(ctx.selection().modelName())));
         }
         out.addAll(flipRows(ctx));
         addIfPresent(out, contentsAllowEntry(ctx, roomMode));

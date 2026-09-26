@@ -514,7 +514,8 @@ public final class EditorSaveAsKinds {
         @Override public List<Path> userFiles(Template source) {
             String name = ((Template.ChunkFrame) source).name();
             return List.of(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.fileFor(name),
-                games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.configPathFor(name));
+                games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.configPathFor(name),
+                games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.configPathFor(name));
         }
 
         @Override public Template copy(ServerPlayer player, Template source, String name) throws IOException {
@@ -527,6 +528,8 @@ public final class EditorSaveAsKinds {
             var variants = games.brennan.dungeontrain.track.variant.TrackVariantBlocks.copyOf(
                 games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.loadFor(from));
             games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.save(name, variants, toSource);
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.save(name,
+                games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.get(from), toSource);
             ChunkFrameEditor.enter(player, level, name, null);
             return new Template.ChunkFrame(name);
         }
@@ -534,6 +537,7 @@ public final class EditorSaveAsKinds {
         @Override public void restoreAndRestamp(ServerLevel level, Template source, CarriageDims dims) {
             String name = ((Template.ChunkFrame) source).name();
             games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.clearCache();
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.clearCache();
             ChunkFrameEditor.restamp(level, name);
         }
     };
