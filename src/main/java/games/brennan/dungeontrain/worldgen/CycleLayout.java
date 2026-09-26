@@ -61,7 +61,7 @@ public final class CycleLayout {
     public static final String DEFAULT_ORDER =
             "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
             + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:5000, "
-            + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
 
     private final Slot[] slots;

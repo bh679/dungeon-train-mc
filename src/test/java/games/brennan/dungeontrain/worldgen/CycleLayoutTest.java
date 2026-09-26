@@ -43,9 +43,9 @@ final class CycleLayoutTest {
         assertEquals(16, l.count());
         // Lap 1: 2750 + (232+300+3000+300+232) + 3000 + (740+3000+740) + (600+2500+600+6000+600) = 24,594
         // Lap 2: 8000 + 9064 + 8000 + 9480 + (750+6550) + 5000 = 46,844
-        // Lap 3: legacy (480·12 + 5000 + 5000 + 4320 + 4000 + 5000 + 2000·4 + 1000 + 200 = 38,280)
-        //        + 2000 + 6500 + 5000 + 6500 = 58,280
-        assertEquals(129_718L, l.period());
+        // Lap 3: legacy (480·12 + 5000 + 3500 + 4320 + 4000 + 5000 + 2000·4 + 1000 + 200 = 36,780)
+        //        + 2000 + 6500 + 5000 + 6500 = 56,780
+        assertEquals(128_218L, l.period());
         assertEquals(2, l.typeCount(Type.NETHER));
         assertEquals(2, l.typeCount(Type.END));
         assertEquals(1, l.typeCount(Type.LEGACY_RUN));
@@ -81,15 +81,15 @@ final class CycleLayoutTest {
                         LegacyBandKind.INFDEV, LegacyBandKind.CLASSIC, LegacyBandKind.SUPERFLAT, LegacyBandKind.VOID},
                 java.util.Arrays.stream(eras).map(LegacySpan::kind).toArray(LegacyBandKind[]::new));
         assertEquals(5000, eras[0].hold());
-        assertEquals(5000, eras[1].hold());
+        assertEquals(3500, eras[1].hold());
         assertEquals(4320, eras[2].hold());
         assertEquals(4000, eras[3].hold());
         assertEquals(1000, eras[9].hold());
         assertEquals(200, eras[10].hold());
         assertEquals(480L, l.eraCoreStart(0));
         assertEquals(480L + 5000L + 480L, l.eraCoreStart(1));
-        assertEquals(480L + 5000L + 480L + 5000L + 480L, l.eraCoreStart(2));
-        long total = 480L * 12 + 5000 + 4000 + 5000 + 4320 + 5000 + 2000 * 4 + 1000 + 200;
+        assertEquals(480L + 5000L + 480L + 3500L + 480L, l.eraCoreStart(2));
+        long total = 480L * 12 + 5000 + 4000 + 3500 + 4320 + 5000 + 2000 * 4 + 1000 + 200;
         assertEquals(total, l.length(11));
     }
 

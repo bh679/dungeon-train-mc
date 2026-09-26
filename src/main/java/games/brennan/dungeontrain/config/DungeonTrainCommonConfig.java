@@ -426,8 +426,14 @@ public final class DungeonTrainCommonConfig {
             + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:15000, ow:5000, "
             + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
+    /** The {@code worldgenCycleOrder} v6 shipped; v7 changed only its {@code beta=5000} era. */
+    public static final String V6_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:5000, "
+            + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
 
-    public static final int CURRENT_CONFIG_VERSION = 6;
+    public static final int CURRENT_CONFIG_VERSION = 7;
 
     /** The shipped band order — see {@link games.brennan.dungeontrain.worldgen.CycleLayout#DEFAULT_ORDER}. */
     public static final String DEFAULT_WORLDGEN_CYCLE_ORDER = games.brennan.dungeontrain.worldgen.CycleLayout.DEFAULT_ORDER;
@@ -1161,6 +1167,15 @@ public final class DungeonTrainCommonConfig {
                 LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
                         from, CURRENT_CONFIG_VERSION);
             }
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v6 -> v7: the Beta era shrank 5000 -> 3500. Only an order still exactly as v6 shipped moves; an
+        // edited order is a choice and is left alone.
+        if (from < 7 && V6_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
+                    from, CURRENT_CONFIG_VERSION);
             WorldGenCycle.invalidateCache();
         }
 
