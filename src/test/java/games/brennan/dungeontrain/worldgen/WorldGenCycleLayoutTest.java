@@ -41,7 +41,7 @@ final class WorldGenCycleLayoutTest {
     @DisplayName("period is the run-1 length and the layout is reported")
     void period() {
         assertTrue(C.hasLayout());
-        assertEquals(138_918L, C.period());
+        assertEquals(132_918L, C.period());
         assertEquals(232, C.riseLen());
     }
 
@@ -177,7 +177,7 @@ final class WorldGenCycleLayoutTest {
         assertEquals(x(l + 480 + 5000 + 480), (int) C.legacyCoreStartX(LegacyBandKind.BETA, x(l + 480 + 5000 + 100)));
         assertEquals(WorldGenCycle.NOT_IN_LEGACY_SLOT, C.legacyCoreStartX(LegacyBandKind.BETA, x(l + 100)));
         assertEquals(0.5, C.legacyCoreProgress(LegacyBandKind.AMPLIFIED, x(l + 480 + 2500)), 1e-9);
-        long chaos = l + 480 + 5000 + 480 + 5000 + 480 + 4320 + 480;                 // Caves of Chaos core start, after the Far Lands
+        long chaos = l + 480 + 5000 + 480 + 3500 + 480 + 4320 + 480;                 // Caves of Chaos core start, after the Far Lands
         WorldGenCycle.LegacyHit cross2 = C.legacyAt(x(chaos - 240));
         assertEquals(LegacyBandKind.FAR_LANDS, cross2.from());
         assertEquals(LegacyBandKind.CAVES_OF_CHAOS, cross2.to());
