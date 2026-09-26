@@ -6,7 +6,8 @@
   "refmap": "dungeontrain.refmap.json",
   "mixins": [
     "betterend.BetterEndChorusCosmeticMixin",
-    "betterend.BetterEndDebugItemsMixin"
+    "betterend.BetterEndDebugItemsMixin",
+    "wover.WoverBiomePickerOrderMixin"
   ],
   "client": [
     "bclib.BclibFixPromptMixin",
