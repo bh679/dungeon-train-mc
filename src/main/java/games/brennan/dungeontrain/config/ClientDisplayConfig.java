@@ -204,17 +204,25 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue PORTAL_ROOM_HIDE_DISTANT_HORIZONS;
 
     /**
-     * Whether Distant Horizons skips terrain past a void's far side along the track (the End islands
-     * across the first void, the overworld across the second). Only the track axis is cut — the view out
-     * to either side is untouched — and DH's own settings and render distance are never changed.
+     * Whether a see-through wall stands across the track at a void's far side: from before the void you
+     * see into it, never past it. Nothing past the wall is drawn — vanilla, Sodium, the train's Sable
+     * sub-levels and Distant Horizons alike — except the track. See {@code worldgen/VoidWallLayout}.
      */
-    public static final ModConfigSpec.BooleanValue DISTANT_HORIZONS_LIMIT_PAST_VOIDS;
+    public static final ModConfigSpec.BooleanValue VOID_WALL_ENABLED;
 
     /**
-     * Whether Distant Horizons skips terrain beyond the next legacy era along the track, so it shows the
-     * next era but never the one after it. Same contract as {@link #DISTANT_HORIZONS_LIMIT_PAST_VOIDS}.
+     * Whether legacy eras get the same wall: from one era you see the next, never the one after it.
+     * Same contract as {@link #VOID_WALL_ENABLED}.
      */
-    public static final ModConfigSpec.BooleanValue DISTANT_HORIZONS_LIMIT_LEGACY_ERAS;
+    public static final ModConfigSpec.BooleanValue VOID_WALL_LEGACY_ERAS;
+
+    /**
+     * Share of a void's (or era's) length over which its wall fades out once you enter it, instead of
+     * vanishing at the edge. 0 drops it the moment you cross in.
+     */
+    public static final ModConfigSpec.DoubleValue VOID_WALL_FADE_FRACTION;
+
+    public static final double DEFAULT_VOID_WALL_FADE_FRACTION = 0.2;
 
     /**
      * Master switch for everything Dungeon Train does to Distant Horizons: the upside-down and
@@ -390,8 +398,9 @@ public final class ClientDisplayConfig {
         UPSIDE_DOWN_HIDE_DISTANT_HORIZONS = pair.getLeft().upsideDownHideDistantHorizons;
         UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN = pair.getLeft().upsideDownDistantHorizonsMargin;
         PORTAL_ROOM_HIDE_DISTANT_HORIZONS = pair.getLeft().portalRoomHideDistantHorizons;
-        DISTANT_HORIZONS_LIMIT_PAST_VOIDS = pair.getLeft().distantHorizonsLimitPastVoids;
-        DISTANT_HORIZONS_LIMIT_LEGACY_ERAS = pair.getLeft().distantHorizonsLimitLegacyEras;
+        VOID_WALL_ENABLED = pair.getLeft().voidWallEnabled;
+        VOID_WALL_LEGACY_ERAS = pair.getLeft().voidWallLegacyEras;
+        VOID_WALL_FADE_FRACTION = pair.getLeft().voidWallFadeFraction;
         DISTANT_HORIZONS_DT_ADJUSTMENTS = pair.getLeft().distantHorizonsDtAdjustments;
         DISTANT_HORIZONS_BUFFER_BLOCKS = pair.getLeft().distantHorizonsBufferBlocks;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
@@ -525,18 +534,24 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue portalRoomHideDistantHorizons = b
                 .comment("Stop Distant Horizons drawing while you are inside a dimensional carriage - a portal room, or the corridor leading into one. A room is stamped in twin space at the coordinates of the carriage it stands in for, and DH draws its own LODs of the overworld around exactly those coordinates, so the room's sky comes with the surface world's horizon behind it. Worst in a Chunk Dimension room, which is itself a sampled slice of terrain that DH then contradicts. Set false to let DH draw inside rooms anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
                 .define("hideInPortalRooms", true);
-        ModConfigSpec.BooleanValue distantHorizonsLimitPastVoids = b
-                .comment("Stop Distant Horizons drawing terrain past the far side of a void along the track - you can see into the void, never across it. Only the direction of the track is cut: the view out to either side is untouched. DH's render distance and settings are never changed, so nothing reloads. Does nothing if Distant Horizons is not installed.")
-                .define("limitPastVoids", true);
-        ModConfigSpec.BooleanValue distantHorizonsLimitLegacyEras = b
-                .comment("Stop Distant Horizons drawing more than one legacy era ahead or behind along the track - you can see the next era, never the one after it. Only the direction of the track is cut: the view out to either side is untouched. DH's render distance and settings are never changed, so nothing reloads. Does nothing if Distant Horizons is not installed.")
-                .define("limitLegacyEras", true);
         ModConfigSpec.BooleanValue distantHorizonsDtAdjustments = b
-                .comment("Master switch: let Dungeon Train adjust Distant Horizons at all - hiding it in the upside-down section and inside dimensional carriages, and stopping it drawing past voids or beyond the next legacy era. Set false to leave Distant Horizons exactly as you configured it everywhere. The switches above only apply while this is on. Also settable in-game via Options -> Train -> Adjust Distant Horizons. Does nothing if Distant Horizons is not installed.")
+                .comment("Master switch: let Dungeon Train adjust Distant Horizons at all - hiding it in the upside-down section and inside dimensional carriages, and the void wall's culling, veil and track in DH. Set false to leave Distant Horizons exactly as you configured it everywhere. The switches above only apply while this is on. Also settable in-game via Options -> Train -> Adjust Distant Horizons. Does nothing if Distant Horizons is not installed.")
                 .define("dtAdjustments", true);
         ModConfigSpec.IntValue distantHorizonsBufferBlocks = b
                 .comment("How far, in blocks, you must travel back past a boundary before Distant Horizons shows more again. Hiding always happens straight away; showing waits for this buffer, so riding back and forth across a boundary does not flip Distant Horizons on and off. 0 turns the buffer off.")
                 .defineInRange("bufferBlocks", DEFAULT_DISTANT_HORIZONS_BUFFER_BLOCKS, 0, MAX_DISTANT_HORIZONS_BUFFER_BLOCKS);
+        b.pop();
+
+        b.push("voidWall");
+        ModConfigSpec.BooleanValue voidWallEnabled = b
+                .comment("Stand a see-through wall across the track at the far side of every void: from before a void you can see into it, never past it, and looking back once you are through is unrestricted. Nothing past the wall is drawn except the track. Entering the void fades the wall out (see fadeFraction). Applies to Distant Horizons too, without changing its render distance, so nothing reloads.")
+                .define("enabled", true);
+        ModConfigSpec.BooleanValue voidWallLegacyEras = b
+                .comment("Give legacy eras the same wall: from one era you can see the next, never the one after it.")
+                .define("legacyEras", true);
+        ModConfigSpec.DoubleValue voidWallFadeFraction = b
+                .comment("How much of a void's (or era's) length its wall takes to fade out once you enter it, as a fraction - 0.2 fades over the first fifth. 0 drops the wall the moment you cross in.")
+                .defineInRange("fadeFraction", DEFAULT_VOID_WALL_FADE_FRACTION, 0.0, 1.0);
         b.pop();
 
         b.push("framerateThrottle");
@@ -787,8 +802,8 @@ public final class ClientDisplayConfig {
                 rideSnapshotMaxResolution,
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
-                distantHorizonsLimitPastVoids, distantHorizonsLimitLegacyEras,
                 distantHorizonsDtAdjustments, distantHorizonsBufferBlocks,
+                voidWallEnabled, voidWallLegacyEras, voidWallFadeFraction,
                 framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
@@ -1254,6 +1269,21 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         DISTANT_HORIZONS_DT_ADJUSTMENTS.set(value);
         DISTANT_HORIZONS_DT_ADJUSTMENTS.save();
+    }
+
+    /** Whether the void wall stands at all ({@link #VOID_WALL_ENABLED}); on pre-load. */
+    public static boolean isVoidWallEnabled() {
+        return !isLoaded() || VOID_WALL_ENABLED.get();
+    }
+
+    /** Whether legacy eras are walled too ({@link #VOID_WALL_LEGACY_ERAS}); on pre-load. */
+    public static boolean isVoidWallLegacyEras() {
+        return !isLoaded() || VOID_WALL_LEGACY_ERAS.get();
+    }
+
+    /** See {@link #VOID_WALL_FADE_FRACTION}; the default pre-load. */
+    public static double getVoidWallFadeFraction() {
+        return isLoaded() ? VOID_WALL_FADE_FRACTION.get() : DEFAULT_VOID_WALL_FADE_FRACTION;
     }
 
     /** See {@link #DISTANT_HORIZONS_BUFFER_BLOCKS}; the default pre-load. */
@@ -1801,10 +1831,11 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue upsideDownHideDistantHorizons,
             ModConfigSpec.IntValue upsideDownDistantHorizonsMargin,
             ModConfigSpec.BooleanValue portalRoomHideDistantHorizons,
-            ModConfigSpec.BooleanValue distantHorizonsLimitPastVoids,
-            ModConfigSpec.BooleanValue distantHorizonsLimitLegacyEras,
             ModConfigSpec.BooleanValue distantHorizonsDtAdjustments,
             ModConfigSpec.IntValue distantHorizonsBufferBlocks,
+            ModConfigSpec.BooleanValue voidWallEnabled,
+            ModConfigSpec.BooleanValue voidWallLegacyEras,
+            ModConfigSpec.DoubleValue voidWallFadeFraction,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.DoubleValue trainEngineVolume,

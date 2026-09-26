@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client.sodium;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.ClientPortalSeal;
+import games.brennan.dungeontrain.client.ClientVoidWall;
 import games.brennan.dungeontrain.client.portal.ClientPortalSwap;
 import games.brennan.dungeontrain.client.portal.PortalArrivalTrace;
 import games.brennan.dungeontrain.portal.PortalSealPlane;
@@ -44,6 +45,7 @@ public abstract class SodiumWorldRendererPortalSealMixin {
         Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         PortalSealPlane.Cut before = ClientPortalSeal.cut();
         ClientPortalSeal.beginFrame(camera.x, camera.y);
+        ClientVoidWall.beginFrame(camera.x);
         dungeontrain$trace(before, camera.y);
     }
 

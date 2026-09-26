@@ -46,11 +46,11 @@ public final class DungeonTrainClient {
         // than the coordinates it is stamped at. Bind the per-frame suppression for both — behind the
         // ModList check, because DistantHorizonsSuppression is the one DT class that names DH types
         // and must not be loaded when DH isn't installed.
-        // The same gate covers the track culling, which keeps DH from drawing past a void or more than
-        // one legacy era along the track.
+        // The same gate covers the void wall's DH half (ClientVoidWall): DH stops drawing at the wall,
+        // and draws the track past it and the fading veil as its own boxes.
         if (GraphicsCapabilities.distantHorizonsActive()) {
             DistantHorizonsSuppression.register();
-            DistantHorizonsTrackView.register();
+            DistantHorizonsVoidWall.register();
         }
 
         // Skybox blocks mask each variant's sky with the stencil buffer, which Minecraft's

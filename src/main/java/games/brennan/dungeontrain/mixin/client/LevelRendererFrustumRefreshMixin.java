@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import games.brennan.dungeontrain.client.ClientPortalSeal;
+import games.brennan.dungeontrain.client.ClientVoidWall;
 import games.brennan.dungeontrain.client.portal.ClientPortalSwap;
 import games.brennan.dungeontrain.client.portal.PortalArrivalTrace;
 import net.minecraft.client.Camera;
@@ -80,6 +81,7 @@ public abstract class LevelRendererFrustumRefreshMixin {
                                                        boolean hasCapturedFrustum, boolean isSpectator,
                                                        CallbackInfo ci) {
         ClientPortalSeal.beginFrame(camera.getPosition().x, camera.getPosition().y);
+        ClientVoidWall.beginFrame(camera.getPosition().x);
     }
 
     @ModifyExpressionValue(

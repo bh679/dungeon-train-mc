@@ -84,6 +84,11 @@ public final class ClientUpsideDownBand {
         return trainY + DungeonTrainCommonConfig.getUpsideDownMirrorPlaneOffset();
     }
 
+    /** The carriage floor height synced on join (0 before a sync has landed). */
+    public static int trainY() {
+        return trainY;
+    }
+
     /**
      * World-Y of this world's terrain floor — the bedrock row, as synced on join.
      * {@link Integer#MIN_VALUE} before a sync has landed, which every caller reads as "not known

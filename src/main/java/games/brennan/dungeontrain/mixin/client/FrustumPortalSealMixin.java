@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.client.ClientPortalSeal;
+import games.brennan.dungeontrain.client.ClientVoidWall;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,13 +36,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * and the twin the player is standing in are never touched, and a portal swap's arrival frame still
  * draws its destination — see {@link SectionOcclusionGraphPortalSwapMixin}, which is what makes that
  * frame land at all.</p>
+ *
+ * <p><b>The void wall rides the same seam.</b> {@link ClientVoidWall} is the seal turned on its side: a
+ * vertical plane across the track at a void's far edge, past which nothing but the track is drawn.</p>
  */
 @Mixin(Frustum.class)
 public abstract class FrustumPortalSealMixin {
 
     @Inject(method = "isVisible(Lnet/minecraft/world/phys/AABB;)Z", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$cullBeyondTwinSeal(AABB aabb, CallbackInfoReturnable<Boolean> cir) {
-        if (!ClientPortalSeal.sealed()) return;
-        if (ClientPortalSeal.hides(aabb.minY, aabb.maxY)) cir.setReturnValue(false);
+        if (ClientPortalSeal.sealed() && ClientPortalSeal.hides(aabb.minY, aabb.maxY)) {
+            cir.setReturnValue(false);
+            return;
+        }
+        if (ClientVoidWall.active()
+                && ClientVoidWall.hides(aabb.minX, aabb.minY, aabb.minZ, aabb.maxX, aabb.maxY, aabb.maxZ)) {
+            cir.setReturnValue(false);
+        }
     }
 }

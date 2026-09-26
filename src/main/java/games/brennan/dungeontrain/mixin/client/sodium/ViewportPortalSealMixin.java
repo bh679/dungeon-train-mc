@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin.client.sodium;
 
 import games.brennan.dungeontrain.client.ClientPortalSeal;
+import games.brennan.dungeontrain.client.ClientVoidWall;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -25,6 +26,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * <p>Targeted by class name and applied only when Sodium is loaded ({@code SodiumMixinPlugin}); the
  * config sets {@code defaultRequire: 0}, so a future Sodium refactor of these methods costs the cut
  * under Sodium rather than the client's launch.</p>
+ *
+ * <p>The void wall ({@link ClientVoidWall}) is applied here too, for the same reason.</p>
  */
 @Mixin(targets = "net.caffeinemc.mods.sodium.client.render.viewport.Viewport", remap = false)
 public abstract class ViewportPortalSealMixin {
@@ -35,19 +38,24 @@ public abstract class ViewportPortalSealMixin {
     @Inject(method = "isBoxVisible(III)Z", at = @At("HEAD"), cancellable = true, remap = false)
     private void dungeontrain$cullBeyondTwinSeal(int x, int y, int z,
                                                  CallbackInfoReturnable<Boolean> cir) {
-        dungeontrain$applySeal(y, cir);
+        dungeontrain$applySeal(x, y, z, cir);
     }
 
     @Inject(method = "isBoxVisibleLooser(III)Z", at = @At("HEAD"), cancellable = true, remap = false)
     private void dungeontrain$cullNearbyBeyondTwinSeal(int x, int y, int z,
                                                        CallbackInfoReturnable<Boolean> cir) {
-        dungeontrain$applySeal(y, cir);
+        dungeontrain$applySeal(x, y, z, cir);
     }
 
-    private static void dungeontrain$applySeal(int centreY, CallbackInfoReturnable<Boolean> cir) {
-        if (!ClientPortalSeal.sealed()) return;
-        if (ClientPortalSeal.hides(centreY - DUNGEONTRAIN$SECTION_RADIUS,
-                                   centreY + DUNGEONTRAIN$SECTION_RADIUS)) {
+    private static void dungeontrain$applySeal(int centreX, int centreY, int centreZ,
+                                               CallbackInfoReturnable<Boolean> cir) {
+        int r = DUNGEONTRAIN$SECTION_RADIUS;
+        if (ClientPortalSeal.sealed() && ClientPortalSeal.hides(centreY - r, centreY + r)) {
+            cir.setReturnValue(false);
+            return;
+        }
+        if (ClientVoidWall.active() && ClientVoidWall.hides(centreX - r, centreY - r, centreZ - r,
+                                                            centreX + r, centreY + r, centreZ + r)) {
             cir.setReturnValue(false);
         }
     }

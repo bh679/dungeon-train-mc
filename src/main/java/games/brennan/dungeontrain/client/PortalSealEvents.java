@@ -28,6 +28,7 @@ public final class PortalSealEvents {
     public static void onComputeCameraAngles(ViewportEvent.ComputeCameraAngles event) {
         Vec3 camera = event.getCamera().getPosition();
         ClientPortalSeal.beginFrame(camera.x, camera.y);
+        ClientVoidWall.beginFrame(camera.x);
     }
 
     @SubscribeEvent
@@ -36,5 +37,6 @@ public final class PortalSealEvents {
         // cut afresh anyway, but a stale one is exactly the kind of cache that strands a client
         // looking at nothing, and the sibling portal caches are all cleared here for the same reason.
         ClientPortalSeal.reset();
+        ClientVoidWall.reset();
     }
 }

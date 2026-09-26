@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.portal;
 import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import games.brennan.dungeontrain.client.ClientPortalSeal;
+import games.brennan.dungeontrain.client.ClientVoidWall;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,12 +36,17 @@ public final class SubLevelSealFilter {
      * sub-level that close to the seal is one the player is about to be swapped into.</p>
      */
     public static Iterable<ClientSubLevel> beyondSeal(Iterable<ClientSubLevel> subLevels) {
-        if (!ClientPortalSeal.sealed() || subLevels == null) return subLevels;
+        boolean sealed = ClientPortalSeal.sealed();
+        boolean walled = ClientVoidWall.active();
+        if ((!sealed && !walled) || subLevels == null) return subLevels;
 
         List<ClientSubLevel> kept = new ArrayList<>();
         for (ClientSubLevel subLevel : subLevels) {
             BoundingBox3dc bounds = subLevel.boundingBox();
-            if (bounds != null && ClientPortalSeal.hides(bounds.minY(), bounds.maxY())) continue;
+            if (bounds != null && sealed && ClientPortalSeal.hides(bounds.minY(), bounds.maxY())) continue;
+            // Past the void wall: another train out beyond it is as hidden as the terrain there.
+            if (bounds != null && walled && ClientVoidWall.hides(bounds.minX(), bounds.minY(), bounds.minZ(),
+                    bounds.maxX(), bounds.maxY(), bounds.maxZ())) continue;
             kept.add(subLevel);
         }
         return kept;
