@@ -19344,6 +19344,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sable-pathfinder-dependency",
+      "version": "0.973.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "mobs"
+      ],
+      "title": "Mobs can follow you onto the train",
+      "summary": "Dungeon Train now installs Sable Pathfinder, so mobs and villagers find their way onto and along the moving train instead of giving up at the edge. If you install the mod manually, you now need NeoForge 21.1.230 or newer.",
+      "highlights": [],
+      "pr": 1577,
+      "date": "2026-09-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
