@@ -88,9 +88,16 @@ public final class BandLabel {
         // Superflat has no phase of its own — name it so the panel and /dtp next see it as its own band.
         if (LegacyBands.isInBand(overworld, LegacyBandKind.SUPERFLAT, worldX)) return "Superflat";
         return switch (phase) {
-            case NETHER -> NetherBand.isInNetherBand(overworld, worldX) && cycle.isBetterNetherAt(worldX)
-                ? "Better Nether" : "";
-            case END -> cycle.isBetterEndAt(worldX) ? "Better End" : "";
+            case NETHER -> !NetherBand.isInNetherBand(overworld, worldX) ? "" : switch (cycle.netherLookAt(worldX)) {
+                case BETTER -> "Better Nether";
+                case BOP -> "Biomes O' Plenty Nether";
+                default -> "";
+            };
+            case END -> switch (cycle.endLookAt(worldX)) {
+                case BETTER -> "Better End";
+                case BOP -> "Biomes O' Plenty End";
+                default -> "";
+            };
             case OVERWORLD -> switch (SecondLapOverworld.at(cycle, worldX)) {
                 case WWOO -> "WWOO";
                 case BOP -> "Biomes O' Plenty";

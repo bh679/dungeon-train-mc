@@ -85,7 +85,7 @@ final class MixBandTest {
                     assertEquals(p, MixBand.pickAt(C, CANDIDATES, SEED, cx, cz));
                     assertEquals(0L, Math.floorMod(p.dx(), 16L));
                     WorldGenCycle s = C.shifted(p.dx());
-                    IntPredicate core = coreOf(s, p.candidate());
+                    IntPredicate core = coreOf(s, p.candidate(), k);
                     for (int dx = 0; dx < 16; dx++) {
                         int x = (cx << 4) + dx;
                         assertTrue(core.test(x), p.candidate().token() + " run " + k + " chunk " + cx + " col " + dx);
@@ -96,14 +96,17 @@ final class MixBandTest {
         }
     }
 
-    /** The band test a representative chunk must pass on the shifted cycle. */
-    private static IntPredicate coreOf(WorldGenCycle s, MixBand.Candidate c) {
+    /**
+     * The band test a representative chunk must pass on the shifted cycle, in run {@code run} — a
+     * {@code first>later} slot (Lap 1's {@code vanilla>bop} Nether and End) wears its later look there.
+     */
+    private static IntPredicate coreOf(WorldGenCycle s, MixBand.Candidate c, int run) {
         return switch (c.type()) {
             case OVERWORLD -> x -> s.slotIndexAt(x) >= 0
                     && LAYOUT.slot(s.slotIndexAt(x)).type() == CycleLayout.Type.OVERWORLD
                     && LAYOUT.slot(s.slotIndexAt(x)).style() == c.style();
-            case NETHER -> x -> s.isNetherCore(x) && s.netherStyleAt(x) == c.style();
-            case END -> x -> s.isEndCore(x) && s.endStyleAt(x) == c.style();
+            case NETHER -> x -> s.isNetherCore(x) && s.netherStyleAt(x) == styleOnRun(c, run);
+            case END -> x -> s.isEndCore(x) && s.endStyleAt(x) == styleOnRun(c, run);
             case UPSIDE_DOWN -> s::isInUpsideDownBand;
             case SPHERES -> s::isInSpheresBand;
             case LEGACY_RUN -> {
@@ -112,6 +115,15 @@ final class MixBandTest {
             }
             default -> x -> false;
         };
+    }
+
+    /** The look candidate {@code c}'s slot wears on run {@code run}. */
+    private static CycleLayout.Style styleOnRun(MixBand.Candidate c, int run) {
+        for (int i = 0; i < LAYOUT.count(); i++) {
+            CycleLayout.Slot slot = LAYOUT.slot(i);
+            if (slot.type() == c.type() && slot.style() == c.style()) return slot.styleOnRun(run);
+        }
+        return c.style();
     }
 
     @Test

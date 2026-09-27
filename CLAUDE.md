@@ -282,9 +282,11 @@ End-islands band copies real BetterEnd End chunks (`worldgen/EndBandStyle` + `En
 read `worldgen/density/VanillaEndBiomes`. DT's presets give the End WorldWeaver's `wover:end_biome_source` — the
 vanilla `minecraft:the_end` source yields no BetterEnd biomes (TerraBlender's patch wins `getNoiseBiome`) — and
 `data/wover/config/biome_config.json` keeps BoP out of the End (`EndPresetBiomeSourceTest` pins both). **William Wythers' Overhauled
-Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too: on odd laps the
-overworld gap before the Nether band is WWOO and the gap after it is BoP (`worldgen/SecondLapOverworld`;
-`/dungeontrain debug overworld-laps` lists each lap's stretches and biomes). WWOO is confined at feature placement plus vanilla
+Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too. Lap 2 of every cycle is WWOO →
+BetterNether → BoP → BetterEnd; from the second cycle on, Lap 1's Nether and End take the Biomes O' Plenty look
+(`nether:vanilla>bop` / `end:vanilla>bop` in the order — a vanilla + BoP TerraBlender region mix in
+`density/NetherCoreBiomes`, and a BoP End sampled from `worldgen/BopEnd`) (`worldgen/SecondLapOverworld`;
+`/dungeontrain debug overworld-laps` / `nether-passes` list each lap's stretches and biomes). WWOO is confined at feature placement plus vanilla
 "twins" for its biome colours/climate/spawns outside the stretch, BoP at biome choice — see
 `worldgen/VanillaBiomeFeatures`, `worldgen/VanillaBiomeTwins` and `worldgen/density/OverworldStretchBiomes`.
 On top of those, `modpack.config.json` → `optional_mods[]` bundles the siblings (each carrying
