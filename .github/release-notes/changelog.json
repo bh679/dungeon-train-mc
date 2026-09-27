@@ -19777,6 +19777,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "band-advancements-review",
+      "version": "0.982.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Journey advancements, polished",
+      "summary": "The advancements you earn as the train carries you through new stretches of the world have had a polish: snappier descriptions, a few new titles and icons, and the tree now lists them in the order you actually earn them. Two that doubled up on others have been retired, and every language has been updated to match.",
+      "highlights": [],
+      "pr": 1600,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
