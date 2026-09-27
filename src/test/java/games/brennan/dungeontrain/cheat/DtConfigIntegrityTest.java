@@ -222,4 +222,37 @@ class DtConfigIntegrityTest {
         assertEquals(DtConfigIntegrity.GOVERNED.size(), distinct);
         assertTrue(DtConfigIntegrity.GOVERNED.stream().allMatch(k -> k.path().contains(".")));
     }
+
+    // ---- Mid-run changes -------------------------------------------------
+
+    @Test
+    @DisplayName("Mid-run: nothing new when the files still match what the session started with")
+    void introducedNothingWhenUnchanged() {
+        List<String> boot = List.of("train.speed=5.0 (expected 2.0)");
+        assertEquals(List.of(), DtConfigIntegrity.introduced(List.of(), List.of()));
+        assertEquals(List.of(), DtConfigIntegrity.introduced(boot, boot));
+    }
+
+    @Test
+    @DisplayName("Mid-run: a key moved off default is a new change")
+    void introducedNewKey() {
+        assertEquals(List.of("train.speed=5.0 (expected 2.0)"),
+            DtConfigIntegrity.introduced(List.of(), List.of("train.speed=5.0 (expected 2.0)")));
+    }
+
+    @Test
+    @DisplayName("Mid-run: moving an already-changed key again still counts")
+    void introducedChangedValue() {
+        assertEquals(List.of("train.speed=6.0 (expected 2.0)"),
+            DtConfigIntegrity.introduced(
+                List.of("train.speed=5.0 (expected 2.0)"),
+                List.of("train.speed=6.0 (expected 2.0)")));
+    }
+
+    @Test
+    @DisplayName("Mid-run: reverting to defaults adds nothing")
+    void introducedNothingOnRevert() {
+        assertEquals(List.of(), DtConfigIntegrity.introduced(
+            List.of("train.speed=5.0 (expected 2.0)"), List.of()));
+    }
 }

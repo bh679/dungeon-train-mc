@@ -6,11 +6,16 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriageGenerationConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
 import java.nio.file.Files;
@@ -35,9 +40,18 @@ import java.util.Map;
  * taint is per-world — so flattening the difficulty curve in one world and then starting a fresh
  * one gave a "clean" run on a rebalanced game. Hand-editing the toml tainted nothing at all.</p>
  *
- * <p><b>Session-only</b>, exactly like the AIS taint: re-checked at every server start, nothing
+ * <p><b>Session-only at boot</b>, exactly like the AIS taint: re-checked at every server start, nothing
  * written to the world or player, and restoring the defaults restores normal play on the next
  * boot.</p>
+ *
+ * <p><b>Permanent mid-run.</b> NeoForge applies config edits live — an in-game config editor
+ * (Configured), DT's own settings screen, or a hand edit picked up by the file watcher — so a key
+ * changed <em>while a world is running</em> is played with immediately, and reverting it before
+ * quitting would leave the boot check nothing to find. {@link #refreshMidSession} therefore stamps
+ * every online player's run permanently cheated ({@link RunIntegrity#markCheated}) for any deviation
+ * the session did not start with — the same outcome as the {@code /dungeontrain} tuning commands.
+ * It runs on the config {@code Reloading} event and on a throttled tick sweep, because not every
+ * writer fires the event.</p>
  *
  * <p><b>Only balance keys are governed</b> — see {@link #GOVERNED}. Performance and visual knobs,
  * the Discord/relay privacy toggles, the player-content switches and everything in
@@ -182,6 +196,21 @@ public final class DtConfigIntegrity {
      */
     private static volatile List<String> deviations = List.of();
 
+    /**
+     * What the session has already accounted for: the boot scan, plus sanctioned writes
+     * ({@link #rebaseline}) and anything a mid-run refresh already stamped. Only deviations beyond
+     * this are a mid-run change. Immutable snapshot, replaced whole.
+     */
+    private static volatile List<String> baseline = List.of();
+
+    /** Mid-run sweep cadence: the governed files are re-read every 5 s as a {@code Reloading} backstop. */
+    private static final int SWEEP_INTERVAL_TICKS = 100;
+
+    private static int tickCounter = 0;
+
+    /** Both files' modification stamps at the last read, so the sweep only parses on a real change. */
+    private static long lastStamp = Long.MIN_VALUE;
+
     private DtConfigIntegrity() {}
 
     /** Is the current server session Free Play because DT's own balance config was changed? */
@@ -199,7 +228,10 @@ public final class DtConfigIntegrity {
 
     @SubscribeEvent
     public static void onServerAboutToStart(ServerAboutToStartEvent event) {
+        lastStamp = filesStamp();
         deviations = check(FMLPaths.CONFIGDIR.get());
+        baseline = deviations;
+        tickCounter = 0;
         if (!deviations.isEmpty()) {
             LOGGER.warn("[DungeonTrain] DT config differs from defaults — this session runs in Free Play: {}",
                 String.join(", ", deviations));
@@ -209,6 +241,96 @@ public final class DtConfigIntegrity {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         deviations = List.of();
+        baseline = List.of();
+        tickCounter = 0;
+        lastStamp = Long.MIN_VALUE;
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (++tickCounter < SWEEP_INTERVAL_TICKS) return;
+        tickCounter = 0;
+        // Cheap guard: two stat() calls. Only a file that actually changed is re-parsed.
+        if (filesStamp() == lastStamp) return;
+        refreshMidSession(event.getServer());
+    }
+
+    /** Sum of both files' mtimes (0 for a missing/unreadable one) — changes whenever either is written. */
+    private static long filesStamp() {
+        Path dir = FMLPaths.CONFIGDIR.get();
+        return mtime(dir.resolve(SERVER_FILE)) + 31 * mtime(dir.resolve(COMMON_FILE));
+    }
+
+    private static long mtime(Path file) {
+        try {
+            return Files.exists(file) ? Files.getLastModifiedTime(file).toMillis() : 0L;
+        } catch (Throwable t) {
+            return 0L;
+        }
+    }
+
+    /**
+     * A DT config spec (re)loaded — called from the mod-bus {@code ModConfigEvent} listener in
+     * {@code DungeonTrain}, possibly off-thread (file watcher). Hops onto the server thread; no-op
+     * with no server running (title screen, or a client-only JVM editing its own common file).
+     */
+    public static void onConfigReloaded() {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return;
+        server.execute(() -> refreshMidSession(server));
+    }
+
+    /**
+     * Accept the files as they are now without stamping anyone — for writes the session sanctioned,
+     * i.e. the Create World screen's generation choices committed at overworld load, before anyone
+     * has joined. The session still reads them as Free Play, exactly as the next boot would.
+     */
+    public static void rebaseline() {
+        lastStamp = filesStamp();
+        deviations = check(FMLPaths.CONFIGDIR.get());
+        baseline = deviations;
+    }
+
+    /**
+     * Re-read the governed files mid-session. Any deviation the session has not already accounted
+     * for permanently marks every online player's run Free Play; the session snapshot then follows
+     * the files, so a revert lifts the session taint for later joiners (the stamps stay). Server
+     * thread only. Never throws: {@link #check} fails open, and a stamp failure is logged.
+     */
+    static void refreshMidSession(MinecraftServer server) {
+        if (server == null) return;
+        lastStamp = filesStamp();
+        List<String> current = check(FMLPaths.CONFIGDIR.get());
+        List<String> added = introduced(baseline, current);
+        if (!added.isEmpty()) {
+            LOGGER.warn("[DungeonTrain] DT config changed mid-run — online runs are now permanently Free Play: {}",
+                String.join(", ", added));
+            // Stamp BEFORE publishing the new snapshot: markCheated goes quiet (no notice, no Discord
+            // post) once isVisiblySessionFreePlay() is true, and these players need to be told.
+            stampOnlinePlayers(server);
+        }
+        deviations = current;
+        baseline = current;
+    }
+
+    private static void stampOnlinePlayers(MinecraftServer server) {
+        try {
+            for (ServerPlayer player : List.copyOf(server.getPlayerList().getPlayers())) {
+                RunIntegrity.markCheated(player,
+                    Component.translatable("chat.dungeontrain.free_play.cause.dt_config"));
+            }
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Could not mark runs Free Play after a mid-run config change", t);
+        }
+    }
+
+    /**
+     * Pure: the deviations in {@code current} the session has not already accounted for. Entries
+     * carry their value, so moving an already-changed key again counts as a new change; a revert
+     * adds nothing. Package-visible for tests.
+     */
+    static List<String> introduced(List<String> baseline, List<String> current) {
+        return current.stream().filter(d -> !baseline.contains(d)).toList();
     }
 
     /**
