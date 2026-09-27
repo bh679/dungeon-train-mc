@@ -547,6 +547,10 @@ dependencies {
     implementation "maven.modrinth:worldweaver-neoforge:${worldweaver_version}"
     implementation "maven.modrinth:wunderlib-neoforge:${wunderlib_version}"
 
+    // Big Lost City — REQUIRED third-party dep (see gradle.properties). Structures only; on the dev
+    // classpath so runClient/runServer generate the Lost City era's cities.
+    implementation "maven.modrinth:big-lost-city:${biglostcity_version}"
+
     // Unit tests — JUnit 5 Jupiter (pure-logic only).
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -822,6 +826,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         wwoo_min_version                  : wwoo_min_version,
         biomesoplenty_min_version         : biomesoplenty_min_version,
         betternether_min_version          : betternether_min_version,
+        biglostcity_min_version           : biglostcity_min_version,
         // BetterEnd: New Dawn + its libraries — floors only.
         betterend_min_version             : betterend_min_version,
         bclib_min_version                 : bclib_min_version,

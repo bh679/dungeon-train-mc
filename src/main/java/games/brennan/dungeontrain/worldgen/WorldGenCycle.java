@@ -1925,11 +1925,11 @@ public record WorldGenCycle(long startX, int owGap,
         long l = legacyRunLocal(worldX);
         if (l < 0L) return null;
         LegacySpan[] eras = layout.eras();
-        long f = layout.legacyFade();
         long at = 0L;
         LegacyBandKind prev = null;
         for (int e = 0; e <= eras.length; e++) {
             LegacyBandKind next = e < eras.length ? eras[e].kind() : null;
+            long f = layout.fadeBefore(e);
             if (l < at + f) {                                      // the fade / crossfade before era e
                 double t = (double) (l - at + 1) / (f + 1);
                 return new LegacyHit(prev, next, t);
@@ -1972,9 +1972,9 @@ public record WorldGenCycle(long startX, int owGap,
             long l = legacyRunLocal(worldX);
             long cs = eraCoreStart(kind);
             if (l < 0L || cs < 0L) return -1.0D;
-            long f = layout.legacyFade();
-            long from = cs - f;
-            long len = 2L * f + legacyLen(kind);
+            int e = layout.eraIndex(kind);
+            long from = cs - layout.fadeBefore(e);
+            long len = layout.fadeBefore(e) + legacyLen(kind) + layout.fadeBefore(e + 1);
             long local = l - from;
             return (local < 0L || local >= len) ? -1.0D : (double) local / len;
         }
@@ -2028,8 +2028,10 @@ public record WorldGenCycle(long startX, int owGap,
             long l = legacyRunLocal(worldX);
             long cs = eraCoreStart(kind);
             if (l < 0L || cs < 0L) return NOT_IN_LEGACY_SLOT;
-            long f = layout.legacyFade();
-            if (l < cs - f || l >= cs + legacyLen(kind) + f) return NOT_IN_LEGACY_SLOT;
+            int e = layout.eraIndex(kind);
+            if (l < cs - layout.fadeBefore(e) || l >= cs + legacyLen(kind) + layout.fadeBefore(e + 1)) {
+                return NOT_IN_LEGACY_SLOT;
+            }
             int i = slotAt(worldX);
             return worldOf(worldX, layout.start(i) + cs);
         }
@@ -2053,9 +2055,9 @@ public record WorldGenCycle(long startX, int owGap,
             long l = legacyRunLocal(worldX);
             long cs = eraCoreStart(kind);
             if (l < 0L || cs < 0L) return Double.NaN;
-            long f = layout.legacyFade();
+            int e = layout.eraIndex(kind);
             long len = legacyLen(kind);
-            if (l < cs - f || l >= cs + len + f) return Double.NaN;
+            if (l < cs - layout.fadeBefore(e) || l >= cs + len + layout.fadeBefore(e + 1)) return Double.NaN;
             return (double) (l - cs) / len;
         }
         LegacySpan span = spanOf(kind);

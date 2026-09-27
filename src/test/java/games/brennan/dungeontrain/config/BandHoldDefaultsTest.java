@@ -78,13 +78,19 @@ class BandHoldDefaultsTest {
                 "v8 -> v9 changed only the chuncks core and added the mix zone");
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 9,
                 "CURRENT_CONFIG_VERSION must be at least 9, or the v8 -> v9 order step never runs");
-        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+        assertEquals(DungeonTrainCommonConfig.V10_WORLDGEN_CYCLE_ORDER,
                 DungeonTrainCommonConfig.V9_WORLDGEN_CYCLE_ORDER
                         .replace("nether:3000,", "nether:vanilla>bop:3000,")
                         .replace("end:3000,", "end:vanilla>bop:3000,"),
                 "v9 -> v10 changed only Lap 1's Nether and End");
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 10,
                 "CURRENT_CONFIG_VERSION must be at least 10, or the v9 -> v10 order step never runs");
+        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+                DungeonTrainCommonConfig.V10_WORLDGEN_CYCLE_ORDER
+                        .replace("amplified=5000:beta=3500", "amplified=5000:lost_city=4000:beta=3500"),
+                "v10 -> v11 changed only the legacy run, adding the Lost City era after Amplified");
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 11,
+                "CURRENT_CONFIG_VERSION must be at least 11, or the v10 -> v11 order step never runs");
         assertTrue(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER.contains("spheres:"
                 + DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS + ","));
     }

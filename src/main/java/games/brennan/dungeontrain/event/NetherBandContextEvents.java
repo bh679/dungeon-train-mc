@@ -151,9 +151,12 @@ public final class NetherBandContextEvents {
             // Second-lap overworld stretches: BoP only in its stretch, vanilla elsewhere. Published
             // alongside the band context so it is live before the first chunk bakes too.
             OverworldStretchBiomes.publish(OverworldStretchBiomes.resolve(server));
-            // Upside-down band: keep the source terrain low near the track (erosion weighting).
+            // Upside-down band and the Lost City era: keep the source terrain low near the track
+            // (erosion weighting).
+            boolean lostCity = data.startsWithTrain()
+                    && cycle.legacyLen(games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.LOST_CITY) > 0L;
             boolean flatten = DungeonTrainCommonConfig.isUpsideDownTrackFlatten()
-                    && UpsideDownBand.startX(overworld) != UpsideDownBand.OFF;
+                    && (UpsideDownBand.startX(overworld) != UpsideDownBand.OFF || lostCity);
             UpsideDownTrackFlatten.publish(new UpsideDownTrackFlatten.Context(flatten, cycle, track.trackCenterZ(),
                     data.getGenerationSeed()));
             // Intermediate per-dimension-load republishes log at debug to avoid 3+ identical

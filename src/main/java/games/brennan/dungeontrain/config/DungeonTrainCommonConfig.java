@@ -470,7 +470,17 @@ public final class DungeonTrainCommonConfig {
             + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:650, chuncks:2000, mix:4000, stacks:5000";
 
-    public static final int CURRENT_CONFIG_VERSION = 10;
+    /**
+     * The {@code worldgenCycleOrder} v10 shipped; v11 changed only its legacy run — the Lost City era
+     * ({@code lost_city=4000}) between Amplified and Beta.
+     */
+    public static final String V10_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:vanilla>bop:3000, ow:3000, end:vanilla>bop:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:650, chuncks:2000, mix:4000, stacks:5000";
+
+    public static final int CURRENT_CONFIG_VERSION = 11;
     public static final boolean DEFAULT_MIX_ENABLED = true;
     public static final String DEFAULT_MIX_EXCLUDE = "";
 
@@ -1268,6 +1278,15 @@ public final class DungeonTrainCommonConfig {
         if (from < 10 && V9_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
             WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
             LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> BoP Nether/End on later cycles.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v10 -> v11: the Lost City era joined the legacy run between Amplified and Beta. Same rule: only
+        // an order still exactly as v10 shipped moves.
+        if (from < 11 && V10_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
                     from, CURRENT_CONFIG_VERSION);
             WorldGenCycle.invalidateCache();
         }

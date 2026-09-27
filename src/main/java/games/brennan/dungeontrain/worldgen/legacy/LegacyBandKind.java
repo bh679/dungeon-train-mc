@@ -59,7 +59,14 @@ public enum LegacyBandKind {
      * Nothing at all — an empty stretch after the oldest generator: no terrain, no floor, just the track
      * over open void. Reuses the void-below plumbing (no fill, no bedrock, fluid veto).
      */
-    VOID(true);
+    VOID(true),
+    /**
+     * Lost City — the ordinary modern overworld, left entirely to vanilla's generator, dense with the
+     * ruined cities of the Big Lost City mod ({@link games.brennan.dungeontrain.worldgen.LostCityStructures}).
+     * Not a port and not a preset: every terrain hook treats its chunks as plain overworld
+     * ({@link #usesVanillaTerrain}). Declared last so the config file's era order is unchanged.
+     */
+    LOST_CITY(false);
 
     private final boolean voidBelow;
 
@@ -81,6 +88,19 @@ public enum LegacyBandKind {
      */
     public boolean isPreset() {
         return this == LARGE_BIOMES || this == AMPLIFIED;
+    }
+
+    /**
+     * True for an era whose terrain is the untouched modern overworld (Lost City): no old generator and no
+     * preset generator — vanilla's own noise, biomes, surface, carvers and decoration all run as normal.
+     */
+    public boolean usesVanillaTerrain() {
+        return this == LOST_CITY;
+    }
+
+    /** True when an OLD generator's port writes this era's terrain — neither a preset nor vanilla terrain. */
+    public boolean usesOldGenerator() {
+        return !isPreset() && !usesVanillaTerrain();
     }
 
     /** Lower-cased config / command token ({@code beta}, {@code far_lands}, {@code caves_of_chaos}). */

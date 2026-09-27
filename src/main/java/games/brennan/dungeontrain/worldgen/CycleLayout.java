@@ -82,7 +82,7 @@ public final class CycleLayout {
     public static final String DEFAULT_ORDER =
             "ow:2750, nether:vanilla>bop:3000, ow:3000, end:vanilla>bop:3000, upside_down:2500:6000, "
             + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:sunk:500, "
-            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "legacy:amplified=5000:lost_city=4000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:650, chuncks:2000, mix:4000, stacks:5000";
 
     private final Slot[] slots;
@@ -296,10 +296,11 @@ public final class CycleLayout {
         return Math.max(0, s.extra() >= 0 ? s.extra() : fades.udExitFade());
     }
 
-    /** {@code F + Σcore + (n−1)·F + F}: entry fade, cores with a shared crossfade between, exit fade. */
+    /** {@code Σ fadeBefore(e) + Σcore}: each era's own entry fade / crossfade, the cores, then the exit fade. */
     private long legacyRunLength() {
         if (eras.length == 0) return 0L;
-        long total = (long) legacyFade() * (eras.length + 1);
+        long total = 0L;
+        for (int e = 0; e <= eras.length; e++) total += fadeBefore(e);
         for (LegacySpan e : eras) total += e.holdLen();
         return total;
     }
@@ -355,9 +356,21 @@ public final class CycleLayout {
         return fades;
     }
 
-    /** Crossfade length between legacy eras (and the run's entry/exit fades). */
+    /** The legacy run's exit fade, and the fallback for an era with no fade of its own. */
     public int legacyFade() {
         return Math.max(0, fades.legacyFade());
+    }
+
+    /**
+     * Length of the fade <em>into</em> era {@code e}: the run's entry fade for {@code e == 0}, the crossfade
+     * from era {@code e − 1} otherwise — each era's own configured fade ({@code legacy<Era>FadeBlocks}), so
+     * one seam can be longer than the rest (Lost City's 750-block run-in out of Amplified). {@code e} equal to
+     * the era count is the run's exit fade ({@link #legacyFade}).
+     */
+    public long fadeBefore(int e) {
+        if (e < 0 || e >= eras.length) return legacyFade();
+        int f = eras[e].fade();
+        return f >= 0 ? f : legacyFade();
     }
 
     /** The legacy eras in run order — {@code (kind, 0, fade, core)} each. Never mutated. */
@@ -440,8 +453,8 @@ public final class CycleLayout {
 
     /** Offset of era {@code e}'s core from the legacy slot start. */
     public long eraCoreStart(int e) {
-        long at = legacyFade();
-        for (int i = 0; i < e; i++) at += eras[i].holdLen() + legacyFade();
+        long at = fadeBefore(0);
+        for (int i = 0; i < e; i++) at += eras[i].holdLen() + fadeBefore(i + 1);
         return at;
     }
 

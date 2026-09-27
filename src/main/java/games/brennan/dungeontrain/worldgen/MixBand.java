@@ -106,6 +106,9 @@ public final class MixBand {
                 case LEGACY_RUN -> {
                     for (LegacySpan era : layout.eras()) {
                         LegacyBandKind kind = era.kind();
+                        // Lost City is plain overworld terrain; its cities are multi-chunk structures a lone
+                        // mix chunk can't carry, so as a pick it would only repeat "ow".
+                        if (kind.usesVanillaTerrain()) continue;
                         if (!seen.add(kind.token())) continue;
                         add(out, exclude, kind.token(), slot, kind, window(cycle, layout, i,
                                 x -> cycle.slotIndexAt(x) == slotIndex && cycle.isInLegacyBand(kind, x)));
