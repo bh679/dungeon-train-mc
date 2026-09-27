@@ -435,6 +435,26 @@ Keep the two in sync so both packs ship the same build. A stale pin just ships a
 - **Advancement Plaques ↔ Iceberg.** AP requires Iceberg `[1.2.2,)` (not jarJar'd inside AP) —
   keep the bundled Iceberg at or above that. Both ship `required:true` so AP works on a default install.
 
+## `mod_ids` and the fair-play whitelist
+
+Every mod the pack ships is **approved for fair play automatically**: the `generateApprovedMods`
+Gradle task (`gradle/approved-mods.gradle`) builds the baked whitelist
+(`assets/dungeontrain/cheat/approved_mods.json` in the jar) from each entry's `mod_ids`, plus DT's
+jarJar'd siblings and the dependencies in `neoforge.mods.toml`. Hand-judged third-party approvals
+stay in `src/main/whitelist/approved_mods.curated.json`.
+
+- `mod_ids` are what `ModList` reports, **never store slugs** — `irisshaders` loads as `iris`,
+  `selene` as `moonlight` + `codecui`, `advanced-shulkerboxes` as `shulkerbox`. Include jar-in-jar
+  mods (Sable brings `veil` + `sablecompanion`). Don't type them: run
+  `python3 scripts/modpack/check-mod-ids.py --fill`, which reads the pinned jar.
+- After bumping a pin, run `check-mod-ids.py --verify` (CI does too) — a new version can add or
+  rename a module.
+- `"whitelist": false` opts an entry out (it then needs no `mod_ids`). That's Brennan's call, asked
+  at Gate 3 (step 3b) whenever an entry is added — creative-focused mods are the usual candidates.
+
+After a whitelist change ships, refresh the relay's copy (dp-relay
+`web/js/approved-mods-catalog.json`) from `build/generated/sources/approvedMods/…/approved_mods.json`.
+
 ## Files
 
 | File | Purpose |
