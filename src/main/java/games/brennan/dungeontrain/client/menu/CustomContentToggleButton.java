@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.FreePlayText;
 import games.brennan.dungeontrain.client.CustomContentGate;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -37,7 +38,7 @@ public final class CustomContentToggleButton extends Button {
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/free_play");
 
     private static final Component TOOLTIP_ON =
-            Component.translatable("gui.dungeontrain.custom_content.toggle.on");
+            FreePlayText.withExplanation("gui.dungeontrain.custom_content.toggle.on");
     private static final Component TOOLTIP_OFF =
             Component.translatable("gui.dungeontrain.custom_content.toggle.off");
 

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.FreePlayText;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
 import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
@@ -460,7 +461,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                             .create(0, 0, width, ROW_H,
                                     Component.translatable("gui.dungeontrain.options.custom_content"),
                                     (btn, pref) -> ClientDisplayConfig.setCustomContentPreference(pref)),
-                    "gui.dungeontrain.options.custom_content.tip");
+                    FreePlayText.withExplanation("gui.dungeontrain.options.custom_content.tip"));
 
             // The three backup controls are Dungeon Backup's: it owns the setting
             // (config/dungeonbackup-client.toml) and the archives, so it builds the widgets; this
@@ -591,7 +592,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     }
 
     private static <T extends AbstractWidget> T withTip(T widget, String key) {
-        widget.setTooltip(Tooltip.create(Component.translatable(key)));
+        return withTip(widget, Component.translatable(key));
+    }
+
+    private static <T extends AbstractWidget> T withTip(T widget, Component tip) {
+        widget.setTooltip(Tooltip.create(tip));
         return widget;
     }
 

@@ -19999,6 +19999,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "freeplay-shared-explanation",
+      "version": "0.990.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "Free Play explained the same way everywhere",
+      "summary": "Every screen that mentions Free Play now explains it with the same words: advancements and stats won't be saved. Where you still have a choice to make, it adds that Free Play is a safe space to use hacks and cheats.",
+      "highlights": [
+        "The Free Play explanation now reads the same in chat, tooltips, menus and prompts",
+        "Updated Free Play translations in every supported language"
+      ],
+      "pr": 1617,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
