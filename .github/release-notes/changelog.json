@@ -19584,14 +19584,11 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "internal"
       ],
-      "title": "/dtp reaches every stretch \u2014 and the parts inside them",
-      "summary": "The operator teleport command /dtp now covers every stretch of the journey, lists each one once, and can drop you into a specific part of a stretch instead of just its start.",
-      "highlights": [
-        "/dtp's list no longer shows the same place several times under different names, and one stretch that was missing is now there.",
-        "Add a section name after the place to land partway in \u2014 e.g. /dtp <place> <section>. Press Tab to see the sections; a number still works as a distance."
-      ],
+      "title": "Better testing tools",
+      "summary": "Behind-the-scenes improvements to the tools used to test the journey, so future updates can be checked more thoroughly.",
+      "highlights": [],
       "pr": 1592,
       "date": "2026-09-27",
       "released": false,
