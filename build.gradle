@@ -196,6 +196,14 @@ neoForge {
             if (project.hasProperty('changelogUrl')) {
                 systemProperty 'dungeontrain.changelogUrl', project.property('changelogUrl').toString()
             }
+            // Live update-notice seam: ./gradlew runClient -PupdateFeedUrl=<url> [-PupdatePollSeconds=<n>]
+            // polls that update.json instead of raw main, and lets LiveUpdateNotice run on a dev build.
+            if (project.hasProperty('updateFeedUrl')) {
+                systemProperty 'dungeontrain.updateFeedUrl', project.property('updateFeedUrl').toString()
+            }
+            if (project.hasProperty('updatePollSeconds')) {
+                systemProperty 'dungeontrain.updatePollSeconds', project.property('updatePollSeconds').toString()
+            }
             // DPI-bypass notice seam: ./gradlew runClient -PdpiBypassTest=winws.exe makes the
             // DPI Bypass Detect add-on report that process without looking at the real process table, so
             // the title-screen notice can be seen and screenshotted on a machine that isn't running

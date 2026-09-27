@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.version;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.ChatFormatting;
@@ -15,6 +16,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import org.slf4j.Logger;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -33,6 +35,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveUpdateNotice {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final long DEFAULT_INTERVAL_MS = 10 * 60 * 1000L;
 
@@ -94,10 +98,12 @@ public final class LiveUpdateNotice {
         if (latest == null) return;
         if (baseline == null) {
             baseline = latest;
+            LOGGER.info("Update notice: baseline {} (installed {})", latest, installed);
             return;
         }
         if (!shouldAnnounce(installed, baseline, latest)) return;
         baseline = latest;
+        LOGGER.info("Update notice: announcing {} (installed {})", latest, installed);
         VersionCheckState.accept(VersionCheckState.Status.UPDATE_AVAILABLE, latest);
         announce(latest);
     }
