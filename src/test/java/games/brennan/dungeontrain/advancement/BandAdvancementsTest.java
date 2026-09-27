@@ -40,9 +40,9 @@ final class BandAdvancementsTest {
                 "reached_nether", "reached_void", "reached_end_islands", "the_upside_down", "reassembly_required",
                 "reached_wwoo", "reached_better_nether", "reached_bop", "reached_better_end", "reached_spheres",
                 "reached_amplified", "reached_lost_city", "reached_beta", "reached_far_lands", "reached_caves_of_chaos", "reached_skylands", "reached_floating",
-                "reached_alpha", "reached_infdev", "reached_classic", "reached_superflat", "reached_legacy_void",
-                "reached_chuncks", "reached_stacks", "reached_bop_nether", "reached_bop_end",
-                "reached_overworld_again"), chain);
+                "reached_alpha", "reached_infdev", "reached_classic", "reached_superflat",
+                "reached_chuncks", "reached_stacks",
+                "reached_overworld_again", "read_all_nether_starting_books", "reached_bop_end"), chain);
     }
 
     @Test
@@ -58,9 +58,9 @@ final class BandAdvancementsTest {
         assertEquals("reached_nether", chain.get(4));
         assertEquals("reached_void", chain.get(5));
         assertEquals("reached_end_islands", chain.get(6));
-        assertEquals(BandAdvancements.ALL.size() + 1, chain.size());
         assertEquals(chain.size(), new HashSet<>(chain).size());
-        assertEquals("reached_overworld_again", chain.get(chain.size() - 1));
+        assertTrue(chain.containsAll(BandAdvancements.ALL));
+        assertEquals(BandAdvancements.LATER_CYCLES, chain.subList(chain.size() - 3, chain.size()));
     }
 
     @Test
@@ -70,7 +70,7 @@ final class BandAdvancementsTest {
         assertEquals("reached_nether", chain.get(0));
         assertTrue(chain.contains("reached_spheres"));
         assertTrue(chain.indexOf("reached_spheres") > chain.indexOf("reached_nether"));
-        assertEquals("reached_overworld_again", chain.get(chain.size() - 1));
+        assertEquals(BandAdvancements.LATER_CYCLES, chain.subList(chain.size() - 3, chain.size()));
     }
 
     @Test
@@ -83,11 +83,12 @@ final class BandAdvancementsTest {
     }
 
     @Test
-    @DisplayName("no layout: the classic order, every band, closer last")
+    @DisplayName("no layout: the classic order, every band, the later-cycle links last")
     void classicFallback() {
         List<String> chain = BandAdvancements.chain(null);
         List<String> expected = new ArrayList<>(BandAdvancements.ALL);
-        expected.add(BandAdvancements.OVERWORLD_AGAIN);
+        expected.removeAll(BandAdvancements.LATER_CYCLES);
+        expected.addAll(BandAdvancements.LATER_CYCLES);
         assertEquals(expected, chain);
     }
 

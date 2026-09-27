@@ -31,7 +31,7 @@ import java.util.Set;
  *   <li>{@link #chain(CycleLayout)} — the advancement ids in <em>layout order</em>: the order the
  *       player meets the bands riding +X. Every id in {@link #ALL} appears exactly once (a band the
  *       layout lacks is appended so its advancement stays parented rather than orphaned into its own
- *       tab), and {@link #OVERWORLD_AGAIN} closes the chain. The datapack rewriter
+ *       tab), and {@link #LATER_CYCLES} closes the chain. The datapack rewriter
  *       ({@link BandAdvancementChainRewriter}) turns this into the {@code parent} fields at load.</li>
  *   <li>{@link #triggers()} — each id with the column test that grants it, for
  *       {@link games.brennan.dungeontrain.event.ZoneProgressEvents}' depth-gated scan.</li>
@@ -50,8 +50,6 @@ public final class BandAdvancements {
     public static final String VOID = "reached_void";
     public static final String END_ISLANDS = "reached_end_islands";
     public static final String BETTER_END = "reached_better_end";
-    /** A Nether band in a Biomes O' Plenty lap. */
-    public static final String BOP_NETHER = "reached_bop_nether";
     /** An End-islands band in a Biomes O' Plenty lap. */
     public static final String BOP_END = "reached_bop_end";
     public static final String UPSIDE_DOWN = "the_upside_down";
@@ -61,9 +59,19 @@ public final class BandAdvancements {
     public static final String CHUNCKS = "reached_chuncks";
     public static final String SPHERES = "reached_spheres";
     public static final String STACKS = "reached_stacks";
-    public static final String LEGACY_VOID = "reached_legacy_void";
-    /** "Re-Over-World" — always the last link of the chain. */
+    /** "Re-Over-World": plain overworld at the start of the second cycle. */
     public static final String OVERWORLD_AGAIN = "reached_overworld_again";
+    /**
+     * "Nether Return Again": the second cycle's Nether. The id predates the advancement's current
+     * meaning; it is kept so earned progress survives. Granted as action {@code nether_return_again}.
+     */
+    public static final String NETHER_RETURN = "read_all_nether_starting_books";
+
+    /**
+     * The chain's closing links, in the order the second cycle grants them: back on plain overworld,
+     * into its (Biomes O' Plenty) Nether, then its End. Always after every first-cycle band.
+     */
+    public static final List<String> LATER_CYCLES = List.of(OVERWORLD_AGAIN, NETHER_RETURN, BOP_END);
 
     /** The advancement the chain hangs from: the first band advancement's parent. */
     public static final String ANCHOR = "carts_100";
@@ -78,16 +86,16 @@ public final class BandAdvancements {
             legacyId(LegacyBandKind.AMPLIFIED), legacyId(LegacyBandKind.LOST_CITY), legacyId(LegacyBandKind.BETA), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.CAVES_OF_CHAOS),
             legacyId(LegacyBandKind.SKYLANDS),
             legacyId(LegacyBandKind.FLOATING), legacyId(LegacyBandKind.ALPHA), legacyId(LegacyBandKind.INFDEV),
-            legacyId(LegacyBandKind.CLASSIC), legacyId(LegacyBandKind.SUPERFLAT), LEGACY_VOID,
+            legacyId(LegacyBandKind.CLASSIC), legacyId(LegacyBandKind.SUPERFLAT),
             CHUNCKS, STACKS,
-            // Lap 1's Nether and End turn Biomes O' Plenty from the second cycle on (vanilla>bop).
-            BOP_NETHER, BOP_END);
+            // Lap 1's End turns Biomes O' Plenty from the second cycle on (vanilla>bop).
+            BOP_END);
 
     private BandAdvancements() {}
 
-    /** The advancement for a legacy era: {@code reached_<kind>}, except the closing void's {@link #LEGACY_VOID}. */
+    /** The advancement for a legacy era: {@code reached_<kind>}, or {@code null} for the closing void, which has none. */
     public static String legacyId(LegacyBandKind kind) {
-        if (kind == LegacyBandKind.VOID) return LEGACY_VOID;
+        if (kind == LegacyBandKind.VOID) return null;
         return "reached_" + kind.name().toLowerCase(Locale.ROOT);
     }
 
@@ -95,8 +103,9 @@ public final class BandAdvancements {
 
     /**
      * The advancement ids in the order the layout visits their bands, each once (first occurrence
-     * wins), then every id of {@link #ALL} the layout has no band for, then {@link #OVERWORLD_AGAIN}.
-     * Never returns an empty list; with a {@code null} layout the result is {@link #ALL} + the closer.
+     * wins), then every id of {@link #ALL} the layout has no band for, then {@link #LATER_CYCLES}.
+     * Never returns an empty list; with a {@code null} layout the result is {@link #ALL} (minus the
+     * later-cycle links) + {@link #LATER_CYCLES}.
      */
     public static List<String> chain(CycleLayout layout) {
         Set<String> out = new LinkedHashSet<>();
@@ -105,8 +114,10 @@ public final class BandAdvancements {
                 addSlot(out, layout, i);
             }
         }
-        out.addAll(ALL);
-        out.add(OVERWORLD_AGAIN);
+        for (String id : ALL) {
+            if (!LATER_CYCLES.contains(id)) out.add(id);
+        }
+        out.addAll(LATER_CYCLES);
         return List.copyOf(out);
     }
 
@@ -124,7 +135,6 @@ public final class BandAdvancements {
             case NETHER -> {
                 out.add(NETHER);
                 if (better) out.add(BETTER_NETHER);
-                if (bop) out.add(BOP_NETHER);
             }
             case END -> {
                 out.add(VOID);
@@ -140,7 +150,10 @@ public final class BandAdvancements {
             case SPHERES -> out.add(SPHERES);
             case STACKS -> out.add(STACKS);
             case LEGACY_RUN -> {
-                for (LegacySpan era : layout.eras()) out.add(legacyId(era.kind()));
+                for (LegacySpan era : layout.eras()) {
+                    String id = legacyId(era.kind());
+                    if (id != null) out.add(id);
+                }
             }
             case MIX -> { }                                     // no band of its own: it remixes the ones behind it
         }
@@ -192,8 +205,6 @@ public final class BandAdvancements {
         t.add(entry(BETTER_NETHER, (l, x) -> NetherBand.isInNetherBiome(l, x)
                 && cycle(l).isBetterNetherAt(x)));
         t.add(entry(BOP, (l, x) -> overworldStyle(l, x) == CycleLayout.Style.BOP));
-        t.add(entry(BOP_NETHER, (l, x) -> NetherBand.isInNetherBiome(l, x)
-                && cycle(l).isBopNetherAt(x)));
         t.add(entry(BETTER_END, (l, x) -> isInEndIslands(l, x)
                 && cycle(l).isBetterEndAt(x)));
         t.add(entry(BOP_END, (l, x) -> isInEndIslands(l, x)
@@ -201,6 +212,7 @@ public final class BandAdvancements {
         t.add(entry(SPHERES, SpheresBand::isInBand));
         for (LegacyBandKind kind : LegacyBandKind.values()) {
             if (kind == LegacyBandKind.LARGE_BIOMES) continue;   // built, not shipped — see LegacyBandKind
+            if (legacyId(kind) == null) continue;                // the closing void has no advancement
             t.add(entry(legacyId(kind), (l, x) -> LegacyBands.isInBand(l, kind, x)));
         }
         t.add(entry(CHUNCKS, ChuncksBand::isInBand));
