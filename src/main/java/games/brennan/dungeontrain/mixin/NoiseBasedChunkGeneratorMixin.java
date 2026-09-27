@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.StacksBand;
+import games.brennan.dungeontrain.worldgen.SunkZone;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyChunkWriter;
@@ -20,6 +21,7 @@ import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.GenerationStep;
+import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
@@ -70,7 +72,9 @@ import java.util.concurrent.CompletableFuture;
  * A <b>modern-preset</b> band (Large Biomes, Amplified — {@link LegacyBandKind#isPreset}) instead hands the
  * chunk to its own vanilla generator ({@link PresetTerrain}): first at {@code createBiomes}, which is where the
  * chunk's {@code NoiseChunk} is created (so the NOISE, SURFACE and CARVER steps all read the preset router),
- * then at {@code fillFromNoise}; vanilla's surface, carvers and decoration then run unchanged.</p>
+ * then at {@code fillFromNoise}; vanilla's surface, carvers and decoration then run unchanged — except that a
+ * preset whose terrain is sunk ({@link PresetTerrain.Preset#ownsSurfaceAndCarvers}) has its surface and carver
+ * passes run on its own generator too, since both anchor on the generator's floor.</p>
  *
  * <p>Scope: only the overworld dimension (both bands' home). Fade-zone / straddle / kept chunks fall
  * through to vanilla so their terrain is byte-identical to before. The floating track bed + rails are
@@ -149,6 +153,13 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             ChunkAccess chunk, CallbackInfo ci) {
         try {
             ServerLevel level = region.getLevel();
+            PresetTerrain.Preset preset = dungeontrain$preset(level, chunk, this);
+            if (preset != null && preset.ownsSurfaceAndCarvers()) {
+                // Sunk Amplified: its surface rules must anchor on its own floor, not the overworld's.
+                preset.generator().buildSurface(region, structureManager, preset.randomState(), chunk);
+                ci.cancel();
+                return;
+            }
             if (dungeontrain$isVoidChunk(level, chunk) || dungeontrain$oldGeneratorKind(level, chunk) != null) {
                 ci.cancel(); // void: nothing to surface; legacy: the old generator laid its own surface
             }
@@ -209,12 +220,51 @@ public abstract class NoiseBasedChunkGeneratorMixin {
         return true;
     }
 
+    /**
+     * Sunk-zone column: answer height queries from the sunk preset. Structure placement sites villages,
+     * outposts and the like with {@code getBaseHeight} on the overworld's own generator — which would
+     * put them on stock-height terrain, hanging {@code AmplifiedDrop.drop} blocks over the real ground.
+     */
+    @Inject(method = "getBaseHeight", at = @At("HEAD"), cancellable = true)
+    private void dungeontrain$sunkBaseHeight(int x, int z, Heightmap.Types type, LevelHeightAccessor level,
+                                             RandomState random, CallbackInfoReturnable<Integer> cir) {
+        try {
+            PresetTerrain.Preset preset = PresetTerrain.sunkForColumn(this, x, z);
+            if (preset != null) {
+                cir.setReturnValue(preset.generator().getBaseHeight(x, z, type, level, preset.randomState()));
+            }
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] sunk base-height lookup failed at {},{}; using the overworld's", x, z, t);
+        }
+    }
+
+    /** {@link #dungeontrain$sunkBaseHeight}'s twin for the full column (structure pieces probe it too). */
+    @Inject(method = "getBaseColumn", at = @At("HEAD"), cancellable = true)
+    private void dungeontrain$sunkBaseColumn(int x, int z, LevelHeightAccessor level, RandomState random,
+                                             CallbackInfoReturnable<NoiseColumn> cir) {
+        try {
+            PresetTerrain.Preset preset = PresetTerrain.sunkForColumn(this, x, z);
+            if (preset != null) {
+                cir.setReturnValue(preset.generator().getBaseColumn(x, z, level, preset.randomState()));
+            }
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] sunk base-column lookup failed at {},{}; using the overworld's", x, z, t);
+        }
+    }
+
     /** Skip vanilla caves and ravines in legacy chunks — the old generator carved its own. */
     @Inject(method = "applyCarvers", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$skipLegacyCarvers(WorldGenRegion region, long seed, RandomState random,
                                                 BiomeManager biomeManager, StructureManager structureManager,
                                                 ChunkAccess chunk, GenerationStep.Carving step, CallbackInfo ci) {
         try {
+            PresetTerrain.Preset preset = dungeontrain$preset(region.getLevel(), chunk, this);
+            if (preset != null && preset.ownsSurfaceAndCarvers()) {
+                // Sunk Amplified: carver Y ranges and lava level anchor on its own floor, not the overworld's.
+                preset.generator().applyCarvers(region, seed, preset.randomState(), biomeManager, structureManager, chunk, step);
+                ci.cancel();
+                return;
+            }
             if (dungeontrain$oldGeneratorKind(region.getLevel(), chunk) != null) ci.cancel();
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] legacy carver skip failed at {}; running vanilla carvers", chunk.getPos(), t);
@@ -237,6 +287,9 @@ public abstract class NoiseBasedChunkGeneratorMixin {
     private static PresetTerrain.Preset dungeontrain$preset(ServerLevel level, ChunkAccess chunk, Object self) {
         if (PresetTerrain.isPresetGenerator(self)) return null;
         LegacyBandKind kind = LegacyBands.kindOfChunk(level, chunk.getPos().x, chunk.getPos().z);
-        return kind == null || !kind.isPreset() ? null : PresetTerrain.of(kind);
+        if (kind != null) return kind.isPreset() ? PresetTerrain.of(kind) : null;
+        // A plain chunk of the sunk zone: the ordinary overworld, lowered with Amplified.
+        return SunkZone.isSunkOverworldChunk(level, chunk.getPos().x, chunk.getPos().z)
+                ? PresetTerrain.sunkOverworld() : null;
     }
 }

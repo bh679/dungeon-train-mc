@@ -5,6 +5,8 @@ import games.brennan.dungeontrain.portal.PortalTwinRegion;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.SunkZone;
+import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 
@@ -141,11 +143,48 @@ public final class ClientUpsideDownBand {
     public static boolean isInPortalTwinSpace(int worldX, int y) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null || bedrockY == Integer.MIN_VALUE) return false;
+        AmplifiedDrop drop = isInSunkZone(worldX) ? amplifiedDrop() : null;
+        if (drop != null) {
+            return PortalTwinSpace.amplifiedTwinSpaceContains(y, drop, bedrockY,
+                level.getMinBuildHeight(), level.getMaxBuildHeight());
+        }
         PortalTwinRegion basement = PortalTwinRegion.basement(level.getMinBuildHeight(), bedrockY);
         if (basement.contains(y)) return true;
         boolean atticApplies = DungeonTrainCommonConfig.isUpsideDownBedrockRoof() && isInCoreBand(worldX);
         return atticApplies && PortalTwinRegion.twinSpaceContains(y, basement, true,
             PortalTwinRegion.attic(roofY(), level.getMaxBuildHeight(), PortalTwinSpace.CEILING_MARGIN));
+    }
+
+    /**
+     * This world's sunk-Amplified geometry — the same pure {@link AmplifiedDrop#compute} the server
+     * runs, from the synced terrain floor — or {@code null} before a sync, off the overworld, or in a
+     * world with nothing to sink into.
+     */
+    public static AmplifiedDrop amplifiedDrop() {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null || bedrockY == Integer.MIN_VALUE || !startsWithTrain) return null;
+        AmplifiedDrop drop = AmplifiedDrop.compute(bedrockY, level.getMinBuildHeight(),
+            level.getMaxBuildHeight(), PortalTwinSpace.CEILING_MARGIN);
+        return drop.active() ? drop : null;
+    }
+
+    /** Client mirror of {@code SunkZone.contains(level, x)}: the gap into Amplified, and Amplified's slot. */
+    public static boolean isInSunkZone(int worldX) {
+        return startsWithTrain && SunkZone.contains(WorldGenCycle.fromConfig(), worldX);
+    }
+
+    /**
+     * Whether the sunk zone reaches anywhere in {@code [worldX - margin, worldX + margin]} — so a
+     * camera on the approach, looking in, already sees the band's valleys. Same 64-block sampling as
+     * {@link #isFlipZoneWithin}; the zone is hundreds of blocks long at least, so no step can skip it.
+     */
+    public static boolean isSunkZoneWithin(int worldX, int margin) {
+        if (!startsWithTrain) return false;
+        int span = Math.max(0, margin);
+        for (int x = worldX - span; x < worldX + span; x += FLIP_ZONE_SAMPLE_STEP) {
+            if (isInSunkZone(x)) return true;
+        }
+        return isInSunkZone(worldX + span);
     }
 
     /** Client mirror of {@code UpsideDownBand.isInBand}: the core band only, no lead-in or fade. */
