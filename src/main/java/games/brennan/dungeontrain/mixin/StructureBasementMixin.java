@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.worldgen.LegacyUnderground;
+import games.brennan.dungeontrain.worldgen.LostCityStructures;
 import games.brennan.dungeontrain.worldgen.UpsideDownSpawnerStructures;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.server.level.ServerLevel;
@@ -8,6 +9,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.biome.Biome;
@@ -54,20 +56,27 @@ public abstract class StructureBasementMixin {
             return;
         }
         int floorY = WorldFloor.bedrockY(heightAccessor, chunkGenerator);
-        if (heightAccessor instanceof ChunkAccess chunk
-                && ((ChunkAccessAccessor) chunk).dungeontrain$getLevelHeightAccessor() instanceof ServerLevel level
-                && level.getChunkSource().getGenerator() == chunkGenerator) {
+        ResourceLocation id = registryAccess.registryOrThrow(Registries.STRUCTURE).getKey((Structure) (Object) this);
+        ServerLevel level = heightAccessor instanceof ChunkAccess chunk
+                && ((ChunkAccessAccessor) chunk).dungeontrain$getLevelHeightAccessor() instanceof ServerLevel l
+                && l.getChunkSource().getGenerator() == chunkGenerator ? l : null;
+        // Big Lost City's cities belong to the Lost City era's core alone (LostCityStructures) — anywhere
+        // else, including a start we can't place in a level (a sampler or foreign generator), is dropped.
+        if (LostCityStructures.isLostCityStructure(id)
+                && (level == null || !LostCityStructures.allowedAt(level, chunkPos.x))) {
+            cir.setReturnValue(StructureStart.INVALID_START);
+            return;
+        }
+        if (level != null) {
             // Legacy bands and the sunk zone never get the underground set (LegacyUnderground).
             if (LegacyUnderground.appliesTo(level, chunkPos.x, chunkPos.z)
-                    && LegacyUnderground.excludesStructure(registryAccess.registryOrThrow(Registries.STRUCTURE)
-                            .getKey((Structure) (Object) this))) {
+                    && LegacyUnderground.excludesStructure(id)) {
                 cir.setReturnValue(StructureStart.INVALID_START);
                 return;
             }
             // The upside-down band never gets spawner structures (UpsideDownSpawnerStructures).
             if (UpsideDownSpawnerStructures.appliesTo(level, chunkPos.x)
-                    && UpsideDownSpawnerStructures.excludesStructure(registryAccess.registryOrThrow(Registries.STRUCTURE)
-                            .getKey((Structure) (Object) this))) {
+                    && UpsideDownSpawnerStructures.excludesStructure(id)) {
                 cir.setReturnValue(StructureStart.INVALID_START);
                 return;
             }

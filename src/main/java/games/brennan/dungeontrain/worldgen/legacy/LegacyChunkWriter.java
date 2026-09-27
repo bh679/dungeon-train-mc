@@ -96,6 +96,7 @@ public final class LegacyChunkWriter {
             case VOID -> throw new IllegalStateException("void handled above");
             case SUPERFLAT -> throw new IllegalStateException("superflat handled above");
             case LARGE_BIOMES, AMPLIFIED -> throw new IllegalStateException(kind + " is filled by its preset generator");
+            case LOST_CITY -> throw new IllegalStateException(kind + " is filled by the vanilla generator");
             case CLASSIC -> LegacyBands.classic(seed).chunkColumn(cx, cz);
             case FAR_LANDS -> {
                 // The Far Lands are Beta's own terrain, read ~12.55M blocks out (see FarLandsShift).

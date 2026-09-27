@@ -55,11 +55,11 @@ final class LegacyBandsTest {
     }
 
     @Test
-    @DisplayName("declaration order ends Classic, Superflat, Void; chaos, Skylands, floating, superflat and void are void below")
+    @DisplayName("declaration order ends Classic, Superflat, Void, Lost City; chaos, Skylands, floating, superflat and void are void below")
     void kindOrder() {
         assertArrayEquals(new LegacyBandKind[] {LegacyBandKind.LARGE_BIOMES, LegacyBandKind.AMPLIFIED, LegacyBandKind.BETA, LegacyBandKind.FAR_LANDS, LegacyBandKind.CAVES_OF_CHAOS, LegacyBandKind.SKYLANDS,
                         LegacyBandKind.ALPHA, LegacyBandKind.INFDEV, LegacyBandKind.FLOATING, LegacyBandKind.CLASSIC,
-                        LegacyBandKind.SUPERFLAT, LegacyBandKind.VOID},
+                        LegacyBandKind.SUPERFLAT, LegacyBandKind.VOID, LegacyBandKind.LOST_CITY},
                 LegacyBandKind.values());
         assertTrue(LegacyBandKind.VOID.voidBelow());
         assertTrue(LegacyBandKind.SUPERFLAT.voidBelow());
@@ -76,6 +76,12 @@ final class LegacyBandsTest {
         assertTrue(LegacyBandKind.LARGE_BIOMES.isPreset());
         assertTrue(LegacyBandKind.AMPLIFIED.isPreset());
         assertFalse(LegacyBandKind.BETA.isPreset());
+        assertFalse(LegacyBandKind.LOST_CITY.voidBelow());
+        assertFalse(LegacyBandKind.LOST_CITY.isPreset());
+        assertTrue(LegacyBandKind.LOST_CITY.usesVanillaTerrain());
+        assertFalse(LegacyBandKind.LOST_CITY.usesOldGenerator());
+        assertFalse(LegacyBandKind.AMPLIFIED.usesOldGenerator());
+        assertTrue(LegacyBandKind.BETA.usesOldGenerator());
     }
 
     @Test

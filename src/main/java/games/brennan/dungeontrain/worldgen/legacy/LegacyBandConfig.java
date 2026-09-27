@@ -34,6 +34,7 @@ public final class LegacyBandConfig {
     public static final Defaults SUPERFLAT_DEFAULTS = new Defaults(true, 1000, 480, 3000);
     public static final Defaults VOID_DEFAULTS = new Defaults(true, 1000, 480, 3000);
     public static final Defaults FAR_LANDS_DEFAULTS = new Defaults(true, 4320, 480, 3000);
+    public static final Defaults LOST_CITY_DEFAULTS = new Defaults(true, 4000, 480, 3000);
 
     /** Shipped share of the Alpha core (counted from its end) that is winter mode. */
     public static final double ALPHA_WINTER_SHARE_DEFAULT = 0.5D;
@@ -60,6 +61,7 @@ public final class LegacyBandConfig {
             case FAR_LANDS -> FAR_LANDS_DEFAULTS;
             case SUPERFLAT -> SUPERFLAT_DEFAULTS;
             case VOID -> VOID_DEFAULTS;
+            case LOST_CITY -> LOST_CITY_DEFAULTS;
         };
     }
 
@@ -77,6 +79,7 @@ public final class LegacyBandConfig {
             case FAR_LANDS -> "Far Lands";
             case SUPERFLAT -> "Superflat";
             case VOID -> "Void";
+            case LOST_CITY -> "Lost City";
         };
     }
 

@@ -71,7 +71,7 @@ public final class BandAdvancements {
     public static final List<String> ALL = List.of(
             NETHER, VOID, END_ISLANDS, UPSIDE_DOWN, REASSEMBLY,
             WWOO, BETTER_NETHER, BOP, BETTER_END, SPHERES,
-            legacyId(LegacyBandKind.AMPLIFIED), legacyId(LegacyBandKind.BETA), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.CAVES_OF_CHAOS),
+            legacyId(LegacyBandKind.AMPLIFIED), legacyId(LegacyBandKind.LOST_CITY), legacyId(LegacyBandKind.BETA), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.CAVES_OF_CHAOS),
             legacyId(LegacyBandKind.SKYLANDS),
             legacyId(LegacyBandKind.FLOATING), legacyId(LegacyBandKind.ALPHA), legacyId(LegacyBandKind.INFDEV),
             legacyId(LegacyBandKind.CLASSIC), legacyId(LegacyBandKind.SUPERFLAT), LEGACY_VOID,

@@ -282,11 +282,11 @@ public abstract class NoiseBasedChunkGeneratorMixin {
         }
     }
 
-    /** The legacy kind whose OLD generator owns this chunk — null for modern chunks and for preset chunks. */
+    /** The legacy kind whose OLD generator owns this chunk — null for modern, preset and vanilla-terrain chunks. */
     @Unique
     private static LegacyBandKind dungeontrain$oldGeneratorKind(ServerLevel level, ChunkAccess chunk) {
         LegacyBandKind kind = LegacyBands.kindOfChunk(level, chunk.getPos().x, chunk.getPos().z);
-        return kind == null || kind.isPreset() ? null : kind;
+        return kind == null || !kind.usesOldGenerator() ? null : kind;
     }
 
     /**
