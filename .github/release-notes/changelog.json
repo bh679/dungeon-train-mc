@@ -19794,6 +19794,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-core-floating-decorations",
+      "version": "0.982.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Nothing hangs in mid-air any more",
+      "summary": "Along some of the stranger stretches of the line, the things that grow there now stay rooted to the ground instead of hovering in the air.",
+      "highlights": [
+        "Tall growths keep their trunks, so their tops no longer float",
+        "No more scenery hanging in straight lines through the sky"
+      ],
+      "pr": 1601,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
