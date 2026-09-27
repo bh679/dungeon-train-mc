@@ -90,6 +90,9 @@ public final class LegacyBiomes {
         Context c = current;
         if (c == null || !isOverworld(source, c)) return null;
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        // Mix zone: a legacy-era pick keeps the ordinary overworld biome, so sky and fog never change chunk
+        // to chunk (vanilla reads both from the biome). Only the blocks are the old era's.
+        if (cycle.mixPicksAt(blockX)) return null;
         LegacyBandKind kind = LegacyBands.kindOfChunk(c.seed(), cycle, blockX >> 4, blockZ >> 4);
         if (kind == null) return null;
         return switch (kind) {

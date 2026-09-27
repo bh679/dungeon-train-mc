@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -104,7 +105,7 @@ public final class WorldEndBandEvents {
         } else {
             // A chunk that unloaded before its terrain arrived: ask again.
             if (!chunk.getData(ModDataAttachments.END_BAND_PENDING)) return;
-            pass = WorldGenCycle.fromConfig().endPassIndex(pos.getMinBlockX() + 8);
+            pass = MixBand.cycleAt(level, pos.x, pos.z).endPassIndex(pos.getMinBlockX() + 8);
         }
         EndBandSampler.Result early = STASH.remove(pos.toLong());
         if (early != null) {
@@ -163,7 +164,7 @@ public final class WorldEndBandEvents {
      */
     private static long betterEndPass(ServerLevel level, ChunkPos pos) {
         if (DisintegrationBand.startX(level) == DisintegrationBand.OFF) return -1L;
-        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        WorldGenCycle cycle = MixBand.cycleAt(level, pos.x, pos.z);   // mix zone: the chunk's picked band
         int minX = pos.getMinBlockX();
         if (cycle.endIslandRamp(minX) <= 0.0 && cycle.endIslandRamp(minX + 15) <= 0.0) return -1L;
         long pass = cycle.endPassIndex(minX + 8);
@@ -183,7 +184,10 @@ public final class WorldEndBandEvents {
                     if (STASH.containsKey(pos.toLong())) continue;
                     if (level.getChunkSource().getChunkNow(cx, cz) != null) continue;
                     long pass = betterEndPass(level, pos);
-                    if (pass < 0L) break;                  // whole strip column shares X: none of it is band
+                    if (pass < 0L) {
+                        if (WorldGenCycle.fromConfig().mixPicksAt(cx << 4)) continue;   // mix zone: picks vary by Z
+                        break;                             // whole strip column shares X: none of it is band
+                    }
                     if (bedY == -1) bedY = SphereCarveGeometry.of(level).bedY();
                     EndBandSampler.request(level, pos, pass, bedY);
                 }
@@ -205,7 +209,7 @@ public final class WorldEndBandEvents {
     private static boolean fill(ServerLevel level, LevelChunk chunk, EndBandSampler.Result r) {
         ChunkPos pos = r.pos();
         SphereCarveGeometry geo = SphereCarveGeometry.of(level);
-        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        WorldGenCycle cycle = MixBand.cycleAt(level, pos.x, pos.z);    // mix zone: the chunk's picked band
         long seed = DungeonTrainWorldData.get(level).getGenerationSeed();
         int yStart = Math.max(r.minY(), chunk.getMinBuildHeight());
         int yEnd = Math.min(r.minY() + r.height(), chunk.getMaxBuildHeight());

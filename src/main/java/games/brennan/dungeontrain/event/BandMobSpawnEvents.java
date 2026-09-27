@@ -44,9 +44,10 @@ public final class BandMobSpawnEvents {
         ServerLevel level = event.getLevel().getLevel();
         if (!level.dimension().equals(Level.OVERWORLD)) return;
         int x = (int) Math.floor(event.getX());
+        int z = (int) Math.floor(event.getZ());
 
         // End band: only endermen (the End's natives) survive; cancel every other ambient spawn.
-        if (DisintegrationBand.middleRampAt(level, x) > 0.0) {
+        if (DisintegrationBand.middleRampAt(level, x, z) > 0.0) {
             if (!(event.getEntity() instanceof EnderMan)) {
                 event.setSpawnCancelled(true);
             }
@@ -56,14 +57,14 @@ public final class BandMobSpawnEvents {
         // Upside-down band (plus its entry lead-in and exit-fade transition zones): the mirrored /
         // partial terrain gives ambient mobs nothing to stand on, so they just fall to their death —
         // cancel every natural spawn (hostile and passive) across all three.
-        if (UpsideDownBand.isInBandEntryLeadOrExit(level, x)) {
+        if (UpsideDownBand.isInBandEntryLeadOrExit(level, x, z)) {
             event.setSpawnCancelled(true);
             return;
         }
 
         // Spheres band (entry fade + core): floating spheres over open void — nothing ambient can
         // stay on its feet for long, so cancel every natural spawn here too.
-        if (SpheresBand.voidRamp(level, x) > 0.0) {
+        if (SpheresBand.voidRamp(level, x, z) > 0.0) {
             event.setSpawnCancelled(true);
         }
     }

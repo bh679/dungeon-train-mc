@@ -19674,6 +19674,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "chuncks-band-mix-zone",
+      "version": "0.979.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The world remembers where you've been",
+      "summary": "Late in the journey, one of the stranger stretches now turns into a patchwork of pieces from everywhere the train has already passed.",
+      "highlights": [
+        "A new, unpredictable stretch deep into a run.",
+        "No two patches are the same, but the sky stays still overhead."
+      ],
+      "pr": 1597,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

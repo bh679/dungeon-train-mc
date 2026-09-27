@@ -131,6 +131,7 @@ public final class BandAdvancements {
             case LEGACY_RUN -> {
                 for (LegacySpan era : layout.eras()) out.add(legacyId(era.kind()));
             }
+            case MIX -> { }                                     // no band of its own: it remixes the ones behind it
         }
     }
 

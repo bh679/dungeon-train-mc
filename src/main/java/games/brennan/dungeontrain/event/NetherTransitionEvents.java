@@ -60,8 +60,8 @@ public final class NetherTransitionEvents {
             int worldX = chunkMinX + dx;
             // Only the netherrack crossfade + Nether core (netherRamp > 0) — NOT the vegetated
             // mountain stages — and never a column the End band owns (End wins).
-            band[dx] = NetherBand.netherRampAt(level, worldX) > 0.0
-                    && DisintegrationBand.middleRampAt(level, worldX) <= 0.0;
+            band[dx] = NetherBand.netherRampAt(level, worldX, pos.getMinBlockZ()) > 0.0
+                    && DisintegrationBand.middleRampAt(level, worldX, pos.getMinBlockZ()) <= 0.0;
             if (band[dx]) any = true;
         }
         if (!any) return;

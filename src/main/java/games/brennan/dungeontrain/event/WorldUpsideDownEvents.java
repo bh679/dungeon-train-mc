@@ -154,12 +154,13 @@ public final class WorldUpsideDownEvents {
         long startX = UpsideDownBand.startX(level);
         if (startX == UpsideDownBand.OFF) return false;
         int chunkMinX = chunk.getPos().getMinBlockX();
+        int chunkMinZ = chunk.getPos().getMinBlockZ();
         if (chunkMinX + 15 < startX) return false;           // entirely before the first band
         for (int dx = 0; dx < 16; dx++) {
             int worldX = chunkMinX + dx;
-            if (UpsideDownBand.isInBand(level, worldX)
-                    || UpsideDownBand.isInEntryLead(level, worldX)
-                    || UpsideDownBand.isInExitFade(level, worldX)) {
+            if (UpsideDownBand.isInBand(level, worldX, chunkMinZ)
+                    || UpsideDownBand.isInEntryLead(level, worldX, chunkMinZ)
+                    || UpsideDownBand.isInExitFade(level, worldX, chunkMinZ)) {
                 return true;
             }
         }

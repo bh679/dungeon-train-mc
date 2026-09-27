@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.structure.BandNetherStructures;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,6 +33,18 @@ public abstract class StructureBandBiomeFilterMixin {
 
     @Shadow
     protected abstract Optional<Structure.GenerationStub> findGenerationPoint(Structure.GenerationContext context);
+
+    /**
+     * No structure starts in the mix zone: its chunks each generate as a different band, so a multi-chunk
+     * structure would straddle unrelated terrain (a village half over void, a city half in the Nether).
+     */
+    @Inject(method = "findValidGenerationPoint", at = @At("HEAD"), cancellable = true)
+    private void dungeontrain$noStructuresInMixZone(Structure.GenerationContext context,
+                                                   CallbackInfoReturnable<Optional<Structure.GenerationStub>> cir) {
+        if (!PresetTerrain.isTrainOverworldGenerator(context.chunkGenerator())) return;
+        if (!WorldGenCycle.fromConfig().mixPicksAt(context.chunkPos().getMinBlockX())) return;
+        cir.setReturnValue(Optional.empty());
+    }
 
     @Inject(method = "findValidGenerationPoint", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$skipBiomeFilterInBand(Structure.GenerationContext context,
