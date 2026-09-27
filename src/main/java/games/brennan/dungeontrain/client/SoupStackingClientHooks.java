@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.client;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 
 /**
  * Client side of {@link games.brennan.dungeontrain.cheat.FarmersDelightSoupStacking}. Only ever
@@ -13,15 +12,13 @@ public final class SoupStackingClientHooks {
     private SoupStackingClientHooks() {}
 
     /**
-     * Is a mod's config menu (Configured, NeoForge's config screen, …) what the player is looking at?
-     * Read as "a non-vanilla screen is open": a hand edit to the file is made with the game on the
-     * title screen, the pause menu or in play, all of which are vanilla screens (or none).
+     * Is this the client (render) thread? A config reload posted here came from an in-game save —
+     * Configured and NeoForge's config screen both save on it. NeoForge's file watcher, which is the
+     * only way a hand edit to the file reaches the game, posts from its own thread instead.
      */
-    public static boolean isConfigMenuOpen() {
+    public static boolean isClientThread() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc == null) return false;
-        Screen screen = mc.screen;
-        return screen != null && !screen.getClass().getName().startsWith("net.minecraft.");
+        return mc != null && mc.isSameThread();
     }
 
     /** Open the "turn on stackable soups?" question over whatever menu is open. Any thread. */

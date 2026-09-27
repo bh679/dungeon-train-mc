@@ -61,6 +61,12 @@ public final class FarmersDelightSoupStacking {
     /** The player confirmed "turn on anyway": the next reload showing {@code true} is theirs. */
     private static volatile boolean approved = false;
 
+    /**
+     * Farmers' Delight had no config file yet at our constructor, so the one-time switch-off waits
+     * for NeoForge's first load of it (see {@link #applyDefaultOnce}).
+     */
+    private static volatile boolean pendingFirstLoad = false;
+
     /** Farmers' Delight's loaded COMMON config, captured from its events, for the confirmed write. */
     private static volatile ModConfig fdConfig = null;
 
@@ -102,15 +108,47 @@ public final class FarmersDelightSoupStacking {
     /**
      * Write {@link #PATH}{@code = false} into {@code configDir/FILE} unless {@link #MARKER} says it
      * was already done; then write the marker. Returns whether it wrote. Package-visible for tests.
+     *
+     * <p>A <b>missing</b> file is left alone: a file holding only this key is one NeoForge calls
+     * "not correct", and correcting it leaves a stray {@code farmersdelight-common-1.toml.bak} behind
+     * on every fresh install. Instead the switch-off waits for NeoForge's first load of the file it
+     * generates ({@link #onConfigEvent}) — COMMON configs load before registry events, so that is
+     * still before Farmers' Delight reads the key.</p>
      */
     static boolean applyDefaultOnce(Path configDir) throws IOException {
-        Path marker = configDir.resolve(DungeonTrain.MOD_ID).resolve(MARKER);
+        Path marker = markerPath(configDir);
         if (Files.exists(marker)) return false;
+        if (!Files.exists(configDir.resolve(FILE))) {
+            pendingFirstLoad = true;
+            return false;
+        }
         writeFlag(configDir.resolve(FILE), false);
+        writeMarker(marker);
+        return true;
+    }
+
+    /** Whether the switch-off is waiting for NeoForge to generate the file. Package-visible for tests. */
+    static boolean isPendingFirstLoad() {
+        return pendingFirstLoad;
+    }
+
+    private static Path markerPath(Path configDir) {
+        return configDir.resolve(DungeonTrain.MOD_ID).resolve(MARKER);
+    }
+
+    private static void writeMarker(Path marker) throws IOException {
         Files.createDirectories(marker.getParent());
         Files.writeString(marker, "Dungeon Train switched off Farmers' Delight stackable soups once. "
             + "Delete this file to have it do so again on next launch.\n");
-        return true;
+    }
+
+    /** First load of a file NeoForge just generated: switch soups off through the loaded config. */
+    private static void applyOnFirstLoad(ModConfig config) throws IOException {
+        pendingFirstLoad = false;
+        setLoaded(config, false);
+        writeMarker(markerPath(net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get()));
+        LOGGER.info("[DungeonTrain] Farmers' Delight config generated — stackable soups switched off ({} in {})",
+            PATH, FILE);
     }
 
     /**
@@ -158,6 +196,10 @@ public final class FarmersDelightSoupStacking {
             if (event instanceof ModConfigEvent.Reloading) {
                 onReloaded(config, current);
             } else if (event instanceof ModConfigEvent.Loading) {
+                if (pendingFirstLoad) {
+                    applyOnFirstLoad(config);
+                    current = false;
+                }
                 lastKnown = current;
             }
         } catch (Throwable t) {
@@ -165,16 +207,25 @@ public final class FarmersDelightSoupStacking {
         }
     }
 
+    /**
+     * How a menu change is told apart from a hand edit: <b>which thread the reload arrives on</b>.
+     * Every in-game editor (Configured, NeoForge's own config screen) saves through
+     * {@code ILoadedConfig.save()}, which writes the file and posts {@code Reloading} right there on
+     * the client thread. A change made to the file on disk only reaches the game through NeoForge's
+     * file watcher, which reloads and posts {@code Reloading} on night-config's watcher thread. So
+     * this doesn't depend on what screen happens to be open.
+     */
     private static void onReloaded(ModConfig config, boolean current) {
-        boolean menuOpen = FMLEnvironment.dist.isClient()
-            && games.brennan.dungeontrain.client.SoupStackingClientHooks.isConfigMenuOpen();
-        if (!shouldAsk(lastKnown, current, approved, menuOpen)) {
+        boolean inGameSave = FMLEnvironment.dist.isClient()
+            && games.brennan.dungeontrain.client.SoupStackingClientHooks.isClientThread();
+        if (!shouldAsk(lastKnown, current, approved, inGameSave)) {
             lastKnown = current;
             if (!current) approved = false; // switched off again: the next switch-on asks afresh
             return;
         }
         // Undo first, so the file never holds a change the player hasn't confirmed — that is what
-        // DtConfigIntegrity's sweep reads. The save re-fires Reloading with false, a no-op here.
+        // DtConfigIntegrity's sweep reads. The save re-fires Reloading with false (and the watcher
+        // re-reads the file as false shortly after), both no-ops here.
         setLoaded(config, false);
         LOGGER.info("[DungeonTrain] Stackable soups switched on from a menu — undone pending confirmation");
         games.brennan.dungeontrain.client.SoupStackingClientHooks.askToEnable();
@@ -182,12 +233,12 @@ public final class FarmersDelightSoupStacking {
 
     /**
      * Pure: should this reload be undone and the player asked first? Only a switch from off to on,
-     * that the player hasn't already confirmed, made while a config menu is open. A switch-on with
-     * no menu open is a file edit (or a dedicated server), which goes straight to Free Play.
-     * Package-visible for tests.
+     * that the player hasn't already confirmed, saved from inside the game. A switch-on picked up by
+     * the file watcher is a hand edit (so is anything on a dedicated server), which goes straight to
+     * Free Play. Package-visible for tests.
      */
-    static boolean shouldAsk(boolean previous, boolean current, boolean alreadyApproved, boolean menuOpen) {
-        return current && !previous && !alreadyApproved && menuOpen;
+    static boolean shouldAsk(boolean previous, boolean current, boolean alreadyApproved, boolean inGameSave) {
+        return current && !previous && !alreadyApproved && inGameSave;
     }
 
     /**

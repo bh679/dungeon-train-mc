@@ -59,11 +59,13 @@ class FarmersDelightSoupStackingTest {
     }
 
     @Test
-    @DisplayName("No Farmers' Delight config yet ⇒ one is created holding just the switch, off")
-    void createsMissingFile(@TempDir Path dir) throws IOException {
-        assertTrue(FarmersDelightSoupStacking.applyDefaultOnce(dir));
-        assertEquals(Optional.of(false),
-            FarmersDelightSoupStacking.readFlag(dir.resolve(FarmersDelightSoupStacking.FILE)));
+    @DisplayName("No Farmers' Delight config yet ⇒ nothing written; waits for NeoForge's first load")
+    void missingFileWaitsForFirstLoad(@TempDir Path dir) throws IOException {
+        assertFalse(FarmersDelightSoupStacking.applyDefaultOnce(dir));
+        assertFalse(Files.exists(dir.resolve(FarmersDelightSoupStacking.FILE)),
+            "a partial file makes NeoForge 'correct' it and leave a .bak behind");
+        assertFalse(Files.exists(dir.resolve("dungeontrain").resolve(FarmersDelightSoupStacking.MARKER)));
+        assertTrue(FarmersDelightSoupStacking.isPendingFirstLoad());
     }
 
     @Test
@@ -76,10 +78,10 @@ class FarmersDelightSoupStackingTest {
     }
 
     @Test
-    @DisplayName("Asks only for an unconfirmed off→on switch made from a menu")
+    @DisplayName("Asks only for an unconfirmed off→on switch saved from inside the game")
     void shouldAsk() {
-        assertTrue(FarmersDelightSoupStacking.shouldAsk(false, true, false, true), "menu switch-on");
-        assertFalse(FarmersDelightSoupStacking.shouldAsk(false, true, false, false), "file edit: straight to Free Play");
+        assertTrue(FarmersDelightSoupStacking.shouldAsk(false, true, false, true), "in-game save switch-on");
+        assertFalse(FarmersDelightSoupStacking.shouldAsk(false, true, false, false), "file watcher (hand edit): straight to Free Play");
         assertFalse(FarmersDelightSoupStacking.shouldAsk(false, true, true, true), "already confirmed");
         assertFalse(FarmersDelightSoupStacking.shouldAsk(true, true, false, true), "was already on");
         assertFalse(FarmersDelightSoupStacking.shouldAsk(false, false, false, true), "still off (our own revert)");
