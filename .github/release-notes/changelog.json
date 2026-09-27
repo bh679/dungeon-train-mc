@@ -19803,12 +19803,11 @@
         "fix",
         "world"
       ],
-      "title": "No more floating fungi in the Nether",
-      "summary": "Huge fungi, glowing caps, hanging vines and crystals in the Nether stretches of the line now grow on solid ground instead of hovering in mid-air.",
+      "title": "Nothing hangs in mid-air any more",
+      "summary": "Along some of the stranger stretches of the line, the things that grow there now stay rooted to the ground instead of hovering in the air.",
       "highlights": [
-        "Huge fungi keep their stems, so their caps and vines no longer float",
-        "Crystals and plants no longer hang in the air along invisible lines",
-        "Stranger stretches of the journey look right too"
+        "Tall growths keep their trunks, so their tops no longer float",
+        "No more scenery hanging in straight lines through the sky"
       ],
       "pr": 1601,
       "date": "2026-09-27",
