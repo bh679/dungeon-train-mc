@@ -13,8 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The {@code first>later} style switch: a slot wears one look on the first run of the order and
- * another on every run after — how the shipped order gives Lap 1's Nether and End their Biomes O'
- * Plenty look from the second cycle on, while Lap 2 stays WWOO → BetterNether → BoP → BetterEnd.
+ * another on every run after — how the shipped order gives Lap 1's Nether its Biomes O' Plenty look
+ * from the second cycle on. Lap 1's End is vanilla then BoP (two joined pieces) every cycle, and Lap 2
+ * stays BoP → BetterNether → Lost City → BetterEnd.
  */
 final class CycleLayoutRunStyleTest {
 
@@ -48,15 +49,19 @@ final class CycleLayoutRunStyleTest {
     }
 
     @Test
-    @DisplayName("Lap 1's Nether and End are vanilla on the first cycle and BoP on every cycle after")
+    @DisplayName("Lap 1's Nether is vanilla on the first cycle and BoP after; its End is vanilla then BoP every cycle")
     void lap1TurnsBop() {
         assertEquals(Style.VANILLA, C.netherStyleAt(mid(1, 0)));
-        assertEquals(Style.VANILLA, C.endStyleAt(mid(3, 0)));
+        for (int k = 0; k <= 3; k++) {
+            assertEquals(Style.VANILLA, C.endStyleAt(mid(3, k)), "run " + k);
+            assertEquals(Style.BOP, C.endStyleAt(mid(4, k)), "run " + k);
+            assertTrue(C.isBopEndAt(mid(4, k)));
+            assertFalse(C.isBopEndAt(mid(3, k)));
+            assertEquals(SecondLapOverworld.Stretch.WWOO, SecondLapOverworld.at(C, mid(2, k)), "Lap 1 WWOO every cycle");
+        }
         for (int k = 1; k <= 3; k++) {
             assertEquals(Style.BOP, C.netherStyleAt(mid(1, k)), "run " + k);
-            assertEquals(Style.BOP, C.endStyleAt(mid(3, k)), "run " + k);
             assertTrue(C.isBopNetherAt(mid(1, k)));
-            assertTrue(C.isBopEndAt(mid(3, k)));
             assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, mid(0, k)), "Lap 1 overworld stays vanilla");
         }
         assertFalse(C.isBopNetherAt(mid(1, 0)));
@@ -65,17 +70,20 @@ final class CycleLayoutRunStyleTest {
         assertEquals(Style.BETTER, C.netherStyleOfPass(1));
         assertEquals(Style.BOP, C.netherStyleOfPass(2));
         assertEquals(Style.BETTER, C.netherStyleOfPass(3));
+        // 3 End occurrences per run → vanilla, BoP, Better, repeating
+        assertEquals(Style.VANILLA, C.endStyleOfPass(3));
         assertEquals(Style.BOP, C.endStyleOfPass(4));
+        assertEquals(Style.BETTER, C.endStyleOfPass(5));
     }
 
     @Test
-    @DisplayName("Lap 2 is WWOO → BetterNether → BoP → BetterEnd on every cycle")
+    @DisplayName("Lap 2 is BoP → BetterNether → Lost City → BetterEnd on every cycle")
     void lap2Unchanged() {
         for (int k = 0; k <= 2; k++) {
-            assertEquals(Style.WWOO, C.overworldStyleAt(mid(5, k)));
-            assertEquals(Style.BETTER, C.netherStyleAt(mid(6, k)));
-            assertEquals(Style.BOP, C.overworldStyleAt(mid(7, k)));
-            assertEquals(Style.BETTER, C.endStyleAt(mid(8, k)));
+            assertEquals(Style.BOP, C.overworldStyleAt(mid(6, k)));
+            assertEquals(Style.BETTER, C.netherStyleAt(mid(7, k)));
+            assertTrue(C.isInLegacyBand(games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.LOST_CITY, mid(8, k)));
+            assertEquals(Style.BETTER, C.endStyleAt(mid(9, k)));
         }
     }
 }

@@ -85,12 +85,20 @@ class BandHoldDefaultsTest {
                 "v9 -> v10 changed only Lap 1's Nether and End");
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 10,
                 "CURRENT_CONFIG_VERSION must be at least 10, or the v9 -> v10 order step never runs");
-        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+        assertEquals(DungeonTrainCommonConfig.V11_WORLDGEN_CYCLE_ORDER,
                 DungeonTrainCommonConfig.V10_WORLDGEN_CYCLE_ORDER
                         .replace("amplified=5000:beta=3500", "amplified=5000:lost_city=4000:beta=3500"),
                 "v10 -> v11 changed only the legacy run, adding the Lost City era after Amplified");
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 11,
                 "CURRENT_CONFIG_VERSION must be at least 11, or the v10 -> v11 order step never runs");
+        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+                DungeonTrainCommonConfig.V11_WORLDGEN_CYCLE_ORDER
+                        .replace("ow:3000, end:vanilla>bop:3000, upside_down:2500:6000, ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000,",
+                                "ow:wwoo:4500, end:vanilla:1200, end:bop:1800, upside_down:2500:6000, ow:bop:8000, nether:better:8000, legacy:lost_city=4000, end:better:8000,")
+                        .replace("amplified=5000:lost_city=4000:beta=3500", "amplified=5000:beta=3500"),
+                "v11 -> v12 reordered the laps only: WWOO + a vanilla/BoP End on Lap 1, Lost City on Lap 2");
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 12,
+                "CURRENT_CONFIG_VERSION must be at least 12, or the v11 -> v12 order step never runs");
         assertTrue(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER.contains("spheres:"
                 + DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS + ","));
     }

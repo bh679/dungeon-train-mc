@@ -62,15 +62,23 @@ public final class BandStages {
             case OVERWORLD -> add(out, "Gap", core);
             case NETHER -> nether(out, f, core, stageCount, stageBlocks, beachBlocks);
             case END -> {
+                // back-to-back End slots are one band: only its first piece fades in, only its last fades out
                 long fade = Math.max(0, f.eFade());
                 long hold = Math.max(0, f.eVoid());
-                add(out, "Erosion fade-in", fade);
-                add(out, "Void", hold);
-                add(out, "Islands fade-in", fade);
+                int first = layout.endGroupFirst(i);
+                boolean entry = first == i;
+                boolean exit = first + layout.endGroupSize(i) - 1 == i;
+                if (entry) {
+                    add(out, "Erosion fade-in", fade);
+                    add(out, "Void", hold);
+                    add(out, "Islands fade-in", fade);
+                }
                 add(out, "End core", core);
-                add(out, "Islands fade-out", fade);
-                add(out, "Void", hold);
-                add(out, "Erosion fade-out", fade);
+                if (exit) {
+                    add(out, "Islands fade-out", fade);
+                    add(out, "Void", hold);
+                    add(out, "Erosion fade-out", fade);
+                }
             }
             case UPSIDE_DOWN -> {
                 long fade = Math.max(0, f.udFade());
@@ -86,7 +94,7 @@ public final class BandStages {
                 add(out, "Transition in", Math.max(0, f.spheresFade()));
                 spheres(out, core, spheres, exitTaperBlocks, exitVoidBlocks);
             }
-            case LEGACY_RUN -> legacy(out, layout);
+            case LEGACY_RUN -> legacy(out, layout, i);
             case MIX -> add(out, "Mix", core);
         }
         return List.copyOf(out);
@@ -186,15 +194,15 @@ public final class BandStages {
     private record Breakpoint(long offset, String name) {}
 
     /** {@code [fade][era0][crossfade][era1]…[eraN-1][fade]} — each crossfade the incoming era's own fade. */
-    private static void legacy(List<Stage> out, CycleLayout layout) {
-        LegacySpan[] eras = layout.eras();
+    private static void legacy(List<Stage> out, CycleLayout layout, int slot) {
+        LegacySpan[] eras = layout.eras(slot);
         if (eras.length == 0) return;
-        add(out, "Fade into " + pretty(eras[0].kind().token()), layout.fadeBefore(0));
+        add(out, "Fade into " + pretty(eras[0].kind().token()), layout.fadeBefore(slot, 0));
         for (int e = 0; e < eras.length; e++) {
             String name = pretty(eras[e].kind().token());
-            add(out, name, layout.eraCoreLen(e));
+            add(out, name, layout.eraCoreLen(slot, e));
             String next = e + 1 < eras.length ? pretty(eras[e + 1].kind().token()) : "Overworld";
-            add(out, name + " → " + next, layout.fadeBefore(e + 1));
+            add(out, name + " → " + next, layout.fadeBefore(slot, e + 1));
         }
     }
 

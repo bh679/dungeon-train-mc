@@ -85,7 +85,7 @@ final class SubsectionLocatorTest {
     @DisplayName("a legacy era offers only the stages that name it; unknown tokens resolve to nothing")
     void legacyFilter() {
         WorldGenCycle c = cycle();
-        int legacy = c.layout().firstIndexOf(CycleLayout.Type.LEGACY_RUN);
+        int legacy = c.layout().legacySlotOf(games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.BETA);
         int anyX = slotX(c, legacy, 0);
         List<String> offered = SubsectionLocator.of(c, stages(c, legacy), "beta", anyX).orElseThrow().offeredTokens();
         assertTrue(offered.contains("beta"), offered.toString());

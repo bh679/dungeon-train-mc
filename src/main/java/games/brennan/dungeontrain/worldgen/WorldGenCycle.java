@@ -370,7 +370,9 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     public long endLen() {
-        return Disintegration.bandLength(eFade, eVoid, layout == null ? eEnd : layout.firstCoreOf(CycleLayout.Type.END));
+        if (layout == null) return Disintegration.bandLength(eFade, eVoid, eEnd);
+        int first = layout.firstIndexOf(CycleLayout.Type.END);
+        return first < 0 ? Disintegration.bandLength(eFade, eVoid, 0) : layout.endGroupLength(first);
     }
 
     /** Combined length of the upside-down band ({@code 2·udFade + udHold}); 0 when the band is disabled. */
@@ -563,7 +565,9 @@ public record WorldGenCycle(long startX, int owGap,
         if (layout != null) {
             int i = slotAt(worldX);
             if (i < 0 || layout.slot(i).type() != t) return -1L;
-            return baseAt(worldX) - layout.start(i);
+            // back-to-back End slots are one band: its ramps run from the joined band's start
+            long start = t == CycleLayout.Type.END ? layout.endGroupStart(i) : layout.start(i);
+            return baseAt(worldX) - start;
         }
         long o = offset(worldX);
         if (o < 0L) return -1L;
@@ -586,7 +590,13 @@ public record WorldGenCycle(long startX, int owGap,
     private int spanCore(CycleLayout.Type t, int worldX) {
         if (layout != null) {
             int i = slotAt(worldX);
-            if (i >= 0 && layout.slot(i).type() == t) return layout.slot(i).core();
+            if (i >= 0 && layout.slot(i).type() == t) {
+                return t == CycleLayout.Type.END ? layout.endGroupCore(i) : layout.slot(i).core();
+            }
+            if (t == CycleLayout.Type.END) {
+                int first = layout.firstIndexOf(t);
+                return first < 0 ? 0 : layout.endGroupCore(first);
+            }
             return layout.firstCoreOf(t);
         }
         return switch (t) {
@@ -658,7 +668,16 @@ public record WorldGenCycle(long startX, int owGap,
                 return local >= bleedStart ? moddedOverworldStyle(i + 1, runAt(worldX)) : null;
             }
             case NETHER -> side = (len - Math.max(0, slot.core())) / 2L;
-            case END -> side = Math.max(0, eFade);
+            case END -> {
+                // a joined End band bleeds only at its outer edges, from the gaps around the whole band
+                int first = layout.endGroupFirst(i);
+                local = baseAt(worldX) - layout.start(first);
+                len = layout.endGroupLength(i);
+                side = Math.max(0, eFade);
+                if (local < side) return moddedOverworldStyle(first - 1, runAt(worldX));
+                if (local >= len - side) return moddedOverworldStyle(first + layout.endGroupSize(i), runAt(worldX));
+                return null;
+            }
             default -> { return null; }
         }
         if (local < side) return moddedOverworldStyle(i - 1, runAt(worldX));
@@ -1848,8 +1867,11 @@ public record WorldGenCycle(long startX, int owGap,
     /** Combined length of every legacy span; 0 when none is enabled. */
     public long legacyTotalLen() {
         if (layout != null) {
-            int i = layout.firstIndexOf(CycleLayout.Type.LEGACY_RUN);
-            return i < 0 ? 0L : layout.length(i);
+            long total = 0L;
+            for (int i = 0; i < layout.count(); i++) {
+                if (layout.slot(i).type() == CycleLayout.Type.LEGACY_RUN) total += layout.length(i);
+            }
+            return total;
         }
         if (legacy == null) return 0L;
         long total = 0L;
@@ -1885,7 +1907,7 @@ public record WorldGenCycle(long startX, int owGap,
     public long legacyLen(LegacyBandKind kind) {
         if (layout != null) {
             int e = layout.eraIndex(kind);
-            return e < 0 ? 0L : layout.eraCoreLen(e);
+            return e < 0 ? 0L : layout.eraCoreLen(layout.legacySlotOf(kind), e);
         }
         LegacySpan span = spanOf(kind);
         return span == null ? 0L : span.holdLen();
@@ -1914,22 +1936,39 @@ public record WorldGenCycle(long startX, int owGap,
         return null;
     }
 
-    // ---- legacy run (ordered layout): entry fade, era cores with one shared crossfade between, exit fade.
+    // ---- legacy runs (ordered layout): entry fade, era cores with one shared crossfade between, exit fade.
+    // An order may hold several legacy-run slots; each era lives in exactly one of them.
 
     /** Local offset into the legacy-run slot at {@code worldX}, or {@code -1}. Layout only. */
     private long legacyRunLocal(int worldX) {
         return spanLocal(CycleLayout.Type.LEGACY_RUN, worldX);
     }
 
+    /**
+     * Local offset into the legacy-run slot at {@code worldX} when that slot is the one running era
+     * {@code kind}, else {@code -1}. Layout only.
+     */
+    private long eraRunLocal(LegacyBandKind kind, int worldX) {
+        int i = slotAt(worldX);
+        if (i < 0 || i != layout.legacySlotOf(kind)) return -1L;
+        return legacyRunLocal(worldX);
+    }
+
+    /** {@link CycleLayout#fadeBefore} in era {@code kind}'s own legacy slot. */
+    private long eraFadeBefore(LegacyBandKind kind, int e) {
+        return layout.fadeBefore(layout.legacySlotOf(kind), e);
+    }
+
     private LegacyHit layoutLegacyAt(int worldX) {
         long l = legacyRunLocal(worldX);
         if (l < 0L) return null;
-        LegacySpan[] eras = layout.eras();
+        int slot = slotAt(worldX);
+        LegacySpan[] eras = layout.eras(slot);
         long at = 0L;
         LegacyBandKind prev = null;
         for (int e = 0; e <= eras.length; e++) {
             LegacyBandKind next = e < eras.length ? eras[e].kind() : null;
-            long f = layout.fadeBefore(e);
+            long f = layout.fadeBefore(slot, e);
             if (l < at + f) {                                      // the fade / crossfade before era e
                 double t = (double) (l - at + 1) / (f + 1);
                 return new LegacyHit(prev, next, t);
@@ -1947,7 +1986,7 @@ public record WorldGenCycle(long startX, int owGap,
     /** Offset of {@code kind}'s core from the legacy-run slot start, or {@code -1} when not in the run. Layout only. */
     private long eraCoreStart(LegacyBandKind kind) {
         int e = layout.eraIndex(kind);
-        return e < 0 ? -1L : layout.eraCoreStart(e);
+        return e < 0 ? -1L : layout.eraCoreStart(layout.legacySlotOf(kind), e);
     }
 
     /** Ramp at {@code local} blocks into {@code span}'s slot (lead gap first). */
@@ -1969,12 +2008,12 @@ public record WorldGenCycle(long startX, int owGap,
      */
     public double legacyProgress(LegacyBandKind kind, int worldX) {
         if (layout != null) {
-            long l = legacyRunLocal(worldX);
+            long l = eraRunLocal(kind, worldX);
             long cs = eraCoreStart(kind);
             if (l < 0L || cs < 0L) return -1.0D;
             int e = layout.eraIndex(kind);
-            long from = cs - layout.fadeBefore(e);
-            long len = layout.fadeBefore(e) + legacyLen(kind) + layout.fadeBefore(e + 1);
+            long from = cs - eraFadeBefore(kind, e);
+            long len = eraFadeBefore(kind, e) + legacyLen(kind) + eraFadeBefore(kind, e + 1);
             long local = l - from;
             return (local < 0L || local >= len) ? -1.0D : (double) local / len;
         }
@@ -1992,7 +2031,7 @@ public record WorldGenCycle(long startX, int owGap,
     /** True if {@code worldX} lies in the core of legacy band {@code kind} (not its fades). */
     public boolean isInLegacyBand(LegacyBandKind kind, int worldX) {
         if (layout != null) {
-            long l = legacyRunLocal(worldX);
+            long l = eraRunLocal(kind, worldX);
             long cs = eraCoreStart(kind);
             return l >= 0L && cs >= 0L && l >= cs && l < cs + legacyLen(kind);
         }
@@ -2025,11 +2064,11 @@ public record WorldGenCycle(long startX, int owGap,
      */
     public long legacyCoreStartX(LegacyBandKind kind, int worldX) {
         if (layout != null) {
-            long l = legacyRunLocal(worldX);
+            long l = eraRunLocal(kind, worldX);
             long cs = eraCoreStart(kind);
             if (l < 0L || cs < 0L) return NOT_IN_LEGACY_SLOT;
             int e = layout.eraIndex(kind);
-            if (l < cs - layout.fadeBefore(e) || l >= cs + legacyLen(kind) + layout.fadeBefore(e + 1)) {
+            if (l < cs - eraFadeBefore(kind, e) || l >= cs + legacyLen(kind) + eraFadeBefore(kind, e + 1)) {
                 return NOT_IN_LEGACY_SLOT;
             }
             int i = slotAt(worldX);
@@ -2052,12 +2091,12 @@ public record WorldGenCycle(long startX, int owGap,
      */
     public double legacyCoreProgress(LegacyBandKind kind, int worldX) {
         if (layout != null) {
-            long l = legacyRunLocal(worldX);
+            long l = eraRunLocal(kind, worldX);
             long cs = eraCoreStart(kind);
             if (l < 0L || cs < 0L) return Double.NaN;
             int e = layout.eraIndex(kind);
             long len = legacyLen(kind);
-            if (l < cs - layout.fadeBefore(e) || l >= cs + len + layout.fadeBefore(e + 1)) return Double.NaN;
+            if (l < cs - eraFadeBefore(kind, e) || l >= cs + len + eraFadeBefore(kind, e + 1)) return Double.NaN;
             return (double) (l - cs) / len;
         }
         LegacySpan span = spanOf(kind);
@@ -2076,7 +2115,11 @@ public record WorldGenCycle(long startX, int owGap,
      * {@code reached_overworld_again} gate so "Re-Over-World" waits for the overworld after the LAST band.
      */
     public boolean isInLegacyApproachOrBand(LegacyBandKind kind, int worldX) {
-        if (layout != null) return layout.eraIndex(kind) >= 0 && layoutApproachOrBand(CycleLayout.Type.LEGACY_RUN, worldX);
+        if (layout != null) {
+            int slot = layout.legacySlotOf(kind);
+            long u = baseAt(worldX);
+            return slot >= 0 && u >= 0L && u >= layout.approachStart(slot) && u < layout.start(slot) + layout.length(slot);
+        }
         LegacySpan span = spanOf(kind);
         if (span == null) return false;
         long o = offset(worldX);

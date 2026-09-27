@@ -52,13 +52,18 @@ final class LostCityStructuresTest {
         return (int) (START + CycleLayout.runStart(k, P) + (u << k));
     }
 
+    /** Lost City's own legacy-run slot. */
+    private static int slot() {
+        return LAYOUT.legacySlotOf(LegacyBandKind.LOST_CITY);
+    }
+
     private static long legacyStart() {
-        return LAYOUT.start(LAYOUT.firstIndexOf(CycleLayout.Type.LEGACY_RUN));
+        return LAYOUT.start(slot());
     }
 
     /** Base coordinate where the Lost City core starts. */
     private static long coreStart() {
-        return legacyStart() + LAYOUT.eraCoreStart(LAYOUT.eraIndex(LegacyBandKind.LOST_CITY));
+        return legacyStart() + LAYOUT.eraCoreStart(slot(), LAYOUT.eraIndex(LegacyBandKind.LOST_CITY));
     }
 
     /** Fraction of chunks across an X range (a 64-chunk-deep Z strip) that may host a city. */
@@ -75,20 +80,27 @@ final class LostCityStructuresTest {
     }
 
     @Test
-    @DisplayName("Lost City runs 4000 blocks after Amplified, entered over its own 750-block crossfade")
+    @DisplayName("Lost City runs 4000 blocks alone between BetterNether and BetterEnd, entered over its own 750-block fade")
     void shippedPlacement() {
-        int e = LAYOUT.eraIndex(LegacyBandKind.LOST_CITY);
-        assertEquals(LAYOUT.eraIndex(LegacyBandKind.AMPLIFIED) + 1, e);
-        assertEquals(LAYOUT.eraIndex(LegacyBandKind.BETA) - 1, e);
+        int slot = slot();
+        assertEquals(CycleLayout.Type.NETHER, LAYOUT.slot(slot - 1).type());
+        assertEquals(CycleLayout.Style.BETTER, LAYOUT.slot(slot - 1).style());
+        assertEquals(CycleLayout.Type.END, LAYOUT.slot(slot + 1).type());
+        assertEquals(CycleLayout.Style.BETTER, LAYOUT.slot(slot + 1).style());
+        assertEquals(1, LAYOUT.eras(slot).length);
+        assertEquals(0, LAYOUT.eraIndex(LegacyBandKind.LOST_CITY));
         assertEquals(4000L, C.legacyLen(LegacyBandKind.LOST_CITY));
-        assertEquals(750L, LAYOUT.fadeBefore(e));
-        assertEquals(480L, LAYOUT.fadeBefore(e + 1));                  // Lost City → Beta keeps Beta's fade
-        long amplifiedEnd = legacyStart() + LAYOUT.eraCoreStart(e - 1) + 5000L;
-        assertEquals(amplifiedEnd + 750L, coreStart());
-        WorldGenCycle.LegacyHit cross = C.legacyAt(x(amplifiedEnd + 375L, 0));
-        assertEquals(LegacyBandKind.AMPLIFIED, cross.from());
-        assertEquals(LegacyBandKind.LOST_CITY, cross.to());
-        assertEquals(0.5, cross.t(), 0.01);
+        assertEquals(750L, LAYOUT.fadeBefore(slot, 0));
+        assertEquals(480L, LAYOUT.fadeBefore(slot, 1));                // the run's exit fade
+        assertEquals(legacyStart() + 750L, coreStart());
+        WorldGenCycle.LegacyHit in = C.legacyAt(x(legacyStart() + 375L, 0));
+        assertEquals(null, in.from());
+        assertEquals(LegacyBandKind.LOST_CITY, in.to());
+        assertEquals(0.5, in.t(), 0.01);
+        // Amplified now crossfades straight into Beta.
+        int main = LAYOUT.legacySlotOf(LegacyBandKind.AMPLIFIED);
+        assertEquals(LAYOUT.eraIndex(LegacyBandKind.AMPLIFIED) + 1, LAYOUT.eraIndex(LegacyBandKind.BETA));
+        assertEquals(main, LAYOUT.legacySlotOf(LegacyBandKind.BETA));
     }
 
     @Test
@@ -101,7 +113,7 @@ final class LostCityStructuresTest {
         assertTrue(early > 0.0, "the first buildings appear inside the crossfade");
         assertTrue(early < late && late < core, early + " < " + late + " < " + core);
         assertEquals(1.0, core, 1e-9);
-        assertEquals(0.0, share(cs - 2500L, cs - 1000L), 1e-9);        // Amplified core: never
+        assertEquals(0.0, share(cs - 2500L, cs - 1000L), 1e-9);        // BetterNether: never
     }
 
     @Test
@@ -117,7 +129,7 @@ final class LostCityStructuresTest {
     }
 
     @Test
-    @DisplayName("the exit keeps its margin: nothing within 128 blocks of the core's end, nothing in Beta")
+    @DisplayName("the exit keeps its margin: nothing within 128 blocks of the core's end, nothing in the End")
     void exitMargin() {
         long ce = coreStart() + 4000L;
         int lastOk = Math.floorDiv(x(ce, 0) - 1 - LostCityStructures.EXIT_MARGIN_BLOCKS - 15, 16);
@@ -138,7 +150,8 @@ final class LostCityStructuresTest {
     @Test
     @DisplayName("a disabled Lost City era allows no city anywhere")
     void disabled() {
-        CycleLayout without = layout(CycleLayout.DEFAULT_ORDER.replace("lost_city=4000:", ""));
+        CycleLayout without = layout(CycleLayout.DEFAULT_ORDER.replace("legacy:lost_city=4000, ", ""));
+        assertEquals(-1, without.legacySlotOf(LegacyBandKind.LOST_CITY));
         WorldGenCycle c = cycle(without);
         for (long u = 0; u < without.period(); u += 500) {
             assertFalse(LostCityStructures.allowedAt(SEED, c, (int) (START + u) >> 4, 0));
@@ -156,8 +169,8 @@ final class LostCityStructuresTest {
         assertEquals(1.0, UpsideDownTrackFlatten.bandWeight(C, x(slotEnd - 1L, 0)), 1e-9);
         double ramp = UpsideDownTrackFlatten.bandWeight(C, x(slotStart - 80L, 0));
         assertTrue(ramp > 0.0 && ramp < 1.0, "ramps in before the slot: " + ramp);
-        assertEquals(0.0, UpsideDownTrackFlatten.bandWeight(C, x(slotStart - 1000L, 0)), 1e-9);   // Amplified core
-        assertEquals(0.0, UpsideDownTrackFlatten.bandWeight(C, x(slotEnd + 1000L, 0)), 1e-9);     // Beta core
+        assertEquals(0.0, UpsideDownTrackFlatten.bandWeight(C, x(slotStart - 1000L, 0)), 1e-9);   // BetterNether
+        assertEquals(0.0, UpsideDownTrackFlatten.bandWeight(C, x(slotEnd + 1000L, 0)), 1e-9);     // BetterEnd
     }
 
     @Test

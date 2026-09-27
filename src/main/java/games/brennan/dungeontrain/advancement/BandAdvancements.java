@@ -69,7 +69,9 @@ public final class BandAdvancements {
 
     /**
      * The chain's closing links, in the order the second cycle grants them: back on plain overworld,
-     * into its (Biomes O' Plenty) Nether, then its End. Always after every first-cycle band.
+     * into its (Biomes O' Plenty) Nether, then its End. Always after every first-cycle band — unless the
+     * layout meets one of them on the first cycle already ({@link #chain} keeps the earlier place; the
+     * shipped order's BoP End does).
      */
     public static final List<String> LATER_CYCLES = List.of(OVERWORLD_AGAIN, NETHER_RETURN, BOP_END);
 
@@ -81,14 +83,15 @@ public final class BandAdvancements {
      * Also the fallback order for bands a custom layout leaves out.
      */
     public static final List<String> ALL = List.of(
-            NETHER, VOID, END_ISLANDS, UPSIDE_DOWN, REASSEMBLY,
-            WWOO, BETTER_NETHER, BOP, BETTER_END, SPHERES,
-            legacyId(LegacyBandKind.AMPLIFIED), legacyId(LegacyBandKind.LOST_CITY), legacyId(LegacyBandKind.BETA), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.CAVES_OF_CHAOS),
+            NETHER, WWOO, VOID, END_ISLANDS, UPSIDE_DOWN, REASSEMBLY,
+            BOP, BETTER_NETHER, legacyId(LegacyBandKind.LOST_CITY), BETTER_END, SPHERES,
+            legacyId(LegacyBandKind.AMPLIFIED), legacyId(LegacyBandKind.BETA), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.CAVES_OF_CHAOS),
             legacyId(LegacyBandKind.SKYLANDS),
             legacyId(LegacyBandKind.FLOATING), legacyId(LegacyBandKind.ALPHA), legacyId(LegacyBandKind.INFDEV),
             legacyId(LegacyBandKind.CLASSIC), legacyId(LegacyBandKind.SUPERFLAT),
             CHUNCKS, STACKS,
-            // Lap 1's End turns Biomes O' Plenty from the second cycle on (vanilla>bop).
+            // The shipped order meets the BoP End on Lap 1 (the joined End's second piece), so chain()
+            // places it there; this slot is only the fallback for a layout whose End turns BoP later.
             BOP_END);
 
     private BandAdvancements() {}
@@ -150,7 +153,7 @@ public final class BandAdvancements {
             case SPHERES -> out.add(SPHERES);
             case STACKS -> out.add(STACKS);
             case LEGACY_RUN -> {
-                for (LegacySpan era : layout.eras()) {
+                for (LegacySpan era : layout.eras(i)) {
                     String id = legacyId(era.kind());
                     if (id != null) out.add(id);
                 }

@@ -37,12 +37,14 @@ final class BandAdvancementsTest {
     void shippedOrder() {
         List<String> chain = BandAdvancements.chain(parse(CycleLayout.DEFAULT_ORDER));
         assertEquals(List.of(
-                "reached_nether", "reached_void", "reached_end_islands", "the_upside_down", "reassembly_required",
-                "reached_wwoo", "reached_better_nether", "reached_bop", "reached_better_end", "reached_spheres",
-                "reached_amplified", "reached_lost_city", "reached_beta", "reached_far_lands", "reached_caves_of_chaos", "reached_skylands", "reached_floating",
+                "reached_nether", "reached_wwoo", "reached_void", "reached_end_islands", "reached_bop_end",
+                "the_upside_down", "reassembly_required",
+                "reached_bop", "reached_better_nether", "reached_lost_city", "reached_better_end", "reached_spheres",
+                "reached_amplified", "reached_beta", "reached_far_lands", "reached_caves_of_chaos", "reached_skylands", "reached_floating",
                 "reached_alpha", "reached_infdev", "reached_classic", "reached_superflat",
                 "reached_chuncks", "reached_stacks",
-                "reached_overworld_again", "read_all_nether_starting_books", "reached_bop_end"), chain);
+                // the BoP End is met on Lap 1 now, so it keeps that place instead of closing the chain
+                "reached_overworld_again", "read_all_nether_starting_books"), chain);
     }
 
     @Test

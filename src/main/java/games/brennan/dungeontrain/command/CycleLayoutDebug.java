@@ -50,10 +50,10 @@ final class CycleLayoutDebug {
                 send(source, String.format("    %2d %-11s%-7s core=%-6d X %d..%d  phase@mid=%s", i,
                         slot.type().name().toLowerCase(), style, slot.core(), from, to, phase), ChatFormatting.WHITE);
                 if (slot.type() == CycleLayout.Type.LEGACY_RUN) {
-                    for (int e = 0; e < layout.eras().length; e++) {
-                        LegacyBandKind kind = layout.eras()[e].kind();
-                        long cs = runStart + ((layout.start(i) + layout.eraCoreStart(e)) << k);
-                        long ce = cs + (layout.eraCoreLen(e) << k);
+                    for (int e = 0; e < layout.eras(i).length; e++) {
+                        LegacyBandKind kind = layout.eras(i)[e].kind();
+                        long cs = runStart + ((layout.start(i) + layout.eraCoreStart(i, e)) << k);
+                        long ce = cs + (layout.eraCoreLen(i, e) << k);
                         long emid = (cs + ce) / 2L;
                         String ephase = emid > Integer.MAX_VALUE ? "?" : TrainPhase.phaseAt(overworld, (int) emid).token();
                         send(source, String.format("         era %-10s core X %d..%d  phase@mid=%s", kind.token(), cs, ce, ephase),

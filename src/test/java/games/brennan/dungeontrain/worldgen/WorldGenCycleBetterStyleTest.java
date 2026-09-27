@@ -93,15 +93,15 @@ final class WorldGenCycleBetterStyleTest {
     }
 
     @Test
-    @DisplayName("the shipped order answers exactly as the old pass-parity rules did")
+    @DisplayName("the shipped order: Nether keeps the old pass parity; every third End pass (Lap 2's) is BetterEnd")
     void shippedOrderMatchesParity() {
         CycleLayout l = CycleLayoutTest.shipped();
         assertEquals(2, l.typeCount(Type.NETHER));
-        assertEquals(2, l.typeCount(Type.END));
+        assertEquals(3, l.typeCount(Type.END));                  // Lap 1's End is two joined pieces
         WorldGenCycle c = cycle(l);
         for (long pass = -1; pass < 16; pass++) {
             assertEquals(BetterNetherCoreBiomes.isBetterNetherPass(pass), c.isBetterNetherPass(pass), "nether " + pass);
-            assertEquals(EndBandStyle.isBetterEndPass(pass), c.isBetterEndPass(pass), "end " + pass);
+            assertEquals(pass >= 0 && pass % 3 == 2, c.isBetterEndPass(pass), "end " + pass);
         }
     }
 

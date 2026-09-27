@@ -1,11 +1,11 @@
 package games.brennan.dungeontrain.worldgen;
 
 /**
- * Which overworld stretches take their look from a third-party worldgen mod. On every <b>odd</b> lap
- * of the {@link WorldGenCycle} (cycle index 1, 3, 5, …) — the same parity the BetterNether and
- * BetterEnd laps use — the overworld gap <b>before</b> the Nether band is William Wythers' Overhauled
- * Overworld and the gap <b>after</b> it is Biomes O' Plenty. Lap 0, even laps and every other stretch
- * stay vanilla.
+ * Which overworld stretches take their look from a third-party worldgen mod. With an ordered layout
+ * ({@code worldgenCycleOrder}) each gap's own style says so — the shipped order puts William Wythers'
+ * Overhauled Overworld between Lap 1's Nether and End, and Biomes O' Plenty at the start of Lap 2. The
+ * classic (blank-order) cycle keeps the old rule: on every <b>odd</b> lap (cycle index 1, 3, 5, …) the gap
+ * <b>before</b> the Nether is WWOO and the gap <b>after</b> it is BoP. Every other stretch stays vanilla.
  *
  * <p>Pure (no Minecraft types) so the lap/gap rules are unit-testable. The two mods are confined in
  * different places because they work differently: BoP adds its own biomes, so it is confined at
