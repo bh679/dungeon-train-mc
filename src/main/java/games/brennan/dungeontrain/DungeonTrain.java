@@ -323,6 +323,14 @@ public class DungeonTrain {
             if (event.getConfig().getSpec() == DungeonTrainConfig.SPEC) {
                 DungeonTrainConfig.runPendingMigrations();
             }
+            // A balance key edited while a world runs (Configured, the settings screen, a hand edit)
+            // is Free Play from that moment — see DtConfigIntegrity. Reloading only: Loading is the
+            // boot path, which DtConfigIntegrity already scans at server start.
+            if (event instanceof net.neoforged.fml.event.config.ModConfigEvent.Reloading
+                    && (event.getConfig().getSpec() == DungeonTrainConfig.SPEC
+                        || event.getConfig().getSpec() == DungeonTrainCommonConfig.SPEC)) {
+                games.brennan.dungeontrain.cheat.DtConfigIntegrity.onConfigReloaded();
+            }
         });
 
         // No NeoForge.EVENT_BUS.register(this) — every game-bus listener in

@@ -19851,6 +19851,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "midrun-config-free-play",
+      "version": "0.983.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Fair play now covers settings changed mid-run",
+      "summary": "Changing a Dungeon Train balance setting while you're playing, whether in the settings screen or an in-game config editor, now puts that run into Free Play for good, just like using a tuning command. Changing it back before you quit no longer hides it.",
+      "highlights": [
+        "How the train's mobs fight and scavenge now counts as a balance setting",
+        "So does whether your backpack survives death, and how big it can grow",
+        "The one-click settings reset puts these back to default along with everything else"
+      ],
+      "pr": 1604,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
