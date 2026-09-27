@@ -135,9 +135,17 @@ public final class UnsupportedModsScreen extends Screen {
         // Continue is red: carrying on means playing this launch in Free Play.
         addRenderableWidget(new DarkTintedButton(panelX + PAD, buttonY, half, BUTTON_H,
             CommonComponents.GUI_CONTINUE, b -> onClose(), 1.15F, 0.35F, 0.35F));
-        Button quit = addRenderableWidget(new DarkTintedButton(panelX + PAD + inner - half, buttonY, half, BUTTON_H,
-            Component.translatable("gui.dungeontrain.unsupported_mods.quit_disable"), b -> quitAndDisable()));
-        quit.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.unsupported_mods.quit_disable.tooltip")));
+        int quitX = panelX + PAD + inner - half;
+        if (disableFailed) {
+            // Disabling from here didn't work, so this is now a plain, blue Quit: the player turns the
+            // mods off in their launcher and comes back.
+            addRenderableWidget(new DarkTintedButton(quitX, buttonY, half, BUTTON_H,
+                Component.translatable("menu.quit"), b -> this.minecraft.stop(), 0.45F, 0.60F, 1.25F));
+        } else {
+            Button quit = addRenderableWidget(new DarkTintedButton(quitX, buttonY, half, BUTTON_H,
+                Component.translatable("gui.dungeontrain.unsupported_mods.quit_disable"), b -> quitAndDisable()));
+            quit.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.unsupported_mods.quit_disable.tooltip")));
+        }
     }
 
     /**
