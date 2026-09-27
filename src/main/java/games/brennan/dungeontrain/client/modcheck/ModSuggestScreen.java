@@ -194,6 +194,20 @@ public final class ModSuggestScreen extends Screen {
         if (this.minecraft.screen == this) rebuildWidgets();
     }
 
+    /**
+     * The colour the list shows a result in: a sent result takes its choice's colour (green
+     * whitelist, blue modpack, red cheat); a refusal the player can fix is red; anything else settled
+     * (already approved / already decided) is the whitelist green.
+     */
+    static int resultColour(ModSuggestClient.Result r) {
+        return switch (r) {
+            case CREATED, BACKED, ALREADY_LISTED, ALREADY_DECIDED -> KIND_COLOUR[ModSuggestClient.Kind.WHITELIST.ordinal()];
+            case MODPACK -> KIND_COLOUR[ModSuggestClient.Kind.MODPACK.ordinal()];
+            case REPORTED -> KIND_COLOUR[ModSuggestClient.Kind.CHEAT.ordinal()];
+            default -> 0xFFE08080;
+        };
+    }
+
     /** The player-facing line for a result — shared with the list, which shows it under the mod. */
     static Component resultMessage(ModSuggestClient.Result r) {
         return Component.translatable("gui.dungeontrain.unsupported_mods.result."

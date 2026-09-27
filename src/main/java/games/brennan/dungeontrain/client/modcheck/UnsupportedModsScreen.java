@@ -231,7 +231,7 @@ public final class UnsupportedModsScreen extends Screen {
                 Component sub = r == null
                     ? Component.literal(mod.modId())
                     : ModSuggestScreen.resultMessage(r);
-                int subColour = r == null ? ID_COLOUR : (r.isFinal() ? 0xFF7FD07F : 0xFFE08080);
+                int subColour = r == null ? ID_COLOUR : ModSuggestScreen.resultColour(r);
                 g.drawString(this.font, trim(sub.getString(), textW - 8), x + 8, rowY + 3 + this.font.lineHeight + 1,
                     subColour, false);
             }
