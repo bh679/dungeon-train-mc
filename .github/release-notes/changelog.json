@@ -19892,6 +19892,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "whitelist-min-dt-version",
+      "version": "0.985.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Some fair-play mods need a recent Dungeon Train",
+      "summary": "A few mods on the fair-play list are only approved on newer versions of Dungeon Train, because they rely on support those versions added. Run one on an older version and the run is Free Play until you update.",
+      "highlights": [
+        "Update Dungeon Train to keep a mod like Catalogue approved for fair play"
+      ],
+      "pr": 1606,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
