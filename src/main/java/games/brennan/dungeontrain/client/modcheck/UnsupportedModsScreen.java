@@ -127,8 +127,9 @@ public final class UnsupportedModsScreen extends Screen {
 
         int buttonY = panelY + panelH - PAD - BUTTON_H;
         int half = (inner - GAP) / 2;
+        // Continue is red: carrying on means playing this launch in Free Play.
         addRenderableWidget(new DarkTintedButton(panelX + PAD, buttonY, half, BUTTON_H,
-            CommonComponents.GUI_CONTINUE, b -> onClose()));
+            CommonComponents.GUI_CONTINUE, b -> onClose(), 1.15F, 0.35F, 0.35F));
         Button quit = addRenderableWidget(new DarkTintedButton(panelX + PAD + inner - half, buttonY, half, BUTTON_H,
             Component.translatable("gui.dungeontrain.unsupported_mods.quit_disable"), b -> quitAndDisable()));
         quit.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.unsupported_mods.quit_disable.tooltip")));
