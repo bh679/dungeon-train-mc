@@ -44,12 +44,12 @@ final class CycleLayoutTest {
         // Lap 1: 2750 + (232+300+3000+300+232) + 3000 + (740+3000+740) + (600+2500+600+6000+600) = 24,594
         // Lap 2: 8000 + 9064 + 8000 + 9480 + (750+6550) + 500 (the sunk approach) = 42,344
         // Lap 3: legacy (480·12 + 5000 + 3500 + 4320 + 4000 + 5000 + 2000·4 + 1000 + 200 = 36,780)
-        //        + 2000 + 6500 + 5000 + 6500 = 56,780
-        assertEquals(123_718L, l.period());
+        //        + 650 + (1500+2000) + 4000 (the mix zone) + 6500 = 51,430
+        assertEquals(118_368L, l.period());
         assertEquals(2, l.typeCount(Type.NETHER));
         assertEquals(2, l.typeCount(Type.END));
         assertEquals(1, l.typeCount(Type.LEGACY_RUN));
-        assertEquals(7, l.typeCount(Type.OVERWORLD));
+        assertEquals(6, l.typeCount(Type.OVERWORLD));
         // Lap-1 starts
         assertEquals(0L, l.start(0));
         assertEquals(2750L, l.start(1));                        // Nether
@@ -72,6 +72,8 @@ final class CycleLayoutTest {
         assertEquals(Type.LEGACY_RUN, l.slot(11).type());
         assertEquals(24_594L + 42_344L, l.start(11));
         assertEquals(Style.SUNK, l.slot(10).style());            // the short approach into Amplified
+        assertEquals(Type.MIX, l.slot(14).type());
+        assertEquals(4000L, l.length(14));                      // hard-edged: no fades
         assertEquals(Type.STACKS, l.slot(15).type());
         assertEquals(1, l.occurrence(6));                       // the BetterNether slot is Nether occurrence 1
         assertEquals(0, l.occurrence(1));

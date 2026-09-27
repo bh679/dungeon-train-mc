@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.worldgen.SunkZone;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyChunkWriter;
+import games.brennan.dungeontrain.worldgen.legacy.SuperflatHeight;
 import games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.Util;
@@ -185,7 +186,7 @@ public abstract class NoiseBasedChunkGeneratorMixin {
 
         long disStartX = DisintegrationBand.startX(level);
         if (disStartX != DisintegrationBand.OFF && chunkMinX + 15 >= disStartX
-                && DisintegrationBand.isChunkFullyEroded(level, chunkMinX)) {
+                && DisintegrationBand.isChunkFullyEroded(level, chunkMinX, chunkMinZ)) {
             return true; // End void/core: post-erosion would delete 100% of the terrain anyway
         }
         if (ChuncksBand.isVoidChunk(level, chunkMinX, chunkMinZ)) return true; // chuncks band: a mostly-void gap
@@ -221,7 +222,7 @@ public abstract class NoiseBasedChunkGeneratorMixin {
     }
 
     /**
-     * Sunk-zone column: answer height queries from the sunk preset. Structure placement sites villages,
+     * Sunk-zone column: answer height queries from the sunk preset (Superflat column: from its sheet). Structure placement sites villages,
      * outposts and the like with {@code getBaseHeight} on the overworld's own generator — which would
      * put them on stock-height terrain, hanging {@code AmplifiedDrop.drop} blocks over the real ground.
      */
@@ -232,7 +233,11 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             PresetTerrain.Preset preset = PresetTerrain.sunkForColumn(this, x, z);
             if (preset != null) {
                 cir.setReturnValue(preset.generator().getBaseHeight(x, z, type, level, preset.randomState()));
+                return;
             }
+            // Superflat band: villages are sited on the sheet, not on the modern terrain it replaced.
+            Integer grassY = SuperflatHeight.grassYForColumn(this, x, z);
+            if (grassY != null) cir.setReturnValue(SuperflatHeight.baseHeight(grassY));
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] sunk base-height lookup failed at {},{}; using the overworld's", x, z, t);
         }
@@ -246,6 +251,12 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             PresetTerrain.Preset preset = PresetTerrain.sunkForColumn(this, x, z);
             if (preset != null) {
                 cir.setReturnValue(preset.generator().getBaseColumn(x, z, level, preset.randomState()));
+                return;
+            }
+            Integer grassY = SuperflatHeight.grassYForColumn(this, x, z);
+            if (grassY != null) {
+                int minY = level.getMinBuildHeight();
+                cir.setReturnValue(new NoiseColumn(minY, SuperflatHeight.column(grassY, minY, level.getHeight())));
             }
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] sunk base-column lookup failed at {},{}; using the overworld's", x, z, t);

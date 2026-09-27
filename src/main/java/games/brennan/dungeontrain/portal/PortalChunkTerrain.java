@@ -800,7 +800,7 @@ public final class PortalChunkTerrain {
                 // Void-below legacy bands (Indev floating, Skylands): islands over open void — never solid
                 // ground for a room.
                 || isVoidBelowLegacy(LegacyBands.kindOfChunk(level, site.x, site.z))
-                || DisintegrationBand.isChunkFullyEroded(level, site.getMinBlockX());
+                || DisintegrationBand.isChunkFullyEroded(level, site.getMinBlockX(), site.getMinBlockZ());
         } catch (Throwable t) {
             // The bands are the train's business, not the sample's: if either cannot answer, the
             // site is judged the ordinary way, by generating it.

@@ -62,6 +62,33 @@
       ]
     }
   },
+  "gui.dungeontrain.unsupported_mods.suggest.tooltip": {
+    "1": {
+      "label": "the mod's display name",
+      "examples": [
+        "Xaero's Minimap",
+        "Sodium Extra"
+      ]
+    }
+  },
+  "gui.dungeontrain.unsupported_mods.suggested.tooltip": {
+    "1": {
+      "label": "the mod's display name",
+      "examples": [
+        "Xaero's Minimap",
+        "Sodium Extra"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.unapproved_mods": {
+    "1": {
+      "label": "the installed mods that are not on the approved list, comma-separated",
+      "examples": [
+        "somemod v1.2.3",
+        "somemod v1.2.3, anothermod v4.5"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.stages.block_tip": {
     "1": {
       "label": "how many times the block is used across the stage's parts",
@@ -11133,6 +11160,54 @@
       "examples": [
         "0",
         "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.package.dtp_next_band": {
+    "1": {
+      "label": "the name of the band the player is in now",
+      "examples": [
+        "Overworld",
+        "Void"
+      ]
+    },
+    "2": {
+      "label": "the name of the band the player is teleported to",
+      "examples": [
+        "Nether (Better Nether)",
+        "Spheres"
+      ]
+    }
+  },
+  "chat.dungeontrain.package.dtp_next_band_not_found": {
+    "1": {
+      "label": "the name of the band the player is in now",
+      "examples": [
+        "Overworld",
+        "End"
+      ]
+    }
+  },
+  "chat.dungeontrain.package.dtp_subsection_not_found": {
+    "1": {
+      "label": "the subsection name the player typed",
+      "examples": [
+        "mountain_9",
+        "core"
+      ]
+    },
+    "2": {
+      "label": "the name of the band",
+      "examples": [
+        "Nether",
+        "Spheres"
+      ]
+    },
+    "3": {
+      "label": "comma-separated list of the band's subsection names (command tokens, not translated)",
+      "examples": [
+        "beach, mountain_1, core",
+        "transition_in, core"
       ]
     }
   },

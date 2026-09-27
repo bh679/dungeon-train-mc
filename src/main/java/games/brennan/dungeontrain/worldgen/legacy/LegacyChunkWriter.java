@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen.legacy;
 
+import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBlocks;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingLevel;
@@ -75,6 +76,7 @@ public final class LegacyChunkWriter {
     public static void fill(LegacyBandKind kind, long seed, ChunkAccess chunk, int floorY, int yOffset) {
         int cx = chunk.getPos().x;
         int cz = chunk.getPos().z;
+        WorldGenCycle cycle = MixBand.cycleFor(WorldGenCycle.fromConfig(), seed, cx, cz);   // mix zone: the picked band's frame
         if (kind == LegacyBandKind.VOID) {
             // Nothing: the chunk stays the all-air ProtoChunk it arrived as; only the heightmaps need priming.
             Heightmap.primeHeightmaps(chunk, EnumSet.of(Heightmap.Types.OCEAN_FLOOR_WG, Heightmap.Types.WORLD_SURFACE_WG));
@@ -82,7 +84,7 @@ public final class LegacyChunkWriter {
         }
         if (kind == LegacyBandKind.SUPERFLAT) {
             // yOffset is the first loop's grass; every later loop's Superflat sits one chunk lower.
-            long loop = WorldGenCycle.fromConfig().cycleIndex(chunk.getPos().getMinBlockX());
+            long loop = cycle.cycleIndex(chunk.getPos().getMinBlockX());
             writeSuperflat(chunk, LegacyBands.superflatGrassY(yOffset, loop, chunk.getMinBuildHeight()));
             return;
         }
@@ -90,8 +92,8 @@ public final class LegacyChunkWriter {
             case CAVES_OF_CHAOS -> LegacyBands.chaos(seed).generate(cx, cz).blocks();
             case BETA -> LegacyBands.beta(seed).generate(cx, cz).blocks();
             case SKYLANDS -> LegacyBands.sky(seed).generate(cx, cz).blocks();
-            case ALPHA -> LegacyBands.alpha(seed).generate(cx, cz, LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), cx));
-            case INFDEV -> LegacyBands.infdev(seed).generate(cx, cz, LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), cx));
+            case ALPHA -> LegacyBands.alpha(seed).generate(cx, cz, LegacyBands.isAlphaWinter(cycle, cx));
+            case INFDEV -> LegacyBands.infdev(seed).generate(cx, cz, LegacyBands.infdevVersion(cycle, cx));
             case FLOATING -> null; // not a Beta-layout column: a slice of a whole finite level
             case VOID -> throw new IllegalStateException("void handled above");
             case SUPERFLAT -> throw new IllegalStateException("superflat handled above");
@@ -99,7 +101,7 @@ public final class LegacyChunkWriter {
             case CLASSIC -> LegacyBands.classic(seed).chunkColumn(cx, cz);
             case FAR_LANDS -> {
                 // The Far Lands are Beta's own terrain, read ~12.55M blocks out (see FarLandsShift).
-                FarLandsShift shift = FarLandsShift.of(WorldGenCycle.fromConfig(), cx, cz);
+                FarLandsShift shift = FarLandsShift.of(cycle, cx, cz);
                 yield LegacyBands.beta(seed).generate(cx + shift.dxChunks(), cz + shift.dzChunks()).blocks();
             }
         };

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
@@ -124,7 +125,8 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                                                          int x, int y, int z, Climate.Sampler sampler) {
         OverworldStretchBiomes stretchBiomes = OverworldStretchBiomes.current();
         if (stretchBiomes == null) return null;
-        return stretchBiomes.pick(SecondLapOverworld.lookAt(ctx.cycle(), x << 2), source, x, y, z, sampler);
+        WorldGenCycle cycle = ctx.cycle();   // base cycle even in the mix zone: see dungeontrain$bandBiome
+        return stretchBiomes.pick(SecondLapOverworld.lookAt(cycle, x << 2), source, x, y, z, sampler);
     }
 
     /** The forced Nether-core / End-core / highland biome, or {@code null} for an ordinary column. */
@@ -134,24 +136,28 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         int blockX = x << 2;
         int blockY = y << 2;
         int blockZ = z << 2;
+        // Always the base cycle — even in the mix zone, whose chunks keep the ordinary overworld biome whatever
+        // band they picked: vanilla takes sky, fog and water colour from the biome, so a forced Nether / End
+        // biome would re-tint the air chunk by chunk. The zone swaps blocks, never the atmosphere.
+        WorldGenCycle cycle = ctx.cycle();
         // The whole per-quart decision — sea-level gate, off-band early-out, waved Nether-core /
         // un-waved End-core / highland ordering — lives in the pure, unit-tested
         // BandBiomeDecision.decide; this shell only maps the result onto the live providers.
-        switch (BandBiomeDecision.decide(ctx.cycle(), ctx.generationSeed(), ctx.seaLevel(),
+        switch (BandBiomeDecision.decide(cycle, ctx.generationSeed(), ctx.seaLevel(),
                 ctx.netherCoreBiomes() != null, ctx.endCoreBiomes() != null,
                 blockX, blockY, blockZ)) {
             case NETHER_CORE:
                 // Per-biome fog/ambient/music + the Nether decoration features' own biome filter
                 // pass so they place in NetherTransitionFeature. The order's :better passes are BetterNether.
-                return ctx.netherCoreBiomes().biomeAt(blockX, blockZ, ctx.cycle().netherLookAt(blockX));
+                return ctx.netherCoreBiomes().biomeAt(blockX, blockZ, cycle.netherLookAt(blockX));
             case END_CORE:
                 // Sample the real End's biome source (all five End biomes, swept across successive
                 // End-band passes — see EndCoreBiomes) so world label, surface skin and decoration agree.
-                long endPass = ctx.cycle().endPassIndex(blockX);
-                return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, ctx.cycle().endStyleOfPass(endPass));
+                long endPass = cycle.endPassIndex(blockX);
+                return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, cycle.endStyleOfPass(endPass));
             case HIGHLAND:
                 // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.
-                return SecondLapOverworld.lookAt(ctx.cycle(), blockX) == SecondLapOverworld.Stretch.BOP
+                return SecondLapOverworld.lookAt(cycle, blockX) == SecondLapOverworld.Stretch.BOP
                         ? ctx.highlandBiomes().bopBiomeFor(blockX, blockY, blockZ)
                         : ctx.highlandBiomes().biomeFor(blockX, blockY, blockZ);
             default:

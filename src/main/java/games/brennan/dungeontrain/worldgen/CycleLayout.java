@@ -27,7 +27,7 @@ import java.util.function.Consumer;
  *
  * <p>Parsed from the {@code worldgenCycleOrder} COMMON key ({@link #parse}): comma-separated
  * {@code slot[:style][:length]} tokens — {@code ow}, {@code nether}, {@code end}, {@code upside_down}
- * ({@code :core:reassembly}), {@code chuncks}, {@code spheres}, {@code stacks}, and {@code legacy}
+ * ({@code :core:reassembly}), {@code chuncks}, {@code spheres}, {@code stacks}, {@code mix}, and {@code legacy}
  * ({@code :kind=core} per era, run in the order written, or bare for every enabled era at its configured
  * length in declaration order). A band whose
  * config flag is off is dropped from the layout wherever the order names it.</p>
@@ -35,7 +35,9 @@ import java.util.function.Consumer;
 public final class CycleLayout {
 
     /** The kinds of slot a run is made of. */
-    public enum Type { OVERWORLD, NETHER, END, UPSIDE_DOWN, CHUNCKS, SPHERES, STACKS, LEGACY_RUN }
+    public enum Type { OVERWORLD, NETHER, END, UPSIDE_DOWN, CHUNCKS, SPHERES, STACKS, LEGACY_RUN,
+        /** Hard-edged zone where every chunk generates as a band the run has already passed; see {@link MixBand}. */
+        MIX }
 
     /**
      * Which look an occurrence wears. A label the band's own code reads
@@ -81,7 +83,7 @@ public final class CycleLayout {
             "ow:2750, nether:vanilla>bop:3000, ow:3000, end:vanilla>bop:3000, upside_down:2500:6000, "
             + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:sunk:500, "
             + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
-            + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
+            + "ow:650, chuncks:2000, mix:4000, stacks:5000";
 
     private final Slot[] slots;
     private final long[] starts;
@@ -251,6 +253,7 @@ public final class CycleLayout {
             case "spheres" -> Type.SPHERES;
             case "stacks" -> Type.STACKS;
             case "legacy" -> Type.LEGACY_RUN;
+            case "mix" -> Type.MIX;
             default -> null;
         };
     }
@@ -284,6 +287,7 @@ public final class CycleLayout {
             case SPHERES -> Math.max(0, fades.spheresFade()) + s.core();
             case STACKS -> Math.max(0, fades.stacksFade()) + s.core();
             case LEGACY_RUN -> legacyRunLength();
+            case MIX -> Math.max(0, s.core());
         };
     }
 

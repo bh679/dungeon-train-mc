@@ -264,6 +264,8 @@ public class DungeonTrain {
         ModMobEffects.register(modBus);
         ModSounds.register(modBus);
         ModMenuTypes.register(modBus);
+        // Strips BetterNether/BetterEnd/BoP gear and ores from all loot (see compat.DisabledModContent).
+        games.brennan.dungeontrain.compat.StripDisabledItemsLootModifier.register(modBus);
 
         // Global achievements (advancements) — custom criterion triggers
         // + per-player run-state attachment.
@@ -306,6 +308,7 @@ public class DungeonTrain {
                 games.brennan.dungeontrain.worldgen.SpheresBand.invalidateCache();
                 games.brennan.dungeontrain.worldgen.StacksBand.invalidateCache();
                 games.brennan.dungeontrain.worldgen.legacy.LegacyBands.invalidateCache();
+                games.brennan.dungeontrain.worldgen.MixBand.invalidateCache();
                 // The catch-up pacing may now be a different stored value, or AUTO where it wasn't.
                 games.brennan.dungeontrain.train.CatchUpBurstAuto.invalidate();
                 // Same reasoning as the server-config step below — the common file needs its own

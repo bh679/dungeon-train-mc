@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
+import games.brennan.dungeontrain.worldgen.MixBand;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -173,7 +174,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             int chunkMinX = cp.getMinBlockX();
             if (chunkMinX + 15 < startX) return false; // before the first band (or disabled)
 
-            WorldGenCycle cycle = WorldGenCycle.fromConfig();
+            WorldGenCycle cycle = MixBand.cycleAt(overworld, cp.x, cp.z);   // mix zone: the chunk's picked band
             int seaLevel = overworld.getSeaLevel();
 
             // Resolve the End-band gate ONCE per chunk. DisintegrationBand.middleRampAt(overworld, wx)

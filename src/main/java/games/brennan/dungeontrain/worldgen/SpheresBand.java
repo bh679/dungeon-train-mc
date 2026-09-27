@@ -54,8 +54,13 @@ public final class SpheresBand {
 
     /** True if the column at {@code worldX} lies in the spheres band core (not the entry fade). */
     public static boolean isInBand(ServerLevel overworld, int worldX) {
+        return isInBand(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #isInBand(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static boolean isInBand(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return false;
-        return WorldGenCycle.fromConfig().isInSpheresBand(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).isInSpheresBand(worldX);
     }
 
     /**
@@ -73,8 +78,13 @@ public final class SpheresBand {
      * core. Cheap gate first (config flag + memoised cycle), the per-world lookup only when in range.
      */
     public static double voidRamp(ServerLevel overworld, int worldX) {
+        return voidRamp(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #voidRamp(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static double voidRamp(ServerLevel overworld, int worldX, int worldZ) {
         if (!DungeonTrainCommonConfig.isSpheresEnabled()) return 0.0;
-        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        WorldGenCycle cycle = MixBand.cycleAtColumn(overworld, worldX, worldZ);
         if (cycle.spheresLen() <= 0L) return 0.0;
         double ramp = cycle.spheresVoidRamp(worldX);
         if (ramp <= 0.0) return 0.0;
@@ -84,8 +94,13 @@ public final class SpheresBand {
 
     /** True if any column of the chunk starting at {@code chunkMinX} has a non-zero {@link #voidRamp}. */
     public static boolean chunkTouchesBand(ServerLevel overworld, int chunkMinX) {
+        return chunkTouchesBand(overworld, chunkMinX, MixBand.NO_Z);
+    }
+
+    /** {@link #chunkTouchesBand(ServerLevel, int)} for the chunk at {@code (chunkMinX, chunkMinZ)} — its mix-zone pick included. */
+    public static boolean chunkTouchesBand(ServerLevel overworld, int chunkMinX, int chunkMinZ) {
         if (!DungeonTrainCommonConfig.isSpheresEnabled()) return false;
-        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        WorldGenCycle cycle = MixBand.cycleAtColumn(overworld, chunkMinX, chunkMinZ);
         if (cycle.spheresLen() <= 0L) return false;
         // The ramp is monotone non-decreasing across fade+core and 0 after, so the two chunk edges plus
         // a mid sample cover every phase edge a 16-wide chunk can straddle.
@@ -103,12 +118,12 @@ public final class SpheresBand {
      * Memoised per chunk; only in-band chunks are cached.
      */
     public static List<SphereField.Sphere> candidates(ServerLevel overworld, int chunkX, int chunkZ) {
-        if (!chunkTouchesBand(overworld, chunkX << 4)) return List.of();
+        if (!chunkTouchesBand(overworld, chunkX << 4, chunkZ << 4)) return List.of();
         SphereField field = fieldFor(overworld);
         long key = ChunkPos.asLong(chunkX, chunkZ);
         List<SphereField.Sphere> hit = CANDIDATE_CACHE.get(key);
         if (hit != null) return hit;
-        List<SphereField.Sphere> list = insideBand(WorldGenCycle.fromConfig(), field.candidatesFor(chunkX, chunkZ));
+        List<SphereField.Sphere> list = insideBand(MixBand.cycleAt(overworld, chunkX, chunkZ), field.candidatesFor(chunkX, chunkZ));
         if (CANDIDATE_CACHE.size() >= MAX_CACHE) CANDIDATE_CACHE.clear();
         CANDIDATE_CACHE.put(key, list);
         return list;
@@ -141,7 +156,7 @@ public final class SpheresBand {
      */
     public static boolean isVoidChunk(ServerLevel overworld, int chunkMinX, int chunkMinZ) {
         if (!DungeonTrainCommonConfig.isSpheresEnabled()) return false;
-        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        WorldGenCycle cycle = MixBand.cycleAtBlock(overworld, chunkMinX, chunkMinZ);
         if (cycle.spheresLen() <= 0L) return false;
         if (cycle.spheresVoidRamp(chunkMinX) < 1.0 || cycle.spheresVoidRamp(chunkMinX + 15) < 1.0) return false;
         if (!DungeonTrainWorldData.get(overworld).startsWithTrain()) return false;
@@ -158,7 +173,7 @@ public final class SpheresBand {
      */
     public static boolean isVoidSpace(ServerLevel overworld, int blockX, int blockY, int blockZ) {
         if (!DungeonTrainCommonConfig.isSpheresEnabled()) return false;
-        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        WorldGenCycle cycle = MixBand.cycleAtBlock(overworld, blockX, blockZ);
         if (cycle.spheresLen() <= 0L) return false;
         if (cycle.spheresVoidRamp(blockX) <= 0.0) return false;
         if (!DungeonTrainWorldData.get(overworld).startsWithTrain()) return false;

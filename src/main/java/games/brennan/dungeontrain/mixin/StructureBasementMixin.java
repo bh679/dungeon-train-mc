@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.worldgen.LegacyUnderground;
+import games.brennan.dungeontrain.worldgen.UpsideDownSpawnerStructures;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -59,6 +60,13 @@ public abstract class StructureBasementMixin {
             // Legacy bands and the sunk zone never get the underground set (LegacyUnderground).
             if (LegacyUnderground.appliesTo(level, chunkPos.x, chunkPos.z)
                     && LegacyUnderground.excludesStructure(registryAccess.registryOrThrow(Registries.STRUCTURE)
+                            .getKey((Structure) (Object) this))) {
+                cir.setReturnValue(StructureStart.INVALID_START);
+                return;
+            }
+            // The upside-down band never gets spawner structures (UpsideDownSpawnerStructures).
+            if (UpsideDownSpawnerStructures.appliesTo(level, chunkPos.x, chunkPos.z)
+                    && UpsideDownSpawnerStructures.excludesStructure(registryAccess.registryOrThrow(Registries.STRUCTURE)
                             .getKey((Structure) (Object) this))) {
                 cir.setReturnValue(StructureStart.INVALID_START);
                 return;

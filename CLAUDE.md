@@ -325,9 +325,15 @@ loads (Advancement Plaques needs Iceberg).
   For a hard dependency (a sibling mod) use `dependency_type: required` in the config and
   `<slug>(required)` in release.yml instead. Note `required` (pack ships it ON) and
   `dependency_type` (mod won't load without it) answer different questions — don't conflate them.
+  **Also give it `mod_ids`** — the REAL modIds its jar loads (`python3 scripts/modpack/check-mod-ids.py
+  --fill` reads them from the pinned jar). Every modpack mod, sibling and declared dependency is
+  **auto-whitelisted for fair play at build time** (`gradle/approved-mods.gradle` →
+  `generateApprovedMods`); opt a mod out with `"whitelist": false` — Gate 3 step 3b asks the user.
+  Hand-judged third-party approvals live in `src/main/whitelist/approved_mods.curated.json`.
   Enforced in CI (`modpack-checks` job in `build.yml`): `check-relations.py` (CurseForge dep) +
   `build-mrpack.py --check-config` (Modrinth pins present) + `check-pins.py` (Sable chain +
-  sibling floors) + `check-overrides.py` (allowlist for `modpack/overrides/`).
+  sibling floors) + `check-overrides.py` (allowlist for `modpack/overrides/`) +
+  `check-mod-ids.py` (`mod_ids` present, and `--verify` against the pinned jars).
 - **`modpack/overrides/` is allowlisted.** The tree ships verbatim to every player, so a config
   file DT holds to its defaults landing there would put the whole player base into Free Play
   (`adventureitemstats.properties` → `AisDataIntegrity`). `check-overrides.py` fails CI on any

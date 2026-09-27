@@ -59,11 +59,6 @@ class BandHoldDefaultsTest {
         assertEquals(DungeonTrainCommonConfig.V6_WORLDGEN_CYCLE_ORDER,
                 DungeonTrainCommonConfig.V5_WORLDGEN_CYCLE_ORDER.replace("spheres:15000", "spheres:6550"),
                 "v5 -> v6 changed only the spheres slot");
-        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
-                DungeonTrainCommonConfig.V7_WORLDGEN_CYCLE_ORDER
-                        .replace("nether:3000,", "nether:vanilla>bop:3000,")
-                        .replace("end:3000,", "end:vanilla>bop:3000,"),
-                "v7 -> v8 changed only Lap 1's Nether and End");
         assertEquals(DungeonTrainCommonConfig.V7_WORLDGEN_CYCLE_ORDER,
                 DungeonTrainCommonConfig.V6_WORLDGEN_CYCLE_ORDER
                         .replace("spheres:6550, ow:5000,", "spheres:6550, ow:sunk:500,")
@@ -71,6 +66,25 @@ class BandHoldDefaultsTest {
                 "v6 -> v7 changed only the gap into Amplified and the Beta era");
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 7,
                 "CURRENT_CONFIG_VERSION must be at least 7, or the v6 -> v7 order step never runs");
+        assertEquals(DungeonTrainCommonConfig.V8_WORLDGEN_CYCLE_ORDER,
+                DungeonTrainCommonConfig.V7_WORLDGEN_CYCLE_ORDER
+                        .replace("ow:2000, chuncks:5000, ow:5000, stacks:5000", "ow:650, chuncks:5000, stacks:5000"),
+                "v7 -> v8 changed only the gaps after the legacy run and between chuncks and stacks");
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 8,
+                "CURRENT_CONFIG_VERSION must be at least 8, or the v7 -> v8 order step never runs");
+        assertEquals(DungeonTrainCommonConfig.V9_WORLDGEN_CYCLE_ORDER,
+                DungeonTrainCommonConfig.V8_WORLDGEN_CYCLE_ORDER
+                        .replace("chuncks:5000, stacks:5000", "chuncks:2000, mix:4000, stacks:5000"),
+                "v8 -> v9 changed only the chuncks core and added the mix zone");
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 9,
+                "CURRENT_CONFIG_VERSION must be at least 9, or the v8 -> v9 order step never runs");
+        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+                DungeonTrainCommonConfig.V9_WORLDGEN_CYCLE_ORDER
+                        .replace("nether:3000,", "nether:vanilla>bop:3000,")
+                        .replace("end:3000,", "end:vanilla>bop:3000,"),
+                "v9 -> v10 changed only Lap 1's Nether and End");
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 10,
+                "CURRENT_CONFIG_VERSION must be at least 10, or the v9 -> v10 order step never runs");
         assertTrue(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER.contains("spheres:"
                 + DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS + ","));
     }

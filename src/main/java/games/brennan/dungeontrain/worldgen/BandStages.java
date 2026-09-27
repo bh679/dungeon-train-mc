@@ -87,6 +87,7 @@ public final class BandStages {
                 spheres(out, core, spheres, exitTaperBlocks, exitVoidBlocks);
             }
             case LEGACY_RUN -> legacy(out, layout);
+            case MIX -> add(out, "Mix", core);
         }
         return List.copyOf(out);
     }
@@ -196,6 +197,36 @@ public final class BandStages {
             String next = e + 1 < eras.length ? pretty(eras[e + 1].kind().token()) : "Overworld";
             add(out, name + " → " + next, fade);
         }
+    }
+
+    /**
+     * Command token per stage, index-aligned with {@code stages}: the name snake-cased ({@code Mountain 3} →
+     * {@code mountain_3}, {@code Amplified → Beta} → {@code amplified_to_beta}). A name repeated in one slot
+     * (the Nether's mirrored mountains, the End's two voids) gets {@code _out} on its second occurrence and
+     * {@code _<n>} after that, so every token is unique.
+     */
+    public static List<String> tokens(List<Stage> stages) {
+        List<String> out = new ArrayList<>(stages.size());
+        java.util.Map<String, Integer> seen = new java.util.HashMap<>();
+        for (Stage stage : stages) {
+            String base = token(stage.name());
+            int n = seen.merge(base, 1, Integer::sum);
+            out.add(n == 1 ? base : n == 2 ? base + "_out" : base + "_" + n);
+        }
+        return List.copyOf(out);
+    }
+
+    /** {@code Amplified → Beta} → {@code amplified_to_beta}. */
+    static String token(String name) {
+        String s = name.replace("→", " to ").toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_");
+        return s.replaceAll("^_+|_+$", "");
+    }
+
+    /** Base-block offset of stage {@code index} from its slot's start. */
+    public static long startOf(List<Stage> stages, int index) {
+        long at = 0L;
+        for (int s = 0; s < index; s++) at += stages.get(s).length();
+        return at;
     }
 
     /** {@code far_lands} → {@code Far Lands}. */
