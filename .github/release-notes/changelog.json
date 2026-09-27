@@ -19534,6 +19534,49 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "offline-sampler-chunk-biomes",
+      "version": "0.974.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Distant lands keep up with a fast train",
+      "summary": "Some of the stranger stretches of the journey now take shape far faster, so the land around you is there as you arrive, even at top speed, instead of filling in behind the train.",
+      "highlights": [
+        "Terrain in far-off stretches appears in step with the train.",
+        "Less work for the server while you travel."
+      ],
+      "pr": 1585,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "disable-mod-gear-ores",
+      "version": "0.975.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "loot",
+        "balance"
+      ],
+      "title": "Gear stays on Dungeon Train's own progression",
+      "summary": "The biome mods bundled with Dungeon Train no longer add their own armour, weapons, tools, ingots or ores. Their landscapes and building blocks stay, but they can no longer hand you a shortcut past the gear the game is balanced around.",
+      "highlights": [
+        "Their armour, weapons and tools can't be crafted and no longer turn up in chests",
+        "Their ores no longer generate, and their ingots are gone too",
+        "Mobs that used to spawn wearing that gear now wear iron or diamond instead"
+      ],
+      "pr": 1587,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
