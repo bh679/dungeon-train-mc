@@ -29,6 +29,9 @@ import net.minecraft.world.level.Level;
  * would pass cars and tents but few buildings. DT ships trackside copies of them
  * ({@code dungeontrain:lost_city/<name>}: the same structure, any land biome) that may start only within
  * {@link #TRACKSIDE_BLOCKS} of the track; away from it the mod's own biome rules stand.</p>
+ *
+ * <p>How a city sits in the ground — its template's natural pad and lower air yielding to the stretch's own
+ * terrain — is {@link LostCityGroundProcessor}'s.</p>
  */
 public final class LostCityStructures {
 

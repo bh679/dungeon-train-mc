@@ -37,6 +37,7 @@
     "ServerLevelDeferRingGenMixin",
     "WorldGenRegionFloorMixin",
     "StructureBasementMixin",
+    "SinglePoolElementMixin",
     "ChunkStatusSpawnMixin",
     "RandomStateMixin",
     "TagLoaderWwooFilterMixin",
