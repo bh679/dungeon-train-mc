@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.LegacyUnderground;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.StacksBand;
+import games.brennan.dungeontrain.worldgen.UpsideDownSpawnerStructures;
 import games.brennan.dungeontrain.worldgen.OfflineChunkSampler;
 import games.brennan.dungeontrain.worldgen.VanillaOnlySample;
 import net.minecraft.core.RegistryAccess;
@@ -90,11 +91,21 @@ public abstract class ChunkGeneratorDecorationMixin {
     @Unique
     private static final ThreadLocal<RegistryAccess> dungeontrain$legacyUnderground = new ThreadLocal<>();
 
+    /**
+     * Per-decoration-call registry access while decorating an upside-down band chunk, else {@code null} —
+     * the {@link UpsideDownSpawnerStructures} veto reads feature / structure ids through it. Same lifecycle
+     * as the flags above.
+     */
+    @Unique
+    private static final ThreadLocal<RegistryAccess> dungeontrain$upsideDownSpawners = new ThreadLocal<>();
+
     @Inject(method = "applyBiomeDecoration", at = @At("HEAD"))
     private void dungeontrain$computeSkip(WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager, CallbackInfo ci) {
         boolean skip = dungeontrain$isFullyErodedBandChunk(level, chunk);
         dungeontrain$skipDecoration.set(skip);
         dungeontrain$legacyUnderground.set(dungeontrain$appliesLegacyUnderground(level, chunk)
+                ? level.registryAccess() : null);
+        dungeontrain$upsideDownSpawners.set(dungeontrain$appliesUpsideDownSpawners(level, chunk)
                 ? level.registryAccess() : null);
         dungeontrain$deferStructures.set(DeferredStructurePlacement.isDeferred(level, chunk.getPos()));
         WwooDecorationPass.begin(level, chunk, skip);
@@ -142,6 +153,11 @@ public abstract class ChunkGeneratorDecorationMixin {
                 legacy.registryOrThrow(Registries.PLACED_FEATURE).getKey(feature))) {
             return false; // legacy / sunk chunk: no geodes, dungeons or fossils at vanilla's absolute depths
         }
+        RegistryAccess upsideDown = dungeontrain$upsideDownSpawners.get();
+        if (upsideDown != null && UpsideDownSpawnerStructures.excludesFeature(
+                upsideDown.registryOrThrow(Registries.PLACED_FEATURE).getKey(feature))) {
+            return false; // upside-down band: no dungeon spawners hanging in the mirrored ceiling
+        }
         return feature.placeWithBiomeCheck(level, generator, random, origin);
     }
 
@@ -180,6 +196,12 @@ public abstract class ChunkGeneratorDecorationMixin {
         RegistryAccess legacy = dungeontrain$legacyUnderground.get();
         if (legacy != null && LegacyUnderground.excludesStructure(
                 legacy.registryOrThrow(Registries.STRUCTURE).getKey(structure))) {
+            return List.of();
+        }
+        // Upside-down band: no spawner structures, even pieces reaching in from a start outside the band.
+        RegistryAccess upsideDown = dungeontrain$upsideDownSpawners.get();
+        if (upsideDown != null && UpsideDownSpawnerStructures.excludesStructure(
+                upsideDown.registryOrThrow(Registries.STRUCTURE).getKey(structure))) {
             return List.of();
         }
         return structureManager.startsForStructure(sectionPos, structure);
@@ -258,6 +280,18 @@ public abstract class ChunkGeneratorDecorationMixin {
             return LegacyUnderground.appliesTo(serverLevel, chunk.getPos().x, chunk.getPos().z);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] legacy-underground resolve failed at {}; decorating as vanilla",
+                    chunk.getPos(), t);
+            return false;
+        }
+    }
+
+    /** An overworld chunk in the upside-down band — see {@link UpsideDownSpawnerStructures}. Unresolvable → no veto. */
+    @Unique
+    private static boolean dungeontrain$appliesUpsideDownSpawners(WorldGenLevel level, ChunkAccess chunk) {
+        try {
+            return UpsideDownSpawnerStructures.appliesTo(level.getLevel(), chunk.getPos().x);
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] upside-down spawner resolve failed at {}; decorating as vanilla",
                     chunk.getPos(), t);
             return false;
         }
