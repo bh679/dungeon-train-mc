@@ -68,7 +68,8 @@ public final class ModSuggestClient {
     private ModSuggestClient() {}
 
     /**
-     * POST the suggestion. {@code uuid}/{@code name}/{@code serverId} are the owner proof; {@code
+     * POST the suggestion. {@code uuid}/{@code name} identify the player; {@code serverId} (may be
+     * empty) is the optional owner proof. {@code
      * comment} is required (the relay refuses an empty one). No-throw.
      */
     public static CompletableFuture<Result> suggest(String baseUrl, String uuid, String name, String serverId,
