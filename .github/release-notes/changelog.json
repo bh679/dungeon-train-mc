@@ -19979,6 +19979,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "end-band-void-squares",
+      "version": "0.990.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "No more holes in the scenery",
+      "summary": "Along some of the stranger stretches of the line, the scenery beside the track now fills in first, instead of leaving square holes of empty sky for a while \u2014 or for good, if you moved on too quickly.",
+      "highlights": [
+        "Scenery closest to you fills in first",
+        "No more square gaps left behind when the server is busy"
+      ],
+      "pr": 1615,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
