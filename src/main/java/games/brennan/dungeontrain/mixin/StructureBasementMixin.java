@@ -60,10 +60,10 @@ public abstract class StructureBasementMixin {
         ServerLevel level = heightAccessor instanceof ChunkAccess chunk
                 && ((ChunkAccessAccessor) chunk).dungeontrain$getLevelHeightAccessor() instanceof ServerLevel l
                 && l.getChunkSource().getGenerator() == chunkGenerator ? l : null;
-        // Big Lost City's cities belong to the Lost City era's core alone (LostCityStructures) — anywhere
+        // Big Lost City's cities belong to the Lost City era alone (LostCityStructures) — anywhere
         // else, including a start we can't place in a level (a sampler or foreign generator), is dropped.
         if (LostCityStructures.isLostCityStructure(id)
-                && (level == null || !LostCityStructures.allowedAt(level, chunkPos.x))) {
+                && (level == null || !LostCityStructures.allowedAt(level, chunkPos.x, chunkPos.z))) {
             cir.setReturnValue(StructureStart.INVALID_START);
             return;
         }

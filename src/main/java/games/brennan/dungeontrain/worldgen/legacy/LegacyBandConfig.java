@@ -34,7 +34,7 @@ public final class LegacyBandConfig {
     public static final Defaults SUPERFLAT_DEFAULTS = new Defaults(true, 1000, 480, 3000);
     public static final Defaults VOID_DEFAULTS = new Defaults(true, 1000, 480, 3000);
     public static final Defaults FAR_LANDS_DEFAULTS = new Defaults(true, 4320, 480, 3000);
-    public static final Defaults LOST_CITY_DEFAULTS = new Defaults(true, 4000, 480, 3000);
+    public static final Defaults LOST_CITY_DEFAULTS = new Defaults(true, 4000, 750, 3000);
 
     /** Shipped share of the Alpha core (counted from its end) that is winter mode. */
     public static final double ALPHA_WINTER_SHARE_DEFAULT = 0.5D;
@@ -97,8 +97,8 @@ public final class LegacyBandConfig {
                     .comment("Blocks of full-strength " + label(kind) + " terrain. 0 drops the band from the cycle.")
                     .defineInRange(prefix + "HoldBlocks", d.hold(), MIN_BLOCKS, MAX_BLOCKS);
             ModConfigSpec.IntValue fade = b
-                    .comment("Entry and exit fade (each side): chunks switch between modern and " + label(kind),
-                            "terrain one at a time, leaving old-world chunk walls. 0 = hard edge.")
+                    .comment("Fade into " + label(kind) + ": chunks switch from the terrain before it (modern, or the",
+                            "previous era in the legacy run) one at a time, leaving old-world chunk walls. 0 = hard edge.")
                     .defineInRange(prefix + "FadeBlocks", d.fade(), MIN_BLOCKS, MAX_BLOCKS);
             ModConfigSpec.IntValue leadGap = b
                     .comment("Plain-overworld gap before the " + label(kind) + " band's entry fade.")

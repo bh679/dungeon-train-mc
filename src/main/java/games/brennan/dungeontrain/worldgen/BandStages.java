@@ -184,17 +184,16 @@ public final class BandStages {
 
     private record Breakpoint(long offset, String name) {}
 
-    /** {@code [fade][era0][crossfade][era1]…[eraN-1][fade]}. */
+    /** {@code [fade][era0][crossfade][era1]…[eraN-1][fade]} — each crossfade the incoming era's own fade. */
     private static void legacy(List<Stage> out, CycleLayout layout) {
         LegacySpan[] eras = layout.eras();
         if (eras.length == 0) return;
-        long fade = layout.legacyFade();
-        add(out, "Fade into " + pretty(eras[0].kind().token()), fade);
+        add(out, "Fade into " + pretty(eras[0].kind().token()), layout.fadeBefore(0));
         for (int e = 0; e < eras.length; e++) {
             String name = pretty(eras[e].kind().token());
             add(out, name, layout.eraCoreLen(e));
             String next = e + 1 < eras.length ? pretty(eras[e + 1].kind().token()) : "Overworld";
-            add(out, name + " → " + next, fade);
+            add(out, name + " → " + next, layout.fadeBefore(e + 1));
         }
     }
 

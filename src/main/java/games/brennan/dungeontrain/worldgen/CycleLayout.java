@@ -259,10 +259,11 @@ public final class CycleLayout {
         return Math.max(0, s.extra() >= 0 ? s.extra() : fades.udExitFade());
     }
 
-    /** {@code F + Σcore + (n−1)·F + F}: entry fade, cores with a shared crossfade between, exit fade. */
+    /** {@code Σ fadeBefore(e) + Σcore}: each era's own entry fade / crossfade, the cores, then the exit fade. */
     private long legacyRunLength() {
         if (eras.length == 0) return 0L;
-        long total = (long) legacyFade() * (eras.length + 1);
+        long total = 0L;
+        for (int e = 0; e <= eras.length; e++) total += fadeBefore(e);
         for (LegacySpan e : eras) total += e.holdLen();
         return total;
     }
@@ -310,9 +311,21 @@ public final class CycleLayout {
         return fades;
     }
 
-    /** Crossfade length between legacy eras (and the run's entry/exit fades). */
+    /** The legacy run's exit fade, and the fallback for an era with no fade of its own. */
     public int legacyFade() {
         return Math.max(0, fades.legacyFade());
+    }
+
+    /**
+     * Length of the fade <em>into</em> era {@code e}: the run's entry fade for {@code e == 0}, the crossfade
+     * from era {@code e − 1} otherwise — each era's own configured fade ({@code legacy<Era>FadeBlocks}), so
+     * one seam can be longer than the rest (Lost City's 750-block run-in out of Amplified). {@code e} equal to
+     * the era count is the run's exit fade ({@link #legacyFade}).
+     */
+    public long fadeBefore(int e) {
+        if (e < 0 || e >= eras.length) return legacyFade();
+        int f = eras[e].fade();
+        return f >= 0 ? f : legacyFade();
     }
 
     /** The legacy eras in run order — {@code (kind, 0, fade, core)} each. Never mutated. */
@@ -395,8 +408,8 @@ public final class CycleLayout {
 
     /** Offset of era {@code e}'s core from the legacy slot start. */
     public long eraCoreStart(int e) {
-        long at = legacyFade();
-        for (int i = 0; i < e; i++) at += eras[i].holdLen() + legacyFade();
+        long at = fadeBefore(0);
+        for (int i = 0; i < e; i++) at += eras[i].holdLen() + fadeBefore(i + 1);
         return at;
     }
 

@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.worldgen.density;
 
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.feature.MountainNoise;
 
 /**
@@ -112,12 +114,34 @@ public final class UpsideDownTrackFlatten {
     }
 
     /**
-     * X weight {@code 0..1}: 1 anywhere the upside-down mirror touches ({@link WorldGenCycle#isInUpsideDownStretch}),
-     * ramping smoothly to 0 over {@link #BAND_RAMP} blocks outside each end; 0 everywhere else. An O(1)
-     * {@link WorldGenCycle#upsideDownInfluence} check answers the far-away majority before any search.
+     * Whether {@code worldX} lies in a stretch whose terrain is kept flat near the track: anywhere the
+     * upside-down mirror touches ({@link WorldGenCycle#isInUpsideDownStretch}), or the Lost City era's slot
+     * (both crossfades included) — a city stretch reads as flat ground along the line.
+     */
+    static boolean inStretch(WorldGenCycle cycle, int worldX) {
+        return cycle.isInUpsideDownStretch(worldX)
+            || LegacyBands.isInSlot(cycle, LegacyBandKind.LOST_CITY, worldX);
+    }
+
+    /**
+     * O(1), conservative: false proves no stretch column lies within {@code margin} of {@code worldX}. The
+     * Lost City slot is far longer than {@code 2·margin}, so a window touching it always has an end or the
+     * centre inside it.
+     */
+    private static boolean influence(WorldGenCycle cycle, int worldX, int margin) {
+        return cycle.upsideDownInfluence(worldX, margin)
+            || LegacyBands.isInSlot(cycle, LegacyBandKind.LOST_CITY, worldX)
+            || LegacyBands.isInSlot(cycle, LegacyBandKind.LOST_CITY, worldX - margin)
+            || LegacyBands.isInSlot(cycle, LegacyBandKind.LOST_CITY, worldX + margin);
+    }
+
+    /**
+     * X weight {@code 0..1}: 1 anywhere in a flattened stretch ({@link #inStretch}), ramping smoothly to 0
+     * over {@link #BAND_RAMP} blocks outside each end; 0 everywhere else. An O(1) {@link #influence} check
+     * answers the far-away majority before any search.
      */
     public static double bandWeight(WorldGenCycle cycle, int worldX) {
-        if (cycle == null || !cycle.upsideDownInfluence(worldX, BAND_RAMP)) return 0.0;
+        if (cycle == null || !influence(cycle, worldX, BAND_RAMP)) return 0.0;
         int d = distanceToStretch(cycle, worldX, BAND_RAMP);
         if (d < 0) return 0.0;
         if (d == 0) return 1.0;
@@ -130,7 +154,7 @@ public final class UpsideDownTrackFlatten {
      * the first hit to the exact block.
      */
     static int distanceToStretch(WorldGenCycle cycle, int worldX, int max) {
-        if (cycle.isInUpsideDownStretch(worldX)) return 0;
+        if (inStretch(cycle, worldX)) return 0;
         for (int d = PROBE_STEP; d < max + PROBE_STEP; d += PROBE_STEP) {
             int probe = Math.min(d, max);
             if (hitAt(cycle, worldX, probe)) {
@@ -144,7 +168,7 @@ public final class UpsideDownTrackFlatten {
     }
 
     private static boolean hitAt(WorldGenCycle cycle, int worldX, int d) {
-        return cycle.isInUpsideDownStretch(worldX - d) || cycle.isInUpsideDownStretch(worldX + d);
+        return inStretch(cycle, worldX - d) || inStretch(cycle, worldX + d);
     }
 
     /** Combined weight at a column; 0 when the context is missing or disabled. */
