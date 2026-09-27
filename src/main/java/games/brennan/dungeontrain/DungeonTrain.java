@@ -238,6 +238,11 @@ public class DungeonTrain {
     public DungeonTrain(IEventBus modBus, ModContainer modContainer) {
         modBus.addListener(this::commonSetup);
 
+        // Farmers' Delight: switch its stackable soups off once, before NeoForge loads any COMMON
+        // config, and ask before a menu switches it back on. No-op without the mod; fails open.
+        games.brennan.dungeontrain.cheat.FarmersDelightSoupStacking.init(
+            net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get());
+
         // Bundled Edible Backpacks: in Dungeon Train, backpack space resets on
         // death (the standalone mod's default is persist-through-death). This
         // only steers the sibling's `resetOnDeath = DEFAULT` config value — a
@@ -322,6 +327,14 @@ public class DungeonTrain {
             // stamped and idempotent, so the write it performs re-entering here is a no-op.
             if (event.getConfig().getSpec() == DungeonTrainConfig.SPEC) {
                 DungeonTrainConfig.runPendingMigrations();
+            }
+            // A balance key edited while a world runs (Configured, the settings screen, a hand edit)
+            // is Free Play from that moment — see DtConfigIntegrity. Reloading only: Loading is the
+            // boot path, which DtConfigIntegrity already scans at server start.
+            if (event instanceof net.neoforged.fml.event.config.ModConfigEvent.Reloading
+                    && (event.getConfig().getSpec() == DungeonTrainConfig.SPEC
+                        || event.getConfig().getSpec() == DungeonTrainCommonConfig.SPEC)) {
+                games.brennan.dungeontrain.cheat.DtConfigIntegrity.onConfigReloaded();
             }
         });
 

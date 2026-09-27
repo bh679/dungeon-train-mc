@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.worldgen;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
 
 import java.util.Set;
@@ -15,6 +17,13 @@ import java.util.Set;
  * would keep dropping out of the roof. Rather than generate a spawner nobody can reach and cancel its
  * output, the structure is left out. Strongholds are deliberately not on the list — the End portal and
  * the stronghold-ring logic depend on them. Wired through the same seams as {@link LegacyUnderground}.</p>
+ *
+ * <p>Structures that <em>do</em> generate here keep their blocks but not their residents: a mob a
+ * structure template places (a village's villagers, iron golem and cats) is left out
+ * ({@link #dropsTemplateEntity}). It would stand where the mirror has emptied the ground and fall. Those
+ * spawns bypass {@code BandMobSpawnEvents} — the template calls {@code finalizeSpawn} directly as
+ * {@code STRUCTURE}, never through {@code FinalizeSpawnEvent}. Their beds go with them in the exit
+ * crossfade ({@code UpsideDownMirror.keepsNativeBlockEntity}).</p>
  */
 public final class UpsideDownSpawnerStructures {
 
@@ -46,5 +55,15 @@ public final class UpsideDownSpawnerStructures {
 
     public static boolean excludesFeature(ResourceLocation id) {
         return id != null && FEATURES.contains(id.toString());
+    }
+
+    /**
+     * Whether a structure template's entity is left out: any mob whose position is in the overworld's
+     * band, entry lead-in or exit fade. Non-mob template entities (item frames, armour stands) stay.
+     */
+    public static boolean dropsTemplateEntity(ServerLevel level, Entity entity) {
+        if (!(entity instanceof Mob)) return false;
+        if (!level.dimension().equals(Level.OVERWORLD)) return false;
+        return UpsideDownBand.isInBandEntryLeadOrExit(level, entity.getBlockX(), entity.getBlockZ());
     }
 }

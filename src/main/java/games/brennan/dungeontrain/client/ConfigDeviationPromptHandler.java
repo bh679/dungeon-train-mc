@@ -126,6 +126,29 @@ public final class ConfigDeviationPromptHandler {
     }
 
     /**
+     * The player just confirmed switching Farmers' Delight's stackable soups on
+     * ({@link SoupStackingConfirmScreen}), so the launch prompt shouldn't ask about it again. The
+     * current deviations are acknowledged only when everything else in them was already acknowledged
+     * (or there is nothing else) — confirming soups must never silently accept an unrelated change
+     * the player hasn't answered yet.
+     */
+    static void acknowledgeConfirmedChange() {
+        try {
+            List<String> current = scan();
+            List<String> others = current.stream()
+                .filter(d -> !d.startsWith(DtConfigIntegrity.FD_DISPLAY_PREFIX))
+                .toList();
+            String stored = ClientDisplayConfig.getConfigDeviationAcknowledged();
+            if (others.isEmpty() || signatureOf(others).equals(stored)) {
+                ClientDisplayConfig.setConfigDeviationAcknowledged(signatureOf(current));
+            }
+            deviations = current;
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Could not record the stackable-soups confirmation", t);
+        }
+    }
+
+    /**
      * The player reset. The files are gone and defaults regenerate on next launch, so nothing is
      * left to prompt about this session; any stored acknowledgement is cleared, since it describes
      * a config that no longer exists.

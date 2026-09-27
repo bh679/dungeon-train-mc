@@ -32,7 +32,6 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -122,11 +121,7 @@ public final class WorldEndBandEvents {
     public static void onServerTick(ServerTickEvent.Post event) {
         ServerLevel level = event.getServer().overworld();
         if (level == null) return;
-        if (++tickCounter % PREFETCH_INTERVAL_TICKS == 0) {
-            prefetch(level);
-            rerequestStuck(level);
-        }
-        sweepStash(level);
+        if (++tickCounter % PREFETCH_INTERVAL_TICKS == 0) prefetch(level);
         if (!DUE.isEmpty()) {
             // Prefetched terrain for chunks that arrived last tick: all of it, so none is seen bare.
             long t0 = GenProfiler.t0();
@@ -151,56 +146,6 @@ public final class WorldEndBandEvents {
             STASH.put(r.pos().toLong(), r);                // not generated yet (prefetch) or unloaded
         } else if (chunk.getData(ModDataAttachments.END_BAND_PENDING)) {
             apply(level, chunk, r);
-        }
-    }
-
-    /**
-     * Write every stashed sample whose chunk is now loaded and still owed. {@link #onChunkLoad} is the
-     * usual way a stashed sample reaches its chunk, but a sample can be stashed <em>after</em> its chunk's
-     * load event: a prefetched job still in flight when the chunk loads (the load's own request is then
-     * de-duplicated away), or a {@link #DUE} write that found the chunk not yet visible. Nothing would ever
-     * look at it again, and the chunk stayed a square of void in the islands until it was reloaded.
-     */
-    private static void sweepStash(ServerLevel level) {
-        if (STASH.isEmpty()) return;
-        long t0 = GenProfiler.t0();
-        Iterator<Map.Entry<Long, EndBandSampler.Result>> it = STASH.entrySet().iterator();
-        while (it.hasNext()) {
-            EndBandSampler.Result r = it.next().getValue();
-            LevelChunk chunk = level.getChunkSource().getChunkNow(r.pos().x, r.pos().z);
-            if (chunk == null) continue;                    // not here yet: onChunkLoad or a later sweep takes it
-            it.remove();
-            if (chunk.getData(ModDataAttachments.END_BAND_PENDING)) apply(level, chunk, r);
-        }
-        GenProfiler.add(GenProfiler.Bucket.END_BAND_APPLY, t0);
-    }
-
-    /**
-     * Safety net: ask again for any loaded chunk near a player that is still owed its End terrain but has
-     * no job in flight and no sample waiting — however its sample was lost. Also heals worlds saved with
-     * such chunks (they fill in as soon as a player comes near).
-     */
-    private static void rerequestStuck(ServerLevel level) {
-        if (DisintegrationBand.startX(level) == DisintegrationBand.OFF) return;
-        int view = level.getServer().getPlayerList().getViewDistance();
-        int bedY = -1;
-        for (ServerPlayer player : level.players()) {
-            ChunkPos at = player.chunkPosition();
-            for (int cx = at.x - view; cx <= at.x + view; cx++) {
-                for (int cz = at.z - view; cz <= at.z + view; cz++) {
-                    LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
-                    if (chunk == null || !chunk.getData(ModDataAttachments.END_BAND_PENDING)) continue;
-                    ChunkPos pos = chunk.getPos();
-                    if (STASH.containsKey(pos.toLong()) || DUE.containsKey(pos.toLong())) continue;
-                    if (EndBandSampler.isInFlight(pos)) continue;
-                    if (bedY == -1) bedY = SphereCarveGeometry.of(level).bedY();
-                    WorldGenCycle cycle = MixBand.cycleAt(level, cx, cz);
-                    long pass = cycle.endPassIndex(pos.getMinBlockX() + 8);
-                    // A pass this server can no longer sample (its mod removed) would just fail every sweep.
-                    if (!EndBandSampler.appliesTo(level.getServer(), cycle.endStyleOfPass(pass))) continue;
-                    EndBandSampler.request(level, pos, pass, bedY);
-                }
-            }
         }
     }
 

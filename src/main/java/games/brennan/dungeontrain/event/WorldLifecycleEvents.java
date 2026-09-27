@@ -92,6 +92,9 @@ public final class WorldLifecycleEvents {
             // so they live in the per-save Forge TOML rather than SavedData.
             DungeonTrainConfig.setGenerationMode(generationMode);
             DungeonTrainConfig.setGroupSize(groupSize);
+            // Sanctioned: chosen on the Create World screen before anyone joined. Accept it so the
+            // mid-run config check doesn't permanently taint the creator for their own world choice.
+            games.brennan.dungeontrain.cheat.DtConfigIntegrity.rebaseline();
 
             PendingWorldChoices.clear();
 

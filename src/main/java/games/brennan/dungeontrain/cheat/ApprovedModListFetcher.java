@@ -2,12 +2,15 @@ package games.brennan.dungeontrain.cheat;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.VersionInfo;
 import org.slf4j.Logger;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 /**
@@ -16,9 +19,12 @@ import java.time.Duration;
  * fire-and-forget, fully no-throw. Any failure just leaves the baked ∪ last-cached list in place,
  * which is the safe direction — a relay outage must never invent unapproved mods.
  *
- * <p>The request is anonymous — no uuid, session, or query params — so it runs regardless of the
- * network-consent setting (same deliberate product decision as the cheat-mod and official-links
- * overlays). It is always on: this is an integrity feature, and an off-switch would only let a
+ * <p>The request is anonymous — no uuid or session, only {@code ?dt=<this jar's version>} — so it
+ * runs regardless of the network-consent setting (same deliberate product decision as the cheat-mod
+ * and official-links overlays). The version is what lets the relay hold an approval back from jars
+ * too old for it: an approval set with a minimum DT version is served as {@code approved} to a jar
+ * at or above it, and as {@code revoked} to anything older — including every jar from before this
+ * parameter existed, which sends none. It is always on: this is an integrity feature, and an off-switch would only let a
  * cheater freeze the list at whatever their jar shipped with.</p>
  */
 public final class ApprovedModListFetcher {
@@ -58,10 +64,22 @@ public final class ApprovedModListFetcher {
         return settled || !attempted;
     }
 
+    /**
+     * {@code <base>/approved-mods?dt=<version>}, or without the parameter when the version is
+     * unknown (the relay then treats this jar as older than every floor). Pure, for tests.
+     */
+    static String requestUrl(String base, String dtVersion) {
+        String url = base + "/approved-mods";
+        String v = dtVersion == null ? "" : dtVersion.trim();
+        // VersionInfo reports "?" when it can't read the jar's version — send nothing rather than junk.
+        if (v.isEmpty() || !Character.isDigit(v.charAt(0))) return url;
+        return url + "?dt=" + URLEncoder.encode(v, StandardCharsets.UTF_8);
+    }
+
     /** Fetch the approved-mod list off-thread; results land in {@link ApprovedModList}. No-throw. */
     static void fetchAsync() {
         try {
-            String url = DungeonTrain.relayBaseUrl() + "/approved-mods";
+            String url = requestUrl(DungeonTrain.relayBaseUrl(), VersionInfo.VERSION);
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Accept", "application/json")

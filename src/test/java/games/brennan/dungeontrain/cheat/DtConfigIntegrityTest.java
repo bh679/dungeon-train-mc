@@ -220,6 +220,109 @@ class DtConfigIntegrityTest {
         long distinct = DtConfigIntegrity.GOVERNED.stream()
             .map(k -> k.file() + "#" + k.path()).distinct().count();
         assertEquals(DtConfigIntegrity.GOVERNED.size(), distinct);
-        assertTrue(DtConfigIntegrity.GOVERNED.stream().allMatch(k -> k.path().contains(".")));
+        // DT's own files are sectioned; the bundled Edible Backpacks file is flat.
+        assertTrue(DtConfigIntegrity.GOVERNED.stream()
+            .filter(k -> !k.file().equals(DtConfigIntegrity.EB_FILE))
+            .allMatch(k -> k.path().contains(".")));
+    }
+
+    // ---- Mid-run changes -------------------------------------------------
+
+    @Test
+    @DisplayName("Mid-run: nothing new when the files still match what the session started with")
+    void introducedNothingWhenUnchanged() {
+        List<String> boot = List.of("train.speed=5.0 (expected 2.0)");
+        assertEquals(List.of(), DtConfigIntegrity.introduced(List.of(), List.of()));
+        assertEquals(List.of(), DtConfigIntegrity.introduced(boot, boot));
+    }
+
+    @Test
+    @DisplayName("Mid-run: a key moved off default is a new change")
+    void introducedNewKey() {
+        assertEquals(List.of("train.speed=5.0 (expected 2.0)"),
+            DtConfigIntegrity.introduced(List.of(), List.of("train.speed=5.0 (expected 2.0)")));
+    }
+
+    @Test
+    @DisplayName("Mid-run: moving an already-changed key again still counts")
+    void introducedChangedValue() {
+        assertEquals(List.of("train.speed=6.0 (expected 2.0)"),
+            DtConfigIntegrity.introduced(
+                List.of("train.speed=5.0 (expected 2.0)"),
+                List.of("train.speed=6.0 (expected 2.0)")));
+    }
+
+    @Test
+    @DisplayName("Mid-run: reverting to defaults adds nothing")
+    void introducedNothingOnRevert() {
+        assertEquals(List.of(), DtConfigIntegrity.introduced(
+            List.of("train.speed=5.0 (expected 2.0)"), List.of()));
+    }
+
+    // ---- Bundled siblings -------------------------------------------------
+
+    private static List<String> eb(Object... kv) {
+        return DtConfigIntegrity.deviationsOf(Map.of(), Map.of(), map(kv));
+    }
+
+    @Test
+    @DisplayName("Edible Backpacks: shipped defaults and junk values are clean")
+    void ebDefaultsAreClean() {
+        assertEquals(List.of(), eb());
+        assertEquals(List.of(), eb("resetOnDeath", "DEFAULT", "maxSlots", 108));
+        assertEquals(List.of(), eb("resetOnDeath", "bogus", "maxSlots", 999));
+    }
+
+    @Test
+    @DisplayName("Edible Backpacks: keep-on-death and a lower cap are deviations")
+    void ebChangesAreFlagged() {
+        assertEquals(List.of("ediblebackpacks: resetOnDeath=OFF (expected DEFAULT)"),
+            eb("resetOnDeath", "OFF"));
+        assertEquals(List.of("ediblebackpacks: resetOnDeath=ON (expected DEFAULT)",
+                "ediblebackpacks: maxSlots=27 (expected 108)"),
+            eb("resetOnDeath", "on", "maxSlots", 27));
+    }
+
+    @Test
+    @DisplayName("PlayerMob: only changed keys are reported, named and in order")
+    void playerMobCompare() {
+        Map<String, Object> expected = map("tntCombat", true, "rangedEngageDistance", 8.0F,
+            "extraPickupItems", "");
+        assertEquals(List.of(), PlayerMobConfigCheck.compare(expected, expected));
+        assertEquals(List.of(
+                "playermob: tntCombat=false (expected true)",
+                "playermob: extraPickupItems=custom (expected empty)"),
+            PlayerMobConfigCheck.compare(
+                map("tntCombat", false, "rangedEngageDistance", 8.0F,
+                    "extraPickupItems", PlayerMobConfigCheck.CUSTOM_LIST),
+                expected));
+    }
+
+    // ---- Farmers' Delight stackable soups -------------------------------
+
+    private static List<String> fd(Object... kv) {
+        return DtConfigIntegrity.deviationsOfFiles(Map.of(DtConfigIntegrity.FD_FILE, map(kv)));
+    }
+
+    @Test
+    @DisplayName("Farmers' Delight: soups off, or no file/key ⇒ clean")
+    void fdOffIsClean() {
+        assertTrue(fd(FarmersDelightSoupStacking.PATH, false).isEmpty());
+        assertTrue(fd().isEmpty());
+        assertTrue(DtConfigIntegrity.deviationsOfFiles(Map.of()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Farmers' Delight: non-boolean value (NeoForge would correct it) ⇒ clean")
+    void fdWrongTypeIsClean() {
+        assertTrue(fd(FarmersDelightSoupStacking.PATH, "true").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Farmers' Delight: stackable soups on ⇒ deviation named after the mod")
+    void fdOnIsDeviation() {
+        List<String> d = fd(FarmersDelightSoupStacking.PATH, true);
+        assertEquals(List.of(DtConfigIntegrity.FD_DISPLAY_PREFIX + FarmersDelightSoupStacking.PATH
+            + "=true (expected false)"), d);
     }
 }

@@ -120,11 +120,6 @@ public final class EndBandSampler {
         });
     }
 
-    /** True while {@code pos} has a job queued, running, or finished and not yet polled. */
-    public static boolean isInFlight(ChunkPos pos) {
-        return IN_FLIGHT.contains(pos.toLong());
-    }
-
     /** The next finished sample, or {@code null}. Server thread. */
     public static Result poll() {
         Result r = READY.poll();

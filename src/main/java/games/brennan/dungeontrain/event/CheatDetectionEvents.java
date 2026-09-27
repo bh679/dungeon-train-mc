@@ -215,7 +215,7 @@ public final class CheatDetectionEvents {
             // the exact changed settings and a one-click fix action.
             RunIntegrity.applyFreePlayEffect(player);
             RunIntegrity.sendFreePlayNotice(player,
-                Component.translatable("chat.dungeontrain.free_play.cause.dt_config"));
+                DtConfigIntegrity.causeFor(DtConfigIntegrity.deviations()));
             player.sendSystemMessage(Component.translatable(
                     "chat.dungeontrain.free_play.dt_config_changed",
                     String.join(", ", DtConfigIntegrity.deviations()))

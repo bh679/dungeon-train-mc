@@ -18,7 +18,14 @@
     "READS, and libraries that do nothing on their own. Do not approve mods that change what the game",
     "GIVES you — loot, mobs, structures, recipes, progression, movement — however popular they are.",
     "Those runs are not comparable to anyone else's, which is the whole reason Free Play exists.",
-    "Nothing here overrides the cheat-mod blacklist: a mod on both lists is still a cheat mod."
+    "Nothing here overrides the cheat-mod blacklist: a mod on both lists is still a cheat mod.",
+    "",
+    "MINIMUM DT VERSION: an approval that is only safe from some Dungeon Train version up (it needs",
+    "support DT added, e.g. Farmer's Delight needs the soup-stacking hold-off) is floored ON THE RELAY",
+    "(Approved Mods page, min_dt_version), not here. Jars send ?dt=<version>; the relay serves a",
+    "floored id as approved at or above the floor and as REVOKED below it or when no version is sent.",
+    "That is the only lever that reaches jars already shipped: a field here would be invisible to them,",
+    "and a revocation beats this file's baked approval in every jar ever released."
   ],
   "prefixes": [
     "fabric_"
@@ -207,6 +214,17 @@
         "irons_lib",
         "oracle_index",
         "rhino"
+      ]
+    },
+    "farmers_delight": {
+      "why": "Farmer's Delight and its addons: cooking and farming content, approved on the operator's call. Its one setting that changes what a run can carry, stackable soups, is held OFF by Dungeon Train (cheat/FarmersDelightSoupStacking) and turning it back on is Free Play, so the approval does not cover that.",
+      "ids": [
+        "farmersdelight",
+        "cuttingdelight"
+      ],
+      "note": [
+        "cuttingdelight (Cutting Delight, JaronZ) only adds a cutting board with a recipe picker for",
+        "Farmer's Delight cutting recipes. It requires farmersdelight, so it rides on this approval."
       ]
     },
     "community_approved": {
