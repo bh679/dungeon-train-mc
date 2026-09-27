@@ -19794,6 +19794,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-core-floating-decorations",
+      "version": "0.982.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "No more floating fungi in the Nether",
+      "summary": "Huge fungi, glowing caps, hanging vines and crystals in the Nether stretches of the line now grow on solid ground instead of hovering in mid-air.",
+      "highlights": [
+        "Huge fungi keep their stems, so their caps and vines no longer float",
+        "Crystals and plants no longer hang in the air along invisible lines",
+        "Stranger stretches of the journey look right too"
+      ],
+      "pr": 1601,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
