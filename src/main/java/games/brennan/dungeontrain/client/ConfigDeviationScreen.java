@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.cheat.ConfigReset;
+import games.brennan.dungeontrain.cheat.FreePlayText;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
@@ -140,7 +141,7 @@ public final class ConfigDeviationScreen extends Screen {
     }
 
     private Component bodyText() {
-        if (result == null) return Component.translatable(KEY_BODY);
+        if (result == null) return FreePlayText.withExplanation(KEY_BODY);
         return Component.translatable(result.success() ? KEY_DONE_BODY : KEY_DONE_FAIL);
     }
 

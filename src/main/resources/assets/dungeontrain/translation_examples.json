@@ -12478,5 +12478,130 @@
         "mossy_stone"
       ]
     }
+  },
+  "gui.dungeontrain.free_play.explained": {
+    "1": {
+      "label": "what Free Play costs — the shared sentence",
+      "examples": [
+        {
+          "key": "effect.dungeontrain.free_play.desc.1",
+          "args": []
+        }
+      ]
+    },
+    "2": {
+      "label": "why Free Play is still worth it — the shared sentence",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.free_play.safe_space",
+          "args": []
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.config_deviation.body": {
+    "1": {
+      "label": "the shared Free Play explanation (translated once, under gui.dungeontrain.free_play.explained)",
+      "examples": [
+        {
+          "key": "effect.dungeontrain.free_play.desc.1",
+          "args": []
+        },
+        {
+          "key": "gui.dungeontrain.free_play.safe_space",
+          "args": []
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.video_tools.cinematographer.free_play": {
+    "1": {
+      "label": "the shared Free Play explanation (translated once, under gui.dungeontrain.free_play.explained)",
+      "examples": [
+        {
+          "key": "effect.dungeontrain.free_play.desc.1",
+          "args": []
+        },
+        {
+          "key": "gui.dungeontrain.free_play.safe_space",
+          "args": []
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.custom_content.info": {
+    "1": {
+      "label": "the shared Free Play explanation (translated once, under gui.dungeontrain.free_play.explained)",
+      "examples": [
+        {
+          "key": "effect.dungeontrain.free_play.desc.1",
+          "args": []
+        },
+        {
+          "key": "gui.dungeontrain.free_play.safe_space",
+          "args": []
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.custom_content.toggle.on": {
+    "1": {
+      "label": "the shared Free Play explanation (translated once, under gui.dungeontrain.free_play.explained)",
+      "examples": [
+        {
+          "key": "effect.dungeontrain.free_play.desc.1",
+          "args": []
+        },
+        {
+          "key": "gui.dungeontrain.free_play.safe_space",
+          "args": []
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.options.custom_content.tip": {
+    "1": {
+      "label": "the shared Free Play explanation (translated once, under gui.dungeontrain.free_play.explained)",
+      "examples": [
+        {
+          "key": "effect.dungeontrain.free_play.desc.1",
+          "args": []
+        },
+        {
+          "key": "gui.dungeontrain.free_play.safe_space",
+          "args": []
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.unsupported_mods.body": {
+    "1": {
+      "label": "the shared Free Play explanation (translated once, under gui.dungeontrain.free_play.explained)",
+      "examples": [
+        {
+          "key": "effect.dungeontrain.free_play.desc.1",
+          "args": []
+        },
+        {
+          "key": "gui.dungeontrain.free_play.safe_space",
+          "args": []
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.soup_stacking.body": {
+    "1": {
+      "label": "the shared Free Play explanation (translated once, under gui.dungeontrain.free_play.explained)",
+      "examples": [
+        {
+          "key": "effect.dungeontrain.free_play.desc.1",
+          "args": []
+        },
+        {
+          "key": "gui.dungeontrain.free_play.safe_space",
+          "args": []
+        }
+      ]
+    }
   }
 }

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.FreePlayText;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.CustomContentPreference;
 import games.brennan.dungeontrain.net.CustomContentChoicePacket;
@@ -168,7 +169,7 @@ public final class CustomContentPromptScreen extends Screen {
                 INFO_SIZE, INFO_SIZE)
             .build();
         info.setTooltip(Tooltip.create(
-            Component.translatable("gui.dungeontrain.custom_content.info")));
+            FreePlayText.withExplanation("gui.dungeontrain.custom_content.info")));
         addRenderableWidget(info);
 
         // One row, two cards. Left plays the shipped game and keeps the stats; right keeps the

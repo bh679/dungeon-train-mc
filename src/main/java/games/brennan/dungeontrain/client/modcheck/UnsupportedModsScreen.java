@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.modcheck;
 
+import games.brennan.dungeontrain.cheat.FreePlayText;
 import games.brennan.dungeontrain.cheat.ModSuggestClient;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
@@ -94,7 +95,7 @@ public final class UnsupportedModsScreen extends Screen {
     protected void init() {
         panelW = Math.min(PANEL_W, this.width - 32);
         int inner = panelW - PAD * 2;
-        bodyLines = this.font.split(Component.translatable("gui.dungeontrain.unsupported_mods.body"),
+        bodyLines = this.font.split(FreePlayText.withExplanation("gui.dungeontrain.unsupported_mods.body"),
             inner - ICON - ICON_GAP);
         int bodyH = Math.max(ICON, bodyLines.size() * (this.font.lineHeight + 1));
         hintLines = this.font.split(Component.translatable(disableFailed

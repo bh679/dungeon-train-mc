@@ -205,7 +205,7 @@ public final class RunIntegrity {
             .append(CommonComponents.SPACE)
             .append(cause.copy().withStyle(ChatFormatting.GRAY))
             .append(CommonComponents.NEW_LINE)
-            .append(Component.translatable("chat.dungeontrain.free_play.consequence")
+            .append(FreePlayText.consequence()
                 .withStyle(ChatFormatting.GRAY));
         player.sendSystemMessage(msg);
     }
