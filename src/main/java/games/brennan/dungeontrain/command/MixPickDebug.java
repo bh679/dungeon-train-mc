@@ -16,7 +16,7 @@ import java.util.TreeMap;
 
 /**
  * {@code /dungeontrain debug mix-pick} — which band each chunk around the caller generates as in the mix
- * zone: a letter grid (one letter per candidate, {@code .} for a chunk that keeps the base cycle), the key,
+ * zone: a letter grid (one letter per candidate, {@code .} for a void chunk or one outside the zone), the key,
  * and the pick at the caller's own chunk. Logged at INFO as well so a headless RCON run can read it.
  */
 final class MixPickDebug {

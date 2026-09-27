@@ -169,13 +169,15 @@ public final class MixBand {
 
     /**
      * The pick for chunk {@code (chunkX, chunkZ)}, or {@code null} where the chunk keeps the base cycle:
-     * outside the mix zone, with no candidates, or in the stacks fade after the zone when stacks claims
-     * the chunk. Pure and deterministic in (seed, chunk, cycle, candidates).
+     * outside the mix zone, with no candidates, in the stacks fade after the zone when stacks claims the
+     * chunk, or when the chunk is one of the zone's void chunks ({@link #keeps}). Pure and deterministic
+     * in (seed, chunk, cycle, candidates).
      */
     public static Pick pickAt(WorldGenCycle base, List<Candidate> candidates, long seed, int chunkX, int chunkZ) {
         int x = chunkX << 4;
         if (candidates.isEmpty() || !base.mixPicksAt(x)) return null;
         if (!base.isInMixZone(x) && stacksClaims(base, seed, chunkX, chunkZ, x)) return null;
+        if (!keeps(base, seed, chunkX, chunkZ)) return null;
         int n = candidates.size();
         Candidate c = candidates.get(Math.min(n - 1, (int) (hash01(seed, chunkX, chunkZ, PICK_SALT) * n)));
         int k = base.runIndexAt(x);
@@ -184,6 +186,30 @@ public final class MixBand {
         if (hi <= lo) hi = lo + 1L;
         long rep = lo + Math.min(hi - lo - 1L, (long) (hash01(seed, chunkX, chunkZ, REP_SALT) * (hi - lo)));
         return new Pick(c, (rep - chunkX) * 16L);
+    }
+
+    /**
+     * The zone is as sparse as the chuncks core: a chunk keeps terrain with the chuncks keep density, and
+     * only a kept chunk becomes a band — the rest stay chuncks void. Pure.
+     */
+    static boolean keeps(WorldGenCycle base, long seed, int chunkX, int chunkZ) {
+        return hash01(seed, chunkX, chunkZ, KEEP_SALT) < base.chuncksKeepDensity();
+    }
+
+    /**
+     * True if chunk {@code (chunkX, chunkZ)} of {@code level} is one of the mix zone's void chunks (in the
+     * zone, or in the stacks fade after it without stacks claiming it, and not kept). {@link ChuncksBand}
+     * voids these, so the zone keeps the chuncks band's density.
+     */
+    public static boolean isVoidAt(ServerLevel level, int chunkX, int chunkZ) {
+        WorldGenCycle base = WorldGenCycle.fromConfig();
+        int x = chunkX << 4;
+        if (!base.mixPicksAt(x)) return false;
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        if (!data.startsWithTrain()) return false;
+        long seed = data.getGenerationSeed();
+        if (!base.isInMixZone(x) && stacksClaims(base, seed, chunkX, chunkZ, x)) return false;
+        return !keeps(base, seed, chunkX, chunkZ);
     }
 
     /** In the stacks fade after the zone, stacks keeps any chunk its own void roll claims. */
@@ -298,6 +324,7 @@ public final class MixBand {
     // ---- per-chunk uniform hash (the ChuncksBand idiom) ----------------------------------
     private static final int PICK_SALT = 41;
     private static final int REP_SALT = 42;
+    private static final int KEEP_SALT = 43;
 
     private static double hash01(long seed, int a, int b, int salt) {
         long h = seed * 0x9E3779B97F4A7C15L + salt * 0xD1B54A32D192ED03L;

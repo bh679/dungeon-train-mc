@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.worldgen.legacy;
 
-import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.OverworldBiomeSourceMark;
@@ -90,7 +89,10 @@ public final class LegacyBiomes {
     public static Holder<Biome> override(Object source, int blockX, int blockZ) {
         Context c = current;
         if (c == null || !isOverworld(source, c)) return null;
-        WorldGenCycle cycle = MixBand.cycleFor(WorldGenCycle.fromConfig(), c.seed(), blockX >> 4, blockZ >> 4);
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        // Mix zone: a legacy-era pick keeps the ordinary overworld biome, so sky and fog never change chunk
+        // to chunk (vanilla reads both from the biome). Only the blocks are the old era's.
+        if (cycle.mixPicksAt(blockX)) return null;
         LegacyBandKind kind = LegacyBands.kindOfChunk(c.seed(), cycle, blockX >> 4, blockZ >> 4);
         if (kind == null) return null;
         return switch (kind) {

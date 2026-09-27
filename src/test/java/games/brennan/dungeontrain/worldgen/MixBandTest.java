@@ -12,7 +12,6 @@ import java.util.function.IntPredicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -81,7 +80,8 @@ final class MixBandTest {
             for (int cx = c0; cx < c0 + chunks; cx += 3) {
                 for (int cz = -6; cz <= 6; cz += 4) {
                     MixBand.Pick p = MixBand.pickAt(C, CANDIDATES, SEED, cx, cz);
-                    assertNotNull(p, "no pick in the zone at chunk " + cx);
+                    assertEquals(MixBand.keeps(C, SEED, cx, cz), p != null, "a pick exactly on kept chunks");
+                    if (p == null) continue;                               // one of the zone's void chunks
                     assertEquals(p, MixBand.pickAt(C, CANDIDATES, SEED, cx, cz));
                     assertEquals(0L, Math.floorMod(p.dx(), 16L));
                     WorldGenCycle s = C.shifted(p.dx());
@@ -121,8 +121,10 @@ final class MixBandTest {
         int c0 = mixChunk(0);
         int n = 0;
         for (int cx = c0; cx < c0 + 240; cx++) {
-            for (int cz = -200; cz < 200; cz++) {
-                counts.merge(MixBand.pickAt(C, CANDIDATES, SEED, cx, cz).candidate().token(), 1, Integer::sum);
+            for (int cz = -800; cz < 800; cz++) {
+                MixBand.Pick p = MixBand.pickAt(C, CANDIDATES, SEED, cx, cz);
+                if (p == null) continue;
+                counts.merge(p.candidate().token(), 1, Integer::sum);
                 n++;
             }
         }
@@ -149,10 +151,27 @@ final class MixBandTest {
             if (MixBand.pickAt(C, CANDIDATES, SEED, s0, cz) == null) kept++;
             else picked++;
         }
-        assertTrue(picked > 500, "the fade start should be nearly all mix: " + picked);
+        // At the fade start stacks claims almost nothing, so about the chuncks keep density of chunks pick.
+        assertTrue(picked > 600 * 0.3 * 0.6 && picked < 600 * 0.3 * 1.4, "fade-start picks: " + picked);
         int fadeEnd = (int) Math.floorDiv(C.worldXOfBase(0, LAYOUT.start(stacks) + 1_500L), 16L);
         assertNull(MixBand.pickAt(C, CANDIDATES, SEED, fadeEnd + 1, 0));   // stacks core: never a pick
         assertTrue(kept >= 0);
+    }
+
+    @Test
+    @DisplayName("the zone is as sparse as the chuncks core: only the kept share of chunks becomes a band")
+    void keepsChuncksDensity() {
+        int c0 = mixChunk(0);
+        int kept = 0;
+        int n = 0;
+        for (int cx = c0; cx < c0 + 200; cx++) {
+            for (int cz = -100; cz < 100; cz++) {
+                if (MixBand.pickAt(C, CANDIDATES, SEED, cx, cz) != null) kept++;
+                n++;
+            }
+        }
+        double share = (double) kept / n;
+        assertEquals(C.chuncksKeepDensity(), share, 0.01, "kept share " + share);
     }
 
     @Test

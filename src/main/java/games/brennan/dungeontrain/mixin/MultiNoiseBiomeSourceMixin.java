@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
-import games.brennan.dungeontrain.worldgen.MixBand;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
@@ -126,7 +125,7 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                                                          int x, int y, int z, Climate.Sampler sampler) {
         OverworldStretchBiomes stretchBiomes = OverworldStretchBiomes.current();
         if (stretchBiomes == null) return null;
-        WorldGenCycle cycle = MixBand.cycleFor(ctx.cycle(), ctx.generationSeed(), x >> 2, z >> 2);  // mix zone pick
+        WorldGenCycle cycle = ctx.cycle();   // base cycle even in the mix zone: see dungeontrain$bandBiome
         return stretchBiomes.pick(SecondLapOverworld.lookAt(cycle, x << 2), source, x, y, z, sampler);
     }
 
@@ -137,8 +136,10 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         int blockX = x << 2;
         int blockY = y << 2;
         int blockZ = z << 2;
-        // The mix zone hands each chunk the cycle of the band it picked; the base cycle everywhere else.
-        WorldGenCycle cycle = MixBand.cycleFor(ctx.cycle(), ctx.generationSeed(), blockX >> 4, blockZ >> 4);
+        // Always the base cycle — even in the mix zone, whose chunks keep the ordinary overworld biome whatever
+        // band they picked: vanilla takes sky, fog and water colour from the biome, so a forced Nether / End
+        // biome would re-tint the air chunk by chunk. The zone swaps blocks, never the atmosphere.
+        WorldGenCycle cycle = ctx.cycle();
         // The whole per-quart decision — sea-level gate, off-band early-out, waved Nether-core /
         // un-waved End-core / highland ordering — lives in the pure, unit-tested
         // BandBiomeDecision.decide; this shell only maps the result onto the live providers.
