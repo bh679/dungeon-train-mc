@@ -80,20 +80,49 @@ final class UpsideDownTrackFlattenTest {
     }
 
     @Test
-    @DisplayName("track weight: 1 near the track, smooth fade, 0 far away — symmetric about the centre")
+    @DisplayName("track weight: 1 near the track, smooth fade, 0 beyond the edge — at both edge extremes")
     void trackWeightFalloff() {
         int c = 2;
-        assertEquals(1.0, UpsideDownTrackFlatten.trackWeight(c, c), EPS);
-        assertEquals(1.0, UpsideDownTrackFlatten.trackWeight(c + UpsideDownTrackFlatten.TRACK_INNER, c), EPS);
-        assertEquals(0.0, UpsideDownTrackFlatten.trackWeight(c + UpsideDownTrackFlatten.TRACK_OUTER, c), EPS);
-        assertEquals(0.0, UpsideDownTrackFlatten.trackWeight(c - 5000, c), EPS);
-        double prev = 1.0;
-        for (int d = 0; d <= UpsideDownTrackFlatten.TRACK_OUTER + 4; d++) {
-            double w = UpsideDownTrackFlatten.trackWeight(c + d, c);
-            assertEquals(w, UpsideDownTrackFlatten.trackWeight(c - d, c), EPS);
-            assertTrue(w <= prev + EPS, "not monotone at d=" + d);
-            prev = w;
+        for (double open : new double[] {0.0, 0.5, 1.0}) {
+            assertEquals(1.0, UpsideDownTrackFlatten.trackWeight(c, c, open), EPS);
+            assertEquals(1.0, UpsideDownTrackFlatten.trackWeight(c + UpsideDownTrackFlatten.TRACK_INNER_MIN, c, open), EPS);
+            assertEquals(0.0, UpsideDownTrackFlatten.trackWeight(c + UpsideDownTrackFlatten.TRACK_OUTER_MAX, c, open), EPS);
+            double prev = 1.0;
+            for (int d = 0; d <= UpsideDownTrackFlatten.TRACK_OUTER_MAX + 4; d++) {
+                double w = UpsideDownTrackFlatten.trackWeight(c + d, c, open);
+                assertEquals(w, UpsideDownTrackFlatten.trackWeight(c - d, c, open), EPS);
+                assertTrue(w <= prev + EPS, "not monotone at d=" + d + " open=" + open);
+                prev = w;
+            }
         }
+        // Tightest edge: mountains may stand one chunk from the track; widest: flat out to 32, gone by 160.
+        assertEquals(0.0, UpsideDownTrackFlatten.trackWeight(c + UpsideDownTrackFlatten.TRACK_OUTER_MIN, c, 0.0), EPS);
+        assertEquals(1.0, UpsideDownTrackFlatten.trackWeight(c + UpsideDownTrackFlatten.TRACK_INNER_MAX, c, 1.0), EPS);
+        assertTrue(UpsideDownTrackFlatten.trackWeight(c + 100, c, 1.0) > 0.0);
+    }
+
+    @Test
+    @DisplayName("edge openness wanders smoothly along X, reaches both extremes, and differs per side")
+    void edgeOpennessIsNoisyAndSmooth() {
+        long seed = 1450L;
+        double lo = 1.0, hi = 0.0, maxStep = 0.0;
+        int differ = 0;
+        double prev = UpsideDownTrackFlatten.edgeOpenness(seed, 0, true);
+        for (int x = 1; x < 20000; x++) {
+            double o = UpsideDownTrackFlatten.edgeOpenness(seed, x, true);
+            assertTrue(o >= 0.0 && o <= 1.0);
+            lo = Math.min(lo, o);
+            hi = Math.max(hi, o);
+            maxStep = Math.max(maxStep, Math.abs(o - prev));
+            prev = o;
+            if (Math.abs(o - UpsideDownTrackFlatten.edgeOpenness(seed, x, false)) > 0.2) differ++;
+        }
+        assertTrue(lo < 0.05, "edge should pull in tight somewhere: min=" + lo);
+        assertTrue(hi > 0.95, "edge should open wide somewhere: max=" + hi);
+        assertTrue(maxStep < 0.1, "edge should be smooth along X: step=" + maxStep);
+        assertTrue(differ > 2000, "the two sides should wander independently");
+        assertEquals(UpsideDownTrackFlatten.edgeOpenness(seed, 1234, true),
+                UpsideDownTrackFlatten.edgeOpenness(seed, 1234, true), EPS);   // deterministic
     }
 
     @Test
@@ -114,8 +143,8 @@ final class UpsideDownTrackFlattenTest {
     @Test
     @DisplayName("combined weight is 0 without a context, disabled, or far from the track")
     void combinedWeight() {
-        UpsideDownTrackFlatten.Context on = new UpsideDownTrackFlatten.Context(true, E, 2);
-        UpsideDownTrackFlatten.Context off = new UpsideDownTrackFlatten.Context(false, E, 2);
+        UpsideDownTrackFlatten.Context on = new UpsideDownTrackFlatten.Context(true, E, 2, 1450L);
+        UpsideDownTrackFlatten.Context off = new UpsideDownTrackFlatten.Context(false, E, 2, 1450L);
         assertEquals(0.0, UpsideDownTrackFlatten.weight(null, 3000, 2), EPS);
         assertEquals(0.0, UpsideDownTrackFlatten.weight(off, 3000, 2), EPS);
         assertEquals(1.0, UpsideDownTrackFlatten.weight(on, 3000, 2), EPS);

@@ -19,9 +19,10 @@ import net.minecraft.world.level.levelgen.DensityFunction;
 public final class TrackErosionDensityFunction implements DensityFunction {
 
     /**
-     * Per-worker memo of the X-only band weight — the only non-trivial part of the weight (a short
-     * distance search near the band's ends). Direct-mapped by X; a miss simply recomputes the same
-     * pure value. Guarded by context identity so a republish never serves a stale weight.
+     * Per-worker memo of the X-only parts of the weight — the band weight (a short distance search near
+     * the band's ends) and each side's edge openness (a few octaves of noise). Direct-mapped by X; a miss
+     * simply recomputes the same pure value. Guarded by context identity so a republish never serves a
+     * stale weight.
      */
     private static final int X_MASK = 63;
 
@@ -30,6 +31,8 @@ public final class TrackErosionDensityFunction implements DensityFunction {
         final int[] x = new int[X_MASK + 1];
         final boolean[] present = new boolean[X_MASK + 1];
         final double[] w = new double[X_MASK + 1];
+        final double[] openPos = new double[X_MASK + 1];
+        final double[] openNeg = new double[X_MASK + 1];
     }
 
     private static final ThreadLocal<XMemo> X_MEMO = ThreadLocal.withInitial(XMemo::new);
@@ -40,27 +43,35 @@ public final class TrackErosionDensityFunction implements DensityFunction {
         this.wrapped = wrapped;
     }
 
-    private static double bandWeight(UpsideDownTrackFlatten.Context ctx, int worldX) {
-        XMemo memo = X_MEMO.get();
+    /** The memo slot for {@code worldX}, filled (band weight + both sides' edge openness) on a miss. */
+    private static int slot(XMemo memo, UpsideDownTrackFlatten.Context ctx, int worldX) {
         if (memo.ctx != ctx) {
             java.util.Arrays.fill(memo.present, false);
             memo.ctx = ctx;
         }
         int i = worldX & X_MASK;
-        if (memo.present[i] && memo.x[i] == worldX) return memo.w[i];
+        if (memo.present[i] && memo.x[i] == worldX) return i;
         double w = UpsideDownTrackFlatten.bandWeight(ctx.cycle(), worldX);
         memo.x[i] = worldX;
         memo.w[i] = w;
+        if (w > 0.0) {   // edge noise only matters where the band weight does
+            memo.openPos[i] = UpsideDownTrackFlatten.edgeOpenness(ctx.seed(), worldX, true);
+            memo.openNeg[i] = UpsideDownTrackFlatten.edgeOpenness(ctx.seed(), worldX, false);
+        }
         memo.present[i] = true;
-        return w;
+        return i;
     }
 
     private static double adjust(UpsideDownTrackFlatten.Context ctx, int worldX, int worldZ, double erosion) {
         if (erosion >= UpsideDownTrackFlatten.EROSION_FLOOR) return erosion;
-        double wz = UpsideDownTrackFlatten.trackWeight(worldZ, ctx.trackCenterZ());
-        if (wz <= 0.0) return erosion;
-        double wx = bandWeight(ctx, worldX);
+        if (Math.abs(worldZ - ctx.trackCenterZ()) >= UpsideDownTrackFlatten.TRACK_OUTER_MAX) return erosion;
+        XMemo memo = X_MEMO.get();
+        int i = slot(memo, ctx, worldX);
+        double wx = memo.w[i];
         if (wx <= 0.0) return erosion;
+        double open = worldZ >= ctx.trackCenterZ() ? memo.openPos[i] : memo.openNeg[i];
+        double wz = UpsideDownTrackFlatten.trackWeight(worldZ, ctx.trackCenterZ(), open);
+        if (wz <= 0.0) return erosion;
         return UpsideDownTrackFlatten.apply(erosion, wx * wz);
     }
 

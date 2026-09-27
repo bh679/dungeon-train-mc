@@ -154,7 +154,8 @@ public final class NetherBandContextEvents {
             // Upside-down band: keep the source terrain low near the track (erosion weighting).
             boolean flatten = DungeonTrainCommonConfig.isUpsideDownTrackFlatten()
                     && UpsideDownBand.startX(overworld) != UpsideDownBand.OFF;
-            UpsideDownTrackFlatten.publish(new UpsideDownTrackFlatten.Context(flatten, cycle, track.trackCenterZ()));
+            UpsideDownTrackFlatten.publish(new UpsideDownTrackFlatten.Context(flatten, cycle, track.trackCenterZ(),
+                    data.getGenerationSeed()));
             // Intermediate per-dimension-load republishes log at debug to avoid 3+ identical
             // info lines per start; the ServerStarted refresh logs the final snapshot at info.
             if (logInfo) {
