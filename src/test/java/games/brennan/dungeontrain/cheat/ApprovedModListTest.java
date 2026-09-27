@@ -262,4 +262,78 @@ class ApprovedModListTest {
             }
         }
     }
+
+    // ---- version requirements -------------------------------------------------------------------
+
+    @Test
+    @DisplayName("A bare version is a floor; a bracketed spec is a Maven range")
+    void requirementParsing() {
+        ModVersionRanges.Requirement floor = ModVersionRanges.parse("1.7.0");
+        assertFalse(floor.allows("1.6.9"));
+        assertTrue(floor.allows("1.7.0"));
+        assertTrue(floor.allows("1.7.0+mc1.21.1"));
+        assertTrue(floor.allows("2.0"));
+        assertEquals("1.7.0+", floor.describe());
+
+        ModVersionRanges.Requirement range = ModVersionRanges.parse("[1.2,1.5],[1.8,)");
+        assertTrue(range.allows("1.3"));
+        assertFalse(range.allows("1.6"));
+        assertTrue(range.allows("1.9"));
+        assertEquals("[1.2,1.5],[1.8,)", range.describe());
+
+        assertFalse(floor.allows(""), "an unreadable installed version never satisfies a requirement");
+        assertFalse(floor.allows(null));
+    }
+
+    @Test
+    @DisplayName("An unreadable requirement is dropped, leaving the mod approved at any version")
+    void badRequirementIsDropped() {
+        assertNull(ModVersionRanges.parse("[1.0"));
+        assertNull(ModVersionRanges.parse(""));
+        var parsed = ModVersionRanges.fromJson(JsonParser.parseString(
+            "{\"Sodium\":\"0.6\",\"jade\":\"[oops\",\"bad id\":\"1.0\",\"iris\":5}"));
+        assertEquals(Set.of("sodium"), parsed.keySet());
+    }
+
+    @Test
+    @DisplayName("isApproved checks the requirement for exact ids only; revocation still wins")
+    void versionedApproval() {
+        var reqs = java.util.Map.of("sodium", ModVersionRanges.parse("0.6"),
+            "fabric_api_base", ModVersionRanges.parse("9.0"));
+        Set<String> ids = Set.of("sodium", "jade");
+        List<String> prefixes = List.of("fabric_");
+        assertFalse(ApprovedModList.isApproved("sodium", "0.5", ids, prefixes, Set.of(), reqs));
+        assertTrue(ApprovedModList.isApproved("sodium", "0.6", ids, prefixes, Set.of(), reqs));
+        assertTrue(ApprovedModList.isApproved("jade", "0.0.1", ids, prefixes, Set.of(), reqs));
+        assertTrue(ApprovedModList.isApproved("fabric_api_base", "1.0", ids, prefixes, Set.of(), reqs),
+            "a prefix match carries no requirement");
+        assertFalse(ApprovedModList.isApproved("sodium", "0.7", ids, prefixes, Set.of("sodium"), reqs));
+    }
+
+    @Test
+    @DisplayName("The relay's versions object parses, round-trips, and replaces a baked requirement")
+    void relayVersions() {
+        ApprovedModList.Payload p = ApprovedModList.parse(
+            "{\"approved\":[\"jade\"],\"versions\":{\"jade\":\"[15.0,)\"}}");
+        assertEquals("[15.0,)", p.versions().get("jade").spec());
+        ApprovedModList.Payload back = ApprovedModList.parse(ApprovedModList.toJson(p));
+        assertEquals("[15.0,)", back.versions().get("jade").spec());
+        assertTrue(ApprovedModList.parse("{\"approved\":[]}").versions().isEmpty(),
+            "a relay that sends no versions leaves none");
+        assertFalse(ApprovedModList.toJson(new ApprovedModList.Payload(Set.of(), Set.of(), null))
+            .contains("versions"));
+
+        ApprovedModList.setRelayForTest(p);
+        assertEquals("[15.0,)", ApprovedModList.requirements().get("jade").spec());
+    }
+
+    @Test
+    @DisplayName("Baked versions maps are read from every group")
+    void bakedVersionsParse() {
+        JsonObject root = JsonParser.parseString(
+            "{\"groups\":{\"a\":{\"ids\":[\"x\"],\"versions\":{\"x\":\"1.0\"}},"
+                + "\"b\":{\"ids\":[\"y\"],\"versions\":{\"y\":\"[2,3)\"}},\"c\":{\"ids\":[\"z\"]}}}")
+            .getAsJsonObject();
+        assertEquals(Set.of("x", "y"), ApprovedModList.parseVersions(root).keySet());
+    }
 }

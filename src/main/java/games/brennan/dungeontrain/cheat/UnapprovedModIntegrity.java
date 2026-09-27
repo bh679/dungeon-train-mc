@@ -112,7 +112,8 @@ public final class UnapprovedModIntegrity {
                 installed.put(info.getModId(), info.getVersion().toString());
             }
             return unapprovedFrom(ApprovedModList.approved(), ApprovedModList.prefixes(),
-                ApprovedModList.revoked(), CheatModList.effective(), installed);
+                ApprovedModList.revoked(), ApprovedModList.requirements(), CheatModList.effective(),
+                installed);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Could not scan the mod list against the approved list — "
                 + "assuming everything is approved: {}", t.toString());
@@ -134,10 +135,29 @@ public final class UnapprovedModIntegrity {
     static List<String> unapprovedFrom(Set<String> approvedIds, List<String> prefixes,
                                        Set<String> revokedIds, Set<String> cheatIds,
                                        Map<String, String> installed) {
+        return unapprovedFrom(approvedIds, prefixes, revokedIds, Map.of(), cheatIds, installed);
+    }
+
+    /**
+     * {@link #unapprovedFrom(Set, List, Set, Set, Map)} with version requirements: an approved id
+     * installed at a version outside its requirement is reported too, with what it needs appended —
+     * {@code "somemod v1.6.2 (needs 1.7.0+)"} — so the player can see an update is the fix.
+     */
+    static List<String> unapprovedFrom(Set<String> approvedIds, List<String> prefixes,
+                                       Set<String> revokedIds,
+                                       Map<String, ModVersionRanges.Requirement> requirements,
+                                       Set<String> cheatIds, Map<String, String> installed) {
         List<String> found = new ArrayList<>();
         for (Map.Entry<String, String> e : installed.entrySet()) {
-            if (!isUnsupported(e.getKey(), approvedIds, prefixes, revokedIds, cheatIds)) continue;
-            found.add(e.getKey() + " v" + e.getValue());
+            if (!isUnsupported(e.getKey(), e.getValue(), approvedIds, prefixes, revokedIds,
+                    requirements, cheatIds)) continue;
+            String line = e.getKey() + " v" + e.getValue();
+            // Approved by id, so the version is why — say what it needs.
+            ModVersionRanges.Requirement req = requirements.get(ModIds.normalise(e.getKey()));
+            if (req != null && ApprovedModList.isApproved(e.getKey(), approvedIds, prefixes, revokedIds)) {
+                line += " (needs " + req.describe() + ")";
+            }
+            found.add(line);
         }
         found.sort(String::compareTo);
         return List.copyOf(found);
@@ -155,12 +175,24 @@ public final class UnapprovedModIntegrity {
         return !ApprovedModList.isApproved(id, approvedIds, prefixes, revokedIds);
     }
 
+    /** Pure: as above, but an installed version outside its requirement is unsupported too. */
+    static boolean isUnsupported(String modId, String version, Set<String> approvedIds,
+                                 List<String> prefixes, Set<String> revokedIds,
+                                 Map<String, ModVersionRanges.Requirement> requirements,
+                                 Set<String> cheatIds) {
+        String id = ModIds.normalise(modId);
+        if (id.isEmpty()) return false;
+        if (cheatIds != null && cheatIds.contains(id)) return false;
+        return !ApprovedModList.isApproved(id, version, approvedIds, prefixes, revokedIds, requirements);
+    }
+
     /**
-     * Live-state convenience for the client popup: is {@code modId} unsupported right now (judged
-     * against baked ∪ cached/live relay approvals, minus revocations, minus the blacklist)?
+     * Live-state convenience for the client popup: is {@code modId} at {@code version} unsupported
+     * right now (judged against baked ∪ cached/live relay approvals, minus revocations, with version
+     * requirements, minus the blacklist)?
      */
-    public static boolean isUnsupported(String modId) {
-        return isUnsupported(modId, ApprovedModList.approved(), ApprovedModList.prefixes(),
-            ApprovedModList.revoked(), CheatModList.effective());
+    public static boolean isUnsupported(String modId, String version) {
+        return isUnsupported(modId, version, ApprovedModList.approved(), ApprovedModList.prefixes(),
+            ApprovedModList.revoked(), ApprovedModList.requirements(), CheatModList.effective());
     }
 }

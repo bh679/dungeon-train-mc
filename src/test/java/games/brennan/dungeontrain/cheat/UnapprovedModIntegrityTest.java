@@ -122,4 +122,44 @@ class UnapprovedModIntegrityTest {
         assertTrue(UnapprovedModIntegrity.isUnsupported("jade", APPROVED, PREFIXES, Set.of("jade"), CHEATS),
             "a revoked mod is unsupported again");
     }
+
+    // ---- version requirements -------------------------------------------------------------------
+
+    private static final Map<String, ModVersionRanges.Requirement> SODIUM_FLOOR =
+        Map.of("sodium", ModVersionRanges.parse("0.6.0"));
+
+    @Test
+    @DisplayName("An approved mod below its version floor is reported with what it needs")
+    void belowFloorIsReported() {
+        assertEquals(List.of("sodium v0.5.13+mc1.21.1 (needs 0.6.0+)"),
+            UnapprovedModIntegrity.unapprovedFrom(APPROVED, PREFIXES, NO_REVOCATIONS, SODIUM_FLOOR, CHEATS,
+                installed("dungeontrain", "1.0", "sodium", "0.5.13+mc1.21.1")));
+    }
+
+    @Test
+    @DisplayName("At or above the floor is clean; mods with no requirement are unaffected")
+    void atOrAboveFloorIsClean() {
+        for (String v : new String[]{"0.6.0", "0.6.0+mc1.21.1", "0.6.5", "1.0"}) {
+            assertEquals(List.of(),
+                UnapprovedModIntegrity.unapprovedFrom(APPROVED, PREFIXES, NO_REVOCATIONS, SODIUM_FLOOR, CHEATS,
+                    installed("sodium", v, "jade", "0.0.1")), v);
+        }
+    }
+
+    @Test
+    @DisplayName("An unlisted mod is reported without a 'needs' note, even if a requirement names it")
+    void unlistedModHasNoNeedsNote() {
+        assertEquals(List.of("somemod v1.0"),
+            UnapprovedModIntegrity.unapprovedFrom(APPROVED, PREFIXES, NO_REVOCATIONS,
+                Map.of("somemod", ModVersionRanges.parse("2.0")), CHEATS, installed("somemod", "1.0")));
+    }
+
+    @Test
+    @DisplayName("The popup check honours the version requirement")
+    void popupHonoursVersion() {
+        assertTrue(UnapprovedModIntegrity.isUnsupported("sodium", "0.5", APPROVED, PREFIXES,
+            NO_REVOCATIONS, SODIUM_FLOOR, CHEATS));
+        assertTrue(!UnapprovedModIntegrity.isUnsupported("sodium", "0.6.1", APPROVED, PREFIXES,
+            NO_REVOCATIONS, SODIUM_FLOOR, CHEATS));
+    }
 }

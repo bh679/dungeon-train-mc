@@ -18,7 +18,13 @@
     "READS, and libraries that do nothing on their own. Do not approve mods that change what the game",
     "GIVES you — loot, mobs, structures, recipes, progression, movement — however popular they are.",
     "Those runs are not comparable to anyone else's, which is the whole reason Free Play exists.",
-    "Nothing here overrides the cheat-mod blacklist: a mod on both lists is still a cheat mod."
+    "Nothing here overrides the cheat-mod blacklist: a mod on both lists is still a cheat mod.",
+    "",
+    "VERSION REQUIREMENTS: a group may add \"versions\": {\"<modId>\": \"<spec>\"} beside its ids to",
+    "approve that mod only at some versions. <spec> is a bare version (\"1.7.0\" = 1.7.0 AND ABOVE) or",
+    "a mods.toml-style range (\"[1.7.0,2.0)\"). Any other installed version counts as unapproved and",
+    "the Free Play notice says what it needs. No entry = every version. The relay can serve its own",
+    "\"versions\" object too; a relay requirement for an id replaces the one baked here."
   ],
   "prefixes": [
     "fabric_"

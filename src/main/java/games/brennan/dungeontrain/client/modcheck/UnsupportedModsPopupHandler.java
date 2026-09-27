@@ -85,7 +85,7 @@ public final class UnsupportedModsPopupHandler {
         List<UnsupportedModsScreen.UnsupportedMod> out = new ArrayList<>();
         try {
             for (var info : ModList.get().getMods()) {
-                if (!UnapprovedModIntegrity.isUnsupported(info.getModId())) continue;
+                if (!UnapprovedModIntegrity.isUnsupported(info.getModId(), info.getVersion().toString())) continue;
                 String name = info.getDisplayName();
                 out.add(new UnsupportedModsScreen.UnsupportedMod(info.getModId(),
                     name == null || name.isBlank() ? info.getModId() : name));

@@ -16,7 +16,9 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -43,6 +45,12 @@ import java.util.Set;
  *   <li><b>Relay revocations</b> — subtracted last, and they beat everything: an approval baked
  *       into a shipped jar (or matched by a prefix) can be pulled without a release.</li>
  * </ul>
+ *
+ * <p><b>Version requirements.</b> An approval can be limited to some versions ("1.7.0 and above")
+ * through a {@code versions} map beside a group's {@code ids}, or the relay's {@code versions}
+ * object — see {@link ModVersionRanges}. A relay requirement for an id replaces the baked one. An
+ * installed version outside the requirement is unapproved, exactly as if the id were not listed.
+ * Prefix matches carry no requirement.</p>
  *
  * <p>So the effective set is {@code (baked ∪ approved) − revoked}, and a prefix match counts as
  * approval unless the exact ID was revoked. The last successful fetch is cached to
@@ -80,10 +88,12 @@ public final class ApprovedModList {
     /** Parsed once from the jar resource; never null after {@link #loadBakedOnce}. */
     private static volatile Set<String> baked;
     private static volatile List<String> prefixes = List.of();
+    private static volatile Map<String, ModVersionRanges.Requirement> bakedVersions = Map.of();
 
     /** Sanitized relay overlays — only ever swapped whole, never mutated. */
     private static volatile Set<String> relayApproved = Set.of();
     private static volatile Set<String> relayRevoked = Set.of();
+    private static volatile Map<String, ModVersionRanges.Requirement> relayVersions = Map.of();
     /**
      * Enforcement as this jar ships it: ON. A run with an unapproved mod installed is Free Play from
      * the very first launch, offline included. The relay can only turn it OFF (or back on) with an
@@ -146,9 +156,42 @@ public final class ApprovedModList {
         return false;
     }
 
-    /** Live-state convenience over {@link #isApproved}. */
+    /**
+     * {@link #isApproved(String, Set, List, Set)} plus the version check: an id approved by exact
+     * match must also satisfy its requirement in {@code requirements} (if it has one). A prefix
+     * match carries no requirement. Pure, for the same reason as the id-only form.
+     */
+    static boolean isApproved(String modId, String version, Set<String> approvedIds,
+                              List<String> idPrefixes, Set<String> revokedIds,
+                              Map<String, ModVersionRanges.Requirement> requirements) {
+        String id = ModIds.normalise(modId);
+        if (!isApproved(id, approvedIds, idPrefixes, revokedIds)) return false;
+        if (!approvedIds.contains(id)) return true; // approved by prefix
+        ModVersionRanges.Requirement req = requirements == null ? null : requirements.get(id);
+        return req == null || req.allows(version);
+    }
+
+    /** Live-state convenience over {@link #isApproved}, ignoring version requirements. */
     public static boolean isApproved(String modId) {
         return isApproved(modId, approved(), prefixes(), relayRevoked);
+    }
+
+    /** Live-state convenience: is this id approved AT this installed version? */
+    public static boolean isApproved(String modId, String version) {
+        return isApproved(modId, version, approved(), prefixes(), revoked(), requirements());
+    }
+
+    /**
+     * The effective version requirements, id → requirement: baked, with any relay requirement for
+     * the same id replacing it. Ids without an entry are approved at any version.
+     */
+    public static Map<String, ModVersionRanges.Requirement> requirements() {
+        loadBakedOnce();
+        loadDiskCacheOnce();
+        if (relayVersions.isEmpty()) return bakedVersions;
+        Map<String, ModVersionRanges.Requirement> out = new HashMap<>(bakedVersions);
+        out.putAll(relayVersions);
+        return Map.copyOf(out);
     }
 
     /** The current relay revocations — package-visible so the scan can pass them down. */
@@ -166,16 +209,28 @@ public final class ApprovedModList {
         loaded = true;
         relayApproved = payload.approved();
         relayRevoked = payload.revoked();
+        relayVersions = payload.versions();
         if (payload.enforce() != null) enforce = payload.enforce();
         saveDiskCache(payload);
     }
 
     /**
-     * What the relay serves, and what the disk cache holds: two lists and the enforcement flag.
-     * {@code enforce} is {@code null} when the payload did not say — the current value (baked or
-     * cached) then stands, so a relay that has never been told cannot switch enforcement off.
+     * What the relay serves, and what the disk cache holds: two lists, the version requirements and
+     * the enforcement flag. {@code enforce} is {@code null} when the payload did not say — the
+     * current value (baked or cached) then stands, so a relay that has never been told cannot switch
+     * enforcement off. {@code versions} is empty when the relay sends none (every relay before
+     * requirements existed), leaving the baked requirements in force.
      */
-    record Payload(Set<String> approved, Set<String> revoked, Boolean enforce) {}
+    record Payload(Set<String> approved, Set<String> revoked, Boolean enforce,
+                   Map<String, ModVersionRanges.Requirement> versions) {
+        Payload {
+            versions = versions == null ? Map.of() : Map.copyOf(versions);
+        }
+
+        Payload(Set<String> approved, Set<String> revoked, Boolean enforce) {
+            this(approved, revoked, enforce, Map.of());
+        }
+    }
 
     /** Read the baked resource once per JVM. Best-effort — a missing/corrupt file means "empty". */
     static synchronized void loadBakedOnce() {
@@ -191,8 +246,9 @@ public final class ApprovedModList {
                 new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
             baked = parseBaked(root);
             prefixes = parsePrefixes(root);
-            LOGGER.debug("[DungeonTrain] approved-mod list: {} baked id(s), {} prefix(es)",
-                baked.size(), prefixes.size());
+            bakedVersions = parseVersions(root);
+            LOGGER.debug("[DungeonTrain] approved-mod list: {} baked id(s), {} prefix(es), "
+                + "{} version requirement(s)", baked.size(), prefixes.size(), bakedVersions.size());
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] approved-mod list: could not read {} — "
                 + "no mod is approved from the jar: {}", RESOURCE, e.toString());
@@ -220,6 +276,21 @@ public final class ApprovedModList {
         return ModIds.sanitize(ids, MAX_IDS);
     }
 
+    /**
+     * Every group's {@code versions} map, merged into one id → requirement map (an id appears in one
+     * group only, so there is nothing to reconcile). Unreadable entries are skipped — see
+     * {@link ModVersionRanges}. Package-visible for tests.
+     */
+    static Map<String, ModVersionRanges.Requirement> parseVersions(JsonObject root) {
+        if (!root.has("groups") || !root.get("groups").isJsonObject()) return Map.of();
+        Map<String, ModVersionRanges.Requirement> out = new HashMap<>();
+        for (var entry : root.getAsJsonObject("groups").entrySet()) {
+            if (!entry.getValue().isJsonObject()) continue;
+            out.putAll(ModVersionRanges.fromJson(entry.getValue().getAsJsonObject().get("versions")));
+        }
+        return Map.copyOf(out);
+    }
+
     /** The resource's raw-ID prefixes, lowercased and validated as ID fragments. */
     static List<String> parsePrefixes(JsonObject root) {
         if (!root.has("prefixes") || !root.get("prefixes").isJsonArray()) return List.of();
@@ -245,6 +316,7 @@ public final class ApprovedModList {
             if (p == null) return;
             relayApproved = p.approved();
             relayRevoked = p.revoked();
+            relayVersions = p.versions();
             if (p.enforce() != null) enforce = p.enforce();
             LOGGER.debug("[DungeonTrain] approved-mod list: loaded {} approval(s), {} revocation(s), "
                 + "enforce={} from {}", relayApproved.size(), relayRevoked.size(), enforce, file);
@@ -255,7 +327,8 @@ public final class ApprovedModList {
     }
 
     /**
-     * Parse {@code {"ok":true,"approved":[…],"revoked":[…],"enforce":false}} into a payload.
+     * Parse {@code {"ok":true,"approved":[…],"revoked":[…],"versions":{…},"enforce":false}} into a
+     * payload.
      * Defensive at the boundary, never throws: an unreadable body (not JSON, not an object) is
      * {@code null}, and the caller keeps what it already had — lists AND enforcement. An {@code
      * enforce} that is missing or not a boolean comes back {@code null} for the same reason: only an
@@ -271,7 +344,7 @@ public final class ApprovedModList {
             Boolean on = o.has("enforce") && o.get("enforce").isJsonPrimitive()
                 && o.getAsJsonPrimitive("enforce").isBoolean()
                 ? o.get("enforce").getAsBoolean() : null;
-            return new Payload(approvedIds, revokedIds, on);
+            return new Payload(approvedIds, revokedIds, on, ModVersionRanges.fromJson(o.get("versions")));
         } catch (Exception e) {
             return null;
         }
@@ -293,6 +366,7 @@ public final class ApprovedModList {
         obj.addProperty("ok", true);
         obj.add("approved", arrayOf(payload.approved()));
         obj.add("revoked", arrayOf(payload.revoked()));
+        if (!payload.versions().isEmpty()) obj.add("versions", ModVersionRanges.toJson(payload.versions()));
         if (payload.enforce() != null) obj.addProperty("enforce", payload.enforce());
         return obj.toString();
     }
@@ -334,11 +408,13 @@ public final class ApprovedModList {
         if (payload == null) {
             relayApproved = Set.of();
             relayRevoked = Set.of();
+            relayVersions = Map.of();
             enforce = BAKED_ENFORCE;
             loaded = false;
         } else {
             relayApproved = payload.approved();
             relayRevoked = payload.revoked();
+            relayVersions = payload.versions();
             enforce = payload.enforce() != null ? payload.enforce() : BAKED_ENFORCE;
             loaded = true;
         }
