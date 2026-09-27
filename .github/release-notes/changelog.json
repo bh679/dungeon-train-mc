@@ -19534,6 +19534,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "offline-sampler-chunk-biomes",
+      "version": "0.974.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Distant lands keep up with a fast train",
+      "summary": "Some of the stranger stretches of the journey now take shape far faster, so the land around you is there as you arrive, even at top speed, instead of filling in behind the train.",
+      "highlights": [
+        "Terrain in far-off stretches appears in step with the train.",
+        "Less work for the server while you travel."
+      ],
+      "pr": 1585,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
