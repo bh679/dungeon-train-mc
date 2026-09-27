@@ -148,6 +148,9 @@ public abstract class ChunkGeneratorDecorationMixin {
         if (WwooDecorationPass.vetoes(feature)) {
             return false; // outside the WWOO stretch: WWOO-only or overridden (vanilla version places later)
         }
+        if (dungeontrain$isDisabledOreFeature(level, feature)) {
+            return false; // BetterNether/BetterEnd/BoP ores are disabled in DT (see DisabledModContent)
+        }
         RegistryAccess legacy = dungeontrain$legacyUnderground.get();
         if (legacy != null && LegacyUnderground.excludesFeature(
                 legacy.registryOrThrow(Registries.PLACED_FEATURE).getKey(feature))) {
@@ -255,6 +258,17 @@ public abstract class ChunkGeneratorDecorationMixin {
         try {
             ResourceLocation key = BuiltInRegistries.FEATURE.getKey(feature.feature().value().feature());
             return key != null && DungeonTrain.MOD_ID.equals(key.getNamespace());
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** A disabled mod ore placed feature, by its registry key. Unreadable → kept (never drop blind). */
+    @Unique
+    private static boolean dungeontrain$isDisabledOreFeature(WorldGenLevel level, PlacedFeature feature) {
+        try {
+            return games.brennan.dungeontrain.compat.DisabledModContent.isDisabledOreFeature(
+                level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE).getKey(feature));
         } catch (Throwable t) {
             return false;
         }
