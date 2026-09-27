@@ -534,6 +534,20 @@ public record WorldGenCycle(long startX, int owGap,
         return i < 0 ? -1L : baseAt(worldX) - layout.start(i);
     }
 
+    /**
+     * World X of the column {@code local} base blocks into the slot occurrence containing {@code worldX} (the
+     * inverse of {@link #slotLocal}, scaled by that run's doubling), or {@code -1} when {@code worldX} has no slot.
+     */
+    public long slotWorldX(int worldX, long local) {
+        int i = slotIndexAt(worldX);
+        return i < 0 ? -1L : worldOf(worldX, layout.start(i) + local);
+    }
+
+    /** Doubling scale ({@code 2^run}) at {@code worldX}: world blocks per base block. 1 without a layout. */
+    public long runScaleAt(int worldX) {
+        return layout == null ? 1L : 1L << runAt(worldX);
+    }
+
     /** World X of base coordinate {@code u} in the run {@code worldX} is in — the inverse of {@link #baseAt}. */
     private long worldOf(int worldX, long u) {
         int k = runAt(worldX);

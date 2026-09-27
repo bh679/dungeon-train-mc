@@ -83,8 +83,9 @@ public final class FallingBlockAnchor {
      * as a no-op.
      *
      * <p>Used both by the anchor overloads below and by the upside-down mirror
-     * ({@code WorldUpsideDownEvents}), which swaps every {@link Fallable} block in the
-     * reflected terrain for its stable equivalent so nothing falls out of the ceiling.
+     * ({@code UpsideDownMirror}), which swaps {@link Fallable} blocks for their stable
+     * equivalent everywhere except the in-band reflected ceiling — there gravity is
+     * reversed ({@link UpsideDownGravity}) and real sand/gravel rests on the terrain above.
      * Also visible for unit tests.</p>
      */
     @Nullable

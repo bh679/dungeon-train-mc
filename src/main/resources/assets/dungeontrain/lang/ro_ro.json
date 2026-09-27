@@ -3490,6 +3490,7 @@
   "chat.dungeontrain.package.dtp_band_not_found_in_lap": "Nicio bandă %s în tura %s — tura aceea poate nu are una, sau poate fi dezactivată în configurație.",
   "chat.dungeontrain.package.dtp_next_band": "Banda următoare: %s → %s",
   "chat.dungeontrain.package.dtp_next_band_not_found": "Nicio bandă găsită după %s — benzile pot fi dezactivate în configurație.",
+  "chat.dungeontrain.package.dtp_subsection_not_found": "Nicio subsecțiune %s în banda %s. Încearcă una dintre: %s",
   "chat.dungeontrain.train.spawned_fresh_train_track": "Un tren nou a fost generat pe șină la X=%s (id navă %s, inițializat cu %s vagoane / %s blocuri, viteză +X %s m/s) — vei ateriza pe platformă odată ce se așază. Trenul anterior a fost șters; dificultatea a revenit la scalarea automată și %s vagon(oane) din comunitate reținute pot apărea din nou. Folosește '/dungeontrain carriages <count>' pentru a schimba fereastra de vagoane.",
   "chat.dungeontrain.train.train_speed_set_m": "Viteza trenului setată la %s m/s (%s %s active actualizate)",
   "chat.dungeontrain.train.default_carriages_set_appender": "Numărul implicit de vagoane setat la %s. Extensorul își va extinde sau scurta fereastra necesară la următorul tick, pe măsură ce jucătorul trece granițele pIdx.",

@@ -9,6 +9,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import games.brennan.dungeontrain.client.skybox.SkyboxStencil;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import games.brennan.dungeontrain.registry.ModMenuTypes;
+import games.brennan.dungeontrain.worldgen.UpsideDownGravity;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
@@ -26,6 +27,8 @@ public final class DungeonTrainClient {
 
     @SubscribeEvent
     public static void clientSetup(FMLClientSetupEvent event) {
+        // Falling blocks rise in the upside-down band on the client too (FallingBlockEntityUpsideDownMixin).
+        UpsideDownGravity.setClientBand(ClientUpsideDownBand::isInBand);
         ModList.get().getModContainerById(DungeonTrain.MOD_ID).ifPresent(container ->
             container.registerExtensionPoint(
                 IConfigScreenFactory.class,
