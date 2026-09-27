@@ -62,6 +62,33 @@
       ]
     }
   },
+  "gui.dungeontrain.unsupported_mods.suggest.tooltip": {
+    "1": {
+      "label": "the mod's display name",
+      "examples": [
+        "Xaero's Minimap",
+        "Sodium Extra"
+      ]
+    }
+  },
+  "gui.dungeontrain.unsupported_mods.suggested.tooltip": {
+    "1": {
+      "label": "the mod's display name",
+      "examples": [
+        "Xaero's Minimap",
+        "Sodium Extra"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.unapproved_mods": {
+    "1": {
+      "label": "the installed mods that are not on the approved list, comma-separated",
+      "examples": [
+        "somemod v1.2.3",
+        "somemod v1.2.3, anothermod v4.5"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.stages.block_tip": {
     "1": {
       "label": "how many times the block is used across the stage's parts",

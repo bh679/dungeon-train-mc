@@ -52,7 +52,7 @@ public final class NetherBandBehaviourEvents {
         if (!(event.getEntity() instanceof LightningBolt bolt)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
-        if (NetherBand.isInNetherBiome(level, (int) Math.floor(bolt.getX()))) {
+        if (NetherBand.isInNetherBiome(level, (int) Math.floor(bolt.getX()), (int) Math.floor(bolt.getZ()))) {
             event.setCanceled(true);
         }
     }
@@ -71,7 +71,7 @@ public final class NetherBandBehaviourEvents {
         if (!(event.getEntity() instanceof FallingBlockEntity falling)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
-        if (!NetherBand.isInNetherBiome(level, Mth.floor(falling.getX()))) return;
+        if (!NetherBand.isInNetherBiome(level, Mth.floor(falling.getX()), Mth.floor(falling.getZ()))) return;
 
         // Only inside the train corridor's airspace — a falling block in this Z-span drops onto the
         // track (or past it into lava); elsewhere in the core gravel is harmless and left alone.
@@ -92,7 +92,7 @@ public final class NetherBandBehaviourEvents {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
         BlockPos pos = event.getPos();
-        if (!NetherBand.isInNetherBiome(level, pos.getX())) return;
+        if (!NetherBand.isInNetherBiome(level, pos.getX(), pos.getZ())) return;
 
         level.setBlock(pos, Blocks.SPONGE.defaultBlockState(), 3);
         level.levelEvent(2009, pos, 0); // drying smoke puff

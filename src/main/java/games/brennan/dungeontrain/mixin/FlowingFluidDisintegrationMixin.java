@@ -59,7 +59,7 @@ public class FlowingFluidDisintegrationMixin {
         if (startX == DisintegrationBand.OFF) return;                 // band disabled / no train — fast out
         int chunkMinX = (toPos.getX() >> 4) << 4;
         if (chunkMinX + 15 < startX) return;                          // before the first band
-        if (DisintegrationBand.isChunkFullyEroded(server, chunkMinX)) {
+        if (DisintegrationBand.isChunkFullyEroded(server, chunkMinX, (toPos.getZ() >> 4) << 4)) {
             cir.setReturnValue(false); // no liquid may flow into an eroded void chunk
         }
     }

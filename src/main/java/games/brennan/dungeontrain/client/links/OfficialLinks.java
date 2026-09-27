@@ -52,6 +52,13 @@ public final class OfficialLinks {
      * with no rebuild and no re-release.
      */
 
+    /**
+     * The public approved-mod whitelist page — where players see which mods count and what has been
+     * suggested. Linked from the Unsupported Mods screen.
+     */
+    static final String FALLBACK_MOD_WHITELIST =
+            "https://brennan.games/dungeontrain/mods/";
+
     private static final int MAX_URL = 500;
 
     /** Sanitized relay overlay — only ever swapped whole, never mutated. */
@@ -80,6 +87,7 @@ public final class OfficialLinks {
     public static String youtube()   { return resolve("youtube", FALLBACK_YOUTUBE); }
     /** Brennan's Instagram — the Videos page's channel row. */
     public static String instagram() { return resolve("instagram", FALLBACK_INSTAGRAM); }
+    public static String modWhitelist() { return resolve("mod_whitelist", FALLBACK_MOD_WHITELIST); }
 
     /** The China payment link, or {@code null} when the relay has not served a valid one. */
     public static String paymentCn() { return resolve("payment_cn", null); }

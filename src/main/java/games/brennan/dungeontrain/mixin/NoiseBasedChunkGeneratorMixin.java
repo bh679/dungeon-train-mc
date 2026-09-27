@@ -186,7 +186,7 @@ public abstract class NoiseBasedChunkGeneratorMixin {
 
         long disStartX = DisintegrationBand.startX(level);
         if (disStartX != DisintegrationBand.OFF && chunkMinX + 15 >= disStartX
-                && DisintegrationBand.isChunkFullyEroded(level, chunkMinX)) {
+                && DisintegrationBand.isChunkFullyEroded(level, chunkMinX, chunkMinZ)) {
             return true; // End void/core: post-erosion would delete 100% of the terrain anyway
         }
         if (ChuncksBand.isVoidChunk(level, chunkMinX, chunkMinZ)) return true; // chuncks band: a mostly-void gap

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen.legacy.preset;
 
+import games.brennan.dungeontrain.worldgen.MixBand;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.mixin.NoiseRouterDataAccessor;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -117,6 +118,12 @@ public final class PresetTerrain {
         return t == null || !t.sunkOverworld.drop().active() ? null : t.sunkOverworld;
     }
 
+    /** True if {@code generator} is the published overworld generator of a world with a train. */
+    public static boolean isTrainOverworldGenerator(Object generator) {
+        PresetTerrain t = current;
+        return t != null && t.trainWorld && generator == t.overworldGenerator;
+    }
+
     /** True if {@code generator} is one of the published preset generators (the hooks must not re-enter them). */
     public static boolean isPresetGenerator(Object generator) {
         PresetTerrain t = current;
@@ -133,8 +140,8 @@ public final class PresetTerrain {
     public static Preset sunkForColumn(Object self, int blockX, int blockZ) {
         PresetTerrain t = current;
         if (t == null || !t.trainWorld || self != t.overworldGenerator) return null;
-        WorldGenCycle cycle = WorldGenCycle.fromConfig();
         int chunkX = blockX >> 4;
+        WorldGenCycle cycle = MixBand.cycleFor(WorldGenCycle.fromConfig(), t.generationSeed, chunkX, blockZ >> 4);
         LegacyBandKind kind = LegacyBands.kindOfChunk(t.generationSeed, cycle, chunkX, blockZ >> 4);
         if (kind == LegacyBandKind.AMPLIFIED) return t.amplified.drop().active() ? t.amplified : null;
         if (kind != null) return null;

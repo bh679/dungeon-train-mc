@@ -80,7 +80,8 @@ public final class RunIntegrity {
      * is Free Play because AIS data was changed
      * ({@link AisDataIntegrity#isSessionFreePlay}), DT's own balance config was
      * changed ({@link DtConfigIntegrity#isSessionFreePlay}), a known cheat mod is
-     * installed ({@link CheatModIntegrity#isSessionFreePlay}), custom Train
+     * installed ({@link CheatModIntegrity#isSessionFreePlay}), an unapproved mod
+     * is installed ({@link UnapprovedModIntegrity#isSessionFreePlay}), custom Train
      * Editor content is active ({@link EditorContentIntegrity#isSessionFreePlay}),
      * or someone online has cheats ({@link OperatorIntegrity#isSessionFreePlay}),
      * OR the world's portal rate has been retuned
@@ -95,6 +96,7 @@ public final class RunIntegrity {
         return AisDataIntegrity.isSessionFreePlay()
             || DtConfigIntegrity.isSessionFreePlay()
             || CheatModIntegrity.isSessionFreePlay()
+            || UnapprovedModIntegrity.isSessionFreePlay()
             || EditorContentIntegrity.isSessionFreePlay()
             || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
@@ -140,6 +142,7 @@ public final class RunIntegrity {
         return AisDataIntegrity.isSessionFreePlay()
             || DtConfigIntegrity.isSessionFreePlay()
             || CheatModIntegrity.isSessionFreePlay()
+            || UnapprovedModIntegrity.isSessionFreePlay()
             || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
@@ -252,10 +255,10 @@ public final class RunIntegrity {
     /**
      * Why is this run Free Play right now — every currently-active reason, in the order the login
      * notices announce them ({@code CheatDetectionEvents.onLogin}): changed AIS data, changed DT
-     * config, a cheat mod, custom editor content, a retuned portal rate, {@code keepInventory},
-     * then the player's own recorded action.
+     * config, a cheat mod, an unapproved mod, custom editor content, a retuned portal rate,
+     * {@code keepInventory}, then the player's own recorded action.
      *
-     * <p>Built from the same eight terms as {@link #isCheated}, so an empty list means exactly "not
+     * <p>Built from the same nine terms as {@link #isCheated}, so an empty list means exactly "not
      * Free Play" and the tooltip can never disagree with the badge it explains. Usually one entry;
      * a creative switch made <em>inside</em> an already-tainted session genuinely has two reasons
      * and lists both.</p>
@@ -270,6 +273,9 @@ public final class RunIntegrity {
         }
         if (CheatModIntegrity.isSessionFreePlay()) {
             causes.add(sessionCause("cheat_mod", CheatModIntegrity.detected()));
+        }
+        if (UnapprovedModIntegrity.isSessionFreePlay()) {
+            causes.add(sessionCause("unapproved_mod", UnapprovedModIntegrity.detected()));
         }
         if (EditorContentIntegrity.isSessionFreePlay()) {
             causes.add(sessionCause("custom_content", EditorContentIntegrity.contentPackageNames()));

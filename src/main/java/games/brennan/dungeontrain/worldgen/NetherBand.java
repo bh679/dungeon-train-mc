@@ -33,14 +33,24 @@ public final class NetherBand {
 
     /** Mountain-height ramp at a single world-X; 0 outside the nether segment / when disabled. */
     public static double heightRampAt(ServerLevel overworld, int worldX) {
+        return heightRampAt(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #heightRampAt(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static double heightRampAt(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return 0.0;
-        return WorldGenCycle.fromConfig().netherHeightRamp(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).netherHeightRamp(worldX);
     }
 
     /** Nether intensity ramp (netherrack → real Nether) at a single world-X; 0 outside the core. */
     public static double netherRampAt(ServerLevel overworld, int worldX) {
+        return netherRampAt(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #netherRampAt(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static double netherRampAt(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return 0.0;
-        return WorldGenCycle.fromConfig().netherRamp(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).netherRamp(worldX);
     }
 
     /**
@@ -51,8 +61,13 @@ public final class NetherBand {
      * core. See {@link WorldGenCycle#netherCoreDepth}.
      */
     public static long netherCoreDepthAt(ServerLevel overworld, int worldX) {
+        return netherCoreDepthAt(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #netherCoreDepthAt(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static long netherCoreDepthAt(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return -1L;
-        return WorldGenCycle.fromConfig().netherCoreDepth(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).netherCoreDepth(worldX);
     }
 
     /**
@@ -65,8 +80,13 @@ public final class NetherBand {
      * so a returning player's cross-world sidecar can't fire the return on the first pass.
      */
     public static long netherPassIndex(ServerLevel overworld, int worldX) {
+        return netherPassIndex(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #netherPassIndex(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static long netherPassIndex(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return -1L;
-        return WorldGenCycle.fromConfig().netherPassIndex(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).netherPassIndex(worldX);
     }
 
     /**
@@ -82,9 +102,14 @@ public final class NetherBand {
      * piglins/hoglins should behave as if in the real Nether (no zombification).
      */
     public static boolean isInNetherBiome(ServerLevel overworld, int worldX) {
+        return isInNetherBiome(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #isInNetherBiome(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static boolean isInNetherBiome(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return false;
-        if (DisintegrationBand.middleRampAt(overworld, worldX) > 0.0) return false; // End band wins
-        return netherRampAt(overworld, worldX) >= NETHER_CORE_RAMP;
+        if (DisintegrationBand.middleRampAt(overworld, worldX, worldZ) > 0.0) return false; // End band wins
+        return netherRampAt(overworld, worldX, worldZ) >= NETHER_CORE_RAMP;
     }
 
     /**
@@ -113,9 +138,14 @@ public final class NetherBand {
      * {@link #isInNetherBiome} stays the source of truth for the real Nether biome / mob behaviour.</p>
      */
     public static boolean isInNetherBand(ServerLevel overworld, int worldX) {
+        return isInNetherBand(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #isInNetherBand(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static boolean isInNetherBand(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return false;
-        if (DisintegrationBand.middleRampAt(overworld, worldX) > 0.0) return false; // End band wins
-        return netherRampAt(overworld, worldX) > 0.0;
+        if (DisintegrationBand.middleRampAt(overworld, worldX, worldZ) > 0.0) return false; // End band wins
+        return netherRampAt(overworld, worldX, worldZ) > 0.0;
     }
 
     /** Pure {@link WorldGenCycle} overload of {@link #isInNetherBand(ServerLevel, int)} (End wins, then

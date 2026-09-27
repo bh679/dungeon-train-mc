@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
+import games.brennan.dungeontrain.worldgen.MixBand;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -99,7 +100,7 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             if (end == null) return false;
             // A BetterEnd End band (end:better in the order) gets real End chunks copied in by
             // WorldEndBandEvents instead, so no end stone or chorus is stamped here.
-            if (EndBandSampler.appliesTo(server, WorldGenCycle.fromConfig().isBetterEndAt(chunkMinX + 8))) return false;
+            if (EndBandSampler.appliesTo(server, MixBand.cycleAt(overworld, cp.x, cp.z).isBetterEndAt(chunkMinX + 8))) return false;
 
             DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
             CarriageDims dims = data.dims();
@@ -111,7 +112,7 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             double[] endRamp = new double[16];
             boolean anyEnd = false;
             for (int dx = 0; dx < 16; dx++) {
-                endRamp[dx] = DisintegrationBand.endIslandRampAt(overworld, chunkMinX + dx);
+                endRamp[dx] = DisintegrationBand.endIslandRampAt(overworld, chunkMinX + dx, cp.getMinBlockZ());
                 if (endRamp[dx] > 0.0) anyEnd = true;
             }
             if (!anyEnd) return false;
@@ -140,7 +141,7 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             // so anything already in it is an End city placed at the earlier surface_structures step.
             // Stamp around it rather than through it. Outside the core there are no cities, and real
             // terrain is still present, so the stamp keeps overwriting as before.
-            boolean protectExisting = DisintegrationBand.isChunkFullyEroded(overworld, chunkMinX);
+            boolean protectExisting = DisintegrationBand.isChunkFullyEroded(overworld, chunkMinX, chunkMinZ);
 
             for (int dx = 0; dx < 16; dx++) {
                 double e = endRamp[dx];

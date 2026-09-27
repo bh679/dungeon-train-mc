@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
+import games.brennan.dungeontrain.worldgen.MixBand;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
@@ -51,6 +52,7 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
         long genT0 = GenProfiler.t0();
         try {
             long seed = DungeonTrainWorldData.get(serverLevel).getGenerationSeed();
+            WorldGenCycle cycle = MixBand.cycleAt(serverLevel, chunk.x, chunk.z);   // mix zone: the picked band's frame
             int yOffset = LegacyBands.yOffset(kind, serverLevel);
             BetaWorld world = switch (kind) {
                 case FLOATING -> new BetaWorld(level, yOffset, IndevFloatingLevel.HEIGHT);
@@ -63,9 +65,9 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
                 case SKYLANDS -> BetaPopulator.populate(world, seed, LegacyBands.sky(seed).forestNoise(),
                         BetaBiome.SKY, null, chunk.x, chunk.z);
                 case ALPHA -> AlphaPopulator.populate(level, LegacyBands.alpha(seed), chunk.x, chunk.z,
-                        LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), chunk.x));
+                        LegacyBands.isAlphaWinter(cycle, chunk.x));
                 case INFDEV -> InfdevPopulator.populate(world, LegacyBands.infdev(seed),
-                        LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), chunk.x), chunk.x, chunk.z);
+                        LegacyBands.infdevVersion(cycle, chunk.x), chunk.x, chunk.z);
                 case FLOATING -> IndevFloatingPopulator.populate(world, seed, chunk.x, chunk.z);
                 // Classic planted its trees, flowers and mushrooms while building the level — already written.
                 case CLASSIC, LARGE_BIOMES, AMPLIFIED -> {
@@ -73,7 +75,7 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
                 }
                 case VOID, SUPERFLAT -> { /* nothing to decorate: void, or a bare flat sheet */ }
                 case FAR_LANDS -> {
-                    FarLandsShift shift = FarLandsShift.of(WorldGenCycle.fromConfig(), chunk.x, chunk.z);
+                    FarLandsShift shift = FarLandsShift.of(cycle, chunk.x, chunk.z);
                     BetaPopulator.populate(BetaWorld.shifted(level, yOffset, shift.dxBlocks(), shift.dzBlocks()),
                             LegacyBands.beta(seed), chunk.x + shift.dxChunks(), chunk.z + shift.dzChunks());
                 }

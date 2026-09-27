@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -376,6 +377,8 @@ public final class CorridorCleanupEvents {
         TrackGeometry g, WorldGenCycle cycle, long bandStartX
     ) {
         if (bandStartX == NetherBand.OFF) return;                        // band off / trainless world
+        cycle = MixBand.cycleFor(cycle, DungeonTrainWorldData.get(overworld).getGenerationSeed(),
+                chunkMinX >> 4, chunkMinZ >> 4);                         // mix zone: the chunk's picked band
         TunnelGeometry tg = TunnelGeometry.from(g);
         int zLo = Math.max(tg.airMinZ(), chunkMinZ);
         int zHi = Math.min(tg.airMaxZ(), chunkMaxZ);
