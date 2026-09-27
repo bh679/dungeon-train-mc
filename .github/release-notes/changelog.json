@@ -19577,6 +19577,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "upside-down-no-spawner-structures",
+      "version": "0.976.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "mobs"
+      ],
+      "title": "No more monsters raining from the ceiling",
+      "summary": "In one of the stranger stretches of the journey, hidden monster spawners no longer hang out of reach overhead, dropping mobs that fall straight past you.",
+      "highlights": [
+        "No more mobs tumbling out of spawners you can never reach."
+      ],
+      "pr": 1590,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
