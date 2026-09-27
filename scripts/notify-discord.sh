@@ -53,6 +53,12 @@ LOGO_URL="https://raw.githubusercontent.com/$REPO/main/src/main/resources/logo.p
 GH_RELEASE_URL="https://github.com/$REPO/releases/tag/$RELEASE_TAG"
 MODRINTH_URL="https://modrinth.com/mod/dungeon-train/version/$RELEASE_TAG"
 CURSEFORGE_URL="https://www.curseforge.com/minecraft/mc-mods/dungeon-train/files"
+# The modpacks (everything bundled — the easiest install). Project pages, not this tag's pack
+# version, and no ✅/⚠️: the packs are built AFTER this ping fires (the CurseForge pack waits for
+# CurseForge to approve the mod file, up to hours), so a version link would be dead at send time.
+# The project page always shows the newest pack.
+CF_MODPACK_URL="https://www.curseforge.com/minecraft/modpacks/dungeon-train"
+MR_MODPACK_URL="https://modrinth.com/modpack/dungeon-train-pack-a-lore-rich-roguelite-adventure"
 
 PAYLOAD=$(jq -n \
   --arg title "Dungeon Train $RELEASE_TAG" \
@@ -64,6 +70,8 @@ PAYLOAD=$(jq -n \
   --arg cf_url "$CURSEFORGE_URL" \
   --arg mr_url "$MODRINTH_URL" \
   --arg gh_url "$GH_RELEASE_URL" \
+  --arg cf_pack_url "$CF_MODPACK_URL" \
+  --arg mr_pack_url "$MR_MODPACK_URL" \
   --arg logo "$LOGO_URL" \
   '{
     username: "Dungeon Train",
@@ -77,7 +85,9 @@ PAYLOAD=$(jq -n \
       fields: [
         { name: "CurseForge", value: ($cf_status + " [Download](" + $cf_url + ")"), inline: true },
         { name: "Modrinth",   value: ($mr_status + " [Download](" + $mr_url + ")"), inline: true },
-        { name: "GitHub",     value: ("✅ [Download](" + $gh_url + ")"),             inline: true }
+        { name: "GitHub",     value: ("✅ [Download](" + $gh_url + ")"),             inline: true },
+        { name: "Modpack — everything bundled",
+          value: ("[CurseForge](" + $cf_pack_url + ") · [Modrinth](" + $mr_pack_url + ")"), inline: false }
       ],
       footer: { text: "Powered by Sable" }
     }]
