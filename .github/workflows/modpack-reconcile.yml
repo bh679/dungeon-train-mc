@@ -22,7 +22,9 @@ name: Modpack Reconcile
 
 on:
   schedule:
-    - cron: "17 */6 * * *"   # every 6 hours, off the hour to dodge the rush
+    # Hourly: a deferred release goes live at most ~1h after its DT file is approved (was 6h).
+    # Cheap — both steps are a few API reads and exit without dispatching when there's nothing to do.
+    - cron: "17 * * * *"   # off the hour to dodge the rush
   workflow_dispatch:
     inputs:
       fail_if_stale_hours:
@@ -67,8 +69,32 @@ jobs:
 
       # Newest release missing from the pack AND its DT mod file approved → publish it.
       # Nothing to do → no outputs → the dispatch step below is skipped. Never polls: it acts
-      # only on approvals that have already happened, so the next pass is at most 6h away.
+      # only on approvals that have already happened, so the next pass is at most 1h away.
+      #
+      # Skipped while any release-modpack.yml run is queued or in progress: that run is either
+      # still waiting on this same approval (it will publish on its next poll) or mid-upload /
+      # mid-verify, where the pack listing hasn't caught up yet. Dispatching the same tag then
+      # would cancel it (concurrency: cancel-in-progress) and could upload a duplicate version.
+      # If that run ends up deferring, the next hourly pass picks the release up.
+      - name: Skip while a modpack release is already running
+        id: busy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ACTIVE=0
+          for status in queued in_progress; do
+            n=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow release-modpack.yml \
+                  --status "$status" --limit 20 --json databaseId --jq 'length')
+            ACTIVE=$((ACTIVE + n))
+          done
+          if [ "$ACTIVE" -gt 0 ]; then
+            echo "::notice::$ACTIVE release-modpack.yml run(s) active — leaving catch-up to the next pass."
+            echo "active=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Catch up — find the newest publishable missing release
+        if: ${{ steps.busy.outputs.active != 'true' }}
         id: catchup
         env:
           GITHUB_TOKEN: ${{ github.token }}

@@ -256,10 +256,11 @@ Separate from the mod, there are **two modpacks** published from one config
   `project_id`/`file_id`. First publish is a **draft** → enters Modrinth's modpack review queue.
 
 After a successful mod upload `release.yml` dispatches **`release-modpack.yml`** (CurseForge —
-polls until CurseForge approves the new DT file; if that takes longer than the timeout the run
-**defers** — green, nothing uploaded — and `modpack-reconcile.yml`'s 6-hourly catch-up
+polls up to 300 min until CurseForge approves the new DT file, so the pack goes live within a
+minute of approval; if that takes longer the run
+**defers** — green, nothing uploaded — and `modpack-reconcile.yml`'s hourly catch-up
 (`scripts/modpack/catch-up.py`) publishes the newest release once its file is listed as
-approved. Approval routinely takes >1h, so this is the normal path. Catch-up is **newest
+approved. Approval routinely takes >1h — hence the long wait. Catch-up is **newest
 release only** — no backfill of older gaps.) and **`release-modpack-modrinth.yml`**
 (Modrinth — no wait), each gated on that platform's mod upload having produced a file/version id.
 **Modrinth fires for every release including the ~22 cascade ticks; CurseForge fires only for
@@ -343,7 +344,7 @@ loads (Advancement Plaques needs Iceberg).
   unhandled exception occurred…"`), leaving the workflow green and the release missing from the
   pack — this is how the pack silently fell 13 releases behind in Aug 2026. `release-modpack.yml`
   now polls the public listing after uploading (`scripts/modpack/reconcile.py --verify`) and fails
-  the run if the version never appears. `modpack-reconcile.yml` re-checks every 6h as a backstop.
+  the run if the version never appears. `modpack-reconcile.yml` re-checks hourly as a backstop.
   Run the drift report any time with `python3 scripts/modpack/reconcile.py`.
   A 2026-08-22 re-upload of the identical rejected manifest was **accepted**, so those rejections
   were a transient CurseForge fault — missing versions can be recovered by re-uploading.
