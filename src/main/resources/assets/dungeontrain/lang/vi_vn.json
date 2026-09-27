@@ -2030,6 +2030,7 @@
   "gui.dungeontrain.unsupported_mods.quit_disable": "Thoát và Tắt",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Tắt các mod này trong thư mục mods của bạn, giống như cách launcher của bạn làm, và đóng trò chơi. Bạn có thể bật lại bất cứ lúc nào từ launcher của mình.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Không thể tắt các mod này từ đây. Hãy tắt chúng trong launcher của bạn, sau đó khởi động lại.",
+  "gui.dungeontrain.unsupported_mods.kind.prompt": "Đây là loại mod gì?",
   "gui.dungeontrain.unsupported_mods.kind.whitelist": "Danh sách",
   "gui.dungeontrain.unsupported_mods.kind.whitelist.desc": "Điều này không ảnh hưởng đến lối chơi một cách bất công.",
   "gui.dungeontrain.unsupported_mods.kind.modpack": "Modpack",

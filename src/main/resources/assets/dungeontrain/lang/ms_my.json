@@ -2030,6 +2030,7 @@
   "gui.dungeontrain.unsupported_mods.quit_disable": "Keluar & Lumpuhkan",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Melumpuhkan mod-mod ini dalam folder mods anda, sama seperti yang dilakukan pelancar anda, dan menutup permainan. Anda boleh menghidupkannya semula bila-bila masa dari pelancar anda.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Mod-mod ini tidak dapat dilumpuhkan dari sini. Matikan dari pelancar anda, kemudian mulakan semula.",
+  "gui.dungeontrain.unsupported_mods.kind.prompt": "Mod jenis apakah ini?",
   "gui.dungeontrain.unsupported_mods.kind.whitelist": "Senarai",
   "gui.dungeontrain.unsupported_mods.kind.whitelist.desc": "Ini tidak menjejaskan permainan secara tidak adil.",
   "gui.dungeontrain.unsupported_mods.kind.modpack": "Modpack",

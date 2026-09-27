@@ -18,10 +18,15 @@ import java.util.Locale;
 import java.util.function.Consumer;
 
 /**
- * Tell us about one unsupported mod, from the {@link UnsupportedModsScreen}. The player picks what
- * the mod is — <b>Whitelist</b> (doesn't impact gameplay unfairly), <b>Modpack</b> (should be in the
- * modpack) or <b>Cheat</b> (gives unfair advantages) — and writes why; the comment is required, so
- * Submit stays disabled until something is written.
+ * Tell us about one unsupported mod, from the {@link UnsupportedModsScreen}. Two stages:
+ * <ol>
+ *   <li><b>Pick</b> — nothing is selected yet. Under an instruction heading, the three choices sit in
+ *       columns, each button with its one-line meaning underneath: <b>Whitelist</b> (doesn't impact
+ *       gameplay unfairly), <b>Modpack</b> (should be in the modpack), <b>Cheat</b> (gives unfair
+ *       advantages). No comment box until one is picked.</li>
+ *   <li><b>Tell us why</b> — the choice stays as a button row on top (so it can be changed), then the
+ *       comment box; the comment is required, so Submit stays disabled until something is written.</li>
+ * </ol>
  *
  * <p>Whitelist starts a suggestion, or backs one somebody already made; Modpack and Cheat land in the
  * relay's queue under those categories. Sending runs off-thread ({@link ModSuggestProof}); the answer
@@ -38,6 +43,12 @@ public final class ModSuggestScreen extends Screen {
     private static final int BOX_H = 70;
     private static final int BUTTON_H = 20;
     private static final int GAP = 6;
+
+    // Pick stage: heading, then per column a button with its meaning wrapped underneath.
+    private static final int PICK_HEADING_Y = 32;
+    private static final int PICK_BUTTON_Y = PICK_HEADING_Y + 16;
+    private static final int PICK_DESC_Y = PICK_BUTTON_Y + BUTTON_H + 5;
+    private static final int PICK_DESC_LINES = 4;
 
     // Vertical layout, from the top of the content block.
     private static final int KIND_Y = 28;
@@ -57,7 +68,8 @@ public final class ModSuggestScreen extends Screen {
     private final UnsupportedModsScreen.UnsupportedMod mod;
     private final Consumer<ModSuggestClient.Result> onResult;
 
-    private ModSuggestClient.Kind kind = ModSuggestClient.Kind.WHITELIST;
+    /** Null until the player picks one — the pick stage shows until then. */
+    private ModSuggestClient.Kind kind;
     private String comment = "";
     private boolean sending;
     private ModSuggestClient.Result lastError;
@@ -74,6 +86,10 @@ public final class ModSuggestScreen extends Screen {
 
     @Override
     protected void init() {
+        if (kind == null) {
+            initPick();
+            return;
+        }
         int w = Math.min(FIELD_W, this.width - 32);
         int x = this.width / 2 - w / 2;
         int content = BOX_Y + BOX_H + GAP + 12 + GAP + BUTTON_H;
@@ -113,6 +129,33 @@ public final class ModSuggestScreen extends Screen {
                 : "gui.dungeontrain.unsupported_mods.suggest.submit"),
             b -> send()));
         refreshSubmit();
+    }
+
+    /** The pick stage: three columns (button, meaning underneath) and Cancel. */
+    private void initPick() {
+        int w = Math.min(FIELD_W, this.width - 32);
+        int x = this.width / 2 - w / 2;
+        int content = pickCancelY() + BUTTON_H;
+        this.top = Math.max(8, (this.height - content) / 2);
+        ModSuggestClient.Kind[] kinds = ModSuggestClient.Kind.values();
+        int col = columnWidth(w, kinds.length);
+        for (int i = 0; i < kinds.length; i++) {
+            ModSuggestClient.Kind k = kinds[i];
+            addRenderableWidget(new DarkTintedButton(x + i * (col + GAP), top + PICK_BUTTON_Y, col, BUTTON_H,
+                Component.translatable(kindKey(k)), b -> select(k),
+                KIND_TINT[i][0], KIND_TINT[i][1], KIND_TINT[i][2]));
+        }
+        int cancelW = Math.min(120, w);
+        addRenderableWidget(new DarkTintedButton(this.width / 2 - cancelW / 2, top + pickCancelY(), cancelW, BUTTON_H,
+            CommonComponents.GUI_CANCEL, b -> onClose()));
+    }
+
+    private int pickCancelY() {
+        return PICK_DESC_Y + PICK_DESC_LINES * (this.font.lineHeight + 1) + GAP * 2;
+    }
+
+    private static int columnWidth(int w, int columns) {
+        return (w - GAP * (columns - 1)) / columns;
     }
 
     private static String kindKey(ModSuggestClient.Kind k) {
@@ -165,6 +208,10 @@ public final class ModSuggestScreen extends Screen {
         g.drawCenteredString(this.font, this.title.copy().withStyle(ChatFormatting.BOLD), this.width / 2, top, 0xFFFFFFFF);
         g.drawCenteredString(this.font, Component.literal(mod.modId()).withStyle(ChatFormatting.GRAY),
             this.width / 2, top + 13, 0xFFFFFFFF);
+        if (kind == null) {
+            renderPick(g, x, w);
+            return;
+        }
         // One line under the choices saying what the selected one means.
         g.drawCenteredString(this.font, Component.translatable(kindKey(kind) + ".desc"),
             this.width / 2, top + DESC_Y, KIND_COLOUR[kind.ordinal()]);
@@ -176,6 +223,24 @@ public final class ModSuggestScreen extends Screen {
             int counterW = this.font.width(MAX_COMMENT + "/" + MAX_COMMENT);
             List<FormattedCharSequence> lines = this.font.split(resultMessage(lastError), w - counterW - 8);
             if (!lines.isEmpty()) g.drawString(this.font, lines.get(0), x, y, 0xFFE08080, false);
+        }
+    }
+
+    /** Pick stage: the instruction heading, and each choice's meaning wrapped under its button. */
+    private void renderPick(GuiGraphics g, int x, int w) {
+        g.drawCenteredString(this.font, Component.translatable("gui.dungeontrain.unsupported_mods.kind.prompt"),
+            this.width / 2, top + PICK_HEADING_Y, 0xFFFFD060);
+        ModSuggestClient.Kind[] kinds = ModSuggestClient.Kind.values();
+        int col = columnWidth(w, kinds.length);
+        for (int i = 0; i < kinds.length; i++) {
+            int cx = x + i * (col + GAP) + col / 2;
+            int y = top + PICK_DESC_Y;
+            List<FormattedCharSequence> lines =
+                this.font.split(Component.translatable(kindKey(kinds[i]) + ".desc"), col);
+            for (int l = 0; l < Math.min(PICK_DESC_LINES, lines.size()); l++) {
+                g.drawCenteredString(this.font, lines.get(l), cx, y, KIND_COLOUR[i]);
+                y += this.font.lineHeight + 1;
+            }
         }
     }
 

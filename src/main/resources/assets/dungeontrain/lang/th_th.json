@@ -2030,6 +2030,7 @@
   "gui.dungeontrain.unsupported_mods.quit_disable": "ออกแล้วปิดใช้งาน",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "ปิดการใช้งานม็อดเหล่านี้ในโฟลเดอร์ม็อดของคุณ เหมือนกับที่ตัวเปิดเกมของคุณทำ และปิดเกม คุณสามารถเปิดใช้งานได้อีกครั้งทุกเมื่อจากตัวเปิดเกมของคุณ",
   "gui.dungeontrain.unsupported_mods.disable_failed": "ไม่สามารถปิดการใช้งานม็อดเหล่านี้จากที่นี่ได้ โปรดปิดใช้งานจากตัวเปิดเกมของคุณ แล้วเริ่มเกมใหม่",
+  "gui.dungeontrain.unsupported_mods.kind.prompt": "ม็อดนี้เป็นแบบไหน?",
   "gui.dungeontrain.unsupported_mods.kind.whitelist": "รายการ",
   "gui.dungeontrain.unsupported_mods.kind.whitelist.desc": "สิ่งนี้ไม่ส่งผลต่อเกมอย่างไม่เป็นธรรม",
   "gui.dungeontrain.unsupported_mods.kind.modpack": "Modpack",

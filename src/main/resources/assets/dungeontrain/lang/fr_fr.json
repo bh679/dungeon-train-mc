@@ -2068,6 +2068,7 @@
   "gui.dungeontrain.unsupported_mods.quit_disable": "Quitter & Désactiver",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Désactive ces mods dans ton dossier de mods, comme le fait ton launcher, et ferme le jeu. Tu peux les réactiver à tout moment depuis ton launcher.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Ces mods n'ont pas pu être désactivés depuis ici. Désactive-les depuis ton launcher, puis redémarre.",
+  "gui.dungeontrain.unsupported_mods.kind.prompt": "Quel type de mod est-ce ?",
   "gui.dungeontrain.unsupported_mods.kind.whitelist": "Liste",
   "gui.dungeontrain.unsupported_mods.kind.whitelist.desc": "Cela n'affecte pas le jeu de façon injuste.",
   "gui.dungeontrain.unsupported_mods.kind.modpack": "Modpack",

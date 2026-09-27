@@ -2030,6 +2030,7 @@
   "gui.dungeontrain.unsupported_mods.quit_disable": "I-quit at I-disable",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Ino-off ang mga mod na ito sa iyong mods folder, tulad ng ginagawa ng launcher mo, at isinasara ang laro. Puwede mo silang buksan ulit anumang oras mula sa launcher mo.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Hindi ma-disable ang mga mod na ito mula rito. I-off ang mga ito sa launcher mo, tapos mag-restart.",
+  "gui.dungeontrain.unsupported_mods.kind.prompt": "Anong uri ng mod ito?",
   "gui.dungeontrain.unsupported_mods.kind.whitelist": "Listahan",
   "gui.dungeontrain.unsupported_mods.kind.whitelist.desc": "Hindi nito naaapektuhan ang laro nang hindi patas.",
   "gui.dungeontrain.unsupported_mods.kind.modpack": "Modpack",

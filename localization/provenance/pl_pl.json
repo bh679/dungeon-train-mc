@@ -2106,6 +2106,7 @@
   "gui.dungeontrain.unsupported_mods.quit_disable": {"author": "Sonnet 5 (Claude)", "reviewer": "", "source_hash": "b94045041f67f103"},
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": {"author": "Sonnet 5 (Claude)", "reviewer": "", "source_hash": "d3a45324c9d9f237"},
   "gui.dungeontrain.unsupported_mods.disable_failed": {"author": "Sonnet 5 (Claude)", "reviewer": "", "source_hash": "407c042000f3c5da"},
+  "gui.dungeontrain.unsupported_mods.kind.prompt": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "d68418f554801566"},
   "gui.dungeontrain.unsupported_mods.kind.whitelist": {"author": "Sonnet 5 (Claude)", "reviewer": "", "source_hash": "8559afa62d4671ca"},
   "gui.dungeontrain.unsupported_mods.kind.whitelist.desc": {"author": "Sonnet 5 (Claude)", "reviewer": "", "source_hash": "ec293b6d2ff7b396"},
   "gui.dungeontrain.unsupported_mods.kind.modpack": {"author": "Sonnet 5 (Claude)", "reviewer": "", "source_hash": "ff74891e9da6c4d7"},

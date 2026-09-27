@@ -2106,6 +2106,7 @@
   "gui.dungeontrain.unsupported_mods.quit_disable": "Wyjdź i Wyłącz",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Wyłącza te mody w Twoim folderze mods, tak samo jak robi to Twój launcher, i zamyka grę. Możesz je włączyć ponownie w dowolnym momencie w swoim launcherze.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Nie udało się wyłączyć tych modów stąd. Wyłącz je w swoim launcherze, a następnie uruchom grę ponownie.",
+  "gui.dungeontrain.unsupported_mods.kind.prompt": "Jaki to rodzaj moda?",
   "gui.dungeontrain.unsupported_mods.kind.whitelist": "Lista",
   "gui.dungeontrain.unsupported_mods.kind.whitelist.desc": "To nie wpływa na rozgrywkę w nieuczciwy sposób.",
   "gui.dungeontrain.unsupported_mods.kind.modpack": "Modpack",

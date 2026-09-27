@@ -2623,6 +2623,7 @@
   "gui.dungeontrain.unsupported_mods.quit_disable": "Ieși și Dezactivează",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Dezactivează aceste moduri în folderul tău de moduri, la fel cum face launcher-ul tău, și închide jocul. Le poți reactiva oricând din launcher-ul tău.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Aceste moduri nu au putut fi dezactivate de aici. Dezactivează-le din launcher-ul tău, apoi repornește.",
+  "gui.dungeontrain.unsupported_mods.kind.prompt": "Ce fel de mod este acesta?",
   "gui.dungeontrain.unsupported_mods.kind.whitelist": "Lista",
   "gui.dungeontrain.unsupported_mods.kind.whitelist.desc": "Asta nu afectează jocul într-un mod incorect.",
   "gui.dungeontrain.unsupported_mods.kind.modpack": "Modpack",

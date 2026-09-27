@@ -2584,6 +2584,7 @@
   "gui.dungeontrain.unsupported_mods.quit_disable": "Quit and Disable",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Turns these mods off in your mods folder, the same way your launcher does, and closes the game. Turn them back on any time from your launcher.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "These mods couldn't be disabled from here. Turn them off in your launcher, then restart.",
+  "gui.dungeontrain.unsupported_mods.kind.prompt": "What kind of mod is this?",
   "gui.dungeontrain.unsupported_mods.kind.whitelist": "Whitelist",
   "gui.dungeontrain.unsupported_mods.kind.whitelist.desc": "This doesn't impact gameplay in an unfair way.",
   "gui.dungeontrain.unsupported_mods.kind.modpack": "Modpack",

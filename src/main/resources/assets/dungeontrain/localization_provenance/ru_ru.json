@@ -1334,6 +1334,7 @@
       "gui.dungeontrain.unsupported_mods.quit_disable",
       "gui.dungeontrain.unsupported_mods.quit_disable.tooltip",
       "gui.dungeontrain.unsupported_mods.disable_failed",
+      "gui.dungeontrain.unsupported_mods.kind.prompt",
       "gui.dungeontrain.unsupported_mods.kind.whitelist",
       "gui.dungeontrain.unsupported_mods.kind.whitelist.desc",
       "gui.dungeontrain.unsupported_mods.kind.modpack",

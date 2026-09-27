@@ -2111,6 +2111,7 @@
   "gui.dungeontrain.unsupported_mods.quit_disable": "Выйти и отключить",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Отключает эти моды в папке модов, так же как это делает ваш лаунчер, и закрывает игру. Вы можете снова включить их в любой момент через лаунчер.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Эти моды не удалось отключить отсюда. Отключите их в лаунчере, а затем перезапустите игру.",
+  "gui.dungeontrain.unsupported_mods.kind.prompt": "Что это за мод?",
   "gui.dungeontrain.unsupported_mods.kind.whitelist": "Список",
   "gui.dungeontrain.unsupported_mods.kind.whitelist.desc": "Это не влияет на игру нечестным образом.",
   "gui.dungeontrain.unsupported_mods.kind.modpack": "Модпак",

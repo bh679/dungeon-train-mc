@@ -2030,6 +2030,7 @@
   "gui.dungeontrain.unsupported_mods.quit_disable": "Keluar & Nonaktifkan",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "Menonaktifkan mod-mod ini di folder mods-mu, sama seperti yang dilakukan launcher-mu, lalu menutup game. Kamu bisa mengaktifkannya lagi kapan saja dari launcher-mu.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "Mod-mod ini tidak bisa dinonaktifkan dari sini. Nonaktifkan lewat launcher-mu, lalu mulai ulang.",
+  "gui.dungeontrain.unsupported_mods.kind.prompt": "Mod jenis apa ini?",
   "gui.dungeontrain.unsupported_mods.kind.whitelist": "Daftar",
   "gui.dungeontrain.unsupported_mods.kind.whitelist.desc": "Ini tidak memengaruhi permainan secara tidak adil.",
   "gui.dungeontrain.unsupported_mods.kind.modpack": "Modpack",

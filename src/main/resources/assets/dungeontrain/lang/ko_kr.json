@@ -2030,6 +2030,7 @@
   "gui.dungeontrain.unsupported_mods.quit_disable": "종료 및 비활성화",
   "gui.dungeontrain.unsupported_mods.quit_disable.tooltip": "이 모드들을 모드 폴더에서 끕니다. 런처가 하는 방식과 동일하며, 게임도 종료됩니다. 언제든지 런처에서 다시 켤 수 있습니다.",
   "gui.dungeontrain.unsupported_mods.disable_failed": "이 모드들은 여기서 비활성화할 수 없습니다. 런처에서 끈 뒤 다시 시작하세요.",
+  "gui.dungeontrain.unsupported_mods.kind.prompt": "어떤 종류의 모드인가요?",
   "gui.dungeontrain.unsupported_mods.kind.whitelist": "목록",
   "gui.dungeontrain.unsupported_mods.kind.whitelist.desc": "이것은 게임 플레이에 불공정한 영향을 주지 않습니다.",
   "gui.dungeontrain.unsupported_mods.kind.modpack": "모드팩",
