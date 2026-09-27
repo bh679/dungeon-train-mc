@@ -110,4 +110,16 @@ class UnapprovedModIntegrityTest {
             ApprovedModList.setRelayForTest(null);
         }
     }
+
+    @Test
+    @DisplayName("The popup lists unsupported mods — never a blacklisted one, which keeps its own notice")
+    void popupExcludesBlacklist() {
+        assertTrue(UnapprovedModIntegrity.isUnsupported("somemod", APPROVED, PREFIXES, NO_REVOCATIONS, CHEATS));
+        assertTrue(!UnapprovedModIntegrity.isUnsupported("xray", APPROVED, PREFIXES, NO_REVOCATIONS, CHEATS),
+            "a known cheat mod is not listed as merely unsupported");
+        assertTrue(!UnapprovedModIntegrity.isUnsupported("Sodium", APPROVED, PREFIXES, NO_REVOCATIONS, CHEATS));
+        assertTrue(!UnapprovedModIntegrity.isUnsupported("fabric_api_base", APPROVED, PREFIXES, NO_REVOCATIONS, CHEATS));
+        assertTrue(UnapprovedModIntegrity.isUnsupported("jade", APPROVED, PREFIXES, Set.of("jade"), CHEATS),
+            "a revoked mod is unsupported again");
+    }
 }

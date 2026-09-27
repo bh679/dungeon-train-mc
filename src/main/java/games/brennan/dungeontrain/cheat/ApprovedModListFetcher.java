@@ -36,6 +36,8 @@ public final class ApprovedModListFetcher {
 
     private static volatile boolean attempted;
     private static volatile boolean failed;
+    /** True once the current attempt has finished, successfully or not. */
+    private static volatile boolean settled;
 
     private ApprovedModListFetcher() {}
 
@@ -44,7 +46,16 @@ public final class ApprovedModListFetcher {
         if (attempted && !failed) return;
         attempted = true;
         failed = false;
+        settled = false;
         fetchAsync();
+    }
+
+    /**
+     * Has the latest fetch attempt finished (landed, failed, or never started)? The Unsupported Mods
+     * popup waits on this briefly so it judges against live approvals rather than a stale cache.
+     */
+    public static boolean isSettled() {
+        return settled || !attempted;
     }
 
     /** Fetch the approved-mod list off-thread; results land in {@link ApprovedModList}. No-throw. */
@@ -59,35 +70,44 @@ public final class ApprovedModListFetcher {
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                     .whenComplete((resp, err) -> {
                         try {
-                            if (err != null) {
-                                LOGGER.debug("[DungeonTrain] approved-mod list fetch failed: {}", err.toString());
-                                failed = true;
-                                return;
-                            }
-                            if (resp.statusCode() / 100 != 2) {
-                                LOGGER.debug("[DungeonTrain] approved-mod list fetch -> HTTP {}", resp.statusCode());
-                                failed = true;
-                                return;
-                            }
-                            ApprovedModList.Payload payload = ApprovedModList.parse(resp.body());
-                            if (payload == null) {
-                                // Unreadable body: keep baked ∪ cache, including the enforce flag.
-                                LOGGER.debug("[DungeonTrain] approved-mod list fetch -> unreadable body");
-                                failed = true;
-                                return;
-                            }
-                            ApprovedModList.accept(payload);
-                            LOGGER.info("[DungeonTrain] approved-mod list updated from relay "
-                                    + "({} approval(s), {} revocation(s), enforce={})",
-                                payload.approved().size(), payload.revoked().size(), payload.enforce());
-                        } catch (Throwable t) {
-                            LOGGER.debug("[DungeonTrain] approved-mod list parse failed: {}", t.toString());
-                            failed = true;
+                            settle(resp, err);
+                        } finally {
+                            settled = true;
                         }
                     });
         } catch (Throwable t) {
             // Building the request failed synchronously — swallow; baked ∪ cache stay in force.
             LOGGER.debug("[DungeonTrain] approved-mod list request failed to start: {}", t.toString());
+            failed = true;
+            settled = true;
+        }
+    }
+
+    private static void settle(HttpResponse<String> resp, Throwable err) {
+        try {
+            if (err != null) {
+                LOGGER.debug("[DungeonTrain] approved-mod list fetch failed: {}", err.toString());
+                failed = true;
+                return;
+            }
+            if (resp.statusCode() / 100 != 2) {
+                LOGGER.debug("[DungeonTrain] approved-mod list fetch -> HTTP {}", resp.statusCode());
+                failed = true;
+                return;
+            }
+            ApprovedModList.Payload payload = ApprovedModList.parse(resp.body());
+            if (payload == null) {
+                // Unreadable body: keep baked ∪ cache, including the enforce flag.
+                LOGGER.debug("[DungeonTrain] approved-mod list fetch -> unreadable body");
+                failed = true;
+                return;
+            }
+            ApprovedModList.accept(payload);
+            LOGGER.info("[DungeonTrain] approved-mod list updated from relay "
+                    + "({} approval(s), {} revocation(s), enforce={})",
+                payload.approved().size(), payload.revoked().size(), payload.enforce());
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] approved-mod list parse failed: {}", t.toString());
             failed = true;
         }
     }

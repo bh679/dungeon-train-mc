@@ -136,13 +136,31 @@ public final class UnapprovedModIntegrity {
                                        Map<String, String> installed) {
         List<String> found = new ArrayList<>();
         for (Map.Entry<String, String> e : installed.entrySet()) {
-            String id = ModIds.normalise(e.getKey());
-            if (id.isEmpty()) continue;
-            if (cheatIds != null && cheatIds.contains(id)) continue;
-            if (ApprovedModList.isApproved(id, approvedIds, prefixes, revokedIds)) continue;
+            if (!isUnsupported(e.getKey(), approvedIds, prefixes, revokedIds, cheatIds)) continue;
             found.add(e.getKey() + " v" + e.getValue());
         }
         found.sort(String::compareTo);
         return List.copyOf(found);
+    }
+
+    /**
+     * Pure: is this installed mod one the Unsupported Mods screen should list — not approved (by id
+     * or prefix, and not revoked) and NOT a known cheat mod, which keeps its own notice instead?
+     */
+    static boolean isUnsupported(String modId, Set<String> approvedIds, List<String> prefixes,
+                                 Set<String> revokedIds, Set<String> cheatIds) {
+        String id = ModIds.normalise(modId);
+        if (id.isEmpty()) return false;
+        if (cheatIds != null && cheatIds.contains(id)) return false;
+        return !ApprovedModList.isApproved(id, approvedIds, prefixes, revokedIds);
+    }
+
+    /**
+     * Live-state convenience for the client popup: is {@code modId} unsupported right now (judged
+     * against baked ∪ cached/live relay approvals, minus revocations, minus the blacklist)?
+     */
+    public static boolean isUnsupported(String modId) {
+        return isUnsupported(modId, ApprovedModList.approved(), ApprovedModList.prefixes(),
+            ApprovedModList.revoked(), CheatModList.effective());
     }
 }
