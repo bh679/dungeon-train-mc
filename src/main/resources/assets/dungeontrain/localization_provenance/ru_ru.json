@@ -2661,11 +2661,16 @@
       "dungeontrain.requirement.days.single",
       "dungeontrain.requirement.days.some",
       "dungeontrain.requirement.days.plural",
+      "chat.dungeontrain.update_notice",
+      "chat.dungeontrain.update_notice.ago",
+      "chat.dungeontrain.update_notice.link",
       "item.dungeontrain.stats_book",
       "item.dungeontrain.random_potion",
       "item.dungeontrain.random_good_potion",
       "item.dungeontrain.random_bad_potion",
-      "gui.dungeontrain.options.book_author_chat"
+      "gui.dungeontrain.options.book_author_chat",
+      "gui.dungeontrain.options.update_notice_chat",
+      "gui.dungeontrain.options.update_notice_chat.tip"
     ],
     "adventureitemnames": [
       "key.categories.adventureitemnames",

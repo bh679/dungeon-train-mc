@@ -19848,13 +19848,13 @@
       ],
       "pr": 1603,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.983.0",
+      "released_at": "2026-09-27T10:54:10Z"
     },
     {
       "id": "midrun-config-free-play",
-      "version": "0.983.0",
+      "version": "0.984.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -19868,6 +19868,45 @@
         "The one-click settings reset puts these back to default along with everything else"
       ],
       "pr": 1604,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-update-chat-notice",
+      "version": "0.984.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Chat tells you when a new version drops",
+      "summary": "If a new Dungeon Train version is released while you're playing, a line appears in chat saying which version is out and how long ago it dropped, with a link to what's new.",
+      "highlights": [
+        "Only real releases are announced \u2014 never the small automatic ones",
+        "Turn it off in Options > Dungeon Train > New Version Chat"
+      ],
+      "pr": 1605,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "whitelist-min-dt-version",
+      "version": "0.985.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Some fair-play mods need a recent Dungeon Train",
+      "summary": "A few mods on the fair-play list are only approved on newer versions of Dungeon Train, because they rely on support those versions added. Run one on an older version and the run is Free Play until you update.",
+      "highlights": [
+        "Update Dungeon Train to keep a mod like Catalogue approved for fair play"
+      ],
+      "pr": 1606,
       "date": "2026-09-27",
       "released": false,
       "released_in": null,
