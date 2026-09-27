@@ -526,6 +526,11 @@ public record WorldGenCycle(long startX, int owGap,
         return d < 0L ? -1L : d;
     }
 
+    /** Lowest world X of reversed run {@code k} behind the anchor — it ends at {@code startX − buffer}, less the later runs. Layout only. */
+    public long reversedRunLowX(int k) {
+        return startX - mirrorBuffer() - CycleLayout.runStart(k + 1, layout.period());
+    }
+
     /** True when {@code worldX} lies in the reversed cycle behind the anchor (past the overworld buffer). */
     public boolean isMirroredAt(long worldX) {
         return layout != null && backDist(worldX) >= 0L;
