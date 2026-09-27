@@ -13,6 +13,8 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.BandLabel;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -34,6 +36,8 @@ import java.util.OptionalInt;
  * {@code /dtp <band> <distance> <lap>}, where {@code lap} is 0-based
  * {@link games.brennan.dungeontrain.worldgen.WorldGenCycle#cycleIndex} (the same numbering
  * {@code /dungeontrain debug overworld-laps} prints) and defaults to lap 0, wherever the player is.
+ * {@code /dtp next [distance]} jumps just inside the next band ahead of the player — "band" as the
+ * F3+4 debug panel names it ({@link BandLabel#bandAt}), so Void gaps and styled occurrences count.
  *
  * <p>Vanilla {@code /tp} (and a bare walk) can outrun the train —
  * {@link games.brennan.dungeontrain.train.TrainCarriageAppender} only
@@ -84,13 +88,20 @@ public final class DtpCommand {
     /** Lap {@code /dtp <band>} jumps to when none is given — the first. */
     private static final int DEFAULT_LAP = 0;
 
+    /** {@code /dtp next} — not a {@link games.brennan.dungeontrain.worldgen.TrainPhase} token or alias, so it can't shadow a band. */
+    private static final String NEXT_TOKEN = "next";
+
     private DtpCommand() {}
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("dtp")
             .requires(s -> s.hasPermission(2))
             .then(Commands.argument("x", DoubleArgumentType.doubleArg())
-                .executes(ctx -> run(ctx.getSource(), DoubleArgumentType.getDouble(ctx, "x"))));
+                .executes(ctx -> run(ctx.getSource(), DoubleArgumentType.getDouble(ctx, "x"))))
+            .then(Commands.literal(NEXT_TOKEN)
+                .executes(ctx -> runNext(ctx.getSource(), BAND_ENTRY_INSET))
+                .then(Commands.argument("distance", DoubleArgumentType.doubleArg())
+                    .executes(ctx -> runNext(ctx.getSource(), DoubleArgumentType.getDouble(ctx, "distance")))));
         for (DtpTarget target : DtpTarget.all()) {
             root.then(bandLiteral(target));
         }
@@ -123,6 +134,34 @@ public final class DtpCommand {
             return 0;
         }
         return run(source, entry.getAsInt() + distance);
+    }
+
+    /** Teleport {@code distance} blocks past the entry of the next band ahead of the player, via the normal {@link #run} path. */
+    private static int runNext(CommandSourceStack source, double distance) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception e) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
+            return 0;
+        }
+        ServerLevel overworld = source.getServer().overworld();
+        if (!DungeonTrainWorldData.get(overworld).startsWithTrain()) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.package.world_doesn_t_use"));
+            return 0;
+        }
+        int fromX = player.getBlockX();
+        String current = BandLabel.bandAt(overworld, fromX);
+        OptionalInt entry = BandLocator.nextBandStartX(WorldGenCycle.fromConfig(),
+            x -> !BandLabel.bandAt(overworld, x).equals(current), fromX);
+        if (entry.isEmpty()) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.package.dtp_next_band_not_found", current));
+            return 0;
+        }
+        double targetX = entry.getAsInt() + distance;
+        String next = BandLabel.bandAt(overworld, (int) Math.floor(targetX));
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.package.dtp_next_band", current, next), true);
+        return run(source, targetX);
     }
 
     private static int run(CommandSourceStack source, double x) {

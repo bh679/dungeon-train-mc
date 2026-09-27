@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "dungeontrain.refmap.json",
   "mixins": [
+    "RecipeManagerDisableMixin",
     "PlayerFudgeSpawnMixin",
     "PlayerSprintFlyMixin",
     "TamableAnimalTameMixin",
