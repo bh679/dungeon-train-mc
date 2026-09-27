@@ -713,6 +713,25 @@
       ]
     }
   },
+  "chat.dungeontrain.update_notice.ago": {
+    "1": {
+      "label": "how long ago the release was published, already translated with its unit",
+      "examples": [
+        "42 seconds",
+        "7 minutes",
+        "2 hours"
+      ]
+    }
+  },
+  "chat.dungeontrain.update_notice": {
+    "1": {
+      "label": "the version number of the new Dungeon Train release",
+      "examples": [
+        "0.984.0",
+        "1.2.0"
+      ]
+    }
+  },
   "chat.dungeontrain.book_suspended.blocked": {
     "1": {
       "label": "how long the pause still has to run",
