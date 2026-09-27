@@ -107,4 +107,27 @@ final class MirrorPromotionTest {
                 new HashSet<Long>()::contains, new HashSet<Long>()::contains, neighbourhoodFull(loaded)).isEmpty(),
                 "nothing pending → nothing promoted");
     }
+
+    @Test
+    @DisplayName("the chunk whose Load is firing counts as loaded — its own event completes the 3x3")
+    void loadingChunkCompletesNeighbourhood() {
+        // NeoForge fires ChunkEvent.Load before the chunk is published FULL, so getChunkNow can't see the
+        // loading chunk. The last neighbour to arrive is always the one whose Load is firing; it must still
+        // complete the pending chunk's neighbourhood, or the chunk is stranded un-mirrored.
+        long p = key(0, 0);
+        long loading = key(1, 1);
+        Set<Long> published = new HashSet<>();
+        for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                if (key(dx, dz) != loading) published.add(key(dx, dz));
+            }
+        }
+        assertFalse(WorldUpsideDownEvents.neighbourhoodLoaded(0, 0, published::contains),
+                "published-only view is missing the loading chunk");
+        LongPredicate withLoading = k -> k == loading || published.contains(k);
+        assertTrue(WorldUpsideDownEvents.neighbourhoodLoaded(0, 0, withLoading));
+        assertTrue(WorldUpsideDownEvents.promotableKeys(1, 1, Set.of(p)::contains, k -> false,
+                k -> WorldUpsideDownEvents.neighbourhoodLoaded(ChunkPos.getX(k), ChunkPos.getZ(k), withLoading))
+                .contains(p), "the last neighbour's own load must promote the pending chunk");
+    }
 }

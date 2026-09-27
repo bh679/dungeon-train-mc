@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.StrongholdRingGate;
+import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.VanillaBiomeFeatures;
 import games.brennan.dungeontrain.worldgen.VanillaBiomeTwins;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
@@ -18,6 +19,7 @@ import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import games.brennan.dungeontrain.worldgen.density.NetherCoreBiomes;
 import games.brennan.dungeontrain.worldgen.density.OverworldBiomeSourceMark;
 import games.brennan.dungeontrain.worldgen.density.OverworldStretchBiomes;
+import games.brennan.dungeontrain.worldgen.density.UpsideDownTrackFlatten;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
@@ -106,7 +108,8 @@ public final class NetherBandContextEvents {
             int seaLevel = overworld.getSeaLevel();
             int worldCeiling = overworld.getMaxBuildHeight() - 1;
             int baseRelief = DungeonTrainCommonConfig.getNetherBaseReliefBlocks();
-            int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();
+            TrackGeometry track = TrackGeometry.from(data.dims(), data.getTrainY());
+            int bedY = track.bedY();
             int netherTop = bedY + NETHER_TOP_ABOVE_BED;
 
             // Overworld biome source (identity gate) + resolved highland palette for the biome-source mixin.
@@ -148,6 +151,11 @@ public final class NetherBandContextEvents {
             // Second-lap overworld stretches: BoP only in its stretch, vanilla elsewhere. Published
             // alongside the band context so it is live before the first chunk bakes too.
             OverworldStretchBiomes.publish(OverworldStretchBiomes.resolve(server));
+            // Upside-down band: keep the source terrain low near the track (erosion weighting).
+            boolean flatten = DungeonTrainCommonConfig.isUpsideDownTrackFlatten()
+                    && UpsideDownBand.startX(overworld) != UpsideDownBand.OFF;
+            UpsideDownTrackFlatten.publish(new UpsideDownTrackFlatten.Context(flatten, cycle, track.trackCenterZ(),
+                    data.getGenerationSeed()));
             // Intermediate per-dimension-load republishes log at debug to avoid 3+ identical
             // info lines per start; the ServerStarted refresh logs the final snapshot at info.
             if (logInfo) {
@@ -163,6 +171,7 @@ public final class NetherBandContextEvents {
             games.brennan.dungeontrain.worldgen.legacy.SuperflatHeight.clear();
             games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.clear();
             OverworldStretchBiomes.clear();
+            UpsideDownTrackFlatten.clear();
             LOGGER.error("[DungeonTrain] Failed to publish nether-band terrain context; mountains stay flat this session", t);
         } finally {
             // Only now may the stronghold rings sample the overworld's biomes — see StrongholdRingGate.
@@ -179,6 +188,7 @@ public final class NetherBandContextEvents {
         games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.clear();
         games.brennan.dungeontrain.worldgen.legacy.LegacyBands.releaseGenerators();
         OverworldStretchBiomes.clear();
+        UpsideDownTrackFlatten.clear();
         VanillaBiomeFeatures.clear();
         VanillaBiomeTwins.clear();
     }
