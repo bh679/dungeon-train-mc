@@ -1,7 +1,7 @@
 {
   "parent": "dungeontrain:dungeon_train/reached_skylands",
   "display": {
-    "icon": { "id": "minecraft:grass_block" },
+    "icon": { "id": "minecraft:phantom_membrane" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_floating.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reached_floating.description" },
     "frame": "goal",

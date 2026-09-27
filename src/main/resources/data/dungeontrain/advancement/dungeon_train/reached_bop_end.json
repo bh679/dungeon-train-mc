@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_bop_nether",
+  "parent": "dungeontrain:dungeon_train/read_all_nether_starting_books",
   "display": {
     "icon": { "id": "minecraft:popped_chorus_fruit" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_bop_end.title" },
