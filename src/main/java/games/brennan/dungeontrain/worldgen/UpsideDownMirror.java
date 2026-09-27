@@ -9,10 +9,16 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.BrushableBlock;
+import net.minecraft.world.level.block.Fallable;
+import net.minecraft.world.level.block.FallingBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 
 import java.util.Arrays;
@@ -81,11 +87,23 @@ public final class UpsideDownMirror {
         private final int minY;
         private final int[] packed;
         private final BlockState[] states;
+        /** Suspicious-block moves: packed source → packed target, whose block entity (loot) travels too. */
+        private final int[] beFrom;
+        private final int[] beTo;
+        /** Columns (bit dx) whose reflected ceiling keeps real gravity blocks — they fall up after apply. */
+        private final int fallUpCols;
+        /** Lowest Y of the reflected ceiling ({@code mirror + ceilingGap}); fall-up is armed at/above it. */
+        private final int fallUpFromY;
 
-        private MirrorPlan(int minY, int[] packed, BlockState[] states) {
+        private MirrorPlan(int minY, int[] packed, BlockState[] states, int[] beFrom, int[] beTo,
+                           int fallUpCols, int fallUpFromY) {
             this.minY = minY;
             this.packed = packed;
             this.states = states;
+            this.beFrom = beFrom;
+            this.beTo = beTo;
+            this.fallUpCols = fallUpCols;
+            this.fallUpFromY = fallUpFromY;
         }
 
         /** Number of recorded writes (may be 0 for a band-relevant but all-air chunk). */
@@ -99,6 +117,10 @@ public final class UpsideDownMirror {
         private final int minY;
         private final IntArrayList packed = new IntArrayList();
         private final ObjectArrayList<BlockState> states = new ObjectArrayList<>();
+        private final IntArrayList beFrom = new IntArrayList();
+        private final IntArrayList beTo = new IntArrayList();
+        private int fallUpCols;
+        private int fallUpFromY = Integer.MAX_VALUE;
 
         PlanBuilder(int minY) {
             this.minY = minY;
@@ -109,8 +131,19 @@ public final class UpsideDownMirror {
             states.add(state);
         }
 
+        void moveBlockEntity(int dx, int fromY, int toY, int dz) {
+            beFrom.add(pack(dx, fromY, dz, minY));
+            beTo.add(pack(dx, toY, dz, minY));
+        }
+
+        void armFallUp(int dx, int fromY) {
+            fallUpCols |= 1 << dx;
+            fallUpFromY = fromY;
+        }
+
         MirrorPlan freeze() {
-            return new MirrorPlan(minY, packed.toIntArray(), states.toArray(new BlockState[0]));
+            return new MirrorPlan(minY, packed.toIntArray(), states.toArray(new BlockState[0]),
+                beFrom.toIntArray(), beTo.toIntArray(), fallUpCols, fallUpFromY);
         }
     }
 
@@ -217,6 +250,7 @@ public final class UpsideDownMirror {
                 int extent = extentCol[dx];
                 int worldX = chunkMinX + dx;
                 boolean clearFloor = inBand[dx] || inLead[dx] || (inExit[dx] && exitFloorClear[dx]);
+                if (inBand[dx]) plan.armFallUp(dx, mirror + ceilingGap);
 
                 // 1) Snapshot the column into an immutable buffer (skip all-air sections).
                 Arrays.fill(col, AIR);
@@ -255,15 +289,26 @@ public final class UpsideDownMirror {
                     }
 
                     BlockState ns = AIR;
+                    int beSrcY = Integer.MIN_VALUE;          // set when a suspicious block (with its loot) is carried
                     if (sy > floorGuard && sy < maxY) {
                         BlockState s = col[sy - minY];
-                        if (!s.isAir() && !s.hasBlockEntity()) {
-                            if (s.getBlock() instanceof LiquidBlock) {
+                        if (!s.isAir()) {
+                            if (s.hasBlockEntity()) {
+                                if (inBand[dx] && s.getBlock() instanceof BrushableBlock) {
+                                    ns = s;
+                                    beSrcY = sy;
+                                }
+                            } else if (s.getBlock() instanceof LiquidBlock) {
                                 if (s.getFluidState().is(FluidTags.WATER)) {
                                     ns = Blocks.WATER.defaultBlockState();
                                 }
                             } else {
-                                BlockState stable = FallingBlockAnchor.stableEquivalent(s);
+                                // In-band ceiling keeps real gravity blocks — gravity is reversed there, so they
+                                // rest on the terrain above them and fall up. Everything else is anchored: the
+                                // hanging hills would otherwise rise across the train gap, and the lead-in/exit
+                                // dithers punch random holes that would rain blocks upward.
+                                boolean keepFallable = inBand[dx] && y >= mirror + ceilingGap;
+                                BlockState stable = keepFallable ? null : FallingBlockAnchor.stableEquivalent(s);
                                 ns = stable != null ? stable : s;
                             }
                         }
@@ -321,6 +366,11 @@ public final class UpsideDownMirror {
                     // which equals the live cur apply() will re-check — so this filter is exactly the old
                     // handler's cur == ns no-op skip, precomputed off-thread.
                     if (ns != col[y - minY]) plan.add(dx, y, dz, ns);
+                    // Carry a suspicious block's loot with it. Recorded even when the target already holds an
+                    // identical state (no block write) — the block entity at the target still has to change.
+                    if (beSrcY != Integer.MIN_VALUE && beSrcY != y && ns == col[beSrcY - minY]) {
+                        plan.moveBlockEntity(dx, beSrcY, y, dz);
+                    }
                 }
 
                 // Open the underside for columns that should hang over void (band + lead-in + not-yet-
@@ -354,9 +404,11 @@ public final class UpsideDownMirror {
      * anything changed.
      */
     public static void apply(ChunkAccess chunk, MirrorPlan plan) {
-        if (plan == null || plan.size() == 0) return;
+        if (plan == null || (plan.size() == 0 && plan.beFrom.length == 0)) return;
         int chunkMinX = chunk.getPos().getMinBlockX();
         int chunkMinZ = chunk.getPos().getMinBlockZ();
+        LevelChunk live = chunk instanceof LevelChunk lc ? lc : null;
+        CompoundTag[] carried = snapshotCarriedBlockEntities(live, plan);
         boolean changed = false;
         for (int i = 0; i < plan.packed.length; i++) {
             int p = plan.packed[i];
@@ -376,7 +428,77 @@ public final class UpsideDownMirror {
             sec.setBlockState(dx, ly, dz, ns, false);
             changed = true;
         }
+        if (live != null) {
+            changed |= placeCarriedBlockEntities(live, plan, carried);
+            armFallUp(live, plan);
+        }
         if (changed) chunk.setUnsaved(true);
+    }
+
+    private static BlockPos worldPos(ChunkAccess chunk, int packed, int minY) {
+        return new BlockPos(chunk.getPos().getMinBlockX() + unpackDx(packed), unpackY(packed, minY),
+            chunk.getPos().getMinBlockZ() + unpackDz(packed));
+    }
+
+    /**
+     * Save every carried suspicious block's entity (loot table + seed) <b>before</b> any write — a source
+     * cell may itself be overwritten earlier in the replay. A missing entity leaves a {@code null} slot.
+     */
+    private static CompoundTag[] snapshotCarriedBlockEntities(LevelChunk live, MirrorPlan plan) {
+        CompoundTag[] tags = new CompoundTag[plan.beFrom.length];
+        if (live == null) return tags;
+        var registries = live.getLevel().registryAccess();
+        for (int i = 0; i < tags.length; i++) {
+            BlockEntity be = live.getBlockEntity(worldPos(live, plan.beFrom[i], plan.minY));
+            if (be != null) tags[i] = be.saveWithFullMetadata(registries);
+        }
+        return tags;
+    }
+
+    /** Recreate each carried block entity at its mirrored target. Returns whether anything was placed. */
+    private static boolean placeCarriedBlockEntities(LevelChunk live, MirrorPlan plan, CompoundTag[] tags) {
+        var registries = live.getLevel().registryAccess();
+        boolean placed = false;
+        for (int i = 0; i < tags.length; i++) {
+            if (tags[i] == null) continue;
+            BlockPos to = worldPos(live, plan.beTo[i], plan.minY);
+            BlockState state = live.getBlockState(to);
+            if (!(state.getBlock() instanceof BrushableBlock)) continue; // target changed since compute — drop
+            live.removeBlockEntity(to);
+            BlockEntity be = BlockEntity.loadStatic(to, state, tags[i], registries);
+            if (be == null) continue;
+            live.setBlockEntity(be);
+            placed = true;
+        }
+        return placed;
+    }
+
+    /**
+     * Schedule a gravity tick for every reflected-ceiling gravity block that now has open air above it —
+     * with gravity reversed in the band it falls up. The mirror writes through the raw section primitive,
+     * which never schedules ticks, and only a write can open the cell above a block, so checking each
+     * written cell and the one under it covers every block the flip exposed.
+     */
+    private static void armFallUp(LevelChunk live, MirrorPlan plan) {
+        if (plan.fallUpCols == 0) return;
+        var level = live.getLevel();
+        for (int p : plan.packed) {
+            int dx = unpackDx(p);
+            if ((plan.fallUpCols & (1 << dx)) == 0) continue;
+            int y = unpackY(p, plan.minY);
+            if (y < plan.fallUpFromY) continue;
+            BlockPos pos = worldPos(live, p, plan.minY);
+            armIfExposed(level, live, pos);
+            if (y - 1 >= plan.fallUpFromY) armIfExposed(level, live, pos.below());
+        }
+    }
+
+    private static void armIfExposed(net.minecraft.world.level.Level level, LevelChunk live, BlockPos pos) {
+        BlockState state = live.getBlockState(pos);
+        if (!(state.getBlock() instanceof Fallable)) return;
+        if (pos.getY() + 1 >= live.getMaxBuildHeight()) return;
+        if (!FallingBlock.isFree(live.getBlockState(pos.above()))) return;
+        level.scheduleTick(pos, state.getBlock(), 2);
     }
 
     /** Inline convenience: compute + apply in one call (the precompute-off / cache-miss fallback). */
