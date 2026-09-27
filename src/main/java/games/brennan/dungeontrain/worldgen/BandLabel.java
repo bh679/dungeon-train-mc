@@ -70,13 +70,17 @@ public final class BandLabel {
     private static String stageAt(WorldGenCycle cycle, int worldX) {
         int slot = cycle.slotIndexAt(worldX);
         if (slot < 0) return "";
+        BandStages.Position at = BandStages.locate(stagesOf(cycle, slot), cycle.slotLocal(worldX));
+        return at == null ? "" : at.describe();
+    }
+
+    /** The stages of layout slot {@code slot} with the live config — the list the panel counts and {@code /dtp <band> <subsection>} targets. */
+    public static java.util.List<BandStages.Stage> stagesOf(WorldGenCycle cycle, int slot) {
         int[] mults = cycle.stageMultipliers();
-        java.util.List<BandStages.Stage> stages = BandStages.of(cycle.layout(), slot,
+        return BandStages.of(cycle.layout(), slot,
             mults == null ? 1 : mults.length, cycle.stageBlocks(), cycle.beachBlocks(),
             SpheresProgressionConfig.segments(), SpheresProgressionConfig.exitTaperBlocks(),
             SpheresProgressionConfig.exitVoidBlocks());
-        BandStages.Position at = BandStages.locate(stages, cycle.slotLocal(worldX));
-        return at == null ? "" : at.describe();
     }
 
     /** The styled occurrence at {@code worldX} within {@code phase}, or empty when it is the plain look. */
