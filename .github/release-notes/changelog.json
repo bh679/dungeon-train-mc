@@ -19944,6 +19944,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "upside-down-village-no-residents",
+      "version": "0.990.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world",
+        "mobs"
+      ],
+      "title": "No more floating beds and villagers",
+      "summary": "Villages caught in one of the stranger stretches of the journey no longer leave beds and villagers hanging in mid-air beside the track.",
+      "highlights": [],
+      "pr": 1612,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
