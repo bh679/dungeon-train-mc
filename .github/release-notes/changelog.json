@@ -19674,6 +19674,30 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "mod-whitelist-unsupported-mods-popup",
+      "version": "0.979.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "compatibility",
+        "ui"
+      ],
+      "title": "A heads-up for unsupported mods, and a way to get them approved",
+      "summary": "Free Play now works from a list of approved mods instead of a list of banned ones. If you launch with a mod Dungeon Train doesn't know yet, a screen tells you before you play: that run will be Free Play, so scores and advancements won't be saved. From there you can suggest the mod for the approved list, or quit and switch those mods off for a normal run.",
+      "highlights": [
+        "New Unsupported Mods screen at launch lists any mods Dungeon Train doesn't know yet",
+        "Suggest a mod for the approved list right from that screen \u2014 write a line about why, and it joins the community's suggestions (or adds your vote if someone already asked)",
+        "Quit and Disable switches those mods off, the same way your launcher does, so your next launch is a normal run",
+        "See the full approved list at brennan.games/dungeontrain/mods"
+      ],
+      "pr": 1594,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
