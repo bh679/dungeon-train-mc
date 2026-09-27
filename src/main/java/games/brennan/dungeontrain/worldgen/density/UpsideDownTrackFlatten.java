@@ -25,11 +25,11 @@ public final class UpsideDownTrackFlatten {
      * Erosion floor near the track. Vanilla's erosion band 4 ({@code 0.05..0.45}) is the flat lowland
      * band of the overworld offset spline — plains/forest ground that sits below the train plane.
      */
-    public static final double EROSION_FLOOR = 0.10;
+    public static final double EROSION_FLOOR = 0.25;
     /** Blocks either side of the track centre held at full weight. */
-    public static final int TRACK_INNER = 48;
+    public static final int TRACK_INNER = 80;
     /** Blocks from the track centre where the weight has faded to zero — mountains beyond are untouched. */
-    public static final int TRACK_OUTER = 224;
+    public static final int TRACK_OUTER = 288;
     /** Blocks outside each end of the upside-down stretch over which the weight ramps in / out. */
     public static final int BAND_RAMP = 160;
     /** Coarse probe step of the distance search in {@link #bandWeight}; refined to one block after a hit. */
