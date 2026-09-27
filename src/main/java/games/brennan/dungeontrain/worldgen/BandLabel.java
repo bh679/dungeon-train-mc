@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import net.minecraft.server.level.ServerLevel;
 
 /**
@@ -79,6 +81,8 @@ public final class BandLabel {
 
     /** The styled occurrence at {@code worldX} within {@code phase}, or empty when it is the plain look. */
     private static String styleOf(ServerLevel overworld, WorldGenCycle cycle, TrainPhase phase, int worldX) {
+        // Superflat has no phase of its own — name it so the panel and /dtp next see it as its own band.
+        if (LegacyBands.isInBand(overworld, LegacyBandKind.SUPERFLAT, worldX)) return "Superflat";
         return switch (phase) {
             case NETHER -> NetherBand.isInNetherBand(overworld, worldX) && cycle.isBetterNetherAt(worldX)
                 ? "Better Nether" : "";
