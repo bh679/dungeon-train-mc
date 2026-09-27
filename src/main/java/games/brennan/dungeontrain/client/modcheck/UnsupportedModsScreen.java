@@ -1,9 +1,9 @@
 package games.brennan.dungeontrain.client.modcheck;
 
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.ModSuggestClient;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
+import games.brennan.dungeontrain.registry.ModMobEffects;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
@@ -54,10 +54,14 @@ public final class UnsupportedModsScreen extends Screen {
     private static final int NAME_COLOUR = 0xFFFFFFFF;
     private static final int ID_COLOUR = 0xFF909090;
     private static final int BODY_COLOUR = 0xFFD0D0D0;
-    /** The Free Play effect's icon, so the body reads like the effect it describes. */
-    private static final ResourceLocation FREE_PLAY_ICON =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/free_play");
-    private static final int ICON = 16;
+    /**
+     * The Free Play effect drawn exactly as the HUD draws a status effect: the vanilla
+     * {@code hud/effect_background} frame (24×24) with the effect's own atlas sprite inset 3px at 18×18.
+     */
+    private static final ResourceLocation EFFECT_BACKGROUND = ResourceLocation.withDefaultNamespace("hud/effect_background");
+    private static final int ICON = 24;
+    private static final int EFFECT_INSET = 3;
+    private static final int EFFECT_SPRITE = 18;
     private static final int ICON_GAP = 6;
 
     private final Screen parent;
@@ -221,7 +225,10 @@ public final class UnsupportedModsScreen extends Screen {
         // Free Play icon on the left, centred on the paragraph — like the effect in the inventory.
         int y = listY + visibleRows * ROW_H + GAP;
         int bodyH = bodyLines.size() * (this.font.lineHeight + 1);
-        g.blitSprite(FREE_PLAY_ICON, textX, y + Math.max(0, (bodyH - ICON) / 2), ICON, ICON);
+        int iconY = y + Math.max(0, (bodyH - ICON) / 2);
+        g.blitSprite(EFFECT_BACKGROUND, textX, iconY, ICON, ICON);
+        g.blit(textX + EFFECT_INSET, iconY + EFFECT_INSET, 0, EFFECT_SPRITE, EFFECT_SPRITE,
+            this.minecraft.getMobEffectTextures().get(ModMobEffects.FREE_PLAY));
         int bodyX = textX + ICON + ICON_GAP;
         for (FormattedCharSequence line : bodyLines) {
             g.drawString(this.font, line, bodyX, y, BODY_COLOUR, false);
