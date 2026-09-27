@@ -38,6 +38,7 @@
     "WorldGenRegionFloorMixin",
     "StructureBasementMixin",
     "SinglePoolElementMixin",
+    "StructureTerrainAdaptationMixin",
     "ChunkStatusSpawnMixin",
     "RandomStateMixin",
     "TagLoaderWwooFilterMixin",

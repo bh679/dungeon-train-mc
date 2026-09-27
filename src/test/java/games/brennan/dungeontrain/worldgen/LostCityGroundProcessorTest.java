@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.function.IntFunction;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -87,6 +88,25 @@ final class LostCityGroundProcessorTest {
         assertFalse(LostCityGroundProcessor.yields(Blocks.SHORT_GRASS.defaultBlockState(), 1, column(GRASS, AIR)));
         assertFalse(LostCityGroundProcessor.yields(Blocks.DEEPSLATE_TILES.defaultBlockState(), 1, hill));
         assertFalse(LostCityGroundProcessor.yields(Blocks.DIRT.defaultBlockState(), 3, hill));  // a planter is structure
+    }
+
+    @Test
+    @DisplayName("footing runs from a hanging pad down to the ground, capped, and never under grounded pads")
+    void footing() {
+        BlockState moss = Blocks.MOSS_BLOCK.defaultBlockState();
+        BlockState road = Blocks.COBBLESTONE.defaultBlockState();
+        // below.apply(1) is the block right under the pad
+        IntFunction<BlockState> grounded = d -> STONE;
+        IntFunction<BlockState> dip = d -> d <= 5 ? AIR : STONE;
+        IntFunction<BlockState> chasm = d -> AIR;
+        assertEquals(0, LostCityGroundProcessor.footingDepth(moss, grounded));
+        assertEquals(5, LostCityGroundProcessor.footingDepth(moss, dip));
+        assertEquals(5, LostCityGroundProcessor.footingDepth(road, dip));
+        assertEquals(LostCityGroundProcessor.FOOTING_MAX_DEPTH, LostCityGroundProcessor.footingDepth(road, chasm));
+        assertEquals(0, LostCityGroundProcessor.footingDepth(AIR, chasm));          // an air pad cell gets nothing
+        assertEquals(5, LostCityGroundProcessor.footingDepth(moss, d -> d <= 5 ? Blocks.WATER.defaultBlockState() : STONE));
+        assertEquals(Blocks.DIRT, LostCityGroundProcessor.footingFor(moss).getBlock());
+        assertEquals(Blocks.STONE, LostCityGroundProcessor.footingFor(road).getBlock());
     }
 
     @Test

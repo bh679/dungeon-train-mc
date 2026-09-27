@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BushBlock;
@@ -17,6 +18,8 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProc
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.function.IntFunction;
 
@@ -26,8 +29,8 @@ import java.util.function.IntFunction;
  * <p>Every Big Lost City template carries a fully filled one-block <b>pad</b> at its bottom layer: natural
  * ground (grass, dirt, moss, stone, gravel, sand, a puddle) mixed with built ground (cobblestone and smooth
  * stone roads, deepslate tiles, concrete). Vanilla's {@code beard_thin} adaptation raises terrain to that
- * pad and carves a smooth Gaussian above it, then the template overwrites its whole box — so the pad stamps
- * a flat plane of foreign ground over the stretch's surface, and the template's <em>air</em> cuts a vertical
+ * pad and carves a smooth Gaussian above it, then the template overwrites its whole box — so the pad stamped
+ * a flat plane of foreign ground over the stretch's surface, and the template's <em>air</em> cut a vertical
  * face into any hillside inside the footprint.</p>
  *
  * <p>This processor splits the template into base and structure:</p>
@@ -43,6 +46,13 @@ import java.util.function.IntFunction;
  *   the pad such as planters) is placed as the template says.</li>
  * </ul>
  *
+ * <p>The buildings generate with terrain adaptation <b>off</b> ({@code StructureTerrainAdaptationMixin}):
+ * vanilla's {@code beard_thin} would level the footprint before any of this ran. So the stretch's own ground
+ * runs through the box untouched — where a hill stands higher than the pad it climbs over the lower floors
+ * and buries them (walls and floors are still placed inside it) — and where the pad hangs over lower ground
+ * on the downhill side, {@link #finalizeProcessing} props it up with a footing column: dirt under natural
+ * pad blocks, stone under roads and plazas, down to the ground or {@link #FOOTING_MAX_DEPTH}.</p>
+ *
  * <p>Attached at runtime by {@code SinglePoolElementMixin} to every pool element that places a
  * {@code big_lost_city} template — the mod's own pools and DT's trackside copies alike. Runtime-only, never
  * serialised, so {@link #getType()} is a unit codec. Reads the world only inside the placement box:
@@ -54,6 +64,9 @@ public final class LostCityGroundProcessor extends StructureProcessor {
     public static final LostCityGroundProcessor INSTANCE = new LostCityGroundProcessor();
 
     private static final StructureProcessorType<LostCityGroundProcessor> TYPE = () -> MapCodec.unit(INSTANCE);
+
+    /** Deepest footing placed under a pad hanging over lower ground. */
+    static final int FOOTING_MAX_DEPTH = 24;
 
     /** Namespace of the templates this processor is attached to. */
     private static final String TEMPLATE_NAMESPACE = "big_lost_city";
@@ -141,6 +154,54 @@ public final class LostCityGroundProcessor extends StructureProcessor {
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         boolean yields = yields(state, localY, y -> world.getBlockState(cursor.set(at.getX(), padY + y, at.getZ())));
         return yields ? null : target;
+    }
+
+    /** The block a footing column is built of under this pad block: earth under ground, stone under paving. */
+    static BlockState footingFor(BlockState pad) {
+        return isBase(pad) ? Blocks.DIRT.defaultBlockState() : Blocks.STONE.defaultBlockState();
+    }
+
+    /**
+     * How many footing blocks go under a pad block, given the world column below it ({@code below.apply(1)} is
+     * one block under the pad): down to the first natural ground, at most {@link #FOOTING_MAX_DEPTH}; none
+     * when ground is directly underneath or the pad cell is air.
+     */
+    static int footingDepth(BlockState pad, IntFunction<BlockState> below) {
+        if (pad.isAir()) return 0;
+        int depth = 0;
+        while (depth < FOOTING_MAX_DEPTH && !isNaturalGround(below.apply(depth + 1))) depth++;
+        return depth;
+    }
+
+    @Override
+    public List<StructureTemplate.StructureBlockInfo> finalizeProcessing(ServerLevelAccessor level, BlockPos offset,
+                                                                         BlockPos pivot,
+                                                                         List<StructureTemplate.StructureBlockInfo> originals,
+                                                                         List<StructureTemplate.StructureBlockInfo> processed,
+                                                                         StructurePlaceSettings settings) {
+        int padY = offset.getY();   // rotation and mirroring keep Y, so the template's y=0 lands here
+        BoundingBox box = settings.getBoundingBox();
+        List<StructureTemplate.StructureBlockInfo> footing = null;
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (StructureTemplate.StructureBlockInfo info : processed) {
+            BlockPos at = info.pos();
+            if (at.getY() != padY || (box != null && !box.isInside(at))) continue;
+            int room = box != null ? at.getY() - box.minY() : FOOTING_MAX_DEPTH;
+            if (room <= 0) continue;
+            int depth = footingDepth(info.state(), d -> d > room ? Blocks.STONE.defaultBlockState()
+                    : level.getBlockState(cursor.set(at.getX(), at.getY() - d, at.getZ())));
+            if (depth == 0) continue;
+            if (footing == null) footing = new ArrayList<>();
+            BlockState block = footingFor(info.state());
+            for (int d = 1; d <= depth; d++) {
+                footing.add(new StructureTemplate.StructureBlockInfo(new BlockPos(at.getX(), at.getY() - d, at.getZ()), block, null));
+            }
+        }
+        if (footing == null) return processed;
+        List<StructureTemplate.StructureBlockInfo> out = new ArrayList<>(processed.size() + footing.size());
+        out.addAll(processed);
+        out.addAll(footing);
+        return out;
     }
 
     @Override
