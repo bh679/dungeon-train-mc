@@ -153,7 +153,8 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
             case END_CORE:
                 // Sample the real End's biome source (all five End biomes, swept across successive
                 // End-band passes — see EndCoreBiomes) so world label, surface skin and decoration agree.
-                long endPass = cycle.endPassIndex(blockX);
+                // across a joined End band's seam, the look that owns the column (islands and biome agree)
+                long endPass = cycle.endSourcePassAt(blockX, blockZ, ctx.generationSeed());
                 return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, cycle.endStyleOfPass(endPass));
             case HIGHLAND:
                 // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.

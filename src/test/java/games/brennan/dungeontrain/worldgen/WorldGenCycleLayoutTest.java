@@ -141,6 +141,41 @@ final class WorldGenCycleLayoutTest {
     }
 
     @Test
+    @DisplayName("the vanilla → BoP End seam crossfades: BoP's share of columns rises across ±200, none outside")
+    void endSeamCrossfade() {
+        long seed = 1450L;
+        long seam = LAYOUT.start(4);
+        int half = WorldGenCycle.END_SEAM_HALF_BLEND;
+        double prev = -1.0;
+        for (long u = seam - half; u < seam + half; u += 40) {
+            int bop = 0;
+            int n = 0;
+            for (long du = 0; du < 40; du++) {
+                for (int z = -128; z < 128; z += 2) {
+                    long pass = C.endSourcePassAt(x(u + du), z, seed);
+                    assertTrue(pass == 0L || pass == 1L, "pass " + pass);
+                    if (pass == 1L) bop++;
+                    n++;
+                }
+            }
+            double share = (double) bop / n;
+            assertTrue(share >= prev - 0.05, "BoP share should rise: " + prev + " -> " + share + " at " + u);
+            prev = share;
+        }
+        assertTrue(prev > 0.9, "almost all BoP at the far edge: " + prev);
+        for (int z = -64; z < 64; z++) {
+            assertEquals(0L, C.endSourcePassAt(x(seam - half - 1), z, seed));
+            assertEquals(1L, C.endSourcePassAt(x(seam + half), z, seed));
+            // away from any seam it is just the pass at X — the lone BetterEnd, and before the band
+            assertEquals(C.endPassIndex(x(LAYOUT.start(9) + 3000)), C.endSourcePassAt(x(LAYOUT.start(9) + 3000), z, seed));
+        }
+        // seed-stable, and it doubles with the run like everything else
+        assertEquals(C.endSourcePassAt(x(seam), 7, seed), C.endSourcePassAt(x(seam), 7, seed));
+        assertEquals(Style.VANILLA, C.endSourceLookAt(x(seam - half - 1, 1), 0, seed));
+        assertEquals(Style.BOP, C.endSourceLookAt(x(seam + half, 1), 0, seed));
+    }
+
+    @Test
     @DisplayName("the WWOO stretch runs up to the joined End; it bleeds only into the End's entry fade")
     void wwooBleed() {
         long w = LAYOUT.start(2);

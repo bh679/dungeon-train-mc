@@ -782,6 +782,57 @@ public record WorldGenCycle(long startX, int owGap,
         return isBetterEndPass(endPassIndex(worldX));
     }
 
+    /**
+     * Half-width, in base blocks, of the crossfade across the seam between two joined End pieces (Lap 1's
+     * vanilla → Biomes O' Plenty End). Clamped to half of either piece's core so a short piece keeps a core
+     * of its own.
+     */
+    static final int END_SEAM_HALF_BLEND = 200;
+
+    /** Coherent-noise cell scale for the seam crossfade: clumps of whole island columns, not salt-and-pepper. */
+    private static final int END_SEAM_NOISE_SCALE = 3;
+
+    /** Salt so the seam dither is independent of the other coherent-noise users. */
+    private static final long END_SEAM_SALT = 0x3E5D_A11CL;
+
+    /**
+     * The End pass whose look owns column {@code (worldX, worldZ)}. Away from a seam that is simply
+     * {@link #endPassIndex}. Across the seam between two joined End pieces the two looks crossfade: the
+     * later piece's share rises {@code 0 → 1} over {@code ±END_SEAM_HALF_BLEND} base blocks, and a seed-stable
+     * column noise picks which piece owns each column — so vanilla and BoP islands interleave in clumps
+     * instead of meeting at a chunk-aligned wall. Every consumer (the vanilla island stamp, the sampled
+     * copy-in and the End-core biomes) asks this one function, so no column gets both looks or neither.
+     */
+    public long endSourcePassAt(int worldX, int worldZ, long seed) {
+        long pass = endPassIndex(worldX);
+        if (layout == null || pass < 0L) return pass;
+        int i = slotAt(worldX);
+        if (i < 0 || layout.slot(i).type() != CycleLayout.Type.END) return pass;
+        long u = baseAt(worldX);
+        int first = layout.endGroupFirst(i);
+        int last = first + layout.endGroupSize(i) - 1;
+        // the seam at this piece's start (from the previous piece) or at its end (into the next one)
+        for (int seam = i; seam <= i + 1; seam++) {
+            if (seam <= first || seam > last) continue;
+            long half = Math.min(END_SEAM_HALF_BLEND,
+                    Math.min(layout.slot(seam - 1).core(), layout.slot(seam).core()) / 2L);
+            if (half <= 0L) continue;
+            long d = u - layout.start(seam);
+            if (d < -half || d >= half) continue;
+            double later = (d + half + 0.5) / (2.0 * half);
+            long base = (long) runAt(worldX) * layout.typeCount(CycleLayout.Type.END);
+            double n = Disintegration.coherentNoise(seed ^ END_SEAM_SALT, worldX, 0, worldZ, END_SEAM_NOISE_SCALE);
+            int owner = n < later ? seam : seam - 1;
+            return base + layout.occurrence(owner);
+        }
+        return pass;
+    }
+
+    /** {@link #endStyleOfPass} of {@link #endSourcePassAt}: the look column {@code (worldX, worldZ)} wears. */
+    public CycleLayout.Style endSourceLookAt(int worldX, int worldZ, long seed) {
+        return endStyleOfPass(endSourcePassAt(worldX, worldZ, seed));
+    }
+
     /** Style of the occurrence behind {@code t}-pass {@code pass} ({@code run × perRun + occurrence}); {@code null} if none. */
     private CycleLayout.Style occurrenceStyle(CycleLayout.Type t, long pass) {
         int n = layout.typeCount(t);
