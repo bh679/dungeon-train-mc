@@ -33,7 +33,8 @@ public final class StrongholdRingGate {
         try {
             overworld.getChunkSource().getGeneratorState().ensureStructuresGenerated();
         } catch (Throwable t) {
-            LOGGER.error("[DungeonTrain] Failed to start the stronghold ring search; it will start on first use", t);
+            LOGGER.error("[DungeonTrain] Failed to start the stronghold ring search ({}); vanilla will retry it "
+                + "on the first structure chunk, where the same failure is fatal", t.getClass().getName(), t);
         }
     }
 }
