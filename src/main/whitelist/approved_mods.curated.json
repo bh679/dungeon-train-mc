@@ -18,7 +18,14 @@
     "READS, and libraries that do nothing on their own. Do not approve mods that change what the game",
     "GIVES you — loot, mobs, structures, recipes, progression, movement — however popular they are.",
     "Those runs are not comparable to anyone else's, which is the whole reason Free Play exists.",
-    "Nothing here overrides the cheat-mod blacklist: a mod on both lists is still a cheat mod."
+    "Nothing here overrides the cheat-mod blacklist: a mod on both lists is still a cheat mod.",
+    "",
+    "MINIMUM DT VERSION: an approval that is only safe from some Dungeon Train version up (it needs",
+    "support DT added, e.g. Farmer's Delight needs the soup-stacking hold-off) is floored ON THE RELAY",
+    "(Approved Mods page, min_dt_version), not here. Jars send ?dt=<version>; the relay serves a",
+    "floored id as approved at or above the floor and as REVOKED below it or when no version is sent.",
+    "That is the only lever that reaches jars already shipped: a field here would be invisible to them,",
+    "and a revocation beats this file's baked approval in every jar ever released."
   ],
   "prefixes": [
     "fabric_"

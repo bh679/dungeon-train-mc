@@ -19848,13 +19848,13 @@
       ],
       "pr": 1603,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.983.0",
+      "released_at": "2026-09-27T10:54:10Z"
     },
     {
       "id": "midrun-config-free-play",
-      "version": "0.983.0",
+      "version": "0.984.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -19894,8 +19894,27 @@
       "released_at": null
     },
     {
-      "id": "sprint-fly-3x-default",
+      "id": "whitelist-min-dt-version",
       "version": "0.985.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Some fair-play mods need a recent Dungeon Train",
+      "summary": "A few mods on the fair-play list are only approved on newer versions of Dungeon Train, because they rely on support those versions added. Run one on an older version and the run is Free Play until you update.",
+      "highlights": [
+        "Update Dungeon Train to keep a mod like Catalogue approved for fair play"
+      ],
+      "pr": 1606,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sprint-fly-3x-default",
+      "version": "0.986.0",
       "type": "feat",
       "tags": [
         "feature"
@@ -19903,6 +19922,7 @@
       "title": "Faster creative sprint-flying",
       "summary": "Sprint-flying in creative is now 3\u00d7 faster by default. Normal flight and flying up or down are unchanged. Use /dt flyspeed 1 to go back to vanilla speed, or pick any multiplier you like.",
       "highlights": [],
+      "pr": 1608,
       "date": "2026-09-27",
       "released": false,
       "released_in": null,
