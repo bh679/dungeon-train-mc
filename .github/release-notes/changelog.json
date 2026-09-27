@@ -19563,13 +19563,9 @@
         "feature",
         "world"
       ],
-      "title": "/dtp next \u2014 hop to the next band",
-      "summary": "Operators can now type /dtp next to jump straight to the start of whatever band lies ahead, landing on a fresh train, instead of looking up the band's name first.",
-      "highlights": [
-        "/dtp next jumps just inside the next band ahead of you",
-        "/dtp next <distance> lands that many blocks into it",
-        "Chat tells you which band you left and which you arrived in"
-      ],
+      "title": "/dtp next",
+      "summary": "A new operator shortcut for skipping ahead.",
+      "highlights": [],
       "pr": 1586,
       "date": "2026-09-27",
       "released": false,
