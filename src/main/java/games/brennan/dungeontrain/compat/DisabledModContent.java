@@ -16,14 +16,14 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * The armour, weapons, tools and ores of the biome mods DT depends on — Biomes O' Plenty, BetterEnd and
+ * The armour, weapons, tools, gear metals and ores of the biome mods DT depends on — Biomes O' Plenty, BetterEnd and
  * BetterNether. DT keeps their biomes and blocks but not their parallel gear progression, which would
  * bypass DT's own loot and difficulty balance.
  *
- * <p>Single source of truth for four enforcement points: recipes ({@code RecipeManagerDisableMixin}),
+ * <p>Single source of truth for five enforcement points: recipes ({@code RecipeManagerDisableMixin}),
  * loot ({@link StripDisabledItemsLootModifier}), ore placement ({@code ChunkGeneratorDecorationMixin})
- * and the creative tabs. Gear is recognised by item class, so hammers, excavators and anything a mod
- * update adds are caught without a list; ores and BetterEnd's tool parts are recognised by id.</p>
+ * the creative tabs and spawned mobs' equipment ({@link DisabledModMobGear}). Gear is recognised by item class, so hammers, excavators and anything a mod
+ * update adds are caught without a list; ores, metals and BetterEnd's tool parts are recognised by id.</p>
  */
 public final class DisabledModContent {
 
@@ -37,6 +37,10 @@ public final class DisabledModContent {
      *  intermediates once the tools they make are gone. */
     private static final Pattern TOOL_PART =
         Pattern.compile(".*_(?:axe|hammer|hoe|pickaxe|shovel)_head$|.*_sword_(?:blade|handle)$");
+
+    /** Gear metals: ingots, nuggets and raw ore drops ({@code cincinnasite_ingot}, {@code thallasium_nugget},
+     *  {@code raw_amber}). Gems (nether ruby, amber) are kept — decorative blocks are made from them. */
+    private static final Pattern METAL = Pattern.compile(".*_(?:ingot|nugget)$|^raw_.*");
 
     /** Smithing templates — the mods' templates only upgrade or assemble their gear. */
     private static final Pattern SMITHING_TEMPLATE = Pattern.compile(".*_smithing_template$");
@@ -53,7 +57,7 @@ public final class DisabledModContent {
             && ORE.matcher(placedFeature.getPath()).matches();
     }
 
-    /** True for a disabled mod's armour, weapon, tool, tool part, gear smithing template or ore block item. */
+    /** True for a disabled mod's armour, weapon, tool, tool part, gear smithing template, metal or ore item. */
     public static boolean isDisabledItem(Item item) {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
         return isDisabledItem(id, isGearClass(item));
@@ -72,7 +76,10 @@ public final class DisabledModContent {
         if (SMITHING_TEMPLATE.matcher(path).matches()) {
             return !KEPT_TEMPLATES.contains(id.toString());
         }
-        return gearClass || ORE.matcher(path).matches() || TOOL_PART.matcher(path).matches();
+        return gearClass
+            || ORE.matcher(path).matches()
+            || METAL.matcher(path).matches()
+            || TOOL_PART.matcher(path).matches();
     }
 
     /** Armour, melee weapons (swords, maces, tridents), ranged weapons, shields and every tiered tool. */

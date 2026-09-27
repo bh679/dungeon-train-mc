@@ -6,7 +6,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -56,7 +58,7 @@ final class DisabledModContentTest {
     }
 
     @Test
-    @DisplayName("ore blocks and BetterEnd tool parts are disabled by id; materials are kept")
+    @DisplayName("ore blocks, gear metals and BetterEnd tool parts are disabled by id; gems and blocks are kept")
     void idRules() {
         assertTrue(DisabledModContent.isDisabledItem(id("betternether:nether_ruby_ore"), false));
         assertTrue(DisabledModContent.isDisabledItem(id("betterend:thallasium_ore"), false));
@@ -65,13 +67,32 @@ final class DisabledModContentTest {
         assertTrue(DisabledModContent.isDisabledItem(id("betterend:thallasium_sword_blade"), false));
         assertTrue(DisabledModContent.isDisabledItem(id("betterend:terminite_sword_handle"), false));
 
-        assertFalse(DisabledModContent.isDisabledItem(id("betternether:cincinnasite_ingot"), false));
+        assertTrue(DisabledModContent.isDisabledItem(id("betternether:cincinnasite_ingot"), false));
+        assertTrue(DisabledModContent.isDisabledItem(id("betterend:thallasium_ingot"), false));
+        assertTrue(DisabledModContent.isDisabledItem(id("betterend:terminite_ingot"), false));
+        assertTrue(DisabledModContent.isDisabledItem(id("betterend:aeternium_ingot"), false));
+        assertTrue(DisabledModContent.isDisabledItem(id("betterend:thallasium_nugget"), false));
+        assertTrue(DisabledModContent.isDisabledItem(id("betterend:terminite_nugget"), false));
+        assertTrue(DisabledModContent.isDisabledItem(id("betterend:raw_amber"), false));
+
         assertFalse(DisabledModContent.isDisabledItem(id("betternether:nether_ruby"), false));
-        assertFalse(DisabledModContent.isDisabledItem(id("betterend:thallasium_ingot"), false));
+        assertFalse(DisabledModContent.isDisabledItem(id("betternether:cincinnasite_block"), false));
+        assertFalse(DisabledModContent.isDisabledItem(id("betterend:thallasium_block"), false));
+        assertFalse(DisabledModContent.isDisabledItem(id("minecraft:iron_ingot"), false));
         assertFalse(DisabledModContent.isDisabledItem(id("betterend:amber_gem"), false));
         assertFalse(DisabledModContent.isDisabledItem(id("biomesoplenty:rose_quartz_chunk"), false));
         assertFalse(DisabledModContent.isDisabledItem(id("minecraft:iron_ore"), false));
         assertFalse(DisabledModContent.isDisabledItem(null, true));
+    }
+
+    @Test
+    @DisplayName("mob gear swaps to iron, or diamond for diamond variants; non-gear is removed")
+    void mobGearReplacement() {
+        assertEquals("iron_helmet", DisabledModMobGear.vanillaReplacementId("cincinnasite_helmet", "helmet"));
+        assertEquals("diamond_sword", DisabledModMobGear.vanillaReplacementId("cincinnasite_sword_diamond", "sword"));
+        assertEquals("iron_axe", DisabledModMobGear.vanillaReplacementId("thallasium_hammer", "axe"));
+        assertEquals("bow", DisabledModMobGear.vanillaReplacementId("some_bow", "bow"));
+        assertNull(DisabledModMobGear.vanillaReplacementId("cincinnasite_ingot", null));
     }
 
     @Test
