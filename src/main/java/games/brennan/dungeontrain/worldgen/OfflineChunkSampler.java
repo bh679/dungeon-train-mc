@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen;
 
+import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -11,6 +12,8 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeManager;
+import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
@@ -53,6 +56,9 @@ import java.util.EnumSet;
  *       {@code CocoaDecorator} can't survive).</li>
  *   <li><b>Whole-chunk fill, never per-column.</b> {@code fillFromNoise} uses vanilla's interpolated cell
  *       grid (~100 ms a chunk); a column asked for alone runs the whole noise router (~28 ms each).</li>
+ *   <li><b>Surface rules and carvers read biomes off the sample</b> (see {@link #biomeManager}), not the
+ *       biome source: they ask ~4,900 times a chunk, and on a modded source that was two-thirds of the
+ *       sample's cost. Live generation does the same through its {@code WorldGenRegion}.</li>
  *   <li><b>Never join {@code fillFromNoise} from inside {@code Util.backgroundExecutor()}</b> — it
  *       schedules there. Callers sample from their own dedicated thread(s).</li>
  * </ul>
@@ -195,7 +201,7 @@ public final class OfflineChunkSampler {
         Registry<Biome> biomes = level.registryAccess().registryOrThrow(Registries.BIOME);
         NoiseChunk noise = NoiseChunk.forChunk(chunk, random, NO_BEARDS, settings,
             fluidPicker(settings), Blender.empty());
-        random.surfaceSystem().buildSurface(random, biomeManager(generator, random, level.getSeed()),
+        random.surfaceSystem().buildSurface(random, biomeManager(generator, random, level.getSeed(), chunk),
             biomes, settings.useLegacyRandomSource(), new WorldGenerationContext(generator, level),
             chunk, noise, settings.surfaceRule());
     }
@@ -204,7 +210,7 @@ public final class OfflineChunkSampler {
     public static void carve(NoiseBasedChunkGenerator generator, RandomState random, ProtoChunk chunk,
                              Workspace workspace, long worldSeed) {
         generator.applyCarvers(workspace.region(), worldSeed, random,
-            biomeManager(generator, random, worldSeed), workspace.structures(), chunk,
+            biomeManager(generator, random, worldSeed, chunk), workspace.structures(), chunk,
             GenerationStep.Carving.AIR);
     }
 
@@ -220,12 +226,30 @@ public final class OfflineChunkSampler {
         return (x, y, z) -> y < Math.min(-54, seaLevel) ? lava : sea;
     }
 
-    /** A biome manager reading the generator's own biome source rather than any level's chunks. */
+    /**
+     * A biome manager over {@code sample}'s own biomes, falling back to the generator's biome source
+     * for quarts outside the sample (the fuzzed lookups at its edges reach into the neighbours).
+     *
+     * <p>Equal to asking the source everywhere: {@link #blankSample} filled every quart of the sample
+     * with exactly {@code source.getNoiseBiome(qx, qy, qz, sampler)}. It is vanilla's own pattern —
+     * {@code WorldGenRegion.getNoiseBiome} answers from the chunk — and it matters because surface rules
+     * and carvers look biomes up thousands of times a chunk, at 6–12 µs each on the End's sources.</p>
+     */
     public static BiomeManager biomeManager(NoiseBasedChunkGenerator generator, RandomState random,
-                                            long worldSeed) {
-        return new BiomeManager(
-            (x, y, z) -> generator.getBiomeSource().getNoiseBiome(x, y, z, random.sampler()),
-            BiomeManager.obfuscateSeed(worldSeed));
+                                            long worldSeed, ChunkAccess sample) {
+        BiomeSource source = generator.getBiomeSource();
+        Climate.Sampler sampler = random.sampler();
+        int minQx = QuartPos.fromBlock(sample.getPos().getMinBlockX());
+        int minQz = QuartPos.fromBlock(sample.getPos().getMinBlockZ());
+        int maxQx = minQx + QuartPos.fromBlock(16) - 1;
+        int maxQz = minQz + QuartPos.fromBlock(16) - 1;
+        int minQy = QuartPos.fromSection(sample.getMinSection());
+        int maxQy = QuartPos.fromSection(sample.getMaxSection()) - 1;
+        return new BiomeManager((qx, qy, qz) -> {
+            boolean inside = qx >= minQx && qx <= maxQx && qz >= minQz && qz <= maxQz
+                && qy >= minQy && qy <= maxQy;
+            return inside ? sample.getNoiseBiome(qx, qy, qz) : source.getNoiseBiome(qx, qy, qz, sampler);
+        }, BiomeManager.obfuscateSeed(worldSeed));
     }
 
     /** A workspace over {@code chunk} and the ring of throwaway neighbours around it. */

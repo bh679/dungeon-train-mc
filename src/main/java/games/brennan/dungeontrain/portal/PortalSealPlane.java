@@ -86,6 +86,24 @@ public final class PortalSealPlane {
      *                attic and no ceiling to hide anything over — every mountainside would otherwise
      *                answer yes.
      */
+    /**
+     * The cut near the sunk Amplified band, whose terrain runs down to {@code floorY} (the band's own
+     * bedrock row) and whose twins sit in an attic over a barrier lid at {@code lidY}.
+     *
+     * <p>Below the sunk floor and inside the attic behave as the basement and the attic do in
+     * {@link #cutFor}. From the world there is only a floor cut, at the <em>sunk</em> floor — the
+     * stock floor would cull every valley under it. There is deliberately no cut above the lid: the
+     * band's fades mix in ordinary chunks whose peaks can pass the lid height, and a plane there would
+     * shear their tops off. The twins over the lid are left to sit above the clouds instead.</p>
+     *
+     * @param atticHere whether the camera's column is in the band's slot, where the lid is stamped
+     */
+    public static Cut cutForAmplified(int floorY, int lidY, boolean atticHere, double cameraY) {
+        if (cameraY < floorY) return Cut.between(Integer.MIN_VALUE, floorY);
+        if (atticHere && cameraY > lidY + 1) return Cut.between(lidY, Integer.MAX_VALUE);
+        return Cut.between(floorY, Integer.MAX_VALUE);
+    }
+
     public static Cut cutFor(int bedrockY, int roofY, boolean lidHere, double cameraY) {
         boolean hasFloor = bedrockY != Integer.MIN_VALUE;
         boolean hasLid = lidHere && roofY != Integer.MAX_VALUE;
