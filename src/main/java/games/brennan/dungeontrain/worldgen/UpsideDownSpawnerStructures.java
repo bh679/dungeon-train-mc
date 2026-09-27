@@ -31,12 +31,13 @@ public final class UpsideDownSpawnerStructures {
         "minecraft:monster_room",
         "minecraft:monster_room_deep");
 
-    /** Whether any column of overworld chunk {@code chunkX} is in the band, its entry lead-in or exit fade. */
-    public static boolean appliesTo(ServerLevel level, int chunkX) {
+    /** Whether any column of overworld chunk {@code (chunkX, chunkZ)} is in the band, its entry lead-in or exit fade. */
+    public static boolean appliesTo(ServerLevel level, int chunkX, int chunkZ) {
         if (!level.dimension().equals(Level.OVERWORLD)) return false;
         int minX = chunkX << 4;
-        return UpsideDownBand.isInBandEntryLeadOrExit(level, minX)
-            || UpsideDownBand.isInBandEntryLeadOrExit(level, minX + 15);
+        int minZ = chunkZ << 4;
+        return UpsideDownBand.isInBandEntryLeadOrExit(level, minX, minZ)
+            || UpsideDownBand.isInBandEntryLeadOrExit(level, minX + 15, minZ);
     }
 
     public static boolean excludesStructure(ResourceLocation id) {

@@ -36,6 +36,17 @@ public final class SunkZone {
         return DungeonTrainWorldData.get(level).startsWithTrain();
     }
 
+    /**
+     * Whether the column at {@code (worldX, worldZ)} of {@code level} is sunk, reading the chunk's own cycle
+     * — in the mix zone that is the band the chunk picked. Use this in worldgen; the X-only form is for
+     * progression, which stays on the real X.
+     */
+    public static boolean contains(ServerLevel level, int worldX, int worldZ) {
+        if (!level.dimension().equals(Level.OVERWORLD)) return false;
+        if (!contains(MixBand.cycleAtBlock(level, worldX, worldZ), worldX)) return false;
+        return DungeonTrainWorldData.get(level).startsWithTrain();
+    }
+
     /** The column a chunk-level decision reads: the chunk's centre. */
     public static int chunkColumn(int chunkX) {
         return (chunkX << 4) + 8;
@@ -47,13 +58,13 @@ public final class SunkZone {
      */
     public static boolean isSunkOverworldChunk(ServerLevel level, int chunkX, int chunkZ) {
         if (LegacyBands.kindOfChunk(level, chunkX, chunkZ) != null) return false;
-        return contains(level, chunkColumn(chunkX));
+        return contains(level, chunkColumn(chunkX), chunkZ << 4);
     }
 
     /** Whether chunk {@code (chunkX, chunkZ)}'s terrain is sunk at all — Amplified, or sunk overworld. */
     public static boolean isSunkChunk(ServerLevel level, int chunkX, int chunkZ) {
         LegacyBandKind kind = LegacyBands.kindOfChunk(level, chunkX, chunkZ);
         if (kind == LegacyBandKind.AMPLIFIED) return true;
-        return kind == null && contains(level, chunkColumn(chunkX));
+        return kind == null && contains(level, chunkColumn(chunkX), chunkZ << 4);
     }
 }

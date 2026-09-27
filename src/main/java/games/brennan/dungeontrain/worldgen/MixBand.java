@@ -212,6 +212,14 @@ public final class MixBand {
         return cycleFor(base, data.getGenerationSeed(), chunkX, chunkZ);
     }
 
+    /** Sentinel Z for the band helpers' X-only overloads: read the base cycle (progression, the real X). */
+    public static final int NO_Z = Integer.MIN_VALUE;
+
+    /** {@link #cycleAtBlock}, or the base cycle when {@code blockZ} is {@link #NO_Z}. */
+    public static WorldGenCycle cycleAtColumn(ServerLevel level, int blockX, int blockZ) {
+        return blockZ == NO_Z ? WorldGenCycle.fromConfig() : cycleAtBlock(level, blockX, blockZ);
+    }
+
     /** {@link #cycleAt} for the chunk holding block {@code (blockX, blockZ)}. */
     public static WorldGenCycle cycleAtBlock(ServerLevel level, int blockX, int blockZ) {
         return cycleAt(level, blockX >> 4, blockZ >> 4);

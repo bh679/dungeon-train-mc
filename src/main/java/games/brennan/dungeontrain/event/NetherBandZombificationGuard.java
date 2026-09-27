@@ -49,7 +49,7 @@ public final class NetherBandZombificationGuard {
         if (!level.dimension().equals(Level.OVERWORLD)) return;
         if (entity.tickCount % CHECK_PERIOD_TICKS != 0) return;
 
-        boolean inNether = NetherBand.isInNetherBiome(level, (int) Math.floor(entity.getX()));
+        boolean inNether = NetherBand.isInNetherBiome(level, (int) Math.floor(entity.getX()), (int) Math.floor(entity.getZ()));
         boolean ours = entity.getTags().contains(TAG);
         if (inNether == ours) return; // steady state — nothing to do, no synced-data write
 

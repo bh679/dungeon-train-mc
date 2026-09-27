@@ -103,14 +103,14 @@ public final class BedrockFloorEvents {
         // Spheres band: floating spheres over open void, and a fade where the ground dissolves — no
         // bedrock floor anywhere the void ramp is non-zero. Per-chunk + deterministic, order-independent
         // with the carve handler (which would erase the floor anyway outside the spheres).
-        if (SpheresBand.chunkTouchesBand(level, chunkMinX)) {
+        if (SpheresBand.chunkTouchesBand(level, chunkMinX, chunk.getPos().getMinBlockZ())) {
             return;
         }
 
         // Spheres band: floating spheres over open void, and a fade where the ground dissolves — no
         // bedrock floor anywhere the void ramp is non-zero. Per-chunk + deterministic, order-independent
         // with the carve handler (which would erase the floor anyway outside the spheres).
-        if (SpheresBand.chunkTouchesBand(level, chunkMinX)) {
+        if (SpheresBand.chunkTouchesBand(level, chunkMinX, chunk.getPos().getMinBlockZ())) {
             return;
         }
 
@@ -151,15 +151,15 @@ public final class BedrockFloorEvents {
         for (int dx = 0; dx < 16; dx++) {
             int worldX = chunkMinX + dx;
             boolean voidColumn = maybeBand
-                    && DisintegrationBand.middleRampAt(level, worldX) > 0.0;
+                    && DisintegrationBand.middleRampAt(level, worldX, chunk.getPos().getMinBlockZ()) > 0.0;
             boolean upsideColumn = maybeUpside
-                    && UpsideDownBand.isInBand(level, worldX);
+                    && UpsideDownBand.isInBand(level, worldX, chunk.getPos().getMinBlockZ());
             // In the exit crossfade the underside stays open void until the overworld coalesces —
             // WorldUpsideDownEvents clears the floor there while !exitFloorPresent, so match it here so
             // the two handlers agree per column. Once the floor has returned, bedrock is stamped normally.
             boolean exitVoidColumn = maybeUpside
-                    && UpsideDownBand.isInExitFade(level, worldX)
-                    && !UpsideDownBand.exitFloorPresent(level, worldX);
+                    && UpsideDownBand.isInExitFade(level, worldX, chunk.getPos().getMinBlockZ())
+                    && !UpsideDownBand.exitFloorPresent(level, worldX, chunk.getPos().getMinBlockZ());
             if (voidColumn || upsideColumn || exitVoidColumn) continue;
             for (int dz = 0; dz < 16; dz++) {
                 section.setBlockState(dx, localY, dz, bedrock, false);
@@ -179,7 +179,8 @@ public final class BedrockFloorEvents {
      */
     private static void stampSunkLid(ServerLevel level, ChunkAccess chunk) {
         int chunkMinX = chunk.getPos().getMinBlockX();
-        boolean anyInSlot = SunkZone.contains(level, chunkMinX) || SunkZone.contains(level, chunkMinX + 15);
+        int chunkMinZ = chunk.getPos().getMinBlockZ();
+        boolean anyInSlot = SunkZone.contains(level, chunkMinX, chunkMinZ) || SunkZone.contains(level, chunkMinX + 15, chunkMinZ);
         if (!anyInSlot) return;
         AmplifiedDrop drop = AmplifiedDrop.of(level);
         if (!drop.active() || drop.lidY() >= level.getMaxBuildHeight()) return;
@@ -189,7 +190,7 @@ public final class BedrockFloorEvents {
         BlockState barrier = Blocks.BARRIER.defaultBlockState();
         boolean wrote = false;
         for (int dx = 0; dx < 16; dx++) {
-            if (!SunkZone.contains(level, chunkMinX + dx)) continue;
+            if (!SunkZone.contains(level, chunkMinX + dx, chunkMinZ)) continue;
             for (int dz = 0; dz < 16; dz++) {
                 if (!section.getBlockState(dx, localY, dz).isAir()) continue;
                 section.setBlockState(dx, localY, dz, barrier, false);

@@ -126,6 +126,9 @@ public final class DebugCommand {
             .then(Commands.literal("nether-passes").executes(ctx -> NetherPassesDebug.report(ctx.getSource())))
             // /dungeontrain debug cycle-layout [runs] — every band slot's world-X range (run 0 and the doubled
             // runs after it) with the phase read at its midpoint. Also logged at INFO for RCON runs.
+            // /dungeontrain debug mix-pick — the mix-zone band each chunk around you generates as (a letter grid,
+            // +X to the right), plus the candidate counts. Also logged at INFO for RCON runs.
+            .then(Commands.literal("mix-pick").executes(ctx -> MixPickDebug.report(ctx.getSource())))
             .then(Commands.literal("cycle-layout")
                 .executes(ctx -> CycleLayoutDebug.report(ctx.getSource(), 2))
                 .then(Commands.argument("runs", IntegerArgumentType.integer(1, 8))

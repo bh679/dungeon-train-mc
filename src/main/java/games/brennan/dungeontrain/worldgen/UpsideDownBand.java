@@ -42,8 +42,13 @@ public final class UpsideDownBand {
      * terrain reflection, since a vertical mirror is all-or-nothing per column.
      */
     public static boolean isInBand(ServerLevel overworld, int worldX) {
+        return isInBand(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #isInBand(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static boolean isInBand(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return false;
-        return WorldGenCycle.fromConfig().isInUpsideDownBand(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).isInUpsideDownBand(worldX);
     }
 
     /**
@@ -51,8 +56,13 @@ public final class UpsideDownBand {
      * drives the sky/light crossfade and the mob-spawn gate on the server side.
      */
     public static double rampAt(ServerLevel overworld, int worldX) {
+        return rampAt(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #rampAt(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static double rampAt(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return 0.0;
-        return WorldGenCycle.fromConfig().upsideDownRamp(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).upsideDownRamp(worldX);
     }
 
     /**
@@ -61,8 +71,13 @@ public final class UpsideDownBand {
      * noise-gated partial mirror instead of the full in-band reflection. False when the band is off.
      */
     public static boolean isInEntryLead(ServerLevel overworld, int worldX) {
+        return isInEntryLead(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #isInEntryLead(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static boolean isInEntryLead(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return false;
-        return WorldGenCycle.fromConfig().isInUpsideDownEntryLead(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).isInUpsideDownEntryLead(worldX);
     }
 
     /**
@@ -71,8 +86,13 @@ public final class UpsideDownBand {
      * {@code WorldUpsideDownEvents}'s partial-mirror pass (see {@link #revealYExtent}).
      */
     public static double entryRevealRamp(ServerLevel overworld, int worldX) {
+        return entryRevealRamp(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #entryRevealRamp(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static double entryRevealRamp(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return 0.0;
-        return WorldGenCycle.fromConfig().upsideDownEntryRevealRamp(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).upsideDownEntryRevealRamp(worldX);
     }
 
     /**
@@ -81,8 +101,13 @@ public final class UpsideDownBand {
      * the lead-in's revealed terrain looks and behaves like the band. False when the band is off.
      */
     public static boolean isInBandOrEntryLead(ServerLevel overworld, int worldX) {
+        return isInBandOrEntryLead(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #isInBandOrEntryLead(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static boolean isInBandOrEntryLead(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return false;
-        return WorldGenCycle.fromConfig().isInUpsideDownBandOrEntryLead(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).isInUpsideDownBandOrEntryLead(worldX);
     }
 
     /**
@@ -91,20 +116,35 @@ public final class UpsideDownBand {
      * islands while fading the normal overworld back in over the void. False when the band is off.
      */
     public static boolean isInExitFade(ServerLevel overworld, int worldX) {
+        return isInExitFade(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #isInExitFade(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static boolean isInExitFade(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return false;
-        return WorldGenCycle.fromConfig().isInUpsideDownExitFade(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).isInUpsideDownExitFade(worldX);
     }
 
     /** Overworld-reveal ramp {@code 0..1} across the exit crossfade (0 outside / when disabled). */
     public static double exitOwReveal(ServerLevel overworld, int worldX) {
+        return exitOwReveal(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #exitOwReveal(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static double exitOwReveal(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return 0.0;
-        return WorldGenCycle.fromConfig().upsideDownExitOwRevealRamp(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).upsideDownExitOwRevealRamp(worldX);
     }
 
     /** Mirror-disperse ramp {@code 1..0} across the exit crossfade (0 outside / when disabled). */
     public static double exitMirrorDisperse(ServerLevel overworld, int worldX) {
+        return exitMirrorDisperse(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #exitMirrorDisperse(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static double exitMirrorDisperse(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return 0.0;
-        return WorldGenCycle.fromConfig().upsideDownExitMirrorDisperseRamp(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).upsideDownExitMirrorDisperseRamp(worldX);
     }
 
     /**
@@ -114,7 +154,12 @@ public final class UpsideDownBand {
      * it) so the two ChunkEvent.Load handlers agree per column regardless of ordering.
      */
     public static boolean exitFloorPresent(ServerLevel overworld, int worldX) {
-        return exitOwReveal(overworld, worldX) >= DungeonTrainCommonConfig.UPSIDE_DOWN_EXIT_FLOOR_RETURN;
+        return exitFloorPresent(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #exitFloorPresent(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static boolean exitFloorPresent(ServerLevel overworld, int worldX, int worldZ) {
+        return exitOwReveal(overworld, worldX, worldZ) >= DungeonTrainCommonConfig.UPSIDE_DOWN_EXIT_FLOOR_RETURN;
     }
 
     /**
@@ -123,7 +168,12 @@ public final class UpsideDownBand {
      * lid recedes so the exit doesn't end in a bedrock wall.
      */
     public static boolean exitRoofPresent(ServerLevel overworld, int worldX) {
-        return exitMirrorDisperse(overworld, worldX) >= DungeonTrainCommonConfig.UPSIDE_DOWN_EXIT_ROOF_RECEDE;
+        return exitRoofPresent(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #exitRoofPresent(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static boolean exitRoofPresent(ServerLevel overworld, int worldX, int worldZ) {
+        return exitMirrorDisperse(overworld, worldX, worldZ) >= DungeonTrainCommonConfig.UPSIDE_DOWN_EXIT_ROOF_RECEDE;
     }
 
     /**
@@ -133,8 +183,13 @@ public final class UpsideDownBand {
      * False when the band is off.
      */
     public static boolean isInBandEntryLeadOrExit(ServerLevel overworld, int worldX) {
+        return isInBandEntryLeadOrExit(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #isInBandEntryLeadOrExit(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static boolean isInBandEntryLeadOrExit(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return false;
-        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        WorldGenCycle cycle = MixBand.cycleAtColumn(overworld, worldX, worldZ);
         return cycle.isInUpsideDownBandOrEntryLead(worldX) || cycle.isInUpsideDownExitFade(worldX);
     }
 

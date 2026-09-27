@@ -138,16 +138,16 @@ public final class UpsideDownMirror {
         boolean any = false;
         for (int dx = 0; dx < 16; dx++) {
             int worldX = chunkMinX + dx;
-            inBand[dx] = UpsideDownBand.isInBand(level, worldX);
+            inBand[dx] = UpsideDownBand.isInBand(level, worldX, chunkMinZ);
             if (!inBand[dx]) {
-                inLead[dx] = UpsideDownBand.isInEntryLead(level, worldX);
+                inLead[dx] = UpsideDownBand.isInEntryLead(level, worldX, chunkMinZ);
                 if (inLead[dx]) {
-                    leadReveal[dx] = UpsideDownBand.entryRevealRamp(level, worldX);
+                    leadReveal[dx] = UpsideDownBand.entryRevealRamp(level, worldX, chunkMinZ);
                 } else {
-                    inExit[dx] = UpsideDownBand.isInExitFade(level, worldX);
+                    inExit[dx] = UpsideDownBand.isInExitFade(level, worldX, chunkMinZ);
                     if (inExit[dx]) {
-                        exitReveal[dx] = UpsideDownBand.exitOwReveal(level, worldX);
-                        exitDisperse[dx] = UpsideDownBand.exitMirrorDisperse(level, worldX);
+                        exitReveal[dx] = UpsideDownBand.exitOwReveal(level, worldX, chunkMinZ);
+                        exitDisperse[dx] = UpsideDownBand.exitMirrorDisperse(level, worldX, chunkMinZ);
                     }
                 }
             }

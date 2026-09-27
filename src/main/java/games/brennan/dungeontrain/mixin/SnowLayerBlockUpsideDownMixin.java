@@ -44,7 +44,7 @@ public abstract class SnowLayerBlockUpsideDownMixin {
             BlockPos currentPos, BlockPos facingPos, CallbackInfoReturnable<BlockState> cir) {
         if (!(level instanceof ServerLevel server)) return;
         if (!server.dimension().equals(Level.OVERWORLD)) return;
-        if (UpsideDownBand.isInBandOrEntryLead(server, currentPos.getX())) {
+        if (UpsideDownBand.isInBandOrEntryLead(server, currentPos.getX(), currentPos.getZ())) {
             cir.setReturnValue(state); // in-band or lead-in: keep the layer, ignore missing support
         }
     }

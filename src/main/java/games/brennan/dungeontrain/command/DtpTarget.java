@@ -46,6 +46,8 @@ record DtpTarget(String token, String displayName, ColumnTest test) {
         out.add(new DtpTarget("wwoo", "WWOO Overworld", (l, x) -> overworldStretch(l, x) == SecondLapOverworld.Stretch.WWOO));
         out.add(new DtpTarget("bop", "Biomes O' Plenty Overworld", (l, x) -> overworldStretch(l, x) == SecondLapOverworld.Stretch.BOP));
         out.add(new DtpTarget("reassembly", "Reassembly", UpsideDownBand::isInExitFade));
+        out.add(new DtpTarget("mix", "Mix zone", (l, x) -> DungeonTrainWorldData.get(l).startsWithTrain()
+                && WorldGenCycle.fromConfig().isInMixZone(x)));
         return List.copyOf(out);
     }
 

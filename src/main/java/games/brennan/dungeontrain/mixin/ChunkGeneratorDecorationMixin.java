@@ -235,7 +235,7 @@ public abstract class ChunkGeneratorDecorationMixin {
             int chunkMinX = chunk.getPos().getMinBlockX();
             long startX = DisintegrationBand.startX(serverLevel);
             if (startX != DisintegrationBand.OFF && chunkMinX + 15 >= startX
-                    && DisintegrationBand.isChunkFullyEroded(serverLevel, chunkMinX)) {
+                    && DisintegrationBand.isChunkFullyEroded(serverLevel, chunkMinX, chunk.getPos().getMinBlockZ())) {
                 return true;
             }
             int chunkMinZ = chunk.getPos().getMinBlockZ();
@@ -303,7 +303,7 @@ public abstract class ChunkGeneratorDecorationMixin {
     @Unique
     private static boolean dungeontrain$appliesUpsideDownSpawners(WorldGenLevel level, ChunkAccess chunk) {
         try {
-            return UpsideDownSpawnerStructures.appliesTo(level.getLevel(), chunk.getPos().x);
+            return UpsideDownSpawnerStructures.appliesTo(level.getLevel(), chunk.getPos().x, chunk.getPos().z);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] upside-down spawner resolve failed at {}; decorating as vanilla",
                     chunk.getPos(), t);

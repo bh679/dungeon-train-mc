@@ -88,6 +88,7 @@ public final class BandLabel {
                 case BOP -> "Biomes O' Plenty";
                 case VANILLA -> UpsideDownBand.isInExitFade(overworld, worldX) ? "Reassembly" : "";
             };
+            case CHUNCKS -> cycle.isInMixZone(worldX) ? "Mix" : "";
             default -> UpsideDownBand.isInExitFade(overworld, worldX) ? "Reassembly" : "";
         };
     }

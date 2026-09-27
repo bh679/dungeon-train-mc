@@ -48,7 +48,7 @@ public final class NetherBandLava {
     public static boolean isNetherLava(LevelReader level, BlockPos pos) {
         if (!(level instanceof ServerLevel server)) return false;   // spreading is server-driven
         if (!server.dimension().equals(Level.OVERWORLD)) return false;
-        return NetherBand.isInNetherBiome(server, pos.getX());
+        return NetherBand.isInNetherBiome(server, pos.getX(), pos.getZ());
     }
 
     /** Nether tick delay (10) inside the core, else the vanilla value. */
