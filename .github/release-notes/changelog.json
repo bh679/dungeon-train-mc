@@ -19962,6 +19962,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "bookshelf-honey-trade-value",
+      "version": "0.990.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Bookshelves and honey blocks trade for 1 emerald",
+      "summary": "Villagers now give 1 emerald for a bookshelf or a honey block. Bookshelves used to fetch far more.",
+      "highlights": [],
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

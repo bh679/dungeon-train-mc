@@ -38,6 +38,16 @@ public final class TradeEverythingBridge {
      */
     private static final int TRIM_TEMPLATE_VALUE_SIXTEENTHS = 35;
 
+    /**
+     * Bookshelf and honey block — trade for 1 emerald each. 22 sixteenths × the
+     * default 0.75 payout margin = 16.5, so the payout clears exactly 1 emerald
+     * (16 would pay out only 12 sixteenths). Recipe derivation priced a
+     * bookshelf at ~8 emeralds, far too much for a block library carriages are
+     * packed with.
+     */
+    private static final int BOOKSHELF_VALUE_SIXTEENTHS = 22;
+    private static final int HONEY_BLOCK_VALUE_SIXTEENTHS = 22;
+
     /** +1 permanent backpack slot — 5 emeralds. */
     private static final int EDIBLE_BACKPACK_VALUE_SIXTEENTHS = 80;
 
@@ -77,6 +87,11 @@ public final class TradeEverythingBridge {
             stack.is(ItemTags.TRIM_TEMPLATES)
                 ? OptionalInt.of(TRIM_TEMPLATE_VALUE_SIXTEENTHS)
                 : OptionalInt.empty());
+
+        TradeEverythingApi.setItemOverride(
+            ResourceLocation.withDefaultNamespace("bookshelf"), BOOKSHELF_VALUE_SIXTEENTHS);
+        TradeEverythingApi.setItemOverride(
+            ResourceLocation.withDefaultNamespace("honey_block"), HONEY_BLOCK_VALUE_SIXTEENTHS);
 
         // Sibling-mod items, addressed by id so the sibling is never classloaded:
         // absent EdibleBackpacks simply means the override never matches.
