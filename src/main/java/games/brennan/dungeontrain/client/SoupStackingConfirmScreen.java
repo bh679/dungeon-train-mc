@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.cheat.FarmersDelightSoupStacking;
+import games.brennan.dungeontrain.cheat.FreePlayText;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -56,7 +57,7 @@ public final class SoupStackingConfirmScreen extends Screen {
     @Override
     protected void init() {
         int innerWidth = CARD_W - 2 * PAD;
-        bodyLines = font.split(Component.translatable(KEY_BODY), innerWidth);
+        bodyLines = font.split(FreePlayText.withExplanation(KEY_BODY), innerWidth);
         int contentH = font.lineHeight + GAP_TITLE + bodyLines.size() * LINE_STEP + GAP_BODY + BUTTON_H;
         panelH = PAD + contentH + PAD;
         panelX = (width - CARD_W) / 2;

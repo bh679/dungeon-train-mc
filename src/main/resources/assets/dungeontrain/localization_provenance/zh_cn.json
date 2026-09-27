@@ -132,6 +132,8 @@
       "gui.dungeontrain.difficulty_confirm.change",
       "gui.dungeontrain.difficulty_confirm.cancel",
       "chat.dungeontrain.difficulty_profile.swapped",
+      "gui.dungeontrain.free_play.safe_space",
+      "gui.dungeontrain.free_play.explained",
       "gui.dungeontrain.soup_stacking.title",
       "gui.dungeontrain.soup_stacking.body",
       "gui.dungeontrain.soup_stacking.keep_off",
@@ -2575,7 +2577,6 @@
       "gui.dungeontrain.enderchest.expand",
       "gui.dungeontrain.enderchest.expand.tooltip",
       "effect.dungeontrain.free_play.desc.1",
-      "effect.dungeontrain.free_play.desc.3",
       "chat.dungeontrain.shared_carriage.deaths.few.1",
       "chat.dungeontrain.shared_carriage.deaths.unnamed.1",
       "chat.dungeontrain.shared_carriage.deaths.unnamed.2",
@@ -2671,7 +2672,8 @@
       "gui.dungeontrain.builder.profile.collision.replace.hint",
       "gui.dungeontrain.builder.profile.name.rename_existing",
       "gui.dungeontrain.builder.room_size.tooltip",
-      "gui.dungeontrain.builder.open.tiles_per_row.tooltip"
+      "gui.dungeontrain.builder.open.tiles_per_row.tooltip",
+      "gui.dungeontrain.custom_content.card.custom.tag"
     ],
     "adventureitemnames": [],
     "playermob": [],
