@@ -3571,12 +3571,16 @@
   "dungeontrain.requirement.days.plural": "%s 天",
   "chat.dungeontrain.book_burns_author": "%s 寫的書燃燒起來",
   "chat.dungeontrain.book_burns_author.copy": "點擊以複製作者的名字",
+  "chat.dungeontrain.update_notice": "[Dungeon Train] 版本 %s 已發布！",
+  "chat.dungeontrain.update_notice.link": "[更新內容]",
   "item.dungeontrain.stats_book": "統計之書",
   "item.dungeontrain.random_potion": "隨機藥水",
   "item.dungeontrain.random_good_potion": "隨機有益藥水",
   "item.dungeontrain.random_bad_potion": "隨機有害藥水",
   "gui.dungeontrain.options.book_author_chat": "聊天欄顯示書的作者",
   "gui.dungeontrain.options.book_author_chat.tip": "每當一本《地牢列車》的書燃燒時，在聊天欄打出一行寫明作者的字——「X 寫的書燃燒起來」。你讀過的、丟掉的、死時掉落的書都會起火，而這裡是唯一署上執筆者名字的地方。預設關閉。",
+  "gui.dungeontrain.options.update_notice_chat": "新版本聊天提醒",
+  "gui.dungeontrain.options.update_notice_chat.tip": "遊戲過程中如果 Dungeon Train 發布了新版本，會在聊天欄提示並附上更新內容連結。只提醒正式版本，不提醒小型自動更新。預設開啟。",
   "chat.dungeontrain.free_play.cause.keep_inventory": "本世界開啟了「保留物品欄」。",
   "chat.dungeontrain.free_play.keep_inventory_on": "《地牢列車》是以死亡要付出代價為前提來平衡的，因此從現在起本世界的統計只留在自己這裡。把遊戲規則再關掉也無濟於事——你帶著穿過一次死亡的裝備，已經是你的了。"
 }

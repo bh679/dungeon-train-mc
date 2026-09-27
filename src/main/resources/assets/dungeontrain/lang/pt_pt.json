@@ -3600,12 +3600,16 @@
   "dungeontrain.requirement.days.plural": "%s dias",
   "chat.dungeontrain.book_burns_author": "O livro de %s arde",
   "chat.dungeontrain.book_burns_author.copy": "Clica para copiares o nome do autor",
+  "chat.dungeontrain.update_notice": "[Dungeon Train] A versão %s já saiu!",
+  "chat.dungeontrain.update_notice.link": "[Novidades]",
   "item.dungeontrain.stats_book": "Livro de estatísticas",
   "item.dungeontrain.random_potion": "Poção Aleatória",
   "item.dungeontrain.random_good_potion": "Poção Boa Aleatória",
   "item.dungeontrain.random_bad_potion": "Poção Má Aleatória",
   "gui.dungeontrain.options.book_author_chat": "Autor do livro no chat",
   "gui.dungeontrain.options.book_author_chat.tip": "Escreve no chat uma linha com o nome do autor sempre que um livro do Dungeon Train arde — «O livro de X arde». Os livros que lês, deitas fora ou deixas cair ao morrer ardem todos, e este é o único sítio onde quem os escreveu é creditado. Desligado por predefinição.",
+  "gui.dungeontrain.options.update_notice_chat": "Chat de nova versão",
+  "gui.dungeontrain.options.update_notice_chat.tip": "Mostra uma mensagem no chat quando é lançada uma nova versão do Dungeon Train enquanto jogas, com uma ligação para as novidades. Só as versões a sério são anunciadas, não as pequenas automáticas. Ativado por predefinição.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Neste mundo, «Manter inventário» está ligado.",
   "chat.dungeontrain.free_play.keep_inventory_on": "O Dungeon Train está equilibrado em torno de morrer custar-te alguma coisa, por isso deste ponto em diante este mundo guarda as suas próprias estatísticas. Voltar a desligar a regra de jogo não muda isso — o equipamento que levaste contigo através de uma morte já é teu."
 }

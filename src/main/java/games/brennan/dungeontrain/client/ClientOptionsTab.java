@@ -73,6 +73,8 @@ public enum ClientOptionsTab {
         /** Chinese-language clients only — absent, not merely inert, everywhere else. */
         POLITICAL_FILTER,
         BOOK_AUTHOR_CHAT,
+        /** "Dungeon Train X is out" chat line when a release lands mid-session. */
+        UPDATE_NOTICE_CHAT,
         CINEMATIC_HOTKEY,
         /** Whether Edible Backpacks draws its open/close button on the inventory screen. */
         BACKPACK_BUTTON,
@@ -157,6 +159,7 @@ public enum ClientOptionsTab {
                     rows.add(Row.POLITICAL_FILTER);
                 }
                 rows.add(Row.BOOK_AUTHOR_CHAT);
+                rows.add(Row.UPDATE_NOTICE_CHAT);
                 rows.add(Row.CINEMATIC_HOTKEY);
                 rows.add(Row.BACKPACK_BUTTON);
                 // The two rows that open a page rather than change a setting, led by the

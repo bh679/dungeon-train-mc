@@ -3557,12 +3557,16 @@
   "dungeontrain.requirement.days.plural": "%s hari",
   "chat.dungeontrain.book_burns_author": "Buku karya %s terbakar",
   "chat.dungeontrain.book_burns_author.copy": "Klik untuk menyalin nama penulis",
+  "chat.dungeontrain.update_notice": "[Dungeon Train] Versi %s sudah keluar!",
+  "chat.dungeontrain.update_notice.link": "[Apa yang baharu]",
   "item.dungeontrain.stats_book": "Buku Statistik",
   "item.dungeontrain.random_potion": "Ramuan Rawak",
   "item.dungeontrain.random_good_potion": "Ramuan Baik Rawak",
   "item.dungeontrain.random_bad_potion": "Ramuan Buruk Rawak",
   "gui.dungeontrain.options.book_author_chat": "Penulis buku dalam sembang",
   "gui.dungeontrain.options.book_author_chat.tip": "Menulis satu baris sembang yang menamakan penulisnya setiap kali sebuah buku Dungeon Train terbakar — \"Buku karya X terbakar\". Buku yang anda baca, anda buang, atau anda jatuhkan ketika mati semuanya terbakar, dan hanya di sinilah penulisnya dikreditkan. Dimatikan secara lalai.",
+  "gui.dungeontrain.options.update_notice_chat": "Chat Versi Baharu",
+  "gui.dungeontrain.options.update_notice_chat.tip": "Paparkan mesej dalam chat apabila versi baharu Dungeon Train dikeluarkan semasa anda bermain, dengan pautan ke apa yang baharu. Hanya keluaran sebenar diumumkan, bukan keluaran kecil automatik. Hidup secara lalai.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Dalam dunia ini \"Simpan Inventori\" sedang dihidupkan.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train diimbangi atas dasar bahawa kematian merugikan anda sesuatu, jadi mulai sekarang dunia ini menyimpan statistiknya sendiri. Mematikan semula peraturan permainan itu tidak akan mengubahnya — kelengkapan yang anda bawa merentasi satu kematian sudah pun menjadi milik anda."
 }
