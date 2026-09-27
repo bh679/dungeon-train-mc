@@ -56,6 +56,8 @@ final class BandLocatorTest {
         m.put("better_end", x -> c.endStyleAt(x) == Style.BETTER);
         m.put("wwoo", x -> c.overworldStyleAt(x) == Style.WWOO);
         m.put("bop", x -> c.overworldStyleAt(x) == Style.BOP);
+        m.put("bop_nether", x -> c.isNetherCore(x) && c.netherStyleAt(x) == Style.BOP);
+        m.put("bop_end", x -> c.endStyleAt(x) == Style.BOP);
         m.put("upside_down", c::isInUpsideDownBand);
         m.put("reassembly", c::isInUpsideDownExitFade);
         m.put("spheres", c::isInSpheresBand);
@@ -126,6 +128,11 @@ final class BandLocatorTest {
         WorldGenCycle c = cycle(CycleLayout.DEFAULT_ORDER);
         for (int lap = 0; lap <= 3; lap++) {
             for (Map.Entry<String, IntPredicate> band : bands(c).entrySet()) {
+                // Lap 1's BoP Nether and End (vanilla>bop) exist only from the second run on.
+                if (lap == 0 && band.getKey().startsWith("bop_")) {
+                    assertFalse(BandLocator.bandStartXInLap(c, band.getValue(), 0).isPresent(), band.getKey() + " in lap 0");
+                    continue;
+                }
                 OptionalInt entry = BandLocator.bandStartXInLap(c, band.getValue(), lap);
                 assertTrue(entry.isPresent(), band.getKey() + " not found in lap " + lap);
                 int x = entry.getAsInt();
@@ -210,7 +217,7 @@ final class BandLocatorTest {
         for (LegacyBandKind k : LegacyBandKind.values()) {
             assertTrue(tokens.contains(k.name().toLowerCase(java.util.Locale.ROOT)), "legacy era " + k + " unreachable");
         }
-        for (String styled : List.of("better_nether", "better_end", "wwoo", "bop", "reassembly", "superflat")) {
+        for (String styled : List.of("better_nether", "better_end", "bop_nether", "bop_end", "wwoo", "bop", "reassembly", "superflat")) {
             assertTrue(tokens.contains(styled), styled);
         }
         assertEquals(TrainPhase.CAVES_OF_CHAOS, TrainPhase.byToken("chaos"));

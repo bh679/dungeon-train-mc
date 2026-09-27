@@ -206,6 +206,21 @@
       "modrinth_version": "S2TfWrZR"
     },
     {
+      "name": "Big Lost City",
+      "slug": "big-lost-city",
+      "mod_ids": [
+        "big_lost_city"
+      ],
+      "project_id": 1472594,
+      "file_id": 8110093,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "biglostcity_min_version",
+      "version": "1.0.1",
+      "modrinth_project": "big-lost-city",
+      "modrinth_version": "5ciGCJeq"
+    },
+    {
       "name": "BetterEnd: New Dawn",
       "slug": "betterend-neoforge",
       "mod_ids": [

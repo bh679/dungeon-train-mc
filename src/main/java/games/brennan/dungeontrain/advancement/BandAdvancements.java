@@ -50,6 +50,10 @@ public final class BandAdvancements {
     public static final String VOID = "reached_void";
     public static final String END_ISLANDS = "reached_end_islands";
     public static final String BETTER_END = "reached_better_end";
+    /** A Nether band in a Biomes O' Plenty lap. */
+    public static final String BOP_NETHER = "reached_bop_nether";
+    /** An End-islands band in a Biomes O' Plenty lap. */
+    public static final String BOP_END = "reached_bop_end";
     public static final String UPSIDE_DOWN = "the_upside_down";
     public static final String REASSEMBLY = "reassembly_required";
     public static final String WWOO = "reached_wwoo";
@@ -71,11 +75,13 @@ public final class BandAdvancements {
     public static final List<String> ALL = List.of(
             NETHER, VOID, END_ISLANDS, UPSIDE_DOWN, REASSEMBLY,
             WWOO, BETTER_NETHER, BOP, BETTER_END, SPHERES,
-            legacyId(LegacyBandKind.AMPLIFIED), legacyId(LegacyBandKind.BETA), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.CAVES_OF_CHAOS),
+            legacyId(LegacyBandKind.AMPLIFIED), legacyId(LegacyBandKind.LOST_CITY), legacyId(LegacyBandKind.BETA), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.CAVES_OF_CHAOS),
             legacyId(LegacyBandKind.SKYLANDS),
             legacyId(LegacyBandKind.FLOATING), legacyId(LegacyBandKind.ALPHA), legacyId(LegacyBandKind.INFDEV),
             legacyId(LegacyBandKind.CLASSIC), legacyId(LegacyBandKind.SUPERFLAT), LEGACY_VOID,
-            CHUNCKS, STACKS);
+            CHUNCKS, STACKS,
+            // Lap 1's Nether and End turn Biomes O' Plenty from the second cycle on (vanilla>bop).
+            BOP_NETHER, BOP_END);
 
     private BandAdvancements() {}
 
@@ -106,20 +112,25 @@ public final class BandAdvancements {
 
     private static void addSlot(Set<String> out, CycleLayout layout, int i) {
         CycleLayout.Slot slot = layout.slot(i);
+        // Only the first-run look: a first>later slot's later look is met from the second cycle on, so
+        // its advancement keeps its place near the end of ALL, after the whole first cycle.
         boolean better = slot.style() == CycleLayout.Style.BETTER;
+        boolean bop = slot.style() == CycleLayout.Style.BOP;
         switch (slot.type()) {
             case OVERWORLD -> {
                 if (slot.style() == CycleLayout.Style.WWOO) out.add(WWOO);
-                if (slot.style() == CycleLayout.Style.BOP) out.add(BOP);
+                if (bop) out.add(BOP);
             }
             case NETHER -> {
                 out.add(NETHER);
                 if (better) out.add(BETTER_NETHER);
+                if (bop) out.add(BOP_NETHER);
             }
             case END -> {
                 out.add(VOID);
                 out.add(END_ISLANDS);
                 if (better) out.add(BETTER_END);
+                if (bop) out.add(BOP_END);
             }
             case UPSIDE_DOWN -> {
                 out.add(UPSIDE_DOWN);
@@ -181,8 +192,12 @@ public final class BandAdvancements {
         t.add(entry(BETTER_NETHER, (l, x) -> NetherBand.isInNetherBiome(l, x)
                 && cycle(l).isBetterNetherAt(x)));
         t.add(entry(BOP, (l, x) -> overworldStyle(l, x) == CycleLayout.Style.BOP));
+        t.add(entry(BOP_NETHER, (l, x) -> NetherBand.isInNetherBiome(l, x)
+                && cycle(l).isBopNetherAt(x)));
         t.add(entry(BETTER_END, (l, x) -> isInEndIslands(l, x)
                 && cycle(l).isBetterEndAt(x)));
+        t.add(entry(BOP_END, (l, x) -> isInEndIslands(l, x)
+                && cycle(l).isBopEndAt(x)));
         t.add(entry(SPHERES, SpheresBand::isInBand));
         for (LegacyBandKind kind : LegacyBandKind.values()) {
             if (kind == LegacyBandKind.LARGE_BIOMES) continue;   // built, not shipped — see LegacyBandKind

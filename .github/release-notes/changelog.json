@@ -19738,6 +19738,45 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "later-laps-new-looks",
+      "version": "0.981.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Returning laps look different",
+      "summary": "Ride far enough to start the journey over and some of the places you've already passed through come back changed, with new sights to find the second time around.",
+      "highlights": [],
+      "pr": 1598,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "lost-city-ruins",
+      "version": "0.981.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "world"
+      ],
+      "title": "Ruins along the line",
+      "summary": "Deep into the journey, the train now runs through the remains of a lost civilisation.",
+      "highlights": [
+        "A new stretch of the journey lined with ruined cities, thickening as you ride in.",
+        "The biggest ruins stand right beside the track.",
+        "Built with the Big Lost City mod \u2014 the CurseForge and Modrinth apps install it for you."
+      ],
+      "pr": 1599,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

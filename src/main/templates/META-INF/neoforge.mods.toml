@@ -112,6 +112,15 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Big Lost City — third-party, REQUIRED. Its ruined cities fill the legacy run's Lost City era
+# (worldgen/LostCityStructures). DT names its structures only by id, so a floor is all it needs.
+[[dependencies.${mod_id}]]
+    modId="big_lost_city"
+    type="required"
+    versionRange="[${biglostcity_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Sibling mods (same author). These are NOT bundled — each is a separate required
 # download, so its own Modrinth/CurseForge page gets credited for the install.
 #

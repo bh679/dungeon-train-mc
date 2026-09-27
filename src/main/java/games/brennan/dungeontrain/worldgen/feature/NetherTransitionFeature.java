@@ -506,7 +506,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             int x0 = cp.getMinBlockX(), z0 = cp.getMinBlockZ(), x1 = cp.getMaxBlockX(), z1 = cp.getMaxBlockZ();
             int[][] pts = {{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}, {(x0 + x1) >> 1, (z0 + z1) >> 1}};
             for (int[] p : pts) {
-                Holder<Biome> b = ncb.biomeAt(p[0], p[1], bandCtx.cycle().isBetterNetherAt(p[0]));
+                Holder<Biome> b = ncb.biomeAt(p[0], p[1], bandCtx.cycle().netherLookAt(p[0]));
                 if (b != null) out.add(b);
             }
         }

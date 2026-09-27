@@ -53,7 +53,9 @@ public enum TrainPhase {
     /** Vanilla's Large Biomes preset; see {@link games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain}. */
     LARGE_BIOMES,
     /** Vanilla's Amplified preset; see {@link games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain}. */
-    AMPLIFIED;
+    AMPLIFIED,
+    /** Modern overworld dense with ruined cities; see {@link LostCityStructures}. Last: phase masks are {@code 1 << ordinal}. */
+    LOST_CITY;
 
     /** Bitmask with every phase set ({@code 1<<ordinal} per value) — the "all phases" wire value. */
     public static final int ALL_MASK = (1 << values().length) - 1;
@@ -108,6 +110,7 @@ public enum TrainPhase {
             case CAVES_OF_CHAOS -> "Caves of Chaos";
             case LARGE_BIOMES -> "Large Biomes";
             case AMPLIFIED -> "Amplified";
+            case LOST_CITY -> "Lost City";
         };
     }
 
@@ -131,6 +134,7 @@ public enum TrainPhase {
             m.put("large", LARGE_BIOMES);
             m.put("chaos", CAVES_OF_CHAOS);
             m.put("cavesofchaos", CAVES_OF_CHAOS);
+            m.put("lostcity", LOST_CITY);
             MAP = java.util.Collections.unmodifiableMap(m);
         }
     }
@@ -181,6 +185,10 @@ public enum TrainPhase {
         if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
                 games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.AMPLIFIED, worldX)) {
             return AMPLIFIED;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.LOST_CITY, worldX)) {
+            return LOST_CITY;
         }
         if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
                 games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.BETA, worldX)) {

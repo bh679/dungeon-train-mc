@@ -350,7 +350,7 @@ public abstract class ChunkGeneratorDecorationMixin {
     @Unique
     private static boolean dungeontrain$isVanillaPlacedFeature(WorldGenLevel level, PlacedFeature feature) {
         try {
-            return VanillaOnlySample.allows(
+            return VanillaOnlySample.allowsHere(
                 level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE).getKey(feature));
         } catch (Throwable t) {
             return true;
@@ -383,12 +383,12 @@ public abstract class ChunkGeneratorDecorationMixin {
         }
     }
 
-    /** A legacy chunk owned by an OLD generator — a modern-preset band's chunks keep vanilla decoration. */
+    /** A legacy chunk owned by an OLD generator — preset and Lost City chunks keep vanilla decoration. */
     @Unique
     private static boolean dungeontrain$isOldGeneratorChunk(ServerLevel serverLevel, ChunkAccess chunk) {
         games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind kind =
                 LegacyBands.kindOfChunk(serverLevel, chunk.getPos().x, chunk.getPos().z);
-        return kind != null && !kind.isPreset();
+        return kind != null && kind.usesOldGenerator();
     }
 
     /** The track bed + End-island features are the only ones kept in the eroded core. */

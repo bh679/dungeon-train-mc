@@ -48,7 +48,7 @@ final class WorldGenCycleLayoutTest {
     @DisplayName("period is the run-1 length and the layout is reported")
     void period() {
         assertTrue(C.hasLayout());
-        assertEquals(118_368L, C.period());
+        assertEquals(122_848L, C.period());
         assertEquals(232, C.riseLen());
     }
 
@@ -198,17 +198,23 @@ final class WorldGenCycleLayoutTest {
         assertEquals(1.0, core.t());
         WorldGenCycle.LegacyHit cross = C.legacyAt(x(l + 480 + 5000 + 240));
         assertEquals(LegacyBandKind.AMPLIFIED, cross.from());
-        assertEquals(LegacyBandKind.BETA, cross.to());
+        assertEquals(LegacyBandKind.LOST_CITY, cross.to());
         assertEquals(0.5, cross.t(), 0.01);
         assertTrue(C.isInLegacyBand(LegacyBandKind.AMPLIFIED, x(l + 480)));
         assertFalse(C.isInLegacyBand(LegacyBandKind.AMPLIFIED, x(l + 480 + 5000)));
-        assertTrue(C.isInLegacyBand(LegacyBandKind.BETA, x(l + 480 + 5000 + 480)));
+        long beta = l + 480 + 5000 + 480 + 4000 + 480;                               // Beta core start, after Lost City
+        assertTrue(C.isInLegacyBand(LegacyBandKind.LOST_CITY, x(l + 480 + 5000 + 480)));
+        assertFalse(C.isInLegacyBand(LegacyBandKind.LOST_CITY, x(beta - 480)));
+        WorldGenCycle.LegacyHit cross1 = C.legacyAt(x(beta - 240));
+        assertEquals(LegacyBandKind.LOST_CITY, cross1.from());
+        assertEquals(LegacyBandKind.BETA, cross1.to());
+        assertTrue(C.isInLegacyBand(LegacyBandKind.BETA, x(beta)));
         assertFalse(C.isInLegacyBand(LegacyBandKind.LARGE_BIOMES, x(l + 480)));   // built, not shipped
         assertEquals(4320L, C.legacyLen(LegacyBandKind.FAR_LANDS));
-        assertEquals(x(l + 480 + 5000 + 480), (int) C.legacyCoreStartX(LegacyBandKind.BETA, x(l + 480 + 5000 + 100)));
+        assertEquals(x(beta), (int) C.legacyCoreStartX(LegacyBandKind.BETA, x(beta - 380)));
         assertEquals(WorldGenCycle.NOT_IN_LEGACY_SLOT, C.legacyCoreStartX(LegacyBandKind.BETA, x(l + 100)));
         assertEquals(0.5, C.legacyCoreProgress(LegacyBandKind.AMPLIFIED, x(l + 480 + 2500)), 1e-9);
-        long chaos = l + 480 + 5000 + 480 + 3500 + 480 + 4320 + 480;                 // Caves of Chaos core start, after the Far Lands
+        long chaos = beta + 3500 + 480 + 4320 + 480;                                 // Caves of Chaos core start, after the Far Lands
         WorldGenCycle.LegacyHit cross2 = C.legacyAt(x(chaos - 240));
         assertEquals(LegacyBandKind.FAR_LANDS, cross2.from());
         assertEquals(LegacyBandKind.CAVES_OF_CHAOS, cross2.to());
@@ -242,7 +248,7 @@ final class WorldGenCycleLayoutTest {
             assertEquals(C.isInLegacyBand(LegacyBandKind.BETA, x(u)), C.isInLegacyBand(LegacyBandKind.BETA, x(u, 2)));
         }
         // Block-length queries scale: the Far Lands script covers twice the ground on run 1.
-        long fl = LAYOUT.start(11) + LAYOUT.eraCoreStart(2);
+        long fl = LAYOUT.start(11) + LAYOUT.eraCoreStart(LAYOUT.eraIndex(LegacyBandKind.FAR_LANDS));
         assertEquals(4320L, C.legacyCoreLenBlocks(LegacyBandKind.FAR_LANDS, x(fl + 10)));
         assertEquals(8640L, C.legacyCoreLenBlocks(LegacyBandKind.FAR_LANDS, x(fl + 10, 1)));
         assertEquals(x(fl, 1), (int) C.legacyCoreStartX(LegacyBandKind.FAR_LANDS, x(fl + 10, 1)));

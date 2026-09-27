@@ -43,9 +43,9 @@ final class CycleLayoutTest {
         assertEquals(16, l.count());
         // Lap 1: 2750 + (232+300+3000+300+232) + 3000 + (740+3000+740) + (600+2500+600+6000+600) = 24,594
         // Lap 2: 8000 + 9064 + 8000 + 9480 + (750+6550) + 500 (the sunk approach) = 42,344
-        // Lap 3: legacy (480·12 + 5000 + 3500 + 4320 + 4000 + 5000 + 2000·4 + 1000 + 200 = 36,780)
-        //        + 650 + (1500+2000) + 4000 (the mix zone) + 6500 = 51,430
-        assertEquals(118_368L, l.period());
+        // Lap 3: legacy (480·13 + 5000 + 4000 + 3500 + 4320 + 4000 + 5000 + 2000·4 + 1000 + 200 = 41,260)
+        //        + 650 + (1500+2000) + 4000 (the mix zone) + 6500 = 55,910
+        assertEquals(122_848L, l.period());
         assertEquals(2, l.typeCount(Type.NETHER));
         assertEquals(2, l.typeCount(Type.END));
         assertEquals(1, l.typeCount(Type.LEGACY_RUN));
@@ -61,6 +61,13 @@ final class CycleLayoutTest {
         assertEquals(Style.BETTER, l.slot(6).style());
         assertEquals(Style.BOP, l.slot(7).style());
         assertEquals(Style.BETTER, l.slot(8).style());
+        // Lap 1's Nether and End: vanilla on the first run, Biomes O' Plenty on every run after.
+        assertEquals(Style.VANILLA, l.slot(1).styleOnRun(0));
+        assertEquals(Style.BOP, l.slot(1).styleOnRun(1));
+        assertEquals(Style.VANILLA, l.slot(3).styleOnRun(0));
+        assertEquals(Style.BOP, l.slot(3).styleOnRun(2));
+        assertEquals(Style.VANILLA, l.slot(0).styleOnRun(1));             // Lap 1's overworld stays vanilla
+        assertEquals(Style.BETTER, l.slot(6).styleOnRun(1));              // Lap 2 is the same every run
         assertEquals(Type.SPHERES, l.slot(9).type());
         assertEquals(Type.LEGACY_RUN, l.slot(11).type());
         assertEquals(24_594L + 42_344L, l.start(11));
@@ -77,22 +84,23 @@ final class CycleLayoutTest {
     void legacyRun() {
         CycleLayout l = shipped();
         LegacySpan[] eras = l.eras();
-        assertEquals(11, eras.length);
+        assertEquals(12, eras.length);
         // The shipped run order is the order the token writes, not declaration order.
-        assertArrayEquals(new LegacyBandKind[] {LegacyBandKind.AMPLIFIED, LegacyBandKind.BETA, LegacyBandKind.FAR_LANDS,
+        assertArrayEquals(new LegacyBandKind[] {LegacyBandKind.AMPLIFIED, LegacyBandKind.LOST_CITY, LegacyBandKind.BETA, LegacyBandKind.FAR_LANDS,
                         LegacyBandKind.CAVES_OF_CHAOS, LegacyBandKind.SKYLANDS, LegacyBandKind.FLOATING, LegacyBandKind.ALPHA,
                         LegacyBandKind.INFDEV, LegacyBandKind.CLASSIC, LegacyBandKind.SUPERFLAT, LegacyBandKind.VOID},
                 java.util.Arrays.stream(eras).map(LegacySpan::kind).toArray(LegacyBandKind[]::new));
         assertEquals(5000, eras[0].hold());
-        assertEquals(3500, eras[1].hold());
-        assertEquals(4320, eras[2].hold());
-        assertEquals(4000, eras[3].hold());
-        assertEquals(1000, eras[9].hold());
-        assertEquals(200, eras[10].hold());
+        assertEquals(4000, eras[1].hold());
+        assertEquals(3500, eras[2].hold());
+        assertEquals(4320, eras[3].hold());
+        assertEquals(4000, eras[4].hold());
+        assertEquals(1000, eras[10].hold());
+        assertEquals(200, eras[11].hold());
         assertEquals(480L, l.eraCoreStart(0));
         assertEquals(480L + 5000L + 480L, l.eraCoreStart(1));
-        assertEquals(480L + 5000L + 480L + 3500L + 480L, l.eraCoreStart(2));
-        long total = 480L * 12 + 5000 + 4000 + 3500 + 4320 + 5000 + 2000 * 4 + 1000 + 200;
+        assertEquals(480L + 5000L + 480L + 4000L + 480L, l.eraCoreStart(2));
+        long total = 480L * 13 + 5000 + 4000 + 3500 + 4320 + 4000 + 5000 + 2000 * 4 + 1000 + 200;
         assertEquals(total, l.length(11));
     }
 

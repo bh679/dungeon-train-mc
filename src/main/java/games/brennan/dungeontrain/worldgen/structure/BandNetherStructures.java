@@ -146,7 +146,7 @@ public final class BandNetherStructures {
          */
         public boolean biomeAllows(HolderSet<Biome> biomes, int worldX, int worldZ) {
             if (ctx.netherCoreBiomes() == null) return false;
-            Holder<Biome> coreBiome = ctx.netherCoreBiomes().biomeAt(worldX, worldZ, ctx.cycle().isBetterNetherAt(worldX));
+            Holder<Biome> coreBiome = ctx.netherCoreBiomes().biomeAt(worldX, worldZ, ctx.cycle().netherLookAt(worldX));
             return biomes.contains(coreBiome);
         }
     }
