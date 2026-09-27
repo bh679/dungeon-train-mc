@@ -19554,23 +19554,6 @@
       "released": false,
       "released_in": null,
       "released_at": null
-    },
-    {
-      "id": "dtp-next-band",
-      "version": "0.974.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "world"
-      ],
-      "title": "/dtp next",
-      "summary": "A new operator shortcut for skipping ahead.",
-      "highlights": [],
-      "pr": 1586,
-      "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
     }
   ]
 }
