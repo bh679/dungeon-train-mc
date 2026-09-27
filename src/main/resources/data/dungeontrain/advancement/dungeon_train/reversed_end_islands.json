@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reversed_upside_down",
+  "parent": "dungeontrain:dungeon_train/reversed_void",
   "display": {
     "icon": { "id": "minecraft:end_stone" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_end_islands.title" },

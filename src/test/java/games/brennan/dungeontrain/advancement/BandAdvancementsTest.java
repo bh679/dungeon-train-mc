@@ -118,7 +118,7 @@ final class BandAdvancementsTest {
             "reversed_skylands", "reversed_caves_of_chaos", "reversed_far_lands", "reversed_beta",
             "reversed_lost_city", "reversed_amplified",
             "reversed_spheres", "reversed_better_end", "reversed_bop", "reversed_better_nether", "reversed_wwoo",
-            "reversed_reassembly", "reversed_upside_down", "reversed_end_islands", "reversed_void", "reversed_nether");
+            "reversed_reassembly", "reversed_upside_down", "reversed_void", "reversed_end_islands", "reversed_nether");
 
     @Test
     @DisplayName("walking back from spawn meets the shipped bands last-first, all the way to the first Nether")
@@ -130,7 +130,7 @@ final class BandAdvancementsTest {
     @DisplayName("reverse: a Better Nether/End is its own band, so the plain first ones stay last")
     void reverseStyledOccurrences() {
         List<String> chain = BandAdvancements.reverseChain(parse("ow:1000, nether:4000, end:4000, nether:better:4000, end:better:4000"));
-        assertEquals(List.of("reversed_better_end", "reversed_better_nether", "reversed_end_islands", "reversed_void",
+        assertEquals(List.of("reversed_better_end", "reversed_better_nether", "reversed_void", "reversed_end_islands",
                 "reversed_nether"), chain.subList(0, 5));
     }
 

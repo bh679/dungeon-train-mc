@@ -115,7 +115,7 @@ public final class BandAdvancements {
             legacyId(LegacyBandKind.CAVES_OF_CHAOS), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.BETA),
             legacyId(LegacyBandKind.LOST_CITY), legacyId(LegacyBandKind.AMPLIFIED),
             SPHERES, BETTER_END, BOP, BETTER_NETHER, WWOO,
-            REASSEMBLY, UPSIDE_DOWN, END_ISLANDS, VOID, NETHER);
+            REASSEMBLY, UPSIDE_DOWN, VOID, END_ISLANDS, NETHER);
 
     /** The reverse advancement for forward band id {@code forwardId}: {@code reached_x} → {@code reversed_x}. */
     public static String reverseId(String forwardId) {
@@ -200,11 +200,11 @@ public final class BandAdvancements {
     /**
      * The reverse advancement ids in the order a player walking back from spawn meets their bands: the
      * layout's slots last-first, and inside a slot its parts last-first too (a copy behind spawn keeps its
-     * +X orientation, so −X crosses a legacy run's eras, the upside-down exit fade and an End's islands
-     * before their earlier parts). Unlike {@link #chain}, each styled Nether / End is its own band — a
-     * Better one gives only its Better id — so the chain runs on to the plain first Nether rather than
-     * stopping at the first Nether it meets. First occurrence wins; members of {@link #REVERSE_ALL} the
-     * layout lacks are appended so they stay parented. A {@code null} layout gives {@link #REVERSE_ALL}.
+     * +X orientation, so −X crosses a legacy run's eras and the upside-down exit fade before their
+     * earlier parts; a plain End's void strip comes before its islands). Unlike {@link #chain}, each
+     * styled Nether / End is its own band — a Better one gives only its Better id — so the chain runs
+     * on to the plain first Nether rather than stopping at the first Nether it meets. First occurrence
+     * wins; members of {@link #REVERSE_ALL} the layout lacks are appended so they stay parented. A {@code null} layout gives {@link #REVERSE_ALL}.
      */
     public static List<String> reverseChain(CycleLayout layout) {
         Set<String> out = new LinkedHashSet<>();
@@ -231,8 +231,8 @@ public final class BandAdvancements {
                 if (better) {
                     out.add(BETTER_END);
                 } else {
+                    out.add(VOID);                       // its void strip lies on the spawn side of the islands
                     out.add(END_ISLANDS);
-                    out.add(VOID);
                 }
             }
             case UPSIDE_DOWN -> {
