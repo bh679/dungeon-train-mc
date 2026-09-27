@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.modcheck;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.ModSuggestClient;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
@@ -13,6 +14,7 @@ import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -52,6 +54,11 @@ public final class UnsupportedModsScreen extends Screen {
     private static final int NAME_COLOUR = 0xFFFFFFFF;
     private static final int ID_COLOUR = 0xFF909090;
     private static final int BODY_COLOUR = 0xFFD0D0D0;
+    /** The Free Play effect's icon, so the body reads like the effect it describes. */
+    private static final ResourceLocation FREE_PLAY_ICON =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/free_play");
+    private static final int ICON = 16;
+    private static final int ICON_GAP = 6;
 
     private final Screen parent;
     private final List<UnsupportedMod> mods;
@@ -78,8 +85,9 @@ public final class UnsupportedModsScreen extends Screen {
     protected void init() {
         panelW = Math.min(PANEL_W, this.width - 32);
         int inner = panelW - PAD * 2;
-        bodyLines = this.font.split(Component.translatable("gui.dungeontrain.unsupported_mods.body"), inner);
-        int bodyH = bodyLines.size() * (this.font.lineHeight + 1);
+        bodyLines = this.font.split(Component.translatable("gui.dungeontrain.unsupported_mods.body"),
+            inner - ICON - ICON_GAP);
+        int bodyH = Math.max(ICON, bodyLines.size() * (this.font.lineHeight + 1));
         int chrome = PAD + this.font.lineHeight + GAP      // title
             + GAP + bodyH + GAP + this.font.lineHeight      // body + link
             + GAP + BUTTON_H + PAD;                         // continue
@@ -184,9 +192,13 @@ public final class UnsupportedModsScreen extends Screen {
                 panelY + PAD, ID_COLOUR, false);
         }
 
+        // Free Play icon on the left, centred on the paragraph — like the effect in the inventory.
         int y = listY + visibleRows * ROW_H + GAP;
+        int bodyH = bodyLines.size() * (this.font.lineHeight + 1);
+        g.blitSprite(FREE_PLAY_ICON, textX, y + Math.max(0, (bodyH - ICON) / 2), ICON, ICON);
+        int bodyX = textX + ICON + ICON_GAP;
         for (FormattedCharSequence line : bodyLines) {
-            g.drawString(this.font, line, textX, y, BODY_COLOUR, false);
+            g.drawString(this.font, line, bodyX, y, BODY_COLOUR, false);
             y += this.font.lineHeight + 1;
         }
     }
