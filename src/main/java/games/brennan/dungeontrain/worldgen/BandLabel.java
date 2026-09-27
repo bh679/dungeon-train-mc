@@ -47,9 +47,21 @@ public final class BandLabel {
     public static BandLabel at(ServerLevel overworld, int worldX) {
         if (!DungeonTrainWorldData.get(overworld).startsWithTrain()) return NONE;
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        return new BandLabel(bandAt(overworld, cycle, worldX), stageAt(cycle, worldX), cycle.cycleIndex(worldX));
+    }
+
+    /**
+     * Just the {@link #band()} string at {@code worldX} — no stage or lap — for callers that scan many
+     * columns ({@code /dtp next}). Empty when the world has no train.
+     */
+    public static String bandAt(ServerLevel overworld, int worldX) {
+        if (!DungeonTrainWorldData.get(overworld).startsWithTrain()) return NONE.band;
+        return bandAt(overworld, WorldGenCycle.fromConfig(), worldX);
+    }
+
+    private static String bandAt(ServerLevel overworld, WorldGenCycle cycle, int worldX) {
         TrainPhase phase = TrainPhase.phaseAt(overworld, worldX);
-        return new BandLabel(format(phase.displayName(), styleOf(overworld, cycle, phase, worldX)),
-            stageAt(cycle, worldX), cycle.cycleIndex(worldX));
+        return format(phase.displayName(), styleOf(overworld, cycle, phase, worldX));
     }
 
     /** The stage within the layout slot at {@code worldX}; empty on the classic single-period order. */
