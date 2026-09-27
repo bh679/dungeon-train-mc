@@ -56,7 +56,8 @@ import java.util.Map;
  * <p><b>Bundled siblings count as DT's config.</b> Edible Backpacks' server keys
  * ({@link #EB_FILE}) and PlayerMob's combat/scavenging settings ({@link PlayerMobConfigCheck}) are
  * part of the game DT ships, so their deviations join this list and share its notice, prompt and
- * {@code /fixconfig}. AIS keeps its own twin ({@link AisDataIntegrity}) for historical reasons.</p>
+ * {@code /fixconfig}. So does Farmers' Delight's stackable-soups switch while that mod is installed
+ * ({@link FarmersDelightSoupStacking}). AIS keeps its own twin ({@link AisDataIntegrity}) for historical reasons.</p>
  *
  * <p><b>Only balance keys are governed</b> — see {@link #GOVERNED}. Performance and visual knobs,
  * the Discord/relay privacy toggles, the player-content switches and everything in
@@ -86,6 +87,16 @@ public final class DtConfigIntegrity {
      * so the mid-run tick sweep is what notices an edit.
      */
     public static final String EB_FILE = "ediblebackpacks-server.toml";
+
+    /**
+     * Farmers' Delight's COMMON config — only its stackable-soups switch is governed (see
+     * {@link FarmersDelightSoupStacking}). Read only while Farmers' Delight is installed: a leftover
+     * file from a removed mod changes nothing in the game.
+     */
+    public static final String FD_FILE = FarmersDelightSoupStacking.FILE;
+
+    /** How a Farmers' Delight deviation is labelled, so the player knows which file to open. */
+    public static final String FD_DISPLAY_PREFIX = "farmersdelight: ";
 
     /**
      * One governed entry: which file it lives in, its dotted path, the expected (default) value,
@@ -207,7 +218,12 @@ public final class DtConfigIntegrity {
         Key.option(EB_FILE, "resetOnDeath",
             games.brennan.ediblebackpacks.config.EBConfig.ResetMode.DEFAULT),
         Key.number(EB_FILE, "maxSlots", games.brennan.ediblebackpacks.menu.BackpackLayout.MAX_SLOTS,
-            0, games.brennan.ediblebackpacks.menu.BackpackLayout.MAX_SLOTS)
+            0, games.brennan.ediblebackpacks.menu.BackpackLayout.MAX_SLOTS),
+
+        // --- farmersdelight-common.toml (third-party, only while installed) ---
+        // Farmers' Delight defaults this to true; DT holds it off. Absent reads as off, so an
+        // install that hasn't had DT's one-time write yet is never flagged.
+        Key.flag(FD_FILE, FarmersDelightSoupStacking.PATH, false)
     );
 
     /**
@@ -276,11 +292,11 @@ public final class DtConfigIntegrity {
         refreshMidSession(event.getServer());
     }
 
-    /** Sum of both files' mtimes (0 for a missing/unreadable one) — changes whenever either is written. */
+    /** Weighted sum of the governed files' mtimes (0 for a missing/unreadable one) — changes whenever one is written. */
     private static long filesStamp() {
         Path dir = FMLPaths.CONFIGDIR.get();
         return mtime(dir.resolve(SERVER_FILE)) + 31 * mtime(dir.resolve(COMMON_FILE))
-            + 961 * mtime(dir.resolve(EB_FILE));
+            + 961 * mtime(dir.resolve(EB_FILE)) + 29_791 * mtime(dir.resolve(FD_FILE));
     }
 
     private static long mtime(Path file) {
@@ -329,17 +345,28 @@ public final class DtConfigIntegrity {
                 String.join(", ", added));
             // Stamp BEFORE publishing the new snapshot: markCheated goes quiet (no notice, no Discord
             // post) once isVisiblySessionFreePlay() is true, and these players need to be told.
-            stampOnlinePlayers(server);
+            stampOnlinePlayers(server, causeFor(added));
         }
         deviations = current;
         baseline = current;
     }
 
-    private static void stampOnlinePlayers(MinecraftServer server) {
+    /**
+     * The Free Play cause for a set of deviations: stackable soups gets its own line when it is the
+     * only thing that changed, since "difficulty settings" would send the player to the wrong file.
+     */
+    public static Component causeFor(List<String> deviations) {
+        boolean onlySoups = !deviations.isEmpty()
+            && deviations.stream().allMatch(d -> d.startsWith(FD_DISPLAY_PREFIX));
+        return Component.translatable(onlySoups
+            ? "chat.dungeontrain.free_play.cause.soup_stacking"
+            : "chat.dungeontrain.free_play.cause.dt_config");
+    }
+
+    private static void stampOnlinePlayers(MinecraftServer server, Component cause) {
         try {
             for (ServerPlayer player : List.copyOf(server.getPlayerList().getPlayers())) {
-                RunIntegrity.markCheated(player,
-                    Component.translatable("chat.dungeontrain.free_play.cause.dt_config"));
+                RunIntegrity.markCheated(player, cause);
             }
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Could not mark runs Free Play after a mid-run config change", t);
@@ -361,10 +388,14 @@ public final class DtConfigIntegrity {
      * prompt uses this too.
      */
     public static List<String> check(Path configDir) {
-        List<String> found = new ArrayList<>(deviationsOf(
-            read(configDir.resolve(SERVER_FILE), SERVER_FILE),
-            read(configDir.resolve(COMMON_FILE), COMMON_FILE),
-            read(configDir.resolve(EB_FILE), EB_FILE)));
+        Map<String, Map<String, Object>> byFile = new LinkedHashMap<>();
+        byFile.put(SERVER_FILE, read(configDir.resolve(SERVER_FILE), SERVER_FILE));
+        byFile.put(COMMON_FILE, read(configDir.resolve(COMMON_FILE), COMMON_FILE));
+        byFile.put(EB_FILE, read(configDir.resolve(EB_FILE), EB_FILE));
+        if (FarmersDelightSoupStacking.isInstalled()) {
+            byFile.put(FD_FILE, read(configDir.resolve(FD_FILE), FD_FILE));
+        }
+        List<String> found = new ArrayList<>(deviationsOfFiles(byFile));
         found.addAll(PlayerMobConfigCheck.deviations());
         return List.copyOf(found);
     }
@@ -410,23 +441,35 @@ public final class DtConfigIntegrity {
     /** As above, with the bundled Edible Backpacks server file too. */
     static List<String> deviationsOf(Map<String, Object> serverValues, Map<String, Object> commonValues,
                                      Map<String, Object> ebValues) {
+        return deviationsOfFiles(Map.of(SERVER_FILE, serverValues, COMMON_FILE, commonValues, EB_FILE, ebValues));
+    }
+
+    /**
+     * Pure: as above, with each file's already-read values keyed by file name. A file with no entry
+     * reads as all defaults. Package-visible for tests.
+     */
+    static List<String> deviationsOfFiles(Map<String, Map<String, Object>> byFile) {
         List<String> found = new ArrayList<>();
-        int fileVersion = configVersionOf(serverValues);
+        int fileVersion = configVersionOf(byFile.getOrDefault(SERVER_FILE, Map.of()));
         for (Key key : GOVERNED) {
             if (notYetMigrated(key, fileVersion)) continue;
-            Map<String, Object> values = switch (key.file()) {
-                case SERVER_FILE -> serverValues;
-                case COMMON_FILE -> commonValues;
-                default -> ebValues;
-            };
+            Map<String, Object> values = byFile.getOrDefault(key.file(), Map.of());
             Object effective = effectiveValue(key, values.get(key.path()));
             if (!effective.equals(key.expected())) {
-                // Sibling keys are top-level in their own file — name the mod so the player can find it.
-                String where = EB_FILE.equals(key.file()) ? "ediblebackpacks: " : "";
-                found.add(where + key.path() + "=" + display(effective) + " (expected " + display(key.expected()) + ")");
+                found.add(displayPrefix(key.file()) + key.path() + "=" + display(effective)
+                    + " (expected " + display(key.expected()) + ")");
             }
         }
         return List.copyOf(found);
+    }
+
+    /** Other mods' keys live in their own file — name the mod so the player can find it. */
+    private static String displayPrefix(String file) {
+        return switch (file) {
+            case EB_FILE -> "ediblebackpacks: ";
+            case FD_FILE -> FD_DISPLAY_PREFIX;
+            default -> "";
+        };
     }
 
     /**

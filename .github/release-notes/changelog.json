@@ -19927,6 +19927,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "farmers-delight-soup-stacking",
+      "version": "0.988.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Farmer's Delight",
+      "summary": "Farmer's Delight isn't officially supported, but now it won't break the game at least.",
+      "highlights": [],
+      "pr": 1610,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -22,6 +22,9 @@ import java.util.List;
  * left exactly as it was — the rule inherited from the AIS restore is that we never destroy the
  * player's data, so no backup means no reset.</p>
  *
+ * <p>Farmers' Delight is the exception: only its stackable-soups switch is governed, so its file is
+ * backed up and that one key set back in place — see {@link #resetSoupStacking}.</p>
+ *
  * <p>DT, AIS, Edible Backpacks and PlayerMob all write a fresh default config on next launch
  * when theirs is missing, so the
  * reset is deliberately a <b>rename and nothing else</b>. That also means it <b>takes effect on
@@ -65,8 +68,14 @@ public final class ConfigReset {
      */
     public static Result run(Path configDir) {
         String stamp = LocalDateTime.now().format(STAMP);
-        List<Moved> moved = new ArrayList<>(GOVERNED_FILES.size());
+        List<Moved> moved = new ArrayList<>(GOVERNED_FILES.size() + 1);
         List<String> failed = new ArrayList<>();
+        moveGovernedAside(configDir, stamp, moved, failed);
+        resetSoupStacking(configDir, stamp, moved, failed);
+        return new Result(List.copyOf(moved), List.copyOf(failed));
+    }
+
+    private static void moveGovernedAside(Path configDir, String stamp, List<Moved> moved, List<String> failed) {
         for (String name : GOVERNED_FILES) {
             Path file = configDir.resolve(name);
             if (!Files.exists(file)) continue;
@@ -81,6 +90,27 @@ public final class ConfigReset {
                 failed.add(name);
             }
         }
-        return new Result(List.copyOf(moved), List.copyOf(failed));
+    }
+
+    /**
+     * Farmers' Delight's file holds dozens of the player's own settings, so it is not moved aside
+     * like the files above: it is <b>copied</b> to a backup and only the stackable-soups switch is
+     * set back to off in place. Untouched unless the switch is actually on. Same rule as the moves —
+     * no backup, no change.
+     */
+    private static void resetSoupStacking(Path configDir, String stamp, List<Moved> moved, List<String> failed) {
+        String name = FarmersDelightSoupStacking.FILE;
+        Path file = configDir.resolve(name);
+        if (!FarmersDelightSoupStacking.readFlag(file).orElse(false)) return;
+        Path backup = configDir.resolve(name + ".bak-" + stamp);
+        try {
+            Files.copy(file, backup);
+            FarmersDelightSoupStacking.writeFlag(file, false);
+            LOGGER.info("[DungeonTrain] Config reset: stackable soups off in {} (backup {})", name, backup.getFileName());
+            moved.add(new Moved(name, backup.getFileName().toString()));
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Could not reset stackable soups in {} — left untouched", file, t);
+            failed.add(name);
+        }
     }
 }

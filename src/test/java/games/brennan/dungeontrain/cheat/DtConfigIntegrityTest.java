@@ -297,4 +297,32 @@ class DtConfigIntegrityTest {
                     "extraPickupItems", PlayerMobConfigCheck.CUSTOM_LIST),
                 expected));
     }
+
+    // ---- Farmers' Delight stackable soups -------------------------------
+
+    private static List<String> fd(Object... kv) {
+        return DtConfigIntegrity.deviationsOfFiles(Map.of(DtConfigIntegrity.FD_FILE, map(kv)));
+    }
+
+    @Test
+    @DisplayName("Farmers' Delight: soups off, or no file/key ⇒ clean")
+    void fdOffIsClean() {
+        assertTrue(fd(FarmersDelightSoupStacking.PATH, false).isEmpty());
+        assertTrue(fd().isEmpty());
+        assertTrue(DtConfigIntegrity.deviationsOfFiles(Map.of()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Farmers' Delight: non-boolean value (NeoForge would correct it) ⇒ clean")
+    void fdWrongTypeIsClean() {
+        assertTrue(fd(FarmersDelightSoupStacking.PATH, "true").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Farmers' Delight: stackable soups on ⇒ deviation named after the mod")
+    void fdOnIsDeviation() {
+        List<String> d = fd(FarmersDelightSoupStacking.PATH, true);
+        assertEquals(List.of(DtConfigIntegrity.FD_DISPLAY_PREFIX + FarmersDelightSoupStacking.PATH
+            + "=true (expected false)"), d);
+    }
 }

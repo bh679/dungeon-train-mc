@@ -106,4 +106,32 @@ class ConfigResetTest {
             dir.toFile().setWritable(true); // let @TempDir clean up
         }
     }
+
+    @Test
+    @DisplayName("Farmers' Delight: soups switched off in place, other settings kept, backup made")
+    void resetsSoupStackingInPlace(@TempDir Path dir) throws IOException {
+        Path fd = write(dir, FarmersDelightSoupStacking.FILE,
+            "[overrides]\nenableRabbitStewBuff = false\n[overrides.stack_size]\nenableStackableSoupItems = true\n");
+
+        ConfigReset.Result result = ConfigReset.run(dir);
+
+        assertTrue(result.success());
+        assertEquals(java.util.Optional.of(false), FarmersDelightSoupStacking.readFlag(fd));
+        assertTrue(Files.readString(fd).contains("enableRabbitStewBuff = false"), "other settings kept");
+        ConfigReset.Moved moved = result.moved().get(0);
+        assertEquals(FarmersDelightSoupStacking.FILE, moved.file());
+        assertTrue(Files.readString(dir.resolve(moved.backup())).contains("enableStackableSoupItems = true"));
+    }
+
+    @Test
+    @DisplayName("Farmers' Delight: soups already off ⇒ file untouched, nothing reported")
+    void leavesSoupsOffAlone(@TempDir Path dir) throws IOException {
+        String contents = "[overrides.stack_size]\nenableStackableSoupItems = false\n";
+        Path fd = write(dir, FarmersDelightSoupStacking.FILE, contents);
+
+        ConfigReset.Result result = ConfigReset.run(dir);
+
+        assertTrue(result.moved().isEmpty());
+        assertEquals(contents, Files.readString(fd));
+    }
 }
