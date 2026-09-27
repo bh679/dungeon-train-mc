@@ -4,22 +4,18 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/** Which sprint-fly multiplier a player gets: their chosen one, else the build's default. */
+/** Which sprint-fly multiplier a player gets: their chosen one, else the default. */
 class SprintFlyBoostTest {
 
     @Test
-    void storedValueWinsInEitherBuild() {
-        assertEquals(1f, SprintFlyBoost.resolve(1f, false));
-        assertEquals(10f, SprintFlyBoost.resolve(10f, true));
+    void storedValueWins() {
+        assertEquals(1f, SprintFlyBoost.resolve(1f));
+        assertEquals(10f, SprintFlyBoost.resolve(10f));
     }
 
     @Test
-    void unsetIsThreeTimesInDev() {
-        assertEquals(SprintFlyBoost.DEV_DEFAULT, SprintFlyBoost.resolve(null, false));
-    }
-
-    @Test
-    void unsetIsVanillaInProduction() {
-        assertEquals(SprintFlyBoost.VANILLA, SprintFlyBoost.resolve(null, true));
+    void unsetIsThreeTimes() {
+        assertEquals(3f, SprintFlyBoost.DEFAULT);
+        assertEquals(SprintFlyBoost.DEFAULT, SprintFlyBoost.resolve(null));
     }
 }
