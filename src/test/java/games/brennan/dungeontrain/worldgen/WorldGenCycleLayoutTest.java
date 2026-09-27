@@ -41,7 +41,7 @@ final class WorldGenCycleLayoutTest {
     @DisplayName("period is the run-1 length and the layout is reported")
     void period() {
         assertTrue(C.hasLayout());
-        assertEquals(123_718L, C.period());
+        assertEquals(117_368L, C.period());
         assertEquals(232, C.riseLen());
     }
 
@@ -143,8 +143,24 @@ final class WorldGenCycleLayoutTest {
         assertEquals(1.0, C.chuncksKeepDensityAt(x(c - 1)));
         assertEquals(0.3, C.chuncksKeepDensityAt(x(c + 1500 + 10)), 1e-9);
         assertTrue(C.isInChuncksBand(x(c + 1500)));
-        assertTrue(C.isInChuncksApproachOrBand(x(c - 1000)));                // the OW gap before it
-        long st = LAYOUT.start(15);
+        assertTrue(C.isInChuncksApproachOrBand(x(c - 500)));                 // the 650-block OW gap before it
+        long st = LAYOUT.start(14);                                    // straight after the chuncks core
+        // Chuncks carries on at its core density under the stacks entry fade, then stops at the stacks core.
+        assertTrue(C.isInChuncksStacksCrossfade(x(st)));
+        assertEquals(0.3, C.chuncksKeepDensityAt(x(st + 10)), 1e-9);
+        assertEquals(0.3, C.chuncksKeepDensityAt(x(st + 1499)), 1e-9);
+        assertFalse(C.isInChuncksStacksCrossfade(x(st + 1500)));
+        assertEquals(1.0, C.chuncksKeepDensityAt(x(st + 1500)));
+        assertFalse(C.isInChuncksStacksCrossfade(x(c - 1)));                 // not before chuncks
+        // An overworld gap between them (a custom order) keeps the plain-terrain entry fade.
+        CycleLayout gapped = CycleLayout.parse("ow:100, chuncks:5000, ow:500, stacks:5000", CycleLayoutTest.FADES,
+                CycleLayoutTest.eraDefaults(), t -> true, w -> {});
+        WorldGenCycle g = new WorldGenCycle(START, 10_000, 40, new int[] {1, 2, 4, 8, 15}, 32, 0, 300, 5000,
+                120, 500, 5000, 600, 5000, 600, 10_000, 8000, 1500, 5000, 0.3, 0.4, 6550, 750, 5000, 8000, 1500, 10_000, 0.08,
+                CycleLayoutTest.eraDefaults(), gapped, 0);
+        int gst = (int) (START + gapped.start(3));
+        assertFalse(g.isInChuncksStacksCrossfade(gst + 10));
+        assertEquals(1.0, g.chuncksKeepDensityAt(gst + 10));
         assertEquals(1.0, C.stacksVoidRampAt(x(st + 1500 + 4999)));
         assertTrue(C.isInStacksBand(x(st + 1500 + 4999)));
         assertEquals(0.0, C.stacksVoidRampAt(x(st + 1500 + 5000)));           // run 1 starts here

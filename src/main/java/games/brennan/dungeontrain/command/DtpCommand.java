@@ -3,7 +3,10 @@ package games.brennan.dungeontrain.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyOffset;
@@ -18,6 +21,7 @@ import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -26,14 +30,18 @@ import net.minecraft.server.level.ServerPlayer;
 import org.joml.Vector3d;
 import org.slf4j.Logger;
 
+import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.OptionalLong;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Registers {@code /dtp <x>} (OP-only, permission level 2): teleports the
  * player to world-X {@code x} and guarantees a train is there to land on.
  * {@code /dtp <band>} (every phase token and alias, plus the styled occurrences — see
  * {@link DtpTarget}) does the same for that band's occurrence in a lap — see {@link BandLocator}:
- * {@code /dtp <band> <distance> <lap>}, where {@code lap} is 0-based
+ * {@code /dtp <band> <distance|subsection> <lap>} — a subsection is one of the band's F3+4 stages
+ * ({@code /dtp nether mountain_3}, see {@link SubsectionLocator}) — where {@code lap} is 0-based
  * {@link games.brennan.dungeontrain.worldgen.WorldGenCycle#cycleIndex} (the same numbering
  * {@code /dungeontrain debug overworld-laps} prints) and defaults to lap 0, wherever the player is.
  * {@code /dtp next [distance]} jumps just inside the next band ahead of the player — "band" as the
@@ -91,6 +99,9 @@ public final class DtpCommand {
     /** {@code /dtp next} — not a {@link games.brennan.dungeontrain.worldgen.TrainPhase} token or alias, so it can't shadow a band. */
     private static final String NEXT_TOKEN = "next";
 
+    /** {@code /dtp <band> <where>}: a distance past the band's entry, or a subsection token. */
+    private static final String WHERE_ARG = "where";
+
     private DtpCommand() {}
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -108,15 +119,56 @@ public final class DtpCommand {
         dispatcher.register(root);
     }
 
-    /** {@code /dtp <band>}: literal children win over the {@code x} double argument, so numeric use is unaffected. */
+    /**
+     * {@code /dtp <band> [<where> [lap]]}: literal children win over the {@code x} double argument, so numeric use is
+     * unaffected. {@code where} is one word — a number is a distance past the band's entry (the old
+     * {@code <distance>}), anything else a subsection token ({@link SubsectionLocator}). One argument rather than
+     * a double and a word side by side, which Brigadier can't reliably choose between.
+     */
     private static LiteralArgumentBuilder<CommandSourceStack> bandLiteral(DtpTarget target) {
         return Commands.literal(target.token())
             .executes(ctx -> runBand(ctx.getSource(), target, BAND_ENTRY_INSET, DEFAULT_LAP))
-            .then(Commands.argument("distance", DoubleArgumentType.doubleArg())
-                .executes(ctx -> runBand(ctx.getSource(), target, DoubleArgumentType.getDouble(ctx, "distance"), DEFAULT_LAP))
+            .then(Commands.argument(WHERE_ARG, StringArgumentType.word())
+                .suggests((ctx, builder) -> suggestSubsections(ctx.getSource(), target, builder))
+                .executes(ctx -> runWhere(ctx.getSource(), target, StringArgumentType.getString(ctx, WHERE_ARG), DEFAULT_LAP))
                 .then(Commands.argument("lap", IntegerArgumentType.integer(0))
-                    .executes(ctx -> runBand(ctx.getSource(), target, DoubleArgumentType.getDouble(ctx, "distance"),
+                    .executes(ctx -> runWhere(ctx.getSource(), target, StringArgumentType.getString(ctx, WHERE_ARG),
                         IntegerArgumentType.getInteger(ctx, "lap")))));
+    }
+
+    /** Suggests the band's lap-0 subsection tokens (the layout is the same shape every lap). */
+    private static CompletableFuture<Suggestions> suggestSubsections(CommandSourceStack source, DtpTarget target,
+                                                                     SuggestionsBuilder builder) {
+        SubsectionLocator.of(source.getServer().overworld(), target, DEFAULT_LAP)
+            .ifPresent(subs -> SharedSuggestionProvider.suggest(subs.offeredTokens(), builder));
+        return builder.buildFuture();
+    }
+
+    /** {@code where} is a number → distance past the entry; otherwise a subsection token. */
+    private static int runWhere(CommandSourceStack source, DtpTarget target, String where, int lap) {
+        try {
+            return runBand(source, target, Double.parseDouble(where), lap);
+        } catch (NumberFormatException notANumber) {
+            return runSubsection(source, target, where, lap);
+        }
+    }
+
+    /** Teleport just inside subsection {@code token} of the {@code target} band's occurrence in {@code lap}. */
+    private static int runSubsection(CommandSourceStack source, DtpTarget target, String token, int lap) {
+        ServerLevel overworld = source.getServer().overworld();
+        Optional<SubsectionLocator.Subsections> subs = SubsectionLocator.of(overworld, target, lap);
+        if (subs.isEmpty()) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.package.dtp_band_not_found_in_lap", target.displayName(), lap));
+            return 0;
+        }
+        int index = subs.get().indexOf(token);
+        OptionalLong x = SubsectionLocator.targetX(WorldGenCycle.fromConfig(), subs.get(), index, BAND_ENTRY_INSET);
+        if (x.isEmpty()) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.package.dtp_subsection_not_found",
+                token, target.displayName(), String.join(", ", subs.get().offeredTokens())));
+            return 0;
+        }
+        return run(source, x.getAsLong());
     }
 
     /** Teleport {@code distance} blocks past the entry of the {@code target} band's occurrence in {@code lap}, via the normal {@link #run} path. */

@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import net.minecraft.server.level.ServerLevel;
 
 /**
@@ -68,17 +70,23 @@ public final class BandLabel {
     private static String stageAt(WorldGenCycle cycle, int worldX) {
         int slot = cycle.slotIndexAt(worldX);
         if (slot < 0) return "";
+        BandStages.Position at = BandStages.locate(stagesOf(cycle, slot), cycle.slotLocal(worldX));
+        return at == null ? "" : at.describe();
+    }
+
+    /** The stages of layout slot {@code slot} with the live config — the list the panel counts and {@code /dtp <band> <subsection>} targets. */
+    public static java.util.List<BandStages.Stage> stagesOf(WorldGenCycle cycle, int slot) {
         int[] mults = cycle.stageMultipliers();
-        java.util.List<BandStages.Stage> stages = BandStages.of(cycle.layout(), slot,
+        return BandStages.of(cycle.layout(), slot,
             mults == null ? 1 : mults.length, cycle.stageBlocks(), cycle.beachBlocks(),
             SpheresProgressionConfig.segments(), SpheresProgressionConfig.exitTaperBlocks(),
             SpheresProgressionConfig.exitVoidBlocks());
-        BandStages.Position at = BandStages.locate(stages, cycle.slotLocal(worldX));
-        return at == null ? "" : at.describe();
     }
 
     /** The styled occurrence at {@code worldX} within {@code phase}, or empty when it is the plain look. */
     private static String styleOf(ServerLevel overworld, WorldGenCycle cycle, TrainPhase phase, int worldX) {
+        // Superflat has no phase of its own — name it so the panel and /dtp next see it as its own band.
+        if (LegacyBands.isInBand(overworld, LegacyBandKind.SUPERFLAT, worldX)) return "Superflat";
         return switch (phase) {
             case NETHER -> NetherBand.isInNetherBand(overworld, worldX) && cycle.isBetterNetherAt(worldX)
                 ? "Better Nether" : "";
