@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen;
 
+import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.WorldGenLevel;
@@ -52,6 +53,40 @@ public final class WorldFloor {
     /** The maths on its own, so it unit-tests without a NeoForge bootstrap. */
     public static int bedrockY(int minBuildHeight, int generatorMinY) {
         return Math.max(minBuildHeight, generatorMinY);
+    }
+
+    /**
+     * The terrain floor under chunk {@code (chunkX, chunkZ)} — {@link #bedrockY} everywhere except a chunk
+     * of the {@link SunkZone} (Amplified and the gap leading into it), whose terrain runs {@link AmplifiedDrop#drop} blocks down into what is
+     * elsewhere the basement (and whose twins live in an attic instead — see {@code PortalTwinSpace}).
+     * The cheap config gate in {@link LegacyBands#kindOfChunk} keeps this at {@link #bedrockY}'s cost for
+     * every chunk outside the legacy run.
+     */
+    public static int terrainFloorY(ServerLevel level, int chunkX, int chunkZ) {
+        int bedrock = bedrockY(level);
+        if (!SunkZone.isSunkChunk(level, chunkX, chunkZ)) return bedrock;
+        return AmplifiedDrop.of(level).floorY(bedrock);
+    }
+
+    /** {@link #terrainFloorY} for the column at block {@code (blockX, blockZ)}. */
+    public static int terrainFloorAt(ServerLevel level, int blockX, int blockZ) {
+        return terrainFloorY(level, blockX >> 4, blockZ >> 4);
+    }
+
+    /** Worldgen-side variant of {@link #terrainFloorAt}. */
+    public static int terrainFloorAt(WorldGenLevel level, int blockX, int blockZ) {
+        return terrainFloorAt(level.getLevel(), blockX, blockZ);
+    }
+
+    /**
+     * The sea level of the column at block {@code (blockX, blockZ)} — the level's own, except in a
+     * {@link SunkZone} chunk, whose sea was lowered with its land ({@link AmplifiedDrop#seaLevel}).
+     */
+    public static int seaLevelAt(WorldGenLevel level, int blockX, int blockZ) {
+        int sea = level.getSeaLevel();
+        ServerLevel server = level.getLevel();
+        if (!SunkZone.isSunkChunk(server, blockX >> 4, blockZ >> 4)) return sea;
+        return AmplifiedDrop.of(server).seaLevel(sea);
     }
 
     /**

@@ -990,7 +990,7 @@ public final class DungeonTrainCommonConfig {
         games.brennan.dungeontrain.worldgen.legacy.LegacyBandConfig.define(b);
         ModConfigSpec.ConfigValue<String> worldgenCycleOrder = b
                 .comment("The order the bands come in, as one run of the cycle: comma-separated slots, each",
-                        "  ow[:style]:<blocks>            an overworld gap (style: vanilla | wwoo | bop)",
+                        "  ow[:style]:<blocks>            an overworld gap (style: vanilla | wwoo | bop | sunk = at Amplified's lowered height)",
                         "  nether[:style]:<core>          a Nether band (style: vanilla | better = BetterNether)",
                         "  end[:style]:<core>             an End-islands band (style: vanilla | better = BetterEnd)",
                         "  upside_down:<core>:<reassembly> the upside-down band and its Reassembly crossfade",
@@ -1170,7 +1170,8 @@ public final class DungeonTrainCommonConfig {
             WorldGenCycle.invalidateCache();
         }
 
-        // v6 -> v7: the Beta era shrank 5000 -> 3500. Only an order still exactly as v6 shipped moves; an
+        // v6 -> v7: the Beta era shrank 5000 -> 3500, and the overworld gap into Amplified became the
+        // short sunk approach (ow:sunk:500). Only an order still exactly as v6 shipped moves; an
         // edited order is a choice and is left alone.
         if (from < 7 && V6_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
             WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
