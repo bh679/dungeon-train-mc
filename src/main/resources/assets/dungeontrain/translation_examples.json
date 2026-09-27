@@ -11197,6 +11197,29 @@
       ]
     }
   },
+  "chat.dungeontrain.package.dtp_subsection_not_found": {
+    "1": {
+      "label": "the subsection name the player typed",
+      "examples": [
+        "mountain_9",
+        "core"
+      ]
+    },
+    "2": {
+      "label": "the name of the band",
+      "examples": [
+        "Nether",
+        "Spheres"
+      ]
+    },
+    "3": {
+      "label": "comma-separated list of the band's subsection names (command tokens, not translated)",
+      "examples": [
+        "beach, mountain_1, core",
+        "transition_in, core"
+      ]
+    }
+  },
   "chat.dungeontrain.package.teleporting_x_spawning_train": {
     "1": {
       "label": "a coordinate",

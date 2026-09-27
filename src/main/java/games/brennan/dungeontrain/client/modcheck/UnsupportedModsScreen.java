@@ -44,6 +44,8 @@ public final class UnsupportedModsScreen extends Screen {
 
     private static final int PANEL_W = 340;
     private static final int ROW_H = 24;
+    /** Mods sit two to a row, so a longer list still fits without scrolling. */
+    private static final int COLUMNS = 2;
     private static final int ICON_BUTTON = 20;
     private static final int BUTTON_H = 20;
     private static final int GAP = 8;
@@ -104,18 +106,21 @@ public final class UnsupportedModsScreen extends Screen {
             + GAP + this.font.lineHeight                    // link
             + GAP + BUTTON_H + PAD;                         // Continue | Quit and Disable
         int maxRows = Math.max(1, (this.height - 16 - chrome) / ROW_H);
-        visibleRows = Math.min(mods.size(), maxRows);
-        scroll = Math.max(0, Math.min(scroll, mods.size() - visibleRows));
+        visibleRows = Math.min(totalRows(), maxRows);
+        scroll = Math.max(0, Math.min(scroll, totalRows() - visibleRows));
         panelH = chrome + visibleRows * ROW_H;
         panelX = (this.width - panelW) / 2;
         panelY = Math.max(8, (this.height - panelH) / 2);
         listY = panelY + PAD + this.font.lineHeight + GAP;
 
-        int buttonX = panelX + panelW - PAD - ICON_BUTTON;
         for (int i = 0; i < visibleRows; i++) {
-            UnsupportedMod mod = mods.get(scroll + i);
-            int rowY = listY + i * ROW_H + (ROW_H - ICON_BUTTON) / 2;
-            addRenderableWidget(suggestButton(mod, buttonX, rowY));
+            for (int c = 0; c < COLUMNS; c++) {
+                int index = (scroll + i) * COLUMNS + c;
+                if (index >= mods.size()) break;
+                int buttonX = cellX(c) + cellW() - ICON_BUTTON - 2;
+                int rowY = listY + i * ROW_H + (ROW_H - ICON_BUTTON) / 2;
+                addRenderableWidget(suggestButton(mods.get(index), buttonX, rowY));
+            }
         }
 
         int linkY = listY + visibleRows * ROW_H + GAP + bodyH + GAP + hintH + GAP;
@@ -127,11 +132,20 @@ public final class UnsupportedModsScreen extends Screen {
 
         int buttonY = panelY + panelH - PAD - BUTTON_H;
         int half = (inner - GAP) / 2;
+        // Continue is red: carrying on means playing this launch in Free Play.
         addRenderableWidget(new DarkTintedButton(panelX + PAD, buttonY, half, BUTTON_H,
-            CommonComponents.GUI_CONTINUE, b -> onClose()));
-        Button quit = addRenderableWidget(new DarkTintedButton(panelX + PAD + inner - half, buttonY, half, BUTTON_H,
-            Component.translatable("gui.dungeontrain.unsupported_mods.quit_disable"), b -> quitAndDisable()));
-        quit.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.unsupported_mods.quit_disable.tooltip")));
+            CommonComponents.GUI_CONTINUE, b -> onClose(), 1.15F, 0.35F, 0.35F));
+        int quitX = panelX + PAD + inner - half;
+        if (disableFailed) {
+            // Disabling from here didn't work, so this is now a plain, blue Quit: the player turns the
+            // mods off in their launcher and comes back.
+            addRenderableWidget(new DarkTintedButton(quitX, buttonY, half, BUTTON_H,
+                Component.translatable("menu.quit"), b -> this.minecraft.stop(), 0.45F, 0.60F, 1.25F));
+        } else {
+            Button quit = addRenderableWidget(new DarkTintedButton(quitX, buttonY, half, BUTTON_H,
+                Component.translatable("gui.dungeontrain.unsupported_mods.quit_disable"), b -> quitAndDisable()));
+            quit.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.unsupported_mods.quit_disable.tooltip")));
+        }
     }
 
     /**
@@ -186,8 +200,8 @@ public final class UnsupportedModsScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (mods.size() <= visibleRows) return false;
-        int next = Math.max(0, Math.min(mods.size() - visibleRows, scroll - (int) Math.signum(scrollY)));
+        if (totalRows() <= visibleRows) return false;
+        int next = Math.max(0, Math.min(totalRows() - visibleRows, scroll - (int) Math.signum(scrollY)));
         if (next != scroll) {
             scroll = next;
             rebuildWidgets();
@@ -202,22 +216,29 @@ public final class UnsupportedModsScreen extends Screen {
             this.width / 2, panelY + PAD, 0xFFFFD060);
 
         int textX = panelX + PAD;
-        int textW = panelW - PAD * 3 - ICON_BUTTON;
+        int textW = cellW() - ICON_BUTTON - 8;
         for (int i = 0; i < visibleRows; i++) {
-            UnsupportedMod mod = mods.get(scroll + i);
             int rowY = listY + i * ROW_H;
             if (((scroll + i) & 1) == 0) g.fill(panelX + PAD / 2, rowY, panelX + panelW - PAD / 2, rowY + ROW_H, ROW_ALT);
-            g.drawString(this.font, trim("• " + mod.displayName(), textW), textX, rowY + 3, NAME_COLOUR, false);
-            ModSuggestClient.Result r = results.get(mod.modId());
-            Component sub = r == null
-                ? Component.literal(mod.modId())
-                : ModSuggestScreen.resultMessage(r);
-            int subColour = r == null ? ID_COLOUR : (r.isFinal() ? 0xFF7FD07F : 0xFFE08080);
-            g.drawString(this.font, trim(sub.getString(), textW - 8), textX + 8, rowY + 3 + this.font.lineHeight + 1,
-                subColour, false);
+            for (int c = 0; c < COLUMNS; c++) {
+                int index = (scroll + i) * COLUMNS + c;
+                if (index >= mods.size()) break;
+                UnsupportedMod mod = mods.get(index);
+                int x = cellX(c);
+                g.drawString(this.font, trim("• " + mod.displayName(), textW), x, rowY + 3, NAME_COLOUR, false);
+                ModSuggestClient.Result r = results.get(mod.modId());
+                Component sub = r == null
+                    ? Component.literal(mod.modId())
+                    : ModSuggestScreen.resultMessage(r);
+                int subColour = r == null ? ID_COLOUR : (r.isFinal() ? 0xFF7FD07F : 0xFFE08080);
+                g.drawString(this.font, trim(sub.getString(), textW - 8), x + 8, rowY + 3 + this.font.lineHeight + 1,
+                    subColour, false);
+            }
         }
-        if (mods.size() > visibleRows) {
-            String more = (scroll + 1) + "–" + (scroll + visibleRows) + " / " + mods.size();
+        if (totalRows() > visibleRows) {
+            int first = scroll * COLUMNS + 1;
+            int last = Math.min(mods.size(), (scroll + visibleRows) * COLUMNS);
+            String more = first + "–" + last + " / " + mods.size();
             g.drawString(this.font, more, panelX + panelW - PAD - this.font.width(more),
                 panelY + PAD, ID_COLOUR, false);
         }
@@ -246,6 +267,19 @@ public final class UnsupportedModsScreen extends Screen {
         super.renderBackground(g, mouseX, mouseY, partialTick);
         g.fill(panelX - 1, panelY - 1, panelX + panelW + 1, panelY + panelH + 1, PANEL_EDGE);
         g.fill(panelX, panelY, panelX + panelW, panelY + panelH, PANEL_BG);
+    }
+
+    private int totalRows() {
+        return (mods.size() + COLUMNS - 1) / COLUMNS;
+    }
+
+    /** Width of one mod cell: the list's inner width split into {@link #COLUMNS} with a gap between. */
+    private int cellW() {
+        return (panelW - PAD * 2 - GAP * (COLUMNS - 1)) / COLUMNS;
+    }
+
+    private int cellX(int column) {
+        return panelX + PAD + column * (cellW() + GAP);
     }
 
     private String trim(String s, int width) {

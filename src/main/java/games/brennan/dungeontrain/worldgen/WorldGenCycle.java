@@ -533,6 +533,20 @@ public record WorldGenCycle(long startX, int owGap,
         return i < 0 ? -1L : baseAt(worldX) - layout.start(i);
     }
 
+    /**
+     * World X of the column {@code local} base blocks into the slot occurrence containing {@code worldX} (the
+     * inverse of {@link #slotLocal}, scaled by that run's doubling), or {@code -1} when {@code worldX} has no slot.
+     */
+    public long slotWorldX(int worldX, long local) {
+        int i = slotIndexAt(worldX);
+        return i < 0 ? -1L : worldOf(worldX, layout.start(i) + local);
+    }
+
+    /** Doubling scale ({@code 2^run}) at {@code worldX}: world blocks per base block. 1 without a layout. */
+    public long runScaleAt(int worldX) {
+        return layout == null ? 1L : 1L << runAt(worldX);
+    }
+
     /** World X of base coordinate {@code u} in the run {@code worldX} is in — the inverse of {@link #baseAt}. */
     private long worldOf(int worldX, long u) {
         int k = runAt(worldX);
@@ -1458,8 +1472,23 @@ public record WorldGenCycle(long startX, int owGap,
      */
     public double chuncksKeepDensityAt(int worldX) {
         if (chuncksLen() <= 0L) return 1.0;                         // band disabled → all real terrain
+        if (isInChuncksStacksCrossfade(worldX)) return chuncksKeepDensity;   // chuncks carries on under the stacks fade
         double t = fadeInRamp(CycleLayout.Type.CHUNCKS, chuncksFadeLen(), worldX);   // 0 at fade start → 1 at core edge
         return 1.0 + (chuncksKeepDensity - 1.0) * t;                // lerp 1 → keepDensity (1.0 outside the band + fade)
+    }
+
+    /**
+     * True inside a stacks slot's entry fade when the slot straight before it is chuncks (layout only).
+     * There the two bands crossfade: a chunk the stacks ramp claims stays stacks, and every other chunk
+     * is classified by chuncks at its core density ({@link #chuncksKeepDensityAt}) instead of falling back
+     * to plain overworld — so chuncks fades out as stacks fades in, with no overworld wall between them.
+     */
+    public boolean isInChuncksStacksCrossfade(int worldX) {
+        if (layout == null || chuncksLen() <= 0L || stacksLen() <= 0L) return false;
+        int i = slotAt(worldX);
+        if (i <= 0 || layout.slot(i).type() != CycleLayout.Type.STACKS
+                || layout.slot(i - 1).type() != CycleLayout.Type.CHUNCKS) return false;
+        return baseAt(worldX) - layout.start(i) < stacksFadeLen();
     }
 
     // ---- spheres band --------------------------------------------------------
