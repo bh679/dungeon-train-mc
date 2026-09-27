@@ -59,7 +59,33 @@
         "playermob",
         "enderchestpersistence",
         "ediblebackpacks",
-        "joml-primitives"
+        "joml-primitives",
+        "keeptrim",
+        "dungeonbackup",
+        "sable_fence_trapdoor_fix",
+        "sable_pathfinder",
+        "pigmanvillagers",
+        "streamdetect",
+        "dpibypassdetect"
+      ]
+    },
+    "required_dependencies": {
+      "why": "Third-party mods Dungeon Train declares as REQUIRED in neoforge.mods.toml — the game will not load without them, so every player has them. Paintings are Fast Paintings blocks; every second Nether/End band is BetterNether/BetterEnd; odd overworld laps are WWOO and Biomes O' Plenty.",
+      "ids": [
+        "fastpaintings",
+        "betternether",
+        "betterend",
+        "bclib",
+        "wover",
+        "wunderlib",
+        "wwoo",
+        "biomesoplenty"
+      ]
+    },
+    "optional_compat": {
+      "why": "Mods Dungeon Train declares an optional compat entry for in neoforge.mods.toml and has tested against. Vivecraft is VR: it changes how you play, not what the game gives you.",
+      "ids": [
+        "vivecraft"
       ]
     },
     "modpack_roster": {
@@ -105,7 +131,9 @@
         "effortlessbuilding",
         "distanthorizons",
         "tectonic",
-        "worldedit"
+        "worldedit",
+        "particle_effects",
+        "shulkerbox"
       ],
       "note": [
         "worldedit is here because the modpack ships it, not because it is harmless — it can build",
@@ -276,6 +304,16 @@
         "irons_lib",
         "oracle_index",
         "rhino"
+      ]
+    },
+    "community_approved": {
+      "why": "Approved on the relay's mod-request queue (dt.brennan.games #/mod-requests) after community suggestion, then baked here so offline and first-launch players get them too. Same rule as every other group.",
+      "ids": [
+        "alltheleaks",
+        "catalogue",
+        "cirrus",
+        "lmft",
+        "perception"
       ]
     }
   }

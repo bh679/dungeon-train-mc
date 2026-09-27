@@ -2,14 +2,18 @@ package games.brennan.dungeontrain.cheat;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import games.brennan.dungeontrain.RepoPaths;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -164,8 +168,36 @@ class ApprovedModListTest {
         Set<String> baked = ApprovedModList.approved();
         // Real modIds, not store slugs: Item Highlighter ships as `highlighter`, Iris as `iris`.
         for (String id : List.of("sodium", "iris", "jade", "appleskin", "ferritecore", "modernfix",
-            "highlighter", "khi", "sablejade", "distanthorizons", "mousetweaks", "jei")) {
+            "highlighter", "khi", "sablejade", "distanthorizons", "mousetweaks", "jei",
+            // Read out of each pinned jar's own mods.toml — several differ from their slug.
+            "enchdesc", "supermartijn642configlib", "particle_effects", "shulkerbox",
+            "crash_assistant", "nemos_inventory_sorting", "smoothswapping", "codecui", "kuma_api")) {
             assertTrue(baked.contains(id), id + " is in the modpack, so it must be approved");
+        }
+    }
+
+    @Test
+    @DisplayName("Every mod neoforge.mods.toml names is approved — a new dependency can't free-play everyone")
+    void bakedResourceCoversEveryDeclaredDependency() throws Exception {
+        String toml = Files.readString(RepoPaths.root().resolve("src/main/templates/META-INF/neoforge.mods.toml"));
+        Matcher m = Pattern.compile("modId\\s*=\\s*\"([^\"$]+)\"").matcher(toml);
+        Set<String> approved = ApprovedModList.approved();
+        int seen = 0;
+        while (m.find()) {
+            seen++;
+            assertTrue(approved.contains(m.group(1)),
+                m.group(1) + " is declared in neoforge.mods.toml, so it must be approved");
+        }
+        assertTrue(seen > 10, "expected to find the declared dependencies, found " + seen);
+    }
+
+    @Test
+    @DisplayName("The jarJar'd and hybrid siblings are approved under their real mod ids")
+    void bakedResourceCoversSiblings() {
+        Set<String> baked = ApprovedModList.approved();
+        for (String id : List.of("keeptrim", "dungeonbackup", "sable_fence_trapdoor_fix",
+            "sable_pathfinder", "pigmanvillagers", "streamdetect", "dpibypassdetect")) {
+            assertTrue(baked.contains(id), id + " ships with Dungeon Train, so it must be approved");
         }
     }
 
