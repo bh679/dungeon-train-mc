@@ -19619,6 +19619,46 @@
       "released_at": null
     },
     {
+      "id": "upsidedown-reverse-gravity",
+      "version": "0.977.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Sand knows which way is down - even when down is up",
+      "summary": "In one of the stranger stretches of the journey, sand and gravel no longer tumble out of the world before it has settled \u2014 and once it has, they fall the way that place says they should.",
+      "highlights": [
+        "Sand and gravel wait for the world to settle before they fall.",
+        "Suspicious sand and gravel turn up there too, loot and all."
+      ],
+      "pr": 1589,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "superflat-band-villages",
+      "version": "0.977.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Villages in a stretch that had none",
+      "summary": "One of the stranger stretches of the journey used to be completely empty. Villages now turn up there as often as they would anywhere else, standing on the ground beside the line.",
+      "highlights": [
+        "Villages generate in a stretch of the journey that never had them.",
+        "Only land you haven't explored yet gets them."
+      ],
+      "pr": 1593,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "dtp-every-stage-and-subsections",
       "version": "0.978.0",
       "type": "feat",

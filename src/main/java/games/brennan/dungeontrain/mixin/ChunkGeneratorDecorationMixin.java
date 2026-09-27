@@ -12,7 +12,9 @@ import games.brennan.dungeontrain.worldgen.OfflineChunkSampler;
 import games.brennan.dungeontrain.worldgen.VanillaOnlySample;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
+import games.brennan.dungeontrain.worldgen.legacy.SuperflatHeight;
 import games.brennan.dungeontrain.worldgen.WwooDecorationPass;
 import games.brennan.dungeontrain.worldgen.feature.DeferredStructurePlacement;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
@@ -92,6 +94,13 @@ public abstract class ChunkGeneratorDecorationMixin {
     private static final ThreadLocal<RegistryAccess> dungeontrain$legacyUnderground = new ThreadLocal<>();
 
     /**
+     * Per-decoration-call registry access while decorating a Superflat-band chunk, else {@code null} — the
+     * one legacy band that keeps vanilla's villages, as vanilla Superflat did. Same lifecycle as the flags above.
+     */
+    @Unique
+    private static final ThreadLocal<RegistryAccess> dungeontrain$superflatVillages = new ThreadLocal<>();
+
+    /**
      * Per-decoration-call registry access while decorating an upside-down band chunk, else {@code null} —
      * the {@link UpsideDownSpawnerStructures} veto reads feature / structure ids through it. Same lifecycle
      * as the flags above.
@@ -108,6 +117,8 @@ public abstract class ChunkGeneratorDecorationMixin {
         dungeontrain$upsideDownSpawners.set(dungeontrain$appliesUpsideDownSpawners(level, chunk)
                 ? level.registryAccess() : null);
         dungeontrain$deferStructures.set(DeferredStructurePlacement.isDeferred(level, chunk.getPos()));
+        dungeontrain$superflatVillages.set(skip && dungeontrain$isSuperflatChunk(level, chunk)
+                ? level.registryAccess() : null);
         WwooDecorationPass.begin(level, chunk, skip);
     }
 
@@ -192,7 +203,8 @@ public abstract class ChunkGeneratorDecorationMixin {
         if (dungeontrain$deferStructures.get()) {
             return List.of();
         }
-        if (dungeontrain$skipDecoration.get() && !dungeontrain$isDtStructure(structure)) {
+        if (dungeontrain$skipDecoration.get() && !dungeontrain$isDtStructure(structure)
+                && !dungeontrain$isSuperflatVillage(structure)) {
             return List.of();
         }
         // Legacy / sunk chunk: no pieces of the underground set, even from a start just outside the band.
@@ -208,6 +220,30 @@ public abstract class ChunkGeneratorDecorationMixin {
             return List.of();
         }
         return structureManager.startsForStructure(sectionPos, structure);
+    }
+
+    /** A village being placed into a Superflat-band chunk. Unclassifiable → not a village (skip it, as before). */
+    @Unique
+    private static boolean dungeontrain$isSuperflatVillage(Structure structure) {
+        RegistryAccess registries = dungeontrain$superflatVillages.get();
+        if (registries == null) return false;
+        try {
+            return SuperflatHeight.isVillage(registries, structure);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** A Superflat-band chunk of the overworld. Unresolvable → no (villages stay off, as before). */
+    @Unique
+    private static boolean dungeontrain$isSuperflatChunk(WorldGenLevel level, ChunkAccess chunk) {
+        try {
+            ServerLevel serverLevel = level.getLevel();
+            return LegacyBands.kindOfChunk(serverLevel, chunk.getPos().x, chunk.getPos().z) == LegacyBandKind.SUPERFLAT;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] superflat-village resolve failed at {}; no villages", chunk.getPos(), t);
+            return false;
+        }
     }
 
     /** The band's own structures are the only ones kept in the eroded core. */
@@ -243,7 +279,8 @@ public abstract class ChunkGeneratorDecorationMixin {
                     || SpheresBand.isVoidChunk(serverLevel, chunkMinX, chunkMinZ)
                     || StacksBand.isVoidOrStackChunk(serverLevel, chunkMinX, chunkMinZ)
                     // Legacy band: not void, but its old generator decorates it (LegacyDecorateFeature) —
-                    // vanilla features and structure pieces would be modern things on old terrain.
+                    // vanilla features and structure pieces would be modern things on old terrain
+                    // (Superflat villages are the one exception — see dungeontrain$isSuperflatVillage).
                     || dungeontrain$isOldGeneratorChunk(serverLevel, chunk);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] decoration-skip resolve failed at {}; running vanilla decoration",
