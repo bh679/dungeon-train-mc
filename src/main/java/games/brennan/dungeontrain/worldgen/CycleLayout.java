@@ -22,7 +22,7 @@ import java.util.function.Consumer;
  * into each other (an order may hold several legacy slots; each era belongs to at most one). End slots
  * written back to back join into <b>one</b> continuous End band — a single void fade in and out, the
  * pieces' cores laid end to end — while each piece stays its own occurrence with its own look
- * ({@code end:vanilla:1200, end:bop:1800}). Slot lengths are {@code core + the band's own fades}, computed from the
+ * ({@code end:vanilla:1200, end:bop:2000}). Slot lengths are {@code core + the band's own fades}, computed from the
  * {@link Fades} the cycle carries, so every band's existing ramp maths keeps working at a slot-local
  * offset. {@link #period()} is the length of run 0; later runs stretch — see {@link #runIndex} /
  * {@link #baseCoord}: run {@code k} is {@code 2^k} times as long and every ramp is evaluated at the
@@ -81,14 +81,14 @@ public final class CycleLayout {
      * The default order: the layout {@code build()} uses when the key is blank.
      * <ul>
      *   <li>Lap 1: overworld → Nether (vanilla on the first cycle, vanilla + Biomes O' Plenty after:
-     *       {@code vanilla>bop}) → WWOO overworld → one End band whose first 40% is vanilla and last 60%
+     *       {@code vanilla>bop}) → WWOO overworld → one End band whose first 1200 blocks are vanilla and last 2000
      *       Biomes O' Plenty (two joined End slots) → upside-down + Reassembly.</li>
      *   <li>Lap 2: BoP overworld → BetterNether → Lost City (its own legacy run) → BetterEnd.</li>
      *   <li>Then spheres, the sunk approach, the rest of the legacy eras, chuncks, mix and stacks.</li>
      * </ul>
      */
     public static final String DEFAULT_ORDER =
-            "ow:2750, nether:vanilla>bop:3000, ow:wwoo:4500, end:vanilla:1200, end:bop:1800, upside_down:2500:6000, "
+            "ow:2750, nether:vanilla>bop:3000, ow:wwoo:4500, end:vanilla:1200, end:bop:2000, upside_down:2500:6000, "
             + "ow:bop:8000, nether:better:8000, legacy:lost_city=4000, end:better:8000, spheres:6550, ow:sunk:500, "
             + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:650, chuncks:2000, mix:4000, stacks:5000";

@@ -482,7 +482,7 @@ public final class DungeonTrainCommonConfig {
 
     /**
      * The {@code worldgenCycleOrder} v11 shipped. v12 reordered the laps: Lap 1 became overworld → Nether →
-     * WWOO → one End band (vanilla 40%, Biomes O' Plenty 60%) → upside-down; Lap 2 became BoP overworld →
+     * WWOO → one End band (1200 vanilla, 2000 Biomes O' Plenty) → upside-down; Lap 2 became BoP overworld →
      * BetterNether → Lost City (out of the legacy run) → BetterEnd.
      */
     public static final String V11_WORLDGEN_CYCLE_ORDER =

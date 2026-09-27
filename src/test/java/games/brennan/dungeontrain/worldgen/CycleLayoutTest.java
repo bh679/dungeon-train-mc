@@ -41,12 +41,12 @@ final class CycleLayoutTest {
     void shippedGeometry() {
         CycleLayout l = shipped();
         assertEquals(17, l.count());
-        // Lap 1: 2750 + (232+300+3000+300+232) + 4500 (WWOO) + joined End (740+1200 | 1800+740)
-        //        + (600+2500+600+6000+600) = 26,094
+        // Lap 1: 2750 + (232+300+3000+300+232) + 4500 (WWOO) + joined End (740+1200 | 2000+740)
+        //        + (600+2500+600+6000+600) = 26,294
         // Lap 2: 8000 (BoP) + 9064 + Lost City (480+4000+480) + 9480 + (750+6550) + 500 (the sunk approach) = 39,304
         // Lap 3: legacy (480·12 + 5000 + 3500 + 4320 + 4000 + 5000 + 2000·4 + 1000 + 200 = 36,780)
         //        + 650 + (1500+2000) + 4000 (the mix zone) + 6500 = 51,430
-        assertEquals(116_828L, l.period());
+        assertEquals(117_028L, l.period());
         assertEquals(2, l.typeCount(Type.NETHER));
         assertEquals(3, l.typeCount(Type.END));
         assertEquals(2, l.typeCount(Type.LEGACY_RUN));
@@ -59,8 +59,8 @@ final class CycleLayoutTest {
         assertEquals(4500L, l.length(2));
         assertEquals(11_314L, l.start(3));                      // End (vanilla piece)
         assertEquals(11_314L + 1940L, l.start(4));              // End (BoP piece) — no fade between them
-        assertEquals(13_254L + 2540L, l.start(5));              // Upside-down
-        assertEquals(26_094L, l.start(6));                      // OW·BoP opens lap 2
+        assertEquals(13_254L + 2740L, l.start(5));              // Upside-down
+        assertEquals(26_294L, l.start(6));                      // OW·BoP opens lap 2
         assertEquals(Style.BOP, l.slot(6).style());
         assertEquals(Style.BETTER, l.slot(7).style());
         assertEquals(Type.LEGACY_RUN, l.slot(8).type());        // Lost City, its own run
@@ -77,7 +77,7 @@ final class CycleLayoutTest {
         assertEquals(Style.BETTER, l.slot(7).styleOnRun(1));              // Lap 2 is the same every run
         assertEquals(Type.SPHERES, l.slot(10).type());
         assertEquals(Type.LEGACY_RUN, l.slot(12).type());
-        assertEquals(26_094L + 39_304L, l.start(12));
+        assertEquals(26_294L + 39_304L, l.start(12));
         assertEquals(Style.SUNK, l.slot(11).style());            // the short approach into Amplified
         assertEquals(Type.MIX, l.slot(15).type());
         assertEquals(4000L, l.length(15));                      // hard-edged: no fades
@@ -96,10 +96,10 @@ final class CycleLayoutTest {
         assertEquals(3, l.endGroupFirst(4));
         assertEquals(2, l.endGroupSize(4));
         assertEquals(l.start(3), l.endGroupStart(4));
-        assertEquals(3000, l.endGroupCore(3));
-        assertEquals(3000, l.endGroupCore(4));
-        // The joined band is exactly as long as one 3000-core End.
-        assertEquals(Disintegration.bandLength(120, 500, 3000), l.endGroupLength(3));
+        assertEquals(3200, l.endGroupCore(3));
+        assertEquals(3200, l.endGroupCore(4));
+        // The joined band is exactly as long as one 3200-core End.
+        assertEquals(Disintegration.bandLength(120, 500, 3200), l.endGroupLength(3));
         // A lone End is untouched.
         assertEquals(9, l.endGroupFirst(9));
         assertEquals(1, l.endGroupSize(9));

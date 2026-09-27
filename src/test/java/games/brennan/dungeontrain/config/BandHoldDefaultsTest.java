@@ -94,7 +94,7 @@ class BandHoldDefaultsTest {
         assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
                 DungeonTrainCommonConfig.V11_WORLDGEN_CYCLE_ORDER
                         .replace("ow:3000, end:vanilla>bop:3000, upside_down:2500:6000, ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000,",
-                                "ow:wwoo:4500, end:vanilla:1200, end:bop:1800, upside_down:2500:6000, ow:bop:8000, nether:better:8000, legacy:lost_city=4000, end:better:8000,")
+                                "ow:wwoo:4500, end:vanilla:1200, end:bop:2000, upside_down:2500:6000, ow:bop:8000, nether:better:8000, legacy:lost_city=4000, end:better:8000,")
                         .replace("amplified=5000:lost_city=4000:beta=3500", "amplified=5000:beta=3500"),
                 "v11 -> v12 reordered the laps only: WWOO + a vanilla/BoP End on Lap 1, Lost City on Lap 2");
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 12,

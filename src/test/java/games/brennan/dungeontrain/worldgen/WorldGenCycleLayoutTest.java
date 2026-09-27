@@ -48,7 +48,7 @@ final class WorldGenCycleLayoutTest {
     @DisplayName("period is the run-1 length and the layout is reported")
     void period() {
         assertTrue(C.hasLayout());
-        assertEquals(116_828L, C.period());
+        assertEquals(117_028L, C.period());
         assertEquals(232, C.riseLen());
     }
 
@@ -111,14 +111,14 @@ final class WorldGenCycleLayoutTest {
         assertTrue(C.isBopEndAt(x(bop + 100)));
         assertFalse(C.isBopEndAt(x(e1 + 1000)));
         // One band: the islands carry straight on across the vanilla → BoP seam, no void dip between.
-        for (long u = e1 + 740; u < bop + 1800; u += 50) {
+        for (long u = e1 + 740; u < bop + 2000; u += 50) {
             assertEquals(1.0, C.endIslandRamp(x(u)), 1e-12, "u=" + u);
             assertTrue(C.isEndCore(x(u)), "u=" + u);
         }
         assertEquals(C.endMiddleRamp(x(bop - 1)), C.endMiddleRamp(x(bop)), 1e-12);
         assertEquals(C.endSkyRamp(x(bop - 1), 200), C.endSkyRamp(x(bop), 200), 1e-12);
         // Its exit side matches a lone 3000-core End's.
-        assertEquals(0.0, C.endIslandRamp(x(bop + 1800 + 120)));
+        assertEquals(0.0, C.endIslandRamp(x(bop + 2000 + 120)));
         assertEquals(0.0, C.endMiddleRamp(x(e1end)));
         assertTrue(C.endMiddleRamp(x(e1end - 1)) > 0.0);
         // Entry lead = min(udFade 600, eVoid 500) = 500, the last 500 of the joined End.
