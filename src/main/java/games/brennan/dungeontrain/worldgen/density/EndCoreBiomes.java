@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.worldgen.density;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.util.LogFirstN;
+import games.brennan.dungeontrain.worldgen.BopEnd;
+import games.brennan.dungeontrain.worldgen.CycleLayout;
 import games.brennan.dungeontrain.worldgen.EndBandSampler;
 import games.brennan.dungeontrain.worldgen.EndBandStyle;
 import net.minecraft.core.Holder;
@@ -59,14 +61,16 @@ public final class EndCoreBiomes {
     private final Climate.Sampler endSampler;     // nullable alongside the source
     private final Holder<Biome> fallback;         // minecraft:the_end
     private final boolean betterEndPasses;        // true if the even passes are sampled from the live End
+    private final BiomeSource bopEnd;             // nullable — vanilla + BoP End layout (BopEnd)
 
     private EndCoreBiomes(BiomeSource endBiomeSource, VanillaEndBiomes vanilla, Climate.Sampler endSampler,
-                          Holder<Biome> fallback, boolean betterEndPasses) {
+                          Holder<Biome> fallback, boolean betterEndPasses, BiomeSource bopEnd) {
         this.endBiomeSource = endBiomeSource;
         this.vanilla = vanilla;
         this.endSampler = endSampler;
         this.fallback = fallback;
         this.betterEndPasses = betterEndPasses;
+        this.bopEnd = bopEnd;
     }
 
     /**
@@ -76,10 +80,12 @@ public final class EndCoreBiomes {
      * real End we sample: pass 0 (or earlier/unknown, {@code <= 0}) always resolves to the real End's
      * main island; later passes sweep further into the outer noise field. BetterEnd passes sample the
      * live (BetterEnd) End at the same spot {@code EndBandSampler} copies terrain from, so label and
-     * terrain agree; vanilla passes sample the vanilla layout. {@code betterPass} is the cycle's verdict
-     * for this pass ({@link games.brennan.dungeontrain.worldgen.WorldGenCycle#isBetterEndPass}).
+     * terrain agree; Biomes O' Plenty passes sample {@link BopEnd}'s layout (vanilla + BoP End biomes),
+     * which is also what their terrain is copied from; vanilla passes sample the vanilla layout.
+     * {@code style} is the cycle's verdict for this pass
+     * ({@link games.brennan.dungeontrain.worldgen.WorldGenCycle#endStyleOfPass}).
      */
-    public Holder<Biome> biomeAt(int worldX, int worldZ, long passIndex, boolean betterPass) {
+    public Holder<Biome> biomeAt(int worldX, int worldZ, long passIndex, CycleLayout.Style style) {
         if (endBiomeSource == null || vanilla == null || endSampler == null) return fallback;
         try {
             if (passIndex <= 0L) {
@@ -88,7 +94,11 @@ public final class EndCoreBiomes {
                 return vanilla.biomeAtQuart(0, SAMPLE_QUART_Y, 0);
             }
             int sampleX = (int) Math.min(Integer.MAX_VALUE, EndBandStyle.endSampleX(worldX, passIndex));
-            if (betterEndPasses && betterPass) {
+            if (bopEnd != null && style == CycleLayout.Style.BOP) {
+                return bopEnd.getNoiseBiome(
+                        QuartPos.fromBlock(sampleX), SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ), endSampler);
+            }
+            if (betterEndPasses && style == CycleLayout.Style.BETTER) {
                 Holder<Biome> live = endBiomeSource.getNoiseBiome(
                         QuartPos.fromBlock(sampleX), SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ), endSampler);
                 // Biomes O' Plenty adds End biomes through TerraBlender; keep those to its overworld stretch.
@@ -146,17 +156,19 @@ public final class EndCoreBiomes {
                 // debug: legitimately fires during earlier dimensions' Load events (End not yet
                 // created) before the End-Load republish upgrades the snapshot.
                 LOGGER.debug("[DungeonTrain] No End dimension — End core stays single-biome (the_end)");
-                return new EndCoreBiomes(null, null, null, fallback, false);
+                return new EndCoreBiomes(null, null, null, fallback, false, null);
             }
             ChunkGenerator gen = end.getChunkSource().getGenerator();
             BiomeSource src = gen.getBiomeSource();
             VanillaEndBiomes vanilla = VanillaEndBiomes.create(end.getSeed(),
                     end.registryAccess().lookupOrThrow(Registries.BIOME));
             Climate.Sampler sampler = end.getChunkSource().randomState().sampler();
-            return new EndCoreBiomes(src, vanilla, sampler, fallback, EndBandSampler.available(server));
+            BopEnd.Built bop = BopEnd.get(server);
+            return new EndCoreBiomes(src, vanilla, sampler, fallback, EndBandSampler.available(server),
+                    bop == null ? null : bop.source());
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to capture End biome source; core stays single-biome", t);
-            return new EndCoreBiomes(null, null, null, fallback, false);
+            return new EndCoreBiomes(null, null, null, fallback, false, null);
         }
     }
 }

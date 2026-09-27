@@ -62,11 +62,14 @@ final class NetherPassesDebug {
         Set<String> seen = new LinkedHashSet<>();
         for (long x = coreMin; x <= coreMax; x += BIOME_SAMPLE_STEP) {
             int ix = (int) x;
-            biomes.biomeAt(ix, 0, cycle.isBetterNetherAt(ix)).unwrapKey()
+            biomes.biomeAt(ix, 0, cycle.netherLookAt(ix)).unwrapKey()
                     .ifPresent(k -> seen.add(k.location().toString()));
         }
-        String kind = cycle.isBetterNetherPass(pass) && biomes.hasBetterNether()
-                ? "BetterNether" : "vanilla";
+        String kind = switch (cycle.netherStyleOfPass(pass)) {
+            case BETTER -> biomes.hasBetterNether() ? "BetterNether" : "vanilla";
+            case BOP -> biomes.hasBopNether() ? "BoP" : "vanilla";
+            default -> "vanilla";
+        };
         return "  pass " + pass + " (" + kind + "): core x=" + coreMin + ".." + coreMax
                 + " centre=" + ((coreMin + coreMax) / 2) + " biomes=" + seen
                 + " | " + describeEndCore(cycle, bandEnd, bandStart - Math.max(0, cycle.owGap()) + cycle.period());
@@ -86,7 +89,11 @@ final class NetherPassesDebug {
     }
 
     private static ChatFormatting passColour(WorldGenCycle cycle, int pass) {
-        return cycle.isBetterNetherPass(pass) ? ChatFormatting.GREEN : ChatFormatting.GOLD;
+        return switch (cycle.netherStyleOfPass(pass)) {
+            case BETTER -> ChatFormatting.GREEN;
+            case BOP -> ChatFormatting.LIGHT_PURPLE;
+            default -> ChatFormatting.GOLD;
+        };
     }
 
     private static void send(CommandSourceStack source, String line, ChatFormatting colour) {

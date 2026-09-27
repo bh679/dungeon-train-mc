@@ -460,8 +460,9 @@ public final class DungeonTrainCommonConfig {
             + "ow:650, chuncks:5000, stacks:5000";
 
     /**
-     * The {@code worldgenCycleOrder} v9 shipped; v10 changed only its legacy run — the Lost City era
-     * ({@code lost_city=4000}) between Amplified and Beta.
+     * The {@code worldgenCycleOrder} v9 shipped. v10 changed only Lap 1's Nether and End to
+     * {@code vanilla>bop} (vanilla on the first cycle, Biomes O' Plenty on every cycle after); the
+     * v9 -> v10 migration moves only this exact value.
      */
     public static final String V9_WORLDGEN_CYCLE_ORDER =
             "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
@@ -469,7 +470,17 @@ public final class DungeonTrainCommonConfig {
             + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:650, chuncks:2000, mix:4000, stacks:5000";
 
-    public static final int CURRENT_CONFIG_VERSION = 10;
+    /**
+     * The {@code worldgenCycleOrder} v10 shipped; v11 changed only its legacy run — the Lost City era
+     * ({@code lost_city=4000}) between Amplified and Beta.
+     */
+    public static final String V10_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:vanilla>bop:3000, ow:3000, end:vanilla>bop:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:650, chuncks:2000, mix:4000, stacks:5000";
+
+    public static final int CURRENT_CONFIG_VERSION = 11;
     public static final boolean DEFAULT_MIX_ENABLED = true;
     public static final String DEFAULT_MIX_EXCLUDE = "";
 
@@ -1052,8 +1063,9 @@ public final class DungeonTrainCommonConfig {
         ModConfigSpec.ConfigValue<String> worldgenCycleOrder = b
                 .comment("The order the bands come in, as one run of the cycle: comma-separated slots, each",
                         "  ow[:style]:<blocks>            an overworld gap (style: vanilla | wwoo | bop | sunk = at Amplified's lowered height)",
-                        "  nether[:style]:<core>          a Nether band (style: vanilla | better = BetterNether)",
-                        "  end[:style]:<core>             an End-islands band (style: vanilla | better = BetterEnd)",
+                        "  nether[:style]:<core>          a Nether band (style: vanilla | better = BetterNether | bop)",
+                        "  end[:style]:<core>             an End-islands band (style: vanilla | better = BetterEnd | bop)",
+                        "  style a>b (e.g. nether:vanilla>bop): look a on the first run of the order, look b on every run after",
                         "  upside_down:<core>:<reassembly> the upside-down band and its Reassembly crossfade",
                         "  chuncks:<core>  spheres:<core>  stacks:<core>",
                         "  mix:<core>                     every chunk is a random band from earlier in the run",
@@ -1261,9 +1273,18 @@ public final class DungeonTrainCommonConfig {
             WorldGenCycle.invalidateCache();
         }
 
-        // v9 -> v10: the Lost City era joined the legacy run between Amplified and Beta. Same rule: only an
-        // order still exactly as v9 shipped moves.
+        // v9 -> v10: Lap 1's Nether and End take the Biomes O' Plenty look from the second cycle on
+        // (vanilla>bop). Same rule: only an order still exactly as v9 shipped moves.
         if (from < 10 && V9_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> BoP Nether/End on later cycles.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v10 -> v11: the Lost City era joined the legacy run between Amplified and Beta. Same rule: only
+        // an order still exactly as v10 shipped moves.
+        if (from < 11 && V10_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
             WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
             LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
                     from, CURRENT_CONFIG_VERSION);

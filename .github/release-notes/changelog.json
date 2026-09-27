@@ -19738,6 +19738,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "later-laps-new-looks",
+      "version": "0.981.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Returning laps look different",
+      "summary": "Ride far enough to start the journey over and some of the places you've already passed through come back changed, with new sights to find the second time around.",
+      "highlights": [],
+      "pr": 1598,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

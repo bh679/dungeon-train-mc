@@ -61,6 +61,13 @@ final class CycleLayoutTest {
         assertEquals(Style.BETTER, l.slot(6).style());
         assertEquals(Style.BOP, l.slot(7).style());
         assertEquals(Style.BETTER, l.slot(8).style());
+        // Lap 1's Nether and End: vanilla on the first run, Biomes O' Plenty on every run after.
+        assertEquals(Style.VANILLA, l.slot(1).styleOnRun(0));
+        assertEquals(Style.BOP, l.slot(1).styleOnRun(1));
+        assertEquals(Style.VANILLA, l.slot(3).styleOnRun(0));
+        assertEquals(Style.BOP, l.slot(3).styleOnRun(2));
+        assertEquals(Style.VANILLA, l.slot(0).styleOnRun(1));             // Lap 1's overworld stays vanilla
+        assertEquals(Style.BETTER, l.slot(6).styleOnRun(1));              // Lap 2 is the same every run
         assertEquals(Type.SPHERES, l.slot(9).type());
         assertEquals(Type.LEGACY_RUN, l.slot(11).type());
         assertEquals(24_594L + 42_344L, l.start(11));
