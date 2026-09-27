@@ -19872,6 +19872,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-update-chat-notice",
+      "version": "0.984.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Chat tells you when a new version drops",
+      "summary": "If a new Dungeon Train version is released while you're playing, a line appears in chat saying which version is out and how long ago it dropped, with a link to what's new.",
+      "highlights": [
+        "Only real releases are announced \u2014 never the small automatic ones",
+        "Turn it off in Options > Dungeon Train > New Version Chat"
+      ],
+      "pr": 1605,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

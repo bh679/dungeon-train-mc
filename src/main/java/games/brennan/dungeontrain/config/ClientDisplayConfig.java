@@ -270,6 +270,8 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.BooleanValue DPI_BYPASS_WARNING_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue BOOK_AUTHOR_BURN_CHAT;
+    /** Chat line when a new Dungeon Train release lands mid-session — see {@code LiveUpdateNotice}. */
+    public static final ModConfigSpec.BooleanValue UPDATE_NOTICE_CHAT;
 
     /**
      * Where each of the editor's three author-facing menus draws — see {@link EditorMenuSpace}.
@@ -388,6 +390,7 @@ public final class ClientDisplayConfig {
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
         DPI_BYPASS_WARNING_OPTED_OUT = pair.getLeft().dpiBypassWarningOptedOut;
         BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
+        UPDATE_NOTICE_CHAT = pair.getLeft().updateNoticeChat;
         COMMAND_MENU_SPACE = pair.getLeft().commandMenuSpace;
         TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
         CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
@@ -732,6 +735,15 @@ public final class ClientDisplayConfig {
                 .define("authorBurnChat", false);
         b.pop();
 
+        b.push("updates");
+        ModConfigSpec.BooleanValue updateNoticeChat = b
+                .comment("Print a chat line when a new Dungeon Train version is released while you are playing,",
+                         "with a link to what's new. Only real releases (a new minor or major version) are",
+                         "announced, never the small automatic patch releases. Checks update.json on GitHub",
+                         "every 10 minutes while you are in a world; nothing about you is sent. On by default.")
+                .define("updateNoticeChat", true);
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
@@ -748,7 +760,7 @@ public final class ClientDisplayConfig {
                 deathScreenLastNps, deathFormAnsweredIds, deathFormMutedIds,
                 politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
-                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat,
+                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, updateNoticeChat,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme,
@@ -1140,6 +1152,17 @@ public final class ClientDisplayConfig {
         BOOK_AUTHOR_BURN_CHAT.set(value);
         BOOK_AUTHOR_BURN_CHAT.save();
         BookAuthorChatSyncClient.syncNow();
+    }
+
+    /** Whether a new-release chat line may print mid-session. On by default. */
+    public static boolean isUpdateNoticeChatEnabled() {
+        return isLoaded() && UPDATE_NOTICE_CHAT.get();
+    }
+
+    public static void setUpdateNoticeChat(boolean value) {
+        if (!isLoaded()) return;
+        UPDATE_NOTICE_CHAT.set(value);
+        UPDATE_NOTICE_CHAT.save();
     }
 
     /** Minimum client FPS required to take a ride photo; {@code 0} disables the FPS gate. */
@@ -1761,6 +1784,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,
             ModConfigSpec.BooleanValue dpiBypassWarningOptedOut,
             ModConfigSpec.BooleanValue bookAuthorBurnChat,
+            ModConfigSpec.BooleanValue updateNoticeChat,
             ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
