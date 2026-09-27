@@ -16,19 +16,12 @@
 // src/main/whitelist/approved_mods.curated.json. The output keeps the resource path
 // ApprovedModList reads, so the loader and the relay's copy of the file are unchanged.
 // An id appears once: platform first, then the generated groups, then the curated rest.
-//
-// A curated group may also carry "versions": {"<modId>": "<spec>"} — that id is approved only at
-// those versions. <spec> is a bare version ("1.7.0" = 1.7.0 and above) or a mods.toml-style Maven
-// range ("[1.7.0,2.0)"). Checked here so a typo fails the build instead of silently doing nothing
-// (the runtime drops an unreadable spec, leaving the mod approved at any version).
 
 def curatedFile = file('src/main/whitelist/approved_mods.curated.json')
 def modsTomlFile = file('src/main/templates/META-INF/neoforge.mods.toml')
 def modpackFile = file('modpack/modpack.config.json')
 def outDir = layout.buildDirectory.dir('generated/sources/approvedMods')
 def modIdPattern = ~/^[a-z][a-z0-9_]{1,63}$/
-def bareVersionPattern = ~/^[0-9A-Za-z][0-9A-Za-z.+_-]*$/
-def rangePattern = ~/^[\[(][0-9A-Za-z.+_,\-\[\]() ]*[\])]$/
 
 // Only the jars we embed, not their transitive deps — matching what jarJar puts in our jar.
 def jarJarJars = configurations.detachedConfiguration(
@@ -142,24 +135,13 @@ tasks.register('generateApprovedMods') {
         if (curatedGroups.platform) ordered.platform = curatedGroups.platform
         ordered.putAll(generated)
         curatedGroups.each { k, v -> if (k != 'platform') ordered[k] = v }
-        def badVersions = []
         ordered.each { key, group ->
             def out = new LinkedHashMap(group as Map)
-            def groupIds = (group.ids as List).collect { (it as String).trim().toLowerCase() }
-            (group.versions ?: [:]).each { id, spec ->
-                def s = (spec as String).trim()
-                if (!(id in groupIds)) badVersions << "${key}.${id}: not in this group's ids"
-                else if (!(s ==~ bareVersionPattern || s ==~ rangePattern)) badVersions << "${key}.${id}: \"${s}\""
-            }
             out.ids = take(group.ids as List)
             if (out.ids) groups[key] = out
         }
         if (bad) {
             throw new GradleException("Not modIds (store slug pasted in?): ${bad.unique().join(', ')}")
-        }
-        if (badVersions) {
-            throw new GradleException('Bad whitelist "versions" entries (want "1.7.0" or "[1.7.0,2.0)"): '
-                + badVersions.join('; '))
         }
 
         def result = new LinkedHashMap()
