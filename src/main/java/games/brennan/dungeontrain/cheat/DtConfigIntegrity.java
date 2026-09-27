@@ -53,6 +53,11 @@ import java.util.Map;
  * It runs on the config {@code Reloading} event and on a throttled tick sweep, because not every
  * writer fires the event.</p>
  *
+ * <p><b>Bundled siblings count as DT's config.</b> Edible Backpacks' server keys
+ * ({@link #EB_FILE}) and PlayerMob's combat/scavenging settings ({@link PlayerMobConfigCheck}) are
+ * part of the game DT ships, so their deviations join this list and share its notice, prompt and
+ * {@code /fixconfig}. AIS keeps its own twin ({@link AisDataIntegrity}) for historical reasons.</p>
+ *
  * <p><b>Only balance keys are governed</b> — see {@link #GOVERNED}. Performance and visual knobs,
  * the Discord/relay privacy toggles, the player-content switches and everything in
  * {@code dungeontrain-client.toml} are deliberately excluded: a player turning off telemetry, or a
@@ -73,6 +78,14 @@ public final class DtConfigIntegrity {
     /** DT's two gameplay config files, under the loader config dir. */
     public static final String SERVER_FILE = "dungeontrain-server.toml";
     public static final String COMMON_FILE = "dungeontrain-common.toml";
+
+    /**
+     * Bundled Edible Backpacks' server config. Held here rather than in a twin class because its
+     * balance keys are part of the game DT ships — and it is a NeoForge config, so an in-game editor
+     * (Configured) can change it mid-run. Its {@code Reloading} event fires on EB's mod bus, not DT's,
+     * so the mid-run tick sweep is what notices an edit.
+     */
+    public static final String EB_FILE = "ediblebackpacks-server.toml";
 
     /**
      * One governed entry: which file it lives in, its dotted path, the expected (default) value,
@@ -186,7 +199,15 @@ public final class DtConfigIntegrity {
             DungeonTrainCommonConfig.MIN_PLAYER_MOB_BEHIND_SPAWN_PERCENT,
             DungeonTrainCommonConfig.MAX_PLAYER_MOB_BEHIND_SPAWN_PERCENT),
         Key.flag(COMMON_FILE, "train.defaultBreakBlocksOnContact",
-            DungeonTrainCommonConfig.DEFAULT_BREAK_BLOCKS_ON_CONTACT)
+            DungeonTrainCommonConfig.DEFAULT_BREAK_BLOCKS_ON_CONTACT),
+
+        // --- ediblebackpacks-server.toml (bundled sibling) ---
+        // DEFAULT defers to DT's host policy (reset on death); an explicit OFF keeps the backpack
+        // through death. maxSlots is the unlock cap.
+        Key.option(EB_FILE, "resetOnDeath",
+            games.brennan.ediblebackpacks.config.EBConfig.ResetMode.DEFAULT),
+        Key.number(EB_FILE, "maxSlots", games.brennan.ediblebackpacks.menu.BackpackLayout.MAX_SLOTS,
+            0, games.brennan.ediblebackpacks.menu.BackpackLayout.MAX_SLOTS)
     );
 
     /**
@@ -258,7 +279,8 @@ public final class DtConfigIntegrity {
     /** Sum of both files' mtimes (0 for a missing/unreadable one) — changes whenever either is written. */
     private static long filesStamp() {
         Path dir = FMLPaths.CONFIGDIR.get();
-        return mtime(dir.resolve(SERVER_FILE)) + 31 * mtime(dir.resolve(COMMON_FILE));
+        return mtime(dir.resolve(SERVER_FILE)) + 31 * mtime(dir.resolve(COMMON_FILE))
+            + 961 * mtime(dir.resolve(EB_FILE));
     }
 
     private static long mtime(Path file) {
@@ -339,9 +361,12 @@ public final class DtConfigIntegrity {
      * prompt uses this too.
      */
     public static List<String> check(Path configDir) {
-        return deviationsOf(
+        List<String> found = new ArrayList<>(deviationsOf(
             read(configDir.resolve(SERVER_FILE), SERVER_FILE),
-            read(configDir.resolve(COMMON_FILE), COMMON_FILE));
+            read(configDir.resolve(COMMON_FILE), COMMON_FILE),
+            read(configDir.resolve(EB_FILE), EB_FILE)));
+        found.addAll(PlayerMobConfigCheck.deviations());
+        return List.copyOf(found);
     }
 
     /**
@@ -379,14 +404,26 @@ public final class DtConfigIntegrity {
      * replaces with the default, so they are <em>not</em> deviations. Package-visible for tests.
      */
     static List<String> deviationsOf(Map<String, Object> serverValues, Map<String, Object> commonValues) {
+        return deviationsOf(serverValues, commonValues, Map.of());
+    }
+
+    /** As above, with the bundled Edible Backpacks server file too. */
+    static List<String> deviationsOf(Map<String, Object> serverValues, Map<String, Object> commonValues,
+                                     Map<String, Object> ebValues) {
         List<String> found = new ArrayList<>();
         int fileVersion = configVersionOf(serverValues);
         for (Key key : GOVERNED) {
             if (notYetMigrated(key, fileVersion)) continue;
-            Map<String, Object> values = SERVER_FILE.equals(key.file()) ? serverValues : commonValues;
+            Map<String, Object> values = switch (key.file()) {
+                case SERVER_FILE -> serverValues;
+                case COMMON_FILE -> commonValues;
+                default -> ebValues;
+            };
             Object effective = effectiveValue(key, values.get(key.path()));
             if (!effective.equals(key.expected())) {
-                found.add(key.path() + "=" + display(effective) + " (expected " + display(key.expected()) + ")");
+                // Sibling keys are top-level in their own file — name the mod so the player can find it.
+                String where = EB_FILE.equals(key.file()) ? "ediblebackpacks: " : "";
+                found.add(where + key.path() + "=" + display(effective) + " (expected " + display(key.expected()) + ")");
             }
         }
         return List.copyOf(found);
