@@ -74,6 +74,9 @@ public final class UnsupportedModsScreen extends Screen {
     private int listY;
     private int visibleRows;
     private List<FormattedCharSequence> bodyLines = List.of();
+    private List<FormattedCharSequence> hintLines = List.of();
+    /** Set when Quit and Disable could not disable anything, so the player knows to use the launcher. */
+    private boolean disableFailed;
 
     public UnsupportedModsScreen(Screen parent, List<UnsupportedMod> mods) {
         super(Component.translatable("gui.dungeontrain.unsupported_mods.title"));
@@ -88,9 +91,14 @@ public final class UnsupportedModsScreen extends Screen {
         bodyLines = this.font.split(Component.translatable("gui.dungeontrain.unsupported_mods.body"),
             inner - ICON - ICON_GAP);
         int bodyH = Math.max(ICON, bodyLines.size() * (this.font.lineHeight + 1));
+        hintLines = this.font.split(Component.translatable(disableFailed
+            ? "gui.dungeontrain.unsupported_mods.disable_failed"
+            : "gui.dungeontrain.unsupported_mods.live_hint"), inner);
+        int hintH = hintLines.size() * (this.font.lineHeight + 1);
         int chrome = PAD + this.font.lineHeight + GAP      // title
-            + GAP + bodyH + GAP + this.font.lineHeight      // body + link
-            + GAP + BUTTON_H + PAD;                         // continue
+            + GAP + bodyH + GAP + hintH                     // body + live-run hint
+            + GAP + this.font.lineHeight                    // link
+            + GAP + BUTTON_H + PAD;                         // Continue | Quit and Disable
         int maxRows = Math.max(1, (this.height - 16 - chrome) / ROW_H);
         visibleRows = Math.min(mods.size(), maxRows);
         scroll = Math.max(0, Math.min(scroll, mods.size() - visibleRows));
@@ -106,17 +114,35 @@ public final class UnsupportedModsScreen extends Screen {
             addRenderableWidget(suggestButton(mod, buttonX, rowY));
         }
 
-        int linkY = listY + visibleRows * ROW_H + GAP + bodyH + GAP;
+        int linkY = listY + visibleRows * ROW_H + GAP + bodyH + GAP + hintH + GAP;
         Component link = Component.translatable("gui.dungeontrain.unsupported_mods.whitelist_link")
             .withStyle(ChatFormatting.AQUA);
         int linkW = this.font.width(link);
         addRenderableWidget(new PlainTextButton(this.width / 2 - linkW / 2, linkY, linkW,
             this.font.lineHeight, link, b -> openWhitelist(), this.font));
 
-        int continueW = Math.min(160, inner);
-        addRenderableWidget(new DarkTintedButton(this.width / 2 - continueW / 2,
-            panelY + panelH - PAD - BUTTON_H, continueW, BUTTON_H, CommonComponents.GUI_CONTINUE,
-            b -> onClose()));
+        int buttonY = panelY + panelH - PAD - BUTTON_H;
+        int half = (inner - GAP) / 2;
+        addRenderableWidget(new DarkTintedButton(panelX + PAD, buttonY, half, BUTTON_H,
+            CommonComponents.GUI_CONTINUE, b -> onClose()));
+        Button quit = addRenderableWidget(new DarkTintedButton(panelX + PAD + inner - half, buttonY, half, BUTTON_H,
+            Component.translatable("gui.dungeontrain.unsupported_mods.quit_disable"), b -> quitAndDisable()));
+        quit.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.unsupported_mods.quit_disable.tooltip")));
+    }
+
+    /**
+     * Rename the unsupported mods' jars to {@code .jar.disabled} and quit, so the next launch is a
+     * live run. If nothing could be disabled from here (a dev classpath, mods nested in another jar),
+     * stay open and say so rather than quitting for nothing.
+     */
+    private void quitAndDisable() {
+        ModDisabler.Outcome outcome = ModDisabler.disable(mods.stream().map(UnsupportedMod::modId).toList());
+        if (outcome.anyDisabled()) {
+            this.minecraft.stop();
+            return;
+        }
+        disableFailed = true;
+        rebuildWidgets();
     }
 
     private Button suggestButton(UnsupportedMod mod, int x, int y) {
@@ -199,6 +225,11 @@ public final class UnsupportedModsScreen extends Screen {
         int bodyX = textX + ICON + ICON_GAP;
         for (FormattedCharSequence line : bodyLines) {
             g.drawString(this.font, line, bodyX, y, BODY_COLOUR, false);
+            y += this.font.lineHeight + 1;
+        }
+        y = Math.max(y, listY + visibleRows * ROW_H + GAP + ICON) + GAP;
+        for (FormattedCharSequence line : hintLines) {
+            g.drawCenteredString(this.font, line, this.width / 2, y, disableFailed ? 0xFFE08080 : 0xFFFFD060);
             y += this.font.lineHeight + 1;
         }
     }
