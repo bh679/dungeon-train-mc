@@ -41,7 +41,7 @@ final class WorldGenCycleLayoutTest {
     @DisplayName("period is the run-1 length and the layout is reported")
     void period() {
         assertTrue(C.hasLayout());
-        assertEquals(123_718L, C.period());
+        assertEquals(117_368L, C.period());
         assertEquals(232, C.riseLen());
     }
 
@@ -143,8 +143,8 @@ final class WorldGenCycleLayoutTest {
         assertEquals(1.0, C.chuncksKeepDensityAt(x(c - 1)));
         assertEquals(0.3, C.chuncksKeepDensityAt(x(c + 1500 + 10)), 1e-9);
         assertTrue(C.isInChuncksBand(x(c + 1500)));
-        assertTrue(C.isInChuncksApproachOrBand(x(c - 1000)));                // the OW gap before it
-        long st = LAYOUT.start(15);
+        assertTrue(C.isInChuncksApproachOrBand(x(c - 500)));                 // the 650-block OW gap before it
+        long st = LAYOUT.start(14);                                    // straight after the chuncks core
         assertEquals(1.0, C.stacksVoidRampAt(x(st + 1500 + 4999)));
         assertTrue(C.isInStacksBand(x(st + 1500 + 4999)));
         assertEquals(0.0, C.stacksVoidRampAt(x(st + 1500 + 5000)));           // run 1 starts here

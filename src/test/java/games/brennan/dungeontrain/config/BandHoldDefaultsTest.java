@@ -59,13 +59,19 @@ class BandHoldDefaultsTest {
         assertEquals(DungeonTrainCommonConfig.V6_WORLDGEN_CYCLE_ORDER,
                 DungeonTrainCommonConfig.V5_WORLDGEN_CYCLE_ORDER.replace("spheres:15000", "spheres:6550"),
                 "v5 -> v6 changed only the spheres slot");
-        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+        assertEquals(DungeonTrainCommonConfig.V7_WORLDGEN_CYCLE_ORDER,
                 DungeonTrainCommonConfig.V6_WORLDGEN_CYCLE_ORDER
                         .replace("spheres:6550, ow:5000,", "spheres:6550, ow:sunk:500,")
                         .replace("beta=5000", "beta=3500"),
                 "v6 -> v7 changed only the gap into Amplified and the Beta era");
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 7,
                 "CURRENT_CONFIG_VERSION must be at least 7, or the v6 -> v7 order step never runs");
+        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+                DungeonTrainCommonConfig.V7_WORLDGEN_CYCLE_ORDER
+                        .replace("ow:2000, chuncks:5000, ow:5000, stacks:5000", "ow:650, chuncks:5000, stacks:5000"),
+                "v7 -> v8 changed only the gaps after the legacy run and between chuncks and stacks");
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 8,
+                "CURRENT_CONFIG_VERSION must be at least 8, or the v7 -> v8 order step never runs");
         assertTrue(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER.contains("spheres:"
                 + DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS + ","));
     }

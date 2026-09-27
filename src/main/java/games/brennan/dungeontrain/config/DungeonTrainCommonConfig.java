@@ -433,7 +433,17 @@ public final class DungeonTrainCommonConfig {
             + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
 
-    public static final int CURRENT_CONFIG_VERSION = 7;
+    /**
+     * The {@code worldgenCycleOrder} v7 shipped; v8 changed only its tail — the gap after the legacy run
+     * ({@code ow:2000 -> ow:650}) and the gap between chuncks and stacks (dropped).
+     */
+    public static final String V7_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
+
+    public static final int CURRENT_CONFIG_VERSION = 8;
 
     /** The shipped band order — see {@link games.brennan.dungeontrain.worldgen.CycleLayout#DEFAULT_ORDER}. */
     public static final String DEFAULT_WORLDGEN_CYCLE_ORDER = games.brennan.dungeontrain.worldgen.CycleLayout.DEFAULT_ORDER;
@@ -1174,6 +1184,15 @@ public final class DungeonTrainCommonConfig {
         // short sunk approach (ow:sunk:500). Only an order still exactly as v6 shipped moves; an
         // edited order is a choice and is left alone.
         if (from < 7 && V6_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v7 -> v8: the overworld gap after the legacy run shrank 2000 -> 650 and the gap between
+        // chuncks and stacks was dropped. Same rule: only an order still exactly as v7 shipped moves.
+        if (from < 8 && V7_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
             WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
             LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
                     from, CURRENT_CONFIG_VERSION);
