@@ -4,6 +4,8 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.density.NetherBandHooks;
 import games.brennan.dungeontrain.worldgen.density.NetherBandTerrainDensityFunction;
+import games.brennan.dungeontrain.worldgen.density.TrackErosionDensityFunction;
+import net.minecraft.world.level.levelgen.DensityFunctions;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.NoiseRouter;
 import net.minecraft.world.level.levelgen.RandomState;
@@ -45,7 +47,7 @@ public abstract class RandomStateMixin {
             DensityFunction initialDensityWithoutJaggedness =
                     new NetherBandTerrainDensityFunction(router.initialDensityWithoutJaggedness());
 
-            return new NoiseRouter(
+            NoiseRouter raised = new NoiseRouter(
                     router.barrierNoise(),
                     router.fluidLevelFloodednessNoise(),
                     router.fluidLevelSpreadNoise(),
@@ -61,8 +63,54 @@ public abstract class RandomStateMixin {
                     router.veinToggle(),
                     router.veinRidged(),
                     router.veinGap());
+            return dungeontrain$flattenTrackErosion(raised);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] nether-band terrain raise wrap failed; using vanilla router", t);
+            return router;
+        }
+    }
+
+    /**
+     * Wraps every copy of the router's erosion noise node in {@link TrackErosionDensityFunction} — the
+     * upside-down band's keep-mountains-off-the-track weighting. The node is the router's climate
+     * {@code erosion} with its holder and cache-marker layers peeled off (vanilla:
+     * {@code flat_cache(shifted_noise(erosion))}); the terrain splines (offset / factor / jaggedness —
+     * the terrain's height) reach a structurally-equal copy through different wrappers, so mapping the
+     * whole router wraps both, and terrain and biome pick stay coherent. The visitor canonicalises
+     * structurally-equal nodes (density functions are records) the way vanilla's wiring pass does, so
+     * shared subtrees stay shared and their caches aren't duplicated. On failure the unflattened router
+     * is kept.
+     */
+    private static NoiseRouter dungeontrain$flattenTrackErosion(NoiseRouter router) {
+        try {
+            DensityFunction erosion = router.erosion();
+            // Peel the holder + cache-marker layers down to the noise node itself: the terrain splines
+            // reach the same node through different wrappers than the router's climate field does.
+            while (true) {
+                if (erosion instanceof DensityFunctions.MarkerOrMarked marked) erosion = marked.wrapped();
+                else if (erosion instanceof DensityFunctions.HolderHolder holder) erosion = holder.function().value();
+                else break;
+            }
+            if (erosion.minValue() == erosion.maxValue()) {   // constant erosion (flat/debug presets) — nothing to weight
+                LOGGER.info("[DungeonTrain] Overworld router has a constant erosion; upside-down track flattening is off");
+                return router;
+            }
+            final DensityFunction target = erosion;
+            java.util.Map<DensityFunction, DensityFunction> canonical = new java.util.HashMap<>();
+            boolean[] found = {false};
+            NoiseRouter out = router.mapAll(f -> canonical.computeIfAbsent(f, node -> {
+                if (node.equals(target)) {
+                    found[0] = true;
+                    return new TrackErosionDensityFunction(node);
+                }
+                return node;
+            }));
+            if (!found[0]) {
+                LOGGER.info("[DungeonTrain] Overworld erosion node not found in the router; upside-down track flattening is off");
+            }
+            return out;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] upside-down track erosion wrap failed; terrain left unflattened", t);
             return router;
         }
     }

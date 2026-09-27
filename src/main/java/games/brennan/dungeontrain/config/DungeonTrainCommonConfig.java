@@ -220,6 +220,12 @@ public final class DungeonTrainCommonConfig {
      */
     public static final boolean DEFAULT_UPSIDE_DOWN_BEDROCK_ROOF = true;
     /**
+     * When true the upside-down band's source terrain is flattened toward lowland near the track (the
+     * overworld erosion climate input is weighted up), so the mirrored band doesn't bury the train in
+     * mountains. Mountains further from the track are left as they are.
+     */
+    public static final boolean DEFAULT_UPSIDE_DOWN_TRACK_FLATTEN = true;
+    /**
      * In-band cloud plane world-Y — clouds render at this height (below the train, in the open void)
      * instead of the vanilla 192, so the flipped world's sky sits beneath you. Default 0 (just under
      * the base world floor at {@code minY=32}).
@@ -513,6 +519,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.DoubleValue UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_MAX_CEILING_HEIGHT;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_MIRROR_PRECOMPUTE;
+    public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_TRACK_FLATTEN;
     public static final ModConfigSpec.BooleanValue CHUNCKS_ENABLED;
     public static final ModConfigSpec.IntValue CHUNCKS_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue CHUNCKS_FADE_BLOCKS;
@@ -585,6 +592,7 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON = pair.getLeft().upsideDownExitNoiseSkipEpsilon;
         UPSIDE_DOWN_MAX_CEILING_HEIGHT = pair.getLeft().upsideDownMaxCeilingHeight;
         UPSIDE_DOWN_MIRROR_PRECOMPUTE = pair.getLeft().upsideDownMirrorPrecompute;
+        UPSIDE_DOWN_TRACK_FLATTEN = pair.getLeft().upsideDownTrackFlatten;
         CHUNCKS_ENABLED = pair.getLeft().chuncksEnabled;
         CHUNCKS_HOLD_BLOCKS = pair.getLeft().chuncksHoldBlocks;
         CHUNCKS_FADE_BLOCKS = pair.getLeft().chuncksFadeBlocks;
@@ -879,6 +887,12 @@ public final class DungeonTrainCommonConfig {
                         "byte-identical terrain. Set false to compute and apply everything at load (original behaviour).",
                         "Default true.")
                 .define("upsideDownMirrorPrecompute", DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE);
+        ModConfigSpec.BooleanValue upsideDownTrackFlatten = b
+                .comment("Keep mountains off the track in the upside-down band: near the track the overworld terrain",
+                        "(and its biomes) is weighted toward lowland before it is mirrored, fading smoothly back to the",
+                        "natural terrain further out, so the train doesn't tunnel through mountains. Only affects newly",
+                        "generated chunks. Default true.")
+                .define("upsideDownTrackFlatten", DEFAULT_UPSIDE_DOWN_TRACK_FLATTEN);
 
         ModConfigSpec.BooleanValue chuncksEnabled = b
                 .comment("Chuncks phase — part of the single repeating world-gen cycle, appended after the upside-down",
@@ -1064,7 +1078,7 @@ public final class DungeonTrainCommonConfig {
                 upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks, upsideDownExitGapBlocks,
                 upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
                 upsideDownBedrockRoof, upsideDownCloudY, upsideDownExitNoiseSkipEpsilon,
-                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute,
+                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute, upsideDownTrackFlatten,
                 chuncksEnabled, chuncksHoldBlocks, chuncksFadeBlocks, chuncksLeadGapBlocks,
                 chuncksKeepDensity, chuncksSliceRatio,
                 spheresEnabled, spheresHoldBlocks, spheresFadeBlocks, spheresLeadGapBlocks,
@@ -1454,6 +1468,10 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? UPSIDE_DOWN_BEDROCK_ROOF.get() : DEFAULT_UPSIDE_DOWN_BEDROCK_ROOF;
     }
 
+    public static boolean isUpsideDownTrackFlatten() {
+        return isLoaded() ? UPSIDE_DOWN_TRACK_FLATTEN.get() : DEFAULT_UPSIDE_DOWN_TRACK_FLATTEN;
+    }
+
     /** In-band cloud plane world-Y (clouds render below the train); falls back to the hardcoded default pre-load. */
     public static int getUpsideDownCloudY() {
         return isLoaded() ? UPSIDE_DOWN_CLOUD_Y.get() : DEFAULT_UPSIDE_DOWN_CLOUD_Y;
@@ -1655,6 +1673,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.DoubleValue upsideDownExitNoiseSkipEpsilon,
                           ModConfigSpec.IntValue upsideDownMaxCeilingHeight,
                           ModConfigSpec.BooleanValue upsideDownMirrorPrecompute,
+                          ModConfigSpec.BooleanValue upsideDownTrackFlatten,
                           ModConfigSpec.BooleanValue chuncksEnabled,
                           ModConfigSpec.IntValue chuncksHoldBlocks,
                           ModConfigSpec.IntValue chuncksFadeBlocks,
