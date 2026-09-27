@@ -19934,17 +19934,11 @@
       "type": "feat",
       "tags": [
         "feature",
-        "compatibility",
-        "ui",
-        "balance"
+        "compatibility"
       ],
-      "title": "Farmer's Delight support: soups stay unstackable",
-      "summary": "Farmer's Delight and Cutting Delight are now approved mods, so runs with them installed still count. Dungeon Train is balanced around soups and stews that don't stack, so it keeps Farmer's Delight's stackable soups switched off. Turning them back on puts your runs in Free Play, and if you do it from a settings menu you'll be asked first.",
-      "highlights": [
-        "Farmer's Delight and Cutting Delight no longer put runs in Free Play",
-        "Soups and stews stay unstackable when Farmer's Delight is installed",
-        "Turning stackable soups back on asks you first from the settings menu, and makes the run Free Play"
-      ],
+      "title": "Farmer's Delight",
+      "summary": "Farmer's Delight isn't officially supported, but now it won't break the game at least.",
+      "highlights": [],
       "pr": 1610,
       "date": "2026-09-27",
       "released": false,
