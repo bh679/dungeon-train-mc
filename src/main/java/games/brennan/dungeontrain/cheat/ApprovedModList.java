@@ -32,8 +32,10 @@ import java.util.Set;
  *
  * <p>Three sources, resolved in {@link #approved()}:</p>
  * <ul>
- *   <li><b>Baked</b> — {@code assets/dungeontrain/cheat/approved_mods.json}, curated and shipped in
- *       the jar, so the check works offline and on the very first launch. Also carries
+ *   <li><b>Baked</b> — {@code assets/dungeontrain/cheat/approved_mods.json}, shipped in the jar so
+ *       the check works offline and on the very first launch. GENERATED at build time
+ *       ({@code gradle/approved-mods.gradle}): every modpack mod, jarJar'd sibling and declared
+ *       dependency, plus the hand-curated rest from {@code src/main/whitelist/}. Also carries
  *       {@link #prefixes()}, a short list of raw-ID prefixes (Sinytra Connector's ~45 {@code
  *       fabric_*} modules) where a rule beats a transcription that goes stale silently.</li>
  *   <li><b>Relay approvals</b> — added to the baked set, so a newly-approved mod reaches

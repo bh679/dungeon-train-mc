@@ -77,8 +77,28 @@ jobs:
         # refuses to load against. No network.
         run: python3 scripts/modpack/check-pins.py
 
+      - name: Modpack mod_ids present (feeds the generated whitelist)
+        # Every modpack entry is auto-approved for fair play by generateApprovedMods, which reads
+        # its mod_ids. Fails if an entry lacks them (unless "whitelist": false) or holds a store
+        # slug instead of a modId. No network.
+        run: python3 scripts/modpack/check-mod-ids.py
+
+      - name: Cache pinned modpack jars
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/dungeontrain-modpack-jars
+          key: modpack-jars-${{ hashFiles('modpack/modpack.config.json') }}
+          restore-keys: modpack-jars-
+
+      - name: Modpack mod_ids match the pinned jars
+        # Downloads each pinned jar (Modrinth, or CurseForge for curseforge_only) and requires
+        # mod_ids == its [[mods]] + jar-in-jar modIds, so a version bump that renames or adds a
+        # module can't silently free-play the players running it.
+        run: python3 scripts/modpack/check-mod-ids.py --verify
+
       - name: Modpack manifest + relation tests
         run: |
+          python3 scripts/modpack/test_check_mod_ids.py
           python3 scripts/modpack/test_build_manifest.py
           python3 scripts/modpack/test_check_relations.py
           python3 scripts/modpack/test_check_overrides.py

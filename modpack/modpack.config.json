@@ -8,12 +8,20 @@
     "file_id": 8673825,
     "version": "2.0.5+mc1.21.1",
     "modrinth_project": "sable",
-    "modrinth_version": "U678xqle"
+    "modrinth_version": "U678xqle",
+    "mod_ids": [
+      "sable",
+      "sablecompanion",
+      "veil"
+    ]
   },
   "optional_mods": [
     {
       "name": "Adventure Item Names",
       "slug": "adventure-item-names",
+      "mod_ids": [
+        "adventureitemnames"
+      ],
       "project_id": 1546573,
       "file_id": 8760632,
       "required": true,
@@ -26,6 +34,9 @@
     {
       "name": "Adventure Item Stats",
       "slug": "adventure-item-stats",
+      "mod_ids": [
+        "adventureitemstats"
+      ],
       "project_id": 1554362,
       "file_id": 8465206,
       "required": true,
@@ -38,6 +49,9 @@
     {
       "name": "Interactive Player Mobs",
       "slug": "interactive-player-mobs",
+      "mod_ids": [
+        "playermob"
+      ],
       "project_id": 1559379,
       "file_id": 8878899,
       "required": true,
@@ -50,6 +64,9 @@
     {
       "name": "Ender Chest Persistence",
       "slug": "ender-chest-persistence",
+      "mod_ids": [
+        "enderchestpersistence"
+      ],
       "project_id": 1579341,
       "file_id": 8885474,
       "required": true,
@@ -62,6 +79,9 @@
     {
       "name": "Trade Everything",
       "slug": "trade-everything",
+      "mod_ids": [
+        "tradeeverything"
+      ],
       "project_id": 1622962,
       "file_id": 8732181,
       "required": true,
@@ -74,6 +94,9 @@
     {
       "name": "Keep Trim",
       "slug": "keep-trim",
+      "mod_ids": [
+        "keeptrim"
+      ],
       "project_id": 1691315,
       "file_id": 8858619,
       "required": true,
@@ -85,6 +108,9 @@
     {
       "name": "Fast Paintings",
       "slug": "fast-paintings",
+      "mod_ids": [
+        "fastpaintings"
+      ],
       "project_id": 883287,
       "file_id": 7305762,
       "required": true,
@@ -96,6 +122,10 @@
     {
       "name": "Moonlight Lib",
       "slug": "selene",
+      "mod_ids": [
+        "codecui",
+        "moonlight"
+      ],
       "project_id": 499980,
       "file_id": 8850087,
       "required": true,
@@ -107,6 +137,9 @@
     {
       "name": "William Wythers' Overhauled Overworld",
       "slug": "william-wythers-overhauled-overworld",
+      "mod_ids": [
+        "wwoo"
+      ],
       "project_id": 921022,
       "file_id": 8160022,
       "required": true,
@@ -119,6 +152,9 @@
     {
       "name": "Cristel Lib",
       "slug": "cristel-lib",
+      "mod_ids": [
+        "cristellib"
+      ],
       "project_id": 856996,
       "file_id": 8241767,
       "required": true,
@@ -130,6 +166,9 @@
     {
       "name": "Biomes O' Plenty",
       "slug": "biomes-o-plenty",
+      "mod_ids": [
+        "biomesoplenty"
+      ],
       "project_id": 220318,
       "file_id": 8288121,
       "required": true,
@@ -141,6 +180,9 @@
     {
       "name": "TerraBlender",
       "slug": "terrablender-neoforge",
+      "mod_ids": [
+        "terrablender"
+      ],
       "project_id": 940057,
       "file_id": 6054947,
       "required": true,
@@ -152,6 +194,9 @@
     {
       "name": "GlitchCore",
       "slug": "glitchcore",
+      "mod_ids": [
+        "glitchcore"
+      ],
       "project_id": 955399,
       "file_id": 8109792,
       "required": true,
@@ -163,6 +208,9 @@
     {
       "name": "BetterEnd: New Dawn",
       "slug": "betterend-neoforge",
+      "mod_ids": [
+        "betterend"
+      ],
       "project_id": 1422294,
       "file_id": 8896285,
       "required": true,
@@ -175,6 +223,9 @@
     {
       "name": "BetterNether: New Dawn",
       "slug": "betternether-neoforge",
+      "mod_ids": [
+        "betternether"
+      ],
       "project_id": 1422293,
       "file_id": 8896389,
       "required": true,
@@ -187,6 +238,9 @@
     {
       "name": "BCLib: New Dawn",
       "slug": "bclib-neoforge",
+      "mod_ids": [
+        "bclib"
+      ],
       "project_id": 1422283,
       "file_id": 8608827,
       "required": true,
@@ -199,6 +253,9 @@
     {
       "name": "WorldWeaver: New Dawn",
       "slug": "worldweaver-neoforge",
+      "mod_ids": [
+        "wover"
+      ],
       "project_id": 1422284,
       "file_id": 8594162,
       "required": true,
@@ -211,6 +268,9 @@
     {
       "name": "WunderLib: New Dawn",
       "slug": "wunderlib-neoforge",
+      "mod_ids": [
+        "wunderlib"
+      ],
       "project_id": 1422273,
       "file_id": 7469725,
       "required": true,
@@ -223,6 +283,9 @@
     {
       "name": "Dungeon Backup",
       "slug": "dungeon-train-backup",
+      "mod_ids": [
+        "dungeonbackup"
+      ],
       "project_id": 1694135,
       "file_id": 8871323,
       "required": true,
@@ -234,6 +297,9 @@
     {
       "name": "Sable Fence & Trapdoor Fix",
       "slug": "sable-fence-trapdoor-fix",
+      "mod_ids": [
+        "sable_fence_trapdoor_fix"
+      ],
       "project_id": 1694049,
       "file_id": 8871004,
       "required": true,
@@ -245,6 +311,9 @@
     {
       "name": "AppleSkin",
       "slug": "appleskin",
+      "mod_ids": [
+        "appleskin"
+      ],
       "project_id": 248787,
       "file_id": 7854442,
       "required": true,
@@ -254,6 +323,9 @@
     {
       "name": "FerriteCore",
       "slug": "ferritecore",
+      "mod_ids": [
+        "ferritecore"
+      ],
       "project_id": 429235,
       "file_id": 7524151,
       "required": true,
@@ -263,6 +335,9 @@
     {
       "name": "ModernFix",
       "slug": "modernfix",
+      "mod_ids": [
+        "modernfix"
+      ],
       "project_id": 790626,
       "file_id": 8255560,
       "required": true,
@@ -272,6 +347,13 @@
     {
       "name": "Sodium",
       "slug": "sodium",
+      "mod_ids": [
+        "fabric_api_base",
+        "fabric_block_view_api_v2",
+        "fabric_renderer_api_v1",
+        "fabric_rendering_data_attachment_v1",
+        "sodium"
+      ],
       "project_id": 394468,
       "file_id": 8382328,
       "required": true,
@@ -281,6 +363,13 @@
     {
       "name": "Iris Shaders",
       "slug": "irisshaders",
+      "mod_ids": [
+        "fabric_api_base",
+        "fabric_block_view_api_v2",
+        "fabric_renderer_api_v1",
+        "fabric_rendering_data_attachment_v1",
+        "iris"
+      ],
       "project_id": 455508,
       "file_id": 8242804,
       "required": true,
@@ -290,6 +379,9 @@
     {
       "name": "AmbientSounds",
       "slug": "ambientsounds",
+      "mod_ids": [
+        "ambientsounds"
+      ],
       "project_id": 254284,
       "file_id": 8043019,
       "required": true,
@@ -299,6 +391,9 @@
     {
       "name": "CreativeCore",
       "slug": "creativecore",
+      "mod_ids": [
+        "creativecore"
+      ],
       "project_id": 257814,
       "file_id": 8190065,
       "required": true,
@@ -308,6 +403,9 @@
     {
       "name": "Advancement Plaques",
       "slug": "advancement-plaques",
+      "mod_ids": [
+        "advancementplaques"
+      ],
       "project_id": 499826,
       "file_id": 5905995,
       "required": true,
@@ -317,6 +415,9 @@
     {
       "name": "Better Advancements",
       "slug": "better-advancements",
+      "mod_ids": [
+        "betteradvancements"
+      ],
       "project_id": 272515,
       "file_id": 5850587,
       "required": true,
@@ -326,6 +427,9 @@
     {
       "name": "Iceberg",
       "slug": "iceberg",
+      "mod_ids": [
+        "iceberg"
+      ],
       "project_id": 520110,
       "file_id": 6423863,
       "required": true,
@@ -335,6 +439,9 @@
     {
       "name": "Nemo's Inventory Sorting",
       "slug": "nemos-inventory-sorting",
+      "mod_ids": [
+        "nemos_inventory_sorting"
+      ],
       "project_id": 1148320,
       "file_id": 6487633,
       "required": false,
@@ -344,6 +451,9 @@
     {
       "name": "Mouse Tweaks",
       "slug": "mouse-tweaks",
+      "mod_ids": [
+        "mousetweaks"
+      ],
       "project_id": 60089,
       "file_id": 5637846,
       "required": false,
@@ -353,6 +463,9 @@
     {
       "name": "Jade",
       "slug": "jade",
+      "mod_ids": [
+        "jade"
+      ],
       "project_id": 324717,
       "file_id": 7545219,
       "required": true,
@@ -362,6 +475,9 @@
     {
       "name": "Jade Sable Compat",
       "slug": "jade-sable-compat",
+      "mod_ids": [
+        "sablejade"
+      ],
       "project_id": 1530988,
       "file_id": 8269260,
       "required": true,
@@ -371,6 +487,9 @@
     {
       "name": "Distant Horizons",
       "slug": "distant-horizons",
+      "mod_ids": [
+        "distanthorizons"
+      ],
       "project_id": 508933,
       "file_id": 7350266,
       "required": false,
@@ -380,6 +499,9 @@
     {
       "name": "Controlling",
       "slug": "controlling",
+      "mod_ids": [
+        "controlling"
+      ],
       "project_id": 250398,
       "file_id": 6368976,
       "required": true,
@@ -389,6 +511,9 @@
     {
       "name": "Searchables",
       "slug": "searchables",
+      "mod_ids": [
+        "searchables"
+      ],
       "project_id": 858542,
       "file_id": 5831692,
       "required": true,
@@ -398,6 +523,9 @@
     {
       "name": "Equipment Compare",
       "slug": "equipment-compare",
+      "mod_ids": [
+        "equipmentcompare"
+      ],
       "project_id": 502561,
       "file_id": 6375501,
       "required": true,
@@ -407,6 +535,9 @@
     {
       "name": "Item Highlighter",
       "slug": "item-highlighter",
+      "mod_ids": [
+        "highlighter"
+      ],
       "project_id": 521590,
       "file_id": 5591015,
       "required": true,
@@ -416,6 +547,9 @@
     {
       "name": "Pick Up Notifier",
       "slug": "pick-up-notifier",
+      "mod_ids": [
+        "pickupnotifier"
+      ],
       "project_id": 351441,
       "file_id": 6409785,
       "required": true,
@@ -425,6 +559,9 @@
     {
       "name": "Puzzles Lib",
       "slug": "puzzles-lib",
+      "mod_ids": [
+        "puzzleslib"
+      ],
       "project_id": 495476,
       "file_id": 8251525,
       "required": true,
@@ -434,6 +571,9 @@
     {
       "name": "Smooth Swapping",
       "slug": "smooth-swapping",
+      "mod_ids": [
+        "smoothswapping"
+      ],
       "project_id": 513689,
       "file_id": 7274625,
       "required": false,
@@ -443,6 +583,9 @@
     {
       "name": "Kinetic Hosting Integration",
       "slug": "kinetic-hosting-integration",
+      "mod_ids": [
+        "khi"
+      ],
       "project_id": 1048150,
       "file_id": 8188461,
       "required": true,
@@ -452,6 +595,9 @@
     {
       "name": "Overloaded Armor Bar",
       "slug": "overloaded-armor-bar",
+      "mod_ids": [
+        "overloadedarmorbar"
+      ],
       "project_id": 314002,
       "file_id": 5537850,
       "required": true,
@@ -461,6 +607,9 @@
     {
       "name": "Effortless Building",
       "slug": "effortless-building",
+      "mod_ids": [
+        "effortlessbuilding"
+      ],
       "project_id": 302113,
       "file_id": 8515718,
       "required": false,
@@ -470,6 +619,9 @@
     {
       "name": "Punchy!",
       "slug": "punchy",
+      "mod_ids": [
+        "punchy"
+      ],
       "project_id": 1374153,
       "file_id": 8697205,
       "required": false,
@@ -479,6 +631,9 @@
     {
       "name": "WorldEdit",
       "slug": "worldedit",
+      "mod_ids": [
+        "worldedit"
+      ],
       "project_id": 225608,
       "file_id": 5830452,
       "required": false,
@@ -488,6 +643,9 @@
     {
       "name": "Just Enough Items",
       "slug": "jei",
+      "mod_ids": [
+        "jei"
+      ],
       "project_id": 238222,
       "file_id": 8512040,
       "required": false,
@@ -497,6 +655,9 @@
     {
       "name": "Clumps",
       "slug": "clumps",
+      "mod_ids": [
+        "clumps"
+      ],
       "project_id": 256717,
       "file_id": 5623731,
       "required": true,
@@ -506,6 +667,9 @@
     {
       "name": "Scribble",
       "slug": "scribble",
+      "mod_ids": [
+        "scribble"
+      ],
       "project_id": 1051344,
       "file_id": 6240188,
       "required": true,
@@ -515,6 +679,9 @@
     {
       "name": "Shulker Box Tooltip",
       "slug": "shulkerboxtooltip",
+      "mod_ids": [
+        "shulkerboxtooltip"
+      ],
       "project_id": 315811,
       "file_id": 7768285,
       "required": true,
@@ -524,6 +691,9 @@
     {
       "name": "TrashSlot",
       "slug": "trashslot",
+      "mod_ids": [
+        "trashslot"
+      ],
       "project_id": 235577,
       "file_id": 8163135,
       "required": true,
@@ -533,6 +703,9 @@
     {
       "name": "Enchantment Descriptions",
       "slug": "enchantment-descriptions",
+      "mod_ids": [
+        "enchdesc"
+      ],
       "project_id": 250419,
       "file_id": 7039849,
       "required": true,
@@ -542,6 +715,9 @@
     {
       "name": "Bookshelf",
       "slug": "bookshelf",
+      "mod_ids": [
+        "bookshelf"
+      ],
       "project_id": 228525,
       "file_id": 7606240,
       "required": true,
@@ -551,6 +727,9 @@
     {
       "name": "Prickle",
       "slug": "prickle",
+      "mod_ids": [
+        "prickle"
+      ],
       "project_id": 1023259,
       "file_id": 6961457,
       "required": true,
@@ -560,6 +739,10 @@
     {
       "name": "Balm",
       "slug": "balm",
+      "mod_ids": [
+        "balm",
+        "kuma_api"
+      ],
       "project_id": 531761,
       "file_id": 8645517,
       "required": true,
@@ -569,6 +752,9 @@
     {
       "name": "Durability Tooltip",
       "slug": "durability-tooltip",
+      "mod_ids": [
+        "durabilitytooltip"
+      ],
       "project_id": 511040,
       "file_id": 6833316,
       "required": true,
@@ -578,6 +764,9 @@
     {
       "name": "SuperMartijn642's Config Lib",
       "slug": "supermartijn642s-config-lib",
+      "mod_ids": [
+        "supermartijn642configlib"
+      ],
       "project_id": 438332,
       "file_id": 5546996,
       "required": true,
@@ -587,6 +776,9 @@
     {
       "name": "Crash Assistant",
       "slug": "crash-assistant",
+      "mod_ids": [
+        "crash_assistant"
+      ],
       "project_id": 1154099,
       "file_id": 8636685,
       "required": true,
@@ -596,6 +788,9 @@
     {
       "name": "Particle Effects",
       "slug": "particle-effects",
+      "mod_ids": [
+        "particle_effects"
+      ],
       "project_id": 1120746,
       "file_id": 8325471,
       "required": true,
@@ -605,6 +800,9 @@
     {
       "name": "Sable Pathfinder",
       "slug": "sable-pathfinder",
+      "mod_ids": [
+        "sable_pathfinder"
+      ],
       "required": true,
       "dependency_type": "required",
       "version": "1.4.0",
@@ -616,6 +814,9 @@
     {
       "name": "Advanced Shulkerboxes",
       "slug": "advanced-shulkerboxes",
+      "mod_ids": [
+        "shulkerbox"
+      ],
       "project_id": 253861,
       "file_id": 5610975,
       "required": true,
