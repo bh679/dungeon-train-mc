@@ -19869,9 +19869,9 @@
       ],
       "pr": 1604,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "live-update-chat-notice",
@@ -19889,9 +19889,9 @@
       ],
       "pr": 1605,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "whitelist-min-dt-version",
@@ -19908,9 +19908,9 @@
       ],
       "pr": 1606,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "sprint-fly-3x-default",
@@ -19924,9 +19924,9 @@
       "highlights": [],
       "pr": 1608,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "farmers-delight-soup-stacking",
@@ -19941,9 +19941,9 @@
       "highlights": [],
       "pr": 1610,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "upside-down-village-no-residents",
@@ -19959,9 +19959,9 @@
       "highlights": [],
       "pr": 1612,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "bookshelf-honey-trade-value",
@@ -19976,9 +19976,9 @@
       "summary": "Villagers now give 1 emerald for a bookshelf or a honey block. Bookshelves used to fetch far more.",
       "highlights": [],
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "end-band-void-squares",
@@ -19996,9 +19996,9 @@
       ],
       "pr": 1615,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "freeplay-shared-explanation",
@@ -20017,9 +20017,9 @@
       ],
       "pr": 1617,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "dimensional-carriage-stale-room-overlap",
@@ -20037,9 +20037,9 @@
       ],
       "pr": 1616,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     }
   ]
 }
