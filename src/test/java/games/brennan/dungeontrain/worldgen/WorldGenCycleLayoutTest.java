@@ -176,7 +176,8 @@ final class WorldGenCycleLayoutTest {
         int gst = (int) (START + g.layout().start(3));
         assertFalse(g.isInChuncksStacksCrossfade(gst + 10));
         assertEquals(1.0, g.chuncksKeepDensityAt(gst + 10));
-        assertEquals(1.0, C.stacksVoidRampAt(x(st + 1500 + 4999)));
+        assertEquals(1.0, C.stacksVoidRampAt(x(st + 1500 + 4699)));          // core holds until the exit fade
+        assertEquals(1.0 / 300, C.stacksVoidRampAt(x(st + 1500 + 4999)), 1e-9);   // …then thins out into overworld
         assertTrue(C.isInStacksBand(x(st + 1500 + 4999)));
         assertEquals(0.0, C.stacksVoidRampAt(x(st + 1500 + 5000)));           // run 1 starts here
         assertEquals(x(0, 1), x(st + 1500 + 5000));

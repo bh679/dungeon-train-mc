@@ -1570,6 +1570,16 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * Fraction of kept chuncks chunks that are top-down slices at {@code worldX}: {@code chuncksSliceRatio},
+     * except across the stacks exit fade, where it eases to 0 with the fade — so the last chunks before the
+     * overworld are whole columns and the pieces close into solid terrain without a sliced seam.
+     */
+    public double chuncksSliceRatioAt(int worldX) {
+        double exit = stacksExitRamp(worldX);
+        return exit >= 0.0 ? chuncksSliceRatio * exit : chuncksSliceRatio;
+    }
+
+    /**
      * True if {@code worldX} lies anywhere in the run-up to the chuncks band or the band core itself —
      * the whole stretch from the end of the upside-down exit crossfade ({@code udExitGap}, the chuncks
      * {@code leadGap}, the entry fade, then the core). The intervening gaps read as plain overworld to
@@ -1598,6 +1608,8 @@ public record WorldGenCycle(long startX, int owGap,
     public double chuncksKeepDensityAt(int worldX) {
         if (chuncksLen() <= 0L) return 1.0;                         // band disabled → all real terrain
         if (isInChuncksStacksCrossfade(worldX)) return chuncksKeepDensity;   // chuncks carries on under the stacks fade
+        double exit = stacksExitRamp(worldX);
+        if (exit >= 0.0) return 1.0 + (chuncksKeepDensity - 1.0) * exit;   // stacks exit: chunks close back into terrain
         double t = fadeInRamp(CycleLayout.Type.CHUNCKS, chuncksFadeLen(), worldX);   // 0 at fade start → 1 at core edge
         return 1.0 + (chuncksKeepDensity - 1.0) * t;                // lerp 1 → keepDensity (1.0 outside the band + fade)
     }
@@ -1866,7 +1878,41 @@ public record WorldGenCycle(long startX, int owGap,
      */
     public double stacksVoidRampAt(int worldX) {
         if (stacksLen() <= 0L) return 0.0;                          // band disabled → all real terrain
+        double exit = stacksExitRamp(worldX);
+        if (exit >= 0.0) return exit;                               // exit fade: void thins out towards the overworld
         return fadeInRamp(CycleLayout.Type.STACKS, stacksFadeLen(), worldX);   // 0 at fade start → 1 in the core
+    }
+
+    /**
+     * Base-block length of the stacks exit fade: the last stretch of a stacks slot that hands straight over
+     * to plain overworld. Much shorter than the chuncks → stacks crossfade it borrows its look from.
+     */
+    static final long STACKS_EXIT_FADE_BLOCKS = 300L;
+
+    /**
+     * True in the last {@link #STACKS_EXIT_FADE_BLOCKS} of a stacks slot whose next slot is an overworld gap
+     * (the last slot wraps to the next run's slot 0 — ahead of spawn the next run, behind it the buffer).
+     * There stacks' void thins out towards the overworld and every chunk it doesn't claim is classified by
+     * chuncks, so floating chunks grow denser until they close into solid terrain. Layout only.
+     */
+    public boolean isInStacksExitFade(int worldX) {
+        return stacksExitRamp(worldX) >= 0.0;
+    }
+
+    /**
+     * Stacks void fraction across the exit fade — 1 at the stacks side, falling to 1/len at the overworld
+     * edge — or {@code -1} outside it. Evaluated in base coordinates, so the fade stretches with the run.
+     */
+    private double stacksExitRamp(int worldX) {
+        if (layout == null || stacksLen() <= 0L) return -1.0;
+        int i = slotAt(worldX);
+        if (i < 0 || layout.slot(i).type() != CycleLayout.Type.STACKS) return -1.0;
+        int next = (i + 1) % layout.count();
+        if (layout.slot(next).type() != CycleLayout.Type.OVERWORLD || layout.length(next) <= 0L) return -1.0;
+        long fade = Math.min(STACKS_EXIT_FADE_BLOCKS, Math.max(0L, layout.slot(i).core()));
+        long toEnd = layout.start(i) + layout.length(i) - baseAt(worldX);   // 1 at the last block
+        if (fade <= 0L || toEnd > fade) return -1.0;
+        return (double) toEnd / fade;
     }
 
     // ---- legacy bands ------------------------------------------------------------
