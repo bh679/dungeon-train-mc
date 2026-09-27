@@ -171,18 +171,21 @@ final class LostCityStructuresTest {
     }
 
     @Test
-    @DisplayName("the track is flattened across the whole slot, ramping in and out beyond it")
+    @DisplayName("the flat track zone ramps in inside the slot and never reaches the Nether's mountains or the End")
     void flattened() {
-        long cs = coreStart();
-        long slotStart = cs - 750L;
-        long slotEnd = cs + 4000L + 480L;
-        assertEquals(1.0, UpsideDownTrackFlatten.bandWeight(C, x(cs + 2000L, 0)), 1e-9);
-        assertEquals(1.0, UpsideDownTrackFlatten.bandWeight(C, x(slotStart, 0)), 1e-9);
-        assertEquals(1.0, UpsideDownTrackFlatten.bandWeight(C, x(slotEnd - 1L, 0)), 1e-9);
-        double ramp = UpsideDownTrackFlatten.bandWeight(C, x(slotStart - 80L, 0));
-        assertTrue(ramp > 0.0 && ramp < 1.0, "ramps in before the slot: " + ramp);
-        assertEquals(0.0, UpsideDownTrackFlatten.bandWeight(C, x(slotStart - 1000L, 0)), 1e-9);   // BetterNether
-        assertEquals(0.0, UpsideDownTrackFlatten.bandWeight(C, x(slotEnd + 1000L, 0)), 1e-9);     // BetterEnd
+        long slotStart = legacyStart();
+        long slotEnd = slotStart + LAYOUT.length(slot());
+        long ramp = UpsideDownTrackFlatten.BAND_RAMP;
+        assertEquals(1.0, UpsideDownTrackFlatten.bandWeight(C, x(coreStart() + 2000L, 0)), 1e-9);
+        assertEquals(0.0, UpsideDownTrackFlatten.bandWeight(C, x(slotStart - 1L, 0)), 1e-9);          // lead-in: Nether
+        assertEquals(0.0, UpsideDownTrackFlatten.bandWeight(C, x(slotStart - 100L, 0)), 1e-9);
+        assertEquals(0.0, UpsideDownTrackFlatten.bandWeight(C, x(slotStart, 0)), 1e-9);               // edge: none yet
+        double in = UpsideDownTrackFlatten.bandWeight(C, x(slotStart + ramp / 2, 0));
+        assertTrue(in > 0.0 && in < 1.0, "ramps in inside the slot: " + in);
+        assertEquals(1.0, UpsideDownTrackFlatten.bandWeight(C, x(slotStart + ramp, 0)), 1e-9);
+        assertTrue(UpsideDownTrackFlatten.bandWeight(C, x(slotEnd - ramp / 2, 0)) < 1.0);
+        assertEquals(0.0, UpsideDownTrackFlatten.bandWeight(C, x(slotEnd, 0)), 1e-9);                 // BetterEnd
+        assertEquals(0.0, UpsideDownTrackFlatten.bandWeight(C, x(slotEnd + 100L, 0)), 1e-9);
     }
 
     @Test

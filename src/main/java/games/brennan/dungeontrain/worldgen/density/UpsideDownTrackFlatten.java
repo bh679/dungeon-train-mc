@@ -20,6 +20,12 @@ import games.brennan.dungeontrain.worldgen.feature.MountainNoise;
  * of the track has its own <b>noisy edge</b> that wanders along X — in places the mountains come right
  * up to within a chunk of the line, elsewhere the lowland opens out wider.</p>
  *
+ * <p>It only flattens where the line would actually run into high ground: the <b>mountain gate</b>
+ * ({@link #mountainGate}) reads the untouched erosion on the track's centre line at each X, and is 0
+ * wherever that is hills-or-flatter — there the terrain (and its biomes) are left exactly as generated,
+ * which keeps the Lost City's WWOO landscape intact. The Lost City stretch ramps in <em>inside</em> its
+ * own slot, so the Nether's exit mountains before it are never touched.</p>
+ *
  * <p>This class is the pure maths (unit-tested without a NeoForge bootstrap, like
  * {@link BandBiomeDecision}); {@link TrackErosionDensityFunction} applies it inside the noise router,
  * reading the per-world {@link Context} lazily.</p>
@@ -47,8 +53,15 @@ public final class UpsideDownTrackFlatten {
     /** Salts decorrelating the two sides' edges from each other and from the mountain noise. */
     private static final long EDGE_SALT_POS = 0x5DEECE66DL * 31L + 0x2545F4914F6CDD1DL;
     private static final long EDGE_SALT_NEG = 0x9E3779B97F4A7C15L ^ 0x2545F4914F6CDD1DL;
-    /** Blocks outside each end of the upside-down stretch over which the weight ramps in / out. */
+    /** Blocks outside each end of the upside-down stretch (inside each end of the Lost City's) over which the weight ramps. */
     public static final int BAND_RAMP = 160;
+    /**
+     * Line erosion at/above which the gate is shut: vanilla's erosion band 2 floor — hills and anything
+     * flatter pass the track untouched.
+     */
+    public static final double HILL_EROSION = -0.2225;
+    /** Line erosion at/below which the gate is fully open: vanilla's mountain / peak erosion bands. */
+    public static final double MOUNTAIN_EROSION = -0.375;
     /** Coarse probe step of the distance search in {@link #bandWeight}; refined to one block after a hit. */
     private static final int PROBE_STEP = 8;
 
@@ -114,25 +127,35 @@ public final class UpsideDownTrackFlatten {
     }
 
     /**
-     * Whether {@code worldX} lies in a stretch whose terrain is kept flat near the track: anywhere the
-     * upside-down mirror touches ({@link WorldGenCycle#isInUpsideDownStretch}), or the Lost City era's slot
-     * (both crossfades included) — a city stretch reads as flat ground along the line.
+     * How open the mountain gate is for a column whose track-line erosion (the untouched climate erosion
+     * on the track centre at this X) is {@code lineErosion}: 0 at/above {@link #HILL_EROSION} (the line
+     * runs through hills or flatter — leave it), 1 at/below {@link #MOUNTAIN_EROSION} (the line would cut
+     * a mountain), smooth between. Erosion noise is smooth along X, so the valley opens and closes gently.
      */
-    static boolean inStretch(WorldGenCycle cycle, int worldX) {
-        return cycle.isInUpsideDownStretch(worldX)
-            || LegacyBands.isInSlot(cycle, LegacyBandKind.LOST_CITY, worldX);
+    public static double mountainGate(double lineErosion) {
+        return smoothstep((HILL_EROSION - lineErosion) / (HILL_EROSION - MOUNTAIN_EROSION));
     }
 
     /**
-     * O(1), conservative: false proves no stretch column lies within {@code margin} of {@code worldX}. The
-     * Lost City slot is far longer than {@code 2·margin}, so a window touching it always has an end or the
-     * centre inside it.
+     * Whether {@code worldX} lies where the upside-down mirror touches
+     * ({@link WorldGenCycle#isInUpsideDownStretch}) — the stretch whose weight ramps in outside its ends.
      */
-    private static boolean influence(WorldGenCycle cycle, int worldX, int margin) {
-        return cycle.upsideDownInfluence(worldX, margin)
-            || LegacyBands.isInSlot(cycle, LegacyBandKind.LOST_CITY, worldX)
-            || LegacyBands.isInSlot(cycle, LegacyBandKind.LOST_CITY, worldX - margin)
-            || LegacyBands.isInSlot(cycle, LegacyBandKind.LOST_CITY, worldX + margin);
+    static boolean inStretch(WorldGenCycle cycle, int worldX) {
+        return cycle.isInUpsideDownStretch(worldX);
+    }
+
+    /**
+     * The Lost City stretch's X weight: its slot (both fades included), ramping {@code 0 → 1} over the
+     * first and last {@link #BAND_RAMP} base blocks <em>inside</em> it — never reaching out onto the
+     * Nether's exit mountains before it or the band after.
+     */
+    public static double lostCityWeight(WorldGenCycle cycle, int worldX) {
+        if (!LegacyBands.isInSlot(cycle, LegacyBandKind.LOST_CITY, worldX)) return 0.0;
+        int slot = cycle.slotIndexAt(worldX);
+        if (slot < 0) return 1.0;                                   // classic cycle: no slot table
+        long local = cycle.slotLocal(worldX);
+        long inside = Math.min(local, cycle.layout().length(slot) - 1L - local);
+        return inside >= BAND_RAMP ? 1.0 : smoothstep((double) inside / BAND_RAMP);
     }
 
     /**
@@ -141,7 +164,13 @@ public final class UpsideDownTrackFlatten {
      * answers the far-away majority before any search.
      */
     public static double bandWeight(WorldGenCycle cycle, int worldX) {
-        if (cycle == null || !influence(cycle, worldX, BAND_RAMP)) return 0.0;
+        if (cycle == null) return 0.0;
+        return Math.max(upsideDownWeight(cycle, worldX), lostCityWeight(cycle, worldX));
+    }
+
+    /** The upside-down stretch's X weight: 1 inside, ramping to 0 over {@link #BAND_RAMP} blocks outside each end. */
+    public static double upsideDownWeight(WorldGenCycle cycle, int worldX) {
+        if (cycle == null || !cycle.upsideDownInfluence(worldX, BAND_RAMP)) return 0.0;
         int d = distanceToStretch(cycle, worldX, BAND_RAMP);
         if (d < 0) return 0.0;
         if (d == 0) return 1.0;
@@ -171,15 +200,18 @@ public final class UpsideDownTrackFlatten {
         return inStretch(cycle, worldX - d) || inStretch(cycle, worldX + d);
     }
 
-    /** Combined weight at a column; 0 when the context is missing or disabled. */
-    public static double weight(Context ctx, int worldX, int worldZ) {
+    /**
+     * Combined weight at a column whose track-line erosion is {@code lineErosion}; 0 when the context is
+     * missing or disabled, or the line runs through hills-or-flatter ({@link #mountainGate}).
+     */
+    public static double weight(Context ctx, int worldX, int worldZ, double lineErosion) {
         if (ctx == null || !ctx.enabled()) return 0.0;
         if (Math.abs(worldZ - ctx.trackCenterZ()) >= TRACK_OUTER_MAX) return 0.0;
         double wz = trackWeight(worldZ, ctx.trackCenterZ(),
                 edgeOpenness(ctx.seed(), worldX, worldZ >= ctx.trackCenterZ()));
         if (wz <= 0.0) return 0.0;
         double wx = bandWeight(ctx.cycle(), worldX);
-        return wx * wz;
+        return wx * mountainGate(lineErosion) * wz;
     }
 
     /**
