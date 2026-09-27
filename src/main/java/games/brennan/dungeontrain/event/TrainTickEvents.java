@@ -223,9 +223,12 @@ public final class TrainTickEvents {
      */
     private static void logGenTiming(ServerLevel level) {
         GenProfiler.Sample s = GenProfiler.sampleAndReset();
-        if (s.chunks() <= 0) return;
+        double endSampleMs = s.ms(GenProfiler.Bucket.END_BAND_SAMPLE);
+        double endApplyMs = s.ms(GenProfiler.Bucket.END_BAND_APPLY);
+        // End-band sampling runs off the gen workers, so a window can have End work and no chunks fulled.
+        if (s.chunks() <= 0 && endSampleMs <= 0 && endApplyMs <= 0) return;
         JITTER_LOGGER.debug(
-            "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} biome={} mirror={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={} sphSample={} sphApply={} | perChunk df={} nether={} core={} biome={} mirror={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={}",
+            "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} biome={} mirror={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={} sphSample={} sphApply={} endSample={} endApply={} | perChunk df={} nether={} core={} biome={} mirror={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={}",
             level.dimension().location(), s.chunks(),
             String.format("%.2f", s.dtTotalMs()), String.format("%.3f", s.dtTotalPerChunkMs()),
             String.format("%.2f", s.ms(GenProfiler.Bucket.DF)),
@@ -242,6 +245,8 @@ public final class TrainTickEvents {
             String.format("%.2f", s.ms(GenProfiler.Bucket.LEGACY)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.SPHERES_FOREIGN_SAMPLE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.SPHERES_FOREIGN_APPLY)),
+            String.format("%.2f", endSampleMs),
+            String.format("%.2f", endApplyMs),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.DF)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.NETHER_FEATURE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.CORE_REPLACE)),
