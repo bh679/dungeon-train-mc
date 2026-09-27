@@ -19599,8 +19599,28 @@
       "released_at": null
     },
     {
+      "id": "shorter-lap3-gaps-crossfade",
+      "version": "0.977.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Fewer lulls in the late journey",
+      "summary": "The quiet overworld stretches between some of the stranger places late in the run are shorter or gone, and one strange place now melts straight into the next.",
+      "highlights": [
+        "Less waiting between the strange places deep into a run.",
+        "A smoother handover where two of them meet."
+      ],
+      "pr": 1591,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "superflat-band-villages",
-      "version": "0.976.0",
+      "version": "0.977.0",
       "type": "feat",
       "tags": [
         "feature",
