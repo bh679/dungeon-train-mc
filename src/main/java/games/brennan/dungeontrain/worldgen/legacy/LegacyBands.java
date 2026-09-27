@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen.legacy;
 
+import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.worldgen.legacy.classic.ClassicLevels;
 import net.minecraft.Util;
@@ -46,7 +47,7 @@ public final class LegacyBands {
      */
     public static LegacyBandKind kindOfChunk(ServerLevel level, int chunkX, int chunkZ) {
         if (!level.dimension().equals(Level.OVERWORLD)) return null;
-        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        WorldGenCycle cycle = MixBand.cycleAt(level, chunkX, chunkZ);   // mix zone: the picked band's frame
         if (cycle.legacyTotalLen() <= 0L) return null;
         WorldGenCycle.LegacyHit hit = cycle.legacyAt(chunkX << 4);
         if (hit == null) return null;
@@ -106,7 +107,9 @@ public final class LegacyBands {
      * hook, which runs without a level). The caller owns the overworld / train-world gate.
      */
     public static LegacyBandKind kindOfChunk(long seed, WorldGenCycle cycle, int chunkX, int chunkZ) {
-        if (cycle == null || cycle.legacyTotalLen() <= 0L) return null;
+        if (cycle == null) return null;
+        cycle = MixBand.cycleFor(cycle, seed, chunkX, chunkZ);          // mix zone: the picked band's frame
+        if (cycle.legacyTotalLen() <= 0L) return null;
         WorldGenCycle.LegacyHit hit = cycle.legacyAt(chunkX << 4);
         if (hit == null) return null;
         return cachedKind(seed, chunkX, chunkZ, hit);

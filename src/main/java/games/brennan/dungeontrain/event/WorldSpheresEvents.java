@@ -89,7 +89,7 @@ public final class WorldSpheresEvents {
         ChunkPos pos = chunk.getPos();
         int chunkMinX = pos.getMinBlockX();
         int chunkMinZ = pos.getMinBlockZ();
-        if (!SpheresBand.chunkTouchesBand(level, chunkMinX)) return;
+        if (!SpheresBand.chunkTouchesBand(level, chunkMinX, chunkMinZ)) return;
 
         long genT0 = GenProfiler.t0();
         List<SphereField.Sphere> offline = new ArrayList<>(2);
@@ -118,7 +118,7 @@ public final class WorldSpheresEvents {
         double[] ramp = new double[16];
         boolean any = false;
         for (int dx = 0; dx < 16; dx++) {
-            ramp[dx] = SpheresBand.voidRamp(level, chunkMinX + dx);
+            ramp[dx] = SpheresBand.voidRamp(level, chunkMinX + dx, chunkMinZ);
             any |= ramp[dx] > 0.0;
         }
         if (!any) return false;

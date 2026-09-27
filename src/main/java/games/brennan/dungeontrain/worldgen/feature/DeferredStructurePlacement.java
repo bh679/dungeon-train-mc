@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
@@ -40,7 +41,7 @@ public final class DeferredStructurePlacement {
             ServerLevel overworld = serverLevel.getServer() == null ? null : serverLevel.getServer().overworld();
             if (overworld == null || NetherBand.startX(overworld) == NetherBand.OFF) return false;
 
-            WorldGenCycle cycle = WorldGenCycle.fromConfig();
+            WorldGenCycle cycle = MixBand.cycleAt(overworld, chunkPos.x, chunkPos.z);   // mix zone pick
             int margin = NetherMountainTerrain.maxEdgeShift();
             for (int worldX = chunkPos.getMinBlockX() - margin; worldX <= chunkPos.getMaxBlockX() + margin; worldX++) {
                 // The End band always wins any overlap, exactly as the core fill yields those columns.

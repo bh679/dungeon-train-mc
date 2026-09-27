@@ -443,7 +443,19 @@ public final class DungeonTrainCommonConfig {
             + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
 
-    public static final int CURRENT_CONFIG_VERSION = 8;
+    /**
+     * The {@code worldgenCycleOrder} v8 shipped; v9 split its {@code chuncks:5000} into {@code chuncks:2000}
+     * and the new {@code mix:4000} zone.
+     */
+    public static final String V8_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:650, chuncks:5000, stacks:5000";
+
+    public static final int CURRENT_CONFIG_VERSION = 9;
+    public static final boolean DEFAULT_MIX_ENABLED = true;
+    public static final String DEFAULT_MIX_EXCLUDE = "";
 
     /** The shipped band order — see {@link games.brennan.dungeontrain.worldgen.CycleLayout#DEFAULT_ORDER}. */
     public static final String DEFAULT_WORLDGEN_CYCLE_ORDER = games.brennan.dungeontrain.worldgen.CycleLayout.DEFAULT_ORDER;
@@ -515,6 +527,8 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue STACKS_FADE_BLOCKS;
     public static final ModConfigSpec.IntValue STACKS_LEAD_GAP_BLOCKS;
     public static final ModConfigSpec.DoubleValue STACKS_DENSITY;
+    public static final ModConfigSpec.BooleanValue MIX_ENABLED;
+    public static final ModConfigSpec.ConfigValue<String> MIX_EXCLUDE;
     public static final ModConfigSpec.ConfigValue<String> WORLDGEN_CYCLE_ORDER;
     public static final ModConfigSpec.BooleanValue BREAK_BLOCKS_ON_CONTACT;
     public static final ModConfigSpec.DoubleValue BACKER_NAME_WEIGHT;
@@ -585,6 +599,8 @@ public final class DungeonTrainCommonConfig {
         STACKS_FADE_BLOCKS = pair.getLeft().stacksFadeBlocks;
         STACKS_LEAD_GAP_BLOCKS = pair.getLeft().stacksLeadGapBlocks;
         STACKS_DENSITY = pair.getLeft().stacksDensity;
+        MIX_ENABLED = pair.getLeft().mixEnabled;
+        MIX_EXCLUDE = pair.getLeft().mixExclude;
         WORLDGEN_CYCLE_ORDER = pair.getLeft().worldgenCycleOrder;
         BREAK_BLOCKS_ON_CONTACT = pair.getLeft().breakBlocksOnContact;
         BACKER_NAME_WEIGHT = pair.getLeft().backerNameWeight;
@@ -997,6 +1013,17 @@ public final class DungeonTrainCommonConfig {
                         "per-chunk, seed-stable noise gate. Default 0.08 (~8% of chunks carry a tower).")
                 .defineInRange("stacksDensity", DEFAULT_STACKS_DENSITY,
                         MIN_STACKS_DENSITY, MAX_STACKS_DENSITY);
+        ModConfigSpec.BooleanValue mixEnabled = b
+                .comment("Mix zone — a hard-edged stretch (the order's mix:<core> slot) where every chunk, with equal",
+                        "odds, generates as one of the bands the run has already passed: any overworld style, Nether,",
+                        "BetterNether, End, BetterEnd, upside-down, spheres, or a legacy era. Seed-stable per chunk.",
+                        "Set false to drop the mix slot from the cycle.")
+                .define("mixEnabled", DEFAULT_MIX_ENABLED);
+        ModConfigSpec.ConfigValue<String> mixExclude = b
+                .comment("Comma-separated candidates the mix zone never picks. Tokens: ow, ow_wwoo, ow_bop, ow_sunk,",
+                        "nether, nether_better, end, end_better, upside_down, spheres, and a legacy era name",
+                        "(amplified, beta, far_lands, …). Blank = every band behind the zone.")
+                .define("mixExclude", DEFAULT_MIX_EXCLUDE);
         games.brennan.dungeontrain.worldgen.legacy.LegacyBandConfig.define(b);
         ModConfigSpec.ConfigValue<String> worldgenCycleOrder = b
                 .comment("The order the bands come in, as one run of the cycle: comma-separated slots, each",
@@ -1005,6 +1032,7 @@ public final class DungeonTrainCommonConfig {
                         "  end[:style]:<core>             an End-islands band (style: vanilla | better = BetterEnd)",
                         "  upside_down:<core>:<reassembly> the upside-down band and its Reassembly crossfade",
                         "  chuncks:<core>  spheres:<core>  stacks:<core>",
+                        "  mix:<core>                     every chunk is a random band from earlier in the run",
                         "  legacy:<era>=<core>:...        the old-generator eras, back to back, crossfading into each other",
                         "Fades come from the keys above. Every run of the whole order is twice as long as the last.",
                         "A band whose Enabled key is false is dropped wherever it is named. Blank = the classic",
@@ -1032,6 +1060,7 @@ public final class DungeonTrainCommonConfig {
                 spheresCenterMinY, spheresCenterMaxY, spheresSurfaceBias,
                 spheresEndSky, spheresEndSkyStartBlocks, spheresEndSkyFadeBlocks,
                 stacksEnabled, stacksHoldBlocks, stacksFadeBlocks, stacksLeadGapBlocks, stacksDensity,
+                mixEnabled, mixExclude,
                 worldgenCycleOrder,
                 breakBlocksOnContact, backerNameWeight, catchUpBurstMode);
     }
@@ -1193,6 +1222,15 @@ public final class DungeonTrainCommonConfig {
         // v7 -> v8: the overworld gap after the legacy run shrank 2000 -> 650 and the gap between
         // chuncks and stacks was dropped. Same rule: only an order still exactly as v7 shipped moves.
         if (from < 8 && V7_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v8 -> v9: the chuncks core shrank 5000 -> 2000 and the mix zone (mix:4000) follows it. Same
+        // rule: only an order still exactly as v8 shipped moves.
+        if (from < 9 && V8_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
             WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
             LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
                     from, CURRENT_CONFIG_VERSION);
@@ -1541,6 +1579,16 @@ public final class DungeonTrainCommonConfig {
     }
 
     /** Fraction 0..1 of stacks-band void chunks that hold a stack; falls back to the hardcoded default pre-load. */
+    /** Whether the mix zone is on; the shipped default pre-load. */
+    public static boolean isMixEnabled() {
+        return isLoaded() ? MIX_ENABLED.get() : DEFAULT_MIX_ENABLED;
+    }
+
+    /** The mix zone's excluded candidate tokens ({@code mixExclude}); blank pre-load. */
+    public static String getMixExclude() {
+        return isLoaded() ? MIX_EXCLUDE.get() : DEFAULT_MIX_EXCLUDE;
+    }
+
     /** The band order spec ({@code worldgenCycleOrder}); the shipped default pre-load. */
     public static String getWorldgenCycleOrder() {
         return isLoaded() ? WORLDGEN_CYCLE_ORDER.get() : DEFAULT_WORLDGEN_CYCLE_ORDER;
@@ -1611,6 +1659,8 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue stacksFadeBlocks,
                           ModConfigSpec.IntValue stacksLeadGapBlocks,
                           ModConfigSpec.DoubleValue stacksDensity,
+                          ModConfigSpec.BooleanValue mixEnabled,
+                          ModConfigSpec.ConfigValue<String> mixExclude,
                           ModConfigSpec.ConfigValue<String> worldgenCycleOrder,
                           ModConfigSpec.BooleanValue breakBlocksOnContact,
                           ModConfigSpec.DoubleValue backerNameWeight,

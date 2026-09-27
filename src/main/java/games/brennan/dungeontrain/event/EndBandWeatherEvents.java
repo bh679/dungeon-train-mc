@@ -42,7 +42,7 @@ public final class EndBandWeatherEvents {
         if (!(event.getEntity() instanceof LightningBolt bolt)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
-        if (DisintegrationBand.middleRampAt(level, Mth.floor(bolt.getX())) > 0.0) {
+        if (DisintegrationBand.middleRampAt(level, Mth.floor(bolt.getX()), Mth.floor(bolt.getZ())) > 0.0) {
             event.setCanceled(true);
         }
     }
