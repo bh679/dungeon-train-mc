@@ -19834,6 +19834,25 @@
       "released_at": "2026-09-27T09:01:26Z"
     },
     {
+      "id": "modernfix-new-world-crash",
+      "version": "0.983.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "New worlds load again with ModernFix installed",
+      "summary": "Starting a new world with ModernFix installed \u2014 it ships in the modpack \u2014 could crash with \"Exception generating new chunk\", or leave the loading screen sitting at 33% for good. Both are fixed.",
+      "highlights": [
+        "No change to how the world generates: the same seed still gives the same world, with ModernFix or without."
+      ],
+      "pr": 1603,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "midrun-config-free-play",
       "version": "0.983.0",
       "type": "feat",
