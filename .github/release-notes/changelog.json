@@ -19860,7 +19860,7 @@
         "feature",
         "compatibility"
       ],
-      "title": "Fair play now covers settings changed mid-run",
+      "title": "The whitelist now covers settings changed mid-run",
       "summary": "Changing a Dungeon Train balance setting while you're playing, whether in the settings screen or an in-game config editor, now puts that run into Free Play for good, just like using a tuning command. Changing it back before you quit no longer hides it.",
       "highlights": [
         "How the train's mobs fight and scavenge now counts as a balance setting",
@@ -19901,10 +19901,10 @@
         "feature",
         "compatibility"
       ],
-      "title": "Some fair-play mods need a recent Dungeon Train",
-      "summary": "A few mods on the fair-play list are only approved on newer versions of Dungeon Train, because they rely on support those versions added. Run one on an older version and the run is Free Play until you update.",
+      "title": "Some whitelisted mods need a recent Dungeon Train",
+      "summary": "A few mods on the whitelist are only approved on newer versions of Dungeon Train, because they rely on support those versions added. Run one on an older version and the run is Free Play until you update.",
       "highlights": [
-        "Update Dungeon Train to keep a mod like Catalogue approved for fair play"
+        "Update Dungeon Train to keep a mod like Catalogue on the whitelist"
       ],
       "pr": 1606,
       "date": "2026-09-27",
@@ -19965,7 +19965,7 @@
     },
     {
       "id": "bookshelf-honey-trade-value",
-      "version": "0.990.0",
+      "version": "0.991.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -19982,7 +19982,7 @@
     },
     {
       "id": "end-band-void-squares",
-      "version": "0.990.0",
+      "version": "0.992.0",
       "type": "fix",
       "tags": [
         "fix",
@@ -20002,7 +20002,7 @@
     },
     {
       "id": "freeplay-shared-explanation",
-      "version": "0.990.0",
+      "version": "0.993.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -20023,7 +20023,7 @@
     },
     {
       "id": "dimensional-carriage-stale-room-overlap",
-      "version": "0.990.0",
+      "version": "0.994.0",
       "type": "fix",
       "tags": [
         "fix",
