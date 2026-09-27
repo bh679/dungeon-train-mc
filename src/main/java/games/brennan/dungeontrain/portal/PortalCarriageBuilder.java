@@ -1487,6 +1487,51 @@ public final class PortalCarriageBuilder {
     }
 
     /**
+     * Everything a structure owns for the purpose of <b>not being stamped over by another pair</b>:
+     * its {@link #footprintOf footprint}, and for a room that {@link PortalRoomMode#clearsSurroundings
+     * clears its surroundings} the swept void around it as well.
+     *
+     * <p>A Bedrockless room's void is part of what the player sees, so another pair standing in it
+     * is visible damage — an old Bedrock Lock room left in there reads as bedrock where the void
+     * should be. That is why the void counts here even though {@link #footprintOf} deliberately
+     * leaves it out (see {@link #clearVoidAround} for why the erase and the tiler must not see it).</p>
+     */
+    public static BoundingBox claimOf(ServerLevel level, PortalStructure structure,
+                                      CarriageDims dims) {
+        BoundingBox footprint = footprintOf(level, structure, dims);
+        if (!structure.mode().clearsSurroundings()) return footprint;
+        return claimWithHalo(footprint, voidHaloOf(level, structure, dims));
+    }
+
+    /**
+     * The footprint grown horizontally to the halo. The halo's own Y band starts at the structure's
+     * floor rather than the row beneath it, so the footprint's Y range is kept: that is the box two
+     * structures actually conflict over. Pure geometry, so it unit-tests without a level.
+     */
+    /**
+     * Whether two {@link #claimOf claims} are in each other's way.
+     *
+     * <p><b>Not a plain intersect.</b> A footprint reaches one row past its structure's top, and that
+     * row is the next lane's under-floor skin row — the lanes are spaced to share it
+     * ({@link PortalTwinLanes#laneHeight}). Two pairs in neighbouring lanes therefore always touch on
+     * that one row, and treating it as a collision would have every stamp waiting on the pair in the
+     * lane above. Dropping each claim's top row leaves exactly the overlap that matters.</p>
+     */
+    public static boolean claimsConflict(BoundingBox a, BoundingBox b) {
+        return a.minX() <= b.maxX() && a.maxX() >= b.minX()
+            && a.minZ() <= b.maxZ() && a.maxZ() >= b.minZ()
+            && a.minY() <= b.maxY() - 1 && a.maxY() - 1 >= b.minY();
+    }
+
+    static BoundingBox claimWithHalo(BoundingBox footprint, BoundingBox halo) {
+        return new BoundingBox(
+            Math.min(footprint.minX(), halo.minX()), footprint.minY(),
+            Math.min(footprint.minZ(), halo.minZ()),
+            Math.max(footprint.maxX(), halo.maxX()), Math.max(footprint.maxY(), halo.maxY()),
+            Math.max(footprint.maxZ(), halo.maxZ()));
+    }
+
+    /**
      * {@code halo} minus {@code footprint}, as up to four disjoint slabs — everything a Bedrockless
      * room clears, and nothing the structure owns.
      *

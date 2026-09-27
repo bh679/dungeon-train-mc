@@ -20020,6 +20020,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-stale-room-overlap",
+      "version": "0.990.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriages stay clean on later visits",
+      "summary": "Deep into a run, a dimensional carriage could appear with bedrock where its void should be, and walking in could bounce you straight back onto the train with \"This room lost its train\". Each carriage now gets its own space again.",
+      "highlights": [
+        "Void rooms stay void \u2014 no stray bedrock from rooms you passed long ago",
+        "No more being put back on the train the moment you step into a room"
+      ],
+      "pr": 1616,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

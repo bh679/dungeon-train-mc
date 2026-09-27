@@ -202,6 +202,17 @@ public final class PortalCarriageEvents {
     private static final Map<Integer, PortalStructure> STRUCTURES = new HashMap<>();
 
     /**
+     * Pair key → the record of a structure that was erased because another pair needed its space
+     * ({@link #clearOverlapping}). Kept only so the pair keeps its room when it next needs a twin —
+     * a pair rolls its room once, and re-planning from wherever its carriage is by then could roll
+     * a different one.
+     */
+    private static final Map<Integer, PortalStructure> EVICTED = new HashMap<>();
+
+    /** Pair key → game time a blocked stamp was last logged, so a wait is one line per 10s. */
+    private static final Map<Integer, Long> OVERLAP_WARNED_AT = new HashMap<>();
+
+    /**
      * How far outside the corridor's own cross-section the room extends, for the "is anyone in this
      * structure" test. The room is wider and taller than a corridor, and a player standing in it
      * must still pin the structure against being re-stamped.
@@ -632,6 +643,8 @@ public final class PortalCarriageEvents {
     public static void onServerStopped(ServerStoppedEvent event) {
         STRUCTURES.clear();
         STAMPED_AT.clear();
+        EVICTED.clear();
+        OVERLAP_WARNED_AT.clear();
         // Each pairing holds its carriage's plot; a pair key names a different carriage next world.
         games.brennan.dungeontrain.portal.PortalPairIndex.clear();
         // The author each locked room settled on, and the catalogues behind them. Keyed by pair key
@@ -2297,8 +2310,10 @@ public final class PortalCarriageEvents {
         // deliberately does NOT re-plan — the gate context travels with the train, so re-planning
         // further down the track could swap a player's room for a different one mid-visit. Relocating
         // keeps the room and the mode it was built with and only moves them.
-        PortalStructure planned = existing != null
-            ? existing.movedTo(wanted)
+        // A pair evicted by another one's stamp keeps the room it rolled, the same as a relocation.
+        PortalStructure evicted = existing == null ? EVICTED.get(pairKey) : null;
+        PortalStructure planned = existing != null ? existing.movedTo(wanted)
+            : evicted != null ? evicted.movedTo(wanted)
             : PortalCarriageBuilder.planStructure(level, dims, wanted, pairKey, region,
                 GateContext.forCarriageAtWorldX(level, Mth.floor(originX), pairKey, dims.length()));
 
@@ -2389,6 +2404,14 @@ public final class PortalCarriageEvents {
             return existing;
         }
 
+        // Not on top of another pair. Lanes keep neighbouring pairs apart, but a pair the train left
+        // behind long ago keeps standing in its lane, and one in the same lane can be relocated right
+        // onto it: the two rooms merge, a Bedrockless room shows the old one's bedrock where its void
+        // should be, and the old pair — still claiming the space — pulls the player out as stranded.
+        if (!clearOverlapping(level, dims, pairKey, planned)) {
+            return existing;
+        }
+
         // Clear the outgoing structure rather than leaving it hanging in the sky. Without this the
         // train would trail abandoned corridors, a set every time a pair drifted out of range.
         // Both the carry and the erase read the OLD record, so they cover exactly the box that was
@@ -2427,6 +2450,8 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.train.StagePlacementScope.run(stageId,
             () -> PortalCarriageBuilder.stampPairStructure(level, toStamp, dims, pairKey));
         STRUCTURES.put(pairKey, planned);
+        EVICTED.remove(pairKey);
+        OVERLAP_WARNED_AT.remove(pairKey);
         STAMPED_AT.put(pairKey, level.getGameTime());
         // Where the exit stands, but only when it is not the ordinary place. A pair that moved it
         // (PortalRoomExits) is a portal a player has to search, and that is worth being able to see
@@ -2438,6 +2463,68 @@ public final class PortalCarriageEvents {
             pairKey, wanted, planned.roomName(), planned.roomLength(), exit,
             fmt(originX), fmt(originY), fmt(originZ));
         return planned;
+    }
+
+    /**
+     * Make room for {@code planned}: erase every other pair's structure it would land on, or report
+     * that it cannot be stamped yet.
+     *
+     * <p>Only a pair that is <b>not live</b> and has <b>nobody inside</b> is erased — one the train has
+     * left behind. It is not lost: its record moves to {@link #EVICTED} and the next time its carriage
+     * wants a twin it is stamped afresh with the same room. A live or occupied pair is never touched;
+     * the caller waits instead, which is also what stops two live pairs evicting each other in turn.</p>
+     *
+     * <p>Both sides are measured with {@link PortalCarriageBuilder#claimOf}, which counts a Bedrockless
+     * room's swept void as its own — something standing in it is what the player would see.</p>
+     */
+    private static boolean clearOverlapping(ServerLevel level, CarriageDims dims, int pairKey,
+                                            PortalStructure planned) {
+        BoundingBox claim = PortalCarriageBuilder.claimOf(level, planned, dims);
+        List<Integer> toEvict = new ArrayList<>();
+        for (Map.Entry<Integer, PortalStructure> entry : STRUCTURES.entrySet()) {
+            int otherKey = entry.getKey();
+            if (otherKey == pairKey) continue;
+            PortalStructure other = entry.getValue();
+            if (!PortalCarriageBuilder.claimsConflict(
+                    claim, PortalCarriageBuilder.claimOf(level, other, dims))) {
+                continue;
+            }
+            if (LIVE_PAIRS.contains(otherKey) || anyPlayerInStructure(level.players(), dims, other)) {
+                warnOverlapWait(level, pairKey, otherKey);
+                return false;
+            }
+            toEvict.add(otherKey);
+        }
+        for (int otherKey : toEvict) {
+            evictStructure(level, dims, otherKey, pairKey);
+        }
+        return true;
+    }
+
+    /** Erase a left-behind pair's structure and forget everything that described it standing. */
+    private static void evictStructure(ServerLevel level, CarriageDims dims, int pairKey, int byPair) {
+        PortalStructure structure = STRUCTURES.remove(pairKey);
+        if (structure == null) return;
+        PortalRoomMobs.reapPair(level, PortalCarriageBuilder.footprintOf(level, structure, dims), pairKey);
+        PortalCarriageBuilder.eraseTwin(level, structure, dims);
+        EVICTED.put(pairKey, structure);
+        STAMPED_AT.remove(pairKey);
+        PortalWalkThrough.forget(pairKey);
+        PortalRoomRescue.forget(pairKey);
+        PortalCarriageRevival.forget(pairKey);
+        games.brennan.dungeontrain.portal.PortalRoomLibrarian.forget(pairKey);
+        LOGGER.info("[DungeonTrain] Portal pair {} evicted: pair {} is stamping over the space its "
+            + "twin ('{}' at {}) was left standing in — it is stamped afresh when next needed",
+            pairKey, byPair, structure.roomName(), structure.origin());
+    }
+
+    private static void warnOverlapWait(ServerLevel level, int pairKey, int blockingKey) {
+        long now = level.getGameTime();
+        Long last = OVERLAP_WARNED_AT.get(pairKey);
+        if (last != null && now - last < SKIP_WARN_PERIOD_TICKS) return;
+        OVERLAP_WARNED_AT.put(pairKey, now);
+        LOGGER.warn("[DungeonTrain] Portal pair {} twin not stamped yet: pair {} is live or occupied "
+            + "where it would go — waiting rather than stamping into it", pairKey, blockingKey);
     }
 
     /**
