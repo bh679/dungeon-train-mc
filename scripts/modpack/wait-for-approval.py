@@ -26,7 +26,7 @@ Sources (see cf_api.py):
 Exit codes: 0 approved, 1 not approved within the timeout (``--on-timeout fail``, the
 default). With ``--on-timeout defer`` a timeout still means "do NOT publish" — it exits 0
 and writes ``approved=false`` to $GITHUB_OUTPUT so the workflow can skip the upload and end
-green, because the 6-hourly catch-up in modpack-reconcile.yml will publish this release once
+green, because the hourly catch-up in modpack-reconcile.yml will publish this release once
 the file is approved (scripts/modpack/catch-up.py). A red run on every slow approval taught
 everyone to ignore the workflow, which is how the pack fell 41 releases behind.
 
@@ -131,7 +131,7 @@ def _report_timeout(project_id, file_id, timeout_minutes, detail, authoritative,
     print(f"::{level}::Publishing the modpack now would reference an unapproved file and the "
           "pack would be REJECTED (\"References file with invalid status\"). Not publishing.")
     if on_timeout == ON_TIMEOUT_DEFER:
-        print(f"::{level}::Deferred: modpack-reconcile.yml runs every 6 hours and will publish "
+        print(f"::{level}::Deferred: modpack-reconcile.yml runs hourly and will publish "
               "this release's pack version once the file is approved (scripts/modpack/"
               "catch-up.py). Nothing to do by hand.")
     else:

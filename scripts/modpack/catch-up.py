@@ -11,7 +11,7 @@ so the release was dropped from the pack for good. Approval routinely takes long
 hour, so this was the normal case, not the exception — by September 2026 the pack was 41 of
 the last 100 releases behind while every one of those DT files was, by then, approved.
 
-This script is the retry. It runs from the 6-hourly modpack-reconcile.yml and inverts the
+This script is the retry. It runs from the hourly modpack-reconcile.yml and inverts the
 question: rather than "wait for approval", it asks "which missing release is ALREADY
 approved?" — so it never polls and never waits. A DT file being publicly listed on the mod
 project IS the approval (the same signal wait-for-approval.py accepts on its mirror path).

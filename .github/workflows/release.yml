@@ -91,21 +91,11 @@ jobs:
 
       - run: ./gradlew build --no-daemon
 
-      # Teach the relay which builds are unmodified copies of the templates this release ships, so
-      # the builder search and profile counts leave them out (relay: bundled_fingerprints). The set is
-      # cumulative on the relay, so every release adds only what changed. Never blocks a release:
-      # a relay hiccup here means the next release's push catches up.
-      - name: Push shipped-template fingerprints to the relay
-        continue-on-error: true
-        env:
-          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
-        run: |
-          if [ -z "$DUNGEONTRAIN_RELAY_ADMIN_BASE" ]; then
-            echo "::warning::RELAY_ADMIN_BASE is not set — shipped-template fingerprints not pushed."
-            exit 0
-          fi
-          ./gradlew bundledFingerprints --no-daemon
-          python3 scripts/relay/push-bundled-fingerprints.py
+      # STEP ORDER: every player-facing output (GitHub, wiki, Modrinth, CurseForge upload, both
+      # modpack dispatches, update.json, Discord) runs as early as it can. Anything that only
+      # WAITS or is invisible to players (relay fingerprints, the CurseForge listing poll) sits
+      # at the END so it never delays a publish. v0.982.0 spent 30 of its 34 minutes with every
+      # downstream output queued behind the CurseForge poll.
 
       - name: Generate release notes
         env:
@@ -347,33 +337,6 @@ jobs:
           retry-delay: 10000
           fail-mode: warn
 
-      # An upload returning 200 is not a publish, and mc-publish runs with `fail-mode: warn` so a
-      # CurseForge 500 leaves this job GREEN with the jar live on Modrinth and missing on
-      # CurseForge. That is exactly how v0.692.0 shipped three-quarters of the way: two 500s, no
-      # third attempt, success. This is the guard the MODPACK already had and the mod did not.
-      #
-      # Verification only — recovery is `reupload-curseforge.yml`, which re-publishes the tag's
-      # existing artifact without burning a version number.
-      - name: Verify the CurseForge mod upload landed
-        if: ${{ always() && steps.publish_check.outputs.curseforge == 'true' }}
-        env:
-          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
-          CF_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID }}
-          RELEASE_TAG: ${{ env.RELEASE_TAG }}
-        run: |
-          set -euo pipefail
-          if [ -z "${{ steps.mcpublish.outputs.curseforge-version }}" ]; then
-            echo "::error::CurseForge upload produced no file id — the upload failed. Recover with:"
-            echo "::error::  gh workflow run reupload-curseforge.yml -f tag=$RELEASE_TAG"
-            exit 1
-          fi
-          python3 scripts/modpack/reconcile.py \
-            --verify "$RELEASE_TAG" \
-            --platform curseforge \
-            --curseforge-project "$CF_PROJECT" \
-            --timeout-minutes 30 \
-            --poll-seconds 60
-
       # Mirror REAL (operator-dispatched) mod releases into the CurseForge modpack.
       # Dispatches release-modpack.yml (which polls until CurseForge has APPROVED the
       # DT file — a pack referencing an unapproved file is rejected — then publishes a
@@ -558,3 +521,56 @@ jobs:
           CURSEFORGE_VERSION: ${{ steps.mcpublish.outputs.curseforge-version }}
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/notify-discord.sh
+
+      # ---- Nothing below here is player-facing: it runs AFTER every publish so it can't delay one.
+
+      # Teach the relay which builds are unmodified copies of the templates this release ships, so
+      # the builder search and profile counts leave them out (relay: bundled_fingerprints). The set is
+      # cumulative on the relay, so every release adds only what changed. Never blocks a release:
+      # a relay hiccup here means the next release's push catches up. always() so an earlier
+      # failure (e.g. a lost changelog push race) doesn't also skip this.
+      - name: Push shipped-template fingerprints to the relay
+        if: ${{ always() && env.RELEASE_TAG != '' }}
+        continue-on-error: true
+        env:
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+        run: |
+          if [ -z "$DUNGEONTRAIN_RELAY_ADMIN_BASE" ]; then
+            echo "::warning::RELAY_ADMIN_BASE is not set — shipped-template fingerprints not pushed."
+            exit 0
+          fi
+          ./gradlew bundledFingerprints --no-daemon
+          python3 scripts/relay/push-bundled-fingerprints.py
+
+      # An upload returning 200 is not a publish, and mc-publish runs with `fail-mode: warn` so a
+      # CurseForge 500 leaves this job GREEN with the jar live on Modrinth and missing on
+      # CurseForge. That is exactly how v0.692.0 shipped three-quarters of the way: two 500s, no
+      # third attempt, success. This is the guard the MODPACK already had and the mod did not.
+      #
+      # LAST on purpose: it polls the public listing for up to 30 min (the full 30 whenever
+      # CURSEFORGE_API_KEY is unset, since the cfwidget mirror can't prove absence). Nothing
+      # downstream needs it — the CurseForge modpack runs its own approval wait — so it only
+      # decides whether the run ends red, never when anything goes live.
+      #
+      # Verification only — recovery is `reupload-curseforge.yml`, which re-publishes the tag's
+      # existing artifact without burning a version number.
+      - name: Verify the CurseForge mod upload landed
+        if: ${{ always() && steps.publish_check.outputs.curseforge == 'true' }}
+        env:
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          CF_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          CF_FILE_ID: ${{ steps.mcpublish.outputs.curseforge-version }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CF_FILE_ID" ]; then
+            echo "::error::CurseForge upload produced no file id — the upload failed. Recover with:"
+            echo "::error::  gh workflow run reupload-curseforge.yml -f tag=$RELEASE_TAG"
+            exit 1
+          fi
+          python3 scripts/modpack/reconcile.py \
+            --verify "$RELEASE_TAG" \
+            --platform curseforge \
+            --curseforge-project "$CF_PROJECT" \
+            --timeout-minutes 30 \
+            --poll-seconds 60

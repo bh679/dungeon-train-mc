@@ -238,7 +238,7 @@ release.yml (REAL release only — cascade ticks are skipped for CurseForge)
   └─ dispatches release-modpack.yml with that file ID
         └─ scripts/modpack/wait-for-approval.py → polls until CurseForge APPROVES that file
         │     not approved within the timeout? → run DEFERS (green + warning), nothing uploaded
-        │     modpack-reconcile.yml's catch-up (every 6h) publishes it once approved ↓
+        │     modpack-reconcile.yml's catch-up (hourly) publishes it once approved ↓
         └─ scripts/modpack/build-manifest.py   → manifest.json
         └─ zip  manifest.json + overrides/      → dungeon-train-<version>.zip
         └─ scripts/modpack/publish-curseforge.sh → uploads to project 1556213
@@ -257,7 +257,7 @@ never approved), the pack was built around an unapproved file, uploaded, and rej
 afterwards — leaving the workflow green and the release silently missing from the pack.
 
 `wait-for-approval.py` asks the real question instead. If the answer is still no when
-`approval_timeout_minutes` (default `60`) runs out, the run **defers** (`--on-timeout defer`):
+`approval_timeout_minutes` (default `300` — the most the 360-min job limit allows after the upload + verify) runs out, the run **defers** (`--on-timeout defer`):
 nothing is uploaded, every later step is skipped, and the run ends green with a warning and a
 step-summary note. It reads `api.curseforge.com` when `CURSEFORGE_API_KEY` is set
 (authoritative: `fileStatus == 4`), otherwise the caching cfwidget mirror — where the file
@@ -266,11 +266,12 @@ never reaches a manifest.
 
 ### The catch-up (why a slow approval is a delay, not a loss)
 
-Approval **routinely takes longer than an hour**, so the deferral above is the normal path.
+Approval **routinely takes longer than an hour** — which is why the wait above is 300 min; the
+deferral now only catches the rare approval slower than that.
 Until Sept 2026 that step *failed* the run instead, and nothing ever retried — the pack sat 41
 of the last 100 releases behind while every one of those DT files had, by then, been approved.
 
-`modpack-reconcile.yml` (every 6h) now runs `scripts/modpack/catch-up.py`, which inverts the
+`modpack-reconcile.yml` (hourly; skipped while a `release-modpack.yml` run is active) now runs `scripts/modpack/catch-up.py`, which inverts the
 question: instead of waiting for approval, it asks *which release is already approved?* A DT
 file being publicly listed on the mod project **is** the approval. If the **newest** GitHub
 release is missing from the pack and its file is listed, it dispatches `release-modpack.yml`
@@ -317,7 +318,7 @@ Two guards now cover it:
 | Guard | Where | What it catches |
 |---|---|---|
 | `reconcile.py --verify <tag>` | last step of `release-modpack.yml` | polls the public listing for up to 30 min and **fails that release's run** if the version never appears |
-| `modpack-reconcile.yml` | scheduled every 6h | **repairs** a deferred release (`catch-up.py` → dispatches the pack once the DT file is approved) and prints published-vs-released for both packs; fails after a 7-day CurseForge stall, which with catch-up in place means catch-up itself is broken |
+| `modpack-reconcile.yml` | scheduled hourly | **repairs** a deferred release (`catch-up.py` → dispatches the pack once the DT file is approved) and prints published-vs-released for both packs; fails after a 7-day CurseForge stall, which with catch-up in place means catch-up itself is broken |
 
 Check drift yourself at any time:
 
