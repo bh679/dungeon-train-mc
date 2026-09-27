@@ -2,7 +2,10 @@ package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.ship.Shipyards;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -26,8 +29,13 @@ import java.util.function.IntPredicate;
  */
 public final class UpsideDownGravity {
 
-    /** Delay before a tick swallowed while frozen is retried — long enough to span the mirror drain. */
-    public static final int FROZEN_RETRY_TICKS = 40;
+    /**
+     * Gravity ticks swallowed while their chunk waited for the mirror, keyed by chunk — exactly the blocks
+     * vanilla would have dropped. {@code UpsideDownMirror.armFallUp} replays each at its <em>mirrored</em>
+     * position once the flip lands. Server-thread only; in-memory (a chunk that unloads first just loses
+     * them, and its blocks stay put — vanilla's own behaviour for an un-ticked gravity block).
+     */
+    private static final Long2ObjectOpenHashMap<LongOpenHashSet> FROZEN = new Long2ObjectOpenHashMap<>();
 
     /**
      * Client-side band test (world-X → in band or entry lead-in). Installed by {@code DungeonTrainClient}
@@ -37,6 +45,28 @@ public final class UpsideDownGravity {
     private static volatile IntPredicate clientBand = x -> false;
 
     private UpsideDownGravity() {}
+
+    /** Remember a gravity tick swallowed at {@code pos} while its chunk is frozen. */
+    public static void recordFrozen(BlockPos pos) {
+        FROZEN.computeIfAbsent(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4), k -> new LongOpenHashSet())
+            .add(pos.asLong());
+    }
+
+    /** Take (and forget) every tick recorded for a chunk; empty when none. */
+    public static LongOpenHashSet drainFrozen(long chunkKey) {
+        LongOpenHashSet set = FROZEN.remove(chunkKey);
+        return set != null ? set : new LongOpenHashSet();
+    }
+
+    /** Forget a chunk's recorded ticks (unload). */
+    public static void forgetFrozen(long chunkKey) {
+        FROZEN.remove(chunkKey);
+    }
+
+    /** Forget everything (overworld unload), so no tick leaks into the next world. */
+    public static void clearFrozen() {
+        FROZEN.clear();
+    }
 
     public static void setClientBand(IntPredicate band) {
         clientBand = band;

@@ -16,8 +16,8 @@ import org.spongepowered.asm.mixin.injection.At;
  *
  * <ul>
  *   <li><b>Frozen until the flip:</b> while the chunk still waits for its deferred mirror, the fall check
- *       reports "supported" and the tick is retried later — so worldgen's persisted ticks can't drop
- *       blocks through the un-flipped terrain.</li>
+ *       reports "supported" and the tick is recorded — so worldgen's persisted ticks can't drop blocks
+ *       through the un-flipped terrain. The mirror replays it at the block's reflected position.</li>
  *   <li><b>Falls up:</b> in the band / entry lead-in the support cell is the one <em>above</em>, so the
  *       block only falls (up — see {@code FallingBlockEntityUpsideDownMixin}) when the cell above is free.</li>
  * </ul>
@@ -38,10 +38,9 @@ public class FallingBlockUpsideDownMixin {
     @WrapOperation(method = "tick",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/FallingBlock;isFree(Lnet/minecraft/world/level/block/state/BlockState;)Z"))
     private boolean dungeontrain$freezeUntilFlipped(BlockState support, Operation<Boolean> original,
-            @Local(argsOnly = true) ServerLevel level, @Local(argsOnly = true) BlockPos pos,
-            @Local(argsOnly = true) BlockState self) {
+            @Local(argsOnly = true) ServerLevel level, @Local(argsOnly = true) BlockPos pos) {
         if (UpsideDownGravity.isFrozen(level, pos)) {
-            level.scheduleTick(pos, self.getBlock(), UpsideDownGravity.FROZEN_RETRY_TICKS);
+            UpsideDownGravity.recordFrozen(pos);   // replayed at the mirrored position after the flip
             return false;
         }
         return original.call(support);

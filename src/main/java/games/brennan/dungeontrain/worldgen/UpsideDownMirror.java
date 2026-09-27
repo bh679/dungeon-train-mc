@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -94,9 +95,11 @@ public final class UpsideDownMirror {
         private final int fallUpCols;
         /** Lowest Y of the reflected ceiling ({@code mirror + ceilingGap}); fall-up is armed at/above it. */
         private final int fallUpFromY;
+        /** {@code 2·mirror + ceilingGap}: a ground-side source at {@code y} reflects to {@code reflectSum − y}. */
+        private final int reflectSum;
 
         private MirrorPlan(int minY, int[] packed, BlockState[] states, int[] beFrom, int[] beTo,
-                           int fallUpCols, int fallUpFromY) {
+                           int fallUpCols, int fallUpFromY, int reflectSum) {
             this.minY = minY;
             this.packed = packed;
             this.states = states;
@@ -104,6 +107,7 @@ public final class UpsideDownMirror {
             this.beTo = beTo;
             this.fallUpCols = fallUpCols;
             this.fallUpFromY = fallUpFromY;
+            this.reflectSum = reflectSum;
         }
 
         /** Number of recorded writes (may be 0 for a band-relevant but all-air chunk). */
@@ -121,6 +125,7 @@ public final class UpsideDownMirror {
         private final IntArrayList beTo = new IntArrayList();
         private int fallUpCols;
         private int fallUpFromY = Integer.MAX_VALUE;
+        private int reflectSum;
 
         PlanBuilder(int minY) {
             this.minY = minY;
@@ -136,14 +141,15 @@ public final class UpsideDownMirror {
             beTo.add(pack(dx, toY, dz, minY));
         }
 
-        void armFallUp(int dx, int fromY) {
+        void armFallUp(int dx, int fromY, int reflectSum) {
             fallUpCols |= 1 << dx;
             fallUpFromY = fromY;
+            this.reflectSum = reflectSum;
         }
 
         MirrorPlan freeze() {
             return new MirrorPlan(minY, packed.toIntArray(), states.toArray(new BlockState[0]),
-                beFrom.toIntArray(), beTo.toIntArray(), fallUpCols, fallUpFromY);
+                beFrom.toIntArray(), beTo.toIntArray(), fallUpCols, fallUpFromY, reflectSum);
         }
     }
 
@@ -250,7 +256,7 @@ public final class UpsideDownMirror {
                 int extent = extentCol[dx];
                 int worldX = chunkMinX + dx;
                 boolean clearFloor = inBand[dx] || inLead[dx] || (inExit[dx] && exitFloorClear[dx]);
-                if (inBand[dx]) plan.armFallUp(dx, mirror + ceilingGap);
+                if (inBand[dx]) plan.armFallUp(dx, mirror + ceilingGap, 2 * mirror + ceilingGap);
 
                 // 1) Snapshot the column into an immutable buffer (skip all-air sections).
                 Arrays.fill(col, AIR);
@@ -428,10 +434,7 @@ public final class UpsideDownMirror {
             sec.setBlockState(dx, ly, dz, ns, false);
             changed = true;
         }
-        if (live != null) {
-            changed |= placeCarriedBlockEntities(live, plan, carried);
-            armFallUp(live, plan);
-        }
+        if (live != null) changed |= placeCarriedBlockEntities(live, plan, carried);
         if (changed) chunk.setUnsaved(true);
     }
 
@@ -474,31 +477,36 @@ public final class UpsideDownMirror {
     }
 
     /**
-     * Schedule a gravity tick for every reflected-ceiling gravity block that now has open air above it —
-     * with gravity reversed in the band it falls up. The mirror writes through the raw section primitive,
-     * which never schedules ticks, and only a write can open the cell above a block, so checking each
-     * written cell and the one under it covers every block the flip exposed.
+     * Replay the gravity ticks swallowed while this chunk waited for the flip
+     * ({@link UpsideDownGravity#recordFrozen}) at each block's <em>mirrored</em> position — the blocks vanilla
+     * would have dropped now fall up instead. Only ground-side sources in band columns reflect into the
+     * reflected ceiling (where fallables are kept); the rest map to anchored terrain and are dropped. A
+     * block that is supported after the flip simply stays, as vanilla's own tick would leave it. Must run
+     * after {@link #apply}.
      */
-    private static void armFallUp(LevelChunk live, MirrorPlan plan) {
-        if (plan.fallUpCols == 0) return;
+    public static int armFallUp(LevelChunk live, MirrorPlan plan, LongOpenHashSet frozen) {
+        if (plan == null || plan.fallUpCols == 0 || frozen.isEmpty()) return 0;
+        int armed = 0;
         var level = live.getLevel();
-        for (int p : plan.packed) {
-            int dx = unpackDx(p);
-            if ((plan.fallUpCols & (1 << dx)) == 0) continue;
-            int y = unpackY(p, plan.minY);
+        int chunkMinX = live.getPos().getMinBlockX();
+        var it = frozen.iterator();
+        while (it.hasNext()) {
+            BlockPos src = BlockPos.of(it.nextLong());
+            if ((plan.fallUpCols & (1 << (src.getX() - chunkMinX))) == 0) continue;
+            int y = plan.reflectSum - src.getY();
             if (y < plan.fallUpFromY) continue;
-            BlockPos pos = worldPos(live, p, plan.minY);
-            armIfExposed(level, live, pos);
-            if (y - 1 >= plan.fallUpFromY) armIfExposed(level, live, pos.below());
+            if (armIfExposed(level, live, new BlockPos(src.getX(), y, src.getZ()))) armed++;
         }
+        return armed;
     }
 
-    private static void armIfExposed(net.minecraft.world.level.Level level, LevelChunk live, BlockPos pos) {
+    private static boolean armIfExposed(net.minecraft.world.level.Level level, LevelChunk live, BlockPos pos) {
         BlockState state = live.getBlockState(pos);
-        if (!(state.getBlock() instanceof Fallable)) return;
-        if (pos.getY() + 1 >= live.getMaxBuildHeight()) return;
-        if (!FallingBlock.isFree(live.getBlockState(pos.above()))) return;
+        if (!(state.getBlock() instanceof Fallable)) return false;
+        if (pos.getY() + 1 >= live.getMaxBuildHeight()) return false;
+        if (!FallingBlock.isFree(live.getBlockState(pos.above()))) return false;
         level.scheduleTick(pos, state.getBlock(), 2);
+        return true;
     }
 
     /** Inline convenience: compute + apply in one call (the precompute-off / cache-miss fallback). */
