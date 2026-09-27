@@ -70,6 +70,12 @@ public final class ApprovedModListFetcher {
                                 return;
                             }
                             ApprovedModList.Payload payload = ApprovedModList.parse(resp.body());
+                            if (payload == null) {
+                                // Unreadable body: keep baked ∪ cache, including the enforce flag.
+                                LOGGER.debug("[DungeonTrain] approved-mod list fetch -> unreadable body");
+                                failed = true;
+                                return;
+                            }
                             ApprovedModList.accept(payload);
                             LOGGER.info("[DungeonTrain] approved-mod list updated from relay "
                                     + "({} approval(s), {} revocation(s), enforce={})",

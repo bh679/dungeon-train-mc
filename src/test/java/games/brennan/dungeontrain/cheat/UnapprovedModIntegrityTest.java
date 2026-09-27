@@ -101,12 +101,11 @@ class UnapprovedModIntegrityTest {
     @DisplayName("Detection runs whether or not enforcement is on — only the consequence is gated")
     void detectionIsIndependentOfEnforcement() {
         // The scan itself never consults the switch; isSessionFreePlay does. Asserting the split
-        // here is what stops a future refactor from making the observe-only period silent.
-        assertTrue(scan(installed("somemod", "1")).contains("somemod v1"));
-        ApprovedModList.setRelayForTest(ApprovedModList.Payload.EMPTY);
+        // here is what keeps the relay kill switch a pure consequence toggle.
+        ApprovedModList.setRelayForTest(new ApprovedModList.Payload(Set.of(), Set.of(), false));
         try {
-            assertTrue(!ApprovedModList.enforce(),
-                "enforcement must default off so detection alone costs a player nothing");
+            assertTrue(scan(installed("somemod", "1")).contains("somemod v1"),
+                "the kill switch must not blind the scan");
         } finally {
             ApprovedModList.setRelayForTest(null);
         }

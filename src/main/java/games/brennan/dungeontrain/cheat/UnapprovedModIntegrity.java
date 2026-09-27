@@ -27,12 +27,11 @@ import java.util.Set;
  * dedicated servers) and cleared on stop. Removing the mod restores normal play on the next boot.
  * Nothing is written to the world or player.</p>
  *
- * <p><b>Enforcement is a relay switch, and it ships OFF</b> ({@link ApprovedModList#enforce}).
+ * <p><b>Enforcement ships ON and the relay can switch it off</b> ({@link ApprovedModList#enforce}).
  * While it is off the scan still runs and still logs what it found, but {@link #isSessionFreePlay}
- * returns false and no run is affected. That is deliberate: the failure direction here is the
- * opposite of the blacklist's — a missing blacklist entry lets one cheat through, a missing
- * APPROVAL free-plays every honest player running that mod — so the list gets measured against the
- * real player base (the relay's Approved Mods page) before it costs anybody anything.</p>
+ * returns false and no run is affected. That kill switch exists because the failure direction here
+ * is the opposite of the blacklist's — a missing blacklist entry lets one cheat through, a missing
+ * APPROVAL free-plays every honest player running that mod.</p>
  *
  * <p><b>Known cheat mods are left to {@link CheatModIntegrity}.</b> They are unapproved too, but
  * naming them twice at login would say the same thing in a vaguer way; the specific "a known cheat
@@ -52,8 +51,8 @@ public final class UnapprovedModIntegrity {
      * display strings; empty when clean (or no server is running). Immutable snapshot, replaced
      * whole — never mutated (volatile: written on the server thread, read from event handlers).
      *
-     * <p>Populated whether or not enforcement is on: the whole point of the observe-only period is
-     * that the detection runs and gets logged while the consequence does not.</p>
+     * <p>Populated whether or not enforcement is on: with the relay kill switch thrown, detection
+     * still runs and gets logged while the consequence does not.</p>
      */
     private static volatile List<String> detected = List.of();
 
@@ -70,7 +69,7 @@ public final class UnapprovedModIntegrity {
     /**
      * The unapproved mods found at this session's boot, e.g. {@code "somemod v1.2.3"} — shown to
      * the player in the login notice so they can see exactly WHAT tripped Free Play. Empty when
-     * clean. Non-empty while enforcement is off is normal and means nothing has been applied.
+     * clean. Non-empty while enforcement is off means nothing has been applied.
      */
     public static List<String> detected() {
         return detected;
@@ -86,9 +85,9 @@ public final class UnapprovedModIntegrity {
             LOGGER.warn("[DungeonTrain] Unapproved mod(s) installed — this session runs in Free Play: {}",
                 String.join(", ", detected));
         } else {
-            // The observe-only line. Worth logging loudly enough to find in a player's log when
-            // they ask why their run WOULD have been Free Play, without warning about a thing that
-            // has not happened.
+            // The kill-switch line. Worth logging loudly enough to find in a player's log when they
+            // ask why their run WOULD have been Free Play, without warning about a thing that has
+            // not happened.
             LOGGER.info("[DungeonTrain] Unapproved mod(s) installed, but the approved-mod list is not "
                 + "enforcing — this session plays normally: {}", String.join(", ", detected));
         }

@@ -48,13 +48,13 @@ import java.util.Set;
  * {@link CheatModList}) so an offline boot still has the last-known list.</p>
  *
  * <p><b>{@link #enforce()} is the switch that decides whether any of this costs a player
- * anything.</b> It ships false and is turned on from the relay. While it is false, unapproved mods
- * are detected and logged but the run is untouched — an observe-only period in which the real
- * impact of the list can be measured before anybody's progress is affected. It is also the kill
- * switch: turning it off returns the whole player base to normal play on their next launch. That
- * matters more here than it did for the blacklist, because the failure direction is inverted — a
- * missing entry on the blacklist lets one cheat through, a missing entry HERE free-plays every
- * honest player running that mod.</p>
+ * anything.</b> It ships ON ({@link #BAKED_ENFORCE}), so an unapproved mod makes the run Free Play
+ * from the first launch, offline included. The relay can turn it off with an explicit
+ * {@code "enforce":false}: the kill switch that returns the whole player base to normal play on
+ * their next launch. It matters more here than it did for the blacklist, because the failure
+ * direction is inverted — a missing entry on the blacklist lets one cheat through, a missing entry
+ * HERE free-plays every honest player running that mod. A payload that does not mention
+ * {@code enforce} (or cannot be read) leaves the current value alone.</p>
  *
  * <p>All writes swap the {@code volatile} snapshots whole (never mutate them); readers only touch
  * volatile state. Relay values are validated ({@link ModIds#isValid}) so a typo'd server-side entry
@@ -82,7 +82,13 @@ public final class ApprovedModList {
     /** Sanitized relay overlays — only ever swapped whole, never mutated. */
     private static volatile Set<String> relayApproved = Set.of();
     private static volatile Set<String> relayRevoked = Set.of();
-    private static volatile boolean enforce = false;
+    /**
+     * Enforcement as this jar ships it: ON. A run with an unapproved mod installed is Free Play from
+     * the very first launch, offline included. The relay can only turn it OFF (or back on) with an
+     * explicit value, which is then cached so the kill switch also holds on offline boots.
+     */
+    static final boolean BAKED_ENFORCE = true;
+    private static volatile boolean enforce = BAKED_ENFORCE;
 
     /**
      * True once the disk cache has been consulted OR a network fetch has landed — either way the
@@ -114,7 +120,7 @@ public final class ApprovedModList {
 
     /**
      * Is enforcement on — i.e. does an unapproved mod actually flip the run to Free Play? Ships
-     * false; only the relay turns it on.
+     * true ({@link #BAKED_ENFORCE}); an explicit relay value (live or cached) overrides it.
      */
     public static boolean enforce() {
         loadDiskCacheOnce();
@@ -158,14 +164,16 @@ public final class ApprovedModList {
         loaded = true;
         relayApproved = payload.approved();
         relayRevoked = payload.revoked();
-        enforce = payload.enforce();
+        if (payload.enforce() != null) enforce = payload.enforce();
         saveDiskCache(payload);
     }
 
-    /** What the relay serves, and what the disk cache holds: two lists and the enforcement flag. */
-    record Payload(Set<String> approved, Set<String> revoked, boolean enforce) {
-        static final Payload EMPTY = new Payload(Set.of(), Set.of(), false);
-    }
+    /**
+     * What the relay serves, and what the disk cache holds: two lists and the enforcement flag.
+     * {@code enforce} is {@code null} when the payload did not say — the current value (baked or
+     * cached) then stands, so a relay that has never been told cannot switch enforcement off.
+     */
+    record Payload(Set<String> approved, Set<String> revoked, Boolean enforce) {}
 
     /** Read the baked resource once per JVM. Best-effort — a missing/corrupt file means "empty". */
     static synchronized void loadBakedOnce() {
@@ -232,9 +240,10 @@ public final class ApprovedModList {
         if (file == null || !Files.exists(file)) return;
         try {
             Payload p = parse(Files.readString(file, StandardCharsets.UTF_8));
+            if (p == null) return;
             relayApproved = p.approved();
             relayRevoked = p.revoked();
-            enforce = p.enforce();
+            if (p.enforce() != null) enforce = p.enforce();
             LOGGER.debug("[DungeonTrain] approved-mod list: loaded {} approval(s), {} revocation(s), "
                 + "enforce={} from {}", relayApproved.size(), relayRevoked.size(), enforce, file);
         } catch (Exception e) {
@@ -245,23 +254,24 @@ public final class ApprovedModList {
 
     /**
      * Parse {@code {"ok":true,"approved":[…],"revoked":[…],"enforce":false}} into a payload.
-     * Defensive at the boundary: any malformed body → the empty payload, never throws. Note that
-     * an unreadable body therefore turns enforcement OFF rather than leaving it on — the safe
-     * direction when we cannot tell what the relay meant.
+     * Defensive at the boundary, never throws: an unreadable body (not JSON, not an object) is
+     * {@code null}, and the caller keeps what it already had — lists AND enforcement. An {@code
+     * enforce} that is missing or not a boolean comes back {@code null} for the same reason: only an
+     * explicit relay value may change it.
      */
     static Payload parse(String body) {
         try {
             JsonElement root = JsonParser.parseString(body);
-            if (!root.isJsonObject()) return Payload.EMPTY;
+            if (root == null || !root.isJsonObject()) return null;
             JsonObject o = root.getAsJsonObject();
             Set<String> approvedIds = ModIds.sanitize(stringsAt(o, "approved"), MAX_IDS);
             Set<String> revokedIds = ModIds.sanitize(stringsAt(o, "revoked"), MAX_IDS);
-            boolean on = o.has("enforce") && o.get("enforce").isJsonPrimitive()
+            Boolean on = o.has("enforce") && o.get("enforce").isJsonPrimitive()
                 && o.getAsJsonPrimitive("enforce").isBoolean()
-                && o.get("enforce").getAsBoolean();
+                ? o.get("enforce").getAsBoolean() : null;
             return new Payload(approvedIds, revokedIds, on);
         } catch (Exception e) {
-            return Payload.EMPTY;
+            return null;
         }
     }
 
@@ -281,7 +291,7 @@ public final class ApprovedModList {
         obj.addProperty("ok", true);
         obj.add("approved", arrayOf(payload.approved()));
         obj.add("revoked", arrayOf(payload.revoked()));
-        obj.addProperty("enforce", payload.enforce());
+        if (payload.enforce() != null) obj.addProperty("enforce", payload.enforce());
         return obj.toString();
     }
 
@@ -322,12 +332,12 @@ public final class ApprovedModList {
         if (payload == null) {
             relayApproved = Set.of();
             relayRevoked = Set.of();
-            enforce = false;
+            enforce = BAKED_ENFORCE;
             loaded = false;
         } else {
             relayApproved = payload.approved();
             relayRevoked = payload.revoked();
-            enforce = payload.enforce();
+            enforce = payload.enforce() != null ? payload.enforce() : BAKED_ENFORCE;
             loaded = true;
         }
     }

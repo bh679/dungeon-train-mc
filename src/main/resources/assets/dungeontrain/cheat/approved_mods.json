@@ -1,7 +1,7 @@
 {
   "comment": [
     "The baked APPROVED-MOD WHITELIST — mods a Dungeon Train run may have installed and still count.",
-    "Anything installed and NOT approved makes the session Free Play (once enforcement is on).",
+    "Anything installed and NOT approved makes the session Free Play (the relay can switch that off).",
     "",
     "Every id here is a real modId as ModList.get().getMods() reports it, NOT a CurseForge/Modrinth",
     "slug: Item Highlighter ships as `highlighter`, Iris Shaders as `iris`, Interactive Player Mobs",

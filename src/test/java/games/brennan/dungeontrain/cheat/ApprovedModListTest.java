@@ -14,6 +14,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -42,21 +43,22 @@ class ApprovedModListTest {
     }
 
     @Test
-    @DisplayName("A malformed body parses to the empty payload rather than throwing")
-    void malformedBodyIsEmpty() {
-        for (String body : new String[]{"", "not json", "[]", "{\"approved\":\"nope\"}"}) {
-            ApprovedModList.Payload p = ApprovedModList.parse(body);
-            assertEquals(Set.of(), p.approved(), body);
-            assertFalse(p.enforce(), body);
+    @DisplayName("An unreadable body parses to null, so the caller keeps what it had")
+    void malformedBodyIsNull() {
+        for (String body : new String[]{"", "not json", "[]", "\"str\""}) {
+            assertNull(ApprovedModList.parse(body), body);
         }
+        // An object with a junk list is still readable — just empty on that list.
+        assertEquals(Set.of(), ApprovedModList.parse("{\"approved\":\"nope\"}").approved());
     }
 
     @Test
-    @DisplayName("enforce defaults to false when the field is missing or not a boolean")
-    void enforceDefaultsOff() {
-        assertFalse(ApprovedModList.parse("{\"approved\":[\"jade\"]}").enforce());
-        assertFalse(ApprovedModList.parse("{\"enforce\":\"true\"}").enforce());
-        assertTrue(ApprovedModList.parse("{\"enforce\":true}").enforce());
+    @DisplayName("enforce is null (unsaid) when the field is missing or not a boolean")
+    void enforceUnsaidWhenMissing() {
+        assertNull(ApprovedModList.parse("{\"approved\":[\"jade\"]}").enforce());
+        assertNull(ApprovedModList.parse("{\"enforce\":\"true\"}").enforce());
+        assertEquals(Boolean.TRUE, ApprovedModList.parse("{\"enforce\":true}").enforce());
+        assertEquals(Boolean.FALSE, ApprovedModList.parse("{\"enforce\":false}").enforce());
     }
 
     @Test
@@ -117,12 +119,30 @@ class ApprovedModListTest {
     }
 
     @Test
-    @DisplayName("Enforcement is off until the relay turns it on")
-    void enforcementIsOffByDefault() {
-        ApprovedModList.setRelayForTest(ApprovedModList.Payload.EMPTY);
-        assertFalse(ApprovedModList.enforce());
+    @DisplayName("Enforcement is baked ON; only an explicit relay value changes it")
+    void enforcementIsBakedOn() {
+        assertTrue(ApprovedModList.BAKED_ENFORCE);
+        ApprovedModList.setRelayForTest(new ApprovedModList.Payload(Set.of(), Set.of(), null));
+        assertTrue(ApprovedModList.enforce(), "a relay that says nothing leaves the baked ON");
+        ApprovedModList.setRelayForTest(new ApprovedModList.Payload(Set.of(), Set.of(), false));
+        assertFalse(ApprovedModList.enforce(), "the relay's explicit false is the kill switch");
         ApprovedModList.setRelayForTest(new ApprovedModList.Payload(Set.of(), Set.of(), true));
         assertTrue(ApprovedModList.enforce());
+    }
+
+    @Test
+    @DisplayName("A payload without enforce doesn't undo an earlier explicit kill switch")
+    void unsaidEnforceKeepsCurrentValue() {
+        ApprovedModList.setRelayForTest(new ApprovedModList.Payload(Set.of(), Set.of(), false));
+        ApprovedModList.accept(new ApprovedModList.Payload(Set.of("jade"), Set.of(), null));
+        assertFalse(ApprovedModList.enforce());
+    }
+
+    @Test
+    @DisplayName("toJson omits an unsaid enforce, so the cache can't invent one")
+    void toJsonOmitsUnsaidEnforce() {
+        String json = ApprovedModList.toJson(new ApprovedModList.Payload(Set.of(), Set.of(), null));
+        assertFalse(json.contains("enforce"), json);
     }
 
     // ---- the baked resource ---------------------------------------------------------------------
