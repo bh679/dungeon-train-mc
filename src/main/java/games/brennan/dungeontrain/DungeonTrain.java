@@ -238,6 +238,11 @@ public class DungeonTrain {
     public DungeonTrain(IEventBus modBus, ModContainer modContainer) {
         modBus.addListener(this::commonSetup);
 
+        // Farmers' Delight: switch its stackable soups off once, before NeoForge loads any COMMON
+        // config, and ask before a menu switches it back on. No-op without the mod; fails open.
+        games.brennan.dungeontrain.cheat.FarmersDelightSoupStacking.init(
+            net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get());
+
         // Bundled Edible Backpacks: in Dungeon Train, backpack space resets on
         // death (the standalone mod's default is persist-through-death). This
         // only steers the sibling's `resetOnDeath = DEFAULT` config value — a

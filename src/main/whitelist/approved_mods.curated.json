@@ -209,6 +209,17 @@
         "rhino"
       ]
     },
+    "farmers_delight": {
+      "why": "Farmer's Delight and its addons: cooking and farming content, approved on the operator's call. Its one setting that changes what a run can carry, stackable soups, is held OFF by Dungeon Train (cheat/FarmersDelightSoupStacking) and turning it back on is Free Play, so the approval does not cover that.",
+      "ids": [
+        "farmersdelight",
+        "cuttingdelight"
+      ],
+      "note": [
+        "cuttingdelight (Cutting Delight, JaronZ) only adds a cutting board with a recipe picker for",
+        "Farmer's Delight cutting recipes. It requires farmersdelight, so it rides on this approval."
+      ]
+    },
     "community_approved": {
       "why": "Approved on the relay's mod-request queue (dt.brennan.games #/mod-requests) after community suggestion, then baked here so offline and first-launch players get them too. Same rule as every other group.",
       "ids": [
