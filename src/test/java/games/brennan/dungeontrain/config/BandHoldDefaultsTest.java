@@ -72,12 +72,18 @@ class BandHoldDefaultsTest {
                 "v7 -> v8 changed only the gaps after the legacy run and between chuncks and stacks");
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 8,
                 "CURRENT_CONFIG_VERSION must be at least 8, or the v7 -> v8 order step never runs");
-        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+        assertEquals(DungeonTrainCommonConfig.V9_WORLDGEN_CYCLE_ORDER,
                 DungeonTrainCommonConfig.V8_WORLDGEN_CYCLE_ORDER
-                        .replace("amplified=5000:beta=3500", "amplified=5000:lost_city=4000:beta=3500"),
-                "v8 -> v9 changed only the legacy run, adding the Lost City era after Amplified");
+                        .replace("chuncks:5000, stacks:5000", "chuncks:2000, mix:4000, stacks:5000"),
+                "v8 -> v9 changed only the chuncks core and added the mix zone");
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 9,
                 "CURRENT_CONFIG_VERSION must be at least 9, or the v8 -> v9 order step never runs");
+        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+                DungeonTrainCommonConfig.V9_WORLDGEN_CYCLE_ORDER
+                        .replace("amplified=5000:beta=3500", "amplified=5000:lost_city=4000:beta=3500"),
+                "v9 -> v10 changed only the legacy run, adding the Lost City era after Amplified");
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 10,
+                "CURRENT_CONFIG_VERSION must be at least 10, or the v9 -> v10 order step never runs");
         assertTrue(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER.contains("spheres:"
                 + DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS + ","));
     }

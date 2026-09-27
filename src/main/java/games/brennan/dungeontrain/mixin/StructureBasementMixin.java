@@ -75,7 +75,7 @@ public abstract class StructureBasementMixin {
                 return;
             }
             // The upside-down band never gets spawner structures (UpsideDownSpawnerStructures).
-            if (UpsideDownSpawnerStructures.appliesTo(level, chunkPos.x)
+            if (UpsideDownSpawnerStructures.appliesTo(level, chunkPos.x, chunkPos.z)
                     && UpsideDownSpawnerStructures.excludesStructure(id)) {
                 cir.setReturnValue(StructureStart.INVALID_START);
                 return;

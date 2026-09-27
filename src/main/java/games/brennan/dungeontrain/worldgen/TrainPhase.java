@@ -223,6 +223,11 @@ public enum TrainPhase {
         if (ChuncksBand.isInBand(overworld, worldX)) {
             return CHUNCKS;
         }
+        // The mix zone remixes the bands behind it chunk by chunk; as a phase it is the tail of chuncks.
+        if (WorldGenCycle.fromConfig().isInMixZone(worldX)
+                && games.brennan.dungeontrain.world.DungeonTrainWorldData.get(overworld).startsWithTrain()) {
+            return CHUNCKS;
+        }
         if (UpsideDownBand.isInBand(overworld, worldX)) {
             return UPSIDE_DOWN;
         }

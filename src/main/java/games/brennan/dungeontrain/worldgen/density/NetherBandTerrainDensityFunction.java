@@ -137,8 +137,13 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
             // Evaluate the band at the edge-waved X so the leading/trailing front undulates across Z rather
             // than starting at one straight X (matched in the biome source + post-process feature).
             int wx = NetherMountainTerrain.wavyX(seed, worldX, worldZ);
-            skip = !NetherMountainTerrain.raises(cycle, wx);
-            t = skip ? 0.0 : NetherMountainTerrain.targetTop(cycle, seed, wx, worldZ,
+            // Mix zone: this column's chunk generates as the band it picked. Resolved per column on a memo
+            // miss only, and deterministic per chunk, so the column memo stays consistent.
+            WorldGenCycle c = cycle.mixPicksAt(worldX)
+                    ? games.brennan.dungeontrain.worldgen.MixBand.cycleFor(cycle, seed, worldX >> 4, worldZ >> 4)
+                    : cycle;
+            skip = !NetherMountainTerrain.raises(c, wx);
+            t = skip ? 0.0 : NetherMountainTerrain.targetTop(c, seed, wx, worldZ,
                     seaLevel, ceiling, netherTop, baseRelief);
             memo.key[idx] = ckey;
             memo.skip[idx] = skip;

@@ -87,6 +87,7 @@ public final class BandStages {
                 spheres(out, core, spheres, exitTaperBlocks, exitVoidBlocks);
             }
             case LEGACY_RUN -> legacy(out, layout);
+            case MIX -> add(out, "Mix", core);
         }
         return List.copyOf(out);
     }

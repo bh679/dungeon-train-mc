@@ -28,6 +28,13 @@ final class WorldGenCycleLayoutTest {
             120, 500, 5000, 600, 5000, 600, 10_000, 8000, 1500, 5000, 0.3, 0.4, 6550, 750, 5000, 8000, 1500, 10_000, 0.08,
             CycleLayoutTest.eraDefaults(), LAYOUT, 0);
 
+    private static WorldGenCycle custom(String order) {
+        CycleLayout l = CycleLayout.parse(order, CycleLayoutTest.FADES, CycleLayoutTest.eraDefaults(), t -> true, w -> {});
+        return new WorldGenCycle(START, 10_000, 40, new int[] {1, 2, 4, 8, 15}, 32, 0, 300, 5000,
+                120, 500, 5000, 600, 5000, 600, 10_000, 8000, 1500, 5000, 0.3, 0.4, 6550, 750, 5000, 8000, 1500, 10_000, 0.08,
+                CycleLayoutTest.eraDefaults(), l, 0);
+    }
+
     /** World X of base coordinate {@code u} on run {@code k}. */
     private static int x(long u, int k) {
         return (int) (START + CycleLayout.runStart(k, P) + (u << k));
@@ -41,7 +48,7 @@ final class WorldGenCycleLayoutTest {
     @DisplayName("period is the run-1 length and the layout is reported")
     void period() {
         assertTrue(C.hasLayout());
-        assertEquals(121_848L, C.period());
+        assertEquals(122_848L, C.period());
         assertEquals(232, C.riseLen());
     }
 
@@ -144,21 +151,29 @@ final class WorldGenCycleLayoutTest {
         assertEquals(0.3, C.chuncksKeepDensityAt(x(c + 1500 + 10)), 1e-9);
         assertTrue(C.isInChuncksBand(x(c + 1500)));
         assertTrue(C.isInChuncksApproachOrBand(x(c - 500)));                 // the 650-block OW gap before it
-        long st = LAYOUT.start(14);                                    // straight after the chuncks core
-        // Chuncks carries on at its core density under the stacks entry fade, then stops at the stacks core.
-        assertTrue(C.isInChuncksStacksCrossfade(x(st)));
-        assertEquals(0.3, C.chuncksKeepDensityAt(x(st + 10)), 1e-9);
-        assertEquals(0.3, C.chuncksKeepDensityAt(x(st + 1499)), 1e-9);
-        assertFalse(C.isInChuncksStacksCrossfade(x(st + 1500)));
-        assertEquals(1.0, C.chuncksKeepDensityAt(x(st + 1500)));
-        assertFalse(C.isInChuncksStacksCrossfade(x(c - 1)));                 // not before chuncks
-        // An overworld gap between them (a custom order) keeps the plain-terrain entry fade.
-        CycleLayout gapped = CycleLayout.parse("ow:100, chuncks:5000, ow:500, stacks:5000", CycleLayoutTest.FADES,
-                CycleLayoutTest.eraDefaults(), t -> true, w -> {});
-        WorldGenCycle g = new WorldGenCycle(START, 10_000, 40, new int[] {1, 2, 4, 8, 15}, 32, 0, 300, 5000,
-                120, 500, 5000, 600, 5000, 600, 10_000, 8000, 1500, 5000, 0.3, 0.4, 6550, 750, 5000, 8000, 1500, 10_000, 0.08,
-                CycleLayoutTest.eraDefaults(), gapped, 0);
-        int gst = (int) (START + gapped.start(3));
+        long m = LAYOUT.start(14);                                     // the mix zone: 2000 of chuncks core, then it
+        assertTrue(C.isInChuncksBand(x(m - 1)));
+        assertFalse(C.isInChuncksBand(x(m)));
+        assertTrue(C.isInMixZone(x(m)));
+        assertFalse(C.isInMixZone(x(m - 1)));
+        assertTrue(C.isInMixZone(x(m + 3999)));
+        long st = LAYOUT.start(15);                                    // straight after the mix zone
+        assertFalse(C.isInMixZone(x(st)));
+        assertTrue(C.isInMixStacksCrossfade(x(st)));                   // the stacks fade after mix takes mix picks
+        assertTrue(C.mixPicksAt(x(st + 1499)));
+        assertFalse(C.mixPicksAt(x(st + 1500)));
+        assertFalse(C.isInChuncksStacksCrossfade(x(st)));
+        assertEquals(1.0, C.chuncksKeepDensityAt(x(st + 10)));
+        // Chuncks straight into stacks (a custom order) carries on at its core density under the stacks fade;
+        // an overworld gap between them keeps the plain-terrain entry fade.
+        WorldGenCycle direct = custom("ow:100, chuncks:5000, stacks:5000");
+        int dst = (int) (START + direct.layout().start(2));
+        assertTrue(direct.isInChuncksStacksCrossfade(dst + 10));
+        assertEquals(0.3, direct.chuncksKeepDensityAt(dst + 1499), 1e-9);
+        assertFalse(direct.isInChuncksStacksCrossfade(dst + 1500));
+        assertEquals(1.0, direct.chuncksKeepDensityAt(dst + 1500));
+        WorldGenCycle g = custom("ow:100, chuncks:5000, ow:500, stacks:5000");
+        int gst = (int) (START + g.layout().start(3));
         assertFalse(g.isInChuncksStacksCrossfade(gst + 10));
         assertEquals(1.0, g.chuncksKeepDensityAt(gst + 10));
         assertEquals(1.0, C.stacksVoidRampAt(x(st + 1500 + 4999)));

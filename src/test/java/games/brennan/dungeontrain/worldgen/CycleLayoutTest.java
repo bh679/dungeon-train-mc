@@ -37,15 +37,15 @@ final class CycleLayoutTest {
     }
 
     @Test
-    @DisplayName("the shipped order parses to 15 slots and the planned run-1 length")
+    @DisplayName("the shipped order parses to 16 slots and the planned run-1 length")
     void shippedGeometry() {
         CycleLayout l = shipped();
-        assertEquals(15, l.count());
+        assertEquals(16, l.count());
         // Lap 1: 2750 + (232+300+3000+300+232) + 3000 + (740+3000+740) + (600+2500+600+6000+600) = 24,594
         // Lap 2: 8000 + 9064 + 8000 + 9480 + (750+6550) + 500 (the sunk approach) = 42,344
         // Lap 3: legacy (480·13 + 5000 + 4000 + 3500 + 4320 + 4000 + 5000 + 2000·4 + 1000 + 200 = 41,260)
-        //        + 650 + 6500 + 6500 = 54,910 (Chuncks runs straight into Stacks)
-        assertEquals(121_848L, l.period());
+        //        + 650 + (1500+2000) + 4000 (the mix zone) + 6500 = 55,910
+        assertEquals(122_848L, l.period());
         assertEquals(2, l.typeCount(Type.NETHER));
         assertEquals(2, l.typeCount(Type.END));
         assertEquals(1, l.typeCount(Type.LEGACY_RUN));
@@ -65,7 +65,9 @@ final class CycleLayoutTest {
         assertEquals(Type.LEGACY_RUN, l.slot(11).type());
         assertEquals(24_594L + 42_344L, l.start(11));
         assertEquals(Style.SUNK, l.slot(10).style());            // the short approach into Amplified
-        assertEquals(Type.STACKS, l.slot(14).type());
+        assertEquals(Type.MIX, l.slot(14).type());
+        assertEquals(4000L, l.length(14));                      // hard-edged: no fades
+        assertEquals(Type.STACKS, l.slot(15).type());
         assertEquals(1, l.occurrence(6));                       // the BetterNether slot is Nether occurrence 1
         assertEquals(0, l.occurrence(1));
     }

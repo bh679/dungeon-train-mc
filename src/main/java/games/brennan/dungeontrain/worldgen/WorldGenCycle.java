@@ -294,6 +294,7 @@ public record WorldGenCycle(long startX, int owGap,
                     case CHUNCKS -> chuncks;
                     case SPHERES -> spheres;
                     case STACKS -> stacks;
+                    case MIX -> DungeonTrainCommonConfig.isMixEnabled();
                 },
                 msg -> LOGGER.warn("[DungeonTrain] worldgenCycleOrder: {}", msg));
         return new WorldGenCycle(
@@ -1076,7 +1077,11 @@ public record WorldGenCycle(long startX, int owGap,
         int ka = CycleLayout.runIndex(offA, p);
         if (ka != CycleLayout.runIndex(offB, p)) return true;
         long rs = CycleLayout.runStart(ka, p);
-        return layout.anyOfTypeIn(t, (offA - rs) >> ka, (offB - rs) >> ka);
+        long ua = (offA - rs) >> ka;
+        long ub = (offB - rs) >> ka;
+        // A mix-zone chunk may pick any band, so the zone counts as influence for every type: the caller
+        // then resolves the chunk's own (mix-shifted) cycle and answers exactly.
+        return layout.anyOfTypeIn(t, ua, ub) || layout.anyOfTypeIn(CycleLayout.Type.MIX, ua, ub);
     }
 
     /** The precomputed {@link Influence} snapshot for this cycle (identity-cached, thread-safe). */
@@ -1508,11 +1513,69 @@ public record WorldGenCycle(long startX, int owGap,
      * to plain overworld — so chuncks fades out as stacks fades in, with no overworld wall between them.
      */
     public boolean isInChuncksStacksCrossfade(int worldX) {
-        if (layout == null || chuncksLen() <= 0L || stacksLen() <= 0L) return false;
+        return stacksFadeAfter(CycleLayout.Type.CHUNCKS, worldX) && chuncksLen() > 0L;
+    }
+
+    /**
+     * True inside a stacks slot's entry fade when the slot straight before it is the mix zone. The same
+     * crossfade as {@link #isInChuncksStacksCrossfade}, but the chunks stacks doesn't claim take a mix pick.
+     */
+    public boolean isInMixStacksCrossfade(int worldX) {
+        return stacksFadeAfter(CycleLayout.Type.MIX, worldX);
+    }
+
+    private boolean stacksFadeAfter(CycleLayout.Type before, int worldX) {
+        if (layout == null || stacksLen() <= 0L) return false;
         int i = slotAt(worldX);
         if (i <= 0 || layout.slot(i).type() != CycleLayout.Type.STACKS
-                || layout.slot(i - 1).type() != CycleLayout.Type.CHUNCKS) return false;
+                || layout.slot(i - 1).type() != before) return false;
         return baseAt(worldX) - layout.start(i) < stacksFadeLen();
+    }
+
+    // ---- mix zone ------------------------------------------------------------------------
+
+    /** True if {@code worldX} lies in a mix slot (layout only; hard-edged, no fades). */
+    public boolean isInMixZone(int worldX) {
+        if (layout == null) return false;
+        int i = slotAt(worldX);
+        return i >= 0 && layout.slot(i).type() == CycleLayout.Type.MIX;
+    }
+
+    /** True where a chunk takes a mix pick: the mix zone itself, or the stacks fade straight after it. */
+    public boolean mixPicksAt(int worldX) {
+        return isInMixZone(worldX) || isInMixStacksCrossfade(worldX);
+    }
+
+    /**
+     * This cycle moved {@code dx} blocks west: {@code shifted(dx).q(x) == q(x + dx)} for every X query,
+     * because every query depends on X only through {@code worldX - startX}. The mix zone hands a chunk
+     * the cycle shifted onto a representative chunk of the band it picked, so every band helper answers
+     * for that band without knowing the zone exists. Absolute-X outputs come back in the shifted frame.
+     */
+    public WorldGenCycle shifted(long dx) {
+        if (dx == 0L) return this;
+        return new WorldGenCycle(startX - dx, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold,
+                coreFade, coreHold, eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade,
+                chuncksHold, chuncksFade, chuncksLeadGap, chuncksKeepDensity, chuncksSliceRatio,
+                spheresHold, spheresFade, spheresLeadGap, stacksHold, stacksFade, stacksLeadGap, stacksDensity,
+                legacy, layout, phaseShift);
+    }
+
+    /** World X where the mix slot of the run containing {@code worldX} starts, or {@code -1} when there is none. */
+    public long mixZoneStartX(int worldX) {
+        if (!isInMixZone(worldX) && !isInMixStacksCrossfade(worldX)) return -1L;
+        int i = layout.firstIndexOf(CycleLayout.Type.MIX);
+        return i < 0 ? -1L : worldOf(worldX, layout.start(i));
+    }
+
+    /** Doubling run index at {@code worldX}; {@code 0} without a layout. */
+    public int runIndexAt(int worldX) {
+        return layout == null ? 0 : runAt(worldX);
+    }
+
+    /** World X of base coordinate {@code u} in doubling run {@code k} (layout only). */
+    public long worldXOfBase(int k, long u) {
+        return startX + CycleLayout.runStart(k, layout.period()) + (u << k);
     }
 
     // ---- spheres band --------------------------------------------------------

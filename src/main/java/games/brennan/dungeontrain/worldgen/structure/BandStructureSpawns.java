@@ -30,7 +30,7 @@ public final class BandStructureSpawns {
     public static boolean inMonsterSpawningStructure(ServerLevel level, BlockPos pos) {
         try {
             if (!level.dimension().equals(Level.OVERWORLD)) return false;
-            if (NetherBand.heightRampAt(level, pos.getX()) <= 0.0) return false;
+            if (NetherBand.heightRampAt(level, pos.getX(), pos.getZ()) <= 0.0) return false;
             return level.structureManager()
                     .getStructureWithPieceAt(pos, holder -> hasMonsterSpawns(holder.value()))
                     .isValid();
