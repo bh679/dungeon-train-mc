@@ -37,13 +37,12 @@ final class BandAdvancementsTest {
     void shippedOrder() {
         List<String> chain = BandAdvancements.chain(parse(CycleLayout.DEFAULT_ORDER));
         assertEquals(List.of(
-                "reached_nether", "reached_wwoo", "reached_void", "reached_end_islands", "reached_bop_end",
+                "reached_nether", "reached_wwoo", "reached_void", "reached_end_islands",
                 "the_upside_down", "reassembly_required",
                 "reached_bop", "reached_better_nether", "reached_lost_city", "reached_better_end", "reached_spheres",
                 "reached_amplified", "reached_beta", "reached_far_lands", "reached_caves_of_chaos", "reached_skylands", "reached_floating",
                 "reached_alpha", "reached_infdev", "reached_classic", "reached_superflat",
                 "reached_chuncks", "reached_stacks",
-                // the BoP End is met on Lap 1 now, so it keeps that place instead of closing the chain
                 "reached_overworld_again", "read_all_nether_starting_books"), chain);
     }
 
@@ -62,7 +61,7 @@ final class BandAdvancementsTest {
         assertEquals("reached_end_islands", chain.get(6));
         assertEquals(chain.size(), new HashSet<>(chain).size());
         assertTrue(chain.containsAll(BandAdvancements.ALL));
-        assertEquals(BandAdvancements.LATER_CYCLES, chain.subList(chain.size() - 3, chain.size()));
+        assertEquals(BandAdvancements.LATER_CYCLES, chain.subList(chain.size() - BandAdvancements.LATER_CYCLES.size(), chain.size()));
     }
 
     @Test
@@ -72,7 +71,7 @@ final class BandAdvancementsTest {
         assertEquals("reached_nether", chain.get(0));
         assertTrue(chain.contains("reached_spheres"));
         assertTrue(chain.indexOf("reached_spheres") > chain.indexOf("reached_nether"));
-        assertEquals(BandAdvancements.LATER_CYCLES, chain.subList(chain.size() - 3, chain.size()));
+        assertEquals(BandAdvancements.LATER_CYCLES, chain.subList(chain.size() - BandAdvancements.LATER_CYCLES.size(), chain.size()));
     }
 
     @Test

@@ -50,8 +50,6 @@ public final class BandAdvancements {
     public static final String VOID = "reached_void";
     public static final String END_ISLANDS = "reached_end_islands";
     public static final String BETTER_END = "reached_better_end";
-    /** An End-islands band in a Biomes O' Plenty lap. */
-    public static final String BOP_END = "reached_bop_end";
     public static final String UPSIDE_DOWN = "the_upside_down";
     public static final String REASSEMBLY = "reassembly_required";
     public static final String WWOO = "reached_wwoo";
@@ -69,11 +67,9 @@ public final class BandAdvancements {
 
     /**
      * The chain's closing links, in the order the second cycle grants them: back on plain overworld,
-     * into its (Biomes O' Plenty) Nether, then its End. Always after every first-cycle band — unless the
-     * layout meets one of them on the first cycle already ({@link #chain} keeps the earlier place; the
-     * shipped order's BoP End does).
+     * into its (Biomes O' Plenty) Nether. Always after every first-cycle band.
      */
-    public static final List<String> LATER_CYCLES = List.of(OVERWORLD_AGAIN, NETHER_RETURN, BOP_END);
+    public static final List<String> LATER_CYCLES = List.of(OVERWORLD_AGAIN, NETHER_RETURN);
 
     /** The advancement the chain hangs from: the first band advancement's parent. */
     public static final String ANCHOR = "carts_100";
@@ -89,10 +85,7 @@ public final class BandAdvancements {
             legacyId(LegacyBandKind.SKYLANDS),
             legacyId(LegacyBandKind.FLOATING), legacyId(LegacyBandKind.ALPHA), legacyId(LegacyBandKind.INFDEV),
             legacyId(LegacyBandKind.CLASSIC), legacyId(LegacyBandKind.SUPERFLAT),
-            CHUNCKS, STACKS,
-            // The shipped order meets the BoP End on Lap 1 (the joined End's second piece), so chain()
-            // places it there; this slot is only the fallback for a layout whose End turns BoP later.
-            BOP_END);
+            CHUNCKS, STACKS);
 
     private BandAdvancements() {}
 
@@ -143,7 +136,6 @@ public final class BandAdvancements {
                 out.add(VOID);
                 out.add(END_ISLANDS);
                 if (better) out.add(BETTER_END);
-                if (bop) out.add(BOP_END);
             }
             case UPSIDE_DOWN -> {
                 out.add(UPSIDE_DOWN);
@@ -210,8 +202,6 @@ public final class BandAdvancements {
         t.add(entry(BOP, (l, x) -> overworldStyle(l, x) == CycleLayout.Style.BOP));
         t.add(entry(BETTER_END, (l, x) -> isInEndIslands(l, x)
                 && cycle(l).isBetterEndAt(x)));
-        t.add(entry(BOP_END, (l, x) -> isInEndIslands(l, x)
-                && cycle(l).isBopEndAt(x)));
         t.add(entry(SPHERES, SpheresBand::isInBand));
         for (LegacyBandKind kind : LegacyBandKind.values()) {
             if (kind == LegacyBandKind.LARGE_BIOMES) continue;   // built, not shipped — see LegacyBandKind
