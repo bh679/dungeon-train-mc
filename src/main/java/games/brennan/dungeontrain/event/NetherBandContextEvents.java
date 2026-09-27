@@ -142,6 +142,7 @@ public final class NetherBandContextEvents {
             NetherCoreGeometry.Source netherCore = NetherCoreGeometry.Source.resolve(server, bedY);
 
             games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.publish(overworld);
+            games.brennan.dungeontrain.worldgen.legacy.SuperflatHeight.publish(overworld);
             games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.publish(overworld);
             NetherBandContext.publish(new NetherBandContext(
                     enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
@@ -166,6 +167,7 @@ public final class NetherBandContextEvents {
             // Never block server start on the band snapshot — a missing context just leaves terrain vanilla.
             NetherBandContext.clear();
             games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.clear();
+            games.brennan.dungeontrain.worldgen.legacy.SuperflatHeight.clear();
             games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.clear();
             OverworldStretchBiomes.clear();
             UpsideDownTrackFlatten.clear();
@@ -181,6 +183,7 @@ public final class NetherBandContextEvents {
         // After stopServer(): the last generated chunks have been baked and saved against a live context.
         NetherBandContext.clear();
         games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.clear();
+        games.brennan.dungeontrain.worldgen.legacy.SuperflatHeight.clear();
         games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.clear();
         games.brennan.dungeontrain.worldgen.legacy.LegacyBands.releaseGenerators();
         OverworldStretchBiomes.clear();

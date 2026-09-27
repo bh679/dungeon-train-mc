@@ -165,16 +165,55 @@ final class BandLocatorTest {
         }
     }
 
+    /** Pure stand-in for {@code BandLabel.bandAt}: the set of bands a column is in, so any band or style change reads as a new label. */
+    private static String label(Map<String, IntPredicate> bands, int x) {
+        StringBuilder out = new StringBuilder();
+        for (Map.Entry<String, IntPredicate> band : bands.entrySet()) {
+            if (band.getValue().test(x)) out.append(band.getKey()).append(',');
+        }
+        return out.toString();
+    }
+
     @Test
-    @DisplayName("/dtp registers every phase token and alias once, plus the styled targets")
+    @DisplayName("/dtp next: chained hops land on each band boundary in turn across a whole run")
+    void nextBandChain() {
+        WorldGenCycle c = cycle(CycleLayout.DEFAULT_ORDER);
+        Map<String, IntPredicate> bands = bands(c);
+        Set<String> seen = new HashSet<>();
+        int x = (int) START;
+        long end = START + c.period();
+        int hops = 0;
+        while (x < end) {
+            String current = label(bands, x);
+            OptionalInt entry = BandLocator.nextBandStartX(c, col -> !label(bands, col).equals(current), x);
+            assertTrue(entry.isPresent(), "no next band from " + x);
+            int next = entry.getAsInt();
+            assertTrue(next > x, "next band " + next + " not ahead of " + x);
+            assertFalse(label(bands, next).equals(current), "entry " + next + " is still " + current);
+            assertEquals(current, label(bands, next - 1), "entry " + next + " is not the first column of the next band");
+            seen.add(label(bands, next));
+            x = next;
+            assertTrue(++hops < 500, "runaway hop chain");
+        }
+        for (String name : List.of("nether", "end", "upside_down", "spheres", "chuncks", "stacks")) {
+            assertTrue(seen.stream().anyMatch(l -> l.contains(name + ",")), name + " never reached by /dtp next");
+        }
+    }
+
+    @Test
+    @DisplayName("/dtp registers every stage once — phase tokens, every legacy era, the styled targets, no aliases")
     void targetTokens() {
         Set<String> tokens = new HashSet<>();
         for (DtpTarget t : DtpTarget.all()) assertTrue(tokens.add(t.token()), "duplicate /dtp token " + t.token());
         for (TrainPhase p : TrainPhase.values()) assertTrue(tokens.contains(p.token()), p.token());
-        for (String alias : TrainPhase.aliases().keySet()) assertTrue(tokens.contains(alias), alias);
-        for (String styled : List.of("better_nether", "better_end", "wwoo", "bop", "reassembly")) {
+        for (String alias : TrainPhase.aliases().keySet()) assertFalse(tokens.contains(alias), "alias listed twice: " + alias);
+        for (LegacyBandKind k : LegacyBandKind.values()) {
+            assertTrue(tokens.contains(k.name().toLowerCase(java.util.Locale.ROOT)), "legacy era " + k + " unreachable");
+        }
+        for (String styled : List.of("better_nether", "better_end", "wwoo", "bop", "reassembly", "superflat")) {
             assertTrue(tokens.contains(styled), styled);
         }
         assertEquals(TrainPhase.CAVES_OF_CHAOS, TrainPhase.byToken("chaos"));
+        assertFalse(tokens.contains("next"), "a band token would shadow /dtp next");
     }
 }

@@ -19554,6 +19554,126 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "disable-mod-gear-ores",
+      "version": "0.975.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "loot",
+        "balance"
+      ],
+      "title": "Gear stays on Dungeon Train's own progression",
+      "summary": "The biome mods bundled with Dungeon Train no longer add their own armour, weapons, tools, ingots or ores. Their landscapes and building blocks stay, but they can no longer hand you a shortcut past the gear the game is balanced around.",
+      "highlights": [
+        "Their armour, weapons and tools can't be crafted and no longer turn up in chests",
+        "Their ores no longer generate, and their ingots are gone too",
+        "Mobs that used to spawn wearing that gear now wear iron or diamond instead"
+      ],
+      "pr": 1587,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "upside-down-no-spawner-structures",
+      "version": "0.976.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "mobs"
+      ],
+      "title": "No more monsters raining from the ceiling",
+      "summary": "In one of the stranger stretches of the journey, hidden monster spawners no longer hang out of reach overhead, dropping mobs that fall straight past you.",
+      "highlights": [
+        "No more mobs tumbling out of spawners you can never reach."
+      ],
+      "pr": 1590,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "shorter-lap3-gaps-crossfade",
+      "version": "0.977.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Fewer lulls in the late journey",
+      "summary": "The quiet overworld stretches between some of the stranger places late in the run are shorter or gone, and one strange place now melts straight into the next.",
+      "highlights": [
+        "Less waiting between the strange places deep into a run.",
+        "A smoother handover where two of them meet."
+      ],
+      "pr": 1591,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "upsidedown-reverse-gravity",
+      "version": "0.977.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Sand knows which way is down - even when down is up",
+      "summary": "In one of the stranger stretches of the journey, sand and gravel no longer tumble out of the world before it has settled \u2014 and once it has, they fall the way that place says they should.",
+      "highlights": [
+        "Sand and gravel wait for the world to settle before they fall.",
+        "Suspicious sand and gravel turn up there too, loot and all."
+      ],
+      "pr": 1589,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "superflat-band-villages",
+      "version": "0.977.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Villages in a stretch that had none",
+      "summary": "One of the stranger stretches of the journey used to be completely empty. Villages now turn up there as often as they would anywhere else, standing on the ground beside the line.",
+      "highlights": [
+        "Villages generate in a stretch of the journey that never had them.",
+        "Only land you haven't explored yet gets them."
+      ],
+      "pr": 1593,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dtp-every-stage-and-subsections",
+      "version": "0.978.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "internal"
+      ],
+      "title": "Better testing tools",
+      "summary": "Behind-the-scenes improvements to the tools used to test the journey, so future updates can be checked more thoroughly.",
+      "highlights": [],
+      "pr": 1592,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
