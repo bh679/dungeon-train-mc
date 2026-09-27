@@ -19848,13 +19848,13 @@
       ],
       "pr": 1603,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.983.0",
+      "released_at": "2026-09-27T10:54:10Z"
     },
     {
       "id": "midrun-config-free-play",
-      "version": "0.983.0",
+      "version": "0.984.0",
       "type": "feat",
       "tags": [
         "feature",
