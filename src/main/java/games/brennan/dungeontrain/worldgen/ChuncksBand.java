@@ -101,11 +101,11 @@ public final class ChuncksBand {
         if (density >= 1.0) return Kind.FULL;                        // outside the band + fade → normal terrain
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
         if (!data.startsWithTrain()) return Kind.FULL;               // no train → no bands
-        if (cycle.isInChuncksStacksCrossfade(chunkX << 4)
+        if ((cycle.isInChuncksStacksCrossfade(chunkX << 4) || cycle.isInStacksExitFade(chunkX << 4))
                 && StacksBand.kindOf(overworld, chunkX, chunkZ) != StacksBand.Kind.TERRAIN) {
-            return Kind.FULL;                                        // chuncks→stacks crossfade: stacks owns this chunk
+            return Kind.FULL;                                        // stacks crossfade / exit fade: stacks owns this chunk
         }
-        return cachedKind(data.getGenerationSeed(), chunkX, chunkZ, density, cycle.chuncksSliceRatio());
+        return cachedKind(data.getGenerationSeed(), chunkX, chunkZ, density, cycle.chuncksSliceRatioAt(chunkX << 4));
     }
 
     /**

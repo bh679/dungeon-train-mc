@@ -124,4 +124,44 @@ final class WorldGenCycleMirrorTest {
         }
         assertFalse(C.netherInfluence(START - BUFFER / 2, margin));
     }
+
+    @Test
+    @DisplayName("stacks fades out into overworld over its last 300 blocks — at the run's end and behind spawn")
+    void stacksExitFade() {
+        long fade = WorldGenCycle.STACKS_EXIT_FADE_BLOCKS;
+        int last = LAYOUT.count() - 1;
+        assertEquals(CycleLayout.Type.STACKS, LAYOUT.slot(last).type());
+        for (int k = 0; k <= 1; k++) {
+            int edgeF = fx(P - 1, k);                                      // last stacks base block, forward run k
+            int edgeB = bx(P - 1, k);                                      // …and reversed run k (next to the buffer)
+            for (int x : new int[] {edgeF, edgeB}) {
+                assertTrue(C.isInStacksExitFade(x));
+                assertEquals(1.0 / fade, C.stacksVoidRampAt(x), 1e-9);
+                assertEquals(1.0 + (0.3 - 1.0) / fade, C.chuncksKeepDensityAt(x), 1e-9);
+                assertEquals(0.4 / fade, C.chuncksSliceRatioAt(x), 1e-9);   // whole columns at the overworld edge
+            }
+            for (int x : new int[] {fx(P - fade, k), bx(P - fade, k)}) {
+                assertTrue(C.isInStacksExitFade(x));
+                assertEquals(1.0, C.stacksVoidRampAt(x), 1e-9);
+                assertEquals(0.3, C.chuncksKeepDensityAt(x), 1e-9);
+                assertEquals(0.4, C.chuncksSliceRatioAt(x), 1e-9);
+            }
+            for (int x : new int[] {fx(P - fade - 1, k), bx(P - fade - 1, k)}) {
+                assertFalse(C.isInStacksExitFade(x));
+                assertEquals(1.0, C.stacksVoidRampAt(x));
+                assertEquals(1.0, C.chuncksKeepDensityAt(x));
+            }
+        }
+        // the ramp falls monotonically across the zone, and the overworld beyond is untouched
+        double prev = 2.0;
+        for (long u = P - fade; u < P; u++) {
+            double r = C.stacksVoidRampAt(fx(u, 0));
+            assertTrue(r < prev);
+            prev = r;
+        }
+        assertEquals(0.0, C.stacksVoidRampAt(fx(0, 1)));
+        assertEquals(0.0, C.stacksVoidRampAt((int) (START - 1)));
+        assertEquals(0.0, C.stacksVoidRampAt((int) (START - BUFFER)));
+        assertEquals(1.0, C.chuncksKeepDensityAt((int) (START - BUFFER)));
+    }
 }
