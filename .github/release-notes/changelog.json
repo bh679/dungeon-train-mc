@@ -19718,6 +19718,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "upside-down-track-flatten",
+      "version": "0.981.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "A clearer run through the strange stretches",
+      "summary": "In one of the stranger stretches of the journey, the line no longer ploughs through mountains. The land settles low around the track, with peaks crowding in close in places and standing back across open ground in others.",
+      "highlights": [
+        "Mountains stay beside the track instead of in its way, sometimes close enough to touch.",
+        "Patches of the landscape beside the line that were left unfinished now settle properly."
+      ],
+      "pr": 1596,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

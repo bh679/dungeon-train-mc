@@ -20,6 +20,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
+import java.util.function.LongPredicate;
 
 /**
  * Realises the <b>upside-down band</b> ({@link UpsideDownBand}) by mirroring each in-band column of
@@ -97,12 +98,22 @@ public final class WorldUpsideDownEvents {
      * neighbourhood is now loaded (so its deferred write can pass the {@link #neighboursFull} guard).
      * Called from {@link #onChunkLoad} for every overworld load: the newly-loaded chunk may be the last
      * neighbour any of its 8 surrounding pending chunks (or itself) was waiting on.
+     *
+     * <p>The loading chunk {@code (cx,cz)} counts as loaded even though {@code getChunkNow} can't see it
+     * yet: NeoForge fires {@code ChunkEvent.Load} inside the FULL status task, before the chunk is
+     * published as FULL. Without that, the last neighbour to arrive — always the one whose Load is firing —
+     * never completed anybody's 3×3, so promotion fell through to the drain's idle-only reconcile, and
+     * chunks the train outran unloaded un-mirrored. Promotion is only a scheduling hint: the drain re-runs
+     * the real {@link #neighboursFull} guard before writing, by which time the chunk is published.</p>
      */
     public static void promoteNeighbourhood(ServerLevel level, DungeonTrainWorldData data, int cx, int cz) {
+        long loading = ChunkPos.asLong(cx, cz);
+        var cache = level.getChunkSource();
+        LongPredicate loaded = k -> k == loading || cache.getChunkNow(ChunkPos.getX(k), ChunkPos.getZ(k)) != null;
         for (long key : promotableKeys(cx, cz,
                 data.pendingMirrorChunks()::contains,
                 data.readyMirrorChunks()::contains,
-                k -> neighboursFull(level, ChunkPos.getX(k), ChunkPos.getZ(k)))) {
+                k -> neighbourhoodLoaded(ChunkPos.getX(k), ChunkPos.getZ(k), loaded))) {
             data.promoteMirrorChunk(key);
         }
     }
@@ -227,9 +238,14 @@ public final class WorldUpsideDownEvents {
      */
     public static boolean neighboursFull(ServerLevel level, int cx, int cz) {
         var cache = level.getChunkSource();
+        return neighbourhoodLoaded(cx, cz, k -> cache.getChunkNow(ChunkPos.getX(k), ChunkPos.getZ(k)) != null);
+    }
+
+    /** True iff {@code isLoaded} holds for the chunk {@code (cx,cz)} and all 8 of its neighbours. Pure. */
+    public static boolean neighbourhoodLoaded(int cx, int cz, LongPredicate isLoaded) {
         for (int dz = -1; dz <= 1; dz++) {
             for (int dx = -1; dx <= 1; dx++) {
-                if (cache.getChunkNow(cx + dx, cz + dz) == null) return false;
+                if (!isLoaded.test(ChunkPos.asLong(cx + dx, cz + dz))) return false;
             }
         }
         return true;

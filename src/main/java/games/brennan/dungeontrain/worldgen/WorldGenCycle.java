@@ -1360,6 +1360,30 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * True if {@code worldX} lies anywhere the upside-down mirror touches — entry lead-in, band, or exit
+     * crossfade. The stretch whose source terrain {@code UpsideDownTrackFlatten} keeps low near the track.
+     */
+    public boolean isInUpsideDownStretch(int worldX) {
+        return isInUpsideDownBand(worldX) || isInUpsideDownEntryLead(worldX) || isInUpsideDownExitFade(worldX);
+    }
+
+    /**
+     * True iff ANY x′ in {@code [worldX − margin, worldX + margin]} could lie in the upside-down stretch
+     * ({@link #isInUpsideDownStretch}) of some cycle repeat. O(1) and conservative in the same way as
+     * {@link #netherInfluence} — a {@code false} proves the whole window is clear of the stretch, a
+     * {@code true} may be a false positive (it also covers the trailing exit gap, and a layout window is
+     * widened by the entry lead so the lead-in inside the preceding End slot is never missed).
+     */
+    public boolean upsideDownInfluence(long worldX, int margin) {
+        long lead = udEntryLeadLen();
+        int m = (int) Math.min(Integer.MAX_VALUE, Math.max(0, margin) + lead);
+        if (layout != null) return layoutInfluence(CycleLayout.Type.UPSIDE_DOWN, worldX, m);
+        long len = upsideDownLen() + udExitFadeLen();
+        if (len <= 0L) return false;
+        return influence().contains(worldX, m, udStart(), len);
+    }
+
+    /**
      * Overworld-reveal ramp {@code 0..1} across the exit crossfade: {@code 0} at the band's trailing
      * edge (full mirror, no overworld yet) climbing to {@code 1} at the zone end (solid overworld). 0
      * outside the zone. Drives how much of the normal terrain is un-eroded back in
