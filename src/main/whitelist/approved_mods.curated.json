@@ -43,105 +43,6 @@
         "kotlinforforge"
       ]
     },
-    "dungeon_train": {
-      "why": "Dungeon Train itself, its required physics engine, and the mods we ship inside our own jar or as siblings. Every player has these.",
-      "ids": [
-        "dungeontrain",
-        "sable",
-        "sablecompanion",
-        "veil",
-        "sablejade",
-        "sable_player_ragdoll",
-        "discordpresence",
-        "tradeeverything",
-        "adventureitemnames",
-        "adventureitemstats",
-        "playermob",
-        "enderchestpersistence",
-        "ediblebackpacks",
-        "joml-primitives",
-        "keeptrim",
-        "dungeonbackup",
-        "sable_fence_trapdoor_fix",
-        "sable_pathfinder",
-        "pigmanvillagers",
-        "streamdetect",
-        "dpibypassdetect"
-      ]
-    },
-    "required_dependencies": {
-      "why": "Third-party mods Dungeon Train declares as REQUIRED in neoforge.mods.toml — the game will not load without them, so every player has them. Paintings are Fast Paintings blocks; every second Nether/End band is BetterNether/BetterEnd; odd overworld laps are WWOO and Biomes O' Plenty.",
-      "ids": [
-        "fastpaintings",
-        "betternether",
-        "betterend",
-        "bclib",
-        "wover",
-        "wunderlib",
-        "wwoo",
-        "biomesoplenty"
-      ]
-    },
-    "optional_compat": {
-      "why": "Mods Dungeon Train declares an optional compat entry for in neoforge.mods.toml and has tested against. Vivecraft is VR: it changes how you play, not what the game gives you.",
-      "ids": [
-        "vivecraft"
-      ]
-    },
-    "modpack_roster": {
-      "why": "Every mod either modpack bundles (modpack/modpack.config.json optional_mods), whether it ships on by default or opt-in. Approving these is not a judgement call — we put them on the player's disk.",
-      "ids": [
-        "sodium",
-        "iris",
-        "ferritecore",
-        "modernfix",
-        "jade",
-        "appleskin",
-        "creativecore",
-        "ambientsounds",
-        "advancementplaques",
-        "betteradvancements",
-        "iceberg",
-        "lithostitched",
-        "controlling",
-        "searchables",
-        "equipmentcompare",
-        "highlighter",
-        "pickupnotifier",
-        "puzzleslib",
-        "overloadedarmorbar",
-        "khi",
-        "scribble",
-        "clumps",
-        "shulkerboxtooltip",
-        "trashslot",
-        "balm",
-        "kuma_api",
-        "bookshelf",
-        "prickle",
-        "supermartijn642configlib",
-        "durabilitytooltip",
-        "enchdesc",
-        "crash_assistant",
-        "mousetweaks",
-        "nemos_inventory_sorting",
-        "smoothswapping",
-        "jei",
-        "punchy",
-        "effortlessbuilding",
-        "distanthorizons",
-        "tectonic",
-        "worldedit",
-        "particle_effects",
-        "shulkerbox"
-      ],
-      "note": [
-        "worldedit is here because the modpack ships it, not because it is harmless — it can build",
-        "anything from thin air. Its commands are not on CommandAllowlist, so USING it still taints",
-        "the run; only having it installed does not. Same use-not-presence split as Effortless",
-        "Building (see EffortlessBuildingGate)."
-      ]
-    },
     "performance": {
       "why": "Frame rate and memory only. They change nothing a player can get.",
       "ids": [
@@ -160,6 +61,7 @@
     "visual": {
       "why": "How the game looks and animates. Cosmetic: no reach, no resources, no information a vanilla player lacks.",
       "ids": [
+        "sable_player_ragdoll",
         "entity_texture_features",
         "entity_model_features",
         "skinlayers3d",
@@ -257,6 +159,7 @@
     "libraries": {
       "why": "Do nothing on their own — they arrive as a dependency of something else, and that something else still has to be approved in its own right. Approving the library layer costs nothing and stops a player being free-played by their mod's plumbing.",
       "ids": [
+        "lithostitched",
         "cloth_config",
         "architectury",
         "geckolib",

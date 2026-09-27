@@ -1,0 +1,164 @@
+// generateApprovedMods — the baked Free Play whitelist, assembled at build time.
+//
+// Rule (Brennan, 2026-09-27): every mod the modpack ships, every sibling, every dependency is
+// approved AUTOMATICALLY unless he says otherwise. Hand-maintaining those ids is how the relay
+// review found our own jarJar'd siblings missing and 13 store slugs that can never match a modId.
+// So the four "it's ours" groups are generated from the files that already define membership:
+//
+//   dungeon_train          mod_id + the [[mods]] of every jarJar'd jar (recursing into its own jarjar/)
+//   required_dependencies  [[dependencies.<mod_id>]] type="required" in the mods.toml template
+//   optional_compat        [[dependencies.<mod_id>]] type="optional"
+//   modpack_roster         modpack/modpack.config.json: sable + optional_mods[].mod_ids
+//                          (real modIds read from each pinned jar by scripts/modpack/check-mod-ids.py;
+//                          an entry with "whitelist": false is left out — Brennan's opt-out)
+//
+// Everything else (performance, visual, libraries, …) is judged by hand and lives in
+// src/main/whitelist/approved_mods.curated.json. The output keeps the resource path
+// ApprovedModList reads, so the loader and the relay's copy of the file are unchanged.
+// An id appears once: platform first, then the generated groups, then the curated rest.
+
+def curatedFile = file('src/main/whitelist/approved_mods.curated.json')
+def modsTomlFile = file('src/main/templates/META-INF/neoforge.mods.toml')
+def modpackFile = file('modpack/modpack.config.json')
+def outDir = layout.buildDirectory.dir('generated/sources/approvedMods')
+def modIdPattern = ~/^[a-z][a-z0-9_]{1,63}$/
+
+// Only the jars we embed, not their transitive deps — matching what jarJar puts in our jar.
+def jarJarJars = configurations.detachedConfiguration(
+        *configurations.jarJar.dependencies.collect { it.copy() }).tap { transitive = false }
+
+// modIds declared by the [[mods]] tables of a mods.toml (dependency tables are ignored).
+def tomlModIds = { String text ->
+    def ids = []
+    def inMods = false
+    text.eachLine { raw ->
+        def line = raw.split('#', 2)[0].trim()
+        if (line.startsWith('[')) { inMods = line.replace(' ', '') == '[[mods]]'; return }
+        def m = line =~ /modId\s*=\s*["']([^"']+)["']/
+        if (inMods && m.find()) ids << m.group(1)
+    }
+    ids
+}
+
+// Every modId a jar loads: its own [[mods]] plus each META-INF/jarjar/*.jar, recursively.
+// A plain library (no mods.toml, e.g. joml-primitives) contributes nothing — NeoForge doesn't list it.
+def jarModIds
+jarModIds = { byte[] data ->
+    def ids = []
+    def nested = []
+    new java.util.zip.ZipInputStream(new ByteArrayInputStream(data)).withCloseable { zip ->
+        for (def e = zip.nextEntry; e != null; e = zip.nextEntry) {
+            if (e.name in ['META-INF/neoforge.mods.toml', 'META-INF/mods.toml']) {
+                ids.addAll(tomlModIds(new String(zip.readAllBytes(), 'UTF-8')))
+            } else if (e.name.startsWith('META-INF/jarjar/') && e.name.endsWith('.jar')) {
+                nested << zip.readAllBytes()
+            }
+        }
+    }
+    nested.each { ids.addAll(jarModIds(it)) }
+    ids
+}
+
+tasks.register('generateApprovedMods') {
+    inputs.file curatedFile
+    inputs.file modsTomlFile
+    inputs.file modpackFile
+    inputs.files jarJarJars
+    inputs.property 'modId', mod_id
+    outputs.dir outDir
+
+    doLast {
+        def slurper = new groovy.json.JsonSlurper()
+        def curated = slurper.parse(curatedFile)
+        def selfId = mod_id as String
+
+        // dungeon_train: us + everything we embed.
+        def embedded = [selfId]
+        jarJarJars.files.sort { it.name }.each { embedded.addAll(jarModIds(it.bytes)) }
+
+        // required_dependencies / optional_compat: the mods.toml template, split by type.
+        def declared = [required: [], optional: []]
+        def blocks = modsTomlFile.text.split(/(?m)^\s*\[\[/)
+        blocks.findAll { it.startsWith('dependencies.') }.each { block ->
+            def id = (block =~ /modId\s*=\s*"([^"]+)"/)
+            def type = (block =~ /type\s*=\s*"([^"]+)"/)
+            if (id.find() && type.find() && !id.group(1).contains('$')) {
+                declared.get(type.group(1), []) << id.group(1)
+            }
+        }
+
+        // modpack_roster: the real modIds every whitelisted modpack entry was verified to load.
+        def config = slurper.parse(modpackFile)
+        def roster = []
+        def missing = []
+        ([['Sable', config.sable]] + config.optional_mods.collect { [it.name ?: it.slug, it] }).each { label, entry ->
+            if (entry.whitelist == false) return
+            if (!entry.mod_ids) { missing << label; return }
+            roster.addAll(entry.mod_ids)
+        }
+        if (missing) {
+            throw new GradleException("modpack.config.json entries without mod_ids: ${missing.join(', ')}. "
+                + 'Run `python3 scripts/modpack/check-mod-ids.py --fill`, or set "whitelist": false.')
+        }
+
+        def generated = new LinkedHashMap()
+        generated.dungeon_train = [
+            why: 'Dungeon Train itself and every mod shipped inside our jar (siblings, bundled libraries). '
+               + 'GENERATED from the jarJar dependencies in build.gradle.',
+            ids: embedded]
+        generated.required_dependencies = [
+            why: 'Mods Dungeon Train declares as REQUIRED in neoforge.mods.toml — the game will not load '
+               + 'without them, so every player has them. GENERATED from the mods.toml template.',
+            ids: declared.required]
+        generated.optional_compat = [
+            why: 'Mods Dungeon Train declares an optional compat entry for in neoforge.mods.toml and has '
+               + 'tested against. GENERATED from the mods.toml template.',
+            ids: declared.optional]
+        generated.modpack_roster = [
+            why: 'Every mod either modpack ships (modpack/modpack.config.json), on by default or opt-in. '
+               + 'Approving these is not a judgement call — we put them on the player\'s disk. '
+               + 'GENERATED from each entry\'s mod_ids (read from the pinned jar).',
+            ids: roster]
+
+        // Assemble: platform, generated, then the remaining curated groups — each id once.
+        def seen = new HashSet<String>()
+        def bad = []
+        def take = { List ids ->
+            ids.collect { (it as String).trim().toLowerCase() }.findAll { id ->
+                if (!(id ==~ modIdPattern)) { bad << id; return false }
+                seen.add(id)
+            }
+        }
+        def groups = new LinkedHashMap()
+        def curatedGroups = curated.groups as Map
+        def ordered = [:]
+        if (curatedGroups.platform) ordered.platform = curatedGroups.platform
+        ordered.putAll(generated)
+        curatedGroups.each { k, v -> if (k != 'platform') ordered[k] = v }
+        ordered.each { key, group ->
+            def out = new LinkedHashMap(group as Map)
+            out.ids = take(group.ids as List)
+            if (out.ids) groups[key] = out
+        }
+        if (bad) {
+            throw new GradleException("Not modIds (store slug pasted in?): ${bad.unique().join(', ')}")
+        }
+
+        def result = new LinkedHashMap()
+        result.comment = ['GENERATED by the generateApprovedMods Gradle task (gradle/approved-mods.gradle) — do not edit.',
+                          'Hand-curated groups live in src/main/whitelist/approved_mods.curated.json.'] + (curated.comment ?: [])
+        result.prefixes = curated.prefixes ?: []
+        result.prefixesWhy = curated.prefixesWhy ?: []
+        result.groups = groups
+
+        def outFile = outDir.get().file("assets/${selfId}/cheat/approved_mods.json").asFile
+        outFile.parentFile.mkdirs()
+        def json = new groovy.json.JsonGenerator.Options().disableUnicodeEscaping().build().toJson(result)
+        outFile.setText(groovy.json.JsonOutput.prettyPrint(json) + '\n', 'UTF-8')
+        logger.lifecycle("generateApprovedMods: ${seen.size()} approved ids "
+            + "(${embedded.size()} embedded, ${declared.required.size()} required, "
+            + "${declared.optional.size()} optional, ${roster.unique(false).size()} modpack)")
+    }
+}
+sourceSets.main.resources.srcDir(files(outDir) { builtBy 'generateApprovedMods' })
+neoForge.ideSyncTask tasks.named('generateApprovedMods')

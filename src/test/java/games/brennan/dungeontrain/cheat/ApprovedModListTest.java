@@ -177,6 +177,28 @@ class ApprovedModListTest {
     }
 
     @Test
+    @DisplayName("Every modpack entry's mod_ids is approved unless it opts out with whitelist:false")
+    void bakedResourceCoversEveryModpackEntry() throws Exception {
+        JsonObject config = JsonParser.parseString(Files.readString(
+            RepoPaths.root().resolve("modpack/modpack.config.json"))).getAsJsonObject();
+        List<JsonObject> entries = new java.util.ArrayList<>();
+        entries.add(config.getAsJsonObject("sable"));
+        config.getAsJsonArray("optional_mods").forEach(e -> entries.add(e.getAsJsonObject()));
+        Set<String> approved = ApprovedModList.approved();
+        int seen = 0;
+        for (JsonObject entry : entries) {
+            if (entry.has("whitelist") && !entry.get("whitelist").getAsBoolean()) continue;
+            assertTrue(entry.has("mod_ids"), entry + " has no mod_ids (check-mod-ids.py --fill)");
+            for (var id : entry.getAsJsonArray("mod_ids")) {
+                seen++;
+                assertTrue(approved.contains(id.getAsString()),
+                    id.getAsString() + " ships in the modpack, so it must be approved");
+            }
+        }
+        assertTrue(seen > 50, "expected the modpack's mod ids, found " + seen);
+    }
+
+    @Test
     @DisplayName("Every mod neoforge.mods.toml names is approved — a new dependency can't free-play everyone")
     void bakedResourceCoversEveryDeclaredDependency() throws Exception {
         String toml = Files.readString(RepoPaths.root().resolve("src/main/templates/META-INF/neoforge.mods.toml"));
