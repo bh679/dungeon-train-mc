@@ -3601,6 +3601,7 @@
   "chat.dungeontrain.book_burns_author": "Het boek van %s verbrandt",
   "chat.dungeontrain.book_burns_author.copy": "Klik om de naam van de auteur te kopiëren",
   "chat.dungeontrain.update_notice": "[Dungeon Train] Versie %s is uit!",
+  "chat.dungeontrain.update_notice.ago": " - %s geleden verschenen",
   "chat.dungeontrain.update_notice.link": "[Wat is er nieuw]",
   "item.dungeontrain.stats_book": "Statistiekenboek",
   "item.dungeontrain.random_potion": "Willekeurig drankje",

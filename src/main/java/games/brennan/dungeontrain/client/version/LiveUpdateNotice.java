@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.version;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.util.PresenceLine;
 import net.minecraft.ChatFormatting;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
@@ -18,6 +19,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -105,10 +107,12 @@ public final class LiveUpdateNotice {
         baseline = latest;
         LOGGER.info("Update notice: announcing {} (installed {})", latest, installed);
         VersionCheckState.accept(VersionCheckState.Status.UPDATE_AVAILABLE, latest);
-        announce(latest);
+        // Look up when it was published, then work out "N ago" at the moment the line is sent.
+        ReleaseTime.fetchPublishedAt(latest, installed)
+            .thenAcceptAsync(publishedAt -> announce(latest, publishedAt), Minecraft.getInstance());
     }
 
-    private static void announce(String version) {
+    private static void announce(String version, Long publishedAtMs) {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null || !ClientDisplayConfig.isUpdateNoticeChatEnabled()) return;
         MutableComponent link = Component.translatable("chat.dungeontrain.update_notice.link")
@@ -120,6 +124,12 @@ public final class LiveUpdateNotice {
             .withStyle(ChatFormatting.GOLD)
             .append(" ")
             .append(link);
+        if (publishedAtMs != null) {
+            String locale = Minecraft.getInstance().getLanguageManager().getSelected();
+            Duration ago = ReleaseTime.since(publishedAtMs, System.currentTimeMillis());
+            msg = msg.copy().append(Component.translatable("chat.dungeontrain.update_notice.ago",
+                    PresenceLine.agoComponent(locale, ago)).withStyle(ChatFormatting.GRAY));
+        }
         player.displayClientMessage(msg, false);
     }
 

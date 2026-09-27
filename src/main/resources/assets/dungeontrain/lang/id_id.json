@@ -3558,6 +3558,7 @@
   "chat.dungeontrain.book_burns_author": "Buku karya %s terbakar",
   "chat.dungeontrain.book_burns_author.copy": "Klik untuk menyalin nama penulisnya",
   "chat.dungeontrain.update_notice": "[Dungeon Train] Versi %s sudah rilis!",
+  "chat.dungeontrain.update_notice.ago": " - rilis %s yang lalu",
   "chat.dungeontrain.update_notice.link": "[Yang baru]",
   "item.dungeontrain.stats_book": "Buku Statistik",
   "item.dungeontrain.random_potion": "Ramuan Acak",

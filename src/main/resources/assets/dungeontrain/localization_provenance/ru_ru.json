@@ -2657,6 +2657,7 @@
       "dungeontrain.requirement.days.some",
       "dungeontrain.requirement.days.plural",
       "chat.dungeontrain.update_notice",
+      "chat.dungeontrain.update_notice.ago",
       "chat.dungeontrain.update_notice.link",
       "item.dungeontrain.stats_book",
       "item.dungeontrain.random_potion",

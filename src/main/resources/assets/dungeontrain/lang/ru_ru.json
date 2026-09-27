@@ -3644,6 +3644,7 @@
   "chat.dungeontrain.book_burns_author": "Книга %s сгорает",
   "chat.dungeontrain.book_burns_author.copy": "Нажмите, чтобы скопировать имя автора",
   "chat.dungeontrain.update_notice": "[Dungeon Train] Вышла версия %s!",
+  "chat.dungeontrain.update_notice.ago": " — вышла %s назад",
   "chat.dungeontrain.update_notice.link": "[Что нового]",
   "item.dungeontrain.stats_book": "Книга статистики",
   "item.dungeontrain.random_potion": "Случайное зелье",

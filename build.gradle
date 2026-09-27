@@ -197,9 +197,13 @@ neoForge {
                 systemProperty 'dungeontrain.changelogUrl', project.property('changelogUrl').toString()
             }
             // Live update-notice seam: ./gradlew runClient -PupdateFeedUrl=<url> [-PupdatePollSeconds=<n>]
-            // polls that update.json instead of raw main, and lets LiveUpdateNotice run on a dev build.
+            // [-PreleaseApiUrl=<base>] polls that update.json instead of raw main (and lets LiveUpdateNotice
+            // run on a dev build); releaseApiUrl is the base "v<ver>" is appended to for the publish time.
             if (project.hasProperty('updateFeedUrl')) {
                 systemProperty 'dungeontrain.updateFeedUrl', project.property('updateFeedUrl').toString()
+            }
+            if (project.hasProperty('releaseApiUrl')) {
+                systemProperty 'dungeontrain.releaseApiUrl', project.property('releaseApiUrl').toString()
             }
             if (project.hasProperty('updatePollSeconds')) {
                 systemProperty 'dungeontrain.updatePollSeconds', project.property('updatePollSeconds').toString()

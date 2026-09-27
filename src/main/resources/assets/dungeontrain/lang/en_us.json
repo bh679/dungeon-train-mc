@@ -171,6 +171,7 @@
   "chat.dungeontrain.book_burns_author": "The book by %s burns",
   "chat.dungeontrain.book_burns_author.copy": "Click to copy the author's name",
   "chat.dungeontrain.update_notice": "[Dungeon Train] Version %s is out!",
+  "chat.dungeontrain.update_notice.ago": " - it dropped %s ago",
   "chat.dungeontrain.update_notice.link": "[What's new]",
   "chat.dungeontrain.free_play.title": "Free Play.",
   "chat.dungeontrain.free_play.cause.gamemode": "You switched to %s.",

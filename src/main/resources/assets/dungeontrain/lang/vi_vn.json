@@ -3558,6 +3558,7 @@
   "chat.dungeontrain.book_burns_author": "Cuốn sách của %s bốc cháy",
   "chat.dungeontrain.book_burns_author.copy": "Nhấp để sao chép tên tác giả",
   "chat.dungeontrain.update_notice": "[Dungeon Train] Phiên bản %s đã ra mắt!",
+  "chat.dungeontrain.update_notice.ago": " - ra mắt %s trước",
   "chat.dungeontrain.update_notice.link": "[Có gì mới]",
   "item.dungeontrain.stats_book": "Sách thống kê",
   "item.dungeontrain.random_potion": "Thuốc Ngẫu nhiên",

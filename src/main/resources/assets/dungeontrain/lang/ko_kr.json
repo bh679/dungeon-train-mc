@@ -3558,6 +3558,7 @@
   "chat.dungeontrain.book_burns_author": "%s 님의 책이 타오릅니다",
   "chat.dungeontrain.book_burns_author.copy": "클릭하면 지은이의 이름을 복사합니다",
   "chat.dungeontrain.update_notice": "[Dungeon Train] 버전 %s 출시!",
+  "chat.dungeontrain.update_notice.ago": " - %s 전에 출시됨",
   "chat.dungeontrain.update_notice.link": "[새로운 내용]",
   "item.dungeontrain.stats_book": "통계의 책",
   "item.dungeontrain.random_potion": "무작위 물약",

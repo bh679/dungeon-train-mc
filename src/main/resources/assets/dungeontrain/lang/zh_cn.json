@@ -3572,6 +3572,7 @@
   "chat.dungeontrain.book_burns_author": "%s 写的书燃烧起来",
   "chat.dungeontrain.book_burns_author.copy": "点击复制作者名字",
   "chat.dungeontrain.update_notice": "[Dungeon Train] 版本 %s 已发布！",
+  "chat.dungeontrain.update_notice.ago": "（%s前发布）",
   "chat.dungeontrain.update_notice.link": "[更新内容]",
   "item.dungeontrain.stats_book": "统计之书",
   "item.dungeontrain.random_potion": "随机药水",

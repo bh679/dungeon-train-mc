@@ -2545,6 +2545,7 @@
       "chat.dungeontrain.book_burns_author",
       "chat.dungeontrain.book_burns_author.copy",
       "chat.dungeontrain.update_notice",
+      "chat.dungeontrain.update_notice.ago",
       "chat.dungeontrain.update_notice.link",
       "item.dungeontrain.stats_book",
       "item.dungeontrain.random_potion",

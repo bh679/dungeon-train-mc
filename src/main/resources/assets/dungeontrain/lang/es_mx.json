@@ -3601,6 +3601,7 @@
   "chat.dungeontrain.book_burns_author": "El libro de %s arde",
   "chat.dungeontrain.book_burns_author.copy": "Haz clic para copiar el nombre del autor",
   "chat.dungeontrain.update_notice": "[Dungeon Train] ¡Ya salió la versión %s!",
+  "chat.dungeontrain.update_notice.ago": " - salió hace %s",
   "chat.dungeontrain.update_notice.link": "[Novedades]",
   "item.dungeontrain.stats_book": "Libro de estadísticas",
   "item.dungeontrain.random_potion": "Poción aleatoria",

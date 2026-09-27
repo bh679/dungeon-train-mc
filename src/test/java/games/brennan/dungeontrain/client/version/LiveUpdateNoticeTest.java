@@ -74,4 +74,23 @@ final class LiveUpdateNoticeTest {
         assertNull(UpdateFeed.parseLatest("{\"promos\":{\"1.21.1-latest\":{}}}", "1.21.1"));
         assertNull(UpdateFeed.parseLatest("{\"promos\":{\"1.21.1-latest\":\"0.984.0\"}}", "1.20.1"));
     }
+
+    @Test
+    @DisplayName("parsePublishedAt reads a GitHub release's published_at")
+    void parsePublishedAt() {
+        String body = "{\"tag_name\":\"v0.984.0\",\"published_at\":\"2026-09-27T09:00:00Z\"}";
+        assertEquals(java.time.Instant.parse("2026-09-27T09:00:00Z").toEpochMilli(),
+            ReleaseTime.parsePublishedAt(body));
+        assertNull(ReleaseTime.parsePublishedAt(null));
+        assertNull(ReleaseTime.parsePublishedAt("{}"));
+        assertNull(ReleaseTime.parsePublishedAt("{\"published_at\":\"yesterday\"}"));
+        assertNull(ReleaseTime.parsePublishedAt("{\"published_at\":null}"));
+    }
+
+    @Test
+    @DisplayName("Time since release is measured at send time; a future stamp (clock skew) clamps to zero")
+    void sinceRelease() {
+        assertEquals(java.time.Duration.ofSeconds(90), ReleaseTime.since(1_000_000L, 1_090_000L));
+        assertEquals(java.time.Duration.ZERO, ReleaseTime.since(2_000_000L, 1_000_000L));
+    }
 }

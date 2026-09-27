@@ -3558,6 +3558,7 @@
   "chat.dungeontrain.book_burns_author": "หนังสือของ %s กำลังลุกไหม้",
   "chat.dungeontrain.book_burns_author.copy": "คลิกเพื่อคัดลอกชื่อผู้เขียน",
   "chat.dungeontrain.update_notice": "[Dungeon Train] เวอร์ชัน %s ออกแล้ว!",
+  "chat.dungeontrain.update_notice.ago": " - ออกเมื่อ %s ที่แล้ว",
   "chat.dungeontrain.update_notice.link": "[มีอะไรใหม่]",
   "item.dungeontrain.stats_book": "หนังสือสถิติ",
   "item.dungeontrain.random_potion": "ยาสุ่ม",

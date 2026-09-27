@@ -3558,6 +3558,7 @@
   "chat.dungeontrain.book_burns_author": "%s の本が燃える",
   "chat.dungeontrain.book_burns_author.copy": "クリックで著者の名前をコピー",
   "chat.dungeontrain.update_notice": "[Dungeon Train] バージョン %s が公開されました！",
+  "chat.dungeontrain.update_notice.ago": "（%s前に公開）",
   "chat.dungeontrain.update_notice.link": "[更新内容]",
   "item.dungeontrain.stats_book": "統計の本",
   "item.dungeontrain.random_potion": "ランダムなポーション",

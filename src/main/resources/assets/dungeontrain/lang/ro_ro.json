@@ -189,6 +189,7 @@
   "chat.dungeontrain.book_burns_author": "Cartea scrisă de %s arde",
   "chat.dungeontrain.book_burns_author.copy": "Apasă pentru a copia numele autorului",
   "chat.dungeontrain.update_notice": "[Dungeon Train] Versiunea %s a apărut!",
+  "chat.dungeontrain.update_notice.ago": " - a apărut acum %s",
   "chat.dungeontrain.update_notice.link": "[Ce e nou]",
   "chat.dungeontrain.free_play.title": "Joc Liber.",
   "chat.dungeontrain.free_play.cause.gamemode": "Ai trecut pe %s.",

@@ -3558,6 +3558,7 @@
   "chat.dungeontrain.book_burns_author": "Nasusunog ang aklat ni %s",
   "chat.dungeontrain.book_burns_author.copy": "I-click para kopyahin ang pangalan ng may-akda",
   "chat.dungeontrain.update_notice": "[Dungeon Train] Labas na ang bersyon %s!",
+  "chat.dungeontrain.update_notice.ago": " - lumabas %s na ang nakalipas",
   "chat.dungeontrain.update_notice.link": "[Ano'ng bago]",
   "item.dungeontrain.stats_book": "Aklat ng Estadistika",
   "item.dungeontrain.random_potion": "Random na Gayuma",
