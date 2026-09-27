@@ -19637,6 +19637,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "superflat-band-villages",
+      "version": "0.977.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Villages in a stretch that had none",
+      "summary": "One of the stranger stretches of the journey used to be completely empty. Villages now turn up there as often as they would anywhere else, standing on the ground beside the line.",
+      "highlights": [
+        "Villages generate in a stretch of the journey that never had them.",
+        "Only land you haven't explored yet gets them."
+      ],
+      "pr": 1593,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
