@@ -17997,9 +17997,9 @@
       ],
       "pr": 1495,
       "date": "2026-09-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "modrinth-installs-fast-paintings-moonlight",
@@ -18014,9 +18014,9 @@
       "highlights": [],
       "pr": 1500,
       "date": "2026-09-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "nether-band-betternether",
@@ -18031,9 +18031,9 @@
       "highlights": [],
       "pr": 1501,
       "date": "2026-09-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "end-band-betterend",
@@ -18050,9 +18050,9 @@
       ],
       "pr": 1503,
       "date": "2026-09-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "second-lap-overworld-wwoo-bop",
@@ -18068,9 +18068,9 @@
         "Now needs William Wythers' Overhauled Overworld and Biomes O' Plenty (with their libraries). The CurseForge and Modrinth apps install them for you."
       ],
       "date": "2026-09-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "remove-betterx-welcome-popup",
@@ -18086,9 +18086,9 @@
       "highlights": [],
       "pr": 1507,
       "date": "2026-09-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "physics-block-change-no-sync-load",
@@ -18105,9 +18105,9 @@
       "highlights": [],
       "pr": 1509,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "editor-whole-room-group-new",
@@ -18124,9 +18124,9 @@
       ],
       "pr": 1510,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "editor-unsaved-check-stall",
@@ -18142,9 +18142,9 @@
       "highlights": [],
       "pr": 1511,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "my-builds-delete-from-relay",
@@ -18165,9 +18165,9 @@
       ],
       "pr": 1512,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "x-menu-refresh-after-save",
@@ -18187,9 +18187,9 @@
       ],
       "pr": 1513,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "tidier-advancements-screen",
@@ -18205,9 +18205,9 @@
       "highlights": [],
       "pr": 1514,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "per-player-build-cap",
@@ -18222,9 +18222,9 @@
       "highlights": [],
       "pr": 1516,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "builder-review-questions",
@@ -18245,9 +18245,9 @@
       ],
       "pr": 1515,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "save-as-for-built-in-templates",
@@ -18267,9 +18267,9 @@
       ],
       "pr": 1520,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "editor-unsaved-mob-plots",
@@ -18286,9 +18286,9 @@
       ],
       "pr": 1521,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "dtp-band-names",
@@ -18303,9 +18303,9 @@
       "highlights": [],
       "pr": 1522,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "builder-owner-proof",
@@ -18323,9 +18323,9 @@
       ],
       "pr": 1523,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "legacy-alpha-band",
@@ -18343,9 +18343,9 @@
       ],
       "pr": 1497,
       "date": "2026-09-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "legacy-band-two",
@@ -18362,9 +18362,9 @@
         "A new hidden advancement waits there for anyone who rides far enough."
       ],
       "date": "2026-09-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z",
       "pr": 1524
     },
     {
@@ -18383,9 +18383,9 @@
       ],
       "pr": 1499,
       "date": "2026-09-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "legacy-band-floating",
@@ -18403,9 +18403,9 @@
       ],
       "pr": 1502,
       "date": "2026-09-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "legacy-band-far-lands",
@@ -18423,9 +18423,9 @@
       ],
       "pr": 1504,
       "date": "2026-09-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "legacy-band-classic",
@@ -18443,9 +18443,9 @@
       ],
       "pr": 1505,
       "date": "2026-09-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "three-lap-journey",
@@ -18465,9 +18465,9 @@
         "The order is a single config line, for anyone who wants their own"
       ],
       "date": "2026-09-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z",
       "pr": 1524
     },
     {
@@ -18485,9 +18485,9 @@
         "A new stretch of the journey, with a hidden goal for reaching it"
       ],
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "band-advancements-follow-layout",
@@ -18506,9 +18506,9 @@
       ],
       "pr": 1518,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "legacy-amplified-band",
@@ -18525,9 +18525,9 @@
         "A new stretch at the start of the journey's third leg, with a hidden goal for reaching it"
       ],
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "offline-sample-decoration-fixes",
@@ -18548,9 +18548,9 @@
       ],
       "pr": 1525,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "protocol-check-composite-codecs",
@@ -18564,9 +18564,9 @@
       "highlights": [],
       "pr": 1526,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "plot-arrival-bounds-hardening",
@@ -18582,9 +18582,9 @@
       "highlights": [],
       "pr": 1527,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "tunnel-ignores-trees",
@@ -18601,9 +18601,9 @@
       ],
       "pr": 1530,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "dtp-every-band",
@@ -18618,9 +18618,9 @@
       "highlights": [],
       "pr": 1528,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "nether-walls-netherrack",
@@ -18637,9 +18637,9 @@
       ],
       "pr": 1531,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "journey-rhythm-older-worlds-in-order",
@@ -18660,9 +18660,9 @@
       ],
       "pr": 1533,
       "date": "2026-09-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "block-variants-multi-space",
@@ -18682,9 +18682,9 @@
       ],
       "pr": 1534,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "dt-flyspeed-sprint",
@@ -18701,9 +18701,9 @@
       ],
       "pr": 1535,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "dimensional-carriage-stage-bricks-whole-doors",
@@ -18725,9 +18725,9 @@
       ],
       "pr": 1537,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "sable-save-no-dsync",
@@ -18746,9 +18746,9 @@
       ],
       "pr": 1536,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "vanilla-nether-band-pure-ores",
@@ -18763,9 +18763,9 @@
       "highlights": [],
       "pr": 1538,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "smooth-bedrock-floor",
@@ -18780,9 +18780,9 @@
       "highlights": [],
       "pr": 1541,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "chunkgen-animals-match-biome",
@@ -18801,9 +18801,9 @@
       ],
       "pr": 1540,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "vanilla-tags-outside-overhauled-stretch",
@@ -18823,9 +18823,9 @@
       ],
       "pr": 1539,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "bop-shutdown-biome-leak",
@@ -18840,9 +18840,9 @@
       "highlights": [],
       "pr": 1543,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "better-band-style-single-rule",
@@ -18857,9 +18857,9 @@
       "highlights": [],
       "pr": 1545,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "legacy-biomes-terrablender-clone",
@@ -18875,9 +18875,9 @@
       "highlights": [],
       "pr": 1544,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "fly-double-tap-sprint",
@@ -18891,9 +18891,9 @@
       "highlights": [],
       "pr": 1546,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "dimensional-carriage-looks",
@@ -18913,9 +18913,9 @@
       ],
       "pr": 1547,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "tint-follows-the-land",
@@ -18932,9 +18932,9 @@
       ],
       "pr": 1549,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "server-dt-world-preset",
@@ -18955,9 +18955,9 @@
       ],
       "pr": 1548,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "editor-menus-hold-still",
@@ -18977,9 +18977,9 @@
       ],
       "pr": 1550,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "skip-incompatible-world-prompt",
@@ -18995,9 +18995,9 @@
       "highlights": [],
       "pr": 1551,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "dimensional-carriages-open-onto-their-worlds",
@@ -19017,9 +19017,9 @@
       ],
       "pr": 1552,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "test-carriage-contents-templates",
@@ -19040,9 +19040,9 @@
       ],
       "pr": 1553,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "modded-overworld-transition-bleed",
@@ -19060,9 +19060,9 @@
       ],
       "pr": 1555,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "process-detection-addons",
@@ -19080,9 +19080,9 @@
       ],
       "pr": 1554,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "cmd-r-reseed-test-carriage",
@@ -19098,9 +19098,9 @@
       "highlights": [],
       "pr": 1557,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "vanilla-end-carriage-only-vanilla",
@@ -19121,9 +19121,9 @@
       ],
       "pr": 1559,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "relay-build-chest-loot",
@@ -19143,9 +19143,9 @@
       ],
       "pr": 1561,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "effortless-building-breaks-clear-variants",
@@ -19164,9 +19164,9 @@
       ],
       "pr": 1560,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "stronghold-rings-stable-across-loads",
@@ -19183,9 +19183,9 @@
       ],
       "pr": 1562,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "creative-prefab-cmd-delete",
@@ -19204,9 +19204,9 @@
       ],
       "pr": 1558,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "wwoo-shrubs-keep-leaves",
@@ -19221,9 +19221,9 @@
       "highlights": [],
       "pr": 1568,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "bclib-feature-seed-per-thread",
@@ -19241,9 +19241,9 @@
       ],
       "pr": 1570,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "dh-macos-native-crash",
@@ -19258,9 +19258,9 @@
       "highlights": [],
       "pr": 1571,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "dimensional-carriage-fail-closed",
@@ -19276,9 +19276,9 @@
       "highlights": [],
       "pr": 1569,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "patient-relay-fetch",
@@ -19297,9 +19297,9 @@
       ],
       "pr": 1572,
       "date": "2026-09-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "dimensional-carriage-crops-survive",
@@ -19317,9 +19317,9 @@
       ],
       "pr": 1573,
       "date": "2026-09-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "chunk-carriages-framed-in-sky",
@@ -19341,9 +19341,9 @@
       ],
       "pr": 1574,
       "date": "2026-09-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "dtp-band-lap",
@@ -19358,9 +19358,9 @@
       "highlights": [],
       "pr": 1576,
       "date": "2026-09-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "modpack-advanced-shulkerboxes",
@@ -19379,9 +19379,9 @@
       ],
       "pr": 1578,
       "date": "2026-09-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "late-wwoo-after-upside-down",
@@ -19398,9 +19398,9 @@
       ],
       "pr": 1575,
       "date": "2026-09-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "sable-pathfinder-dependency",
@@ -19416,9 +19416,9 @@
       "highlights": [],
       "pr": 1577,
       "date": "2026-09-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "rare-villager-variant",
@@ -19437,9 +19437,9 @@
       ],
       "pr": 1579,
       "date": "2026-09-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "f3-4-debug-panel-band-readout",
@@ -19453,9 +19453,9 @@
       "highlights": [],
       "pr": 1580,
       "date": "2026-09-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "spheres-band-shorter-no-nether-sky",
@@ -19470,9 +19470,9 @@
       "highlights": [],
       "pr": 1581,
       "date": "2026-09-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "end-scenery-as-intended",
@@ -19491,9 +19491,9 @@
       ],
       "pr": 1583,
       "date": "2026-09-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "shorter-old-terrain-stretch",
@@ -19510,9 +19510,9 @@
       ],
       "pr": 1582,
       "date": "2026-09-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "train-rides-high-wilder-country",
@@ -19531,9 +19531,9 @@
       ],
       "pr": 1584,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "offline-sampler-chunk-biomes",
@@ -19551,9 +19551,9 @@
       ],
       "pr": 1585,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "disable-mod-gear-ores",
@@ -19574,9 +19574,9 @@
       ],
       "pr": 1587,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "upside-down-no-spawner-structures",
@@ -19594,9 +19594,9 @@
       ],
       "pr": 1590,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "shorter-lap3-gaps-crossfade",
@@ -19614,9 +19614,9 @@
       ],
       "pr": 1591,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "upsidedown-reverse-gravity",
@@ -19634,9 +19634,9 @@
       ],
       "pr": 1589,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "superflat-band-villages",
@@ -19654,9 +19654,9 @@
       ],
       "pr": 1593,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "dtp-every-stage-and-subsections",
@@ -19671,9 +19671,9 @@
       "highlights": [],
       "pr": 1592,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "chuncks-band-mix-zone",
@@ -19691,9 +19691,9 @@
       ],
       "pr": 1597,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "mod-whitelist-unsupported-mods-popup",
@@ -19715,9 +19715,9 @@
       ],
       "pr": 1594,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "upside-down-track-flatten",
@@ -19735,9 +19735,9 @@
       ],
       "pr": 1596,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "later-laps-new-looks",
@@ -19752,9 +19752,9 @@
       "highlights": [],
       "pr": 1598,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "lost-city-ruins",
@@ -19774,9 +19774,9 @@
       ],
       "pr": 1599,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "release-dimensions-overhaul",
@@ -19792,9 +19792,9 @@
       "summary": "## Number of dimensions\nA HUGE boost to the number of dimensions the train travels through. Many custom made for DT, some you may already know and love.\n\n## Shorter Dimensions\nDimensions are now short, pass through more quicker, but it will take longer to pass through them all.\n\n# The Whitelist for Mods\nMoving from blacklist to whitelist. Unless whitelisted, mods put you into freeplay. \nThe game will boot regardless, only whitelisted will enable high-scores.\n\n## Modpack Additions\n* **Advanced Shulkerboxes:** \n* **Sable Pathfinder:** *(Modrinth only for now)*\n* **Pigman Villagers:** ;)\n\n## Train Editor Tools\nThe train editor has undergone some big changes, make it work much better\n* **Test the Carriage** works on every carriage and contents template. Ctrl/Cmd+R re-rolls it\n* **Frames:** build your own to dress terrain dimensional carriages\n* **Doors, beds and tall plants** in block variants, with a new Span button\n* **Menus stay put** instead of following you, update as soon as you save, and no longer freeze on first open\n* **New** works for whole rooms and groups\n* **Save as new** on built-in templates, or keep a local edit\n* **Info panel** shows a build's lights and loot\n* **My Builds:** delete builds, and tell the reviewer about your build when you submit\n* Cmd/Ctrl-click deletes saved prefabs in the creative menu\n* Effortless Building breaks now clear block variants\n* Big shared builds keep their chest loot, and loading survives a busy server\n* Templates with thousands of block variants no longer lag\n\n## Bug Fixes\n* No more freezes when editing the train or saving\n* Distant Horizons no longer crashes on Mac\n* Dedicated servers now create Dungeon Train worlds\n* Eyes of ender lead to the same stronghold every time\n* Crops in dimensional carriages stay planted\n* Trees no longer turn the track into a tunnel\n\n## Bug fixes\n- New Biomes are cosmetics focused. New items and mobs on the train will be coming later.",
       "highlights": [],
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "band-advancements-review",
@@ -19809,9 +19809,9 @@
       "highlights": [],
       "pr": 1600,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     },
     {
       "id": "nether-core-floating-decorations",
@@ -19829,9 +19829,9 @@
       ],
       "pr": 1601,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.982.0",
+      "released_at": "2026-09-27T09:01:26Z"
     }
   ]
 }
