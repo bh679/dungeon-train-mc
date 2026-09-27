@@ -18,10 +18,10 @@ import java.util.concurrent.CompletableFuture;
  * as a new suggestion when nobody has suggested that mod yet, or as a backing vote on the existing
  * one — {@link Result#CREATED} vs {@link Result#BACKED}.
  *
- * <p>The request carries an owner proof ({@code name} + {@code serverId}): the relay only accepts a
- * suggestion from a Minecraft account Mojang confirms, never from a bare uuid. Obtaining that proof
- * needs the client's session, so it happens on the client side ({@code ModSuggestProof}); this class
- * only speaks HTTP and never touches client classes.</p>
+ * <p>The request carries the player's {@code uuid} and {@code name} as the client knows them, which
+ * the relay takes as given, plus an optional {@code serverId} owner proof that lets the relay mark the
+ * suggestion verified. Obtaining that proof needs the client's session, so it happens on the client
+ * side ({@code ModSuggestProof}); this class only speaks HTTP and never touches client classes.</p>
  *
  * <p>Never fails exceptionally: every failure resolves to a {@link Result} the screen can show.</p>
  */
@@ -44,7 +44,7 @@ public final class ModSuggestClient {
         CREATED,
         /** Somebody had already suggested it; this vote backs theirs. */
         BACKED,
-        /** Mojang could not confirm the account (offline/dev account, or the join failed). */
+        /** An older relay that still required a Mojang-proven account refused this one. */
         NOT_PROVEN,
         /** The operator has already approved, rejected or ruled on this mod. */
         ALREADY_DECIDED,
