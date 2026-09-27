@@ -124,4 +124,26 @@ final class WorldGenCycleMirrorTest {
         }
         assertFalse(C.netherInfluence(START - BUFFER / 2, margin));
     }
+
+    @Test
+    @DisplayName("behind spawn each Nether / End copy keeps its own look, so the reverse journey can tell the first from the Better one")
+    void reversedStylesPerCopy() {
+        int nethers = 0;
+        int ends = 0;
+        for (int i = 0; i < LAYOUT.count(); i++) {
+            CycleLayout.Slot slot = LAYOUT.slot(i);
+            int mid = bx(LAYOUT.start(i) + LAYOUT.length(i) / 2, 0);
+            boolean better = slot.styleOnRun(0) == CycleLayout.Style.BETTER;
+            if (slot.type() == CycleLayout.Type.NETHER) {
+                nethers++;
+                assertTrue(C.isNetherCore(mid), "nether core at slot " + i);
+                assertEquals(better, C.isBetterNetherAt(mid), "better nether at slot " + i);
+            } else if (slot.type() == CycleLayout.Type.END) {
+                ends++;
+                assertEquals(better, C.isBetterEndAt(mid), "better end at slot " + i);
+            }
+        }
+        assertEquals(2, nethers);
+        assertEquals(2, ends);
+    }
 }

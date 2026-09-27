@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.BandAdvancements;
 import it.unimi.dsi.fastutil.Stack;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.DisplayInfo;
@@ -46,6 +47,9 @@ import java.util.function.Predicate;
  * {@code VisibilityRule} is package-private, so the comparison goes via
  * {@code String.valueOf(...)} against the enum name.</p>
  *
+ * <p>The reverse journey ({@code dungeon_train/reversed_*}, earned behind
+ * spawn) opts out of the frontier: it is hidden until earned.</p>
+ *
  * <p>Vanilla and other-mod advancements are untouched — the namespace check
  * returns early.</p>
  */
@@ -66,6 +70,10 @@ public abstract class AdvancementVisibilityEvaluatorMixin {
         if (original) return true;
         ResourceLocation id = node.holder().id();
         if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) return false;
+
+        // The reverse journey stays hidden until earned: no frontier reveal, so a reversed_* node
+        // appears only once it (or, via vanilla, a descendant) is done.
+        if (BandAdvancements.isReverse(id.getPath())) return false;
 
         // Frontier reveal: unhide an advancement once its DIRECT parent is
         // earned. Applies to hidden and non-hidden nodes alike; the root has

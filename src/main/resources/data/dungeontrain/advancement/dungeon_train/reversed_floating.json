@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/reversed_alpha",
+  "display": {
+    "icon": { "id": "minecraft:phantom_membrane" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_floating.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_floating.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "reversed_floating" }
+    }
+  },
+  "requirements": [["reached"]]
+}

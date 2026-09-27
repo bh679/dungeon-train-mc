@@ -65,8 +65,16 @@ public final class ZoneProgressEvents {
         for (ServerPlayer player : players) {
             if (player.isSpectator()) continue;
             int px = player.getBlockX();
-            // Behind spawn the bands run in reverse — scenery only; the journey is earned going forward.
-            if (WorldGenCycle.fromConfig().isMirroredAt(px)) continue;
+            // Behind spawn the bands run in reverse: only the reverse journey is earned there, entering
+            // each band from its spawn (+X) side. The forward journey is earned going forward.
+            if (WorldGenCycle.fromConfig().isMirroredAt(px)) {
+                for (BandAdvancements.Trigger t : BandAdvancements.reverseTriggers()) {
+                    if (t.test().test(level, px) && t.test().test(level, px + t.depth())) {
+                        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, t.id());
+                    }
+                }
+                continue;
+            }
 
             for (BandAdvancements.Trigger t : BandAdvancements.triggers()) {
                 if (t.test().test(level, px) && t.test().test(level, px - t.depth())) {

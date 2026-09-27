@@ -1,16 +1,23 @@
 package games.brennan.dungeontrain.advancement;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import games.brennan.dungeontrain.RepoPaths;
 import games.brennan.dungeontrain.worldgen.CycleLayout;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacySpan;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The journey chain follows the layout: order, dedupe, disabled bands appended, closer last. */
@@ -100,6 +107,69 @@ final class BandAdvancementsTest {
         assertEquals(ids.size(), new HashSet<>(ids).size());
         for (BandAdvancements.Trigger t : BandAdvancements.triggers()) {
             assertTrue(t.depth() > 0, t.id());
+        }
+    }
+
+    // ---- reverse journey ---------------------------------------------------------------------
+
+    private static final List<String> SHIPPED_REVERSE = List.of(
+            "reversed_stacks", "reversed_chuncks",
+            "reversed_superflat", "reversed_classic", "reversed_infdev", "reversed_alpha", "reversed_floating",
+            "reversed_skylands", "reversed_caves_of_chaos", "reversed_far_lands", "reversed_beta",
+            "reversed_lost_city", "reversed_amplified",
+            "reversed_spheres", "reversed_better_end", "reversed_bop", "reversed_better_nether", "reversed_wwoo",
+            "reversed_reassembly", "reversed_upside_down", "reversed_end_islands", "reversed_void", "reversed_nether");
+
+    @Test
+    @DisplayName("walking back from spawn meets the shipped bands last-first, all the way to the first Nether")
+    void reverseShippedOrder() {
+        assertEquals(SHIPPED_REVERSE, BandAdvancements.reverseChain(parse(CycleLayout.DEFAULT_ORDER)));
+    }
+
+    @Test
+    @DisplayName("reverse: a Better Nether/End is its own band, so the plain first ones stay last")
+    void reverseStyledOccurrences() {
+        List<String> chain = BandAdvancements.reverseChain(parse("ow:1000, nether:4000, end:4000, nether:better:4000, end:better:4000"));
+        assertEquals(List.of("reversed_better_end", "reversed_better_nether", "reversed_end_islands", "reversed_void",
+                "reversed_nether"), chain.subList(0, 5));
+    }
+
+    @Test
+    @DisplayName("reverse: a band the layout leaves out is appended; every reverse id appears exactly once")
+    void reverseMissingAppended() {
+        List<String> chain = BandAdvancements.reverseChain(parse("ow:1000, nether:4000, stacks:5000"));
+        assertEquals("reversed_stacks", chain.get(0));
+        assertEquals("reversed_nether", chain.get(1));
+        assertEquals(chain.size(), new HashSet<>(chain).size());
+        assertEquals(new HashSet<>(SHIPPED_REVERSE), new HashSet<>(chain));
+        assertEquals(SHIPPED_REVERSE, BandAdvancements.reverseChain(null));
+    }
+
+    @Test
+    @DisplayName("every reverse advancement has one trigger; isReverse tells the two journeys apart")
+    void reverseTriggersMatchTable() {
+        List<String> ids = BandAdvancements.reverseTriggers().stream().map(BandAdvancements.Trigger::id).toList();
+        assertEquals(SHIPPED_REVERSE, ids);
+        for (BandAdvancements.Trigger t : BandAdvancements.reverseTriggers()) {
+            assertTrue(t.depth() > 0, t.id());
+            assertTrue(BandAdvancements.isReverse("dungeon_train/" + t.id()), t.id());
+        }
+        for (String id : BandAdvancements.ALL) assertFalse(BandAdvancements.isReverse("dungeon_train/" + id), id);
+        assertFalse(BandAdvancements.isReverse("editor/reversed_stacks"));
+    }
+
+    @Test
+    @DisplayName("each reverse advancement JSON is hidden, fires on its own action, and chains in shipped order")
+    void reverseJsonMatchesChain() throws IOException {
+        String parent = "dungeontrain:dungeon_train/" + BandAdvancements.REVERSE_ANCHOR;
+        for (String id : SHIPPED_REVERSE) {
+            Path file = RepoPaths.advancements().resolve("dungeon_train/" + id + ".json");
+            JsonObject json = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+            assertEquals(parent, json.get("parent").getAsString(), id);
+            assertTrue(json.getAsJsonObject("display").get("hidden").getAsBoolean(), id);
+            assertEquals(id, json.getAsJsonObject("criteria").getAsJsonObject("reached")
+                    .getAsJsonObject("conditions").get("actionId").getAsString(), id);
+            parent = "dungeontrain:dungeon_train/" + id;
         }
     }
 }
