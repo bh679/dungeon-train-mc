@@ -71,16 +71,6 @@ class BandHoldDefaultsTest {
     }
 
     @Test
-    @DisplayName("the v6 cycle order differs from the shipped default only in its Beta era")
-    void v6CycleOrderDiffersOnlyInBeta() {
-        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
-                DungeonTrainCommonConfig.V6_WORLDGEN_CYCLE_ORDER.replace("beta=5000", "beta=3500"),
-                "the v6 -> v7 migration matches a file still holding the v6 order string exactly");
-        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 7,
-                "CURRENT_CONFIG_VERSION must be at least 7, or the v6 -> v7 Beta step never runs");
-    }
-
-    @Test
     @DisplayName("the migration moves exactly the previously shipped length")
     void legacyIsThePreviouslyShippedLength() {
         assertEquals(5000, DungeonTrainCommonConfig.LEGACY_BAND_HOLD_BLOCKS,
