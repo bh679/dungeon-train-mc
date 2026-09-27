@@ -167,7 +167,6 @@ public final class UpsideDownMirror {
         var pos = chunk.getPos();
         int chunkMinX = pos.getMinBlockX();
         int chunkMinZ = pos.getMinBlockZ();
-        if (chunkMinX + 15 < startX) return null; // before the first band
 
         boolean[] inBand = new boolean[16];
         boolean[] inLead = new boolean[16];

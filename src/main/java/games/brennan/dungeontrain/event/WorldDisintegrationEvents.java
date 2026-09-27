@@ -88,7 +88,7 @@ public final class WorldDisintegrationEvents {
         ChunkAccess chunk = event.getChunk();
         ChunkPos pos = chunk.getPos();
         int chunkMinX = pos.getMinBlockX();
-        if (chunkMinX + 15 < startX) return; // before the first band (or disabled)
+        if (startX == DisintegrationBand.OFF) return; // disabled (bands run both ways from the anchor)
 
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();

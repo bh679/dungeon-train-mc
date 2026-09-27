@@ -128,7 +128,7 @@ public final class BedrockFloorEvents {
         // event ordering vs the erosion handler. (The nether phase keeps its floor: its
         // middleRamp is 0, so bedrock is placed normally there.)
         long bandStartX = DisintegrationBand.startX(level);
-        boolean maybeBand = chunkMinX + 15 >= bandStartX;
+        boolean maybeBand = bandStartX != DisintegrationBand.OFF;
 
         // The upside-down band flips the world's bedrock caps to the roof (WorldUpsideDownEvents),
         // so it has no floor either — skip bedrock in its columns when that inversion is enabled.
@@ -136,7 +136,7 @@ public final class BedrockFloorEvents {
         // like the void skip, so the two ChunkEvent.Load handlers stay order-independent.
         boolean roofInvert = DungeonTrainCommonConfig.isUpsideDownBedrockRoof();
         long upsideStartX = roofInvert ? UpsideDownBand.startX(level) : UpsideDownBand.OFF;
-        boolean maybeUpside = upsideStartX != UpsideDownBand.OFF && chunkMinX + 15 >= upsideStartX;
+        boolean maybeUpside = upsideStartX != UpsideDownBand.OFF;
 
         // The floor of TERRAIN, not of the level: a DT overworld's dimension type runs below its
         // noise settings so the portal system has an empty basement to work in, and the bedrock

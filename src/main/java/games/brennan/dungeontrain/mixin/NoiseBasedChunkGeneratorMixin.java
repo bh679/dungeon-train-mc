@@ -185,7 +185,7 @@ public abstract class NoiseBasedChunkGeneratorMixin {
         int chunkMinZ = chunk.getPos().getMinBlockZ();
 
         long disStartX = DisintegrationBand.startX(level);
-        if (disStartX != DisintegrationBand.OFF && chunkMinX + 15 >= disStartX
+        if (disStartX != DisintegrationBand.OFF
                 && DisintegrationBand.isChunkFullyEroded(level, chunkMinX, chunkMinZ)) {
             return true; // End void/core: post-erosion would delete 100% of the terrain anyway
         }
