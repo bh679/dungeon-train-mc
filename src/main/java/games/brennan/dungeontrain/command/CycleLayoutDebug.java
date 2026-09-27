@@ -44,14 +44,10 @@ final class CycleLayoutDebug {
                 long to = runStart + ((layout.start(i) + layout.length(i)) << k);
                 long mid = (from + to) / 2L;
                 String phase = mid > Integer.MAX_VALUE ? "?" : TrainPhase.phaseAt(overworld, (int) mid).token();
-                String style = slot.style() == CycleLayout.Style.VANILLA ? "" : " " + slot.style().name().toLowerCase();
-                if (slot.style() == CycleLayout.Style.THEMED) {
-                    // Never decides a lap: an undecided one says so.
-                    games.brennan.dungeontrain.worldgen.LapTheme theme =
-                            cycle.peekThemeOfLap((long) k * layout.themeGroupCount() + slot.themeGroup());
-                    style = " t" + (slot.themeGroup() + 1) + "=" + (theme == null ? "undecided" : theme.id());
-                }
-                send(source, String.format("    %2d %-11s%-16s core=%-6d X %d..%d  phase@mid=%s", i,
+                // The look on this run: a first>later slot switches after run 0.
+                CycleLayout.Style onRun = slot.styleOnRun(k);
+                String style = onRun == CycleLayout.Style.VANILLA ? "" : " " + onRun.name().toLowerCase();
+                send(source, String.format("    %2d %-11s%-7s core=%-6d X %d..%d  phase@mid=%s", i,
                         slot.type().name().toLowerCase(), style, slot.core(), from, to, phase), ChatFormatting.WHITE);
                 if (slot.type() == CycleLayout.Type.LEGACY_RUN) {
                     for (int e = 0; e < layout.eras().length; e++) {

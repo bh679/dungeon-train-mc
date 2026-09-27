@@ -39,22 +39,28 @@ public final class CycleLayout {
 
     /**
      * Which look an occurrence wears. A label the band's own code reads
-     * ({@code WorldGenCycle#netherStyleAt} etc.); the layout itself is style-agnostic.
-     * {@link #THEMED} is a placeholder the world fills in: the slot belongs to a theme group
-     * ({@code :t1} / {@code :t2}) whose {@link LapTheme} is chosen per world and per lap, and
-     * {@code WorldGenCycle} resolves it to one of the concrete styles before anything reads it.
+     * ({@code WorldGenCycle#netherStyleAt} etc.); the layout itself is style-agnostic. {@code SUNK} is an
+     * overworld gap generated at the sunk Amplified band's height ({@code worldgen.SunkZone}), so the
+     * approach to that band is already low.
      */
-    public enum Style { VANILLA, WWOO, BOP, BETTER, THEMED }
+    public enum Style { VANILLA, WWOO, BOP, BETTER, SUNK }
 
     /**
      * One parsed slot. {@code core} is the band's full-strength length; {@code extra} is the
      * upside-down slot's Reassembly (exit-fade) length, or {@code -1} for the cycle's default.
+     * {@code style} is the look on the first run; {@code laterStyle} the look on every run after it
+     * (the same unless the order wrote {@code first>later}, e.g. {@code nether:vanilla>bop}).
      */
-    public record Slot(Type type, Style style, int core, int extra, int themeGroup) {
+    public record Slot(Type type, Style style, int core, int extra, Style laterStyle) {
 
-        /** An unthemed slot. */
+        /** A slot with the same look on every run. */
         public Slot(Type type, Style style, int core, int extra) {
-            this(type, style, core, extra, -1);
+            this(type, style, core, extra, style);
+        }
+
+        /** The look on doubling run {@code run}: {@link #style} on run 0, {@link #laterStyle} after. */
+        public Style styleOnRun(long run) {
+            return run <= 0L ? style : laterStyle;
         }
     }
 
@@ -67,14 +73,14 @@ public final class CycleLayout {
                         int chuncksFade, int spheresFade, int stacksFade, int legacyFade) {}
 
     /**
-     * The default order: the layout {@code build()} uses when the key is blank. Lap 1 ({@code t1}) and
-     * Lap 2 ({@code t2}) are theme groups — each lap's overworld, Nether and End take one
-     * {@link LapTheme} chosen per world ({@link LapThemePicker}).
+     * The default order: the layout {@code build()} uses when the key is blank. Lap 1's Nether and End
+     * are vanilla on the first cycle and the vanilla + Biomes O' Plenty look on every cycle after
+     * ({@code vanilla>bop}); Lap 2 is WWOO → BetterNether → BoP → BetterEnd every cycle.
      */
     public static final String DEFAULT_ORDER =
-            "ow:t1:2750, nether:t1:3000, ow:t1:3000, end:t1:3000, upside_down:2500:6000, "
-            + "ow:t2:8000, nether:t2:8000, ow:t2:8000, end:t2:8000, spheres:6550, ow:5000, "
-            + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            "ow:2750, nether:vanilla>bop:3000, ow:3000, end:vanilla>bop:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
 
     private final Slot[] slots;
@@ -85,15 +91,8 @@ public final class CycleLayout {
     private final Fades fades;
     private final long period;
     private final Map<Type, Integer> typeCounts = new EnumMap<>(Type.class);
-    private final List<LapThemePicker.Kind> themeKinds;
-    private final long[] themeStarts;
-    private final long[] themeEnds;
 
     private CycleLayout(Slot[] slots, LegacySpan[] eras, Fades fades) {
-        this(slots, eras, fades, List.of());
-    }
-
-    private CycleLayout(Slot[] slots, LegacySpan[] eras, Fades fades, List<LapThemePicker.Kind> themeKinds) {
         this.slots = slots;
         this.eras = eras;
         this.fades = fades;
@@ -108,16 +107,6 @@ public final class CycleLayout {
             at += lens[i];
         }
         this.period = at;
-        this.themeKinds = List.copyOf(themeKinds);
-        this.themeStarts = new long[themeKinds.size()];
-        this.themeEnds = new long[themeKinds.size()];
-        Arrays.fill(themeStarts, -1L);
-        for (int i = 0; i < slots.length; i++) {
-            int g = slots[i].themeGroup();
-            if (g < 0 || g >= themeKinds.size()) continue;
-            if (themeStarts[g] < 0L) themeStarts[g] = starts[i];
-            themeEnds[g] = starts[i] + lens[i];
-        }
     }
 
     // ---- construction ----------------------------------------------------------------
@@ -132,8 +121,6 @@ public final class CycleLayout {
                                     java.util.function.Predicate<Type> enabled, Consumer<String> warn) {
         if (spec == null || spec.isBlank()) return null;
         List<Slot> slots = new ArrayList<>();
-        List<LapThemePicker.Kind> themeKinds = new ArrayList<>();
-        List<String> themeTags = new ArrayList<>();
         LegacySpan[] eras = new LegacySpan[0];
         for (String raw : spec.split(",")) {
             String token = raw.trim();
@@ -155,28 +142,26 @@ public final class CycleLayout {
             Style style = Style.VANILLA;
             int core = -1;
             int extra = -1;
-            int themeGroup = -1;
+            Style later = null;
             for (int i = 1; i < parts.length; i++) {
                 String arg = parts[i].trim().toLowerCase(Locale.ROOT);
-                LapThemePicker.Kind kind = themeKindOf(arg);
-                if (kind != null) {
-                    if (type != Type.OVERWORLD && type != Type.NETHER && type != Type.END) {
-                        warn.accept("theme tag '" + arg + "' only applies to ow / nether / end; ignored on '" + token + "'");
+                int gt = arg.indexOf('>');
+                if (gt >= 0) {
+                    // first>later: one look on the first run, another on every run after it
+                    Style first = styleOf(arg.substring(0, gt).trim());
+                    Style after = styleOf(arg.substring(gt + 1).trim());
+                    if (first == null || after == null) {
+                        warn.accept("bad style switch '" + arg + "' on '" + token + "'");
                         continue;
                     }
-                    int g = themeTags.indexOf(arg);
-                    if (g < 0) {
-                        g = themeTags.size();
-                        themeTags.add(arg);
-                        themeKinds.add(kind);
-                    }
-                    themeGroup = g;
-                    style = Style.THEMED;
+                    style = first;
+                    later = after;
                     continue;
                 }
                 Style s = styleOf(arg);
                 if (s != null) {
                     style = s;
+                    later = null;
                     continue;
                 }
                 try {
@@ -192,10 +177,10 @@ public final class CycleLayout {
                 continue;
             }
             if (core == 0 && type != Type.OVERWORLD) continue;    // a zero-length band is just dropped
-            slots.add(new Slot(type, style, core, extra, themeGroup));
+            slots.add(new Slot(type, style, core, extra, later == null ? style : later));
         }
         if (slots.isEmpty()) return null;
-        return new CycleLayout(slots.toArray(new Slot[0]), eras, fades, themeKinds);
+        return new CycleLayout(slots.toArray(new Slot[0]), eras, fades);
     }
 
     /** Build directly from slots (tests). */
@@ -203,19 +188,6 @@ public final class CycleLayout {
         return new CycleLayout(slots.toArray(new Slot[0]), eras, fades);
     }
 
-    /** Build directly from slots with theme groups (tests); group {@code g}'s rule is {@code themeKinds[g]}. */
-    public static CycleLayout of(List<Slot> slots, LegacySpan[] eras, Fades fades, List<LapThemePicker.Kind> themeKinds) {
-        return new CycleLayout(slots.toArray(new Slot[0]), eras, fades, themeKinds);
-    }
-
-    /** {@code t1} → Lap 1 rules, {@code t2} → Lap 2 rules; anything else is not a theme tag. */
-    private static LapThemePicker.Kind themeKindOf(String arg) {
-        return switch (arg) {
-            case "t1" -> LapThemePicker.Kind.LAP1;
-            case "t2" -> LapThemePicker.Kind.LAP2;
-            default -> null;
-        };
-    }
 
     /**
      * The legacy run's eras. Named eras run in the order written; a bare {@code legacy} takes every enabled
@@ -289,6 +261,7 @@ public final class CycleLayout {
             case "wwoo" -> Style.WWOO;
             case "bop" -> Style.BOP;
             case "better" -> Style.BETTER;
+            case "sunk" -> Style.SUNK;
             default -> null;
         };
     }
@@ -370,39 +343,6 @@ public final class CycleLayout {
     public int indexOfOccurrence(Type t, int occ) {
         for (int i = 0; i < slots.length; i++) {
             if (slots[i].type() == t && occurrence[i] == occ) return i;
-        }
-        return -1;
-    }
-
-    /** Theme groups per run ({@code :t1} / {@code :t2} tags in the order); {@code 0} when the order has none. */
-    public int themeGroupCount() {
-        return themeKinds.size();
-    }
-
-    /** The picker rule of every theme group, in group order (lap {@code n} is group {@code n % size}). */
-    public List<LapThemePicker.Kind> themeKinds() {
-        return themeKinds;
-    }
-
-    /** The picker rule of theme group {@code g}. */
-    public LapThemePicker.Kind themeGroupKind(int g) {
-        return themeKinds.get(g);
-    }
-
-    /** Base-coordinate start of theme group {@code g}: its first slot's start. */
-    public long themeGroupStart(int g) {
-        return themeStarts[g];
-    }
-
-    /** Base-coordinate end (exclusive) of theme group {@code g}: its last slot's end. */
-    public long themeGroupEnd(int g) {
-        return themeEnds[g];
-    }
-
-    /** Theme group whose span {@code [start, end)} holds base coordinate {@code u}, or {@code -1}. */
-    public int themeGroupAt(long u) {
-        for (int g = 0; g < themeKinds.size(); g++) {
-            if (themeStarts[g] >= 0L && u >= themeStarts[g] && u < themeEnds[g]) return g;
         }
         return -1;
     }

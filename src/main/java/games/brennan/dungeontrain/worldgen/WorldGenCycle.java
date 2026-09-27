@@ -594,78 +594,11 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
-     * The concrete style of slot {@code i} in doubling run {@code run}: its own label, or — for a
-     * {@code :t1} / {@code :t2} slot — the style its theme lap's {@link LapTheme} gives it (decided now
-     * if this is the first time that lap is asked about; see {@link LapThemes}).
+     * The concrete style of slot {@code i} in doubling run {@code run}: its first-run look on run 0, its
+     * later look on every run after ({@code first>later} in the order — see {@link CycleLayout.Slot}).
      */
     private CycleLayout.Style resolveStyle(int i, long run) {
-        CycleLayout.Slot slot = layout.slot(i);
-        if (slot.style() != CycleLayout.Style.THEMED) return slot.style();
-        long n = run * layout.themeGroupCount() + slot.themeGroup();
-        return LapThemes.resolve(n, layout.themeKinds()).styleFor(slot.type());
-    }
-
-    // ---- theme laps ---------------------------------------------------------------------------
-
-    /** Theme groups per run ({@code :t1} / {@code :t2}); {@code 0} for the classic layout or an unthemed order. */
-    public int themeGroupsPerRun() {
-        return layout == null ? 0 : layout.themeGroupCount();
-    }
-
-    /**
-     * Global index of the theme lap whose span (first themed slot to last) holds {@code worldX} —
-     * {@code run × groupsPerRun + group} — or {@code -1} outside every theme lap.
-     */
-    public long themeLapIndexAt(int worldX) {
-        if (layout == null || layout.themeGroupCount() == 0) return -1L;
-        long u = baseAt(worldX);
-        if (u < 0L) return -1L;
-        int g = layout.themeGroupAt(u);
-        return g < 0 ? -1L : (long) runAt(worldX) * layout.themeGroupCount() + g;
-    }
-
-    /**
-     * How far through its theme lap {@code worldX} is, {@code [0, 1)}, or {@code -1} outside one. In
-     * base coordinates, so a stretched later run reports the same fraction at the same relative spot.
-     */
-    public double themeLapProgressAt(int worldX) {
-        if (layout == null || layout.themeGroupCount() == 0) return -1.0;
-        long u = baseAt(worldX);
-        if (u < 0L) return -1.0;
-        int g = layout.themeGroupAt(u);
-        if (g < 0) return -1.0;
-        long start = layout.themeGroupStart(g);
-        long len = layout.themeGroupEnd(g) - start;
-        return len <= 0L ? -1.0 : (double) (u - start) / (double) len;
-    }
-
-    /** World-X range {@code [start, end)} of theme lap {@code n}, or {@code null}. */
-    public long[] themeLapRange(long n) {
-        if (layout == null || n < 0L) return null;
-        int groups = layout.themeGroupCount();
-        if (groups == 0) return null;
-        int k = (int) Math.min(62L, n / groups);
-        int g = (int) (n % groups);
-        long runStart = startX + CycleLayout.runStart(k, layout.period());
-        return new long[] {runStart + (layout.themeGroupStart(g) << k), runStart + (layout.themeGroupEnd(g) << k)};
-    }
-
-    /** The theme of lap {@code n}, deciding it if needed ({@link LapThemes#resolve}); {@code null} with no theme groups. */
-    public LapTheme themeOfLap(long n) {
-        if (themeGroupsPerRun() == 0 || n < 0L) return null;
-        return LapThemes.resolve(n, layout.themeKinds());
-    }
-
-    /** The theme of lap {@code n} if already decided — never decides; {@code null} when undecided. */
-    public LapTheme peekThemeOfLap(long n) {
-        if (themeGroupsPerRun() == 0 || n < 0L) return null;
-        return LapThemes.peek(n, layout.themeKinds());
-    }
-
-    /** The picker rule of lap {@code n}, or {@code null} with no theme groups. */
-    public LapThemePicker.Kind themeKindOfLap(long n) {
-        if (themeGroupsPerRun() == 0 || n < 0L) return null;
-        return layout.themeGroupKind((int) (n % layout.themeGroupCount()));
+        return layout.slot(i).styleOnRun(run);
     }
 
     /** Which look the Nether band at {@code worldX} wears ({@code BETTER} = BetterNether); {@code null} outside one. */

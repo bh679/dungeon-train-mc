@@ -74,12 +74,14 @@ public final class BandAdvancements {
      */
     public static final List<String> ALL = List.of(
             NETHER, VOID, END_ISLANDS, UPSIDE_DOWN, REASSEMBLY,
-            WWOO, BOP, BETTER_NETHER, BOP_NETHER, BETTER_END, BOP_END, SPHERES,
+            WWOO, BETTER_NETHER, BOP, BETTER_END, SPHERES,
             legacyId(LegacyBandKind.AMPLIFIED), legacyId(LegacyBandKind.BETA), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.CAVES_OF_CHAOS),
             legacyId(LegacyBandKind.SKYLANDS),
             legacyId(LegacyBandKind.FLOATING), legacyId(LegacyBandKind.ALPHA), legacyId(LegacyBandKind.INFDEV),
             legacyId(LegacyBandKind.CLASSIC), legacyId(LegacyBandKind.SUPERFLAT), LEGACY_VOID,
-            CHUNCKS, STACKS);
+            CHUNCKS, STACKS,
+            // Lap 1's Nether and End turn Biomes O' Plenty from the second cycle on (vanilla>bop).
+            BOP_NETHER, BOP_END);
 
     private BandAdvancements() {}
 
@@ -110,15 +112,13 @@ public final class BandAdvancements {
 
     private static void addSlot(Set<String> out, CycleLayout layout, int i) {
         CycleLayout.Slot slot = layout.slot(i);
-        // A Lap 2 theme slot can wear either modded look (chosen per world), so it chains both;
-        // a Lap 1 theme slot is vanilla on the first cycle, when the chain is first walked.
-        boolean themed2 = slot.style() == CycleLayout.Style.THEMED && slot.themeGroup() >= 0
-                && layout.themeGroupKind(slot.themeGroup()) == games.brennan.dungeontrain.worldgen.LapThemePicker.Kind.LAP2;
-        boolean better = themed2 || slot.style() == CycleLayout.Style.BETTER;
-        boolean bop = themed2 || slot.style() == CycleLayout.Style.BOP;
+        // Only the first-run look: a first>later slot's later look is met from the second cycle on, so
+        // its advancement keeps its place near the end of ALL, after the whole first cycle.
+        boolean better = slot.style() == CycleLayout.Style.BETTER;
+        boolean bop = slot.style() == CycleLayout.Style.BOP;
         switch (slot.type()) {
             case OVERWORLD -> {
-                if (themed2 || slot.style() == CycleLayout.Style.WWOO) out.add(WWOO);
+                if (slot.style() == CycleLayout.Style.WWOO) out.add(WWOO);
                 if (bop) out.add(BOP);
             }
             case NETHER -> {

@@ -29,16 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 final class BandLocatorTest {
 
-    @org.junit.jupiter.api.BeforeEach
-    void publishThemes() {
-        games.brennan.dungeontrain.worldgen.LapThemes.publish(games.brennan.dungeontrain.worldgen.TestLapPlans.bopThenBetter());
-    }
-
-    @org.junit.jupiter.api.AfterEach
-    void clearThemes() {
-        games.brennan.dungeontrain.worldgen.LapThemes.clear();
-    }
-
     private static final long START = 10_000L;
     private static final CycleLayout.Fades FADES = new CycleLayout.Fades(232, 0, 300, 120, 500, 600, 600, 10_000, 1500, 1500, 1500, 480);
 
@@ -66,10 +56,8 @@ final class BandLocatorTest {
         m.put("better_end", x -> c.endStyleAt(x) == Style.BETTER);
         m.put("wwoo", x -> c.overworldStyleAt(x) == Style.WWOO);
         m.put("bop", x -> c.overworldStyleAt(x) == Style.BOP);
-        if (c.themeGroupsPerRun() > 0) {
-            m.put("bop_nether", x -> c.isNetherCore(x) && c.netherStyleAt(x) == Style.BOP);
-            m.put("bop_end", x -> c.endStyleAt(x) == Style.BOP);
-        }
+        m.put("bop_nether", x -> c.isNetherCore(x) && c.netherStyleAt(x) == Style.BOP);
+        m.put("bop_end", x -> c.endStyleAt(x) == Style.BOP);
         m.put("upside_down", c::isInUpsideDownBand);
         m.put("reassembly", c::isInUpsideDownExitFade);
         m.put("spheres", c::isInSpheresBand);
@@ -140,6 +128,11 @@ final class BandLocatorTest {
         WorldGenCycle c = cycle(CycleLayout.DEFAULT_ORDER);
         for (int lap = 0; lap <= 3; lap++) {
             for (Map.Entry<String, IntPredicate> band : bands(c).entrySet()) {
+                // Lap 1's BoP Nether and End (vanilla>bop) exist only from the second run on.
+                if (lap == 0 && band.getKey().startsWith("bop_")) {
+                    assertFalse(BandLocator.bandStartXInLap(c, band.getValue(), 0).isPresent(), band.getKey() + " in lap 0");
+                    continue;
+                }
                 OptionalInt entry = BandLocator.bandStartXInLap(c, band.getValue(), lap);
                 assertTrue(entry.isPresent(), band.getKey() + " not found in lap " + lap);
                 int x = entry.getAsInt();

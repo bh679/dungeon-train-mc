@@ -300,7 +300,7 @@ public final class TrackGenerator {
     private static int probeGroundY(ServerLevel level, int x, int z, int bedY) {
         Shipyard shipyard = Shipyards.of(level);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, x, z) + 1;
         for (int py = bedY - 1; py >= minY; py--) {
             pos.set(x, py, z);
             if (shipyard.isInShip(pos)) {
@@ -349,7 +349,7 @@ public final class TrackGenerator {
         int deepest = bedY;                            // bedSentinel = "no useful ground"
         int currentIdx = N / 2;                        // anchor = centre column
         int currentY = bedY - 1;
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, worldX, zMin) + 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         while (unresolved > 0) {
@@ -364,7 +364,8 @@ public final class TrackGenerator {
             }
             int currentZ = zMin + currentIdx;
 
-            int groundBlockY = -1;
+            // MIN_VALUE, not -1: ground below y 0 is real ground (the sunk Amplified band).
+            int groundBlockY = NO_GROUND;
             boolean shipAbort = false;
             for (int y = currentY; y >= minY; y--) {
                 pos.set(worldX, y, currentZ);
@@ -374,7 +375,7 @@ public final class TrackGenerator {
             resolved[currentIdx] = true;
             unresolved--;
 
-            if (shipAbort || groundBlockY < 0) {
+            if (shipAbort || groundBlockY == NO_GROUND) {
                 // Ship intercept or void — column doesn't contribute. Pick the
                 // next unresolved column from full bedY-1; can't reuse currentY
                 // because it was scoped to a different (now-skipped) column.
@@ -843,7 +844,7 @@ public final class TrackGenerator {
      */
     private static int probeGroundYWorldgen(WorldGenLevel level, int x, int z, int bedY) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, x, z) + 1;
         for (int py = bedY - 1; py >= minY; py--) {
             pos.set(x, py, z);
             BlockState state = level.getBlockState(pos);
@@ -869,7 +870,7 @@ public final class TrackGenerator {
         int deepest = bedY;
         int currentIdx = N / 2;
         int currentY = bedY - 1;
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, worldX, zMin) + 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         while (unresolved > 0) {
@@ -884,7 +885,8 @@ public final class TrackGenerator {
             }
             int currentZ = zMin + currentIdx;
 
-            int groundBlockY = -1;
+            // MIN_VALUE, not -1: ground below y 0 is real ground (the sunk Amplified band).
+            int groundBlockY = NO_GROUND;
             for (int y = currentY; y >= minY; y--) {
                 pos.set(worldX, y, currentZ);
                 if (!isPassable(level.getBlockState(pos))) { groundBlockY = y; break; }
@@ -892,7 +894,7 @@ public final class TrackGenerator {
             resolved[currentIdx] = true;
             unresolved--;
 
-            if (groundBlockY < 0) {
+            if (groundBlockY == NO_GROUND) {
                 currentY = bedY - 1;
                 continue;
             }
@@ -959,7 +961,6 @@ public final class TrackGenerator {
         if (probeZ < chunkMinZ || probeZ > chunkMaxZ) return;
 
         long worldSeed = level.getSeed();
-        int voidSentinel = WorldFloor.bedrockY(level) + 1;
 
         // Pre-compute pillar positions + heights in [chunkMinX - MIN_STAIRS_SPACING,
         // chunkMaxX + MIN_STAIRS_SPACING]. Used to apply the cross-chunk
@@ -974,7 +975,7 @@ public final class TrackGenerator {
         for (int x = scanMinX; x <= scanMaxX; x++) {
             int gy = probeGroundYWorldgen(level, x, probeZ, g.bedY());
             if (gy >= g.bedY()) continue;
-            if (gy == voidSentinel) continue;
+            if (gy == WorldFloor.terrainFloorAt(level, x, probeZ) + 1) continue; // void: no ground found
             int h = g.bedY() - 1 - gy;
             if (h < 0) continue;
             int sp = computeSpacing(h);
@@ -1124,6 +1125,9 @@ public final class TrackGenerator {
      * in that stretch and let them land on a more substantial pillar.
      */
     private static final int SHORT_PILLAR_THRESHOLD = 3;
+
+    /** Probe result for a column with no ground above the floor. Not -1: terrain can sit below y 0. */
+    private static final int NO_GROUND = Integer.MIN_VALUE;
 
     /** Pillar position metadata cached during the worldgen scan. */
     private record PillarInfo(int groundY, int height) {}
@@ -1386,19 +1390,19 @@ public final class TrackGenerator {
         // Walk up if terrain is solid at that level (hill rising past the
         // pillar) or down if air (cliff edge / down-slope).
         int centerStairsZ = originZ + (STAIRS_Z - 1) / 2;
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, centerX, centerStairsZ) + 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int deepestGroundY;
         pos.set(centerX, pillarBaseY, centerStairsZ);
         if (isPassable(level.getBlockState(pos))) {
             // Air at pillar base level — terrain is below. Walk down to
             // find the first non-passable block; anchor stairs one above.
-            int found = -1;
+            int found = NO_GROUND;   // not -1: sunk ground sits below y 0
             for (int y = pillarBaseY - 1; y >= minY; y--) {
                 pos.set(centerX, y, centerStairsZ);
                 if (!isPassable(level.getBlockState(pos))) { found = y; break; }
             }
-            if (found < 0) {
+            if (found == NO_GROUND) {
                 LOGGER.info("[stairs] centerX={} reject=void_below probeStart={}", centerX, pillarBaseY);
                 return;
             }
@@ -1407,12 +1411,12 @@ public final class TrackGenerator {
             // Solid at pillar base level — terrain extends at or above.
             // Walk up until we find air; anchor stairs at that air block
             // (= one above the highest non-passable).
-            int found = -1;
+            int found = NO_GROUND;
             for (int y = pillarBaseY + 1; y <= topInclusive + STAIRS_Y; y++) {
                 pos.set(centerX, y, centerStairsZ);
                 if (isPassable(level.getBlockState(pos))) { found = y; break; }
             }
-            if (found < 0) {
+            if (found == NO_GROUND) {
                 LOGGER.info("[stairs] centerX={} reject=terrain_above_cap probeStart={} topInclusive={}",
                     centerX, pillarBaseY, topInclusive);
                 return;
@@ -1427,7 +1431,9 @@ public final class TrackGenerator {
         // Capping at seaLevel-2 leaves stairs visibly anchored just under
         // the water surface and bounds the placement work to ~2 stamps
         // (16 rows) regardless of terrain depth.
-        int seaLevel = level.getSeaLevel();
+        // The column's own sea — the sunk zone's is AmplifiedDrop.drop lower than the level's, and
+        // capping at the level's would leave every staircase there ending ~80 blocks over the ground.
+        int seaLevel = WorldFloor.seaLevelAt(level, centerX, centerStairsZ);
         int seaFloorCap = seaLevel - 2;
         if (deepestGroundY < seaFloorCap) {
             LOGGER.debug("[stairs] centerX={} clamping deepest {} → seaFloorCap {} (seaLevel={})",

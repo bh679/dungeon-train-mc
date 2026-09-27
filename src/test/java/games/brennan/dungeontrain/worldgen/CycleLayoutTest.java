@@ -42,10 +42,10 @@ final class CycleLayoutTest {
         CycleLayout l = shipped();
         assertEquals(16, l.count());
         // Lap 1: 2750 + (232+300+3000+300+232) + 3000 + (740+3000+740) + (600+2500+600+6000+600) = 24,594
-        // Lap 2: 8000 + 9064 + 8000 + 9480 + (750+6550) + 5000 = 46,844
-        // Lap 3: legacy (480·12 + 5000 + 5000 + 4320 + 4000 + 5000 + 2000·4 + 1000 + 200 = 38,280)
-        //        + 2000 + 6500 + 5000 + 6500 = 58,280
-        assertEquals(129_718L, l.period());
+        // Lap 2: 8000 + 9064 + 8000 + 9480 + (750+6550) + 500 (the sunk approach) = 42,344
+        // Lap 3: legacy (480·12 + 5000 + 3500 + 4320 + 4000 + 5000 + 2000·4 + 1000 + 200 = 36,780)
+        //        + 2000 + 6500 + 5000 + 6500 = 56,780
+        assertEquals(123_718L, l.period());
         assertEquals(2, l.typeCount(Type.NETHER));
         assertEquals(2, l.typeCount(Type.END));
         assertEquals(1, l.typeCount(Type.LEGACY_RUN));
@@ -57,14 +57,21 @@ final class CycleLayoutTest {
         assertEquals(9814L, l.start(3));                        // End
         assertEquals(9814L + 4480L, l.start(4));                // Upside-down
         assertEquals(24_594L, l.start(5));                      // OW·WWOO opens lap 2
-        for (int i : new int[] {0, 1, 2, 3, 5, 6, 7, 8}) {
-            assertEquals(Style.THEMED, l.slot(i).style(), "slot " + i + " is a theme-lap slot");
-        }
-        assertEquals(0, l.slot(1).themeGroup());                // Lap 1
-        assertEquals(1, l.slot(6).themeGroup());                // Lap 2
+        assertEquals(Style.WWOO, l.slot(5).style());
+        assertEquals(Style.BETTER, l.slot(6).style());
+        assertEquals(Style.BOP, l.slot(7).style());
+        assertEquals(Style.BETTER, l.slot(8).style());
+        // Lap 1's Nether and End: vanilla on the first run, Biomes O' Plenty on every run after.
+        assertEquals(Style.VANILLA, l.slot(1).styleOnRun(0));
+        assertEquals(Style.BOP, l.slot(1).styleOnRun(1));
+        assertEquals(Style.VANILLA, l.slot(3).styleOnRun(0));
+        assertEquals(Style.BOP, l.slot(3).styleOnRun(2));
+        assertEquals(Style.VANILLA, l.slot(0).styleOnRun(1));             // Lap 1's overworld stays vanilla
+        assertEquals(Style.BETTER, l.slot(6).styleOnRun(1));              // Lap 2 is the same every run
         assertEquals(Type.SPHERES, l.slot(9).type());
         assertEquals(Type.LEGACY_RUN, l.slot(11).type());
-        assertEquals(24_594L + 46_844L, l.start(11));
+        assertEquals(24_594L + 42_344L, l.start(11));
+        assertEquals(Style.SUNK, l.slot(10).style());            // the short approach into Amplified
         assertEquals(Type.STACKS, l.slot(15).type());
         assertEquals(1, l.occurrence(6));                       // the BetterNether slot is Nether occurrence 1
         assertEquals(0, l.occurrence(1));
@@ -82,15 +89,15 @@ final class CycleLayoutTest {
                         LegacyBandKind.INFDEV, LegacyBandKind.CLASSIC, LegacyBandKind.SUPERFLAT, LegacyBandKind.VOID},
                 java.util.Arrays.stream(eras).map(LegacySpan::kind).toArray(LegacyBandKind[]::new));
         assertEquals(5000, eras[0].hold());
-        assertEquals(5000, eras[1].hold());
+        assertEquals(3500, eras[1].hold());
         assertEquals(4320, eras[2].hold());
         assertEquals(4000, eras[3].hold());
         assertEquals(1000, eras[9].hold());
         assertEquals(200, eras[10].hold());
         assertEquals(480L, l.eraCoreStart(0));
         assertEquals(480L + 5000L + 480L, l.eraCoreStart(1));
-        assertEquals(480L + 5000L + 480L + 5000L + 480L, l.eraCoreStart(2));
-        long total = 480L * 12 + 5000 + 4000 + 5000 + 4320 + 5000 + 2000 * 4 + 1000 + 200;
+        assertEquals(480L + 5000L + 480L + 3500L + 480L, l.eraCoreStart(2));
+        long total = 480L * 12 + 5000 + 4000 + 3500 + 4320 + 5000 + 2000 * 4 + 1000 + 200;
         assertEquals(total, l.length(11));
     }
 

@@ -54,17 +54,23 @@ class BandHoldDefaultsTest {
     }
 
     @Test
-    @DisplayName("the v5 cycle order differs from v6's only in its spheres slot, and v6's from the shipped one only in its theme laps")
-    void v5CycleOrderDiffersOnlyInSpheres() {
+    @DisplayName("each shipped cycle order differs from the next only in the slot its migration changed")
+    void cycleOrdersChainToTheDefault() {
         assertEquals(DungeonTrainCommonConfig.V6_WORLDGEN_CYCLE_ORDER,
                 DungeonTrainCommonConfig.V5_WORLDGEN_CYCLE_ORDER.replace("spheres:15000", "spheres:6550"),
-                "the v5 -> v6 migration matches a file still holding the v5 order string exactly");
+                "v5 -> v6 changed only the spheres slot");
         assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+                DungeonTrainCommonConfig.V7_WORLDGEN_CYCLE_ORDER
+                        .replace("nether:3000,", "nether:vanilla>bop:3000,")
+                        .replace("end:3000,", "end:vanilla>bop:3000,"),
+                "v7 -> v8 changed only Lap 1's Nether and End");
+        assertEquals(DungeonTrainCommonConfig.V7_WORLDGEN_CYCLE_ORDER,
                 DungeonTrainCommonConfig.V6_WORLDGEN_CYCLE_ORDER
-                        .replace("ow:2750, nether:3000, ow:3000, end:3000,", "ow:t1:2750, nether:t1:3000, ow:t1:3000, end:t1:3000,")
-                        .replace("ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000,",
-                                "ow:t2:8000, nether:t2:8000, ow:t2:8000, end:t2:8000,"),
-                "the v6 -> v7 migration matches a file still holding the v6 order string exactly");
+                        .replace("spheres:6550, ow:5000,", "spheres:6550, ow:sunk:500,")
+                        .replace("beta=5000", "beta=3500"),
+                "v6 -> v7 changed only the gap into Amplified and the Beta era");
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 7,
+                "CURRENT_CONFIG_VERSION must be at least 7, or the v6 -> v7 order step never runs");
         assertTrue(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER.contains("spheres:"
                 + DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS + ","));
     }

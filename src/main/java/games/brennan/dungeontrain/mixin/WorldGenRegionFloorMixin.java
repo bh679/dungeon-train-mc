@@ -56,17 +56,28 @@ public abstract class WorldGenRegionFloorMixin {
         return dungeontrain$floorY;
     }
 
+    /**
+     * The world-wide floor first — every write above it passes on one comparison. Only a write below it
+     * pays for the per-chunk lookup, which lets the sunk Amplified band's valleys, trees and ores through
+     * ({@link WorldFloor#terrainFloorY}).
+     */
+    @Unique
+    private boolean dungeontrain$belowFloor(int x, int y, int z) {
+        if (!WorldFloor.isBelowFloor(y, dungeontrain$floorY())) return false;
+        return WorldFloor.isBelowFloor(y, WorldFloor.terrainFloorY(this.getLevel(), x >> 4, z >> 4));
+    }
+
     @Inject(method = "setBlock", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$noBlocksBelowBedrock(BlockPos pos, BlockState state, int flags, int recursionLeft,
                                                    CallbackInfoReturnable<Boolean> cir) {
-        if (WorldFloor.isBelowFloor(pos.getY(), dungeontrain$floorY())) {
+        if (dungeontrain$belowFloor(pos.getX(), pos.getY(), pos.getZ())) {
             cir.setReturnValue(false); // same answer vanilla gives for a write outside the world
         }
     }
 
     @Inject(method = "addFreshEntity", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$noEntitiesBelowBedrock(Entity entity, CallbackInfoReturnable<Boolean> cir) {
-        if (WorldFloor.isBelowFloor(entity.getBlockY(), dungeontrain$floorY())) {
+        if (dungeontrain$belowFloor(entity.getBlockX(), entity.getBlockY(), entity.getBlockZ())) {
             cir.setReturnValue(false);
         }
     }

@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_better_nether",
+  "parent": "dungeontrain:dungeon_train/reached_stacks",
   "display": {
     "icon": { "id": "minecraft:warped_fungus" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_bop_nether.title" },
