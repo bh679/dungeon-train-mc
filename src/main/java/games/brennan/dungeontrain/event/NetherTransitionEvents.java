@@ -3,10 +3,13 @@ package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.feature.NetherTransitionFeature;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -28,6 +31,10 @@ import net.neoforged.neoforge.event.level.ChunkEvent;
  * generation, after all decoration, never on reload). Only touches columns the End band does not
  * own ({@link DisintegrationBand#middleRampAt} {@code == 0}). Writes go through raw
  * {@link LevelChunkSection#setBlockState}, the Sable-safe path (mirroring {@code WorldDisintegrationEvents}).</p>
+ *
+ * <p>In the real-Nether <b>core</b> the Nether's own flora is kept ({@link #isNetherFlora}): the core is
+ * decorated with real Nether features, and a huge fungus's stem is a {@code #minecraft:logs} block, so
+ * stripping it left the cap floating.</p>
  *
  * <p><b>History:</b> this previously stripped foliage across the WHOLE band ({@code heightRampAt > 0})
  * to keep the old bare stamped mountains clean — which also deleted the trees/flowers the new
@@ -55,13 +62,16 @@ public final class NetherTransitionEvents {
         if (chunkMinX + 15 < startX) return; // before the first band
 
         boolean[] band = new boolean[16];
+        boolean[] core = new boolean[16];
         boolean any = false;
         for (int dx = 0; dx < 16; dx++) {
             int worldX = chunkMinX + dx;
             // Only the netherrack crossfade + Nether core (netherRamp > 0) — NOT the vegetated
             // mountain stages — and never a column the End band owns (End wins).
-            band[dx] = NetherBand.netherRampAt(level, worldX, pos.getMinBlockZ()) > 0.0
+            double ramp = NetherBand.netherRampAt(level, worldX, pos.getMinBlockZ());
+            band[dx] = ramp > 0.0
                     && DisintegrationBand.middleRampAt(level, worldX, pos.getMinBlockZ()) <= 0.0;
+            core[dx] = ramp >= WorldGenCycle.NETHER_CORE_THRESHOLD;
             if (band[dx]) any = true;
         }
         if (!any) return;
@@ -77,6 +87,7 @@ public final class NetherTransitionEvents {
                     for (int ly = 0; ly < 16; ly++) {
                         BlockState cur = section.getBlockState(dx, ly, dz);
                         if (cur.isAir() || !NetherTransitionFeature.isStrippableFoliage(cur)) continue;
+                        if (core[dx] && isNetherFlora(cur)) continue;   // the core's own Nether decoration
                         if (cur.hasBlockEntity()) {
                             chunk.removeBlockEntity(new BlockPos(chunkMinX + dx, baseY + ly, pos.getMinBlockZ() + dz));
                         }
@@ -87,5 +98,20 @@ public final class NetherTransitionEvents {
             }
         }
         if (changed) chunk.setUnsaved(true);
+    }
+
+    /**
+     * Flora the real-Nether core's own decoration grows, which the strip must leave standing. Huge crimson /
+     * warped fungi have {@code #minecraft:logs} stems, and BetterNether / BoP Nether trees have modded logs
+     * and leaves; stripping them as "overworld foliage" left their caps, shroomlights, weeping vines, wall
+     * moss and wall mushrooms floating in mid-air. Overworld trees are vanilla ({@code minecraft:}) wood, so
+     * spilled overworld canopies are still stripped in the core.
+     */
+    static boolean isNetherFlora(BlockState state) {
+        if (state.is(BlockTags.CRIMSON_STEMS) || state.is(BlockTags.WARPED_STEMS)
+                || state.is(BlockTags.WART_BLOCKS)) {
+            return true;
+        }
+        return !BuiltInRegistries.BLOCK.getKey(state.getBlock()).getNamespace().equals("minecraft");
     }
 }

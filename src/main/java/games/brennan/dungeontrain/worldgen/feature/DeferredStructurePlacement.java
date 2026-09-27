@@ -33,10 +33,17 @@ public final class DeferredStructurePlacement {
 
     /** True if this chunk's structure pieces must wait for the core fill. Never throws. */
     public static boolean isDeferred(WorldGenLevel level, ChunkPos chunkPos) {
+        return DungeonTrainCommonConfig.isNetherStructuresEnabled() && touchesCore(level, chunkPos);
+    }
+
+    /**
+     * True if any column of this overworld chunk (widened by the edge-wave margin) belongs to the real-Nether
+     * core — the chunks whose decoration lands on core terrain. Never throws.
+     */
+    public static boolean touchesCore(WorldGenLevel level, ChunkPos chunkPos) {
         try {
             ServerLevel serverLevel = level.getLevel();
             if (!serverLevel.dimension().equals(Level.OVERWORLD)) return false;
-            if (!DungeonTrainCommonConfig.isNetherStructuresEnabled()) return false;
 
             ServerLevel overworld = serverLevel.getServer() == null ? null : serverLevel.getServer().overworld();
             if (overworld == null || NetherBand.startX(overworld) == NetherBand.OFF) return false;
@@ -49,7 +56,7 @@ public final class DeferredStructurePlacement {
             }
             return false;
         } catch (Throwable t) {
-            return false;   // never block generation over this — worst case, structures place as they used to
+            return false;   // never block generation over this — worst case, the chunk decorates as it used to
         }
     }
 }

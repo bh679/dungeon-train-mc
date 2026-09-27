@@ -86,6 +86,23 @@ public abstract class ChunkGeneratorDecorationMixin {
     private static final ThreadLocal<Boolean> dungeontrain$deferStructures = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
     /**
+     * Per-decoration-call registry access while decorating a chunk that touches the Nether core, else
+     * {@code null} — the {@link #dungeontrain$isCoreVetoedFeature} veto reads feature ids through it. Same
+     * lifecycle as the flags above.
+     */
+    @Unique
+    private static final ThreadLocal<RegistryAccess> dungeontrain$netherCore = new ThreadLocal<>();
+
+    /**
+     * Overworld features kept out of chunks that touch the Nether core. The core is stamped at CARVERS, so
+     * the overworld decoration of the low, overworld-labelled rows now lands on it; amethyst geodes (placed
+     * up to y30, shells reaching past y50) would bore calcite/amethyst pockets into the Nether floor.
+     */
+    @Unique
+    private static final java.util.Set<ResourceLocation> dungeontrain$CORE_VETOED_FEATURES =
+        java.util.Set.of(ResourceLocation.withDefaultNamespace("amethyst_geode"));
+
+    /**
      * Per-decoration-call registry access while decorating a legacy or sunk chunk, else {@code null} —
      * the {@link LegacyUnderground} veto reads feature / structure ids through it. Same lifecycle as the
      * flags above.
@@ -117,6 +134,8 @@ public abstract class ChunkGeneratorDecorationMixin {
         dungeontrain$upsideDownSpawners.set(dungeontrain$appliesUpsideDownSpawners(level, chunk)
                 ? level.registryAccess() : null);
         dungeontrain$deferStructures.set(DeferredStructurePlacement.isDeferred(level, chunk.getPos()));
+        dungeontrain$netherCore.set(DeferredStructurePlacement.touchesCore(level, chunk.getPos())
+                ? level.registryAccess() : null);
         dungeontrain$superflatVillages.set(skip && dungeontrain$isSuperflatChunk(level, chunk)
                 ? level.registryAccess() : null);
         WwooDecorationPass.begin(level, chunk, skip);
@@ -158,6 +177,9 @@ public abstract class ChunkGeneratorDecorationMixin {
         }
         if (WwooDecorationPass.vetoes(feature)) {
             return false; // outside the WWOO stretch: WWOO-only or overridden (vanilla version places later)
+        }
+        if (dungeontrain$isCoreVetoedFeature(feature)) {
+            return false; // Nether core: no overworld geodes boring into the stamped Nether floor
         }
         if (dungeontrain$isDisabledOreFeature(level, feature)) {
             return false; // BetterNether/BetterEnd/BoP ores are disabled in DT (see DisabledModContent)
@@ -295,6 +317,19 @@ public abstract class ChunkGeneratorDecorationMixin {
         try {
             ResourceLocation key = BuiltInRegistries.FEATURE.getKey(feature.feature().value().feature());
             return key != null && DungeonTrain.MOD_ID.equals(key.getNamespace());
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** An overworld feature kept off the Nether core ({@link #dungeontrain$CORE_VETOED_FEATURES}). Unreadable → kept. */
+    @Unique
+    private static boolean dungeontrain$isCoreVetoedFeature(PlacedFeature feature) {
+        RegistryAccess registries = dungeontrain$netherCore.get();
+        if (registries == null) return false;
+        try {
+            return dungeontrain$CORE_VETOED_FEATURES.contains(
+                registries.registryOrThrow(Registries.PLACED_FEATURE).getKey(feature));
         } catch (Throwable t) {
             return false;
         }
