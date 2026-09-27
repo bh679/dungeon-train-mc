@@ -19892,6 +19892,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sprint-fly-3x-default",
+      "version": "0.985.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Faster creative sprint-flying",
+      "summary": "Sprint-flying in creative is now 3\u00d7 faster by default. Normal flight and flying up or down are unchanged. Use /dt flyspeed 1 to go back to vanilla speed, or pick any multiplier you like.",
+      "highlights": [],
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
