@@ -19657,6 +19657,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dtp-every-stage-and-subsections",
+      "version": "0.978.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "internal"
+      ],
+      "title": "Better testing tools",
+      "summary": "Behind-the-scenes improvements to the tools used to test the journey, so future updates can be checked more thoroughly.",
+      "highlights": [],
+      "pr": 1592,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

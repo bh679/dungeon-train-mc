@@ -201,13 +201,16 @@ final class BandLocatorTest {
     }
 
     @Test
-    @DisplayName("/dtp registers every phase token and alias once, plus the styled targets")
+    @DisplayName("/dtp registers every stage once — phase tokens, every legacy era, the styled targets, no aliases")
     void targetTokens() {
         Set<String> tokens = new HashSet<>();
         for (DtpTarget t : DtpTarget.all()) assertTrue(tokens.add(t.token()), "duplicate /dtp token " + t.token());
         for (TrainPhase p : TrainPhase.values()) assertTrue(tokens.contains(p.token()), p.token());
-        for (String alias : TrainPhase.aliases().keySet()) assertTrue(tokens.contains(alias), alias);
-        for (String styled : List.of("better_nether", "better_end", "wwoo", "bop", "reassembly")) {
+        for (String alias : TrainPhase.aliases().keySet()) assertFalse(tokens.contains(alias), "alias listed twice: " + alias);
+        for (LegacyBandKind k : LegacyBandKind.values()) {
+            assertTrue(tokens.contains(k.name().toLowerCase(java.util.Locale.ROOT)), "legacy era " + k + " unreachable");
+        }
+        for (String styled : List.of("better_nether", "better_end", "wwoo", "bop", "reassembly", "superflat")) {
             assertTrue(tokens.contains(styled), styled);
         }
         assertEquals(TrainPhase.CAVES_OF_CHAOS, TrainPhase.byToken("chaos"));
