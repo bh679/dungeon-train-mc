@@ -27,9 +27,9 @@ public final class UpsideDownTrackFlatten {
      */
     public static final double EROSION_FLOOR = 0.25;
     /** Blocks either side of the track centre held at full weight. */
-    public static final int TRACK_INNER = 80;
+    public static final int TRACK_INNER = 32;
     /** Blocks from the track centre where the weight has faded to zero — mountains beyond are untouched. */
-    public static final int TRACK_OUTER = 288;
+    public static final int TRACK_OUTER = 160;
     /** Blocks outside each end of the upside-down stretch over which the weight ramps in / out. */
     public static final int BAND_RAMP = 160;
     /** Coarse probe step of the distance search in {@link #bandWeight}; refined to one block after a hit. */
