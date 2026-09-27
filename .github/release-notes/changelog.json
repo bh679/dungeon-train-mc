@@ -19577,6 +19577,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "upsidedown-reverse-gravity",
+      "version": "0.975.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Sand knows which way is down",
+      "summary": "In one of the stranger stretches of the journey, sand and gravel no longer tumble out of the world before it has settled \u2014 and once it has, they fall the way that place says they should.",
+      "highlights": [
+        "Sand and gravel wait for the world to settle before they fall.",
+        "Suspicious sand and gravel turn up there too, loot and all."
+      ],
+      "pr": 1589,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
