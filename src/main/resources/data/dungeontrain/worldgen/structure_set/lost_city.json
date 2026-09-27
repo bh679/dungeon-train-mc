@@ -173,6 +173,58 @@
     {
       "structure": "big_lost_city:warehouse",
       "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/blackskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "dungeontrain:lost_city/redskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "dungeontrain:lost_city/ruindedredskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "dungeontrain:lost_city/ruinedblackskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "dungeontrain:lost_city/ruinedskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "dungeontrain:lost_city/tallskyscraper",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/powerplant",
+      "weight": 3
+    },
+    {
+      "structure": "dungeontrain:lost_city/house_1",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/house_2",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/house_3",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/store_1",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/warehouse",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/ferriswheel",
+      "weight": 3
     }
   ],
   "placement": {

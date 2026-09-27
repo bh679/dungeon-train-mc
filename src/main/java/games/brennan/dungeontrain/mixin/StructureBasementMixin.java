@@ -63,7 +63,7 @@ public abstract class StructureBasementMixin {
         // Big Lost City's cities belong to the Lost City era alone (LostCityStructures) — anywhere
         // else, including a start we can't place in a level (a sampler or foreign generator), is dropped.
         if (LostCityStructures.isLostCityStructure(id)
-                && (level == null || !LostCityStructures.allowedAt(level, chunkPos.x, chunkPos.z))) {
+                && (level == null || !LostCityStructures.allowedAt(level, chunkPos.x, chunkPos.z, id))) {
             cir.setReturnValue(StructureStart.INVALID_START);
             return;
         }

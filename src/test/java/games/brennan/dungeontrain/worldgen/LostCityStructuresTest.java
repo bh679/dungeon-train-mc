@@ -161,11 +161,66 @@ final class LostCityStructuresTest {
     }
 
     @Test
-    @DisplayName("only the big_lost_city namespace is a Lost City structure")
+    @DisplayName("Lost City structures: the big_lost_city namespace and DT's trackside copies, nothing else")
     void namespace() {
         assertTrue(LostCityStructures.isLostCityStructure(ResourceLocation.parse("big_lost_city:tallskyscraper")));
+        assertTrue(LostCityStructures.isLostCityStructure(COPY));
+        assertTrue(LostCityStructures.isTracksideCopy(COPY));
+        assertFalse(LostCityStructures.isTracksideCopy(ORIGINAL));
         assertFalse(LostCityStructures.isLostCityStructure(ResourceLocation.parse("minecraft:village_plains")));
         assertFalse(LostCityStructures.isLostCityStructure(ResourceLocation.parse("dungeontrain:lost_city")));
+        assertFalse(LostCityStructures.isLostCityStructure(ResourceLocation.parse("dungeontrain:end_city")));
         assertFalse(LostCityStructures.isLostCityStructure(null));
+    }
+
+    private static final ResourceLocation COPY = ResourceLocation.parse("dungeontrain:lost_city/tallskyscraper");
+    private static final ResourceLocation ORIGINAL = ResourceLocation.parse("big_lost_city:tallskyscraper");
+
+    @Test
+    @DisplayName("a trackside copy starts only within 160 blocks of the track; an original ignores the track")
+    void trackside() {
+        int cx = x(coreStart() + 2000L, 0) >> 4;
+        int trackZ = 8;
+        assertTrue(LostCityStructures.allowedAt(SEED, C, cx, 0, COPY, trackZ));
+        assertTrue(LostCityStructures.allowedAt(SEED, C, cx, (trackZ + 160) >> 4, COPY, trackZ));
+        assertTrue(LostCityStructures.allowedAt(SEED, C, cx, (trackZ - 160) >> 4, COPY, trackZ));
+        assertFalse(LostCityStructures.allowedAt(SEED, C, cx, (trackZ + 200) >> 4, COPY, trackZ));
+        assertFalse(LostCityStructures.allowedAt(SEED, C, cx, (trackZ - 200) >> 4, COPY, trackZ));
+        assertTrue(LostCityStructures.allowedAt(SEED, C, cx, (trackZ + 2000) >> 4, ORIGINAL, trackZ));
+        // Beside the track but outside the era: the era rule still applies to copies.
+        assertFalse(LostCityStructures.allowedAt(SEED, C, x(coreStart() - 2500L, 0) >> 4, 0, COPY, trackZ));
+    }
+
+    @Test
+    @DisplayName("every trackside copy is its original with only the biomes widened, weighted like it in the set")
+    void copiesMatchTheirOriginals() throws Exception {
+        String dir = "/data/dungeontrain/worldgen/structure/lost_city/";
+        com.google.gson.JsonObject set = json("/data/dungeontrain/worldgen/structure_set/lost_city.json");
+        java.util.Map<String, Integer> weights = new java.util.HashMap<>();
+        for (com.google.gson.JsonElement e : set.getAsJsonArray("structures")) {
+            com.google.gson.JsonObject o = e.getAsJsonObject();
+            weights.put(o.get("structure").getAsString(), o.get("weight").getAsInt());
+        }
+        String[] big = {"blackskyscraper", "redskyscraper", "ruindedredskyscraper", "ruinedblackskyscraper",
+                "ruinedskyscraper", "tallskyscraper", "powerplant", "house_1", "house_2", "house_3", "store_1",
+                "warehouse", "ferriswheel"};
+        for (String name : big) {
+            com.google.gson.JsonObject copy = json(dir + name + ".json");
+            assertEquals("big_lost_city:" + name, copy.get("start_pool").getAsString(), name);
+            assertEquals("#dungeontrain:lost_city_trackside", copy.get("biomes").getAsString(), name);
+            assertEquals("beard_thin", copy.get("terrain_adaptation").getAsString(), name);
+            assertEquals("big_lost_city", copy.getAsJsonArray("neoforge:conditions").get(0).getAsJsonObject()
+                    .get("modid").getAsString(), name);
+            assertEquals(weights.get("big_lost_city:" + name), weights.get("dungeontrain:lost_city/" + name), name);
+        }
+        assertEquals(42 + big.length, weights.size());
+    }
+
+    private static com.google.gson.JsonObject json(String path) throws Exception {
+        try (var in = LostCityStructuresTest.class.getResourceAsStream(path)) {
+            assertTrue(in != null, "missing " + path);
+            return com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(in,
+                    java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+        }
     }
 }
