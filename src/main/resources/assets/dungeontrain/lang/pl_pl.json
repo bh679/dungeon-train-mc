@@ -2109,8 +2109,6 @@
   "gui.dungeontrain.unsupported_mods.whitelist_link": "(Zobacz tutaj listę zatwierdzonych)",
   "gui.dungeontrain.unsupported_mods.suggest.tooltip": "Zgłoś %s do listy zatwierdzonych",
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": "Zgłosiłeś %s do listy zatwierdzonych",
-  "gui.dungeontrain.unsupported_mods.suggest.title": "Zgłoś %s do listy zatwierdzonych",
-  "gui.dungeontrain.unsupported_mods.suggest.label": "Dlaczego ten mod powinien być dozwolony?",
   "gui.dungeontrain.unsupported_mods.suggest.hint": "Co on robi? Wymagane.",
   "gui.dungeontrain.unsupported_mods.suggest.submit": "Wyślij",
   "gui.dungeontrain.unsupported_mods.suggest.sending": "Wysyłanie…",

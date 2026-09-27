@@ -2626,8 +2626,6 @@
   "gui.dungeontrain.unsupported_mods.whitelist_link": "(Vezi aici lista aprobată)",
   "gui.dungeontrain.unsupported_mods.suggest.tooltip": "Sugerează %s pentru lista aprobată",
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": "Ai sugerat %s pentru lista aprobată",
-  "gui.dungeontrain.unsupported_mods.suggest.title": "Sugerează %s pentru lista aprobată",
-  "gui.dungeontrain.unsupported_mods.suggest.label": "De ce ar trebui permis acest mod?",
   "gui.dungeontrain.unsupported_mods.suggest.hint": "Ce face? Obligatoriu.",
   "gui.dungeontrain.unsupported_mods.suggest.submit": "Trimite",
   "gui.dungeontrain.unsupported_mods.suggest.sending": "Se trimite…",

@@ -21,6 +21,19 @@ class ModSuggestClientTest {
     }
 
     @Test
+    @DisplayName("A modpack or cheat submission comes back as its own result")
+    void kindsMapToTheirOwnResult() {
+        assertEquals(ModSuggestClient.Result.MODPACK,
+            ModSuggestClient.resultOf(200, "{\"ok\":true,\"kind\":\"modpack\",\"created\":false}"));
+        assertEquals(ModSuggestClient.Result.REPORTED,
+            ModSuggestClient.resultOf(200, "{\"ok\":true,\"kind\":\"cheat\",\"created\":false}"));
+        assertEquals(ModSuggestClient.Result.CREATED,
+            ModSuggestClient.resultOf(200, "{\"ok\":true,\"kind\":\"whitelist\",\"created\":true}"));
+        assertTrue(ModSuggestClient.Result.MODPACK.isFinal());
+        assertTrue(ModSuggestClient.Result.REPORTED.isFinal());
+    }
+
+    @Test
     @DisplayName("A 200 that isn't ok:true is a failure, not a silent success")
     void okWithoutOkIsFailed() {
         assertEquals(ModSuggestClient.Result.FAILED, ModSuggestClient.resultOf(200, "not json"));

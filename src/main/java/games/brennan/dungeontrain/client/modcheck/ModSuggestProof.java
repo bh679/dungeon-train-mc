@@ -34,8 +34,9 @@ public final class ModSuggestProof {
 
     private ModSuggestProof() {}
 
-    /** Suggest, proving the account when it can. Never fails exceptionally. */
-    public static CompletableFuture<ModSuggestClient.Result> suggest(String modId, String comment) {
+    /** Suggest ({@code kind}: whitelist, modpack or cheat), proving the account when it can. Never fails exceptionally. */
+    public static CompletableFuture<ModSuggestClient.Result> suggest(String modId, ModSuggestClient.Kind kind,
+                                                                  String comment) {
         try {
             User user = Minecraft.getInstance().getUser();
             if (user == null) return CompletableFuture.completedFuture(ModSuggestClient.Result.FAILED);
@@ -49,7 +50,7 @@ public final class ModSuggestProof {
                     .exceptionally(t -> "")
                 : CompletableFuture.completedFuture("");
             return proof
-                .thenCompose(serverId -> ModSuggestClient.suggest(base, uuid.toString(), name, serverId, modId, comment))
+                .thenCompose(serverId -> ModSuggestClient.suggest(base, uuid.toString(), name, serverId, modId, kind, comment))
                 .exceptionally(t -> {
                     LOGGER.info("[DungeonTrain] mod suggestion for {} failed: {}", modId, t.toString());
                     return ModSuggestClient.Result.FAILED;

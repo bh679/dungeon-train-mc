@@ -2033,8 +2033,6 @@
   "gui.dungeontrain.unsupported_mods.whitelist_link": "(Tingnan ang listahan dito)",
   "gui.dungeontrain.unsupported_mods.suggest.tooltip": "Imungkahi ang %s para sa listahan",
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": "Iminungkahi mo ang %s para sa listahan",
-  "gui.dungeontrain.unsupported_mods.suggest.title": "Imungkahi ang %s para sa listahan",
-  "gui.dungeontrain.unsupported_mods.suggest.label": "Bakit dapat payagan ang mod na ito?",
   "gui.dungeontrain.unsupported_mods.suggest.hint": "Ano ang ginagawa nito? Kailangan.",
   "gui.dungeontrain.unsupported_mods.suggest.submit": "Isumite",
   "gui.dungeontrain.unsupported_mods.suggest.sending": "Ipinapadala…",

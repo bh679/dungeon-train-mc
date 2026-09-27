@@ -183,7 +183,8 @@ public final class UnsupportedModsScreen extends Screen {
             Map<String, ModSuggestClient.Result> next = new HashMap<>(results);
             next.put(mod.modId(), result);
             results = Map.copyOf(next);
-            if (result == ModSuggestClient.Result.CREATED || result == ModSuggestClient.Result.BACKED) {
+            if (result.isFinal() && result != ModSuggestClient.Result.ALREADY_DECIDED
+                    && result != ModSuggestClient.Result.ALREADY_LISTED) {
                 SuggestedMods.add(mod.modId());
             }
         }));

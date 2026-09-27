@@ -2071,8 +2071,6 @@
   "gui.dungeontrain.unsupported_mods.whitelist_link": "(Bekijk hier de goedgekeurde lijst)",
   "gui.dungeontrain.unsupported_mods.suggest.tooltip": "Stel %s voor voor de goedgekeurde lijst",
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": "Je hebt %s voorgesteld voor de goedgekeurde lijst",
-  "gui.dungeontrain.unsupported_mods.suggest.title": "Stel %s voor voor de goedgekeurde lijst",
-  "gui.dungeontrain.unsupported_mods.suggest.label": "Waarom zou deze mod toegestaan moeten worden?",
   "gui.dungeontrain.unsupported_mods.suggest.hint": "Wat doet hij? Verplicht.",
   "gui.dungeontrain.unsupported_mods.suggest.submit": "Verzenden",
   "gui.dungeontrain.unsupported_mods.suggest.sending": "Verzenden…",

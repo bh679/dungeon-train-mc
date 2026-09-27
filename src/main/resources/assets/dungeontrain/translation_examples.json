@@ -80,15 +80,6 @@
       ]
     }
   },
-  "gui.dungeontrain.unsupported_mods.suggest.title": {
-    "1": {
-      "label": "the mod's display name",
-      "examples": [
-        "Xaero's Minimap",
-        "Sodium Extra"
-      ]
-    }
-  },
   "chat.dungeontrain.free_play.unapproved_mods": {
     "1": {
       "label": "the installed mods that are not on the approved list, comma-separated",

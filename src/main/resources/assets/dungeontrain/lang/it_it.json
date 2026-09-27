@@ -2071,8 +2071,6 @@
   "gui.dungeontrain.unsupported_mods.whitelist_link": "(Vedi qui l'elenco approvato)",
   "gui.dungeontrain.unsupported_mods.suggest.tooltip": "Suggerisci %s per l'elenco approvato",
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": "Hai suggerito %s per l'elenco approvato",
-  "gui.dungeontrain.unsupported_mods.suggest.title": "Suggerisci %s per l'elenco approvato",
-  "gui.dungeontrain.unsupported_mods.suggest.label": "Perché questa mod dovrebbe essere permessa?",
   "gui.dungeontrain.unsupported_mods.suggest.hint": "Cosa fa? Obbligatorio.",
   "gui.dungeontrain.unsupported_mods.suggest.submit": "Invia",
   "gui.dungeontrain.unsupported_mods.suggest.sending": "Invio…",

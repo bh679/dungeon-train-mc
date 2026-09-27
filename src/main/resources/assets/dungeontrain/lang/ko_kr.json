@@ -2033,8 +2033,6 @@
   "gui.dungeontrain.unsupported_mods.whitelist_link": "(여기서 승인 목록 보기)",
   "gui.dungeontrain.unsupported_mods.suggest.tooltip": "%s을(를) 승인 목록에 제안",
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": "%s을(를) 승인 목록에 제안했습니다",
-  "gui.dungeontrain.unsupported_mods.suggest.title": "%s을(를) 승인 목록에 제안",
-  "gui.dungeontrain.unsupported_mods.suggest.label": "이 모드를 허용해야 하는 이유는 무엇인가요?",
   "gui.dungeontrain.unsupported_mods.suggest.hint": "무엇을 하는 모드인가요? (필수)",
   "gui.dungeontrain.unsupported_mods.suggest.submit": "제출",
   "gui.dungeontrain.unsupported_mods.suggest.sending": "전송 중…",

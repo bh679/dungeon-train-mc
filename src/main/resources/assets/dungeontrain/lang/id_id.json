@@ -2033,8 +2033,6 @@
   "gui.dungeontrain.unsupported_mods.whitelist_link": "(Lihat daftar yang disetujui di sini)",
   "gui.dungeontrain.unsupported_mods.suggest.tooltip": "Sarankan %s untuk daftar yang disetujui",
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": "Kamu menyarankan %s untuk daftar yang disetujui",
-  "gui.dungeontrain.unsupported_mods.suggest.title": "Sarankan %s untuk daftar yang disetujui",
-  "gui.dungeontrain.unsupported_mods.suggest.label": "Kenapa mod ini boleh diizinkan?",
   "gui.dungeontrain.unsupported_mods.suggest.hint": "Apa fungsinya? Wajib diisi.",
   "gui.dungeontrain.unsupported_mods.suggest.submit": "Kirim",
   "gui.dungeontrain.unsupported_mods.suggest.sending": "Mengirim…",

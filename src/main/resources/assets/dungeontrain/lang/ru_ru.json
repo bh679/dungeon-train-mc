@@ -2114,8 +2114,6 @@
   "gui.dungeontrain.unsupported_mods.whitelist_link": "(Посмотреть список здесь)",
   "gui.dungeontrain.unsupported_mods.suggest.tooltip": "Предложить %s в список",
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": "Вы предложили %s в список",
-  "gui.dungeontrain.unsupported_mods.suggest.title": "Предложить %s в список",
-  "gui.dungeontrain.unsupported_mods.suggest.label": "Почему этот мод стоит разрешить?",
   "gui.dungeontrain.unsupported_mods.suggest.hint": "Что он делает? Обязательно.",
   "gui.dungeontrain.unsupported_mods.suggest.submit": "Отправить",
   "gui.dungeontrain.unsupported_mods.suggest.sending": "Отправка…",

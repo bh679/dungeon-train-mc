@@ -2033,8 +2033,6 @@
   "gui.dungeontrain.unsupported_mods.whitelist_link": "(Xem danh sách tại đây)",
   "gui.dungeontrain.unsupported_mods.suggest.tooltip": "Đề xuất %s vào danh sách",
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": "Bạn đã đề xuất %s vào danh sách",
-  "gui.dungeontrain.unsupported_mods.suggest.title": "Đề xuất %s vào danh sách",
-  "gui.dungeontrain.unsupported_mods.suggest.label": "Vì sao mod này nên được cho phép?",
   "gui.dungeontrain.unsupported_mods.suggest.hint": "Nó làm gì? Bắt buộc.",
   "gui.dungeontrain.unsupported_mods.suggest.submit": "Gửi",
   "gui.dungeontrain.unsupported_mods.suggest.sending": "Đang gửi…",

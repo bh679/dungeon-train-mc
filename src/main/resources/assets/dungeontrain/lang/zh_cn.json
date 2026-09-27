@@ -2047,8 +2047,6 @@
   "gui.dungeontrain.unsupported_mods.whitelist_link": "（点此查看名单）",
   "gui.dungeontrain.unsupported_mods.suggest.tooltip": "建议将%s加入名单",
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": "你已建议将%s加入名单",
-  "gui.dungeontrain.unsupported_mods.suggest.title": "建议将%s加入名单",
-  "gui.dungeontrain.unsupported_mods.suggest.label": "为什么这个模组应该被允许？",
   "gui.dungeontrain.unsupported_mods.suggest.hint": "它有什么作用？必填。",
   "gui.dungeontrain.unsupported_mods.suggest.submit": "提交",
   "gui.dungeontrain.unsupported_mods.suggest.sending": "发送中…",

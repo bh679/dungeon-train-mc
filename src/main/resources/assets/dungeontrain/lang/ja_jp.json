@@ -2033,8 +2033,6 @@
   "gui.dungeontrain.unsupported_mods.whitelist_link": "(承認済みリストはこちら)",
   "gui.dungeontrain.unsupported_mods.suggest.tooltip": "%sを承認済みリストに提案する",
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": "%sを承認済みリストに提案済み",
-  "gui.dungeontrain.unsupported_mods.suggest.title": "%sを承認済みリストに提案する",
-  "gui.dungeontrain.unsupported_mods.suggest.label": "このModを許可すべき理由は?",
   "gui.dungeontrain.unsupported_mods.suggest.hint": "何をするMod?（必須）",
   "gui.dungeontrain.unsupported_mods.suggest.submit": "送信",
   "gui.dungeontrain.unsupported_mods.suggest.sending": "送信中…",

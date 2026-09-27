@@ -2033,8 +2033,6 @@
   "gui.dungeontrain.unsupported_mods.whitelist_link": "(ดูรายการที่นี่)",
   "gui.dungeontrain.unsupported_mods.suggest.tooltip": "เสนอ %s เข้ารายการ",
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": "คุณเสนอ %s เข้ารายการแล้ว",
-  "gui.dungeontrain.unsupported_mods.suggest.title": "เสนอ %s เข้ารายการ",
-  "gui.dungeontrain.unsupported_mods.suggest.label": "ทำไมม็อดนี้ควรได้รับอนุญาต?",
   "gui.dungeontrain.unsupported_mods.suggest.hint": "มันทำอะไร? จำเป็นต้องกรอก",
   "gui.dungeontrain.unsupported_mods.suggest.submit": "ส่ง",
   "gui.dungeontrain.unsupported_mods.suggest.sending": "กำลังส่ง…",

@@ -38,12 +38,30 @@ public final class ModSuggestClient {
 
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
 
+    /** What the player is telling us about the mod — the three choices in the suggest dialog. */
+    public enum Kind {
+        /** It doesn't impact gameplay in an unfair way: allow it. */
+        WHITELIST,
+        /** It should be included in the modpack. */
+        MODPACK,
+        /** It gives unfair advantages. */
+        CHEAT;
+
+        String wire() {
+            return name().toLowerCase(java.util.Locale.ROOT);
+        }
+    }
+
     /** What happened to a suggestion — one per message the screen can show. */
     public enum Result {
         /** This vote started the suggestion. */
         CREATED,
         /** Somebody had already suggested it; this vote backs theirs. */
         BACKED,
+        /** Sent as a modpack suggestion. */
+        MODPACK,
+        /** Reported as a cheat. */
+        REPORTED,
         /** An older relay that still required a Mojang-proven account refused this one. */
         NOT_PROVEN,
         /** The operator has already approved, rejected or ruled on this mod. */
@@ -61,7 +79,8 @@ public final class ModSuggestClient {
 
         /** A result the player can't fix by rewording and resending. */
         public boolean isFinal() {
-            return this == CREATED || this == BACKED || this == ALREADY_DECIDED || this == ALREADY_LISTED;
+            return this == CREATED || this == BACKED || this == MODPACK || this == REPORTED
+                || this == ALREADY_DECIDED || this == ALREADY_LISTED;
         }
     }
 
@@ -69,17 +88,18 @@ public final class ModSuggestClient {
 
     /**
      * POST the suggestion. {@code uuid}/{@code name} identify the player; {@code serverId} (may be
-     * empty) is the optional owner proof. {@code
+     * empty) is the optional owner proof; {@code kind} is what they're saying about the mod. {@code
      * comment} is required (the relay refuses an empty one). No-throw.
      */
     public static CompletableFuture<Result> suggest(String baseUrl, String uuid, String name, String serverId,
-                                                    String modId, String comment) {
+                                                    String modId, Kind kind, String comment) {
         try {
             JsonObject body = new JsonObject();
             body.addProperty("uuid", uuid == null ? "" : uuid);
             body.addProperty("name", name == null ? "" : name);
             body.addProperty("serverId", serverId == null ? "" : serverId);
             body.addProperty("modId", modId == null ? "" : modId);
+            body.addProperty("kind", (kind == null ? Kind.WHITELIST : kind).wire());
             body.addProperty("comment", comment == null ? "" : comment);
             HttpRequest req = HttpRequest.newBuilder(URI.create(baseUrl + "/mods/suggest"))
                     .timeout(REQUEST_TIMEOUT)
@@ -113,6 +133,9 @@ public final class ModSuggestClient {
             if (o == null || !o.has("ok") || !o.get("ok").isJsonPrimitive() || !o.get("ok").getAsBoolean()) {
                 return Result.FAILED;
             }
+            String kind = o.has("kind") && o.get("kind").isJsonPrimitive() ? o.get("kind").getAsString() : "whitelist";
+            if ("modpack".equals(kind)) return Result.MODPACK;
+            if ("cheat".equals(kind)) return Result.REPORTED;
             boolean created = o.has("created") && o.get("created").isJsonPrimitive()
                 && o.getAsJsonPrimitive("created").isBoolean() && o.get("created").getAsBoolean();
             return created ? Result.CREATED : Result.BACKED;
