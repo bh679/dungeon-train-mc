@@ -91,6 +91,10 @@ public final class LostCityStructures {
         if (cycle == null || cycle.legacyLen(LegacyBandKind.LOST_CITY) <= 0L) return false;
         if (LegacyBands.kindOfChunk(seed, cycle, chunkX, chunkZ) != LegacyBandKind.LOST_CITY) return false;
         double reach = cycle.legacyCoreProgress(LegacyBandKind.LOST_CITY, (chunkX << 4) + 15 + EXIT_MARGIN_BLOCKS);
-        return !Double.isNaN(reach) && reach < 1.0D;
+        if (Double.isNaN(reach)) {
+            // the lead-in on the Nether's exit mountains, before the Lost City's own slot
+            return cycle.isInLegacyLeadIn(LegacyBandKind.LOST_CITY, chunkX << 4);
+        }
+        return reach < 1.0D;
     }
 }

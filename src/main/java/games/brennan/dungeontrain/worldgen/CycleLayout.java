@@ -83,13 +83,14 @@ public final class CycleLayout {
      *   <li>Lap 1: overworld → Nether (vanilla on the first cycle, vanilla + Biomes O' Plenty after:
      *       {@code vanilla>bop}) → WWOO overworld → one End band whose first 1200 blocks are vanilla and last 2000
      *       Biomes O' Plenty (two joined End slots) → upside-down + Reassembly.</li>
-     *   <li>Lap 2: BoP overworld → BetterNether → Lost City (its own legacy run) → BetterEnd.</li>
+     *   <li>Lap 2: BoP overworld → BetterNether → Lost City (its own legacy run, wearing WWOO decoration; its
+     *       buildings start on the Nether's exit mountains — {@link #legacyLeadIn}) → BetterEnd.</li>
      *   <li>Then spheres, the sunk approach, the rest of the legacy eras, chuncks, mix and stacks.</li>
      * </ul>
      */
     public static final String DEFAULT_ORDER =
             "ow:2750, nether:vanilla>bop:3000, ow:wwoo:4500, end:vanilla:1200, end:bop:2000, upside_down:2500:6000, "
-            + "ow:bop:8000, nether:better:8000, legacy:lost_city=4000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "ow:bop:8000, nether:better:8000, legacy:wwoo:lost_city=4000, end:better:8000, spheres:6550, ow:sunk:500, "
             + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:650, chuncks:2000, mix:4000, stacks:5000";
 
@@ -149,7 +150,7 @@ public final class CycleLayout {
                 LegacySpan[] run = parseEras(parts, legacyDefaults, usedEras, warn);
                 if (run.length == 0) continue;
                 for (LegacySpan e : run) usedEras.add(e.kind());
-                slots.add(new Slot(type, Style.VANILLA, 0, -1));
+                slots.add(new Slot(type, legacyStyle(parts), 0, -1));
                 eras.add(run);
                 continue;
             }
@@ -218,9 +219,11 @@ public final class CycleLayout {
     private static LegacySpan[] parseEras(String[] parts, LegacySpan[] defaults, java.util.Set<LegacyBandKind> used,
                                           Consumer<String> warn) {
         Map<LegacyBandKind, Integer> cores = new java.util.LinkedHashMap<>();
-        boolean explicit = parts.length > 1;
+        boolean explicit = false;
         for (int i = 1; i < parts.length; i++) {
             String arg = parts[i].trim().toLowerCase(Locale.ROOT);
+            if (styleOf(arg) != null) continue;                     // the run's look, not an era
+            explicit = true;
             int eq = arg.indexOf('=');
             String kindName = eq < 0 ? arg : arg.substring(0, eq);
             LegacyBandKind kind = kindOf(kindName);
@@ -255,6 +258,20 @@ public final class CycleLayout {
             out.add(new LegacySpan(kind, 0, d.fade(), core));
         }
         return out.toArray(new LegacySpan[0]);
+    }
+
+    /**
+     * The look a legacy run wears: a style name among its parts ({@code legacy:wwoo:lost_city=4000} gives
+     * the Lost City run William Wythers' Overhauled Overworld decoration), {@code VANILLA} otherwise. Only
+     * a vanilla-terrain era shows it — an old generator writes its own terrain and decoration.
+     */
+    private static Style legacyStyle(String[] parts) {
+        Style style = Style.VANILLA;
+        for (int i = 1; i < parts.length; i++) {
+            Style s = styleOf(parts[i].trim().toLowerCase(Locale.ROOT));
+            if (s != null) style = s;
+        }
+        return style;
     }
 
     private static LegacySpan defaultOf(LegacySpan[] defaults, LegacyBandKind kind) {
@@ -334,6 +351,20 @@ public final class CycleLayout {
 
     private boolean isEnd(int i) {
         return i >= 0 && i < slots.length && slots[i].type() == Type.END;
+    }
+
+    /**
+     * How far legacy slot {@code slot}'s entry fade reaches back into the slot before it: the preceding
+     * Nether's exit mountains ({@code megaHold + riseLen}) when the run opens with a vanilla-terrain era
+     * (Lost City) — its buildings start on the slopes as the mountains come down. {@code 0} otherwise:
+     * an old generator's terrain can't share the Nether's. Slot lengths are unaffected.
+     */
+    public long legacyLeadIn(int slot) {
+        if (slot <= 0 || slot >= slots.length || slots[slot].type() != Type.LEGACY_RUN) return 0L;
+        if (slots[slot - 1].type() != Type.NETHER) return 0L;
+        LegacySpan[] run = eras[slot];
+        if (run.length == 0 || !run[0].kind().usesVanillaTerrain()) return 0L;
+        return Math.min(lens[slot - 1], (long) Math.max(0, fades.megaHold()) + Math.max(0, fades.riseLen()));
     }
 
     /** {@code Σ fadeBefore(e) + Σcore}: each era's own entry fade / crossfade, the cores, then the exit fade. */

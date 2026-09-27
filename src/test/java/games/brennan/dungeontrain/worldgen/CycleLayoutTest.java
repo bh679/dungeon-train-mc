@@ -150,6 +150,26 @@ final class CycleLayoutTest {
     }
 
     @Test
+    @DisplayName("a legacy run can wear a look; a vanilla-terrain run after a Nether leads in over its exit mountains")
+    void legacyStyleAndLeadIn() {
+        CycleLayout l = shipped();
+        assertEquals(Style.WWOO, l.slot(8).style());                 // legacy:wwoo:lost_city=4000
+        assertEquals(1, l.eras(8).length);
+        assertEquals(Style.VANILLA, l.slot(12).style());
+        assertEquals(232L, l.legacyLeadIn(8));                       // megaHold 0 + rise 232
+        assertEquals(0L, l.legacyLeadIn(12));                        // after an overworld gap
+        assertEquals(0L, l.legacyLeadIn(7));                         // not a legacy slot
+        List<String> warnings = new ArrayList<>();
+        CycleLayout bare = CycleLayout.parse("ow:100, legacy:bop", FADES, eraDefaults(), t -> true, warnings::add);
+        assertEquals(Style.BOP, bare.slot(1).style());
+        assertEquals(LegacyBandKind.values().length, bare.eras(1).length);   // a bare run: every era
+        assertTrue(warnings.isEmpty(), warnings.toString());
+        // an old-generator era leads in over nothing, even after a Nether
+        CycleLayout beta = CycleLayout.parse("nether:3000, legacy:beta=1000", FADES, eraDefaults(), t -> true, m -> {});
+        assertEquals(0L, beta.legacyLeadIn(1));
+    }
+
+    @Test
     @DisplayName("an era already run by an earlier legacy slot is dropped from a later one")
     void legacyEraInOneSlotOnly() {
         List<String> warnings = new ArrayList<>();

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.worldgen.CycleLayout.Style;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.legacy.LegacySpan;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -188,11 +189,56 @@ final class WorldGenCycleLayoutTest {
     }
 
     @Test
+    @DisplayName("Lost City's fade starts on BetterNether's exit mountains and runs on unbroken into its own slot")
+    void lostCityLeadIn() {
+        long lc = LAYOUT.start(8);
+        long lead = LAYOUT.legacyLeadIn(8);
+        assertEquals(232L, lead);
+        assertNull(C.legacyAt(x(lc - lead - 1)));
+        WorldGenCycle.LegacyHit first = C.legacyAt(x(lc - lead));
+        assertNull(first.from());
+        assertEquals(LegacyBandKind.LOST_CITY, first.to());
+        assertTrue(first.t() > 0.0 && first.t() < 0.01, "starts near zero: " + first.t());
+        double prev = 0.0;
+        for (long u = lc - lead; u < lc + 480; u++) {
+            double t = C.legacyAt(x(u)).t();
+            assertTrue(t > prev && t - prev < 0.01, "rises smoothly at " + u + ": " + prev + " -> " + t);
+            prev = t;
+        }
+        assertEquals(1.0, C.legacyAt(x(lc + 480)).t());               // the core
+        assertTrue(C.isInLegacyLeadIn(LegacyBandKind.LOST_CITY, x(lc - 1)));
+        assertFalse(C.isInLegacyLeadIn(LegacyBandKind.LOST_CITY, x(lc)));
+        assertFalse(C.isInLegacyLeadIn(LegacyBandKind.BETA, x(lc - 1)));
+        // the lead-in borrows the Nether's tail — it is still the Nether's slot, not the city's
+        assertEquals(7, C.slotIndexAt(x(lc - 1)));
+        assertFalse(LegacyBands.isInSlot(C, LegacyBandKind.LOST_CITY, x(lc - 1)));
+        assertTrue(LegacyBands.isInSlot(C, LegacyBandKind.LOST_CITY, x(lc)));
+        // the main legacy run (after an overworld gap) has no lead-in
+        assertNull(C.legacyAt(x(LAYOUT.start(12) - 1)));
+    }
+
+    @Test
+    @DisplayName("Lost City wears WWOO, and the BetterNether exit mountains carry the look into it")
+    void lostCityWearsWwoo() {
+        long lc = LAYOUT.start(8);
+        for (long u = lc; u < lc + LAYOUT.length(8); u += 250) {
+            assertEquals(SecondLapOverworld.Stretch.WWOO, SecondLapOverworld.at(C, x(u)), "u=" + u);
+        }
+        assertEquals(Style.WWOO, C.stretchStyleAt(x(lc + 1000)));
+        assertNull(C.overworldStyleAt(x(lc + 1000)));                 // not an overworld gap: /dtp wwoo, portal sites
+        assertEquals(SecondLapOverworld.Stretch.WWOO, SecondLapOverworld.lookAt(C, x(lc - 100)));   // exit mountains
+        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, x(LAYOUT.start(7) + 4000)));   // Nether core
+        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, x(LAYOUT.start(9) + 4000)));   // BetterEnd
+        assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, x(LAYOUT.start(12) + 1000)));  // Amplified
+        assertTrue(C.isOverworldGapAt(x(lc - 1)) == false);
+    }
+
+    @Test
     @DisplayName("Lost City is its own legacy run between BetterNether and BetterEnd")
     void lostCityRun() {
         long lc = LAYOUT.start(8);
         assertEquals(LAYOUT.start(7) + LAYOUT.length(7), lc);
-        assertNull(C.legacyAt(x(lc - 1)));
+        assertNotNull(C.legacyAt(x(lc - 1)));                          // the lead-in on the Nether's mountains
         WorldGenCycle.LegacyHit entry = C.legacyAt(x(lc + 10));
         assertNull(entry.from());
         assertEquals(LegacyBandKind.LOST_CITY, entry.to());

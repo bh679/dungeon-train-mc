@@ -3,7 +3,8 @@ package games.brennan.dungeontrain.worldgen;
 /**
  * Which overworld stretches take their look from a third-party worldgen mod. With an ordered layout
  * ({@code worldgenCycleOrder}) each gap's own style says so — the shipped order puts William Wythers'
- * Overhauled Overworld between Lap 1's Nether and End, and Biomes O' Plenty at the start of Lap 2. The
+ * Overhauled Overworld between Lap 1's Nether and End and over Lap 2's Lost City run
+ * ({@code legacy:wwoo:lost_city}), and Biomes O' Plenty at the start of Lap 2. The
  * classic (blank-order) cycle keeps the old rule: on every <b>odd</b> lap (cycle index 1, 3, 5, …) the gap
  * <b>before</b> the Nether is WWOO and the gap <b>after</b> it is BoP. Every other stretch stays vanilla.
  *
@@ -28,8 +29,8 @@ public final class SecondLapOverworld {
     public static Stretch at(WorldGenCycle cycle, int worldX) {
         if (cycle == null) return Stretch.VANILLA;
         if (cycle.hasLayout()) {
-            // Ordered layout: the gap's own style label says which mod owns it (lap 2's WWOO / BoP slots).
-            CycleLayout.Style style = cycle.overworldStyleAt(worldX);
+            // Ordered layout: the gap's (or a vanilla-terrain legacy run's) own style label says which mod owns it.
+            CycleLayout.Style style = cycle.stretchStyleAt(worldX);
             if (style == CycleLayout.Style.WWOO) return Stretch.WWOO;
             if (style == CycleLayout.Style.BOP) return Stretch.BOP;
             return Stretch.VANILLA;

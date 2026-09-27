@@ -96,7 +96,8 @@ final class LostCityStructuresTest {
         WorldGenCycle.LegacyHit in = C.legacyAt(x(legacyStart() + 375L, 0));
         assertEquals(null, in.from());
         assertEquals(LegacyBandKind.LOST_CITY, in.to());
-        assertEquals(0.5, in.t(), 0.01);
+        long lead = LAYOUT.legacyLeadIn(slot);                         // the ramp began on the Nether's mountains
+        assertEquals((lead + 375.0 + 1) / (lead + 750 + 1), in.t(), 1e-9);
         // Amplified now crossfades straight into Beta.
         int main = LAYOUT.legacySlotOf(LegacyBandKind.AMPLIFIED);
         assertEquals(LAYOUT.eraIndex(LegacyBandKind.AMPLIFIED) + 1, LAYOUT.eraIndex(LegacyBandKind.BETA));
@@ -114,6 +115,17 @@ final class LostCityStructuresTest {
         assertTrue(early < late && late < core, early + " < " + late + " < " + core);
         assertEquals(1.0, core, 1e-9);
         assertEquals(0.0, share(cs - 2500L, cs - 1000L), 1e-9);        // BetterNether: never
+    }
+
+    @Test
+    @DisplayName("the first buildings stand on the Nether's exit mountains, and none before them")
+    void leadInOnTheMountains() {
+        long lc = legacyStart();
+        long lead = LAYOUT.legacyLeadIn(slot());
+        assertTrue(lead > 0L);
+        assertTrue(share(lc - lead, lc) > 0.0, "some buildings on the mountains");
+        assertTrue(share(lc - lead, lc) < share(lc, coreStart()), "fewer on the mountains than in the run-in");
+        assertEquals(0.0, share(lc - lead - 1500L, lc - lead - 16L), 1e-9);   // the Nether proper: never
     }
 
     @Test
@@ -150,7 +162,7 @@ final class LostCityStructuresTest {
     @Test
     @DisplayName("a disabled Lost City era allows no city anywhere")
     void disabled() {
-        CycleLayout without = layout(CycleLayout.DEFAULT_ORDER.replace("legacy:lost_city=4000, ", ""));
+        CycleLayout without = layout(CycleLayout.DEFAULT_ORDER.replace("legacy:wwoo:lost_city=4000, ", ""));
         assertEquals(-1, without.legacySlotOf(LegacyBandKind.LOST_CITY));
         WorldGenCycle c = cycle(without);
         for (long u = 0; u < without.period(); u += 500) {

@@ -642,6 +642,17 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * The look of the stretch at {@code worldX}: an overworld gap's, or a legacy run's
+     * ({@code legacy:wwoo:lost_city=…} — the Lost City wears WWOO decoration over its vanilla terrain).
+     * {@code null} anywhere else. Drives the WWOO / BoP confinement ({@link SecondLapOverworld#at});
+     * {@link #overworldStyleAt} stays the gap alone (advancements, portal sites).
+     */
+    public CycleLayout.Style stretchStyleAt(int worldX) {
+        CycleLayout.Style gap = overworldStyleAt(worldX);
+        return gap != null ? gap : styleAt(CycleLayout.Type.LEGACY_RUN, worldX);
+    }
+
+    /**
      * The look ({@code WWOO} / {@code BOP}) of a modded overworld gap that carries on into the band
      * transition at {@code worldX}, or {@code null}. The overworld-looking part of a band's transition
      * wears the look of the overworld gap it borders, so a modded stretch doesn't stop at a hard line:
@@ -692,11 +703,11 @@ public record WorldGenCycle(long startX, int owGap,
      */
     static final double UD_BLEED_REASSEMBLY_FRACTION = 43.0 / 60.0;
 
-    /** Style of slot {@code i} when it is a WWOO / BoP overworld gap, else {@code null}. */
+    /** Style of slot {@code i} when it is a WWOO / BoP overworld gap (or a legacy run wearing one), else {@code null}. */
     private CycleLayout.Style moddedOverworldStyle(int i, long run) {
         if (i < 0 || i >= layout.count()) return null;
         CycleLayout.Slot s = layout.slot(i);
-        if (s.type() != CycleLayout.Type.OVERWORLD) return null;
+        if (s.type() != CycleLayout.Type.OVERWORLD && s.type() != CycleLayout.Type.LEGACY_RUN) return null;
         CycleLayout.Style style = resolveStyle(i, run);
         return (style == CycleLayout.Style.WWOO || style == CycleLayout.Style.BOP) ? style : null;
     }
@@ -2011,17 +2022,21 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     private LegacyHit layoutLegacyAt(int worldX) {
-        long l = legacyRunLocal(worldX);
-        if (l < 0L) return null;
         int slot = slotAt(worldX);
+        if (slot < 0) return null;
+        if (layout.slot(slot).type() != CycleLayout.Type.LEGACY_RUN) return legacyLeadInHit(slot, worldX);
+        long l = baseAt(worldX) - layout.start(slot);
         LegacySpan[] eras = layout.eras(slot);
+        long leadIn = layout.legacyLeadIn(slot);
         long at = 0L;
         LegacyBandKind prev = null;
         for (int e = 0; e <= eras.length; e++) {
             LegacyBandKind next = e < eras.length ? eras[e].kind() : null;
             long f = layout.fadeBefore(slot, e);
             if (l < at + f) {                                      // the fade / crossfade before era e
-                double t = (double) (l - at + 1) / (f + 1);
+                // the run's entry fade carries on from a lead-in in the slot before (see legacyLeadInHit)
+                long pre = e == 0 ? leadIn : 0L;
+                double t = (double) (pre + l - at + 1) / (pre + f + 1);
                 return new LegacyHit(prev, next, t);
             }
             at += f;
@@ -2032,6 +2047,31 @@ public record WorldGenCycle(long startX, int owGap,
             prev = next;
         }
         return null;
+    }
+
+    /**
+     * The first half of a lead-in entry fade: the last {@link CycleLayout#legacyLeadIn} blocks of the slot
+     * before a legacy run (the Nether's exit mountains before the Lost City), where the run's first era
+     * already rolls in, rising towards where the run itself continues the ramp. {@code null} elsewhere.
+     */
+    private LegacyHit legacyLeadInHit(int slot, int worldX) {
+        int run = slot + 1;
+        if (run >= layout.count()) return null;
+        long leadIn = layout.legacyLeadIn(run);
+        if (leadIn <= 0L) return null;
+        long toRun = layout.start(run) - baseAt(worldX);          // 1..slot length
+        if (toRun <= 0L || toRun > leadIn) return null;
+        long l = leadIn - toRun;
+        long f = leadIn + layout.fadeBefore(run, 0);
+        return new LegacyHit(null, layout.eras(run)[0].kind(), (double) (l + 1) / (f + 1));
+    }
+
+    /** True if {@code worldX} is in the lead-in of legacy era {@code kind}'s run (before its slot). Layout only. */
+    public boolean isInLegacyLeadIn(LegacyBandKind kind, int worldX) {
+        if (layout == null) return false;
+        int slot = slotAt(worldX);
+        if (slot < 0 || slot + 1 != layout.legacySlotOf(kind) || layout.eraIndex(kind) != 0) return false;
+        return legacyLeadInHit(slot, worldX) != null;
     }
 
     /** Offset of {@code kind}'s core from the legacy-run slot start, or {@code -1} when not in the run. Layout only. */
