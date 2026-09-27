@@ -125,11 +125,11 @@ public final class ModSuggestScreen extends Screen {
             this.width / 2, top + 13, 0xFFFFFFFF);
         g.drawString(this.font, Component.translatable("gui.dungeontrain.unsupported_mods.suggest.label"),
             x, top + 28, 0xFFA0A0A0, false);
+        // The box draws its own "n/280" counter at the right of this line; the error sits left of it.
         int y = top + 40 + BOX_H + GAP;
-        String count = comment.length() + " / " + MAX_COMMENT;
-        g.drawString(this.font, count, x + w - this.font.width(count), y, 0xFF707070, false);
         if (lastError != null) {
-            List<FormattedCharSequence> lines = this.font.split(resultMessage(lastError), w - this.font.width(count) - 8);
+            int counterW = this.font.width(MAX_COMMENT + "/" + MAX_COMMENT);
+            List<FormattedCharSequence> lines = this.font.split(resultMessage(lastError), w - counterW - 8);
             if (!lines.isEmpty()) g.drawString(this.font, lines.get(0), x, y, 0xFFE08080, false);
         }
     }
