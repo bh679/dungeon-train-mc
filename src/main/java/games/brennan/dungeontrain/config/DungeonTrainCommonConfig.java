@@ -426,12 +426,7 @@ public final class DungeonTrainCommonConfig {
             + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:15000, ow:5000, "
             + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
-
-    /**
-     * The {@code worldgenCycleOrder} v6 shipped as its default, before v7 turned the overworld gap into
-     * Amplified into the short sunk approach ({@code ow:5000} → {@code ow:sunk:500}). The v6 -> v7
-     * migration moves only a file still holding exactly this string.
-     */
+    /** The {@code worldgenCycleOrder} v6 shipped; v7 changed only its {@code beta=5000} era. */
     public static final String V6_WORLDGEN_CYCLE_ORDER =
             "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
             + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:5000, "
@@ -1175,11 +1170,12 @@ public final class DungeonTrainCommonConfig {
             WorldGenCycle.invalidateCache();
         }
 
-        // v6 -> v7: the overworld gap into Amplified shrank to 500 blocks and sinks with the band. Only the
-        // exact v6 default moves (a v5 file already landed on the current default above); an edited order stays.
+        // v6 -> v7: the Beta era shrank 5000 -> 3500, and the overworld gap into Amplified became the
+        // short sunk approach (ow:sunk:500). Only an order still exactly as v6 shipped moves; an
+        // edited order is a choice and is left alone.
         if (from < 7 && V6_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
             WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
-            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> sunk Amplified approach.",
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
                     from, CURRENT_CONFIG_VERSION);
             WorldGenCycle.invalidateCache();
         }
