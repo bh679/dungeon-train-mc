@@ -62,14 +62,17 @@ public final class ReverseSlide {
     private static final int SCAN_PERIOD_TICKS = 20;
 
     /**
-     * Longest backward step between two scans that still counts as walking along the train. A sprint-jump
-     * covers well under this in a second; anything longer is a teleport or a long fall and earns nothing.
+     * Fastest backward movement, in blocks per <em>real</em> second, that still counts as walking along the
+     * train. A sprint-jump covers well under this; anything faster is a teleport or a long fall and earns
+     * nothing. Per real second rather than per scan: when the server lags (generating chunks ahead of a
+     * fast player) scans stretch out in wall-clock time while the player keeps moving, and a per-scan cap
+     * would throw genuine movement away as a "teleport".
      */
     static final double MAX_EARNED_STEP = 12.0;
 
     /**
-     * The step limit in editor dev mode, where flying along the train counts: creative sprint-flight
-     * covers ~22 blocks a second, and a teleport is still far past this.
+     * The limit in editor dev mode, where flying along the train counts: creative sprint-flight covers
+     * ~22 blocks a second, and a teleport is still far past this.
      */
     static final double DEV_MAX_EARNED_STEP = 48.0;
 
@@ -156,11 +159,14 @@ public final class ReverseSlide {
     public static void onServerStopped(ServerStoppedEvent event) {
         WorldGenCycle.setReverseSlide(0L);
         LAST_SENT.clear();
-        LAST_ON_TRAIN_X.clear();
+        LAST_ON_TRAIN.clear();
     }
 
-    /** Each player's world X at the previous scan, present only if they were on the train then. */
-    private static final Map<UUID, Double> LAST_ON_TRAIN_X = new ConcurrentHashMap<>();
+    /** A player's world X at a scan they were on the train for, and when (wall clock, nanoseconds). */
+    private record OnTrainAt(double x, long nanos) {}
+
+    /** Each player's position at the previous scan, present only if they were on the train then. */
+    private static final Map<UUID, OnTrainAt> LAST_ON_TRAIN = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
@@ -171,7 +177,8 @@ public final class ReverseSlide {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         if (!data.startsWithTrain()) return;
         List<ServerPlayer> players = new ArrayList<>();
-        List<Sample> samples = samples(level, players);
+        long scanNanos = System.nanoTime();
+        List<Sample> samples = samples(level, players, scanNanos);
 
         State before = new State(data.getReverseOriginX(), data.getReverseReachX(),
                 data.getReverseEarned(), data.getReverseSlide());
@@ -182,8 +189,8 @@ public final class ReverseSlide {
 
         for (int i = 0; i < samples.size(); i++) {
             UUID id = players.get(i).getUUID();
-            if (samples.get(i).onTrain()) LAST_ON_TRAIN_X.put(id, samples.get(i).x());
-            else LAST_ON_TRAIN_X.remove(id);
+            if (samples.get(i).onTrain()) LAST_ON_TRAIN.put(id, new OnTrainAt(samples.get(i).x(), scanNanos));
+            else LAST_ON_TRAIN.remove(id);
         }
         syncHud(level, data, players, result.earnedBy());
     }
@@ -228,7 +235,7 @@ public final class ReverseSlide {
      * they count fully; on a server a creative player (an admin flying or teleporting around) never pushes
      * the bands back for everyone else.
      */
-    private static List<Sample> samples(ServerLevel level, List<ServerPlayer> players) {
+    private static List<Sample> samples(ServerLevel level, List<ServerPlayer> players, long scanNanos) {
         List<Trains.Carriage> carriages = carriages(level);
         boolean singleplayer = level.getServer().isSingleplayer();
         // Editor dev mode: flying close to the train counts as on it, as it does for the difficulty's
@@ -240,11 +247,15 @@ public final class ReverseSlide {
             // Still in the intro cinematic: not playing yet, so no origin, earning or sliding until it ends.
             if (CinematicIntroService.isCinematicActive(p.getUUID())) continue;
             if (PortalTwinSpace.isInside(level, p.getBlockX(), p.getY())) continue;
-            Double prev = LAST_ON_TRAIN_X.get(p.getUUID());
+            OnTrainAt prev = LAST_ON_TRAIN.get(p.getUUID());
+            // The step limit covers the real time since that scan (at least a second), so a lagging
+            // server never makes genuine movement look like a teleport.
+            double seconds = prev == null ? 1.0 : Math.max(1.0, (scanNanos - prev.nanos()) / 1.0e9);
+            double speed = dev ? DEV_MAX_EARNED_STEP : MAX_EARNED_STEP;
             boolean onTrain = CarriageDeck.isOnTrainFootprint(carriages, p)
                     || (dev && BoardingProgressEvents.isBoarded(carriages, p));
             out.add(new Sample(p.getX(), onTrain, singleplayer || !p.isCreative(),
-                    prev == null ? Double.NaN : prev, dev ? DEV_MAX_EARNED_STEP : MAX_EARNED_STEP));
+                    prev == null ? Double.NaN : prev.x(), speed * seconds));
             players.add(p);
         }
         return out;
