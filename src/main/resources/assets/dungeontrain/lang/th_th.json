@@ -1698,6 +1698,7 @@
   "advancements.dungeontrain.dungeon_train.i_must_know.description": "อ่านอย่างน้อยหนึ่งรูปแบบของหนังสือ Faulthurst ทุกเล่ม",
   "advancements.dungeontrain.dungeon_train.faulthursts_favourite.title": "เล่มโปรดของ Faulthurst",
   "advancements.dungeontrain.dungeon_train.faulthursts_favourite.description": "อ่านทุกรูปแบบของหนังสือ Faulthurst ทุกเล่ม ตอนนี้ขอบหน้ากระดาษเต็มไปหมดแล้ว",
+  "advancements.dungeontrain.dungeon_train.faulthursts_favourite.hint": "อ่านต่อไป สักวันก็จะไปถึง",
   "advancements.dungeontrain.dungeon_train.collecting_stories.title": "สะสมเรื่องราว",
   "advancements.dungeontrain.dungeon_train.collecting_stories.description": "อ่านเรื่องราวหนึ่งเรื่องตั้งแต่ต้นจนจบเป็นครั้งแรก",
   "advancements.dungeontrain.dungeon_train.the_same_but_different.title": "เหมือนเดิมแต่ต่างออกไป",
