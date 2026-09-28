@@ -766,7 +766,7 @@ public record WorldGenCycle(long startX, int owGap,
     /**
      * How far into the upside-down Reassembly the next gap's modded look begins. Most of it is still
      * visibly reassembling, so the look waits until the world has nearly settled (shipped layout:
-     * X ≈ 22 294 instead of the Reassembly's start at 17 994).
+     * X ≈ 21 577 instead of the Reassembly's start at 17 994).
      */
     static final double UD_BLEED_REASSEMBLY_FRACTION = 43.0 / 60.0;
 
