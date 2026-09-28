@@ -20375,8 +20375,25 @@
       "released_at": null
     },
     {
-      "id": "playermob-companion-train-setup",
+      "id": "clocks-spin-in-otherworldly-stretches",
       "version": "0.1008.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Small change to clocks and compasses",
+      "summary": "Small change to clocks and compasses.",
+      "highlights": [],
+      "pr": 1636,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "playermob-companion-train-setup",
+      "version": "0.1009.0",
       "type": "fix",
       "tags": [
         "fix",
