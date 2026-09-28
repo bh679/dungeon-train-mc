@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:bedrock" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_far_lands.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_far_lands.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

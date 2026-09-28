@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:chorus_flower" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_better_end.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_better_end.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:oak_sapling" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_alpha.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_alpha.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

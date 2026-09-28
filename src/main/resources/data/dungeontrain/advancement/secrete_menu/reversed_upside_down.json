@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:crying_obsidian" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_upside_down.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_upside_down.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

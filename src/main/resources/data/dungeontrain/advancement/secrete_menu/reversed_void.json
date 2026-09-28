@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:obsidian" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_void.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_void.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

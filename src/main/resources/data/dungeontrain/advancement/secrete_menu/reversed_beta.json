@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:gravel" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_beta.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_beta.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true
