@@ -20213,6 +20213,28 @@
       "released": true,
       "released_in": "v0.999.0",
       "released_at": "2026-09-28T10:15:02Z"
+    },
+    {
+      "id": "drifting-bedrock-lock-rooms",
+      "version": "0.1000.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "train"
+      ],
+      "title": "Dimensional carriages drift",
+      "summary": "Sealed dimensional carriages now drift the way carriages do. Build in one and your work is uploaded; the next traveller to roll that same room may step into your version, with you credited by name and their changes travelling on in turn. The room comes back with you when the train moves, and authors can keep any room out of it with the new Drift setting.",
+      "highlights": [
+        "Sealed (Bedrock Lock) dimensional carriages upload when edited and can arrive as another traveller's copy",
+        "Builders are credited on entry, just like a drifting carriage",
+        "New per-room Drift setting in the editor panel and /dt editor portals <room> drift"
+      ],
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
