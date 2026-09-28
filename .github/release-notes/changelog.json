@@ -20079,6 +20079,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "faulthurst-hint-every-language",
+      "version": "0.996.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Faulthurst's Favourite hint in every language",
+      "summary": "Faulthurst's Favourite now gives a hint before you earn it in every language, not just English.",
+      "highlights": [],
+      "pr": 1623,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
