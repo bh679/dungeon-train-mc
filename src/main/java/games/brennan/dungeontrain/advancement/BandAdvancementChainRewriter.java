@@ -36,13 +36,23 @@ public final class BandAdvancementChainRewriter {
      */
     public static Map<ResourceLocation, JsonElement> rewriteParents(Map<ResourceLocation, JsonElement> loaded,
                                                                     List<String> chain, String anchor, String modId) {
+        return rewriteParents(loaded, chain, anchor, modId, PATH_PREFIX);
+    }
+
+    /**
+     * {@link #rewriteParents(Map, List, String, String)} for a chain in another tab: every member and
+     * the anchor are short names under {@code pathPrefix} (e.g. The Secrete Menu's {@code secrete_menu/}).
+     */
+    public static Map<ResourceLocation, JsonElement> rewriteParents(Map<ResourceLocation, JsonElement> loaded,
+                                                                    List<String> chain, String anchor, String modId,
+                                                                    String pathPrefix) {
         Map<ResourceLocation, JsonElement> out = new LinkedHashMap<>(loaded);
         String previous = anchor;
         for (String name : chain) {
-            ResourceLocation id = ResourceLocation.fromNamespaceAndPath(modId, PATH_PREFIX + name);
+            ResourceLocation id = ResourceLocation.fromNamespaceAndPath(modId, pathPrefix + name);
             JsonElement value = out.get(id);
             if (value == null || !value.isJsonObject()) continue;
-            out.put(id, withParent(value.getAsJsonObject(), modId + ":" + PATH_PREFIX + previous));
+            out.put(id, withParent(value.getAsJsonObject(), modId + ":" + pathPrefix + previous));
             previous = name;
         }
         return out;

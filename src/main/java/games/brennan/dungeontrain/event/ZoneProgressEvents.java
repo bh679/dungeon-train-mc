@@ -3,10 +3,12 @@ package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.BandAdvancements;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.ReverseSlide;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.StacksBand;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
@@ -54,6 +56,19 @@ public final class ZoneProgressEvents {
 
     private ZoneProgressEvents() {}
 
+    /**
+     * "The Secrete Menu" (both its tab root and its Dungeon Train-tab twin, which share the action):
+     * ridden {@link BandAdvancements#SECRETE_MENU_BLOCKS} blocks behind spawn while on the train, by
+     * {@link ReverseSlide}'s measure. Cheap position check first; the train lookup only runs behind it.
+     */
+    private static void checkSecreteMenu(ServerLevel level, ServerPlayer player, int px) {
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        if (!cycle.hasLayout() || px > cycle.startX() - BandAdvancements.SECRETE_MENU_BLOCKS) return;
+        if (!DungeonTrainWorldData.get(level).startsWithTrain()) return;
+        if (ReverseSlide.riddenBehindSpawn(level, cycle.startX(), player) < BandAdvancements.SECRETE_MENU_BLOCKS) return;
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, BandAdvancements.SECRETE_MENU);
+    }
+
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
@@ -65,6 +80,17 @@ public final class ZoneProgressEvents {
         for (ServerPlayer player : players) {
             if (player.isSpectator()) continue;
             int px = player.getBlockX();
+            checkSecreteMenu(level, player, px);
+            // Behind spawn the bands run in reverse: only the reverse journey is earned there, entering
+            // each band from its spawn (+X) side. The forward journey is earned going forward.
+            if (WorldGenCycle.fromConfig().isMirroredAt(px)) {
+                for (BandAdvancements.Trigger t : BandAdvancements.reverseTriggers()) {
+                    if (t.test().test(level, px) && t.test().test(level, px + t.depth())) {
+                        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, t.id());
+                    }
+                }
+                continue;
+            }
 
             for (BandAdvancements.Trigger t : BandAdvancements.triggers()) {
                 if (t.test().test(level, px) && t.test().test(level, px - t.depth())) {

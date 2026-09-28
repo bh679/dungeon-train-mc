@@ -20056,9 +20056,9 @@
       ],
       "pr": 1619,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.995.0",
+      "released_at": "2026-09-28T08:11:16Z"
     },
     {
       "id": "curseforge-companion-installs",
@@ -20076,9 +20076,9 @@
       ],
       "pr": 1622,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.995.0",
+      "released_at": "2026-09-28T08:11:16Z"
     },
     {
       "id": "faulthurst-hint-every-language",
@@ -20115,6 +20115,44 @@
         "Whole groups can now be set as rare as one in every 1000 groups"
       ],
       "pr": 1624,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "advancement-frontier-visibility",
+      "version": "0.997.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancements reveal one step at a time",
+      "summary": "The advancements screen now shows only what you've earned plus the next step ahead \u2014 everything further along stays hidden until you reach it.",
+      "highlights": [],
+      "pr": 1625,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "reverse-journey-behind-spawn",
+      "version": "0.996.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "New ground behind you",
+      "summary": "Head back along the train past where you boarded and the journey now carries on behind you, in its own order. But the train has to take you there: only ground you cover walking back along the train brings the next stretch closer, while jumping off or flying ahead just pushes it further away.",
+      "highlights": [
+        "Heading back past where you boarded now leads into new stretches",
+        "Only distance covered on the train counts; getting off or flying ahead doesn't bring you closer",
+        "Smoother edges where the strangest stretch gives way to ordinary land"
+      ],
+      "pr": 1621,
       "date": "2026-09-28",
       "released": false,
       "released_in": null,

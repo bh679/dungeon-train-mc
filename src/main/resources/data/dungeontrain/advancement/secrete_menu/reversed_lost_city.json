@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:secrete_menu/reversed_beta",
+  "display": {
+    "icon": { "id": "minecraft:cracked_stone_bricks" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_lost_city.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_lost_city.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "reversed_lost_city" }
+    }
+  },
+  "requirements": [["reached"]]
+}
