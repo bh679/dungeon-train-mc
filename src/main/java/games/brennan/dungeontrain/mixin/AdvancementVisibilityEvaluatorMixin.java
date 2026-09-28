@@ -1,88 +1,85 @@
 package games.brennan.dungeontrain.mixin;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import games.brennan.dungeontrain.DungeonTrain;
-import it.unimi.dsi.fastutil.Stack;
+import games.brennan.dungeontrain.advancement.BandAdvancementChainRewriter;
 import net.minecraft.advancements.AdvancementNode;
-import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.advancements.AdvancementVisibilityEvaluator;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
- * Progressive "frontier" reveal for {@code dungeontrain:*} advancements, plus
- * a lift of the vanilla {@code VISIBILITY_DEPTH = 2} cap.
+ * Strict "frontier-only" reveal for the {@code dungeontrain:dungeon_train/*}
+ * band chain: a player sees earned advancements and the single unearned step
+ * immediately after their furthest earned one — nothing else. Anything in
+ * between (a newly inserted advancement that retroactively became a parent
+ * of one already earned, or a node skipped over by a buggy/out-of-order
+ * grant) stays hidden, as if it doesn't exist, even once some later node in
+ * the chain is done.
  *
- * <p>The DT {@code dungeon_train} tab marks (almost) every advancement
- * {@code hidden:true} so the tree isn't a wall of spoilers. On its own,
- * vanilla only reveals a {@code hidden:true} advancement once it is
- * <em>itself</em> earned — so the tab would show nothing but a lone root. We
- * want a fog-of-war instead: an advancement stays hidden until its
- * <em>direct parent</em> is earned, at which point it (and its siblings under
- * that parent) unhide as the next visible step.</p>
+ * <p>The {@code dungeon_train} tab marks (almost) every advancement
+ * {@code hidden:true} so the tree isn't a wall of spoilers, and is a
+ * hand-maintained linear chain ({@code BandAdvancements.chain(...)},
+ * reparented by {@code BandAdvancementChainRewriter}) — so "ancestor" and
+ * "everything before" are effectively the same thing here.</p>
  *
  * <p>Vanilla {@link AdvancementVisibilityEvaluator#evaluateVisibility}
- * decides whether to sync an unearned advancement to the client via
- * {@code evaluateVisiblityForUnfinishedNode(stack)}. This mixin wraps that
- * result (MixinExtras {@link ModifyExpressionValue}). When the original says
- * "hide" and the node is a {@code dungeontrain} advancement whose direct
- * parent has been completed, we force it visible — revealing the frontier one
- * ring beyond what's earned. Because the evaluator re-runs whenever progress
- * changes, earning a node reveals its children on the next sync.</p>
+ * computes, per node, {@code flag2 = flag1 || evaluateVisiblityForUnfinishedNode(stack)}
+ * where {@code flag1} is "this node or any descendant is done" — vanilla's
+ * own ancestor-reveal, which unconditionally shows every node on the path
+ * from an earned node back to the root. A narrower wrap around just the
+ * {@code evaluateVisiblityForUnfinishedNode} sub-call can't suppress that,
+ * since {@code flag1} short-circuits it. So instead this mixin intercepts the
+ * final {@code Output.accept(node, flag2)} call and substitutes its own rule
+ * for every {@code dungeon_train} chain node, completely replacing vanilla's
+ * {@code flag2} rather than adjusting one term of it:</p>
  *
- * <p>Grandchildren stay hidden (their parent isn't done yet), so the reveal
- * never runs ahead of the player. The root ({@code hidden:false}) is always
- * visible so the tab renders. Earned nodes and ancestors of earned nodes are
- * already handled by vanilla ({@code isSelfOrDescendantDone}).</p>
+ * <ul>
+ *   <li>Node is done (earned) → always visible.</li>
+ *   <li>Node isn't done but its <em>direct</em> parent is done → visible
+ *       (the frontier, one ring past what's earned).</li>
+ *   <li>Otherwise → hidden, regardless of whether some descendant further
+ *       along the chain happens to be done.</li>
+ * </ul>
  *
- * <p>For the rare non-hidden DT advancement, the legacy behaviour is kept:
- * scan the whole ancestor rule stack for a {@code SHOW} so the depth cap
- * doesn't drop a deep non-hidden node below an earned ancestor.
- * {@code VisibilityRule} is package-private, so the comparison goes via
- * {@code String.valueOf(...)} against the enum name.</p>
+ * <p>The root has no parent and is auto-granted (tick trigger), so it's
+ * always "done" and falls into the first case; {@code original} is used as a
+ * defensive fallback only if that ever isn't true. The separate
+ * {@code dungeontrain:editor/*} tab, vanilla advancements, and other mods are
+ * untouched — the path check returns {@code original} early.</p>
  *
- * <p>Vanilla and other-mod advancements are untouched — the namespace check
- * returns early.</p>
+ * <p>This only decides whether a node is <em>sent</em> to the client at all —
+ * it says nothing about where it's drawn once there. An earned node whose
+ * real parent got hidden by this rule needs its synced tree connection
+ * rewritten too, or the client drops it as an orphan; see
+ * {@link PlayerAdvancementsRehomeMixin}.</p>
  */
 @Mixin(AdvancementVisibilityEvaluator.class)
 public abstract class AdvancementVisibilityEvaluatorMixin {
 
-    @ModifyExpressionValue(
+    @ModifyArg(
         method = "evaluateVisibility(Lnet/minecraft/advancements/AdvancementNode;Lit/unimi/dsi/fastutil/Stack;Ljava/util/function/Predicate;Lnet/minecraft/server/advancements/AdvancementVisibilityEvaluator$Output;)Z",
         at = @At(value = "INVOKE",
-                 target = "Lnet/minecraft/server/advancements/AdvancementVisibilityEvaluator;evaluateVisiblityForUnfinishedNode(Lit/unimi/dsi/fastutil/Stack;)Z")
+                 target = "Lnet/minecraft/server/advancements/AdvancementVisibilityEvaluator$Output;accept(Lnet/minecraft/advancements/AdvancementNode;Z)V")
     )
-    private static boolean dungeontrain$revealFrontierForModNamespace(
+    private static boolean dungeontrain$frontierOnlyVisibility(
         boolean original,
         @Local(argsOnly = true) AdvancementNode node,
-        @Local(argsOnly = true) Stack<?> stack,
         @Local(argsOnly = true) Predicate<AdvancementNode> isDoneTest
     ) {
-        if (original) return true;
         ResourceLocation id = node.holder().id();
-        if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) return false;
+        if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) return original;
+        if (!id.getPath().startsWith(BandAdvancementChainRewriter.PATH_PREFIX)) return original;
 
-        // Frontier reveal: unhide an advancement once its DIRECT parent is
-        // earned. Applies to hidden and non-hidden nodes alike; the root has
-        // no parent and is already visible via its SHOW rule.
+        if (isDoneTest.test(node)) return true;
+
         AdvancementNode parent = node.parent();
-        if (parent != null && isDoneTest.test(parent)) return true;
+        if (parent == null) return original;
 
-        // Legacy depth-cap lift for non-hidden DT advancements only: reveal a
-        // deep non-hidden node when any ancestor rule is SHOW (an earned
-        // ancestor), regardless of the vanilla 2-hop window. Hidden nodes fall
-        // through to the frontier rule above and otherwise stay hidden.
-        Optional<DisplayInfo> display = node.advancement().display();
-        if (display.isEmpty() || display.get().isHidden()) return false;
-        java.util.List<?> entries = (java.util.List<?>) stack;
-        for (int i = 0; i < entries.size(); i++) {
-            if ("SHOW".equals(String.valueOf(entries.get(i)))) return true;
-        }
-        return false;
+        return isDoneTest.test(parent);
     }
 }
