@@ -175,12 +175,6 @@ public final class ReverseSlide {
         return CarriageDeck.isOnTrainFootprint(carriages(level), player) ? back : 0L;
     }
 
-    private static List<Trains.Carriage> carriages(ServerLevel level) {
-        List<Trains.Carriage> carriages = new ArrayList<>();
-        for (List<Trains.Carriage> train : Trains.byTrainId(level).values()) carriages.addAll(train);
-        return carriages;
-    }
-
     private static void applyChange(ServerLevel level, long before, State now) {
         WorldGenCycle.setReverseSlide(now.slide());
         StacksBand.invalidateCache();
