@@ -20040,6 +20040,25 @@
       "released": true,
       "released_in": "v0.994.0",
       "released_at": "2026-09-27T17:11:27Z"
+    },
+    {
+      "id": "tower-blocks-hang-until-disturbed",
+      "version": "0.995.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Some things hold together until you touch them",
+      "summary": "Loose sand and gravel out in the stranger stretches of the journey no longer crumble away the moment you arrive. They hang where they were built, just like sand over a cave, until you disturb them.",
+      "highlights": [
+        "Loose blocks stay put until you mine or build next to them."
+      ],
+      "pr": 1619,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
