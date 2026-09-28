@@ -53,7 +53,10 @@ public final class CarriageGroupPlacer {
             // its processor chain in charge of that. The decoration follows through TemplateDecor,
             // exactly as CarriagePlacer.stampTemplate does for a shell: the capture below keeps the
             // author's armor stands, pictures and minecarts, so a stamp has to put them back.
-            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+            // Stage placeholders resolve only inside a StagePlacementScope (Test the Carriage); an
+            // unscoped editor plot stamp keeps them, so a save never bakes the swap into the template.
+            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true)
+                .addProcessor(new StagePlaceholderProcessor());
             template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
             // replace, not spawn: this lands in a plot that a caller may not have cleared first
             // (BuilderWorldSetup's open path), and a re-stamp must not hang a second copy of every
