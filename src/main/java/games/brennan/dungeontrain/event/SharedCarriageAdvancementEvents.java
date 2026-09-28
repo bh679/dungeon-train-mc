@@ -37,6 +37,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>{@code drift_gift_left} — left an item in a container aboard one, for whoever leases it next.</li>
  * </ul>
  *
+ * <p>The container close hook also queues chest edits for upload — only gifts on a carriage nobody has
+ * changed yet, but any add/remove once it has been (see {@link #shouldQueue}).</p>
+ *
  * <p>(The fourth, {@code drift_own_return}, fires from {@link SharedCarriageEnterEvents} — it is about
  * arriving, not editing.)</p>
  *
@@ -55,8 +58,8 @@ public final class SharedCarriageAdvancementEvents {
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /**
-     * Item count seen in a container the moment a player opened it, keyed by player. Written on the
-     * open click, consumed on the matching close.
+     * What a container held the moment a player opened it, keyed by player. Written on the open click,
+     * consumed on the matching close.
      */
     private static final Map<UUID, OpenContainer> OPEN_CONTAINER = new ConcurrentHashMap<>();
 
@@ -67,11 +70,13 @@ public final class SharedCarriageAdvancementEvents {
     private static final Map<UUID, Long> LAST_CUE_MS = new ConcurrentHashMap<>();
 
     /**
-     * A container a player has open: where it is, which carriage it belongs to, and what was in it.
+     * A container a player has open: where it is, which carriage it belongs to, and what was in it —
+     * both the coarse item count (the gift check) and a slot-by-slot signature (any change at all).
      * The level is carried explicitly — a carriage's blocks live in the plot level, which is not
      * necessarily the level the player themselves is standing in.
      */
-    private record OpenContainer(ResourceKey<Level> levelKey, BlockPos pos, UUID subLevelId, int itemCount) {}
+    private record OpenContainer(ResourceKey<Level> levelKey, BlockPos pos, UUID subLevelId,
+                                 int itemCount, long contentsSig) {}
 
     private SharedCarriageAdvancementEvents() {}
 
@@ -127,22 +132,17 @@ public final class SharedCarriageAdvancementEvents {
         Container container = containerAt(level, pos);
         if (container == null) return;
         OPEN_CONTAINER.put(player.getUUID(),
-                new OpenContainer(level.dimension(), pos.immutable(), inst.subLevelId, countItems(container)));
+                new OpenContainer(level.dimension(), pos.immutable(), inst.subLevelId,
+                        countItems(container), contentsSig(container)));
     }
 
     /**
-     * On close, re-read the container the player opened. If it now holds MORE than it did, they left
-     * something for whoever leases this carriage next:
+     * On close, re-read the container the player opened and decide whether the cell must be queued for
+     * upload — container contents change no block state, so Sable's block-change hook never sees them,
+     * and without the queue the change is never sent (see {@link #shouldQueue}).
      *
-     * <ol>
-     *   <li>queue the cell for upload — container contents change no block state, so Sable's block-change
-     *       hook never sees this, and without the queue the gift is never sent (a fresh carriage would
-     *       never even get its first submit); and</li>
-     *   <li>award the advancement.</li>
-     * </ol>
-     *
-     * <p>Deliberately one-directional: taking items out does NOT queue anything. Ordinary looting must
-     * not dirty a carriage — the same rule the block-change hook keeps for breaking a loot container.</p>
+     * <p>If it now holds MORE than it did, the player also left something for whoever leases this
+     * carriage next, which awards the gift advancement. Taking items out never does.</p>
      */
     @SubscribeEvent
     public static void onContainerClose(PlayerContainerEvent.Close event) {
@@ -154,13 +154,18 @@ public final class SharedCarriageAdvancementEvents {
         if (level == null) return;
         Container container = containerAt(level, opened.pos());
         if (container == null) return;
-        if (!isGift(opened.itemCount(), countItems(container))) return;
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.resolve(
                 opened.subLevelId(), opened.pos().getX(), opened.pos().getY(), opened.pos().getZ());
         if (inst == null || inst.isCulled()) return;
+        int afterCount = countItems(container);
+        if (!shouldQueue(opened.itemCount(), afterCount, opened.contentsSig(), contentsSig(container),
+                inst.isOnRelay())) return;
         inst.enqueue(opened.pos());
-        LOGGER.debug("[DungeonTrain] gift left in drifting carriage pIdx={} at {} by {} (queued for upload).",
-                inst.pIdx, opened.pos(), player.getGameProfile().getName());
+        boolean gift = isGift(opened.itemCount(), afterCount);
+        LOGGER.debug("[DungeonTrain] {} in drifting carriage pIdx={} at {} by {} (queued for upload).",
+                gift ? "gift left" : "contents changed", inst.pIdx, opened.pos(),
+                player.getGameProfile().getName());
+        if (!gift) return;
         cuePhoto(player, "left a gift in a drifting carriage");
         if (SharedCarriageGate.canContribute(player)) trigger(player, "drift_gift_left");
     }
@@ -171,6 +176,23 @@ public final class SharedCarriageAdvancementEvents {
      */
     static boolean isGift(Integer before, int after) {
         return before != null && after > before;
+    }
+
+    /**
+     * Whether a container edit must be queued for upload.
+     *
+     * <ul>
+     *   <li>A gift ({@link #isGift}) always is — it is what shares a fresh carriage in the first place.</li>
+     *   <li>Once the carriage has already been changed ({@code onRelay}: leased from the pool, or its
+     *       first edit submitted) ANY difference in contents is — taking items out and swapping them
+     *       included — or the next world leases it with chest contents that no longer exist.</li>
+     *   <li>Otherwise not: looting a carriage nobody has touched must not turn it into a build.</li>
+     * </ul>
+     */
+    static boolean shouldQueue(Integer beforeCount, int afterCount, long beforeSig, long afterSig,
+                               boolean onRelay) {
+        if (isGift(beforeCount, afterCount)) return true;
+        return onRelay && beforeCount != null && beforeSig != afterSig;
     }
 
     @SubscribeEvent
@@ -194,6 +216,21 @@ public final class SharedCarriageAdvancementEvents {
             if (!stack.isEmpty()) total += stack.getCount();
         }
         return total;
+    }
+
+    /**
+     * Slot-by-slot signature of what a container holds — item, components and count per slot, order
+     * dependent, so a take, a swap or a rearrangement all change it where {@link #countItems} may not.
+     */
+    private static long contentsSig(Container container) {
+        long sig = 1L;
+        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            ItemStack stack = container.getItem(slot);
+            long cell = stack.isEmpty() ? 0L
+                    : 31L * ItemStack.hashItemAndComponents(stack) + stack.getCount();
+            sig = sig * 1_000_003L + cell;
+        }
+        return sig;
     }
 
     private static void trigger(ServerPlayer player, String actionId) {

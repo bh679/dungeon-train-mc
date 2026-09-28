@@ -9,9 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The "left something behind" rule for {@code drift_gift_left}: a drifting-carriage container counts
  * as a gift only when it holds MORE at close than it did at open.
  *
- * <p>The one-directional part matters beyond the achievement — the same predicate decides whether the
- * cell is queued for upload, and queuing on a REMOVAL would make ordinary looting dirty (and re-upload)
- * every carriage a player empties.</p>
+ * <p>Plus {@code shouldQueue}, which decides whether the cell is uploaded: a gift always, and any
+ * change at all once the carriage has already been changed (on the relay) — but looting a carriage
+ * nobody has touched must never turn it into a build.</p>
  */
 class DriftingCarriageGiftTest {
 
@@ -41,5 +41,42 @@ class DriftingCarriageGiftTest {
         // Close with nothing snapshotted (opened before the world loaded this carriage, or a menu we
         // never saw opened) — we cannot claim the player put anything there.
         assertFalse(SharedCarriageAdvancementEvents.isGift(null, 7));
+    }
+
+    // ---------------- Upload queue ----------------
+
+    private static final long SIG_A = 111L;
+    private static final long SIG_B = 222L;
+
+    @Test
+    void lootingAnAlreadyChangedCarriageIsQueued() {
+        assertTrue(SharedCarriageAdvancementEvents.shouldQueue(4, 3, SIG_A, SIG_B, true));
+        assertTrue(SharedCarriageAdvancementEvents.shouldQueue(9, 0, SIG_A, SIG_B, true));
+    }
+
+    @Test
+    void lootingAnUntouchedCarriageIsNotQueued() {
+        assertFalse(SharedCarriageAdvancementEvents.shouldQueue(4, 3, SIG_A, SIG_B, false));
+    }
+
+    @Test
+    void anEvenSwapIsQueuedOnlyOnceAlreadyChanged() {
+        assertTrue(SharedCarriageAdvancementEvents.shouldQueue(5, 5, SIG_A, SIG_B, true));
+        assertFalse(SharedCarriageAdvancementEvents.shouldQueue(5, 5, SIG_A, SIG_B, false));
+    }
+
+    @Test
+    void openingAndClosingWithoutChangeIsNotQueued() {
+        assertFalse(SharedCarriageAdvancementEvents.shouldQueue(5, 5, SIG_A, SIG_A, true));
+    }
+
+    @Test
+    void aGiftIsQueuedEvenOnAnUntouchedCarriage() {
+        assertTrue(SharedCarriageAdvancementEvents.shouldQueue(0, 1, SIG_A, SIG_B, false));
+    }
+
+    @Test
+    void noRecordedOpenIsNeverQueued() {
+        assertFalse(SharedCarriageAdvancementEvents.shouldQueue(null, 7, SIG_A, SIG_B, true));
     }
 }
