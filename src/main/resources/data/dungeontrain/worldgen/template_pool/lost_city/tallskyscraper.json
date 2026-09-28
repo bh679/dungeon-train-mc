@@ -48,6 +48,15 @@
       }
     },
     {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:tall_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/tallskyscraper_bitten"
+      }
+    },
+    {
       "weight": 1,
       "element": {
         "element_type": "minecraft:single_pool_element",

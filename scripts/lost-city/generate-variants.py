@@ -34,6 +34,13 @@ def swap(pairs):
             "swaps": [{"from": mc(p[0]), "to": mc(p[1]), **({"chance": p[2]} if len(p) > 2 else {})} for p in pairs]}
 
 
+def bite(rubble, bites=(1, 2), radius=(0.3, 0.5), pile_scale=0.8, pile_max=10):
+    """Huge chunks bitten out of the shell, the mass heaped as rubble on the floor/ground beneath."""
+    return {"processor_type": "dungeontrain:lost_city_bite", "bites_min": bites[0], "bites_max": bites[1],
+            "radius_min": radius[0], "radius_max": radius[1], "rubble": [mc(r) for r in rubble],
+            "pile_scale": pile_scale, "pile_max": pile_max}
+
+
 def truncate(lo, hi, rubble, jagged=3):
     return {"processor_type": "dungeontrain:lost_city_truncate", "min_fraction": lo, "max_fraction": hi,
             "jagged": jagged, "rubble": [mc(r) for r in rubble]}
@@ -130,16 +137,25 @@ WARE_GREY = swap([("bricks", "stone_bricks"), ("brick_slab", "stone_brick_slab")
                   ("calcite", "light_gray_concrete"), ("diorite", "andesite"), ("diorite_stairs", "andesite_stairs"),
                   ("granite", "tuff"), ("cyan_terracotta", "gray_terracotta"), ("blue_terracotta", "light_gray_terracotta")])
 
+DEEP_RUBBLE = ["cracked_deepslate_tiles", "cobbled_deepslate", "deepslate_tiles", "cobblestone", "gravel"]
+BLACK_BITE = bite(DEEP_RUBBLE)
+BLACK_BITE_GREY = [BLACK_GREY, bite(["andesite", "cobblestone", "gravel", "gray_concrete_powder", "polished_andesite"])]
+RED_BITE = bite(["bricks", "granite", "cobblestone", "gravel", "cracked_deepslate_tiles"])
+TALL_BITE = bite(["mossy_cobblestone", "cobblestone", "cracked_deepslate_tiles", "gravel", "stone"], radius=(0.4, 0.7))
+RUIN_BITE = bite(["cracked_stone_bricks", "cobblestone", "stone", "gravel", "andesite"])
+PLANT_BITE = bite(["cracked_stone_bricks", "cobblestone", "mossy_cobblestone", "gravel", "stone"], bites=(2, 3), radius=(0.25, 0.4))
+GARAGE_BITE = bite(["gray_concrete", "gray_concrete_powder", "cobblestone", "gravel", "andesite"], bites=(2, 3), radius=(0.18, 0.3), pile_max=7)
+
 # building -> (mod template, [(variant, processors, weight)]); "shipped"/"dry" use the shared lists
 BUILDINGS = {
-    "blackskyscraper": ("black_skyscraperlt", [("shipped", [], 3), ("grey", [BLACK_GREY], 2), ("white", [BLACK_WHITE], 2), ("topped", [BLACK_TOP], 2), ("dry", [], 1)]),
-    "ruinedblackskyscraper": ("ruined_black_skyscraperlt", [("shipped", [], 3), ("grey", [BLACK_GREY], 2), ("white", [BLACK_WHITE], 2), ("topped", [BLACK_TOP], 2), ("dry", [], 1)]),
-    "redskyscraper": ("red_skyscraperlt", [("shipped", [], 3), ("sandstone", [RED_SAND], 2), ("oxidised", [RED_OXID], 2), ("topped", [RED_TOP], 2), ("dry", [], 1)]),
-    "ruindedredskyscraper": ("ruinded_red_skyscraperlt", [("shipped", [], 3), ("sandstone", [RED_SAND], 2), ("oxidised", [RED_OXID], 2), ("topped", [RED_TOP], 2), ("dry", [], 1)]),
-    "tallskyscraper": ("tall_skyscraperlt", [("shipped", [], 3), ("clear", [TALL_CLEAR], 2), ("dark", [TALL_DARK], 2), ("blown", [TALL_BLOWN], 2), ("topped", [TALL_TOP], 2), ("dry", [], 1)]),
-    "ruinedskyscraper": ("ruined_skyscraperlt", [("shipped", [], 3), ("deepslate", [RUIN_DEEP], 2), ("mud", [RUIN_MUD], 2), ("collapsed", [RUIN_COLLAPSE], 2), ("dry", [], 1)]),
-    "powerplant": ("power_plantlt", [("shipped", [], 3), ("mud", [RUIN_MUD], 2), ("deepslate", [RUIN_DEEP], 2), ("crumbling", [PLANT_CRUMBLE], 2), ("dry", [], 1)]),
-    "parking_garage": ("parking_garagelt", [("shipped", [], 3), ("light", [GARAGE_LIGHT], 2), ("collapsed", [GARAGE_TOP], 2), ("dry", [], 1)]),
+    "blackskyscraper": ("black_skyscraperlt", [("shipped", [], 3), ("grey", [BLACK_GREY], 2), ("white", [BLACK_WHITE], 2), ("topped", [BLACK_TOP], 2), ("bitten", [BLACK_BITE], 3), ("bitten_grey", BLACK_BITE_GREY, 2), ("dry", [], 1)]),
+    "ruinedblackskyscraper": ("ruined_black_skyscraperlt", [("shipped", [], 3), ("grey", [BLACK_GREY], 2), ("white", [BLACK_WHITE], 2), ("topped", [BLACK_TOP], 2), ("bitten", [BLACK_BITE], 3), ("dry", [], 1)]),
+    "redskyscraper": ("red_skyscraperlt", [("shipped", [], 3), ("sandstone", [RED_SAND], 2), ("oxidised", [RED_OXID], 2), ("topped", [RED_TOP], 2), ("bitten", [RED_BITE], 3), ("dry", [], 1)]),
+    "ruindedredskyscraper": ("ruinded_red_skyscraperlt", [("shipped", [], 3), ("sandstone", [RED_SAND], 2), ("oxidised", [RED_OXID], 2), ("topped", [RED_TOP], 2), ("bitten", [RED_BITE], 3), ("dry", [], 1)]),
+    "tallskyscraper": ("tall_skyscraperlt", [("shipped", [], 3), ("clear", [TALL_CLEAR], 2), ("dark", [TALL_DARK], 2), ("blown", [TALL_BLOWN], 2), ("topped", [TALL_TOP], 2), ("bitten", [TALL_BITE], 3), ("dry", [], 1)]),
+    "ruinedskyscraper": ("ruined_skyscraperlt", [("shipped", [], 3), ("deepslate", [RUIN_DEEP], 2), ("mud", [RUIN_MUD], 2), ("collapsed", [RUIN_COLLAPSE], 2), ("bitten", [RUIN_BITE], 3), ("dry", [], 1)]),
+    "powerplant": ("power_plantlt", [("shipped", [], 3), ("mud", [RUIN_MUD], 2), ("deepslate", [RUIN_DEEP], 2), ("crumbling", [PLANT_CRUMBLE], 2), ("bitten", [PLANT_BITE], 2), ("dry", [], 1)]),
+    "parking_garage": ("parking_garagelt", [("shipped", [], 3), ("light", [GARAGE_LIGHT], 2), ("collapsed", [GARAGE_TOP], 2), ("bitten", [GARAGE_BITE], 2), ("dry", [], 1)]),
     "warship": ("warshiplt", [("shipped", [], 3), ("rusted", [SHIP_RUST], 2), ("grey", [SHIP_GREY], 2)]),
     "warehouse": ("warehouselt", [("shipped", [], 3), ("grey", [WARE_GREY], 2), ("dry", [], 1)]),
 }

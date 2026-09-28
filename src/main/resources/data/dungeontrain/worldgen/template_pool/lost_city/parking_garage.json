@@ -30,6 +30,15 @@
       }
     },
     {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:parking_garagelt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/parking_garage_bitten"
+      }
+    },
+    {
       "weight": 1,
       "element": {
         "element_type": "minecraft:single_pool_element",

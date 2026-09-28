@@ -39,6 +39,15 @@
       }
     },
     {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:ruined_black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/ruinedblackskyscraper_bitten"
+      }
+    },
+    {
       "weight": 1,
       "element": {
         "element_type": "minecraft:single_pool_element",
