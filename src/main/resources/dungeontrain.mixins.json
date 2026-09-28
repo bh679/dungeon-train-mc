@@ -142,6 +142,7 @@
     "client.DimensionSpecialEffectsCloudHeightMixin",
     "client.ClientLevelBandSkyColorMixin",
     "client.LightTextureEndBandMixin",
+    "client.ClockBandSpinMixin",
     "client.LightTextureNetherBandMixin",
     "client.LightTextureUpsideDownBandMixin",
     "client.LightTexturePortalRoomMixin",
