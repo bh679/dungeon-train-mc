@@ -32,8 +32,8 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class FarLandsClock {
 
-    /** Clock ticks per game tick at the heart of the Far Lands: a day in one minute. */
-    public static final float MAX_SPEED = 20.0f;
+    /** Clock ticks per game tick at the heart of the Far Lands: a day in about thirty-four seconds. */
+    public static final float MAX_SPEED = 35.0f;
     /** Script blocks over which the speed ramps, after the entry wall and before the exit wall. */
     static final int RAMP = FarLandsShift.ENTRY_INSIDE;
     /** Script block of the entry wall — where the Far Lands proper begin. */
