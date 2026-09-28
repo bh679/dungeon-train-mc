@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderCinematicService;
 import games.brennan.dungeontrain.builder.BuilderSpawn;
 import games.brennan.dungeontrain.builder.BuilderWorldSetup;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.narrative.BookUploadSuspensions;
@@ -28,6 +29,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -48,8 +50,10 @@ import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -138,6 +142,33 @@ public final class PlayerJoinEvents {
      * the on-train last-resort fires.
      */
     private static final int MAX_X_SLIDE = 300;
+
+    /**
+     * Wall-clock budget for one {@link #pickPlayerTarget} call. The search runs on the server
+     * thread inside a tick; a player log of 28 Sep 2026 showed it holding the thread for 61 s
+     * (and 22 s at world create) while it force-generated ~330 chunk columns along the track
+     * and then fell back to the on-train spawn anyway. Candidates are no longer force-generated
+     * (see {@link #ensureSearchChunk}), so this only bounds the loaded-chunk scan itself; once it
+     * trips, Phase B stops and Phase C (on-train) fires.
+     */
+    static final long SPAWN_SEARCH_BUDGET_NANOS = 20_000_000L;
+
+    /**
+     * Line-of-sight aim height above the train centre. The corridor is a carriage-width slot cut
+     * into the terrain, open to the sky only where the surface sits at or below the bed, so on a
+     * flat stretch this point is in open air above the train.
+     */
+    static final double AIM_ABOVE_TRAIN = 8.0;
+
+    /**
+     * Where the surface is higher than that, the aim is lifted to this far above the slot rim —
+     * the terrain top just outside the track footprint at the anchor column. A ray from a spot
+     * 10–40 blocks to the side down into the slot always hits the slot wall (the surface here
+     * was Y 94–110 against a train at Y 78 in the log above), so every candidate failed and the
+     * search ran to exhaustion. Aiming above the rim keeps the check's purpose — reject a candidate
+     * under a tree canopy or an overhang — without demanding a view into the slot.
+     */
+    static final double AIM_ABOVE_RIM = 2.0;
 
     /** Standing eye height (blocks above feet) — used for pitch math. */
     private static final double EYE_HEIGHT = 1.62;
@@ -674,31 +705,47 @@ public final class PlayerJoinEvents {
         Vector3d trainCenter, boolean allowWater
     ) {
         RandomSource rand = level.getRandom();
-        // Aim point sits in the open air ABOVE the train, well clear of:
-        //   - the bed/carriage blocks (bed Y .. bed Y + ~3)
-        //   - the trench wall (extends from bed Y up to local surface Y)
-        // The open corridor is open to sky at above-ground X stretches, so
-        // a ray to (trainX, bedY + 8, trainZ) crosses the trench top and
-        // arrives in open air. If the ray hits something it's a genuine
-        // overhead obstruction (tree, overhanging cliff).
-        Vec3 trainAim = new Vec3(trainCenter.x, trainCenter.y + 8.0, trainCenter.z);
+        long startNanos = System.nanoTime();
+        boolean syncGen = DungeonTrainConfig.isSpawnSearchSyncGenEnabled();
+
+        // Aim point: in the open air above the train, lifted above the slot rim where the
+        // terrain is higher than the bed (see AIM_ABOVE_TRAIN / AIM_ABOVE_RIM). If the ray
+        // from a candidate hits something it's a genuine overhead obstruction (tree canopy,
+        // overhanging cliff), not the corridor wall.
+        Vec3 trainAim = new Vec3(trainCenter.x, aimYAt(level, anchorX, g, trainCenter.y, syncGen), trainCenter.z);
 
         // Phase A — original anchor.
-        PlayerTarget r = tryFindLOSClearSpawn(level, anchorX, g, trainAim, rand, allowWater);
+        PlayerTarget r = tryFindLOSClearSpawn(level, anchorX, g, trainAim, rand, allowWater, syncGen);
         if (r != null) return r;
 
         // Phase B — slide the anchor along the track in both directions.
         // 2 * X_JITTER_MAX stride so each slide explores a fresh X region.
+        // Anchors whose chunk isn't loaded are skipped rather than generated
+        // (the player's view distance is the useful search area), and the
+        // whole slide stops at SPAWN_SEARCH_BUDGET_NANOS. The aim for a slid
+        // anchor is above that anchor, not the train: the check exists to
+        // reject overhead obstructions, not to prove the train is visible
+        // from 300 blocks down the line.
         int stride = (int) (2.0 * X_JITTER_MAX);
+        int anchorsTried = 0;
+        boolean budgetHit = false;
+        slide:
         for (int step = stride; step <= MAX_X_SLIDE; step += stride) {
             for (int dir : new int[] {+1, -1}) {
+                if (spawnSearchExpired(startNanos, System.nanoTime())) {
+                    budgetHit = true;
+                    break slide;
+                }
                 int newAnchor = anchorX + dir * step;
-                WorldgenForceGuard.forceChunk(level, newAnchor >> 4, tg.centerZ() >> 4);
+                if (!ensureSearchChunk(level, newAnchor, tg.centerZ(), syncGen)) continue;
                 if (TunnelGenerator.isColumnUnderground(level, newAnchor, tg)) continue;
-                r = tryFindLOSClearSpawn(level, newAnchor, g, trainAim, rand, allowWater);
+                anchorsTried++;
+                Vec3 slideAim = new Vec3(newAnchor + 0.5,
+                    aimYAt(level, newAnchor, g, trainCenter.y, syncGen), trainCenter.z);
+                r = tryFindLOSClearSpawn(level, newAnchor, g, slideAim, rand, allowWater, syncGen);
                 if (r != null) {
-                    LOGGER.info("[DungeonTrain] X-slide found LOS-clear anchor at X={} (slid {} from original X={})",
-                        newAnchor, dir * step, anchorX);
+                    LOGGER.info("[DungeonTrain] X-slide found LOS-clear anchor at X={} (slid {} from original X={}, {} ms)",
+                        newAnchor, dir * step, anchorX, (System.nanoTime() - startNanos) / 1_000_000L);
                     return r;
                 }
             }
@@ -710,8 +757,9 @@ public final class PlayerJoinEvents {
         int tx = Mth.floor(trainCenter.x);
         int ty = (int) Math.ceil(trainCenter.y) + 8;
         int tz = Mth.floor(trainCenter.z);
-        LOGGER.warn("[DungeonTrain] pickPlayerTarget exhausted X-slide ±{} — last-resort spawn above train at ({}, {}, {})",
-            MAX_X_SLIDE, tx, ty, tz);
+        LOGGER.warn("[DungeonTrain] pickPlayerTarget {} (X-slide ±{}, {} loaded anchor(s) tried, {} ms, syncGen={}) — last-resort spawn above train at ({}, {}, {})",
+            budgetHit ? "hit its time budget" : "exhausted", MAX_X_SLIDE, anchorsTried,
+            (System.nanoTime() - startNanos) / 1_000_000L, syncGen, tx, ty, tz);
         return new PlayerTarget(tx + 0.5, ty, tz + 0.5);
     }
 
@@ -720,10 +768,11 @@ public final class PlayerJoinEvents {
      * Returns the first candidate that passes both {@link #isSafePlayerPos}
      * and {@link #hasLineOfSight} to {@code trainAim}, or {@code null} if
      * no candidate within {@link #MAX_FALLBACK_PERP} satisfies both.
+     * Candidates in unloaded chunks are skipped (see {@link #ensureSearchChunk}).
      */
     private static PlayerTarget tryFindLOSClearSpawn(
         ServerLevel level, int anchorX, TrackGeometry g,
-        Vec3 trainAim, RandomSource rand, boolean allowWater
+        Vec3 trainAim, RandomSource rand, boolean allowWater, boolean syncGen
     ) {
         double centerZ = g.trackCenterZ() + 0.5;
         for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -734,7 +783,7 @@ public final class PlayerJoinEvents {
 
             int bx = Mth.floor(anchorX + 0.5 + xOffset);
             int bz = Mth.floor(centerZ + zOffset);
-            WorldgenForceGuard.forceChunk(level, bx >> 4, bz >> 4);
+            if (!ensureSearchChunk(level, bx, bz, syncGen)) continue;
 
             int groundY = findGroundY(level, bx, bz, allowWater);
             int playerY = groundY + 1;
@@ -747,7 +796,7 @@ public final class PlayerJoinEvents {
         for (int perpDist = (int) PERP_MIN; perpDist <= MAX_FALLBACK_PERP; perpDist++) {
             for (int sign : new int[] {+1, -1}) {
                 int bz = Mth.floor(centerZ + sign * perpDist);
-                WorldgenForceGuard.forceChunk(level, anchorX >> 4, bz >> 4);
+                if (!ensureSearchChunk(level, anchorX, bz, syncGen)) continue;
                 int gy = findGroundY(level, anchorX, bz, allowWater);
                 int py = gy + 1;
                 if (!isSafePlayerPos(level, anchorX, py, bz, allowWater)) continue;
@@ -758,6 +807,98 @@ public final class PlayerJoinEvents {
         }
 
         return null;
+    }
+
+    /**
+     * Make the chunk holding block column {@code (bx, bz)} readable for the search, or say it
+     * isn't. By default this is a non-blocking {@code getChunkNow} check — an unloaded chunk is
+     * simply not a candidate, because every {@code getBlockState} the search would then do on a
+     * {@link ServerLevel} is a synchronous chunk load on the server thread, and that is what held
+     * the server for 61 s in the 28 Sep 2026 player log. With the {@code spawnSearchSyncGen}
+     * server config on, the pre-fix behaviour (force to FULL under the Sable re-entry guard) is
+     * restored for worlds that want it.
+     */
+    private static boolean ensureSearchChunk(ServerLevel level, int bx, int bz, boolean syncGen) {
+        if (syncGen) {
+            WorldgenForceGuard.forceChunk(level, bx >> 4, bz >> 4);
+            return true;
+        }
+        return level.getChunkSource().getChunkNow(bx >> 4, bz >> 4) != null;
+    }
+
+    /** Whether the search has spent its {@link #SPAWN_SEARCH_BUDGET_NANOS}. Pure — unit-tested. */
+    static boolean spawnSearchExpired(long startNanos, long nowNanos) {
+        return nowNanos - startNanos >= SPAWN_SEARCH_BUDGET_NANOS;
+    }
+
+    /**
+     * Aim Y for the line-of-sight check at anchor column {@code x}: the terrain top just outside
+     * the track footprint on either side (the slot rim), or the plain above-train height where
+     * the surface is at or below it. A side whose chunk isn't loaded is left out of the rim.
+     */
+    private static double aimYAt(ServerLevel level, int x, TrackGeometry g, double trainCenterY, boolean syncGen) {
+        int rimY = Integer.MIN_VALUE;
+        for (int z : new int[] {g.trackZMin() - 1, g.trackZMax() + 1}) {
+            if (!ensureSearchChunk(level, x, z, syncGen)) continue;
+            rimY = Math.max(rimY, findGroundY(level, x, z, /*allowWater*/ false));
+        }
+        return aimYFor(trainCenterY, rimY);
+    }
+
+    /**
+     * Pure core of {@link #aimYAt}: {@code trainCenterY + AIM_ABOVE_TRAIN}, lifted to
+     * {@code rimY + AIM_ABOVE_RIM} when the rim is higher. {@code Integer.MIN_VALUE} means no rim
+     * could be read. Unit-tested.
+     */
+    static double aimYFor(double trainCenterY, int rimY) {
+        double base = trainCenterY + AIM_ABOVE_TRAIN;
+        if (rimY == Integer.MIN_VALUE) return base;
+        return Math.max(base, rimY + AIM_ABOVE_RIM);
+    }
+
+    /**
+     * Every chunk the horizontal projection of the segment {@code (fromX, fromZ) → (toX, toZ)}
+     * passes through, as {@link ChunkPos#asLong} keys — a 2-D grid walk on 16-block cells. A
+     * boundary crossed exactly at a corner adds the corner's side chunk too (conservative: the
+     * caller only uses this to refuse a ray, never to permit one). Pure — unit-tested.
+     */
+    static Set<Long> chunksAlongRay(double fromX, double fromZ, double toX, double toZ) {
+        Set<Long> out = new HashSet<>();
+        int cx = Mth.floor(fromX) >> 4;
+        int cz = Mth.floor(fromZ) >> 4;
+        int endCx = Mth.floor(toX) >> 4;
+        int endCz = Mth.floor(toZ) >> 4;
+        out.add(ChunkPos.asLong(cx, cz));
+        double dx = toX - fromX;
+        double dz = toZ - fromZ;
+        int stepX = dx > 0 ? 1 : (dx < 0 ? -1 : 0);
+        int stepZ = dz > 0 ? 1 : (dz < 0 ? -1 : 0);
+        double tMaxX = stepX == 0 ? Double.POSITIVE_INFINITY
+            : ((stepX > 0 ? (cx + 1) * 16.0 : cx * 16.0) - fromX) / dx;
+        double tMaxZ = stepZ == 0 ? Double.POSITIVE_INFINITY
+            : ((stepZ > 0 ? (cz + 1) * 16.0 : cz * 16.0) - fromZ) / dz;
+        double tDeltaX = stepX == 0 ? Double.POSITIVE_INFINITY : 16.0 / Math.abs(dx);
+        double tDeltaZ = stepZ == 0 ? Double.POSITIVE_INFINITY : 16.0 / Math.abs(dz);
+        int guard = 0;
+        while ((cx != endCx || cz != endCz) && guard++ < 4096) {
+            if (tMaxX < tMaxZ) {
+                cx += stepX;
+                tMaxX += tDeltaX;
+            } else {
+                cz += stepZ;
+                tMaxZ += tDeltaZ;
+            }
+            out.add(ChunkPos.asLong(cx, cz));
+        }
+        return out;
+    }
+
+    /** True when every chunk under the ray is loaded, so {@code level.clip} cannot sync-load one. */
+    private static boolean rayChunksLoaded(ServerLevel level, double fromX, double fromZ, double toX, double toZ) {
+        for (long key : chunksAlongRay(fromX, fromZ, toX, toZ)) {
+            if (level.getChunkSource().getChunkNow(ChunkPos.getX(key), ChunkPos.getZ(key)) == null) return false;
+        }
+        return true;
     }
 
     /**
@@ -951,12 +1092,17 @@ public final class PlayerJoinEvents {
      * can spawn near a coastal corridor and still see the train through
      * shallow water). The train itself lives in a Sable sub-level — its
      * blocks are NOT in this level, so this ray only intersects world terrain.
+     *
+     * <p>{@code level.clip} reads every block along the ray through the level, and on a
+     * {@link ServerLevel} a read in an unloaded chunk is a synchronous chunk load. The ray is
+     * refused up front unless every chunk under it is already loaded.</p>
      */
     private static boolean hasLineOfSight(
         ServerLevel level,
         double fromX, double fromY, double fromZ,
         double toX,   double toY,   double toZ
     ) {
+        if (!rayChunksLoaded(level, fromX, fromZ, toX, toZ)) return false;
         Vec3 from = new Vec3(fromX, fromY, fromZ);
         Vec3 to   = new Vec3(toX,   toY,   toZ);
         HitResult hit = level.clip(new ClipContext(

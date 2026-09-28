@@ -1056,6 +1056,7 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
                 pIdx, trainId, currentGameTick - lastNextTransformGameTick,
                 fmt(spawnWorldPos), fmt(canonicalPos),
                 String.format("%.3f", input.currentPosition().distance(canonicalPos)));
+            games.brennan.dungeontrain.ship.sable.PhysicsStepTimer.countReanchor();
             spawnWorldPos.set(canonicalPos);
             spawnGameTick = currentGameTick;
             // With the elapsed count now measured from here, the frozen ticks before here are
