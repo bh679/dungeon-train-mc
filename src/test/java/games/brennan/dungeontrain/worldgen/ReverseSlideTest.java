@@ -85,6 +85,16 @@ final class ReverseSlideTest {
     }
 
     @Test
+    @DisplayName("dev mode's wider step limit lets flying along the train earn; a teleport still doesn't")
+    void devStep() {
+        State s = step(BOARDED, new Sample(-35.0, true, true, -15.0, ReverseSlide.DEV_MAX_EARNED_STEP));
+        assertEquals(20L, s.earned());
+        assertEquals(0L, step(BOARDED, on(-35.0, -15.0)).earned());                     // too far for a walk
+        assertEquals(0L, step(BOARDED,
+                new Sample(-515.0, true, true, -15.0, ReverseSlide.DEV_MAX_EARNED_STEP)).earned());
+    }
+
+    @Test
     @DisplayName("the slide never shrinks")
     void monotone() {
         State s = new State(-15L, -2000L, 100L, 2048L);

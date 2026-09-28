@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.editor.EditorDevMode;
+import games.brennan.dungeontrain.event.BoardingProgressEvents;
 import games.brennan.dungeontrain.event.CinematicIntroService;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.ReverseSlideSyncPacket;
@@ -65,6 +67,12 @@ public final class ReverseSlide {
      */
     static final double MAX_EARNED_STEP = 12.0;
 
+    /**
+     * The step limit in editor dev mode, where flying along the train counts: creative sprint-flight
+     * covers ~22 blocks a second, and a teleport is still far past this.
+     */
+    static final double DEV_MAX_EARNED_STEP = 48.0;
+
     /** Sentinel for an origin / reach not yet set. */
     static final long UNSET = Long.MAX_VALUE;
 
@@ -72,10 +80,17 @@ public final class ReverseSlide {
 
     /**
      * One player this scan: world X, whether they are on the train, whether their position may push the
-     * bands back (not creative on a server — see {@link #samples}), and their world X at the previous scan
-     * if they were on the train then too ({@code NaN} otherwise — nothing to earn from).
+     * bands back (not creative on a server — see {@link #samples}), their world X at the previous scan
+     * if they were on the train then too ({@code NaN} otherwise — nothing to earn from), and the longest
+     * backward step between scans that still earns.
      */
-    record Sample(double x, boolean onTrain, boolean slides, double prevOnTrainX) {}
+    record Sample(double x, boolean onTrain, boolean slides, double prevOnTrainX, double maxStep) {
+
+        /** A sample held to the walking step limit, {@link #MAX_EARNED_STEP}. */
+        Sample(double x, boolean onTrain, boolean slides, double prevOnTrainX) {
+            this(x, onTrain, slides, prevOnTrainX, MAX_EARNED_STEP);
+        }
+    }
 
     /** The persisted state. */
     record State(long originX, long reachX, long earned, long slide) {}
@@ -121,7 +136,7 @@ public final class ReverseSlide {
 
     /** True when the player was on the train last scan too and stepped back no further than a walk. */
     private static boolean isWalk(Sample p) {
-        return !Double.isNaN(p.prevOnTrainX()) && p.prevOnTrainX() - p.x() <= MAX_EARNED_STEP;
+        return !Double.isNaN(p.prevOnTrainX()) && p.prevOnTrainX() - p.x() <= p.maxStep();
     }
 
     /** {@code blocks} rounded up to a whole {@link #STEP}; 0 when not positive. */
@@ -208,13 +223,17 @@ public final class ReverseSlide {
     /**
      * Players that count: everyone in the overworld proper except spectators, anyone still watching the
      * intro cinematic (so the origin is where they stand once it hands them control), and anyone in a portal
-     * twin's sealed space (not out on the line). Creative players earn on the train like anyone. In singleplayer
+     * twin's sealed space (not out on the line). In editor dev mode, flying close to the train counts as on
+     * it. Creative players earn on the train like anyone. In singleplayer
      * they count fully; on a server a creative player (an admin flying or teleporting around) never pushes
      * the bands back for everyone else.
      */
     private static List<Sample> samples(ServerLevel level, List<ServerPlayer> players) {
         List<Trains.Carriage> carriages = carriages(level);
         boolean singleplayer = level.getServer().isSingleplayer();
+        // Editor dev mode: flying close to the train counts as on it, as it does for the difficulty's
+        // carriage progress (BoardingProgressEvents#isBoarded), with a step limit that fits flight.
+        boolean dev = EditorDevMode.isEnabled();
         List<Sample> out = new ArrayList<>();
         for (ServerPlayer p : level.players()) {
             if (p.isSpectator()) continue;
@@ -222,8 +241,10 @@ public final class ReverseSlide {
             if (CinematicIntroService.isCinematicActive(p.getUUID())) continue;
             if (PortalTwinSpace.isInside(level, p.getBlockX(), p.getY())) continue;
             Double prev = LAST_ON_TRAIN_X.get(p.getUUID());
-            out.add(new Sample(p.getX(), CarriageDeck.isOnTrainFootprint(carriages, p),
-                    singleplayer || !p.isCreative(), prev == null ? Double.NaN : prev));
+            boolean onTrain = CarriageDeck.isOnTrainFootprint(carriages, p)
+                    || (dev && BoardingProgressEvents.isBoarded(carriages, p));
+            out.add(new Sample(p.getX(), onTrain, singleplayer || !p.isCreative(),
+                    prev == null ? Double.NaN : prev, dev ? DEV_MAX_EARNED_STEP : MAX_EARNED_STEP));
             players.add(p);
         }
         return out;
