@@ -20179,6 +20179,23 @@
       "released": true,
       "released_in": "v0.998.0",
       "released_at": "2026-09-28T09:34:40Z"
+    },
+    {
+      "id": "drifting-carriage-storage-changes",
+      "version": "0.998.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Drifting carriage improvements",
+      "summary": "Drifting carriages hold on to more of what their builders leave behind.",
+      "highlights": [],
+      "pr": 1627,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

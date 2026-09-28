@@ -17,6 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 /**
  * In-memory registry of the shared (relay-sourced) carriages currently resident in the world, keyed by
@@ -210,7 +211,58 @@ public final class SharedCarriageRegistry {
         public void setCallInFlight(boolean v) { this.callInFlight = v; }
         public void stampContact(long ms) { this.lastContactMs = ms; }
         /** Mark this carriage as culling — stops further enqueue + flusher POSTs (belt for the cull hook). */
-        public void markCulled() { this.culled = true; }
+        public void markCulled() {
+            this.culled = true;
+            parkedContainers.clear(); // release them first (finalFlushAndReturn) or they are lost with the plot
+        }
+
+        /**
+         * Storage blocks whose contents a player changed without it being a gift (taking, swapping,
+         * rearranging), mapped to the contents signature from BEFORE the first such change. Flagged
+         * locally only — nothing is sent until {@link #releaseParked} decides it should be, so that
+         * looting neither costs a relay delta per container nor drains a carriage's loot across worlds.
+         */
+        private final Map<BlockPos, Long> parkedContainers = new ConcurrentHashMap<>();
+        /**
+         * Set once a real block edit lands on this carriage in this session (see
+         * {@code SableBlockChangeGuardMixin}). Parked container changes only travel on a carriage somebody
+         * actually built on — a player who only loots never uploads anything.
+         */
+        private volatile boolean blockEditedThisSession;
+
+        public void markBlockEdited() { this.blockEditedThisSession = true; }
+        public boolean isBlockEditedThisSession() { return blockEditedThisSession; }
+        public boolean hasParked() { return !parkedContainers.isEmpty(); }
+
+        /**
+         * Flag a storage block as changed locally. The FIRST signature wins, so the baseline stays the
+         * contents before this carriage's edits however many times the container is reopened.
+         */
+        public void parkContainer(BlockPos pos, long sigBefore) {
+            if (!culled) parkedContainers.putIfAbsent(pos.immutable(), sigBefore);
+        }
+
+        /**
+         * Queue every parked container whose live contents really differ from its baseline — one emptied
+         * and refilled nets to nothing — and forget them. Does nothing (and keeps them parked) until a
+         * block edit has landed this session, so a later edit plus a later release still sends them.
+         * {@code liveSig} returns null when the container cannot be read (unloaded, broken); such a cell
+         * is dropped rather than uploaded as whatever now stands there.
+         *
+         * @return how many cells were queued
+         */
+        public int releaseParked(Function<BlockPos, Long> liveSig) {
+            if (!blockEditedThisSession || parkedContainers.isEmpty()) return 0;
+            int queued = 0;
+            for (Map.Entry<BlockPos, Long> e : Map.copyOf(parkedContainers).entrySet()) {
+                parkedContainers.remove(e.getKey());
+                Long live = liveSig.apply(e.getKey());
+                if (live == null || live.longValue() == e.getValue()) continue;
+                enqueue(e.getKey());
+                queued++;
+            }
+            return queued;
+        }
 
         /**
          * Set once this carriage's lease has been reported to the relay together with a real host uuid.

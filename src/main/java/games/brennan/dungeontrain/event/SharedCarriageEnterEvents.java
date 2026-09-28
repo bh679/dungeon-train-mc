@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.train.SharedCarriageMessage;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
+import games.brennan.dungeontrain.train.StorageContents;
 import games.brennan.dungeontrain.train.Trains;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -45,6 +46,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class SharedCarriageEnterEvents {
+
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     private static final int CHECK_INTERVAL_TICKS = 10;   // ~0.5 s
     /**
@@ -150,12 +153,14 @@ public final class SharedCarriageEnterEvents {
             // Walking to a different carriage is unaffected: its key differs, so that still messages
             // immediately whatever this counter says.
             int off = OFF_POLLS.merge(id, 1, (a, b) -> Math.min(a + b, OFF_GRACE_POLLS));
-            if (off >= OFF_GRACE_POLLS) LAST_KEY.remove(id); // genuinely left → a later re-entry messages again
+            if (off >= OFF_GRACE_POLLS) {
+                releaseParkedStorage(LAST_KEY.remove(id)); // genuinely left → a later re-entry messages again
+            }
             return;
         }
         OFF_POLLS.remove(id);
         if (key.equals(LAST_KEY.get(id))) return; // still on the same carriage
-        LAST_KEY.put(id, key);
+        releaseParkedStorage(LAST_KEY.put(id, key)); // walked straight onto another shared carriage
 
         // Triggered before the rate limit: a milestone the player earned shouldn't hinge on how chatty the
         // last ten seconds were.
@@ -244,10 +249,38 @@ public final class SharedCarriageEnterEvents {
         else PENDING.put(id, List.copyOf(pending.subList(sent, pending.size())));
     }
 
+    /**
+     * A player just left the carriage {@code key} ("subLevelId:pIdx", null when they weren't on one):
+     * send whichever storage blocks they changed aboard it, if the carriage was block-edited this
+     * session. Storage edits are parked at container close rather than sent, so one visit costs at most
+     * one delta however many containers were opened.
+     */
+    private static void releaseParkedStorage(String key) {
+        if (key == null) return;
+        int split = key.lastIndexOf(':');
+        if (split <= 0) return;
+        UUID subLevelId;
+        int pIdx;
+        try {
+            subLevelId = UUID.fromString(key.substring(0, split));
+            pIdx = Integer.parseInt(key.substring(split + 1));
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.bySubLevel(subLevelId)) {
+            if (inst.pIdx != pIdx || inst.isCulled() || !inst.hasParked()) continue;
+            int queued = inst.releaseParked(pos -> StorageContents.sig(inst.level, pos));
+            if (queued > 0) {
+                LOGGER.debug("[DungeonTrain] player left drifting carriage pIdx={} — released {} storage cell(s) for upload.",
+                        inst.pIdx, queued);
+            }
+        }
+    }
+
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         UUID id = event.getEntity().getUUID();
-        LAST_KEY.remove(id);
+        releaseParkedStorage(LAST_KEY.remove(id));
         RECENT_MSG_MS.remove(id);
         OFF_POLLS.remove(id);
         // Drop any undelivered lines — tickCount resets on rejoin, and a Dungeon Train death starts a

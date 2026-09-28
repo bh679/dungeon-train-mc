@@ -106,6 +106,8 @@ public abstract class SableBlockChangeGuardMixin {
         // non-blocking — safe on the server thread inside setBlock. Skipped once the carriage is culling.
         if (inst != null && !inst.isCulled()) {
             inst.enqueue(new BlockPos(x, y, z));
+            // A real build edit — from now on this carriage's parked storage changes are allowed to travel.
+            inst.markBlockEdited();
         }
     }
 }
