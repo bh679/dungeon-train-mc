@@ -44,6 +44,9 @@ public final class VersionHudOverlay {
     private static volatile int difficultyTier = 0;
     private static volatile ActivityStatePacket activityState = null;
     private static volatile TravelCreditPacket travelCredit = null;
+    private static volatile long trainBackEarned = 0L;
+    private static volatile boolean trainBackEarning = false;
+    private static volatile long trainBackAhead = 0L;
 
     private VersionHudOverlay() {}
 
@@ -104,6 +107,18 @@ public final class VersionHudOverlay {
      */
     public static void setTravelCredit(TravelCreditPacket state) {
         travelCredit = state;
+    }
+
+    /**
+     * Called from {@code ReverseSlideSyncPacket.handle}. Drives the "Back:" read-out beside Diff-Car — how
+     * far this player stands ahead of spawn (where the train was first boarded), or once behind it the world
+     * blocks earned back along the train (the only distance that brings the bands behind spawn closer), and
+     * whether this player is earning more right now.
+     */
+    public static void setTrainBack(long earned, boolean earning, long ahead) {
+        trainBackEarned = earned;
+        trainBackEarning = earning;
+        trainBackAhead = ahead;
     }
 
     /** {@code M:SS}, or {@code H:MM:SS} once it runs past an hour. */
@@ -207,9 +222,22 @@ public final class VersionHudOverlay {
             // counter ("diff-car") and the tier it resolves to ("diff-level").
             if (boardingProgressPresent) {
                 String carText = "  Diff-Car: " + formatSigned(travelledCarriageIndex);
-                HudText.drawScaled(graphics, mc.font, carText,
-                    4, 4 + (HudText.scaledLineHeight(mc.font) + 1) * line,
-                    0xFFFFD080, true);
+                int carY = 4 + (HudText.scaledLineHeight(mc.font) + 1) * line;
+                HudText.drawScaled(graphics, mc.font, carText, 4, carY, 0xFFFFD080, true);
+                // Ahead of spawn: red "+N", the distance still to go back to it. Behind it: "-N", the
+                // world distance earned back along the train — green while this player is pushing it,
+                // faded to half once it has a value but isn't moving.
+                String backText;
+                int backColor;
+                if (trainBackAhead > 0L) {
+                    backText = "   Back: +" + trainBackAhead;
+                    backColor = 0xFFFF6060;
+                } else {
+                    backText = "   Back: " + (trainBackEarned > 0L ? "-" + trainBackEarned : "0");
+                    backColor = trainBackEarning ? 0xFF80FF80 : (trainBackEarned > 0L ? 0x8080FF80 : 0xFF80FF80);
+                }
+                HudText.drawScaled(graphics, mc.font, backText,
+                    4 + HudText.scaledWidth(mc.font, carText), carY, backColor, true);
                 line++;
                 String levelText = "  Diff-Level: " + difficultyTier;
                 HudText.drawScaled(graphics, mc.font, levelText,

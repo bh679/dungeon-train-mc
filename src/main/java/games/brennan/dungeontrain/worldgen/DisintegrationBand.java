@@ -21,7 +21,7 @@ public final class DisintegrationBand {
     /**
      * World-X where the cycle is anchored (shared with the nether phase via
      * {@link WorldGenCycle}), or {@link #OFF} if disintegration is disabled or this world
-     * has no train. Past this X the cycle repeats forever; before it is plain overworld.
+     * has no train. Past this X the cycle repeats forever; behind it (after an overworld buffer) it runs in reverse.
      */
     public static long startX(ServerLevel overworld) {
         if (!DungeonTrainCommonConfig.isDisintegrationEnabled()) return OFF;

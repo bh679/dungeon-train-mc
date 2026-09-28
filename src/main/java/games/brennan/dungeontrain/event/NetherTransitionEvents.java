@@ -59,7 +59,6 @@ public final class NetherTransitionEvents {
         ChunkAccess chunk = event.getChunk();
         ChunkPos pos = chunk.getPos();
         int chunkMinX = pos.getMinBlockX();
-        if (chunkMinX + 15 < startX) return; // before the first band
 
         boolean[] band = new boolean[16];
         boolean[] core = new boolean[16];

@@ -50,7 +50,10 @@ public abstract class ServerAdvancementManagerRequirementsMixin {
         // Journey chain: with an ordered band layout the parents follow the layout, not the jar JSON.
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         if (!cycle.hasLayout()) return enabled;
-        return BandAdvancementChainRewriter.rewriteParents(enabled, BandAdvancements.chain(cycle.layout()),
-            BandAdvancements.ANCHOR, DungeonTrain.MOD_ID);
+        Map<ResourceLocation, JsonElement> forward = BandAdvancementChainRewriter.rewriteParents(enabled,
+            BandAdvancements.chain(cycle.layout()), BandAdvancements.ANCHOR, DungeonTrain.MOD_ID);
+        // Reverse journey (behind spawn): the layout walked last-first, on The Secrete Menu tab.
+        return BandAdvancementChainRewriter.rewriteParents(forward, BandAdvancements.reverseChain(cycle.layout()),
+            BandAdvancements.REVERSE_ANCHOR, DungeonTrain.MOD_ID, BandAdvancements.SECRETE_MENU_PREFIX);
     }
 }

@@ -169,7 +169,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
             long startX = NetherBand.startX(overworld);
             int chunkMinX = cp.getMinBlockX();
-            if (chunkMinX + 15 < startX) return false; // before the first band (or disabled)
+            if (startX == NetherBand.OFF) return false; // disabled (bands run both ways from the anchor)
 
             WorldGenCycle cycle = MixBand.cycleAt(overworld, cp.x, cp.z);   // mix zone: the chunk's picked band
             int seaLevel = overworld.getSeaLevel();

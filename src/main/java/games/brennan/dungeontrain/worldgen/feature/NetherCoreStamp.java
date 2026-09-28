@@ -97,7 +97,7 @@ public final class NetherCoreStamp {
 
         long startX = NetherBand.startX(overworld);
         int chunkMinX = cp.getMinBlockX();
-        if (chunkMinX + 15 < startX) return; // before the first band (or disabled)
+        if (startX == NetherBand.OFF) return; // disabled (bands run both ways from the anchor)
 
         WorldGenCycle cycle = MixBand.cycleAt(overworld, cp.x, cp.z);   // mix zone: the chunk's picked band
         // Cheap reject: the core is edge-waved by at most maxEdgeShift, so a chunk with no core X in that

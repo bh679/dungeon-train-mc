@@ -292,7 +292,7 @@ public abstract class ChunkGeneratorDecorationMixin {
             if (!serverLevel.dimension().equals(Level.OVERWORLD)) return false;
             int chunkMinX = chunk.getPos().getMinBlockX();
             long startX = DisintegrationBand.startX(serverLevel);
-            if (startX != DisintegrationBand.OFF && chunkMinX + 15 >= startX
+            if (startX != DisintegrationBand.OFF
                     && DisintegrationBand.isChunkFullyEroded(serverLevel, chunkMinX, chunk.getPos().getMinBlockZ())) {
                 return true;
             }

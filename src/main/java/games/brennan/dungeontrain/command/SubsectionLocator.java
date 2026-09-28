@@ -73,7 +73,7 @@ final class SubsectionLocator {
     static OptionalLong targetX(WorldGenCycle cycle, Subsections subs, int index, int inset) {
         if (index < 0 || index >= subs.stages().size()) return OptionalLong.empty();
         long start = cycle.slotWorldX(subs.slotX(), BandStages.startOf(subs.stages(), index));
-        if (start < 0L) return OptionalLong.empty();
+        if (start == Long.MIN_VALUE) return OptionalLong.empty();
         long worldLen = subs.stages().get(index).length() * cycle.runScaleAt(subs.slotX());
         return OptionalLong.of(start + Math.min(inset, worldLen / 2));
     }

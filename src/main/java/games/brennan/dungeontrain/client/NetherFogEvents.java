@@ -215,6 +215,11 @@ public final class NetherFogEvents {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         ClientNetherBand.reset();
+        // A remote server's reverse slide must not leak into the next world. In singleplayer the
+        // integrated server shares the static and clears it itself once it has stopped generating.
+        if (!net.minecraft.client.Minecraft.getInstance().hasSingleplayerServer()) {
+            games.brennan.dungeontrain.worldgen.WorldGenCycle.setReverseSlide(0L);
+        }
         musicFadeActive = false;
         resetSmoothedColor();
     }
