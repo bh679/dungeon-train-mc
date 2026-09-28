@@ -1,0 +1,118 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -2,
+      "max_floors": -2,
+      "period_min": 4,
+      "period_max": 8,
+      "min_similarity": 0.45,
+      "axis": "x"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 2,
+      "max_floors": 3,
+      "period_min": 4,
+      "period_max": 16,
+      "min_similarity": 0.45,
+      "axis": "y"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 0,
+      "max_floors": 0,
+      "period_min": 4,
+      "period_max": 16,
+      "min_similarity": 0.45,
+      "axis": "y",
+      "floor_layers": 1
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:green_stained_glass",
+          "to": "minecraft:light_blue_stained_glass"
+        },
+        {
+          "from": "minecraft:green_stained_glass_pane",
+          "to": "minecraft:light_blue_stained_glass_pane"
+        },
+        {
+          "from": "minecraft:mossy_cobblestone",
+          "to": "minecraft:diorite"
+        },
+        {
+          "from": "minecraft:stone",
+          "to": "minecraft:calcite"
+        },
+        {
+          "from": "minecraft:deepslate_tiles",
+          "to": "minecraft:smooth_quartz"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:quartz_bricks"
+        },
+        {
+          "from": "minecraft:smooth_stone_slab",
+          "to": "minecraft:quartz_slab"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:polished_blackstone_slab",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:spruce_slab",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:smooth_stone_slab",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:polished_andesite_slab",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:stone_slab",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:crimson_stairs",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:dark_oak_slab",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:polished_blackstone_button",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:cobblestone_slab",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:mossy_cobblestone_slab",
+          "to": "minecraft:air"
+        }
+      ]
+    }
+  ]
+}

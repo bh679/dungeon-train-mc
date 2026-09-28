@@ -1,0 +1,69 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 3,
+      "max_floors": 3,
+      "period_min": 4,
+      "period_max": 8,
+      "min_similarity": 0.45,
+      "axis": "x"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -7,
+      "max_floors": -5,
+      "period_min": 4,
+      "period_max": 16,
+      "min_similarity": 0.45,
+      "axis": "y"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:green_stained_glass",
+          "to": "minecraft:brown_stained_glass"
+        },
+        {
+          "from": "minecraft:green_stained_glass_pane",
+          "to": "minecraft:brown_stained_glass_pane"
+        },
+        {
+          "from": "minecraft:mossy_cobblestone",
+          "to": "minecraft:tuff_bricks"
+        },
+        {
+          "from": "minecraft:stone",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:deepslate_tiles",
+          "to": "minecraft:polished_tuff"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:polished_tuff"
+        },
+        {
+          "from": "minecraft:smooth_stone_slab",
+          "to": "minecraft:polished_tuff_slab"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_facade",
+      "pilaster_every": 6,
+      "min_layer": 2,
+      "ledge": "minecraft:tuff_brick_slab"
+    }
+  ]
+}

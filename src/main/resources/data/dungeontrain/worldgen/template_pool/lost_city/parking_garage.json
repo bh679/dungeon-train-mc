@@ -3,7 +3,7 @@
   "fallback": "minecraft:empty",
   "elements": [
     {
-      "weight": 3,
+      "weight": 2,
       "element": {
         "element_type": "minecraft:single_pool_element",
         "location": "big_lost_city:parking_garagelt",
@@ -12,12 +12,21 @@
       }
     },
     {
-      "weight": 2,
+      "weight": 3,
       "element": {
         "element_type": "minecraft:single_pool_element",
         "location": "big_lost_city:parking_garagelt",
         "projection": "rigid",
-        "processors": "dungeontrain:lost_city/parking_garage_light"
+        "processors": "dungeontrain:lost_city/parking_garage_light_sprawl"
+      }
+    },
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:parking_garagelt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/parking_garage_dark_compact"
       }
     },
     {
@@ -39,30 +48,12 @@
       }
     },
     {
-      "weight": 2,
-      "element": {
-        "element_type": "minecraft:single_pool_element",
-        "location": "big_lost_city:parking_garagelt",
-        "projection": "rigid",
-        "processors": "dungeontrain:lost_city/parking_garage_bigger"
-      }
-    },
-    {
-      "weight": 3,
-      "element": {
-        "element_type": "minecraft:single_pool_element",
-        "location": "big_lost_city:parking_garagelt",
-        "projection": "rigid",
-        "processors": "dungeontrain:lost_city/parking_garage_smaller"
-      }
-    },
-    {
       "weight": 1,
       "element": {
         "element_type": "minecraft:single_pool_element",
         "location": "big_lost_city:parking_garagelt",
         "projection": "rigid",
-        "processors": "dungeontrain:lost_city/dry"
+        "processors": "dungeontrain:lost_city/parking_garage_small_dry"
       }
     }
   ]

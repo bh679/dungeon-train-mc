@@ -1,0 +1,85 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 3,
+      "max_floors": 3,
+      "period_min": 4,
+      "period_max": 8,
+      "min_similarity": 0.45,
+      "axis": "x",
+      "max_layer": 30
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:smooth_basalt",
+          "to": "minecraft:tuff_bricks"
+        },
+        {
+          "from": "minecraft:deepslate",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:deepslate_tiles",
+          "to": "minecraft:polished_tuff"
+        },
+        {
+          "from": "minecraft:cracked_deepslate_tiles",
+          "to": "minecraft:chiseled_tuff"
+        },
+        {
+          "from": "minecraft:polished_deepslate",
+          "to": "minecraft:polished_tuff"
+        },
+        {
+          "from": "minecraft:polished_blackstone",
+          "to": "minecraft:tuff_bricks"
+        },
+        {
+          "from": "minecraft:polished_blackstone_slab",
+          "to": "minecraft:tuff_brick_slab"
+        },
+        {
+          "from": "minecraft:polished_blackstone_stairs",
+          "to": "minecraft:tuff_brick_stairs"
+        },
+        {
+          "from": "minecraft:deepslate_bricks",
+          "to": "minecraft:tuff_bricks"
+        },
+        {
+          "from": "minecraft:cracked_deepslate_bricks",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:black_stained_glass_pane",
+          "to": "minecraft:brown_stained_glass_pane"
+        },
+        {
+          "from": "minecraft:black_stained_glass",
+          "to": "minecraft:brown_stained_glass"
+        },
+        {
+          "from": "minecraft:crimson_stairs",
+          "to": "minecraft:dark_oak_stairs"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_facade",
+      "pilaster_every": 6,
+      "min_layer": 2,
+      "ledge": "minecraft:tuff_brick_slab"
+    }
+  ]
+}

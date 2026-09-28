@@ -1,0 +1,76 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -2,
+      "max_floors": -2,
+      "period_min": 4,
+      "period_max": 8,
+      "min_similarity": 0.45,
+      "axis": "x",
+      "min_layer": 58
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 2,
+      "max_floors": 2,
+      "period_min": 4,
+      "period_max": 16,
+      "min_similarity": 0.45,
+      "axis": "y"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:bricks",
+          "to": "minecraft:quartz_bricks"
+        },
+        {
+          "from": "minecraft:brick_slab",
+          "to": "minecraft:quartz_slab"
+        },
+        {
+          "from": "minecraft:brick_stairs",
+          "to": "minecraft:quartz_stairs"
+        },
+        {
+          "from": "minecraft:granite",
+          "to": "minecraft:calcite"
+        },
+        {
+          "from": "minecraft:polished_granite",
+          "to": "minecraft:smooth_quartz"
+        },
+        {
+          "from": "minecraft:terracotta",
+          "to": "minecraft:light_gray_terracotta"
+        },
+        {
+          "from": "minecraft:waxed_copper_block",
+          "to": "minecraft:waxed_weathered_copper"
+        },
+        {
+          "from": "minecraft:dripstone_block",
+          "to": "minecraft:diorite"
+        },
+        {
+          "from": "minecraft:stripped_acacia_wood",
+          "to": "minecraft:stripped_birch_wood"
+        },
+        {
+          "from": "minecraft:black_stained_glass_pane",
+          "to": "minecraft:light_gray_stained_glass_pane"
+        }
+      ]
+    }
+  ]
+}

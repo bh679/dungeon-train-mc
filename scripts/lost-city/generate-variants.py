@@ -41,11 +41,42 @@ def bite(rubble, bites=(1, 2), radius=(0.3, 0.5), pile_scale=0.8, pile_max=10):
             "pile_scale": pile_scale, "pile_max": pile_max}
 
 
-def stretch(floors, period=(4, 16), similarity=0.45, axis="y"):
+def stretch(floors, period=(4, 16), similarity=0.45, axis="y", floor_layers=0, min_layer=None, max_layer=None):
     """Taller / shorter (axis y), or wider / narrower (axis x or z, in template terms), by repeating or
-    removing the building's repeating band: a floor, or a window bay."""
-    return {"processor_type": "dungeontrain:lost_city_stretch", "min_floors": floors[0], "max_floors": floors[1],
-            "period_min": period[0], "period_max": period[1], "min_similarity": similarity, "axis": axis}
+    removing the building's repeating band: a floor, or a window bay. floor_layers != 0 instead raises or
+    lowers every ceiling by that many layers; min_layer / max_layer confine a bay stretch to a height range
+    (a podium when the lower layers widen, a setback when the upper ones narrow)."""
+    out = {"processor_type": "dungeontrain:lost_city_stretch", "min_floors": floors[0], "max_floors": floors[1],
+           "period_min": period[0], "period_max": period[1], "min_similarity": similarity, "axis": axis}
+    if floor_layers:
+        out["floor_layers"] = floor_layers
+    if min_layer is not None:
+        out["min_layer"] = min_layer
+    if max_layer is not None:
+        out["max_layer"] = max_layer
+    return out
+
+
+def facade(ledge=None, pilaster=None, every=6, min_layer=2):
+    """A cornice block outside every floor layer and / or a pilaster block every `every` along the walls."""
+    out = {"processor_type": "dungeontrain:lost_city_facade", "pilaster_every": every, "min_layer": min_layer}
+    if ledge:
+        out["ledge"] = mc(ledge)
+    if pilaster:
+        out["pilaster"] = mc(pilaster)
+    return out
+
+
+def ceilings(n):
+    return stretch((0, 0), period=(4, 16), floor_layers=n)
+
+
+def bays(n, axis="x", period=(4, 8), min_layer=None, max_layer=None):
+    return stretch((n, n), period=period, axis=axis, min_layer=min_layer, max_layer=max_layer)
+
+
+def floors(n):
+    return stretch((n, n))
 
 
 def truncate(lo, hi, rubble, jagged=3):
@@ -88,6 +119,26 @@ BLACK_WHITE = swap([
     ("black_stained_glass", "light_gray_stained_glass"), ("crimson_stairs", "birch_stairs"),
 ])
 BLACK_TOP = truncate(0.45, 0.7, ["cracked_deepslate_tiles", "cobbled_deepslate", "deepslate_tiles", "air"])
+BLACK_TUFF = swap([
+    ("smooth_basalt", "tuff_bricks"), ("deepslate", "tuff"), ("deepslate_tiles", "polished_tuff"),
+    ("cracked_deepslate_tiles", "chiseled_tuff"), ("polished_deepslate", "polished_tuff"),
+    ("polished_blackstone", "tuff_bricks"), ("polished_blackstone_slab", "tuff_brick_slab"),
+    ("polished_blackstone_stairs", "tuff_brick_stairs"), ("deepslate_bricks", "tuff_bricks"),
+    ("cracked_deepslate_bricks", "tuff"), ("black_stained_glass_pane", "brown_stained_glass_pane"),
+    ("black_stained_glass", "brown_stained_glass"), ("crimson_stairs", "dark_oak_stairs"),
+])
+BLACK_COPPER = swap([
+    ("smooth_basalt", "waxed_weathered_copper"), ("deepslate", "waxed_oxidized_copper"),
+    ("deepslate_tiles", "waxed_weathered_cut_copper"), ("cracked_deepslate_tiles", "waxed_oxidized_cut_copper"),
+    ("polished_deepslate", "waxed_exposed_cut_copper"), ("polished_blackstone", "waxed_exposed_copper"),
+    ("polished_blackstone_slab", "waxed_weathered_cut_copper_slab"), ("polished_blackstone_stairs", "waxed_weathered_cut_copper_stairs"),
+    ("deepslate_bricks", "waxed_oxidized_copper"), ("cracked_deepslate_bricks", "waxed_oxidized_copper"),
+    ("black_stained_glass_pane", "cyan_stained_glass_pane"), ("black_stained_glass", "cyan_stained_glass"),
+])
+# the towers' existing ledges are slabs and stairs on the facade: stripping them bares the frame
+STRIP = swap([("polished_blackstone_slab", "air"), ("spruce_slab", "air"), ("smooth_stone_slab", "air"),
+              ("polished_andesite_slab", "air"), ("stone_slab", "air"), ("crimson_stairs", "air"), ("dark_oak_slab", "air"),
+              ("polished_blackstone_button", "air"), ("cobblestone_slab", "air"), ("mossy_cobblestone_slab", "air")])
 
 RED_SAND = swap([
     ("granite", "sandstone"), ("polished_granite", "cut_sandstone"), ("bricks", "smooth_sandstone"),
@@ -102,6 +153,18 @@ RED_OXID = swap([
     ("terracotta", "cyan_terracotta"), ("dripstone_block", "tuff"), ("stripped_acacia_wood", "stripped_spruce_wood"),
 ])
 RED_TOP = truncate(0.45, 0.7, ["cracked_deepslate_tiles", "bricks", "granite", "air"])
+RED_DARK = swap([
+    ("bricks", "deepslate_bricks"), ("brick_slab", "deepslate_brick_slab"), ("brick_stairs", "deepslate_brick_stairs"),
+    ("granite", "deepslate"), ("polished_granite", "polished_deepslate"), ("terracotta", "black_terracotta"),
+    ("waxed_copper_block", "waxed_exposed_copper"), ("dripstone_block", "cobbled_deepslate"),
+    ("stripped_acacia_wood", "stripped_dark_oak_wood"),
+])
+RED_WHITE = swap([
+    ("bricks", "quartz_bricks"), ("brick_slab", "quartz_slab"), ("brick_stairs", "quartz_stairs"),
+    ("granite", "calcite"), ("polished_granite", "smooth_quartz"), ("terracotta", "light_gray_terracotta"),
+    ("waxed_copper_block", "waxed_weathered_copper"), ("dripstone_block", "diorite"),
+    ("stripped_acacia_wood", "stripped_birch_wood"), ("black_stained_glass_pane", "light_gray_stained_glass_pane"),
+])
 
 TALL_CLEAR = swap([("green_stained_glass", "light_gray_stained_glass"),
                    ("green_stained_glass_pane", "light_gray_stained_glass_pane"), ("mossy_cobblestone", "cobblestone", 0.7)])
@@ -111,6 +174,12 @@ TALL_DARK = swap([("green_stained_glass", "gray_stained_glass"), ("green_stained
 TALL_BLOWN = swap([("green_stained_glass", "air", 0.6), ("green_stained_glass_pane", "air", 0.6), ("cobweb", "air"),
                    ("chain", "air", 0.5), ("deepslate_tiles", "cracked_deepslate_tiles", 0.4)])
 TALL_TOP = truncate(0.35, 0.6, ["mossy_cobblestone", "cracked_deepslate_tiles", "cobblestone", "air"])
+TALL_BRONZE = swap([("green_stained_glass", "brown_stained_glass"), ("green_stained_glass_pane", "brown_stained_glass_pane"),
+                    ("mossy_cobblestone", "tuff_bricks"), ("stone", "tuff"), ("deepslate_tiles", "polished_tuff"),
+                    ("smooth_stone", "polished_tuff"), ("smooth_stone_slab", "polished_tuff_slab")])
+TALL_ICE = swap([("green_stained_glass", "light_blue_stained_glass"), ("green_stained_glass_pane", "light_blue_stained_glass_pane"),
+                 ("mossy_cobblestone", "diorite"), ("stone", "calcite"), ("deepslate_tiles", "smooth_quartz"),
+                 ("smooth_stone", "quartz_bricks"), ("smooth_stone_slab", "quartz_slab")])
 
 RUIN_DEEP = swap([("stone", "deepslate"), ("andesite", "tuff"), ("diorite", "tuff"), ("stone_bricks", "deepslate_bricks"),
                   ("cracked_stone_bricks", "cracked_deepslate_bricks"), ("mossy_stone_bricks", "deepslate_bricks"),
@@ -131,6 +200,8 @@ GARAGE_LIGHT = swap([("gray_concrete", "light_gray_concrete"), ("black_terracott
                      ("red_terracotta", "brown_terracotta"), ("blue_terracotta", "light_gray_terracotta"),
                      ("black_stained_glass", "gray_stained_glass"), ("coal_block", "gray_concrete")])
 GARAGE_TOP = truncate(0.45, 0.75, ["gray_concrete_powder", "cobblestone", "gravel", "gray_concrete", "air"], jagged=2)
+GARAGE_DARK = swap([("gray_concrete", "polished_deepslate"), ("black_terracotta", "black_concrete"),
+                    ("red_terracotta", "gray_terracotta"), ("blue_terracotta", "cyan_terracotta"), ("white_wool", "light_gray_wool")])
 
 SHIP_RUST = swap([("waxed_exposed_copper", "waxed_weathered_copper", 0.6), ("waxed_exposed_copper", "waxed_oxidized_copper", 0.4),
                   ("waxed_weathered_copper", "waxed_oxidized_copper"), ("cyan_terracotta", "gray_terracotta"),
@@ -157,29 +228,92 @@ TALLER = stretch((2, 6))
 SHORTER = stretch((-4, -1))
 TALL_TALLER = stretch((1, 3))            # already 159 tall; a floor or three more
 TALL_SHORTER = stretch((-8, -3))
-# bays: the towers' facades are uniform along x and z (no window rhythm shows through the moss), so the
-# finder settles on the smallest period allowed — 4 for the towers, 3 for the garage's parking bays
-WIDER = stretch((2, 4), period=(4, 8), axis="x")
-NARROWER = stretch((-3, -1), period=(4, 8), axis="x")
-LONGER = stretch((2, 3), period=(4, 8), axis="z")
-DEEP_NARROWER = stretch((-3, -1), period=(4, 8), axis="z")
-GARAGE_BIGGER = stretch((3, 8), period=(3, 3), axis="x")
-GARAGE_SMALLER = stretch((-10, -4), period=(3, 3), axis="z")
-WARE_WIDER = stretch((1, 3), period=(3, 6), axis="x")
-WARE_LONGER = stretch((2, 4), period=(3, 6), axis="z")
+# Designs. Each pool entry composes footprint, height, ceilings, palette, facade and decay so it reads as
+# its own building rather than a recolour of the one beside it. "shipped"/"dry" use the shared lists.
+# The towers' facades are uniform along x and z in full-block terms, so a bay is simply 4 blocks (3 for
+# the garage's parking bays); floors are 7 layers in the black/red towers and 6 in the tall one.
+LEDGE_ANDESITE = facade(ledge="polished_andesite_slab")
+LEDGE_TUFF = facade(ledge="tuff_brick_slab")
+LEDGE_SAND = facade(ledge="smooth_sandstone_slab")
+LEDGE_COPPER = facade(ledge="waxed_oxidized_cut_copper_slab")
+LEDGE_STONE = facade(ledge="smooth_stone_slab")
+PILASTER_QUARTZ = facade(pilaster="quartz_bricks", every=5)
+PILASTER_DEEPSLATE = facade(pilaster="polished_deepslate", every=4)
+PILASTER_TUFF = facade(pilaster="chiseled_tuff", every=6)
+PILASTER_MUD = facade(pilaster="mud_bricks", every=5)
 
-# building -> (mod template, [(variant, processors, weight)]); "shipped"/"dry" use the shared lists
+BLACK_DESIGNS = [
+    ("shipped", [], 2),
+    ("grey_block", [bays(3), bays(2, "z"), floors(-3), BLACK_GREY, LEDGE_ANDESITE], 3),
+    ("calcite_spire", [bays(-2), bays(-2, "z"), floors(4), ceilings(2), BLACK_WHITE, PILASTER_QUARTZ], 3),
+    ("brutalist", [bays(2), floors(-2), ceilings(-1), BLACK_GREY, STRIP], 2),
+    ("tuff_podium", [bays(3, max_layer=30), BLACK_TUFF, LEDGE_TUFF], 2),
+    ("copper_setback", [bays(-2, min_layer=58), floors(2), BLACK_COPPER], 2),
+    ("lofty", [bays(-1), ceilings(3), PILASTER_DEEPSLATE], 2),
+    ("stump", [floors(-4), BLACK_BITE, BLACK_TUFF], 2),
+    ("bitten", [BLACK_BITE], 2),
+    ("topped", [BLACK_TOP], 1),
+    ("dry", [], 1),
+]
+RED_DESIGNS = [
+    ("shipped", [], 2),
+    ("sandstone_block", [bays(3), bays(2, "z"), floors(-3), RED_SAND, LEDGE_SAND], 3),
+    ("dark_spire", [bays(-2), bays(-2, "z"), floors(4), ceilings(2), RED_DARK, PILASTER_DEEPSLATE], 3),
+    ("oxidised_podium", [bays(3, max_layer=30), RED_OXID, LEDGE_COPPER], 2),
+    ("white_setback", [bays(-2, min_layer=58), floors(2), RED_WHITE], 2),
+    ("brutalist", [bays(2), floors(-2), ceilings(-1), RED_DARK, STRIP], 2),
+    ("lofty", [ceilings(3), RED_SAND, PILASTER_TUFF], 2),
+    ("stump", [floors(-4), RED_BITE, RED_DARK], 2),
+    ("bitten", [RED_BITE], 2),
+    ("topped", [RED_TOP], 1),
+    ("dry", [], 1),
+]
+RUINED_BLACK_DESIGNS = [("shipped", [], 2), ("grey_block", [bays(3), bays(2, "z"), floors(-3), BLACK_GREY, LEDGE_ANDESITE], 2),
+                        ("white_spire", [bays(-2), floors(3), ceilings(2), BLACK_WHITE, PILASTER_QUARTZ], 2),
+                        ("tuff_podium", [bays(3, max_layer=30), BLACK_TUFF, LEDGE_TUFF], 2), ("copper_lofty", [ceilings(2), BLACK_COPPER], 2),
+                        ("stump", [floors(-4), BLACK_BITE], 2), ("bitten", [BLACK_BITE], 2), ("topped", [BLACK_TOP], 1), ("dry", [], 1)]
+RUINED_RED_DESIGNS = [("shipped", [], 2), ("sandstone_block", [bays(3), bays(2, "z"), floors(-3), RED_SAND, LEDGE_SAND], 2),
+                      ("dark_spire", [bays(-2), floors(3), ceilings(2), RED_DARK, PILASTER_DEEPSLATE], 2),
+                      ("oxidised_podium", [bays(3, max_layer=30), RED_OXID, LEDGE_COPPER], 2), ("white_lofty", [ceilings(2), RED_WHITE], 2),
+                      ("stump", [floors(-4), RED_BITE], 2), ("bitten", [RED_BITE], 2), ("topped", [RED_TOP], 1), ("dry", [], 1)]
+TALL_DESIGNS = [
+    ("shipped", [], 2),
+    ("bronze_block", [bays(3), stretch((-7, -5)), TALL_BRONZE, LEDGE_TUFF], 3),
+    ("ice_needle", [bays(-2), stretch((2, 3)), ceilings(1), TALL_ICE, STRIP], 3),
+    ("dark_podium", [bays(3, max_layer=40), TALL_DARK, PILASTER_DEEPSLATE], 2),
+    ("clear_setback", [bays(-2, min_layer=80), TALL_CLEAR], 2),
+    ("blown_stump", [stretch((-9, -7)), TALL_BLOWN, TALL_BITE], 2),
+    ("lofty", [stretch((-4, -3)), ceilings(3), TALL_CLEAR, LEDGE_STONE], 2),
+    ("bitten", [TALL_BITE], 2),
+    ("topped", [TALL_TOP], 1),
+    ("wide_dry", [bays(2), stretch((-5, -4)), DRY], 1),
+]
+RUIN_DESIGNS = [("shipped", [], 2), ("deepslate", [RUIN_DEEP], 2), ("mud_pilasters", [RUIN_MUD, PILASTER_MUD], 2),
+                ("collapsed", [RUIN_COLLAPSE], 2), ("bitten", [RUIN_BITE], 3), ("deepslate_ledges", [RUIN_DEEP, facade(ledge="deepslate_tile_slab")], 2), ("dry", [], 1)]
+PLANT_DESIGNS = [("shipped", [], 3), ("mud", [RUIN_MUD], 2), ("deepslate", [RUIN_DEEP], 2), ("crumbling", [PLANT_CRUMBLE], 2), ("bitten", [PLANT_BITE], 2), ("dry", [], 1)]
+GARAGE_DESIGNS = [
+    ("shipped", [], 2),
+    ("light_sprawl", [bays(5, period=(3, 3)), bays(3, "z", period=(3, 3)), GARAGE_LIGHT, LEDGE_STONE], 3),
+    ("dark_compact", [bays(-8, period=(3, 3)), bays(-10, "z", period=(3, 3)), GARAGE_DARK], 3),
+    ("collapsed", [GARAGE_TOP], 2),
+    ("bitten", [GARAGE_BITE], 2),
+    ("small_dry", [bays(-6, "z", period=(3, 3)), DRY], 1),
+]
+SHIP_DESIGNS = [("shipped", [], 3), ("rusted", [SHIP_RUST], 2), ("grey", [SHIP_GREY], 2)]
+WARE_DESIGNS = [("shipped", [], 2), ("grey_long", [bays(3, "z", period=(3, 6)), WARE_GREY], 2), ("wide_ledges", [bays(2, period=(3, 6)), LEDGE_STONE], 2),
+                ("long_pilasters", [bays(4, "z", period=(3, 6)), WARE_GREY, facade(pilaster="stone_bricks", every=4)], 2), ("dry", [], 1)]
+
 BUILDINGS = {
-    "blackskyscraper": ("black_skyscraperlt", [("shipped", [], 3), ("grey", [BLACK_GREY], 2), ("white", [BLACK_WHITE], 2), ("topped", [BLACK_TOP], 2), ("bitten", [BLACK_BITE], 3), ("bitten_grey", BLACK_BITE_GREY, 2), ("taller", [TALLER], 3), ("shorter", [SHORTER], 3), ("taller_bitten", [TALLER, BLACK_BITE], 2), ("shorter_white", [SHORTER, BLACK_WHITE], 2), ("wide", [WIDER], 3), ("narrow", [NARROWER], 3), ("long", [LONGER], 2), ("block", [WIDER, LONGER, SHORTER], 2), ("slab", [NARROWER, LONGER, TALLER], 2), ("dry", [], 1)]),
-    "ruinedblackskyscraper": ("ruined_black_skyscraperlt", [("shipped", [], 3), ("grey", [BLACK_GREY], 2), ("white", [BLACK_WHITE], 2), ("topped", [BLACK_TOP], 2), ("bitten", [BLACK_BITE], 3), ("taller", [TALLER], 3), ("shorter", [SHORTER], 3), ("wide", [WIDER], 3), ("narrow", [NARROWER], 3), ("deep_narrow", [DEEP_NARROWER], 2), ("dry", [], 1)]),
-    "redskyscraper": ("red_skyscraperlt", [("shipped", [], 3), ("sandstone", [RED_SAND], 2), ("oxidised", [RED_OXID], 2), ("topped", [RED_TOP], 2), ("bitten", [RED_BITE], 3), ("taller", [TALLER], 3), ("shorter", [SHORTER], 3), ("taller_bitten", [TALLER, RED_BITE], 2), ("shorter_sandstone", [SHORTER, RED_SAND], 2), ("wide", [WIDER], 3), ("narrow", [NARROWER], 3), ("long", [LONGER], 2), ("block", [WIDER, LONGER, SHORTER], 2), ("slab_oxidised", [NARROWER, LONGER, TALLER, RED_OXID], 2), ("dry", [], 1)]),
-    "ruindedredskyscraper": ("ruinded_red_skyscraperlt", [("shipped", [], 3), ("sandstone", [RED_SAND], 2), ("oxidised", [RED_OXID], 2), ("topped", [RED_TOP], 2), ("bitten", [RED_BITE], 3), ("taller", [TALLER], 3), ("shorter", [SHORTER], 3), ("wide", [WIDER], 3), ("narrow", [NARROWER], 3), ("deep_narrow", [DEEP_NARROWER], 2), ("dry", [], 1)]),
-    "tallskyscraper": ("tall_skyscraperlt", [("shipped", [], 3), ("clear", [TALL_CLEAR], 2), ("dark", [TALL_DARK], 2), ("blown", [TALL_BLOWN], 2), ("topped", [TALL_TOP], 2), ("bitten", [TALL_BITE], 3), ("taller", [TALL_TALLER], 2), ("shorter", [TALL_SHORTER], 4), ("shorter_dark", [TALL_SHORTER, TALL_DARK], 2), ("wide", [stretch((1, 3), period=(4, 8), axis="x")], 3), ("narrow", [stretch((-2, -1), period=(4, 8), axis="x")], 3), ("wide_short", [stretch((2, 3), period=(4, 8), axis="x"), TALL_SHORTER], 2), ("dry", [], 1)]),
-    "ruinedskyscraper": ("ruined_skyscraperlt", [("shipped", [], 3), ("deepslate", [RUIN_DEEP], 2), ("mud", [RUIN_MUD], 2), ("collapsed", [RUIN_COLLAPSE], 2), ("bitten", [RUIN_BITE], 3), ("dry", [], 1)]),
-    "powerplant": ("power_plantlt", [("shipped", [], 3), ("mud", [RUIN_MUD], 2), ("deepslate", [RUIN_DEEP], 2), ("crumbling", [PLANT_CRUMBLE], 2), ("bitten", [PLANT_BITE], 2), ("dry", [], 1)]),
-    "parking_garage": ("parking_garagelt", [("shipped", [], 3), ("light", [GARAGE_LIGHT], 2), ("collapsed", [GARAGE_TOP], 2), ("bitten", [GARAGE_BITE], 2), ("bigger", [GARAGE_BIGGER], 2), ("smaller", [GARAGE_SMALLER], 3), ("dry", [], 1)]),
-    "warship": ("warshiplt", [("shipped", [], 3), ("rusted", [SHIP_RUST], 2), ("grey", [SHIP_GREY], 2)]),
-    "warehouse": ("warehouselt", [("shipped", [], 3), ("grey", [WARE_GREY], 2), ("wide", [WARE_WIDER], 2), ("long", [WARE_LONGER], 2), ("long_grey", [WARE_LONGER, WARE_GREY], 1), ("dry", [], 1)]),
+    "blackskyscraper": ("black_skyscraperlt", BLACK_DESIGNS),
+    "ruinedblackskyscraper": ("ruined_black_skyscraperlt", RUINED_BLACK_DESIGNS),
+    "redskyscraper": ("red_skyscraperlt", RED_DESIGNS),
+    "ruindedredskyscraper": ("ruinded_red_skyscraperlt", RUINED_RED_DESIGNS),
+    "tallskyscraper": ("tall_skyscraperlt", TALL_DESIGNS),
+    "ruinedskyscraper": ("ruined_skyscraperlt", RUIN_DESIGNS),
+    "powerplant": ("power_plantlt", PLANT_DESIGNS),
+    "parking_garage": ("parking_garagelt", GARAGE_DESIGNS),
+    "warship": ("warshiplt", SHIP_DESIGNS),
+    "warehouse": ("warehouselt", WARE_DESIGNS),
 }
 
 SHARED = {"shipped": "dungeontrain:lost_city/shipped", "dry": "dungeontrain:lost_city/dry"}

@@ -1,0 +1,94 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -4,
+      "max_floors": -4,
+      "period_min": 4,
+      "period_max": 16,
+      "min_similarity": 0.45,
+      "axis": "y"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_bite",
+      "bites_min": 1,
+      "bites_max": 2,
+      "radius_min": 0.3,
+      "radius_max": 0.5,
+      "rubble": [
+        "minecraft:cracked_deepslate_tiles",
+        "minecraft:cobbled_deepslate",
+        "minecraft:deepslate_tiles",
+        "minecraft:cobblestone",
+        "minecraft:gravel"
+      ],
+      "pile_scale": 0.8,
+      "pile_max": 10
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:smooth_basalt",
+          "to": "minecraft:tuff_bricks"
+        },
+        {
+          "from": "minecraft:deepslate",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:deepslate_tiles",
+          "to": "minecraft:polished_tuff"
+        },
+        {
+          "from": "minecraft:cracked_deepslate_tiles",
+          "to": "minecraft:chiseled_tuff"
+        },
+        {
+          "from": "minecraft:polished_deepslate",
+          "to": "minecraft:polished_tuff"
+        },
+        {
+          "from": "minecraft:polished_blackstone",
+          "to": "minecraft:tuff_bricks"
+        },
+        {
+          "from": "minecraft:polished_blackstone_slab",
+          "to": "minecraft:tuff_brick_slab"
+        },
+        {
+          "from": "minecraft:polished_blackstone_stairs",
+          "to": "minecraft:tuff_brick_stairs"
+        },
+        {
+          "from": "minecraft:deepslate_bricks",
+          "to": "minecraft:tuff_bricks"
+        },
+        {
+          "from": "minecraft:cracked_deepslate_bricks",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:black_stained_glass_pane",
+          "to": "minecraft:brown_stained_glass_pane"
+        },
+        {
+          "from": "minecraft:black_stained_glass",
+          "to": "minecraft:brown_stained_glass"
+        },
+        {
+          "from": "minecraft:crimson_stairs",
+          "to": "minecraft:dark_oak_stairs"
+        }
+      ]
+    }
+  ]
+}

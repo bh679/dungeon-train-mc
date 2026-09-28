@@ -77,6 +77,18 @@ final class LostCityStretchProcessorTest {
         return t;
     }
 
+    /** How many layers hold glass: one per wall layer of every floor. */
+    private static int glassLayers(List<StructureBlockInfo> list) {
+        java.util.Set<Integer> ys = new java.util.HashSet<>();
+        for (StructureBlockInfo i : list) if (i.state().getBlock() == Blocks.GLASS) ys.add(i.pos().getY());
+        return ys.size();
+    }
+
+    /** The building's own far x edge (its wall), not the plaza's. */
+    private static int wallX(int bays) {
+        return 2 + bays * BAY + 3 - 4;
+    }
+
     private static LostCityStretchProcessor stretch(int min, int max, Direction.Axis axis) {
         return new LostCityStretchProcessor(min, max, 3, 12, 0.85F, axis);
     }
@@ -164,6 +176,65 @@ final class LostCityStretchProcessorTest {
         assertEquals(8 - BAY, shrunk.maxX());
         BoundingBox back = LostCityFootprint.grown(box, Direction.Axis.X, Rotation.CLOCKWISE_180, BAY);
         assertEquals(-BAY, back.minX(), "rotated 180, template +x is world -x");
+    }
+
+    @Test
+    @DisplayName("ceilings: every floor gains or loses layers, the roof follows, and the floor count stays")
+    void ceilings() {
+        BlockPos origin = new BlockPos(5, 64, 5);
+        List<StructureBlockInfo> template = tower(6, 5);
+        List<StructureBlockInfo> before = placed(template, origin);
+        LostCityStretchProcessor higher = new LostCityStretchProcessor(0, 0, 3, 12, 0.85F, Direction.Axis.Y, 2, 0, 4096);
+        Plan plan = higher.plan(origin, template);
+        assertNotNull(plan);
+        assertEquals(2, plan.floorLayers());
+        assertEquals(2 * plan.band().count(), plan.growth());
+        List<StructureBlockInfo> after = higher.apply(plan, origin, LostCityStretchProcessor.plain(), template, before);
+        assertEquals(extent(before, origin, Direction.Axis.Y) + plan.growth(), extent(after, origin, Direction.Axis.Y));
+        assertEquals(count(before, Blocks.GOLD_BLOCK), count(after, Blocks.GOLD_BLOCK));
+        assertEquals(glassLayers(before) + 2 * plan.band().count(), glassLayers(after), "every floor gained two wall layers");
+        LostCityStretchProcessor lower = new LostCityStretchProcessor(0, 0, 3, 12, 0.85F, Direction.Axis.Y, -1, 0, 4096);
+        Plan low = lower.plan(origin, template);
+        assertNotNull(low);
+        List<StructureBlockInfo> squat = lower.apply(low, origin, LostCityStretchProcessor.plain(), template, before);
+        assertEquals(extent(before, origin, Direction.Axis.Y) - low.band().count(), extent(squat, origin, Direction.Axis.Y));
+        assertEquals(glassLayers(before) - low.band().count(), glassLayers(squat), "every floor lost one wall layer");
+        assertEquals(count(before, Blocks.GOLD_BLOCK), count(squat, Blocks.GOLD_BLOCK));
+        LostCityStretchProcessor tooLow = new LostCityStretchProcessor(0, 0, 3, 12, 0.85F, Direction.Axis.Y, -8, 0, 4096);
+        Plan clamped = tooLow.plan(origin, template);
+        assertNotNull(clamped);
+        assertEquals(-(PERIOD - 3), clamped.floorLayers(), "a floor keeps three layers");
+    }
+
+    @Test
+    @DisplayName("podium and setback: only the layers in range move, and the box grows only for a podium")
+    void podiumAndSetback() {
+        BlockPos origin = new BlockPos(0, 64, 0);
+        List<StructureBlockInfo> template = tower(6, 5);
+        List<StructureBlockInfo> before = placed(template, origin);
+        LostCityStretchProcessor podium = new LostCityStretchProcessor(2, 2, 3, 12, 0.85F, Direction.Axis.X, 0, 0, 12);
+        Plan plan = podium.plan(origin, template);
+        assertNotNull(plan);
+        assertEquals(2 * BAY, plan.growth(), "a podium widens the box");
+        List<StructureBlockInfo> after = podium.apply(plan, origin, LostCityStretchProcessor.plain(), template, before);
+        int lowMax = 0, highMax = 0;
+        for (StructureBlockInfo i : after) {
+            int y = i.pos().getY() - origin.getY();
+            if (i.state().isAir()) continue;
+            if (y <= 12) lowMax = Math.max(lowMax, i.pos().getX()); else highMax = Math.max(highMax, i.pos().getX());
+        }
+        assertEquals(extent(before, origin, Direction.Axis.X) + 2 * BAY, lowMax, "the base is wider");
+        assertTrue(highMax <= extent(before, origin, Direction.Axis.X), "the upper floors are not");
+        LostCityStretchProcessor setback = new LostCityStretchProcessor(-2, -2, 3, 12, 0.85F, Direction.Axis.X, 0, 13, 4096);
+        Plan back = setback.plan(origin, template);
+        assertNotNull(back);
+        assertEquals(0, back.growth(), "a setback keeps the full base, so the box stays");
+        List<StructureBlockInfo> stepped = setback.apply(back, origin, LostCityStretchProcessor.plain(), template, before);
+        int upper = 0;
+        for (StructureBlockInfo i : stepped) {
+            if (i.pos().getY() - origin.getY() >= 13 && !i.state().isAir()) upper = Math.max(upper, i.pos().getX());
+        }
+        assertEquals(wallX(5) - 2 * BAY, upper, "the upper floors are narrower");
     }
 
     @Test

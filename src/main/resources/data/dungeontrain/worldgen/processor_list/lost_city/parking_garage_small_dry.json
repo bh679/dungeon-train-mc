@@ -1,0 +1,186 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -6,
+      "max_floors": -6,
+      "period_min": 3,
+      "period_max": 3,
+      "min_similarity": 0.45,
+      "axis": "z"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:vine",
+          "to": "minecraft:air",
+          "chance": 0.9
+        },
+        {
+          "from": "minecraft:cave_vines",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:cave_vines_plant",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:hanging_roots",
+          "to": "minecraft:air",
+          "chance": 0.8
+        },
+        {
+          "from": "minecraft:moss_block",
+          "to": "minecraft:coarse_dirt"
+        },
+        {
+          "from": "minecraft:moss_carpet",
+          "to": "minecraft:air",
+          "chance": 0.9
+        },
+        {
+          "from": "minecraft:short_grass",
+          "to": "minecraft:dead_bush",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:short_grass",
+          "to": "minecraft:air",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:fern",
+          "to": "minecraft:dead_bush",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:fern",
+          "to": "minecraft:air",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:tall_grass",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:large_fern",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:azalea_leaves",
+          "to": "minecraft:air",
+          "chance": 0.6
+        },
+        {
+          "from": "minecraft:flowering_azalea_leaves",
+          "to": "minecraft:air",
+          "chance": 0.6
+        },
+        {
+          "from": "minecraft:oak_leaves",
+          "to": "minecraft:air",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:birch_leaves",
+          "to": "minecraft:air",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:spruce_leaves",
+          "to": "minecraft:air",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:dark_oak_leaves",
+          "to": "minecraft:air",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:acacia_leaves",
+          "to": "minecraft:air",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:small_dripleaf",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:big_dripleaf",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:big_dripleaf_stem",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:seagrass",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:tall_seagrass",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:lily_pad",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:azalea",
+          "to": "minecraft:dead_bush"
+        },
+        {
+          "from": "minecraft:flowering_azalea",
+          "to": "minecraft:dead_bush"
+        },
+        {
+          "from": "minecraft:cornflower",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:bamboo",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:mossy_cobblestone",
+          "to": "minecraft:cobblestone",
+          "chance": 0.7
+        },
+        {
+          "from": "minecraft:mossy_stone_bricks",
+          "to": "minecraft:cracked_stone_bricks",
+          "chance": 0.7
+        },
+        {
+          "from": "minecraft:mossy_cobblestone_wall",
+          "to": "minecraft:cobblestone_wall",
+          "chance": 0.7
+        },
+        {
+          "from": "minecraft:mossy_stone_brick_wall",
+          "to": "minecraft:stone_brick_wall",
+          "chance": 0.7
+        },
+        {
+          "from": "minecraft:mossy_cobblestone_slab",
+          "to": "minecraft:cobblestone_slab",
+          "chance": 0.7
+        },
+        {
+          "from": "minecraft:mossy_cobblestone_stairs",
+          "to": "minecraft:cobblestone_stairs",
+          "chance": 0.7
+        }
+      ]
+    }
+  ]
+}

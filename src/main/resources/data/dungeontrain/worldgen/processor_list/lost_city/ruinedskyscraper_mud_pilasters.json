@@ -1,0 +1,55 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:stone_bricks",
+          "to": "minecraft:mud_bricks"
+        },
+        {
+          "from": "minecraft:cracked_stone_bricks",
+          "to": "minecraft:packed_mud"
+        },
+        {
+          "from": "minecraft:mossy_stone_bricks",
+          "to": "minecraft:mud_bricks"
+        },
+        {
+          "from": "minecraft:andesite",
+          "to": "minecraft:packed_mud"
+        },
+        {
+          "from": "minecraft:stone_brick_slab",
+          "to": "minecraft:mud_brick_slab"
+        },
+        {
+          "from": "minecraft:stone_brick_stairs",
+          "to": "minecraft:mud_brick_stairs"
+        },
+        {
+          "from": "minecraft:stone_brick_wall",
+          "to": "minecraft:mud_brick_wall"
+        },
+        {
+          "from": "minecraft:diorite",
+          "to": "minecraft:packed_mud"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_facade",
+      "pilaster_every": 5,
+      "min_layer": 2,
+      "pilaster": "minecraft:mud_bricks"
+    }
+  ]
+}

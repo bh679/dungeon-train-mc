@@ -1,0 +1,96 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -2,
+      "max_floors": -2,
+      "period_min": 4,
+      "period_max": 8,
+      "min_similarity": 0.45,
+      "axis": "x"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -2,
+      "max_floors": -2,
+      "period_min": 4,
+      "period_max": 8,
+      "min_similarity": 0.45,
+      "axis": "z"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 4,
+      "max_floors": 4,
+      "period_min": 4,
+      "period_max": 16,
+      "min_similarity": 0.45,
+      "axis": "y"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 0,
+      "max_floors": 0,
+      "period_min": 4,
+      "period_max": 16,
+      "min_similarity": 0.45,
+      "axis": "y",
+      "floor_layers": 2
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:bricks",
+          "to": "minecraft:deepslate_bricks"
+        },
+        {
+          "from": "minecraft:brick_slab",
+          "to": "minecraft:deepslate_brick_slab"
+        },
+        {
+          "from": "minecraft:brick_stairs",
+          "to": "minecraft:deepslate_brick_stairs"
+        },
+        {
+          "from": "minecraft:granite",
+          "to": "minecraft:deepslate"
+        },
+        {
+          "from": "minecraft:polished_granite",
+          "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:terracotta",
+          "to": "minecraft:black_terracotta"
+        },
+        {
+          "from": "minecraft:waxed_copper_block",
+          "to": "minecraft:waxed_exposed_copper"
+        },
+        {
+          "from": "minecraft:dripstone_block",
+          "to": "minecraft:cobbled_deepslate"
+        },
+        {
+          "from": "minecraft:stripped_acacia_wood",
+          "to": "minecraft:stripped_dark_oak_wood"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_facade",
+      "pilaster_every": 4,
+      "min_layer": 2,
+      "pilaster": "minecraft:polished_deepslate"
+    }
+  ]
+}

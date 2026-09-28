@@ -1,0 +1,75 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 0,
+      "max_floors": 0,
+      "period_min": 4,
+      "period_max": 16,
+      "min_similarity": 0.45,
+      "axis": "y",
+      "floor_layers": 2
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:smooth_basalt",
+          "to": "minecraft:waxed_weathered_copper"
+        },
+        {
+          "from": "minecraft:deepslate",
+          "to": "minecraft:waxed_oxidized_copper"
+        },
+        {
+          "from": "minecraft:deepslate_tiles",
+          "to": "minecraft:waxed_weathered_cut_copper"
+        },
+        {
+          "from": "minecraft:cracked_deepslate_tiles",
+          "to": "minecraft:waxed_oxidized_cut_copper"
+        },
+        {
+          "from": "minecraft:polished_deepslate",
+          "to": "minecraft:waxed_exposed_cut_copper"
+        },
+        {
+          "from": "minecraft:polished_blackstone",
+          "to": "minecraft:waxed_exposed_copper"
+        },
+        {
+          "from": "minecraft:polished_blackstone_slab",
+          "to": "minecraft:waxed_weathered_cut_copper_slab"
+        },
+        {
+          "from": "minecraft:polished_blackstone_stairs",
+          "to": "minecraft:waxed_weathered_cut_copper_stairs"
+        },
+        {
+          "from": "minecraft:deepslate_bricks",
+          "to": "minecraft:waxed_oxidized_copper"
+        },
+        {
+          "from": "minecraft:cracked_deepslate_bricks",
+          "to": "minecraft:waxed_oxidized_copper"
+        },
+        {
+          "from": "minecraft:black_stained_glass_pane",
+          "to": "minecraft:cyan_stained_glass_pane"
+        },
+        {
+          "from": "minecraft:black_stained_glass",
+          "to": "minecraft:cyan_stained_glass"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:stone",
+          "to": "minecraft:deepslate"
+        },
+        {
+          "from": "minecraft:andesite",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:diorite",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:stone_bricks",
+          "to": "minecraft:deepslate_bricks"
+        },
+        {
+          "from": "minecraft:cracked_stone_bricks",
+          "to": "minecraft:cracked_deepslate_bricks"
+        },
+        {
+          "from": "minecraft:mossy_stone_bricks",
+          "to": "minecraft:deepslate_bricks"
+        },
+        {
+          "from": "minecraft:stone_brick_slab",
+          "to": "minecraft:deepslate_brick_slab"
+        },
+        {
+          "from": "minecraft:stone_brick_stairs",
+          "to": "minecraft:deepslate_brick_stairs"
+        },
+        {
+          "from": "minecraft:stone_brick_wall",
+          "to": "minecraft:deepslate_brick_wall"
+        },
+        {
+          "from": "minecraft:mossy_cobblestone",
+          "to": "minecraft:cobbled_deepslate"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_facade",
+      "pilaster_every": 6,
+      "min_layer": 2,
+      "ledge": "minecraft:deepslate_tile_slab"
+    }
+  ]
+}

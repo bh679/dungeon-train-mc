@@ -1,0 +1,78 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -4,
+      "max_floors": -4,
+      "period_min": 4,
+      "period_max": 16,
+      "min_similarity": 0.45,
+      "axis": "y"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_bite",
+      "bites_min": 1,
+      "bites_max": 2,
+      "radius_min": 0.3,
+      "radius_max": 0.5,
+      "rubble": [
+        "minecraft:bricks",
+        "minecraft:granite",
+        "minecraft:cobblestone",
+        "minecraft:gravel",
+        "minecraft:cracked_deepslate_tiles"
+      ],
+      "pile_scale": 0.8,
+      "pile_max": 10
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:bricks",
+          "to": "minecraft:deepslate_bricks"
+        },
+        {
+          "from": "minecraft:brick_slab",
+          "to": "minecraft:deepslate_brick_slab"
+        },
+        {
+          "from": "minecraft:brick_stairs",
+          "to": "minecraft:deepslate_brick_stairs"
+        },
+        {
+          "from": "minecraft:granite",
+          "to": "minecraft:deepslate"
+        },
+        {
+          "from": "minecraft:polished_granite",
+          "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:terracotta",
+          "to": "minecraft:black_terracotta"
+        },
+        {
+          "from": "minecraft:waxed_copper_block",
+          "to": "minecraft:waxed_exposed_copper"
+        },
+        {
+          "from": "minecraft:dripstone_block",
+          "to": "minecraft:cobbled_deepslate"
+        },
+        {
+          "from": "minecraft:stripped_acacia_wood",
+          "to": "minecraft:stripped_dark_oak_wood"
+        }
+      ]
+    }
+  ]
+}

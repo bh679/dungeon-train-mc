@@ -1,0 +1,40 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -2,
+      "max_floors": -2,
+      "period_min": 4,
+      "period_max": 8,
+      "min_similarity": 0.45,
+      "axis": "x",
+      "min_layer": 80
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:green_stained_glass",
+          "to": "minecraft:light_gray_stained_glass"
+        },
+        {
+          "from": "minecraft:green_stained_glass_pane",
+          "to": "minecraft:light_gray_stained_glass_pane"
+        },
+        {
+          "from": "minecraft:mossy_cobblestone",
+          "to": "minecraft:cobblestone",
+          "chance": 0.7
+        }
+      ]
+    }
+  ]
+}

@@ -3,7 +3,7 @@
   "fallback": "minecraft:empty",
   "elements": [
     {
-      "weight": 3,
+      "weight": 2,
       "element": {
         "element_type": "minecraft:single_pool_element",
         "location": "big_lost_city:tall_skyscraperlt",
@@ -12,43 +12,61 @@
       }
     },
     {
-      "weight": 2,
+      "weight": 3,
       "element": {
         "element_type": "minecraft:single_pool_element",
         "location": "big_lost_city:tall_skyscraperlt",
         "projection": "rigid",
-        "processors": "dungeontrain:lost_city/tallskyscraper_clear"
-      }
-    },
-    {
-      "weight": 2,
-      "element": {
-        "element_type": "minecraft:single_pool_element",
-        "location": "big_lost_city:tall_skyscraperlt",
-        "projection": "rigid",
-        "processors": "dungeontrain:lost_city/tallskyscraper_dark"
-      }
-    },
-    {
-      "weight": 2,
-      "element": {
-        "element_type": "minecraft:single_pool_element",
-        "location": "big_lost_city:tall_skyscraperlt",
-        "projection": "rigid",
-        "processors": "dungeontrain:lost_city/tallskyscraper_blown"
-      }
-    },
-    {
-      "weight": 2,
-      "element": {
-        "element_type": "minecraft:single_pool_element",
-        "location": "big_lost_city:tall_skyscraperlt",
-        "projection": "rigid",
-        "processors": "dungeontrain:lost_city/tallskyscraper_topped"
+        "processors": "dungeontrain:lost_city/tallskyscraper_bronze_block"
       }
     },
     {
       "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:tall_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/tallskyscraper_ice_needle"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:tall_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/tallskyscraper_dark_podium"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:tall_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/tallskyscraper_clear_setback"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:tall_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/tallskyscraper_blown_stump"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:tall_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/tallskyscraper_lofty"
+      }
+    },
+    {
+      "weight": 2,
       "element": {
         "element_type": "minecraft:single_pool_element",
         "location": "big_lost_city:tall_skyscraperlt",
@@ -57,57 +75,12 @@
       }
     },
     {
-      "weight": 2,
+      "weight": 1,
       "element": {
         "element_type": "minecraft:single_pool_element",
         "location": "big_lost_city:tall_skyscraperlt",
         "projection": "rigid",
-        "processors": "dungeontrain:lost_city/tallskyscraper_taller"
-      }
-    },
-    {
-      "weight": 4,
-      "element": {
-        "element_type": "minecraft:single_pool_element",
-        "location": "big_lost_city:tall_skyscraperlt",
-        "projection": "rigid",
-        "processors": "dungeontrain:lost_city/tallskyscraper_shorter"
-      }
-    },
-    {
-      "weight": 2,
-      "element": {
-        "element_type": "minecraft:single_pool_element",
-        "location": "big_lost_city:tall_skyscraperlt",
-        "projection": "rigid",
-        "processors": "dungeontrain:lost_city/tallskyscraper_shorter_dark"
-      }
-    },
-    {
-      "weight": 3,
-      "element": {
-        "element_type": "minecraft:single_pool_element",
-        "location": "big_lost_city:tall_skyscraperlt",
-        "projection": "rigid",
-        "processors": "dungeontrain:lost_city/tallskyscraper_wide"
-      }
-    },
-    {
-      "weight": 3,
-      "element": {
-        "element_type": "minecraft:single_pool_element",
-        "location": "big_lost_city:tall_skyscraperlt",
-        "projection": "rigid",
-        "processors": "dungeontrain:lost_city/tallskyscraper_narrow"
-      }
-    },
-    {
-      "weight": 2,
-      "element": {
-        "element_type": "minecraft:single_pool_element",
-        "location": "big_lost_city:tall_skyscraperlt",
-        "projection": "rigid",
-        "processors": "dungeontrain:lost_city/tallskyscraper_wide_short"
+        "processors": "dungeontrain:lost_city/tallskyscraper_topped"
       }
     },
     {
@@ -116,7 +89,7 @@
         "element_type": "minecraft:single_pool_element",
         "location": "big_lost_city:tall_skyscraperlt",
         "projection": "rigid",
-        "processors": "dungeontrain:lost_city/dry"
+        "processors": "dungeontrain:lost_city/tallskyscraper_wide_dry"
       }
     }
   ]
