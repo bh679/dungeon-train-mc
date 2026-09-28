@@ -20293,6 +20293,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "clocks-spin-in-otherworldly-stretches",
+      "version": "0.1004.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Clocks lose track of time in otherworldly stretches",
+      "summary": "Clocks now behave the way they do in other dimensions: in the stretches of the line that take on another world's sky, a clock's needle spins wildly instead of showing the time of day, and settles back once you ride out.",
+      "highlights": [
+        "Works for clocks you hold, clocks in item frames and dropped clocks."
+      ],
+      "pr": 1636,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
