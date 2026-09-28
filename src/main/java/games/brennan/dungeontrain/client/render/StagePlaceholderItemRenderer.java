@@ -86,7 +86,8 @@ public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelR
                 pose.translate(-0.5f, -0.5f, -0.5f);
                 // Both layers go through the same (non-fixed) translucent sheet so they flush in
                 // draw order — a fixed cutout buffer would flush AFTER the ghost and cover it.
-                renderQuads(base, pose, buffers.getBuffer(Sheets.translucentItemSheet()), light, overlay, whole);
+                renderQuads(base, pose, buffers.getBuffer(Sheets.translucentItemSheet()), light, overlay, whole,
+                    resolvedStack);
                 pose.popPose();
                 drewBase = true;
             }
@@ -100,7 +101,7 @@ public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelR
         pose.translate(-0.5f, -0.5f, -0.5f);
         float alpha = (drewBase ? OVERLAY_ALPHA : 1.0f) * whole;
         VertexConsumer vc = buffers.getBuffer(Sheets.translucentItemSheet());
-        renderQuads(tile, pose, vc, light, overlay, alpha);
+        renderQuads(tile, pose, vc, light, overlay, alpha, ItemStack.EMPTY);
         pose.popPose();
 
         pose.popPose();
@@ -135,22 +136,30 @@ public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelR
         return StagePlaceholderBlocks.isPlaceholder(b) ? null : b;
     }
 
-    /** Every quad of {@code model} (all faces + unculled) at {@code alpha}, untinted. */
+    /**
+     * Every quad of {@code model} (all faces + unculled) at {@code alpha}; tinted faces take
+     * {@code tintSource}'s item colour (the resolved leaves' foliage green), untinted when empty.
+     */
     private static void renderQuads(BakedModel model, PoseStack pose, VertexConsumer vc,
-                                    int light, int overlay, float alpha) {
+                                    int light, int overlay, float alpha, ItemStack tintSource) {
         PoseStack.Pose last = pose.last();
         for (Direction dir : Direction.values()) {
             RANDOM.setSeed(42L);
-            put(model.getQuads(null, dir, RANDOM, ModelData.EMPTY, null), last, vc, light, overlay, alpha);
+            put(model.getQuads(null, dir, RANDOM, ModelData.EMPTY, null), last, vc, light, overlay, alpha, tintSource);
         }
         RANDOM.setSeed(42L);
-        put(model.getQuads(null, null, RANDOM, ModelData.EMPTY, null), last, vc, light, overlay, alpha);
+        put(model.getQuads(null, null, RANDOM, ModelData.EMPTY, null), last, vc, light, overlay, alpha, tintSource);
     }
 
     private static void put(List<BakedQuad> quads, PoseStack.Pose pose, VertexConsumer vc,
-                            int light, int overlay, float alpha) {
+                            int light, int overlay, float alpha, ItemStack tintSource) {
         for (BakedQuad q : quads) {
-            vc.putBulkData(pose, q, 1.0f, 1.0f, 1.0f, alpha, light, overlay);
+            int rgb = q.isTinted() && !tintSource.isEmpty()
+                ? Minecraft.getInstance().getItemColors().getColor(tintSource, q.getTintIndex()) : -1;
+            float r = ((rgb >> 16) & 0xFF) / 255f;
+            float g = ((rgb >> 8) & 0xFF) / 255f;
+            float b = (rgb & 0xFF) / 255f;
+            vc.putBulkData(pose, q, r, g, b, alpha, light, overlay);
         }
     }
 }

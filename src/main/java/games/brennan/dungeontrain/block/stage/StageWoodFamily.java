@@ -7,12 +7,13 @@ import java.util.Optional;
 /**
  * The vanilla wood families a stage can resolve its wood placeholders to — a Java port of the
  * {@code overworld} / {@code nether} / {@code BAMBOO} / {@code BAMBOO_MOSAIC} maps in
- * {@code scripts/parts/clone-wood-stage.py}, extended with the fence gate, door and trapdoor.
+ * {@code scripts/parts/clone-wood-stage.py}, extended with the fence gate, door, trapdoor and leaves.
  *
  * <p>Each family answers {@link #block(WoodKind)} with a {@code minecraft:} block id. Nether woods
  * swap log/wood for stem/hyphae; bamboo has no log at all (both pillar kinds are the bamboo block);
  * bamboo mosaic keeps bamboo's fittings but swaps planks/stairs/slab for the mosaic set and inverts
- * the pillar blocks for contrast, exactly as the clone script does.</p>
+ * the pillar blocks for contrast, exactly as the clone script does. Leaves are the tree's own; the
+ * nether woods use their fungus's wart block, and bamboo (which has none) the jungle's.</p>
  */
 public enum StageWoodFamily {
     OAK("oak"),
@@ -31,7 +32,7 @@ public enum StageWoodFamily {
     /** Placeholder kinds in the wood set — one per {@code stage_*} wood block. */
     public enum WoodKind {
         LOG, STRIPPED_LOG, WOOD, STRIPPED_WOOD, PLANKS, STAIRS, SLAB, FENCE, FENCE_GATE,
-        BUTTON, PRESSURE_PLATE, DOOR, TRAPDOOR
+        BUTTON, PRESSURE_PLATE, DOOR, TRAPDOOR, LEAVES
     }
 
     /** Family used when a stage has no wood in its tally at all. */
@@ -57,7 +58,7 @@ public enum StageWoodFamily {
         return blocks.get(kind);
     }
 
-    /** True when {@code blockId} is one of this family's 13 blocks. */
+    /** True when {@code blockId} is one of this family's 14 blocks. */
     public boolean contains(String blockId) {
         return blockId != null && blocks.containsValue(blockId);
     }
@@ -111,7 +112,8 @@ public enum StageWoodFamily {
             Map.entry(WoodKind.BUTTON, NS + w + "_button"),
             Map.entry(WoodKind.PRESSURE_PLATE, NS + w + "_pressure_plate"),
             Map.entry(WoodKind.DOOR, NS + w + "_door"),
-            Map.entry(WoodKind.TRAPDOOR, NS + w + "_trapdoor")));
+            Map.entry(WoodKind.TRAPDOOR, NS + w + "_trapdoor"),
+            Map.entry(WoodKind.LEAVES, NS + w + "_leaves")));
     }
 
     private static Map<WoodKind, String> nether(String w) {
@@ -120,6 +122,8 @@ public enum StageWoodFamily {
         m.put(WoodKind.STRIPPED_LOG, NS + "stripped_" + w + "_stem");
         m.put(WoodKind.WOOD, NS + w + "_hyphae");
         m.put(WoodKind.STRIPPED_WOOD, NS + "stripped_" + w + "_hyphae");
+        // Huge fungi grow wart blocks where trees grow leaves; crimson's is plain nether wart.
+        m.put(WoodKind.LEAVES, NS + (w.equals("crimson") ? "nether" : w) + "_wart_block");
         return m;
     }
 
@@ -129,6 +133,8 @@ public enum StageWoodFamily {
         m.put(WoodKind.STRIPPED_LOG, NS + "stripped_bamboo_block");
         m.put(WoodKind.WOOD, NS + "bamboo_block");
         m.put(WoodKind.STRIPPED_WOOD, NS + "stripped_bamboo_block");
+        // Bamboo has no leaves of its own; it grows in jungles.
+        m.put(WoodKind.LEAVES, NS + "jungle_leaves");
         return m;
     }
 
