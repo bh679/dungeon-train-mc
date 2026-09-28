@@ -128,8 +128,8 @@ final class BandLocatorTest {
         WorldGenCycle c = cycle(CycleLayout.DEFAULT_ORDER);
         for (int lap = 0; lap <= 3; lap++) {
             for (Map.Entry<String, IntPredicate> band : bands(c).entrySet()) {
-                // Lap 1's BoP Nether and End (vanilla>bop) exist only from the second run on.
-                if (lap == 0 && band.getKey().startsWith("bop_")) {
+                // Lap 1's BoP Nether (vanilla>bop) exists only from the second run on; the BoP End is every run.
+                if (lap == 0 && band.getKey().equals("bop_nether")) {
                     assertFalse(BandLocator.bandStartXInLap(c, band.getValue(), 0).isPresent(), band.getKey() + " in lap 0");
                     continue;
                 }

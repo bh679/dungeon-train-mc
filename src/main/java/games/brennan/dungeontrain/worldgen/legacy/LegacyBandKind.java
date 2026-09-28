@@ -4,11 +4,12 @@ import java.util.Locale;
 
 /**
  * The old Minecraft world generators that each get a <b>legacy band</b> — a stretch of the repeating
- * {@link games.brennan.dungeontrain.worldgen.WorldGenCycle} (after the stacks band) where the terrain is
+ * {@link games.brennan.dungeontrain.worldgen.WorldGenCycle} (most of them in one run after the spheres; Lost City in a run of its own on Lap 2) where the terrain is
  * produced by a port of that version's generator instead of vanilla's.
  *
- * <p>The run order comes from the {@code legacy:} token of {@code worldgenCycleOrder}, which runs its eras in
- * the order written ({@code CycleLayout#DEFAULT_ORDER}: Amplified → Beta 1.7.3 → Far Lands → Caves of Chaos →
+ * <p>The run order comes from the {@code legacy:} tokens of {@code worldgenCycleOrder}, each running its eras in
+ * the order written ({@code CycleLayout#DEFAULT_ORDER}: Lost City alone between BetterNether and BetterEnd, then
+ * Amplified → Beta 1.7.3 → Far Lands → Caves of Chaos →
  * Skylands → Indev floating → Alpha 1.1.2 → Infdev → Classic → Superflat → Void). Declaration order is only
  * the fallback for a bare {@code legacy} token and the config-file order. Large Biomes and Amplified are <em>modern presets</em> rather than ports — vanilla's own
  * router with the preset flag flipped ({@link games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain}); they

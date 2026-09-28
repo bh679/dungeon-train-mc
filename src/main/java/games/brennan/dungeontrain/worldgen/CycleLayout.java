@@ -18,8 +18,11 @@ import java.util.function.Consumer;
  *
  * <p>Each slot is a band <em>occurrence</em> — Nether and End appear twice per run (vanilla, then the
  * BetterNether / BetterEnd style), the overworld gaps are explicit slots (with the WWOO / BoP styles on
- * lap 2), and the legacy eras share one {@link Type#LEGACY_RUN} slot in which they crossfade straight
- * into each other. Slot lengths are {@code core + the band's own fades}, computed from the
+ * lap 2), and the legacy eras share {@link Type#LEGACY_RUN} slots in which they crossfade straight
+ * into each other (an order may hold several legacy slots; each era belongs to at most one). End slots
+ * written back to back join into <b>one</b> continuous End band — a single void fade in and out, the
+ * pieces' cores laid end to end — while each piece stays its own occurrence with its own look
+ * ({@code end:vanilla:1200, end:bop:2000}). Slot lengths are {@code core + the band's own fades}, computed from the
  * {@link Fades} the cycle carries, so every band's existing ramp maths keeps working at a slot-local
  * offset. {@link #period()} is the length of run 0; later runs stretch — see {@link #runIndex} /
  * {@link #baseCoord}: run {@code k} is {@code 2^k} times as long and every ramp is evaluated at the
@@ -75,26 +78,33 @@ public final class CycleLayout {
                         int chuncksFade, int spheresFade, int stacksFade, int legacyFade) {}
 
     /**
-     * The default order: the layout {@code build()} uses when the key is blank. Lap 1's Nether and End
-     * are vanilla on the first cycle and the vanilla + Biomes O' Plenty look on every cycle after
-     * ({@code vanilla>bop}); Lap 2 is WWOO → BetterNether → BoP → BetterEnd every cycle.
+     * The default order: the layout {@code build()} uses when the key is blank.
+     * <ul>
+     *   <li>Lap 1: overworld → Nether (vanilla on the first cycle, vanilla + Biomes O' Plenty after:
+     *       {@code vanilla>bop}) → WWOO overworld → one End band whose first 1200 blocks are vanilla and last 2000
+     *       Biomes O' Plenty (two joined End slots) → upside-down + Reassembly.</li>
+     *   <li>Lap 2: BoP overworld → BetterNether → Lost City (its own legacy run, wearing WWOO decoration; its
+     *       buildings start on the Nether's exit mountains — {@link #legacyLeadIn}) → BetterEnd.</li>
+     *   <li>Then spheres, the sunk approach, the rest of the legacy eras, chuncks, mix and stacks.</li>
+     * </ul>
      */
     public static final String DEFAULT_ORDER =
-            "ow:2750, nether:vanilla>bop:3000, ow:3000, end:vanilla>bop:3000, upside_down:2500:6000, "
-            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:sunk:500, "
-            + "legacy:amplified=5000:lost_city=4000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            "ow:2750, nether:vanilla>bop:3000, ow:wwoo:4500, end:vanilla:1200, end:bop:2000, upside_down:2500:6000, "
+            + "ow:bop:8000, nether:better:8000, legacy:wwoo:lost_city=4000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:650, chuncks:2000, mix:4000, stacks:5000";
 
     private final Slot[] slots;
     private final long[] starts;
     private final long[] lens;
     private final int[] occurrence;
-    private final LegacySpan[] eras;
+    /** Eras of each slot, index-aligned with {@link #slots}: empty for every slot but a legacy run. */
+    private final LegacySpan[][] eras;
     private final Fades fades;
     private final long period;
     private final Map<Type, Integer> typeCounts = new EnumMap<>(Type.class);
 
-    private CycleLayout(Slot[] slots, LegacySpan[] eras, Fades fades) {
+    private CycleLayout(Slot[] slots, LegacySpan[][] eras, Fades fades) {
         this.slots = slots;
         this.eras = eras;
         this.fades = fades;
@@ -104,7 +114,7 @@ public final class CycleLayout {
         long at = 0L;
         for (int i = 0; i < slots.length; i++) {
             starts[i] = at;
-            lens[i] = slotLength(slots[i]);
+            lens[i] = slotLength(i);
             occurrence[i] = typeCounts.merge(slots[i].type(), 1, Integer::sum) - 1;
             at += lens[i];
         }
@@ -123,7 +133,8 @@ public final class CycleLayout {
                                     java.util.function.Predicate<Type> enabled, Consumer<String> warn) {
         if (spec == null || spec.isBlank()) return null;
         List<Slot> slots = new ArrayList<>();
-        LegacySpan[] eras = new LegacySpan[0];
+        List<LegacySpan[]> eras = new ArrayList<>();
+        java.util.Set<LegacyBandKind> usedEras = java.util.EnumSet.noneOf(LegacyBandKind.class);
         for (String raw : spec.split(",")) {
             String token = raw.trim();
             if (token.isEmpty()) continue;
@@ -136,9 +147,11 @@ public final class CycleLayout {
             }
             if (!enabled.test(type)) continue;
             if (type == Type.LEGACY_RUN) {
-                eras = parseEras(parts, legacyDefaults, warn);
-                if (eras.length == 0) continue;
-                slots.add(new Slot(type, Style.VANILLA, 0, -1));
+                LegacySpan[] run = parseEras(parts, legacyDefaults, usedEras, warn);
+                if (run.length == 0) continue;
+                for (LegacySpan e : run) usedEras.add(e.kind());
+                slots.add(new Slot(type, legacyStyle(parts), 0, -1));
+                eras.add(run);
                 continue;
             }
             Style style = Style.VANILLA;
@@ -180,26 +193,37 @@ public final class CycleLayout {
             }
             if (core == 0 && type != Type.OVERWORLD) continue;    // a zero-length band is just dropped
             slots.add(new Slot(type, style, core, extra, later == null ? style : later));
+            eras.add(NO_ERAS);
         }
         if (slots.isEmpty()) return null;
-        return new CycleLayout(slots.toArray(new Slot[0]), eras, fades);
+        return new CycleLayout(slots.toArray(new Slot[0]), eras.toArray(new LegacySpan[0][]), fades);
     }
 
-    /** Build directly from slots (tests). */
+    private static final LegacySpan[] NO_ERAS = new LegacySpan[0];
+
+    /** Build directly from slots (tests); every legacy-run slot shares {@code eras}. */
     public static CycleLayout of(List<Slot> slots, LegacySpan[] eras, Fades fades) {
-        return new CycleLayout(slots.toArray(new Slot[0]), eras, fades);
+        LegacySpan[][] perSlot = new LegacySpan[slots.size()][];
+        for (int i = 0; i < perSlot.length; i++) {
+            perSlot[i] = slots.get(i).type() == Type.LEGACY_RUN ? eras : NO_ERAS;
+        }
+        return new CycleLayout(slots.toArray(new Slot[0]), perSlot, fades);
     }
 
 
     /**
-     * The legacy run's eras. Named eras run in the order written; a bare {@code legacy} takes every enabled
-     * era in {@link LegacyBandKind} declaration order. An era named twice keeps its first position.
+     * One legacy run's eras. Named eras run in the order written; a bare {@code legacy} takes every enabled
+     * era in {@link LegacyBandKind} declaration order not already in an earlier run. An era named twice —
+     * in this run or an earlier one ({@code used}) — keeps its first position.
      */
-    private static LegacySpan[] parseEras(String[] parts, LegacySpan[] defaults, Consumer<String> warn) {
+    private static LegacySpan[] parseEras(String[] parts, LegacySpan[] defaults, java.util.Set<LegacyBandKind> used,
+                                          Consumer<String> warn) {
         Map<LegacyBandKind, Integer> cores = new java.util.LinkedHashMap<>();
-        boolean explicit = parts.length > 1;
+        boolean explicit = false;
         for (int i = 1; i < parts.length; i++) {
             String arg = parts[i].trim().toLowerCase(Locale.ROOT);
+            if (styleOf(arg) != null) continue;                     // the run's look, not an era
+            explicit = true;
             int eq = arg.indexOf('=');
             String kindName = eq < 0 ? arg : arg.substring(0, eq);
             LegacyBandKind kind = kindOf(kindName);
@@ -216,7 +240,7 @@ public final class CycleLayout {
                     continue;
                 }
             }
-            if (cores.containsKey(kind)) {
+            if (cores.containsKey(kind) || used.contains(kind)) {
                 warn.accept("legacy era '" + kindName + "' named twice; keeping the first");
                 continue;
             }
@@ -225,6 +249,7 @@ public final class CycleLayout {
         Iterable<LegacyBandKind> order = explicit ? cores.keySet() : Arrays.asList(LegacyBandKind.values());
         List<LegacySpan> out = new ArrayList<>();
         for (LegacyBandKind kind : order) {
+            if (used.contains(kind)) continue;
             LegacySpan d = defaultOf(defaults, kind);
             if (d == null || d.holdLen() <= 0L) continue;             // disabled in config
             Integer len = cores.get(kind);
@@ -233,6 +258,20 @@ public final class CycleLayout {
             out.add(new LegacySpan(kind, 0, d.fade(), core));
         }
         return out.toArray(new LegacySpan[0]);
+    }
+
+    /**
+     * The look a legacy run wears: a style name among its parts ({@code legacy:wwoo:lost_city=4000} gives
+     * the Lost City run William Wythers' Overhauled Overworld decoration), {@code VANILLA} otherwise. Only
+     * a vanilla-terrain era shows it — an old generator writes its own terrain and decoration.
+     */
+    private static Style legacyStyle(String[] parts) {
+        Style style = Style.VANILLA;
+        for (int i = 1; i < parts.length; i++) {
+            Style s = styleOf(parts[i].trim().toLowerCase(Locale.ROOT));
+            if (s != null) style = s;
+        }
+        return style;
     }
 
     private static LegacySpan defaultOf(LegacySpan[] defaults, LegacyBandKind kind) {
@@ -276,17 +315,18 @@ public final class CycleLayout {
         return null;
     }
 
-    /** Full length of a slot: its core plus the band's own fades. */
-    private long slotLength(Slot s) {
+    /** Full length of slot {@code i}: its core plus the band's own fades. */
+    private long slotLength(int i) {
+        Slot s = slots[i];
         return switch (s.type()) {
             case OVERWORLD -> Math.max(0, s.core());
             case NETHER -> NetherTransition.bandLength(fades.riseLen(), fades.megaHold(), fades.coreFade(), s.core());
-            case END -> Disintegration.bandLength(fades.eFade(), fades.eVoid(), s.core());
+            case END -> endPieceLength(i);
             case UPSIDE_DOWN -> 2L * Math.max(0, fades.udFade()) + s.core() + udReassembly(s) + Math.max(0, fades.udExit());
             case CHUNCKS -> Math.max(0, fades.chuncksFade()) + s.core();
             case SPHERES -> Math.max(0, fades.spheresFade()) + s.core();
             case STACKS -> Math.max(0, fades.stacksFade()) + s.core();
-            case LEGACY_RUN -> legacyRunLength();
+            case LEGACY_RUN -> legacyRunLength(i);
             case MIX -> Math.max(0, s.core());
         };
     }
@@ -296,12 +336,44 @@ public final class CycleLayout {
         return Math.max(0, s.extra() >= 0 ? s.extra() : fades.udExitFade());
     }
 
+    /**
+     * Length of End slot {@code i}. A lone End is the whole {@link Disintegration#bandLength}; in a joined
+     * run of back-to-back End slots the first piece carries only the entry side (erosion, void, islands
+     * fade-in), the last only the exit side, and a middle piece just its core.
+     */
+    private long endPieceLength(int i) {
+        long side = 2L * Math.max(0, fades.eFade()) + Math.max(0, fades.eVoid());
+        long len = Math.max(0, slots[i].core());
+        if (!isEnd(i - 1)) len += side;
+        if (!isEnd(i + 1)) len += side;
+        return len;
+    }
+
+    private boolean isEnd(int i) {
+        return i >= 0 && i < slots.length && slots[i].type() == Type.END;
+    }
+
+    /**
+     * How far legacy slot {@code slot}'s entry fade reaches back into the slot before it: the preceding
+     * Nether's exit mountains ({@code megaHold + riseLen}) when the run opens with a vanilla-terrain era
+     * (Lost City) — its buildings start on the slopes as the mountains come down. {@code 0} otherwise:
+     * an old generator's terrain can't share the Nether's. Slot lengths are unaffected.
+     */
+    public long legacyLeadIn(int slot) {
+        if (slot <= 0 || slot >= slots.length || slots[slot].type() != Type.LEGACY_RUN) return 0L;
+        if (slots[slot - 1].type() != Type.NETHER) return 0L;
+        LegacySpan[] run = eras[slot];
+        if (run.length == 0 || !run[0].kind().usesVanillaTerrain()) return 0L;
+        return Math.min(lens[slot - 1], (long) Math.max(0, fades.megaHold()) + Math.max(0, fades.riseLen()));
+    }
+
     /** {@code Σ fadeBefore(e) + Σcore}: each era's own entry fade / crossfade, the cores, then the exit fade. */
-    private long legacyRunLength() {
-        if (eras.length == 0) return 0L;
+    private long legacyRunLength(int slot) {
+        LegacySpan[] run = eras[slot];
+        if (run.length == 0) return 0L;
         long total = 0L;
-        for (int e = 0; e <= eras.length; e++) total += fadeBefore(e);
-        for (LegacySpan e : eras) total += e.holdLen();
+        for (int e = 0; e <= run.length; e++) total += fadeBefore(slot, e);
+        for (LegacySpan e : run) total += e.holdLen();
         return total;
     }
 
@@ -356,26 +428,68 @@ public final class CycleLayout {
         return fades;
     }
 
-    /** The legacy run's exit fade, and the fallback for an era with no fade of its own. */
+    // ---- joined End bands ----------------------------------------------------------------
+
+    /** First slot of the joined End band slot {@code i} belongs to ({@code i} itself for a lone End). */
+    public int endGroupFirst(int i) {
+        while (isEnd(i - 1)) i--;
+        return i;
+    }
+
+    /** Base offset where the joined End band containing slot {@code i} starts. */
+    public long endGroupStart(int i) {
+        return starts[endGroupFirst(i)];
+    }
+
+    /** Summed core of the joined End band containing slot {@code i} — the core the band's ramps see. */
+    public int endGroupCore(int i) {
+        int core = 0;
+        for (int j = endGroupFirst(i); isEnd(j); j++) core += Math.max(0, slots[j].core());
+        return core;
+    }
+
+    /** Number of End slots in the joined End band containing slot {@code i}. */
+    public int endGroupSize(int i) {
+        int n = 0;
+        for (int j = endGroupFirst(i); isEnd(j); j++) n++;
+        return n;
+    }
+
+    /** Whole length of the joined End band containing slot {@code i}. */
+    public long endGroupLength(int i) {
+        long len = 0L;
+        for (int j = endGroupFirst(i); isEnd(j); j++) len += lens[j];
+        return len;
+    }
+
+    /** A legacy run's exit fade, and the fallback for an era with no fade of its own. */
     public int legacyFade() {
         return Math.max(0, fades.legacyFade());
     }
 
     /**
-     * Length of the fade <em>into</em> era {@code e}: the run's entry fade for {@code e == 0}, the crossfade
-     * from era {@code e − 1} otherwise — each era's own configured fade ({@code legacy<Era>FadeBlocks}), so
-     * one seam can be longer than the rest (Lost City's 750-block run-in out of Amplified). {@code e} equal to
-     * the era count is the run's exit fade ({@link #legacyFade}).
+     * Length of the fade <em>into</em> era {@code e} of legacy slot {@code slot}: the run's entry fade for
+     * {@code e == 0}, the crossfade from era {@code e − 1} otherwise — each era's own configured fade
+     * ({@code legacy<Era>FadeBlocks}), so one seam can be longer than the rest (Lost City's 750-block run-in).
+     * {@code e} equal to the era count is the run's exit fade ({@link #legacyFade}).
      */
-    public long fadeBefore(int e) {
-        if (e < 0 || e >= eras.length) return legacyFade();
-        int f = eras[e].fade();
+    public long fadeBefore(int slot, int e) {
+        LegacySpan[] run = eras(slot);
+        if (e < 0 || e >= run.length) return legacyFade();
+        int f = run[e].fade();
         return f >= 0 ? f : legacyFade();
     }
 
-    /** The legacy eras in run order — {@code (kind, 0, fade, core)} each. Never mutated. */
-    public LegacySpan[] eras() {
-        return eras;
+    /** Legacy slot {@code slot}'s eras in run order — {@code (kind, 0, fade, core)} each; empty for any other slot. Never mutated. */
+    public LegacySpan[] eras(int slot) {
+        return slot < 0 || slot >= eras.length ? NO_ERAS : eras[slot];
+    }
+
+    /** Every era of every legacy run, in layout order. */
+    public List<LegacySpan> allEras() {
+        List<LegacySpan> out = new ArrayList<>();
+        for (LegacySpan[] run : eras) out.addAll(Arrays.asList(run));
+        return out;
     }
 
     /** Index of the slot containing base coordinate {@code u}, or {@code -1} outside {@code [0, period)}. */
@@ -443,23 +557,35 @@ public final class CycleLayout {
 
     // ---- legacy run geometry ------------------------------------------------------------
 
-    /** Index of {@code kind} among the run's eras, or {@code -1}. */
-    public int eraIndex(LegacyBandKind kind) {
-        for (int i = 0; i < eras.length; i++) {
-            if (eras[i].kind() == kind) return i;
+    /** The legacy slot that runs era {@code kind}, or {@code -1}. */
+    public int legacySlotOf(LegacyBandKind kind) {
+        for (int s = 0; s < eras.length; s++) {
+            for (LegacySpan e : eras[s]) {
+                if (e.kind() == kind) return s;
+            }
         }
         return -1;
     }
 
-    /** Offset of era {@code e}'s core from the legacy slot start. */
-    public long eraCoreStart(int e) {
-        long at = fadeBefore(0);
-        for (int i = 0; i < e; i++) at += eras[i].holdLen() + fadeBefore(i + 1);
+    /** Index of {@code kind} among its own legacy slot's eras, or {@code -1}. */
+    public int eraIndex(LegacyBandKind kind) {
+        int s = legacySlotOf(kind);
+        if (s < 0) return -1;
+        for (int i = 0; i < eras[s].length; i++) {
+            if (eras[s][i].kind() == kind) return i;
+        }
+        return -1;
+    }
+
+    /** Offset of era {@code e}'s core from legacy slot {@code slot}'s start. */
+    public long eraCoreStart(int slot, int e) {
+        long at = fadeBefore(slot, 0);
+        for (int i = 0; i < e; i++) at += eras[slot][i].holdLen() + fadeBefore(slot, i + 1);
         return at;
     }
 
-    public long eraCoreLen(int e) {
-        return eras[e].holdLen();
+    public long eraCoreLen(int slot, int e) {
+        return eras[slot][e].holdLen();
     }
 
     // ---- doubling ------------------------------------------------------------------------

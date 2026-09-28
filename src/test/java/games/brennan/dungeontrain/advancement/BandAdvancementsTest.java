@@ -44,12 +44,13 @@ final class BandAdvancementsTest {
     void shippedOrder() {
         List<String> chain = BandAdvancements.chain(parse(CycleLayout.DEFAULT_ORDER));
         assertEquals(List.of(
-                "reached_nether", "reached_void", "reached_end_islands", "the_upside_down", "reassembly_required",
-                "reached_wwoo", "reached_better_nether", "reached_bop", "reached_better_end", "reached_spheres",
-                "reached_amplified", "reached_lost_city", "reached_beta", "reached_far_lands", "reached_caves_of_chaos", "reached_skylands", "reached_floating",
+                "reached_nether", "reached_wwoo", "reached_void", "reached_end_islands",
+                "the_upside_down", "reassembly_required",
+                "reached_bop", "reached_better_nether", "reached_lost_city", "reached_better_end", "reached_spheres",
+                "reached_amplified", "reached_beta", "reached_far_lands", "reached_caves_of_chaos", "reached_skylands", "reached_floating",
                 "reached_alpha", "reached_infdev", "reached_classic", "reached_superflat",
                 "reached_chuncks", "reached_stacks",
-                "reached_overworld_again", "read_all_nether_starting_books", "reached_bop_end"), chain);
+                "reached_overworld_again", "read_all_nether_starting_books"), chain);
     }
 
     @Test
@@ -67,7 +68,7 @@ final class BandAdvancementsTest {
         assertEquals("reached_end_islands", chain.get(6));
         assertEquals(chain.size(), new HashSet<>(chain).size());
         assertTrue(chain.containsAll(BandAdvancements.ALL));
-        assertEquals(BandAdvancements.LATER_CYCLES, chain.subList(chain.size() - 3, chain.size()));
+        assertEquals(BandAdvancements.LATER_CYCLES, chain.subList(chain.size() - BandAdvancements.LATER_CYCLES.size(), chain.size()));
     }
 
     @Test
@@ -77,7 +78,7 @@ final class BandAdvancementsTest {
         assertEquals("reached_nether", chain.get(0));
         assertTrue(chain.contains("reached_spheres"));
         assertTrue(chain.indexOf("reached_spheres") > chain.indexOf("reached_nether"));
-        assertEquals(BandAdvancements.LATER_CYCLES, chain.subList(chain.size() - 3, chain.size()));
+        assertEquals(BandAdvancements.LATER_CYCLES, chain.subList(chain.size() - BandAdvancements.LATER_CYCLES.size(), chain.size()));
     }
 
     @Test
@@ -115,10 +116,10 @@ final class BandAdvancementsTest {
     private static final List<String> SHIPPED_REVERSE = List.of(
             "reversed_stacks", "reversed_chuncks",
             "reversed_superflat", "reversed_classic", "reversed_infdev", "reversed_alpha", "reversed_floating",
-            "reversed_skylands", "reversed_caves_of_chaos", "reversed_far_lands", "reversed_beta",
-            "reversed_lost_city", "reversed_amplified",
-            "reversed_spheres", "reversed_better_end", "reversed_bop", "reversed_better_nether", "reversed_wwoo",
-            "reversed_reassembly", "reversed_upside_down", "reversed_void", "reversed_end_islands", "reversed_nether");
+            "reversed_skylands", "reversed_caves_of_chaos", "reversed_far_lands", "reversed_beta", "reversed_amplified",
+            "reversed_spheres", "reversed_better_end", "reversed_lost_city", "reversed_better_nether", "reversed_bop",
+            "reversed_reassembly", "reversed_upside_down", "reversed_void", "reversed_end_islands", "reversed_wwoo",
+            "reversed_nether");
 
     @Test
     @DisplayName("walking back from spawn meets the shipped bands last-first, all the way to the first Nether")

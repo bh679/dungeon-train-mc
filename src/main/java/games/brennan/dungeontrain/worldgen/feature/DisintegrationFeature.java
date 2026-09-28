@@ -98,11 +98,24 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
 
             ServerLevel end = server.getLevel(Level.END);
             if (end == null) return false;
-            // A BetterEnd End band (end:better in the order) gets real End chunks copied in by
-            // WorldEndBandEvents instead, so no end stone or chorus is stamped here.
-            if (EndBandSampler.appliesTo(server, MixBand.cycleAt(overworld, cp.x, cp.z).endLookAt(chunkMinX + 8))) return false;
-
+            // A sampled End look (BetterEnd / BoP in the order) gets real End chunks copied in by
+            // WorldEndBandEvents instead, so no end stone or chorus is stamped in its columns. Per column:
+            // across the seam of a joined End band the two looks crossfade (WorldGenCycle#endSourcePassAt).
             DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+            WorldGenCycle cycle = MixBand.cycleAt(overworld, cp.x, cp.z);
+            long genSeed = data.getGenerationSeed();
+            boolean[] sampledColumn = new boolean[256];
+            boolean anyStamped = false;
+            for (int dx = 0; dx < 16; dx++) {
+                for (int dz = 0; dz < 16; dz++) {
+                    boolean sampled = EndBandSampler.appliesTo(server,
+                            cycle.endSourceLookAt(chunkMinX + dx, cp.getMinBlockZ() + dz, genSeed));
+                    sampledColumn[dx * 16 + dz] = sampled;
+                    if (!sampled) anyStamped = true;
+                }
+            }
+            if (!anyStamped) return false;
+
             CarriageDims dims = data.dims();
             TrackGeometry g = TrackGeometry.from(dims, data.getTrainY());
             int bedY = g.bedY();
@@ -148,6 +161,7 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
                 if (e <= 0.0) continue;
                 int worldX = chunkMinX + dx;
                 for (int dz = 0; dz < 16; dz++) {
+                    if (sampledColumn[dx * 16 + dz]) continue;          // the copied-in look owns this column
                     int worldZ = chunkMinZ + dz;
                     int[] top = {Integer.MIN_VALUE};
                     boolean[] wrote = {false};
@@ -189,7 +203,7 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             for (int i = 0; i < count; i++) {
                 int dx = random.nextInt(16);
                 int dz = random.nextInt(16);
-                if (endRamp[dx] <= 0.0) continue;
+                if (endRamp[dx] <= 0.0 || sampledColumn[dx * 16 + dz]) continue;
                 int top = islandTop[dx * 16 + dz];
                 if (top == Integer.MIN_VALUE || top + 1 > maxY) continue;
                 int worldZ = chunkMinZ + dz;

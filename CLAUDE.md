@@ -283,10 +283,13 @@ End-islands band copies real BetterEnd End chunks (`worldgen/EndBandStyle` + `En
 read `worldgen/density/VanillaEndBiomes`. DT's presets give the End WorldWeaver's `wover:end_biome_source` — the
 vanilla `minecraft:the_end` source yields no BetterEnd biomes (TerraBlender's patch wins `getNoiseBiome`) — and
 `data/wover/config/biome_config.json` keeps BoP out of the End (`EndPresetBiomeSourceTest` pins both). **William Wythers' Overhauled
-Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too. Lap 2 of every cycle is WWOO →
-BetterNether → BoP → BetterEnd; from the second cycle on, Lap 1's Nether and End take the Biomes O' Plenty look
-(`nether:vanilla>bop` / `end:vanilla>bop` in the order — a vanilla + BoP TerraBlender region mix in
-`density/NetherCoreBiomes`, and a BoP End sampled from `worldgen/BopEnd`) (`worldgen/SecondLapOverworld`;
+Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too. Lap 1 of every cycle is
+overworld → Nether → WWOO → one End band (1200 vanilla, then 2000 BoP — two back-to-back `end:` slots join into one
+band with a single void fade, each piece its own pass/look) → upside-down; Lap 2 is BoP → BetterNether → Lost City (its
+own `legacy:wwoo:` run — an order may hold several; it wears WWOO decoration, and its buildings start on the Nether's exit
+mountains via `CycleLayout#legacyLeadIn`; the track is flattened only where it would cut a mountain — `density/UpsideDownTrackFlatten#mountainGate`, also in the upside-down band; its buildings fade in from the foot of the Nether's fall, half the grid there rising to full 2900 blocks on, none on the range (`LostCityStructures#density`, `#fallFoot`; a 4% sprinkling also lands in Lap 1's WWOO stretch), start in every overworld biome, oceans included, seated on the footprint's 30th-percentile floor (`worldgen/LostCitySeating#seat`, from `StructureBasementMixin`); they generate with vanilla adaptation off (`StructureTerrainAdaptationMixin`) and a fill-only beard instead (`BeardifierMixin`), and yield their natural pad and air to WWOO's terrain and water, which climb over and flood them — `worldgen/LostCityGroundProcessor`, attached by `SinglePoolElementMixin`) → BetterEnd. From the second cycle on, Lap 1's Nether takes the Biomes O'
+Plenty look (`nether:vanilla>bop` in the order — a vanilla + BoP TerraBlender region mix in
+`density/NetherCoreBiomes`; the BoP End is sampled from `worldgen/BopEnd`) (`worldgen/SecondLapOverworld`;
 `/dungeontrain debug overworld-laps` / `nether-passes` list each lap's stretches and biomes). WWOO is confined at feature placement plus vanilla
 "twins" for its biome colours/climate/spawns outside the stretch, BoP at biome choice — see
 `worldgen/VanillaBiomeFeatures`, `worldgen/VanillaBiomeTwins` and `worldgen/density/OverworldStretchBiomes`.
