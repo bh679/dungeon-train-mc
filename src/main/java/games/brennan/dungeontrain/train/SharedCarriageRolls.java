@@ -37,6 +37,21 @@ public final class SharedCarriageRolls {
         return Bucket.FRESH;
     }
 
+    /** Salt for the room roll, so a pair's "does it drift at all" is independent of its bucket. */
+    private static final long SHARED_ROOM_SALT = 0x44524946544D5253L;
+
+    /**
+     * Whether the dimensional carriage at {@code pairKey} drifts at all — the gate in front of
+     * {@link #bucket} for rooms. Deterministic per pair, and rolled apart from the bucket so the one
+     * in twenty that drifts still splits pool/own/fresh the way every shared slot does.
+     */
+    public static boolean roomDrifts(long generationSeed, int pairKey, double roomChance) {
+        if (roomChance <= 0) return false;
+        if (roomChance >= 1) return true;
+        long mixed = generationSeed ^ ((long) pairKey * 0x9E3779B97F4A7C15L) ^ SHARED_ROOM_SALT;
+        return new Random(mixed).nextDouble() < roomChance;
+    }
+
     /** The raw [0,1) roll for a slot — exposed so tests can assert the bucket boundaries directly. */
     public static double roll(long generationSeed, int carriagePIdx) {
         long mixed = generationSeed ^ ((long) carriagePIdx * 0x9E3779B97F4A7C15L) ^ SHARED_POOL_SALT;

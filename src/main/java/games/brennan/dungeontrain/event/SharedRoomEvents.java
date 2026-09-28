@@ -224,8 +224,8 @@ public final class SharedRoomEvents {
             return;
         }
         if (!SharedCarriageGate.canDiscover()) return;
-        if (!structure.settings().drifts()) return;
-        if (games.brennan.dungeontrain.portal.PortalTestSession.isTestStamp(pairKey)) return;
+        // Same gate the planner used — mode, author's setting, test rig and the one-in-twenty roll.
+        if (!games.brennan.dungeontrain.portal.PortalRoomDriftPlanner.driftsHere(level, pairKey, structure.settings())) return;
         PortalRoomBlob blob = structure.blob();
         if (blob != null && blob.isLeased()) {
             SharedRoomRegistry.Instance inst = SharedRoomRegistry.register(level, pairKey, structure.roomName(),

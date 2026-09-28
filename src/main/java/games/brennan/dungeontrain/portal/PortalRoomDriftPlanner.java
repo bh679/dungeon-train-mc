@@ -47,8 +47,7 @@ public final class PortalRoomDriftPlanner {
      */
     public static PortalRoomBlob leaseFor(ServerLevel level, int pairKey, String roomName,
                                           PortalRoomSettings settings, Vec3i size, CarriageDims dims) {
-        if (settings == null || !settings.drifts()) return null;
-        if (PortalTestSession.isTestStamp(pairKey)) return null;
+        if (!driftsHere(level, pairKey, settings)) return null;
         if (!SharedCarriageGate.canLease()) return null;
         String stageId = PortalCarriageBuilder.stageIdFor(level, pairKey, dims);
         if (stageId == null || stageId.isEmpty()) {
@@ -97,6 +96,19 @@ public final class PortalRoomDriftPlanner {
             SharedRoomPool.returnLease(lease);
             return null;
         }
+    }
+
+    /**
+     * Whether this pair's room takes part in drifting at all: the room's mode and the author's
+     * setting say it may, it is not the editor's test rig, and the pair won its
+     * {@code sharedRoomChance} roll — one in twenty by default. The same answer registers a fresh
+     * room for upload ({@code SharedRoomEvents.onStructureStamped}) and lets the planner draw a
+     * copy, so a pair that lost the roll is a plain template room in every respect.
+     */
+    public static boolean driftsHere(ServerLevel level, int pairKey, PortalRoomSettings settings) {
+        if (settings == null || !settings.drifts()) return false;
+        if (PortalTestSession.isTestStamp(pairKey)) return false;
+        return SharedCarriageRolls.roomDrifts(level.getSeed(), pairKey, DungeonTrainConfig.getSharedRoomChance());
     }
 
     private static PoolLease firstNonNull(PoolLease first, java.util.function.Supplier<PoolLease> second) {
