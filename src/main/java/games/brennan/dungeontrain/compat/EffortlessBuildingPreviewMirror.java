@@ -31,6 +31,9 @@ import java.util.Map;
  * cells inside it are mirrored.
  * Sidecar marker cells are not excluded here; the server skips them, so a ghost may show on one.</p>
  *
+ * <p>Nothing is added while EB's build mode is {@code DISABLED}: that is the author turning EB
+ * off, and a mirrored highlight then would be a preview of a build EB will not make.</p>
+ *
  * <p>EB is not a compile dependency, so its {@code BlockEntry} is reached by reflection, resolved
  * once from the first entry seen. <b>Fails open</b>: any failure leaves EB's preview as it was.</p>
  */
@@ -45,6 +48,8 @@ public final class EffortlessBuildingPreviewMirror {
     private static Field mirrorX;
     private static Field mirrorY;
     private static Field mirrorZ;
+    private static Object buildModes;
+    private static Method getBuildMode;
     private static boolean broken;
 
     private EffortlessBuildingPreviewMirror() {}
@@ -57,6 +62,7 @@ public final class EffortlessBuildingPreviewMirror {
         try {
             List<Object> sources = new ArrayList<>(set.values());
             resolve(sources.get(0).getClass());
+            if (isDisabled()) return;
             BlockPos origin = plot.origin();
             Vec3i f = plot.footprint();
             for (Object src : sources) {
@@ -89,8 +95,18 @@ public final class EffortlessBuildingPreviewMirror {
             && l.getX() < f.getX() && l.getY() < f.getY() && l.getZ() < f.getZ();
     }
 
+    /** EB's client build mode is {@code DISABLED} ({@code BuildModes.CLIENT.getBuildMode()}). */
+    private static boolean isDisabled() throws ReflectiveOperationException {
+        Object mode = getBuildMode.invoke(buildModes);
+        return mode instanceof Enum<?> e && "DISABLED".equals(e.name());
+    }
+
     private static void resolve(Class<?> cls) throws ReflectiveOperationException {
         if (cls == entryClass) return;
+        Class<?> modes = Class.forName("neoforge.nl.requios.effortlessbuilding.buildmode.BuildModes",
+            false, cls.getClassLoader());
+        buildModes = modes.getField("CLIENT").get(null);
+        getBuildMode = modes.getMethod("getBuildMode");
         ctor = cls.getConstructor(BlockPos.class);
         copyRotation = cls.getMethod("copyRotationSettingsFrom", cls);
         posField = cls.getField("blockPos");
