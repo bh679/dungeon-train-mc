@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reversed_spheres",
+  "parent": "dungeontrain:secrete_menu/reversed_spheres",
   "display": {
     "icon": { "id": "minecraft:chorus_flower" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_better_end.title" },

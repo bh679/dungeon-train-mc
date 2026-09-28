@@ -1639,6 +1639,8 @@
   "advancements.dungeontrain.dungeon_train.reached_bop_end.title": "末地的丰饶",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.description": "在遍布荒野、礁石与蔓延腐化的末地岛屿之间，这些都是原版末地从未有过的。",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.hint": "末地容得下的不止紫颂植物。",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.title": "隐藏菜单",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.description": "乘着列车向后行驶 250 格，回到你出发点的后方。",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.title": "栈下溢",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.description": "从起点走错方向，进入塔林虚空 - 同一座建筑层层叠起，直抵天际。",
   "advancements.dungeontrain.dungeon_train.reversed_chuncks.title": "区块倒带",

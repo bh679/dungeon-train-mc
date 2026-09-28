@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:secrete_menu/root",
   "display": {
     "icon": { "id": "minecraft:stone_bricks" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_stacks.title" },

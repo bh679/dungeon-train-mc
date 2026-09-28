@@ -1720,6 +1720,8 @@
   "advancements.dungeontrain.dungeon_train.reached_bop_end.title": "Изобилие на Краю",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.description": "Среди островов Края, заросших дебрями, рифами и ползучей порчей, которых в обычном Крае никогда не было.",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.hint": "На Краю найдётся место не только хорусу.",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.title": "Секретное меню",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.description": "Проедьте на поезде 250 блоков назад, за точку, откуда вы начали.",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.title": "Stack Underflow",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.description": "Не в ту сторону от старта, в пустоту, полную башен - одно и то же здание, сложенное само на себя до самого неба.",
   "advancements.dungeontrain.dungeon_train.reversed_chuncks.title": "Откат чанков",

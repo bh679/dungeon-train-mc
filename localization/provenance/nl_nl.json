@@ -1677,6 +1677,8 @@
   "advancements.dungeontrain.dungeon_train.reached_bop_end.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "fed0fd10f72eedac"},
   "advancements.dungeontrain.dungeon_train.reached_bop_end.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "b85ffdd09d1dc8d2"},
   "advancements.dungeontrain.dungeon_train.reached_bop_end.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "778d56e95c83d98e"},
+  "advancements.dungeontrain.dungeon_train.secrete_menu.title": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "dfd460ed25c3ba97"},
+  "advancements.dungeontrain.dungeon_train.secrete_menu.description": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "c388dda3ad855d30"},
   "advancements.dungeontrain.dungeon_train.reversed_stacks.title": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "b07b6f74bad8ea1e"},
   "advancements.dungeontrain.dungeon_train.reversed_stacks.description": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "74739e78894e22dc"},
   "advancements.dungeontrain.dungeon_train.reversed_chuncks.title": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "3d688133af70e81a"},

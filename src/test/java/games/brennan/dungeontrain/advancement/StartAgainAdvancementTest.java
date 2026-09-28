@@ -71,7 +71,7 @@ final class StartAgainAdvancementTest {
         assertTrue(StartAgainAdvancement.isWiped(ResourceLocation.parse("dungeontrain:dungeon_train/reached_nether"), true));
         assertTrue(StartAgainAdvancement.isWiped(CompletionistAdvancement.ID, false));
         assertTrue(StartAgainAdvancement.isWiped(StartAgainAdvancement.ID, false));
-        assertFalse(StartAgainAdvancement.isWiped(ResourceLocation.parse("dungeontrain:dungeon_train/reversed_nether"), false));
+        assertFalse(StartAgainAdvancement.isWiped(ResourceLocation.parse("dungeontrain:secrete_menu/reversed_nether"), false));
         assertFalse(StartAgainAdvancement.isWiped(ResourceLocation.parse("dungeontrain:editor/root"), false));
         assertFalse(StartAgainAdvancement.isWiped(ResourceLocation.parse("minecraft:story/mine_stone"), false));
     }

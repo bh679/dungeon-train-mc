@@ -1677,6 +1677,8 @@
   "advancements.dungeontrain.dungeon_train.reached_bop_end.title": "Abbondanza nell'End",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.description": "Tra isole dell'End invase da boscaglie, scogliere e una corruzione strisciante che l'End vanilla non ha mai avuto.",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.hint": "L'End ha spazio per qualcosa di più del chorus.",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.title": "Il Menu Segreto",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.description": "Percorri 250 blocchi all'indietro sul treno, dietro il punto da cui sei partito.",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.title": "Stack Underflow",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.description": "Dalla partenza nel verso sbagliato, in un vuoto di torri - lo stesso edificio impilato su sé stesso fino al cielo.",
   "advancements.dungeontrain.dungeon_train.reversed_chuncks.title": "Chunk a ritroso",

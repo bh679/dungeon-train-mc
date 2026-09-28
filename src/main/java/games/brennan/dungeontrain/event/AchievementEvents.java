@@ -1184,7 +1184,7 @@ public final class AchievementEvents {
      *
      * <p>When it arms, vanilla's revoke is cancelled and {@link StartAgainAdvancement#wipe} runs in
      * its place: only the advancements that make up the capstone are cleared, everything that never
-     * counted towards it (the reverse journey, the editor tree, other mods') stays earned.</p>
+     * counted towards it (The Secrete Menu, the editor tree, other mods') stays earned.</p>
      *
      * <p>Ignores console / command-block / function sources — there is no player to
      * award. Runs at {@link EventPriority#LOWEST} so a cancelling handler gets there

@@ -112,8 +112,7 @@ public final class ReverseSlide {
      * is not out on the line.
      */
     private static List<Sample> samples(ServerLevel level) {
-        List<Trains.Carriage> carriages = new ArrayList<>();
-        for (List<Trains.Carriage> train : Trains.byTrainId(level).values()) carriages.addAll(train);
+        List<Trains.Carriage> carriages = carriages(level);
         List<Sample> out = new ArrayList<>();
         for (ServerPlayer p : level.players()) {
             if (p.isSpectator() || p.isCreative()) continue;
@@ -121,6 +120,24 @@ public final class ReverseSlide {
             out.add(new Sample(p.getX(), CarriageDeck.isOnTrainFootprint(carriages, p)));
         }
         return out;
+    }
+
+    /**
+     * How far behind spawn {@code player} has ridden: the blocks back of {@code startX} they stand at while
+     * on the train — the same world-space measure as the frontier — or 0 when off the train, in a portal
+     * twin's sealed space, or ahead of spawn. Gamemode is not checked; callers decide who counts.
+     */
+    public static long riddenBehindSpawn(ServerLevel level, long startX, ServerPlayer player) {
+        long back = startX - (long) Math.floor(player.getX());
+        if (back <= 0L) return 0L;
+        if (PortalTwinSpace.isInside(level, player.getBlockX(), player.getY())) return 0L;
+        return CarriageDeck.isOnTrainFootprint(carriages(level), player) ? back : 0L;
+    }
+
+    private static List<Trains.Carriage> carriages(ServerLevel level) {
+        List<Trains.Carriage> carriages = new ArrayList<>();
+        for (List<Trains.Carriage> train : Trains.byTrainId(level).values()) carriages.addAll(train);
+        return carriages;
     }
 
     private static void applyChange(ServerLevel level, long before, State now) {

@@ -1,0 +1,19 @@
+{
+  "display": {
+    "icon": { "id": "minecraft:knowledge_book" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.secrete_menu.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.secrete_menu.description" },
+    "frame": "task",
+    "background": "minecraft:textures/gui/advancements/backgrounds/end.png",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "secrete_menu" }
+    }
+  },
+  "requirements": [["reached"]]
+}

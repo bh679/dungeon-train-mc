@@ -38,8 +38,8 @@ import java.util.Set;
  * advancement itself, {@link StartAgainAdvancement} (which sits <em>after</em>
  * the capstone — requiring it would make the capstone unreachable), and
  * display-less (recipe-style) advancements, and the reverse journey
- * ({@link BandAdvancements#isReverse}: the hidden {@code reversed_*} set
- * earned behind spawn, which is never required). A new
+ * and The Secrete Menu ({@link BandAdvancements#isBackwards}: the hidden
+ * backwards-travelling advancements behind spawn, never required). A new
  * {@code dungeon_train/*} advancement added in a future update is therefore
  * required automatically, with no change to this class — and one the relay has
  * {@link games.brennan.dungeontrain.advancement.requirement.AdvancementFlag#DISABLED disabled}
@@ -75,7 +75,7 @@ public final class CompletionistAdvancement {
         if (rl.getPath().startsWith("editor/")) return false;             // editor tree excluded
         if (rl.equals(ID)) return false;                                  // never require itself
         if (rl.equals(StartAgainAdvancement.ID)) return false;            // downstream of the capstone, not a prerequisite
-        if (BandAdvancements.isReverse(rl.getPath())) return false;       // the reverse journey is optional, never required
+        if (BandAdvancements.isBackwards(rl.getPath())) return false;     // The Secrete Menu: optional, never required
         if (notRequired.contains(rl)) return false;                       // the operator dropped it from the capstone (relay)
         return holder.value().display().isPresent();                      // skip recipe/display-less
     }

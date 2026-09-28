@@ -1639,6 +1639,8 @@
   "advancements.dungeontrain.dungeon_train.reached_bop_end.title": "Berlimpah di End",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.description": "Di celah pulau-pulau End yang dipenuhi belantara, terumbu dan kerosakan yang menjalar - perkara yang tidak pernah ada di End vanilla.",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.hint": "End ada ruang untuk lebih daripada chorus.",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.title": "Menu Rahsia",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.description": "Naik kereta api sejauh 250 blok ke belakang, di belakang tempat anda bermula.",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.title": "Stack Underflow",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.description": "Arah yang salah dari permulaan, menuju lohong penuh menara - bangunan yang sama disusun di atas dirinya hingga ke langit.",
   "advancements.dungeontrain.dungeon_train.reversed_chuncks.title": "Chunk Diundur",

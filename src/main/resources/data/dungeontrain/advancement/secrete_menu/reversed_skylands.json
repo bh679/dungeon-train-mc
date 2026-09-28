@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reversed_floating",
+  "parent": "dungeontrain:secrete_menu/reversed_floating",
   "display": {
     "icon": { "id": "minecraft:feather" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_skylands.title" },

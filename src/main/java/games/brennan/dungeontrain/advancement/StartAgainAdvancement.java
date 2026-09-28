@@ -126,8 +126,8 @@ public final class StartAgainAdvancement {
     /**
      * The wipe that earns this, in place of vanilla's revoke-everything: clears only what the capstone
      * is made of — its {@linkplain CompletionistAdvancement#isRequired required set}, the capstone
-     * itself and this advancement — and leaves every other advancement earned (the hidden reverse
-     * journey, the editor tree, relay-{@code notRequired} ones, vanilla and other mods'). Starting again
+     * itself and this advancement — and leaves every other advancement earned (The Secrete Menu, the
+     * editor tree, relay-{@code notRequired} ones, vanilla and other mods'). Starting again
      * means starting the burrito again, not losing what never counted towards it. Revoking rather than
      * re-awarding afterwards also means no kept advancement re-runs its rewards.
      *

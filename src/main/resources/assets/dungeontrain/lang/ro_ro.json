@@ -2164,6 +2164,8 @@
   "advancements.dungeontrain.dungeon_train.reached_bop_end.title": "Belșug în End",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.description": "Printre insulele Endului năpădite de sălbăticii, recife și o putreziciune târâtoare pe care Endul vanilla nu le-a avut niciodată.",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.hint": "Endul are loc de mai mult decât chorus.",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.title": "Meniul secret",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.description": "Mergi cu trenul 250 de blocuri înapoi, în spatele locului de unde ai pornit.",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.title": "Stack Underflow",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.description": "Pe dos de la start, într-un gol plin de turnuri - aceeași clădire stivuită pe ea însăși până la cer.",
   "advancements.dungeontrain.dungeon_train.reversed_chuncks.title": "Chunk Derulat",

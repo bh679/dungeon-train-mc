@@ -100,7 +100,23 @@ public final class BandAdvancements {
      */
     public static final String REVERSE_PREFIX = "reversed_";
 
-    /** The advancement the reverse chain hangs from: the tab root, a branch of its own. */
+    /**
+     * The tab the reverse journey lives in — <b>The Secrete Menu</b> ({@code dungeontrain:secrete_menu/}).
+     * Its root and its Dungeon Train-tab twin {@link #SECRETE_MENU} are granted together.
+     */
+    public static final String SECRETE_MENU_PREFIX = "secrete_menu/";
+
+    /**
+     * "The Secrete Menu": the {@code gameplay_action} that unlocks the tab. Also the name of its twin on
+     * the Dungeon Train tab ({@code dungeon_train/secrete_menu}, under Dungeon Train Explorer), which
+     * shares the action, so both are earned at once.
+     */
+    public static final String SECRETE_MENU = "secrete_menu";
+
+    /** Blocks behind spawn a player must ride (on the train) to open The Secrete Menu. */
+    public static final int SECRETE_MENU_BLOCKS = 250;
+
+    /** The advancement the reverse chain hangs from: The Secrete Menu tab's root. */
     public static final String REVERSE_ANCHOR = "root";
 
     /**
@@ -124,9 +140,13 @@ public final class BandAdvancements {
         return REVERSE_PREFIX + forwardId.substring("reached_".length());
     }
 
-    /** True when {@code path} ({@code dungeon_train/…}) names a reverse journey advancement. */
-    public static boolean isReverse(String path) {
-        return path != null && path.startsWith(BandAdvancementChainRewriter.PATH_PREFIX + REVERSE_PREFIX);
+    /**
+     * True when {@code path} names a backwards-travelling advancement: anything on The Secrete Menu tab,
+     * or its Dungeon Train-tab twin. Every one is hidden until earned and none counts towards the capstone.
+     */
+    public static boolean isBackwards(String path) {
+        return path != null && (path.startsWith(SECRETE_MENU_PREFIX)
+                || path.equals(BandAdvancementChainRewriter.PATH_PREFIX + SECRETE_MENU));
     }
 
     private BandAdvancements() {}

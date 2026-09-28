@@ -1677,6 +1677,8 @@
   "advancements.dungeontrain.dungeon_train.reached_bop_end.title": "Overvloed in het End",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.description": "Tussen End-eilanden vol wildernis, riffen en een sluipende verrotting die het vanilla End nooit had.",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.hint": "Het End heeft ruimte voor meer dan chorus.",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.title": "Het geheime menu",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.description": "Reis met de trein 250 blokken achteruit, achter je startpunt.",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.title": "Stack Underflow",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.description": "De verkeerde kant op vanaf het begin, een leegte van torens in - hetzelfde gebouw op zichzelf gestapeld tot aan de hemel.",
   "advancements.dungeontrain.dungeon_train.reversed_chuncks.title": "Chunk teruggespoeld",

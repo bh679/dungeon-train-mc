@@ -47,8 +47,8 @@ import java.util.function.Predicate;
  * {@code VisibilityRule} is package-private, so the comparison goes via
  * {@code String.valueOf(...)} against the enum name.</p>
  *
- * <p>The reverse journey ({@code dungeon_train/reversed_*}, earned behind
- * spawn) opts out of the frontier: it is hidden until earned.</p>
+ * <p>The backwards-travelling advancements (The Secrete Menu tab and its
+ * Dungeon Train-tab twin) opt out of the frontier: hidden until earned.</p>
  *
  * <p>Vanilla and other-mod advancements are untouched — the namespace check
  * returns early.</p>
@@ -71,9 +71,9 @@ public abstract class AdvancementVisibilityEvaluatorMixin {
         ResourceLocation id = node.holder().id();
         if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) return false;
 
-        // The reverse journey stays hidden until earned: no frontier reveal, so a reversed_* node
-        // appears only once it (or, via vanilla, a descendant) is done.
-        if (BandAdvancements.isReverse(id.getPath())) return false;
+        // Backwards-travelling advancements (The Secrete Menu) stay hidden until earned: no frontier
+        // reveal, so each appears only once it (or, via vanilla, a descendant) is done.
+        if (BandAdvancements.isBackwards(id.getPath())) return false;
 
         // Frontier reveal: unhide an advancement once its DIRECT parent is
         // earned. Applies to hidden and non-hidden nodes alike; the root has

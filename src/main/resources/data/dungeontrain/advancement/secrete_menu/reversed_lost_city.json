@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reversed_beta",
+  "parent": "dungeontrain:secrete_menu/reversed_beta",
   "display": {
     "icon": { "id": "minecraft:cracked_stone_bricks" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_lost_city.title" },

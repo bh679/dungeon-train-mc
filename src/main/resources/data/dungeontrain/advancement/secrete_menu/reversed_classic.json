@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reversed_superflat",
+  "parent": "dungeontrain:secrete_menu/reversed_superflat",
   "display": {
     "icon": { "id": "minecraft:cobblestone" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_classic.title" },

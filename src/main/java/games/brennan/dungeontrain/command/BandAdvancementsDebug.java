@@ -29,9 +29,10 @@ final class BandAdvancementsDebug {
     static int report(CommandSourceStack source) {
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         int mismatches = reportChain(source, cycle, "journey", BandAdvancements.chain(cycle.layout()),
-                BandAdvancements.ANCHOR);
-        mismatches += reportChain(source, cycle, "reverse journey (behind spawn)",
-                BandAdvancements.reverseChain(cycle.layout()), BandAdvancements.REVERSE_ANCHOR);
+                BandAdvancements.ANCHOR, BandAdvancementChainRewriter.PATH_PREFIX);
+        mismatches += reportChain(source, cycle, "reverse journey (The Secrete Menu)",
+                BandAdvancements.reverseChain(cycle.layout()), BandAdvancements.REVERSE_ANCHOR,
+                BandAdvancements.SECRETE_MENU_PREFIX);
         send(source, "[DungeonTrain] band-advancements: " + mismatches + " mismatch(es)",
                 mismatches == 0 ? ChatFormatting.GREEN : ChatFormatting.RED);
         return 1;
@@ -39,7 +40,7 @@ final class BandAdvancementsDebug {
 
     /** Lists one chain with each member's expected vs loaded parent; returns the mismatch count. */
     private static int reportChain(CommandSourceStack source, WorldGenCycle cycle, String label, List<String> chain,
-                                   String anchor) {
+                                   String anchor, String pathPrefix) {
         send(source, "[DungeonTrain] band-advancements " + label + ": " + chain.size() + " in chain, "
                 + (cycle.hasLayout() ? "layout order" : "classic order (no layout — JSON parents apply)"),
                 ChatFormatting.AQUA);
@@ -47,7 +48,7 @@ final class BandAdvancementsDebug {
         int mismatches = 0;
         for (int i = 0; i < chain.size(); i++) {
             String name = chain.get(i);
-            String loaded = loadedParent(source, name);
+            String loaded = loadedParent(source, name, pathPrefix);
             boolean ok = !cycle.hasLayout() || loaded == null || loaded.equals(expected);
             if (!ok) mismatches++;
             send(source, String.format("  %2d %-26s parent=%-26s loaded=%s%s", i + 1, name, expected,
@@ -84,14 +85,12 @@ final class BandAdvancementsDebug {
     }
 
     /** Short name of the parent the loaded tree holds for {@code name}, or {@code null} if it is not loaded. */
-    private static String loadedParent(CommandSourceStack source, String name) {
-        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID,
-                BandAdvancementChainRewriter.PATH_PREFIX + name);
+    private static String loadedParent(CommandSourceStack source, String name, String pathPrefix) {
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, pathPrefix + name);
         AdvancementHolder holder = source.getServer().getAdvancements().get(id);
         if (holder == null) return null;
         return holder.value().parent()
-                .map(p -> p.getPath().startsWith(BandAdvancementChainRewriter.PATH_PREFIX)
-                        ? p.getPath().substring(BandAdvancementChainRewriter.PATH_PREFIX.length()) : p.toString())
+                .map(p -> p.getPath().startsWith(pathPrefix) ? p.getPath().substring(pathPrefix.length()) : p.toString())
                 .orElse("(root)");
     }
 

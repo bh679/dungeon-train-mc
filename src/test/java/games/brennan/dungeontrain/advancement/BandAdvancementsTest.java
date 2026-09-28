@@ -146,30 +146,57 @@ final class BandAdvancementsTest {
     }
 
     @Test
-    @DisplayName("every reverse advancement has one trigger; isReverse tells the two journeys apart")
+    @DisplayName("every reverse advancement has one trigger; isBackwards covers The Secrete Menu and nothing forward")
     void reverseTriggersMatchTable() {
         List<String> ids = BandAdvancements.reverseTriggers().stream().map(BandAdvancements.Trigger::id).toList();
         assertEquals(SHIPPED_REVERSE, ids);
         for (BandAdvancements.Trigger t : BandAdvancements.reverseTriggers()) {
             assertTrue(t.depth() > 0, t.id());
-            assertTrue(BandAdvancements.isReverse("dungeon_train/" + t.id()), t.id());
+            assertTrue(BandAdvancements.isBackwards("secrete_menu/" + t.id()), t.id());
         }
-        for (String id : BandAdvancements.ALL) assertFalse(BandAdvancements.isReverse("dungeon_train/" + id), id);
-        assertFalse(BandAdvancements.isReverse("editor/reversed_stacks"));
+        assertTrue(BandAdvancements.isBackwards("secrete_menu/root"));
+        assertTrue(BandAdvancements.isBackwards("dungeon_train/secrete_menu"));
+        for (String id : BandAdvancements.ALL) assertFalse(BandAdvancements.isBackwards("dungeon_train/" + id), id);
+        assertFalse(BandAdvancements.isBackwards("dungeon_train/root"));
+        assertFalse(BandAdvancements.isBackwards("editor/secrete_menu"));
     }
 
     @Test
-    @DisplayName("each reverse advancement JSON is hidden, fires on its own action, and chains in shipped order")
+    @DisplayName("each reverse advancement JSON sits on The Secrete Menu tab, hidden, and chains in shipped order")
     void reverseJsonMatchesChain() throws IOException {
-        String parent = "dungeontrain:dungeon_train/" + BandAdvancements.REVERSE_ANCHOR;
+        String parent = "dungeontrain:secrete_menu/" + BandAdvancements.REVERSE_ANCHOR;
         for (String id : SHIPPED_REVERSE) {
-            Path file = RepoPaths.advancements().resolve("dungeon_train/" + id + ".json");
-            JsonObject json = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+            JsonObject json = advancement("secrete_menu/" + id);
             assertEquals(parent, json.get("parent").getAsString(), id);
             assertTrue(json.getAsJsonObject("display").get("hidden").getAsBoolean(), id);
-            assertEquals(id, json.getAsJsonObject("criteria").getAsJsonObject("reached")
-                    .getAsJsonObject("conditions").get("actionId").getAsString(), id);
-            parent = "dungeontrain:dungeon_train/" + id;
+            assertEquals(id, actionId(json), id);
+            parent = "dungeontrain:secrete_menu/" + id;
         }
+    }
+
+    @Test
+    @DisplayName("The Secrete Menu: a hidden tab root and a hidden twin under Dungeon Train Explorer, on one action")
+    void secreteMenuPair() throws IOException {
+        JsonObject root = advancement("secrete_menu/root");
+        assertFalse(root.has("parent"));
+        assertTrue(root.getAsJsonObject("display").has("background"));
+        JsonObject twin = advancement("dungeon_train/secrete_menu");
+        assertEquals("dungeontrain:dungeon_train/" + BandAdvancements.ANCHOR, twin.get("parent").getAsString());
+        for (JsonObject json : List.of(root, twin)) {
+            assertTrue(json.getAsJsonObject("display").get("hidden").getAsBoolean());
+            assertEquals(BandAdvancements.SECRETE_MENU, actionId(json));
+            assertEquals("advancements.dungeontrain.dungeon_train.secrete_menu.title",
+                    json.getAsJsonObject("display").getAsJsonObject("title").get("translate").getAsString());
+        }
+    }
+
+    private static JsonObject advancement(String path) throws IOException {
+        Path file = RepoPaths.advancements().resolve(path + ".json");
+        return JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+    }
+
+    private static String actionId(JsonObject json) {
+        return json.getAsJsonObject("criteria").getAsJsonObject("reached")
+                .getAsJsonObject("conditions").get("actionId").getAsString();
     }
 }

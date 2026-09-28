@@ -1639,6 +1639,8 @@
   "advancements.dungeontrain.dungeon_train.reached_bop_end.title": "엔드의 풍요",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.description": "바닐라 엔드에는 없던 황야와 산호초, 서서히 번지는 부패로 뒤덮인 엔드 섬들 사이로.",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.hint": "엔드에는 코러스 말고도 자리가 있습니다.",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.title": "비밀 메뉴",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.description": "기차를 타고 출발 지점 뒤쪽으로 250블록 거슬러 가세요.",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.title": "스택 언더플로",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.description": "출발점에서 반대 방향으로, 탑의 공허 속으로 - 같은 건물이 하늘까지 제 위에 쌓여 있다.",
   "advancements.dungeontrain.dungeon_train.reversed_chuncks.title": "청크 되감기",

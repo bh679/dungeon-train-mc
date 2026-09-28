@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reversed_reassembly",
+  "parent": "dungeontrain:secrete_menu/reversed_reassembly",
   "display": {
     "icon": { "id": "minecraft:crying_obsidian" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_upside_down.title" },

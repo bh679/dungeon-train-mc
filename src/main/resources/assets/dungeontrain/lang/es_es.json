@@ -1677,6 +1677,8 @@
   "advancements.dungeontrain.dungeon_train.reached_bop_end.title": "Abundancia en el End",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.description": "Entre islas del End invadidas por espesuras, arrecifes y una corrupción que se extiende, cosas que el End normal nunca tuvo.",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.hint": "El End tiene sitio para algo más que coros.",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.title": "El menú secreto",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.description": "Viaja 250 bloques marcha atrás en el tren, por detrás de donde empezaste.",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.title": "Stack Underflow",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.description": "Desde el inicio en sentido contrario, hacia un vacío de torres - el mismo edificio apilado sobre sí mismo hasta el cielo.",
   "advancements.dungeontrain.dungeon_train.reversed_chuncks.title": "Chunks rebobinados",

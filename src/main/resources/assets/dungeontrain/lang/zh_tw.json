@@ -1639,6 +1639,8 @@
   "advancements.dungeontrain.dungeon_train.reached_bop_end.title": "終界的豐饒",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.description": "在遍布荒野、礁石與蔓延腐化的終界島嶼之間，這些都是原版終界從未有過的。",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.hint": "終界容得下的不只歌萊植物。",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.title": "隱藏菜單",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.description": "搭著列車向後行駛 250 格，回到你出發點的後方。",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.title": "堆疊下溢",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.description": "從起點走錯方向，進入塔林虛空 - 同一座建築層層疊起，直抵天際。",
   "advancements.dungeontrain.dungeon_train.reversed_chuncks.title": "區塊倒帶",

@@ -1639,6 +1639,8 @@
   "advancements.dungeontrain.dungeon_train.reached_bop_end.title": "Kasaganaan sa End",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.description": "Palabas sa gitna ng mga isla ng End na punô ng kagubatan, bahura at gumagapang na pagkabulok na hindi kailanman nakita sa vanilla na End.",
   "advancements.dungeontrain.dungeon_train.reached_bop_end.hint": "May puwang ang End para sa higit pa sa chorus.",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.title": "Ang Lihim na Menu",
+  "advancements.dungeontrain.dungeon_train.secrete_menu.description": "Sumakay sa tren nang 250 bloke paatras, sa likod ng pinagsimulan mo.",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.title": "Stack Underflow",
   "advancements.dungeontrain.dungeon_train.reversed_stacks.description": "Pabaligtad mula sa simula, papasok sa kawalan ng mga tore - iisang gusali na nakasalansan sa sarili hanggang sa langit.",
   "advancements.dungeontrain.dungeon_train.reversed_chuncks.title": "Chunk Rewind",

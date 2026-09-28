@@ -52,8 +52,8 @@ public abstract class ServerAdvancementManagerRequirementsMixin {
         if (!cycle.hasLayout()) return enabled;
         Map<ResourceLocation, JsonElement> forward = BandAdvancementChainRewriter.rewriteParents(enabled,
             BandAdvancements.chain(cycle.layout()), BandAdvancements.ANCHOR, DungeonTrain.MOD_ID);
-        // Reverse journey (behind spawn): the layout walked last-first, its own branch off the root.
+        // Reverse journey (behind spawn): the layout walked last-first, on The Secrete Menu tab.
         return BandAdvancementChainRewriter.rewriteParents(forward, BandAdvancements.reverseChain(cycle.layout()),
-            BandAdvancements.REVERSE_ANCHOR, DungeonTrain.MOD_ID);
+            BandAdvancements.REVERSE_ANCHOR, DungeonTrain.MOD_ID, BandAdvancements.SECRETE_MENU_PREFIX);
     }
 }

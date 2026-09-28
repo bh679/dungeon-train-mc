@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reversed_chuncks",
+  "parent": "dungeontrain:secrete_menu/reversed_chuncks",
   "display": {
     "icon": { "id": "minecraft:grass_block" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_superflat.title" },
