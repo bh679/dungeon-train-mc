@@ -1,8 +1,14 @@
 package games.brennan.dungeontrain.worldgen;
 
+import games.brennan.dungeontrain.worldgen.LostCityStretchProcessor.Plan;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,31 +17,51 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** {@link LostCityStretchProcessor}: the floor band is found, repeated or removed, the roof and pad kept. Needs the bootstrap. */
+/**
+ * {@link LostCityStretchProcessor}: the band is found along each axis, repeated or removed, roof, plinth and
+ * pad kept, the plan consistent with {@link LostCityFootprint}. Needs the bootstrap.
+ */
 final class LostCityStretchProcessorTest {
 
-    /** Floors of period 5: a stone slab layer then four layers of glass walls; a distinct lobby and a gold roof. */
+    /** Floors of period 5 up (a stone slab then four glass-walled layers); bays of period 4 along x. */
     private static final int PERIOD = 5;
+    private static final int BAY = 4;
 
-    private static List<StructureBlockInfo> tower(BlockPos origin, int floors) {
+    /** A 9-deep tower on a solid plinth with a gold roof, {@code bays} bays wide, in template-local coordinates. */
+    private static List<StructureBlockInfo> tower(int floors, int bays) {
         List<StructureBlockInfo> out = new ArrayList<>();
         int height = 3 + floors * PERIOD + 2;
+        int width = 2 + bays * BAY + 3;      // plaza margins of 2 and 3
         for (int y = 0; y < height; y++) {
-            for (int x = 0; x < 9; x++) {
+            for (int x = 0; x < width; x++) {
                 for (int z = 0; z < 9; z++) {
-                    boolean wall = x == 0 || x == 8 || z == 0 || z == 8;
+                    boolean plaza = x < 2 || x >= width - 3;
+                    boolean edge = z == 0 || z == 8 || x == 2 || x == width - 4;
+                    boolean pier = (x - 2) % BAY == 0;   // a solid stone cross-wall every bay
                     Block b;
                     if (y == 0) b = Blocks.GRASS_BLOCK;
-                    else if (y < 3) b = Blocks.BRICKS;                                              // a solid plinth
-                    else if (y >= height - 2) b = y == height - 1 ? Blocks.GOLD_BLOCK : Blocks.STONE;   // roof
-                    else if ((y - 3) % PERIOD == 0) b = Blocks.STONE;                                   // floor slab
-                    else b = wall ? Blocks.GLASS : Blocks.AIR;                                          // walls
-                    out.add(new StructureBlockInfo(origin.offset(x, y, z), b.defaultBlockState(), null));
+                    else if (plaza) b = Blocks.AIR;
+                    else if (y < 3) b = Blocks.BRICKS;
+                    else if (y >= height - 2) b = y == height - 1 ? Blocks.GOLD_BLOCK : Blocks.STONE;
+                    else if ((y - 3) % PERIOD == 0) b = Blocks.STONE;
+                    else if (pier) b = Blocks.STONE;
+                    else if (edge) b = Blocks.GLASS;
+                    else b = Blocks.AIR;
+                    out.add(new StructureBlockInfo(new BlockPos(x, y, z), b.defaultBlockState(), null));
                 }
             }
         }
+        return out;
+    }
+
+    /** The template placed unrotated at {@code origin}: world positions. */
+    private static List<StructureBlockInfo> placed(List<StructureBlockInfo> template, BlockPos origin) {
+        List<StructureBlockInfo> out = new ArrayList<>(template.size());
+        for (StructureBlockInfo i : template) out.add(new StructureBlockInfo(i.pos().offset(origin), i.state(), null));
         return out;
     }
 
@@ -45,55 +71,105 @@ final class LostCityStretchProcessorTest {
         return n;
     }
 
-    private static int top(List<StructureBlockInfo> list, BlockPos origin) {
+    private static int extent(List<StructureBlockInfo> list, BlockPos origin, Direction.Axis axis) {
         int t = 0;
-        for (StructureBlockInfo i : list) t = Math.max(t, i.pos().getY() - origin.getY());
+        for (StructureBlockInfo i : list) t = Math.max(t, axis.choose(i.pos().getX(), i.pos().getY(), i.pos().getZ()) - axis.choose(origin.getX(), origin.getY(), origin.getZ()));
         return t;
     }
 
+    private static LostCityStretchProcessor stretch(int min, int max, Direction.Axis axis) {
+        return new LostCityStretchProcessor(min, max, 3, 12, 0.85F, axis);
+    }
+
+    private static List<StructureBlockInfo> run(LostCityStretchProcessor p, BlockPos origin, List<StructureBlockInfo> template) {
+        Plan plan = p.plan(origin, template);
+        assertNotNull(plan, "a plan");
+        return p.apply(plan, origin, LostCityStretchProcessor.plain(), template, placed(template, origin));
+    }
+
     @Test
-    @DisplayName("taller: the floor band repeats, the roof rises by whole floors, the lobby and pad stay put")
+    @DisplayName("taller: the floor band repeats, the roof rises by whole floors, the plinth and pad stay put")
     void taller() {
-        LostCityStretchProcessor p = new LostCityStretchProcessor(3, 3, 3, 12, 0.85F);
         BlockPos origin = new BlockPos(64, 70, 64);
-        List<StructureBlockInfo> before = tower(origin, 6);
-        List<StructureBlockInfo> after = p.stretch(origin, before);
-        assertEquals(top(before, origin) + 3 * PERIOD, top(after, origin));
-        assertEquals(count(before, Blocks.STONE) + 3 * 81, count(after, Blocks.STONE));
+        List<StructureBlockInfo> template = tower(6, 5);
+        List<StructureBlockInfo> before = placed(template, origin);
+        List<StructureBlockInfo> after = run(stretch(3, 3, Direction.Axis.Y), origin, template);
+        assertEquals(extent(before, origin, Direction.Axis.Y) + 3 * PERIOD, extent(after, origin, Direction.Axis.Y));
         assertEquals(count(before, Blocks.GOLD_BLOCK), count(after, Blocks.GOLD_BLOCK));
         assertEquals(count(before, Blocks.BRICKS), count(after, Blocks.BRICKS));
-        assertEquals(81, count(after, Blocks.GRASS_BLOCK));
+        assertEquals(count(before, Blocks.GRASS_BLOCK), count(after, Blocks.GRASS_BLOCK));
+        assertTrue(count(after, Blocks.GLASS) > count(before, Blocks.GLASS));
         int goldY = -1;
         for (StructureBlockInfo i : after) if (i.state().getBlock() == Blocks.GOLD_BLOCK) goldY = i.pos().getY() - origin.getY();
-        assertEquals(top(after, origin), goldY, "the roof is still on top");
-        assertEquals(after, p.stretch(origin, tower(origin, 6)), "deterministic");
+        assertEquals(extent(after, origin, Direction.Axis.Y), goldY, "the roof is still on top");
+        assertEquals(after, run(stretch(3, 3, Direction.Axis.Y), origin, template), "deterministic");
     }
 
     @Test
     @DisplayName("shorter: floors are removed, never below one floor of the band")
     void shorter() {
-        LostCityStretchProcessor p = new LostCityStretchProcessor(-2, -2, 3, 12, 0.85F);
         BlockPos origin = new BlockPos(0, 64, 0);
-        List<StructureBlockInfo> before = tower(origin, 6);
-        List<StructureBlockInfo> after = p.stretch(origin, before);
-        assertEquals(top(before, origin) - 2 * PERIOD, top(after, origin));
+        List<StructureBlockInfo> template = tower(6, 5);
+        List<StructureBlockInfo> before = placed(template, origin);
+        List<StructureBlockInfo> after = run(stretch(-2, -2, Direction.Axis.Y), origin, template);
+        assertEquals(extent(before, origin, Direction.Axis.Y) - 2 * PERIOD, extent(after, origin, Direction.Axis.Y));
         assertEquals(count(before, Blocks.GOLD_BLOCK), count(after, Blocks.GOLD_BLOCK));
-        assertEquals(count(before, Blocks.BRICKS), count(after, Blocks.BRICKS));
-        LostCityStretchProcessor greedy = new LostCityStretchProcessor(-16, -16, 3, 12, 0.85F);
-        List<StructureBlockInfo> clamped = greedy.stretch(origin, tower(origin, 4));
-        assertTrue(top(clamped, origin) >= 3 + PERIOD + 1, "one floor of the band is kept");
+        Plan greedy = stretch(-16, -16, Direction.Axis.Y).plan(origin, tower(4, 5));
+        assertNotNull(greedy);
+        assertTrue(greedy.delta() >= -3, "one floor of the band is kept: " + greedy.delta());
     }
 
     @Test
-    @DisplayName("a change is always a whole number of floors, and a building with no repeat is left alone")
-    void band() {
-        LostCityStretchProcessor p = new LostCityStretchProcessor(1, 2, 3, 12, 0.85F);
-        BlockPos origin = BlockPos.ZERO;
-        List<StructureBlockInfo> before = tower(origin, 6);
-        List<StructureBlockInfo> after = p.stretch(origin, before);
-        assertEquals(0, (top(after, origin) - top(before, origin)) % PERIOD);
-        assertTrue(top(after, origin) > top(before, origin));
-        List<StructureBlockInfo> cone = new ArrayList<>();          // every layer differs from the one five above
+    @DisplayName("wider: the bay repeats along x, the plaza and pad stretch with it, and the growth matches the plan")
+    void wider() {
+        BlockPos origin = new BlockPos(-100, 64, 200);
+        LostCityStretchProcessor p = stretch(2, 2, Direction.Axis.X);
+        List<StructureBlockInfo> template = tower(4, 6);
+        Plan plan = p.plan(origin, template);
+        assertNotNull(plan);
+        assertEquals(BAY, plan.band().period());
+        assertEquals(2 * BAY, plan.growth());
+        List<StructureBlockInfo> before = placed(template, origin);
+        List<StructureBlockInfo> after = p.apply(plan, origin, LostCityStretchProcessor.plain(), template, before);
+        assertEquals(extent(before, origin, Direction.Axis.X) + 2 * BAY, extent(after, origin, Direction.Axis.X));
+        assertEquals(extent(before, origin, Direction.Axis.Y), extent(after, origin, Direction.Axis.Y));
+        assertEquals(count(before, Blocks.GRASS_BLOCK) + 2 * BAY * 9, count(after, Blocks.GRASS_BLOCK), "the pad grew too");
+        assertEquals(count(before, Blocks.GOLD_BLOCK) + 2 * BAY * 9, count(after, Blocks.GOLD_BLOCK), "so did the roof");
+        List<StructureBlockInfo> narrower = run(stretch(-2, -2, Direction.Axis.X), origin, template);
+        assertEquals(extent(before, origin, Direction.Axis.X) - 2 * BAY, extent(narrower, origin, Direction.Axis.X));
+    }
+
+    @Test
+    @DisplayName("a rotated placement stretches along the world axis the template's x maps to")
+    void rotated() {
+        BlockPos origin = new BlockPos(10, 64, 10);
+        LostCityStretchProcessor p = stretch(1, 1, Direction.Axis.X);
+        List<StructureBlockInfo> template = tower(3, 5);
+        StructurePlaceSettings settings = new StructurePlaceSettings().setRotation(Rotation.CLOCKWISE_90);
+        List<StructureBlockInfo> placed = new ArrayList<>();
+        for (StructureBlockInfo i : template) {
+            placed.add(new StructureBlockInfo(StructureTemplate.calculateRelativePosition(settings, i.pos()).offset(origin), i.state(), null));
+        }
+        Plan plan = p.plan(origin, template);
+        assertNotNull(plan);
+        List<StructureBlockInfo> after = p.apply(plan, origin, settings, template, placed);
+        int zBefore = extent(placed, origin, Direction.Axis.Z), zAfter = extent(after, origin, Direction.Axis.Z);
+        assertEquals(zBefore + BAY, zAfter, "template x became world +z");
+        assertEquals(extent(placed, origin, Direction.Axis.X), extent(after, origin, Direction.Axis.X));
+        BoundingBox box = new BoundingBox(0, 64, 0, 8, 100, 30);
+        BoundingBox grown = LostCityFootprint.grown(box, Direction.Axis.X, Rotation.CLOCKWISE_90, BAY);
+        assertEquals(30 + BAY, grown.maxZ());
+        assertEquals(8, grown.maxX());
+        BoundingBox shrunk = LostCityFootprint.grown(box, Direction.Axis.X, Rotation.NONE, -BAY);
+        assertEquals(8 - BAY, shrunk.maxX());
+        BoundingBox back = LostCityFootprint.grown(box, Direction.Axis.X, Rotation.CLOCKWISE_180, BAY);
+        assertEquals(-BAY, back.minX(), "rotated 180, template +x is world -x");
+    }
+
+    @Test
+    @DisplayName("a building with no repeat, or nothing to change, gets no plan")
+    void noPlan() {
+        List<StructureBlockInfo> cone = new ArrayList<>();          // every layer differs from the one above
         for (int y = 0; y < 40; y++) {
             int r = 20 - y / 2;
             for (int x = -r; x <= r; x++) {
@@ -102,6 +178,7 @@ final class LostCityStretchProcessorTest {
                 }
             }
         }
-        assertEquals(cone, p.stretch(origin, cone));
+        assertNull(stretch(1, 2, Direction.Axis.Y).plan(BlockPos.ZERO, cone));
+        assertNull(stretch(-3, -1, Direction.Axis.Z).plan(BlockPos.ZERO, tower(4, 5)), "no bays along z");
     }
 }

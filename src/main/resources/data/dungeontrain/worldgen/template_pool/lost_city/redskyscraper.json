@@ -84,6 +84,51 @@
       }
     },
     {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:red_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/redskyscraper_wide"
+      }
+    },
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:red_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/redskyscraper_narrow"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:red_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/redskyscraper_long"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:red_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/redskyscraper_block"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:red_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/redskyscraper_slab_oxidised"
+      }
+    },
+    {
       "weight": 1,
       "element": {
         "element_type": "minecraft:single_pool_element",

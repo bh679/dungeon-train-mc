@@ -10,12 +10,12 @@
     },
     {
       "processor_type": "dungeontrain:lost_city_stretch",
-      "min_floors": -8,
-      "max_floors": -3,
-      "period_min": 4,
-      "period_max": 16,
+      "min_floors": 1,
+      "max_floors": 3,
+      "period_min": 3,
+      "period_max": 6,
       "min_similarity": 0.45,
-      "axis": "y"
+      "axis": "x"
     }
   ]
 }

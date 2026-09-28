@@ -21,6 +21,33 @@
       }
     },
     {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:warehouselt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/warehouse_wide"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:warehouselt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/warehouse_long"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:warehouselt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/warehouse_long_grey"
+      }
+    },
+    {
       "weight": 1,
       "element": {
         "element_type": "minecraft:single_pool_element",

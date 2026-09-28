@@ -14,7 +14,8 @@
       "max_floors": 6,
       "period_min": 4,
       "period_max": 16,
-      "min_similarity": 0.45
+      "min_similarity": 0.45,
+      "axis": "y"
     },
     {
       "processor_type": "dungeontrain:lost_city_bite",

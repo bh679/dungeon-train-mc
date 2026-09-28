@@ -66,6 +66,33 @@
       }
     },
     {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:ruinded_red_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/ruindedredskyscraper_wide"
+      }
+    },
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:ruinded_red_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/ruindedredskyscraper_narrow"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:ruinded_red_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/ruindedredskyscraper_deep_narrow"
+      }
+    },
+    {
       "weight": 1,
       "element": {
         "element_type": "minecraft:single_pool_element",

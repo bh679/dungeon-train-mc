@@ -1,0 +1,39 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -3,
+      "max_floors": -1,
+      "period_min": 4,
+      "period_max": 8,
+      "min_similarity": 0.45,
+      "axis": "x"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 2,
+      "max_floors": 3,
+      "period_min": 4,
+      "period_max": 8,
+      "min_similarity": 0.45,
+      "axis": "z"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 2,
+      "max_floors": 6,
+      "period_min": 4,
+      "period_max": 16,
+      "min_similarity": 0.45,
+      "axis": "y"
+    }
+  ]
+}

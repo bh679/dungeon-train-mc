@@ -1,0 +1,80 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -3,
+      "max_floors": -1,
+      "period_min": 4,
+      "period_max": 8,
+      "min_similarity": 0.45,
+      "axis": "x"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 2,
+      "max_floors": 3,
+      "period_min": 4,
+      "period_max": 8,
+      "min_similarity": 0.45,
+      "axis": "z"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 2,
+      "max_floors": 6,
+      "period_min": 4,
+      "period_max": 16,
+      "min_similarity": 0.45,
+      "axis": "y"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:waxed_copper_block",
+          "to": "minecraft:waxed_oxidized_copper"
+        },
+        {
+          "from": "minecraft:bricks",
+          "to": "minecraft:stone_bricks"
+        },
+        {
+          "from": "minecraft:brick_slab",
+          "to": "minecraft:stone_brick_slab"
+        },
+        {
+          "from": "minecraft:brick_stairs",
+          "to": "minecraft:stone_brick_stairs"
+        },
+        {
+          "from": "minecraft:granite",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:polished_granite",
+          "to": "minecraft:polished_andesite"
+        },
+        {
+          "from": "minecraft:terracotta",
+          "to": "minecraft:cyan_terracotta"
+        },
+        {
+          "from": "minecraft:dripstone_block",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:stripped_acacia_wood",
+          "to": "minecraft:stripped_spruce_wood"
+        }
+      ]
+    }
+  ]
+}
