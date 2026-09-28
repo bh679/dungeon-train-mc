@@ -163,6 +163,17 @@ final class BandAdvancementsTest {
     }
 
     @Test
+    @DisplayName("both chain tabs use the frontier reveal; the editor tab and other paths do not")
+    void frontierTabs() {
+        assertTrue(BandAdvancements.isFrontierTab("dungeon_train/reached_nether"));
+        assertTrue(BandAdvancements.isFrontierTab("dungeon_train/secrete_menu"));
+        assertTrue(BandAdvancements.isFrontierTab("secrete_menu/root"));
+        assertTrue(BandAdvancements.isFrontierTab("secrete_menu/reversed_stacks"));
+        assertFalse(BandAdvancements.isFrontierTab("editor/root"));
+        assertFalse(BandAdvancements.isFrontierTab("secrete_menu_extra/x"));
+    }
+
+    @Test
     @DisplayName("each reverse advancement JSON sits on The Secrete Menu tab, hidden, and chains in shipped order")
     void reverseJsonMatchesChain() throws IOException {
         String parent = "dungeontrain:secrete_menu/" + BandAdvancements.REVERSE_ANCHOR;
