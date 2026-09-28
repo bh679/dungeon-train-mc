@@ -20295,15 +20295,15 @@
       "released_at": null
     },
     {
-      "id": "fewer-early-city-ruins",
+      "id": "fewer-early-ruins",
       "version": "0.1004.0",
       "type": "feat",
       "tags": [
         "feature",
         "world"
       ],
-      "title": "Fewer city ruins early on",
-      "summary": "The ruined city buildings scattered along an early stretch of the line now turn up less often \u2014 about 70% as many as before \u2014 so they stay a rare glimpse of what lies ahead.",
+      "title": "Fewer ruins early on",
+      "summary": "The ruins scattered along an early stretch of the line now turn up less often \u2014 about 70% as many as before.",
       "highlights": [],
       "pr": 1637,
       "date": "2026-09-28",
