@@ -20425,6 +20425,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "cargostairs-outterstairs-rooms",
+      "version": "0.1011.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "A new stairway room, and a cave room reworked",
+      "summary": "A new stairway room joins the whole-carriage rooms, and one of the cave rooms has been reworked.",
+      "highlights": [
+        "New stairway room",
+        "Reworked cave room"
+      ],
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
