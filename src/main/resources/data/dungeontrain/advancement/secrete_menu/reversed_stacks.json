@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:stone_bricks" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_stacks.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_stacks.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

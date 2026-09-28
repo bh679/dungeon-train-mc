@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:dirt" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_chuncks.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_chuncks.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

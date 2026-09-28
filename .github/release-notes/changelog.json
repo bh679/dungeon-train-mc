@@ -20196,6 +20196,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "hidden-advancements-next-step-challenges",
+      "version": "0.999.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "The Secrete Menu",
+      "summary": "\u2026",
+      "highlights": [],
+      "pr": 1628,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

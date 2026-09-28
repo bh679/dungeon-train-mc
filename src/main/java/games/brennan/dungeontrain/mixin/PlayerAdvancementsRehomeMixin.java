@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.advancement.BandAdvancementChainRewriter;
+import games.brennan.dungeontrain.advancement.BandAdvancements;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementNode;
@@ -25,7 +25,8 @@ import java.util.Set;
 
 /**
  * Companion to {@link AdvancementVisibilityEvaluatorMixin}: keeps the client's advancement tree
- * connected when that mixin hides an interior {@code dungeon_train} chain node.
+ * connected when that mixin hides an interior chain node on the {@code dungeon_train} or
+ * {@code secrete_menu} tab.
  *
  * <p>{@code AdvancementVisibilityEvaluator} only decides per-node visibility — the tree SHAPE the
  * client draws comes from each synced {@link Advancement}'s own {@code parent} field, which is
@@ -82,7 +83,7 @@ public abstract class PlayerAdvancementsRehomeMixin {
     private AdvancementHolder dungeontrain$rehome(AdvancementHolder holder) {
         ResourceLocation id = holder.id();
         if (!DungeonTrain.MOD_ID.equals(id.getNamespace())
-                || !id.getPath().startsWith(BandAdvancementChainRewriter.PATH_PREFIX)) {
+                || !BandAdvancements.isFrontierTab(id.getPath())) {
             return holder;
         }
 

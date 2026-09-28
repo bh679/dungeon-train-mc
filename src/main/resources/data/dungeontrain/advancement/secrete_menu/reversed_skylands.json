@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:feather" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_skylands.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_skylands.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

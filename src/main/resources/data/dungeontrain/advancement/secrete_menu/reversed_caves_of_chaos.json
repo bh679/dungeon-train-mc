@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:cobbled_deepslate" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_caves_of_chaos.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_caves_of_chaos.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

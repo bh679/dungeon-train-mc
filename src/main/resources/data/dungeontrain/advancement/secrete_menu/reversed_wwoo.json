@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:azalea_leaves" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_wwoo.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_wwoo.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

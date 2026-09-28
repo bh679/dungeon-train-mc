@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:heart_of_the_sea" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_spheres.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_spheres.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true
