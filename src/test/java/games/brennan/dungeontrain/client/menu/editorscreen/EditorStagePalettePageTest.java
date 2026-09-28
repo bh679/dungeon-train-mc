@@ -37,9 +37,9 @@ final class EditorStagePalettePageTest {
         assertEquals(StagePaletteEditPacket.Op.SET_WOOD, wood.familyOp());
         assertTrue(wood.text().endsWith("spruce" + EditorStagePalettePage.LOCK), wood.text());
         int woodCells = rows.subList(8, rows.size()).stream().mapToInt(r -> r.names().size()).sum();
-        assertEquals(13, woodCells, "the whole wood set");
+        assertEquals(14, woodCells, "the whole wood set");
         int all = rows.stream().mapToInt(r -> r.names().size()).sum();
-        assertEquals(10 + 6 + 13, all);
+        assertEquals(10 + 6 + 14, all);
     }
 
     @Test

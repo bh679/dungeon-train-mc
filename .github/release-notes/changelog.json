@@ -20276,6 +20276,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stage-leaves-block",
+      "version": "0.1003.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Stage Leaves block for builders",
+      "summary": "A new Stage Leaves block becomes the leaves that match each stage's wood, and Test the Carriage now shows stage blocks as they will look on the train.",
+      "highlights": [],
+      "pr": 1633,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

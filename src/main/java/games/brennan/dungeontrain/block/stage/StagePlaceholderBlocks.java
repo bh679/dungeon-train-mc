@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.ButtonBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.PressurePlateBlock;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.SlabBlock;
@@ -48,10 +49,10 @@ import java.util.function.Supplier;
  * template that are swapped for a real block of whichever {@link Stage} the carriage lands in at
  * generation time, so one build serves every stage.
  *
- * <p>Fifty-seven blocks: ten solid slots ({@code stage_block_1..10}, the stage's most-used full
+ * <p>Fifty-eight blocks: ten solid slots ({@code stage_block_1..10}, the stage's most-used full
  * cubes, looping when a stage has fewer), two stairs and two slab slots derived from the first two
- * solids, a button and a pressure plate, the thirteen-block wood set ({@code stage_log} …
- * {@code stage_trapdoor}) resolved through the stage's {@link StageWoodFamily}, and the
+ * solids, a button and a pressure plate, the fourteen-block wood set ({@code stage_log} …
+ * {@code stage_leaves}) resolved through the stage's {@link StageWoodFamily}, and the
  * twenty-eight-block stone set ({@code stage_stone_<kind>[_stairs|_slab|_wall]} for the seven
  * {@link StoneKind}s) resolved through its {@link StageStoneFamily}. Each placeholder
  * extends the matching vanilla base class so builders orient it normally and the block-state
@@ -259,6 +260,7 @@ public final class StagePlaceholderBlocks {
         out.add(wood("stage_wood_pressure_plate", WoodKind.PRESSURE_PLATE));
         out.add(wood("stage_door", WoodKind.DOOR));
         out.add(wood("stage_trapdoor", WoodKind.TRAPDOOR));
+        out.add(wood("stage_leaves", WoodKind.LEAVES));
         for (StoneKind kind : StoneKind.values()) {
             String base = stoneName(kind);
             out.add(new Placeholder(base, pal -> pal.stoneFamily().block(kind)));
@@ -319,6 +321,8 @@ public final class StagePlaceholderBlocks {
                 () -> new PressurePlateBlock(BlockSetType.OAK, copyOf(Blocks.OAK_PRESSURE_PLATE));
             case "stage_door" -> () -> new DoorBlock(BlockSetType.OAK, copyOf(Blocks.OAK_DOOR));
             case "stage_trapdoor" -> () -> new TrapDoorBlock(BlockSetType.OAK, copyOf(Blocks.OAK_TRAPDOOR));
+            // Placed by hand ⇒ persistent=true, which carries onto the stamped leaves so they never decay.
+            case "stage_leaves" -> () -> new LeavesBlock(copyOf(Blocks.OAK_LEAVES));
             default -> throw new IllegalStateException("No factory for stage placeholder " + name);
         };
     }
