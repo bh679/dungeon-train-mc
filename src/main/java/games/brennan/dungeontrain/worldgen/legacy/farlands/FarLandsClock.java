@@ -13,13 +13,14 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
- * The Far Lands' fast clock: the day/night cycle runs up to {@link #MAX_SPEED}× while the train is inside
- * the Far Lands proper, and at the ordinary pace everywhere else.
+ * The Far Lands' fast clock: the day/night cycle speeds up the whole way through the Far Lands, peaking at
+ * {@link #MAX_SPEED}× at the end of the band's core, then drops back to the ordinary pace as the exit fade
+ * begins.
  *
- * <p>The speed follows the band's script ({@link FarLandsShift}), so the clock and the walls agree: normal
- * across the ordinary Beta land before the entry wall, a smoothstep ramp up over the {@link #RAMP} script
- * blocks riding inside the edge lands, full speed through the closing walls, the canyon and the opening,
- * then the mirror-image ramp down to normal at the exit wall — and normal again on the land beyond it.</p>
+ * <p>The ramp follows the band's script ({@link FarLandsShift}), so the clock and the walls agree: normal
+ * across the ordinary Beta land before the entry wall, then one continuous linear climb from 1× at the
+ * entry wall to {@link #MAX_SPEED}× at the last core block. Past the core, in the exit fade, it falls fast —
+ * a smoothstep back to 1× over {@link #SLOW_DOWN_BLOCKS} world blocks — and stays normal from there on.</p>
  *
  * <p>Like {@code EditorClock}, it rides NeoForge's variable day length ({@code ServerLevel#setDayTimePerTick}),
  * which the server syncs to every client on the ordinary time packet — no client side. The clock is the
@@ -32,10 +33,10 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class FarLandsClock {
 
-    /** Clock ticks per game tick at the heart of the Far Lands: a day in about thirty-four seconds. */
-    public static final float MAX_SPEED = 35.0f;
-    /** Script blocks over which the speed ramps, after the entry wall and before the exit wall. */
-    static final int RAMP = FarLandsShift.ENTRY_INSIDE;
+    /** Clock ticks per game tick at the end of the Far Lands core: a day in twelve seconds. */
+    public static final float MAX_SPEED = 100.0f;
+    /** World blocks into the exit fade over which the clock falls from {@link #MAX_SPEED} back to 1×. */
+    static final int SLOW_DOWN_BLOCKS = 128;
     /** Script block of the entry wall — where the Far Lands proper begin. */
     static final int ENTRY_WALL = FarLandsShift.APPROACH;
 
@@ -52,17 +53,26 @@ public final class FarLandsClock {
     private FarLandsClock() {}
 
     /**
-     * Clock speed at script position {@code scriptPos} of a Far Lands band (script blocks from the core
-     * start, as {@link FarLandsShift} lays them): 1 outside the walls, {@link #MAX_SPEED} between the ramps. Pure.
+     * Clock speed at script position {@code scriptPos} inside a Far Lands band's core (script blocks from
+     * the core start, as {@link FarLandsShift} lays them): 1 up to the entry wall, then linear to
+     * {@link #MAX_SPEED} at the core's end ({@link FarLandsShift#SCRIPT_LEN}). Pure.
      */
-    public static float speedAt(double scriptPos) {
+    public static float speedInCore(double scriptPos) {
         if (Double.isNaN(scriptPos)) return 1.0f;
-        double into = scriptPos - ENTRY_WALL;
-        double left = FarLandsShift.EXIT_WALL - scriptPos;
-        if (into <= 0.0D || left <= 0.0D) return 1.0f;
-        double t = Math.min(1.0D, Math.min(into, left) / RAMP);
+        double t = (scriptPos - ENTRY_WALL) / (FarLandsShift.SCRIPT_LEN - ENTRY_WALL);
+        if (t <= 0.0D) return 1.0f;
+        return (float) (1.0D + (MAX_SPEED - 1.0D) * Math.min(1.0D, t));
+    }
+
+    /**
+     * Clock speed {@code blocksPast} world blocks beyond the end of the core, in the exit fade: a smoothstep
+     * fall from {@link #MAX_SPEED} to 1 over {@link #SLOW_DOWN_BLOCKS}, then 1. Pure.
+     */
+    public static float speedPastCore(long blocksPast) {
+        if (blocksPast >= SLOW_DOWN_BLOCKS) return 1.0f;
+        double t = Math.max(0.0D, (double) blocksPast / SLOW_DOWN_BLOCKS);
         double eased = t * t * (3.0D - 2.0D * t);
-        return (float) (1.0D + (MAX_SPEED - 1.0D) * eased);
+        return (float) (MAX_SPEED - (MAX_SPEED - 1.0D) * eased);
     }
 
     /** Clock speed for a player standing at {@code worldX} under {@code cycle}. Pure. */
@@ -70,9 +80,10 @@ public final class FarLandsClock {
         long coreStart = cycle.legacyCoreStartX(LegacyBandKind.FAR_LANDS, worldX);
         if (coreStart == WorldGenCycle.NOT_IN_LEGACY_SLOT) return 1.0f;
         long holdLen = cycle.legacyCoreLenBlocks(LegacyBandKind.FAR_LANDS, worldX);
+        if (holdLen <= 0L) return 1.0f;
         long local = worldX - coreStart;
-        double scriptPos = holdLen <= 0L ? local : (double) local * FarLandsShift.SCRIPT_LEN / holdLen;
-        return speedAt(scriptPos);
+        if (local >= holdLen) return speedPastCore(local - holdLen);
+        return speedInCore((double) local * FarLandsShift.SCRIPT_LEN / holdLen);
     }
 
     @SubscribeEvent

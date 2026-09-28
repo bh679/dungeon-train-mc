@@ -6,55 +6,47 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The Far Lands clock's speed curve along the band's script. */
+/** The Far Lands clock's speed curve: a climb through the core, a fast fall in the exit fade. */
 final class FarLandsClockTest {
 
-    private static final double EPS = 1e-4;
+    private static final double EPS = 1e-3;
 
     @Test
-    @DisplayName("normal speed before the entry wall and after the exit wall")
-    void normalOutsideTheWalls() {
-        assertEquals(1.0f, FarLandsClock.speedAt(-500), EPS);
-        assertEquals(1.0f, FarLandsClock.speedAt(0), EPS);
-        assertEquals(1.0f, FarLandsClock.speedAt(FarLandsClock.ENTRY_WALL), EPS);
-        assertEquals(1.0f, FarLandsClock.speedAt(FarLandsShift.EXIT_WALL), EPS);
-        assertEquals(1.0f, FarLandsClock.speedAt(FarLandsShift.SCRIPT_LEN), EPS);
-        assertEquals(1.0f, FarLandsClock.speedAt(Double.NaN), EPS);
+    @DisplayName("normal speed before the entry wall")
+    void normalBeforeTheEntryWall() {
+        assertEquals(1.0f, FarLandsClock.speedInCore(-500), EPS);
+        assertEquals(1.0f, FarLandsClock.speedInCore(0), EPS);
+        assertEquals(1.0f, FarLandsClock.speedInCore(FarLandsClock.ENTRY_WALL), EPS);
+        assertEquals(1.0f, FarLandsClock.speedInCore(Double.NaN), EPS);
     }
 
     @Test
-    @DisplayName("full speed through the closing walls, canyon and opening")
-    void fullSpeedInTheHeart() {
-        for (int p = FarLandsShift.ENTRY_END; p <= FarLandsShift.OPENING_END; p += 50) {
-            assertEquals(FarLandsClock.MAX_SPEED, FarLandsClock.speedAt(p), EPS, "at " + p);
-        }
-    }
-
-    @Test
-    @DisplayName("ramps up monotonically after the entry wall and down before the exit wall")
-    void rampsAreMonotone() {
+    @DisplayName("climbs the whole way through the core, peaking at its end")
+    void climbsThroughTheCore() {
         float prev = 1.0f;
-        for (int p = FarLandsClock.ENTRY_WALL; p <= FarLandsShift.ENTRY_END; p += 8) {
-            float s = FarLandsClock.speedAt(p);
-            assertTrue(s >= prev, "ramp up dips at " + p);
+        for (int p = FarLandsClock.ENTRY_WALL + 1; p <= FarLandsShift.SCRIPT_LEN; p += 16) {
+            float s = FarLandsClock.speedInCore(p);
+            assertTrue(s > prev, "no climb at " + p);
             prev = s;
         }
-        prev = FarLandsClock.MAX_SPEED;
-        for (int p = FarLandsShift.EXIT_WALL - FarLandsClock.RAMP; p <= FarLandsShift.EXIT_WALL; p += 8) {
-            float s = FarLandsClock.speedAt(p);
-            assertTrue(s <= prev, "ramp down rises at " + p);
-            prev = s;
-        }
+        assertEquals(FarLandsClock.MAX_SPEED, FarLandsClock.speedInCore(FarLandsShift.SCRIPT_LEN), EPS);
+        float canyon = FarLandsClock.speedInCore(FarLandsShift.CLOSING_END);
+        assertTrue(canyon > 1.0f && canyon < FarLandsClock.MAX_SPEED, "canyon mid-climb, was " + canyon);
     }
 
     @Test
-    @DisplayName("the two ramps mirror each other")
-    void rampsAreSymmetric() {
-        for (int d = 0; d <= FarLandsClock.RAMP; d += 23) {
-            assertEquals(FarLandsClock.speedAt(FarLandsClock.ENTRY_WALL + d),
-                FarLandsClock.speedAt(FarLandsShift.EXIT_WALL - d), EPS, "at " + d);
+    @DisplayName("falls fast from the peak to normal in the exit fade")
+    void fallsFastInTheExitFade() {
+        assertEquals(FarLandsClock.MAX_SPEED, FarLandsClock.speedPastCore(0), EPS);
+        float prev = FarLandsClock.MAX_SPEED;
+        for (int b = 1; b <= FarLandsClock.SLOW_DOWN_BLOCKS; b++) {
+            float s = FarLandsClock.speedPastCore(b);
+            assertTrue(s <= prev, "rises at " + b);
+            prev = s;
         }
-        float mid = FarLandsClock.speedAt(FarLandsClock.ENTRY_WALL + FarLandsClock.RAMP / 2.0);
-        assertEquals((1.0f + FarLandsClock.MAX_SPEED) / 2.0f, mid, EPS);
+        assertEquals((1.0f + FarLandsClock.MAX_SPEED) / 2.0f,
+            FarLandsClock.speedPastCore(FarLandsClock.SLOW_DOWN_BLOCKS / 2), EPS);
+        assertEquals(1.0f, FarLandsClock.speedPastCore(FarLandsClock.SLOW_DOWN_BLOCKS), EPS);
+        assertEquals(1.0f, FarLandsClock.speedPastCore(5_000), EPS);
     }
 }
