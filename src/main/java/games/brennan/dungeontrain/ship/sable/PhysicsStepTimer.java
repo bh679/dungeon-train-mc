@@ -22,8 +22,19 @@ public final class PhysicsStepTimer {
 
     private static final LongAdder stepNanos = new LongAdder();
     private static final LongAdder blockChanges = new LongAdder();
+    private static final LongAdder reanchors = new LongAdder();
 
     private PhysicsStepTimer() {}
+
+    /**
+     * Called by {@code TrainTransformProvider} on every {@code [reanchor]} — a carriage that
+     * rejoined its siblings by extrapolation after a tick gap. A pair re-anchoring every 160 ticks
+     * ran alongside 100–200 ms physics steps in a player log of 28 Sep 2026; counting it per
+     * window puts that next to {@code physMs=} without grepping two log lines together.
+     */
+    public static void countReanchor() {
+        reanchors.increment();
+    }
 
     /** Called by the timing mixin at the end of every {@code physicsTick}. */
     public static void addStepNanos(long nanos) {
@@ -36,15 +47,15 @@ public final class PhysicsStepTimer {
     }
 
     /** One drained {@code [mspt]} window. */
-    public record Window(long stepNanos, long blockChanges) {
+    public record Window(long stepNanos, long blockChanges, long reanchors) {
         /** Mean native-step wall time per tick over a window of {@code ticks} ticks, in ms. */
         public double avgStepMs(int ticks) {
             return ticks <= 0 ? 0.0 : stepNanos / 1_000_000.0 / ticks;
         }
     }
 
-    /** Read and reset both counters — call from exactly one place per window. */
+    /** Read and reset all three counters — call from exactly one place per window. */
     public static Window drain() {
-        return new Window(stepNanos.sumThenReset(), blockChanges.sumThenReset());
+        return new Window(stepNanos.sumThenReset(), blockChanges.sumThenReset(), reanchors.sumThenReset());
     }
 }
