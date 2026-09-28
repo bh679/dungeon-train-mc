@@ -274,6 +274,12 @@ public final class DungeonTrainConfig {
 
     /** Hold the join intro cinematic behind a loading screen until nearby chunks stream in. */
     public static final boolean DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED = true;
+    /**
+     * Off: the spawn/camera-start search only looks at chunks that are already loaded. On: it
+     * force-generates each candidate's chunk on the server thread as it did before 0.1004 — which
+     * held one player's server for 61 s at join on hilly terrain. Kept as an escape hatch.
+     */
+    public static final boolean DEFAULT_SPAWN_SEARCH_SYNC_GEN = false;
 
     /**
      * Schema version of the on-disk config, bumped whenever a shipped default change must reach
@@ -350,6 +356,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_ENABLED;
     public static final ModConfigSpec.IntValue INTRO_CINEMATIC_DURATION_TICKS;
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED;
+    public static final ModConfigSpec.BooleanValue SPAWN_SEARCH_SYNC_GEN;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -412,6 +419,7 @@ public final class DungeonTrainConfig {
         INTRO_CINEMATIC_ENABLED = pair.getLeft().introCinematicEnabled;
         INTRO_CINEMATIC_DURATION_TICKS = pair.getLeft().introCinematicDurationTicks;
         INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED = pair.getLeft().introCinematicChunkPreloadEnabled;
+        SPAWN_SEARCH_SYNC_GEN = pair.getLeft().spawnSearchSyncGen;
     }
 
     private DungeonTrainConfig() {}
@@ -743,6 +751,12 @@ public final class DungeonTrainConfig {
                         "popping in. Only affects the join intro (not the /dungeontrain cinematic replay). Disable to",
                         "start the cinematic immediately on spawn as before.")
                 .define("introCinematicChunkPreloadEnabled", DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED);
+        ModConfigSpec.BooleanValue spawnSearchSyncGen = b
+                .comment("When placing a player's spawn camera beside the track, force-generate each candidate chunk",
+                        "on the server thread (pre-0.1004 behaviour). Off (default): only already-loaded chunks are",
+                        "searched and the search is time-boxed, so joining never freezes the server. Turn on only if",
+                        "you need the wider search and accept multi-second freezes at join on slow worldgen.")
+                .define("spawnSearchSyncGen", DEFAULT_SPAWN_SEARCH_SYNC_GEN);
         b.pop();
         return new Holder(configVersion, numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
                 difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
@@ -758,7 +772,7 @@ public final class DungeonTrainConfig {
                 sharedBookLootMaxChance, sharedBookRepeatGroups, portalRoomAuthorMinBooks, portalRoomDaylight,
                 discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
-                introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriageLeasingEnabled,
+                introCinematicChunkPreloadEnabled, spawnSearchSyncGen, sharedCarriagesEnabled, sharedCarriageLeasingEnabled,
                 sharedCarriagePoolChance,
                 sharedCarriageOwnChance, sharedCarriageMaxEntities, builderProfileEnabled, sharedRoomChance);
     }
@@ -1076,6 +1090,11 @@ public final class DungeonTrainConfig {
         return isLoaded() ? INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED.get() : DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED;
     }
 
+    /** Whether the spawn-camera search may force-generate chunks on the server thread (see {@link #DEFAULT_SPAWN_SEARCH_SYNC_GEN}). */
+    public static boolean isSpawnSearchSyncGenEnabled() {
+        return isLoaded() ? SPAWN_SEARCH_SYNC_GEN.get() : DEFAULT_SPAWN_SEARCH_SYNC_GEN;
+    }
+
     /**
      * Apply every one-time config migration this install has not seen yet, then stamp the file with
      * {@link #CURRENT_CONFIG_VERSION}. Idempotent and safe to call on every config load.
@@ -1274,6 +1293,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue introCinematicEnabled,
             ModConfigSpec.IntValue introCinematicDurationTicks,
             ModConfigSpec.BooleanValue introCinematicChunkPreloadEnabled,
+            ModConfigSpec.BooleanValue spawnSearchSyncGen,
             ModConfigSpec.BooleanValue sharedCarriagesEnabled,
             ModConfigSpec.BooleanValue sharedCarriageLeasingEnabled,
             ModConfigSpec.DoubleValue sharedCarriagePoolChance,
