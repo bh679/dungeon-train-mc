@@ -64,7 +64,12 @@ public final class WholeCarriagePlacer {
             // TemplateDecor, exactly as CarriagePlacer.stampTemplate does for a shell. It has to:
             // captureTemplate below keeps the author's armor stands, pictures, mobs and minecarts,
             // so a stamp that put none back would lose them on the next save.
-            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+            // Stage placeholders resolve and stray variant placeholders go to air, as on the train
+            // (CarriagePlacer#stampTemplateSectionLocal). Both are no-ops unscoped, so an editor plot
+            // keeps its placeholders; only a scoped stamp (Test the Carriage) swaps them.
+            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true)
+                    .addProcessor(new StagePlaceholderProcessor())
+                    .addProcessor(new VariantPlaceholderAirProcessor());
             template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
             // replace, not spawn: a caller may stamp over a plot nobody cleared first
             // (Template.Carriage, BuilderWorldSetup's open path), and a re-stamp must not hang a
