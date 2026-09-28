@@ -427,8 +427,8 @@ public final class EditorScreenActions {
 
     /**
      * The save-then-test screen for a template, or {@code null} for a category that has nothing to
-     * stand up: a dimensional carriage, a carriage and a contents template can be walked into; a
-     * part, a track tile or a whole-carriage group is only ever a piece of one of those.
+     * stand up: a dimensional carriage, a carriage, a contents template and a whole room or group can
+     * be walked into; a part or a track tile is only ever a piece of one of those.
      */
     public static MenuScreen testCheckFor(PlotCategory category, String modelName) {
         if (category == null || modelName == null || modelName.isEmpty()) return null;
@@ -436,7 +436,8 @@ public final class EditorScreenActions {
             case PORTALS -> new PortalTestSaveCheckScreen(modelName);
             case CHUNK_FRAMES -> modelName == null || modelName.isEmpty() ? null
                 : PortalTestSaveCheckScreen.forFrame(modelName);
-            case CARRIAGES, CONTENTS -> PortalTestSaveCheckScreen.forTemplate(category.id(), modelName);
+            case CARRIAGES, CONTENTS, WHOLE, WHOLE_GROUP ->
+                PortalTestSaveCheckScreen.forTemplate(category.id(), modelName);
             default -> null;
         };
     }

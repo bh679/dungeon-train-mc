@@ -324,6 +324,48 @@
       "curseforge_only": true
     },
     {
+      "name": "Stream Detect",
+      "slug": "stream-detect",
+      "mod_ids": [
+        "streamdetect"
+      ],
+      "project_id": 1711267,
+      "file_id": 8971929,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.1.1",
+      "gradle_property": "streamdetect_min_version",
+      "curseforge_only": true
+    },
+    {
+      "name": "DPI Bypass Detect",
+      "slug": "dpi-bypass-detect",
+      "mod_ids": [
+        "dpibypassdetect"
+      ],
+      "project_id": 1711272,
+      "file_id": 8971954,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.1.1",
+      "gradle_property": "dpibypassdetect_min_version",
+      "curseforge_only": true
+    },
+    {
+      "name": "Pigman Villagers",
+      "slug": "pigman-villagers",
+      "mod_ids": [
+        "pigmanvillagers"
+      ],
+      "project_id": 1713315,
+      "file_id": 8984083,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.1.3",
+      "gradle_property": "pigmanvillagers_min_version",
+      "curseforge_only": true
+    },
+    {
       "name": "AppleSkin",
       "slug": "appleskin",
       "mod_ids": [

@@ -11132,6 +11132,15 @@
       ]
     }
   },
+  "chat.dungeontrain.carriage_test.no_whole_template": {
+    "1": {
+      "label": "the whole room or group's name",
+      "examples": [
+        "cargo",
+        "testgroup"
+      ]
+    }
+  },
   "chat.dungeontrain.package.dtpacks_package": {
     "1": {
       "label": "a number",
