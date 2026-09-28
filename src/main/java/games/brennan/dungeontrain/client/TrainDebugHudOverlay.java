@@ -122,7 +122,7 @@ public final class TrainDebugHudOverlay {
         lines.add(new Line("Carriage: "
             + (onTrain ? formatSigned(TrainDebugState.pIdx()) : NONE), COLOR_BODY));
 
-        lines.add(new Line("Cart type: " + fieldOr(onTrain, TrainDebugState.variantId()), COLOR_BODY));
+        lines.add(new Line("Cart type: " + fieldOr(onTrain, TrainDebugState.cartType()), COLOR_BODY));
         lines.add(new Line("Content type: " + fieldOr(onTrain, TrainDebugState.contentsId()), COLOR_BODY));
         // Empty is meaningful here rather than unknown: the group draw landed on the parent's own
         // contents, or the parent has no group at all. Either way there is no sub-variant.
@@ -130,6 +130,10 @@ public final class TrainDebugHudOverlay {
         // The one thing on the panel you cannot read off the carriage by eye: whether this stamp of
         // the interior came out authored or mirrored.
         lines.add(new Line("Flip: " + fieldOr(onTrain, TrainDebugState.flip()), COLOR_BODY));
+        // yes = standing in the dimensional copy of a portal carriage, no = on the train. Never a
+        // dash: whether you are in the copy is always knowable, so there is no "unknown" to show.
+        String copy = TrainDebugState.copy();
+        lines.add(new Line("Copy: " + (copy.isEmpty() ? "no" : copy), COLOR_BODY));
 
         // A "forever" grant (expiry 0) has no countdown to show.
         long expiresAtMs = TrainDebugState.expiresAtMs();

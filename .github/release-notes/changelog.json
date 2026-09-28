@@ -20392,8 +20392,23 @@
       "released_at": null
     },
     {
-      "id": "playermob-companion-train-setup",
+      "id": "internal-diagnostics-carriage-kinds",
       "version": "0.1009.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Internal improvements",
+      "summary": "Behind-the-scenes maintenance work. Nothing to see or do differently in game.",
+      "highlights": [],
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "playermob-companion-train-setup",
+      "version": "0.1010.0",
       "type": "fix",
       "tags": [
         "fix",
