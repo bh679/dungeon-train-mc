@@ -20056,9 +20056,9 @@
       ],
       "pr": 1619,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.995.0",
+      "released_at": "2026-09-28T08:11:16Z"
     },
     {
       "id": "curseforge-companion-installs",
@@ -20076,9 +20076,9 @@
       ],
       "pr": 1622,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.995.0",
+      "released_at": "2026-09-28T08:11:16Z"
     },
     {
       "id": "faulthurst-hint-every-language",
