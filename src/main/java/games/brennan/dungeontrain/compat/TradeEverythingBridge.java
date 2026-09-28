@@ -151,6 +151,15 @@ public final class TradeEverythingBridge {
     }
 
     /**
+     * Whether TE should pay {@code stack} out in emeralds rather than the
+     * villager's goods — see {@code TradePricerEmeraldPayoutMixin}. Its price is
+     * set in emeralds, so goods would turn "1 emerald" into ~20 wheat.
+     */
+    public static boolean paysInEmeralds(ItemStack stack) {
+        return potionValue(stack).isPresent();
+    }
+
+    /**
      * Emeralds a potion pays out: 1, plus one per amplifier level of its
      * strongest effect, plus one for the extended variant, plus one for the
      * lingering form (it costs dragon's breath).
