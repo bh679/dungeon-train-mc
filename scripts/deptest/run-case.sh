@@ -12,6 +12,7 @@
 #   bn bclib wover wunder  BetterNether: New Dawn + its three libraries (third-party required deps)
 #   be         BetterEnd: New Dawn (shares BetterNether's three libraries)
 #   wwoo cristel bop tb glitch  WWOO + Cristel Lib, Biomes O' Plenty + TerraBlender + GlitchCore
+#   blc                         Big Lost City
 #              (second-lap overworld mods, third-party required deps)
 #   sp         Sable Pathfinder (Modrinth-required, `optional` in mods.toml — absent on CurseForge)
 #   pmob-new   PlayerMob ABOVE the declared floor (uses playermob_version)
@@ -83,6 +84,8 @@ resolve() {
     bop)      cached "maven.modrinth/biomes-o-plenty" "$(prop biomesoplenty_version)" ;;
     tb)       cached "maven.modrinth/terrablender"    "$(prop terrablender_version)" ;;
     glitch)   cached "maven.modrinth/glitchcore"      "$(prop glitchcore_version)" ;;
+    # Big Lost City — required structure datapack mod for the Lost City era (#1599).
+    blc)      cached "maven.modrinth/big-lost-city"   "$(prop biglostcity_version)" ;;
     # Hybrid siblings — ALSO jarJar'd inside the DT jar. Present as top-level jars they model the
     # CurseForge-app install (nested copy must be skipped); absent they model Modrinth/manual.
     kt)       cached "bh679/keeptrim"                "$(prop keeptrim_version)" ;;
@@ -93,8 +96,8 @@ resolve() {
     # model Modrinth/manual, loading from the nested copy.
     sd)       cached "bh679/streamdetect"            "$(prop streamdetect_version)" ;;
     dbd)      cached "bh679/dpibypassdetect"         "$(prop dpibypassdetect_version)" ;;
-    # Pigman Villagers — jarJar'd inside the DT jar; present (Case A) proves the nested copy is
-    # skipped in favour of a top-level one.
+    # Pigman Villagers — hybrid like sd/dbd: jarJar'd inside the DT jar; present (Case A) models the
+    # CurseForge-app install (nested copy skipped in favour of the top-level one).
     pv)       cached "bh679/pigmanvillagers"         "$(prop pigmanvillagers_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;

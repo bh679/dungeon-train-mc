@@ -468,9 +468,8 @@ dependencies {
     // detection (OBS/Streamlabs; zapret/GoodbyeDPI) that used to live in DT's own classes.
     // compat/StreamDetectBridge + DpiBypassDetectBridge name their API behind a ModList check.
     // HYBRID contract (same as Keep Trim / Dungeon Backup): jarJar'd so every platform has them
-    // built in while their CurseForge listings (1711267 / 1711272) are in review. TEMPORARY for
-    // CurseForge: once approved, declare them CF-only siblings (NeoForge's JarSelector drops the
-    // nested copy when the CF app installs a top-level one). Modrinth stays embedded.
+    // built in, and CurseForge also declares them required siblings (listings 1711267 / 1711272) —
+    // NeoForge's JarSelector drops the nested copy when the CF app installs a top-level one.
     implementation "bh679:streamdetect:${streamdetect_version}"
     jarJar(group: 'bh679', name: 'streamdetect', version: streamdetect_version)
     implementation "bh679:dpibypassdetect:${dpibypassdetect_version}"
@@ -478,8 +477,8 @@ dependencies {
 
     // Pigman Villagers — 1% of villagers are pigmen (player model + pigman skin + pig sounds).
     // DT calls PigmanVillagersApi.clearRoll (compat/PigmanVillagersBridge) so villagers stamped from
-    // templates roll their own chance. jarJar'd on every platform until its
-    // CurseForge/Modrinth listings exist (see gradle.properties). Flat bh679 Ivy asset
+    // templates roll their own chance. HYBRID like Stream Detect above: jarJar'd, and a required
+    // CurseForge sibling (listing 1713315; see gradle.properties). Flat bh679 Ivy asset
     // pigmanvillagers-neoforge-<v>.jar.
     implementation "bh679:pigmanvillagers:${pigmanvillagers_version}"
     jarJar(group: 'bh679', name: 'pigmanvillagers', version: pigmanvillagers_version)
@@ -817,6 +816,8 @@ tasks.register('generateModMetadata', ProcessResources) {
         keeptrim_version                 : keeptrim_version,
         keeptrim_min_version             : keeptrim_min_version,
         pigmanvillagers_min_version      : pigmanvillagers_min_version,
+        streamdetect_min_version         : streamdetect_min_version,
+        dpibypassdetect_min_version      : dpibypassdetect_min_version,
         dungeonbackup_min_version        : dungeonbackup_min_version,
         sablefencetrapdoorfix_min_version : sablefencetrapdoorfix_min_version,
         // The DH build the modpack pins — VersionInfo reads it so DT can silence DH's own
