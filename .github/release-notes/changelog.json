@@ -20382,12 +20382,9 @@
         "feature",
         "world"
       ],
-      "title": "Time races in the broken lands",
-      "summary": "Deep into one of the later stretches of the line, where the land breaks apart, the sun starts to hurry. The further you ride, the faster the days fly past \u2014 until, just before the land mends, time snaps back to its normal pace.",
-      "highlights": [
-        "The day/night cycle speeds up steadily the further you ride into the broken lands, up to 100\u00d7 normal speed",
-        "It drops quickly back to normal just before you leave them"
-      ],
+      "title": "Keep an eye on the sky",
+      "summary": "Something strange stirs in one of the later stretches of the line. Ride far enough and you might notice it.",
+      "highlights": [],
       "pr": 1642,
       "date": "2026-09-28",
       "released": false,
