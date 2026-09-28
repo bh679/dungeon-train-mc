@@ -20427,18 +20427,36 @@
       "released_at": null
     },
     {
-      "id": "cargostairs-outterstairs-rooms",
+      "id": "far-lands-fast-day-cycle",
       "version": "0.1011.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Keep an eye on the sky",
+      "summary": "Something strange stirs in one of the later stretches of the line. Ride far enough and you might notice it.",
+      "highlights": [],
+      "pr": 1642,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cargostairs-outterstairs-rooms",
+      "version": "0.1012.0",
       "type": "chore",
       "tags": [
-        "internal",
-        "editor"
+        "editor",
+        "internal"
       ],
       "title": "Work-in-progress carriage builds",
       "summary": "Behind the scenes: a new stairway room and carriage group, and a reworked cave room, are saved for later. None of them appear on the train yet.",
       "highlights": [
         "Builds saved for a future update; nothing changes in play"
       ],
+      "pr": 1644,
       "date": "2026-09-28",
       "released": false,
       "released_in": null,
