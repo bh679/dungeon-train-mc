@@ -145,4 +145,71 @@ final class ServerStallWatchdogTest {
         assertFalse(ServerStallWatchdog.isIdleBetweenTicks(null));
         assertFalse(ServerStallWatchdog.isIdleBetweenTicks(new StackTraceElement[0]));
     }
+
+    private static final String CHUNK_CACHE = "net.minecraft.server.level.ServerChunkCache";
+
+    /**
+     * The 22-second stall from the player log of 28 Sep 2026: the server thread, between ticks,
+     * running a chunk load that some other thread asked for ({@code lambda$getChunk$0} is vanilla's
+     * marshal of an off-thread {@code getChunk}), nested twice.
+     */
+    private static StackTraceElement[] offThreadChunkLoadStack() {
+        return new StackTraceElement[] {
+            frame("jdk.internal.misc.Unsafe", "park"),
+            frame("net.minecraft.util.thread.BlockableEventLoop", "waitForTasks"),
+            frame("net.minecraft.util.thread.BlockableEventLoop", "managedBlock"),
+            frame(CHUNK_CACHE + "$MainThreadExecutor", "managedBlock"),
+            frame(CHUNK_CACHE, "getChunk"),
+            frame(CHUNK_CACHE, "lambda$getChunk$0"),
+            frame("net.minecraft.util.thread.BlockableEventLoop", "doRunTask"),
+            frame(CHUNK_CACHE, "pollTask"),
+            frame(SERVER, "pollTaskInternal"),
+            frame("net.minecraft.util.thread.BlockableEventLoop", "managedBlock"),
+            frame(SERVER, "waitUntilNextTick"),
+            frame(SERVER, "runServer"),
+            frame("java.lang.Thread", "run"),
+        };
+    }
+
+    @Test
+    @DisplayName("the marshal frame marks the server thread as servicing an off-thread chunk load")
+    void offThreadLoad_isRecognised() {
+        assertTrue(ServerStallWatchdog.isOffThreadChunkLoad(offThreadChunkLoadStack()));
+    }
+
+    @Test
+    @DisplayName("a DT-side synchronous chunk load has no marshal frame and is not an off-thread load")
+    void ownChunkLoad_isNotOffThread() {
+        assertFalse(ServerStallWatchdog.isOffThreadChunkLoad(chunkLoadStallStack()));
+        assertFalse(ServerStallWatchdog.isOffThreadChunkLoad(pausedStack()));
+        assertFalse(ServerStallWatchdog.isOffThreadChunkLoad(null));
+    }
+
+    @Test
+    @DisplayName("a mixin-wrapped marshal frame still matches")
+    void wrappedMarshalFrame_isRecognised() {
+        StackTraceElement[] stack = {
+            frame(CHUNK_CACHE, "wrapOperation$abc000$somemod$lambda$getChunk$0"),
+            frame(SERVER, "runServer"),
+        };
+        assertTrue(ServerStallWatchdog.isOffThreadChunkLoad(stack));
+    }
+
+    @Test
+    @DisplayName("a worker blocked in ServerChunkCache.getChunk is a requester; an idle worker is not")
+    void requesterClassification() {
+        StackTraceElement[] requester = {
+            frame("java.util.concurrent.CompletableFuture", "join"),
+            frame(CHUNK_CACHE, "getChunk"),
+            frame("net.minecraft.world.level.Level", "getChunk"),
+            frame("com.example.othermod.Worker", "run"),
+        };
+        StackTraceElement[] idleWorker = {
+            frame("jdk.internal.misc.Unsafe", "park"),
+            frame("java.util.concurrent.ForkJoinPool", "awaitWork"),
+        };
+        assertTrue(ServerStallWatchdog.isChunkRequester(requester));
+        assertFalse(ServerStallWatchdog.isChunkRequester(idleWorker));
+        assertFalse(ServerStallWatchdog.isChunkRequester(null));
+    }
 }
