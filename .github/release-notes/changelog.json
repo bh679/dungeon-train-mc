@@ -20119,6 +20119,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-frontier-visibility",
+      "version": "0.997.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancements reveal one step at a time",
+      "summary": "The advancements screen now shows only what you've earned plus the next step ahead \u2014 everything further along stays hidden until you reach it.",
+      "highlights": [],
+      "pr": 1625,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
