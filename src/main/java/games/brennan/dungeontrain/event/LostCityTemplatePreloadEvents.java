@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.LostCityStructures;
 import games.brennan.dungeontrain.worldgen.LostCityTemplatePreload;
+import games.brennan.dungeontrain.worldgen.LostCityWwooCensus;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -114,6 +115,15 @@ public final class LostCityTemplatePreloadEvents {
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
         reset();
+        // Decide this world's WWOO buildings at world load, off the worldgen threads. The census caches its
+        // pick; the lazy path in LostCityStructures.allowedAt only runs it if worldgen asks first.
+        ServerLevel overworld = event.getServer().overworld();
+        if (overworld == null) return;
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        if (!cycle.hasLayout()) return;
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        if (!data.startsWithTrain()) return;
+        LostCityWwooCensus.buildings(overworld, data.getGenerationSeed(), cycle);
     }
 
     @SubscribeEvent

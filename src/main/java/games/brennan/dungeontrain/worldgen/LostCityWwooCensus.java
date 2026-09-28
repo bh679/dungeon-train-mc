@@ -54,6 +54,7 @@ public final class LostCityWwooCensus {
     }
 
     private static Set<String> compute(ServerLevel level, ChunkGeneratorStructureState state, long seed, WorldGenCycle cycle) {
+        long t0 = System.nanoTime();
         try {
             List<ResourceLocation> ids = level.registryAccess().registryOrThrow(Registries.STRUCTURE).keySet().stream()
                     .filter(LostCityStructures::isLostCityStructure)
@@ -62,8 +63,9 @@ public final class LostCityWwooCensus {
             Set<String> picked = LostCityStructures.wwooBuildings(seed, ids, starts);
             Set<String> all = new TreeSet<>();
             ids.forEach(id -> all.add(LostCityStructures.building(id)));
-            LOGGER.info("[DungeonTrain] WWOO Lost City: {} expected starts near the track -> {} of {} buildings: {}",
-                    starts, picked.size(), all.size(), new TreeSet<>(picked));
+            LOGGER.info("[DungeonTrain] WWOO Lost City: {} expected starts near the track -> {} of {} buildings in {} ms ({}): {}",
+                    starts, picked.size(), all.size(), (System.nanoTime() - t0) / 1_000_000L,
+                    Thread.currentThread().getName(), new TreeSet<>(picked));
             return picked;
         } catch (Throwable t) {
             // No foretaste rather than an unconfined one: the Lost City run is unaffected either way.
