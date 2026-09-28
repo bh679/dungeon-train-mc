@@ -22,8 +22,10 @@ import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 
 /**
@@ -76,6 +78,12 @@ public final class PlayerMobGroupSpawner {
     /** Entity id of the bundled PlayerMob (Interactive Player Mobs). */
     private static final ResourceLocation PLAYER_MOB_ID =
         ResourceLocation.fromNamespaceAndPath("playermob", "player_mob");
+
+    /**
+     * Carriage pIdx of the PlayerMob whose {@code finalizeSpawn} {@link #spawnPlayerMob} is running on
+     * this (server) thread, or null outside that call — read by {@link #onCompanionSpawned}.
+     */
+    private static final ThreadLocal<Integer> SPAWNING_CARRIAGE_PIDX = new ThreadLocal<>();
 
     private PlayerMobGroupSpawner() {}
 
@@ -198,14 +206,42 @@ public final class PlayerMobGroupSpawner {
         mob.moveTo(pos.x, pos.y, pos.z, rng.nextFloat() * 360.0f, 0.0f);
 
         // PlayerMobEntity rolls its personality/skin/door behaviour in finalizeSpawn.
-        // Tolerate a throw (mob still functions with defaults) but log it.
+        // Tolerate a throw (mob still functions with defaults) but log it. The pIdx context lets a
+        // friend-pair companion rolled inside finalizeSpawn find its carriage (see onCompanionSpawned).
+        SPAWNING_CARRIAGE_PIDX.set(carriagePIdx);
         try {
             mob.finalizeSpawn(level, level.getCurrentDifficultyAt(floorPos), MobSpawnType.EVENT, null);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] PlayerMob spawn: finalizeSpawn threw at {} pIdx={}: {}",
                 floorPos, carriagePIdx, t.toString());
+        } finally {
+            SPAWNING_CARRIAGE_PIDX.remove();
         }
 
+        applyTrainSpawnSetup(level, mob, carriagePIdx, rng);
+
+        // Optional explicit march heading (behind-spawn → the player's travel direction). Set
+        // before addFreshEntity so it's latched ahead of the mob's first AI tick; 0 = no override
+        // (the boarding latch picks). No-op on a non-PlayerMob, which this always is.
+        if (marchDir != 0) {
+            TrainConfinement.setMarchDirection(mob, marchDir);
+        }
+
+        if (!level.addFreshEntity(mob)) {
+            LOGGER.warn("[DungeonTrain] PlayerMob spawn: addFreshEntity rejected at {} pIdx={}",
+                floorPos, carriagePIdx);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * The on-train setup every DT-spawned PlayerMob gets after {@code finalizeSpawn}: difficulty gear,
+     * the carriage-contents tag, persistence and the spawn-position diagnostics. Shared by
+     * {@link #spawnPlayerMob} and {@link #onCompanionSpawned} so a friend-pair companion is set up
+     * exactly like its leader.
+     */
+    private static void applyTrainSpawnSetup(ServerLevel level, Mob mob, int carriagePIdx, RandomSource rng) {
         // Difficulty-scaled equipment (armor + weapon, AIN-named / AIS-statted),
         // NO potion effects — same progression scale as carriage mobs. We apply
         // it directly (effects off) rather than via MobDifficultyEvents; combined
@@ -228,23 +264,36 @@ public final class PlayerMobGroupSpawner {
 
         // Diagnostic parity with editor-placed contents entities
         // (read by ContentsEntityDiagnostics).
+        Vec3 pos = mob.position();
         CompoundTag persistent = mob.getPersistentData();
         persistent.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_X, pos.x);
         persistent.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Y, pos.y);
         persistent.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Z, pos.z);
+    }
 
-        // Optional explicit march heading (behind-spawn → the player's travel direction). Set
-        // before addFreshEntity so it's latched ahead of the mob's first AI tick; 0 = no override
-        // (the boarding latch picks). No-op on a non-PlayerMob, which this always is.
-        if (marchDir != 0) {
-            TrainConfinement.setMarchDirection(mob, marchDir);
-        }
+    /**
+     * Give a PlayerMob friend-pair companion its leader's on-train setup. PlayerMob rolls the
+     * companion inside the leader's {@code finalizeSpawn} and adds it with {@code addFreshEntity},
+     * so it never passes through {@link #spawnPlayerMob}; PlayerMob announces it (before it is added)
+     * via {@code PlayerMobSpawnHooks#onCompanionSpawned}, which {@code PlayerMobSpawnBridge} routes here.
+     *
+     * <p>The leader is not tagged yet at that point (the tag is stamped after {@code finalizeSpawn}),
+     * so the carriage comes from the spawn context {@link #spawnPlayerMob} holds around the call,
+     * falling back to an already-tagged leader. Neither → not a DT train spawn, left untouched.</p>
+     */
+    public static void onCompanionSpawned(Mob companion, Mob leader) {
+        if (!(companion.level() instanceof ServerLevel level)) return;
+        OptionalInt pIdx = resolveCompanionCarriagePIdx(SPAWNING_CARRIAGE_PIDX.get(), leader.getTags());
+        if (pIdx.isEmpty()) return;
+        applyTrainSpawnSetup(level, companion, pIdx.getAsInt(), companion.getRandom());
+    }
 
-        if (!level.addFreshEntity(mob)) {
-            LOGGER.warn("[DungeonTrain] PlayerMob spawn: addFreshEntity rejected at {} pIdx={}",
-                floorPos, carriagePIdx);
-            return false;
-        }
-        return true;
+    /**
+     * Carriage pIdx for a companion: the in-flight {@link #spawnPlayerMob} context wins, else the
+     * leader's contents tag; empty when neither is known.
+     */
+    static OptionalInt resolveCompanionCarriagePIdx(Integer spawnContextPIdx, Collection<String> leaderTags) {
+        if (spawnContextPIdx != null) return OptionalInt.of(spawnContextPIdx);
+        return TrainMembership.carriageIndexOf(leaderTags);
     }
 }
