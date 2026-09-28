@@ -28,9 +28,9 @@ import net.minecraft.world.level.Level;
  * structure, every overworld biome — oceans and rivers included, where {@link LostCitySeating} sets them on
  * the seabed) that may start in any chunk the era owns, so the ride passes buildings whatever the ground is.</p>
  *
- * <p>The city fades in: a start is kept with a probability that climbs from nothing at the run's start to
- * full {@link #FADE_BLOCKS} in ({@link #density}), and Lap 1's WWOO stretch keeps a few percent of its
- * starts as a foretaste.</p>
+ * <p>The city fades in: nothing on the Nether's exit range, then from the foot of its fall a start is kept
+ * with a probability that climbs from {@link #FADE_FLOOR} to full {@link #FADE_BLOCKS} further on
+ * ({@link #density}); Lap 1's WWOO stretch keeps a few percent of its starts as a foretaste.</p>
  *
  * <p>How a city sits in the ground — its template's natural pad and lower air yielding to the stretch's own
  * terrain — is {@link LostCityGroundProcessor}'s.</p>
@@ -83,17 +83,20 @@ public final class LostCityStructures {
         return hash01(seed, chunkX, chunkZ) < density;
     }
 
-    /** How far into the Lost City run (lead-in included) the city reaches full density, in base blocks. */
-    public static final int FADE_BLOCKS = 3000;
+    /** How far past the foot of the Nether's fall the city reaches full density, in base blocks. */
+    public static final int FADE_BLOCKS = 2900;
+
+    /** The density at the foot of the fall, so the first buildings stand right below the range. */
+    public static final double FADE_FLOOR = 0.5;
 
     /** Share of the placement grid's starts kept in the WWOO overworld stretch: roughly 3–10 buildings near the track. */
     public static final double WWOO_STRETCH_DENSITY = 0.04;
 
     /**
      * The share of placement-grid starts kept for a chunk column at {@code chunkX}: 0 outside the Lost City
-     * run and the WWOO stretch; in the run, rising linearly from 0 at the start of the lead-in (the Nether's
-     * exit mountains) to 1 at {@link #FADE_BLOCKS} in and staying there; in the WWOO stretch,
-     * {@link #WWOO_STRETCH_DENSITY}.
+     * run and the WWOO stretch, and 0 on the Nether's exit range itself; from the foot of its fall
+     * ({@link #fallFoot}) {@link #FADE_FLOOR}, rising linearly to 1 at {@link #FADE_BLOCKS} past the foot
+     * and staying there; in the WWOO stretch, {@link #WWOO_STRETCH_DENSITY}.
      */
     public static double density(WorldGenCycle cycle, int chunkX) {
         if (cycle == null) return 0.0D;
@@ -102,7 +105,19 @@ public final class LostCityStructures {
         if (!inEra(cycle, chunkX)) return 0.0D;
         long into = blocksIntoRun(cycle, worldX);
         if (into < 0L) return 1.0D;
-        return into >= FADE_BLOCKS ? 1.0D : (double) into / FADE_BLOCKS;
+        long past = into - fallFoot(cycle);
+        if (past < 0L) return 0.0D;
+        double t = past >= FADE_BLOCKS ? 1.0D : (double) past / FADE_BLOCKS;
+        return FADE_FLOOR + (1.0D - FADE_FLOOR) * t;
+    }
+
+    /**
+     * Base blocks from the lead-in's start to the foot of the Nether's fall: the mega-mountain plateau and
+     * the two tallest mountain stages, after which the descent eases (stage multipliers 4, 2, 1 and the
+     * beach). Buildings begin below that.
+     */
+    public static long fallFoot(WorldGenCycle cycle) {
+        return Math.max(0, cycle.megaHold()) + 2L * Math.max(0, cycle.stageBlocks());
     }
 
     /**

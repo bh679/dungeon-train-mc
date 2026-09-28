@@ -211,23 +211,28 @@ final class LostCityStructuresTest {
     private static final ResourceLocation ORIGINAL = ResourceLocation.parse("big_lost_city:tallskyscraper");
 
     @Test
-    @DisplayName("the city fades in from the Nether's exit mountains: half way at 1500 in, full from 3000 on")
+    @DisplayName("nothing on the range; half the grid from the foot of its fall, full 2900 blocks on")
     void fadeIn() {
-        int slotStart = x(LAYOUT.start(slot()), 0);
         long lead = LAYOUT.legacyLeadIn(slot());
-        assertEquals(0.0, LostCityStructures.density(C, x(LAYOUT.start(slot()) - lead, 0) >> 4), 0.02);
-        assertEquals(lead / 3000.0, LostCityStructures.density(C, slotStart >> 4), 0.02);
-        assertEquals((lead + 1500) / 3000.0, LostCityStructures.density(C, (slotStart + 1500) >> 4), 0.02);
-        assertEquals(1.0, LostCityStructures.density(C, (slotStart + 3000) >> 4), 1e-9);
-        assertEquals(1.0, LostCityStructures.density(C, (slotStart + 3800) >> 4), 1e-9);
-        assertEquals(0.0, LostCityStructures.density(C, x(coreStart() - 2500L, 0) >> 4), 1e-9);   // the Nether proper
+        long foot = LostCityStructures.fallFoot(C);
+        assertEquals(2L * 40L, foot);                                                     // megaHold 0 + two 40-block stages
+        assertTrue(foot < lead);
+        long leadInStart = LAYOUT.start(slot()) - lead;
+        assertEquals(0.0, LostCityStructures.density(C, x(leadInStart, 0) >> 4), 1e-9);              // the plateau
+        assertEquals(0.0, LostCityStructures.density(C, x(leadInStart + foot - 32, 0) >> 4), 1e-9);  // still on the fall
+        double atFoot = LostCityStructures.density(C, x(leadInStart + foot + 16, 0) >> 4);
+        assertTrue(atFoot >= 0.5 && atFoot < 0.52, "the floor at the foot: " + atFoot);
+        assertEquals(0.75, LostCityStructures.density(C, x(leadInStart + foot + 1450, 0) >> 4), 0.01);
+        assertEquals(1.0, LostCityStructures.density(C, x(leadInStart + foot + 2916, 0) >> 4), 1e-9);
+        assertEquals(1.0, LostCityStructures.density(C, x(coreStart() + 3800L, 0) >> 4), 1e-9);
+        assertEquals(0.0, LostCityStructures.density(C, x(coreStart() - 2500L, 0) >> 4), 1e-9);       // the Nether proper
         // the roll follows the density over a block of chunks, and is deterministic
-        int cx = (slotStart + 1200) >> 4;                                                     // density ~0.48
+        int cx = x(leadInStart + foot + 1450, 0) >> 4;                                                  // density ~0.75
         int kept = 0;
         for (int cz = -100; cz < 100; cz++) if (LostCityStructures.allowedAt(SEED, C, cx, cz)) kept++;
-        assertTrue(kept > 65 && kept < 130, "about half kept at half density: " + kept);
+        assertTrue(kept > 120 && kept < 180, "about 75% kept: " + kept);
         int full = 0;
-        for (int cz = -100; cz < 100; cz++) if (LostCityStructures.allowedAt(SEED, C, (slotStart + 3500) >> 4, cz)) full++;
+        for (int cz = -100; cz < 100; cz++) if (LostCityStructures.allowedAt(SEED, C, x(coreStart() + 3500L, 0) >> 4, cz)) full++;
         assertEquals(200, full);
         assertEquals(LostCityStructures.allowedAt(SEED, C, cx, 7), LostCityStructures.allowedAt(SEED, C, cx, 7));
     }
