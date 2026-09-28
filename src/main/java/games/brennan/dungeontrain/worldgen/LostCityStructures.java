@@ -7,6 +7,11 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 /**
  * Confines the Big Lost City mod's ruined cities to the {@link LegacyBandKind#LOST_CITY} era.
  *
@@ -30,7 +35,9 @@ import net.minecraft.world.level.Level;
  *
  * <p>The city fades in: nothing on the Nether's exit range, then from the foot of its fall a start is kept
  * with a probability that climbs from {@link #FADE_FLOOR} to full {@link #FADE_BLOCKS} further on
- * ({@link #density}); Lap 1's WWOO stretch keeps a few percent of its starts as a foretaste.</p>
+ * ({@link #density}); Lap 1's WWOO stretch keeps a few percent of its starts as a foretaste — built from
+ * only a per-world pick of the buildings ({@link #wwooBuildings}), so each world's foretaste differs and the
+ * stretch loads fewer of the mod's large templates.</p>
  *
  * <p>How a city sits in the ground — its template's natural pad and lower air yielding to the stretch's own
  * terrain — is {@link LostCityGroundProcessor}'s.</p>
@@ -66,8 +73,59 @@ public final class LostCityStructures {
         if (!level.dimension().equals(Level.OVERWORLD)) return false;
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         if (!data.startsWithTrain()) return false;
-        return allowedAt(data.getGenerationSeed(), WorldGenCycle.fromConfig(), chunkX, chunkZ);
+        long seed = data.getGenerationSeed();
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        if (!allowedAt(seed, cycle, chunkX, chunkZ)) return false;
+        if (!inWwooStretch(cycle, chunkX)) return true;
+        return LostCityWwooCensus.buildings(level, seed, cycle).contains(building(id));
     }
+
+    /**
+     * {@link #allowedAt(long, WorldGenCycle, int, int)} for structure {@code id}: in the WWOO stretch only the
+     * world's {@code wwooBuildings} may start; everywhere else the chunk rule alone decides.
+     */
+    public static boolean allowedAt(long seed, WorldGenCycle cycle, int chunkX, int chunkZ, ResourceLocation id,
+                                    Set<String> wwooBuildings) {
+        if (!allowedAt(seed, cycle, chunkX, chunkZ)) return false;
+        return !inWwooStretch(cycle, chunkX) || wwooBuildings.contains(building(id));
+    }
+
+    /** Whether {@code chunkX} lies in a WWOO overworld stretch (the foretaste, not the Lost City run). */
+    public static boolean inWwooStretch(WorldGenCycle cycle, int chunkX) {
+        return cycle != null && cycle.overworldStyleAt(chunkX << 4) == CycleLayout.Style.WWOO;
+    }
+
+    /**
+     * The building {@code id} places: its path without DT's {@link #TRACKSIDE_PREFIX}, so a trackside copy
+     * and the mod's original ({@code dungeontrain:lost_city/warehouse}, {@code big_lost_city:warehouse}) are
+     * one building.
+     */
+    public static String building(ResourceLocation id) {
+        String path = id.getPath();
+        return isTracksideCopy(id) ? path.substring(TRACKSIDE_PREFIX.length()) : path;
+    }
+
+    /**
+     * The buildings allowed in this world's WWOO stretch: the distinct {@link #building}s of {@code ids},
+     * shuffled by {@code seed}, keeping {@code min(half of them, expectedStarts)} — no more kinds than the
+     * stretch has cities to show them. Pure and stable per seed, so every session of a world generates the
+     * same foretaste while each world gets its own.
+     */
+    public static Set<String> wwooBuildings(long seed, Collection<ResourceLocation> ids, int expectedStarts) {
+        Set<String> all = new LinkedHashSet<>();
+        for (ResourceLocation id : ids) all.add(building(id));
+        int keep = Math.max(0, Math.min(all.size() / 2, expectedStarts));
+        Set<String> kept = new LinkedHashSet<>();
+        all.stream()
+                .sorted(Comparator.comparingDouble((String b) -> hash01(seed ^ WWOO_PICK_SALT, b.hashCode(), 0))
+                        .thenComparing(Comparator.naturalOrder()))
+                .limit(keep)
+                .forEach(kept::add);
+        return Set.copyOf(kept);
+    }
+
+    /** Separates {@link #wwooBuildings}'s shuffle from the chunk roll, which shares {@link #hash01}. */
+    private static final long WWOO_PICK_SALT = 0x5741_574F_4F4CL;
 
     /**
      * The era rule with the density roll, for any Lost City structure. In the Lost City run the chunk must
