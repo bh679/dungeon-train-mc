@@ -20215,8 +20215,27 @@
       "released_at": "2026-09-28T10:15:02Z"
     },
     {
-      "id": "drifting-bedrock-lock-rooms",
+      "id": "reassembly-band-shorter",
       "version": "0.1000.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "A quicker reassembly",
+      "summary": "The stretch where the world stitches itself back together is now a little shorter, so you're back on solid ground sooner.",
+      "highlights": [
+        "The reassembling stretch is about a sixth shorter; everything after it arrives sooner"
+      ],
+      "pr": 1629,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "drifting-bedrock-lock-rooms",
+      "version": "0.1001.0",
       "type": "feat",
       "tags": [
         "feature",
