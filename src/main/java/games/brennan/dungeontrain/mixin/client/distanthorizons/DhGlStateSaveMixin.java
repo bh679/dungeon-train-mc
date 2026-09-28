@@ -13,9 +13,12 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  * {@link SafeGlGet}, which gives the driver room for the extra value.
  *
  * <p>The class moved between DH lines (2.x {@code core.render.glObject}, 3.x
- * {@code common.render.openGl.glObject}) and so did the LWJGL owner of the call (GL32 in 2.x, GL33 in
- * 3.x); only one redirect matches per version, hence {@code require = 0}. Gated on DH being installed by
- * {@code DistantHorizonsMixinPlugin}.</p>
+ * {@code common.render.openGl.glObject} — the line the modpack pins since 3.3.2) and so did the LWJGL
+ * owner of the call (GL32 in 2.x, GL33 in 3.x); only one redirect matches per version, hence
+ * {@code require = 0}. Both targets stay listed so a player still on DH 2.x keeps the guard.
+ * {@code DistantHorizonsMixinPlugin} gates the config on DH being installed and hands Mixin only the
+ * target that exists in the installed jar, so the absent one is never probed (that probe used to log
+ * {@code Error loading class ... GLState} at startup).</p>
  */
 @Pseudo
 @Mixin(targets = {
