@@ -20442,6 +20442,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "faster-world-load",
+      "version": "0.1012.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "New worlds load about twice as fast",
+      "summary": "Creating a new world now takes about half as long. The game no longer builds large structures it was only going to throw away, and the biggest ones further down the line are loaded quietly in the background before the train gets there, so arriving doesn't hitch.",
+      "highlights": [
+        "New worlds open in roughly half the time",
+        "Large structures load in the background ahead of the train instead of all at once when you reach them",
+        "Early on, each world now draws from its own smaller mix of structures, so every world looks a little different",
+        "Using /locate no longer freezes the server when searching for some structures"
+      ],
+      "pr": 1643,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
