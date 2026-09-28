@@ -205,18 +205,13 @@ final class LostCityStructuresTest {
     private static final ResourceLocation ORIGINAL = ResourceLocation.parse("big_lost_city:tallskyscraper");
 
     @Test
-    @DisplayName("a trackside copy starts only within 160 blocks of the track; an original ignores the track")
-    void trackside() {
+    @DisplayName("a copy starts in any chunk the era owns, however far from the track; never outside the era")
+    void copiesEverywhereInEra() {
         int cx = x(coreStart() + 2000L, 0) >> 4;
-        int trackZ = 8;
-        assertTrue(LostCityStructures.allowedAt(SEED, C, cx, 0, COPY, trackZ));
-        assertTrue(LostCityStructures.allowedAt(SEED, C, cx, (trackZ + 160) >> 4, COPY, trackZ));
-        assertTrue(LostCityStructures.allowedAt(SEED, C, cx, (trackZ - 160) >> 4, COPY, trackZ));
-        assertFalse(LostCityStructures.allowedAt(SEED, C, cx, (trackZ + 200) >> 4, COPY, trackZ));
-        assertFalse(LostCityStructures.allowedAt(SEED, C, cx, (trackZ - 200) >> 4, COPY, trackZ));
-        assertTrue(LostCityStructures.allowedAt(SEED, C, cx, (trackZ + 2000) >> 4, ORIGINAL, trackZ));
-        // Beside the track but outside the era: the era rule still applies to copies.
-        assertFalse(LostCityStructures.allowedAt(SEED, C, x(coreStart() - 2500L, 0) >> 4, 0, COPY, trackZ));
+        assertTrue(LostCityStructures.allowedAt(SEED, C, cx, 0));
+        assertTrue(LostCityStructures.allowedAt(SEED, C, cx, 2000 >> 4));
+        assertTrue(LostCityStructures.allowedAt(SEED, C, cx, -2000 >> 4));
+        assertFalse(LostCityStructures.allowedAt(SEED, C, x(coreStart() - 2500L, 0) >> 4, 0));
     }
 
     @Test

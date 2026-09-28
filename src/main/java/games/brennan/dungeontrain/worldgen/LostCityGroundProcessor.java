@@ -3,14 +3,17 @@ package games.brennan.dungeontrain.worldgen;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BushBlock;
 import net.minecraft.world.level.block.CarpetBlock;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.VineBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
@@ -39,9 +42,10 @@ import java.util.function.IntFunction;
  *   pad (bushes, carpets, vines, anything replaceable). Yielded to the world wherever the world already
  *   holds natural ground there, so the biome's own surface shows through; kept where the world is air, so a
  *   pad hanging over a dip has no holes.</li>
- *   <li><b>Air</b> above the pad — yielded to the world while the world column from the pad up to it is
+ *   <li><b>Air</b> above the pad — yielded to the world's water wherever the building stands in it (the
+ *   water level runs through the rooms), and to ground while the world column from the pad up to it is
  *   contiguous natural ground, so a hill on the uphill side leans into the outer rooms as a smooth ramp.
- *   The contiguity walk keeps no shelf over a gap the beard carved.</li>
+ *   The contiguity walk keeps no shelf over a gap.</li>
  *   <li><b>Structure</b> — everything else (roads, pavements, walls, floors, props, and natural blocks above
  *   the pad such as planters) is placed as the template says.</li>
  * </ul>
@@ -50,8 +54,9 @@ import java.util.function.IntFunction;
  * vanilla's {@code beard_thin} would level the footprint before any of this ran. So the stretch's own ground
  * runs through the box untouched — where a hill stands higher than the pad it climbs over the lower floors
  * and buries them (walls and floors are still placed inside it) — and where the pad hangs over lower ground
- * on the downhill side, {@link #finalizeProcessing} props it up with a footing column: dirt under natural
- * pad blocks, stone under roads and plazas, down to the ground or {@link #FOOTING_MAX_DEPTH}.</p>
+ * on the downhill side, {@code BeardifierMixin} draws the terrain up to it ({@link LostCitySeating}) and
+ * {@link #finalizeProcessing} props up what that skirt leaves hanging with a footing column: dirt under
+ * natural pad blocks, stone under roads and plazas, down to the ground or {@link #FOOTING_MAX_DEPTH}.</p>
  *
  * <p>Attached at runtime by {@code SinglePoolElementMixin} to every pool element that places a
  * {@code big_lost_city} template — the mod's own pools and DT's trackside copies alike. Runtime-only, never
@@ -78,22 +83,6 @@ public final class LostCityGroundProcessor extends StructureProcessor {
             Blocks.DIORITE, Blocks.TUFF, Blocks.DEEPSLATE, Blocks.DRIPSTONE_BLOCK, Blocks.GRAVEL, Blocks.SAND,
             Blocks.RED_SAND, Blocks.CLAY, Blocks.DIRT_PATH, Blocks.FARMLAND, Blocks.SNOW_BLOCK, Blocks.WATER);
 
-    /**
-     * World blocks that count as natural ground — the raw terrain present at the surface-structures step.
-     * An explicit set rather than block tags: tags are only bound once a world's data loads, and this is
-     * also read by unit tests.
-     */
-    private static final Set<Block> GROUND = Set.of(
-            Blocks.STONE, Blocks.GRANITE, Blocks.DIORITE, Blocks.ANDESITE, Blocks.DEEPSLATE, Blocks.TUFF,
-            Blocks.CALCITE, Blocks.DRIPSTONE_BLOCK, Blocks.DIRT, Blocks.GRASS_BLOCK, Blocks.COARSE_DIRT,
-            Blocks.ROOTED_DIRT, Blocks.PODZOL, Blocks.MYCELIUM, Blocks.MUD, Blocks.MOSS_BLOCK, Blocks.SAND,
-            Blocks.RED_SAND, Blocks.GRAVEL, Blocks.CLAY, Blocks.SANDSTONE, Blocks.RED_SANDSTONE, Blocks.SNOW_BLOCK,
-            Blocks.PACKED_ICE, Blocks.TERRACOTTA, Blocks.WHITE_TERRACOTTA, Blocks.ORANGE_TERRACOTTA,
-            Blocks.MAGENTA_TERRACOTTA, Blocks.LIGHT_BLUE_TERRACOTTA, Blocks.YELLOW_TERRACOTTA, Blocks.LIME_TERRACOTTA,
-            Blocks.PINK_TERRACOTTA, Blocks.GRAY_TERRACOTTA, Blocks.LIGHT_GRAY_TERRACOTTA, Blocks.CYAN_TERRACOTTA,
-            Blocks.PURPLE_TERRACOTTA, Blocks.BLUE_TERRACOTTA, Blocks.BROWN_TERRACOTTA, Blocks.GREEN_TERRACOTTA,
-            Blocks.RED_TERRACOTTA, Blocks.BLACK_TERRACOTTA);
-
     private LostCityGroundProcessor() {}
 
     /** Whether {@code template} is one of the Big Lost City mod's, so its pool element gets this processor. */
@@ -113,23 +102,38 @@ public final class LostCityGroundProcessor extends StructureProcessor {
                 || block == Blocks.HANGING_ROOTS || state.canBeReplaced();
     }
 
-    /** Whether a world block is natural ground: solid, dry, and terrain rather than another piece's block. */
+    /**
+     * Whether a world block is natural ground: a dry, solid, full cube that is not foliage and holds no
+     * block entity. A shape test rather than a block list, so every biome's surface counts — vanilla's
+     * stone and dirt, WWOO's packed mud, snow, ice, basalt, terracotta — while water, plants, slabs and
+     * stairs do not. At the surface-structures step the world holds raw terrain and earlier-step features
+     * only, so nothing built is mistaken for ground.
+     */
     static boolean isNaturalGround(BlockState state) {
-        return !state.isAir() && state.getFluidState().isEmpty() && GROUND.contains(state.getBlock());
+        if (state.isAir() || !state.getFluidState().isEmpty() || state.hasBlockEntity()) return false;
+        if (state.getBlock() instanceof LeavesBlock) return false;
+        return state.isSolid() && state.isCollisionShapeFullBlock(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
+    }
+
+    /** Whether the world holds still water here — the level's water, which continues through the rooms. */
+    static boolean isWater(BlockState state) {
+        return state.getFluidState().isSourceOfType(Fluids.WATER);
     }
 
     /**
      * Whether the template block at local height {@code localY} yields to the world, given the world column
      * from the pad level ({@code world.apply(0)}) up to that height ({@code world.apply(localY)}).
      *
-     * <p>Pad base yields when the world already has ground there. Air and plant cover yield while every
-     * world block from the pad up to them is ground — no shelf is kept over a carved gap.</p>
+     * <p>Pad base yields when the world already has ground there. Air and plant cover yield to the world's
+     * water, and to ground while every world block from the pad up to them is ground — no shelf is kept
+     * over a gap.</p>
      */
     static boolean yields(BlockState template, int localY, IntFunction<BlockState> world) {
         if (localY == 0) {
             return isBase(template) && isNaturalGround(world.apply(0));
         }
         if (!template.isAir() && !isCover(template)) return false;
+        if (isWater(world.apply(localY))) return true;   // the water level runs through the building
         for (int y = 0; y <= localY; y++) {
             if (!isNaturalGround(world.apply(y))) return false;
         }

@@ -39,6 +39,7 @@
     "StructureBasementMixin",
     "SinglePoolElementMixin",
     "StructureTerrainAdaptationMixin",
+    "BeardifierMixin",
     "ChunkStatusSpawnMixin",
     "RandomStateMixin",
     "TagLoaderWwooFilterMixin",

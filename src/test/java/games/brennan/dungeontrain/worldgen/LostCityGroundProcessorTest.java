@@ -46,12 +46,14 @@ final class LostCityGroundProcessorTest {
     @DisplayName("world ground is raw terrain only")
     void naturalGround() {
         for (BlockState s : new BlockState[]{STONE, DIRT, GRASS, Blocks.GRAVEL.defaultBlockState(),
-                Blocks.SAND.defaultBlockState(), Blocks.PODZOL.defaultBlockState(), Blocks.DEEPSLATE.defaultBlockState()}) {
+                Blocks.SAND.defaultBlockState(), Blocks.PODZOL.defaultBlockState(), Blocks.DEEPSLATE.defaultBlockState(),
+                Blocks.PACKED_MUD.defaultBlockState(), Blocks.ICE.defaultBlockState(), Blocks.BASALT.defaultBlockState(),
+                Blocks.SNOW_BLOCK.defaultBlockState(), Blocks.TERRACOTTA.defaultBlockState()}) {
             assertTrue(LostCityGroundProcessor.isNaturalGround(s), s.toString());
         }
-        for (BlockState s : new BlockState[]{AIR, Blocks.WATER.defaultBlockState(), Blocks.COBBLESTONE.defaultBlockState(),
-                Blocks.OAK_PLANKS.defaultBlockState(), Blocks.SHORT_GRASS.defaultBlockState(),
-                Blocks.OAK_LEAVES.defaultBlockState()}) {
+        for (BlockState s : new BlockState[]{AIR, Blocks.WATER.defaultBlockState(), Blocks.LAVA.defaultBlockState(),
+                Blocks.OAK_SLAB.defaultBlockState(), Blocks.STONE_STAIRS.defaultBlockState(), Blocks.SHORT_GRASS.defaultBlockState(),
+                Blocks.OAK_LEAVES.defaultBlockState(), Blocks.CHEST.defaultBlockState(), Blocks.SNOW.defaultBlockState()}) {
             assertFalse(LostCityGroundProcessor.isNaturalGround(s), s.toString());
         }
     }
@@ -76,6 +78,19 @@ final class LostCityGroundProcessorTest {
         IntFunction<BlockState> shelf = column(STONE, AIR, DIRT, GRASS);
         assertFalse(LostCityGroundProcessor.yields(AIR, 2, shelf));           // gap below: the shelf is cut
         assertFalse(LostCityGroundProcessor.yields(AIR, 3, shelf));
+    }
+
+    @Test
+    @DisplayName("air and cover yield to the world's water at any height; walls and the pad do not")
+    void water() {
+        BlockState water = Blocks.WATER.defaultBlockState();
+        IntFunction<BlockState> flooded = column(Blocks.SAND.defaultBlockState(), water, water, water, AIR);
+        assertTrue(LostCityGroundProcessor.yields(AIR, 1, flooded));
+        assertTrue(LostCityGroundProcessor.yields(AIR, 3, flooded));
+        assertTrue(LostCityGroundProcessor.yields(Blocks.SHORT_GRASS.defaultBlockState(), 1, flooded));
+        assertFalse(LostCityGroundProcessor.yields(AIR, 4, flooded));                       // above the surface
+        assertFalse(LostCityGroundProcessor.yields(Blocks.DEEPSLATE_TILES.defaultBlockState(), 2, flooded));
+        assertFalse(LostCityGroundProcessor.yields(Blocks.MOSS_BLOCK.defaultBlockState(), 0, column(water)));  // pad stays over water
     }
 
     @Test
