@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.net.TrainDebugCarriagePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalGeometry;
+import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalStampRecord;
@@ -6696,12 +6697,9 @@ public final class TrainCarriageAppender {
      */
     private static String copyLabel(ServerLevel level, ServerPlayer player,
                                     PortalCarriageEvents.RoomFacts room) {
-        if (room != null) {
-            PortalRoomTiling.Tile tile = room.tile();
-            return PortalRoomTiling.Tile.BASE.equals(tile)
-                ? "base"
-                : "copy (" + tile.x() + "," + tile.z() + ")";
-        }
+        // Corridor first, deliberately. A twin corridor stands inside its structure's box — the
+        // box is grown to cover the corridor masks — so testing the room first would answer a
+        // corridor question with a room tile.
         double x = player.getX();
         double y = player.getY();
         double z = player.getZ();
@@ -6710,6 +6708,12 @@ public final class TrainCarriageAppender {
             int copy = geo.copyAt(y);
             if (copy == PortalGeometry.COPY_NEAR) return "near";
             if (copy == PortalGeometry.COPY_FAR) return "far";
+        }
+        if (room != null) {
+            PortalRoomTiling.Tile tile = room.tile();
+            return PortalRoomTiling.Tile.BASE.equals(tile)
+                ? "base"
+                : "copy (" + tile.x() + "," + tile.z() + ")";
         }
         return "";
     }
@@ -6725,6 +6729,14 @@ public final class TrainCarriageAppender {
     private static TrainDebugCarriagePacket dimensionalCarriagePacket(ServerLevel level,
                                                                       ServerPlayer player,
                                                                       CarriageDims dims) {
+        // Twin space holds BOTH the pocket room and the pair's twin corridors — the corridors are
+        // stamped in the same basement. So ask whether this is a corridor before assuming a room,
+        // or every step down a twin corridor reports itself as a dimensional carriage.
+        PortalPairIndex.Entry twin = PortalPairIndex.findByTwinPos(player.blockPosition());
+        if (twin != null) {
+            return twinCorridorPacket(level, player, twin);
+        }
+
         PortalCarriageEvents.RoomFacts room = PortalCarriageEvents.roomFactsAt(
             dims, player.getX(), player.getY(), player.getZ());
         String copy = copyLabel(level, player, room);
@@ -6735,6 +6747,31 @@ public final class TrainCarriageAppender {
             room.roomName(),
             room.copiesKind().name().toLowerCase(Locale.ROOT) + " #" + room.variantIndex(),
             "", copy);
+    }
+
+    /**
+     * The panel's read-out for a player standing in one of a pair's twin corridors — the underground
+     * copies the crossing is built from.
+     *
+     * <p>It reports the same corridor the train side does, because it is the same corridor: the twin
+     * is stamped from the pair's own draw, which its carriage index already recorded.</p>
+     */
+    private static TrainDebugCarriagePacket twinCorridorPacket(ServerLevel level, ServerPlayer player,
+                                                               PortalPairIndex.Entry twin) {
+        int pIdx = twin.carriageIndex();
+        int groupSize = DungeonTrainConfig.getGroupSize();
+        String label = PortalStampRecord.isCorridorSlot(pIdx, groupSize)
+            ? (PortalCarriageSelection.slotOf(pIdx, groupSize) == PortalCarriageSelection.SLOT_ENTRY
+                ? CART_TYPE_CORRIDOR_ENTRY
+                : CART_TYPE_CORRIDOR_EXIT)
+            : CART_TYPE_CORRIDOR_MIDDLE;
+        String copy = copyLabel(level, player, /*room*/ null);
+        PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(pIdx);
+        if (facts == null) {
+            return new TrainDebugCarriagePacket(true, pIdx, label, "", "", ContentsFlip.LABEL_NONE, copy);
+        }
+        return new TrainDebugCarriagePacket(true, pIdx, label,
+            facts.contentsId(), facts.subVariantId(), facts.flip(), copy);
     }
 
     /**
@@ -6754,7 +6791,8 @@ public final class TrainCarriageAppender {
                 dims = DungeonTrainWorldData.get(level.getServer().overworld()).dims();
             }
             TrainDebugCarriagePacket packet = dimensionalCarriagePacket(level, player, dims);
-            String key = "r:" + packet.contentsId() + ":" + packet.subVariantId() + ":" + packet.copy();
+            String key = "r:" + packet.cartType() + ":" + packet.contentsId()
+                + ":" + packet.subVariantId() + ":" + packet.copy();
             UUID uuid = player.getUUID();
             if (key.equals(LAST_SENT_DEBUG_KEY.get(uuid))) continue;
             DungeonTrainNet.sendTo(player, packet);
