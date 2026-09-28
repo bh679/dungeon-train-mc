@@ -200,6 +200,10 @@ public final class DungeonTrainConfig {
      * 65% / 30% / 5% — most slots show the community's work, a healthy share hands players their own
      * back, and a steady trickle of blank canvases keeps entering the pool.
      */
+    /** One Bedrock Lock dimensional carriage in fifteen drifts; the rest are the plain template. */
+    public static final double DEFAULT_SHARED_ROOM_CHANCE = 1.0 / 15.0;
+    public static final double MIN_SHARED_ROOM_CHANCE = 0.0;
+    public static final double MAX_SHARED_ROOM_CHANCE = 1.0;
     public static final double DEFAULT_SHARED_CARRIAGE_POOL_CHANCE = 0.65;
     public static final double MIN_SHARED_CARRIAGE_POOL_CHANCE = 0.0;
     public static final double MAX_SHARED_CARRIAGE_POOL_CHANCE = 1.0;
@@ -270,6 +274,12 @@ public final class DungeonTrainConfig {
 
     /** Hold the join intro cinematic behind a loading screen until nearby chunks stream in. */
     public static final boolean DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED = true;
+    /**
+     * Off: the spawn/camera-start search only looks at chunks that are already loaded. On: it
+     * force-generates each candidate's chunk on the server thread as it did before 0.1004 — which
+     * held one player's server for 61 s at join on hilly terrain. Kept as an escape hatch.
+     */
+    public static final boolean DEFAULT_SPAWN_SEARCH_SYNC_GEN = false;
 
     /**
      * Schema version of the on-disk config, bumped whenever a shipped default change must reach
@@ -337,6 +347,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGE_LEASING_ENABLED;
     public static final ModConfigSpec.BooleanValue BUILDER_PROFILE_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_POOL_CHANCE;
+    public static final ModConfigSpec.DoubleValue SHARED_ROOM_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_OWN_CHANCE;
     public static final ModConfigSpec.IntValue SHARED_CARRIAGE_MAX_ENTITIES;
     public static final ModConfigSpec.BooleanValue DISCOVER_NARRATIVES_ENABLED;
@@ -345,6 +356,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_ENABLED;
     public static final ModConfigSpec.IntValue INTRO_CINEMATIC_DURATION_TICKS;
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED;
+    public static final ModConfigSpec.BooleanValue SPAWN_SEARCH_SYNC_GEN;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -398,6 +410,7 @@ public final class DungeonTrainConfig {
         SHARED_CARRIAGE_LEASING_ENABLED = pair.getLeft().sharedCarriageLeasingEnabled;
         BUILDER_PROFILE_ENABLED = pair.getLeft().builderProfileEnabled;
         SHARED_CARRIAGE_POOL_CHANCE = pair.getLeft().sharedCarriagePoolChance;
+        SHARED_ROOM_CHANCE = pair.getLeft().sharedRoomChance;
         SHARED_CARRIAGE_OWN_CHANCE = pair.getLeft().sharedCarriageOwnChance;
         SHARED_CARRIAGE_MAX_ENTITIES = pair.getLeft().sharedCarriageMaxEntities;
         DISCOVER_NARRATIVES_ENABLED = pair.getLeft().discoverNarrativesEnabled;
@@ -406,6 +419,7 @@ public final class DungeonTrainConfig {
         INTRO_CINEMATIC_ENABLED = pair.getLeft().introCinematicEnabled;
         INTRO_CINEMATIC_DURATION_TICKS = pair.getLeft().introCinematicDurationTicks;
         INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED = pair.getLeft().introCinematicChunkPreloadEnabled;
+        SPAWN_SEARCH_SYNC_GEN = pair.getLeft().spawnSearchSyncGen;
     }
 
     private DungeonTrainConfig() {}
@@ -614,7 +628,10 @@ public final class DungeonTrainConfig {
                         "true. Set it false to opt a world out entirely: it then neither leases community builds nor",
                         "uploads its own. NOTE: leasing additionally requires sharedCarriageLeasingEnabled below. Only",
                         "carriages captured off a running train are served; Train Builder builds are a separate system",
-                        "the relay withholds from every lease, so submitting one puts it in the queue rather than in a run.")
+                        "the relay withholds from every lease, so submitting one puts it in the queue rather than in a run.",
+                        "Bedrock Lock dimensional carriages drift on the same switch: one a player edits is uploaded, and a",
+                        "pair planning that same room may be handed another world's copy instead. Authors can keep a room",
+                        "out of it with its Drift setting (/dt editor portals <room> drift off).")
                 .define("sharedCarriagesEnabled", DEFAULT_SHARED_CARRIAGES_ENABLED);
         ModConfigSpec.BooleanValue sharedCarriageLeasingEnabled = b
                 .comment("Whether this world may LEASE community carriages from the relay and place them on its trains.",
@@ -622,7 +639,7 @@ public final class DungeonTrainConfig {
                         "Default true — a shared slot may place a carriage another world built, screened and approved by",
                         "the relay. Set it false to ride only this world's own carriages while still contributing yours.",
                         "With sharedCarriagesEnabled false it does nothing, since the master switch opts the world out of",
-                        "the feature entirely.")
+                        "the feature entirely. Also gates leasing drifted dimensional carriages (Bedrock Lock rooms).")
                 .define("sharedCarriageLeasingEnabled", DEFAULT_SHARED_CARRIAGE_LEASING_ENABLED);
         ModConfigSpec.DoubleValue sharedCarriagePoolChance = b
                 .comment("When a shared-carriage slot spawns, the probability it LEASES an existing build by ANY author from",
@@ -632,6 +649,14 @@ public final class DungeonTrainConfig {
                         "relay is unreachable, the slot silently falls back — to an own build if one is ready, else fresh.")
                 .defineInRange("sharedCarriagePoolChance", DEFAULT_SHARED_CARRIAGE_POOL_CHANCE,
                         MIN_SHARED_CARRIAGE_POOL_CHANCE, MAX_SHARED_CARRIAGE_POOL_CHANCE);
+        ModConfigSpec.DoubleValue sharedRoomChance = b
+                .comment("The probability a Bedrock Lock dimensional carriage DRIFTS at all — takes part in the shared pool",
+                        "the way a shared carriage slot does. A drifting one uploads when a player edits it and rolls the",
+                        "pool/own/fresh split above for whether it arrives as another world's copy; the rest are the plain",
+                        "template and never touch the relay. Rolled deterministically per pair. Default 1/15 (0.0667).",
+                        "Authors can still veto a room outright with its Drift setting.")
+                .defineInRange("sharedRoomChance", DEFAULT_SHARED_ROOM_CHANCE,
+                        MIN_SHARED_ROOM_CHANCE, MAX_SHARED_ROOM_CHANCE);
         ModConfigSpec.IntValue sharedCarriageMaxEntities = b
                 .comment("How many free ENTITIES (armor stands, item frames, paintings, mobs) a shared carriage may carry",
                         "into the community pool. They are captured with the build, drawn in the web preview, and spawned",
@@ -726,6 +751,12 @@ public final class DungeonTrainConfig {
                         "popping in. Only affects the join intro (not the /dungeontrain cinematic replay). Disable to",
                         "start the cinematic immediately on spawn as before.")
                 .define("introCinematicChunkPreloadEnabled", DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED);
+        ModConfigSpec.BooleanValue spawnSearchSyncGen = b
+                .comment("When placing a player's spawn camera beside the track, force-generate each candidate chunk",
+                        "on the server thread (pre-0.1004 behaviour). Off (default): only already-loaded chunks are",
+                        "searched and the search is time-boxed, so joining never freezes the server. Turn on only if",
+                        "you need the wider search and accept multi-second freezes at join on slow worldgen.")
+                .define("spawnSearchSyncGen", DEFAULT_SPAWN_SEARCH_SYNC_GEN);
         b.pop();
         return new Holder(configVersion, numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
                 difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
@@ -741,9 +772,9 @@ public final class DungeonTrainConfig {
                 sharedBookLootMaxChance, sharedBookRepeatGroups, portalRoomAuthorMinBooks, portalRoomDaylight,
                 discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
-                introCinematicChunkPreloadEnabled, sharedCarriagesEnabled, sharedCarriageLeasingEnabled,
+                introCinematicChunkPreloadEnabled, spawnSearchSyncGen, sharedCarriagesEnabled, sharedCarriageLeasingEnabled,
                 sharedCarriagePoolChance,
-                sharedCarriageOwnChance, sharedCarriageMaxEntities, builderProfileEnabled);
+                sharedCarriageOwnChance, sharedCarriageMaxEntities, builderProfileEnabled, sharedRoomChance);
     }
 
     /**
@@ -773,6 +804,12 @@ public final class DungeonTrainConfig {
         return isLoaded() ? BUILDER_PROFILE_ENABLED.get() : DEFAULT_BUILDER_PROFILE_ENABLED;
     }
 
+
+    /** Probability a Bedrock Lock dimensional carriage drifts at all — see {@code PortalRoomDriftPlanner}. */
+    public static double getSharedRoomChance() {
+        double v = isLoaded() ? SHARED_ROOM_CHANCE.get() : DEFAULT_SHARED_ROOM_CHANCE;
+        return Math.max(MIN_SHARED_ROOM_CHANCE, Math.min(MAX_SHARED_ROOM_CHANCE, v));
+    }
 
     /** Probability a shared-carriage slot leases a build by any author from the relay pool. */
     public static double getSharedCarriagePoolChance() {
@@ -1053,6 +1090,11 @@ public final class DungeonTrainConfig {
         return isLoaded() ? INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED.get() : DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED;
     }
 
+    /** Whether the spawn-camera search may force-generate chunks on the server thread (see {@link #DEFAULT_SPAWN_SEARCH_SYNC_GEN}). */
+    public static boolean isSpawnSearchSyncGenEnabled() {
+        return isLoaded() ? SPAWN_SEARCH_SYNC_GEN.get() : DEFAULT_SPAWN_SEARCH_SYNC_GEN;
+    }
+
     /**
      * Apply every one-time config migration this install has not seen yet, then stamp the file with
      * {@link #CURRENT_CONFIG_VERSION}. Idempotent and safe to call on every config load.
@@ -1251,11 +1293,13 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue introCinematicEnabled,
             ModConfigSpec.IntValue introCinematicDurationTicks,
             ModConfigSpec.BooleanValue introCinematicChunkPreloadEnabled,
+            ModConfigSpec.BooleanValue spawnSearchSyncGen,
             ModConfigSpec.BooleanValue sharedCarriagesEnabled,
             ModConfigSpec.BooleanValue sharedCarriageLeasingEnabled,
             ModConfigSpec.DoubleValue sharedCarriagePoolChance,
             ModConfigSpec.DoubleValue sharedCarriageOwnChance,
             ModConfigSpec.IntValue sharedCarriageMaxEntities,
-            ModConfigSpec.BooleanValue builderProfileEnabled
+            ModConfigSpec.BooleanValue builderProfileEnabled,
+            ModConfigSpec.DoubleValue sharedRoomChance
     ) {}
 }

@@ -183,6 +183,7 @@ public final class EditorPlotPanelInputHandler {
             case DOOR_WALL_CYCLE -> dispatchDoorWallCycle(entry);
             case ROOM_SKY_CYCLE -> dispatchRoomSkyCycle(entry);
             case ROOM_FOG_CYCLE -> dispatchRoomFogCycle(entry);
+            case ROOM_DRIFT_CYCLE -> dispatchRoomDriftCycle(entry);
             case EXITS_CYCLE -> dispatchExitsCycle(entry);
             case EXIT_EVERY_DEC -> dispatchExitEvery(entry, "dec");
             case EXIT_EVERY_INC -> dispatchExitEvery(entry, "inc");
@@ -308,6 +309,12 @@ public final class EditorPlotPanelInputHandler {
 
     private static void dispatchRoomFogCycle(EditorPlotLabelsPacket.Entry entry) {
         String cmd = EditorPlotTeleport.roomFogCycleCommandFor(entry.plotCategory());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    private static void dispatchRoomDriftCycle(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.roomDriftCycleCommandFor(entry.plotCategory());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }

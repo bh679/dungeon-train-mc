@@ -766,7 +766,7 @@ public record WorldGenCycle(long startX, int owGap,
     /**
      * How far into the upside-down Reassembly the next gap's modded look begins. Most of it is still
      * visibly reassembling, so the look waits until the world has nearly settled (shipped layout:
-     * X ≈ 22 294 instead of the Reassembly's start at 17 994).
+     * X ≈ 21 577 instead of the Reassembly's start at 17 994).
      */
     static final double UD_BLEED_REASSEMBLY_FRACTION = 43.0 / 60.0;
 
@@ -2294,6 +2294,24 @@ public record WorldGenCycle(long startX, int owGap,
         if (o < start || o >= start + span.totalLen()) return NOT_IN_LEGACY_SLOT;
         long coreStart = start + span.leadGapLen() + span.fadeLen();
         return (long) worldX - (o - coreStart);
+    }
+
+    /**
+     * True when {@code worldX} is at or past the Far Lands in its run: from halfway through the crossfade
+     * into the Far Lands to the end of the run, so every later phase of that run counts too. Each run
+     * restarts at the overworld, so this is {@code false} again there. {@code false} with no layout (the
+     * classic order), behind spawn, in the overworld buffer, and when the Far Lands are disabled or not in
+     * the order. Used client-side by {@code OtherworldBand} to spin clocks and compasses.
+     */
+    public boolean isAtOrPastFarLands(int worldX) {
+        if (layout == null || isMirroredAt(worldX)) return false;
+        int fs = layout.legacySlotOf(LegacyBandKind.FAR_LANDS);
+        int fe = layout.eraIndex(LegacyBandKind.FAR_LANDS);
+        if (fs < 0 || fe < 0) return false;
+        long u = baseAt(worldX);
+        if (u < 0L) return false;
+        long farU = layout.start(fs) + layout.eraCoreStart(fs, fe) - layout.fadeBefore(fs, fe) / 2;
+        return u >= farU;
     }
 
     /**

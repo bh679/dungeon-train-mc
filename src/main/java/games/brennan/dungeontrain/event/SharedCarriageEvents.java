@@ -4,8 +4,6 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
-import games.brennan.dungeontrain.net.relay.SharedCarriageClient.CallStatus;
-import games.brennan.dungeontrain.net.relay.SharedCarriageClient.DeltaResult;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
@@ -69,8 +67,6 @@ public final class SharedCarriageEvents {
      * change accompanies, and it walks entities, so it deliberately does not run on the flusher cadence.
      */
     private static final long ENTITY_SCAN_INTERVAL_MS = 30_000L;
-    /** Max base64 blob we'll upload (must stay under the relay's CARRIAGES_MAX_CHARS). */
-    private static final int MAX_BLOB_CHARS = 700_000;
     /**
      * How many ids to send as the lease exclude-list. Kept under the relay's own cap (128) so the list
      * arrives whole rather than being silently truncated at the far end.
@@ -139,8 +135,9 @@ public final class SharedCarriageEvents {
             }
         }
         SharedCarriagePool.returnAllBuffered();
-        LOGGER.info("[DungeonTrain] Shared-carriage pool switched {} → {}; returned {} held carriage(s) and cleared the buffers.",
-                previous, mode, detached);
+        int rooms = SharedRoomEvents.returnAllHeld(); // the rooms' leases belong to the old pool too
+        LOGGER.info("[DungeonTrain] Shared-carriage pool switched {} → {}; returned {} held carriage(s) and {} room(s) and cleared the buffers.",
+                previous, mode, detached, rooms);
     }
 
     /**
@@ -166,21 +163,7 @@ public final class SharedCarriageEvents {
         // Share it with the pool so leases taken off the spawn thread also record a real holder.
         SharedCarriagePool.setHost(hostUuid, hostName);
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        List<Integer> exclude = new ArrayList<>();
-        // Membership rides alongside the list rather than being read out of it: the list is ordered and
-        // goes to the relay as-is, but MAX_EXCLUDE_IDS of them turned the dedupe below into a scan per
-        // candidate.
-        Set<Integer> excluded = new HashSet<>();
-        for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.all()) {
-            Integer id = inst.relayId();
-            if (id != null && excluded.add(id)) exclude.add(id);
-        }
-        // Plus what this world has placed before — a build we've already shown is the one repeat that
-        // reads as the generator running dry. Newest first, since the relay truncates the list.
-        for (Integer id : data.recentUsedCarriageIds(MAX_EXCLUDE_IDS)) {
-            if (exclude.size() >= MAX_EXCLUDE_IDS) break;
-            if (excluded.add(id)) exclude.add(id);
-        }
+        List<Integer> exclude = leaseExcludeIds(level);
         CarriageDims dims = data.dims();
         String stage = SharedCarriagePool.demandStage();
         String mode = SharedCarriageMode.current(level);
@@ -192,6 +175,35 @@ public final class SharedCarriageEvents {
             String owner = players.get(idx).getUUID().toString().replace("-", "");
             SharedCarriagePool.refreshOwnAsync(dims, stage, owner, exclude, mode);
         }
+    }
+
+    /**
+     * The relay ids a lease request must not answer with: every build resident here (carriage or
+     * room — relay ids are one namespace), plus what this world has placed before. A build we've
+     * already shown is the one repeat that reads as the generator running dry. Newest first, since
+     * the relay truncates the list.
+     */
+    public static List<Integer> leaseExcludeIds(ServerLevel level) {
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        List<Integer> exclude = new ArrayList<>();
+        // Membership rides alongside the list rather than being read out of it: the list is ordered and
+        // goes to the relay as-is, but MAX_EXCLUDE_IDS of them turned the dedupe below into a scan per
+        // candidate.
+        Set<Integer> excluded = new HashSet<>();
+        for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.all()) {
+            Integer id = inst.relayId();
+            if (id != null && excluded.add(id)) exclude.add(id);
+        }
+        for (games.brennan.dungeontrain.train.SharedRoomRegistry.Instance inst
+                : games.brennan.dungeontrain.train.SharedRoomRegistry.all()) {
+            Integer id = inst.relayId();
+            if (id != null && excluded.add(id)) exclude.add(id);
+        }
+        for (Integer id : data.recentUsedCarriageIds(MAX_EXCLUDE_IDS)) {
+            if (exclude.size() >= MAX_EXCLUDE_IDS) break;
+            if (excluded.add(id)) exclude.add(id);
+        }
+        return exclude;
     }
 
     /** One flusher pass for a carriage: re-baseline if asked, else upload a delta/first-submit, else heartbeat. */
@@ -259,42 +271,17 @@ public final class SharedCarriageEvents {
         // The full capture folds in every queued edit, so drain them (re-queued on failure). Same-thread
         // as the block-change hook, so nothing new arrives between this drain and the capture.
         Set<BlockPos> covered = inst.drainPending();
-        CapturedBlob blob = captureFull(ship, inst);
-        if (blob == null) { inst.reenqueue(covered); return; }
-        if (blob.base64().length() > MAX_BLOB_CHARS) {
-            LOGGER.warn("[DungeonTrain] shared carriage variant={} too large to upload ({} chars) — skipping.",
-                    inst.variantId, blob.base64().length());
-            return; // drop covered — nothing we can do; a smaller later edit re-queues
-        }
         String ownerUuid = contributor.getUUID().toString().replace("-", "");
         // `contributor` already passed the contribution gate, so their name may go up with the build —
         // it is what every other world credits this carriage to.
         String ownerName = contributor.getGameProfile().getName();
-        inst.setCallInFlight(true);
-        long now = System.currentTimeMillis();
         // Read the pool live rather than from spawn time: the session may have flipped to Free Play since
         // this carriage was placed, and the build belongs to whichever pool the world is in when it lands.
         String mode = SharedCarriageMode.current(inst.level);
-        SharedCarriageClient.submit(ownerUuid, ownerName, blob.base64(), inst.dims.length(), inst.dims.height(), inst.dims.width(), blob.text(), inst.stageId, mode)
-                .whenComplete((result, err) -> {
-                    try {
-                        if (err == null && result != null && result.isPresent() && result.get().token() != null) {
-                            SharedCarriageClient.LeaseResult r = result.get();
-                            inst.onRelayLease(r.id(), r.token()); // baseSeq=0 on the fresh row; seq stays 0 → first delta seq 1
-                            inst.stampContact(now);
-                            inst.setEntitySig(blob.entitySig());
-                            LOGGER.info("[DungeonTrain] Uploaded fresh shared carriage variant={} → relay id={} (leased).",
-                                    inst.variantId, r.id());
-                        } else if (err == null && result != null && result.isPresent()) {
-                            // Deduped against a build leased elsewhere → no token → stays local-only (drop covered).
-                            LOGGER.debug("[DungeonTrain] fresh carriage variant={} deduped to a held relay build — local only.", inst.variantId);
-                        } else {
-                            inst.reenqueue(covered); // transport failure → retry the submit next flush
-                        }
-                    } finally {
-                        inst.setCallInFlight(false);
-                    }
-                });
+        SharedUploadFlow.submitFresh(inst, captureOf(ship, inst),
+                new SharedUploadFlow.SubmitSpec(SharedCarriageClient.PoolLease.KIND_CARRIAGE, null,
+                        inst.dims.length(), inst.dims.height(), inst.dims.width()),
+                covered, ownerUuid, ownerName, inst.stageId, mode);
     }
 
     /**
@@ -308,101 +295,18 @@ public final class SharedCarriageEvents {
         SableManagedShip ship = liveShip(inst.level, inst);
         if (ship == null) return; // sub-level not resident → leave queued, retry later
         Set<BlockPos> drained = inst.drainPending();
-        if (drained.isEmpty() && !entitiesOnly) return;
-        int seq = inst.nextSeq();
-        String cells, text;
-        long sig;
-        try {
-            CarriageBlockSnapshot.Captured cap =
-                    CarriageBlockSnapshot.captureCells(ship, inst.level, inst.shipyardOrigin, inst.dims, drained,
-                            DungeonTrainConfig.getSharedCarriageMaxEntities());
-            cells = CarriageBlockSnapshot.encode(cap.tag());
-            text = cap.text();
-            // The fingerprint of what this upload actually carries — recorded only once the POST lands, so
-            // a failed upload is re-tried rather than mistaken for "the relay already has these entities".
-            sig = CarriageEntitySnapshot.decorFingerprint(
-                    cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
-        } catch (Throwable tErr) {
-            inst.reenqueue(drained); // capture failed → retry
-            LOGGER.debug("[DungeonTrain] shared-carriage delta capture failed for pIdx={}: {}", inst.pIdx, tErr.toString());
-            return;
-        }
-        if (cells.length() > MAX_BLOB_CHARS) {
-            // A single coalesced delta over the cap is implausible; fall back to a full re-baseline.
-            inst.markRebaseline();
-            return;
-        }
-        inst.setCallInFlight(true);
-        long now = System.currentTimeMillis();
-        SharedCarriageClient.delta(inst.relayId(), inst.leaseToken(), seq, cells, text)
-                .whenComplete((res, err) -> {
-                    try {
-                        if (err != null || res == null) {
-                            inst.reenqueue(drained);                 // transport error → retry these cells
-                        } else if (res.status() == CallStatus.OK) {
-                            inst.stampContact(now);
-                            inst.setEntitySig(sig);
-                            if (res.compactNeeded()) inst.markRebaseline(); // proactive re-baseline
-                            // drained stays dropped — successfully uploaded
-                        } else if (res.status() == CallStatus.ERROR && res.mustCompact()) {
-                            inst.markRebaseline();                   // log full → full save captures these cells
-                        } else if (res.status() == CallStatus.FORBIDDEN || res.status() == CallStatus.UNKNOWN) {
-                            inst.clearRelayLease();                  // lost/gone lease → stop; edits stay local
-                        } else {
-                            inst.reenqueue(drained);                 // other error → retry
-                        }
-                    } finally {
-                        inst.setCallInFlight(false);
-                    }
-                });
+        SharedUploadFlow.flushDelta(inst, captureOf(ship, inst), drained, entitiesOnly);
     }
 
     /** Full save of a leased carriage — re-baselines the relay (clears its delta log, advances baseSeq). */
     private static void saveFull(SharedCarriageRegistry.Instance inst) {
         SableManagedShip ship = liveShip(inst.level, inst);
         if (ship == null) return;
-        CapturedBlob blob = captureFull(ship, inst);
-        if (blob == null) return;
-        if (blob.base64().length() > MAX_BLOB_CHARS) {
-            LOGGER.warn("[DungeonTrain] leased shared carriage id={} too large to re-baseline ({} chars).",
-                    inst.relayId(), blob.base64().length());
-            inst.clearRebaseline();
-            return;
-        }
-        int baseSeq = inst.currentSeq();
-        inst.setCallInFlight(true);
-        long now = System.currentTimeMillis();
-        SharedCarriageClient.save(inst.relayId(), inst.leaseToken(), blob.base64(), blob.text(), baseSeq)
-                .whenComplete((status, err) -> {
-                    try {
-                        if (status == CallStatus.OK) {
-                            inst.stampContact(now);
-                            inst.setEntitySig(blob.entitySig());
-                            inst.clearRebaseline();
-                        } else if (status == CallStatus.FORBIDDEN || status == CallStatus.UNKNOWN) {
-                            inst.clearRelayLease();
-                            inst.clearRebaseline();
-                        }
-                        // ERROR → keep rebaseline set, retry next flush
-                    } finally {
-                        inst.setCallInFlight(false);
-                    }
-                });
+        SharedUploadFlow.saveFull(inst, captureOf(ship, inst));
     }
 
     private static void heartbeatLeased(SharedCarriageRegistry.Instance inst) {
-        inst.setCallInFlight(true);
-        long now = System.currentTimeMillis();
-        SharedCarriageClient.heartbeat(inst.relayId(), inst.leaseToken(),
-                SharedCarriagePool.hostUuid(), SharedCarriagePool.hostName())
-                .whenComplete((status, err) -> {
-                    try {
-                        if (status == CallStatus.OK) inst.stampContact(now);
-                        else if (status == CallStatus.FORBIDDEN || status == CallStatus.UNKNOWN) inst.clearRelayLease();
-                    } finally {
-                        inst.setCallInFlight(false);
-                    }
-                });
+        SharedUploadFlow.heartbeat(inst);
     }
 
     /**
@@ -421,44 +325,55 @@ public final class SharedCarriageEvents {
         // queue it now, while the plot is still readable and before markCulled stops enqueue, so the
         // full capture below carries it.
         inst.releaseParked(pos -> StorageContents.sig(inst.level, pos));
-        inst.markCulled(); // stop the flusher issuing new POSTs; a stale in-flight one 403s harmlessly
-        Integer id = inst.relayId();
-        String token = inst.leaseToken();
-        if (id == null || token == null) return false; // never uploaded → nothing leased to return
-        String blocks = null, text = null;
-        int baseSeq = inst.currentSeq();
-        boolean captured = false;
-        if (allowCapture && inst.hasPending()) { // else the streamed deltas already reflect every edit
-            SableManagedShip ship = liveShip(inst.level, inst);
-            if (ship != null) {
-                CapturedBlob blob = captureFull(ship, inst);
-                if (blob != null && blob.base64().length() <= MAX_BLOB_CHARS) {
-                    blocks = blob.base64();
-                    text = blob.text();
-                    captured = true;
-                }
-            }
-        }
-        SharedCarriageClient.returnLease(id, token, blocks, text, baseSeq);
-        return captured;
+        SableManagedShip ship = liveShip(inst.level, inst);
+        // No ship → nothing readable; the flow then does a bare return (allowCapture is moot).
+        return SharedUploadFlow.finalFlushAndReturn(inst,
+                ship == null ? NO_CAPTURE : captureOf(ship, inst), allowCapture && ship != null);
     }
 
-    /**
-     * A captured carriage ready for the relay: the base64 blob, its scraped moderation text, and the
-     * decor fingerprint of the entities it carries — recorded on the instance once the upload lands, so
-     * the sweep can tell a later entity-only edit from the state the relay already holds.
-     */
-    private record CapturedBlob(String base64, String text, long entitySig) {}
+    /** A capture for a carriage whose plot is gone — every read answers "not readable". */
+    private static final SharedUploadFlow.Capture NO_CAPTURE = new SharedUploadFlow.Capture() {
+        @Override public SharedUploadFlow.CapturedBlob full() { return null; }
+        @Override public SharedUploadFlow.CapturedBlob delta(Set<BlockPos> drained) { return null; }
+    };
+
+    /** The plot-backed reads of one live carriage, as the upload flow wants them. */
+    private static SharedUploadFlow.Capture captureOf(SableManagedShip ship, SharedCarriageRegistry.Instance inst) {
+        return new SharedUploadFlow.Capture() {
+            @Override
+            public SharedUploadFlow.CapturedBlob full() {
+                return captureFull(ship, inst);
+            }
+
+            @Override
+            public SharedUploadFlow.CapturedBlob delta(Set<BlockPos> drained) {
+                try {
+                    CarriageBlockSnapshot.Captured cap =
+                            CarriageBlockSnapshot.captureCells(ship, inst.level, inst.shipyardOrigin, inst.dims, drained,
+                                    DungeonTrainConfig.getSharedCarriageMaxEntities());
+                    // The fingerprint of what this upload actually carries — recorded only once the POST
+                    // lands, so a failed upload is re-tried rather than mistaken for "the relay already
+                    // has these entities".
+                    long sig = CarriageEntitySnapshot.decorFingerprint(
+                            cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
+                    return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig);
+                } catch (Throwable tErr) {
+                    LOGGER.debug("[DungeonTrain] shared-carriage delta capture failed for pIdx={}: {}", inst.pIdx, tErr.toString());
+                    return null;
+                }
+            }
+        };
+    }
 
     /** Full-footprint capture + encode of a live carriage (with moderation text), or null on failure. */
-    private static CapturedBlob captureFull(SableManagedShip ship, SharedCarriageRegistry.Instance inst) {
+    private static SharedUploadFlow.CapturedBlob captureFull(SableManagedShip ship, SharedCarriageRegistry.Instance inst) {
         try {
             CarriageBlockSnapshot.Captured cap =
                     CarriageBlockSnapshot.capture(ship, inst.level, inst.shipyardOrigin, inst.dims,
                             DungeonTrainConfig.getSharedCarriageMaxEntities());
             long sig = CarriageEntitySnapshot.decorFingerprint(
                     cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
-            return new CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig);
+            return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig);
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] shared-carriage full capture failed for pIdx={}: {}", inst.pIdx, t.toString());
             return null;

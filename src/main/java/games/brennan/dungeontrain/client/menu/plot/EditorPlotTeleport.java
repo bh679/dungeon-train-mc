@@ -165,6 +165,12 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals fog next";
     }
 
+    /** As {@link #modeCycleCommandFor}, for whether a locked room drifts through the relay. */
+    public static String roomDriftCycleCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
+        return "dungeontrain editor portals drift next";
+    }
+
     /** As {@link #modeCycleCommandFor}, for how many extra corridors an endless room lays. */
     public static String exitsCycleCommandFor(PlotCategory category) {
         if (category == null || !category.hasRoomBox()) return null;

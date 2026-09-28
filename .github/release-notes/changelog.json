@@ -20213,6 +20213,218 @@
       "released": true,
       "released_in": "v0.999.0",
       "released_at": "2026-09-28T10:15:02Z"
+    },
+    {
+      "id": "reassembly-band-shorter",
+      "version": "0.1000.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "A quicker reassembly",
+      "summary": "The stretch where the world stitches itself back together is now a little shorter, so you're back on solid ground sooner.",
+      "highlights": [
+        "The reassembling stretch is about a sixth shorter; everything after it arrives sooner"
+      ],
+      "pr": 1629,
+      "date": "2026-09-28",
+      "released": true,
+      "released_in": "v0.1001.0",
+      "released_at": "2026-09-28T14:26:44Z"
+    },
+    {
+      "id": "drifting-bedrock-lock-rooms",
+      "version": "0.1001.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "train"
+      ],
+      "title": "Dimensional carriages drift",
+      "summary": "Dimensional carriages now drift the way carriages do. Build in one and your work is carried on down the line, with your name and changes travelling on.",
+      "highlights": [
+        "One in fifteen sealed (Bedrock Lock) dimensional carriages drifts: it uploads when edited and can arrive as another traveller's copy",
+        "Builders are credited on entry, just like a drifting carriage",
+        "New per-room Drift setting in the editor panel and /dt editor portals <room> drift"
+      ],
+      "date": "2026-09-28",
+      "released": true,
+      "released_in": "v0.1001.0",
+      "released_at": "2026-09-28T14:26:44Z"
+    },
+    {
+      "id": "potions-trade-for-emeralds",
+      "version": "0.1002.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Potions are worth emeralds",
+      "summary": "Villagers now pay real emeralds for potions, and stronger brews are worth more.",
+      "highlights": [
+        "Potions with an effect now trade for emeralds",
+        "More potent, longer-lasting and lingering potions fetch a better price",
+        "Water bottles and other effect-less brews are unchanged"
+      ],
+      "pr": 1632,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stage-leaves-block",
+      "version": "0.1003.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Stage Leaves block for builders",
+      "summary": "A new Stage Leaves block becomes the leaves that match each stage's wood, and Test the Carriage now shows stage blocks as they will look on the train.",
+      "highlights": [],
+      "pr": 1633,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "spawn-search-stall-and-parked-physics",
+      "version": "0.1004.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "compatibility"
+      ],
+      "title": "Joining no longer freezes the game, and stepping off the train stays smooth",
+      "summary": "Three causes of lag are gone: a freeze of up to a minute when joining a world on hilly ground, a freeze when water flowed near a carriage at the edge of loaded land, and a steady slowdown that built up whenever you were away from the train, which made picking up items and the train's own movement feel late. Ticks now stay fast whether you are aboard or off exploring.",
+      "highlights": [
+        "Joining a world no longer stalls while the game looks for a spot to start the intro shot",
+        "Blocks changing on a carriage next to unloaded land no longer freeze the server",
+        "Wandering away from the train no longer makes the game grind: the carriages you left behind stay cheap to simulate",
+        "New server option spawnSearchSyncGen (off by default) brings back the old, wider spawn search if you want it"
+      ],
+      "pr": 1640,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "drift-storage-generosity",
+      "version": "0.1005.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "mobs"
+      ],
+      "title": "Generosity in drifting carriages is remembered",
+      "summary": "Leaving something good in a drifting carriage's chest for the next traveller now counts in your favour: the echo you leave behind comes back a little friendlier. The better the gift, the more it counts.",
+      "highlights": [
+        "Items you leave in storage in someone else's drifting carriage make your echo friendlier, scaled by what they're worth",
+        "Taking something out and putting it back doesn't count twice"
+      ],
+      "pr": 1635,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "name-playermob-companion",
+      "version": "0.1006.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "A PlayerMob's travelling friend has a name too",
+      "summary": "When two PlayerMobs board the train together as friends, the second one used to walk around with no name above its head. Both now get a name, the same way a PlayerMob always has.",
+      "highlights": [
+        "Friends who board as an echo pair still read \"Echo of \u2026\", unchanged"
+      ],
+      "pr": 1639,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fewer-early-ruins",
+      "version": "0.1007.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Fewer ruins early on",
+      "summary": "The ruins scattered along an early stretch of the line now turn up less often \u2014 about 70% as many as before.",
+      "highlights": [],
+      "pr": 1637,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "clocks-spin-in-otherworldly-stretches",
+      "version": "0.1008.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Small change to clocks and compasses",
+      "summary": "Small change to clocks and compasses.",
+      "highlights": [],
+      "pr": 1636,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "internal-diagnostics-carriage-kinds",
+      "version": "0.1009.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Internal improvements",
+      "summary": "Behind-the-scenes maintenance work. Nothing to see or do differently in game.",
+      "highlights": [],
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "playermob-companion-train-setup",
+      "version": "0.1010.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Friends who travel together now dress for it",
+      "summary": "When a player mob boards the train with a friend in tow, that friend now arrives kitted out for how far you've come, and it counts as one of the train's own passengers.",
+      "highlights": [
+        "The friend now rolls its own armour and weapon for your current difficulty, instead of showing up empty-handed beside its fully geared partner",
+        "The friend is no longer cleared away when it wanders into a dimensional carriage"
+      ],
+      "pr": 1641,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

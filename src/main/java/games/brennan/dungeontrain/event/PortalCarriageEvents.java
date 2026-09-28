@@ -1245,6 +1245,51 @@ public final class PortalCarriageEvents {
     }
 
     /**
+     * What room a position is standing in, for the F3+4 debug panel: its name, how its copies are
+     * made, and which tile of it this is.
+     *
+     * <p>A room has no {@code CarriageContents} the way a carriage does — {@link PortalStructure}
+     * rolls block variants and container contents from a per-tile seed index instead — so the panel
+     * reports the room's own identity rather than inventing a contents analogue. The tile matters
+     * because under {@link games.brennan.dungeontrain.portal.PortalRoomCopies.Kind#DYNAMIC} each one
+     * rerolls, so two copies of the same room are not the same room.</p>
+     *
+     * <p>{@code variantIndex} is what the tile actually rolled from: identical across every copy
+     * under EXACT, and different per tile under DYNAMIC. It is the only field here that separates
+     * one copy from another, the room's name and copies mode being properties of the structure.</p>
+     *
+     * <p>Null when the position is in no room. Another adapter that keeps {@link #STRUCTURES}
+     * private, like {@link #isInRoom}.</p>
+     */
+    public static RoomFacts roomFactsAt(CarriageDims dims, double x, double y, double z) {
+        for (Map.Entry<Integer, PortalStructure> pair : STRUCTURES.entrySet()) {
+            PortalStructure structure = pair.getValue();
+            AABB box = structureBox(dims, structure);
+            int pad = structure.fogPad();
+            if (pad > 0) box = box.inflate(pad, 0.0, pad);
+            if (!box.contains(x, y, z)) continue;
+            PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+            games.brennan.dungeontrain.portal.PortalRoomTiling.Tile tile =
+                structure.tileAt(dims, layout, x, z);
+            // The index THIS tile rolled from, not the structure's. Under DYNAMIC it mixes the tile
+            // in, so it is the one value that separates one copy from another — which is the whole
+            // reason a copy looks different from the base room.
+            return new RoomFacts(
+                structure.roomName(),
+                structure.settings().effectiveCopies().kind(),
+                tile,
+                structure.variantIndexFor(tile, pair.getKey()));
+        }
+        return null;
+    }
+
+    /** One room's identity at a position — see {@link #roomFactsAt}. */
+    public record RoomFacts(String roomName,
+                            games.brennan.dungeontrain.portal.PortalRoomCopies.Kind copiesKind,
+                            games.brennan.dungeontrain.portal.PortalRoomTiling.Tile tile,
+                            int variantIndex) {}
+
+    /**
      * Whether the room standing at {@code pairKey} locks its books to an author, and how it picks one.
      *
      * <p>Reads the STANDING structure's settings rather than a fresh lookup of the room variant, so it
@@ -2417,6 +2462,12 @@ public final class PortalCarriageEvents {
         // Both the carry and the erase read the OLD record, so they cover exactly the box that was
         // written even if the room has since been authored at a different length.
         if (existing != null) {
+            // A drifting room somebody has built in — or one lent by another world — is re-laid as
+            // it stands, not re-rolled from the template. Captured while the old blocks are still
+            // there, before the erase below; null means the template will do.
+            games.brennan.dungeontrain.portal.PortalRoomBlob carried =
+                SharedRoomEvents.captureForRelocation(pairKey);
+            if (carried != null) planned = planned.withBlob(carried);
             // The room's OWN mobs go with the room, before anything is carried: the stamp below rolls
             // and spawns a fresh set for the new site, and clearIntruders spares anything carrying
             // DT's contents tag — so a carried authored mob would simply stand next to its
@@ -2446,6 +2497,13 @@ public final class PortalCarriageEvents {
         // where its carriage stands now, first.
         PortalCarriageBuilder.recordStageIfUnknown(level, pairKey, dims, Mth.floor(originX));
         String stageId = PortalCarriageBuilder.stageIdFor(level, pairKey, dims);
+        // A first stamp may lay another world's copy of the room instead of the template. Drawn
+        // here, on the way into the stamp, rather than at plan time: every early return above is a
+        // plan that never landed, and a lease taken for one of those is a copy locked away from
+        // every other world until it expires. A relocation keeps what it carries.
+        if (existing == null) {
+            planned = PortalCarriageBuilder.withDriftedCopy(level, planned, pairKey, stageId);
+        }
         final PortalStructure toStamp = planned;
         games.brennan.dungeontrain.train.StagePlacementScope.run(stageId,
             () -> PortalCarriageBuilder.stampPairStructure(level, toStamp, dims, pairKey));
@@ -2453,6 +2511,9 @@ public final class PortalCarriageEvents {
         EVICTED.remove(pairKey);
         OVERLAP_WARNED_AT.remove(pairKey);
         STAMPED_AT.put(pairKey, level.getGameTime());
+        // A drifting room is registered once its blocks are down (or, on a relocation, told where
+        // it now stands), so an edit a player makes from the next tick on is queued for the relay.
+        SharedRoomEvents.onStructureStamped(level, pairKey, planned, dims, stageId);
         // Where the exit stands, but only when it is not the ordinary place. A pair that moved it
         // (PortalRoomExits) is a portal a player has to search, and that is worth being able to see
         // in a log without walking the room — it is also the only outward sign the setting fired.
@@ -2505,9 +2566,13 @@ public final class PortalCarriageEvents {
     private static void evictStructure(ServerLevel level, CarriageDims dims, int pairKey, int byPair) {
         PortalStructure structure = STRUCTURES.remove(pairKey);
         if (structure == null) return;
+        // Its drifting room goes back to the relay with whatever was last built in it — before the
+        // erase, while the blocks can still be read. The evicted record keeps the room it rolled but
+        // not the copy: a pair that comes back is stamped afresh, as a culled carriage is.
+        SharedRoomEvents.onStructureGone(pairKey);
         PortalRoomMobs.reapPair(level, PortalCarriageBuilder.footprintOf(level, structure, dims), pairKey);
         PortalCarriageBuilder.eraseTwin(level, structure, dims);
-        EVICTED.put(pairKey, structure);
+        EVICTED.put(pairKey, structure.withBlob(null));
         STAMPED_AT.remove(pairKey);
         PortalWalkThrough.forget(pairKey);
         PortalRoomRescue.forget(pairKey);

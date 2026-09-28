@@ -28,10 +28,11 @@ public final class TrainDebugState {
     private static volatile long seed = 0L;
     private static volatile boolean carriagePresent = false;
     private static volatile int pIdx = 0;
-    private static volatile String variantId = "";
+    private static volatile String cartType = "";
     private static volatile String contentsId = "";
     private static volatile String subVariantId = "";
     private static volatile String flip = "";
+    private static volatile String copy = "";
     /** Band label at the player's X, as {@code BandLabel} renders it; empty = not known. */
     private static volatile String band = "";
     /** Stage within the band, e.g. {@code "6/7 Structure boost (42%)"}; empty = not known. */
@@ -76,9 +77,13 @@ public final class TrainDebugState {
         return pIdx;
     }
 
-    /** The shell variant the player's carriage rolls to, or {@code ""} when unknown / off-train. */
-    public static String variantId() {
-        return variantId;
+    /**
+     * What kind of place the player is in — the rolled variant for an ordinary carriage, or a label
+     * like {@code flatbed pad} / {@code corridor (entry)} / {@code dimensional carriage} for the
+     * places that never roll one. Empty when unknown.
+     */
+    public static String cartType() {
+        return cartType;
     }
 
     /** The interior contents parent id, or {@code ""} when unknown / off-train. */
@@ -100,6 +105,15 @@ public final class TrainDebugState {
      */
     public static String flip() {
         return flip;
+    }
+
+    /**
+     * Whether the player is in a copy, and which: {@code near} / {@code far} inside a portal
+     * corridor's stacked twins, {@code base} / {@code copy (x,z)} inside a room's tiles. Empty in
+     * neither — which includes the corridor riding the train.
+     */
+    public static String copy() {
+        return copy;
     }
 
     /**
@@ -125,15 +139,16 @@ public final class TrainDebugState {
     }
 
     /** Fed by {@code TrainDebugCarriagePacket.handle} on every carriage-boundary crossing. */
-    public static void setCarriage(boolean present, int carriagePIdx, String carriageVariantId,
+    public static void setCarriage(boolean present, int carriagePIdx, String carriageCartType,
                                    String carriageContentsId, String carriageSubVariantId,
-                                   String carriageFlip) {
+                                   String carriageFlip, String carriageCopy) {
         carriagePresent = present;
         pIdx = present ? carriagePIdx : 0;
-        variantId = present ? orEmpty(carriageVariantId) : "";
+        cartType = present ? orEmpty(carriageCartType) : "";
         contentsId = present ? orEmpty(carriageContentsId) : "";
         subVariantId = present ? orEmpty(carriageSubVariantId) : "";
         flip = present ? orEmpty(carriageFlip) : "";
+        copy = present ? orEmpty(carriageCopy) : "";
     }
 
     /** Fed by {@code TrainDebugBandPacket.handle} whenever the player's band or lap changes. */
@@ -158,10 +173,11 @@ public final class TrainDebugState {
         seed = 0L;
         carriagePresent = false;
         pIdx = 0;
-        variantId = "";
+        cartType = "";
         contentsId = "";
         subVariantId = "";
         flip = "";
+        copy = "";
         band = "";
         stage = "";
         lap = -1L;

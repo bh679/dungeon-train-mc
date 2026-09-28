@@ -56,6 +56,9 @@ import java.util.Objects;
  * @param tiling     which copies of the room are currently standing
  * @param exitCopies which of the room's extra corridors are currently standing
  * @param kind       which of the two corridor shapes this pair's two corridors are
+ * @param blob       the room's blocks as one captured snapshot, standing in for its template on the
+ *                   next stamp — another world's drifted copy, or this world's own room carried
+ *                   across a relocation; null for a room stamped from its template
  * @param seedSalt   folded into every roll this structure makes, so a test can stand up a fresh
  *                   furnishing of the same room; {@code 0} — every live pair — rolls exactly as
  *                   before the salt existed
@@ -63,7 +66,7 @@ import java.util.Objects;
 public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
                               PortalRoomSettings settings, PortalRoomTiling tiling,
                               PortalExitCopies exitCopies, PortalRoomTiling.Tile exitTile,
-                              PortalCorridorKind kind, int seedSalt) {
+                              PortalCorridorKind kind, int seedSalt, PortalRoomBlob blob) {
 
     /** No salt: the roll is a function of the pair's position alone. */
     public static final int NO_SALT = 0;
@@ -77,6 +80,14 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         if (exitCopies == null) exitCopies = PortalExitCopies.NONE;
         if (exitTile == null) exitTile = PortalRoomTiling.Tile.BASE;
         if (kind == null) kind = PortalCorridorKind.DEFAULT;
+    }
+
+    /** The nine-part form, before a room's blocks could stand in for its template. */
+    public PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
+                           PortalRoomSettings settings, PortalRoomTiling tiling,
+                           PortalExitCopies exitCopies, PortalRoomTiling.Tile exitTile,
+                           PortalCorridorKind kind, int seedSalt) {
+        this(origin, roomName, roomSize, settings, tiling, exitCopies, exitTile, kind, seedSalt, null);
     }
 
     /** The eight-part form, before a test could reseed a room. */
@@ -390,25 +401,40 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      */
     public PortalStructure movedTo(BlockPos newOrigin) {
         return new PortalStructure(newOrigin, roomName, roomSize, settings, PortalRoomTiling.base(),
-            PortalExitCopies.NONE, exitTile, kind, seedSalt);
+            PortalExitCopies.NONE, exitTile, kind, seedSalt, blob);
+    }
+
+    /**
+     * The same structure with {@code newBlob} standing in for its template on the next stamp — or
+     * back on its template, for null. What a relocation hands the re-stamp: the room as the player
+     * left it, captured just before the old site is erased.
+     */
+    public PortalStructure withBlob(PortalRoomBlob newBlob) {
+        return new PortalStructure(origin, roomName, roomSize, settings, tiling, exitCopies,
+            exitTile, kind, seedSalt, newBlob);
+    }
+
+    /** True when the next stamp lays a captured snapshot rather than the room's template. */
+    public boolean stampsFromBlob() {
+        return blob != null;
     }
 
     /** The same structure with a different set of room copies standing. */
     public PortalStructure withTiling(PortalRoomTiling newTiling) {
         return new PortalStructure(origin, roomName, roomSize, settings, newTiling, exitCopies,
-            exitTile, kind, seedSalt);
+            exitTile, kind, seedSalt, blob);
     }
 
     /** The same structure with a different set of extra corridors standing. */
     public PortalStructure withExitCopies(PortalExitCopies newCopies) {
         return new PortalStructure(origin, roomName, roomSize, settings, tiling, newCopies,
-            exitTile, kind, seedSalt);
+            exitTile, kind, seedSalt, blob);
     }
 
     /** The same structure standing its exit beside a different tile. */
     public PortalStructure withExitTile(PortalRoomTiling.Tile newExitTile) {
         return new PortalStructure(origin, roomName, roomSize, settings, tiling, exitCopies,
-            newExitTile, kind, seedSalt);
+            newExitTile, kind, seedSalt, blob);
     }
 
     /**
@@ -441,7 +467,7 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         return new PortalStructure(
             origin.offset(tile.x() * roomLength(), 0, tile.z() * roomWidth()),
             roomName, roomSize, settings, PortalRoomTiling.base(), PortalExitCopies.NONE,
-            PortalRoomTiling.Tile.BASE, kind, seedSalt);
+            PortalRoomTiling.Tile.BASE, kind, seedSalt, null);
     }
 
     /** Minimum corner of the corridor an extra {@code role} copy anchored at {@code tile} occupies. */
