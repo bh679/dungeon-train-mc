@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.event.CinematicIntroService;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.ReverseSlideSyncPacket;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
@@ -181,15 +182,20 @@ public final class ReverseSlide {
         for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
             int i = counted.indexOf(p);
             boolean earning = i >= 0 && earnedBy[i] > 0L;
-            ReverseSlideSyncPacket packet = packetFor(data, earning);
+            ReverseSlideSyncPacket packet = packetFor(data, p, earning);
             if (packet.equals(LAST_SENT.put(p.getUUID(), packet))) continue;
             DungeonTrainNet.sendTo(p, packet);
         }
     }
 
-    /** The sync packet for a player: the world slide, the earned distance, and whether they are earning it. */
-    public static ReverseSlideSyncPacket packetFor(DungeonTrainWorldData data, boolean earning) {
-        return new ReverseSlideSyncPacket(data.getReverseSlide(), data.getReverseEarned(), earning);
+    /**
+     * The sync packet for a player: the world slide, the earned distance, whether they are earning it, and
+     * how far ahead of the origin (spawn) they stand — 0 at or behind it, or before anyone has boarded.
+     */
+    public static ReverseSlideSyncPacket packetFor(DungeonTrainWorldData data, ServerPlayer player, boolean earning) {
+        long origin = data.getReverseOriginX();
+        long ahead = origin == UNSET ? 0L : Math.max(0L, (long) Math.floor(player.getX()) - origin);
+        return new ReverseSlideSyncPacket(data.getReverseSlide(), data.getReverseEarned(), earning, ahead);
     }
 
     /** Every carriage of every train in the level, for the on-train footprint test. */
@@ -200,8 +206,9 @@ public final class ReverseSlide {
     }
 
     /**
-     * Players that count: everyone in the overworld proper except spectators and anyone in a portal twin's
-     * sealed space (not out on the line). Creative players earn on the train like anyone. In singleplayer
+     * Players that count: everyone in the overworld proper except spectators, anyone still watching the
+     * intro cinematic (so the origin is where they stand once it hands them control), and anyone in a portal
+     * twin's sealed space (not out on the line). Creative players earn on the train like anyone. In singleplayer
      * they count fully; on a server a creative player (an admin flying or teleporting around) never pushes
      * the bands back for everyone else.
      */
@@ -211,6 +218,8 @@ public final class ReverseSlide {
         List<Sample> out = new ArrayList<>();
         for (ServerPlayer p : level.players()) {
             if (p.isSpectator()) continue;
+            // Still in the intro cinematic: not playing yet, so no origin, earning or sliding until it ends.
+            if (CinematicIntroService.isCinematicActive(p.getUUID())) continue;
             if (PortalTwinSpace.isInside(level, p.getBlockX(), p.getY())) continue;
             Double prev = LAST_ON_TRAIN_X.get(p.getUUID());
             out.add(new Sample(p.getX(), CarriageDeck.isOnTrainFootprint(carriages, p),

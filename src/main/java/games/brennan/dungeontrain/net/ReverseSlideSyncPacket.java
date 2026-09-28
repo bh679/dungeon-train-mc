@@ -12,10 +12,12 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * S2C: how far the reversed bands behind spawn have slid back ({@code worldgen.ReverseSlide}), so the
  * client's band visuals (sky, fog, upside-down render flip) place them where the server generates them;
  * plus the dev-HUD read-out next to Diff-Car — {@code earned}, the world blocks behind spawn the world's
- * riders have covered on the train, and {@code earning}, whether this player is pushing it right now.
- * Sent on login and whenever any of the three changes for the receiving player.
+ * riders have covered on the train, {@code earning}, whether this player is pushing it right now, and
+ * {@code ahead}, how far this player stands ahead of spawn (0 at or behind it). Sent on login and
+ * whenever any of these changes for the receiving player.
  */
-public record ReverseSlideSyncPacket(long slide, long earned, boolean earning) implements CustomPacketPayload {
+public record ReverseSlideSyncPacket(long slide, long earned, boolean earning, long ahead)
+        implements CustomPacketPayload {
 
     public static final Type<ReverseSlideSyncPacket> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "reverse_slide_sync"));
@@ -26,8 +28,10 @@ public record ReverseSlideSyncPacket(long slide, long earned, boolean earning) i
                         buf.writeVarLong(packet.slide);
                         buf.writeVarLong(packet.earned);
                         buf.writeBoolean(packet.earning);
+                        buf.writeVarLong(packet.ahead);
                     },
-                    buf -> new ReverseSlideSyncPacket(buf.readVarLong(), buf.readVarLong(), buf.readBoolean())
+                    buf -> new ReverseSlideSyncPacket(buf.readVarLong(), buf.readVarLong(), buf.readBoolean(),
+                            buf.readVarLong())
             );
 
     @Override
@@ -38,7 +42,7 @@ public record ReverseSlideSyncPacket(long slide, long earned, boolean earning) i
     public static void handle(ReverseSlideSyncPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             WorldGenCycle.setReverseSlide(packet.slide);
-            games.brennan.dungeontrain.client.VersionHudOverlay.setTrainBack(packet.earned, packet.earning);
+            games.brennan.dungeontrain.client.VersionHudOverlay.setTrainBack(packet.earned, packet.earning, packet.ahead);
         });
     }
 }
