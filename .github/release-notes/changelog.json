@@ -20273,9 +20273,9 @@
       ],
       "pr": 1632,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1012.0",
+      "released_at": "2026-09-28T18:35:01Z"
     },
     {
       "id": "stage-leaves-block",
@@ -20290,9 +20290,9 @@
       "highlights": [],
       "pr": 1633,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1012.0",
+      "released_at": "2026-09-28T18:35:01Z"
     },
     {
       "id": "spawn-search-stall-and-parked-physics",
@@ -20313,9 +20313,9 @@
       ],
       "pr": 1640,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1012.0",
+      "released_at": "2026-09-28T18:35:01Z"
     },
     {
       "id": "drift-storage-generosity",
@@ -20334,9 +20334,9 @@
       ],
       "pr": 1635,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1012.0",
+      "released_at": "2026-09-28T18:35:01Z"
     },
     {
       "id": "name-playermob-companion",
@@ -20353,9 +20353,9 @@
       ],
       "pr": 1639,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1012.0",
+      "released_at": "2026-09-28T18:35:01Z"
     },
     {
       "id": "fewer-early-ruins",
@@ -20370,9 +20370,9 @@
       "highlights": [],
       "pr": 1637,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1012.0",
+      "released_at": "2026-09-28T18:35:01Z"
     },
     {
       "id": "clocks-spin-in-otherworldly-stretches",
@@ -20387,9 +20387,9 @@
       "highlights": [],
       "pr": 1636,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1012.0",
+      "released_at": "2026-09-28T18:35:01Z"
     },
     {
       "id": "internal-diagnostics-carriage-kinds",
@@ -20402,9 +20402,9 @@
       "summary": "Behind-the-scenes maintenance work. Nothing to see or do differently in game.",
       "highlights": [],
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1012.0",
+      "released_at": "2026-09-28T18:35:01Z"
     },
     {
       "id": "playermob-companion-train-setup",
@@ -20422,9 +20422,9 @@
       ],
       "pr": 1641,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1012.0",
+      "released_at": "2026-09-28T18:35:01Z"
     },
     {
       "id": "far-lands-fast-day-cycle",
@@ -20439,9 +20439,9 @@
       "highlights": [],
       "pr": 1642,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1012.0",
+      "released_at": "2026-09-28T18:35:01Z"
     },
     {
       "id": "faster-world-load",
@@ -20461,9 +20461,9 @@
       ],
       "pr": 1643,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1012.0",
+      "released_at": "2026-09-28T18:35:01Z"
     }
   ]
 }
