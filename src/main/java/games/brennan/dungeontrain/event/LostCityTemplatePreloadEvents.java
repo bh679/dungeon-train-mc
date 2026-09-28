@@ -27,8 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Loads Big Lost City's structure templates on a background thread once a player nears a stretch where
- * cities can start ({@link LostCityTemplatePreload#nearLostCity}), so worldgen finds them already in
+ * Loads Big Lost City's structure templates on a background thread once a player nears the Lost City run
+ * ({@link LostCityTemplatePreload#nearLostCity}), so worldgen finds them already in
  * {@link StructureTemplateManager}'s cache instead of loading and datafixing ~19 MB of 1.20.1 NBT the moment
  * the first city generates.
  *

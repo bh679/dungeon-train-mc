@@ -5,10 +5,12 @@ package games.brennan.dungeontrain.worldgen;
  * worldgen on them. The mod ships 75 templates (~19 MB, 1.20.1 NBT that vanilla datafixes on load); a
  * jigsaw start loads its pieces on first use, which without a pre-load happens right as the train meets the
  * first city. {@code event/LostCityTemplatePreloadEvents} loads them on a background thread once a player
- * comes within {@link #LOOKAHEAD_BLOCKS} of any column where a city can start.
+ * comes within {@link #LOOKAHEAD_BLOCKS} of the Lost City run.
  *
- * <p>Pure logic over {@link LostCityStructures#density}, which already answers "can a city start here" for
- * both the Lost City run and the few ruins sprinkled through Lap 1's WWOO stretch.</p>
+ * <p>Only the run counts, not the few ruins sprinkled through the WWOO stretch: loading all 75 templates
+ * holds ~350–400 MB for the rest of the session, which the run (it shows nearly every building) repays and
+ * a handful of foretaste buildings — a per-world half of them at most ({@link LostCityStructures#wwooBuildings})
+ * — do not; those load on demand on worldgen threads.</p>
  */
 public final class LostCityTemplatePreload {
 
@@ -23,19 +25,19 @@ public final class LostCityTemplatePreload {
 
     private LostCityTemplatePreload() {}
 
-    /** Whether a Lost City start is possible anywhere within {@code lookahead} blocks of {@code worldX}. */
+    /** Whether the Lost City run (not the WWOO foretaste) can start a city within {@code lookahead} blocks of {@code worldX}. */
     public static boolean nearLostCity(WorldGenCycle cycle, int worldX, int lookahead) {
         if (cycle == null || !cycle.hasLayout()) return false;
         long from = (long) worldX - lookahead;
         long to = (long) worldX + lookahead;
         for (long x = from; x <= to; x += STEP_BLOCKS) {
-            if (densityAt(cycle, x) > 0.0D) return true;
+            if (runCityAt(cycle, x)) return true;
         }
-        return densityAt(cycle, to) > 0.0D;
+        return runCityAt(cycle, to);
     }
 
-    private static double densityAt(WorldGenCycle cycle, long worldX) {
-        long clamped = Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, worldX));
-        return LostCityStructures.density(cycle, ((int) clamped) >> 4);
+    private static boolean runCityAt(WorldGenCycle cycle, long worldX) {
+        int chunkX = ((int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, worldX))) >> 4;
+        return !LostCityStructures.inWwooStretch(cycle, chunkX) && LostCityStructures.density(cycle, chunkX) > 0.0D;
     }
 }

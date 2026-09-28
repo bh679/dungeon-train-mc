@@ -22,24 +22,24 @@ final class LostCityTemplatePreloadTest {
     /** The shipped order's WWOO overworld stretch (Lap 1's few ruins). */
     private static final int WWOO_SLOT = 2;
 
-    /** First world X, scanning chunk by chunk from base {@code fromU} on run 0, where a city can start. */
+    /** First world X, scanning chunk by chunk from base {@code fromU} on run 0, where the run can start a city. */
     private static int firstCityX(long fromU) {
         for (int x = x(fromU, 0); x < x(fromU + LAYOUT.period(), 0); x += 16) {
-            if (LostCityStructures.density(C, x >> 4) > 0.0D) return x;
+            if (!LostCityStructures.inWwooStretch(C, x >> 4) && LostCityStructures.density(C, x >> 4) > 0.0D) return x;
         }
         throw new AssertionError("no city column after base " + fromU);
     }
 
     @Test
-    @DisplayName("spawn's vanilla overworld is out of reach; the WWOO stretch is picked up 3000 blocks early")
-    void wwooStretch() {
+    @DisplayName("the WWOO foretaste never triggers the pre-load, and neither does spawn's vanilla overworld")
+    void wwooStretchDoesNotTrigger() {
         long wwooStart = LAYOUT.start(WWOO_SLOT);
         assertEquals(CycleLayout.Style.WWOO, C.overworldStyleAt(x(wwooStart + 100L, 0)));
+        assertTrue(LostCityStructures.density(C, x(wwooStart + 100L, 0) >> 4) > 0.0D);   // cities can start there…
         assertFalse(nearLostCity(C, x(1000L, 0), LOOKAHEAD_BLOCKS));
-        int first = firstCityX(0L);
-        assertTrue(nearLostCity(C, first - LOOKAHEAD_BLOCKS + 16, LOOKAHEAD_BLOCKS));
-        assertFalse(nearLostCity(C, first - LOOKAHEAD_BLOCKS - 2 * LostCityTemplatePreload.STEP_BLOCKS, LOOKAHEAD_BLOCKS));
-        assertTrue(nearLostCity(C, x(wwooStart + LAYOUT.length(WWOO_SLOT) / 2, 0), LOOKAHEAD_BLOCKS));
+        for (long u = wwooStart - LOOKAHEAD_BLOCKS; u < wwooStart + LAYOUT.length(WWOO_SLOT) + LOOKAHEAD_BLOCKS; u += 500) {
+            assertFalse(nearLostCity(C, x(u, 0), LOOKAHEAD_BLOCKS), "u=" + u);        // …but it doesn't pre-load
+        }
     }
 
     @Test
@@ -63,11 +63,9 @@ final class LostCityTemplatePreloadTest {
     }
 
     @Test
-    @DisplayName("without a Lost City era or a WWOO stretch, nothing ever triggers")
+    @DisplayName("without a Lost City era nothing ever triggers")
     void noCities() {
-        CycleLayout without = layout(CycleLayout.DEFAULT_ORDER
-                .replace("legacy:wwoo:lost_city=4000, ", "")
-                .replace("ow:wwoo:4500", "ow:4500"));
+        CycleLayout without = layout(CycleLayout.DEFAULT_ORDER.replace("legacy:wwoo:lost_city=4000, ", ""));
         WorldGenCycle c = cycle(without);
         for (long u = 0; u < without.period(); u += 500) {
             assertFalse(nearLostCity(c, (int) (START + u), LOOKAHEAD_BLOCKS), "u=" + u);
