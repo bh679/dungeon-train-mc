@@ -245,7 +245,7 @@ final class LostCityStructuresTest {
         assertEquals(LostCityStructures.WWOO_STRETCH_DENSITY, LostCityStructures.density(C, cx), 1e-9);
         int kept = 0;
         for (int cz = -500; cz < 500; cz++) if (LostCityStructures.allowedAt(SEED, C, cx, cz)) kept++;
-        assertTrue(kept > 20 && kept < 65, "about 4% kept: " + kept);
+        assertTrue(kept > 13 && kept < 46, "about 2.8% kept: " + kept);
         assertEquals(0.0, LostCityStructures.density(C, x(1000L, 0) >> 4), 1e-9);              // lap-0 vanilla lead
         assertFalse(LostCityStructures.allowedAt(SEED, C, x(1000L, 0) >> 4, 0));
     }

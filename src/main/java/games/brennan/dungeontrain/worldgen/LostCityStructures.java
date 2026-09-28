@@ -89,8 +89,8 @@ public final class LostCityStructures {
     /** The density at the foot of the fall, so the first buildings stand right below the range. */
     public static final double FADE_FLOOR = 0.5;
 
-    /** Share of the placement grid's starts kept in the WWOO overworld stretch: roughly 3–10 buildings near the track. */
-    public static final double WWOO_STRETCH_DENSITY = 0.04;
+    /** Share of the placement grid's starts kept in the WWOO overworld stretch: roughly 2–7 Lost City structures near the track. */
+    public static final double WWOO_STRETCH_DENSITY = 0.028;
 
     /**
      * The share of placement-grid starts kept for a chunk column at {@code chunkX}: 0 outside the Lost City
