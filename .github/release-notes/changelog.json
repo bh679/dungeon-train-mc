@@ -20093,9 +20093,9 @@
       "highlights": [],
       "pr": 1623,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.998.0",
+      "released_at": "2026-09-28T09:34:40Z"
     },
     {
       "id": "eb-editor-mirroring",
@@ -20116,9 +20116,9 @@
       ],
       "pr": 1624,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.998.0",
+      "released_at": "2026-09-28T09:34:40Z"
     },
     {
       "id": "advancement-frontier-visibility",
@@ -20133,9 +20133,9 @@
       "highlights": [],
       "pr": 1625,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.998.0",
+      "released_at": "2026-09-28T09:34:40Z"
     },
     {
       "id": "reverse-journey-behind-spawn",
@@ -20154,9 +20154,9 @@
       ],
       "pr": 1621,
       "date": "2026-09-28",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.998.0",
+      "released_at": "2026-09-28T09:34:40Z"
     },
     {
       "id": "world-gen-lap-reorder",
@@ -20176,9 +20176,9 @@
       ],
       "pr": 1613,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.998.0",
+      "released_at": "2026-09-28T09:34:40Z"
     }
   ]
 }
