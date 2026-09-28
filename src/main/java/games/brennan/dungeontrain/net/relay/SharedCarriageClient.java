@@ -145,7 +145,32 @@ public final class SharedCarriageClient {
      */
     public record PoolLease(int id, String token, String blocks, int l, int h, int w,
                             int baseSeq, List<DeltaRec> deltas, String owner, Credits credits,
-                            Deaths deaths) {}
+                            Deaths deaths, String kind, String subKind) {
+
+        /** The relay's name for a whole carriage — what every lease was before rooms could drift. */
+        public static final String KIND_CARRIAGE = "carriage";
+        /** The relay's name for a dimensional carriage's room. */
+        public static final String KIND_PORTAL_ROOM = "portal_room";
+
+        public PoolLease {
+            // A relay older than the kind field says nothing, and the only thing it can have served is
+            // a carriage — the SQL literal saw to that.
+            if (kind == null || kind.isEmpty()) kind = KIND_CARRIAGE;
+            if (subKind == null) subKind = "";
+        }
+
+        /** The shape this record had before a lease could name its kind. */
+        public PoolLease(int id, String token, String blocks, int l, int h, int w,
+                         int baseSeq, List<DeltaRec> deltas, String owner, Credits credits,
+                         Deaths deaths) {
+            this(id, token, blocks, l, h, w, baseSeq, deltas, owner, credits, deaths, KIND_CARRIAGE, "");
+        }
+
+        /** True when the relay served a dimensional carriage's room rather than a carriage. */
+        public boolean isRoom() {
+            return KIND_PORTAL_ROOM.equals(kind);
+        }
+    }
 
     /** Outcome of a delta POST: transport status + whether the holder should re-baseline (soft/hard). */
     public record DeltaResult(CallStatus status, boolean compactNeeded, boolean mustCompact) {}
@@ -156,7 +181,22 @@ public final class SharedCarriageClient {
                                                                   String blocksBase64,
                                                                   int l, int h, int w, String text, String stage,
                                                                   String mode) {
+        return submit(ownerUuid, ownerName, blocksBase64, l, h, w, text, stage, mode, null, null);
+    }
+
+    /**
+     * {@link #submit} naming what shape the build is. {@code kind} is {@link PoolLease#KIND_CARRIAGE}
+     * or {@link PoolLease#KIND_PORTAL_ROOM}; {@code subKind} is a room's template name, which is what
+     * a room lease later matches on — a room is only ever served back into the same room. Null for
+     * either sends nothing, which the relay reads as a carriage.
+     */
+    public static CompletableFuture<Optional<LeaseResult>> submit(String ownerUuid, String ownerName,
+                                                                  String blocksBase64,
+                                                                  int l, int h, int w, String text, String stage,
+                                                                  String mode, String kind, String subKind) {
         JsonObject body = new JsonObject();
+        if (kind != null && !kind.isEmpty()) body.addProperty("kind", kind);
+        if (subKind != null && !subKind.isEmpty()) body.addProperty("subKind", subKind);
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
         // The builder's name, so other worlds can credit them by name rather than an unresolvable uuid.
         // Only ever sent for a player who has granted network consent (see SharedCarriageGate).
@@ -991,7 +1031,30 @@ public final class SharedCarriageClient {
                                                                int l, int h, int w,
                                                                List<Integer> exclude, String stage,
                                                                String ownerUuid, String mode) {
+        return lease(holderUuid, holderName, l, h, w, exclude, stage, ownerUuid, mode, null, null);
+    }
+
+    /**
+     * {@link #lease} for a build of a particular shape. {@code kind} null or
+     * {@link PoolLease#KIND_CARRIAGE} asks for a carriage exactly as before and sends nothing new on
+     * the wire; {@link PoolLease#KIND_PORTAL_ROOM} asks for a dimensional carriage's room of template
+     * {@code subKind} at these dims.
+     *
+     * <p><b>A room lease is checked on the way back.</b> A relay older than the kind field ignores
+     * it and serves whatever carriage matches the dims — and a carriage stamped into a room's box
+     * is a wall with a corridor door in it. So a room request whose answer does not say
+     * {@code portal_room} is handed straight back to the relay and reported as none; the relay has
+     * to ship first, and this is what makes the mod safe to ship second.</p>
+     */
+    public static CompletableFuture<Optional<PoolLease>> lease(String holderUuid, String holderName,
+                                                               int l, int h, int w,
+                                                               List<Integer> exclude, String stage,
+                                                               String ownerUuid, String mode,
+                                                               String kind, String subKind) {
+        boolean wantsRoom = PoolLease.KIND_PORTAL_ROOM.equals(kind);
         JsonObject body = new JsonObject();
+        if (kind != null && !kind.isEmpty()) body.addProperty("kind", kind);
+        if (subKind != null && !subKind.isEmpty()) body.addProperty("subKind", subKind);
         body.addProperty("uuid", holderUuid == null ? "" : holderUuid);
         // Names this world's holder on the relay, so OUR edits are credited by name in the next world.
         if (holderName != null && !holderName.isEmpty()) body.addProperty("name", holderName);
@@ -1022,9 +1085,17 @@ public final class SharedCarriageClient {
             int dw = d != null && d.has("w") ? d.get("w").getAsInt() : w;
             int baseSeq = o.has("baseSeq") && !o.get("baseSeq").isJsonNull() ? o.get("baseSeq").getAsInt() : 0;
             String owner = o.has("owner") && !o.get("owner").isJsonNull() ? o.get("owner").getAsString() : "";
-            return Optional.of(new PoolLease(o.get("id").getAsInt(), o.get("token").getAsString(),
+            PoolLease lease = new PoolLease(o.get("id").getAsInt(), o.get("token").getAsString(),
                     o.get("blocks").getAsString(), dl, dh, dw, baseSeq, parseDeltas(o), owner,
-                    parseCredits(o), parseDeaths(o)));
+                    parseCredits(o), parseDeaths(o), str(o, "kind"), str(o, "subKind"));
+            if (wantsRoom && (!lease.isRoom() || !lease.subKind().equals(subKind))) {
+                LOGGER.warn("[DungeonTrain] asked the relay for room '{}' and was served kind={} subKind='{}' "
+                        + "(id={}) — an older relay ignores the kind; returning it unused. Update the relay.",
+                        subKind, lease.kind(), lease.subKind(), lease.id());
+                returnLease(lease.id(), lease.token(), null, null, 0);
+                return Optional.empty();
+            }
+            return Optional.of(lease);
         });
     }
 

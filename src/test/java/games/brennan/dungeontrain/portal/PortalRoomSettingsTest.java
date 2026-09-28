@@ -331,6 +331,91 @@ class PortalRoomSettingsTest {
         assertEquals(PortalRoomCopies.DYNAMIC, on.withFog(PortalRoomFog.OFF).copies());
     }
 
+    // ---- drift ----
+
+    @Test
+    @DisplayName("Drift is absent from every tag ever written and reads back On — a locked room drifts unless told not to")
+    void driftDefaultsToOnForEveryLegacyTag() {
+        for (String tag : new String[] {"bedrock_lock", "endless_open/dynamic",
+                "bedrock_lock/exact/off/off/off/none/sealed/-3/2/-3/2/minecraft:obsidian",
+                "bedrock_lock/exact/off/off/off/none/sealed/0/0/0/0/minecraft:bedrock/off"}) {
+            PortalRoomSettings parsed = PortalRoomSettings.parse(tag);
+            assertSame(PortalRoomDrift.ON, parsed.drift(), tag);
+            assertEquals(tag, parsed.toTag(), tag);
+        }
+    }
+
+    @Test
+    @DisplayName("Only a Bedrock Lock room drifts, whatever its drift segment says")
+    void onlyBedrockLockDrifts() {
+        for (PortalRoomMode mode : PortalRoomMode.values()) {
+            PortalRoomSettings on = PortalRoomSettings.parse(mode.id());
+            assertEquals(mode == PortalRoomMode.BEDROCK_LOCK, on.driftApplies(), mode.name());
+            assertEquals(mode == PortalRoomMode.BEDROCK_LOCK, on.drifts(), mode.name());
+            assertEquals(mode == PortalRoomMode.BEDROCK_LOCK ? PortalRoomDrift.ON : PortalRoomDrift.OFF,
+                on.effectiveDrift(), mode.name());
+            assertFalse(on.withDrift(PortalRoomDrift.OFF).drifts(), mode.name());
+        }
+    }
+
+    @Test
+    @DisplayName("Off round-trips as a fourteenth segment on a locked room; On is never written")
+    void driftOffRoundTrips() {
+        PortalRoomSettings sealedOff = PortalRoomSettings.parse("bedrock_lock").withDrift(PortalRoomDrift.OFF);
+        assertFalse(sealedOff.drifts());
+        String tag = sealedOff.toTag();
+        assertTrue(tag.endsWith("/auto/off"), tag);
+        assertEquals(14, tag.split("/", -1).length, tag);
+        assertSame(PortalRoomDrift.OFF, PortalRoomSettings.parse(tag).drift());
+        assertSame(PortalRoomFog.AUTO, PortalRoomSettings.parse(tag).fog());
+        assertEquals(tag, PortalRoomSettings.parse(tag).toTag());
+        assertEquals("bedrock_lock", sealedOff.withDrift(PortalRoomDrift.ON).toTag());
+        assertSame(PortalRoomDrift.OFF, sealedOff.nextDrift().nextDrift().drift());
+    }
+
+    @Test
+    @DisplayName("An endless room carrying Off from before its walls changed writes no drift segment")
+    void driftOffIsNotWrittenWhereItCannotApply() {
+        PortalRoomSettings endless = PortalRoomSettings.parse("endless_open/dynamic").withDrift(PortalRoomDrift.OFF);
+        assertSame(PortalRoomDrift.OFF, endless.drift());
+        assertSame(PortalRoomDrift.OFF, endless.effectiveDrift());
+        assertEquals("endless_open/dynamic", endless.toTag());
+        // Switching the walls back to a lock brings the author's veto with it.
+        assertFalse(endless.withMode(PortalRoomMode.BEDROCK_LOCK).drifts());
+    }
+
+    @Test
+    @DisplayName("Every wither carries the drift veto through, and withDrift leaves the rest alone")
+    void withersPreserveDrift() {
+        PortalRoomSettings off = PortalRoomSettings.parse("bedrock_lock").withDrift(PortalRoomDrift.OFF);
+        assertSame(PortalRoomDrift.OFF, off.withMode(PortalRoomMode.ENDLESS_OPEN).drift());
+        assertSame(PortalRoomDrift.OFF, off.withCopies(PortalRoomCopies.EXACT).drift());
+        assertSame(PortalRoomDrift.OFF, off.withContents(PortalRoomContents.FIT).drift());
+        assertSame(PortalRoomDrift.OFF, off.withExits(PortalRoomExits.ON).drift());
+        assertSame(PortalRoomDrift.OFF, off.withBooks(PortalRoomBooks.DEFAULT).drift());
+        assertSame(PortalRoomDrift.OFF, off.withSky(PortalRoomSky.DAY).drift());
+        assertSame(PortalRoomDrift.OFF, off.withFog(PortalRoomFog.ON).drift());
+        assertSame(PortalRoomDrift.OFF, off.withDoorWall(PortalRoomDoorWall.SEALED).drift());
+        assertSame(PortalRoomDrift.OFF, off.withLock(new PortalRoomLock("minecraft:obsidian")).drift());
+        assertSame(PortalRoomDrift.OFF, off.withDoorOffset(new PortalRoomDoorOffset(2)).drift());
+        assertSame(PortalRoomDrift.OFF, off.withDoorHeightOffset(new PortalRoomDoorHeightOffset(1)).drift());
+        assertSame(PortalRoomDrift.OFF, off.withExitDoorOffset(new PortalRoomDoorOffset(1)).drift());
+        assertSame(PortalRoomDrift.OFF, off.withExitDoorHeightOffset(new PortalRoomDoorHeightOffset(1)).drift());
+        assertSame(PortalRoomMode.BEDROCK_LOCK, off.withDrift(PortalRoomDrift.ON).mode());
+        assertSame(PortalRoomFog.AUTO, off.withDrift(PortalRoomDrift.ON).fog());
+    }
+
+    @Test
+    @DisplayName("The longest tag with a seal block, a fog override and a drift veto still fits the packet's cap")
+    void longestSealedTagWithDriftFitsTheModeTagCap() {
+        String tag = PortalRoomSettings.parse("bedrock_lock")
+            .withLock(new PortalRoomLock("a".repeat(PortalRoomLock.BLOCK_ID_MAX)))
+            .withDoorOffset(new PortalRoomDoorOffset(-PortalRoomLayout.MAX_WIDTH))
+            .withFog(PortalRoomFog.OFF).withDrift(PortalRoomDrift.OFF).toTag();
+        assertTrue(tag.length() <= games.brennan.dungeontrain.net.EditorStatusPacket.MODE_TAG_MAX,
+            "tag is " + tag.length() + " chars: " + tag);
+    }
+
     @Test
     @DisplayName("The longest tag with a seal block and a fog override still fits the packet's cap")
     void longestSealedTagWithFogFitsTheModeTagCap() {

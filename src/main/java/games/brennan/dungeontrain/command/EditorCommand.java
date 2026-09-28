@@ -236,6 +236,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_DRIFT_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomDrift drift
+                    : games.brennan.dungeontrain.portal.PortalRoomDrift.values()) {
+                builder.suggest(drift.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_SKY_SUGGESTIONS =
         (ctx, builder) -> {
             for (games.brennan.dungeontrain.portal.PortalRoomSky sky
@@ -6392,6 +6401,31 @@ public final class EditorCommand {
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withFog(wanted));
     }
 
+    /** {@code /dt editor portals drift next} — step On → Off. */
+    private static int runPortalRoomDriftCycle(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).nextDrift());
+    }
+
+    /** {@code /dt editor portals drift <on|off>} — set it outright. Rejects a misspelling rather than falling back to On. */
+    private static int runPortalRoomDrift(CommandContext<CommandSourceStack> ctx, String raw) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomDrift wanted =
+            games.brennan.dungeontrain.portal.PortalRoomDrift.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_drift_option_try", raw));
+            return 0;
+        }
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withDrift(wanted));
+    }
+
     /** {@code /dt editor portals exits next} — step On → Random → Off, keeping the spacing. */
     private static int runPortalRoomExitsCycle(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
@@ -6653,6 +6687,15 @@ public final class EditorCommand {
                     .suggests(PORTAL_ROOM_FOG_SUGGESTIONS)
                     .executes(ctx -> runPortalRoomFog(ctx,
                         StringArgumentType.getString(ctx, "fog")))))
+            // Whether a Bedrock Lock room drifts — is uploaded when edited and may be served from
+            // the shared pool. On by default; means nothing under the modes a blob cannot describe.
+            .then(Commands.literal("drift")
+                .then(Commands.literal("next")
+                    .executes(ctx -> runPortalRoomDriftCycle(ctx)))
+                .then(Commands.argument("drift", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_DRIFT_SUGGESTIONS)
+                    .executes(ctx -> runPortalRoomDrift(ctx,
+                        StringArgumentType.getString(ctx, "drift")))))
             // How many extra ways back to the train an endless room scatters through its copies.
             // Means nothing under the modes that do not repeat.
             .then(Commands.literal("exits")
