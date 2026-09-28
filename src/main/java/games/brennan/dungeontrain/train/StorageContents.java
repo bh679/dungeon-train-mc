@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.LootValue;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
@@ -25,8 +26,11 @@ import java.util.List;
  */
 public final class StorageContents {
 
-    /** Item total (the gift check) and a slot-by-slot signature (any change at all). */
-    public record Snapshot(int itemCount, long sig) {}
+    /**
+     * Item total (the gift check), a slot-by-slot signature (any change at all), and the contents'
+     * worth by {@link LootValue#stackScore} (what a deposit is credited to the echo by).
+     */
+    public record Snapshot(int itemCount, long sig, double value) {}
 
     private StorageContents() {}
 
@@ -68,16 +72,18 @@ public final class StorageContents {
     private static final class Accumulator {
         private int count;
         private long sig = 1L;
+        private double value;
 
         void add(ItemStack stack) {
             long cell = 0L;
             if (!stack.isEmpty()) {
                 count += stack.getCount();
+                value += LootValue.stackScore(stack);
                 cell = 31L * ItemStack.hashItemAndComponents(stack) + stack.getCount();
             }
             sig = sig * 1_000_003L + cell;
         }
 
-        Snapshot snapshot() { return new Snapshot(count, sig); }
+        Snapshot snapshot() { return new Snapshot(count, sig, value); }
     }
 }

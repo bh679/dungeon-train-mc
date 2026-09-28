@@ -20318,8 +20318,29 @@
       "released_at": null
     },
     {
-      "id": "fewer-early-ruins",
+      "id": "drift-storage-generosity",
       "version": "0.1005.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "mobs"
+      ],
+      "title": "Generosity in drifting carriages is remembered",
+      "summary": "Leaving something good in a drifting carriage's chest for the next traveller now counts in your favour: the echo you leave behind comes back a little friendlier. The better the gift, the more it counts.",
+      "highlights": [
+        "Items you leave in storage in someone else's drifting carriage make your echo friendlier, scaled by what they're worth",
+        "Taking something out and putting it back doesn't count twice"
+      ],
+      "pr": 1635,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fewer-early-ruins",
+      "version": "0.1006.0",
       "type": "feat",
       "tags": [
         "feature",
