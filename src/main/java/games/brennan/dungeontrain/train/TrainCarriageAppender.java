@@ -11,10 +11,8 @@ import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.TrainDebugCarriagePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
-import games.brennan.dungeontrain.portal.PortalGeometry;
 import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalRegistry;
-import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalStampRecord;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.ship.CarriageDeck;
@@ -6623,7 +6621,7 @@ public final class TrainCarriageAppender {
     private static TrainDebugCarriagePacket debugCarriageAt(ServerLevel level, ServerPlayer player,
                                                             int pIdx, int slot, int groupSize) {
         CartType cartType = cartTypeAt(level, pIdx, slot, groupSize);
-        String copy = copyLabel(level, player, /*room*/ null);
+        String copy = copyLabel(level, player);
         // Only consult the facts when this is somewhere that rolls contents at all. A pad's pIdx is
         // its neighbour's, so an unconditional lookup reports the carriage next door's furnishings.
         PlacedCarriageFacts.Facts facts = cartType.rollsContents()
@@ -6689,33 +6687,15 @@ public final class TrainCarriageAppender {
     }
 
     /**
-     * Whether the player is in a copy, and which — answered on whichever axis applies where they
-     * stand. Inside a room it is the tile ({@code base}, or {@code copy (x,z)}); inside a portal
-     * corridor's twin it is {@code near} or {@code far}. Empty everywhere else, which includes the
-     * corridor riding the train: the registry holds the twin's world-space geometry, so only the
-     * underground copies can match, and the panel renders empty as "no".
+     * Whether the player is standing in the copy rather than on the train.
+     *
+     * <p>A portal carriage exists twice: the one riding the train, and the dimensional copy the
+     * crossing puts you in. Twin space — the basement the copy is stamped into, and the pocket room
+     * it opens onto — is exactly "the copy", so the same test that routes the read-out answers this
+     * too.</p>
      */
-    private static String copyLabel(ServerLevel level, ServerPlayer player,
-                                    PortalCarriageEvents.RoomFacts room) {
-        // Corridor first, deliberately. A twin corridor stands inside its structure's box — the
-        // box is grown to cover the corridor masks — so testing the room first would answer a
-        // corridor question with a room tile.
-        double x = player.getX();
-        double y = player.getY();
-        double z = player.getZ();
-        for (PortalGeometry geo : PortalRegistry.get(level).all()) {
-            if (!geo.insideCorridor(x, y, z)) continue;
-            int copy = geo.copyAt(y);
-            if (copy == PortalGeometry.COPY_NEAR) return "near";
-            if (copy == PortalGeometry.COPY_FAR) return "far";
-        }
-        if (room != null) {
-            PortalRoomTiling.Tile tile = room.tile();
-            return PortalRoomTiling.Tile.BASE.equals(tile)
-                ? "base"
-                : "copy (" + tile.x() + "," + tile.z() + ")";
-        }
-        return "";
+    private static String copyLabel(ServerLevel level, ServerPlayer player) {
+        return inDimensionalCarriage(level, player) ? "yes" : "no";
     }
 
     /**
@@ -6737,9 +6717,9 @@ public final class TrainCarriageAppender {
             return twinCorridorPacket(level, player, twin);
         }
 
+        String copy = copyLabel(level, player);
         PortalCarriageEvents.RoomFacts room = PortalCarriageEvents.roomFactsAt(
             dims, player.getX(), player.getY(), player.getZ());
-        String copy = copyLabel(level, player, room);
         if (room == null) {
             return new TrainDebugCarriagePacket(true, 0, CART_TYPE_ROOM, "", "", "", copy);
         }
@@ -6747,47 +6727,6 @@ public final class TrainCarriageAppender {
             room.roomName(),
             room.copiesKind().name().toLowerCase(Locale.ROOT) + " #" + room.variantIndex(),
             "", copy);
-    }
-
-    /** Throttle for {@link #logTwinSpaceDiagnosis} — one line per player per second. */
-    private static final Map<UUID, Long> TWIN_DIAG_LAST = new ConcurrentHashMap<>();
-
-    /**
-     * TEMPORARY. Says which branch the twin-space read-out takes at the player's actual position,
-     * so a wrong Copy line can be diagnosed from a log instead of guessed at. Remove once the
-     * corridor/room split is confirmed correct in game.
-     */
-    private static void logTwinSpaceDiagnosis(ServerLevel level, ServerPlayer player, CarriageDims dims) {
-        long now = level.getGameTime();
-        Long last = TWIN_DIAG_LAST.get(player.getUUID());
-        if (last != null && now - last < 20L) return;
-        TWIN_DIAG_LAST.put(player.getUUID(), now);
-
-        double x = player.getX();
-        double y = player.getY();
-        double z = player.getZ();
-        PortalPairIndex.Entry twin = PortalPairIndex.findByTwinPos(player.blockPosition());
-        PortalCarriageEvents.RoomFacts room = PortalCarriageEvents.roomFactsAt(dims, x, y, z);
-
-        int geoTotal = 0;
-        int geoXZ = 0;
-        String geoHit = "none";
-        for (PortalGeometry geo : PortalRegistry.get(level).all()) {
-            geoTotal++;
-            if (!geo.withinCorridorXZ(x, z)) continue;
-            geoXZ++;
-            geoHit = "originX=" + geo.originX() + " floorY=" + geo.floorY()
-                + " deltaY=" + geo.deltaY() + " copyAt=" + geo.copyAt(y)
-                + " insideCorridor=" + geo.insideCorridor(x, y, z);
-        }
-        LOGGER.info("[DT-twin-diag] pos=({}, {}, {}) twinCorridor={} room={} tile={} geos={} xzHits={} {} -> copy='{}'",
-            String.format(Locale.ROOT, "%.1f", x), String.format(Locale.ROOT, "%.1f", y),
-            String.format(Locale.ROOT, "%.1f", z),
-            twin == null ? "null" : ("pIdx=" + twin.carriageIndex()),
-            room == null ? "null" : room.roomName(),
-            room == null ? "-" : (room.tile().x() + "," + room.tile().z()),
-            geoTotal, geoXZ, geoHit,
-            copyLabel(level, player, room));
     }
 
     /**
@@ -6806,7 +6745,7 @@ public final class TrainCarriageAppender {
                 ? CART_TYPE_CORRIDOR_ENTRY
                 : CART_TYPE_CORRIDOR_EXIT)
             : CART_TYPE_CORRIDOR_MIDDLE;
-        String copy = copyLabel(level, player, /*room*/ null);
+        String copy = copyLabel(level, player);
         PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(pIdx);
         if (facts == null) {
             return new TrainDebugCarriagePacket(true, pIdx, label, "", "", ContentsFlip.LABEL_NONE, copy);
@@ -6831,7 +6770,6 @@ public final class TrainCarriageAppender {
             if (dims == null) {
                 dims = DungeonTrainWorldData.get(level.getServer().overworld()).dims();
             }
-            logTwinSpaceDiagnosis(level, player, dims);
             TrainDebugCarriagePacket packet = dimensionalCarriagePacket(level, player, dims);
             String key = "r:" + packet.cartType() + ":" + packet.contentsId()
                 + ":" + packet.subVariantId() + ":" + packet.copy();

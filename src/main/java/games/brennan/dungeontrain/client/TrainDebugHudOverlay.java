@@ -130,8 +130,8 @@ public final class TrainDebugHudOverlay {
         // The one thing on the panel you cannot read off the carriage by eye: whether this stamp of
         // the interior came out authored or mirrored.
         lines.add(new Line("Flip: " + fieldOr(onTrain, TrainDebugState.flip()), COLOR_BODY));
-        // Only meaningful inside a portal corridor's twins or a room's tiles; elsewhere "no" is the
-        // answer rather than a missing value, so say so rather than showing a dash.
+        // yes = standing in the dimensional copy of a portal carriage, no = on the train. Never a
+        // dash: whether you are in the copy is always knowable, so there is no "unknown" to show.
         String copy = TrainDebugState.copy();
         lines.add(new Line("Copy: " + (copy.isEmpty() ? "no" : copy), COLOR_BODY));
 
