@@ -8,6 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.PotionContents;
 
 import java.util.OptionalInt;
 
@@ -47,6 +48,24 @@ public final class TradeEverythingBridge {
      */
     private static final int BOOKSHELF_VALUE_SIXTEENTHS = 22;
     private static final int HONEY_BLOCK_VALUE_SIXTEENTHS = 22;
+
+    /**
+     * Value that pays out exactly one emerald per multiple — the same 22 as the
+     * bookshelf. {@code 22n × 0.75 = 16.5n} floors to n emeralds for every n < 32.
+     */
+    static final int EMERALD_PAYOUT_SIXTEENTHS = 22;
+
+    /** Every effect potion trades for at least 1 emerald. */
+    static final int POTION_BASE_EMERALDS = 1;
+
+    /**
+     * Cap on the amplifier bonus so a command-given Strength CCLV can't sell for
+     * hundreds of emeralds (and stays within the 22-per-emerald floor range).
+     */
+    static final int MAX_POTION_AMPLIFIER_BONUS = 9;
+
+    /** Vanilla's naming for the extended-duration variants ({@code long_swiftness}). */
+    private static final String EXTENDED_POTION_PREFIX = "long_";
 
     /** +1 permanent backpack slot — 5 emeralds. */
     private static final int EDIBLE_BACKPACK_VALUE_SIXTEENTHS = 80;
@@ -88,6 +107,10 @@ public final class TradeEverythingBridge {
                 ? OptionalInt.of(TRIM_TEMPLATE_VALUE_SIXTEENTHS)
                 : OptionalInt.empty());
 
+        // Brewing isn't a crafting recipe and potions are COMMON, so TE would
+        // floor every potion at 1 sixteenth — Strength II priced like a stick.
+        TradeEverythingApi.registerValueProvider(TradeEverythingBridge::potionValue);
+
         TradeEverythingApi.setItemOverride(
             ResourceLocation.withDefaultNamespace("bookshelf"), BOOKSHELF_VALUE_SIXTEENTHS);
         TradeEverythingApi.setItemOverride(
@@ -101,6 +124,55 @@ public final class TradeEverythingBridge {
         TradeEverythingApi.setItemOverride(
             ResourceLocation.fromNamespaceAndPath("ediblebackpacks", "golden_edible_backpack"),
             GOLDEN_EDIBLE_BACKPACK_VALUE_SIXTEENTHS);
+    }
+
+    /**
+     * Drinkable, splash and lingering potions carrying at least one effect.
+     * Effect-less bottles (water, awkward, mundane, thick) and tipped arrows
+     * (8 per lingering potion) fall through to TE's default valuation.
+     */
+    private static OptionalInt potionValue(ItemStack stack) {
+        boolean lingering = stack.is(Items.LINGERING_POTION);
+        if (!lingering && !stack.is(Items.POTION) && !stack.is(Items.SPLASH_POTION)) {
+            return OptionalInt.empty();
+        }
+        PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+        if (contents == null || !contents.hasEffects()) return OptionalInt.empty();
+
+        int maxAmplifier = 0;
+        for (var effect : contents.getAllEffects()) {
+            maxAmplifier = Math.max(maxAmplifier, effect.getAmplifier());
+        }
+        boolean extended = contents.potion()
+            .flatMap(holder -> holder.unwrapKey())
+            .map(key -> key.location().getPath().startsWith(EXTENDED_POTION_PREFIX))
+            .orElse(false);
+        return OptionalInt.of(emeraldsToSixteenths(potionEmeralds(maxAmplifier, extended, lingering)));
+    }
+
+    /**
+     * Whether TE should pay {@code stack} out in emeralds rather than the
+     * villager's goods — see {@code TradePricerEmeraldPayoutMixin}. Its price is
+     * set in emeralds, so goods would turn "1 emerald" into ~20 wheat.
+     */
+    public static boolean paysInEmeralds(ItemStack stack) {
+        return potionValue(stack).isPresent();
+    }
+
+    /**
+     * Emeralds a potion pays out: 1, plus one per amplifier level of its
+     * strongest effect, plus one for the extended variant, plus one for the
+     * lingering form (it costs dragon's breath).
+     */
+    static int potionEmeralds(int maxAmplifier, boolean extended, boolean lingering) {
+        return POTION_BASE_EMERALDS
+            + Math.clamp(maxAmplifier, 0, MAX_POTION_AMPLIFIER_BONUS)
+            + (extended ? 1 : 0)
+            + (lingering ? 1 : 0);
+    }
+
+    static int emeraldsToSixteenths(int emeralds) {
+        return EMERALD_PAYOUT_SIXTEENTHS * emeralds;
     }
 
     /** See {@link #OMINOUS_BANNER_NAME_KEY} for why the check is component-based. */

@@ -276,7 +276,7 @@ public final class DungeonTrainConfig {
     public static final boolean DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED = true;
     /**
      * Off: the spawn/camera-start search only looks at chunks that are already loaded. On: it
-     * force-generates each candidate's chunk on the server thread as it did before 0.1002 — which
+     * force-generates each candidate's chunk on the server thread as it did before 0.1004 — which
      * held one player's server for 61 s at join on hilly terrain. Kept as an escape hatch.
      */
     public static final boolean DEFAULT_SPAWN_SEARCH_SYNC_GEN = false;
@@ -753,7 +753,7 @@ public final class DungeonTrainConfig {
                 .define("introCinematicChunkPreloadEnabled", DEFAULT_INTRO_CINEMATIC_CHUNK_PRELOAD_ENABLED);
         ModConfigSpec.BooleanValue spawnSearchSyncGen = b
                 .comment("When placing a player's spawn camera beside the track, force-generate each candidate chunk",
-                        "on the server thread (pre-0.1002 behaviour). Off (default): only already-loaded chunks are",
+                        "on the server thread (pre-0.1004 behaviour). Off (default): only already-loaded chunks are",
                         "searched and the search is time-boxed, so joining never freezes the server. Turn on only if",
                         "you need the wider search and accept multi-second freezes at join on slow worldgen.")
                 .define("spawnSearchSyncGen", DEFAULT_SPAWN_SEARCH_SYNC_GEN);

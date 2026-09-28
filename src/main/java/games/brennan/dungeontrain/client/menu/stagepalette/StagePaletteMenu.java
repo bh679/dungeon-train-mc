@@ -49,7 +49,7 @@ public final class StagePaletteMenu {
     public enum Column {
         BLOCK("block"), STAIRS("stairs"), SLAB("slab"), WALL("wall"), BUTTON("button"), PLATE("plate"),
         FENCE("fence"), GATE("gate"), DOOR("door"), TRAPDOOR("trapdoor"), LOG("log"),
-        STRIPPED_LOG("stripped_log"), WOOD("wood"), STRIPPED_WOOD("stripped_wood");
+        STRIPPED_LOG("stripped_log"), WOOD("wood"), STRIPPED_WOOD("stripped_wood"), LEAVES("leaves");
 
         private final String key;
 
@@ -143,6 +143,7 @@ public final class StagePaletteMenu {
         wood.put(Column.STRIPPED_LOG, "stage_stripped_log");
         wood.put(Column.WOOD, "stage_wood");
         wood.put(Column.STRIPPED_WOOD, "stage_stripped_wood");
+        wood.put(Column.LEAVES, "stage_leaves");
         rows.add(Row.family(RowGroup.WOOD, CellKind.WOOD_HEADER, wood));
         rows.add(Row.family(RowGroup.STONE, CellKind.STONE_HEADER, Map.of()));
         for (StoneKind kind : StoneKind.values()) {
