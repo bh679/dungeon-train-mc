@@ -1,10 +1,13 @@
 package games.brennan.dungeontrain.compat;
 
 import games.brennan.adventureitemnames.api.NameComposer;
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
+import games.brennan.dungeontrain.train.PlayerMobGroupSpawner;
 import games.brennan.playermob.compat.PlayerMobSpawnHooks;
 import games.brennan.playermob.compat.ReincarnationRecord;
 import games.brennan.playermob.entity.PlayerMobEntity;
+import org.slf4j.Logger;
 
 /**
  * Bridges PlayerMob's spawn seam ({@link PlayerMobSpawnHooks}) into DungeonTrain:
@@ -14,7 +17,10 @@ import games.brennan.playermob.entity.PlayerMobEntity;
  *   <li>names the friend-pair companion that spawns beside a train PlayerMob. The companion skips
  *       {@code finalizeSpawn}, so Adventure Item Names' spawn mixin never names it the way it names
  *       its leader — we run the same {@link NameComposer#applyMobName} call (honouring AIN's own
- *       chance/category config) before the companion enters the world.</li>
+ *       chance/category config) before the companion enters the world;</li>
+ *   <li>gives that companion its leader's on-train setup — carriage-contents tag, persistence and DT
+ *       difficulty gear ({@link PlayerMobGroupSpawner#onCompanionSpawned}) — since it never passes
+ *       through {@code PlayerMobGroupSpawner#spawnPlayerMob}.</li>
  * </ul>
  *
  * <p>Mirrors {@link PlayerMobSocialBridge}: the hard reference to {@code PlayerMobSpawnHooks} lives
@@ -25,9 +31,11 @@ import games.brennan.playermob.entity.PlayerMobEntity;
  */
 public final class PlayerMobSpawnBridge {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private PlayerMobSpawnBridge() {}
 
-    /** Subscribe the encounter journal (remote echoes only) and companion naming to PlayerMob's spawn seam. */
+    /** Subscribe the encounter journal (remote echoes only) and companion setup + naming to PlayerMob's spawn seam. */
     public static void install() {
         PlayerMobSpawnHooks.install(new PlayerMobSpawnHooks.SpawnObserver() {
             @Override
@@ -39,7 +47,17 @@ public final class PlayerMobSpawnBridge {
 
             @Override
             public void onCompanionSpawned(PlayerMobEntity companion, PlayerMobEntity leader) {
-                NameComposer.applyMobName(companion, companion.getRandom());
+                // Setup first, each step isolated, so a naming fault can't skip the gear/tag or vice versa.
+                try {
+                    PlayerMobGroupSpawner.onCompanionSpawned(companion, leader);
+                } catch (Throwable t) {
+                    LOGGER.warn("[DungeonTrain] PlayerMob companion: train setup failed", t);
+                }
+                try {
+                    NameComposer.applyMobName(companion, companion.getRandom());
+                } catch (Throwable t) {
+                    LOGGER.warn("[DungeonTrain] PlayerMob companion: naming failed", t);
+                }
             }
         });
     }

@@ -97,6 +97,36 @@ public final class PlacedCarriageFacts {
     }
 
     /**
+     * Record a carriage whose shell is placed but which never rolls contents — a FLATBED. Without
+     * this the panel has nothing to say about a carriage that plainly exists, because the contents
+     * pick it would otherwise be recorded at is skipped for exactly this variant.
+     */
+    public static synchronized void recordShellOnly(int carriagePIdx, CarriageVariant variant) {
+        // A flatbed has no interior to flip, which is "none" rather than the unknown a blank
+        // would render as.
+        BY_PIDX.put(carriagePIdx,
+            new Facts(variant == null ? "" : variant.id(), "", "", ContentsFlip.LABEL_NONE));
+    }
+
+    /**
+     * Record the contents a portal corridor was furnished with. The cart-type label is left empty:
+     * a corridor's kind is resolved live from the portal registry, which is authoritative, and it
+     * never rolls a shell variant anyway.
+     *
+     * <p>One draw serves the whole pair — both corridors and the pocket room — so the room reads
+     * this back through its pair's carriage index rather than holding a record of its own.</p>
+     */
+    public static synchronized void recordPortalContents(int carriagePIdx, CarriageContents resolved) {
+        String resolvedId = resolved == null ? "" : resolved.id();
+        String parentId = resolvedId.isEmpty()
+            ? ""
+            : CarriageContentsGroupStore.findParentOf(resolvedId).orElse(resolvedId);
+        String subVariantId = parentId.equals(resolvedId) ? "" : resolvedId;
+        // A corridor's blocks must match its twin exactly, so it is never flipped.
+        BY_PIDX.put(carriagePIdx, new Facts("", parentId, subVariantId, ContentsFlip.LABEL_NONE));
+    }
+
+    /**
      * Record a slot stamped verbatim from the shared-carriage relay pool. It never reaches a
      * contents pick, so only the variant it was leased against is known.
      */
