@@ -20337,6 +20337,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "name-playermob-companion",
+      "version": "0.1006.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "A PlayerMob's travelling friend has a name too",
+      "summary": "When two PlayerMobs board the train together as friends, the second one used to walk around with no name above its head. Both now get a name, the same way a PlayerMob always has.",
+      "highlights": [
+        "Friends who board as an echo pair still read \"Echo of \u2026\", unchanged"
+      ],
+      "pr": 1639,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
