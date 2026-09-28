@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageEntitySnapshot;
 import games.brennan.dungeontrain.train.SharedCarriagePool;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
+import games.brennan.dungeontrain.train.StorageContents;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -416,6 +417,10 @@ public final class SharedCarriageEvents {
      * culled). MUST be called on the server thread BEFORE the sub-level is deleted.
      */
     public static boolean finalFlushAndReturn(SharedCarriageRegistry.Instance inst, boolean allowCapture) {
+        // Storage a player changed but never walked away from (culled around them, server stopping) —
+        // queue it now, while the plot is still readable and before markCulled stops enqueue, so the
+        // full capture below carries it.
+        inst.releaseParked(pos -> StorageContents.sig(inst.level, pos));
         inst.markCulled(); // stop the flusher issuing new POSTs; a stale in-flight one 403s harmlessly
         Integer id = inst.relayId();
         String token = inst.leaseToken();

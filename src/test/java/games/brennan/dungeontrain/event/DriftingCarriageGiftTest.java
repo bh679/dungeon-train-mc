@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.event;
 
 import org.junit.jupiter.api.Test;
 
+import games.brennan.dungeontrain.event.SharedCarriageAdvancementEvents.CloseAction;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -9,9 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The "left something behind" rule for {@code drift_gift_left}: a drifting-carriage container counts
  * as a gift only when it holds MORE at close than it did at open.
  *
- * <p>Plus {@code shouldQueue}, which decides whether the cell is uploaded: a gift always, and any
- * change at all once the carriage has already been changed (on the relay) — but looting a carriage
- * nobody has touched must never turn it into a build.</p>
+ * <p>Plus {@code closeAction}: a gift is sent at once, any other change is only parked locally (it
+ * travels when the player leaves, and only from a block-edited carriage — see
+ * {@code SharedCarriageRegistryTest}).</p>
  */
 class DriftingCarriageGiftTest {
 
@@ -43,40 +46,34 @@ class DriftingCarriageGiftTest {
         assertFalse(SharedCarriageAdvancementEvents.isGift(null, 7));
     }
 
-    // ---------------- Upload queue ----------------
+    // ---------------- Close action ----------------
 
     private static final long SIG_A = 111L;
     private static final long SIG_B = 222L;
 
     @Test
-    void lootingAnAlreadyChangedCarriageIsQueued() {
-        assertTrue(SharedCarriageAdvancementEvents.shouldQueue(4, 3, SIG_A, SIG_B, true));
-        assertTrue(SharedCarriageAdvancementEvents.shouldQueue(9, 0, SIG_A, SIG_B, true));
+    void aGiftIsSentAtOnce() {
+        assertEquals(CloseAction.SEND_NOW, SharedCarriageAdvancementEvents.closeAction(0, 1, SIG_A, SIG_B));
     }
 
     @Test
-    void lootingAnUntouchedCarriageIsNotQueued() {
-        assertFalse(SharedCarriageAdvancementEvents.shouldQueue(4, 3, SIG_A, SIG_B, false));
+    void takingItemsIsParkedNotSent() {
+        assertEquals(CloseAction.PARK, SharedCarriageAdvancementEvents.closeAction(4, 3, SIG_A, SIG_B));
+        assertEquals(CloseAction.PARK, SharedCarriageAdvancementEvents.closeAction(9, 0, SIG_A, SIG_B));
     }
 
     @Test
-    void anEvenSwapIsQueuedOnlyOnceAlreadyChanged() {
-        assertTrue(SharedCarriageAdvancementEvents.shouldQueue(5, 5, SIG_A, SIG_B, true));
-        assertFalse(SharedCarriageAdvancementEvents.shouldQueue(5, 5, SIG_A, SIG_B, false));
+    void anEvenSwapOrRearrangeIsParked() {
+        assertEquals(CloseAction.PARK, SharedCarriageAdvancementEvents.closeAction(5, 5, SIG_A, SIG_B));
     }
 
     @Test
-    void openingAndClosingWithoutChangeIsNotQueued() {
-        assertFalse(SharedCarriageAdvancementEvents.shouldQueue(5, 5, SIG_A, SIG_A, true));
+    void openingAndClosingWithoutChangeDoesNothing() {
+        assertEquals(CloseAction.NONE, SharedCarriageAdvancementEvents.closeAction(5, 5, SIG_A, SIG_A));
     }
 
     @Test
-    void aGiftIsQueuedEvenOnAnUntouchedCarriage() {
-        assertTrue(SharedCarriageAdvancementEvents.shouldQueue(0, 1, SIG_A, SIG_B, false));
-    }
-
-    @Test
-    void noRecordedOpenIsNeverQueued() {
-        assertFalse(SharedCarriageAdvancementEvents.shouldQueue(null, 7, SIG_A, SIG_B, true));
+    void noRecordedOpenDoesNothing() {
+        assertEquals(CloseAction.NONE, SharedCarriageAdvancementEvents.closeAction(null, 7, SIG_A, SIG_B));
     }
 }

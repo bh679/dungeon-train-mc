@@ -196,4 +196,67 @@ class SharedCarriageRegistryTest {
         assertEquals(1, inst.deaths().total());
         assertTrue(inst.deaths().names().isEmpty());
     }
+
+    // ---------------- Parked storage ----------------
+
+    private static SharedCarriageRegistry.Instance parkingCarriage() {
+        return SharedCarriageRegistry.register(null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0),
+                DIMS, "shared", true, false, "", 7, "tok", 0, "stone", Credits.EMPTY, Deaths.EMPTY);
+    }
+
+    @Test
+    void parkedStorageStaysLocalUntilTheCarriageIsBlockEdited() {
+        SharedCarriageRegistry.Instance inst = parkingCarriage();
+        inst.parkContainer(new BlockPos(1, 1, 1), 10L);
+
+        assertEquals(0, inst.releaseParked(pos -> 99L)); // looting only → nothing travels
+        assertFalse(inst.hasPending());
+        assertTrue(inst.hasParked());                    // kept for a later edit + leave
+
+        inst.markBlockEdited();
+        assertEquals(1, inst.releaseParked(pos -> 99L));
+        assertEquals(Set.of(new BlockPos(1, 1, 1)), inst.drainPending());
+        assertFalse(inst.hasParked());
+    }
+
+    @Test
+    void releaseSendsOnlyStorageThatReallyChanged() {
+        SharedCarriageRegistry.Instance inst = parkingCarriage();
+        inst.markBlockEdited();
+        BlockPos changed = new BlockPos(1, 1, 1);
+        BlockPos putBack = new BlockPos(2, 1, 1);
+        BlockPos broken = new BlockPos(3, 1, 1);
+        inst.parkContainer(changed, 10L);
+        inst.parkContainer(putBack, 20L);
+        inst.parkContainer(broken, 30L);
+
+        java.util.Map<BlockPos, Long> live = new java.util.HashMap<>();
+        live.put(changed, 11L); // contents differ from the baseline
+        live.put(putBack, 20L); // emptied and refilled — same as before
+        // `broken` absent → unreadable → dropped, never uploaded as whatever stands there now
+        int queued = inst.releaseParked(live::get);
+
+        assertEquals(1, queued);
+        assertEquals(Set.of(changed), inst.drainPending());
+        assertFalse(inst.hasParked());
+    }
+
+    @Test
+    void theFirstParkedSignatureIsTheBaseline() {
+        SharedCarriageRegistry.Instance inst = parkingCarriage();
+        inst.markBlockEdited();
+        BlockPos pos = new BlockPos(1, 1, 1);
+        inst.parkContainer(pos, 10L); // before the first edit
+        inst.parkContainer(pos, 11L); // reopened after it — must not move the baseline
+        // Put back exactly as it was before the first edit → nothing to send.
+        assertEquals(0, inst.releaseParked(p -> 10L));
+    }
+
+    @Test
+    void cullingDropsParkedStorage() {
+        SharedCarriageRegistry.Instance inst = parkingCarriage();
+        inst.parkContainer(new BlockPos(1, 1, 1), 10L);
+        inst.markCulled();
+        assertFalse(inst.hasParked());
+    }
 }
