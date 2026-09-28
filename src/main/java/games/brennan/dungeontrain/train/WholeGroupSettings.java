@@ -48,7 +48,7 @@ public final class WholeGroupSettings {
 
     public static final int OFF = 0;
     public static final int DEFAULT_EVERY = 12;
-    public static final int MAX_EVERY = 64;
+    public static final int MAX_EVERY = 1000;
 
     private static volatile int every = DEFAULT_EVERY;
     private static volatile int forced = OFF;

@@ -207,6 +207,7 @@ public final class VariantOverlayRenderer {
         LAST_DOOR_GHOSTS_KEY.clear();
         LAST_MOB_GHOSTS_KEY.clear();
         EditorPlotSky.clearAll();
+        EditorMirrorPlotSync.clearAll();
     }
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -252,6 +253,7 @@ public final class VariantOverlayRenderer {
         clearStraysIfStale(player);
         clearDoorGhostsIfStale(player);
         clearMobGhostsIfStale(player);
+        EditorMirrorPlotSync.forget(player);
     }
 
     /**
@@ -313,6 +315,7 @@ public final class VariantOverlayRenderer {
                 continue;
             }
             updateEditorStatus(player, dims);
+            EditorMirrorPlotSync.push(player, dims);
             pushHistorySnapshot(player);
             pushLockIdSnapshot(player);
             pushPlotLabelsSnapshot(player, dims);
