@@ -143,6 +143,7 @@
     "client.ClientLevelBandSkyColorMixin",
     "client.LightTextureEndBandMixin",
     "client.ClockBandSpinMixin",
+    "client.CompassBandSpinMixin",
     "client.LightTextureNetherBandMixin",
     "client.LightTextureUpsideDownBandMixin",
     "client.LightTexturePortalRoomMixin",
