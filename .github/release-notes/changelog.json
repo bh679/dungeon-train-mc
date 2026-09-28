@@ -20254,6 +20254,29 @@
       "released": true,
       "released_in": "v0.1001.0",
       "released_at": "2026-09-28T14:26:44Z"
+    },
+    {
+      "id": "potions-trade-for-emeralds",
+      "version": "0.1002.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Potions are worth emeralds",
+      "summary": "Villagers now pay real emeralds for potions. Every potion with an effect trades for at least 1 emerald, and stronger brews are worth more.",
+      "highlights": [
+        "Any effect potion trades for at least 1 emerald",
+        "+1 emerald for each level of potency (Strength II, Turtle Master\u2026)",
+        "+1 emerald for extended-duration potions, and +1 for lingering ones",
+        "Water bottles and other effect-less brews are unchanged"
+      ],
+      "pr": 1632,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
