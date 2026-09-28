@@ -20265,11 +20265,10 @@
         "balance"
       ],
       "title": "Potions are worth emeralds",
-      "summary": "Villagers now pay real emeralds for potions. Every potion with an effect trades for at least 1 emerald, and stronger brews are worth more.",
+      "summary": "Villagers now pay real emeralds for potions, and stronger brews are worth more.",
       "highlights": [
-        "Any effect potion trades for at least 1 emerald",
-        "+1 emerald for each level of potency (Strength II, Turtle Master\u2026)",
-        "+1 emerald for extended-duration potions, and +1 for lingering ones",
+        "Potions with an effect now trade for emeralds",
+        "More potent, longer-lasting and lingering potions fetch a better price",
         "Water bottles and other effect-less brews are unchanged"
       ],
       "pr": 1632,
