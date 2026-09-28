@@ -142,11 +142,21 @@ public final class BandAdvancements {
 
     /**
      * True when {@code path} names a backwards-travelling advancement: anything on The Secrete Menu tab,
-     * or its Dungeon Train-tab twin. Every one is hidden until earned and none counts towards the capstone.
+     * or its Dungeon Train-tab twin. None counts towards the capstone, so the start-again wipe keeps them all.
      */
     public static boolean isBackwards(String path) {
         return path != null && (path.startsWith(SECRETE_MENU_PREFIX)
                 || path.equals(BandAdvancementChainRewriter.PATH_PREFIX + SECRETE_MENU));
+    }
+
+    /**
+     * True when {@code path} is on a tab drawn as a frontier chain — Dungeon Train or The Secrete Menu:
+     * earned nodes plus the one step past the furthest earned, nothing else (see
+     * {@code AdvancementVisibilityEvaluatorMixin} and {@code PlayerAdvancementsRehomeMixin}).
+     */
+    public static boolean isFrontierTab(String path) {
+        return path != null && (path.startsWith(BandAdvancementChainRewriter.PATH_PREFIX)
+                || path.startsWith(SECRETE_MENU_PREFIX));
     }
 
     private BandAdvancements() {}

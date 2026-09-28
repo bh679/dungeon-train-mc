@@ -70,14 +70,18 @@ public final class CompletionistAdvancement {
      * @param notRequired the relay's live {@code notRequired} set ({@link AdvancementRequirementOverrides#notRequired()})
      */
     public static boolean isRequired(AdvancementHolder holder, Set<ResourceLocation> notRequired) {
-        ResourceLocation rl = holder.id();
+        return isRequiredId(holder.id(), notRequired)
+            && holder.value().display().isPresent();                      // skip recipe/display-less
+    }
+
+    /** The id half of {@link #isRequired} — everything but the display check. Package-private for tests. */
+    static boolean isRequiredId(ResourceLocation rl, Set<ResourceLocation> notRequired) {
         if (!DungeonTrain.MOD_ID.equals(rl.getNamespace())) return false; // other mods / vanilla
         if (rl.getPath().startsWith("editor/")) return false;             // editor tree excluded
         if (rl.equals(ID)) return false;                                  // never require itself
         if (rl.equals(StartAgainAdvancement.ID)) return false;            // downstream of the capstone, not a prerequisite
         if (BandAdvancements.isBackwards(rl.getPath())) return false;     // The Secrete Menu: optional, never required
-        if (notRequired.contains(rl)) return false;                       // the operator dropped it from the capstone (relay)
-        return holder.value().display().isPresent();                      // skip recipe/display-less
+        return !notRequired.contains(rl);                                 // the operator dropped it from the capstone (relay)
     }
 
     /**
