@@ -20390,6 +20390,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "faster-world-load-ruins",
+      "version": "0.1009.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "New worlds load about twice as fast",
+      "summary": "Creating a new world now takes about half as long. The game no longer builds large ruins it was only going to throw away, and the ruins further down the line are loaded quietly in the background before the train gets there, so arriving doesn't hitch.",
+      "highlights": [
+        "New worlds open in roughly half the time",
+        "Large ruins load in the background ahead of the train instead of all at once when you reach them",
+        "The early ruins now come from a smaller mix of buildings chosen for each world, so every world's are a little different",
+        "Using /locate to find a ruin no longer freezes the server"
+      ],
+      "pr": 1643,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
