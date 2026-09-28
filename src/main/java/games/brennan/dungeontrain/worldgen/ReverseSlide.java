@@ -63,7 +63,7 @@ public final class ReverseSlide {
 
     /**
      * Where one player stands (world X), whether they are on the train, and whether their off-train
-     * position may push the bands back (not creative — flying and teleporting to test must not).
+     * position may push the bands back (not creative on a server — see {@link #samples}).
      */
     record Sample(double x, boolean onTrain, boolean slides) {}
 
@@ -173,16 +173,19 @@ public final class ReverseSlide {
 
     /**
      * Players that count: everyone in the overworld proper except spectators and anyone in a portal twin's
-     * sealed space (not out on the line). Creative players earn on the train like anyone — that is how the
-     * rule gets tested — but never push the bands back, since they fly and teleport freely.
+     * sealed space (not out on the line). Creative players earn on the train like anyone. In singleplayer
+     * they count fully; on a server a creative player (an admin flying or teleporting around) never pushes
+     * the bands back for everyone else.
      */
     private static List<Sample> samples(ServerLevel level) {
         List<Trains.Carriage> carriages = carriages(level);
+        boolean singleplayer = level.getServer().isSingleplayer();
         List<Sample> out = new ArrayList<>();
         for (ServerPlayer p : level.players()) {
             if (p.isSpectator()) continue;
             if (PortalTwinSpace.isInside(level, p.getBlockX(), p.getY())) continue;
-            out.add(new Sample(p.getX(), CarriageDeck.isOnTrainFootprint(carriages, p), !p.isCreative()));
+            out.add(new Sample(p.getX(), CarriageDeck.isOnTrainFootprint(carriages, p),
+                    singleplayer || !p.isCreative()));
         }
         return out;
     }

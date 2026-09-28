@@ -54,7 +54,7 @@ final class ReverseSlideTest {
     }
 
     @Test
-    @DisplayName("creative players earn on the train but never push the bands back")
+    @DisplayName("a non-sliding player (creative on a server) earns on the train but never pushes the bands back")
     void creative() {
         assertEquals(new State(-15L, -500L, 0L), next(-15L, -15L, 0L, new Sample(-500.0, true, false)));
         assertEquals(new State(-15L, -15L, 0L), next(-15L, -15L, 0L, new Sample(-3000.0, false, false)));
