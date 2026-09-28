@@ -54,7 +54,8 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_CARRIAGE_HEIGHT = "carriageHeight";
     private static final String TAG_GENERATION_SEED = "generationSeed";
     private static final String TAG_REVERSE_ORIGIN_X = "reverseOriginX";
-    private static final String TAG_REVERSE_FRONTIER_X = "reverseFrontierX";
+    private static final String TAG_REVERSE_REACH_X = "reverseReachX";
+    private static final String TAG_REVERSE_EARNED = "reverseEarned";
     private static final String TAG_REVERSE_SLIDE = "reverseSlide";
     private static final String TAG_STARTING_DIMENSION = "startingDimension";
     private static final String TAG_PLAYER_MOB_SPAWN_OVERRIDE = "playerMobSpawnOneInOverride";
@@ -125,11 +126,15 @@ public final class DungeonTrainWorldData extends SavedData {
      */
     private long reverseOriginX = Long.MAX_VALUE;
     /**
-     * Lowest world X any player has stood at while on the train ({@code worldgen.ReverseSlide}), or
-     * {@link Long#MAX_VALUE} before anyone has — the reversed bands behind spawn only get closer as this
-     * falls. World space, never train-relative.
+     * Lowest world X any counted player has reached, on the train or off it ({@code worldgen.ReverseSlide}),
+     * or {@link Long#MAX_VALUE} before anyone has gone behind the origin. World space, never train-relative.
      */
-    private long reverseFrontierX = Long.MAX_VALUE;
+    private long reverseReachX = Long.MAX_VALUE;
+    /**
+     * World blocks behind the origin covered by walking back along the train into new ground — the only
+     * distance that brings the reversed bands closer. Flying, teleporting or walking off-train never adds.
+     */
+    private long reverseEarned;
     /** Blocks the reversed bands have slid back because players walked off-train past the frontier. Only grows. */
     private long reverseSlide;
     private StartingDimension startingDimension;
@@ -483,7 +488,8 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         // Absent on worlds saved before the reverse slide existed → no frontier yet, no slide.
         if (tag.contains(TAG_REVERSE_ORIGIN_X)) data.reverseOriginX = tag.getLong(TAG_REVERSE_ORIGIN_X);
-        if (tag.contains(TAG_REVERSE_FRONTIER_X)) data.reverseFrontierX = tag.getLong(TAG_REVERSE_FRONTIER_X);
+        if (tag.contains(TAG_REVERSE_REACH_X)) data.reverseReachX = tag.getLong(TAG_REVERSE_REACH_X);
+        if (tag.contains(TAG_REVERSE_EARNED)) data.reverseEarned = Math.max(0L, tag.getLong(TAG_REVERSE_EARNED));
         if (tag.contains(TAG_REVERSE_SLIDE)) data.reverseSlide = Math.max(0L, tag.getLong(TAG_REVERSE_SLIDE));
         // Absent on legacy worlds → false → the join-info report fires once on the next join.
         if (tag.contains(TAG_JOIN_REPORT_POSTED)) {
@@ -600,7 +606,8 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putInt(TAG_CARRIAGE_HEIGHT, dims.height());
         tag.putLong(TAG_GENERATION_SEED, generationSeed);
         if (reverseOriginX != Long.MAX_VALUE) tag.putLong(TAG_REVERSE_ORIGIN_X, reverseOriginX);
-        if (reverseFrontierX != Long.MAX_VALUE) tag.putLong(TAG_REVERSE_FRONTIER_X, reverseFrontierX);
+        if (reverseReachX != Long.MAX_VALUE) tag.putLong(TAG_REVERSE_REACH_X, reverseReachX);
+        if (reverseEarned > 0L) tag.putLong(TAG_REVERSE_EARNED, reverseEarned);
         if (reverseSlide > 0L) tag.putLong(TAG_REVERSE_SLIDE, reverseSlide);
         tag.putString(TAG_STARTING_DIMENSION, startingDimension.nbtId());
         // Only persist the override when set, so "unset" stays distinguishable from "0 (disabled)".
@@ -719,9 +726,14 @@ public final class DungeonTrainWorldData extends SavedData {
         return reverseOriginX;
     }
 
-    /** Lowest world X reached on the train, or {@link Long#MAX_VALUE} before anyone has ridden. */
-    public long getReverseFrontierX() {
-        return reverseFrontierX;
+    /** Lowest world X any counted player has reached, or {@link Long#MAX_VALUE} before anyone has. */
+    public long getReverseReachX() {
+        return reverseReachX;
+    }
+
+    /** World blocks behind the origin earned on the train. */
+    public long getReverseEarned() {
+        return reverseEarned;
     }
 
     /** Blocks the reversed bands behind spawn have slid back (see {@code worldgen.ReverseSlide}). */
@@ -730,16 +742,18 @@ public final class DungeonTrainWorldData extends SavedData {
     }
 
     /**
-     * Record the first-boarding origin (set once), a new on-train frontier and slide; the frontier and
-     * slide only ever move one way. Saved when anything changes.
+     * Record the first-boarding origin (set once), the reach, earned distance and slide; reach, earned
+     * and slide only ever move one way. Saved when anything changes.
      */
-    public void setReverseSlideState(long originX, long frontierX, long slide) {
+    public void setReverseSlideState(long originX, long reachX, long earned, long slide) {
         long o = reverseOriginX == Long.MAX_VALUE ? originX : reverseOriginX;
-        long f = Math.min(frontierX, reverseFrontierX);
+        long r = Math.min(reachX, reverseReachX);
+        long e = Math.max(earned, reverseEarned);
         long sl = Math.max(slide, reverseSlide);
-        if (o == reverseOriginX && f == reverseFrontierX && sl == reverseSlide) return;
+        if (o == reverseOriginX && r == reverseReachX && e == reverseEarned && sl == reverseSlide) return;
         reverseOriginX = o;
-        reverseFrontierX = f;
+        reverseReachX = r;
+        reverseEarned = e;
         reverseSlide = sl;
         setDirty();
     }
