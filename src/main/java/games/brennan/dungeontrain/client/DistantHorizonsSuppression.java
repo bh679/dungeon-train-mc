@@ -86,9 +86,23 @@ public final class DistantHorizonsSuppression {
             return true;
         }
 
-        return ClientDisplayConfig.UPSIDE_DOWN_HIDE_DISTANT_HORIZONS.get()
+        if (ClientDisplayConfig.UPSIDE_DOWN_HIDE_DISTANT_HORIZONS.get()
                 && ClientUpsideDownBand.isFlipZoneWithin((int) Math.floor(pos.x),
-                        ClientDisplayConfig.UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN.get());
+                        ClientDisplayConfig.UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN.get())) {
+            return true;
+        }
+
+        // A band sky dome is up (fades included): DH's transparent LOD pass alternates with it frame to
+        // frame on some drivers and the sky flashes, so DH sits the frame out. Same answers the sky
+        // renderers use, so the two can never disagree about whether a dome is being drawn.
+        return ClientDisplayConfig.BAND_SKY_HIDE_DISTANT_HORIZONS.get() && bandSkyActiveAt(pos.x);
+    }
+
+    /** Whether any band sky overlay would draw for a camera at world {@code x}. */
+    static boolean bandSkyActiveAt(double x) {
+        return ClientNetherBand.netherIntensityAt(x) > 0.0
+                || ClientVoidBand.endSkyIntensityAt(x) > 0.0
+                || ClientUpsideDownBand.upsideDownIntensityAt(x) > 0.0;
     }
 
     /** DH's cancellable before-render event: cancelling it skips DH's LOD pass for that frame. */

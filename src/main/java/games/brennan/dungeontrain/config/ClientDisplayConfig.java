@@ -203,6 +203,16 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.BooleanValue PORTAL_ROOM_HIDE_DISTANT_HORIZONS;
 
+    /**
+     * Whether Distant Horizons stops drawing while a band sky is on: the Nether's, the End's or the
+     * upside-down's, including their fades. DT paints those skies as an alpha-blended dome in the sky
+     * pass; DH's transparent LOD pass then draws over it with its own fog and, on Apple's OpenGL
+     * driver at least, the two alternate frame to frame and the sky flashes. Cancelling DH's frame
+     * while a dome is up is the same remedy the portal rooms use. On by default; set false to let DH
+     * draw under a band sky (turning DH's own Transparency off also stops the flashing).
+     */
+    public static final ModConfigSpec.BooleanValue BAND_SKY_HIDE_DISTANT_HORIZONS;
+
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
@@ -361,6 +371,7 @@ public final class ClientDisplayConfig {
         UPSIDE_DOWN_HIDE_DISTANT_HORIZONS = pair.getLeft().upsideDownHideDistantHorizons;
         UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN = pair.getLeft().upsideDownDistantHorizonsMargin;
         PORTAL_ROOM_HIDE_DISTANT_HORIZONS = pair.getLeft().portalRoomHideDistantHorizons;
+        BAND_SKY_HIDE_DISTANT_HORIZONS = pair.getLeft().bandSkyHideDistantHorizons;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
@@ -493,6 +504,9 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue portalRoomHideDistantHorizons = b
                 .comment("Stop Distant Horizons drawing while you are inside a dimensional carriage - a portal room, or the corridor leading into one. A room is stamped in twin space at the coordinates of the carriage it stands in for, and DH draws its own LODs of the overworld around exactly those coordinates, so the room's sky comes with the surface world's horizon behind it. Worst in a Chunk Dimension room, which is itself a sampled slice of terrain that DH then contradicts. Set false to let DH draw inside rooms anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
                 .define("hideInPortalRooms", true);
+        ModConfigSpec.BooleanValue bandSkyHideDistantHorizons = b
+                .comment("Stop Distant Horizons drawing while a band sky is on - the Nether's, the End's or the upside-down's, fades included. Dungeon Train paints those skies as a translucent dome, and DH's transparent LOD pass drawn over it can alternate with it frame to frame so the sky flashes (seen on macOS). Set false to let DH draw under a band sky; turning off Transparency in DH's own settings also stops the flashing. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
+                .define("hideUnderBandSky", true);
         b.pop();
 
         b.push("framerateThrottle");
@@ -751,7 +765,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
-                portalRoomHideDistantHorizons,
+                portalRoomHideDistantHorizons, bandSkyHideDistantHorizons,
                 framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
@@ -1756,6 +1770,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue upsideDownHideDistantHorizons,
             ModConfigSpec.IntValue upsideDownDistantHorizonsMargin,
             ModConfigSpec.BooleanValue portalRoomHideDistantHorizons,
+            ModConfigSpec.BooleanValue bandSkyHideDistantHorizons,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.DoubleValue trainEngineVolume,
