@@ -1,0 +1,65 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -4,
+      "max_floors": -1,
+      "period_min": 4,
+      "period_max": 16,
+      "min_similarity": 0.45
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:granite",
+          "to": "minecraft:sandstone"
+        },
+        {
+          "from": "minecraft:polished_granite",
+          "to": "minecraft:cut_sandstone"
+        },
+        {
+          "from": "minecraft:bricks",
+          "to": "minecraft:smooth_sandstone"
+        },
+        {
+          "from": "minecraft:brick_slab",
+          "to": "minecraft:smooth_sandstone_slab"
+        },
+        {
+          "from": "minecraft:brick_stairs",
+          "to": "minecraft:smooth_sandstone_stairs"
+        },
+        {
+          "from": "minecraft:terracotta",
+          "to": "minecraft:white_terracotta"
+        },
+        {
+          "from": "minecraft:waxed_copper_block",
+          "to": "minecraft:waxed_exposed_copper"
+        },
+        {
+          "from": "minecraft:dripstone_block",
+          "to": "minecraft:sandstone"
+        },
+        {
+          "from": "minecraft:stripped_acacia_wood",
+          "to": "minecraft:stripped_birch_wood"
+        },
+        {
+          "from": "minecraft:black_stained_glass_pane",
+          "to": "minecraft:brown_stained_glass_pane"
+        }
+      ]
+    }
+  ]
+}

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.worldgen.LostCityBiteProcessor;
+import games.brennan.dungeontrain.worldgen.LostCityStretchProcessor;
 import games.brennan.dungeontrain.worldgen.LostCitySwapProcessor;
 import games.brennan.dungeontrain.worldgen.LostCityTruncateProcessor;
 import net.minecraft.core.registries.Registries;
@@ -23,6 +24,7 @@ public final class ModStructureProcessors {
         PROCESSORS.register("lost_city_swap", () -> LostCitySwapProcessor.TYPE);
         PROCESSORS.register("lost_city_truncate", () -> LostCityTruncateProcessor.TYPE);
         PROCESSORS.register("lost_city_bite", () -> LostCityBiteProcessor.TYPE);
+        PROCESSORS.register("lost_city_stretch", () -> LostCityStretchProcessor.TYPE);
     }
 
     private ModStructureProcessors() {}

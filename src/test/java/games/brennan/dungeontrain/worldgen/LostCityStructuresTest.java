@@ -332,7 +332,7 @@ final class LostCityStructuresTest {
                 for (int i = 1; i < procs.size(); i++) {
                     String type = procs.get(i).getAsJsonObject().get("processor_type").getAsString();
                     assertTrue(type.equals("dungeontrain:lost_city_swap") || type.equals("dungeontrain:lost_city_truncate")
-                            || type.equals("dungeontrain:lost_city_bite"), type);
+                            || type.equals("dungeontrain:lost_city_bite") || type.equals("dungeontrain:lost_city_stretch"), type);
                 }
             }
             assertTrue(lists.contains("dungeontrain:lost_city/shipped"), name + " keeps the as-shipped look");

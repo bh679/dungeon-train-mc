@@ -41,6 +41,12 @@ def bite(rubble, bites=(1, 2), radius=(0.3, 0.5), pile_scale=0.8, pile_max=10):
             "pile_scale": pile_scale, "pile_max": pile_max}
 
 
+def stretch(floors, period=(4, 16), similarity=0.45):
+    """Taller (positive floors) or shorter (negative) by repeating / removing the building's floor band."""
+    return {"processor_type": "dungeontrain:lost_city_stretch", "min_floors": floors[0], "max_floors": floors[1],
+            "period_min": period[0], "period_max": period[1], "min_similarity": similarity}
+
+
 def truncate(lo, hi, rubble, jagged=3):
     return {"processor_type": "dungeontrain:lost_city_truncate", "min_fraction": lo, "max_fraction": hi,
             "jagged": jagged, "rubble": [mc(r) for r in rubble]}
@@ -146,13 +152,18 @@ RUIN_BITE = bite(["cracked_stone_bricks", "cobblestone", "stone", "gravel", "and
 PLANT_BITE = bite(["cracked_stone_bricks", "cobblestone", "mossy_cobblestone", "gravel", "stone"], bites=(2, 3), radius=(0.25, 0.4))
 GARAGE_BITE = bite(["gray_concrete", "gray_concrete_powder", "cobblestone", "gravel", "andesite"], bites=(2, 3), radius=(0.18, 0.3), pile_max=7)
 
+TALLER = stretch((2, 6))
+SHORTER = stretch((-4, -1))
+TALL_TALLER = stretch((1, 3))            # already 159 tall; a floor or three more
+TALL_SHORTER = stretch((-8, -3))
+
 # building -> (mod template, [(variant, processors, weight)]); "shipped"/"dry" use the shared lists
 BUILDINGS = {
-    "blackskyscraper": ("black_skyscraperlt", [("shipped", [], 3), ("grey", [BLACK_GREY], 2), ("white", [BLACK_WHITE], 2), ("topped", [BLACK_TOP], 2), ("bitten", [BLACK_BITE], 3), ("bitten_grey", BLACK_BITE_GREY, 2), ("dry", [], 1)]),
-    "ruinedblackskyscraper": ("ruined_black_skyscraperlt", [("shipped", [], 3), ("grey", [BLACK_GREY], 2), ("white", [BLACK_WHITE], 2), ("topped", [BLACK_TOP], 2), ("bitten", [BLACK_BITE], 3), ("dry", [], 1)]),
-    "redskyscraper": ("red_skyscraperlt", [("shipped", [], 3), ("sandstone", [RED_SAND], 2), ("oxidised", [RED_OXID], 2), ("topped", [RED_TOP], 2), ("bitten", [RED_BITE], 3), ("dry", [], 1)]),
-    "ruindedredskyscraper": ("ruinded_red_skyscraperlt", [("shipped", [], 3), ("sandstone", [RED_SAND], 2), ("oxidised", [RED_OXID], 2), ("topped", [RED_TOP], 2), ("bitten", [RED_BITE], 3), ("dry", [], 1)]),
-    "tallskyscraper": ("tall_skyscraperlt", [("shipped", [], 3), ("clear", [TALL_CLEAR], 2), ("dark", [TALL_DARK], 2), ("blown", [TALL_BLOWN], 2), ("topped", [TALL_TOP], 2), ("bitten", [TALL_BITE], 3), ("dry", [], 1)]),
+    "blackskyscraper": ("black_skyscraperlt", [("shipped", [], 3), ("grey", [BLACK_GREY], 2), ("white", [BLACK_WHITE], 2), ("topped", [BLACK_TOP], 2), ("bitten", [BLACK_BITE], 3), ("bitten_grey", BLACK_BITE_GREY, 2), ("taller", [TALLER], 3), ("shorter", [SHORTER], 3), ("taller_bitten", [TALLER, BLACK_BITE], 2), ("shorter_white", [SHORTER, BLACK_WHITE], 2), ("dry", [], 1)]),
+    "ruinedblackskyscraper": ("ruined_black_skyscraperlt", [("shipped", [], 3), ("grey", [BLACK_GREY], 2), ("white", [BLACK_WHITE], 2), ("topped", [BLACK_TOP], 2), ("bitten", [BLACK_BITE], 3), ("taller", [TALLER], 3), ("shorter", [SHORTER], 3), ("dry", [], 1)]),
+    "redskyscraper": ("red_skyscraperlt", [("shipped", [], 3), ("sandstone", [RED_SAND], 2), ("oxidised", [RED_OXID], 2), ("topped", [RED_TOP], 2), ("bitten", [RED_BITE], 3), ("taller", [TALLER], 3), ("shorter", [SHORTER], 3), ("taller_bitten", [TALLER, RED_BITE], 2), ("shorter_sandstone", [SHORTER, RED_SAND], 2), ("dry", [], 1)]),
+    "ruindedredskyscraper": ("ruinded_red_skyscraperlt", [("shipped", [], 3), ("sandstone", [RED_SAND], 2), ("oxidised", [RED_OXID], 2), ("topped", [RED_TOP], 2), ("bitten", [RED_BITE], 3), ("taller", [TALLER], 3), ("shorter", [SHORTER], 3), ("dry", [], 1)]),
+    "tallskyscraper": ("tall_skyscraperlt", [("shipped", [], 3), ("clear", [TALL_CLEAR], 2), ("dark", [TALL_DARK], 2), ("blown", [TALL_BLOWN], 2), ("topped", [TALL_TOP], 2), ("bitten", [TALL_BITE], 3), ("taller", [TALL_TALLER], 2), ("shorter", [TALL_SHORTER], 4), ("shorter_dark", [TALL_SHORTER, TALL_DARK], 2), ("dry", [], 1)]),
     "ruinedskyscraper": ("ruined_skyscraperlt", [("shipped", [], 3), ("deepslate", [RUIN_DEEP], 2), ("mud", [RUIN_MUD], 2), ("collapsed", [RUIN_COLLAPSE], 2), ("bitten", [RUIN_BITE], 3), ("dry", [], 1)]),
     "powerplant": ("power_plantlt", [("shipped", [], 3), ("mud", [RUIN_MUD], 2), ("deepslate", [RUIN_DEEP], 2), ("crumbling", [PLANT_CRUMBLE], 2), ("bitten", [PLANT_BITE], 2), ("dry", [], 1)]),
     "parking_garage": ("parking_garagelt", [("shipped", [], 3), ("light", [GARAGE_LIGHT], 2), ("collapsed", [GARAGE_TOP], 2), ("bitten", [GARAGE_BITE], 2), ("dry", [], 1)]),

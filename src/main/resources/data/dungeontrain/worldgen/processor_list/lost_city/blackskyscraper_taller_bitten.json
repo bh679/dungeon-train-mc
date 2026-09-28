@@ -1,0 +1,36 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 2,
+      "max_floors": 6,
+      "period_min": 4,
+      "period_max": 16,
+      "min_similarity": 0.45
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_bite",
+      "bites_min": 1,
+      "bites_max": 2,
+      "radius_min": 0.3,
+      "radius_max": 0.5,
+      "rubble": [
+        "minecraft:cracked_deepslate_tiles",
+        "minecraft:cobbled_deepslate",
+        "minecraft:deepslate_tiles",
+        "minecraft:cobblestone",
+        "minecraft:gravel"
+      ],
+      "pile_scale": 0.8,
+      "pile_max": 10
+    }
+  ]
+}

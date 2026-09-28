@@ -57,6 +57,42 @@
       }
     },
     {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/blackskyscraper_taller"
+      }
+    },
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/blackskyscraper_shorter"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/blackskyscraper_taller_bitten"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/blackskyscraper_shorter_white"
+      }
+    },
+    {
       "weight": 1,
       "element": {
         "element_type": "minecraft:single_pool_element",
