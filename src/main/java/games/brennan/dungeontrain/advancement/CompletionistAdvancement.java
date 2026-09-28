@@ -37,7 +37,9 @@ import java.util.Set;
  * {@code dungeontrain} namespace, excluding the {@code editor/} path, this
  * advancement itself, {@link StartAgainAdvancement} (which sits <em>after</em>
  * the capstone — requiring it would make the capstone unreachable), and
- * display-less (recipe-style) advancements. A new
+ * display-less (recipe-style) advancements, and the reverse journey
+ * ({@link BandAdvancements#isReverse}: the hidden {@code reversed_*} set
+ * earned behind spawn, which is never required). A new
  * {@code dungeon_train/*} advancement added in a future update is therefore
  * required automatically, with no change to this class — and one the relay has
  * {@link games.brennan.dungeontrain.advancement.requirement.AdvancementFlag#DISABLED disabled}
@@ -61,6 +63,24 @@ public final class CompletionistAdvancement {
     private CompletionistAdvancement() {}
 
     /**
+     * Does {@code holder} count towards the capstone? The one definition of the required set, shared
+     * with {@link StartAgainAdvancement}'s wipe, which clears exactly these (plus the capstone) and
+     * leaves everything else earned.
+     *
+     * @param notRequired the relay's live {@code notRequired} set ({@link AdvancementRequirementOverrides#notRequired()})
+     */
+    public static boolean isRequired(AdvancementHolder holder, Set<ResourceLocation> notRequired) {
+        ResourceLocation rl = holder.id();
+        if (!DungeonTrain.MOD_ID.equals(rl.getNamespace())) return false; // other mods / vanilla
+        if (rl.getPath().startsWith("editor/")) return false;             // editor tree excluded
+        if (rl.equals(ID)) return false;                                  // never require itself
+        if (rl.equals(StartAgainAdvancement.ID)) return false;            // downstream of the capstone, not a prerequisite
+        if (BandAdvancements.isReverse(rl.getPath())) return false;       // the reverse journey is optional, never required
+        if (notRequired.contains(rl)) return false;                       // the operator dropped it from the capstone (relay)
+        return holder.value().display().isPresent();                      // skip recipe/display-less
+    }
+
+    /**
      * Grant the capstone to {@code player} iff every other non-editor
      * {@code dungeontrain} advancement (bar {@link StartAgainAdvancement}) is
      * already done for them. Cheap and
@@ -80,13 +100,7 @@ public final class CompletionistAdvancement {
 
         Set<ResourceLocation> notRequired = AdvancementRequirementOverrides.notRequired();
         for (AdvancementHolder holder : mgr.getAllAdvancements()) {
-            ResourceLocation rl = holder.id();
-            if (!DungeonTrain.MOD_ID.equals(rl.getNamespace())) continue; // other mods / vanilla
-            if (rl.getPath().startsWith("editor/")) continue;             // editor tree excluded
-            if (rl.equals(ID)) continue;                                  // never require itself
-            if (rl.equals(StartAgainAdvancement.ID)) continue;            // downstream of the capstone, not a prerequisite
-            if (notRequired.contains(rl)) continue;                       // the operator dropped it from the capstone (relay)
-            if (holder.value().display().isEmpty()) continue;             // skip recipe/display-less
+            if (!isRequired(holder, notRequired)) continue;
             if (!player.getAdvancements().getOrStartProgress(holder).isDone()) return; // not complete yet
         }
 

@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/reversed_void",
+  "display": {
+    "icon": { "id": "minecraft:end_stone" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_end_islands.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_end_islands.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "reversed_end_islands" }
+    }
+  },
+  "requirements": [["reached"]]
+}

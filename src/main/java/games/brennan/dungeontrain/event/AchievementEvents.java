@@ -1182,6 +1182,10 @@ public final class AchievementEvents {
      * about to wipe. {@link StartAgainAdvancement#checkArmed} does the grant on the
      * next player tick, once the capstone is confirmed gone.</p>
      *
+     * <p>When it arms, vanilla's revoke is cancelled and {@link StartAgainAdvancement#wipe} runs in
+     * its place: only the advancements that make up the capstone are cleared, everything that never
+     * counted towards it (the reverse journey, the editor tree, other mods') stays earned.</p>
+     *
      * <p>Ignores console / command-block / function sources — there is no player to
      * award. Runs at {@link EventPriority#LOWEST} so a cancelling handler gets there
      * first and this never arms off a command that won't run: notably
@@ -1221,7 +1225,12 @@ public final class AchievementEvents {
         ServerPlayer player = event.getParseResults().getContext().getSource().getPlayer();
         if (player == null) return;
         if (!StartAgainAdvancement.isSelfRevokeEverything(event.getParseResults().getReader().getString())) return;
-        StartAgainAdvancement.armIfEligible(player);
+        if (!StartAgainAdvancement.armIfEligible(player)) return;   // not earning it: vanilla revoke as usual
+        // Earning it: clear only what the capstone is made of, not everything (see StartAgainAdvancement#wipe).
+        event.setCanceled(true);
+        int cleared = StartAgainAdvancement.wipe(player);
+        event.getParseResults().getContext().getSource().sendSuccess(() -> Component.translatable(
+                "commands.advancement.revoke.many.to.one.success", cleared, player.getDisplayName()), true);
     }
 
     @SubscribeEvent

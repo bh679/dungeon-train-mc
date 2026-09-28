@@ -91,6 +91,44 @@ public final class BandAdvancements {
             // Lap 1's End turns Biomes O' Plenty from the second cycle on (vanilla>bop).
             BOP_END);
 
+    // ---- reverse journey ---------------------------------------------------------------------
+
+    /**
+     * Prefix of the <b>reverse journey</b> advancements — earned walking −X behind spawn, where the
+     * {@link WorldGenCycle} lays the layout down in reverse. Each is {@code hidden} until earned (the
+     * frontier reveal skips them) and none is required by {@link CompletionistAdvancement}.
+     */
+    public static final String REVERSE_PREFIX = "reversed_";
+
+    /** The advancement the reverse chain hangs from: the tab root, a branch of its own. */
+    public static final String REVERSE_ANCHOR = "root";
+
+    /**
+     * The forward bands that have a reverse advancement, in the order a player walking back from spawn
+     * meets them in the shipped layout — all the way back to the first Nether ({@link #NETHER} last). Only
+     * the first reversed run's bands: later-cycle looks (BoP End, the second Nether) are left out.
+     */
+    public static final List<String> REVERSE_ALL = List.of(
+            STACKS, CHUNCKS,
+            legacyId(LegacyBandKind.SUPERFLAT), legacyId(LegacyBandKind.CLASSIC), legacyId(LegacyBandKind.INFDEV),
+            legacyId(LegacyBandKind.ALPHA), legacyId(LegacyBandKind.FLOATING), legacyId(LegacyBandKind.SKYLANDS),
+            legacyId(LegacyBandKind.CAVES_OF_CHAOS), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.BETA),
+            legacyId(LegacyBandKind.LOST_CITY), legacyId(LegacyBandKind.AMPLIFIED),
+            SPHERES, BETTER_END, BOP, BETTER_NETHER, WWOO,
+            REASSEMBLY, UPSIDE_DOWN, VOID, END_ISLANDS, NETHER);
+
+    /** The reverse advancement for forward band id {@code forwardId}: {@code reached_x} → {@code reversed_x}. */
+    public static String reverseId(String forwardId) {
+        if (UPSIDE_DOWN.equals(forwardId)) return REVERSE_PREFIX + "upside_down";
+        if (REASSEMBLY.equals(forwardId)) return REVERSE_PREFIX + "reassembly";
+        return REVERSE_PREFIX + forwardId.substring("reached_".length());
+    }
+
+    /** True when {@code path} ({@code dungeon_train/…}) names a reverse journey advancement. */
+    public static boolean isReverse(String path) {
+        return path != null && path.startsWith(BandAdvancementChainRewriter.PATH_PREFIX + REVERSE_PREFIX);
+    }
+
     private BandAdvancements() {}
 
     /** The advancement for a legacy era: {@code reached_<kind>}, or {@code null} for the closing void, which has none. */
@@ -159,6 +197,62 @@ public final class BandAdvancements {
         }
     }
 
+    /**
+     * The reverse advancement ids in the order a player walking back from spawn meets their bands: the
+     * layout's slots last-first, and inside a slot its parts last-first too (a copy behind spawn keeps its
+     * +X orientation, so −X crosses a legacy run's eras and the upside-down exit fade before their
+     * earlier parts; a plain End's void strip comes before its islands). Unlike {@link #chain}, each
+     * styled Nether / End is its own band — a Better one gives only its Better id — so the chain runs
+     * on to the plain first Nether rather than stopping at the first Nether it meets. First occurrence
+     * wins; members of {@link #REVERSE_ALL} the layout lacks are appended so they stay parented. A {@code null} layout gives {@link #REVERSE_ALL}.
+     */
+    public static List<String> reverseChain(CycleLayout layout) {
+        Set<String> out = new LinkedHashSet<>();
+        if (layout != null) {
+            for (int i = layout.count() - 1; i >= 0; i--) {
+                addReverseSlot(out, layout, i);
+            }
+        }
+        out.retainAll(REVERSE_ALL);
+        out.addAll(REVERSE_ALL);
+        return out.stream().map(BandAdvancements::reverseId).toList();
+    }
+
+    private static void addReverseSlot(Set<String> out, CycleLayout layout, int i) {
+        CycleLayout.Slot slot = layout.slot(i);
+        boolean better = slot.style() == CycleLayout.Style.BETTER;
+        switch (slot.type()) {
+            case OVERWORLD -> {
+                if (slot.style() == CycleLayout.Style.WWOO) out.add(WWOO);
+                if (slot.style() == CycleLayout.Style.BOP) out.add(BOP);
+            }
+            case NETHER -> out.add(better ? BETTER_NETHER : NETHER);
+            case END -> {
+                if (better) {
+                    out.add(BETTER_END);
+                } else {
+                    out.add(VOID);                       // its void strip lies on the spawn side of the islands
+                    out.add(END_ISLANDS);
+                }
+            }
+            case UPSIDE_DOWN -> {
+                out.add(REASSEMBLY);
+                out.add(UPSIDE_DOWN);
+            }
+            case CHUNCKS -> out.add(CHUNCKS);
+            case SPHERES -> out.add(SPHERES);
+            case STACKS -> out.add(STACKS);
+            case LEGACY_RUN -> {
+                LegacySpan[] eras = layout.eras();
+                for (int e = eras.length - 1; e >= 0; e--) {
+                    String id = legacyId(eras[e].kind());
+                    if (id != null) out.add(id);
+                }
+            }
+            case MIX -> { }
+        }
+    }
+
     // ---- triggers ----------------------------------------------------------------------------
 
     /** A column test: does world-X {@code worldX} of {@code overworld} read as this band's core? */
@@ -218,6 +312,46 @@ public final class BandAdvancements {
         t.add(entry(CHUNCKS, ChuncksBand::isInBand));
         t.add(entry(STACKS, StacksBand::isInBand));
         return List.copyOf(t);
+    }
+
+    private static final List<Trigger> REVERSE_TRIGGERS = buildReverseTriggers();
+
+    /**
+     * Every reverse trigger, in {@link #REVERSE_ALL} order. Immutable. The caller gates them to
+     * {@link WorldGenCycle#isMirroredAt behind spawn} and measures {@code depth} towards +X — walking
+     * back, the player enters each band from its spawn side.
+     */
+    public static List<Trigger> reverseTriggers() {
+        return REVERSE_TRIGGERS;
+    }
+
+    private static List<Trigger> buildReverseTriggers() {
+        List<Trigger> out = new ArrayList<>();
+        for (String id : REVERSE_ALL) {
+            out.add(new Trigger(reverseId(id), forward(id).depth(), reverseTest(id)));
+        }
+        return List.copyOf(out);
+    }
+
+    /**
+     * The column test for {@code forwardId}'s reverse advancement. The plain Nether / End tests exclude
+     * their Better copy — going back, that copy is met first, and the chain must run on to the first one.
+     */
+    private static ColumnTest reverseTest(String forwardId) {
+        return switch (forwardId) {
+            case NETHER -> (l, x) -> NetherBand.isInNetherBiome(l, x) && !cycle(l).isBetterNetherAt(x);
+            case VOID -> (l, x) -> DisintegrationBand.zoneAt(l, x) == Disintegration.Zone.VOID
+                    && !cycle(l).isBetterEndAt(x);
+            case END_ISLANDS -> (l, x) -> isInEndIslands(l, x) && !cycle(l).isBetterEndAt(x);
+            default -> forward(forwardId).test();
+        };
+    }
+
+    private static Trigger forward(String id) {
+        for (Trigger t : TRIGGERS) {
+            if (t.id().equals(id)) return t;
+        }
+        throw new IllegalStateException("no forward trigger for " + id);
     }
 
     private static Trigger entry(String id, ColumnTest test) {

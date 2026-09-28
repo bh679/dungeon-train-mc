@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.advancement;
 
+import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -62,5 +63,16 @@ final class StartAgainAdvancementTest {
     void freePlayNeverBanks() {
         assertTrue(StartAgainAdvancement.shouldBank(false));
         assertFalse(StartAgainAdvancement.shouldBank(true));
+    }
+
+    @Test
+    @DisplayName("The wipe clears only the capstone's parts; what never counted towards it stays earned")
+    void wipeKeepsNonCapstoneAdvancements() {
+        assertTrue(StartAgainAdvancement.isWiped(ResourceLocation.parse("dungeontrain:dungeon_train/reached_nether"), true));
+        assertTrue(StartAgainAdvancement.isWiped(CompletionistAdvancement.ID, false));
+        assertTrue(StartAgainAdvancement.isWiped(StartAgainAdvancement.ID, false));
+        assertFalse(StartAgainAdvancement.isWiped(ResourceLocation.parse("dungeontrain:dungeon_train/reversed_nether"), false));
+        assertFalse(StartAgainAdvancement.isWiped(ResourceLocation.parse("dungeontrain:editor/root"), false));
+        assertFalse(StartAgainAdvancement.isWiped(ResourceLocation.parse("minecraft:story/mine_stone"), false));
     }
 }
