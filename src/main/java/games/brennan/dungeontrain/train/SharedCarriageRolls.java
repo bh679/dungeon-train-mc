@@ -43,7 +43,7 @@ public final class SharedCarriageRolls {
     /**
      * Whether the dimensional carriage at {@code pairKey} drifts at all — the gate in front of
      * {@link #bucket} for rooms. Deterministic per pair, and rolled apart from the bucket so the one
-     * in twenty that drifts still splits pool/own/fresh the way every shared slot does.
+     * in fifteen that drifts still splits pool/own/fresh the way every shared slot does.
      */
     public static boolean roomDrifts(long generationSeed, int pairKey, double roomChance) {
         if (roomChance <= 0) return false;

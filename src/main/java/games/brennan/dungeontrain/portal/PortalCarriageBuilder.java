@@ -914,6 +914,8 @@ public final class PortalCarriageBuilder {
     public static PortalStructure withDriftedCopy(ServerLevel level, PortalStructure structure,
                                                   int pairKey, String stageId) {
         if (structure.stampsFromBlob()) return structure;
+        LOGGER.info("[DungeonTrain] drifting room pair={} '{}' — deciding at first stamp (stage {})",
+            pairKey, structure.roomName(), stageId == null ? "<none>" : stageId);
         PortalRoomBlob blob = PortalRoomDriftPlanner.leaseFor(level, pairKey, structure.roomName(),
             structure.settings(), structure.roomSize(), stageId);
         return blob == null ? structure : structure.withBlob(blob);

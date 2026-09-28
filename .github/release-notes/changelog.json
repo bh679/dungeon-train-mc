@@ -20244,9 +20244,9 @@
         "train"
       ],
       "title": "Dimensional carriages drift",
-      "summary": "About one sealed dimensional carriage in twenty now drifts the way carriages do. Build in one and your work is uploaded; the next traveller to roll that same room may step into your version, with you credited by name and their changes travelling on in turn. The room comes back with you when the train moves, and authors can keep any room out of it with the new Drift setting.",
+      "summary": "About one sealed dimensional carriage in fifteen now drifts the way carriages do. Build in one and your work is uploaded; the next traveller to roll that same room may step into your version, with you credited by name and their changes travelling on in turn. The room comes back with you when the train moves, and authors can keep any room out of it with the new Drift setting.",
       "highlights": [
-        "One in twenty sealed (Bedrock Lock) dimensional carriages drifts: it uploads when edited and can arrive as another traveller's copy",
+        "One in fifteen sealed (Bedrock Lock) dimensional carriages drifts: it uploads when edited and can arrive as another traveller's copy",
         "Builders are credited on entry, just like a drifting carriage",
         "New per-room Drift setting in the editor panel and /dt editor portals <room> drift"
       ],

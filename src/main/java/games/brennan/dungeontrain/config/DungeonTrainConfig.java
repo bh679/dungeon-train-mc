@@ -200,8 +200,8 @@ public final class DungeonTrainConfig {
      * 65% / 30% / 5% — most slots show the community's work, a healthy share hands players their own
      * back, and a steady trickle of blank canvases keeps entering the pool.
      */
-    /** One dimensional carriage in twenty drifts; the rest are the plain template. */
-    public static final double DEFAULT_SHARED_ROOM_CHANCE = 0.05;
+    /** One Bedrock Lock dimensional carriage in fifteen drifts; the rest are the plain template. */
+    public static final double DEFAULT_SHARED_ROOM_CHANCE = 1.0 / 15.0;
     public static final double MIN_SHARED_ROOM_CHANCE = 0.0;
     public static final double MAX_SHARED_ROOM_CHANCE = 1.0;
     public static final double DEFAULT_SHARED_CARRIAGE_POOL_CHANCE = 0.65;
@@ -645,7 +645,7 @@ public final class DungeonTrainConfig {
                 .comment("The probability a Bedrock Lock dimensional carriage DRIFTS at all — takes part in the shared pool",
                         "the way a shared carriage slot does. A drifting one uploads when a player edits it and rolls the",
                         "pool/own/fresh split above for whether it arrives as another world's copy; the rest are the plain",
-                        "template and never touch the relay. Rolled deterministically per pair. Default 0.05 (one in twenty).",
+                        "template and never touch the relay. Rolled deterministically per pair. Default 1/15 (0.0667).",
                         "Authors can still veto a room outright with its Drift setting.")
                 .defineInRange("sharedRoomChance", DEFAULT_SHARED_ROOM_CHANCE,
                         MIN_SHARED_ROOM_CHANCE, MAX_SHARED_ROOM_CHANCE);

@@ -100,14 +100,27 @@ public final class PortalRoomDriftPlanner {
     /**
      * Whether this pair's room takes part in drifting at all: the room's mode and the author's
      * setting say it may, it is not the editor's test rig, and the pair won its
-     * {@code sharedRoomChance} roll — one in twenty by default. The same answer registers a fresh
+     * {@code sharedRoomChance} roll — one in fifteen by default. The same answer registers a fresh
      * room for upload ({@code SharedRoomEvents.onStructureStamped}) and lets the planner draw a
      * copy, so a pair that lost the roll is a plain template room in every respect.
      */
     public static boolean driftsHere(ServerLevel level, int pairKey, PortalRoomSettings settings) {
-        if (settings == null || !settings.drifts()) return false;
+        if (settings == null || !settings.drifts()) {
+            LOGGER.info("[DungeonTrain] drifting room pair={} → NOT_ELIGIBLE (mode {}, drift {})", pairKey,
+                settings == null ? "?" : settings.mode().id(), settings == null ? "?" : settings.drift().id());
+            return false;
+        }
         if (PortalTestSession.isTestStamp(pairKey)) return false;
-        return SharedCarriageRolls.roomDrifts(level.getSeed(), pairKey, DungeonTrainConfig.getSharedRoomChance());
+        double chance = DungeonTrainConfig.getSharedRoomChance();
+        boolean drifts = SharedCarriageRolls.roomDrifts(level.getSeed(), pairKey, chance);
+        // Logged either way, at the same rate as pairs stamp: a session in which every pair lost the
+        // roll is otherwise silent, and "no room ever drifted" reads exactly like "the feature is
+        // off". One line per decision, so a tester can see the roll rather than infer it.
+        if (!drifts) {
+            LOGGER.info("[DungeonTrain] drifting room pair={} → LOST_ROLL (chance {}) — plain template room",
+                pairKey, chance);
+        }
+        return drifts;
     }
 
     private static PoolLease firstNonNull(PoolLease first, java.util.function.Supplier<PoolLease> second) {

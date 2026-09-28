@@ -240,6 +240,8 @@ public final class SharedRoomEvents {
         SharedRoomRegistry.register(level, pairKey, structure.roomName(), roomOrigin, structure.roomSize(),
                 false, false, "", null, null, 0, stageId, SharedCarriageClient.Credits.EMPTY,
                 SharedCarriageClient.Deaths.EMPTY);
+        LOGGER.info("[DungeonTrain] drifting room pair={} '{}' registered fresh at {} — an edit inside it uploads",
+                pairKey, structure.roomName(), roomOrigin);
     }
 
     /**
