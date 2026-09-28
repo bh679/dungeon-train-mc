@@ -342,6 +342,11 @@ logoFile="logo.png"
 [[mixins]]
     config="${mod_id}.terrablender.mixins.json"
 
+# Trade Everything (required dep) — potions pay out in emeralds rather than the
+# villager's goods (see TradePricerEmeraldPayoutMixin).
+[[mixins]]
+    config="${mod_id}.tradeeverything.mixins.json"
+
 [[mixins]]
     config="${mod_id}.vivecraft.mixins.json"
 

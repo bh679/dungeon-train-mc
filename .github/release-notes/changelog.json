@@ -20254,6 +20254,28 @@
       "released": true,
       "released_in": "v0.1001.0",
       "released_at": "2026-09-28T14:26:44Z"
+    },
+    {
+      "id": "potions-trade-for-emeralds",
+      "version": "0.1002.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Potions are worth emeralds",
+      "summary": "Villagers now pay real emeralds for potions, and stronger brews are worth more.",
+      "highlights": [
+        "Potions with an effect now trade for emeralds",
+        "More potent, longer-lasting and lingering potions fetch a better price",
+        "Water bottles and other effect-less brews are unchanged"
+      ],
+      "pr": 1632,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
