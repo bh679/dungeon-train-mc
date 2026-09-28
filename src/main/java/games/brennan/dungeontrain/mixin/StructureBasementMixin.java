@@ -41,9 +41,34 @@ import java.util.function.Predicate;
  *
  * <p>In a world without a basement {@code bedrockY} is the build floor, nothing generates below it,
  * and this never fires.</p>
+ *
+ * <p>Big Lost City's era veto ({@link LostCityStructures#allowedAt}) runs at {@code HEAD}, not with the
+ * others at {@code RETURN}: it needs nothing from the built start, and a jigsaw start loads (and
+ * datafixes — the mod ships 1.20.1 NBT) its templates and assembles every piece before returning. Vanilla's
+ * structure-set loop also retries the set's other entries after a rejection, so a veto at {@code RETURN}
+ * built and discarded up to the whole set's worth of cities in every refused chunk — most of new-world
+ * spawn generation. The verdict doesn't depend on the structure id, so moving it changes no output.</p>
  */
 @Mixin(Structure.class)
 public abstract class StructureBasementMixin {
+
+    @Inject(method = "generate", at = @At("HEAD"), cancellable = true)
+    private void dungeontrain$vetoLostCityEarly(RegistryAccess registryAccess, ChunkGenerator chunkGenerator,
+                                                BiomeSource biomeSource, RandomState randomState,
+                                                StructureTemplateManager structureTemplateManager, long seed,
+                                                ChunkPos chunkPos, int references, LevelHeightAccessor heightAccessor,
+                                                Predicate<Holder<Biome>> validBiome,
+                                                CallbackInfoReturnable<StructureStart> cir) {
+        ResourceLocation id = registryAccess.registryOrThrow(Registries.STRUCTURE).getKey((Structure) (Object) this);
+        if (!LostCityStructures.isLostCityStructure(id)) return;
+        // Big Lost City's cities belong to the Lost City era alone (LostCityStructures) — anywhere
+        // else, including a start we can't place in a level (a sampler or foreign generator), is dropped
+        // before any template is loaded.
+        ServerLevel level = dungeontrain$levelOf(heightAccessor, chunkGenerator);
+        if (level == null || !LostCityStructures.allowedAt(level, chunkPos.x, chunkPos.z, id)) {
+            cir.setReturnValue(StructureStart.INVALID_START);
+        }
+    }
 
     @Inject(method = "generate", at = @At("RETURN"), cancellable = true)
     private void dungeontrain$dropBasementStarts(RegistryAccess registryAccess, ChunkGenerator chunkGenerator,
@@ -58,16 +83,9 @@ public abstract class StructureBasementMixin {
         }
         int floorY = WorldFloor.bedrockY(heightAccessor, chunkGenerator);
         ResourceLocation id = registryAccess.registryOrThrow(Registries.STRUCTURE).getKey((Structure) (Object) this);
-        ServerLevel level = heightAccessor instanceof ChunkAccess chunk
-                && ((ChunkAccessAccessor) chunk).dungeontrain$getLevelHeightAccessor() instanceof ServerLevel l
-                && l.getChunkSource().getGenerator() == chunkGenerator ? l : null;
-        // Big Lost City's cities belong to the Lost City era alone (LostCityStructures) — anywhere
-        // else, including a start we can't place in a level (a sampler or foreign generator), is dropped.
+        ServerLevel level = dungeontrain$levelOf(heightAccessor, chunkGenerator);
+        // Only a start the HEAD veto allowed gets here (dungeontrain$vetoLostCityEarly).
         if (LostCityStructures.isLostCityStructure(id)) {
-            if (level == null || !LostCityStructures.allowedAt(level, chunkPos.x, chunkPos.z, id)) {
-                cir.setReturnValue(StructureStart.INVALID_START);
-                return;
-            }
             // Seat the city on its footprint's floor (the seabed in water), not on one heightmap sample.
             LostCitySeating.seat(start, chunkGenerator, heightAccessor, randomState);
         }
@@ -90,5 +108,12 @@ public abstract class StructureBasementMixin {
         if (WorldFloor.entirelyBelowFloor(start.getBoundingBox().maxY(), floorY)) {
             cir.setReturnValue(StructureStart.INVALID_START);
         }
+    }
+
+    /** The level {@code heightAccessor} belongs to when {@code chunkGenerator} is its own; else {@code null}. */
+    private static ServerLevel dungeontrain$levelOf(LevelHeightAccessor heightAccessor, ChunkGenerator chunkGenerator) {
+        return heightAccessor instanceof ChunkAccess chunk
+                && ((ChunkAccessAccessor) chunk).dungeontrain$getLevelHeightAccessor() instanceof ServerLevel l
+                && l.getChunkSource().getGenerator() == chunkGenerator ? l : null;
     }
 }

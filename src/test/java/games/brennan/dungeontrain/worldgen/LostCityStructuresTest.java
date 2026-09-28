@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class LostCityStructuresTest {
 
-    private static final long START = 10_000L;
+    static final long START = 10_000L;
     private static final long SEED = 1450L;
     private static final int LOST_CITY_FADE = LegacyBandConfig.LOST_CITY_DEFAULTS.fade();
 
@@ -30,39 +30,39 @@ final class LostCityStructuresTest {
         return eras;
     }
 
-    private static CycleLayout layout(String order) {
+    static CycleLayout layout(String order) {
         List<String> warnings = new ArrayList<>();
         CycleLayout l = CycleLayout.parse(order, CycleLayoutTest.FADES, eras(), t -> true, warnings::add);
         assertTrue(warnings.isEmpty(), warnings.toString());
         return l;
     }
 
-    private static WorldGenCycle cycle(CycleLayout layout) {
+    static WorldGenCycle cycle(CycleLayout layout) {
         return new WorldGenCycle(START, 10_000, 40, new int[] {1, 2, 4, 8, 15}, 32, 0, 300, 5000,
                 120, 500, 5000, 600, 5000, 600, 10_000, 8000, 1500, 5000, 0.3, 0.4, 6550, 750, 5000, 8000, 1500, 10_000, 0.08,
                 eras(), layout, 0);
     }
 
-    private static final CycleLayout LAYOUT = layout(CycleLayout.DEFAULT_ORDER);
-    private static final WorldGenCycle C = cycle(LAYOUT);
+    static final CycleLayout LAYOUT = layout(CycleLayout.DEFAULT_ORDER);
+    static final WorldGenCycle C = cycle(LAYOUT);
     private static final long P = LAYOUT.period();
 
     /** World X of base coordinate {@code u} on run {@code k}. */
-    private static int x(long u, int k) {
+    static int x(long u, int k) {
         return (int) (START + CycleLayout.runStart(k, P) + (u << k));
     }
 
     /** Lost City's own legacy-run slot. */
-    private static int slot() {
+    static int slot() {
         return LAYOUT.legacySlotOf(LegacyBandKind.LOST_CITY);
     }
 
-    private static long legacyStart() {
+    static long legacyStart() {
         return LAYOUT.start(slot());
     }
 
     /** Base coordinate where the Lost City core starts. */
-    private static long coreStart() {
+    static long coreStart() {
         return legacyStart() + LAYOUT.eraCoreStart(slot(), LAYOUT.eraIndex(LegacyBandKind.LOST_CITY));
     }
 
