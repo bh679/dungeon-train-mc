@@ -20062,7 +20062,7 @@
     },
     {
       "id": "curseforge-companion-installs",
-      "version": "0.996.0",
+      "version": "0.995.0",
       "type": "chore",
       "tags": [
         "compatibility",
