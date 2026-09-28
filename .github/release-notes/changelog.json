@@ -20405,6 +20405,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "playermob-companion-train-setup",
+      "version": "0.1010.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Friends who travel together now dress for it",
+      "summary": "When a player mob boards the train with a friend in tow, that friend now arrives kitted out for how far you've come, and it counts as one of the train's own passengers.",
+      "highlights": [
+        "The friend now rolls its own armour and weapon for your current difficulty, instead of showing up empty-handed beside its fully geared partner",
+        "The friend is no longer cleared away when it wanders into a dimensional carriage"
+      ],
+      "pr": 1641,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
