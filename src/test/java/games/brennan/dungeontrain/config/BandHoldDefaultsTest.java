@@ -91,14 +91,26 @@ class BandHoldDefaultsTest {
                 "v10 -> v11 changed only the legacy run, adding the Lost City era after Amplified");
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 11,
                 "CURRENT_CONFIG_VERSION must be at least 11, or the v10 -> v11 order step never runs");
-        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+        assertEquals(DungeonTrainCommonConfig.V12_WORLDGEN_CYCLE_ORDER,
                 DungeonTrainCommonConfig.V11_WORLDGEN_CYCLE_ORDER
                         .replace("ow:3000, end:vanilla>bop:3000, upside_down:2500:6000, ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000,",
-                                "ow:wwoo:4500, end:vanilla:1200, end:bop:2000, upside_down:2500:6000, ow:bop:8000, nether:better:8000, legacy:wwoo:lost_city=4000, end:better:8000,")
+                                "ow:wwoo:4500, end:vanilla:1200, end:bop:2000, upside_down:2500:6000, ow:bop:8000, nether:better:8000, legacy:lost_city=4000, end:better:8000,")
                         .replace("amplified=5000:lost_city=4000:beta=3500", "amplified=5000:beta=3500"),
                 "v11 -> v12 reordered the laps only: WWOO + a vanilla/BoP End on Lap 1, Lost City on Lap 2");
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 12,
                 "CURRENT_CONFIG_VERSION must be at least 12, or the v11 -> v12 order step never runs");
+        assertEquals(DungeonTrainCommonConfig.V13_WORLDGEN_CYCLE_ORDER,
+                DungeonTrainCommonConfig.V12_WORLDGEN_CYCLE_ORDER
+                        .replace("legacy:lost_city=4000", "legacy:wwoo:lost_city=4000"),
+                "v12 -> v13 changed only the Lost City run's look");
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 13,
+                "CURRENT_CONFIG_VERSION must be at least 13, or the v12 -> v13 order step never runs");
+        assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
+                DungeonTrainCommonConfig.V13_WORLDGEN_CYCLE_ORDER
+                        .replace("upside_down:2500:6000", "upside_down:2500:5000"),
+                "v13 -> v14 changed only the upside-down's Reassembly length");
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 14,
+                "CURRENT_CONFIG_VERSION must be at least 14, or the v13 -> v14 order step never runs");
         assertTrue(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER.contains("spheres:"
                 + DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS + ","));
     }

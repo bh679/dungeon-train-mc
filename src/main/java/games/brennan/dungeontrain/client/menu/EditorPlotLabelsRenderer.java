@@ -112,6 +112,8 @@ public final class EditorPlotLabelsRenderer {
         ROOM_SKY_CYCLE,
         /** The fog row — Auto (the walls mode's answer), On or Off. */
         ROOM_FOG_CYCLE,
+        /** The drift row — whether a Bedrock Lock room is shared through the relay. */
+        ROOM_DRIFT_CYCLE,
         /** The author-lock row — whether the room stocks its shelves from one person. */
         ROOM_BOOKS_CYCLE,
         /** The Edit half of that row — the weights and the band, which only a stocking room has. */
@@ -140,7 +142,7 @@ public final class EditorPlotLabelsRenderer {
      */
     public enum RowKind {
         NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, LOCK, COPIES, COPIES_FLOOR, COPIES_ROOF, DOOR_WALL,
-        DOOR_OFFSET, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, ROOM_FOG, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
+        DOOR_OFFSET, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, ROOM_FOG, ROOM_DRIFT, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
         ACTION, CONTENTS
     }
 
@@ -175,6 +177,7 @@ public final class EditorPlotLabelsRenderer {
         if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
         if (hasRoomSkyRow(entry)) buf[n++] = RowKind.ROOM_SKY;
         if (hasRoomFogRow(entry)) buf[n++] = RowKind.ROOM_FOG;
+        if (hasRoomDriftRow(entry)) buf[n++] = RowKind.ROOM_DRIFT;
         if (hasExitsRow(entry)) buf[n++] = RowKind.EXITS;
         if (hasExitEveryRow(entry)) buf[n++] = RowKind.EXIT_EVERY;
         if (hasExitMoveRow(entry)) buf[n++] = RowKind.EXIT_MOVE;
@@ -459,6 +462,24 @@ public final class EditorPlotLabelsRenderer {
             label += " " + MenuLang.t(settings.fogs() ? "plot.fog_resolved_on" : "plot.fog_resolved_off");
         }
         return label;
+    }
+
+    /**
+     * Whether the Drift row shows: a portal room whose walls are Bedrock Lock — the one mode a single
+     * blob can describe, and so the only one the setting means anything under. Hidden elsewhere
+     * rather than shown greyed, the way the Door Wall row is under a mode with no wall to carry.
+     */
+    public static boolean hasRoomDriftRow(EditorPlotLabelsPacket.Entry entry) {
+        if (!hasModeRow(entry)) return false;
+        return games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode()).driftApplies();
+    }
+
+    /** What the Drift row reads, e.g. {@code "Drift: On"}. */
+    public static String roomDriftLabel(String modeTag) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);
+        return MenuLang.t("plot.drift",
+            MenuLang.named("portal.drift", settings.drift().id(), settings.drift().displayName()));
     }
 
     /**
@@ -954,6 +975,7 @@ public final class EditorPlotLabelsRenderer {
             case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
             case ROOM_SKY -> CellKind.ROOM_SKY_CYCLE;
             case ROOM_FOG -> CellKind.ROOM_FOG_CYCLE;
+            case ROOM_DRIFT -> CellKind.ROOM_DRIFT_CYCLE;
             case EXITS -> CellKind.EXITS_CYCLE;
             case EXIT_EVERY -> stepperCell(hitX, halfW,
                 CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC, CellKind.EXIT_EVERY_TYPE);
@@ -1241,6 +1263,12 @@ public final class EditorPlotLabelsRenderer {
                     int bg = hovered == CellKind.ROOM_FOG_CYCLE ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, roomFogLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Drift — whether this locked room is shared through the relay. Same one-cell cycle.
+                case ROOM_DRIFT -> {
+                    int bg = hovered == CellKind.ROOM_DRIFT_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, roomDriftLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
                 // Exits — how many extra ways back to the train this room scatters through its
                 // copies. Only an endless room has anywhere to put one.

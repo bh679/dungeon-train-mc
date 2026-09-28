@@ -44,7 +44,7 @@ public final class SharedCarriageRegistry {
      * One shared carriage instance. Identity fields are final; relay/lease state is mutable and may be
      * updated from an async relay callback thread, so those fields are {@code volatile}.
      */
-    public static final class Instance {
+    public static final class Instance implements SharedBuild {
         public final ServerLevel level;
         public final UUID subLevelId;
         public final UUID trainId;
@@ -178,9 +178,11 @@ public final class SharedCarriageRegistry {
                 && authorUuid.equals(playerId.toString().replace("-", ""));
         }
 
-        public Integer relayId() { return relayId; }
-        public String leaseToken() { return leaseToken; }
-        public boolean isOnRelay() { return relayId != null && leaseToken != null; }
+        @Override public Integer relayId() { return relayId; }
+        @Override public String leaseToken() { return leaseToken; }
+        @Override public boolean isOnRelay() { return relayId != null && leaseToken != null; }
+        @Override public String stageId() { return stageId; }
+        @Override public String describe() { return "pIdx=" + pIdx; }
         public boolean isCallInFlight() { return callInFlight; }
         public long lastContactMs() { return lastContactMs; }
         public boolean isCulled() { return culled; }
