@@ -20429,16 +20429,15 @@
     {
       "id": "cargostairs-outterstairs-rooms",
       "version": "0.1011.0",
-      "type": "content",
+      "type": "chore",
       "tags": [
-        "content",
-        "train"
+        "internal",
+        "editor"
       ],
-      "title": "A new stairway room, and a cave room reworked",
-      "summary": "A new stairway room joins the whole-carriage rooms, and one of the cave rooms has been reworked.",
+      "title": "Work-in-progress carriage builds",
+      "summary": "Behind the scenes: a new stairway room and carriage group, and a reworked cave room, are saved for later. None of them appear on the train yet.",
       "highlights": [
-        "New stairway room",
-        "Reworked cave room"
+        "Builds saved for a future update; nothing changes in play"
       ],
       "date": "2026-09-28",
       "released": false,
