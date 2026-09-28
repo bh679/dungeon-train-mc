@@ -2,15 +2,19 @@ package games.brennan.dungeontrain.advancement;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.requirement.AdvancementRequirementOverrides;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -98,21 +102,71 @@ public final class StartAgainAdvancement {
      * {@link #shouldArm} says they've earned the right — no burrito, nothing armed, nothing ever
      * granted. Called from the {@code CommandEvent} hook, before execution. One sidecar read per
      * revoke command, which is as rare as commands get.
+     *
+     * @return {@code true} when the player was armed — the caller then runs {@link #wipe} in place
+     *         of vanilla's revoke-everything
      */
-    public static void armIfEligible(ServerPlayer player) {
+    public static boolean armIfEligible(ServerPlayer player) {
         MinecraftServer server = player.getServer();
-        if (server == null) return;
+        if (server == null) return false;
         ServerAdvancementManager mgr = server.getAdvancements();
         AdvancementHolder capstone = mgr.get(CompletionistAdvancement.ID);
         AdvancementHolder self = mgr.get(ID);
-        if (capstone == null || self == null) return; // data not loaded (e.g. datapack stripped)
+        if (capstone == null || self == null) return false; // data not loaded (e.g. datapack stripped)
         Set<ResourceLocation> banked = GlobalAchievementStore.read(player.getUUID());
         if (!shouldArm(banked.contains(ID),
                        player.getAdvancements().getOrStartProgress(capstone).isDone(),
                        banked.contains(CompletionistAdvancement.ID))) {
-            return;
+            return false;
         }
         ARMED.add(player.getUUID());
+        return true;
+    }
+
+    /**
+     * The wipe that earns this, in place of vanilla's revoke-everything: clears only what the capstone
+     * is made of — its {@linkplain CompletionistAdvancement#isRequired required set}, the capstone
+     * itself and this advancement — and leaves every other advancement earned (the hidden reverse
+     * journey, the editor tree, relay-{@code notRequired} ones, vanilla and other mods'). Starting again
+     * means starting the burrito again, not losing what never counted towards it. Revoking rather than
+     * re-awarding afterwards also means no kept advancement re-runs its rewards.
+     *
+     * @return how many advancements lost at least one criterion
+     */
+    public static int wipe(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return 0;
+        Set<ResourceLocation> notRequired = AdvancementRequirementOverrides.notRequired();
+        List<AdvancementHolder> targets = new ArrayList<>();
+        for (AdvancementHolder holder : server.getAdvancements().getAllAdvancements()) {
+            if (isWiped(holder.id(), CompletionistAdvancement.isRequired(holder, notRequired))) targets.add(holder);
+        }
+        int cleared = 0;
+        for (AdvancementHolder holder : targets) {
+            AdvancementProgress progress = player.getAdvancements().getOrStartProgress(holder);
+            boolean any = false;
+            for (String criterion : toList(progress.getCompletedCriteria())) {   // copy: revoke mutates it
+                if (player.getAdvancements().revoke(holder, criterion)) any = true;
+            }
+            if (any) cleared++;
+        }
+        LOGGER.info("[DungeonTrain] Start-again wipe for {}: cleared {} capstone advancement(s), kept the rest",
+            player.getName().getString(), cleared);
+        return cleared;
+    }
+
+    private static List<String> toList(Iterable<String> criteria) {
+        List<String> out = new ArrayList<>();
+        for (String c : criteria) out.add(c);
+        return out;
+    }
+
+    /**
+     * Does the start-again wipe clear advancement {@code id}? Only the capstone's parts: its required
+     * set, the capstone, and this advancement. Package-private for unit tests.
+     */
+    static boolean isWiped(ResourceLocation id, boolean requiredByCapstone) {
+        return requiredByCapstone || CompletionistAdvancement.ID.equals(id) || ID.equals(id);
     }
 
     /**
