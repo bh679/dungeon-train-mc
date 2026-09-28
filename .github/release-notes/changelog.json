@@ -20295,8 +20295,31 @@
       "released_at": null
     },
     {
-      "id": "fewer-early-ruins",
+      "id": "spawn-search-stall-and-parked-physics",
       "version": "0.1004.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "compatibility"
+      ],
+      "title": "Joining no longer freezes the game, and stepping off the train stays smooth",
+      "summary": "Three causes of lag are gone: a freeze of up to a minute when joining a world on hilly ground, a freeze when water flowed near a carriage at the edge of loaded land, and a steady slowdown that built up whenever you were away from the train, which made picking up items and the train's own movement feel late. Ticks now stay fast whether you are aboard or off exploring.",
+      "highlights": [
+        "Joining a world no longer stalls while the game looks for a spot to start the intro shot",
+        "Blocks changing on a carriage next to unloaded land no longer freeze the server",
+        "Wandering away from the train no longer makes the game grind: the carriages you left behind stay cheap to simulate",
+        "New server option spawnSearchSyncGen (off by default) brings back the old, wider spawn search if you want it"
+      ],
+      "pr": 1640,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fewer-early-ruins",
+      "version": "0.1005.0",
       "type": "feat",
       "tags": [
         "feature",

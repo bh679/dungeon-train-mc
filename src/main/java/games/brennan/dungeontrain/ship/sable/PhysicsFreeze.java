@@ -33,6 +33,13 @@ import org.joml.Vector3dc;
  * slot the player was standing in was never re-tracked and never unfroze — a group-sized hole in the
  * train, with the group itself stacked hundreds of blocks back on top of other parked groups.</p>
  *
+ * <p><b>…but the body is re-parked near the pose.</b> A body left where it was frozen while the pose
+ * runs on costs Sable's native step more the further apart the two get — measured close to linear,
+ * 3 ms of {@code physMs} at 16 blocks of lag to 262 ms at 414 (see {@link #REPARK_LAG_BLOCKS}). So
+ * once a parked body lags {@link #REPARK_LAG_BLOCKS} behind, {@link #reparkIfLagging} does one more
+ * park-at-rest pass onto the current pose. The body still does no per-tick work; it just never
+ * drifts far from where the train has its pose.</p>
+ *
  * <p><b>Park-at-rest on freeze.</b> A parked kinematic body must have zero velocity, or the native step
  * drifts it. On freeze we do one final {@link #parkAtRest} pass (teleport to the authoritative
  * {@code logicalPose} + zero linear/angular velocity) <em>before</em> setting the flag, so the reader
@@ -59,6 +66,43 @@ public final class PhysicsFreeze {
         Vector3dc parkedAt = sl.logicalPose().position();
         flag.dt$setParked(parkedAt.x(), parkedAt.y(), parkedAt.z(), gameTick);
         flag.dt$setPhysicsFrozen(true);  // readers skip from here; applyTickOutput parks it
+    }
+
+    /**
+     * A parked body is re-parked onto its pose once it sits this far behind it.
+     *
+     * <p><b>Why.</b> Leaving the native body wherever it was frozen turned out not to be free:
+     * Sable's native step costs more the further a parked body is from its pose. Measured on a
+     * headless dev server with no player (28 Sep 2026, 13 carriages, 12 parked): {@code physMs}
+     * 3 ms at 16 blocks of lag, 45 ms at 128, 109 ms at 368, 262 ms at 414 — close to linear in
+     * the lag, until the vanilla watchdog killed the server at a 60 s tick. Player logs show the
+     * same curve whenever the rider is away from the train ({@code near=0}, 45–205 ms). A
+     * carriage that is teleported every tick (unfrozen) is cheap, so the cost is the gap, not the
+     * teleport. Re-parking every few blocks is one teleport per carriage every few seconds — the
+     * per-tick Java work the freeze skips is still skipped.</p>
+     */
+    static final double REPARK_LAG_BLOCKS = 8.0;
+
+    /**
+     * Re-park a frozen carriage whose native body has fallen {@link #REPARK_LAG_BLOCKS} or more
+     * behind its pose: one {@link #parkAtRest} pass onto the current pose, with the frozen flag
+     * dropped for its duration so {@code RapierPipelineFreezeMixin} lets the teleport and
+     * velocity writes through, then the parked position is re-based there. The freeze's own
+     * clock ({@code parkedGameTick}) is left alone — the carriage has been parked the whole time.
+     * Returns {@code true} when a re-park happened. No-op for an unfrozen carriage.
+     */
+    public static boolean reparkIfLagging(ServerSubLevel sl) {
+        if (!(sl instanceof DtFreezable flag) || !flag.dt$isPhysicsFrozen()) return false;
+        if (bodyLagBlocks(sl) < REPARK_LAG_BLOCKS) return false;
+        flag.dt$setPhysicsFrozen(false);
+        try {
+            parkAtRest(sl);
+        } finally {
+            flag.dt$setPhysicsFrozen(true);
+        }
+        Vector3dc at = sl.logicalPose().position();
+        flag.dt$setParked(at.x(), at.y(), at.z(), flag.dt$parkedGameTick());
+        return true;
     }
 
     /** Clear the frozen flag; {@link SableManagedShip#applyTickOutput} resumes teleporting next tick. Idempotent. */
