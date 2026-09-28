@@ -89,6 +89,8 @@ public final class PhysicsFreezeController {
     private static volatile int lastActiveEntity;
     private static volatile int lastActiveSettling;
     private static volatile double lastMaxBodyLagBlocks;
+    /** Re-parks since the last {@link #drainReparks} — one {@code [mspt]} window. */
+    private static final java.util.concurrent.atomic.LongAdder REPARKS = new java.util.concurrent.atomic.LongAdder();
 
     private PhysicsFreezeController() {}
 
@@ -127,7 +129,7 @@ public final class PhysicsFreezeController {
         if (system == null) return;
 
         int resident = 0, active = 0, frozen = 0;
-        int activeTracked = 0, activeEntity = 0, activeSettling = 0;
+        int activeTracked = 0, activeEntity = 0, activeSettling = 0, reparks = 0;
         double maxBodyLag = 0.0;
         for (List<Trains.Carriage> train : trainsById.values()) {
             Set<Integer> settlingAnchors = settlingAnchors(train);
@@ -181,6 +183,10 @@ public final class PhysicsFreezeController {
                 }
                 if (PhysicsFreeze.isFrozen(sl)) {
                     frozen++;
+                    // Keep the parked body near its pose — the native step's cost grows with the
+                    // gap (see PhysicsFreeze.REPARK_LAG_BLOCKS). Lag is read after the re-park so
+                    // maxBodyLag reports what the physics scene will actually see this tick.
+                    if (PhysicsFreeze.reparkIfLagging(sl)) reparks++;
                     maxBodyLag = Math.max(maxBodyLag, PhysicsFreeze.bodyLagBlocks(sl));
                 }
             }
@@ -193,6 +199,7 @@ public final class PhysicsFreezeController {
         lastActiveEntity = activeEntity;
         lastActiveSettling = activeSettling;
         lastMaxBodyLagBlocks = maxBodyLag;
+        REPARKS.add(reparks);
 
         if (frozen > 0 && level.getGameTime() % LOG_PERIOD_TICKS == 0) {
             LOGGER.debug("[freeze] dim={} resident={} active={} frozen={}",
@@ -281,6 +288,8 @@ public final class PhysicsFreezeController {
     public static int lastActiveEntity() { return lastActiveEntity; }
     /** Active because its train has an unsettled group (see {@link #anchorsToKeepTicking}). */
     public static int lastActiveSettling() { return lastActiveSettling; }
-    /** Largest distance a parked body currently sits behind its pose, in blocks. */
+    /** Largest distance a parked body currently sits behind its pose, in blocks (after re-parking). */
     public static double lastMaxBodyLagBlocks() { return lastMaxBodyLagBlocks; }
+    /** Parked bodies re-parked onto their poses since the last call — drained once per {@code [mspt]} window. */
+    public static long drainReparks() { return REPARKS.sumThenReset(); }
 }

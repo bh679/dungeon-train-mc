@@ -356,14 +356,15 @@ public final class TrainTickEvents {
             // their poses, and how many carriages re-anchored in the window — the fields
             // needed to attribute a slow physMs while the player is away from the train
             // (player logs of 28 Sep 2026: 45–205 ms at near=0). See PhysicsFreezeController.
-            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reanchors={}",
+            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={}",
                 level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
                 countNearCarriages(level, trainsById), trainsById.size(),
                 String.format("%.2f", physics.avgStepMs(MSPT_LOG_PERIOD_TICKS)),
                 PhysicsSubstepTuner.currentSubsteps(level), physics.blockChanges(),
                 PhysicsFreezeController.lastActiveTracked(), PhysicsFreezeController.lastActiveEntity(),
                 PhysicsFreezeController.lastActiveSettling(), PhysicsFreezeController.lastFrozen(),
-                String.format("%.1f", PhysicsFreezeController.lastMaxBodyLagBlocks()), physics.reanchors());
+                String.format("%.1f", PhysicsFreezeController.lastMaxBodyLagBlocks()),
+                PhysicsFreezeController.drainReparks(), physics.reanchors());
         }
 
         // Kill-ahead runs once per train, against the lead carriage's
