@@ -20425,6 +20425,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "far-lands-fast-day-cycle",
+      "version": "0.1011.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Keep an eye on the sky",
+      "summary": "Something strange stirs in one of the later stretches of the line. Ride far enough and you might notice it.",
+      "highlights": [],
+      "pr": 1642,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
