@@ -286,6 +286,8 @@ public final class PlayerMobGroupSpawner {
         OptionalInt pIdx = resolveCompanionCarriagePIdx(SPAWNING_CARRIAGE_PIDX.get(), leader.getTags());
         if (pIdx.isEmpty()) return;
         applyTrainSpawnSetup(level, companion, pIdx.getAsInt(), companion.getRandom());
+        LOGGER.info("[DungeonTrain] PlayerMob companion set up beside {} carriagePIdx={} pos={}",
+            leader.getUUID(), pIdx.getAsInt(), companion.blockPosition());
     }
 
     /**
