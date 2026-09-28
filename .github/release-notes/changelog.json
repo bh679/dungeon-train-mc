@@ -20098,6 +20098,29 @@
       "released_at": null
     },
     {
+      "id": "eb-editor-mirroring",
+      "version": "0.996.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "compatibility"
+      ],
+      "title": "Effortless Building follows the editor's mirror, and whole rooms can be test-driven",
+      "summary": "In the train editor, Effortless Building now respects a template's mirror settings. Lines, walls, cubes and breaks you make with it appear on the mirrored side too, and its ghost preview shows both halves before you place. One Ctrl+Z undoes both halves. Test the Carriage now works on whole rooms and whole groups, so you can walk through them before they ride the train.",
+      "highlights": [
+        "Effortless Building places and breaks are mirrored in mirror-enabled templates, including its own undo and redo",
+        "The Effortless Building preview shows the mirrored half, even when you build into a template from outside it",
+        "Test the Carriage works for whole rooms and whole groups, with Reseed and Back",
+        "Whole groups can now be set as rare as one in every 1000 groups"
+      ],
+      "pr": 1624,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "advancement-frontier-visibility",
       "version": "0.997.0",
       "type": "fix",

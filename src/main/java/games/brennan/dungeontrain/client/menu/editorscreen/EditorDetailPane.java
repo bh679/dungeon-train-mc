@@ -742,7 +742,7 @@ public final class EditorDetailPane {
             case GO_HERE -> goHere == null || ctx.selection() == null ? List.of()
                 : List.of(EditorScreenLang.text(EditorScreenLang.GO_HERE),
                           EditorScreenLang.text(EditorScreenLang.STANDING_IN, ctx.selection().displayName()));
-            // Only dimensional carriages, carriages and contents can be stood up, and that is the
+            // Only dimensional carriages, carriages, contents and whole rooms / groups can be stood up, and that is the
             // whole of why the button is off — it no longer asks the author to stand anywhere.
             case RESEED -> List.of(EditorScreenLang.text(EditorScreenLang.RESEED),
                 EditorScreenLang.text(PortalTestSessionState.active() ? EditorScreenLang.RESEED_TIP_NOW

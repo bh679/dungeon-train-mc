@@ -13,6 +13,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.util.BlockSnapshot;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -46,7 +47,7 @@ public final class EditorMirrorLiveHandler {
         if (event.isCanceled()) return;
         if (!(event.getEntity() instanceof ServerPlayer)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
-        applyAt(level, event.getPos(), event.getPlacedBlock());
+        mirrorAt(level, event.getPos(), event.getPlacedBlock());
     }
 
     @SubscribeEvent
@@ -58,7 +59,7 @@ public final class EditorMirrorLiveHandler {
         // back its state and mirror it individually.
         for (BlockSnapshot snapshot : event.getReplacedBlockSnapshots()) {
             BlockPos pos = snapshot.getPos();
-            applyAt(level, pos, level.getBlockState(pos));
+            mirrorAt(level, pos, level.getBlockState(pos));
         }
     }
 
@@ -67,7 +68,7 @@ public final class EditorMirrorLiveHandler {
         if (event.isCanceled()) return;
         if (!(event.getPlayer() instanceof ServerPlayer)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
-        applyAt(level, event.getPos(), null);
+        mirrorAt(level, event.getPos(), null);
     }
 
     /**
@@ -78,9 +79,11 @@ public final class EditorMirrorLiveHandler {
      * standing. No-op when the edit isn't inside a mirror-enabled plot.
      *
      * <p>The subscribers keep their "a real player did this" guard, so
-     * dispenser / piston writes never reach here.</p>
+     * dispenser / piston writes never reach here. The one other caller is
+     * {@link games.brennan.dungeontrain.compat.EffortlessBuildingMirror}, for
+     * Effortless Building's writes, which fire no block events.</p>
      */
-    private static void applyAt(ServerLevel level, BlockPos worldPos, BlockState state) {
+    public static void mirrorAt(ServerLevel level, BlockPos worldPos, @Nullable BlockState state) {
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         BlockVariantPlot plot = BlockVariantPlot.resolveAtPos(level, worldPos, dims);
         if (plot == null) return;

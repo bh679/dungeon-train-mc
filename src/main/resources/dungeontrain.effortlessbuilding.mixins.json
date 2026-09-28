@@ -7,7 +7,9 @@
   "refmap": "dungeontrain.refmap.json",
   "mixins": [
     "effortlessbuilding.EffortlessBuildingPacketHandlerMixin",
-    "effortlessbuilding.EffortlessBuildingTriggerItemMixin"
+    "effortlessbuilding.EffortlessBuildingTriggerItemMixin",
+    "effortlessbuilding.EffortlessBuildingUndoManagerMixin",
+    "effortlessbuilding.EffortlessBuildingPreviewMirrorMixin"
   ],
   "client": [],
   "server": [],

@@ -11,7 +11,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Who is standing in a Test-the-Carriage copy of a <b>carriage or contents</b> template, and how to
+ * Who is standing in a Test-the-Carriage copy of a <b>carriage, contents or whole</b> template, and how to
  * send them back — {@code command.CarriageTestCommand}'s half of what
  * {@code portal.PortalTestSession} is for dimensional carriages.
  *
@@ -24,7 +24,14 @@ public final class CarriageTestSession {
     /** What was tested: the template the author asked for, named by its editor category. */
     public enum Kind {
         CARRIAGE("carriages"),
-        CONTENTS("contents");
+        CONTENTS("contents"),
+        /** A whole room — one template filling the whole carriage, no shell or contents pass. */
+        WHOLE("whole"),
+        /** A whole group — one template spanning a run of carriages. */
+        WHOLE_GROUP("whole_group");
+
+        /** A whole room or group: stood up as one template, rather than a shell plus contents. */
+        public boolean isWhole() { return this == WHOLE || this == WHOLE_GROUP; }
 
         private final String literal;
 
