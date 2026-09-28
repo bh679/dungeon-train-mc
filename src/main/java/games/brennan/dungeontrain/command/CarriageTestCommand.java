@@ -263,7 +263,9 @@ public final class CarriageTestCommand {
             previous, kind, id, box, shellSeed, contentsSeed));
 
         boolean[] placed = {false};
-        CarriageStampGuard.run(() -> StagePlacementScope.run(null, () -> {
+        // Placeholders resolve for the stage the editor is previewing, as in CarriagePlacer#placeForTest.
+        String stage = games.brennan.dungeontrain.editor.EditorStageSelection.effective();
+        CarriageStampGuard.run(() -> StagePlacementScope.run(stage, () -> {
             placed[0] = place.test(origin);
             if (placed[0]) {
                 WholeOverlay.apply(overworld, origin, wholeKind, id, size, shellSeed,
