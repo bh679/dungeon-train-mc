@@ -4,7 +4,7 @@
 Deliberately flat, obviously-not-vanilla tiles so a placeholder that ever reaches a live train is
 visible at a glance: a grey family for the solid / stairs / slab / button / plate slots with the
 slot number stamped on (and a kind letter for the stone set), and a brown family for the wood set (planks, log side + end, door halves,
-trapdoor). Re-run after changing the palette or the catalogue in StagePlaceholderBlocks:
+trapdoor), plus a green leaves tile. Re-run after changing the palette or the catalogue in StagePlaceholderBlocks:
 
     python3 scripts/assets/gen-stage-placeholder-textures.py
 
@@ -49,6 +49,7 @@ DIGITS = {
     "K": ["#.#", "#.#", "##.", "#.#", "#.#"],
     "M": ["#.#", "###", "#.#", "#.#", "#.#"],
     "F": ["###", "#..", "##.", "#..", "#.."],
+    "V": ["#.#", "#.#", "#.#", "#.#", ".#."],
 }
 
 GREY = (128, 132, 140)
@@ -59,6 +60,10 @@ INK = (24, 26, 30)
 BROWN = (150, 110, 70)
 BROWN_DARK = (110, 78, 46)
 BROWN_LIGHT = (184, 142, 96)
+GREEN = (84, 132, 62)
+GREEN_DARK = (58, 96, 42)
+GREEN_LIGHT = (116, 164, 88)
+
 BARK = (92, 64, 40)
 BARK_DARK = (70, 48, 30)
 
@@ -99,6 +104,12 @@ def grey(label: str) -> Image.Image:
 
 def brown(label: str) -> Image.Image:
     img = base_tile(BROWN, BROWN_DARK, BROWN_LIGHT)
+    stamp(img, label)
+    return img
+
+
+def green(label: str) -> Image.Image:
+    img = base_tile(GREEN, GREEN_DARK, GREEN_LIGHT)
     stamp(img, label)
     return img
 
@@ -171,6 +182,7 @@ def main() -> None:
     write(door(True), BLOCK_DIR / "stage_door_top.png")
     write(door(False), BLOCK_DIR / "stage_door_bottom.png")
     write(brown("T"), BLOCK_DIR / "stage_trapdoor.png")
+    write(green("LV"), BLOCK_DIR / "stage_leaves.png")
 
     # Stone set: one tile per kind, shared by its stairs / slab / wall.
     for kind, letter in (("cobbled", "C"), ("stone", "S"), ("bricks", "B"), ("polished", "P"),
