@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.videotools;
 
+import games.brennan.dungeontrain.cheat.FreePlayText;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -56,8 +57,13 @@ public record VideoTool(String id, String command, int frames, int cols, int row
         return tr("blurb");
     }
 
+    /**
+     * One detail-page paragraph. The {@code free_play} note carries a {@code %s} for the shared
+     * Free Play explanation; other paragraphs ignore the extra argument.
+     */
     public MutableComponent body(String key) {
-        return tr(key);
+        return Component.translatable("gui.dungeontrain.video_tools." + id + "." + key,
+                FreePlayText.explained());
     }
 
     private MutableComponent tr(String suffix) {

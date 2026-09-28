@@ -17,12 +17,11 @@ import net.minecraft.world.level.levelgen.RandomState;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -36,6 +35,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * island Y band is copied out shifted onto track level ({@link EndBandStyle#displayY}), with any
  * block-entity NBT re-keyed to display positions. Finished {@link Result}s wait in a queue for
  * {@code WorldEndBandEvents} to write into the live chunk on the server thread.</p>
+ *
+ * <p>Jobs are taken <b>nearest player first</b> ({@link EndBandJobQueue}), not in arrival order: the
+ * prefetch strip keeps queuing chunks beyond the view, and under load the chunks beside the player used to
+ * wait behind them as squares of void in the islands.</p>
  *
  * <p>Same threading rules as {@link ForeignSphereSampler}: dedicated threads, never
  * {@code Util.backgroundExecutor()} ({@code fillFromNoise} schedules onto that pool and joins).</p>
@@ -70,7 +73,14 @@ public final class EndBandSampler {
     private static final ConcurrentLinkedQueue<Result> READY = new ConcurrentLinkedQueue<>();
     /** Bumped on server stop so a job still running for the old server drops its result. */
     private static final AtomicInteger EPOCH = new AtomicInteger();
-    private static volatile ExecutorService executor;
+    /** Waiting jobs, nearest player first; taken by the sampler threads ({@link #startWorkers}). */
+    private static final EndBandJobQueue<Job> QUEUE = new EndBandJobQueue<>();
+    /** Chunks from the nearest player beyond which a waiting job is dropped (view + prefetch strip + slack). */
+    private static volatile int keepRadius = Integer.MAX_VALUE;
+    private static volatile boolean workersStarted;
+
+    /** One queued sample: the chunk it is for, and the work. */
+    private record Job(long key, Runnable work) {}
 
     private EndBandSampler() {}
 
@@ -106,7 +116,8 @@ public final class EndBandSampler {
         int displayMinY = overworld.getMinBuildHeight();
         int displayMaxY = overworld.getMaxBuildHeight();
         int epoch = EPOCH.get();
-        executor().execute(() -> {
+        startWorkers();
+        QUEUE.add(pos.toLong(), pos.x, pos.z, new Job(pos.toLong(), () -> {
             long t0 = System.nanoTime();
             try {
                 Result result = sample(server, pos, passIndex, bedY, displayMinY, displayMaxY);
@@ -117,37 +128,73 @@ public final class EndBandSampler {
                 LOGGER.warn("[DungeonTrain] End-band sample failed for chunk {} (pass {})", pos, passIndex, t);
             }
             GenProfiler.addNanos(GenProfiler.Bucket.END_BAND_SAMPLE, System.nanoTime() - t0);
-        });
+        }));
     }
 
-    /** The next finished sample, or {@code null}. Server thread. */
-    public static Result poll() {
-        Result r = READY.poll();
-        if (r != null) IN_FLIGHT.remove(r.pos().toLong());
-        return r;
+    /**
+     * The players the queue is ordered by, and how far (in chunks) from the nearest of them a waiting job
+     * may be before it is dropped. Server thread, every tick.
+     */
+    public static void updatePlayers(EndBandJobQueue.Players players, int dropBeyondChunks) {
+        keepRadius = dropBeyondChunks;
+        QUEUE.setPlayers(players);
+    }
+
+    /**
+     * Move every finished sample into {@code out}. Each stays in flight until {@link #done} — so a chunk
+     * that loads while its sample waits to be written doesn't ask for a second one. Server thread.
+     */
+    public static void drainReady(List<Result> out) {
+        Result r;
+        while ((r = READY.poll()) != null) out.add(r);
+    }
+
+    /** The sample for {@code pos} has been written (or given up on): it may be requested again. */
+    public static void done(ChunkPos pos) {
+        IN_FLIGHT.remove(pos.toLong());
     }
 
     /** Drop every queued and finished job (server stopping / world change). */
     public static void clear() {
         EPOCH.incrementAndGet();
+        QUEUE.clear(job -> { });
+        QUEUE.setPlayers(EndBandJobQueue.Players.NONE);
+        keepRadius = Integer.MAX_VALUE;
         READY.clear();
         IN_FLIGHT.clear();
     }
 
-    private static ExecutorService executor() {
-        ExecutorService e = executor;
-        if (e != null) return e;
+    /**
+     * Start the sampler threads once. Each loops taking the nearest waiting job; a dropped job frees its
+     * chunk to be requested again. Same threading rule as {@link ForeignSphereSampler}: dedicated daemon
+     * threads, never {@code Util.backgroundExecutor()}.
+     */
+    private static void startWorkers() {
+        if (workersStarted) return;
         synchronized (EndBandSampler.class) {
-            if (executor == null) {
-                AtomicInteger n = new AtomicInteger();
-                executor = Executors.newFixedThreadPool(SpheresProgressionConfig.samplerThreads(), task -> {
-                    Thread thread = new Thread(task, "DungeonTrain-endband-sampler-" + n.incrementAndGet());
-                    thread.setDaemon(true);
-                    thread.setPriority(Thread.NORM_PRIORITY - 1);
-                    return thread;
-                });
+            if (workersStarted) return;
+            int threads = SpheresProgressionConfig.samplerThreads();
+            for (int i = 1; i <= threads; i++) {
+                Thread thread = new Thread(EndBandSampler::workLoop, "DungeonTrain-endband-sampler-" + i);
+                thread.setDaemon(true);
+                thread.setPriority(Thread.NORM_PRIORITY - 1);
+                thread.start();
             }
-            return executor;
+            workersStarted = true;
+        }
+    }
+
+    private static void workLoop() {
+        while (true) {
+            try {
+                Job job = QUEUE.take(keepRadius, dropped -> IN_FLIGHT.remove(dropped.key()));
+                job.work().run();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            } catch (Throwable t) {
+                LOGGER.warn("[DungeonTrain] End-band sampler job threw", t);
+            }
         }
     }
 

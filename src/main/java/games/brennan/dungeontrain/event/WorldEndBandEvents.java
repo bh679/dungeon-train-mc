@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.EndBandJobQueue;
 import games.brennan.dungeontrain.worldgen.EndBandSampler;
 import games.brennan.dungeontrain.worldgen.EndBandStyle;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
@@ -31,7 +32,11 @@ import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -68,6 +73,17 @@ public final class WorldEndBandEvents {
     private static final int STASH_CAP = 192;
     /** Chunk-X ahead of a player, measured past its view distance, the prefetch strip starts at. */
     private static final int PREFETCH_LEAD_CHUNKS = 1;
+    /** Slack past the prefetch strip before a waiting sample job counts as abandoned and is dropped. */
+    private static final int DROP_SLACK_CHUNKS = 2;
+    /**
+     * Finished samples for chunks within a player's view written per tick. Above the general budget
+     * ({@code spheresForeignApplyPerTick}) so terrain a player can see never trails behind as void squares,
+     * but capped so a burst can't stall the tick.
+     */
+    private static final int NEAR_APPLY_PER_TICK = 16;
+
+    /** Finished samples waiting to be written, carried across ticks when the budget runs out. Server thread. */
+    private static final List<EndBandSampler.Result> FINISHED = new ArrayList<>();
 
     private static final Set<Heightmap.Types> FULL_HEIGHTMAPS = EnumSet.of(
             Heightmap.Types.WORLD_SURFACE,
@@ -130,14 +146,50 @@ public final class WorldEndBandEvents {
             DUE.clear();
             GenProfiler.add(GenProfiler.Bucket.END_BAND_APPLY, t0);
         }
-        int budget = SpheresProgressionConfig.applyPerTick();
-        for (int i = 0; i < budget; i++) {
-            EndBandSampler.Result r = EndBandSampler.poll();
-            if (r == null) return;
-            long t0 = GenProfiler.t0();
-            deliver(level, r);
-            GenProfiler.add(GenProfiler.Bucket.END_BAND_APPLY, t0);
+        EndBandJobQueue.Players players = snapshotPlayers(level);
+        int view = level.getServer().getPlayerList().getViewDistance();
+        EndBandSampler.updatePlayers(players,
+                view + PREFETCH_LEAD_CHUNKS + PREFETCH_DEPTH_CHUNKS + DROP_SLACK_CHUNKS);
+        EndBandSampler.drainReady(FINISHED);
+        if (!FINISHED.isEmpty()) writeFinished(level, players, view);
+    }
+
+    /**
+     * Write finished samples nearest player first: up to {@link #NEAR_APPLY_PER_TICK} for chunks within a
+     * player's view, and otherwise the general budget. The rest wait for the next tick.
+     */
+    private static void writeFinished(ServerLevel level, EndBandJobQueue.Players players, int view) {
+        long t0 = GenProfiler.t0();
+        if (!players.isEmpty()) {
+            FINISHED.sort(Comparator.comparingInt(r -> players.distance(r.pos().x, r.pos().z)));
         }
+        int farBudget = SpheresProgressionConfig.applyPerTick();
+        int written = 0;
+        Iterator<EndBandSampler.Result> it = FINISHED.iterator();
+        while (it.hasNext()) {
+            EndBandSampler.Result r = it.next();
+            boolean near = !players.isEmpty() && players.distance(r.pos().x, r.pos().z) <= view;
+            if (written >= (near ? NEAR_APPLY_PER_TICK : farBudget)) break;
+            it.remove();
+            deliver(level, r);
+            EndBandSampler.done(r.pos());
+            written++;
+        }
+        GenProfiler.add(GenProfiler.Bucket.END_BAND_APPLY, t0);
+    }
+
+    /** The overworld players' chunk positions, for ordering the sampler's queue and the writes. */
+    private static EndBandJobQueue.Players snapshotPlayers(ServerLevel level) {
+        List<ServerPlayer> list = level.players();
+        if (list.isEmpty()) return EndBandJobQueue.Players.NONE;
+        int[] xs = new int[list.size()];
+        int[] zs = new int[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            ChunkPos at = list.get(i).chunkPosition();
+            xs[i] = at.x;
+            zs[i] = at.z;
+        }
+        return new EndBandJobQueue.Players(xs, zs);
     }
 
     /** Write {@code r} if its chunk is loaded and still owed; stash it if the chunk isn't there yet. */
@@ -156,6 +208,7 @@ public final class WorldEndBandEvents {
         games.brennan.dungeontrain.worldgen.BopEnd.clear();
         STASH.clear();
         DUE.clear();
+        FINISHED.clear();
         tickCounter = 0;
     }
 

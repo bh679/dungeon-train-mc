@@ -19860,7 +19860,7 @@
         "feature",
         "compatibility"
       ],
-      "title": "Fair play now covers settings changed mid-run",
+      "title": "The whitelist now covers settings changed mid-run",
       "summary": "Changing a Dungeon Train balance setting while you're playing, whether in the settings screen or an in-game config editor, now puts that run into Free Play for good, just like using a tuning command. Changing it back before you quit no longer hides it.",
       "highlights": [
         "How the train's mobs fight and scavenge now counts as a balance setting",
@@ -19869,9 +19869,9 @@
       ],
       "pr": 1604,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "live-update-chat-notice",
@@ -19889,9 +19889,9 @@
       ],
       "pr": 1605,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "whitelist-min-dt-version",
@@ -19901,16 +19901,16 @@
         "feature",
         "compatibility"
       ],
-      "title": "Some fair-play mods need a recent Dungeon Train",
-      "summary": "A few mods on the fair-play list are only approved on newer versions of Dungeon Train, because they rely on support those versions added. Run one on an older version and the run is Free Play until you update.",
+      "title": "Some whitelisted mods need a recent Dungeon Train",
+      "summary": "A few mods on the whitelist are only approved on newer versions of Dungeon Train, because they rely on support those versions added. Run one on an older version and the run is Free Play until you update.",
       "highlights": [
-        "Update Dungeon Train to keep a mod like Catalogue approved for fair play"
+        "Update Dungeon Train to keep a mod like Catalogue on the whitelist"
       ],
       "pr": 1606,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "sprint-fly-3x-default",
@@ -19924,9 +19924,9 @@
       "highlights": [],
       "pr": 1608,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "farmers-delight-soup-stacking",
@@ -19941,6 +19941,198 @@
       "highlights": [],
       "pr": 1610,
       "date": "2026-09-27",
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
+    },
+    {
+      "id": "upside-down-village-no-residents",
+      "version": "0.990.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world",
+        "mobs"
+      ],
+      "title": "No more floating beds and villagers",
+      "summary": "Villages caught in one of the stranger stretches of the journey no longer leave beds and villagers hanging in mid-air beside the track.",
+      "highlights": [],
+      "pr": 1612,
+      "date": "2026-09-27",
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
+    },
+    {
+      "id": "bookshelf-honey-trade-value",
+      "version": "0.991.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Bookshelves and honey blocks trade for 1 emerald",
+      "summary": "Villagers now give 1 emerald for a bookshelf or a honey block. Bookshelves used to fetch far more.",
+      "highlights": [],
+      "date": "2026-09-27",
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
+    },
+    {
+      "id": "end-band-void-squares",
+      "version": "0.992.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "No more holes in the scenery",
+      "summary": "Along some of the stranger stretches of the line, the scenery beside the track now fills in first, instead of leaving square holes of empty sky for a while \u2014 or for good, if you moved on too quickly.",
+      "highlights": [
+        "Scenery closest to you fills in first",
+        "No more square gaps left behind when the server is busy"
+      ],
+      "pr": 1615,
+      "date": "2026-09-27",
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
+    },
+    {
+      "id": "freeplay-shared-explanation",
+      "version": "0.993.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "Free Play explained the same way everywhere",
+      "summary": "Every screen that mentions Free Play now explains it with the same words: advancements and stats won't be saved. Where you still have a choice to make, it adds that Free Play is a safe space to use hacks and cheats.",
+      "highlights": [
+        "The Free Play explanation now reads the same in chat, tooltips, menus and prompts",
+        "Updated Free Play translations in every supported language"
+      ],
+      "pr": 1617,
+      "date": "2026-09-27",
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
+    },
+    {
+      "id": "dimensional-carriage-stale-room-overlap",
+      "version": "0.994.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriages stay clean on later visits",
+      "summary": "Deep into a run, a dimensional carriage could appear with bedrock where its void should be, and walking in could bounce you straight back onto the train with \"This room lost its train\". Each carriage now gets its own space again.",
+      "highlights": [
+        "Void rooms stay void \u2014 no stray bedrock from rooms you passed long ago",
+        "No more being put back on the train the moment you step into a room"
+      ],
+      "pr": 1616,
+      "date": "2026-09-27",
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
+    },
+    {
+      "id": "tower-blocks-hang-until-disturbed",
+      "version": "0.995.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Some things hold together until you touch them",
+      "summary": "Loose sand and gravel out in the stranger stretches of the journey no longer crumble away the moment you arrive. They hang where they were built, just like sand over a cave, until you disturb them.",
+      "highlights": [
+        "Loose blocks stay put until you mine or build next to them."
+      ],
+      "pr": 1619,
+      "date": "2026-09-28",
+      "released": true,
+      "released_in": "v0.995.0",
+      "released_at": "2026-09-28T08:11:16Z"
+    },
+    {
+      "id": "curseforge-companion-installs",
+      "version": "0.995.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "CurseForge installs three companion mods alongside Dungeon Train",
+      "summary": "On CurseForge, the OBS/Streamlabs check behind the Videos tab, the zapret/GoodbyeDPI check behind the connection warning, and one more small companion mod now install as their own mods next to Dungeon Train instead of living inside it. Nothing changes in-game, and Modrinth and manual installs keep them built in.",
+      "highlights": [
+        "The CurseForge app installs them for you automatically",
+        "Modrinth and manual installs are unchanged"
+      ],
+      "pr": 1622,
+      "date": "2026-09-28",
+      "released": true,
+      "released_in": "v0.995.0",
+      "released_at": "2026-09-28T08:11:16Z"
+    },
+    {
+      "id": "faulthurst-hint-every-language",
+      "version": "0.996.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Faulthurst's Favourite hint in every language",
+      "summary": "Faulthurst's Favourite now gives a hint before you earn it in every language, not just English.",
+      "highlights": [],
+      "pr": 1623,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "eb-editor-mirroring",
+      "version": "0.996.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "compatibility"
+      ],
+      "title": "Effortless Building follows the editor's mirror, and whole rooms can be test-driven",
+      "summary": "In the train editor, Effortless Building now respects a template's mirror settings. Lines, walls, cubes and breaks you make with it appear on the mirrored side too, and its ghost preview shows both halves before you place. One Ctrl+Z undoes both halves. Test the Carriage now works on whole rooms and whole groups, so you can walk through them before they ride the train.",
+      "highlights": [
+        "Effortless Building places and breaks are mirrored in mirror-enabled templates, including its own undo and redo",
+        "The Effortless Building preview shows the mirrored half, even when you build into a template from outside it",
+        "Test the Carriage works for whole rooms and whole groups, with Reseed and Back",
+        "Whole groups can now be set as rare as one in every 1000 groups"
+      ],
+      "pr": 1624,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "advancement-frontier-visibility",
+      "version": "0.997.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancements reveal one step at a time",
+      "summary": "The advancements screen now shows only what you've earned plus the next step ahead \u2014 everything further along stays hidden until you reach it.",
+      "highlights": [],
+      "pr": 1625,
+      "date": "2026-09-28",
       "released": false,
       "released_in": null,
       "released_at": null

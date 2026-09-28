@@ -48,7 +48,7 @@ import java.util.Optional;
  *   whole builder &lt;room&gt; &lt;uuid|none&gt; [name…]
  *   whole reset &lt;room&gt;                     delete the user copy
  *   whole new &lt;name&gt; [blank|&lt;room&gt;]        a new room — blank, or a copy (bare = the plot stood in)
- *   whole every &lt;0..64&gt;|inc|dec|off        one carriage group in every N is a whole group
+ *   whole every &lt;0..1000&gt;|inc|dec|off       one carriage group in every N is a whole group
  *   whole group enter|weight|label|builder|reset|new …   the same verbs for groups
  * </pre>
  *

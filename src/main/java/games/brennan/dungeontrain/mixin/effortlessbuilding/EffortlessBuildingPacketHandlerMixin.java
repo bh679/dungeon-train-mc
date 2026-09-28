@@ -2,9 +2,16 @@ package games.brennan.dungeontrain.mixin.effortlessbuilding;
 
 import games.brennan.dungeontrain.compat.EffortlessBuildingGate;
 import games.brennan.dungeontrain.compat.EffortlessBuildingHistory;
+import games.brennan.dungeontrain.compat.EffortlessBuildingMirror;
 import games.brennan.dungeontrain.compat.EffortlessBuildingVariantBreaks;
 import games.brennan.dungeontrain.compat.EffortlessBuildingVariants;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
@@ -12,11 +19,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Four jobs on one set of seams: gates Effortless Building's creative features behind the Free
+ * Five jobs on one set of seams: gates Effortless Building's creative features behind the Free
  * Play confirmation, records what they change into the editor's undo history, with a
  * variant clipboard in hand turns a shape placement into a bulk clipboard paste
  * ({@link EffortlessBuildingVariants}), and clears the variant pools of the cells a shape break
- * empties ({@link EffortlessBuildingVariantBreaks}), as a hand break does.
+ * empties ({@link EffortlessBuildingVariantBreaks}), as a hand break does, and carries the
+ * editor's live mirroring over to every cell a build writes ({@link EffortlessBuildingMirror}).
  *
  * <p>Effortless Building drives every build through its own server-bound packets — it fires no
  * NeoForge block events and registers no commands, so neither {@code CheatDetectionEvents.onCommand}
@@ -68,11 +76,13 @@ public abstract class EffortlessBuildingPacketHandlerMixin {
             return;
         }
         EffortlessBuildingHistory.begin(player, EffortlessBuildingHistory.PLACE);
+        EffortlessBuildingMirror.begin(player);
     }
 
     @Inject(method = "handlePlaceBuildMode", at = @At("RETURN"), remap = false)
     private static void dungeontrain$afterPlaceBuildMode(
             @Coerce Object packet, ServerPlayer player, CallbackInfo ci) {
+        EffortlessBuildingMirror.flush(player);
         EffortlessBuildingHistory.end(player);
     }
 
@@ -87,6 +97,7 @@ public abstract class EffortlessBuildingPacketHandlerMixin {
         // pools the break clears then come back with its blocks on one Ctrl+Z.
         String variantPlotKey = EffortlessBuildingVariantBreaks.begin(player);
         EffortlessBuildingHistory.begin(player, EffortlessBuildingHistory.BREAK, variantPlotKey);
+        EffortlessBuildingMirror.begin(player);
     }
 
     @Inject(method = "handleBreakBuildMode", at = @At("RETURN"), remap = false)
@@ -94,6 +105,7 @@ public abstract class EffortlessBuildingPacketHandlerMixin {
             @Coerce Object packet, ServerPlayer player, CallbackInfo ci) {
         // Pools cleared before the capture closes, so the removal lands in the same undo step.
         EffortlessBuildingVariantBreaks.end(player);
+        EffortlessBuildingMirror.flush(player);
         EffortlessBuildingHistory.end(player);
     }
 
@@ -104,10 +116,12 @@ public abstract class EffortlessBuildingPacketHandlerMixin {
             return;
         }
         EffortlessBuildingHistory.begin(player, EffortlessBuildingHistory.UNDO);
+        EffortlessBuildingMirror.begin(player);
     }
 
     @Inject(method = "handleUndo", at = @At("RETURN"), remap = false)
     private static void dungeontrain$afterUndo(ServerPlayer player, CallbackInfo ci) {
+        EffortlessBuildingMirror.flush(player);
         EffortlessBuildingHistory.end(player);
     }
 
@@ -118,11 +132,38 @@ public abstract class EffortlessBuildingPacketHandlerMixin {
             return;
         }
         EffortlessBuildingHistory.begin(player, EffortlessBuildingHistory.REDO);
+        EffortlessBuildingMirror.begin(player);
     }
 
     @Inject(method = "handleRedo", at = @At("RETURN"), remap = false)
     private static void dungeontrain$afterRedo(ServerPlayer player, CallbackInfo ci) {
+        EffortlessBuildingMirror.flush(player);
         EffortlessBuildingHistory.end(player);
+    }
+
+    /** Every block a shape place or break writes, noted for {@link EffortlessBuildingMirror#flush}. */
+    @WrapOperation(
+        method = {"handlePlaceBuildMode", "handleBreakBuildMode"},
+        at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/server/level/ServerLevel;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z"),
+        remap = false)
+    private static boolean dungeontrain$recordSetBlock(
+            ServerLevel level, BlockPos pos, BlockState state, int flags, Operation<Boolean> original) {
+        boolean changed = original.call(level, pos, state, flags);
+        if (changed) EffortlessBuildingMirror.record(pos);
+        return changed;
+    }
+
+    @WrapOperation(
+        method = "handleBreakBuildMode",
+        at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/server/level/ServerLevel;destroyBlock(Lnet/minecraft/core/BlockPos;ZLnet/minecraft/world/entity/Entity;)Z"),
+        remap = false)
+    private static boolean dungeontrain$recordDestroyBlock(
+            ServerLevel level, BlockPos pos, boolean drop, Entity breaker, Operation<Boolean> original) {
+        boolean changed = original.call(level, pos, drop, breaker);
+        if (changed) EffortlessBuildingMirror.record(pos);
+        return changed;
     }
 
     /**

@@ -345,7 +345,10 @@ def test_real_config_every_mod_has_modrinth_pins():
     # CurseForge only. They must stay out of the Modrinth pack (no double copy) and need no
     # Modrinth keys. Keep Trim rides here while its Modrinth listing is in review.
     cf_only = bm.curseforge_only_entries(cfg)
-    assert sorted(o["slug"] for o in cf_only) == ["dungeon-train-backup", "keep-trim", "sable-fence-trapdoor-fix"], cf_only
+    assert sorted(o["slug"] for o in cf_only) == [
+        "dpi-bypass-detect", "dungeon-train-backup", "keep-trim", "pigman-villagers",
+        "sable-fence-trapdoor-fix", "stream-detect",
+    ], cf_only
     for opt in cf_only:
         assert opt.get("dependency_type") == "required" and opt.get("gradle_property"), opt
         assert not {"modrinth_version", "modrinth_pending_url"} & opt.keys(), opt

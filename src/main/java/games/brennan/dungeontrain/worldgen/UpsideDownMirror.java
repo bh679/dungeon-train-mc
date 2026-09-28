@@ -11,6 +11,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BrushableBlock;
 import net.minecraft.world.level.block.Fallable;
@@ -349,7 +350,7 @@ public final class UpsideDownMirror {
                         BlockState ow = col[y - minY];
                         if (ow != AIR) {
                             if (ow.hasBlockEntity()) {
-                                ns = ow;                                   // native BE — leave it exactly in place (identity Y)
+                                if (keepsNativeBlockEntity(ow)) ns = ow;   // native BE — leave it exactly in place (identity Y)
                             } else {
                                 boolean place = exitOwKeepAll[dx];
                                 if (!place) {
@@ -507,6 +508,16 @@ public final class UpsideDownMirror {
         if (!FallingBlock.isFree(live.getBlockState(pos.above()))) return false;
         level.scheduleTick(pos, state.getBlock(), 2);
         return true;
+    }
+
+    /**
+     * Whether a native block entity survives the exit crossfade in place. Beds don't: the village
+     * around them is thinned away and its villagers are never placed in the zone
+     * ({@link UpsideDownSpawnerStructures#dropsTemplateEntity}), so a kept bed only floats in the sky.
+     * Both halves carry a block entity, so both go — never half a bed.
+     */
+    static boolean keepsNativeBlockEntity(BlockState state) {
+        return !(state.getBlock() instanceof BedBlock);
     }
 
     /** Inline convenience: compute + apply in one call (the precompute-off / cache-miss fallback). */
