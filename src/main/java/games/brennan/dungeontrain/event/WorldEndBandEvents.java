@@ -121,7 +121,8 @@ public final class WorldEndBandEvents {
         } else {
             // A chunk that unloaded before its terrain arrived: ask again.
             if (!chunk.getData(ModDataAttachments.END_BAND_PENDING)) return;
-            pass = MixBand.cycleAt(level, pos.x, pos.z).endPassIndex(pos.getMinBlockX() + 8);
+            pass = betterEndPass(level, pos);
+            if (pass < 0L) return;
         }
         EndBandSampler.Result early = STASH.remove(pos.toLong());
         if (early != null) {
@@ -212,17 +213,25 @@ public final class WorldEndBandEvents {
     }
 
     /**
-     * The End-band pass index of {@code pos} if it's a sampled (BetterEnd / BoP) pass with any band column in it, else
-     * {@code -1}. Every column of one chunk shares a pass: the End band sits mid-cycle, never on a
-     * cycle boundary.
+     * The sampled (BetterEnd / BoP) End pass that owns any band column of {@code pos}, else {@code -1}.
+     * Columns follow {@link WorldGenCycle#endSourcePassAt}: one pass per chunk everywhere except across the
+     * seam of a joined End band, where vanilla and sampled columns interleave — there the sampled side's
+     * pass is the one to fetch, and {@link #fill} writes only the columns it owns.
      */
     private static long betterEndPass(ServerLevel level, ChunkPos pos) {
         if (DisintegrationBand.startX(level) == DisintegrationBand.OFF) return -1L;
         WorldGenCycle cycle = MixBand.cycleAt(level, pos.x, pos.z);   // mix zone: the chunk's picked band
         int minX = pos.getMinBlockX();
         if (cycle.endIslandRamp(minX) <= 0.0 && cycle.endIslandRamp(minX + 15) <= 0.0) return -1L;
-        long pass = cycle.endPassIndex(minX + 8);
-        return EndBandSampler.appliesTo(level.getServer(), cycle.endStyleOfPass(pass)) ? pass : -1L;
+        long seed = DungeonTrainWorldData.get(level).getGenerationSeed();
+        for (int dx = 0; dx < 16; dx++) {
+            if (cycle.endIslandRamp(minX + dx) <= 0.0) continue;
+            for (int dz = 0; dz < 16; dz++) {
+                long pass = cycle.endSourcePassAt(minX + dx, pos.getMinBlockZ() + dz, seed);
+                if (EndBandSampler.appliesTo(level.getServer(), cycle.endStyleOfPass(pass))) return pass;
+            }
+        }
+        return -1L;
     }
 
     /** Request the not-yet-generated band chunks just beyond each player's view, ahead in +X. */
@@ -274,6 +283,8 @@ public final class WorldEndBandEvents {
             if (ramp <= 0.0) continue;
             for (int dz = 0; dz < 16; dz++) {
                 int worldZ = pos.getMinBlockZ() + dz;
+                // across a joined End band's seam the stamped vanilla look owns some columns
+                if (!EndBandSampler.appliesTo(level.getServer(), cycle.endSourceLookAt(worldX, worldZ, seed))) continue;
                 boolean laneZ = geo.laneZ(worldZ), airZ = geo.airZ(worldZ);
                 for (int y = yStart; y < yEnd; y++) {
                     BlockState ns = r.stateAt(dx, y, dz);

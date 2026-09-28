@@ -50,8 +50,6 @@ public final class BandAdvancements {
     public static final String VOID = "reached_void";
     public static final String END_ISLANDS = "reached_end_islands";
     public static final String BETTER_END = "reached_better_end";
-    /** An End-islands band in a Biomes O' Plenty lap. */
-    public static final String BOP_END = "reached_bop_end";
     public static final String UPSIDE_DOWN = "the_upside_down";
     public static final String REASSEMBLY = "reassembly_required";
     public static final String WWOO = "reached_wwoo";
@@ -69,9 +67,9 @@ public final class BandAdvancements {
 
     /**
      * The chain's closing links, in the order the second cycle grants them: back on plain overworld,
-     * into its (Biomes O' Plenty) Nether, then its End. Always after every first-cycle band.
+     * into its (Biomes O' Plenty) Nether. Always after every first-cycle band.
      */
-    public static final List<String> LATER_CYCLES = List.of(OVERWORLD_AGAIN, NETHER_RETURN, BOP_END);
+    public static final List<String> LATER_CYCLES = List.of(OVERWORLD_AGAIN, NETHER_RETURN);
 
     /** The advancement the chain hangs from: the first band advancement's parent. */
     public static final String ANCHOR = "carts_100";
@@ -81,15 +79,13 @@ public final class BandAdvancements {
      * Also the fallback order for bands a custom layout leaves out.
      */
     public static final List<String> ALL = List.of(
-            NETHER, VOID, END_ISLANDS, UPSIDE_DOWN, REASSEMBLY,
-            WWOO, BETTER_NETHER, BOP, BETTER_END, SPHERES,
-            legacyId(LegacyBandKind.AMPLIFIED), legacyId(LegacyBandKind.LOST_CITY), legacyId(LegacyBandKind.BETA), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.CAVES_OF_CHAOS),
+            NETHER, WWOO, VOID, END_ISLANDS, UPSIDE_DOWN, REASSEMBLY,
+            BOP, BETTER_NETHER, legacyId(LegacyBandKind.LOST_CITY), BETTER_END, SPHERES,
+            legacyId(LegacyBandKind.AMPLIFIED), legacyId(LegacyBandKind.BETA), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.CAVES_OF_CHAOS),
             legacyId(LegacyBandKind.SKYLANDS),
             legacyId(LegacyBandKind.FLOATING), legacyId(LegacyBandKind.ALPHA), legacyId(LegacyBandKind.INFDEV),
             legacyId(LegacyBandKind.CLASSIC), legacyId(LegacyBandKind.SUPERFLAT),
-            CHUNCKS, STACKS,
-            // Lap 1's End turns Biomes O' Plenty from the second cycle on (vanilla>bop).
-            BOP_END);
+            CHUNCKS, STACKS);
 
     // ---- reverse journey ---------------------------------------------------------------------
 
@@ -129,9 +125,9 @@ public final class BandAdvancements {
             legacyId(LegacyBandKind.SUPERFLAT), legacyId(LegacyBandKind.CLASSIC), legacyId(LegacyBandKind.INFDEV),
             legacyId(LegacyBandKind.ALPHA), legacyId(LegacyBandKind.FLOATING), legacyId(LegacyBandKind.SKYLANDS),
             legacyId(LegacyBandKind.CAVES_OF_CHAOS), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.BETA),
-            legacyId(LegacyBandKind.LOST_CITY), legacyId(LegacyBandKind.AMPLIFIED),
-            SPHERES, BETTER_END, BOP, BETTER_NETHER, WWOO,
-            REASSEMBLY, UPSIDE_DOWN, VOID, END_ISLANDS, NETHER);
+            legacyId(LegacyBandKind.AMPLIFIED),
+            SPHERES, BETTER_END, legacyId(LegacyBandKind.LOST_CITY), BETTER_NETHER, BOP,
+            REASSEMBLY, UPSIDE_DOWN, VOID, END_ISLANDS, WWOO, NETHER);
 
     /** The reverse advancement for forward band id {@code forwardId}: {@code reached_x} → {@code reversed_x}. */
     public static String reverseId(String forwardId) {
@@ -198,7 +194,6 @@ public final class BandAdvancements {
                 out.add(VOID);
                 out.add(END_ISLANDS);
                 if (better) out.add(BETTER_END);
-                if (bop) out.add(BOP_END);
             }
             case UPSIDE_DOWN -> {
                 out.add(UPSIDE_DOWN);
@@ -208,7 +203,7 @@ public final class BandAdvancements {
             case SPHERES -> out.add(SPHERES);
             case STACKS -> out.add(STACKS);
             case LEGACY_RUN -> {
-                for (LegacySpan era : layout.eras()) {
+                for (LegacySpan era : layout.eras(i)) {
                     String id = legacyId(era.kind());
                     if (id != null) out.add(id);
                 }
@@ -263,7 +258,7 @@ public final class BandAdvancements {
             case SPHERES -> out.add(SPHERES);
             case STACKS -> out.add(STACKS);
             case LEGACY_RUN -> {
-                LegacySpan[] eras = layout.eras();
+                LegacySpan[] eras = layout.eras(i);   // this run's own eras
                 for (int e = eras.length - 1; e >= 0; e--) {
                     String id = legacyId(eras[e].kind());
                     if (id != null) out.add(id);
@@ -321,8 +316,6 @@ public final class BandAdvancements {
         t.add(entry(BOP, (l, x) -> overworldStyle(l, x) == CycleLayout.Style.BOP));
         t.add(entry(BETTER_END, (l, x) -> isInEndIslands(l, x)
                 && cycle(l).isBetterEndAt(x)));
-        t.add(entry(BOP_END, (l, x) -> isInEndIslands(l, x)
-                && cycle(l).isBopEndAt(x)));
         t.add(entry(SPHERES, SpheresBand::isInBand));
         for (LegacyBandKind kind : LegacyBandKind.values()) {
             if (kind == LegacyBandKind.LARGE_BIOMES) continue;   // built, not shipped — see LegacyBandKind

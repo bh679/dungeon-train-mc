@@ -15,6 +15,10 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * <p>Reads {@link UpsideDownTrackFlatten#current()} lazily; a missing or disabled context is a pure
  * pass-through, so terrain before the context is published — and in worlds without the band — is
  * exactly vanilla. Installed at runtime, never serialized.</p>
+ *
+ * <p>The mountain gate ({@link UpsideDownTrackFlatten#mountainGate}) samples this node's <em>own</em>
+ * untouched child on the track centre line once per X, so each generator (the overworld, a preset band's)
+ * gates on its own terrain.</p>
  */
 public final class TrackErosionDensityFunction implements DensityFunction {
 
@@ -28,6 +32,7 @@ public final class TrackErosionDensityFunction implements DensityFunction {
 
     private static final class XMemo {
         UpsideDownTrackFlatten.Context ctx;
+        DensityFunction owner;
         final int[] x = new int[X_MASK + 1];
         final boolean[] present = new boolean[X_MASK + 1];
         final double[] w = new double[X_MASK + 1];
@@ -43,15 +48,24 @@ public final class TrackErosionDensityFunction implements DensityFunction {
         this.wrapped = wrapped;
     }
 
-    /** The memo slot for {@code worldX}, filled (band weight + both sides' edge openness) on a miss. */
-    private static int slot(XMemo memo, UpsideDownTrackFlatten.Context ctx, int worldX) {
-        if (memo.ctx != ctx) {
+    /**
+     * The memo slot for {@code worldX}, filled (band weight × mountain gate + both sides' edge openness) on
+     * a miss. Keyed on this node too: another generator's erosion answers its own gate.
+     */
+    private int slot(XMemo memo, UpsideDownTrackFlatten.Context ctx, int worldX) {
+        if (memo.ctx != ctx || memo.owner != wrapped) {
             java.util.Arrays.fill(memo.present, false);
             memo.ctx = ctx;
+            memo.owner = wrapped;
         }
         int i = worldX & X_MASK;
         if (memo.present[i] && memo.x[i] == worldX) return i;
         double w = UpsideDownTrackFlatten.bandWeight(ctx.cycle(), worldX);
+        if (w > 0.0) {
+            // only where the untouched line would run into a mountain
+            double line = wrapped.compute(new DensityFunction.SinglePointContext(worldX, 0, ctx.trackCenterZ()));
+            w *= UpsideDownTrackFlatten.mountainGate(line);
+        }
         memo.x[i] = worldX;
         memo.w[i] = w;
         if (w > 0.0) {   // edge noise only matters where the band weight does
@@ -62,7 +76,7 @@ public final class TrackErosionDensityFunction implements DensityFunction {
         return i;
     }
 
-    private static double adjust(UpsideDownTrackFlatten.Context ctx, int worldX, int worldZ, double erosion) {
+    private double adjust(UpsideDownTrackFlatten.Context ctx, int worldX, int worldZ, double erosion) {
         if (erosion >= UpsideDownTrackFlatten.EROSION_FLOOR) return erosion;
         if (Math.abs(worldZ - ctx.trackCenterZ()) >= UpsideDownTrackFlatten.TRACK_OUTER_MAX) return erosion;
         XMemo memo = X_MEMO.get();

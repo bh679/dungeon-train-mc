@@ -145,10 +145,29 @@ final class UpsideDownTrackFlattenTest {
     void combinedWeight() {
         UpsideDownTrackFlatten.Context on = new UpsideDownTrackFlatten.Context(true, E, 2, 1450L);
         UpsideDownTrackFlatten.Context off = new UpsideDownTrackFlatten.Context(false, E, 2, 1450L);
-        assertEquals(0.0, UpsideDownTrackFlatten.weight(null, 3000, 2), EPS);
-        assertEquals(0.0, UpsideDownTrackFlatten.weight(off, 3000, 2), EPS);
-        assertEquals(1.0, UpsideDownTrackFlatten.weight(on, 3000, 2), EPS);
-        assertEquals(0.0, UpsideDownTrackFlatten.weight(on, 3000, 2 + 400), EPS);
-        assertEquals(0.0, UpsideDownTrackFlatten.weight(on, 1500, 2), EPS);
+        double mountain = UpsideDownTrackFlatten.MOUNTAIN_EROSION - 0.1;
+        assertEquals(0.0, UpsideDownTrackFlatten.weight(null, 3000, 2, mountain), EPS);
+        assertEquals(0.0, UpsideDownTrackFlatten.weight(off, 3000, 2, mountain), EPS);
+        assertEquals(1.0, UpsideDownTrackFlatten.weight(on, 3000, 2, mountain), EPS);
+        assertEquals(0.0, UpsideDownTrackFlatten.weight(on, 3000, 2 + 400, mountain), EPS);
+        assertEquals(0.0, UpsideDownTrackFlatten.weight(on, 1500, 2, mountain), EPS);
+        // the line runs through hills-or-flatter: nothing is flattened, even in the band
+        assertEquals(0.0, UpsideDownTrackFlatten.weight(on, 3000, 2, UpsideDownTrackFlatten.HILL_EROSION), EPS);
+        assertEquals(0.0, UpsideDownTrackFlatten.weight(on, 3000, 2, 0.3), EPS);
+    }
+
+    @Test
+    @DisplayName("the mountain gate: shut at hills-or-flatter, open at mountain erosion, monotone between")
+    void mountainGate() {
+        assertEquals(0.0, UpsideDownTrackFlatten.mountainGate(UpsideDownTrackFlatten.HILL_EROSION), EPS);
+        assertEquals(0.0, UpsideDownTrackFlatten.mountainGate(0.5), EPS);
+        assertEquals(1.0, UpsideDownTrackFlatten.mountainGate(UpsideDownTrackFlatten.MOUNTAIN_EROSION), EPS);
+        assertEquals(1.0, UpsideDownTrackFlatten.mountainGate(-0.9), EPS);
+        double prev = 0.0;
+        for (double e = UpsideDownTrackFlatten.HILL_EROSION; e >= UpsideDownTrackFlatten.MOUNTAIN_EROSION; e -= 0.005) {
+            double g = UpsideDownTrackFlatten.mountainGate(e);
+            assertTrue(g >= prev - EPS, "monotone at " + e);
+            prev = g;
+        }
     }
 }

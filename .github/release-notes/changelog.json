@@ -20159,6 +20159,28 @@
       "released_at": null
     },
     {
+      "id": "world-gen-lap-reorder",
+      "version": "0.998.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The journey takes a new route",
+      "summary": "The line now runs through its landscapes in a different order, so some of the places you used to reach late in a run come sooner, and others come later.",
+      "highlights": [
+        "The stretches of the journey have been reshuffled.",
+        "One stretch now blends gradually into the next instead of stopping at a hard edge.",
+        "Structures along the line now sit into the land: the ground climbs over and into them, water flows through them where they stand in it, and they appear in every kind of terrain.",
+        "They gather gradually rather than all at once, and a few now turn up earlier in the journey."
+      ],
+      "pr": 1613,
+      "date": "2026-09-27",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "drifting-carriage-storage-changes",
       "version": "0.998.0",
       "type": "feat",

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.worldgen.LegacyUnderground;
+import games.brennan.dungeontrain.worldgen.LostCitySeating;
 import games.brennan.dungeontrain.worldgen.LostCityStructures;
 import games.brennan.dungeontrain.worldgen.UpsideDownSpawnerStructures;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
@@ -62,10 +63,13 @@ public abstract class StructureBasementMixin {
                 && l.getChunkSource().getGenerator() == chunkGenerator ? l : null;
         // Big Lost City's cities belong to the Lost City era alone (LostCityStructures) — anywhere
         // else, including a start we can't place in a level (a sampler or foreign generator), is dropped.
-        if (LostCityStructures.isLostCityStructure(id)
-                && (level == null || !LostCityStructures.allowedAt(level, chunkPos.x, chunkPos.z, id))) {
-            cir.setReturnValue(StructureStart.INVALID_START);
-            return;
+        if (LostCityStructures.isLostCityStructure(id)) {
+            if (level == null || !LostCityStructures.allowedAt(level, chunkPos.x, chunkPos.z, id)) {
+                cir.setReturnValue(StructureStart.INVALID_START);
+                return;
+            }
+            // Seat the city on its footprint's floor (the seabed in water), not on one heightmap sample.
+            LostCitySeating.seat(start, chunkGenerator, heightAccessor, randomState);
         }
         if (level != null) {
             // Legacy bands and the sunk zone never get the underground set (LegacyUnderground).
