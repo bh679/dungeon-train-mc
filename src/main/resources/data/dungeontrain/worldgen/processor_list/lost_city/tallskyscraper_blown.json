@@ -1,0 +1,41 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:green_stained_glass",
+          "to": "minecraft:air",
+          "chance": 0.6
+        },
+        {
+          "from": "minecraft:green_stained_glass_pane",
+          "to": "minecraft:air",
+          "chance": 0.6
+        },
+        {
+          "from": "minecraft:cobweb",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:chain",
+          "to": "minecraft:air",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:deepslate_tiles",
+          "to": "minecraft:cracked_deepslate_tiles",
+          "chance": 0.4
+        }
+      ]
+    }
+  ]
+}

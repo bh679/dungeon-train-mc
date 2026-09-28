@@ -1,0 +1,51 @@
+{
+  "name": "dungeontrain:lost_city/ruinedblackskyscraper",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:ruined_black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/shipped"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:ruined_black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/ruinedblackskyscraper_grey"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:ruined_black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/ruinedblackskyscraper_white"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:ruined_black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/ruinedblackskyscraper_topped"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:ruined_black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/dry"
+      }
+    }
+  ]
+}

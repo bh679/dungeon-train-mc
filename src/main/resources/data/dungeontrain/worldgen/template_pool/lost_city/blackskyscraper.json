@@ -1,0 +1,51 @@
+{
+  "name": "dungeontrain:lost_city/blackskyscraper",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/shipped"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/blackskyscraper_grey"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/blackskyscraper_white"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/blackskyscraper_topped"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:black_skyscraperlt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/dry"
+      }
+    }
+  ]
+}

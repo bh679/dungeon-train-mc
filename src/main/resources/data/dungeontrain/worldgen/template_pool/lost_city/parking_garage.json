@@ -1,0 +1,42 @@
+{
+  "name": "dungeontrain:lost_city/parking_garage",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:parking_garagelt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/shipped"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:parking_garagelt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/parking_garage_light"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:parking_garagelt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/parking_garage_collapsed"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "big_lost_city:parking_garagelt",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/dry"
+      }
+    }
+  ]
+}

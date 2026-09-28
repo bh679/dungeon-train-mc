@@ -1,0 +1,45 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:waxed_exposed_copper",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:waxed_weathered_copper",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:oxidized_copper",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:weathered_copper",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:cyan_terracotta",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:red_concrete",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:waxed_weathered_cut_copper_slab",
+          "to": "minecraft:stone_slab"
+        }
+      ]
+    }
+  ]
+}

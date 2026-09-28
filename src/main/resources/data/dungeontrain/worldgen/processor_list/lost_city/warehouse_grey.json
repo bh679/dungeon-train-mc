@@ -1,0 +1,53 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:bricks",
+          "to": "minecraft:stone_bricks"
+        },
+        {
+          "from": "minecraft:brick_slab",
+          "to": "minecraft:stone_brick_slab"
+        },
+        {
+          "from": "minecraft:brick_stairs",
+          "to": "minecraft:stone_brick_stairs"
+        },
+        {
+          "from": "minecraft:calcite",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:diorite",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:diorite_stairs",
+          "to": "minecraft:andesite_stairs"
+        },
+        {
+          "from": "minecraft:granite",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:cyan_terracotta",
+          "to": "minecraft:gray_terracotta"
+        },
+        {
+          "from": "minecraft:blue_terracotta",
+          "to": "minecraft:light_gray_terracotta"
+        }
+      ]
+    }
+  ]
+}

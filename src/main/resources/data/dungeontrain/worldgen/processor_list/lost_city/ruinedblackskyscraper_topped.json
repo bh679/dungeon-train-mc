@@ -1,0 +1,24 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_truncate",
+      "min_fraction": 0.45,
+      "max_fraction": 0.7,
+      "jagged": 3,
+      "rubble": [
+        "minecraft:cracked_deepslate_tiles",
+        "minecraft:cobbled_deepslate",
+        "minecraft:deepslate_tiles",
+        "minecraft:air"
+      ]
+    }
+  ]
+}

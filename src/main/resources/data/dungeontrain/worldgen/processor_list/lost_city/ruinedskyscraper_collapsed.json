@@ -1,0 +1,52 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:stone_bricks",
+          "to": "minecraft:air",
+          "chance": 0.35
+        },
+        {
+          "from": "minecraft:cracked_stone_bricks",
+          "to": "minecraft:air",
+          "chance": 0.35
+        },
+        {
+          "from": "minecraft:mossy_stone_bricks",
+          "to": "minecraft:air",
+          "chance": 0.35
+        },
+        {
+          "from": "minecraft:andesite",
+          "to": "minecraft:air",
+          "chance": 0.2
+        },
+        {
+          "from": "minecraft:gray_wool",
+          "to": "minecraft:air",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:light_gray_wool",
+          "to": "minecraft:air",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:white_wool",
+          "to": "minecraft:air",
+          "chance": 0.5
+        }
+      ]
+    }
+  ]
+}

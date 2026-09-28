@@ -225,6 +225,14 @@
     {
       "structure": "dungeontrain:lost_city/ferriswheel",
       "weight": 3
+    },
+    {
+      "structure": "dungeontrain:lost_city/parking_garage",
+      "weight": 4
+    },
+    {
+      "structure": "dungeontrain:lost_city/warship",
+      "weight": 3
     }
   ],
   "placement": {

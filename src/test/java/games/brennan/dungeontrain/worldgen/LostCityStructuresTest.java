@@ -205,6 +205,11 @@ final class LostCityStructuresTest {
         assertFalse(LostCityStructures.isLostCityStructure(ResourceLocation.parse("dungeontrain:lost_city")));
         assertFalse(LostCityStructures.isLostCityStructure(ResourceLocation.parse("dungeontrain:end_city")));
         assertFalse(LostCityStructures.isLostCityStructure(null));
+        // pools: the mod's own and DT's variant pools, nothing else
+        assertTrue(LostCityStructures.isLostCityPool(ORIGINAL));
+        assertTrue(LostCityStructures.isLostCityPool(COPY));
+        assertFalse(LostCityStructures.isLostCityPool(ResourceLocation.parse("minecraft:village/plains/town_centers")));
+        assertFalse(LostCityStructures.isLostCityPool(null));
     }
 
     private static final ResourceLocation COPY = ResourceLocation.parse("dungeontrain:lost_city/tallskyscraper");
@@ -250,29 +255,93 @@ final class LostCityStructuresTest {
         assertFalse(LostCityStructures.allowedAt(SEED, C, x(1000L, 0) >> 4, 0));
     }
 
-    @Test
-    @DisplayName("every trackside copy is its original with only the biomes widened, weighted like it in the set")
-    void copiesMatchTheirOriginals() throws Exception {
-        String dir = "/data/dungeontrain/worldgen/structure/lost_city/";
+    /** The small buildings: DT's copy is the original with only the biomes widened. */
+    private static final String[] SMALL = {"house_1", "house_2", "house_3", "store_1", "ferriswheel"};
+
+    /** The big buildings: DT's structure starts from a DT pool that rolls one of several looks. */
+    private static final String[] VARIED = {"blackskyscraper", "redskyscraper", "ruindedredskyscraper",
+            "ruinedblackskyscraper", "ruinedskyscraper", "tallskyscraper", "powerplant", "warehouse"};
+
+    /** The mod's unplaced big models, placed by DT only. */
+    private static final String[] ADDED = {"parking_garage", "warship"};
+
+    private static java.util.Map<String, Integer> setWeights() throws Exception {
         com.google.gson.JsonObject set = json("/data/dungeontrain/worldgen/structure_set/lost_city.json");
         java.util.Map<String, Integer> weights = new java.util.HashMap<>();
         for (com.google.gson.JsonElement e : set.getAsJsonArray("structures")) {
             com.google.gson.JsonObject o = e.getAsJsonObject();
             weights.put(o.get("structure").getAsString(), o.get("weight").getAsInt());
         }
-        String[] big = {"blackskyscraper", "redskyscraper", "ruindedredskyscraper", "ruinedblackskyscraper",
-                "ruinedskyscraper", "tallskyscraper", "powerplant", "house_1", "house_2", "house_3", "store_1",
-                "warehouse", "ferriswheel"};
-        for (String name : big) {
+        return weights;
+    }
+
+    private static void assertTracksideShape(com.google.gson.JsonObject copy, String name) {
+        assertEquals("beard_thin", copy.get("terrain_adaptation").getAsString(), name);
+        assertEquals("big_lost_city", copy.getAsJsonArray("neoforge:conditions").get(0).getAsJsonObject()
+                .get("modid").getAsString(), name);
+    }
+
+    @Test
+    @DisplayName("every small trackside copy is its original with only the biomes widened, weighted like it in the set")
+    void copiesMatchTheirOriginals() throws Exception {
+        String dir = "/data/dungeontrain/worldgen/structure/lost_city/";
+        java.util.Map<String, Integer> weights = setWeights();
+        for (String name : SMALL) {
             com.google.gson.JsonObject copy = json(dir + name + ".json");
             assertEquals("big_lost_city:" + name, copy.get("start_pool").getAsString(), name);
             assertEquals("#dungeontrain:lost_city_trackside", copy.get("biomes").getAsString(), name);
-            assertEquals("beard_thin", copy.get("terrain_adaptation").getAsString(), name);
-            assertEquals("big_lost_city", copy.getAsJsonArray("neoforge:conditions").get(0).getAsJsonObject()
-                    .get("modid").getAsString(), name);
+            assertTracksideShape(copy, name);
             assertEquals(weights.get("big_lost_city:" + name), weights.get("dungeontrain:lost_city/" + name), name);
         }
-        assertEquals(42 + big.length, weights.size());
+        for (String name : VARIED) {
+            assertEquals(weights.get("big_lost_city:" + name), weights.get("dungeontrain:lost_city/" + name), name);
+        }
+        assertTrue(weights.get("dungeontrain:lost_city/parking_garage") > 0);
+        assertTrue(weights.get("dungeontrain:lost_city/warship") > 0);
+        assertEquals(42 + SMALL.length + VARIED.length + ADDED.length, weights.size());
+    }
+
+    @Test
+    @DisplayName("every big building starts from a DT pool whose looks all place the mod's template through a DT processor list")
+    void variantPoolsAreSound() throws Exception {
+        String dir = "/data/dungeontrain/worldgen/structure/lost_city/";
+        for (String name : concat(VARIED, ADDED)) {
+            com.google.gson.JsonObject structure = json(dir + name + ".json");
+            assertEquals("dungeontrain:lost_city/" + name, structure.get("start_pool").getAsString(), name);
+            assertEquals(name.equals("warship") ? "#dungeontrain:lost_city_water" : "#dungeontrain:lost_city_trackside",
+                    structure.get("biomes").getAsString(), name);
+            assertTracksideShape(structure, name);
+            com.google.gson.JsonObject pool = json("/data/dungeontrain/worldgen/template_pool/lost_city/" + name + ".json");
+            assertEquals("dungeontrain:lost_city/" + name, pool.get("name").getAsString());
+            com.google.gson.JsonArray elements = pool.getAsJsonArray("elements");
+            assertTrue(elements.size() >= 3, name + " has several looks");
+            java.util.Set<String> lists = new java.util.HashSet<>();
+            for (com.google.gson.JsonElement e : elements) {
+                com.google.gson.JsonObject el = e.getAsJsonObject().getAsJsonObject("element");
+                assertTrue(e.getAsJsonObject().get("weight").getAsInt() > 0);
+                assertEquals("minecraft:single_pool_element", el.get("element_type").getAsString());
+                assertTrue(el.get("location").getAsString().startsWith("big_lost_city:"), name + " places the mod's template");
+                String list = el.get("processors").getAsString();
+                assertTrue(list.startsWith("dungeontrain:lost_city/"), list);
+                assertTrue(lists.add(list), name + " lists each look once: " + list);
+                com.google.gson.JsonObject processors = json("/data/dungeontrain/worldgen/processor_list/lost_city/"
+                        + list.substring("dungeontrain:lost_city/".length()) + ".json");
+                com.google.gson.JsonArray procs = processors.getAsJsonArray("processors");
+                assertEquals("minecraft:block_ignore", procs.get(0).getAsJsonObject().get("processor_type").getAsString(),
+                        list + " keeps the mod's structure-block ignore");
+                for (int i = 1; i < procs.size(); i++) {
+                    String type = procs.get(i).getAsJsonObject().get("processor_type").getAsString();
+                    assertTrue(type.equals("dungeontrain:lost_city_swap") || type.equals("dungeontrain:lost_city_truncate"), type);
+                }
+            }
+            assertTrue(lists.contains("dungeontrain:lost_city/shipped"), name + " keeps the as-shipped look");
+        }
+    }
+
+    private static String[] concat(String[] a, String[] b) {
+        String[] out = java.util.Arrays.copyOf(a, a.length + b.length);
+        System.arraycopy(b, 0, out, a.length, b.length);
+        return out;
     }
 
     private static com.google.gson.JsonObject json(String path) throws Exception {
