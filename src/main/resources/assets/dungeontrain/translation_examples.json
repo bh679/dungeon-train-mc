@@ -2126,7 +2126,7 @@
   },
   "chat.dungeontrain.shared_carriage.new.1": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2142,6 +2142,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2149,7 +2153,7 @@
   },
   "chat.dungeontrain.shared_carriage.new.2": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2165,6 +2169,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2172,7 +2180,7 @@
   },
   "chat.dungeontrain.shared_carriage.new.3": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2188,6 +2196,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2195,7 +2207,7 @@
   },
   "chat.dungeontrain.shared_carriage.new.4": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2211,6 +2223,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2218,7 +2234,7 @@
   },
   "chat.dungeontrain.shared_carriage.new.5": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2234,6 +2250,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2241,7 +2261,7 @@
   },
   "chat.dungeontrain.shared_carriage.new.6": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2257,6 +2277,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2264,7 +2288,7 @@
   },
   "chat.dungeontrain.shared_carriage.own.1": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2280,6 +2304,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2287,7 +2315,7 @@
   },
   "chat.dungeontrain.shared_carriage.own.2": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2303,6 +2331,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2310,7 +2342,7 @@
   },
   "chat.dungeontrain.shared_carriage.own.3": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2326,6 +2358,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2333,7 +2369,7 @@
   },
   "chat.dungeontrain.shared_carriage.own.4": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2349,6 +2385,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2356,7 +2396,7 @@
   },
   "chat.dungeontrain.shared_carriage.own.5": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2372,6 +2412,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2379,7 +2423,7 @@
   },
   "chat.dungeontrain.shared_carriage.own.6": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2395,6 +2439,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2402,7 +2450,7 @@
   },
   "chat.dungeontrain.shared_carriage.seen.1": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2418,6 +2466,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2425,7 +2477,7 @@
   },
   "chat.dungeontrain.shared_carriage.seen.2": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2441,6 +2493,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2448,7 +2504,7 @@
   },
   "chat.dungeontrain.shared_carriage.seen.3": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2464,6 +2520,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2471,7 +2531,7 @@
   },
   "chat.dungeontrain.shared_carriage.seen.4": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2487,6 +2547,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2494,7 +2558,7 @@
   },
   "chat.dungeontrain.shared_carriage.seen.5": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2510,6 +2574,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
@@ -2517,7 +2585,7 @@
   },
   "chat.dungeontrain.shared_carriage.seen.6": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "the carriage noun for this line, from shared_carriage.noun.* — noun.room when the line announces a dimensional carriage",
       "examples": [
         {
           "key": "chat.dungeontrain.shared_carriage.noun.1",
@@ -2533,6 +2601,10 @@
         },
         {
           "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.room",
           "args": []
         }
       ]
