@@ -20316,6 +20316,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "fewer-early-ruins",
+      "version": "0.1004.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Fewer ruins early on",
+      "summary": "The ruins scattered along an early stretch of the line now turn up less often \u2014 about 70% as many as before.",
+      "highlights": [],
+      "pr": 1637,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
