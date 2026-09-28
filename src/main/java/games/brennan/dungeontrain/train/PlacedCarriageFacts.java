@@ -102,7 +102,10 @@ public final class PlacedCarriageFacts {
      * pick it would otherwise be recorded at is skipped for exactly this variant.
      */
     public static synchronized void recordShellOnly(int carriagePIdx, CarriageVariant variant) {
-        BY_PIDX.put(carriagePIdx, new Facts(variant == null ? "" : variant.id(), "", ""));
+        // A flatbed has no interior to flip, which is "none" rather than the unknown a blank
+        // would render as.
+        BY_PIDX.put(carriagePIdx,
+            new Facts(variant == null ? "" : variant.id(), "", "", ContentsFlip.LABEL_NONE));
     }
 
     /**
@@ -119,7 +122,8 @@ public final class PlacedCarriageFacts {
             ? ""
             : CarriageContentsGroupStore.findParentOf(resolvedId).orElse(resolvedId);
         String subVariantId = parentId.equals(resolvedId) ? "" : resolvedId;
-        BY_PIDX.put(carriagePIdx, new Facts("", parentId, subVariantId));
+        // A corridor's blocks must match its twin exactly, so it is never flipped.
+        BY_PIDX.put(carriagePIdx, new Facts("", parentId, subVariantId, ContentsFlip.LABEL_NONE));
     }
 
     /**
