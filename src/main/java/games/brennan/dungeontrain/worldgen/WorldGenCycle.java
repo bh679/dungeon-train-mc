@@ -513,10 +513,31 @@ public record WorldGenCycle(long startX, int owGap,
 
     /**
      * Plain-overworld run-in directly behind the anchor before the reversed cycle begins: the length of
-     * the layout's lead overworld slot, so spawn has overworld on both sides. Layout only.
+     * the layout's lead overworld slot, so spawn has overworld on both sides, plus the world's
+     * {@link #reverseSlide()} — how far the reversed bands have been pushed back by players walking
+     * off-train past the on-train frontier. Layout only.
      */
     private long mirrorBuffer() {
-        return layout.count() > 0 && layout.slot(0).type() == CycleLayout.Type.OVERWORLD ? layout.length(0) : 0L;
+        long lead = layout.count() > 0 && layout.slot(0).type() == CycleLayout.Type.OVERWORLD ? layout.length(0) : 0L;
+        return lead + reverseSlide;
+    }
+
+    /**
+     * Blocks the reversed cycle behind spawn is pushed back for the running world ({@code worldgen.ReverseSlide}).
+     * Runtime state rather than config: it only grows, and only affects chunks generated after it grows —
+     * terrain already on disk keeps what it was generated as. Set on server start, on every change, and on
+     * the client from {@code ReverseSlideSyncPacket}; 0 with no world.
+     */
+    private static volatile long reverseSlide;
+
+    /** The live reverse slide — see {@link #reverseSlide}. */
+    public static long reverseSlide() {
+        return reverseSlide;
+    }
+
+    /** Set the live reverse slide (never negative). */
+    public static void setReverseSlide(long slide) {
+        reverseSlide = Math.max(0L, slide);
     }
 
     /** Blocks behind the start of the reversed cycle, or {@code -1} ahead of the anchor / inside the buffer. Layout only. */

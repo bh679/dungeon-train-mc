@@ -53,6 +53,8 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_CARRIAGE_WIDTH = "carriageWidth";
     private static final String TAG_CARRIAGE_HEIGHT = "carriageHeight";
     private static final String TAG_GENERATION_SEED = "generationSeed";
+    private static final String TAG_REVERSE_FRONTIER_X = "reverseFrontierX";
+    private static final String TAG_REVERSE_SLIDE = "reverseSlide";
     private static final String TAG_STARTING_DIMENSION = "startingDimension";
     private static final String TAG_PLAYER_MOB_SPAWN_OVERRIDE = "playerMobSpawnOneInOverride";
     private static final String TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE = "playerMobBehindSpawnPercentOverride";
@@ -115,6 +117,14 @@ public final class DungeonTrainWorldData extends SavedData {
      */
     private final java.util.Map<String, int[]> editorPortalPlotBoxes = new java.util.LinkedHashMap<>();
     private long generationSeed;
+    /**
+     * Lowest world X any player has stood at while on the train ({@code worldgen.ReverseSlide}), or
+     * {@link Long#MAX_VALUE} before anyone has — the reversed bands behind spawn only get closer as this
+     * falls. World space, never train-relative.
+     */
+    private long reverseFrontierX = Long.MAX_VALUE;
+    /** Blocks the reversed bands have slid back because players walked off-train past the frontier. Only grows. */
+    private long reverseSlide;
     private StartingDimension startingDimension;
     /** Per-world override of the PlayerMob 1-in-N spawn rate; null = use the global COMMON default. */
     private Integer playerMobSpawnOneInOverride;
@@ -464,6 +474,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_EDITOR_STAMPED_CATEGORY)) {
             data.editorStampedCategory = tag.getString(TAG_EDITOR_STAMPED_CATEGORY);
         }
+        // Absent on worlds saved before the reverse slide existed → no frontier yet, no slide.
+        if (tag.contains(TAG_REVERSE_FRONTIER_X)) data.reverseFrontierX = tag.getLong(TAG_REVERSE_FRONTIER_X);
+        if (tag.contains(TAG_REVERSE_SLIDE)) data.reverseSlide = Math.max(0L, tag.getLong(TAG_REVERSE_SLIDE));
         // Absent on legacy worlds → false → the join-info report fires once on the next join.
         if (tag.contains(TAG_JOIN_REPORT_POSTED)) {
             data.joinReportPosted = tag.getBoolean(TAG_JOIN_REPORT_POSTED);
@@ -578,6 +591,8 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putInt(TAG_CARRIAGE_WIDTH, dims.width());
         tag.putInt(TAG_CARRIAGE_HEIGHT, dims.height());
         tag.putLong(TAG_GENERATION_SEED, generationSeed);
+        if (reverseFrontierX != Long.MAX_VALUE) tag.putLong(TAG_REVERSE_FRONTIER_X, reverseFrontierX);
+        if (reverseSlide > 0L) tag.putLong(TAG_REVERSE_SLIDE, reverseSlide);
         tag.putString(TAG_STARTING_DIMENSION, startingDimension.nbtId());
         // Only persist the override when set, so "unset" stays distinguishable from "0 (disabled)".
         if (playerMobSpawnOneInOverride != null) {
@@ -687,6 +702,26 @@ public final class DungeonTrainWorldData extends SavedData {
     public void setEditorMobsLive(boolean live) {
         if (editorMobsLive == live) return;
         editorMobsLive = live;
+        setDirty();
+    }
+
+    /** Lowest world X reached on the train, or {@link Long#MAX_VALUE} before anyone has ridden. */
+    public long getReverseFrontierX() {
+        return reverseFrontierX;
+    }
+
+    /** Blocks the reversed bands behind spawn have slid back (see {@code worldgen.ReverseSlide}). */
+    public long getReverseSlide() {
+        return reverseSlide;
+    }
+
+    /** Record a new on-train frontier and slide; both only ever move one way, and are saved when they change. */
+    public void setReverseSlideState(long frontierX, long slide) {
+        long f = Math.min(frontierX, reverseFrontierX);
+        long sl = Math.max(slide, reverseSlide);
+        if (f == reverseFrontierX && sl == reverseSlide) return;
+        reverseFrontierX = f;
+        reverseSlide = sl;
         setDirty();
     }
 

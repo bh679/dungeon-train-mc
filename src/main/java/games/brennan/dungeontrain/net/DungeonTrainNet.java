@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "96";
+    public static final String PROTOCOL_VERSION = "97";
 
     private DungeonTrainNet() {}
 
@@ -314,6 +314,7 @@ public final class DungeonTrainNet {
         // carriage length + train flag, so the client can fade the sky/fog toward
         // the End look across the band.
         registrar.playToClient(VoidBandSyncPacket.TYPE, VoidBandSyncPacket.STREAM_CODEC, VoidBandSyncPacket::handle);
+        registrar.playToClient(ReverseSlideSyncPacket.TYPE, ReverseSlideSyncPacket.STREAM_CODEC, ReverseSlideSyncPacket::handle);
 
         // Stage Blocks panel: per-stage row icon strips for the Stages panel (S2C, own channel —
         // pushed only when StageBlockIndex.generation() moves), the panel detail sync (S2C), and
