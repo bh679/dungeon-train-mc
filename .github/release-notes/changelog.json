@@ -20059,6 +20059,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "curseforge-companion-installs",
+      "version": "0.996.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "CurseForge installs three companion mods alongside Dungeon Train",
+      "summary": "On CurseForge, the OBS/Streamlabs check behind the Videos tab, the zapret/GoodbyeDPI check behind the connection warning, and one more small companion mod now install as their own mods next to Dungeon Train instead of living inside it. Nothing changes in-game, and Modrinth and manual installs keep them built in.",
+      "highlights": [
+        "The CurseForge app installs them for you automatically",
+        "Modrinth and manual installs are unchanged"
+      ],
+      "pr": 1622,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
