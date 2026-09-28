@@ -20059,6 +20059,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "reverse-journey-behind-spawn",
+      "version": "0.996.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The line runs both ways",
+      "summary": "Turning back is no longer a dead end. Head back along the train past where you boarded and the journey carries on behind you, in its own order. But the train has to take you there: only ground you cover walking back along the train brings the next stretch closer, while jumping off or flying ahead just pushes it further away.",
+      "highlights": [
+        "Walking back along the train now leads somewhere new",
+        "Only distance covered on the train counts; getting off or flying ahead doesn't bring you closer",
+        "Smoother edges where the strangest stretch gives way to ordinary land"
+      ],
+      "pr": 1621,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
