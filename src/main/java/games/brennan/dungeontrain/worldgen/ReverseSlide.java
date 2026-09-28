@@ -28,6 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Keeps the reversed bands behind spawn exactly as far away as players have <em>earned</em> by riding.
  *
+ * <p>The <b>origin</b> is where a player first stood on the train: "spawn" for this rule, so earned
+ * distance is measured from it and the reversed bands start their lead-gap distance behind it (the slide
+ * starts at however far the origin sits ahead of the cycle's anchor).</p>
+ *
  * <p>The <b>frontier</b> is the lowest world X any player has stood at while on the train — world space,
  * so it is the train's own position plus wherever the player is along it; carriages walked in the
  * train's frame never count, only the net backward displacement beyond the train's forward motion. A
@@ -54,29 +58,47 @@ public final class ReverseSlide {
 
     private ReverseSlide() {}
 
-    /** Where one player stands (world X) and whether they are on the train. */
-    record Sample(double x, boolean onTrain) {}
-
-    /** The persisted pair after a scan. */
-    record State(long frontierX, long slide) {}
+    /** Sentinel for an origin / frontier not yet set. */
+    static final long UNSET = Long.MAX_VALUE;
 
     /**
-     * Pure update rule. {@code frontierX} starts at {@code startX} (spawn): riders lower it, then any
-     * off-train player behind it grows the slide to their distance past it, rounded up to {@link #STEP}.
-     * Neither ever moves back.
+     * Where one player stands (world X), whether they are on the train, and whether their off-train
+     * position may push the bands back (not creative — flying and teleporting to test must not).
      */
-    static State next(long startX, long frontierX, long slide, List<Sample> players) {
-        long f = Math.min(frontierX, startX);
+    record Sample(double x, boolean onTrain, boolean slides) {}
+
+    /** The persisted state after a scan. */
+    record State(long originX, long frontierX, long slide) {}
+
+    /**
+     * Pure update rule. The origin is set once, at the first on-train position seen; until then the
+     * cycle's {@code startX} stands in. The frontier starts at the origin and riders lower it; then any
+     * sliding off-train player behind it grows the slide to their distance past it. The slide is never
+     * less than the origin's lead over {@code startX}, so the bands start their lead gap behind where the
+     * train was boarded. Rounded up to {@link #STEP}; the frontier and slide never move back.
+     */
+    static State next(long startX, long originX, long frontierX, long slide, List<Sample> players) {
+        long o = originX;
+        if (o == UNSET) {
+            for (Sample p : players) {
+                if (p.onTrain()) o = Math.min(o, (long) Math.floor(p.x()));
+            }
+        }
+        long f = Math.min(frontierX, o == UNSET ? startX : o);
         for (Sample p : players) {
             if (p.onTrain()) f = Math.min(f, (long) Math.floor(p.x()));
         }
-        long s = slide;
+        long s = Math.max(slide, o == UNSET ? 0L : roundUp(o - startX));
         for (Sample p : players) {
-            if (p.onTrain()) continue;
-            long past = f - (long) Math.floor(p.x());
-            if (past > s) s = Math.ceilDiv(past, STEP) * STEP;
+            if (p.onTrain() || !p.slides()) continue;
+            s = Math.max(s, roundUp(f - (long) Math.floor(p.x())));
         }
-        return new State(f, s);
+        return new State(o, f, s);
+    }
+
+    /** {@code blocks} rounded up to a whole {@link #STEP}; 0 when not positive. */
+    private static long roundUp(long blocks) {
+        return blocks <= 0L ? 0L : Math.ceilDiv(blocks, STEP) * STEP;
     }
 
     /** Load the world's slide into the cycle as the overworld comes up — before any chunk generates. */
@@ -104,10 +126,13 @@ public final class ReverseSlide {
         List<Sample> samples = samples(level);
         if (samples.isEmpty()) return;
 
-        State now = next(cycle.startX(), data.getReverseFrontierX(), data.getReverseSlide(), samples);
+        State now = next(cycle.startX(), data.getReverseOriginX(), data.getReverseFrontierX(),
+                data.getReverseSlide(), samples);
         long before = data.getReverseSlide();
-        long frontierBefore = Math.min(data.getReverseFrontierX(), cycle.startX());
-        data.setReverseSlideState(now.frontierX(), now.slide());
+        // Earning needs an origin that was already set: the first boarding itself earns nothing.
+        long frontierBefore = data.getReverseOriginX() == UNSET
+                ? Long.MIN_VALUE : Math.min(data.getReverseFrontierX(), data.getReverseOriginX());
+        data.setReverseSlideState(now.originX(), now.frontierX(), now.slide());
         if (now.slide() != before) applyChange(level, before, now);
         syncHud(level, data, frontierBefore, now);
     }
@@ -134,9 +159,8 @@ public final class ReverseSlide {
 
     /** The sync packet for a player: the world slide, the earned distance, and whether they are earning it. */
     public static ReverseSlideSyncPacket packetFor(DungeonTrainWorldData data, boolean earning) {
-        long frontier = data.getReverseFrontierX();
-        long startX = WorldGenCycle.fromConfig().startX();
-        long earned = frontier == Long.MAX_VALUE ? 0L : Math.max(0L, startX - frontier);
+        long origin = data.getReverseOriginX();
+        long earned = origin == UNSET ? 0L : Math.max(0L, origin - Math.min(data.getReverseFrontierX(), origin));
         return new ReverseSlideSyncPacket(data.getReverseSlide(), earned, earning);
     }
 
@@ -148,28 +172,30 @@ public final class ReverseSlide {
     }
 
     /**
-     * Players that count: survival/adventure players in the overworld proper. Creative and spectator
-     * players fly and teleport freely (testing, building), and a player in a portal twin's sealed space
-     * is not out on the line.
+     * Players that count: everyone in the overworld proper except spectators and anyone in a portal twin's
+     * sealed space (not out on the line). Creative players earn on the train like anyone — that is how the
+     * rule gets tested — but never push the bands back, since they fly and teleport freely.
      */
     private static List<Sample> samples(ServerLevel level) {
         List<Trains.Carriage> carriages = carriages(level);
         List<Sample> out = new ArrayList<>();
         for (ServerPlayer p : level.players()) {
-            if (p.isSpectator() || p.isCreative()) continue;
+            if (p.isSpectator()) continue;
             if (PortalTwinSpace.isInside(level, p.getBlockX(), p.getY())) continue;
-            out.add(new Sample(p.getX(), CarriageDeck.isOnTrainFootprint(carriages, p)));
+            out.add(new Sample(p.getX(), CarriageDeck.isOnTrainFootprint(carriages, p), !p.isCreative()));
         }
         return out;
     }
 
     /**
-     * How far behind spawn {@code player} has ridden: the blocks back of {@code startX} they stand at while
-     * on the train — the same world-space measure as the frontier — or 0 when off the train, in a portal
-     * twin's sealed space, or ahead of spawn. Gamemode is not checked; callers decide who counts.
+     * How far behind spawn {@code player} has ridden: the blocks back of the first-boarding origin (or
+     * {@code startX} before anyone has boarded) they stand at while on the train — the same world-space
+     * measure as the frontier — or 0 when off the train, in a portal twin's sealed space, or ahead of it.
+     * Gamemode is not checked; callers decide who counts.
      */
     public static long riddenBehindSpawn(ServerLevel level, long startX, ServerPlayer player) {
-        long back = startX - (long) Math.floor(player.getX());
+        long origin = DungeonTrainWorldData.get(level).getReverseOriginX();
+        long back = (origin == UNSET ? startX : origin) - (long) Math.floor(player.getX());
         if (back <= 0L) return 0L;
         if (PortalTwinSpace.isInside(level, player.getBlockX(), player.getY())) return 0L;
         return CarriageDeck.isOnTrainFootprint(carriages(level), player) ? back : 0L;

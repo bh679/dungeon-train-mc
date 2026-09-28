@@ -53,6 +53,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_CARRIAGE_WIDTH = "carriageWidth";
     private static final String TAG_CARRIAGE_HEIGHT = "carriageHeight";
     private static final String TAG_GENERATION_SEED = "generationSeed";
+    private static final String TAG_REVERSE_ORIGIN_X = "reverseOriginX";
     private static final String TAG_REVERSE_FRONTIER_X = "reverseFrontierX";
     private static final String TAG_REVERSE_SLIDE = "reverseSlide";
     private static final String TAG_STARTING_DIMENSION = "startingDimension";
@@ -117,6 +118,12 @@ public final class DungeonTrainWorldData extends SavedData {
      */
     private final java.util.Map<String, int[]> editorPortalPlotBoxes = new java.util.LinkedHashMap<>();
     private long generationSeed;
+    /**
+     * World X where a player first stood on the train — "spawn" for the reversed bands: distance behind
+     * it is what riders earn, and the bands start their lead-gap distance behind it. {@link Long#MAX_VALUE}
+     * until someone boards.
+     */
+    private long reverseOriginX = Long.MAX_VALUE;
     /**
      * Lowest world X any player has stood at while on the train ({@code worldgen.ReverseSlide}), or
      * {@link Long#MAX_VALUE} before anyone has — the reversed bands behind spawn only get closer as this
@@ -475,6 +482,7 @@ public final class DungeonTrainWorldData extends SavedData {
             data.editorStampedCategory = tag.getString(TAG_EDITOR_STAMPED_CATEGORY);
         }
         // Absent on worlds saved before the reverse slide existed → no frontier yet, no slide.
+        if (tag.contains(TAG_REVERSE_ORIGIN_X)) data.reverseOriginX = tag.getLong(TAG_REVERSE_ORIGIN_X);
         if (tag.contains(TAG_REVERSE_FRONTIER_X)) data.reverseFrontierX = tag.getLong(TAG_REVERSE_FRONTIER_X);
         if (tag.contains(TAG_REVERSE_SLIDE)) data.reverseSlide = Math.max(0L, tag.getLong(TAG_REVERSE_SLIDE));
         // Absent on legacy worlds → false → the join-info report fires once on the next join.
@@ -591,6 +599,7 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putInt(TAG_CARRIAGE_WIDTH, dims.width());
         tag.putInt(TAG_CARRIAGE_HEIGHT, dims.height());
         tag.putLong(TAG_GENERATION_SEED, generationSeed);
+        if (reverseOriginX != Long.MAX_VALUE) tag.putLong(TAG_REVERSE_ORIGIN_X, reverseOriginX);
         if (reverseFrontierX != Long.MAX_VALUE) tag.putLong(TAG_REVERSE_FRONTIER_X, reverseFrontierX);
         if (reverseSlide > 0L) tag.putLong(TAG_REVERSE_SLIDE, reverseSlide);
         tag.putString(TAG_STARTING_DIMENSION, startingDimension.nbtId());
@@ -705,6 +714,11 @@ public final class DungeonTrainWorldData extends SavedData {
         setDirty();
     }
 
+    /** World X of the first boarding, or {@link Long#MAX_VALUE} before anyone has boarded. */
+    public long getReverseOriginX() {
+        return reverseOriginX;
+    }
+
     /** Lowest world X reached on the train, or {@link Long#MAX_VALUE} before anyone has ridden. */
     public long getReverseFrontierX() {
         return reverseFrontierX;
@@ -715,11 +729,16 @@ public final class DungeonTrainWorldData extends SavedData {
         return reverseSlide;
     }
 
-    /** Record a new on-train frontier and slide; both only ever move one way, and are saved when they change. */
-    public void setReverseSlideState(long frontierX, long slide) {
+    /**
+     * Record the first-boarding origin (set once), a new on-train frontier and slide; the frontier and
+     * slide only ever move one way. Saved when anything changes.
+     */
+    public void setReverseSlideState(long originX, long frontierX, long slide) {
+        long o = reverseOriginX == Long.MAX_VALUE ? originX : reverseOriginX;
         long f = Math.min(frontierX, reverseFrontierX);
         long sl = Math.max(slide, reverseSlide);
-        if (f == reverseFrontierX && sl == reverseSlide) return;
+        if (o == reverseOriginX && f == reverseFrontierX && sl == reverseSlide) return;
+        reverseOriginX = o;
         reverseFrontierX = f;
         reverseSlide = sl;
         setDirty();
