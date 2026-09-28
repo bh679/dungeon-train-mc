@@ -20164,16 +20164,11 @@
       "type": "feat",
       "tags": [
         "feature",
-        "community",
-        "loot"
+        "community"
       ],
-      "title": "Drifting carriages remember what builders left in their storage",
-      "summary": "When you build on a drifting carriage, the changes you make to its chests now travel with it too \u2014 not just what you add, but what you take out and rearrange. Simply looting a carriage you haven't built on still leaves it untouched for the next traveller.",
-      "highlights": [
-        "Taking or rearranging items aboard a carriage you've built on is saved when you step off it",
-        "Works for every kind of storage \u2014 chests, barrels, shulker boxes, hoppers and more, including double chests",
-        "Looting a carriage you haven't changed never alters it for anyone else"
-      ],
+      "title": "Drifting carriage improvements",
+      "summary": "Drifting carriages hold on to more of what their builders leave behind.",
+      "highlights": [],
       "pr": 1627,
       "date": "2026-09-28",
       "released": false,
