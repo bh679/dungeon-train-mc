@@ -2297,6 +2297,24 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * True when {@code worldX} is at or past the Far Lands in its run: from halfway through the crossfade
+     * into the Far Lands to the end of the run, so every later phase of that run counts too. Each run
+     * restarts at the overworld, so this is {@code false} again there. {@code false} with no layout (the
+     * classic order), behind spawn, in the overworld buffer, and when the Far Lands are disabled or not in
+     * the order. Used client-side by {@code OtherworldBand} to spin clocks and compasses.
+     */
+    public boolean isAtOrPastFarLands(int worldX) {
+        if (layout == null || isMirroredAt(worldX)) return false;
+        int fs = layout.legacySlotOf(LegacyBandKind.FAR_LANDS);
+        int fe = layout.eraIndex(LegacyBandKind.FAR_LANDS);
+        if (fs < 0 || fe < 0) return false;
+        long u = baseAt(worldX);
+        if (u < 0L) return false;
+        long farU = layout.start(fs) + layout.eraCoreStart(fs, fe) - layout.fadeBefore(fs, fe) / 2;
+        return u >= farU;
+    }
+
+    /**
      * Where {@code worldX} sits along legacy band {@code kind}'s core: {@code 0} at the first core block,
      * {@code 1} one past the last, below 0 in the lead gap / entry fade and above 1 in the exit fade.
      * {@code NaN} outside the band's slot or when it is disabled. Pure.
