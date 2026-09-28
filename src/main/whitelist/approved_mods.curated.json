@@ -99,7 +99,8 @@
         "fancymenu",
         "melody",
         "lambdynlights",
-        "lambdynlights_runtime"
+        "lambdynlights_runtime",
+        "visualworkbench"
       ],
       "note": [
         "lambdynlights (dynamic lights from held torches) is a genuine borderline call — it lets you",

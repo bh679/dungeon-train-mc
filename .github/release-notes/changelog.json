@@ -20307,6 +20307,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "visual-workbench-approved",
+      "version": "0.1002.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Visual Workbench is approved for fair play",
+      "summary": "Visual Workbench, which shows the items you place on a crafting table, is now on the approved-mod list, so having it installed no longer switches a run to Free Play.",
+      "highlights": [],
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
