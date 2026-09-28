@@ -62,7 +62,29 @@ final class CycleLayoutDebug {
                 }
             }
         }
+        reportReversed(source, overworld, cycle, layout, runs);
         return 1;
+    }
+
+    /** Behind spawn: each reversed run's slots in the order a player walking −X meets them. */
+    private static void reportReversed(CommandSourceStack source, ServerLevel overworld, WorldGenCycle cycle,
+                                       CycleLayout layout, int runs) {
+        for (int k = 0; k < Math.max(1, runs); k++) {
+            long low = cycle.reversedRunLowX(k);
+            send(source, "  reversed run " + k + " x" + (1L << k) + " (walking -X) from X=" + (low + (layout.period() << k)),
+                    ChatFormatting.GOLD);
+            for (int i = layout.count() - 1; i >= 0; i--) {
+                CycleLayout.Slot slot = layout.slot(i);
+                long from = low + (layout.start(i) << k);
+                long to = low + ((layout.start(i) + layout.length(i)) << k);
+                long mid = (from + to) / 2L;
+                String phase = mid < Integer.MIN_VALUE ? "?" : TrainPhase.phaseAt(overworld, (int) mid).token();
+                CycleLayout.Style onRun = slot.styleOnRun(k);
+                String style = onRun == CycleLayout.Style.VANILLA ? "" : " " + onRun.name().toLowerCase();
+                send(source, String.format("    %2d %-11s%-7s core=%-6d X %d..%d  phase@mid=%s", i,
+                        slot.type().name().toLowerCase(), style, slot.core(), from, to, phase), ChatFormatting.WHITE);
+            }
+        }
     }
 
     private static void send(CommandSourceStack source, String line, ChatFormatting colour) {

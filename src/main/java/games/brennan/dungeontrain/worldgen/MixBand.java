@@ -183,9 +183,8 @@ public final class MixBand {
         if (!keeps(base, seed, chunkX, chunkZ)) return null;
         int n = candidates.size();
         Candidate c = candidates.get(Math.min(n - 1, (int) (hash01(seed, chunkX, chunkZ, PICK_SALT) * n)));
-        int k = base.runIndexAt(x);
-        long lo = Math.floorDiv(base.worldXOfBase(k, c.lo()) + 15L, 16L);    // first whole chunk inside
-        long hi = Math.floorDiv(base.worldXOfBase(k, c.hi()), 16L);           // exclusive
+        long lo = Math.floorDiv(base.worldXOfBaseNear(x, c.lo()) + 15L, 16L); // first whole chunk inside
+        long hi = Math.floorDiv(base.worldXOfBaseNear(x, c.hi()), 16L);      // exclusive (run fwd or reversed)
         if (hi <= lo) hi = lo + 1L;
         long rep = lo + Math.min(hi - lo - 1L, (long) (hash01(seed, chunkX, chunkZ, REP_SALT) * (hi - lo)));
         return new Pick(c, (rep - chunkX) * 16L);

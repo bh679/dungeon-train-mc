@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin;
 import com.llamalad7.mixinextras.sugar.Local;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.BandAdvancementChainRewriter;
+import games.brennan.dungeontrain.advancement.BandAdvancements;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.advancements.AdvancementVisibilityEvaluator;
@@ -52,6 +53,9 @@ import java.util.function.Predicate;
  * {@code dungeontrain:editor/*} tab, vanilla advancements, and other mods are
  * untouched — the path check returns {@code original} early.</p>
  *
+ * <p>The backwards-travelling advancements in the chain (the Dungeon Train-tab
+ * twins of The Secrete Menu's) opt out of the frontier: hidden until earned.</p>
+ *
  * <p>This only decides whether a node is <em>sent</em> to the client at all —
  * it says nothing about where it's drawn once there. An earned node whose
  * real parent got hidden by this rule needs its synced tree connection
@@ -76,6 +80,9 @@ public abstract class AdvancementVisibilityEvaluatorMixin {
         if (!id.getPath().startsWith(BandAdvancementChainRewriter.PATH_PREFIX)) return original;
 
         if (isDoneTest.test(node)) return true;
+
+        // Backwards-travelling advancements stay hidden until earned: no frontier reveal.
+        if (BandAdvancements.isBackwards(id.getPath())) return false;
 
         AdvancementNode parent = node.parent();
         if (parent == null) return original;

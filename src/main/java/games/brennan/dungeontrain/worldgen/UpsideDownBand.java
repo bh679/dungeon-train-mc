@@ -7,7 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 /**
  * Server-side helper for the upside-down band — the third looping phase (alongside the nether and
  * disintegration/End bands), positioned after the End band in the shared {@link WorldGenCycle}. Past
- * {@link #startX(ServerLevel)} the cycle repeats forever along +X; before it is plain overworld.
+ * {@link #startX(ServerLevel)} the cycle repeats forever along +X, and in reverse along -X behind an overworld buffer.
  *
  * <p>Unlike the nether/End bands (which reshape terrain via density/biome hooks), the upside-down
  * band is realised purely as a post-process vertical mirror in {@code WorldUpsideDownEvents}. This
@@ -25,7 +25,7 @@ public final class UpsideDownBand {
     /**
      * World-X where the cycle is anchored (shared with the nether/End phases via
      * {@link WorldGenCycle}), or {@link #OFF} if the upside-down band is disabled or this world has
-     * no train. Past this X the cycle repeats forever; before it is plain overworld.
+     * no train. Past this X the cycle repeats forever; behind it (after an overworld buffer) it runs in reverse.
      */
     public static long startX(ServerLevel overworld) {
         if (!DungeonTrainCommonConfig.isUpsideDownEnabled()) return OFF;

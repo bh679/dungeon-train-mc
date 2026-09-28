@@ -738,6 +738,15 @@ public final class BoardingProgressEvents {
      * by 3 to count players standing on or sprint-jumping from the roof as
      * "on the train" (sprint-jump peaks at ~1.25 blocks above standing).
      */
+    /**
+     * True when {@code player} counts as boarded for the difficulty's carriage progress — the carriage
+     * box padded 1 sideways and 3 above the roof ({@link #findPlayerCarriagePIdx}), so flying just over
+     * the train still counts.
+     */
+    public static boolean isBoarded(List<Trains.Carriage> carriages, ServerPlayer player) {
+        return findPlayerCarriagePIdx(carriages, player) != null;
+    }
+
     @Nullable
     private static Integer findPlayerCarriagePIdx(List<Trains.Carriage> carriages, ServerPlayer player) {
         double px = player.getX();

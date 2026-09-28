@@ -37,7 +37,7 @@ import java.util.List;
  * the one runtime convenience that reads COMMON config. The per-world
  * {@code startsWithTrain} gate lives in the callers.</p>
  *
- * @param startX     world-X the cycle is anchored at (before it: plain overworld)
+ * @param startX     world-X the cycle is anchored at (behind it, after a lead-gap-long overworld buffer, a layout runs in reverse; classic: plain overworld)
  * @param owGap      overworld blocks before each special band (two gaps per period)
  * @param stageBlocks length of EACH mountain stage
  * @param stageMultipliers heightmap multiplier per stage (stage 1 = first value, 1 = natural)
@@ -502,30 +502,94 @@ public record WorldGenCycle(long startX, int owGap,
         return layout != null;
     }
 
+    // Behind the anchor the layout runs in REVERSE: after a plain-overworld buffer as long as the lead gap
+    // ({@link #mirrorBuffer}), backward run k is a copy of forward run k laid down towards -X, so walking
+    // backwards meets the slots last-first. Each copy keeps its +X orientation (u still rises with X), so a
+    // band's ramps, entrance side and core anchors read exactly as they do ahead of spawn — only the order
+    // you reach them in is reversed. Every query still depends on X only through worldX - startX.
+
     /** Blocks past the anchor, or {@code -1} before it. Layout only (no phase shift: the first slot is explicit). */
-    private long anchored(int worldX) {
-        return worldX < startX ? -1L : (long) worldX - startX;
+    private long anchored(long worldX) {
+        return worldX < startX ? -1L : worldX - startX;
     }
 
-    /** Doubling run index at {@code worldX} (0 before the anchor). Layout only. */
-    private int runAt(int worldX) {
-        long off = anchored(worldX);
-        return off < 0L ? 0 : CycleLayout.runIndex(off, layout.period());
+    /**
+     * Plain-overworld run-in directly behind the anchor before the reversed cycle begins: the length of
+     * the layout's lead overworld slot, so spawn has overworld on both sides, plus the world's
+     * {@link #reverseSlide()} — how far the reversed bands have been pushed back by players walking
+     * off-train past the on-train frontier. Layout only.
+     */
+    private long mirrorBuffer() {
+        long lead = layout.count() > 0 && layout.slot(0).type() == CycleLayout.Type.OVERWORLD ? layout.length(0) : 0L;
+        return lead + reverseSlide;
     }
 
-    /** Base coordinate {@code u} of {@code worldX}, or {@code -1} before the anchor. Layout only. */
-    private long baseAt(int worldX) {
+    /**
+     * Blocks the reversed cycle behind spawn is pushed back for the running world ({@code worldgen.ReverseSlide}).
+     * Runtime state rather than config: it only grows, and only affects chunks generated after it grows —
+     * terrain already on disk keeps what it was generated as. Set on server start, on every change, and on
+     * the client from {@code ReverseSlideSyncPacket}; 0 with no world.
+     */
+    private static volatile long reverseSlide;
+
+    /** The live reverse slide — see {@link #reverseSlide}. */
+    public static long reverseSlide() {
+        return reverseSlide;
+    }
+
+    /** Set the live reverse slide (never negative). */
+    public static void setReverseSlide(long slide) {
+        reverseSlide = Math.max(0L, slide);
+    }
+
+    /** Blocks behind the start of the reversed cycle, or {@code -1} ahead of the anchor / inside the buffer. Layout only. */
+    private long backDist(long worldX) {
+        if (worldX >= startX) return -1L;
+        long d = startX - 1L - worldX - mirrorBuffer();
+        return d < 0L ? -1L : d;
+    }
+
+    /** Lowest world X of reversed run {@code k} behind the anchor — it ends at {@code startX − buffer}, less the later runs. Layout only. */
+    public long reversedRunLowX(int k) {
+        return startX - mirrorBuffer() - CycleLayout.runStart(k + 1, layout.period());
+    }
+
+    /** True when {@code worldX} lies in the reversed cycle behind the anchor (past the overworld buffer). */
+    public boolean isMirroredAt(long worldX) {
+        return layout != null && backDist(worldX) >= 0L;
+    }
+
+    /** Doubling run index at {@code worldX} (0 inside the buffer). Layout only. */
+    private int runAt(long worldX) {
         long off = anchored(worldX);
-        return off < 0L ? -1L : CycleLayout.baseCoord(off, layout.period());
+        if (off >= 0L) return CycleLayout.runIndex(off, layout.period());
+        long d = backDist(worldX);
+        return d < 0L ? 0 : CycleLayout.runIndex(d, layout.period());
+    }
+
+    /** Lowest world X of the run containing {@code worldX}, or {@link Long#MIN_VALUE} inside the buffer. Layout only. */
+    private long runLowX(long worldX) {
+        long p = layout.period();
+        long off = anchored(worldX);
+        if (off >= 0L) return startX + CycleLayout.runStart(CycleLayout.runIndex(off, p), p);
+        long d = backDist(worldX);
+        if (d < 0L) return Long.MIN_VALUE;
+        return startX - mirrorBuffer() - CycleLayout.runStart(CycleLayout.runIndex(d, p) + 1, p);
+    }
+
+    /** Base coordinate {@code u} of {@code worldX}, or {@code -1} inside the buffer. Layout only. */
+    private long baseAt(long worldX) {
+        long low = runLowX(worldX);
+        return low == Long.MIN_VALUE ? -1L : (worldX - low) >> runAt(worldX);
     }
 
     /** Slot index at {@code worldX} or {@code -1}. Layout only. */
-    private int slotAt(int worldX) {
+    private int slotAt(long worldX) {
         long u = baseAt(worldX);
         return u < 0L ? -1 : layout.indexAt(u);
     }
 
-    /** Public read of {@link #slotAt}: the layout slot at {@code worldX}, or {@code -1} (no layout, or before the anchor). */
+    /** Public read of {@link #slotAt}: the layout slot at {@code worldX}, or {@code -1} (no layout, or in the overworld buffer). */
     public int slotIndexAt(int worldX) {
         return layout == null ? -1 : slotAt(worldX);
     }
@@ -538,11 +602,12 @@ public record WorldGenCycle(long startX, int owGap,
 
     /**
      * World X of the column {@code local} base blocks into the slot occurrence containing {@code worldX} (the
-     * inverse of {@link #slotLocal}, scaled by that run's doubling), or {@code -1} when {@code worldX} has no slot.
+     * inverse of {@link #slotLocal}, scaled by that run's doubling), or {@link Long#MIN_VALUE} when
+     * {@code worldX} has no slot (behind spawn a real answer can be negative).
      */
     public long slotWorldX(int worldX, long local) {
         int i = slotIndexAt(worldX);
-        return i < 0 ? -1L : worldOf(worldX, layout.start(i) + local);
+        return i < 0 ? Long.MIN_VALUE : worldOf(worldX, layout.start(i) + local);
     }
 
     /** Doubling scale ({@code 2^run}) at {@code worldX}: world blocks per base block. 1 without a layout. */
@@ -550,10 +615,12 @@ public record WorldGenCycle(long startX, int owGap,
         return layout == null ? 1L : 1L << runAt(worldX);
     }
 
-    /** World X of base coordinate {@code u} in the run {@code worldX} is in — the inverse of {@link #baseAt}. */
-    private long worldOf(int worldX, long u) {
-        int k = runAt(worldX);
-        return startX + CycleLayout.runStart(k, layout.period()) + (u << k);
+    /**
+     * World X of base coordinate {@code u} in the run {@code worldX} is in — the inverse of {@link #baseAt}
+     * (forward or reversed). Only meaningful where {@code worldX} has a slot; callers check that first.
+     */
+    private long worldOf(long worldX, long u) {
+        return runLowX(worldX) + (u << runAt(worldX));
     }
 
     /**
@@ -1196,17 +1263,21 @@ public record WorldGenCycle(long startX, int owGap,
      */
     boolean layoutInfluence(CycleLayout.Type t, long worldX, int margin) {
         long m = Math.max(0, margin);
+        long a = worldX - m;
         long b = worldX + m;
-        if (b < startX) return false;
-        long a = Math.max(worldX - m, startX);
-        long p = layout.period();
-        long offA = a - startX;
-        long offB = b - startX;
-        int ka = CycleLayout.runIndex(offA, p);
-        if (ka != CycleLayout.runIndex(offB, p)) return true;
-        long rs = CycleLayout.runStart(ka, p);
-        long ua = (offA - rs) >> ka;
-        long ub = (offB - rs) >> ka;
+        boolean ahead = b >= startX && sideInfluence(t, Math.max(a, startX), b);
+        if (ahead) return true;
+        long backEnd = startX - 1L - mirrorBuffer();                 // the buffer between is plain overworld
+        return a <= backEnd && sideInfluence(t, a, Math.min(b, backEnd));
+    }
+
+    /** {@link #layoutInfluence} over a window {@code [a, b]} lying wholly ahead of the anchor or wholly behind the buffer. */
+    private boolean sideInfluence(CycleLayout.Type t, long a, long b) {
+        long low = runLowX(a);
+        if (low != runLowX(b)) return true;
+        int k = runAt(a);
+        long ua = (a - low) >> k;
+        long ub = (b - low) >> k;
         // A mix-zone chunk may pick any band, so the zone counts as influence for every type: the caller
         // then resolves the chunk's own (mix-shifted) cycle and answers exactly.
         return layout.anyOfTypeIn(t, ua, ub) || layout.anyOfTypeIn(CycleLayout.Type.MIX, ua, ub);
@@ -1250,16 +1321,15 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
-     * Which repeat of the world-gen cycle {@code worldX} falls in (0-based), or {@code -1} before the
-     * anchor / when the cycle is empty. The general form behind {@link #endPassIndex}: because the Nether
+     * Which repeat of the world-gen cycle {@code worldX} falls in (0-based), or {@code -1} in the
+     * overworld buffer behind the anchor / when the cycle is empty (further back, the reversed run's index). The general form behind {@link #endPassIndex}: because the Nether
      * band is the first special band of every period, this doubles as the Nether-band pass index (repeat
      * 0 = first Nether band, ≥ 1 = second onward), which the "Nether Return Again" advancement keys off
      * via {@link games.brennan.dungeontrain.worldgen.NetherBand#netherPassIndex}.
      */
     public long cycleIndex(int worldX) {
         if (layout != null) {
-            long off = anchored(worldX);
-            return off < 0L ? -1L : CycleLayout.runIndex(off, layout.period());   // the doubling run index
+            return runLowX(worldX) == Long.MIN_VALUE ? -1L : runAt(worldX);      // the doubling run index
         }
         long p = period();
         if (p <= 0L || worldX < startX) return -1L;
@@ -1602,6 +1672,16 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * Fraction of kept chuncks chunks that are top-down slices at {@code worldX}: {@code chuncksSliceRatio},
+     * except across the stacks exit fade, where it eases to 0 with the fade — so the last chunks before the
+     * overworld are whole columns and the pieces close into solid terrain without a sliced seam.
+     */
+    public double chuncksSliceRatioAt(int worldX) {
+        double exit = stacksExitRamp(worldX);
+        return exit >= 0.0 ? chuncksSliceRatio * exit : chuncksSliceRatio;
+    }
+
+    /**
      * True if {@code worldX} lies anywhere in the run-up to the chuncks band or the band core itself —
      * the whole stretch from the end of the upside-down exit crossfade ({@code udExitGap}, the chuncks
      * {@code leadGap}, the entry fade, then the core). The intervening gaps read as plain overworld to
@@ -1630,6 +1710,8 @@ public record WorldGenCycle(long startX, int owGap,
     public double chuncksKeepDensityAt(int worldX) {
         if (chuncksLen() <= 0L) return 1.0;                         // band disabled → all real terrain
         if (isInChuncksStacksCrossfade(worldX)) return chuncksKeepDensity;   // chuncks carries on under the stacks fade
+        double exit = stacksExitRamp(worldX);
+        if (exit >= 0.0) return 1.0 + (chuncksKeepDensity - 1.0) * exit;   // stacks exit: chunks close back into terrain
         double t = fadeInRamp(CycleLayout.Type.CHUNCKS, chuncksFadeLen(), worldX);   // 0 at fade start → 1 at core edge
         return 1.0 + (chuncksKeepDensity - 1.0) * t;                // lerp 1 → keepDensity (1.0 outside the band + fade)
     }
@@ -1701,9 +1783,14 @@ public record WorldGenCycle(long startX, int owGap,
         return layout == null ? 0 : runAt(worldX);
     }
 
-    /** World X of base coordinate {@code u} in doubling run {@code k} (layout only). */
+    /** World X of base coordinate {@code u} in forward doubling run {@code k} (layout only). */
     public long worldXOfBase(int k, long u) {
         return startX + CycleLayout.runStart(k, layout.period()) + (u << k);
+    }
+
+    /** World X of base coordinate {@code u} in the run containing {@code worldX}, forward or reversed (layout only). */
+    public long worldXOfBaseNear(int worldX, long u) {
+        return worldOf(worldX, u);
     }
 
     // ---- spheres band --------------------------------------------------------
@@ -1893,7 +1980,41 @@ public record WorldGenCycle(long startX, int owGap,
      */
     public double stacksVoidRampAt(int worldX) {
         if (stacksLen() <= 0L) return 0.0;                          // band disabled → all real terrain
+        double exit = stacksExitRamp(worldX);
+        if (exit >= 0.0) return exit;                               // exit fade: void thins out towards the overworld
         return fadeInRamp(CycleLayout.Type.STACKS, stacksFadeLen(), worldX);   // 0 at fade start → 1 in the core
+    }
+
+    /**
+     * Base-block length of the stacks exit fade: the last stretch of a stacks slot that hands straight over
+     * to plain overworld. Much shorter than the chuncks → stacks crossfade it borrows its look from.
+     */
+    static final long STACKS_EXIT_FADE_BLOCKS = 300L;
+
+    /**
+     * True in the last {@link #STACKS_EXIT_FADE_BLOCKS} of a stacks slot whose next slot is an overworld gap
+     * (the last slot wraps to the next run's slot 0 — ahead of spawn the next run, behind it the buffer).
+     * There stacks' void thins out towards the overworld and every chunk it doesn't claim is classified by
+     * chuncks, so floating chunks grow denser until they close into solid terrain. Layout only.
+     */
+    public boolean isInStacksExitFade(int worldX) {
+        return stacksExitRamp(worldX) >= 0.0;
+    }
+
+    /**
+     * Stacks void fraction across the exit fade — 1 at the stacks side, falling to 1/len at the overworld
+     * edge — or {@code -1} outside it. Evaluated in base coordinates, so the fade stretches with the run.
+     */
+    private double stacksExitRamp(int worldX) {
+        if (layout == null || stacksLen() <= 0L) return -1.0;
+        int i = slotAt(worldX);
+        if (i < 0 || layout.slot(i).type() != CycleLayout.Type.STACKS) return -1.0;
+        int next = (i + 1) % layout.count();
+        if (layout.slot(next).type() != CycleLayout.Type.OVERWORLD || layout.length(next) <= 0L) return -1.0;
+        long fade = Math.min(STACKS_EXIT_FADE_BLOCKS, Math.max(0L, layout.slot(i).core()));
+        long toEnd = layout.start(i) + layout.length(i) - baseAt(worldX);   // 1 at the last block
+        if (fade <= 0L || toEnd > fade) return -1.0;
+        return (double) toEnd / fade;
     }
 
     // ---- legacy bands ------------------------------------------------------------

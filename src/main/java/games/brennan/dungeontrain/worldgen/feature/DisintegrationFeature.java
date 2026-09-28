@@ -94,7 +94,7 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
 
             long startX = DisintegrationBand.startX(overworld);
             int chunkMinX = cp.getMinBlockX();
-            if (chunkMinX + 15 < startX) return false; // before the first band (or disabled)
+            if (startX == DisintegrationBand.OFF) return false; // disabled (bands run both ways from the anchor)
 
             ServerLevel end = server.getLevel(Level.END);
             if (end == null) return false;

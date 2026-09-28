@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:secrete_menu/reversed_upside_down",
+  "display": {
+    "icon": { "id": "minecraft:obsidian" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_void.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_void.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "reversed_void" }
+    }
+  },
+  "requirements": [["reached"]]
+}
