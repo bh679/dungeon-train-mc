@@ -144,7 +144,7 @@ final class WorldGenCycleMirrorTest {
             }
         }
         assertEquals(2, nethers);
-        assertEquals(2, ends);
+        assertEquals(3, ends);   // Lap 1's End is two joined pieces (vanilla, BoP) plus the Better End
     }
 
     @Test

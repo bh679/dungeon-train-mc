@@ -116,10 +116,10 @@ final class BandAdvancementsTest {
     private static final List<String> SHIPPED_REVERSE = List.of(
             "reversed_stacks", "reversed_chuncks",
             "reversed_superflat", "reversed_classic", "reversed_infdev", "reversed_alpha", "reversed_floating",
-            "reversed_skylands", "reversed_caves_of_chaos", "reversed_far_lands", "reversed_beta",
-            "reversed_lost_city", "reversed_amplified",
-            "reversed_spheres", "reversed_better_end", "reversed_bop", "reversed_better_nether", "reversed_wwoo",
-            "reversed_reassembly", "reversed_upside_down", "reversed_void", "reversed_end_islands", "reversed_nether");
+            "reversed_skylands", "reversed_caves_of_chaos", "reversed_far_lands", "reversed_beta", "reversed_amplified",
+            "reversed_spheres", "reversed_better_end", "reversed_lost_city", "reversed_better_nether", "reversed_bop",
+            "reversed_reassembly", "reversed_upside_down", "reversed_void", "reversed_end_islands", "reversed_wwoo",
+            "reversed_nether");
 
     @Test
     @DisplayName("walking back from spawn meets the shipped bands last-first, all the way to the first Nether")

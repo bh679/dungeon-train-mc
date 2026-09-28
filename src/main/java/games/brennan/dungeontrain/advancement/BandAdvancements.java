@@ -125,9 +125,9 @@ public final class BandAdvancements {
             legacyId(LegacyBandKind.SUPERFLAT), legacyId(LegacyBandKind.CLASSIC), legacyId(LegacyBandKind.INFDEV),
             legacyId(LegacyBandKind.ALPHA), legacyId(LegacyBandKind.FLOATING), legacyId(LegacyBandKind.SKYLANDS),
             legacyId(LegacyBandKind.CAVES_OF_CHAOS), legacyId(LegacyBandKind.FAR_LANDS), legacyId(LegacyBandKind.BETA),
-            legacyId(LegacyBandKind.LOST_CITY), legacyId(LegacyBandKind.AMPLIFIED),
-            SPHERES, BETTER_END, BOP, BETTER_NETHER, WWOO,
-            REASSEMBLY, UPSIDE_DOWN, VOID, END_ISLANDS, NETHER);
+            legacyId(LegacyBandKind.AMPLIFIED),
+            SPHERES, BETTER_END, legacyId(LegacyBandKind.LOST_CITY), BETTER_NETHER, BOP,
+            REASSEMBLY, UPSIDE_DOWN, VOID, END_ISLANDS, WWOO, NETHER);
 
     /** The reverse advancement for forward band id {@code forwardId}: {@code reached_x} → {@code reversed_x}. */
     public static String reverseId(String forwardId) {
@@ -258,7 +258,7 @@ public final class BandAdvancements {
             case SPHERES -> out.add(SPHERES);
             case STACKS -> out.add(STACKS);
             case LEGACY_RUN -> {
-                LegacySpan[] eras = layout.eras();
+                LegacySpan[] eras = layout.eras(i);   // this run's own eras
                 for (int e = eras.length - 1; e >= 0; e--) {
                     String id = legacyId(eras[e].kind());
                     if (id != null) out.add(id);
