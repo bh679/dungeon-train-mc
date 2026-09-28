@@ -26,9 +26,11 @@ import org.apache.logging.log4j.message.Message;
  * tracker builds a {@code getEntities} AABB spanning the player's real position to the sub-level
  * pivot (~20 million blocks), so this fires ~15×/sec <em>on the render thread</em>. The per-call
  * stack-trace capture + write is the actual frame-hitching "lag" reported by players (FPS and heap
- * are fine — this is I/O stutter). See {@code SwingTrackerSubLevelAabbMixin} for the root-cause fix
- * when Vivecraft is present; this filter is the always-on belt so the storm can never resurface from
- * any other trigger (or any Vivecraft build the mixin can't apply to).</p>
+ * are fine — this is I/O stutter). The root-cause fix's real home is the separate
+ * vivecraft-sable-compat addon, with DT carrying a temporary copy of the melee half for players who
+ * have not installed it yet ({@code VivecraftMixinPlugin}). This filter is the always-on belt
+ * underneath both: it still catches a Vivecraft build neither mixin can apply to, and any other
+ * trigger for the same abort.</p>
  *
  * <p><b>Scope:</b> a message-specific {@link AbstractFilter} attached to the
  * {@code dev.ryanhcode.sable.Sable} {@link LoggerConfig}. It returns {@link Filter.Result#DENY} only

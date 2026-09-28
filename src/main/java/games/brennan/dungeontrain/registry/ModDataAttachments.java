@@ -11,6 +11,7 @@ import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -52,6 +53,34 @@ public final class ModDataAttachments {
             // between AttachmentType.builder(Supplier) and builder(Function<IAttachmentHolder, T>).
             () -> AttachmentType.builder(() -> new PlayerBiomeProgress())
                 .serialize(PlayerBiomeProgress.CODEC)
+                .build()
+        );
+
+    /**
+     * Per-chunk list of spheres-band sphere ids ({@code SphereField.Sphere#id}) whose terrain this chunk
+     * is still owed — spheres cut from another dimension, or built around a structure, are generated
+     * off-thread and written in a moment after the chunk loads ({@code WorldSpheresEvents}). Persisted
+     * so a chunk that unloads before its fill arrives is filled the next time it loads; an entry is
+     * removed once written, so a sphere is never filled twice (a player who digs one out keeps the hole).
+     * Serialized only while non-empty.
+     */
+    public static final Supplier<AttachmentType<List<Long>>> SPHERE_PENDING =
+        TYPES.register("sphere_pending",
+            () -> AttachmentType.<List<Long>>builder(() -> List.of())
+                .serialize(Codec.LONG.listOf(), list -> !list.isEmpty())
+                .build()
+        );
+
+    /**
+     * Per-chunk flag: this chunk sits in a BetterEnd End-band pass and is still owed its real-End terrain,
+     * which is generated off-thread and written in a moment after the chunk loads
+     * ({@code WorldEndBandEvents}). Persisted so a chunk that unloads first is filled on its next load;
+     * cleared once written, so the terrain is never written twice. Serialized only while set.
+     */
+    public static final Supplier<AttachmentType<Boolean>> END_BAND_PENDING =
+        TYPES.register("end_band_pending",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL, pending -> pending)
                 .build()
         );
 
@@ -196,6 +225,41 @@ public final class ModDataAttachments {
         TYPES.register("opened_ender_chest_this_life",
             () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
                 .serialize(Codec.BOOL)
+                .build()
+        );
+
+    /**
+     * Per-life flag: has this player's starting book burned during the current life? Once it has,
+     * {@code the_far_start} ("The Far Start" — carry the book past the threshold unread) is out of
+     * reach until the next life hands out a fresh book, so
+     * {@link games.brennan.dungeontrain.advancement.LifeDisqualification} greys it out.
+     *
+     * <p>Serialized so a mid-life logout can't launder the flag away, and <b>no</b> {@code copyOnDeath}
+     * so every new life starts clean — the same shape as {@link #OPENED_ENDER_CHEST_THIS_LIFE}.</p>
+     */
+    public static final Supplier<AttachmentType<Boolean>> STARTING_BOOK_BURNED_THIS_LIFE =
+        TYPES.register("starting_book_burned_this_life",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
+    /**
+     * Travelled-carriage reading (the same {@code effectiveTravelled} value the carts tiers use) at
+     * the moment this player last broke a block this life. The "no block broken" streak is
+     * {@code effectiveTravelled - this}, driving the {@code no_break_100} / {@code no_break_1000}
+     * advancements ("Look, Don't Touch" / "Museum Rules"). Every block counts — decorated pots
+     * included, unlike {@link #CARTS_AT_LAST_CONTAINER_OPEN}, which vases deliberately never touch.
+     *
+     * <p>Its own attachment rather than a {@link games.brennan.dungeontrain.player.PlayerRunState} field
+     * because that codec is at its 16-field cap (see {@link #RUN_SPAWN_X}). Serialized so the streak
+     * survives a mid-run logout, and <b>no</b> {@code copyOnDeath}: the respawn clone starts at 0, which
+     * is exactly the per-life reset wanted — the travelled counter resets with it.</p>
+     */
+    public static final Supplier<AttachmentType<Integer>> CARTS_AT_LAST_BLOCK_BREAK =
+        TYPES.register("carts_at_last_block_break",
+            () -> AttachmentType.<Integer>builder(() -> 0)
+                .serialize(Codec.INT)
                 .build()
         );
 

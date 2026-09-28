@@ -30,11 +30,29 @@ public final class TradeEverythingBridge {
     /** Raid-captain drop, not craftable — 5 emeralds. */
     private static final int OMINOUS_BANNER_VALUE_SIXTEENTHS = 80;
 
+    /**
+     * Every armor trim smithing template — a flat 2.2 emeralds. Values are integer
+     * sixteenths, so 2.2 is not representable exactly (35.2); 35 is the nearest,
+     * i.e. 2.1875 emeralds. Vanilla rarity is COMMON, so without this they resolve
+     * to the 1-sixteenth floor and a Silence template sells for the same as a stick.
+     */
+    private static final int TRIM_TEMPLATE_VALUE_SIXTEENTHS = 35;
+
+    /**
+     * Bookshelf and honey block — trade for 1 emerald each. 22 sixteenths × the
+     * default 0.75 payout margin = 16.5, so the payout clears exactly 1 emerald
+     * (16 would pay out only 12 sixteenths). Recipe derivation priced a
+     * bookshelf at ~8 emeralds, far too much for a block library carriages are
+     * packed with.
+     */
+    private static final int BOOKSHELF_VALUE_SIXTEENTHS = 22;
+    private static final int HONEY_BLOCK_VALUE_SIXTEENTHS = 22;
+
     /** +1 permanent backpack slot — 5 emeralds. */
     private static final int EDIBLE_BACKPACK_VALUE_SIXTEENTHS = 80;
 
     /** +9 slots, a 3×3 of edible backpacks — 45 emeralds, i.e. 9 × the plain one. */
-    private static final int UPGRADED_BACKPACK_VALUE_SIXTEENTHS = 720;
+    private static final int GOLDEN_EDIBLE_BACKPACK_VALUE_SIXTEENTHS = 720;
 
     /**
      * The ominous banner is not its own item: vanilla stamps this translation
@@ -61,14 +79,28 @@ public final class TradeEverythingBridge {
                 ? OptionalInt.of(OMINOUS_BANNER_VALUE_SIXTEENTHS)
                 : OptionalInt.empty());
 
+        // Tag-matched rather than 17 item overrides: a provider also beats TE's
+        // recipe derivation (which would price a template off the 7-diamond
+        // duplication recipe), and a datapack-added trim template is covered too.
+        // The tag excludes netherite_upgrade_smithing_template — not an armor trim.
+        TradeEverythingApi.registerValueProvider(stack ->
+            stack.is(ItemTags.TRIM_TEMPLATES)
+                ? OptionalInt.of(TRIM_TEMPLATE_VALUE_SIXTEENTHS)
+                : OptionalInt.empty());
+
+        TradeEverythingApi.setItemOverride(
+            ResourceLocation.withDefaultNamespace("bookshelf"), BOOKSHELF_VALUE_SIXTEENTHS);
+        TradeEverythingApi.setItemOverride(
+            ResourceLocation.withDefaultNamespace("honey_block"), HONEY_BLOCK_VALUE_SIXTEENTHS);
+
         // Sibling-mod items, addressed by id so the sibling is never classloaded:
         // absent EdibleBackpacks simply means the override never matches.
         TradeEverythingApi.setItemOverride(
             ResourceLocation.fromNamespaceAndPath("ediblebackpacks", "edible_backpack"),
             EDIBLE_BACKPACK_VALUE_SIXTEENTHS);
         TradeEverythingApi.setItemOverride(
-            ResourceLocation.fromNamespaceAndPath("ediblebackpacks", "upgraded_backpack"),
-            UPGRADED_BACKPACK_VALUE_SIXTEENTHS);
+            ResourceLocation.fromNamespaceAndPath("ediblebackpacks", "golden_edible_backpack"),
+            GOLDEN_EDIBLE_BACKPACK_VALUE_SIXTEENTHS);
     }
 
     /** See {@link #OMINOUS_BANNER_NAME_KEY} for why the check is component-based. */

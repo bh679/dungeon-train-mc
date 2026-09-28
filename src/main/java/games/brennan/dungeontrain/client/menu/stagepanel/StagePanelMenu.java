@@ -29,6 +29,8 @@ public final class StagePanelMenu {
         HIDE_TOGGLE,
         /** Toolbar: closes the panel. */
         CLOSE,
+        /** Header's top-right {@code ↻} — face the player; shift resets to the grid. */
+        FACE,
         /** A block list row — {@code index} into {@link #blocks()}. Click swaps it with the held block. */
         BLOCK_ROW,
         /** A part-row icon — {@code index} = part row, {@code secondary} = icon index in its strip. */

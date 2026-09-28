@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.localization.edit;
 
+import games.brennan.dungeontrain.client.ui.ListScrollbar;
+
 import net.minecraft.client.gui.ComponentPath;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;

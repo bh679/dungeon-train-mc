@@ -65,7 +65,21 @@ repositories {
             includeGroup 'bh679'
             excludeModule('bh679', 'playermob')
             excludeModule('bh679', 'adventureitemnames')
+            excludeModule('bh679', 'sable_fence_trapdoor_fix')
         }
+    }
+
+    // sable-fence-trapdoor-fix-mc publishes a single NeoForge jar named after its mod id
+    // (sable_fence_trapdoor_fix-<v>.jar) from a repo whose name doesn't match the module, so
+    // neither shared pattern above resolves it. Separate ivy repo, scoped to just that module.
+    ivy {
+        name = 'GitHubReleasesSableFenceTrapdoorFix'
+        url = 'https://github.com/'
+        patternLayout {
+            artifact '[organization]/sable-fence-trapdoor-fix-mc/releases/download/v[revision]/[module]-[revision].[ext]'
+        }
+        metadataSources { artifact() }
+        content { includeModule('bh679', 'sable_fence_trapdoor_fix') }
     }
 
     // adventureitemnames-mc 0.46.0+ added Minecraft 1.20.1 builds, so its NeoForge asset name
@@ -101,7 +115,15 @@ repositories {
 }
 
 neoForge {
-    version = project.neo_version
+    // disableRecompilation: run dev against Mojang's ORIGINAL bytecode (remapped), not a
+    // decompile→recompile. Recompiling reorders lambda captures, which breaks third-party
+    // @Redirect handlers that capture lambda locals — Sable Pathfinder's
+    // SetWalkTargetFromBlockMemorySubLevelMixin crashed the dev server on the first villager
+    // tick. Production players never recompile, so dev must match them. Cost: no MC sources jar.
+    enable {
+        version = project.neo_version
+        disableRecompilation = true
+    }
 
     parchment {
         mappingsVersion = project.parchment_mappings_version
@@ -121,6 +143,19 @@ neoForge {
             if (localRelay) {
                 environment.put('DUNGEONTRAIN_RELAY_BASE_URL', localRelay.toString())
             }
+            // Its live-pool twin: -PrelayLiveBaseUrl=http://127.0.0.1:3005/<LIVE_CAP> — for the reads a
+            // dev build deliberately makes against live data (My Builds' live toggle, the Credits
+            // page's builder list). Same daemon-environment reason. Unset → the compiled-in live cap.
+            def localLiveRelay = project.findProperty('relayLiveBaseUrl') ?: System.getenv('DUNGEONTRAIN_RELAY_LIVE_BASE_URL')
+            if (localLiveRelay) {
+                environment.put('DUNGEONTRAIN_RELAY_LIVE_BASE_URL', localLiveRelay.toString())
+            }
+            // And the operator route the editor's live builder search + credit mirror go through:
+            // -PrelayAdminUrl=http://127.0.0.1:3005/<ADMIN_CAP> (RelayTarget.adminSearchBase reads it).
+            def localAdminRelay = project.findProperty('relayAdminUrl') ?: System.getenv('DUNGEONTRAIN_RELAY_ADMIN_URL')
+            if (localAdminRelay) {
+                environment.put('DUNGEONTRAIN_RELAY_ADMIN_URL', localAdminRelay.toString())
+            }
             // Server-perf-harness seam: ./gradlew runClient -PquickJoin=127.0.0.1:25571 auto-connects
             // the dev client to a dedicated server instead of stopping at the main menu. The A/B
             // harness measures the SERVER's [mspt], but the train is player-gated (TrainCarriageAppender
@@ -137,19 +172,76 @@ neoForge {
             // is then created flat (dungeontrain:dungeon_train_flat) with a PINNED seed, and the quiet
             // game rules are applied on server start. See perf/PerfTestMode. Property rather than env
             // var for the same daemon-environment reason as relayBaseUrl above.
+            // Recovery-card seam: ./gradlew runClient -PbackupPrompt shows Dungeon Backup's
+            // "Missing … Data" card on a dev build (DungeonTrainBackup suppresses it otherwise).
+            if (project.hasProperty('backupPrompt')) {
+                systemProperty 'dungeontrain.backups.prompt', 'true'
+            }
             if (project.hasProperty('perfTest')) {
                 systemProperty 'dungeontrain.perfTest', 'true'
             }
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
             }
-            // DPI-bypass notice seam: ./gradlew runClient -PdpiBypassTest=winws.exe makes
-            // DpiBypassDetector report that process without looking at the real process table, so
+            // Versions-page seam: ./gradlew runClient -PmockInstalledVersion=0.800.0 makes the page
+            // (and its boot prompt) treat that as the installed version, so the behind state can be
+            // seen against real Modrinth/CurseForge listings on a dev build that is ahead of
+            // everything published. Only InstalledVersion reads it. Same daemon-environment reason.
+            if (project.hasProperty('mockInstalledVersion')) {
+                systemProperty 'dungeontrain.mockInstalledVersion', project.property('mockInstalledVersion').toString()
+            }
+            // Changelog-ledger seam: ./gradlew runClient -PchangelogUrl=<url> fetches the tagged
+            // ledger the Versions page filters by from there instead of raw main — needed to test
+            // a ledger change (new tags, new entries) before it has merged.
+            if (project.hasProperty('changelogUrl')) {
+                systemProperty 'dungeontrain.changelogUrl', project.property('changelogUrl').toString()
+            }
+            // Live update-notice seam: ./gradlew runClient -PupdateFeedUrl=<url> [-PupdatePollSeconds=<n>]
+            // [-PreleaseApiUrl=<base>] polls that update.json instead of raw main (and lets LiveUpdateNotice
+            // run on a dev build); releaseApiUrl is the base "v<ver>" is appended to for the publish time.
+            if (project.hasProperty('updateFeedUrl')) {
+                systemProperty 'dungeontrain.updateFeedUrl', project.property('updateFeedUrl').toString()
+            }
+            if (project.hasProperty('releaseApiUrl')) {
+                systemProperty 'dungeontrain.releaseApiUrl', project.property('releaseApiUrl').toString()
+            }
+            if (project.hasProperty('updatePollSeconds')) {
+                systemProperty 'dungeontrain.updatePollSeconds', project.property('updatePollSeconds').toString()
+            }
+            // DPI-bypass notice seam: ./gradlew runClient -PdpiBypassTest=winws.exe makes the
+            // DPI Bypass Detect add-on report that process without looking at the real process table, so
             // the title-screen notice can be seen and screenshotted on a machine that isn't running
             // zapret. Property rather than env var for the same daemon-environment reason as
             // relayBaseUrl above.
             if (project.hasProperty('dpiBypassTest')) {
-                systemProperty 'dungeontrain.dpi_bypass_test', project.property('dpiBypassTest').toString()
+                systemProperty 'dpibypassdetect.test', project.property('dpiBypassTest').toString()
+            }
+            // Same seam for the streaming-software probe: ./gradlew runClient -PstreamingTest=obs64.exe
+            // makes the Stream Detect add-on report OBS, so the Videos icon's share tab can be seen
+            // on a machine that isn't streaming.
+            if (project.hasProperty('streamingTest')) {
+                systemProperty 'streamdetect.test', project.property('streamingTest').toString()
+            }
+            // Shader-compat sweep: ./gradlew runClient -PshaderSweep="<world folder name>" opens that
+            // world and drives itself round the five atmosphere sites, writing one screenshot each to
+            // run/screenshots/ with the F3+5 panel up, then logs SHADER SWEEP COMPLETE and stops. Lets
+            // one pack be measured per shell command instead of by hand. See client/ShaderSweep and
+            // docs/shaders/compat-matrix.md. Property rather than env var for the same daemon-
+            // environment reason as relayBaseUrl above.
+            if (project.hasProperty('shaderSweep')) {
+                systemProperty 'dungeontrain.shader_sweep', project.property('shaderSweep').toString()
+            }
+            // -PshaderSweepSites=05,06,07 captures only those sites. A fix to one site should not
+            // cost a re-run of all eight across a dozen packs.
+            if (project.hasProperty('shaderSweepSites')) {
+                systemProperty 'dungeontrain.shader_sweep_sites', project.property('shaderSweepSites').toString()
+            }
+            // -PshaderPreview="<world folder name>" runs the same harness for the Shaders menu's
+            // preview frame instead: one site, the train stopped, no diagnostics panel, written to
+            // run/screenshots/preview-<pack>.png. One launch per pack, same world and same camera —
+            // which is the whole reason the nine previews can be compared at all.
+            if (project.hasProperty('shaderPreview')) {
+                systemProperty 'dungeontrain.shader_preview', project.property('shaderPreview').toString()
             }
         }
 
@@ -172,6 +264,19 @@ neoForge {
             def localRelay = project.findProperty('relayBaseUrl') ?: System.getenv('DUNGEONTRAIN_RELAY_BASE_URL')
             if (localRelay) {
                 environment.put('DUNGEONTRAIN_RELAY_BASE_URL', localRelay.toString())
+            }
+            // Its live-pool twin: -PrelayLiveBaseUrl=http://127.0.0.1:3005/<LIVE_CAP> — for the reads a
+            // dev build deliberately makes against live data (My Builds' live toggle, the Credits
+            // page's builder list). Same daemon-environment reason. Unset → the compiled-in live cap.
+            def localLiveRelay = project.findProperty('relayLiveBaseUrl') ?: System.getenv('DUNGEONTRAIN_RELAY_LIVE_BASE_URL')
+            if (localLiveRelay) {
+                environment.put('DUNGEONTRAIN_RELAY_LIVE_BASE_URL', localLiveRelay.toString())
+            }
+            // And the operator route the editor's live builder search + credit mirror go through:
+            // -PrelayAdminUrl=http://127.0.0.1:3005/<ADMIN_CAP> (RelayTarget.adminSearchBase reads it).
+            def localAdminRelay = project.findProperty('relayAdminUrl') ?: System.getenv('DUNGEONTRAIN_RELAY_ADMIN_URL')
+            if (localAdminRelay) {
+                environment.put('DUNGEONTRAIN_RELAY_ADMIN_URL', localAdminRelay.toString())
             }
             // Determinism-harness seam: ./gradlew runServer -PgenDetLog enables the flag-gated
             // [gen.det] worldgen diagnostics (GenDeterminismLog). A project property rather than an
@@ -345,6 +450,62 @@ dependencies {
     implementation "bh679:ediblebackpacks:${ediblebackpacks_version}"
     jarJar(group: 'bh679', name: 'ediblebackpacks', version: ediblebackpacks_version)
 
+    // Keep Trim — crafting-grid repair keeps the left-most item's armor trim. Fetched via the
+    // shared bh679 Ivy repo (flat asset keeptrim-neoforge-<v>.jar). DT does not compile against
+    // it — the mod is a single vanilla mixin, no API.
+    // HYBRID contract (same as Dungeon Backup / Sable Fence & Trapdoor Fix below): jarJar'd so
+    // Modrinth + manual installs get it built in, AND declared `keep-trim(required)` on
+    // CurseForge (project 1691315, live) so the CF app installs it as its own jar and Keep
+    // Trim's page gets the credit. NeoForge's JarSelector drops the nested copy when a
+    // top-level mods/ copy is present. TEMPORARY: it was fully external in 0.863.0–0.908.0,
+    // but the Modrinth listing (keep-trim / HE6l2LC9) is still in review, which left every
+    // Modrinth/manual installer with an un-findable "requires keeptrim" failure. Re-bundled in
+    // 0.909.x; revisit (drop the jarJar line) once the Modrinth listing is public.
+    implementation "bh679:keeptrim:${keeptrim_version}"
+    jarJar(group: 'bh679', name: 'keeptrim', version: keeptrim_version)
+
+    // Stream Detect + DPI Bypass Detect — client-side sibling add-ons holding the process-name
+    // detection (OBS/Streamlabs; zapret/GoodbyeDPI) that used to live in DT's own classes.
+    // compat/StreamDetectBridge + DpiBypassDetectBridge name their API behind a ModList check.
+    // HYBRID contract (same as Keep Trim / Dungeon Backup): jarJar'd so every platform has them
+    // built in, and CurseForge also declares them required siblings (listings 1711267 / 1711272) —
+    // NeoForge's JarSelector drops the nested copy when the CF app installs a top-level one.
+    implementation "bh679:streamdetect:${streamdetect_version}"
+    jarJar(group: 'bh679', name: 'streamdetect', version: streamdetect_version)
+    implementation "bh679:dpibypassdetect:${dpibypassdetect_version}"
+    jarJar(group: 'bh679', name: 'dpibypassdetect', version: dpibypassdetect_version)
+
+    // Pigman Villagers — 1% of villagers are pigmen (player model + pigman skin + pig sounds).
+    // DT calls PigmanVillagersApi.clearRoll (compat/PigmanVillagersBridge) so villagers stamped from
+    // templates roll their own chance. HYBRID like Stream Detect above: jarJar'd, and a required
+    // CurseForge sibling (listing 1713315; see gradle.properties). Flat bh679 Ivy asset
+    // pigmanvillagers-neoforge-<v>.jar.
+    implementation "bh679:pigmanvillagers:${pigmanvillagers_version}"
+    jarJar(group: 'bh679', name: 'pigmanvillagers', version: pigmanvillagers_version)
+
+    // Dungeon Backup — sibling mod: the player-data protection system (migration out of
+    // config/, rolling zip restore points inside + outside the instance, title-screen recovery)
+    // extracted from DT in v0.862.0. DT registers its data root once in
+    // data.DungeonTrainBackup and compiles against its `api.Located`.
+    // HYBRID contract (with Sable Fence & Trapdoor Fix below): jarJar'd so Modrinth users (mod
+    // page + modpack) get it built in, AND declared `<slug>(required)` on CurseForge + shipped as
+    // a CurseForge modpack Include so the CF app installs it as its own jar and the CF page gets
+    // the credit. When both copies are present NeoForge's JarSelector drops the nested one in
+    // favour of the top-level mods/ file (logs "passed in as source"), so the two paths coexist.
+    // Fetched for compile from https://github.com/bh679/dungeonbackup-mc/releases via the
+    // shared Ivy `bh679` repo (asset dungeonbackup-neoforge-<v>.jar — flat, no +mc suffix).
+    implementation "bh679:dungeonbackup:${dungeonbackup_version}"
+    jarJar(group: 'bh679', name: 'dungeonbackup', version: dungeonbackup_version)
+
+    // Sable Fence & Trapdoor Fix — sibling mod: the ProtrudingShapeClip Sable mixin DT used to
+    // ship itself, extracted to bh679/sable-fence-trapdoor-fix-mc. DT does not compile against
+    // it (one Sable mixin, no API). Same hybrid contract as Dungeon Backup: jarJar'd for Modrinth,
+    // required external download on CurseForge. Our own mod, so bundling is licence-clean (it
+    // declares its own Sable floor). Fetched via its own Ivy repo (asset name is
+    // sable_fence_trapdoor_fix-<v>.jar, not the flat <module>-neoforge-<v>.jar pattern).
+    implementation "bh679:sable_fence_trapdoor_fix:${sablefencetrapdoorfix_version}"
+    jarJar(group: 'bh679', name: 'sable_fence_trapdoor_fix', version: sablefencetrapdoorfix_version)
+
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is
     // loaded by NeoForge from Sable's own jarJar — we don't ship it.
@@ -353,6 +514,53 @@ dependencies {
     compileOnly fileTree(dir: layout.buildDirectory.dir('extracted/sable-companion'),
                          include: '*.jar',
                          builtBy: ['extractSableCompanion'])
+
+    // Distant Horizons API — COMPILE ONLY, and deliberately never on any run classpath.
+    // DH is an optional companion (opt-in in the modpack, `optional` in neoforge.mods.toml) and
+    // is not in the dev client; it ships the API classes inside its own jar, so at runtime they
+    // are either DH's or absent. The only DT class that names them
+    // (client/DistantHorizonsUpsideDown) is reached behind a ModList check, so nothing tries to
+    // link them when DH isn't installed. The API artifact version is DH's OWN api version, not the
+    // mod version: DH ${distant_horizons_version} reports API ${distant_horizons_api_version}.
+    compileOnly "maven.modrinth:distanthorizonsapi:${distant_horizons_api_version}"
+
+    // Fast Paintings + Moonlight — REQUIRED third-party deps (see gradle.properties). Not bundled:
+    // the launchers install them from the (required) relations like Sable and the siblings. On the
+    // dev classpath so runClient/runServer stamp block paintings; DT references the block only by
+    // registry id + property name (compat/PaintingTransformProcessor), so nothing compiles against
+    // either jar — `runtimeOnly` would do, `implementation` keeps the sibling convention.
+    implementation "maven.modrinth:fast-paintings:${fastpaintings_version}"
+    implementation "maven.modrinth:moonlight:${moonlight_version}"
+
+    // Sable Pathfinder — third-party mob pathing across Sable sub-levels (see gradle.properties).
+    // Nothing compiles against it; on the dev classpath so runClient/runServer behave like players.
+    implementation "maven.modrinth:sable-pathfinder:${sablepathfinder_version}"
+
+    // Second-lap overworld mods (WWOO + Biomes O' Plenty) and their libraries — REQUIRED third-party
+    // deps (see gradle.properties). Not bundled. DT names their biomes/features only by registry id,
+    // except TerraBlender, whose Regions API builds the BoP-only biome source.
+    implementation "maven.modrinth:wwoo:${wwoo_version}"
+    implementation "maven.modrinth:cristel-lib:${cristellib_version}"
+    implementation "maven.modrinth:biomes-o-plenty:${biomesoplenty_version}"
+    implementation "maven.modrinth:terrablender:${terrablender_version}"
+    implementation "maven.modrinth:glitchcore:${glitchcore_version}"
+
+    // BetterEnd: New Dawn + its three libraries — REQUIRED third-party deps (see gradle.properties).
+    // On the dev classpath so runClient/runServer generate BetterEnd's End, which the even End-islands
+    // bands copy. DT names no BetterEnd class (it only samples the End dimension's generator).
+    implementation "maven.modrinth:betterend-neoforge:${betterend_version}"
+
+    // BetterNether: New Dawn + its three libraries — REQUIRED third-party deps (see gradle.properties).
+    // Not bundled; launchers install them from the (required) relations. DT names BetterNether
+    // biomes/blocks only by registry id, so nothing compiles against these jars.
+    implementation "maven.modrinth:betternether-neoforge:${betternether_version}"
+    implementation "maven.modrinth:bclib-neoforge:${bclib_version}"
+    implementation "maven.modrinth:worldweaver-neoforge:${worldweaver_version}"
+    implementation "maven.modrinth:wunderlib-neoforge:${wunderlib_version}"
+
+    // Big Lost City — REQUIRED third-party dep (see gradle.properties). Structures only; on the dev
+    // classpath so runClient/runServer generate the Lost City era's cities.
+    implementation "maven.modrinth:big-lost-city:${biglostcity_version}"
 
     // Unit tests — JUnit 5 Jupiter (pure-logic only).
     testImplementation platform('org.junit:junit-bom:5.10.2')
@@ -372,6 +580,9 @@ dependencies {
 
 tasks.named('test', Test).configure {
     useJUnitPlatform()
+    // The JUnit launcher boots the full mod set; with BetterEnd + BCLib's registries on top, Gradle's
+    // 512 MB default heap runs out partway through the suite (OutOfMemoryError in the test worker).
+    maxHeapSize = '2g'
     testLogging {
         events 'passed', 'skipped', 'failed'
     }
@@ -468,6 +679,109 @@ def devHours = { ->
     return hours.size()
 }()
 
+// How many updates have shipped, and when the newest one landed — the pair the death screen's
+// donation page shows once the running costs are met. An "update" is a MINOR version bump: one
+// per Gate 3 merge. The cascade's PATCH ticks are excluded, or automation would treble the count.
+//
+// These are the OFFLINE FALLBACK. The live figures come from the relay (which polls the same
+// committed index over HTTP and re-derives them daily); these only render when that fetch fails,
+// so a stale window on an old jar is the point at which the numbers stop moving, not a bug.
+//
+// Two sources, unioned per-day by MAX, for the same reason dev-hours has two:
+//   - docs/version-history/index.json — a committed snapshot from scripts/version-history/collect.py,
+//     which is all a shallow CI clone has to go on.
+//   - the live git history of THIS checkout, so a dev build counts today's merges too.
+// Both count the same events, so the larger count for a given day is the more complete one.
+//
+// Every failure path degrades: a missing index, no git, a corrupt file. Worst case the count is
+// 0, which callers read as UNKNOWN and the screen omits the line rather than claiming zero work.
+def updateStats = { ->
+    var daily = new TreeMap<String, Integer>()
+    var addDay = { String day, int n -> daily[day] = Math.max(daily[day] ?: 0, n) }
+
+    var indexFile = file('docs/version-history/index.json')
+    try {
+        if (indexFile.exists()) {
+            var parsed = new groovy.json.JsonSlurper().parse(indexFile)
+            (parsed.daily ?: [:]).each { day, n -> addDay(day as String, n as int) }
+        } else {
+            logger.info('version-history: {} absent — using this checkout\'s history only', indexFile)
+        }
+    } catch (Exception e) {
+        logger.warn('version-history: could not read {}: {}', indexFile, e.message)
+    }
+
+    try {
+        // Mirrors collect.py: one `+mod_version=` line per commit that changed it, kept only
+        // when its MAJOR.MINOR differs from the version before it.
+        var proc = ['git', 'log', '--reverse', '--format=%x00%ad', '--date=short',
+                    '-p', '--', 'gradle.properties'].execute(null, project.projectDir)
+        var out = new StringBuilder()
+        var err = new StringBuilder()
+        proc.consumeProcessOutput(out, err)   // drain first: this output is thousands of lines
+        proc.waitForOrKill(60000)
+        var live = new TreeMap<String, Integer>()
+        String when = null
+        String seen = null
+        String previousMinor = null
+        out.toString().eachLine { line ->
+            if (line.startsWith('\u0000')) {
+                when = line.substring(1).trim() ?: null
+                return
+            }
+            if (!line.startsWith('+mod_version=') || when == null) return
+            var version = line.substring('+mod_version='.length()).trim()
+            if (version.isEmpty() || version == seen) return
+            seen = version
+            var parts = version.split('\\.')
+            if (parts.length < 2) return
+            var minor = parts[0] + '.' + parts[1]
+            if (minor == previousMinor) return
+            previousMinor = minor
+            live[when] = (live[when] ?: 0) + 1
+        }
+        // The version in gradle.properties right now, when it is a MINOR ahead of the last one
+        // in the history — the bump commit's own version isn't in `git log` while it is being
+        // built. Mirrors collect.py's with_working_tree.
+        var pendingMinor = (mod_version as String).split('\\.').with { it.length >= 2 ? it[0] + '.' + it[1] : null }
+        if (pendingMinor != null && pendingMinor != previousMinor) {
+            var day = java.time.LocalDate.now().toString()
+            live[day] = (live[day] ?: 0) + 1
+        }
+        live.each { day, n -> addDay(day, n) }
+    } catch (Exception e) {
+        logger.warn('version-history: could not read git history: {}', e.message)
+    }
+
+    if (daily.isEmpty()) {
+        logger.warn('version-history: no history found — the death screen will omit the updates card')
+        return [count: 0, windowMonths: 0, month: 0, week: 0, day: 0, year: 0, lastUpdate: '']
+    }
+
+    var today = java.time.LocalDate.now()
+    var first = java.time.LocalDate.parse(daily.firstKey())
+    // The window rule, mirrored in collect.py, UpdateStats.java and dp-relay's updates.js: the
+    // longest window the card offers is the project's own age rounded UP (so it still covers every
+    // update ever shipped), capped at the twelve months the card renders as "1 year".
+    var whole = (today.year - first.year) * 12 + (today.monthValue - first.monthValue)
+    if (today.dayOfMonth < first.dayOfMonth) whole -= 1
+    if (today.dayOfMonth != first.dayOfMonth) whole += 1
+    int windowMonths = Math.max(1, Math.min(12, whole))
+    var countSince = { java.time.LocalDate from ->
+        var key = from.toString()
+        daily.findAll { day, n -> day >= key }.values().sum(0) as int
+    }
+    return [count       : countSince(today.minusMonths(windowMonths)),
+            windowMonths: windowMonths,
+            month       : countSince(today.minusDays(30)),
+            week        : countSince(today.minusDays(7)),
+            day         : (daily[today.toString()] ?: 0) as int,
+            // Calendar year to date, for the menu's "N changes this year" line. Deliberately not
+            // the rolling window above: on a splash "this year" means the calendar.
+            year        : countSince(java.time.LocalDate.of(today.year, 1, 1)),
+            lastUpdate  : daily.lastKey()]
+}()
+
 // Generate neoforge.mods.toml + dungeontrain_version.properties + pack.mcmeta from templates.
 tasks.register('generateModMetadata', ProcessResources) {
     var replaceProperties = [
@@ -484,6 +798,13 @@ tasks.register('generateModMetadata', ProcessResources) {
         update_json_url            : update_json_url,
         git_branch                 : gitBranch,
         dev_hours                  : devHours,
+        updates_count              : updateStats.count,
+        updates_window_months      : updateStats.windowMonths,
+        updates_month              : updateStats.month,
+        updates_week               : updateStats.week,
+        updates_day                : updateStats.day,
+        updates_year               : updateStats.year,
+        last_update_date           : updateStats.lastUpdate,
         sable_mod_version          : sable_mod_version,
         adventureitemnames_version : adventureitemnames_version,
         adventureitemstats_version : adventureitemstats_version,
@@ -492,7 +813,17 @@ tasks.register('generateModMetadata', ProcessResources) {
         enderchestpersistence_version    : enderchestpersistence_version,
         tradeeverything_version          : tradeeverything_version,
         ediblebackpacks_version          : ediblebackpacks_version,
-        // Declared-minimum floors for the five EXTERNAL sibling deps. Deliberately
+        keeptrim_version                 : keeptrim_version,
+        keeptrim_min_version             : keeptrim_min_version,
+        pigmanvillagers_min_version      : pigmanvillagers_min_version,
+        streamdetect_min_version         : streamdetect_min_version,
+        dpibypassdetect_min_version      : dpibypassdetect_min_version,
+        dungeonbackup_min_version        : dungeonbackup_min_version,
+        sablefencetrapdoorfix_min_version : sablefencetrapdoorfix_min_version,
+        // The DH build the modpack pins — VersionInfo reads it so DT can silence DH's own
+        // update prompt for players who are on exactly that build (see DistantHorizonsUpdatePromptSuppression).
+        distant_horizons_version         : distant_horizons_version,
+        // Declared-minimum floors for the EXTERNAL sibling deps (with the three above). Deliberately
         // separate from the *_version values above (which the auto-release cascade
         // bumps freely) — see gradle.properties for the rationale.
         adventureitemnames_min_version    : adventureitemnames_min_version,
@@ -500,6 +831,20 @@ tasks.register('generateModMetadata', ProcessResources) {
         playermob_min_version             : playermob_min_version,
         enderchestpersistence_min_version : enderchestpersistence_min_version,
         tradeeverything_min_version       : tradeeverything_min_version,
+        // Third-party required deps (Fast Paintings + its Moonlight library) — floors only.
+        fastpaintings_min_version         : fastpaintings_min_version,
+        moonlight_min_version             : moonlight_min_version,
+        sablepathfinder_min_version       : sablepathfinder_min_version,
+        // Second-lap overworld mods — floors only.
+        wwoo_min_version                  : wwoo_min_version,
+        biomesoplenty_min_version         : biomesoplenty_min_version,
+        betternether_min_version          : betternether_min_version,
+        biglostcity_min_version           : biglostcity_min_version,
+        // BetterEnd: New Dawn + its libraries — floors only.
+        betterend_min_version             : betterend_min_version,
+        bclib_min_version                 : bclib_min_version,
+        worldweaver_min_version           : worldweaver_min_version,
+        wunderlib_min_version             : wunderlib_min_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties
@@ -594,6 +939,33 @@ sourceSets.main.resources.srcDir files("${layout.buildDirectory.get()}/generated
 }
 neoForge.ideSyncTask tasks.named('generateModRoster')
 
+// The baked Free Play whitelist: modpack + siblings + dependencies generated, the rest curated.
+apply from: 'gradle/approved-mods.gradle'
+
+// Fingerprint every shipped template the way the relay hashes an upload, so the relay can tell an
+// unmodified copy of a stock template from a build (see tools/BundledFingerprints and the relay's
+// bundled_fingerprints table). release.yml runs this after the build and pushes the JSON with
+// scripts/relay/push-bundled-fingerprints.py. Pass extra trees of the same layout (a git-history
+// backfill) with -PfingerprintExtra=<dir>[,<dir>...]. Runs on the compiled main classes: the two
+// NBT reshapings it calls need no Minecraft bootstrap, only the classes on the runtime classpath.
+tasks.register('bundledFingerprints', JavaExec) {
+    group = 'relay'
+    description = 'Write build/bundled-fingerprints.json — the relay-side hash of every shipped template.'
+    var resourcesDir = file("src/main/resources/data/${mod_id}")
+    var outFile = file("${layout.buildDirectory.get()}/bundled-fingerprints.json")
+    var extraDirs = (project.findProperty('fingerprintExtra') ?: '').toString().split(',').findAll { it }
+
+    dependsOn tasks.named('classes')
+    inputs.dir resourcesDir
+    extraDirs.each { inputs.dir file(it) }
+    outputs.file outFile
+
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'games.brennan.dungeontrain.tools.BundledFingerprints'
+    args '--resources', resourcesDir.absolutePath, '--out', outFile.absolutePath
+    extraDirs.each { args '--extra', file(it).absolutePath }
+}
+
 tasks.named('jar', Jar).configure {
     manifest {
         attributes([
@@ -627,4 +999,9 @@ idea {
         downloadSources = true
         downloadJavadoc = true
     }
+}
+
+// The legacy world-gen bands adapt MIT-licensed code from Moderner Beta; its notice must ship in the jar.
+tasks.named('processResources', ProcessResources) {
+    from(rootProject.file('THIRD_PARTY_NOTICES.md')) { into 'META-INF' }
 }

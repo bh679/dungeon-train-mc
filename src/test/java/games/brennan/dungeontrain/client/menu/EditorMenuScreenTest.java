@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.editor.PlotCategory;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * through a separate {@code modelId} channel and only uses the friendly
  * {@code model} string for user-facing labels.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorMenuScreenTest {
 
     // ---- DevMode visibility (hidden on main, visible everywhere else) ----
@@ -121,6 +123,31 @@ final class EditorMenuScreenTest {
     @DisplayName("Remove returns null for unknown categories")
     void remove_architecture_returnsNull() {
         assertNull(EditorMenuScreen.removeEntryFor(PlotCategory.ARCHITECTURE, "x", "x"));
+    }
+
+    // ---- Flip quad (contents-only per-template random flip) ----
+
+    @Test
+    @DisplayName("Flip quad dispatches the per-axis contents flip command and reflects current state")
+    void flip_quad_commandsAndState() {
+        List<CommandMenuEntry> rows = EditorMenuScreen.flipRows("maze", true, false, false, true);
+        assertEquals(2, rows.size(), "a Label and the quad");
+        assertInstanceOf(CommandMenuEntry.Label.class, rows.get(0));
+        CommandMenuEntry.Quad quad = assertInstanceOf(CommandMenuEntry.Quad.class, rows.get(1));
+
+        CommandMenuEntry.Toggle x = (CommandMenuEntry.Toggle) quad.e1();
+        assertEquals("X", x.label());
+        assertTrue(x.state(), "X is on by default for every contents template");
+        assertEquals("dungeontrain editor contents flip maze x on", x.cmdToTurnOn());
+        assertEquals("dungeontrain editor contents flip maze x off", x.cmdToTurnOff());
+
+        assertFalse(((CommandMenuEntry.Toggle) quad.e2()).state(), "Y off");
+        assertFalse(((CommandMenuEntry.Toggle) quad.e3()).state(), "Z off");
+
+        CommandMenuEntry.Toggle rooms = (CommandMenuEntry.Toggle) quad.e4();
+        assertEquals("Rooms", rooms.label());
+        assertTrue(rooms.state());
+        assertEquals("dungeontrain editor contents flip maze rooms on", rooms.cmdToTurnOn());
     }
 
     // ---- New (latent same-bug, would have broken on first track-side click) ----
@@ -443,13 +470,22 @@ final class EditorMenuScreenTest {
     }
 
     @Test
-    @DisplayName("Nav carries Enter and Exit; Test the Carriage only for portals")
+    @DisplayName("Nav carries Enter and Exit; Test the Carriage for portals, carriages and contents")
     void nav_tab_holdsNavigationRows() {
         List<String> carriages = labelsIn(tabsFor(PlotCategory.CARRIAGES, "brass_dining").get(EditorMenuTab.NAV));
-        assertEquals(List.of("Enter", "Exit"), carriages);
+        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), carriages);
+        List<String> contents = labelsIn(tabsFor(PlotCategory.CONTENTS, "library").get(EditorMenuTab.NAV));
+        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), contents);
+        List<String> parts = labelsIn(tabsFor(PlotCategory.PARTS, "oak").get(EditorMenuTab.NAV));
+        assertEquals(List.of("Enter", "Exit"), parts);
 
-        List<String> portals = labelsIn(tabsFor(PlotCategory.PORTALS, "crypt_hall").get(EditorMenuTab.NAV));
-        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), portals);
+        List<CommandMenuEntry> portalNav = tabsFor(PlotCategory.PORTALS, "crypt_hall").get(EditorMenuTab.NAV);
+        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), labelsIn(portalNav));
+
+        // Test drills into the save prompt rather than dispatching the command — a dirty room has
+        // to be offered a save before it is stamped from its last one.
+        assertInstanceOf(PortalTestSaveCheckScreen.class,
+            assertInstanceOf(CommandMenuEntry.DrillIn.class, portalNav.get(1)).target());
     }
 
     @Test
@@ -521,5 +557,75 @@ final class EditorMenuScreenTest {
 
         // ...and the remembered choice is untouched, so stepping back restores it.
         assertEquals(EditorMenuTab.CURRENT, EditorMenuTab.active());
+    }
+
+    // ---- Header Save icon + panel width ----
+
+    @Test
+    @DisplayName("Header Save mirrors the File-tab Save command for ordinary categories")
+    void headerSave_ordinaryCategoryUsesSave() {
+        MenuHeaderAction a = EditorMenuScreen.saveHeaderAction(PlotCategory.CARRIAGES, false, 0L);
+        assertEquals("Save", a.label());
+        assertEquals(EditorSaveStatus.CLEAN_TINT, a.tint());
+        assertEquals(EditorMenuScreen.SAVE_COMMAND, a.command());
+        assertEquals("dungeontrain save", a.command());
+        assertEquals("dungeontrain", a.icon().getNamespace());
+        assertEquals("icon/save", a.icon().getPath());
+    }
+
+    @Test
+    @DisplayName("Header Save routes parts through the part-aware subcommand")
+    void headerSave_partsUsesPartSave() {
+        MenuHeaderAction a = EditorMenuScreen.saveHeaderAction(PlotCategory.PARTS, false, 0L);
+        assertEquals("dungeontrain editor part save", a.command());
+    }
+
+    @Test
+    @DisplayName("Header Save names the unsaved state in its tooltip and goes green")
+    void headerSave_dirtyIsGreenAndSaysSo() {
+        MenuHeaderAction a = EditorMenuScreen.saveHeaderAction(PlotCategory.CARRIAGES, true, 250L);
+        assertTrue(a.label().contains("unsaved"));
+        assertEquals(EditorSaveStatus.DIRTY_TINT, a.tint(), "at the pulse peak the tint is the full green");
+    }
+
+    @Test
+    @DisplayName("Editor panel keeps the shared default width on every tab (no Current-tab widening)")
+    void panelWidth_isSharedDefault() {
+        assertEquals(CommandMenuLayout.PANEL_WIDTH, new EditorMenuScreen().panelWidth(), 0.0);
+    }
+
+    @Test
+    @DisplayName("the room rows can be built for a named room, sending to `portals room <name>`")
+    void portalRowsForANamedRoom() {
+        String prefix = EditorMenuPortalRows.prefixFor("labrynth");
+        assertEquals("dungeontrain editor portals room labrynth", prefix);
+        List<CommandMenuEntry> rows = EditorMenuScreen.portalRows("bedrock_lock", 11, 13, 7, prefix);
+        List<String> labels = rows.stream().map(CommandMenuEntry::label).toList();
+        assertTrue(labels.stream().anyMatch(l -> l.startsWith("Fog: Auto")), labels.toString());
+        assertTrue(labels.stream().anyMatch(l -> l.startsWith("Sky:")), labels.toString());
+        assertTrue(labels.stream().anyMatch(l -> l.startsWith("Contents")), labels.toString());
+        // Every command the rows send starts at the named root — none falls back to the bare one.
+        for (CommandMenuEntry row : rows) {
+            for (String command : commandsOf(row)) {
+                assertTrue(command.startsWith(prefix + " "), command);
+            }
+        }
+        // And the stood-in form still sends to the bare root.
+        CommandMenuEntry.Stay fog = (CommandMenuEntry.Stay) EditorMenuPortalRows.roomFogRowFor("bedrock_lock");
+        assertEquals("dungeontrain editor portals fog next", fog.command());
+    }
+
+    /** Every command string a row (or its cells) would run. */
+    private static List<String> commandsOf(CommandMenuEntry row) {
+        List<String> out = new java.util.ArrayList<>();
+        if (row instanceof CommandMenuEntry.Stay s) out.add(s.command());
+        else if (row instanceof CommandMenuEntry.Run r) out.add(r.command());
+        else if (row instanceof CommandMenuEntry.TypeArg t) out.add(t.commandPrefix());
+        else if (row instanceof CommandMenuEntry.Triple t) {
+            out.addAll(commandsOf(t.leftEntry())); out.addAll(commandsOf(t.middleEntry())); out.addAll(commandsOf(t.rightEntry()));
+        } else if (row instanceof CommandMenuEntry.Split s) {
+            out.addAll(commandsOf(s.leftEntry())); out.addAll(commandsOf(s.rightEntry()));
+        }
+        return out;
     }
 }

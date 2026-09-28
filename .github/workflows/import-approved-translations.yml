@@ -51,14 +51,39 @@ jobs:
             exit 1
           fi
 
-      # No --register-new: an unknown translator FAILS the run on purpose. localization/authors.json
-      # is what keeps the AI-vs-human counts honest, and a name added by a bot loses the profile
-      # URL that makes the credit worth having. A failure here means "add them by hand, then re-run".
+      # --register-new, because "somebody translated for the first time" is the ordinary case for
+      # this job, not an error. It used to fail the run: on 2026-08-30 that cost four dispatches,
+      # two of them spent hand-writing an authors.json PR and merging it before anything could be
+      # imported at all — and it will recur every time the queue reaches a new name.
+      #
+      # localization/authors.json still has to be right, and it still is: the registration lands in
+      # the SAME PR as the text it credits, which is a human review gate that hand-authoring the
+      # JSON first did not add anything to. What the importer will not do is credit a name it has
+      # not accounted for — it registers only translators whose work actually landed in this diff,
+      # names every one of them in the PR body, and still HARD-FAILS on a submission credited to a
+      # name registered as "ai". Profile URLs are the one thing a bot cannot supply, so the PR body
+      # asks for them instead of blocking on them (none of the first eight names had one anyway).
+      # A translator can rename themself from the in-game Credits page; the relay rewrites their
+      # rows at once and logs it. Applied here FIRST, to authors.json and the provenance sidecars,
+      # because the approved rows below already carry the new name — imported against a registry
+      # still holding the old one, --register-new would add the new name as a second, unknown
+      # person and the old one would keep the credit. Never merges onto a name the registry
+      # already has; those are listed in the PR body for a human instead.
+      - name: Apply credited-name changes
+        env:
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+        run: |
+          python3 scripts/localization/apply-translator-renames.py \
+            --report-out "$RUNNER_TEMP/renames.json" \
+            ${{ inputs.dry_run && '--dry-run' || '' }}
+
       - name: Import approved units
         env:
           DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
         run: |
           python3 scripts/localization/import-approved-translations.py \
+            --register-new --new-authors-out "$RUNNER_TEMP/new-authors.json" \
+            --deferred-out "$RUNNER_TEMP/deferred.json" \
             ${{ inputs.dry_run && '--dry-run' || '' }} \
             ${{ inputs.locale && format('--locale {0}', inputs.locale) || '' }}
 
@@ -76,6 +101,12 @@ jobs:
       # build.yml's localization-checks does not run on a PR opened with the default GITHUB_TOKEN
       # (a token-authored PR raises no workflow events), so the same guards run HERE, before the
       # PR exists. A broken import must never reach review looking green.
+      #
+      # validate-locale runs in full. It was narrowed to --values-only while the AIN overlays
+      # carried structural debt this job could not have caused — vi_vn missing `item_types` would
+      # have refused a Vietnamese translation that had nothing to do with it. That debt is paid
+      # off, so the job asks the whole question. If a locale ever fails here on something this
+      # job did not touch, that is the signal to go and fix the locale.
       - name: Provenance + locale checks
         if: steps.changed.outputs.yes == 'true'
         run: |
@@ -86,6 +117,159 @@ jobs:
           if [ -n "$locales" ]; then
             python3 scripts/localization/validate-locale.py $locales
           fi
+
+      # The guards above ask whether the TEXT is well-formed. They cannot ask whether it still
+      # works, and on 2026-08-30 that gap was live: an approved ru_ru epitaph swapped {deaths_nth}
+      # for {deaths}, which substitutes a spelled-out cardinal — "двай, кто пал" — and fails
+      # DeathLoreOrdinalTest. The job went green and opened the PR anyway (#1232), and because a
+      # token-authored PR raises no workflow events, build.yml never ran on it either. Nothing
+      # between the relay and main would have caught it.
+      #
+      # So the suite runs HERE, for the same reason the locale checks do: this job is the only
+      # place a translation import is ever tested. ~1 minute, once a week.
+      - name: Set up JDK 21
+        if: steps.changed.outputs.yes == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        if: steps.changed.outputs.yes == 'true'
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Run the test suite against the imported text
+        if: steps.changed.outputs.yes == 'true'
+        run: ./gradlew test --no-daemon
+
+      # The static template plus, when the import registered anyone, the names it added — a
+      # reviewer should not have to spot a new person in the authors.json hunk to know they are
+      # being asked to vouch for one. Composed in Python because a translator name is arbitrary
+      # player-supplied text and has no business being interpolated into a shell string.
+      - name: Compose the PR body
+        if: steps.changed.outputs.yes == 'true' && !inputs.dry_run
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib
+          template = pathlib.Path('.github/import-approved-translations-pr-body.md')
+          body = template.read_text(encoding='utf-8')
+          temp = pathlib.Path(os.environ['RUNNER_TEMP'])
+          report = temp / 'new-authors.json'
+          names = json.loads(report.read_text(encoding='utf-8')) if report.is_file() else []
+          skipped = temp / 'deferred.json'
+          left = json.loads(skipped.read_text(encoding='utf-8')) if skipped.is_file() else []
+          renamed = temp / 'renames.json'
+          renames = (json.loads(renamed.read_text(encoding='utf-8')) if renamed.is_file()
+                     else {'applied': [], 'skipped': []})
+          if renames['applied'] or renames['skipped']:
+              # Names are player-supplied text: fenced, never inline, for the same reason as the
+              # registrations below. A skipped rename is the one outcome that needs a person.
+              lines = [f'  {json.dumps(r["from"], ensure_ascii=False)} -> '
+                       f'{json.dumps(r["to"], ensure_ascii=False)}' for r in renames['applied']]
+              section = f'## {len(renames["applied"])} credited-name change(s) applied\n\n'
+              if lines:
+                  section += ('Translators who renamed themselves from the in-game Credits page. '
+                              'The relay already serves the new name; this diff renames them in '
+                              '`localization/authors.json` and every provenance sidecar, and the '
+                              'regenerated credits follow:\n\n```\n' + '\n'.join(lines) + '\n```\n\n')
+              if renames['skipped']:
+                  held = [f'  {json.dumps(r["from"], ensure_ascii=False)} -> '
+                          f'{json.dumps(r["to"], ensure_ascii=False)}  # {r["reason"]}'
+                          for r in renames['skipped']]
+                  section += (f'### {len(held)} rename(s) NOT applied\n\n'
+                              'The importer will not merge one person\'s credit into another\'s, '
+                              'and cannot rename a name the repo never credited. Each stays in the '
+                              'relay\'s log and is retried on every run until a human resolves it '
+                              '(rename by hand, or register the name):\n\n```\n'
+                              + '\n'.join(held) + '\n```\n\n')
+              trailer = 'Opened by `.github/workflows/import-approved-translations.yml`.'
+              body = (body.replace(trailer, section + trailer) if trailer in body
+                      else body + '\n' + section)
+          hidden = renames.get('hidden', [])
+          restored = renames.get('restored', [])
+          if hidden or restored:
+              # Translators who pressed Remove (or Restore) on the in-game Credits page. The relay
+              # already serves them anonymously; this diff marks them `"credit": false` in
+              # `localization/authors.json` so the regenerated credits stop naming them too.
+              section = f'## {len(hidden)} name(s) taken off the credits, {len(restored)} restored\n\n'
+              if hidden:
+                  section += ('Asked to be listed as Anonymous from the in-game Credits page. Their '
+                              'work stays in the provenance sidecars; `authors.json` now carries '
+                              '`"credit": false` and `translation_contributors.json` leaves them out:'
+                              '\n\n```\n' + '\n'.join(f'  {json.dumps(n, ensure_ascii=False)}' for n in hidden)
+                              + '\n```\n\n')
+              if restored:
+                  section += ('Back on the credits by their own choice:\n\n```\n'
+                              + '\n'.join(f'  {json.dumps(n, ensure_ascii=False)}' for n in restored)
+                              + '\n```\n\n')
+              body = (body.replace(trailer, section + trailer) if trailer in body
+                      else body + '\n' + section)
+          if names:
+              # Rendered as the authors.json lines themselves: a name is arbitrary player-supplied
+              # text, and inside a fence it cannot break the page's markdown the way a backtick or
+              # an underscore in an inline code span would. It is also what you would edit.
+              entries = '\n'.join(f'  {json.dumps(n, ensure_ascii=False)}: "human",'
+                                  for n in names)
+              section = (
+                  f'## {len(names)} newly registered translator(s)\n\n'
+                  'These names were not in `localization/authors.json` before this run, so the '
+                  'import added them, as plain `"human"` entries:\n\n'
+                  f'```json\n{entries}\n```\n\n'
+                  'Their work is in this diff — vouching for them is part of reviewing it. They '
+                  'carry **no profile URL**, the one thing the importer cannot know; if you know '
+                  'where one of them would like to be linked, give that entry the object form '
+                  'the file already uses (`{ "kind": "human", "url": "…" }`).\n\n')
+              trailer = 'Opened by `.github/workflows/import-approved-translations.yml`.'
+              body = (body.replace(trailer, section + trailer) if trailer in body
+                      else body + '\n' + section)
+          if left:
+              # Named here because this is the only place anyone will look. These units are not
+              # errors and do not fail the run, but they are approved player work that did NOT
+              # land, and a PR that quietly carried 979 translations while dropping 171 without
+              # saying so would be worse than the failing job it replaced. Grouped by the reason,
+              # since the reasons want completely different things done about them.
+              causes = [
+                  ('locale drift', 'locale drift',
+                   'The key exists in `en_us.json` but not in that locale\'s file, so there is no '
+                   'line to write. Translating the missing keys into every locale imports these '
+                   'on the next run — `scripts/localization/check-lang-parity.py` lists them.'),
+                  ('not a plural form', 'a plural form the language cannot use',
+                   'The in-game editor offered the raw English key set, so translators were shown '
+                   '`.other` forms their grammar never selects. These can never be imported; '
+                   'retire them at the relay.'),
+                  ('edit this one by hand', 'a book field that would not apply',
+                   'The field is gone from that book, or is not prose. Open the file.'),
+                  ('needs fixing at the relay', 'text that would not render',
+                   'Component.translatable runs Minecraft\'s format parser, so a translation that '
+                   'drops a `%s`, invents one, or contains a bare `%` is broken however well '
+                   'meant. Fix the text at the relay and it imports on the next run.'),
+              ]
+              blocks = []
+              rest = list(left)
+              for needle, heading, why in causes:
+                  hits = [line for line in rest if needle in line]
+                  if not hits:
+                      continue
+                  rest = [line for line in rest if needle not in line]
+                  # Just the unit — the heading above already carries the reason, and repeating
+                  # it on all 144 bullets buries the one thing a reviewer is scanning for.
+                  units = sorted(line.split(': ', 1)[0] for line in hits)
+                  listed = '\n'.join(f'- `{u}`' for u in units[:40])
+                  more = (f'\n- …and {len(hits) - 40} more' if len(hits) > 40 else '')
+                  blocks.append(f'### {len(hits)} × {heading}\n\n{why}\n\n{listed}{more}\n')
+              if rest:
+                  listed = '\n'.join(f'- `{line}`' for line in sorted(rest)[:40])   # reason kept: unclassified
+                  blocks.append(f'### {len(rest)} × other\n\n{listed}\n')
+              section = (f'## {len(left)} approved unit(s) could not be imported\n\n'
+                         'Approved work with nowhere to land. Nothing here failed the run, and '
+                         'nothing here is lost — every one is still approved at the relay and will '
+                         'import as soon as it has somewhere to go.\n\n' + '\n'.join(blocks) + '\n')
+              trailer = 'Opened by `.github/workflows/import-approved-translations.yml`.'
+              body = (body.replace(trailer, section + trailer) if trailer in body
+                      else body + '\n' + section)
+          (temp / 'pr-body.md').write_text(body, encoding='utf-8')
+          print(body)
+          PY
 
       # Every path staged explicitly. `git add -A` is unsafe in this repo: the in-game editor's
       # dev mode writes into src/main/resources, so a blanket add can sweep up unrelated content.
@@ -115,4 +299,4 @@ jobs:
           git push origin "$branch"
           gh pr create --base main --head "$branch" \
             --title 'feat(localization): import approved player translations from the relay' \
-            --body-file .github/import-approved-translations-pr-body.md
+            --body-file "$RUNNER_TEMP/pr-body.md"

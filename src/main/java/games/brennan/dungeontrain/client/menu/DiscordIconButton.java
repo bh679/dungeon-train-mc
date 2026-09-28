@@ -1,10 +1,8 @@
 package games.brennan.dungeontrain.client.menu;
 
-import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -29,11 +27,7 @@ public final class DiscordIconButton extends Button {
     private static final int FACE          = 0xFFFFFFFF;
     private static final int EYE           = 0xFF5865F2;
 
-    /** One full pulse (alpha 0 → peak → 0) over this many ms. Wall-clock paced so it ticks even when the game pauses. */
-    private static final long PULSE_PERIOD_MS = 1500L;
-    /** Peak alpha (out of 255) at the brightest moment of the pulse. */
-    private static final int PEAK_ALPHA = 200;
-    /** Blue tint of the pulse border (24-bit RGB; alpha is pulsed separately). */
+    /** Blue tint of the pulse border (24-bit RGB; {@link PulseBorder} pulses the alpha). */
     private static final int PULSE_RGB = 0x60_C0_FF;
 
     /** While true, the pulse overlay is skipped. */
@@ -90,24 +84,6 @@ public final class DiscordIconButton extends Button {
         if (!pulsing || suppressPulse.getAsBoolean()) {
             return;
         }
-        long now = Util.getMillis();
-        float phase = (float) (now % PULSE_PERIOD_MS) / (float) PULSE_PERIOD_MS;
-        float wave = (Mth.sin(phase * 2.0F * (float) Math.PI) + 1.0F) * 0.5F;
-        // Multiply by widget alpha so the pulse fades out with the button during screen
-        // transitions (e.g. the ConfirmLinkScreen swap).
-        int alpha = (int) ((int) (wave * PEAK_ALPHA) * this.alpha);
-        if (alpha <= 0) {
-            return;
-        }
-        int colour = (alpha << 24) | PULSE_RGB;
-
-        int x = getX();
-        int y = getY();
-        int w = getWidth();
-        int h = getHeight();
-        g.fill(x - 1, y - 1, x + w + 1, y, colour);         // top edge
-        g.fill(x - 1, y + h, x + w + 1, y + h + 1, colour); // bottom edge
-        g.fill(x - 1, y, x, y + h, colour);                 // left edge
-        g.fill(x + w, y, x + w + 1, y + h, colour);         // right edge
+        PulseBorder.render(g, getX(), getY(), getWidth(), getHeight(), PULSE_RGB, this.alpha);
     }
 }

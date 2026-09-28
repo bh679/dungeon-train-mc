@@ -8,6 +8,9 @@ import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import games.brennan.dungeontrain.client.skybox.SkyboxStencil;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import games.brennan.dungeontrain.registry.ModMenuTypes;
+import games.brennan.dungeontrain.worldgen.UpsideDownGravity;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
 /**
@@ -24,6 +27,8 @@ public final class DungeonTrainClient {
 
     @SubscribeEvent
     public static void clientSetup(FMLClientSetupEvent event) {
+        // Falling blocks rise in the upside-down band on the client too (FallingBlockEntityUpsideDownMixin).
+        UpsideDownGravity.setClientBand(ClientUpsideDownBand::isInBand);
         ModList.get().getModContainerById(DungeonTrain.MOD_ID).ifPresent(container ->
             container.registerExtensionPoint(
                 IConfigScreenFactory.class,
@@ -33,10 +38,30 @@ public final class DungeonTrainClient {
         // the same log-collection path the death screen uses.
         SurveySubmitClientHook.register(BugLogReporter::maybeReport);
 
+        // "@s" in the chat box for a non-op capstone-holder: the server decides for real, this only
+        // keeps the syntax highlighter from painting the selector red once the server has exposed
+        // /advancement to us.
+        games.brennan.dungeontrain.advancement.SelfSelectorGrant.setClientCheck(
+            SelfSelectorClientCheck::serverExposedAdvancementCommand);
+
+        // Distant Horizons draws its own LODs of the real world: it never sees the upside-down band's
+        // block flip, and it never sees that a dimensional carriage is meant to be somewhere other
+        // than the coordinates it is stamped at. Bind the per-frame suppression for both — behind the
+        // ModList check, because DistantHorizonsSuppression is the one DT class that names DH types
+        // and must not be loaded when DH isn't installed.
+        if (GraphicsCapabilities.distantHorizonsActive()) {
+            DistantHorizonsSuppression.register();
+        }
+
         // Skybox blocks mask each variant's sky with the stencil buffer, which Minecraft's
         // main render target does not allocate by default. enqueueWork because this setup
         // event runs on a parallel mod-loading thread while enableStencil() re-creates the
         // framebuffer's attachments — GL work that must happen on the render thread.
         event.enqueueWork(SkyboxStencil::requestStencil);
+    }
+
+    @SubscribeEvent
+    public static void registerScreens(RegisterMenuScreensEvent event) {
+        event.register(ModMenuTypes.FREE_PLAY_ENDER_CHEST.get(), FreePlayEnderChestScreen::new);
     }
 }

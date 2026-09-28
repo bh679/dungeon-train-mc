@@ -110,10 +110,14 @@ public final class CarriageContentsStore {
 
     public static synchronized void reload() {
         CACHE.clear();
+        games.brennan.dungeontrain.train.ContentsFlip.clearCache();
     }
 
     public static synchronized void clearCache() {
         CACHE.clear();
+        // The vertical-flip copies are derived from the templates being dropped here — keeping them
+        // would hand a stale flip back for a template that has just been re-authored.
+        games.brennan.dungeontrain.train.ContentsFlip.clearCache();
     }
 
     /**
@@ -219,6 +223,7 @@ public final class CarriageContentsStore {
         CompoundTag tag = template.save(new CompoundTag());
         NbtIo.writeCompressed(tag, file);
         CACHE.put(contents.id(), Optional.of(template));
+        ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved contents template {} to {}", contents.id(), file);
     }
 
@@ -268,6 +273,7 @@ public final class CarriageContentsStore {
         Path file = fileFor(contents);
         boolean existed = Files.deleteIfExists(file);
         CACHE.put(contents.id(), Optional.empty());
+        ProvenanceCache.invalidateAll();
         if (existed) LOGGER.info("[DungeonTrain] Deleted contents template {} ({})", contents.id(), file);
         return existed;
     }
@@ -292,6 +298,7 @@ public final class CarriageContentsStore {
         Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
         Optional<StructureTemplate> cached = CACHE.remove(sourceId);
         if (cached != null) CACHE.put(targetId, cached);
+        ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Renamed contents template file {} -> {}", src, dst);
         return true;
     }
@@ -329,7 +336,7 @@ public final class CarriageContentsStore {
     ) {
         StructureTemplate template = new StructureTemplate();
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-        template.load(blocks, tag);
+        template.load(blocks, DoubleBlockTemplateRepair.repair(tag, id));
 
         Vec3i size = template.getSize();
         LOGGER.info("[DungeonTrain] Loaded contents template {} from {} ({}x{}x{})",

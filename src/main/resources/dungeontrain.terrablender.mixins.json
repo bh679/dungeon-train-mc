@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "games.brennan.dungeontrain.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "dungeontrain.refmap.json",
+  "mixins": [
+    "terrablender.SurfaceRuleManagerMixin"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -27,7 +27,8 @@ final class BuilderModeTest {
             assertTrue(keys.add(mode.labelKey()), "duplicate label key: " + mode.labelKey());
             assertTrue(textures.add(mode.texturePath()), "duplicate texture: " + mode.texturePath());
         }
-        assertEquals(4, ids.size(), "the picker screen lays out exactly four tiles (2x2)");
+        assertEquals(5, ids.size(), "the picker screen lays out five tiles in a vertical list");
+        assertEquals(BuilderMode.WHOLE_CARRIAGES, BuilderMode.values()[0], "Whole leads, as in the editor's row");
     }
 
     @Test
@@ -52,5 +53,12 @@ final class BuilderModeTest {
     void labelKeysAreNamespaced() {
         assertTrue(Arrays.stream(BuilderMode.values())
                 .allMatch(m -> m.labelKey().startsWith("gui.dungeontrain.builder.")));
+    }
+
+    @Test
+    void descriptionKeyHangsOffTheLabelKey() {
+        for (BuilderMode mode : BuilderMode.values()) {
+            assertEquals(mode.labelKey() + ".description", mode.descriptionKey());
+        }
     }
 }

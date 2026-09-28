@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>Headless on purpose — the arithmetic needs no client, and the render pass it feeds cannot be
  * unit-tested at all, so isolating the part that can be is the whole point of the split.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 final class PanelSpaceMappingTest {
 
     private static final double EPS = 1.0e-9;

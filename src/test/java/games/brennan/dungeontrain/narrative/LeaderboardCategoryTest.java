@@ -35,7 +35,7 @@ class LeaderboardCategoryTest {
         "deathnotes_written", "deathnotes_fought", "deathnotes_people",
         "lovenotes_written", "lovenotes_received", "lovenotes_people", "lovenotes_admirers",
         "book_votes", "translations", "donations", "donations_single",
-        "builder_time", "builds_approved");
+        "builder_time", "builds_approved", "templates_built", "books_praised");
 
     @Test
     @DisplayName("every category id matches one the relay serves, and none is missing")
@@ -128,7 +128,7 @@ class LeaderboardCategoryTest {
         // they stay quiet about it. Without that, a one-life half of them could not be asked for.
         assertEquals(LeaderboardCategory.Scope.TOTAL, LeaderboardCategory.DEATHNOTES_FOUGHT.scope());
         assertFalse(LeaderboardCategory.DEATHNOTES_FOUGHT.labelsSpan());
-        assertEquals("Most Curses Survived", LeaderboardCategory.DEATHNOTES_FOUGHT.title());
+        assertEquals("Most Death Notes Survived", LeaderboardCategory.DEATHNOTES_FOUGHT.title());
     }
 
     @Test

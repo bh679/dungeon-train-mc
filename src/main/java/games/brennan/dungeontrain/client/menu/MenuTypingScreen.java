@@ -24,7 +24,7 @@ import org.lwjgl.glfw.GLFW;
 public final class MenuTypingScreen extends Screen {
 
     public MenuTypingScreen() {
-        super(Component.literal("DT typing"));
+        super(Component.translatable(MenuLang.PREFIX + "typing.title"));
     }
 
     @Override

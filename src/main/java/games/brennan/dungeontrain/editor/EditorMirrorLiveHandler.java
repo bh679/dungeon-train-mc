@@ -13,6 +13,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.util.BlockSnapshot;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -23,12 +24,18 @@ import java.util.Set;
  * reach (an axis toggled on after earlier edits, clipboard pastes, {@code /fill})
  * is fixed up on demand by {@link EditorMirrorRebuild}, never implicitly at save.
  *
- * <p>Plot resolution reuses the same {@link BlockVariantPlot#resolveAt}
- * cascade as {@link VariantBlockBreakHandler}, so all editor categories
- * (carriage / contents / part / track-side) share this one handler. Writes go
- * through {@link EditorMirror} → {@link games.brennan.dungeontrain.worldgen.SilentBlockOps},
- * which uses raw {@code setBlock} — so this handler never re-triggers its own
- * place / break subscribers.</p>
+ * <p>Plot resolution runs the same cascade as {@link VariantBlockBreakHandler},
+ * so all editor categories (carriage / contents / part / track-side) share this
+ * one handler — but keyed on the <i>edited block</i>
+ * ({@link BlockVariantPlot#resolveAtPos}) rather than on where the author is
+ * standing. A template's mirror settings apply to anything placed inside it,
+ * including edits made from the roof, from the gap between plots, or from
+ * inside a neighbouring plot.</p>
+ *
+ * <p>Writes go through {@link EditorMirror} →
+ * {@link games.brennan.dungeontrain.worldgen.SilentBlockOps}, which uses raw
+ * {@code setBlock} — so this handler never re-triggers its own place / break
+ * subscribers.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EditorMirrorLiveHandler {
@@ -38,41 +45,47 @@ public final class EditorMirrorLiveHandler {
     @SubscribeEvent
     public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
         if (event.isCanceled()) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!(event.getEntity() instanceof ServerPlayer)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
-        applyAt(player, level, event.getPos(), event.getPlacedBlock());
+        mirrorAt(level, event.getPos(), event.getPlacedBlock());
     }
 
     @SubscribeEvent
     public static void onMultiBlockPlace(BlockEvent.EntityMultiPlaceEvent event) {
         if (event.isCanceled()) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!(event.getEntity() instanceof ServerPlayer)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         // Each placed cell is already in the world by the time this fires; read
         // back its state and mirror it individually.
         for (BlockSnapshot snapshot : event.getReplacedBlockSnapshots()) {
             BlockPos pos = snapshot.getPos();
-            applyAt(player, level, pos, level.getBlockState(pos));
+            mirrorAt(level, pos, level.getBlockState(pos));
         }
     }
 
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         if (event.isCanceled()) return;
-        if (!(event.getPlayer() instanceof ServerPlayer player)) return;
+        if (!(event.getPlayer() instanceof ServerPlayer)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
-        applyAt(player, level, event.getPos(), null);
+        mirrorAt(level, event.getPos(), null);
     }
 
     /**
      * Mirror a single edit at world {@code worldPos}: {@code state} is the
      * placed block, or {@code null} for a break (image cells cleared to air).
-     * No-op when the player isn't in a mirror-enabled plot or the edit is
-     * outside the plot footprint.
+     * The plot is the one containing {@code worldPos}, so the mirror settings
+     * used are the edited template's wherever the author happens to be
+     * standing. No-op when the edit isn't inside a mirror-enabled plot.
+     *
+     * <p>The subscribers keep their "a real player did this" guard, so
+     * dispenser / piston writes never reach here. The one other caller is
+     * {@link games.brennan.dungeontrain.compat.EffortlessBuildingMirror}, for
+     * Effortless Building's writes, which fire no block events.</p>
      */
-    private static void applyAt(ServerPlayer player, ServerLevel level, BlockPos worldPos, BlockState state) {
+    public static void mirrorAt(ServerLevel level, BlockPos worldPos, @Nullable BlockState state) {
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        BlockVariantPlot plot = BlockVariantPlot.resolveAtPos(level, worldPos, dims);
         if (plot == null) return;
         boolean mx = plot.mirrorX();
         boolean my = plot.mirrorY();

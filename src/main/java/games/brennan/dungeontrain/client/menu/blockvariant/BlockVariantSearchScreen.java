@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.blockvariant;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -16,7 +17,7 @@ import org.lwjgl.glfw.GLFW;
 public final class BlockVariantSearchScreen extends Screen {
 
     public BlockVariantSearchScreen() {
-        super(Component.literal("DT block-variant search"));
+        super(Component.translatable(MenuLang.PREFIX + "block_variant.search_title"));
     }
 
     @Override

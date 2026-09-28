@@ -7,6 +7,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
+import games.brennan.dungeonbackup.api.Located;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
 import org.slf4j.Logger;
 
@@ -82,7 +83,7 @@ public final class GlobalAchievementStore {
         return located(playerUuid).read();
     }
 
-    private static PlayerDataPaths.Located located(UUID playerUuid) {
+    private static Located located(UUID playerUuid) {
         return PlayerDataPaths.locate(
             PlayerDataPaths.ACHIEVEMENTS, LEGACY_DIR_NAME, playerUuid + ".json");
     }

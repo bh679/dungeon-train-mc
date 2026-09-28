@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorMenuSpace;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -17,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * what is checked here is the enum the four settings are made of, plus the plain constants that
  * decide what each menu ships as.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorMenuSpaceTest {
 
     /**

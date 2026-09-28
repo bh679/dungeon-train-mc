@@ -5,6 +5,7 @@ import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.builder.BuilderWorldCheck;
+import games.brennan.dungeontrain.client.crash.CrashRunTracker;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -139,6 +140,9 @@ public final class DeathScreenLayoutHandler {
         // to narrate. This one guard covers everything downstream of the swap: the narrative
         // pages, the survey, mod recommendations, the support card, and reboard.
         if (BuilderWorldCheck.isBuilderWorld()) return;
+        // The run is over. Forget the crash-recovery record now rather than at logout, so a crash
+        // while sitting on this screen doesn't offer to reload a world the player is dead in.
+        CrashRunTracker.runEnded();
         event.setNewScreen(new NarrativeDeathScreen());
     }
 

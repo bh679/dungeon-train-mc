@@ -1,8 +1,16 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.worldgen.LegacyUnderground;
+import games.brennan.dungeontrain.worldgen.LostCitySeating;
+import games.brennan.dungeontrain.worldgen.LostCityStructures;
+import games.brennan.dungeontrain.worldgen.UpsideDownSpawnerStructures;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.biome.Biome;
@@ -49,6 +57,36 @@ public abstract class StructureBasementMixin {
             return;
         }
         int floorY = WorldFloor.bedrockY(heightAccessor, chunkGenerator);
+        ResourceLocation id = registryAccess.registryOrThrow(Registries.STRUCTURE).getKey((Structure) (Object) this);
+        ServerLevel level = heightAccessor instanceof ChunkAccess chunk
+                && ((ChunkAccessAccessor) chunk).dungeontrain$getLevelHeightAccessor() instanceof ServerLevel l
+                && l.getChunkSource().getGenerator() == chunkGenerator ? l : null;
+        // Big Lost City's cities belong to the Lost City era alone (LostCityStructures) — anywhere
+        // else, including a start we can't place in a level (a sampler or foreign generator), is dropped.
+        if (LostCityStructures.isLostCityStructure(id)) {
+            if (level == null || !LostCityStructures.allowedAt(level, chunkPos.x, chunkPos.z, id)) {
+                cir.setReturnValue(StructureStart.INVALID_START);
+                return;
+            }
+            // Seat the city on its footprint's floor (the seabed in water), not on one heightmap sample.
+            LostCitySeating.seat(start, chunkGenerator, heightAccessor, randomState);
+        }
+        if (level != null) {
+            // Legacy bands and the sunk zone never get the underground set (LegacyUnderground).
+            if (LegacyUnderground.appliesTo(level, chunkPos.x, chunkPos.z)
+                    && LegacyUnderground.excludesStructure(id)) {
+                cir.setReturnValue(StructureStart.INVALID_START);
+                return;
+            }
+            // The upside-down band never gets spawner structures (UpsideDownSpawnerStructures).
+            if (UpsideDownSpawnerStructures.appliesTo(level, chunkPos.x, chunkPos.z)
+                    && UpsideDownSpawnerStructures.excludesStructure(id)) {
+                cir.setReturnValue(StructureStart.INVALID_START);
+                return;
+            }
+            // The sunk zone's terrain reaches into the basement, so a deep start there is real.
+            floorY = Math.min(floorY, WorldFloor.terrainFloorY(level, chunkPos.x, chunkPos.z));
+        }
         if (WorldFloor.entirelyBelowFloor(start.getBoundingBox().maxY(), floorY)) {
             cir.setReturnValue(StructureStart.INVALID_START);
         }

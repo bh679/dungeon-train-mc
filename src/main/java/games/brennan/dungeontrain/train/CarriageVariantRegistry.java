@@ -78,6 +78,13 @@ public final class CarriageVariantRegistry {
     /** Sorted custom variant names. Mutations go through register/unregister/reload. */
     private static final TreeSet<String> CUSTOMS = new TreeSet<>();
 
+    /**
+     * Immutable snapshot handed out by {@link #allVariants()}, rebuilt lazily after any
+     * {@link #CUSTOMS} mutation — same reasoning as {@code CarriageContentsRegistry.SNAPSHOT}:
+     * the editor overlay resolves every plot origin every tick. Every mutator nulls this.
+     */
+    private static List<CarriageVariant> SNAPSHOT;
+
     private CarriageVariantRegistry() {}
 
     /**
@@ -86,10 +93,19 @@ public final class CarriageVariantRegistry {
      * another thread mutates the registry.
      */
     public static synchronized List<CarriageVariant> allVariants() {
+        List<CarriageVariant> cached = SNAPSHOT;
+        if (cached != null) return cached;
         List<CarriageVariant> all = new ArrayList<>(BUILTINS.size() + CUSTOMS.size());
         all.addAll(BUILTINS);
         for (String name : CUSTOMS) all.add(new CarriageVariant.Custom(name));
-        return all;
+        cached = List.copyOf(all);
+        SNAPSHOT = cached;
+        return cached;
+    }
+
+    /** Drop the {@link #allVariants()} snapshot — call after every {@link #CUSTOMS} mutation. */
+    private static void customsChanged() {
+        SNAPSHOT = null;
     }
 
     public static synchronized List<CarriageVariant> builtins() {
@@ -119,6 +135,7 @@ public final class CarriageVariantRegistry {
     public static synchronized boolean register(CarriageVariant.Custom variant) {
         if (CarriageVariant.isReservedBuiltinName(variant.name())) return false;
         boolean added = CUSTOMS.add(variant.name());
+        if (added) customsChanged();
         // Variant set feeds StageBlockIndex.partsForStage (it iterates allVariants()).
         if (added) games.brennan.dungeontrain.editor.StageBlockIndex.invalidateAll();
         return added;
@@ -132,6 +149,7 @@ public final class CarriageVariantRegistry {
     public static synchronized boolean unregister(String id) {
         if (CarriageVariant.isReservedBuiltinName(id)) return false;
         boolean removed = CUSTOMS.remove(id.toLowerCase(Locale.ROOT));
+        if (removed) customsChanged();
         // The removed variant's .parts.json stage links vanish from the index's inputs.
         if (removed) games.brennan.dungeontrain.editor.StageBlockIndex.invalidateAll();
         return removed;
@@ -148,6 +166,7 @@ public final class CarriageVariantRegistry {
         PillarTemplateStore.migrateFromLegacyDirectory();
 
         CUSTOMS.clear();
+        customsChanged();
         int bundled = loadBundledScan();
         int config = loadConfigDir();
 
@@ -169,6 +188,8 @@ public final class CarriageVariantRegistry {
         }
 
         games.brennan.dungeontrain.editor.StageBlockIndex.invalidateAll();
+        // The loaders above may have handed out a partial snapshot to anything they consulted.
+        customsChanged();
 
         LOGGER.info("[DungeonTrain] Carriage variant registry loaded — {} built-in + {} custom ({} bundled, {} config)",
             BUILTINS.size(), CUSTOMS.size(), bundled, config);
@@ -250,6 +271,7 @@ public final class CarriageVariantRegistry {
 
     public static synchronized void clear() {
         CUSTOMS.clear();
+        customsChanged();
         games.brennan.dungeontrain.editor.StageBlockIndex.invalidateAll();
     }
 

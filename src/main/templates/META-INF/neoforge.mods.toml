@@ -26,6 +26,101 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Sable Pathfinder — mobs path across Sable sub-levels. Required on Modrinth (listing relation +
+# .mrpack) but `optional` here: it isn't on CurseForge, and a hard dep would stop CF players
+# launching. The floor still applies whenever it is installed.
+[[dependencies.${mod_id}]]
+    modId="sable_pathfinder"
+    type="optional"
+    versionRange="[${sablepathfinder_min_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+# Fast Paintings (+ its Moonlight library) — third-party, REQUIRED. It replaces painting
+# entities with blocks; templates and shared carriages carry those blocks, which are air
+# without the mod. Floors, not exact pins: the block's three state properties are all DT
+# reads (compat/PaintingTransformProcessor), so newer builds are expected to keep working.
+[[dependencies.${mod_id}]]
+    modId="fastpaintings"
+    type="required"
+    versionRange="[${fastpaintings_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="moonlight"
+    type="required"
+    versionRange="[${moonlight_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# BetterNether: New Dawn — third-party, REQUIRED. Its biomes fill every second Nether band's core
+# (worldgen/density/BetterNetherCoreBiomes). DT names its biomes/blocks only by id, so a floor is
+# enough. Its libraries (BCLib, WorldWeaver, WunderLib) are shared with BetterEnd and declared below.
+[[dependencies.${mod_id}]]
+    modId="betternether"
+    type="required"
+    versionRange="[${betternether_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# BetterEnd: New Dawn (+ its libraries) — REQUIRED. Every even End-islands band copies real End
+# chunks, which BetterEnd populates; its blocks also have to exist on the client to render there.
+[[dependencies.${mod_id}]]
+    modId="betterend"
+    type="required"
+    versionRange="[${betterend_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="bclib"
+    type="required"
+    versionRange="[${bclib_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="wover"
+    type="required"
+    versionRange="[${worldweaver_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="wunderlib"
+    type="required"
+    versionRange="[${wunderlib_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Second-lap overworld mods — third-party, REQUIRED. On odd laps the overworld gap before the
+# Nether band is William Wythers' Overhauled Overworld and the gap after it is Biomes O' Plenty
+# (worldgen/SecondLapOverworld). Floors only; their libraries (Cristel Lib, TerraBlender,
+# GlitchCore) are declared by the mods themselves.
+[[dependencies.${mod_id}]]
+    modId="wwoo"
+    type="required"
+    versionRange="[${wwoo_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="biomesoplenty"
+    type="required"
+    versionRange="[${biomesoplenty_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Big Lost City — third-party, REQUIRED. Its ruined cities fill the legacy run's Lost City era
+# (worldgen/LostCityStructures). DT names its structures only by id, so a floor is all it needs.
+[[dependencies.${mod_id}]]
+    modId="big_lost_city"
+    type="required"
+    versionRange="[${biglostcity_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Sibling mods (same author). These are NOT bundled — each is a separate required
 # download, so its own Modrinth/CurseForge page gets credited for the install.
 #
@@ -88,6 +183,47 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Keep Trim — hybrid sibling (crafting-grid repair keeps the left-most item's armor trim):
+# jarJar'd INSIDE this jar (Modrinth / manual installs) AND a required external download on
+# CurseForge. Range keys off the FLOOR, not the build-against version, like the other siblings.
+[[dependencies.${mod_id}]]
+    modId="keeptrim"
+    type="required"
+    versionRange="[${keeptrim_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Pigman Villagers — hybrid sibling: jarJar'd INSIDE this jar (Modrinth / manual installs) AND a
+# required external download on CurseForge, where the CF app's top-level copy replaces the nested one. Adds a synced entity-data flag to Villager, so it must be on BOTH sides. Range keys off the
+# FLOOR so a separately installed copy is checked like the other siblings.
+[[dependencies.${mod_id}]]
+    modId="pigmanvillagers"
+    type="required"
+    versionRange="[${pigmanvillagers_min_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+# Dungeon Backup — hybrid sibling: jarJar'd INSIDE this jar (Modrinth / manual installs) AND a
+# required external download on CurseForge, where the CF app's top-level copy replaces the nested
+# one. Range keys off the FLOOR so a CF-installed copy is checked like the other siblings. AFTER
+# so DT's registration (data.DungeonTrainBackup, in the mod constructor) exists before the
+# library's first server-start event.
+[[dependencies.${mod_id}]]
+    modId="dungeonbackup"
+    type="required"
+    versionRange="[${dungeonbackup_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Sable Fence & Trapdoor Fix — same hybrid contract (nested here, external on CurseForge): the
+# Sable collision-shape clip (fence/wall post under a flush trapdoor/carpet/slab no longer jitters
+# riders) that DT shipped itself in 0.862.0–0.887.0. DT carries no copy of that mixin now.
+[[dependencies.${mod_id}]]
+    modId="sable_fence_trapdoor_fix"
+    type="required"
+    versionRange="[${sablefencetrapdoorfix_min_version},)"
+    side="BOTH"
+
 [[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"
@@ -112,6 +248,26 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Stream Detect + DPI Bypass Detect — client-side hybrid sibling add-ons (like Keep Trim): jarJar'd
+# INSIDE this jar, and on CurseForge the CF app installs them as their own mods and NeoForge drops
+# the nested copy. They answer "is OBS/Streamlabs open?" and "is
+# zapret/GoodbyeDPI running?" for DT's Videos share tab and relay-blocked warning.
+# `optional` (not required): the nested copy is always there, and DT degrades to "nothing found"
+# without them (compat/StreamDetectBridge, DpiBypassDetectBridge). Floor = the API DT calls (gradle.properties).
+[[dependencies.${mod_id}]]
+    modId="streamdetect"
+    type="optional"
+    versionRange="[${streamdetect_min_version},)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${mod_id}]]
+    modId="dpibypassdetect"
+    type="optional"
+    versionRange="[${dpibypassdetect_min_version},)"
+    ordering="NONE"
+    side="CLIENT"
+
 # tectonic (terrain mod; pulls lithostitched). Generates only when the in-game
 # "Compatible Terrain" option is on (Dungeon Train then uses vanilla overworld noise).
 [[dependencies.${mod_id}]]
@@ -121,10 +277,21 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
-# vivecraft (VR). Optional, player-installed — NOT bundled, NOT a compile dep. Dungeon Train
-# ships a CLIENT-side compat mixin (dungeontrain.vivecraft.mixins.json, gated by VivecraftMixinPlugin)
-# so VR melee works while standing on a Sable sub-level (train carriage). Metadata only; the mixin
-# no-ops cleanly when Vivecraft is absent. Client-only, so side="CLIENT".
+# vivecraft (VR). Optional, player-installed — NOT bundled, NOT a compile dep. Metadata only.
+#
+# Vivecraft breaks in two ways on a Sable sub-level — VR melee hits nothing, and VR teleport drops
+# the player into the void. Neither is DT specific, so both fixes live in the standalone
+# "Vivecraft Sable Compat" mod (vivecraft-sable-compat), which VR players install alongside DT.
+#
+# DT keeps a TEMPORARY copy of the melee half only (dungeontrain.vivecraft.mixins.json, gated by
+# VivecraftMixinPlugin). It applies only when Vivecraft is installed AND the compat mod is NOT, so
+# the two never both own the call — see that plugin for the full matrix and for when to delete it.
+# Removing DT's copy outright (#1261) left VR players who update DT without the addon with broken
+# melee; this closes that window until the addon is live and bundled in the modpack.
+#
+# This entry would stay regardless: DT also reacts to Vivecraft at runtime (VrCompat suppresses
+# FramerateThrottle on VR installs). Client-only, so side=CLIENT.
+
 [[dependencies.${mod_id}]]
     modId="vivecraft"
     type="optional"
@@ -133,9 +300,11 @@ logoFile="logo.png"
     side="CLIENT"
 
 # effortlessbuilding. Optional modpack companion (shipped OFF by default) — NOT a compile dep.
-# Dungeon Train ships a SERVER-side compat mixin (dungeontrain.effortlessbuilding.mixins.json, gated
-# by EffortlessBuildingMixinPlugin) that puts a run into Free Play when its creative features are
-# USED — installing it alone changes nothing. Metadata only; the mixin no-ops when the mod is absent.
+# Dungeon Train ships compat mixins (dungeontrain.effortlessbuilding.mixins.json, gated by
+# EffortlessBuildingMixinPlugin): server-side, a run goes into Free Play when its creative features
+# are USED — installing it alone changes nothing — and, both sides, the editor's variant clipboard
+# counts as a build item so its shape modes paste a whole floor / wall / box of variants.
+# Metadata only; the mixins no-op when the mod is absent.
 [[dependencies.${mod_id}]]
     modId="effortlessbuilding"
     type="optional"
@@ -162,6 +331,17 @@ logoFile="logo.png"
 [[mixins]]
     config="${mod_id}.mixins.json"
 
+# TEMPORARY — remove together with VivecraftMixinPlugin once Vivecraft Sable Compat is live and
+# bundled in the modpack. Self-gating: no-ops unless Vivecraft is present and the addon is not.
+# BetterEnd: New Dawn (required dep) — suppresses its dev-only debug items, which crash dev boots.
+[[mixins]]
+    config="${mod_id}.betterend.mixins.json"
+
+# TerraBlender (required via Biomes O' Plenty) — keeps DT's own surface rule, with its 1-thick
+# bedrock floor, in charge of vanilla biomes in DT's worlds (see DtSurfaceRules).
+[[mixins]]
+    config="${mod_id}.terrablender.mixins.json"
+
 [[mixins]]
     config="${mod_id}.vivecraft.mixins.json"
 
@@ -170,3 +350,34 @@ logoFile="logo.png"
 
 [[mixins]]
     config="${mod_id}.betteradvancements.mixins.json"
+
+# Distant Horizons (optional) reads GL_POLYGON_MODE through LWJGL's one-int glGetInteger; Apple's GL
+# driver writes two ints, corrupting the native heap just past the render thread's stack every frame
+# (random C2 / Metal crashes on macOS). dungeontrain.distanthorizons.mixins.json, gated by
+# DistantHorizonsMixinPlugin, gives the query room. No-op when DH is absent.
+[[mixins]]
+    config="${mod_id}.distanthorizons.mixins.json"
+
+# Sodium replaces chunk meshing wholesale, so the upside-down band's per-block flip needs a second
+# copy of itself on Sodium's pipeline (dungeontrain.sodium.mixins.json, gated by SodiumMixinPlugin).
+# Every Iris install has Sodium under it, and the modpack ships both. No dependency is declared here:
+# Sable already pins the compatible Sodium range, and the mixin no-ops when Sodium is absent.
+[[mixins]]
+    config="${mod_id}.sodium.mixins.json"
+
+# The portal-arrival renderer hooks inject into LevelRenderer.setupRender, which Sodium MERGES into
+# its own LevelRendererMixin. Mixin refuses to inject into a method another mixin merged at equal
+# priority, and that refusal is FATAL — it aborts mod loading, not just the injection. `require = 0`
+# does NOT cover it (that only suppresses "no injection point matched"), which is how a crash on
+# every Sodium/Iris install shipped on 2026-09-08. So the two setupRender mixins live in their own
+# config, gated by VanillaRendererMixinPlugin to apply only when Sodium is ABSENT. Nothing is lost:
+# Sodium replaces that path outright, and what it needs is in dungeontrain.sodium.mixins.json.
+[[mixins]]
+    config="${mod_id}.vanillarenderer.mixins.json"
+
+# Iris picks a shader pack's per-dimension program set from Iris.getCurrentDimension() every frame.
+# dungeontrain.iris.mixins.json (gated by IrisMixinPlugin) lets Dungeon Train report the Nether or
+# the End while the train is in a Nether/End band or a dimensional carriage, so the pack renders its
+# own Nether/End atmosphere, fog and lighting there. No-ops without Iris; no dependency declared.
+[[mixins]]
+    config="${mod_id}.iris.mixins.json"

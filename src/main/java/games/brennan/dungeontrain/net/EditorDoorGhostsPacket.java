@@ -13,18 +13,28 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Server → client snapshot of where the two portal corridor doors stand at each portal-room editor
- * plot. Drives the translucent door ghosts that show an author where the corridors open onto the
- * room they are building.
+ * Server → client snapshot of where a plot's two doorways stand, for every plot in the editor
+ * category the player is standing in. Drives the overlay that names an author's two ends: at a
+ * portal room the two corridor mouths, drawn as translucent door ghosts; at a carriage or contents
+ * plot the two end doorways, named but not drawn (see {@link Door#model()}).
  *
- * <p>Each position is a door's <b>lower</b> cell; the renderer draws the upper half from the block
- * above it. One position per door rather than one per cell, because a door is one object — see
+ * <p>Each entry is a door's <b>lower</b> cell plus which of the room's two mouths it is; the
+ * renderer draws the upper half from the block above it. One entry per door rather than one per
+ * cell, because a door is one object — see
  * {@link games.brennan.dungeontrain.portal.PortalRoomDoorCells#doorBases}.</p>
  *
- * <p>Positions are absolute, like {@link EditorStrayBlocksPacket}'s, and here they have to be: a
- * door cell sits one column <b>outside</b> its plot's box, so it has no plot-local coordinate. An
- * empty list clears the client cache — sent when the player leaves the portals category or turns the
- * ghosts off.</p>
+ * <p><b>The role rides with the position</b> rather than being inferred from the list's order. The
+ * snapshot is flattened across every registered room, so parity only names the ends for as long as
+ * every room contributes an exact pair — a degenerate box that contributes none would silently
+ * relabel every door after it. The client draws the two mouths in different colours and words, so
+ * getting this wrong is not a cosmetic slip: it would point an author at the far door.</p>
+ *
+ * <p>Positions are absolute, like {@link EditorStrayBlocksPacket}'s, and for a portal room they have
+ * to be: its door cell sits one column <b>outside</b> the plot's box, so it has no plot-local
+ * coordinate at all. A carriage doorway does sit inside its box, and is sent absolute anyway — one
+ * frame of reference for a list the renderer draws in world space either way. An empty list clears
+ * the client cache — sent when the player leaves a category that has doorways, or turns the ghosts
+ * off.</p>
  *
  * <p><b>Its own payload rather than a second list on the stray packet.</b> The two overlays mean
  * opposite things — a stray is a mistake to remove, a door is a fitting to build around — and are
@@ -36,7 +46,24 @@ import java.util.List;
  * on {@link games.brennan.dungeontrain.editor.EditorDoorGhosts#key}, so a steady editor generates no
  * traffic at all.</p>
  */
-public record EditorDoorGhostsPacket(List<BlockPos> positions) implements CustomPacketPayload {
+public record EditorDoorGhostsPacket(List<Door> doors) implements CustomPacketPayload {
+
+    /**
+     * One door marker: the <b>lower</b> cell it stands in, whether it is the plot's entry mouth
+     * (the near, {@code -X} column) rather than its exit one, and whether the ghost door model is
+     * drawn there.
+     *
+     * <p>A boolean and not a {@code PortalCarriageRole} because that is all the wire has to carry —
+     * a door is one end or the other — and a boolean encodes without pinning the packet to the
+     * ordinal of an enum that exists for a different purpose.</p>
+     *
+     * <p>{@code model} is false for a carriage or contents plot. There the doorway is part of what
+     * the author is building — an open frame, or a real door stamped by a {@code DOORS} part — so a
+     * translucent door hung in the same cells would stand on top of their own blocks. What those
+     * plots need is the <i>naming</i>: the outline and the Entrance/Exit word. A portal room has no
+     * corridor in its plot at all, which is why it alone gets the model.</p>
+     */
+    public record Door(BlockPos base, boolean entry, boolean model) {}
 
     public static final Type<EditorDoorGhostsPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_door_ghosts"));
@@ -52,21 +79,25 @@ public record EditorDoorGhostsPacket(List<BlockPos> positions) implements Custom
     }
 
     public boolean isEmpty() {
-        return positions.isEmpty();
+        return doors.isEmpty();
     }
 
     public void encode(FriendlyByteBuf buf) {
-        buf.writeVarInt(positions.size());
-        for (BlockPos pos : positions) {
-            buf.writeBlockPos(pos);
+        buf.writeVarInt(doors.size());
+        for (Door door : doors) {
+            buf.writeBlockPos(door.base());
+            buf.writeBoolean(door.entry());
+            buf.writeBoolean(door.model());
         }
     }
 
     public static EditorDoorGhostsPacket decode(FriendlyByteBuf buf) {
         int n = buf.readVarInt();
-        List<BlockPos> out = new ArrayList<>(n);
+        List<Door> out = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
-            out.add(buf.readBlockPos());
+            BlockPos base = buf.readBlockPos();
+            boolean entry = buf.readBoolean();
+            out.add(new Door(base, entry, buf.readBoolean()));
         }
         return new EditorDoorGhostsPacket(out);
     }

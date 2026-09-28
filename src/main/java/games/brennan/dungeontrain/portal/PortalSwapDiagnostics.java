@@ -70,8 +70,22 @@ public final class PortalSwapDiagnostics {
         /** Swapped moments ago and still inside the settling window. Ordinary, and self-clearing. */
         COOLDOWN(true, "player swapped within the last second — waiting for the client to acknowledge it"),
 
-        /** The shell was broken past the midpoint. Permanent until {@code portal severed clear}. */
-        SEVERED("this pair's corridor shell was broken open — the way IN is closed for good"),
+        /** The shell was broken past the midpoint. Lasts until the group is re-stamped. */
+        SEVERED("this pair's corridor shell was broken open — the way IN is closed until the group is re-stamped"),
+
+        /**
+         * The pair has given up: one of its corridors kept being refused, so
+         * {@link PortalWalkThrough} opened the plate between the two doors and closed both ends to
+         * entry until the refusals stop.
+         *
+         * <p>Both ends, deliberately. The refusal that started the episode is about one role's own
+         * destination, so the other corridor may well still be able to swap — and a pair whose
+         * entrance is a dead end while its exit takes people in is half a portal, which is the
+         * state this refuses to leave anybody in. Transient and unrecorded: it lapses once the
+         * refusals stop, and the next re-stamp seals the plate again.</p>
+         */
+        PAIR_GAVE_UP("this pair gave up after a run of refused swaps — both ends are closed to entry "
+            + "and the group can be walked straight through"),
 
         /**
          * The destination corridor's chunks are not present.
@@ -86,15 +100,6 @@ public final class PortalSwapDiagnostics {
 
         /** No twin at all: the pocket structure could not be placed for this pair. */
         NO_TWIN_STRUCTURE("this pair has no twin structure — there is no room for one under this world"),
-
-        /**
-         * An exit corridor reached before its pair's entry ever placed the structure.
-         *
-         * <p>Walking a train backwards into an exit corridor before anyone has been within approach
-         * range of the entry two slots behind it. The exit waits rather than placing a structure on
-         * its own coordinates — see the note in {@code PortalCarriageEvents.handlePortalCarriage}.</p>
-         */
-        EXIT_WITHOUT_STRUCTURE("exit corridor reached before its entry placed the pair's room — walk toward the entry"),
 
         /** The group's sub-level has been culled, so its last pose cannot be trusted. */
         GROUP_NOT_RESIDENT("the carriage group's sub-level is culled — its pose is stale"),

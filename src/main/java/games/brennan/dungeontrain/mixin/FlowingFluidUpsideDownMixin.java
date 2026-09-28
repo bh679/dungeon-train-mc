@@ -64,7 +64,7 @@ public class FlowingFluidUpsideDownMixin {
         // Veto across the band, its entry lead-in AND its exit crossfade — water the mirror reveals in
         // the lead-in, and water on the dispersing / returning islands in the exit zone, must all stay
         // static rather than pour off into the void; lava must be kept from flowing in from outside.
-        if (UpsideDownBand.isInBandEntryLeadOrExit(server, toPos.getX())) {
+        if (UpsideDownBand.isInBandEntryLeadOrExit(server, toPos.getX(), toPos.getZ())) {
             cir.setReturnValue(false); // no fluid flow into these cells — mirrored water stays static, lava stays out
         }
     }

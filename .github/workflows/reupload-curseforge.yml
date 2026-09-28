@@ -14,6 +14,12 @@ name: Re-upload to CurseForge
 #
 # CurseForge-only by construction — no `modrinth-id` is passed, so re-running this can never
 # double-publish to Modrinth.
+#
+# The release channel is derived from the tag by scripts/release/release-type.sh — the same rule
+# release.yml used for the original upload — so the re-uploaded file lands on the SAME channel as
+# its GitHub Release and Modrinth version. This workflow once hardcoded `version-type: release`,
+# which is how v0.692.0 became the only full-release file on CurseForge while every other build
+# (and its own GitHub/Modrinth copies) was beta. Never hardcode a channel here again.
 
 on:
   workflow_dispatch:
@@ -85,6 +91,16 @@ jobs:
           fi
           echo "::group::Notes"; cat reupload-notes.md; echo "::endgroup::"
 
+      - name: Compute release type from tag
+        id: release_type
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          # No `--test` here: a test build is never worth re-uploading; recover it by re-dispatching
+          # release.yml with test_release=true instead.
+          scripts/release/release-type.sh "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+
       - name: Check CurseForge publish prerequisites
         id: publish_check
         env:
@@ -101,7 +117,7 @@ jobs:
       - name: Dry run summary
         if: ${{ inputs.dry_run }}
         run: |
-          echo "DRY RUN — would upload ${{ steps.jar.outputs.path }} to CurseForge project ${{ vars.CURSEFORGE_PROJECT_ID }} as ${{ inputs.tag }}."
+          echo "DRY RUN — would upload ${{ steps.jar.outputs.path }} to CurseForge project ${{ vars.CURSEFORGE_PROJECT_ID }} as ${{ inputs.tag }} (version-type: ${{ steps.release_type.outputs.type }})."
           echo "Re-run with dry_run=false to publish."
 
       - name: Publish to CurseForge
@@ -114,7 +130,7 @@ jobs:
           files: ${{ steps.jar.outputs.path }}
           name: Dungeon Train ${{ inputs.tag }}
           version: ${{ inputs.tag }}
-          version-type: release
+          version-type: ${{ steps.release_type.outputs.type }}
           changelog-file: reupload-notes.md
           loaders: neoforge
           game-versions: 1.21.1
@@ -155,7 +171,8 @@ jobs:
             worldedit(optional)
             jei(optional)
             scribble(optional)
-            shulkerboxtooltip(optional)          java: 21
+            shulkerboxtooltip(optional)
+          java: 21
           retry-attempts: 5
           retry-delay: 30000
           # Unlike release.yml this FAILS the job: the entire point of this workflow is to know

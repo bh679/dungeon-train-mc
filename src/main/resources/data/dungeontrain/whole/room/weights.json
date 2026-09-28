@@ -1,0 +1,18 @@
+{
+  "basiccave1": {
+    "weight": 1,
+    "stage": "stone",
+    "builder": {
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
+    }
+  },
+  "jungletemple": {
+    "weight": 1,
+    "stage": "stone",
+    "builder": {
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
+    }
+  }
+}

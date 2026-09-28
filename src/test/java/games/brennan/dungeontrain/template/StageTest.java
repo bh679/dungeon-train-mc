@@ -52,4 +52,18 @@ final class StageTest {
         assertEquals("loose", bare.id());
         assertTrue(bare.gate().isDefault());
     }
+
+    @Test
+    @DisplayName("a builder credit rides in the same builder object a template's does, and clears to nothing")
+    void builderRoundTrip() {
+        Stage credited = new Stage("desert", "Desert", TemplateGate.DEFAULT)
+            .withBuilder(new BuilderCredit("380df991-f603-344c-8e5b-000000000000", "Brennan"));
+        assertTrue(credited.toJson().has(TemplateWeightCodec.K_BUILDER));
+        Stage back = Stage.fromJson("desert", credited.toJson());
+        assertEquals("Brennan", back.builder().name());
+        assertEquals("380df991f603344c8e5b000000000000", back.builder().uuid(), "uuids are stored dashless");
+        assertEquals(null, back.withBuilder(null).builder());
+        assertEquals(null, Stage.fromJson("desert", back.withBuilder(null).toJson()).builder());
+        assertEquals(null, new Stage("plain", "plain", TemplateGate.DEFAULT).builder(), "three-arg shape credits nobody");
+    }
 }

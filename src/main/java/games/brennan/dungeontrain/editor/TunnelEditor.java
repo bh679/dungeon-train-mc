@@ -96,6 +96,8 @@ public final class TunnelEditor {
      * {@code pos}, or null. Includes the 1-block outline-cage margin.
      */
     public static TunnelPlot plotContainingNamed(BlockPos pos) {
+        // Answers only while TRACKS is the resident category — every category shares the origin.
+        if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) return null;
         for (TunnelVariant variant : TunnelVariant.values()) {
             for (String name : TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant))) {
                 BlockPos o = plotOrigin(variant, name);
@@ -115,7 +117,29 @@ public final class TunnelEditor {
         enter(player, variant, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the default plot — a relay Load that installed a new
+     * variant arrives here and its plot must be stamped. The walk that keeps unsaved edits is
+     * {@link #walkTo}.
+     */
     public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop) {
+        enter(player, variant, onTop, true);
+    }
+
+    /**
+     * Go here / the panel's Enter: a walk to the variant's default plot, not a reload — restamps
+     * only when the player is not already standing in it.
+     */
+    public static void walkTo(ServerPlayer player, TunnelVariant variant, boolean onTop) {
+        enter(player, variant, onTop, !EditorPlotScope.standingIn(player, new Template.Tunnel(variant)));
+    }
+
+    /**
+     * @param stamp whether to erase + restamp the plots before teleporting. The category entry
+     *              passes {@code false}: it has stamped, or queued, every plot itself.
+     */
+    public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop, boolean stamp) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -135,14 +159,13 @@ public final class TunnelEditor {
             }
         }
 
-        stampPlot(overworld, variant);
+        if (stamp) stampPlot(overworld, variant);
 
-        double tx = origin.getX() + TunnelPlacer.LENGTH / 2.0;
-        double ty = onTop
-            ? origin.getY() + TunnelPlacer.HEIGHT + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + TunnelPlacer.WIDTH / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        // Tunnel dims are fixed, so the world's CarriageDims only feed the kind lookup — the label
+        // uses the same one, so the roof landing sits in front of the panel it draws.
+        Vec3i footprint = TrackSidePlots.footprint(TunnelTemplateStore.tunnelKind(variant),
+            DungeonTrainWorldData.get(overworld).dims());
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, EditorPlotArrival.Inside.CENTRE, null);
 
         // Edits mirror live across the enabled axes — author one master octant.
         player.sendSystemMessage(Component.literal(
@@ -157,6 +180,8 @@ public final class TunnelEditor {
 
     /** Erase + restamp every registered variant for {@code variant}. Idempotent. */
     public static void stampPlot(ServerLevel overworld, TunnelVariant variant) {
+        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
+        EditorStampQueue.flush();
         for (String name : TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant))) {
             stampPlot(overworld, variant, name);
         }

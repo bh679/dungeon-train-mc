@@ -4,9 +4,12 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsEntry;
+import games.brennan.dungeontrain.editor.PotionForm;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.EditorVariantMirror;
+import games.brennan.dungeontrain.editor.VariantCopyRoll;
+import games.brennan.dungeontrain.editor.VariantCopyScope;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.editor.VariantState;
@@ -31,7 +34,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
@@ -43,10 +45,12 @@ import java.util.List;
 
 /**
  * Custom mod item produced by the block-variant menu's Copy button.
- * Visually mimics a vanilla command block (model JSON parents
- * {@code minecraft:block/command_block}). Carries a snapshot of a variant
- * cell's candidate list AND its cell-level lock-id in ItemStack NBT under
- * {@link #NBT_ROOT_KEY} / {@link #NBT_LOCK_ID}.
+ * Visually mimics the variant placeholder ghost cube (model JSON parents
+ * {@code dungeontrain:block/variant_placeholder}). Carries a snapshot of a variant
+ * cell's candidate list, its cell-level lock-id, and — for a dimensional
+ * carriage room — the two settings for how the cell behaves across the room's
+ * copies, in ItemStack NBT under {@link #NBT_ROOT_KEY} / {@link #NBT_LOCK_ID} /
+ * {@link #NBT_COPY_ROLL} / {@link #NBT_COPY_SCOPE}.
  *
  * <p>On {@link #useOn} the item:
  * <ol>
@@ -56,13 +60,15 @@ import java.util.List;
  *   <li>Decodes its NBT snapshot to a {@code List<VariantState>} plus
  *       lock-id.</li>
  *   <li>Writes the list to the plot's sidecar at the targeted cell,
- *       persists, and places a vanilla {@link Blocks#COMMAND_BLOCK} as the
+ *       persists, and places {@link CarriageVariantBlocks#emptyPlaceholder()} as the
  *       editor's empty-placeholder sentinel.</li>
  *   <li>Restores the lock-id on the new cell so it joins the original's
  *       lock group — the only way for two cells to end up with the same
  *       lock-id.</li>
  *   <li>Consumes one item.</li>
- * </ol></p>
+ * </ol>
+ * Steps 2–4 are {@link #pasteAt}, which is also what Effortless Building's shape modes call once
+ * per cell ({@code compat.EffortlessBuildingVariants}) to paste a whole floor / wall / box.</p>
  */
 public final class VariantClipboardItem extends Item {
 
@@ -73,6 +79,29 @@ public final class VariantClipboardItem extends Item {
 
     /** Top-level NBT key carrying the cell-level lock-id (≥1) — absent / 0 means unlocked. */
     public static final String NBT_LOCK_ID = "dt_lockId";
+
+    /**
+     * Top-level NBT key carrying the source cell's {@link VariantCopyRoll} id. Absent → {@code
+     * default} (follow the room), which is what every clipboard minted before the setting existed
+     * says, and what it always meant.
+     */
+    public static final String NBT_COPY_ROLL = "dt_copyRoll";
+
+    /**
+     * The boolean this setting first shipped as on the branch, before it grew a third state. Read
+     * as {@link VariantCopyRoll#VARY}, never written — a clipboard already sitting in a dev
+     * world's hotbar keeps meaning what it meant.
+     */
+    public static final String NBT_LEGACY_REROLL = "dt_reroll";
+
+    /**
+     * Top-level NBT key carrying the source cell's {@link VariantCopyScope} id. Absent → {@code
+     * both}. Written as the id rather than the ordinal so a reordered enum cannot silently
+     * repurpose an old clipboard.
+     */
+    public static final String NBT_COPY_SCOPE = "dt_copyScope";
+    /** The cell's multi-space {@code VariantSpan} token. Absent when AUTO. */
+    public static final String NBT_SPAN = "dt_span";
 
     /**
      * Top-level NBT key carrying the source cell's container contents pool
@@ -99,6 +128,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_DIFF_MAX = "dmax";
     /** v9 per-entry lock-group reference — see {@link VariantState#groupRef}. */
     private static final String NBT_GROUP_REF = "gref";
+    /** Per-entry redstone-toggle mode ordinal ({@code VariantActive}). Absent when default INACTIVE. */
+    private static final String NBT_ACTIVE_MODE = "am";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -107,6 +138,12 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_POOL_ENTRY_ID = "id";
     private static final String NBT_POOL_ENTRY_COUNT = "c";
     private static final String NBT_POOL_ENTRY_WEIGHT = "w";
+    /** Stored vanilla potion id of a potion entry; absent when the entry has none. */
+    private static final String NBT_POOL_ENTRY_POTION = "p";
+    /** Random-potion scale-with-distance toggle; absent means the default (on). */
+    private static final String NBT_POOL_ENTRY_SCALE = "s";
+    /** Random-potion bottle form id; absent means Any. */
+    private static final String NBT_POOL_ENTRY_FORM = "f";
 
     public VariantClipboardItem(Properties properties) {
         super(properties);
@@ -136,33 +173,81 @@ public final class VariantClipboardItem extends Item {
             return InteractionResult.FAIL;
         }
         BlockPos localPos = placePos.subtract(plot.origin());
-        if (!plot.inBounds(localPos)) {
-            sendActionBar(player, "Target is outside the plot's footprint", ChatFormatting.YELLOW);
-            return InteractionResult.FAIL;
-        }
 
         ItemStack stack = ctx.getItemInHand();
+        PasteOutcome outcome = pasteAt(serverLevel, player, plot, placePos, stack);
+        if (outcome.error() != null) {
+            sendActionBar(player, outcome.error(), outcome.errorColour());
+            return InteractionResult.FAIL;
+        }
+        try {
+            plot.save();
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] VariantClipboard save failed for {}: {}", plot.key(), e.toString());
+            sendActionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+            return InteractionResult.FAIL;
+        }
+        boolean poolPasted = savePool(player, plot, outcome);
+
+        String lockSuffix = outcome.lockId() > 0 ? " (lock-id " + outcome.lockId() + ")" : "";
+        String poolSuffix = poolPasted ? " +pool(" + outcome.pool().size() + ")" : "";
+        sendActionBar(player, "Pasted " + outcome.stateCount() + " variants at " + localPos.getX()
+            + "," + localPos.getY() + "," + localPos.getZ() + lockSuffix + poolSuffix,
+            ChatFormatting.GREEN);
+        if (!player.getAbilities().instabuild) {
+            stack.shrink(1);
+        }
+        return InteractionResult.CONSUME;
+    }
+
+    /**
+     * What one {@link #pasteAt} did — or, when {@code error} is set, why it did nothing. The pool
+     * is handed back rather than written because its store is saved separately from the plot
+     * ({@link #savePool}): a bulk paste writes many cells and saves each store once.
+     */
+    public record PasteOutcome(int stateCount, int lockId, @Nullable ContainerContentsPool pool,
+                               @Nullable String error, @Nullable ChatFormatting errorColour) {
+        static PasteOutcome fail(String error, ChatFormatting colour) {
+            return new PasteOutcome(0, 0, null, error, colour);
+        }
+    }
+
+    /**
+     * Paste this clipboard's cell onto {@code placePos} of {@code plot} — the placeholder block
+     * (plus block-entity NBT), the variant pool, the two repeating-room settings, the lock-id
+     * (and its group's roll), the live mirror, and the pool write into the plot's contents store.
+     * Does <b>not</b> save the plot or the contents store, so a caller pasting many cells
+     * ({@link games.brennan.dungeontrain.compat.EffortlessBuildingVariants}) can save once.
+     */
+    public static PasteOutcome pasteAt(ServerLevel serverLevel, ServerPlayer player, BlockVariantPlot plot,
+                                       BlockPos placePos, ItemStack stack) {
+        BlockPos localPos = placePos.subtract(plot.origin());
+        if (!plot.inBounds(localPos)) {
+            return PasteOutcome.fail("Target is outside the plot's footprint", ChatFormatting.YELLOW);
+        }
         CompoundTag tag = readClipboardTag(stack);
         List<VariantState> states = decodeStates(tag);
         int lockId = decodeLockId(tag);
         ContainerContentsPool pool = decodePool(tag);
+        VariantCopyRoll copyRoll = decodeCopyRoll(tag);
+        VariantCopyScope copyScope = decodeCopyScope(tag);
+        games.brennan.dungeontrain.editor.VariantSpan span = decodeSpan(tag);
         if (states.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
-            sendActionBar(player, "Clipboard needs at least "
+            return PasteOutcome.fail("Clipboard needs at least "
                 + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " variants", ChatFormatting.YELLOW);
-            return InteractionResult.FAIL;
         }
 
         // Match the source cell's appearance: place the first variant's
         // BlockState (with NBT if present) so the pasted placeholder reads
         // the same as the original. The empty-placeholder sentinel is kept
-        // as a vanilla command block so the "leave empty at spawn" cell
-        // type stays visible. Mirrors the Add-on-empty-cell path that
+        // as the ghost-cube placeholder block so the "leave empty at spawn"
+        // cell type stays visible. Mirrors the Add-on-empty-cell path that
         // captures the player's placed base block as the first variant
         // without replacing the world block.
         VariantState first = states.get(0);
         boolean firstIsSentinel = CarriageVariantBlocks.isEmptyPlaceholder(first.state());
         BlockState placeholderState = firstIsSentinel
-            ? Blocks.COMMAND_BLOCK.defaultBlockState()
+            ? CarriageVariantBlocks.emptyPlaceholder()
             : first.state();
         serverLevel.setBlock(placePos, placeholderState, 3);
         if (!firstIsSentinel && first.hasBlockEntityData()) {
@@ -176,19 +261,36 @@ public final class VariantClipboardItem extends Item {
                 be.setChanged();
             }
         }
+        // A door / bed / tall plant placeholder is only one half on its own — add the partner
+        // half so the pasted cell reads as the whole block (only into an empty space; never over
+        // a build).
+        if (!firstIsSentinel && games.brennan.dungeontrain.editor.MultiBlockFootprint.isMultiSpace(first.state())) {
+            BlockPos partnerPos = placePos.offset(
+                games.brennan.dungeontrain.editor.MultiBlockFootprint.partnerOffset(first.state()));
+            if (serverLevel.getBlockState(partnerPos).canBeReplaced()) {
+                games.brennan.dungeontrain.worldgen.SilentBlockOps.setBlockSilent(serverLevel, partnerPos,
+                    games.brennan.dungeontrain.editor.MultiBlockFootprint.partnerState(first.state()));
+            }
+        }
 
         // Write to the sidecar (states first, then lockId so setLockId's
         // "cell must exist" precondition is satisfied).
         plot.put(localPos, states);
+        // The two repeating-room settings the copy captured. Both are no-ops on a plot that cannot
+        // repeat, so a room cell pasted into a carriage simply arrives without them — which is what
+        // they mean there.
+        plot.setCopyRoll(localPos, copyRoll);
+        plot.setCopyScope(localPos, copyScope);
+        plot.setSpan(localPos, span);
         if (lockId > 0) {
             plot.setLockId(localPos, lockId);
-        }
-        try {
-            plot.save();
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] VariantClipboard save failed for {}: {}", plot.key(), e.toString());
-            sendActionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
-            return InteractionResult.FAIL;
+            // Every cell in a lock group draws one index, so they must agree about how they roll:
+            // a member that repeated while the rest varied would show a different block from its
+            // siblings in every copy but the first. The pasted value wins and the group follows
+            // it — the same thing the menu's own button does.
+            for (net.minecraft.core.BlockPos sibling : plot.positionsWithLockId(lockId)) {
+                if (!sibling.equals(localPos)) plot.setCopyRoll(sibling, copyRoll);
+            }
         }
 
         // Mirror the pasted variant pool (+ reflected base block) to the
@@ -203,34 +305,29 @@ public final class VariantClipboardItem extends Item {
             VariantOverlayRenderer.pushLockIdSnapshot(player);
         }
 
-        // Pool write happens after variants so a pool-save IOException doesn't
-        // roll back the (already-persisted) variant write. Failure is degraded
-        // — variants pasted, pool didn't.
-        boolean poolPasted = false;
         if (pool != null) {
-            ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
-            store.putPool(localPos, pool);
-            try {
-                store.save();
-                poolPasted = true;
-            } catch (IOException e) {
-                LOGGER.error("[DungeonTrain] VariantClipboard pool save failed for {}: {}",
-                    plot.key(), e.toString());
-                sendActionBar(player, "Pasted variants but pool save failed: "
-                    + e.getClass().getSimpleName(), ChatFormatting.YELLOW);
-            }
+            ContainerContentsStore.loadFor(plot.key()).putPool(localPos, pool);
         }
+        return new PasteOutcome(states.size(), lockId, pool, null, null);
+    }
 
-        String lockSuffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
-        String poolSuffix = poolPasted ? " +pool(" + pool.size() + ")" : "";
-        sendActionBar(player, "Pasted " + states.size() + " variants at " + localPos.getX()
-            + "," + localPos.getY() + "," + localPos.getZ() + lockSuffix + poolSuffix,
-            ChatFormatting.GREEN);
-
-        if (!player.getAbilities().instabuild) {
-            stack.shrink(1);
+    /**
+     * Save the plot's contents store after a paste that carried a pool. Runs after the plot save
+     * so a pool-save IOException doesn't roll back the (already-persisted) variant write — failure
+     * is degraded: variants pasted, pool didn't. Returns whether a pool was persisted.
+     */
+    public static boolean savePool(ServerPlayer player, BlockVariantPlot plot, PasteOutcome outcome) {
+        if (outcome.pool() == null) return false;
+        try {
+            ContainerContentsStore.loadFor(plot.key()).save();
+            return true;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] VariantClipboard pool save failed for {}: {}",
+                plot.key(), e.toString());
+            sendActionBar(player, "Pasted variants but pool save failed: "
+                + e.getClass().getSimpleName(), ChatFormatting.YELLOW);
+            return false;
         }
-        return InteractionResult.CONSUME;
     }
 
     /**
@@ -239,6 +336,55 @@ public final class VariantClipboardItem extends Item {
      */
     public static CompoundTag encodeStates(List<VariantState> states, int lockId) {
         return encodeStates(states, lockId, null);
+    }
+
+    /**
+     * Encode a variant list + lock-id + pool <b>and the cell's two repeating-room settings</b>.
+     *
+     * <p>Copy is a snapshot of a cell, and these are authored on the cell exactly as the lock-id
+     * is — a paste that dropped them handed back something that looked identical in the menu and
+     * stamped differently down the hall. Both are written only when they are not their default, so
+     * a clipboard from an ordinary cell is byte-identical to what this produced before.</p>
+     */
+    public static CompoundTag encodeStates(List<VariantState> states, int lockId,
+                                           @Nullable ContainerContentsPool pool,
+                                           VariantCopyRoll roll, VariantCopyScope scope) {
+        CompoundTag root = encodeStates(states, lockId, pool);
+        if (roll != null && !roll.isDefault()) {
+            root.putString(NBT_COPY_ROLL, roll.id());
+        }
+        if (scope != null && !scope.isDefault()) {
+            root.putString(NBT_COPY_SCOPE, scope.id());
+        }
+        return root;
+    }
+
+    /** The captured copy roll; {@link VariantCopyRoll#DEFAULT} for a clipboard that carries none. */
+    public static VariantCopyRoll decodeCopyRoll(@Nullable CompoundTag tag) {
+        if (tag == null) return VariantCopyRoll.DEFAULT;
+        if (tag.contains(NBT_COPY_ROLL)) return VariantCopyRoll.parse(tag.getString(NBT_COPY_ROLL));
+        // The superseded boolean, still honoured so an older clipboard pastes what it captured.
+        return tag.getBoolean(NBT_LEGACY_REROLL) ? VariantCopyRoll.VARY : VariantCopyRoll.DEFAULT;
+    }
+
+    /** Add the cell's multi-space span to an encoded clipboard tag (omitted when AUTO). */
+    public static CompoundTag withSpan(CompoundTag root, games.brennan.dungeontrain.editor.VariantSpan span) {
+        if (span != null && !span.isDefault()) {
+            root.putString(NBT_SPAN, span.toToken());
+        }
+        return root;
+    }
+
+    /** The captured multi-space span; AUTO for a clipboard that carries none. */
+    public static games.brennan.dungeontrain.editor.VariantSpan decodeSpan(@Nullable CompoundTag tag) {
+        if (tag == null || !tag.contains(NBT_SPAN)) return games.brennan.dungeontrain.editor.VariantSpan.NONE;
+        return games.brennan.dungeontrain.editor.VariantSpan.fromToken(tag.getString(NBT_SPAN));
+    }
+
+    /** The captured copy scope; {@link VariantCopyScope#BOTH} for a clipboard that carries none. */
+    public static VariantCopyScope decodeCopyScope(@Nullable CompoundTag tag) {
+        if (tag == null || !tag.contains(NBT_COPY_SCOPE)) return VariantCopyScope.BOTH;
+        return VariantCopyScope.parse(tag.getString(NBT_COPY_SCOPE));
     }
 
     /**
@@ -255,7 +401,7 @@ public final class VariantClipboardItem extends Item {
         for (VariantState s : states) {
             CompoundTag entry = new CompoundTag();
             if (s.isMob()) {
-                // Mob entry: state field is the COMMAND_BLOCK sentinel and
+                // Mob entry: state field is the empty-placeholder sentinel and
                 // adds no information — omit on the wire and let the decoder
                 // route via the eid key.
                 entry.putString(NBT_ENTITY_ID, s.entityId().toString());
@@ -285,6 +431,9 @@ public final class VariantClipboardItem extends Item {
             }
             if (s.isGroupRef()) {
                 entry.putInt(NBT_GROUP_REF, s.groupRef());
+            }
+            if (!s.active().isDefault()) {
+                entry.putByte(NBT_ACTIVE_MODE, (byte) s.active().mode().ordinal());
             }
             list.add(entry);
         }
@@ -316,6 +465,9 @@ public final class VariantClipboardItem extends Item {
             et.putString(NBT_POOL_ENTRY_ID, e.itemId().toString());
             et.putInt(NBT_POOL_ENTRY_COUNT, e.count());
             et.putInt(NBT_POOL_ENTRY_WEIGHT, e.weight());
+            if (e.potionId() != null) et.putString(NBT_POOL_ENTRY_POTION, e.potionId().toString());
+            if (!e.scaleWithDistance()) et.putBoolean(NBT_POOL_ENTRY_SCALE, false);
+            if (e.potionForm() != PotionForm.ANY) et.putString(NBT_POOL_ENTRY_FORM, e.potionForm().id());
             entries.add(et);
         }
         tag.put(NBT_POOL_ENTRIES, entries);
@@ -348,7 +500,14 @@ public final class VariantClipboardItem extends Item {
                     ? et.getInt(NBT_POOL_ENTRY_COUNT) : 1;
                 int weight = et.contains(NBT_POOL_ENTRY_WEIGHT, Tag.TAG_INT)
                     ? et.getInt(NBT_POOL_ENTRY_WEIGHT) : 1;
-                entries.add(new ContainerContentsEntry(id, count, weight));
+                ResourceLocation potionId = et.contains(NBT_POOL_ENTRY_POTION, Tag.TAG_STRING)
+                    ? ResourceLocation.tryParse(et.getString(NBT_POOL_ENTRY_POTION)) : null;
+                boolean scale = !et.contains(NBT_POOL_ENTRY_SCALE, Tag.TAG_BYTE)
+                    || et.getBoolean(NBT_POOL_ENTRY_SCALE);
+                PotionForm form = et.contains(NBT_POOL_ENTRY_FORM, Tag.TAG_STRING)
+                    ? PotionForm.parse(et.getString(NBT_POOL_ENTRY_FORM)) : PotionForm.ANY;
+                entries.add(new ContainerContentsEntry(id, count, weight)
+                    .withPotion(potionId).withScaleWithDistance(scale).withPotionForm(form));
             }
         }
         return new ContainerContentsPool(entries, fillMin, fillMax);
@@ -384,6 +543,16 @@ public final class VariantClipboardItem extends Item {
                     games.brennan.dungeontrain.editor.VariantHalf.Mode.values();
                 if (ord >= 0 && ord < modes.length) {
                     half = new games.brennan.dungeontrain.editor.VariantHalf(modes[ord]);
+                }
+            }
+            games.brennan.dungeontrain.editor.VariantActive active =
+                games.brennan.dungeontrain.editor.VariantActive.NONE;
+            if (entry.contains(NBT_ACTIVE_MODE, Tag.TAG_BYTE)) {
+                int ord = entry.getByte(NBT_ACTIVE_MODE) & 0xFF;
+                games.brennan.dungeontrain.editor.VariantActive.Mode[] modes =
+                    games.brennan.dungeontrain.editor.VariantActive.Mode.values();
+                if (ord >= 0 && ord < modes.length) {
+                    active = new games.brennan.dungeontrain.editor.VariantActive(modes[ord]);
                 }
             }
             games.brennan.dungeontrain.editor.VariantDifficulty difficulty =
@@ -423,7 +592,7 @@ public final class VariantClipboardItem extends Item {
             }
             int groupRef = entry.contains(NBT_GROUP_REF, Tag.TAG_INT) ? entry.getInt(NBT_GROUP_REF) : 0;
             out.add(new VariantState(state, beNbt, weight, rotation, lootPrefab, null, half,
-                difficulty, groupRef));
+                difficulty, groupRef, active));
         }
         return out;
     }
@@ -467,6 +636,10 @@ public final class VariantClipboardItem extends Item {
         StringBuilder suffix = new StringBuilder(" (").append(states.size());
         if (lockId > 0) suffix.append(", lock ").append(lockId);
         if (pool != null && !pool.isEmpty()) suffix.append(", pool ").append(pool.size());
+        VariantCopyRoll roll = decodeCopyRoll(tag);
+        if (!roll.isDefault()) suffix.append(", ").append(roll.displayName().toLowerCase(java.util.Locale.ROOT));
+        VariantCopyScope scope = decodeCopyScope(tag);
+        if (!scope.isDefault()) suffix.append(", ").append(scope.displayName().toLowerCase(java.util.Locale.ROOT));
         suffix.append(")");
         return Component.literal(super.getName(stack).getString() + suffix);
     }

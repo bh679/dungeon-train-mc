@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 50,
+  "variants": [
+    {
+      "id": "chunk_dimension_nether",
+      "weight": 8,
+      "minLevel": 4
+    },
+    {
+      "id": "chunk_dimension_end",
+      "weight": 2,
+      "minLevel": 5
+    },
+    {
+      "id": "chunk_dimension_wwoo",
+      "weight": 40
+    },
+    {
+      "id": "chunk_dimension_bop",
+      "weight": 40,
+      "minLevel": 15
+    },
+    {
+      "id": "superflat",
+      "weight": 1
+    },
+    {
+      "id": "chunk_dimension_nether_better",
+      "weight": 29,
+      "minLevel": 11
+    },
+    {
+      "id": "chunk_dimension_end_better",
+      "weight": 8,
+      "minLevel": 13
+    }
+  ]
+}

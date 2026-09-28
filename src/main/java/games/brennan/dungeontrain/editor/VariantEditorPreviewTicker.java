@@ -2,12 +2,14 @@ package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.Half;
@@ -51,8 +53,8 @@ import java.util.List;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class VariantEditorPreviewTicker {
 
-    /** Cycle rate — one tick of preview work per second. */
-    private static final int TICK_PERIOD = 20;
+    /** Cycle rate — one tick of preview work per second. Shared with the mob-ghost snapshot so both frames agree. */
+    static final int TICK_PERIOD = 20;
 
     /** Entry cycle slot length in 1Hz ticks (3 seconds at 1Hz). */
     private static final int ENTRY_SLOT_TICKS = 3;
@@ -83,6 +85,12 @@ public final class VariantEditorPreviewTicker {
      * LOCK entries, subsequent ticks no-op.
      */
     private static void updatePlot(ServerLevel level, BlockVariantPlot plot, long previewTick) {
+        // Under the stamp guard so an observer facing a cycling cell stays quiet: the display
+        // rewrite is DT's own scaffolding, not a gameplay event (ObserverBlockStampMixin).
+        CarriageStampGuard.run(() -> updatePlotGuarded(level, plot, previewTick));
+    }
+
+    private static void updatePlotGuarded(ServerLevel level, BlockVariantPlot plot, long previewTick) {
         java.util.Map<BlockPos, java.util.List<VariantState>> snapshot = collectCells(plot);
         for (java.util.Map.Entry<BlockPos, java.util.List<VariantState>> e : snapshot.entrySet()) {
             BlockPos localPos = e.getKey();
@@ -91,14 +99,35 @@ public final class VariantEditorPreviewTicker {
 
             int entryIdx = pickEntryIndex(plot.key(), localPos, states.size(), previewTick);
             VariantState picked = states.get(entryIdx);
-            // Skip the empty-placeholder sentinel so the cell's "this is a
-            // variant cell" marker stays visible to the author when the
-            // cycle lands on the empty entry. Showing an air-equivalent
-            // would lose the marker until the next entry slot.
-            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) continue;
+            BlockPos worldPos = plot.origin().offset(localPos);
+            // A mob entry's slot shows the mob standing in the ghost-cube placeholder: the client
+            // draws the mob ghost there (EditorMobGhostRenderer, fed by the same previewTick frame
+            // from VariantOverlayRenderer.pushMobGhostsSnapshot) and the translucent placeholder
+            // underneath gives the author a face to build against — plain air would not. Under
+            // Live the ghosts are off, so the cell keeps whatever the neighbouring slots show.
+            if (picked.isMob()) {
+                if (FrozenMobs.isBlocksMode(level)) showPlaceholder(level, worldPos);
+                continue;
+            }
+            // A two-space cell (door / bed / tall plant) previews both spaces, rolled the way
+            // spawn rolls them (MultiBlockVariants), with the preview tick as the seed so the
+            // span choices cycle too.
+            if (MultiBlockFootprint.cellFootprint(states) != null) {
+                previewMultiSpace(level, plot, localPos, states, picked, previewTick);
+                continue;
+            }
+            // The empty-placeholder slot shows the placeholder block itself — the ghost cube IS
+            // the "this is a variant cell, and it can be nothing" marker, so a cell with a block
+            // and an empty entry alternates block <-> ghost the way two blocks do. Legacy
+            // templates stamp a command block there (the sentinel's old form) — swapping it for
+            // the ghost cube here is what migrates those cells, and the author's next save bakes
+            // the swap into the template.
+            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
+                showPlaceholder(level, worldPos);
+                continue;
+            }
 
             BlockState toShow = computePreviewState(picked, previewTick);
-            BlockPos worldPos = plot.origin().offset(localPos);
             BlockState existing = level.getBlockState(worldPos);
             if (!existing.equals(toShow)) {
                 if (VariantLiquids.isLiquid(toShow)) {
@@ -115,6 +144,37 @@ public final class VariantEditorPreviewTicker {
                 }
             }
         }
+    }
+
+    private static void previewMultiSpace(ServerLevel level, BlockVariantPlot plot, BlockPos localPos,
+                                          List<VariantState> states, VariantState picked, long previewTick) {
+        for (MultiBlockVariants.Write w : MultiBlockVariants.expand(states, plot.spanAt(localPos), picked, localPos,
+                previewTick, 0, v -> computePreviewState(v, previewTick))) {
+            BlockPos worldPos = plot.origin().offset(w.localPos());
+            if (w.isAir()) {
+                // The cell itself keeps the ghost cube as its "can be nothing" marker; the
+                // partner space is just cleared.
+                if (w.localPos().equals(localPos)) {
+                    showPlaceholder(level, worldPos);
+                } else if (!level.getBlockState(worldPos).isAir()) {
+                    SilentBlockOps.setBlockSilentNoCascade(level, worldPos, Blocks.AIR.defaultBlockState(), null);
+                }
+                continue;
+            }
+            if (!level.getBlockState(worldPos).equals(w.state())) {
+                SilentBlockOps.setBlockSilentNoCascade(level, worldPos, w.state(), w.entry().blockEntityNbt());
+            }
+        }
+    }
+
+    /**
+     * Stand the ghost-cube placeholder at {@code worldPos} unless it is already there — the same
+     * silent no-cascade write the block slots use, so an observer facing the cell stays quiet.
+     */
+    private static void showPlaceholder(ServerLevel level, BlockPos worldPos) {
+        BlockState placeholder = CarriageVariantBlocks.emptyPlaceholder();
+        if (level.getBlockState(worldPos).equals(placeholder)) return;
+        SilentBlockOps.setBlockSilentNoCascade(level, worldPos, placeholder, null);
     }
 
     /**
@@ -169,6 +229,12 @@ public final class VariantEditorPreviewTicker {
      * </ul>
      */
     static BlockState computePreviewState(VariantState picked, long previewTick) {
+        return applyActivePreview(computeOrientationPreview(picked, previewTick),
+            picked.active(), previewTick);
+    }
+
+    /** Facing + half portion of {@link #computePreviewState}; the redstone toggle layers on top. */
+    private static BlockState computeOrientationPreview(VariantState picked, long previewTick) {
         VariantRotation rot = picked.rotation();
         BlockState base = picked.state();
         BlockState afterFacing = pickFacingPreview(rot, base, previewTick);
@@ -186,6 +252,23 @@ public final class VariantEditorPreviewTicker {
             return cycleFlipPreview(afterFacing, base, previewTick);
         }
         return afterFacing;
+    }
+
+    /**
+     * Redstone-toggle pass for the editor preview: ACTIVE / INACTIVE force
+     * the block's toggle property (the stored state already carries it, but
+     * the facing/half passes above may have rebuilt the state); RANDOM
+     * alternates every preview tick so the author sees both forms. No-op for
+     * blocks without a toggle.
+     */
+    static BlockState applyActivePreview(BlockState state, VariantActive active, long previewTick) {
+        if (active == null || !RedstoneToggle.canToggle(state)) return state;
+        boolean on = switch (active.mode()) {
+            case ACTIVE -> true;
+            case RANDOM -> (previewTick & 1L) != 0L;
+            case INACTIVE -> false;
+        };
+        return RedstoneToggle.set(state, on);
     }
 
     /**

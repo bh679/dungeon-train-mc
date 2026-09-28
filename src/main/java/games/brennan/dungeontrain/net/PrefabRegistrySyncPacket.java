@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.client.menu.PrefabTabState;
 import games.brennan.dungeontrain.editor.BlockVariantPrefabStore;
 import games.brennan.dungeontrain.editor.ContainerContentsEntry;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
+import games.brennan.dungeontrain.editor.PrefabDeletes;
 import games.brennan.dungeontrain.editor.VariantState;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
@@ -29,6 +30,9 @@ import java.util.Optional;
  *   <li>{@code committed} — whether the prefab exists in the source tree or
  *       the bundled jar (vs. config-dir only). Drives the uncommitted-slot
  *       tint mixin.</li>
+ *   <li>{@code deletable} — whether this install lets the prefab be deleted
+ *       (see {@link PrefabDeletes}). Gates the creative menu's Cmd-click
+ *       prompt; the delete packet re-checks it server-side.</li>
  *   <li>{@code blockIds} (variants) / {@code items} (loot) — the full
  *       constituent list, used by the tooltip layer to render an icon-grid
  *       preview when the user hovers a prefab. Tooltip rendering is per-frame
@@ -44,7 +48,8 @@ import java.util.Optional;
 public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEntry> loot) implements CustomPacketPayload {
 
     /** Variant prefab tab entry — full block list used by the icon-grid tooltip. */
-    public record VariantEntry(String id, String iconBlockId, boolean committed, List<String> blockIds) {
+    public record VariantEntry(String id, String iconBlockId, boolean committed, boolean deletable,
+                               List<String> blockIds) {
         public VariantEntry {
             blockIds = List.copyOf(blockIds);
         }
@@ -56,7 +61,8 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
      * {@link LootPrefabStore#CATEGORY_LOOT} / {@code CATEGORY_ARMOR_STAND} /
      * {@code CATEGORY_ITEM_FRAME}.
      */
-    public record LootEntry(String id, String iconBlockId, boolean committed, String category, List<LootItem> items) {
+    public record LootEntry(String id, String iconBlockId, boolean committed, boolean deletable,
+                            String category, List<LootItem> items) {
         public LootEntry {
             if (category == null || category.isEmpty()) category = LootPrefabStore.CATEGORY_LOOT;
             items = List.copyOf(items);
@@ -95,7 +101,8 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
                 blockIds.add(rl.toString());
             }
             variants.add(new VariantEntry(id, iconId.toString(),
-                BlockVariantPrefabStore.isCommitted(id), blockIds));
+                BlockVariantPrefabStore.isCommitted(id),
+                PrefabDeletes.canDelete(PrefabDeletes.Kind.VARIANT, id), blockIds));
         }
         List<LootEntry> loot = new ArrayList<>();
         for (String id : LootPrefabStore.allIds()) {
@@ -109,7 +116,8 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
                 items.add(new LootItem(e.itemId().toString(), e.count()));
             }
             loot.add(new LootEntry(data.id(), data.sourceBlock().toString(),
-                LootPrefabStore.isCommitted(id), data.category(), items));
+                LootPrefabStore.isCommitted(id), PrefabDeletes.canDelete(PrefabDeletes.Kind.LOOT, id),
+                data.category(), items));
         }
         return new PrefabRegistrySyncPacket(variants, loot);
     }
@@ -120,6 +128,7 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
             buf.writeUtf(e.id(), 64);
             buf.writeUtf(e.iconBlockId(), 128);
             buf.writeBoolean(e.committed());
+            buf.writeBoolean(e.deletable());
             buf.writeVarInt(e.blockIds().size());
             for (String bid : e.blockIds()) buf.writeUtf(bid, 128);
         }
@@ -128,6 +137,7 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
             buf.writeUtf(e.id(), 64);
             buf.writeUtf(e.iconBlockId(), 128);
             buf.writeBoolean(e.committed());
+            buf.writeBoolean(e.deletable());
             buf.writeUtf(e.category(), 32);
             buf.writeVarInt(e.items().size());
             for (LootItem it : e.items()) {
@@ -144,10 +154,11 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
             String id = buf.readUtf(64);
             String iconBlockId = buf.readUtf(128);
             boolean committed = buf.readBoolean();
+            boolean deletable = buf.readBoolean();
             int bCount = buf.readVarInt();
             List<String> blockIds = new ArrayList<>(bCount);
             for (int j = 0; j < bCount; j++) blockIds.add(buf.readUtf(128));
-            variants.add(new VariantEntry(id, iconBlockId, committed, blockIds));
+            variants.add(new VariantEntry(id, iconBlockId, committed, deletable, blockIds));
         }
         int lCount = buf.readVarInt();
         List<LootEntry> loot = new ArrayList<>(lCount);
@@ -155,6 +166,7 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
             String id = buf.readUtf(64);
             String iconBlockId = buf.readUtf(128);
             boolean committed = buf.readBoolean();
+            boolean deletable = buf.readBoolean();
             String category = buf.readUtf(32);
             int iCount = buf.readVarInt();
             List<LootItem> items = new ArrayList<>(iCount);
@@ -163,7 +175,7 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
                 int count = buf.readVarInt();
                 items.add(new LootItem(itemId, count));
             }
-            loot.add(new LootEntry(id, iconBlockId, committed, category, items));
+            loot.add(new LootEntry(id, iconBlockId, committed, deletable, category, items));
         }
         return new PrefabRegistrySyncPacket(variants, loot);
     }

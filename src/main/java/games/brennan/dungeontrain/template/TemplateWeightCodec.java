@@ -23,7 +23,8 @@ import java.util.function.IntUnaryOperator;
  * <pre>{ "weight": 5, "minLevel": 3, "maxLevel": "all", "phases": ["NETHER","VOID"], "mode": "endless_open" }</pre>
  *
  * <p>The object form is emitted only when something on the entry is non-default — a non-default gate
- * ({@link TemplateGate#isDefault()}), a Stage link, or a mode tag — and within it each gate field is
+ * ({@link TemplateGate#isDefault()}), a Stage link, a mode tag, or a non-default {@code flip} block
+ * ({@link FlipOptions#isDefault()}) — and within it each gate field is
  * omitted when it is at its own default (minLevel 0, maxLevel {@link TemplateGate#ALL}, all phases).
  * So a store full of plain weights round-trips byte-identically to the pre-feature
  * {@code {"id": int}} files. {@code maxLevel} accepts a number or the string {@code "all"}
@@ -48,7 +49,28 @@ public final class TemplateWeightCodec {
      * unrecognised value is the reader's problem rather than a parse failure.
      */
     public static final String K_MODE = "mode";
+    /**
+     * Optional per-kind flip block — which axes this template may be randomly flipped along, plus the
+     * {@code rooms} scope flag. Opaque here in the same sense as {@link #K_MODE}: only the contents
+     * layer reads it. Absent means {@link FlipOptions#DEFAULT} (Z on), which is why it is never
+     * emitted for a default block — see {@link #parseFlip}/{@link #writeFlip}.
+     */
+    public static final String K_FLIP = "flip";
     /** String accepted (and never emitted — absence means the same) for {@link TemplateGate#ALL}. */
+    /**
+     * Optional editor display label — see {@link TemplateMeta#name()}. Free text, not an id: it is
+     * never lowercased or validated against a name pattern, only trimmed.
+     */
+    public static final String K_NAME = "name";
+    /**
+     * Optional original-builder credit — see {@link TemplateMeta#builder()}. An object
+     * {@code {"uuid": "…", "name": "…"}}; either field may be absent. Never emitted for a null
+     * credit, so a store that never credits anybody round-trips byte-identically.
+     */
+    public static final String K_BUILDER = "builder";
+    public static final String K_BUILDER_UUID = "uuid";
+    public static final String K_BUILDER_NAME = "name";
+
     public static final String MAX_ALL = "all";
 
     /**
@@ -68,9 +90,44 @@ public final class TemplateWeightCodec {
             if (we == null || !we.isJsonPrimitive() || !we.getAsJsonPrimitive().isNumber()) return null;
             Integer w = finiteRound(we);
             if (w == null) return null;
-            return new TemplateMeta(clampWeight.applyAsInt(w), parseGate(o), parseStage(o), parseMode(o));
+            return new TemplateMeta(clampWeight.applyAsInt(w), parseGate(o), parseStage(o), parseMode(o),
+                parseFlip(o), parseName(o), parseBuilder(o));
         }
         return null;
+    }
+
+    /** The optional display label on an entry object; {@code null} when absent or blank. */
+    public static String parseName(JsonObject o) {
+        JsonElement el = o.get(K_NAME);
+        if (el != null && el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()) {
+            return TemplateMeta.normaliseName(el.getAsString());
+        }
+        return null;
+    }
+
+    /**
+     * The optional builder credit on an entry object; {@code null} when absent, not an object, or
+     * naming nobody. A malformed field (a string, a number) is treated as absent rather than failing
+     * the entry — the weight and gate beside it are still worth loading.
+     */
+    public static BuilderCredit parseBuilder(JsonObject o) {
+        JsonElement el = o.get(K_BUILDER);
+        if (el == null || !el.isJsonObject()) return null;
+        JsonObject b = el.getAsJsonObject();
+        return BuilderCredit.ofOrNull(stringOrNull(b.get(K_BUILDER_UUID)), stringOrNull(b.get(K_BUILDER_NAME)));
+    }
+
+    /** Emit the builder credit into {@code o}; nothing for {@code null}. Inverse of {@link #parseBuilder}. */
+    public static void writeBuilder(JsonObject o, BuilderCredit builder) {
+        if (builder == null || !builder.known()) return;
+        JsonObject b = new JsonObject();
+        if (builder.hasUuid()) b.addProperty(K_BUILDER_UUID, builder.uuid());
+        if (!builder.name().isEmpty()) b.addProperty(K_BUILDER_NAME, builder.name());
+        o.add(K_BUILDER, b);
+    }
+
+    private static String stringOrNull(JsonElement el) {
+        return el != null && el.isJsonPrimitive() && el.getAsJsonPrimitive().isString() ? el.getAsString() : null;
     }
 
     /** The optional per-kind mode tag on an entry object; {@code null} when absent or blank. */
@@ -81,6 +138,40 @@ public final class TemplateWeightCodec {
             return s.isEmpty() ? null : s;
         }
         return null;
+    }
+
+    /**
+     * The optional flip block on an entry object; {@code null} when absent, not an object, or equal
+     * to {@link FlipOptions#DEFAULT} (the record's own constructor normalises the last case). Each
+     * missing field falls back to its {@code DEFAULT} value, so {@code {"flip":{"x":true}}} means
+     * "X and Z, still no Y" rather than "X only" — an author edits one flag at a time.
+     */
+    public static FlipOptions parseFlip(JsonObject o) {
+        JsonElement el = o.get(K_FLIP);
+        if (el == null || !el.isJsonObject()) return null;
+        JsonObject f = el.getAsJsonObject();
+        FlipOptions out = FlipOptions.DEFAULT;
+        for (String field : new String[] {"x", "y", "z", "rooms"}) {
+            JsonElement v = f.get(field);
+            if (v != null && v.isJsonPrimitive() && v.getAsJsonPrimitive().isBoolean()) {
+                out = out.with(field, v.getAsBoolean());
+            }
+        }
+        return out.isDefault() ? null : out;
+    }
+
+    /**
+     * Emit the non-default flip fields into {@code o}; nothing at all for {@code null} or a
+     * {@link FlipOptions#isDefault() default} block, so a store that never touches flips round-trips
+     * byte-identically. Inverse of {@link #parseFlip}.
+     */
+    public static void writeFlip(JsonObject o, FlipOptions flip) {
+        if (flip == null || flip.isDefault()) return;
+        JsonObject f = new JsonObject();
+        for (String field : new String[] {"x", "y", "z", "rooms"}) {
+            if (flip.get(field) != FlipOptions.DEFAULT.get(field)) f.addProperty(field, flip.get(field));
+        }
+        o.add(K_FLIP, f);
     }
 
     /** The optional Stage link on an entry object; {@code null} (Custom) when absent or blank. */
@@ -196,8 +287,10 @@ public final class TemplateWeightCodec {
         for (Map.Entry<String, TemplateMeta> e : new TreeMap<>(byId).entrySet()) {
             TemplateMeta meta = e.getValue();
             // Bare-int only when every axis is at its no-op default: default inline gate, no Stage
-            // link AND no mode tag. An entry carrying either always takes the object form.
-            if (meta.gate().isDefault() && meta.stageId() == null && meta.mode() == null) {
+            // link, no mode tag, no flip block, no display label AND no builder credit. An entry
+            // carrying any of those takes the object form.
+            if (meta.gate().isDefault() && meta.stageId() == null && meta.mode() == null
+                    && meta.flip() == null && meta.name() == null && meta.builder() == null) {
                 out.addProperty(e.getKey(), meta.weight());
             } else {
                 out.add(e.getKey(), entryObject(meta));
@@ -212,6 +305,9 @@ public final class TemplateWeightCodec {
         writeGateFields(o, meta.gate());
         if (meta.stageId() != null) o.addProperty(K_STAGE, meta.stageId());
         if (meta.mode() != null) o.addProperty(K_MODE, meta.mode());
+        writeFlip(o, meta.flip());
+        if (meta.name() != null) o.addProperty(K_NAME, meta.name());
+        writeBuilder(o, meta.builder());
         return o;
     }
 

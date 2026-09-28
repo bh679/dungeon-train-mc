@@ -1,0 +1,663 @@
+package games.brennan.dungeontrain.client.menu.editorscreen;
+
+import games.brennan.dungeontrain.client.menu.MenuLang;
+import games.brennan.dungeontrain.client.menu.CarriageContentsAllowScreen;
+import games.brennan.dungeontrain.net.EditorStatusPacket;
+import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
+import games.brennan.dungeontrain.client.menu.CommandRunner;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
+import games.brennan.dungeontrain.client.builder.BuilderProfileState;
+import games.brennan.dungeontrain.client.builder.BuilderSubmitNoteScreen;
+import games.brennan.dungeontrain.client.menu.EditorHistoryState;
+import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
+import games.brennan.dungeontrain.client.menu.ParentRemoveConfirmScreen;
+import games.brennan.dungeontrain.client.menu.GroupParentPickerScreen;
+import games.brennan.dungeontrain.client.menu.MenuScreen;
+import games.brennan.dungeontrain.client.menu.NewSourcePickerScreen;
+import games.brennan.dungeontrain.client.PortalTestSessionState;
+import games.brennan.dungeontrain.client.menu.PortalTestSaveCheckScreen;
+import games.brennan.dungeontrain.client.menu.StagePickerScreen;
+import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
+import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
+import games.brennan.dungeontrain.net.BuilderProfilePacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.EditorPlotActionPacket;
+import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
+import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
+import games.brennan.dungeontrain.portal.PortalRoomSettings;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
+
+import net.minecraft.network.chat.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+/**
+ * Every control of the inventory-style editor screen, resolved to the {@link CommandMenuEntry}
+ * it dispatches — pure functions of the selection and of where the player stands, so the whole
+ * table is unit-testable and every command shape is pinned.
+ *
+ * <p>The one rule that matters: <b>position-resolved commands act on the plot the player stands
+ * in.</b> Save, Reset, Clear, Undo, Redo, Rename, the room geometry rows and Test the Carriage
+ * all read the server's idea of "the current plot", so they are only offered while the selection
+ * is that plot. Everything addressed by id — weight, gate, phases, stage, remove, enter — works on
+ * any selection. Save / Reset / Clear on another plot go through {@link EditorPlotActionPacket},
+ * which is addressed, where the category supports it.</p>
+ */
+public final class EditorScreenActions {
+
+    /** The way out of a test carriage — the same command the row-list menu's Back row runs. */
+    static final String EXIT_TEST_COMMAND = "dungeontrain portal test back";
+
+    /** What the builders need to know about the selection and the player. */
+    public record Ctx(
+        VariantKey selection,
+        EditorTypeMenusPacket.Variant variant,
+        int selfWeight,
+        VariantKey standing,
+        PlotCategory stampedCategory,
+        boolean dirty,
+        EditorRosterIndex.Extras extras
+    ) {
+        public Ctx {
+            if (extras == null) extras = EditorRosterIndex.Extras.NONE;
+        }
+
+        /** The six-field shape from before the selection carried its room's tag and box. */
+        public Ctx(VariantKey selection, EditorTypeMenusPacket.Variant variant, int selfWeight,
+                   VariantKey standing, PlotCategory stampedCategory, boolean dirty) {
+            this(selection, variant, selfWeight, standing, stampedCategory, dirty, EditorRosterIndex.Extras.NONE);
+        }
+
+        public boolean hasSelection() {
+            return selection != null && variant != null;
+        }
+
+        /** True when the selected template is the plot the player stands in. */
+        public boolean standingInSelection() {
+            return hasSelection() && standing != null && standing.sameTemplate(selection);
+        }
+
+        public PlotCategory category() {
+            return hasSelection() ? selection.category() : null;
+        }
+
+        public boolean isSubVariant() {
+            return hasSelection() && selection.isSubVariant();
+        }
+    }
+
+    /** One icon of the file row. {@code entry} null means disabled, with {@code disabledKey} saying why. */
+    public record Icon(String id, String labelKey, CommandMenuEntry entry, String disabledKey,
+                       String detail) {
+        public Icon(String id, String labelKey, CommandMenuEntry entry, String disabledKey) {
+            this(id, labelKey, entry, disabledKey, null);
+        }
+
+        public boolean enabled() {
+            return entry != null;
+        }
+    }
+
+    private EditorScreenActions() {}
+
+    // ------------------------------------------------------------------
+    // Icon row
+    // ------------------------------------------------------------------
+
+    /** As below, for a selection with no relay row of its own — see {@link #submitIcon}. */
+    public static List<Icon> icons(Ctx ctx, Consumer<EditorPlotActionPacket> sendPacket) {
+        return icons(ctx, sendPacket, 0);
+    }
+
+    /**
+     * Save · Rename · Remove | Undo · Redo | Reset · Clear | Submit, in that order.
+     *
+     * <p>{@code relayId} is the selected template's row on the relay, which the pane it is drawn in
+     * already holds for the version strip. Zero means this template has never been uploaded, which is
+     * the one reason the last icon is off.</p>
+     */
+    public static List<Icon> icons(Ctx ctx, Consumer<EditorPlotActionPacket> sendPacket, int relayId) {
+        List<Icon> out = new ArrayList<>(8);
+        boolean here = ctx.standingInSelection();
+        PlotCategory cat = ctx.category();
+        String model = ctx.hasSelection() ? ctx.selection().displayName() : "";
+
+        out.add(new Icon("save", EditorScreenLang.ICON_SAVE,
+            here ? new CommandMenuEntry.Stay(MenuLang.t("common.save"), EditorMenuScreen.saveCommandFor(cat))
+                 : packetAction(ctx, EditorPlotActionPacket.Action.SAVE, sendPacket),
+            EditorScreenLang.DISABLED_STAND_HERE));
+
+        out.add(new Icon("rename", EditorScreenLang.ICON_RENAME, renameEntry(ctx),
+            EditorScreenLang.DISABLED_BUILTIN));
+
+        out.add(new Icon("move", EditorScreenLang.ICON_MOVE, moveEntry(ctx),
+            EditorScreenLang.DISABLED_NO_GROUPS));
+
+        out.add(new Icon("remove", EditorScreenLang.ICON_REMOVE, removeEntry(ctx),
+            EditorScreenLang.DISABLED_NOT_HERE));
+
+        // The history is the player's own and spans every plot, so these are live wherever they
+        // stand — and each says what it would step through, read from the server's own stack.
+        out.add(historyIcon("undo", EditorScreenLang.ICON_UNDO, "dungeontrain editor undo",
+            EditorHistoryState.undoLabel(), EditorScreenLang.UNDO_NOTHING));
+        out.add(historyIcon("redo", EditorScreenLang.ICON_REDO, "dungeontrain editor redo",
+            EditorHistoryState.redoLabel(), EditorScreenLang.REDO_NOTHING));
+
+        out.add(new Icon("reset", EditorScreenLang.ICON_RESET,
+            here && cat != PlotCategory.PARTS ? new CommandMenuEntry.Stay(MenuLang.t("editor.reset"), "dungeontrain reset")
+                 : packetAction(ctx, EditorPlotActionPacket.Action.RESET, sendPacket),
+            EditorScreenLang.DISABLED_STAND_HERE));
+
+        CommandMenuEntry clear = here ? EditorMenuScreen.clearEntryFor(cat, model) : null;
+        out.add(new Icon("clear", EditorScreenLang.ICON_CLEAR,
+            clear != null ? clear : packetAction(ctx, EditorPlotActionPacket.Action.CLEAR, sendPacket),
+            EditorScreenLang.DISABLED_STAND_HERE));
+
+        out.add(submitIcon(relayId));
+        return out;
+    }
+
+    /**
+     * <b>Submit to the train</b> / <b>Withdraw</b>, where the Packages drill-in used to sit.
+     *
+     * <p>Packages keeps its ways in — the older editor menu and the worldspace type menu both open
+     * it — and this row is where an author decides what happens to the build in front of them, which
+     * is the one thing about it this screen could not do.</p>
+     *
+     * <p>The label is read from THIS player's own listing rather than from the roster: whether a
+     * build is on the train is the relay's answer, and the roster only knows what is on disk. No row
+     * for it means nothing to submit, and the icon says so instead of sending a press the relay would
+     * refuse.</p>
+     */
+    static Icon submitIcon(int relayId) {
+        BuilderProfilePacket.Entry entry = BuilderProfileState.ownBuild(relayId);
+        if (entry == null || !BuilderRelayKinds.canSubmitForReview(entry.kind())) {
+            return new Icon("submit", EditorScreenLang.ICON_SUBMIT, null,
+                EditorScreenLang.DISABLED_NOT_UPLOADED);
+        }
+        boolean published = entry.published();
+        String label = published ? EditorScreenLang.ICON_WITHDRAW : EditorScreenLang.ICON_SUBMIT;
+        // A withdraw goes straight out; a submit first asks what the reviewer should know, and the
+        // send is that screen's Submit — its Cancel returns to this menu with nothing sent.
+        Runnable action = published
+            ? () -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), false))
+            : () -> BuilderSubmitNoteScreen.open(entry.relayId(), Component.literal(entry.buildName()),
+                note -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), true, note)));
+        return new Icon(published ? "withdraw" : "submit", label,
+            new CommandMenuEntry.ClientAction(label, action), null);
+    }
+
+    /**
+     * One of the two history buttons, naming the step it would apply.
+     *
+     * <p>Off when its stack is empty, which is the only reason either is ever off: the history is
+     * per player and spans plots, so standing somewhere else does not stop it.</p>
+     */
+    static Icon historyIcon(String id, String labelKey, String command, String step, String emptyKey) {
+        boolean has = step != null && !step.isEmpty();
+        return new Icon(id, labelKey, has ? new CommandMenuEntry.Stay(id, command) : null,
+            emptyKey, has ? step : null);
+    }
+
+    /**
+     * Rename the selected template, from wherever the player is standing.
+     *
+     * <p>A rename here is a <b>display label</b> ({@code … label <id> <name>}): the id — the file
+     * name everything else is keyed by — stays what it is, so the label works on built-ins,
+     * bundled rooms and sub-variants alike, and nothing on disk moves. The typed field starts on
+     * the current label; clearing it returns the row to its id. The id-changing {@code rename}
+     * verbs still exist for the command line.</p>
+     *
+     * <p>Null only for the categories with no label verb: parts and tracks have no pane selection
+     * to address it with yet.</p>
+     */
+    static CommandMenuEntry renameEntry(Ctx ctx) {
+        if (!ctx.hasSelection()) return null;
+        VariantKey sel = ctx.selection();
+        String id = sel.modelId();
+        String label = EditorScreenLang.text(EditorScreenLang.ICON_RENAME);
+        String current = ctx.variant().displayName();
+        return switch (sel.category()) {
+            case CARRIAGES -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor label " + id, "", current);
+            case CONTENTS -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor contents label " + id, "", current);
+            // A room is a track variant under the hood and its key is spelled like one: modelId is
+            // the KIND token (portal_room) and modelName is the room — the same pair the weight and
+            // phase commands beside this one send.
+            case PORTALS -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor portals label " + id + " " + sel.modelName(), "", current);
+            case WHOLE -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor whole label " + id, "", current);
+            case WHOLE_GROUP -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor whole group label " + id, "", current);
+            case CHUNK_FRAMES -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor chunkframe rename " + sel.modelName(), "", sel.modelName());
+            case PARTS, TRACKS, ARCHITECTURE -> null;
+        };
+    }
+
+    /**
+     * Move the selected template in the sub-variant tree: under another parent, up to top level, or
+     * down under one. Opens {@link GroupParentPickerScreen}; null for the categories that have no
+     * groups (the icon shows why).
+     */
+    static CommandMenuEntry moveEntry(Ctx ctx) {
+        if (!ctx.hasSelection()) return null;
+        return moveEntryFor(ctx.selection(), EditorScreenLang.text(EditorScreenLang.ICON_MOVE));
+    }
+
+    /** The same picker for any key, under a caller's label — the Layout tab's cell is shorter. */
+    public static CommandMenuEntry moveEntryFor(VariantKey sel, String label) {
+        if (sel == null || !GroupParentPickerScreen.supports(sel.category())) return null;
+        // Contents groups are keyed by the contents id; a room by its name under the portal kind.
+        String childId = sel.category() == PlotCategory.PORTALS ? sel.modelName() : sel.modelId();
+        return new CommandMenuEntry.DrillIn(label,
+            new GroupParentPickerScreen(sel.category(), childId, sel.parentId()));
+    }
+
+    /**
+     * Remove is addressed by id, so it works on any selection. A sub-variant is removed through
+     * its own template id (contents) or its room name (portals), the same commands the old menu
+     * sent from inside the member's plot.
+     */
+    static CommandMenuEntry removeEntry(Ctx ctx) {
+        if (!ctx.hasSelection()) return null;
+        VariantKey sel = ctx.selection();
+        if (sel.category() == PlotCategory.PARTS) {
+            return new CommandMenuEntry.DrillIn(MenuLang.t("common.remove"),
+                new games.brennan.dungeontrain.client.menu.ConfirmScreen(
+                    MenuLang.t("confirm.remove", sel.modelName()),
+                    "dungeontrain editor part reset " + sel.modelId() + " " + sel.modelName()));
+        }
+        CommandMenuEntry parent = parentRemoveEntry(ctx);
+        if (parent != null) return parent;
+        if (sel.category() == PlotCategory.PORTALS) {
+            // Addressed by room name: the in-plot menu's `reset <kind>` acts on the plot the player
+            // stands in, which is not necessarily the row selected here.
+            return new CommandMenuEntry.DrillIn(MenuLang.t("common.remove"),
+                new games.brennan.dungeontrain.client.menu.ConfirmScreen(
+                    MenuLang.t("confirm.remove", sel.displayName()), resetCommand(sel)));
+        }
+        if (sel.category() == PlotCategory.CHUNK_FRAMES) {
+            return EditorMenuScreen.removeEntryFor(sel.category(), sel.modelId(), sel.modelName());
+        }
+        return EditorMenuScreen.removeEntryFor(sel.category(), sel.modelId(), sel.displayName());
+    }
+
+    /** The name-addressed reset for a selection, without a mode word; null for categories without one. */
+    private static String resetCommand(VariantKey sel) {
+        return switch (sel.category()) {
+            case CONTENTS -> "dungeontrain editor contents reset " + sel.modelId();
+            case PORTALS -> "dungeontrain editor portals reset " + sel.modelId() + " " + sel.modelName();
+            default -> null;
+        };
+    }
+
+    /**
+     * Remove on a template that has sub-variants: the three-way {@link ParentRemoveConfirmScreen}
+     * (delete all / unparent / promote the first) in place of the plain Yes/No, wrapping the same
+     * reset command {@link EditorMenuScreen#removeEntryFor} sends with a mode word appended. Null
+     * when the selection has no sub-variants or its category has no groups.
+     */
+    static CommandMenuEntry parentRemoveEntry(Ctx ctx) {
+        if (!ctx.hasSelection()) return null;
+        VariantKey sel = ctx.selection();
+        List<EditorTypeMenusPacket.Variant> subs = ctx.variant().subVariants();
+        if (subs == null || subs.isEmpty()) return null;
+        String base = resetCommand(sel);
+        if (base == null) return null;
+        return new CommandMenuEntry.DrillIn(MenuLang.t("common.remove"),
+            new ParentRemoveConfirmScreen(sel.displayName(), base, subs.size(), subs.get(0).displayName()));
+    }
+
+    /**
+     * Save / Reset / Clear on a plot the player is not standing in: the addressed packet the
+     * world-space panels use, for categories whose plots have an action row. Null otherwise.
+     */
+    static CommandMenuEntry packetAction(Ctx ctx, EditorPlotActionPacket.Action action,
+                                         Consumer<EditorPlotActionPacket> sendPacket) {
+        if (!ctx.hasSelection() || ctx.isSubVariant()) return null;
+        PlotCategory cat = ctx.category();
+        if (cat == null || !cat.hasActionRow()) return null;
+        VariantKey sel = ctx.selection();
+        EditorPlotActionPacket packet = new EditorPlotActionPacket(
+            cat.id(), sel.modelId(), sel.modelName(), action);
+        return new CommandMenuEntry.ClientAction(action.name(), () -> sendPacket.accept(packet));
+    }
+
+    // ------------------------------------------------------------------
+    // Header, enter, test
+    // ------------------------------------------------------------------
+
+    /**
+     * Go and stand in the selection. Same stamped category: the plain enter command. Another
+     * category: through the unsaved check, which switches category and follows up with the
+     * enter — the path every cross-category jump in the mod takes. Null when nothing is selected.
+     *
+     * <p>Already standing in it: a {@link EditorPlotActionPacket.Action#GO_HERE} packet rather than
+     * the command. The enter command always restamps — a relay Load that replaced the file relies
+     * on that to show the new blocks — so the one walk that must keep unsaved edits says so
+     * explicitly. Parts have no packet arm and keep the command.</p>
+     */
+    public static CommandMenuEntry enterEntry(Ctx ctx, Consumer<EditorPlotActionPacket> sendPacket) {
+        if (!ctx.hasSelection()) return null;
+        VariantKey sel = ctx.selection();
+        String command = EditorPlotTeleport.commandFor(sel.category(), sel.modelId(), sel.modelName());
+        if (command == null) return null;
+        String label = EditorScreenLang.text(EditorScreenLang.ENTER);
+        // A frame walks to its plot as it stands — its enter command restamps, which would throw
+        // away unsaved edits — and brings its category in itself when it has to.
+        if (sel.category() == PlotCategory.CHUNK_FRAMES) {
+            return new CommandMenuEntry.Run(label, CHUNK_FRAME_GOTO + sel.modelName());
+        }
+        if (ctx.stampedCategory() != null && sel.category().owner() == ctx.stampedCategory().owner()) {
+            if (ctx.standingInSelection() && sel.category().hasActionRow()) {
+                EditorPlotActionPacket walk = new EditorPlotActionPacket(
+                    sel.category().id(), sel.modelId(), sel.modelName(), EditorPlotActionPacket.Action.GO_HERE);
+                return new CommandMenuEntry.ClientAction(label, () -> sendPacket.accept(walk));
+            }
+            return new CommandMenuEntry.Run(label, command);
+        }
+        // Another category: switch, then go. No save prompt in between — it listed every plot the
+        // scan could see rather than the ones actually edited, so it stood between the author and
+        // the build they asked for while saying nothing they could act on.
+        String switchTo = "dungeontrain editor " + sel.category().owner().id();
+        return new CommandMenuEntry.ClientAction(label, () -> {
+            CommandRunner.run(switchTo);
+            CommandRunner.run(command);
+        });
+    }
+
+    private static final String CHUNK_FRAME_GOTO = "dungeontrain editor chunkframe goto ";
+
+    /**
+     * Go here with Shift held: Enter — into the middle of the selection's plot rather than to the
+     * front of its menu or its doorway. The per-plot panel's Enter with Shift, reached from the X
+     * menu; from another category it switches first, as Go here does. Null where the plot has no
+     * such landing (a category without an action row), leaving Go here as it is.
+     */
+    public static CommandMenuEntry enterCentreEntry(Ctx ctx, Consumer<EditorPlotActionPacket> sendPacket) {
+        if (!ctx.hasSelection()) return null;
+        VariantKey sel = ctx.selection();
+        if (sel.category() == PlotCategory.CHUNK_FRAMES) {
+            return new CommandMenuEntry.Run(EditorScreenLang.text(EditorScreenLang.ENTER),
+                CHUNK_FRAME_GOTO + sel.modelName() + " centre");
+        }
+        if (!sel.category().hasActionRow()) return null;
+        EditorPlotActionPacket enter = new EditorPlotActionPacket(sel.category().id(), sel.modelId(),
+            sel.modelName(), EditorPlotActionPacket.Action.ENTER_INSIDE, /*centre*/ true);
+        String label = EditorScreenLang.text(EditorScreenLang.ENTER);
+        if (ctx.stampedCategory() != null && sel.category().owner() == ctx.stampedCategory().owner()) {
+            return new CommandMenuEntry.ClientAction(label, () -> sendPacket.accept(enter));
+        }
+        String switchTo = "dungeontrain editor " + sel.category().owner().id();
+        return new CommandMenuEntry.ClientAction(label, () -> {
+            CommandRunner.run(switchTo);
+            sendPacket.accept(enter);
+        });
+    }
+
+    /**
+     * Test the Carriage: dimensional carriages, carriages and contents, from anywhere.
+     *
+     * <p>It used to require standing in the room, because the command could only name the plot the
+     * author was in. The room is stamped in its own band in the basement either way, so where they
+     * were standing was never part of what it tested — only of how it was named.</p>
+     *
+     * <p>While a test is running the same button is the way back out — Exit Test Mode, the row-list
+     * menu's "Back from" row ({@code MainMenuScreen}). Independent of the selection: the test copy
+     * sits in the basement between plots, where nothing is "here" to select.</p>
+     */
+    public static CommandMenuEntry testEntry(Ctx ctx) {
+        if (PortalTestSessionState.active()) {
+            return new CommandMenuEntry.Run(EditorScreenLang.text(EditorScreenLang.EXIT_TEST),
+                EXIT_TEST_COMMAND);
+        }
+        if (!ctx.hasSelection()) return null;
+        MenuScreen check = testCheckFor(ctx.category(), ctx.selection().modelName());
+        return check == null ? null
+            : new CommandMenuEntry.DrillIn(EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE), check);
+    }
+
+    /**
+     * The save-then-test screen for a template, or {@code null} for a category that has nothing to
+     * stand up: a dimensional carriage, a carriage, a contents template and a whole room or group can
+     * be walked into; a part or a track tile is only ever a piece of one of those.
+     */
+    public static MenuScreen testCheckFor(PlotCategory category, String modelName) {
+        if (category == null || modelName == null || modelName.isEmpty()) return null;
+        return switch (category) {
+            case PORTALS -> new PortalTestSaveCheckScreen(modelName);
+            case CHUNK_FRAMES -> modelName == null || modelName.isEmpty() ? null
+                : PortalTestSaveCheckScreen.forFrame(modelName);
+            case CARRIAGES, CONTENTS, WHOLE, WHOLE_GROUP ->
+                PortalTestSaveCheckScreen.forTemplate(category.id(), modelName);
+            default -> null;
+        };
+    }
+
+    /** The world's reseed-on-test switch, the same command either way the server holds it. */
+    static final String RESEED_ON_COMMAND = "dungeontrain portal test reseed on";
+    static final String RESEED_OFF_COMMAND = "dungeontrain portal test reseed off";
+    /** Re-roll the test carriage the author is standing in, now. */
+    public static final String RESEED_NOW_COMMAND = "dungeontrain portal test reseed";
+    /**
+     * Re-roll only the template under test (Shift): the frame on the same ground, the room on the
+     * same chunk, a carriage around the same contents or contents in the same carriage.
+     */
+    public static final String RESEED_FOCUS_COMMAND = "dungeontrain portal test reseed focus";
+
+    /** The reseed a press inside a test runs — focused while Shift is held. */
+    public static String reseedNowCommand() {
+        return net.minecraft.client.gui.screens.Screen.hasShiftDown() ? RESEED_FOCUS_COMMAND : RESEED_NOW_COMMAND;
+    }
+
+    /**
+     * Reseed, beside Test the Carriage. Outside a test it is the world switch: on, each test rolls
+     * the room's contents afresh; off, every test stands up the same roll. Tint alone shows the
+     * state — the cell is too narrow for an [ON]/[OFF] suffix, the same call the Mirror X / Y / Z
+     * cells make. Inside a test it is a button instead: it re-rolls the copy they are standing in,
+     * whatever the switch says — the switch is about the next test, and they are already in one.
+     */
+    public static CommandMenuEntry reseedEntry() {
+        if (PortalTestSessionState.active()) {
+            return new CommandMenuEntry.Run(EditorScreenLang.text(EditorScreenLang.RESEED),
+                RESEED_NOW_COMMAND);
+        }
+        return new CommandMenuEntry.Toggle(EditorScreenLang.text(EditorScreenLang.RESEED),
+            PortalTestSessionState.reseed(), RESEED_ON_COMMAND, RESEED_OFF_COMMAND,
+            /*showStateText*/ false, /*cmdToToggleOthers*/ null);
+    }
+
+    // ------------------------------------------------------------------
+    // Per-plot settings rows
+    // ------------------------------------------------------------------
+
+    /**
+     * The world-space plot panel's rows for the selection, in its order: the room's walls and
+     * what is inside it, a contents template's flip axes, then the contents allow-list.
+     *
+     * <p>Weight, the level bounds, the phases and a room's length, width and height are edited on
+     * the data sheet, on the lines that show them. Only what the sheet has no room for lands here.</p>
+     *
+     * @param portalRows the room rows for the selection — see {@link #roomRows}, supplied so they
+     *                   are only read when they apply
+     * @param roomMode   the selection's settings tag — see {@link #roomModeOf}
+     */
+    public static List<CommandMenuEntry> settingRows(Ctx ctx, Supplier<List<CommandMenuEntry>> portalRows,
+                                                     Supplier<String> roomMode) {
+        List<CommandMenuEntry> out = new ArrayList<>();
+        if (!ctx.hasSelection()) return out;
+        if (ctx.category() == PlotCategory.PORTALS) {
+            for (CommandMenuEntry row : portalRows.get()) {
+                if (!isRoomSizeRow(row)) out.add(row);
+            }
+        }
+        if (ctx.category() == PlotCategory.CHUNK_FRAMES) {
+            out.add(new CommandMenuEntry.DrillIn("Chunk dimensions…",
+                new games.brennan.dungeontrain.client.menu.ChunkFrameRoomsScreen(ctx.selection().modelName())));
+        }
+        out.addAll(flipRows(ctx));
+        addIfPresent(out, contentsAllowEntry(ctx, roomMode));
+        return out;
+    }
+
+    /**
+     * The room rows for the selection, or none when it is not a room the screen can describe.
+     *
+     * <p>Two sources, and which one is a matter of freshness rather than of reach. Standing in the
+     * room, the stood-in status packet is read — it arrives every tick, so a tap shows its result
+     * on the next frame, and the rows send to the bare {@code portals} root the world-space menu
+     * sends to. Anywhere else the roster entry's tag and box are used and the rows send to
+     * {@code portals room <name>}; those update on the roster refresh the screen schedules after
+     * every command it runs. A sub-variant room has no roster entry of its own, so it keeps the
+     * stood-in requirement it always had.</p>
+     */
+    public static List<CommandMenuEntry> roomRows(Ctx ctx) {
+        if (!ctx.hasSelection() || ctx.category() != PlotCategory.PORTALS) return List.of();
+        if (ctx.standingInSelection()) return EditorMenuScreen.portalRows();
+        EditorRosterIndex.Extras x = ctx.extras();
+        if (!x.hasRoom()) return List.of();
+        return EditorMenuScreen.portalRows(x.roomMode(), x.roomLength(), x.roomWidth(), x.roomHeight(),
+            games.brennan.dungeontrain.client.menu.EditorMenuPortalRows.prefixFor(ctx.selection().modelName()));
+    }
+
+    /** The selection's settings tag, from the same source {@link #roomRows} reads. */
+    public static String roomModeOf(Ctx ctx, Supplier<String> stoodIn) {
+        if (ctx.hasSelection() && ctx.category() == PlotCategory.PORTALS && !ctx.standingInSelection()
+            && ctx.extras().hasRoom()) {
+            return ctx.extras().roomMode();
+        }
+        return stoodIn.get();
+    }
+
+    /**
+     * A contents template's random-flip axes — the same Flip quad the world-space Current tab
+     * shows, by model id. Read from the stood-in status while standing in the template (tick-fresh)
+     * and from the roster row otherwise; a sub-variant has neither and shows none.
+     */
+    static List<CommandMenuEntry> flipRows(Ctx ctx) {
+        if (ctx.category() != PlotCategory.CONTENTS || ctx.isSubVariant()) return List.of();
+        String modelId = ctx.selection().modelId();
+        if (ctx.standingInSelection()) {
+            return EditorMenuScreen.flipRows(modelId, EditorStatusHudOverlay.flipX(),
+                EditorStatusHudOverlay.flipY(), EditorStatusHudOverlay.flipZ(), EditorStatusHudOverlay.flipRooms());
+        }
+        EditorRosterIndex.Extras x = ctx.extras();
+        if (!x.hasFlip()) return List.of();
+        return EditorMenuScreen.flipRows(modelId, x.flip(EditorStatusPacket.FLIP_X), x.flip(EditorStatusPacket.FLIP_Y),
+            x.flip(EditorStatusPacket.FLIP_Z), x.flip(EditorStatusPacket.FLIP_ROOMS));
+    }
+
+    /** True for the length, width and height steppers, which the Size line now carries. */
+    static boolean isRoomSizeRow(CommandMenuEntry row) {
+        TemplateDataSheet.Stepper stepper = TemplateDataSheet.Stepper.of(row);
+        return stepper != null && stepper.isRoomAxis();
+    }
+
+    /** The weight stepper for a key, for the sheet to take apart. Null when there is no weight pool. */
+    public static CommandMenuEntry weightRow(VariantKey sel, int weight) {
+        if (sel == null || weight == EditorPlotLabelsPacket.NO_WEIGHT) return null;
+        if (!sel.isSubVariant()) {
+            return EditorMenuScreen.weightTripleFor(sel.category(), sel.modelId(), sel.modelName(), weight);
+        }
+        String dec;
+        String inc;
+        String prefix;
+        switch (sel.category()) {
+            case CONTENTS -> {
+                dec = EditorPlotTeleport.groupMemberWeightCommandFor(sel.parentId(), sel.modelName(), "dec");
+                inc = EditorPlotTeleport.groupMemberWeightCommandFor(sel.parentId(), sel.modelName(), "inc");
+                prefix = "dungeontrain editor contents group set-weight " + sel.parentId() + " " + sel.modelName();
+            }
+            case PORTALS -> {
+                dec = EditorPlotTeleport.portalRoomGroupWeightCommandFor(sel.parentId(), sel.modelName(), "dec");
+                inc = EditorPlotTeleport.portalRoomGroupWeightCommandFor(sel.parentId(), sel.modelName(), "inc");
+                prefix = "dungeontrain editor portals group set-weight " + sel.parentId() + " " + sel.modelName();
+            }
+            // Track-side groups have no per-member weight verb yet.
+            default -> {
+                return null;
+            }
+        }
+        return new CommandMenuEntry.Triple(
+            new CommandMenuEntry.Stay("-", dec),
+            new CommandMenuEntry.TypeArg(EditorScreenLang.text(EditorScreenLang.WEIGHT, weight), "0-100", prefix),
+            new CommandMenuEntry.Stay("+", inc),
+            0.10, 0.90);
+    }
+
+    /** A level-bound stepper for a key, for the sheet to take apart. */
+    public static CommandMenuEntry levelRow(VariantKey sel, String sub, String shown) {
+        if (sel == null || sel.isSubVariant()) return null;
+        return EditorMenuScreen.levelTripleFor(sel.category(), sel.modelId(), sel.modelName(),
+            sub, "(" + shown + ")", sub.equals("minlevel") ? "0-1000" : "-1..1000");
+    }
+
+    /**
+     * The contents allow-list: every carriage has one; a room has one while its Contents setting
+     * furnishes it, which is only knowable for the room the player stands in.
+     */
+    static CommandMenuEntry contentsAllowEntry(Ctx ctx, Supplier<String> roomMode) {
+        VariantKey sel = ctx.selection();
+        String label = EditorScreenLang.text(EditorScreenLang.CONTENTS_ALLOW);
+        if (sel.category() == PlotCategory.CARRIAGES && !sel.isSubVariant()) {
+            return new CommandMenuEntry.DrillIn(label, CarriageContentsAllowScreen.forCarriage(sel.modelId()));
+        }
+        if (sel.category() == PlotCategory.PORTALS
+            && PortalRoomSettings.parse(roomMode.get()).contents().furnishes()) {
+            return new CommandMenuEntry.DrillIn(label, CarriageContentsAllowScreen.forPortalRoom(sel.modelName()));
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------------------
+    // New
+    // ------------------------------------------------------------------
+
+    /**
+     * The "+" tile of a type strip. Carriages and contents pick a source first; parts pick within
+     * their kind; tracks and rooms clone the strip's first variant under a typed name.
+     */
+    public static CommandMenuEntry newEntry(PlotCategory stripCategory, String stripModelId,
+                                            String firstName, VariantKey standing) {
+        if (stripCategory == null) return null;
+        String current = standing != null && standing.category() == stripCategory
+            ? standing.displayName() : firstName;
+        if (stripCategory == PlotCategory.PARTS) {
+            return new CommandMenuEntry.DrillIn(MenuLang.t("common.new"),
+                new NewSourcePickerScreen(NewSourcePickerScreen.Category.PARTS, stripModelId, current));
+        }
+        String modelId = switch (stripCategory) {
+            case TRACKS, PORTALS -> stripModelId;
+            default -> current;
+        };
+        return EditorMenuScreen.newEntryFor(stripCategory, modelId, current);
+    }
+
+    /** The "+" tile of a sub-variant grid: a new member of {@code parent}'s group. */
+    public static CommandMenuEntry newSubVariantEntry(VariantKey parent, VariantKey standing) {
+        if (parent == null) return null;
+        String source = standing != null && standing.category() == parent.category()
+            ? standing.displayName() : parent.displayName();
+        return switch (parent.category()) {
+            case CONTENTS -> new CommandMenuEntry.DrillIn(MenuLang.t("editor.new_sub_variant"),
+                new NewSourcePickerScreen(NewSourcePickerScreen.Category.CONTENTS_SUB_VARIANT,
+                    null, parent.displayName(), source));
+            case PORTALS -> new CommandMenuEntry.DrillIn(MenuLang.t("editor.new_sub_variant"),
+                new NewSourcePickerScreen(NewSourcePickerScreen.Category.PORTAL_ROOM_SUB_VARIANT,
+                    null, parent.displayName(), source));
+            default -> null;
+        };
+    }
+
+    private static void addIfPresent(List<CommandMenuEntry> out, CommandMenuEntry entry) {
+        if (entry != null) out.add(entry);
+    }
+}

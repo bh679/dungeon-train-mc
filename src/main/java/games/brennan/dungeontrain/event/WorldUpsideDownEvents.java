@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.MirrorPlanCache;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
+import games.brennan.dungeontrain.worldgen.UpsideDownGravity;
 import games.brennan.dungeontrain.worldgen.UpsideDownMirror;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.server.level.ServerLevel;
@@ -19,6 +20,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
+import java.util.function.LongPredicate;
 
 /**
  * Realises the <b>upside-down band</b> ({@link UpsideDownBand}) by mirroring each in-band column of
@@ -51,6 +53,8 @@ import net.neoforged.neoforge.event.level.LevelEvent;
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class WorldUpsideDownEvents {
+
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     private WorldUpsideDownEvents() {}
 
@@ -94,12 +98,22 @@ public final class WorldUpsideDownEvents {
      * neighbourhood is now loaded (so its deferred write can pass the {@link #neighboursFull} guard).
      * Called from {@link #onChunkLoad} for every overworld load: the newly-loaded chunk may be the last
      * neighbour any of its 8 surrounding pending chunks (or itself) was waiting on.
+     *
+     * <p>The loading chunk {@code (cx,cz)} counts as loaded even though {@code getChunkNow} can't see it
+     * yet: NeoForge fires {@code ChunkEvent.Load} inside the FULL status task, before the chunk is
+     * published as FULL. Without that, the last neighbour to arrive — always the one whose Load is firing —
+     * never completed anybody's 3×3, so promotion fell through to the drain's idle-only reconcile, and
+     * chunks the train outran unloaded un-mirrored. Promotion is only a scheduling hint: the drain re-runs
+     * the real {@link #neighboursFull} guard before writing, by which time the chunk is published.</p>
      */
     public static void promoteNeighbourhood(ServerLevel level, DungeonTrainWorldData data, int cx, int cz) {
+        long loading = ChunkPos.asLong(cx, cz);
+        var cache = level.getChunkSource();
+        LongPredicate loaded = k -> k == loading || cache.getChunkNow(ChunkPos.getX(k), ChunkPos.getZ(k)) != null;
         for (long key : promotableKeys(cx, cz,
                 data.pendingMirrorChunks()::contains,
                 data.readyMirrorChunks()::contains,
-                k -> neighboursFull(level, ChunkPos.getX(k), ChunkPos.getZ(k)))) {
+                k -> neighbourhoodLoaded(ChunkPos.getX(k), ChunkPos.getZ(k), loaded))) {
             data.promoteMirrorChunk(key);
         }
     }
@@ -134,6 +148,15 @@ public final class WorldUpsideDownEvents {
     public static void onLevelUnload(LevelEvent.Unload event) {
         if (event.getLevel() instanceof ServerLevel level && level.dimension().equals(Level.OVERWORLD)) {
             MirrorPlanCache.clear();
+            UpsideDownGravity.clearFrozen();
+        }
+    }
+
+    /** Drop gravity ticks recorded for a chunk that unloads before its mirror applies. */
+    @SubscribeEvent
+    public static void onChunkUnload(ChunkEvent.Unload event) {
+        if (event.getLevel() instanceof ServerLevel level && level.dimension().equals(Level.OVERWORLD)) {
+            UpsideDownGravity.forgetFrozen(event.getChunk().getPos().toLong());
         }
     }
 
@@ -142,12 +165,12 @@ public final class WorldUpsideDownEvents {
         long startX = UpsideDownBand.startX(level);
         if (startX == UpsideDownBand.OFF) return false;
         int chunkMinX = chunk.getPos().getMinBlockX();
-        if (chunkMinX + 15 < startX) return false;           // entirely before the first band
+        int chunkMinZ = chunk.getPos().getMinBlockZ();
         for (int dx = 0; dx < 16; dx++) {
             int worldX = chunkMinX + dx;
-            if (UpsideDownBand.isInBand(level, worldX)
-                    || UpsideDownBand.isInEntryLead(level, worldX)
-                    || UpsideDownBand.isInExitFade(level, worldX)) {
+            if (UpsideDownBand.isInBand(level, worldX, chunkMinZ)
+                    || UpsideDownBand.isInEntryLead(level, worldX, chunkMinZ)
+                    || UpsideDownBand.isInExitFade(level, worldX, chunkMinZ)) {
                 return true;
             }
         }
@@ -177,6 +200,13 @@ public final class WorldUpsideDownEvents {
         if (plan == null) return false;
 
         UpsideDownMirror.apply(chunk, plan);
+        // Gravity blocks that tried to fall while the chunk waited now fall up from their mirrored spot.
+        var frozen = UpsideDownGravity.drainFrozen(pos.toLong());
+        int fellUp = UpsideDownMirror.armFallUp(chunk, plan, frozen);
+        if (!frozen.isEmpty()) {
+            LOGGER.debug("[DT-UDGravity] chunk {},{}: {} gravity ticks held until the flip, {} now fall up",
+                pos.x, pos.z, frozen.size(), fellUp);
+        }
 
         // Lay the flipped corridor into the composited terrain — the counterpart to TrackBedFeature
         // (which skips band / lead-in / exit-fade chunks). Runs after the mirror so it wins the corridor
@@ -207,9 +237,14 @@ public final class WorldUpsideDownEvents {
      */
     public static boolean neighboursFull(ServerLevel level, int cx, int cz) {
         var cache = level.getChunkSource();
+        return neighbourhoodLoaded(cx, cz, k -> cache.getChunkNow(ChunkPos.getX(k), ChunkPos.getZ(k)) != null);
+    }
+
+    /** True iff {@code isLoaded} holds for the chunk {@code (cx,cz)} and all 8 of its neighbours. Pure. */
+    public static boolean neighbourhoodLoaded(int cx, int cz, LongPredicate isLoaded) {
         for (int dz = -1; dz <= 1; dz++) {
             for (int dx = -1; dx <= 1; dx++) {
-                if (cache.getChunkNow(cx + dx, cz + dz) == null) return false;
+                if (!isLoaded.test(ChunkPos.asLong(cx + dx, cz + dz))) return false;
             }
         }
         return true;

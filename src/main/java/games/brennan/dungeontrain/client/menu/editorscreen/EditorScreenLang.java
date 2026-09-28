@@ -1,0 +1,295 @@
+package games.brennan.dungeontrain.client.menu.editorscreen;
+
+import net.minecraft.network.chat.Component;
+
+/**
+ * Every lang key the inventory-style editor screen uses, in one place so a test can pin that each
+ * one exists in {@code en_us.json}. The old X menu hard-coded its labels; this screen does not.
+ */
+public final class EditorScreenLang {
+
+    private static final String PREFIX = "gui.dungeontrain.editor_screen.";
+
+    public static final String TAB_TEMPLATES = PREFIX + "tab.templates";
+    public static final String TAB_LAYOUT = PREFIX + "tab.layout";
+    public static final String TAB_STAGES = PREFIX + "tab.stages";
+    public static final String TAB_NAV = PREFIX + "tab.nav";
+    public static final String TAB_SETTINGS = PREFIX + "tab.settings";
+    public static final String TAB_EXIT = PREFIX + "tab.exit";
+
+    /** The category strip under the Templates tab's filter row — these were the tabs once. */
+    public static final String TAB_ALL = PREFIX + "tab.all";
+    public static final String TAB_WHOLE = PREFIX + "tab.whole";
+    /** The Settings page's "Whole group every N" stepper — shares the number-entry title's key. */
+    public static final String WHOLE_EVERY = "gui.dungeontrain.number_input.whole_every";
+    public static final String WHOLE_EVERY_OFF = PREFIX + "settings.whole_every_off";
+    public static final String TAB_CARRIAGES = PREFIX + "tab.carriages";
+    public static final String TAB_CONTENTS = PREFIX + "tab.contents";
+    public static final String TAB_TRACKS = PREFIX + "tab.tracks";
+    public static final String TAB_DIMENSIONS = PREFIX + "tab.dimensions";
+
+    /**
+     * The Nav tab: the red button under the picked area, its greyed form when already there, the
+     * button's tooltip, and the confirm that stands between it and a plot-wiping category switch.
+     */
+    public static final String NAV_GO_HERE = PREFIX + "nav.go_here";
+    public static final String NAV_HERE = PREFIX + "nav.here";
+    public static final String NAV_GO_HERE_TIP = PREFIX + "nav.go_here_tip";
+    public static final String NAV_CONFIRM = PREFIX + "nav.confirm";
+
+    /** The filter bar's toggle and its tooltips, and what clicking an active chip does. */
+    public static final String FILTERS = PREFIX + "filters";
+    public static final String FILTERS_SHOW = PREFIX + "filters.show";
+    public static final String FILTERS_HIDE = PREFIX + "filters.hide";
+    public static final String FILTERS_CLEAR_ONE = PREFIX + "filters.clear_one";
+
+    /** The Layout tab: a type's section header, its collapse hint, and the short Move cell. */
+    public static final String LAYOUT_SECTION = PREFIX + "layout.section";
+    public static final String LAYOUT_SECTION_TIP = PREFIX + "layout.section_tip";
+    public static final String LAYOUT_MOVE = PREFIX + "layout.move";
+    /** The Layout tab with a roster but nothing left after the filters — not "loading". */
+    public static final String LAYOUT_NO_MATCHES = PREFIX + "layout.no_matches";
+    /** The weight cell's tooltip: the same three clicks the world-space menus take. */
+    public static final String LAYOUT_WEIGHT_TIP = PREFIX + "layout.weight_tip";
+
+    /** The Stages tab: a row's block-count cell, the detail's parts line, its pager, and its empty states. */
+    public static final String STAGES_BLOCKS = PREFIX + "stages.blocks";
+    public static final String STAGES_PARTS = PREFIX + "stages.parts";
+    public static final String STAGES_MORE = PREFIX + "stages.more";
+    public static final String STAGES_NONE = PREFIX + "stages.none";
+    public static final String STAGES_NO_BLOCKS = PREFIX + "stages.no_blocks";
+    public static final String STAGES_BLOCK_TIP = PREFIX + "stages.block_tip";
+    public static final String STAGES_TEMPLATES = PREFIX + "stages.templates";
+    public static final String STAGES_NO_TEMPLATES = PREFIX + "stages.no_templates";
+    /** The Stages list's two titles, each a sort key. */
+    public static final String STAGES_COL_NAME = PREFIX + "stages.col.name";
+    public static final String STAGES_COL_LEVEL = PREFIX + "stages.col.level";
+    /** The stage overview page: its icon row (Select flips to Deselect once focused) and the gate rows. */
+    public static final String STAGES_ICON_REFRESH = PREFIX + "stages.icon.refresh";
+    public static final String STAGES_ICON_SELECT = PREFIX + "stages.icon.select";
+    public static final String STAGES_ICON_DESELECT = PREFIX + "stages.icon.deselect";
+    public static final String STAGES_ICON_RENAME = PREFIX + "stages.icon.rename";
+    public static final String STAGES_ICON_DUPLICATE = PREFIX + "stages.icon.duplicate";
+    public static final String STAGES_ICON_DELETE = PREFIX + "stages.icon.delete";
+    public static final String STAGES_ICON_PREV = PREFIX + "stages.icon.prev";
+    public static final String STAGES_ICON_NEXT = PREFIX + "stages.icon.next";
+    public static final String STAGES_ONE_TEMPLATE = PREFIX + "stages.one_template";
+    public static final String STAGES_DELETE_CONFIRM = PREFIX + "stages.delete_confirm";
+    public static final String STAGES_MIN_LEVEL = PREFIX + "stages.min_level";
+    public static final String STAGES_MAX_LEVEL = PREFIX + "stages.max_level";
+    public static final String STAGES_BANDS = PREFIX + "stages.bands";
+    /** The stage sheet's two count lines and the one-carriage off reason for Prev / Next. */
+    public static final String STAGES_PARTS_LABEL = PREFIX + "stages.parts_label";
+    public static final String STAGES_TEMPLATES_LABEL = PREFIX + "stages.templates_label";
+    public static final String STAGES_ONE_CARRIAGE = PREFIX + "stages.one_carriage";
+    /** The Palette and Stone pages: their headings, a cell's tooltip lines, and the Re-bake button. */
+    public static final String STAGES_PALETTE_SOLID = PREFIX + "stages.palette.solid";
+    public static final String STAGES_PALETTE_SHAPES = PREFIX + "stages.palette.shapes";
+    public static final String STAGES_PALETTE_WOOD = PREFIX + "stages.palette.wood";
+    public static final String STAGES_PALETTE_STONE = PREFIX + "stages.palette.stone";
+    public static final String STAGES_PALETTE_TITLE = PREFIX + "stages.palette.title";
+    public static final String STAGES_PALETTE_OVERRIDE = PREFIX + "stages.palette.override";
+    public static final String STAGES_PALETTE_DERIVED = PREFIX + "stages.palette.derived";
+    public static final String STAGES_PALETTE_CELL_TIP = PREFIX + "stages.palette.cell_tip";
+    public static final String STAGES_PALETTE_FAMILY_TIP = PREFIX + "stages.palette.family_tip";
+    public static final String STAGES_ICON_REBAKE = PREFIX + "stages.icon.rebake";
+    /** The list's view toggle: what pressing it switches to. */
+    public static final String STAGES_VIEW_GRID = PREFIX + "stages.view.grid";
+    public static final String STAGES_VIEW_LIST = PREFIX + "stages.view.list";
+
+    public static final String FILTER_HINT = PREFIX + "filter.hint";
+    /** The two keys that end a name prompt, under the field. */
+    public static final String TYPING_HINT = PREFIX + "typing.hint";
+    public static final String FILTER_BUILTIN = PREFIX + "filter.builtin";
+    public static final String FILTER_MINE = PREFIX + "filter.mine";
+    public static final String FILTER_IMPORTED = PREFIX + "filter.imported";
+    public static final String FILTER_CREATOR = PREFIX + "filter.creator";
+    public static final String FILTER_FIND_CREATOR = PREFIX + "filter.find_creator";
+    /**
+     * The starred chip, wearing My Builds' own word for the same narrowing — pointed at that key
+     * rather than given one of its own, for the reason the {@code creators.*} block above is.
+     */
+    public static final String FILTER_STARRED = "gui.dungeontrain.builder.profile.favourite.starred";
+
+    /**
+     * The in-menu builder search, which speaks the pause menu's own words.
+     *
+     * <p>Pointed at the existing {@code builder.creators.*} keys rather than copied into this
+     * screen's namespace: it is the same search asking the same question, and two translations of
+     * "No builder by that name" that could drift apart would be two chances to be wrong.</p>
+     */
+    public static final String CREATORS_TITLE = "gui.dungeontrain.builder.creators.title";
+    public static final String CREATORS_HINT = "gui.dungeontrain.builder.creators.hint";
+    public static final String CREATORS_ROW = "gui.dungeontrain.builder.creators.row";
+    public static final String CREATORS_PROMPT = "gui.dungeontrain.builder.creators.prompt";
+    public static final String CREATORS_FAVOURITES = "gui.dungeontrain.builder.creators.favourites";
+    public static final String CREATORS_SEARCHING = "gui.dungeontrain.builder.creators.searching";
+    public static final String CREATORS_NONE = "gui.dungeontrain.builder.creators.none";
+    public static final String CREATORS_UNAVAILABLE = "gui.dungeontrain.builder.creators.unavailable";
+    public static final String CREATORS_MINE = "gui.dungeontrain.builder.profile.back_to_mine";
+    public static final String CREATORS_ALL = PREFIX + "creators.all";
+    public static final String CREATOR_EMPTY = "gui.dungeontrain.builder.profile.empty_other";
+    public static final String CREATOR_NO_MATCHES = "gui.dungeontrain.builder.profile.no_matches";
+
+    public static final String CREATOR_LOADING = PREFIX + "creator.loading";
+    public static final String CREATOR_UNAVAILABLE = PREFIX + "creator.unavailable";
+    public static final String CREATOR_BY = PREFIX + "creator.by";
+    public static final String CREATOR_KIND = PREFIX + "creator.kind";
+    public static final String CREATOR_CHANGES = PREFIX + "creator.changes";
+    public static final String CREATOR_STATUS = PREFIX + "creator.status";
+    public static final String CREATOR_READ_ONLY = PREFIX + "creator.read_only";
+    public static final String CREATOR_NOTHING_SELECTED = PREFIX + "creator.nothing_selected";
+    public static final String CREATOR_LOAD = "gui.dungeontrain.builder.profile.load_into_editor";
+    public static final String CREATOR_LOAD_COPY = PREFIX + "creator.load_copy";
+    public static final String CREATOR_LOADED = PREFIX + "creator.loaded";
+    /** Load, for the kinds that land under a variant parent; and the parent button beside it. */
+    public static final String CREATOR_LOAD_SUB_VARIANT = PREFIX + "creator.load_sub_variant";
+    public static final String CREATOR_PARENT_TITLE = PREFIX + "creator.parent_title";
+    public static final String CREATOR_PARENT_NEW = PREFIX + "creator.parent_new";
+    /** The Whole-pool destination in the "Load under" picker, and the top-level row a carriage gets. */
+    public static final String CREATOR_PARENT_WHOLE_ROOM = PREFIX + "creator.parent_whole_room";
+    public static final String CREATOR_PARENT_TOP_LEVEL = PREFIX + "creator.parent_top_level";
+    public static final String CREATOR_SUBMIT = "gui.dungeontrain.builder.profile.submit_for_review";
+    public static final String CREATOR_WITHDRAW = "gui.dungeontrain.builder.profile.withdraw_submission";
+    public static final String CREATOR_NOT_YOURS = "gui.dungeontrain.builder.profile.not_yours_short";
+    public static final String CREATOR_POOL = PREFIX + "creator.pool";
+    public static final String CREATOR_SUBMITTING = PREFIX + "creator.submitting";
+    public static final String LOAD_ALL = PREFIX + "load_all";
+    public static final String LOAD_ALL_TIP = PREFIX + "load_all.tip";
+    public static final String LOAD_ALL_PROGRESS = PREFIX + "load_all.progress";
+    public static final String VERSION = PREFIX + "version";
+    public static final String VERSION_CURRENT = PREFIX + "version.current";
+    public static final String CREATOR_GOING = PREFIX + "creator.going";
+    public static final String CREATOR_LOADING_BUILD = "gui.dungeontrain.builder.profile.downloading";
+    /** The Load button's own label while a fetch is out — short, because the slot is. */
+    public static final String CREATOR_LOAD_PENDING = PREFIX + "creator.load_pending";
+    /** What the loaded slot says under the mouse: Shift brings the build down again as a copy. */
+    public static final String CREATOR_LOADED_SHIFT_HINT = PREFIX + "creator.loaded_shift_hint";
+    /** What the note says when a Load was never answered. Shares My Builds' wording. */
+    public static final String CREATOR_LOAD_FAILED = "gui.dungeontrain.builder.profile.download_failed";
+
+    public static final String SUB_VARIANTS_OF = PREFIX + "sub_variants_of";
+    public static final String TILE_NEW = PREFIX + "tile.new";
+    public static final String TILE_NEW_SUB_VARIANT = PREFIX + "tile.new_sub_variant";
+    public static final String TILE_SELF = PREFIX + "tile.self";
+    public static final String TILE_BUILTIN_ROOM = PREFIX + "tile.builtin_room";
+    public static final String NO_ROSTER = PREFIX + "no_roster";
+    public static final String NOTHING_SELECTED = PREFIX + "nothing_selected";
+
+    public static final String YOU_ARE_HERE = PREFIX + "you_are_here";
+    public static final String STANDING_IN = PREFIX + "standing_in";
+    public static final String UNSAVED = PREFIX + "unsaved";
+
+    public static final String SHEET_PATH = PREFIX + "sheet.path";
+    public static final String SHEET_SIZE = PREFIX + "sheet.size";
+    public static final String SHEET_BLOCKS = PREFIX + "sheet.blocks";
+    public static final String SHEET_ENTITIES = PREFIX + "sheet.entities";
+    public static final String SHEET_CONTAINERS = PREFIX + "sheet.containers";
+    public static final String SHEET_LIGHTS = PREFIX + "sheet.lights";
+    public static final String SHEET_LIGHT_LEVEL = PREFIX + "sheet.light_level";
+    public static final String SHEET_LOOT = PREFIX + "sheet.loot";
+    public static final String SHEET_LOOT_NONE = PREFIX + "sheet.loot_none";
+    public static final String SHEET_LOOT_POOL = PREFIX + "sheet.loot_source.pool";
+    public static final String SHEET_LOOT_PREFAB = PREFIX + "sheet.loot_source.prefab";
+    public static final String SHEET_LOOT_INLINE = PREFIX + "sheet.loot_source.inline";
+    public static final String SHEET_LOOT_TABLE = PREFIX + "sheet.loot_source.table";
+    public static final String SHEET_LOOT_DEFAULT = PREFIX + "sheet.loot_source.default";
+    public static final String SHEET_LOOT_VARIANT = PREFIX + "sheet.loot_variant";
+    public static final String SHEET_LOOT_VALUE = PREFIX + "sheet.loot_value";
+    public static final String SHEET_LOOT_TOTAL_TIP = PREFIX + "sheet.loot_total_tip";
+    public static final String LOOT_PAGE_HEADER = PREFIX + "loot_page.header";
+    public static final String SUBMISSION_PAGE_HEADER = PREFIX + "submission_page.header";
+    public static final String LOOT_PAGE_IN = PREFIX + "loot_page.in";
+    public static final String SHEET_WEIGHT = PREFIX + "sheet.weight";
+    public static final String SHEET_SHARE = PREFIX + "sheet.share";
+    public static final String SHEET_SPAWNS = PREFIX + "sheet.spawns";
+    public static final String SHEET_LEVELS_ALL = PREFIX + "sheet.levels_all";
+    public static final String SHEET_STAGE = PREFIX + "sheet.stage";
+    public static final String SHEET_STAGE_TOOLTIP = PREFIX + "sheet.stage_tooltip";
+    public static final String SHEET_TRAIN_SIZE = PREFIX + "sheet.train_size";
+    public static final String GO_HERE = PREFIX + "go_here";
+    /** The header's note while a save goes up to the relay, and how it ended — see EditorUploadStatus. */
+    public static final String UPLOADING = PREFIX + "upload.uploading";
+    public static final String UPLOADED = PREFIX + "upload.uploaded";
+    public static final String UPLOAD_FAILED = PREFIX + "upload.failed";
+    public static final String STAGE_CUSTOM_SHORT = PREFIX + "stage_custom_short";
+    public static final String SHEET_MIN_LEVEL = PREFIX + "sheet.min_level";
+    public static final String SHEET_MAX_LEVEL = PREFIX + "sheet.max_level";
+    public static final String SHEET_WEIGHT_TOOLTIP = PREFIX + "sheet.weight_tooltip";
+    public static final String SHEET_WEIGHT_UP = PREFIX + "sheet.weight_up";
+    public static final String SHEET_WEIGHT_DOWN = PREFIX + "sheet.weight_down";
+    public static final String UNDO_NOTHING = PREFIX + "undo_nothing";
+    public static final String REDO_NOTHING = PREFIX + "redo_nothing";
+    public static final String SHEET_SOURCE = PREFIX + "sheet.source";
+    public static final String SOURCE_BUILTIN = PREFIX + "source.builtin";
+    public static final String SOURCE_MINE = PREFIX + "source.mine";
+    public static final String SOURCE_COMMUNITY = PREFIX + "source.community";
+    public static final String SHEET_PENDING = PREFIX + "sheet.pending";
+
+    public static final String ICON_SAVE = PREFIX + "icon.save";
+    public static final String ICON_RENAME = PREFIX + "icon.rename";
+    public static final String ICON_REMOVE = PREFIX + "icon.remove";
+    public static final String ICON_UNDO = PREFIX + "icon.undo";
+    public static final String ICON_REDO = PREFIX + "icon.redo";
+    public static final String ICON_RESET = PREFIX + "icon.reset";
+    public static final String ICON_CLEAR = PREFIX + "icon.clear";
+    public static final String ICON_PACKAGE = PREFIX + "icon.package";
+    public static final String ICON_MOVE = PREFIX + "icon.move";
+    public static final String SHEET_ID = PREFIX + "sheet.id";
+    /** "Built by" — who originally made the template; a picker in dev mode. */
+    public static final String SHEET_BUILDER = PREFIX + "sheet.builder";
+    public static final String SHEET_BUILDER_NONE = PREFIX + "sheet.builder_none";
+    public static final String SHEET_BUILDER_TOOLTIP = PREFIX + "sheet.builder_tooltip";
+    /** The builder search opened from the Built-by cell: its title, and the two rows it adds. */
+    public static final String CREATORS_PICK_TITLE = PREFIX + "creators.pick_title";
+    public static final String CREATORS_PICK_ME = PREFIX + "creators.pick_me";
+    public static final String CREATORS_PICK_NONE = PREFIX + "creators.pick_none";
+    public static final String DISABLED_NO_GROUPS = PREFIX + "disabled.no_groups";
+    public static final String MOVE_TITLE = PREFIX + "move.title";
+    public static final String MOVE_TOP_LEVEL = PREFIX + "move.top_level";
+    public static final String MOVE_NO_TARGETS = PREFIX + "move.no_targets";
+    public static final String MOVE_BACK = PREFIX + "move.back";
+    /** The submit icon wears My Builds' own two words, so one decision reads the same in both. */
+    public static final String ICON_SUBMIT = "gui.dungeontrain.builder.profile.submit_for_review";
+    public static final String ICON_WITHDRAW = "gui.dungeontrain.builder.profile.withdraw_submission";
+    public static final String DISABLED_NOT_UPLOADED = PREFIX + "disabled.not_uploaded";
+    public static final String DISABLED_STAND_HERE = PREFIX + "disabled.stand_here";
+    public static final String DISABLED_BUILTIN = PREFIX + "disabled.builtin";
+    public static final String DISABLED_NOT_HERE = PREFIX + "disabled.not_here";
+    public static final String DISABLED_NOT_TESTABLE = PREFIX + "disabled.not_testable";
+
+    public static final String TEST_CARRIAGE = PREFIX + "test_carriage";
+    public static final String EXIT_TEST = PREFIX + "exit_test";
+    public static final String RESEED = PREFIX + "reseed";
+    public static final String RESEED_TIP_ON = PREFIX + "reseed.tip_on";
+    public static final String RESEED_TIP_OFF = PREFIX + "reseed.tip_off";
+    public static final String RESEED_TIP_NOW = PREFIX + "reseed.tip_now";
+    public static final String ENTER = PREFIX + "enter";
+    public static final String THEME = PREFIX + "theme";
+    public static final String THEME_LIGHT = PREFIX + "theme.light";
+    public static final String THEME_DARK = PREFIX + "theme.dark";
+    public static final String SKYBOX = PREFIX + "skybox";
+    public static final String SKYBOX_ON = PREFIX + "skybox.on";
+    public static final String SKYBOX_OFF = PREFIX + "skybox.off";
+    public static final String RELAY = PREFIX + "relay";
+    public static final String RELAY_LIVE = PREFIX + "relay.live";
+    public static final String RELAY_DEV = PREFIX + "relay.dev";
+    public static final String EXIT_EDITOR = PREFIX + "exit_editor";
+    public static final String WEIGHT = PREFIX + "weight";
+    public static final String WEIGHT_READ_ONLY = PREFIX + "weight_read_only";
+    public static final String PHASES = PREFIX + "phases";
+    public static final String STAGE_CUSTOM = PREFIX + "stage_custom";
+    public static final String STAGE_LINKED = PREFIX + "stage_linked";
+    public static final String CONTENTS_ALLOW = PREFIX + "contents_allow";
+
+    private EditorScreenLang() {}
+
+    /** The English-side string for a key, resolved through the loaded language. */
+    public static String text(String key) {
+        return Component.translatable(key).getString();
+    }
+
+    public static String text(String key, Object... args) {
+        return Component.translatable(key, args).getString();
+    }
+}

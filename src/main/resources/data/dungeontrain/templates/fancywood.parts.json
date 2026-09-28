@@ -53,7 +53,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -121,13 +130,13 @@
       "stage": "mud"
     },
     {
-      "name": "mudwindows_wood_oak",
+      "name": "mudwindows_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "wood_oak"
     },
     {
-      "name": "mudopen_wood_oak",
+      "name": "mudopen_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "wood_oak"
@@ -163,9 +172,150 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "mudwindows_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "darkwood"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "darkwood"
+    },
+    {
+      "name": "mudwindows_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "spruce"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "spruce"
+    },
+    {
+      "name": "mudwindows_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "acacia"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "acacia"
+    },
+    {
+      "name": "mudwindows_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "birch"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "birch"
+    },
+    {
+      "name": "mudwindows_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "jungle"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "jungle"
+    },
+    {
+      "name": "mudwindows_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mangrove"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mangrove"
+    },
+    {
+      "name": "mudwindows_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "cherry"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "cherry"
+    },
+    {
+      "name": "mudwindows_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "bamboo"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "bamboo"
+    },
+    {
+      "name": "mudwindows_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mudwindows_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "crimson"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "crimson"
+    },
+    {
+      "name": "mudwindows_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "warped"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "warped"
     }
   ],
   "roof": [
@@ -175,7 +325,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -201,7 +360,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -246,12 +414,12 @@
       "stage": "mud"
     },
     {
-      "name": "mud_wood_oak",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "wood_oak"
     },
     {
-      "name": "mudopen_wood_oak",
+      "name": "mudopen_wood",
       "weight": 1,
       "stage": "wood_oak"
     },
@@ -271,7 +439,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -281,9 +458,128 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "darkwood"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "darkwood"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "spruce"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "spruce"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "acacia"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "acacia"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "birch"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "birch"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "jungle"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "jungle"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "mangrove"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "mangrove"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "cherry"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "cherry"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "bamboo"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "bamboo"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "crimson"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "crimson"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "warped"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "warped"
     }
   ],
   "doors": [
@@ -318,7 +614,7 @@
       "stage": "mud"
     },
     {
-      "name": "mud_wood_oak",
+      "name": "mud_wood",
       "weight": 1,
       "sideMode": "either",
       "endMode": "end",
@@ -329,6 +625,83 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "obsidian"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "darkwood"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "spruce"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "acacia"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "birch"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "jungle"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "mangrove"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "cherry"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "bamboo"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "crimson"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "warped"
     }
   ]
 }

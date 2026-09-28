@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageDoorCells;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
@@ -135,17 +136,30 @@ public final class CarriageEditor {
      * Returns {@code null} if the variant is not registered.
      */
     public static BlockPos plotOrigin(CarriageVariant variant, CarriageDims dims) {
-        List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
-        String target = variant.id();
-        int index = -1;
-        for (int i = 0; i < all.size(); i++) {
-            if (all.get(i).id().equals(target)) {
-                index = i;
-                break;
-            }
-        }
-        if (index < 0) return null;
+        Integer index = slotIndex().get(variant.id());
+        if (index == null) return null;
         return new BlockPos(FIRST_PLOT_X + index * plotStep(dims), PLOT_Y, PLOT_Z);
+    }
+
+    // ---- id → +X slot index, memoised on the registry snapshot --------------------------------
+
+    /** The registry snapshot {@link #SLOT_INDEX} was built from; a new snapshot means a rebuild. */
+    private static List<CarriageVariant> slotIndexSource;
+    private static java.util.Map<String, Integer> SLOT_INDEX = java.util.Map.of();
+
+    /**
+     * Variant id → row slot. The overlay asks for every variant's origin every tick, and the
+     * linear walk this replaces made each ask O(n) — O(n²) per pass. The registry hands out one
+     * immutable snapshot until it mutates, so a reference compare is the whole staleness check.
+     */
+    private static synchronized java.util.Map<String, Integer> slotIndex() {
+        List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
+        if (all == slotIndexSource) return SLOT_INDEX;
+        java.util.Map<String, Integer> index = new java.util.HashMap<>(all.size() * 2);
+        for (int i = 0; i < all.size(); i++) index.putIfAbsent(all.get(i).id(), i);
+        SLOT_INDEX = java.util.Map.copyOf(index);
+        slotIndexSource = all;
+        return SLOT_INDEX;
     }
 
     /**
@@ -153,6 +167,8 @@ public final class CarriageEditor {
      * footprint plus 1-block outline margin), or {@code null} if none.
      */
     public static CarriageVariant plotContaining(BlockPos pos, CarriageDims dims) {
+        // Answers only while CARRIAGES is the resident category — every category shares the origin.
+        if (!EditorStampedCategoryState.isActive(EditorCategory.CARRIAGES)) return null;
         for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
             BlockPos o = plotOrigin(variant, dims);
             if (o == null) continue;
@@ -186,7 +202,48 @@ public final class CarriageEditor {
         enter(player, variant, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the plot — a relay Load that replaced the file on disk
+     * arrives here and must show the new blocks. The walk that keeps unsaved edits is
+     * {@link #walkTo} / {@link #enterInside}.
+     */
     public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop) {
+        enter(player, variant, onTop, true);
+    }
+
+    /**
+     * The X menu's Go here: a walk to the plot, not a reload — restamps only when the player is
+     * not already standing in it. Restamping a plot you are standing in would throw away
+     * every unsaved edit for the sake of a few blocks' teleport.
+     */
+    public static void walkTo(ServerPlayer player, CarriageVariant variant, boolean onTop) {
+        enter(player, variant, onTop, !EditorPlotScope.standingIn(player, new Template.Carriage(variant)));
+    }
+
+    /**
+     * The panel's Enter button: land inside at {@code inside}, restamping unless the player is
+     * already standing in this plot.
+     */
+    public static void enterInside(ServerPlayer player, CarriageVariant variant, EditorPlotArrival.Inside inside) {
+        enter(player, variant, false, !EditorPlotScope.standingIn(player, new Template.Carriage(variant)), inside);
+    }
+
+    /**
+     * @param stamp whether to erase + restamp the plot before teleporting. The category entry
+     *              passes {@code false}: it has just stamped this plot itself, and a second stamp
+     *              would double the one synchronous cost it kept.
+     */
+    public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop, boolean stamp) {
+        enter(player, variant, onTop, stamp, EditorPlotArrival.Inside.FRONT_DOOR);
+    }
+
+    /**
+     * @param inside where an {@code onTop == false} landing aims: the -X doorway facing in, or the
+     *               centre. Either way it steps to the nearest free column if that cell is built up.
+     */
+    public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop, boolean stamp,
+                             EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -198,15 +255,11 @@ public final class CarriageEditor {
         }
 
         rememberReturn(player);
-        stampPlot(overworld, variant, dims);
+        if (stamp) stampPlot(overworld, variant, dims);
 
-        CarriageDims box = plotDims(variant, dims);
-        double tx = origin.getX() + box.length() / 2.0;
-        double ty = onTop
-            ? origin.getY() + box.height() + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + box.width() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        Vec3i footprint = new Template.Carriage(variant).plotSize(dims);
+        BlockPos door = EditorPlotArrival.firstOrNull(CarriageDoorCells.doorBases(origin, plotDims(variant, dims)));
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, inside, door);
 
         LOGGER.info("[DungeonTrain] Editor enter: {} -> {} plot at {} dims={}x{}x{} ({})",
             player.getName().getString(), variant.id(), origin,
@@ -259,6 +312,8 @@ public final class CarriageEditor {
      * category being stamped; see {@code EditorCommand.restampCarriagePlotsForStage}.
      */
     public static void stampAllPlots(ServerLevel overworld, CarriageDims dims) {
+        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
+        EditorStampQueue.flush();
         for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
             stampPlot(overworld, variant, dims);
         }
@@ -296,6 +351,35 @@ public final class CarriageEditor {
         for (int i = oldDeletedIndex; i < remaining.size(); i++) {
             stampPlot(level, remaining.get(i), dims);
         }
+    }
+
+    /**
+     * The insertion counterpart of {@link #restampRowAfterDeletion}: a variant has just been
+     * <b>registered</b> at {@code fromIndex}, so every plot from there on sits one slot to the right
+     * of where its blocks were stamped. Erase that slice — one slot longer than it was — and stamp
+     * each variant from {@code fromIndex} at its new position, from its saved template.
+     *
+     * <p>{@link #duplicate} alone stamps only the new plot, which left the rest of the row drawn over
+     * by one slot. Plots in the slice lose any unsaved edits; Save-as checks for those first.</p>
+     */
+    public static void restampRowFrom(ServerLevel level, int fromIndex, CarriageDims dims) {
+        BlockState air = Blocks.AIR.defaultBlockState();
+        CarriageDims widest = PortalCorridorSize.corridorDims(dims, PortalCorridorKind.LONG);
+        List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
+        for (int i = Math.max(0, fromIndex); i < all.size(); i++) {
+            BlockPos pos = new BlockPos(FIRST_PLOT_X + i * plotStep(dims), PLOT_Y, PLOT_Z);
+            CarriagePlacer.eraseAt(level, pos, widest);
+            setOutline(level, pos, air, widest);
+        }
+        for (int i = Math.max(0, fromIndex); i < all.size(); i++) {
+            stampPlot(level, all.get(i), dims);
+        }
+    }
+
+    /** The row slot {@code id} occupies, or -1 when it is not registered. */
+    public static int slotOf(String id) {
+        Integer index = slotIndex().get(id);
+        return index == null ? -1 : index;
     }
 
     /**
@@ -457,21 +541,11 @@ public final class CarriageEditor {
         }
         CarriageTemplateStore.save(target, template);
 
-        // Copy the source's variant sidecar into the new variant so the
-        // duplicate shares the "pick from these blocks" authoring.
-        CarriageVariantBlocks sourceSidecar = CarriageVariantBlocks.loadFor(source, plotDims(source, dims));
-        if (!sourceSidecar.isEmpty()) {
-            CarriageVariantBlocks copy = CarriageVariantBlocks.empty();
-            for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
-                copy.put(e.localPos(), e.states());
-            }
-            // Carry over the lock-id grouping so duplicated cells that share a
-            // random pick stay grouped (states pass only copies candidate lists).
-            for (java.util.Map.Entry<net.minecraft.core.BlockPos, Integer> lk : sourceSidecar.allLockIds().entrySet()) {
-                copy.setLockId(lk.getKey(), lk.getValue());
-            }
-            copy.save(target);
-        }
+        // Everything beside the .nbt goes with it — the variant sidecar ("pick from these blocks"
+        // authoring, lock-ids, mirror flags), the part assignments, the contents allow-list, the
+        // container links and the weights entry — so the duplicate is the source, not just its shape.
+        TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CARRIAGE, null,
+            source.id(), target.id());
 
         setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
 
@@ -553,31 +627,8 @@ public final class CarriageEditor {
         return TemplateDecor.capture(level, origin, size, Blocks.AIR);
     }
 
-    /**
-     * Draw the cage: barrier blocks along the 12 edges of the bounding box
-     * that sits 1 block outside the {@code length × height × width} footprint.
-     * Faces are left empty so the player can fly in and out freely; barriers
-     * are invisible in survival and render as translucent red in
-     * creative/spectator.
-     */
+    /** The plot cage — see {@link EditorPlotCage}. */
     private static void setOutline(ServerLevel level, BlockPos origin, BlockState state, CarriageDims dims) {
-        int x0 = origin.getX() - 1;
-        int y0 = origin.getY() - 1;
-        int z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + dims.length();
-        int y1 = origin.getY() + dims.height();
-        int z1 = origin.getZ() + dims.width();
-
-        for (int x = x0; x <= x1; x++) {
-            for (int y = y0; y <= y1; y++) {
-                for (int z = z0; z <= z1; z++) {
-                    int extremes = (x == x0 || x == x1 ? 1 : 0)
-                        + (y == y0 || y == y1 ? 1 : 0)
-                        + (z == z0 || z == z1 ? 1 : 0);
-                    if (extremes < 2) continue;
-                    level.setBlock(new BlockPos(x, y, z), state, 3);
-                }
-            }
-        }
+        EditorPlotCage.setOutline(level, origin, new Vec3i(dims.length(), dims.height(), dims.width()), state);
     }
 }

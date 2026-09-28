@@ -4,6 +4,8 @@ Authoritative instruction set for drafting Dungeon Train story letters — schem
 
 Follow this guide for writing story content
 
+> **Previewing while you write:** `python3 scripts/books-editor/serve.py` opens a local editor that renders any book on the vanilla page — same paginator, same 256-char budget, same ~19×14 visible page — and writes your edits straight back to these files. It is the fastest way to see where the page breaks actually land. See `scripts/books-editor/README.md`.
+
 ---
 
 ## 1. The JSON shape
@@ -15,6 +17,7 @@ Every file in this folder is one story. Schema:
   "id": "filename_slug",
   "character": "Author Name",
   "story": "Story Title",
+  "deferred": false,
   "letters": [
     {
       "index": 1,
@@ -35,6 +38,13 @@ Rules:
 - **Filename matches `id`** — snake_case, no spaces. e.g. `corren_vale_three_heads.json`.
 - `character` omitted → defaults to `"Anonymous"`.
 - `story` omitted → defaults to `"Untitled"` (then the letter `label` is used as the book title).
+- `deferred` omitted → defaults to `false`. `true` holds the series back: a lectern never **starts**
+  it while any ordinary series is still unfinished, so the held-back ones are what remains once the
+  rest of the corpus has been read. It is an ordering tier, not a removal — and once everything is
+  complete the post-completion re-read pool treats every story alike. Currently `true` for
+  `the_querys_and_life_of_fourteen` and `edda_marsh_the_wither_at_the_window`.
+  The flag lives in the English base file only: a localized copy replaces the base wholesale and
+  carries no flag of its own, so `StoryRegistry.baseDeferred` puts the base's value back.
 - Each letter MUST have `index` (1-based), `label`, and at least one `variants[]` entry.
 - `notes` is optional — used for editor annotations on a specific variant's char offset.
 

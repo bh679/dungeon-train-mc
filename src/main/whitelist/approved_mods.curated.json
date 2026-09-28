@@ -1,0 +1,241 @@
+{
+  "comment": [
+    "The baked APPROVED-MOD WHITELIST — mods a Dungeon Train run may have installed and still count.",
+    "Anything installed and NOT approved makes the session Free Play (the relay can switch that off).",
+    "",
+    "Every id here is a real modId as ModList.get().getMods() reports it, NOT a CurseForge/Modrinth",
+    "slug: Item Highlighter ships as `highlighter`, Iris Shaders as `iris`, Interactive Player Mobs",
+    "as `playermob`. An id transcribed from a store URL silently free-plays that mod's players, so",
+    "check the mod's own neoforge.mods.toml or the relay's Approved Mods page (which lists the ids",
+    "players actually report) before adding one.",
+    "",
+    "This file is the OFFLINE fallback and the starting point. The relay serves approvals and",
+    "revocations on top of it (GET /<CAP>/approved-mods), so the live list is:",
+    "  (baked u served.approved) - served.revoked",
+    "Curate here for things that should ship in the jar; curate on the relay for everything else.",
+    "",
+    "THE RULE FOR ADDING SOMETHING: approve mods that change how the game LOOKS, SOUNDS, PERFORMS or",
+    "READS, and libraries that do nothing on their own. Do not approve mods that change what the game",
+    "GIVES you — loot, mobs, structures, recipes, progression, movement — however popular they are.",
+    "Those runs are not comparable to anyone else's, which is the whole reason Free Play exists.",
+    "Nothing here overrides the cheat-mod blacklist: a mod on both lists is still a cheat mod.",
+    "",
+    "MINIMUM DT VERSION: an approval that is only safe from some Dungeon Train version up (it needs",
+    "support DT added, e.g. Farmer's Delight needs the soup-stacking hold-off) is floored ON THE RELAY",
+    "(Approved Mods page, min_dt_version), not here. Jars send ?dt=<version>; the relay serves a",
+    "floored id as approved at or above the floor and as REVOKED below it or when no version is sent.",
+    "That is the only lever that reaches jars already shipped: a field here would be invisible to them,",
+    "and a revocation beats this file's baked approval in every jar ever released."
+  ],
+  "prefixes": [
+    "fabric_"
+  ],
+  "prefixesWhy": [
+    "Sinytra Connector's Forgified Fabric API registers ~45 separate underscore-namespaced modules",
+    "(fabric_api_base, fabric_renderer_api_v1, ...) and ~98% of our players load them. They are",
+    "platform plumbing whose membership is Connector's to change, so a rule beats a transcription",
+    "that goes stale silently — the same call generateModRoster already makes in build.gradle.",
+    "Matched on the RAW id, so the underscore namespace is all that matches: a mod called",
+    "\"Fabric Furniture\" (modId fabricfurniture) is untouched. A prefix never beats a revocation:",
+    "an exact id revoked from the relay stays unapproved even if a prefix would have matched it."
+  ],
+  "groups": {
+    "platform": {
+      "why": "The game and the loader. Never optional, never a choice a player made.",
+      "ids": [
+        "minecraft",
+        "neoforge",
+        "connector",
+        "forgified_fabric_api",
+        "kotlinforforge"
+      ]
+    },
+    "performance": {
+      "why": "Frame rate and memory only. They change nothing a player can get.",
+      "ids": [
+        "lithium",
+        "entityculling",
+        "moreculling",
+        "immediatelyfast",
+        "badoptimizations",
+        "dynamic_fps",
+        "sodium_extra",
+        "reeses_sodium_options",
+        "modelfix",
+        "cupboard"
+      ]
+    },
+    "visual": {
+      "why": "How the game looks and animates. Cosmetic: no reach, no resources, no information a vanilla player lacks.",
+      "ids": [
+        "sable_player_ragdoll",
+        "entity_texture_features",
+        "entity_model_features",
+        "skinlayers3d",
+        "customskinloader",
+        "yes_steve_model",
+        "notenoughanimations",
+        "playeranimator",
+        "player_animation_library",
+        "vintage_animations",
+        "eatinganimation",
+        "firstperson",
+        "cameraoverhaul",
+        "handycam",
+        "ragdoll_reactions",
+        "particular",
+        "particlerain",
+        "subtle_effects",
+        "continuity",
+        "fusion",
+        "euphoria_patcher",
+        "wildfire_gender",
+        "cosmeticarmorreworked",
+        "pride",
+        "simplebedrockmodel",
+        "transition",
+        "trender",
+        "drippyloadingscreen",
+        "fancymenu",
+        "melody",
+        "lambdynlights",
+        "lambdynlights_runtime"
+      ],
+      "note": [
+        "lambdynlights (dynamic lights from held torches) is a genuine borderline call — it lets you",
+        "see a little further into an unlit room. Approved because the alternative is a player",
+        "holding a torch, and because DT's difficulty comes from the train, not from darkness.",
+        "Revoke it from the relay if that stops being true."
+      ]
+    },
+    "audio": {
+      "why": "Sound only.",
+      "ids": [
+        "sound_physics_remastered",
+        "presencefootsteps",
+        "sounds",
+        "voicechat",
+        "voicechat_api"
+      ]
+    },
+    "interface": {
+      "why": "HUD, menus, tooltips, inventory handling and recipe viewers. They present what the game already tells you.",
+      "ids": [
+        "betterf3",
+        "mod_menu",
+        "justzoom",
+        "dynamiccrosshair",
+        "dynamiccrosshairapi",
+        "simplytooltips",
+        "betteradvancedtooltips",
+        "inventoryprofilesnext",
+        "libipn",
+        "roughlyenoughitems",
+        "emi",
+        "patchouli",
+        "polymorph",
+        "visual_health",
+        "imblocker"
+      ]
+    },
+    "maps": {
+      "why": "Minimaps and world maps.",
+      "ids": [
+        "xaerominimap",
+        "xaeroworldmap",
+        "xaerolib",
+        "journeymap",
+        "journeymap_api"
+      ],
+      "note": [
+        "A deliberate call, not an oversight. A minimap shows terrain the player has already been",
+        "shown, and every one of these is near-standard equipment. Their entity radar / cave layers",
+        "are the part that would be an advantage — revoke a specific mod from the relay if that",
+        "starts mattering rather than pre-emptively free-playing everyone who runs a map."
+      ]
+    },
+    "multiplayer": {
+      "why": "Playing with other people: hosting, cosmetics and social layers.",
+      "ids": [
+        "essential",
+        "e4mc",
+        "e4all",
+        "lanserverproperties"
+      ]
+    },
+    "libraries": {
+      "why": "Do nothing on their own — they arrive as a dependency of something else, and that something else still has to be approved in its own right. Approving the library layer costs nothing and stops a player being free-played by their mod's plumbing.",
+      "ids": [
+        "lithostitched",
+        "cloth_config",
+        "architectury",
+        "geckolib",
+        "curios",
+        "yungsapi",
+        "konkrete",
+        "mru",
+        "owo",
+        "apollib",
+        "conditional_mixin",
+        "corgilib",
+        "coroutil",
+        "commongroovylibrary",
+        "commonnetworking",
+        "gml",
+        "integrated_api",
+        "toucanlib",
+        "libbamboo",
+        "fzzy_config",
+        "yet_another_config_lib_v3",
+        "expandability",
+        "octolib",
+        "lambdynlights_api",
+        "spruceui",
+        "yumi_mc_core",
+        "collective",
+        "framework",
+        "tiny_config",
+        "codecui",
+        "moonlight",
+        "spectrelib",
+        "txnilib",
+        "lionfishapi",
+        "resourcefulconfig",
+        "midnightlib",
+        "glitchcore",
+        "cristellib",
+        "mafglib",
+        "cucumber",
+        "malilib",
+        "placebo",
+        "terrablender",
+        "biolith",
+        "smartbrainlib",
+        "irons_lib",
+        "oracle_index",
+        "rhino"
+      ]
+    },
+    "farmers_delight": {
+      "why": "Farmer's Delight and its addons: cooking and farming content, approved on the operator's call. Its one setting that changes what a run can carry, stackable soups, is held OFF by Dungeon Train (cheat/FarmersDelightSoupStacking) and turning it back on is Free Play, so the approval does not cover that.",
+      "ids": [
+        "farmersdelight",
+        "cuttingdelight"
+      ],
+      "note": [
+        "cuttingdelight (Cutting Delight, JaronZ) only adds a cutting board with a recipe picker for",
+        "Farmer's Delight cutting recipes. It requires farmersdelight, so it rides on this approval."
+      ]
+    },
+    "community_approved": {
+      "why": "Approved on the relay's mod-request queue (dt.brennan.games #/mod-requests) after community suggestion, then baked here so offline and first-launch players get them too. Same rule as every other group.",
+      "ids": [
+        "alltheleaks",
+        "catalogue",
+        "cirrus",
+        "lmft",
+        "perception"
+      ]
+    }
+  }
+}

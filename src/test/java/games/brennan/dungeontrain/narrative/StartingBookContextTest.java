@@ -94,8 +94,24 @@ final class StartingBookContextTest {
         for (StartingBookContext ctx : EnumSet.of(StartingBookContext.DEFAULT,
                 StartingBookContext.NEW_WORLD, StartingBookContext.JOINED_WORLD, StartingBookContext.RESPAWN)) {
             assertTrue(ctx.achievementSetId().isEmpty(),
-                ctx + " is a lifecycle folder and must stay reachable for \"Welcome Back\"");
+                ctx + " is a lifecycle folder and must not declare a stand-alone set id");
         }
+    }
+
+    @Test
+    @DisplayName("\"Welcome Back\" requires exactly DEFAULT, NEW_WORLD and RESPAWN titles")
+    void welcomeBackTitleSet() {
+        // JOINED_WORLD is first-login-only on a world someone else was already welcomed in —
+        // never rolled on respawn — so a solo player could never collect it. It is a lifecycle
+        // folder (no set id) yet must sit out the milestone.
+        EnumSet<StartingBookContext> counted = EnumSet.noneOf(StartingBookContext.class);
+        for (StartingBookContext ctx : StartingBookContext.values()) {
+            if (ctx.countsTowardWelcomeBack()) counted.add(ctx);
+        }
+        assertEquals(EnumSet.of(StartingBookContext.DEFAULT, StartingBookContext.NEW_WORLD,
+            StartingBookContext.RESPAWN), counted);
+        assertTrue(StartingBookContext.JOINED_WORLD.achievementSetId().isEmpty(),
+            "JOINED_WORLD stays a lifecycle folder — it is excluded by countsTowardWelcomeBack, not by a set id");
     }
 
     @Test

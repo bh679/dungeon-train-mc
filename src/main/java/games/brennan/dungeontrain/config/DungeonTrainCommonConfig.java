@@ -1,6 +1,11 @@
 package games.brennan.dungeontrain.config;
 
+import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.train.CatchUpBurstAuto;
+import games.brennan.dungeontrain.train.CatchUpBurstMode;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import org.slf4j.Logger;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -94,7 +99,7 @@ public final class DungeonTrainCommonConfig {
     /** Length (blocks) of EACH mountain stage — stage 1 (×1), stage 2 (×s2), stage 3 (×s3). ~80 = 5 chunks. */
     public static final int MIN_NETHER_STAGE_BLOCKS = 0;
     public static final int MAX_NETHER_STAGE_BLOCKS = 100_000_000;
-    public static final int DEFAULT_NETHER_STAGE_BLOCKS = 80;
+    public static final int DEFAULT_NETHER_STAGE_BLOCKS = 40;
     /** Comma-separated heightmap multipliers, one per mountain stage (stage 1 = the first value, 1 = natural). */
     public static final String DEFAULT_NETHER_STAGE_MULTIPLIERS = "1,2,4,8,15";
     /** Mountain relief amplitude (blocks) at ×1 — scaled by the stage multiplier for the peak height. */
@@ -104,7 +109,7 @@ public final class DungeonTrainCommonConfig {
     /** Leading sand-beach stage length (blocks) — only rendered (as sand) when the band entrance is over ocean. */
     public static final int MIN_NETHER_BEACH_BLOCKS = 0;
     public static final int MAX_NETHER_BEACH_BLOCKS = 100_000_000;
-    public static final int DEFAULT_NETHER_BEACH_BLOCKS = 64;
+    public static final int DEFAULT_NETHER_BEACH_BLOCKS = 32;
     /** Blocks of full-height mega-mountain plateau on each side of the nether core (the tunnel zone). */
     public static final int MIN_NETHER_MOUNTAIN_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_MOUNTAIN_HOLD_BLOCKS = 100_000_000;
@@ -112,11 +117,24 @@ public final class DungeonTrainCommonConfig {
     /** Blocks over which the mountain rock crossfades to netherrack on each side of the core. */
     public static final int MIN_NETHER_CORE_FADE_BLOCKS = 0;
     public static final int MAX_NETHER_CORE_FADE_BLOCKS = 10_000;
-    public static final int DEFAULT_NETHER_CORE_FADE_BLOCKS = 600;
+    public static final int DEFAULT_NETHER_CORE_FADE_BLOCKS = 300;
     /** Blocks of real Nether world-gen at the centre of the band. */
     public static final int MIN_NETHER_CORE_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_CORE_HOLD_BLOCKS = 100_000_000;
     public static final int DEFAULT_NETHER_CORE_HOLD_BLOCKS = 5000;
+    /**
+     * How many ambient monsters may stand within {@code AmbientDensity.RADIUS} of a player before
+     * natural spawning is held off. 0 disables the cap.
+     *
+     * <p>30 is measured, not guessed: at a pillager outpost a DT world held 59 monsters inside that
+     * radius against a vanilla world's 19 on the same seed, while ordinary DT track sat at ~32. A cap
+     * of 30 therefore leaves the open line alone and trims only the places where the world has
+     * stacked its whole allowance on one player.</p>
+     */
+    public static final int MIN_AMBIENT_MONSTER_CAP = 0;
+    public static final int MAX_AMBIENT_MONSTER_CAP = 1000;
+    public static final int DEFAULT_AMBIENT_MONSTER_CAP = 30;
+
     /** Nether structures in the band core (vanilla spacing + biome rules) are on by default. */
     public static final boolean DEFAULT_NETHER_STRUCTURES = true;
 
@@ -202,6 +220,12 @@ public final class DungeonTrainCommonConfig {
      */
     public static final boolean DEFAULT_UPSIDE_DOWN_BEDROCK_ROOF = true;
     /**
+     * When true the upside-down band's source terrain is flattened toward lowland near the track (the
+     * overworld erosion climate input is weighted up), so the mirrored band doesn't bury the train in
+     * mountains. Mountains further from the track are left as they are.
+     */
+    public static final boolean DEFAULT_UPSIDE_DOWN_TRACK_FLATTEN = true;
+    /**
      * In-band cloud plane world-Y — clouds render at this height (below the train, in the open void)
      * instead of the vanilla 192, so the flipped world's sky sits beneath you. Default 0 (just under
      * the base world floor at {@code minY=32}).
@@ -229,7 +253,7 @@ public final class DungeonTrainCommonConfig {
     /** Blocks of chuncks-band world-gen (the whole mostly-void stretch). 0 drops the band from the cycle. */
     public static final int MIN_CHUNCKS_HOLD_BLOCKS = 0;
     public static final int MAX_CHUNCKS_HOLD_BLOCKS = 100_000_000;
-    public static final int DEFAULT_CHUNCKS_HOLD_BLOCKS = 5000;
+    public static final int DEFAULT_CHUNCKS_HOLD_BLOCKS = 8000;
     /** Entry fade before the band: void chunks ramp in (keep-density 1 → keepDensity) across this span. */
     public static final int MIN_CHUNCKS_FADE_BLOCKS = 0;
     public static final int MAX_CHUNCKS_FADE_BLOCKS = 100_000_000;
@@ -246,6 +270,84 @@ public final class DungeonTrainCommonConfig {
     public static final double MIN_CHUNCKS_SLICE_RATIO = 0.0;
     public static final double MAX_CHUNCKS_SLICE_RATIO = 1.0;
     public static final double DEFAULT_CHUNCKS_SLICE_RATIO = 0.5;
+
+    /**
+     * Spheres band — a fifth looping phase, appended after the chuncks band behind a plain-overworld
+     * lead gap. Along +X the world is open void scattered with floating spheres of natural overworld
+     * terrain: each sphere is cut from the vanilla terrain at its own X/Z and lifted to its own height,
+     * so the spheres drift at every altitude from the deep to the sky. The train crosses on the floating
+     * track bed. The five special bands occupy disjoint cycle sub-ranges, so they never overlap.
+     */
+    public static final boolean DEFAULT_SPHERES_ENABLED = true;
+    /** Blocks of spheres-band world-gen (the whole void-with-spheres stretch). 0 drops the band from the cycle. */
+    public static final int MIN_SPHERES_HOLD_BLOCKS = 0;
+    public static final int MAX_SPHERES_HOLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_SPHERES_HOLD_BLOCKS = 6550;
+    /** Entry fade before the band: the natural terrain outside the spheres dissolves into void across this span. */
+    public static final int MIN_SPHERES_FADE_BLOCKS = 0;
+    public static final int MAX_SPHERES_FADE_BLOCKS = 100_000_000;
+    public static final int DEFAULT_SPHERES_FADE_BLOCKS = 750;
+    /** Plain-overworld gap before the spheres band (after the chuncks core), before the entry fade. */
+    public static final int MIN_SPHERES_LEAD_GAP_BLOCKS = 0;
+    public static final int MAX_SPHERES_LEAD_GAP_BLOCKS = 100_000_000;
+    public static final int DEFAULT_SPHERES_LEAD_GAP_BLOCKS = 5000;
+    /** Edge of the 3-D placement cell (blocks): at most one sphere is rolled per cell in X, Y and Z. */
+    public static final int MIN_SPHERES_CELL_BLOCKS = 16;
+    public static final int MAX_SPHERES_CELL_BLOCKS = 512;
+    public static final int DEFAULT_SPHERES_CELL_BLOCKS = 64;
+    /** Chance 0..1 that a placement cell holds a sphere. */
+    public static final double MIN_SPHERES_DENSITY = 0.0;
+    public static final double MAX_SPHERES_DENSITY = 1.0;
+    public static final double DEFAULT_SPHERES_DENSITY = 0.15;
+    /** Sphere radius range (blocks); the roll is biased toward the small end. */
+    public static final int MIN_SPHERES_RADIUS = 1;
+    public static final int MAX_SPHERES_RADIUS = 128;
+    public static final int DEFAULT_SPHERES_MIN_RADIUS = 6;
+    public static final int DEFAULT_SPHERES_MAX_RADIUS = 40;
+    /** Range of the height (world Y) a sphere's centre floats at once lifted. */
+    public static final int MIN_SPHERES_CENTER_Y = -64;
+    public static final int MAX_SPHERES_CENTER_Y = 320;
+    public static final int DEFAULT_SPHERES_CENTER_MIN_Y = 0;
+    public static final int DEFAULT_SPHERES_CENTER_MAX_Y = 200;
+    /** Fraction 0..1 of a sphere's diameter that sits below the natural surface where it was cut. */
+    public static final double MIN_SPHERES_SURFACE_BIAS = 0.0;
+    public static final double MAX_SPHERES_SURFACE_BIAS = 1.0;
+    public static final double DEFAULT_SPHERES_SURFACE_BIAS = 0.65;
+    /** Whether the later part of the spheres band core renders the End sky + End lighting. */
+    public static final boolean DEFAULT_SPHERES_END_SKY = true;
+    /** Blocks into the spheres core that keep the normal overworld sky before the End sky takes over. */
+    public static final int MIN_SPHERES_END_SKY_START_BLOCKS = 0;
+    public static final int MAX_SPHERES_END_SKY_START_BLOCKS = 100_000_000;
+    public static final int DEFAULT_SPHERES_END_SKY_START_BLOCKS = 1000;
+    /** Crossfade span (blocks) at each edge of the spheres End-sky second half. */
+    public static final int MIN_SPHERES_END_SKY_FADE_BLOCKS = 0;
+    public static final int MAX_SPHERES_END_SKY_FADE_BLOCKS = 2000;
+    public static final int DEFAULT_SPHERES_END_SKY_FADE_BLOCKS = 150;
+
+    /**
+     * Stacks band — a sixth looping phase, appended after the spheres band with a long plain-overworld
+     * lead-in. Along +X it is mostly void; scattered chunks each hold a <b>vertical stack</b>: one vanilla
+     * structure piece (a village house, a bastion chunk, an End-city tower, an igloo, …) copied straight
+     * up from the world floor to near build height. Different stacks use different pieces; within one
+     * stack the piece repeats. The train crosses on the floating track bed, which passes between stacks.
+     */
+    public static final boolean DEFAULT_STACKS_ENABLED = true;
+    /** Blocks of stacks-band world-gen (the whole mostly-void stretch). 0 drops the band from the cycle. */
+    public static final int MIN_STACKS_HOLD_BLOCKS = 0;
+    public static final int MAX_STACKS_HOLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_STACKS_HOLD_BLOCKS = 8000;
+    /** Entry fade before the band: the fraction of chunks that turn to void ramps 0 → 1 across this span. */
+    public static final int MIN_STACKS_FADE_BLOCKS = 0;
+    public static final int MAX_STACKS_FADE_BLOCKS = 100_000_000;
+    public static final int DEFAULT_STACKS_FADE_BLOCKS = 1500;
+    /** Plain-overworld gap between the end of the spheres band and the stacks entry fade. */
+    public static final int MIN_STACKS_LEAD_GAP_BLOCKS = 0;
+    public static final int MAX_STACKS_LEAD_GAP_BLOCKS = 100_000_000;
+    public static final int DEFAULT_STACKS_LEAD_GAP_BLOCKS = 10000;
+    /** Fraction 0..1 of the band's void chunks that hold a vertical stack (the rest stay empty). */
+    public static final double MIN_STACKS_DENSITY = 0.0;
+    public static final double MAX_STACKS_DENSITY = 1.0;
+    public static final double DEFAULT_STACKS_DENSITY = 0.08;
 
     /**
      * Whether a moving carriage breaks the world blocks its footprint passes through (drops included).
@@ -265,9 +367,168 @@ public final class DungeonTrainCommonConfig {
     public static final double MIN_BACKER_NAME_WEIGHT = 0.0;
     public static final double MAX_BACKER_NAME_WEIGHT = 1000.0;
 
+    /**
+     * Catch-up spawning defaults to filling the whole shortfall in one tick.
+     * Measured in play, two groups per settle window HELD a ~8-group deficit
+     * steady at speed without ever closing it — the train stayed gone, which is
+     * the complaint the feature exists to answer. The pacing that keeps seams
+     * even is untouched in the steady state (at a one-group deficit every mode
+     * adds exactly one); the cost is one bigger server-tick spike on the tick
+     * that catches up, which {@code BURST_TWO} and {@code OFF} are there to
+     * trade away. See {@link CatchUpBurstMode}.
+     *
+     * <p>Global to every world rather than per-save, so it can be set from the
+     * title screen — see {@code train.catchUpBurstMode}.</p>
+     */
+    public static final CatchUpBurstMode DEFAULT_CATCH_UP_BURST_MODE = CatchUpBurstMode.AUTO;
+
+    /**
+     * The value catch-up spawning shipped with before AUTO existed. The v0 -> v1 migration reads it
+     * to tell a file nobody ever answered apart from one where FILL was chosen on purpose — see
+     * {@link #runPendingMigrations()}.
+     */
+    public static final CatchUpBurstMode LEGACY_CATCH_UP_BURST_MODE = CatchUpBurstMode.FILL;
+
+    /**
+     * The length the chuncks, spheres and stacks band holds all shipped with before they grew to
+     * 8000. The v1 -> v2 migration moves exactly this value, so a file still holding it gets the new
+     * default and any other length (a deliberate choice) is left alone — see
+     * {@link #runPendingMigrations()}.
+     */
+    public static final int LEGACY_BAND_HOLD_BLOCKS = 5000;
+
+    /**
+     * The spheres band hold the v1 -> v2 migration shipped (8000) before the band grew again to
+     * {@link #DEFAULT_SPHERES_HOLD_BLOCKS}. The v2 -> v3 migration moves exactly this value.
+     */
+    public static final int SPHERES_V2_HOLD_BLOCKS = 8000;
+
+    /**
+     * The spheres band hold + End-sky start v3 shipped (12000 / 4000) before the band became the
+     * six-segment progression ({@link SpheresProgressionConfig}). The v3 -> v4 migration moves exactly these.
+     */
+    public static final int SPHERES_V3_HOLD_BLOCKS = 12000;
+
+    /**
+     * The Nether transition's shipped lengths before v5 halved them (stage 80, beach 64, core fade 600).
+     * The v4 -> v5 migration moves only values still at these.
+     */
+    public static final int NETHER_V4_STAGE_BLOCKS = 80;
+    public static final int NETHER_V4_BEACH_BLOCKS = 64;
+    public static final int NETHER_V4_CORE_FADE_BLOCKS = 600;
+    public static final int SPHERES_V3_END_SKY_START_BLOCKS = 4000;
+
+    /**
+     * The spheres band v5 shipped — 14000 core, 1500 entry fade, End sky from 3000, Nether sky for the
+     * last stretch — before v6 shrank it to 6550 and dropped the Nether sky. The v5 -> v6 migration
+     * moves only values still at these (the progression offsets live in {@link SpheresProgressionConfig}).
+     */
+    public static final int SPHERES_V5_HOLD_BLOCKS = 14000;
+    public static final int SPHERES_V5_FADE_BLOCKS = 1500;
+    public static final int SPHERES_V5_END_SKY_START_BLOCKS = 3000;
+    /** The {@code worldgenCycleOrder} v5 shipped; v6 changed only its {@code spheres:15000} slot. */
+    public static final String V5_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:15000, ow:5000, "
+            + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
+    /** The {@code worldgenCycleOrder} v6 shipped; v7 changed only its {@code beta=5000} era. */
+    public static final String V6_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:5000, "
+            + "legacy:amplified=5000:beta=5000:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
+
+    /**
+     * The {@code worldgenCycleOrder} v7 shipped; v8 changed only its tail — the gap after the legacy run
+     * ({@code ow:2000 -> ow:650}) and the gap between chuncks and stacks (dropped).
+     */
+    public static final String V7_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:2000, chuncks:5000, ow:5000, stacks:5000";
+
+    /**
+     * The {@code worldgenCycleOrder} v8 shipped; v9 split its {@code chuncks:5000} into {@code chuncks:2000}
+     * and the new {@code mix:4000} zone.
+     */
+    public static final String V8_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:650, chuncks:5000, stacks:5000";
+
+    /**
+     * The {@code worldgenCycleOrder} v9 shipped. v10 changed only Lap 1's Nether and End to
+     * {@code vanilla>bop} (vanilla on the first cycle, Biomes O' Plenty on every cycle after); the
+     * v9 -> v10 migration moves only this exact value.
+     */
+    public static final String V9_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:3000, ow:3000, end:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:650, chuncks:2000, mix:4000, stacks:5000";
+
+    /**
+     * The {@code worldgenCycleOrder} v10 shipped; v11 changed only its legacy run — the Lost City era
+     * ({@code lost_city=4000}) between Amplified and Beta.
+     */
+    public static final String V10_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:vanilla>bop:3000, ow:3000, end:vanilla>bop:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:650, chuncks:2000, mix:4000, stacks:5000";
+
+    /**
+     * The {@code worldgenCycleOrder} v11 shipped. v12 reordered the laps: Lap 1 became overworld → Nether →
+     * WWOO → one End band (1200 vanilla, 2000 Biomes O' Plenty) → upside-down; Lap 2 became BoP overworld →
+     * BetterNether → Lost City (out of the legacy run) → BetterEnd.
+     */
+    public static final String V11_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:vanilla>bop:3000, ow:3000, end:vanilla>bop:3000, upside_down:2500:6000, "
+            + "ow:wwoo:8000, nether:better:8000, ow:bop:8000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:lost_city=4000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:650, chuncks:2000, mix:4000, stacks:5000";
+
+    /**
+     * The v12 order as it first shipped on the development branch: the reordered laps with the Lost City run
+     * still unstyled ({@code legacy:lost_city=4000}). v13 gives that run WWOO's look; a config still holding
+     * this exact string moves to the current default.
+     */
+    public static final String V12_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:vanilla>bop:3000, ow:wwoo:4500, end:vanilla:1200, end:bop:2000, upside_down:2500:6000, "
+            + "ow:bop:8000, nether:better:8000, legacy:lost_city=4000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:650, chuncks:2000, mix:4000, stacks:5000";
+
+    /**
+     * The {@code worldgenCycleOrder} v13 shipped; v14 changed only the upside-down's Reassembly
+     * ({@code upside_down:2500:6000 -> upside_down:2500:5000}).
+     */
+    public static final String V13_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:vanilla>bop:3000, ow:wwoo:4500, end:vanilla:1200, end:bop:2000, upside_down:2500:6000, "
+            + "ow:bop:8000, nether:better:8000, legacy:wwoo:lost_city=4000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:650, chuncks:2000, mix:4000, stacks:5000";
+
+    public static final int CURRENT_CONFIG_VERSION = 14;
+    public static final boolean DEFAULT_MIX_ENABLED = true;
+    public static final String DEFAULT_MIX_EXCLUDE = "";
+
+    /** The shipped band order — see {@link games.brennan.dungeontrain.worldgen.CycleLayout#DEFAULT_ORDER}. */
+    public static final String DEFAULT_WORLDGEN_CYCLE_ORDER = games.brennan.dungeontrain.worldgen.CycleLayout.DEFAULT_ORDER;
+    public static final int DEFAULT_CONFIG_VERSION = 0;
+    public static final int MIN_CONFIG_VERSION = 0;
+    public static final int MAX_CONFIG_VERSION = 1_000_000;
+
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     public static final ModConfigSpec SPEC;
+    public static final ModConfigSpec.IntValue CONFIG_VERSION;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_BEHIND_SPAWN;
+    public static final ModConfigSpec.IntValue AMBIENT_MONSTER_CAP;
     public static final ModConfigSpec.BooleanValue COMPATIBLE_TERRAIN;
     public static final ModConfigSpec.BooleanValue DISINTEGRATION_ENABLED;
     public static final ModConfigSpec.IntValue DISINTEGRATION_START_BLOCKS;
@@ -300,21 +561,47 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.DoubleValue UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_MAX_CEILING_HEIGHT;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_MIRROR_PRECOMPUTE;
+    public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_TRACK_FLATTEN;
     public static final ModConfigSpec.BooleanValue CHUNCKS_ENABLED;
     public static final ModConfigSpec.IntValue CHUNCKS_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue CHUNCKS_FADE_BLOCKS;
     public static final ModConfigSpec.IntValue CHUNCKS_LEAD_GAP_BLOCKS;
     public static final ModConfigSpec.DoubleValue CHUNCKS_KEEP_DENSITY;
     public static final ModConfigSpec.DoubleValue CHUNCKS_SLICE_RATIO;
+    public static final ModConfigSpec.BooleanValue SPHERES_ENABLED;
+    public static final ModConfigSpec.IntValue SPHERES_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue SPHERES_FADE_BLOCKS;
+    public static final ModConfigSpec.IntValue SPHERES_LEAD_GAP_BLOCKS;
+    public static final ModConfigSpec.IntValue SPHERES_CELL_BLOCKS;
+    public static final ModConfigSpec.DoubleValue SPHERES_DENSITY;
+    public static final ModConfigSpec.IntValue SPHERES_MIN_RADIUS;
+    public static final ModConfigSpec.IntValue SPHERES_MAX_RADIUS;
+    public static final ModConfigSpec.IntValue SPHERES_CENTER_MIN_Y;
+    public static final ModConfigSpec.IntValue SPHERES_CENTER_MAX_Y;
+    public static final ModConfigSpec.DoubleValue SPHERES_SURFACE_BIAS;
+    public static final ModConfigSpec.BooleanValue SPHERES_END_SKY;
+    public static final ModConfigSpec.IntValue SPHERES_END_SKY_START_BLOCKS;
+    public static final ModConfigSpec.IntValue SPHERES_END_SKY_FADE_BLOCKS;
+    public static final ModConfigSpec.BooleanValue STACKS_ENABLED;
+    public static final ModConfigSpec.IntValue STACKS_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue STACKS_FADE_BLOCKS;
+    public static final ModConfigSpec.IntValue STACKS_LEAD_GAP_BLOCKS;
+    public static final ModConfigSpec.DoubleValue STACKS_DENSITY;
+    public static final ModConfigSpec.BooleanValue MIX_ENABLED;
+    public static final ModConfigSpec.ConfigValue<String> MIX_EXCLUDE;
+    public static final ModConfigSpec.ConfigValue<String> WORLDGEN_CYCLE_ORDER;
     public static final ModConfigSpec.BooleanValue BREAK_BLOCKS_ON_CONTACT;
     public static final ModConfigSpec.DoubleValue BACKER_NAME_WEIGHT;
+    public static final ModConfigSpec.EnumValue<CatchUpBurstMode> CATCH_UP_BURST_MODE;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
                 .configure(DungeonTrainCommonConfig::build);
         SPEC = pair.getRight();
+        CONFIG_VERSION = pair.getLeft().configVersion;
         DEFAULT_PLAYER_MOB_SPAWN = pair.getLeft().defaultPlayerMobSpawnOneIn;
         DEFAULT_PLAYER_MOB_BEHIND_SPAWN = pair.getLeft().defaultPlayerMobBehindSpawnPercent;
+        AMBIENT_MONSTER_CAP = pair.getLeft().ambientMonsterCap;
         COMPATIBLE_TERRAIN = pair.getLeft().compatibleTerrain;
         DISINTEGRATION_ENABLED = pair.getLeft().disintegrationEnabled;
         DISINTEGRATION_START_BLOCKS = pair.getLeft().disintegrationStartBlocks;
@@ -347,19 +634,49 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON = pair.getLeft().upsideDownExitNoiseSkipEpsilon;
         UPSIDE_DOWN_MAX_CEILING_HEIGHT = pair.getLeft().upsideDownMaxCeilingHeight;
         UPSIDE_DOWN_MIRROR_PRECOMPUTE = pair.getLeft().upsideDownMirrorPrecompute;
+        UPSIDE_DOWN_TRACK_FLATTEN = pair.getLeft().upsideDownTrackFlatten;
         CHUNCKS_ENABLED = pair.getLeft().chuncksEnabled;
         CHUNCKS_HOLD_BLOCKS = pair.getLeft().chuncksHoldBlocks;
         CHUNCKS_FADE_BLOCKS = pair.getLeft().chuncksFadeBlocks;
         CHUNCKS_LEAD_GAP_BLOCKS = pair.getLeft().chuncksLeadGapBlocks;
         CHUNCKS_KEEP_DENSITY = pair.getLeft().chuncksKeepDensity;
         CHUNCKS_SLICE_RATIO = pair.getLeft().chuncksSliceRatio;
+        SPHERES_ENABLED = pair.getLeft().spheresEnabled;
+        SPHERES_HOLD_BLOCKS = pair.getLeft().spheresHoldBlocks;
+        SPHERES_FADE_BLOCKS = pair.getLeft().spheresFadeBlocks;
+        SPHERES_LEAD_GAP_BLOCKS = pair.getLeft().spheresLeadGapBlocks;
+        SPHERES_CELL_BLOCKS = pair.getLeft().spheresCellBlocks;
+        SPHERES_DENSITY = pair.getLeft().spheresDensity;
+        SPHERES_MIN_RADIUS = pair.getLeft().spheresMinRadius;
+        SPHERES_MAX_RADIUS = pair.getLeft().spheresMaxRadius;
+        SPHERES_CENTER_MIN_Y = pair.getLeft().spheresCenterMinY;
+        SPHERES_CENTER_MAX_Y = pair.getLeft().spheresCenterMaxY;
+        SPHERES_SURFACE_BIAS = pair.getLeft().spheresSurfaceBias;
+        SPHERES_END_SKY = pair.getLeft().spheresEndSky;
+        SPHERES_END_SKY_START_BLOCKS = pair.getLeft().spheresEndSkyStartBlocks;
+        SPHERES_END_SKY_FADE_BLOCKS = pair.getLeft().spheresEndSkyFadeBlocks;
+        STACKS_ENABLED = pair.getLeft().stacksEnabled;
+        STACKS_HOLD_BLOCKS = pair.getLeft().stacksHoldBlocks;
+        STACKS_FADE_BLOCKS = pair.getLeft().stacksFadeBlocks;
+        STACKS_LEAD_GAP_BLOCKS = pair.getLeft().stacksLeadGapBlocks;
+        STACKS_DENSITY = pair.getLeft().stacksDensity;
+        MIX_ENABLED = pair.getLeft().mixEnabled;
+        MIX_EXCLUDE = pair.getLeft().mixExclude;
+        WORLDGEN_CYCLE_ORDER = pair.getLeft().worldgenCycleOrder;
         BREAK_BLOCKS_ON_CONTACT = pair.getLeft().breakBlocksOnContact;
         BACKER_NAME_WEIGHT = pair.getLeft().backerNameWeight;
+        CATCH_UP_BURST_MODE = pair.getLeft().catchUpBurstMode;
     }
 
     private DungeonTrainCommonConfig() {}
 
+
     private static Holder build(ModConfigSpec.Builder b) {
+        ModConfigSpec.IntValue configVersion = b
+                .comment("Internal bookkeeping — do not edit. Records which one-time config migrations have already",
+                        "been applied to this file, so a changed default can reach an install that already has a",
+                        "config written. Lowering it re-runs those migrations and may overwrite your settings.")
+                .defineInRange("configVersion", DEFAULT_CONFIG_VERSION, MIN_CONFIG_VERSION, MAX_CONFIG_VERSION);
         b.push("spawning");
         ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn = b
                 .comment("Global DEFAULT 1-in-N chance that each settled carriage group spawns a PlayerMob (Interactive Player Mobs). "
@@ -373,6 +690,15 @@ public final class DungeonTrainCommonConfig {
                         + "from the rear). Used by any world that has not set a per-world override. Default 15; 0 disables; 100 = always.")
                 .defineInRange("defaultPlayerMobBehindSpawnPercent", DEFAULT_PLAYER_MOB_BEHIND_SPAWN_PERCENT,
                         MIN_PLAYER_MOB_BEHIND_SPAWN_PERCENT, MAX_PLAYER_MOB_BEHIND_SPAWN_PERCENT);
+        ModConfigSpec.IntValue ambientMonsterCap = b
+                .comment("Most naturally-spawned monsters allowed within 96 blocks of a player before the world stops",
+                        "spawning more around them. Vanilla's own cap is level-wide and assumes a deep world to spend",
+                        "it in; a Dungeon Train overworld generates from y=32, so that whole allowance lands next to",
+                        "whoever is playing - measured as 59 monsters inside that radius at a pillager outpost against",
+                        "a vanilla world's 19 on the same seed. The train's own mobs never count towards this, so the",
+                        "difficulty curve is untouched. Default 30; 0 disables the cap.")
+                .defineInRange("ambientMonsterCap", DEFAULT_AMBIENT_MONSTER_CAP,
+                        MIN_AMBIENT_MONSTER_CAP, MAX_AMBIENT_MONSTER_CAP);
         b.pop();
 
         b.push("train");
@@ -394,6 +720,9 @@ public final class DungeonTrainCommonConfig {
                         "case naming is byte-identical to a build without the feature.")
                 .defineInRange("backerNameWeight", DEFAULT_BACKER_NAME_WEIGHT,
                         MIN_BACKER_NAME_WEIGHT, MAX_BACKER_NAME_WEIGHT);
+        ModConfigSpec.EnumValue<CatchUpBurstMode> catchUpBurstMode = b
+                .comment("How fast the train may extend when a spawn lane has fallen BEHIND the carriages a player needs around them (fast speed, a reload, a chunk-gen wait). Normally each end adds one group per settle window, which is what keeps the seams between groups even — and also what lets a fast train run away from a standing player. FILL (default) = add however many groups that end is short, all in one tick, so it catches up instantly; costs one bigger server-tick spike as they appear. BURST_TWO = add two in one tick while an end is two or more groups short — a gentler catch-up that may not keep up at high speed. OFF = never add more than one group at a time. No mode changes the steady state, where an end is at most one group short. One global setting: it lives here rather than per-save, so it can be set from the title screen and applies to every world.")
+                .defineEnum("catchUpBurstMode", DEFAULT_CATCH_UP_BURST_MODE);
         b.pop();
 
         b.push("worldgen");
@@ -600,17 +929,23 @@ public final class DungeonTrainCommonConfig {
                         "byte-identical terrain. Set false to compute and apply everything at load (original behaviour).",
                         "Default true.")
                 .define("upsideDownMirrorPrecompute", DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE);
+        ModConfigSpec.BooleanValue upsideDownTrackFlatten = b
+                .comment("Keep mountains off the track in the upside-down band: near the track the overworld terrain",
+                        "(and its biomes) is weighted toward lowland before it is mirrored, fading smoothly back to the",
+                        "natural terrain further out, so the train doesn't tunnel through mountains. Only affects newly",
+                        "generated chunks. Default true.")
+                .define("upsideDownTrackFlatten", DEFAULT_UPSIDE_DOWN_TRACK_FLATTEN);
 
         ModConfigSpec.BooleanValue chuncksEnabled = b
                 .comment("Chuncks phase — part of the single repeating world-gen cycle, appended after the upside-down",
                         "band's trailing overworld gap. Along +X it is mostly void, sprinkled with occasional real",
                         "overworld chunks: some vertically complete, some a top-down slice (natural surface kept, flat",
                         "cut-off bottom). The train crosses on the floating track bed. The full cycle is:",
-                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → (repeat).",
+                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → OW → Spheres → OW → Stacks → (repeat).",
                         "Set false to drop the chuncks phase from the cycle.")
                 .define("chuncksEnabled", DEFAULT_CHUNCKS_ENABLED);
         ModConfigSpec.IntValue chuncksHoldBlocks = b
-                .comment("Blocks of chuncks-band world-gen (the whole mostly-void stretch). Default 5000.")
+                .comment("Blocks of chuncks-band world-gen (the whole mostly-void stretch). Default 8000.")
                 .defineInRange("chuncksHoldBlocks", DEFAULT_CHUNCKS_HOLD_BLOCKS,
                         MIN_CHUNCKS_HOLD_BLOCKS, MAX_CHUNCKS_HOLD_BLOCKS);
         ModConfigSpec.IntValue chuncksFadeBlocks = b
@@ -635,9 +970,146 @@ public final class DungeonTrainCommonConfig {
                         "cut-off bottom) rather than vertically complete. Default 0.5.")
                 .defineInRange("chuncksSliceRatio", DEFAULT_CHUNCKS_SLICE_RATIO,
                         MIN_CHUNCKS_SLICE_RATIO, MAX_CHUNCKS_SLICE_RATIO);
+
+        ModConfigSpec.BooleanValue spheresEnabled = b
+                .comment("Spheres phase — part of the single repeating world-gen cycle, appended after the chuncks",
+                        "band behind a plain-overworld lead gap. Along +X the world is open void scattered with",
+                        "floating spheres of natural overworld terrain: each sphere is cut from the vanilla terrain at",
+                        "its own X/Z and lifted to its own height, so spheres drift at every altitude. The train",
+                        "crosses on the floating track bed. The full cycle is:",
+                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → OW → Spheres → OW → Stacks → (repeat).",
+                        "Set false to drop the spheres phase from the cycle.")
+                .define("spheresEnabled", DEFAULT_SPHERES_ENABLED);
+        ModConfigSpec.IntValue spheresHoldBlocks = b
+                .comment("Blocks of spheres-band world-gen (the whole void-with-spheres stretch). Default 6550.")
+                .defineInRange("spheresHoldBlocks", DEFAULT_SPHERES_HOLD_BLOCKS,
+                        MIN_SPHERES_HOLD_BLOCKS, MAX_SPHERES_HOLD_BLOCKS);
+        ModConfigSpec.IntValue spheresFadeBlocks = b
+                .comment("Entry fade before the spheres band: the natural terrain outside the spheres dissolves into",
+                        "void across this span (noise-dithered, 0 → 1), so the void arrives gradually instead of at a",
+                        "hard wall. Spheres are present at full strength across the fade. 0 = hard edge. Default 750.")
+                .defineInRange("spheresFadeBlocks", DEFAULT_SPHERES_FADE_BLOCKS,
+                        MIN_SPHERES_FADE_BLOCKS, MAX_SPHERES_FADE_BLOCKS);
+        ModConfigSpec.IntValue spheresLeadGapBlocks = b
+                .comment("Plain-overworld gap inserted before the spheres band — between the end of the chuncks band",
+                        "and the spheres entry fade. Breathing room so the two special zones don't run together.",
+                        "Default 5000.")
+                .defineInRange("spheresLeadGapBlocks", DEFAULT_SPHERES_LEAD_GAP_BLOCKS,
+                        MIN_SPHERES_LEAD_GAP_BLOCKS, MAX_SPHERES_LEAD_GAP_BLOCKS);
+        ModConfigSpec.IntValue spheresCellBlocks = b
+                .comment("Edge length (blocks) of the 3-D placement cell. Space is tiled into cubes of this size in X,",
+                        "Y and Z and at most one sphere is rolled per cube, so this sets how far apart spheres sit.",
+                        "Default 64.")
+                .defineInRange("spheresCellBlocks", DEFAULT_SPHERES_CELL_BLOCKS,
+                        MIN_SPHERES_CELL_BLOCKS, MAX_SPHERES_CELL_BLOCKS);
+        ModConfigSpec.DoubleValue spheresDensity = b
+                .comment("Chance 0..1 that a placement cube holds a sphere. A per-cell, seed-stable roll. Default 0.15.")
+                .defineInRange("spheresDensity", DEFAULT_SPHERES_DENSITY,
+                        MIN_SPHERES_DENSITY, MAX_SPHERES_DENSITY);
+        ModConfigSpec.IntValue spheresMinRadius = b
+                .comment("Smallest sphere radius (blocks). Default 6.")
+                .defineInRange("spheresMinRadius", DEFAULT_SPHERES_MIN_RADIUS,
+                        MIN_SPHERES_RADIUS, MAX_SPHERES_RADIUS);
+        ModConfigSpec.IntValue spheresMaxRadius = b
+                .comment("Largest sphere radius (blocks); the roll is biased toward small spheres, so big ones are",
+                        "rare. Clamped to at least spheresMinRadius. Default 40.")
+                .defineInRange("spheresMaxRadius", DEFAULT_SPHERES_MAX_RADIUS,
+                        MIN_SPHERES_RADIUS, MAX_SPHERES_RADIUS);
+        ModConfigSpec.IntValue spheresCenterMinY = b
+                .comment("Lowest world Y a lifted sphere's centre may float at. Default 0.")
+                .defineInRange("spheresCenterMinY", DEFAULT_SPHERES_CENTER_MIN_Y,
+                        MIN_SPHERES_CENTER_Y, MAX_SPHERES_CENTER_Y);
+        ModConfigSpec.IntValue spheresCenterMaxY = b
+                .comment("Highest world Y a lifted sphere's centre may float at. Clamped to at least",
+                        "spheresCenterMinY. Default 200.")
+                .defineInRange("spheresCenterMaxY", DEFAULT_SPHERES_CENTER_MAX_Y,
+                        MIN_SPHERES_CENTER_Y, MAX_SPHERES_CENTER_Y);
+        ModConfigSpec.DoubleValue spheresSurfaceBias = b
+                .comment("Fraction 0..1 of a sphere's diameter that sits below the natural surface where it was cut:",
+                        "0 = the sphere hangs entirely above the surface (mostly air + treetops), 1 = entirely",
+                        "underground (a ball of rock and caves), 0.5 = centred on the surface. Default 0.65 — a",
+                        "natural surface cap with rock beneath.")
+                .defineInRange("spheresSurfaceBias", DEFAULT_SPHERES_SURFACE_BIAS,
+                        MIN_SPHERES_SURFACE_BIAS, MAX_SPHERES_SURFACE_BIAS);
+        ModConfigSpec.BooleanValue spheresEndSky = b
+                .comment("When true, the later part of the spheres band renders the End sky, fog and lighting (the",
+                        "same End atmosphere as the disintegration band); the first spheresEndSkyStartBlocks keep the",
+                        "normal overworld sky and day/night lighting. The overworld sky returns as the band ends.",
+                        "Client-side visual only. Default true.")
+                .define("spheresEndSky", DEFAULT_SPHERES_END_SKY);
+        ModConfigSpec.IntValue spheresEndSkyStartBlocks = b
+                .comment("Blocks into the spheres band (counted from the end of the entry fade) that keep the normal",
+                        "overworld sky before the End sky takes over. Default 1000 — the End sky then holds to the",
+                        "band's end and fades back to overworld over spheresEndSkyExitFadeBlocks.")
+                .defineInRange("spheresEndSkyStartBlocks", DEFAULT_SPHERES_END_SKY_START_BLOCKS,
+                        MIN_SPHERES_END_SKY_START_BLOCKS, MAX_SPHERES_END_SKY_START_BLOCKS);
+        ModConfigSpec.IntValue spheresEndSkyFadeBlocks = b
+                .comment("Crossfade span (blocks) from the overworld to the End sky at spheresEndSkyStartBlocks",
+                        "(the way back out is spheresEndSkyExitFadeBlocks). Clamped to a quarter of the band.",
+                        "0 = hard switch. Default 150.")
+                .defineInRange("spheresEndSkyFadeBlocks", DEFAULT_SPHERES_END_SKY_FADE_BLOCKS,
+                        MIN_SPHERES_END_SKY_FADE_BLOCKS, MAX_SPHERES_END_SKY_FADE_BLOCKS);
+        SpheresProgressionConfig.define(b);
+        ModConfigSpec.BooleanValue stacksEnabled = b
+                .comment("Stacks phase — part of the single repeating world-gen cycle, appended after the spheres band",
+                        "with a long plain-overworld lead-in. Along +X it is mostly void; scattered chunks each hold a",
+                        "vertical stack: one vanilla structure piece (village house, bastion chunk, End-city tower, …)",
+                        "copied straight up from the world floor to near build height. The train crosses on the",
+                        "floating track bed, which passes between stacks. The full cycle is:",
+                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → OW → Spheres → OW → Stacks → (repeat).",
+                        "Set false to drop the stacks phase from the cycle.")
+                .define("stacksEnabled", DEFAULT_STACKS_ENABLED);
+        ModConfigSpec.IntValue stacksHoldBlocks = b
+                .comment("Blocks of stacks-band world-gen (the whole mostly-void stretch). Default 8000.")
+                .defineInRange("stacksHoldBlocks", DEFAULT_STACKS_HOLD_BLOCKS,
+                        MIN_STACKS_HOLD_BLOCKS, MAX_STACKS_HOLD_BLOCKS);
+        ModConfigSpec.IntValue stacksFadeBlocks = b
+                .comment("Entry fade before the stacks band: the fraction of chunks that become void ramps from 0 (all",
+                        "real terrain) to 1 (all void) across this span, so the world dissolves into the void gradually",
+                        "instead of at a hard wall. Stacks appear in the void chunks as they arrive. 0 = hard edge.",
+                        "Default 1500.")
+                .defineInRange("stacksFadeBlocks", DEFAULT_STACKS_FADE_BLOCKS,
+                        MIN_STACKS_FADE_BLOCKS, MAX_STACKS_FADE_BLOCKS);
+        ModConfigSpec.IntValue stacksLeadGapBlocks = b
+                .comment("Plain-overworld gap inserted between the end of the spheres band and the stacks entry fade —",
+                        "a long stretch of normal world before the towers begin. Default 10000.")
+                .defineInRange("stacksLeadGapBlocks", DEFAULT_STACKS_LEAD_GAP_BLOCKS,
+                        MIN_STACKS_LEAD_GAP_BLOCKS, MAX_STACKS_LEAD_GAP_BLOCKS);
+        ModConfigSpec.DoubleValue stacksDensity = b
+                .comment("Fraction 0..1 of the band's void chunks that hold a vertical stack (the rest stay empty). A",
+                        "per-chunk, seed-stable noise gate. Default 0.08 (~8% of chunks carry a tower).")
+                .defineInRange("stacksDensity", DEFAULT_STACKS_DENSITY,
+                        MIN_STACKS_DENSITY, MAX_STACKS_DENSITY);
+        ModConfigSpec.BooleanValue mixEnabled = b
+                .comment("Mix zone — a hard-edged stretch (the order's mix:<core> slot) where every chunk, with equal",
+                        "odds, generates as one of the bands the run has already passed: any overworld style, Nether,",
+                        "BetterNether, End, BetterEnd, upside-down, spheres, or a legacy era. Seed-stable per chunk.",
+                        "Set false to drop the mix slot from the cycle.")
+                .define("mixEnabled", DEFAULT_MIX_ENABLED);
+        ModConfigSpec.ConfigValue<String> mixExclude = b
+                .comment("Comma-separated candidates the mix zone never picks. Tokens: ow, ow_wwoo, ow_bop, ow_sunk,",
+                        "nether, nether_better, end, end_better, upside_down, spheres, and a legacy era name",
+                        "(amplified, beta, far_lands, …). Blank = every band behind the zone.")
+                .define("mixExclude", DEFAULT_MIX_EXCLUDE);
+        games.brennan.dungeontrain.worldgen.legacy.LegacyBandConfig.define(b);
+        ModConfigSpec.ConfigValue<String> worldgenCycleOrder = b
+                .comment("The order the bands come in, as one run of the cycle: comma-separated slots, each",
+                        "  ow[:style]:<blocks>            an overworld gap (style: vanilla | wwoo | bop | sunk = at Amplified's lowered height)",
+                        "  nether[:style]:<core>          a Nether band (style: vanilla | better = BetterNether | bop)",
+                        "  end[:style]:<core>             an End-islands band (style: vanilla | better = BetterEnd | bop)",
+                        "  style a>b (e.g. nether:vanilla>bop): look a on the first run of the order, look b on every run after",
+                        "  upside_down:<core>:<reassembly> the upside-down band and its Reassembly crossfade",
+                        "  chuncks:<core>  spheres:<core>  stacks:<core>",
+                        "  mix:<core>                     every chunk is a random band from earlier in the run",
+                        "  legacy:<era>=<core>:...        the old-generator eras, back to back, crossfading into each other",
+                        "Fades come from the keys above. Every run of the whole order is twice as long as the last.",
+                        "A band whose Enabled key is false is dropped wherever it is named. Blank = the classic",
+                        "single-period order that every band's own hold/lead keys describe.")
+                .define("worldgenCycleOrder", DEFAULT_WORLDGEN_CYCLE_ORDER);
         b.pop();
 
-        return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
+        return new Holder(configVersion, defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent,
+                ambientMonsterCap, compatibleTerrain,
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
                 disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationEndCities,
                 disintegrationOverworldHoldBlocks,
@@ -648,10 +1120,17 @@ public final class DungeonTrainCommonConfig {
                 upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks, upsideDownExitGapBlocks,
                 upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
                 upsideDownBedrockRoof, upsideDownCloudY, upsideDownExitNoiseSkipEpsilon,
-                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute,
+                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute, upsideDownTrackFlatten,
                 chuncksEnabled, chuncksHoldBlocks, chuncksFadeBlocks, chuncksLeadGapBlocks,
                 chuncksKeepDensity, chuncksSliceRatio,
-                breakBlocksOnContact, backerNameWeight);
+                spheresEnabled, spheresHoldBlocks, spheresFadeBlocks, spheresLeadGapBlocks,
+                spheresCellBlocks, spheresDensity, spheresMinRadius, spheresMaxRadius,
+                spheresCenterMinY, spheresCenterMaxY, spheresSurfaceBias,
+                spheresEndSky, spheresEndSkyStartBlocks, spheresEndSkyFadeBlocks,
+                stacksEnabled, stacksHoldBlocks, stacksFadeBlocks, stacksLeadGapBlocks, stacksDensity,
+                mixEnabled, mixExclude,
+                worldgenCycleOrder,
+                breakBlocksOnContact, backerNameWeight, catchUpBurstMode);
     }
 
     /**
@@ -702,6 +1181,186 @@ public final class DungeonTrainCommonConfig {
         if (!isLoaded()) return;
         BREAK_BLOCKS_ON_CONTACT.set(value);
         BREAK_BLOCKS_ON_CONTACT.save();
+    }
+
+    /**
+     * How fast an end of the train may re-extend after falling behind; falls back to the hardcoded
+     * default pre-load. Read per spawn decision by {@code TrainCarriageAppender}, so a change
+     * applies to the train already running.
+     */
+    public static CatchUpBurstMode getCatchUpBurstMode() {
+        return isLoaded() ? CATCH_UP_BURST_MODE.get() : DEFAULT_CATCH_UP_BURST_MODE;
+    }
+
+    public static void setCatchUpBurstMode(CatchUpBurstMode value) {
+        if (!isLoaded() || value == null) return;
+        CATCH_UP_BURST_MODE.set(value);
+        CATCH_UP_BURST_MODE.save();
+        CatchUpBurstAuto.invalidate();
+    }
+
+    /**
+     * Carry changed shipped defaults into a {@code dungeontrain-common.toml} that already exists.
+     *
+     * <p>A default flip on its own only ever reaches an install with no config file yet — everyone
+     * already playing keeps the old value forever, because it is written in their file. This is the
+     * same mechanism {@code DungeonTrainConfig.runPendingMigrations()} provides for the server
+     * config; the common file had none until AUTO needed one.</p>
+     *
+     * <p>Each step runs at most once per install, so a player who changes the value back afterwards
+     * keeps that choice permanently.</p>
+     */
+    public static void runPendingMigrations() {
+        if (!isLoaded()) return;
+        int from = CONFIG_VERSION.get();
+        if (from >= CURRENT_CONFIG_VERSION) return;
+
+        // v0 -> v1: adopt AUTO, which picks a catch-up pacing from the machine's specs. FILL is the
+        // value this setting shipped with, and until v0.778.0 the row was reachable only from inside
+        // a world — so a file still holding FILL is overwhelmingly a file whose owner never answered
+        // the question, and AUTO answers it for them. OFF and BURST_TWO are deliberate choices and
+        // are left alone. On a capable machine AUTO resolves to FILL, so the visible effect is
+        // confined to the machines the change exists for.
+        if (from < 1 && CATCH_UP_BURST_MODE.get() == LEGACY_CATCH_UP_BURST_MODE) {
+            CATCH_UP_BURST_MODE.set(CatchUpBurstMode.AUTO);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: catch-up spawning {} -> AUTO.",
+                    from, CURRENT_CONFIG_VERSION, LEGACY_CATCH_UP_BURST_MODE);
+        }
+
+        // v1 -> v2: the chuncks, spheres and stacks bands grew from 5000 to 8000 blocks. A hold still
+        // at the old shipped length is a default nobody chose; any other length is left alone.
+        if (from < 2) {
+            migrateBandHold("chuncksHoldBlocks", CHUNCKS_HOLD_BLOCKS, LEGACY_BAND_HOLD_BLOCKS, DEFAULT_CHUNCKS_HOLD_BLOCKS, from);
+            migrateBandHold("spheresHoldBlocks", SPHERES_HOLD_BLOCKS, LEGACY_BAND_HOLD_BLOCKS, DEFAULT_SPHERES_HOLD_BLOCKS, from);
+            migrateBandHold("stacksHoldBlocks", STACKS_HOLD_BLOCKS, LEGACY_BAND_HOLD_BLOCKS, DEFAULT_STACKS_HOLD_BLOCKS, from);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v2 -> v3: the spheres band grew again, 8000 -> the current default. A
+        // v1 install already landed on the default above, so this only moves a hold still at v2's 8000.
+        if (from < 3) {
+            migrateBandHold("spheresHoldBlocks", SPHERES_HOLD_BLOCKS, SPHERES_V2_HOLD_BLOCKS, DEFAULT_SPHERES_HOLD_BLOCKS, from);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v3 -> v4: the spheres band became a six-segment progression — 14000 long, End sky from 3000.
+        // Only values still at v3's shipped defaults move; a chosen length or start is left alone.
+        if (from < 4) {
+            migrateBandHold("spheresHoldBlocks", SPHERES_HOLD_BLOCKS, SPHERES_V3_HOLD_BLOCKS, DEFAULT_SPHERES_HOLD_BLOCKS, from);
+            migrateBandHold("spheresEndSkyStartBlocks", SPHERES_END_SKY_START_BLOCKS, SPHERES_V3_END_SKY_START_BLOCKS,
+                    DEFAULT_SPHERES_END_SKY_START_BLOCKS, from);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v4 -> v5: the Nether transition halved — mountain stages, beach and core crossfades. Only values
+        // still at v4's shipped defaults move; a chosen length is left alone.
+        if (from < 5) {
+            migrateBandHold("netherStageBlocks", NETHER_STAGE_BLOCKS, NETHER_V4_STAGE_BLOCKS, DEFAULT_NETHER_STAGE_BLOCKS, from);
+            migrateBandHold("netherBeachBlocks", NETHER_BEACH_BLOCKS, NETHER_V4_BEACH_BLOCKS, DEFAULT_NETHER_BEACH_BLOCKS, from);
+            migrateBandHold("netherCoreFadeBlocks", NETHER_CORE_FADE_BLOCKS, NETHER_V4_CORE_FADE_BLOCKS, DEFAULT_NETHER_CORE_FADE_BLOCKS, from);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v5 -> v6: the spheres band shrank to 6550 (entry fade 750) with its progression moved earlier, and
+        // lost its Nether-sky stretch. Only values still at v5's shipped defaults move.
+        if (from < 6) {
+            migrateBandHold("spheresHoldBlocks", SPHERES_HOLD_BLOCKS, SPHERES_V5_HOLD_BLOCKS, DEFAULT_SPHERES_HOLD_BLOCKS, from);
+            migrateBandHold("spheresFadeBlocks", SPHERES_FADE_BLOCKS, SPHERES_V5_FADE_BLOCKS, DEFAULT_SPHERES_FADE_BLOCKS, from);
+            migrateBandHold("spheresEndSkyStartBlocks", SPHERES_END_SKY_START_BLOCKS, SPHERES_V5_END_SKY_START_BLOCKS,
+                    DEFAULT_SPHERES_END_SKY_START_BLOCKS, from);
+            SpheresProgressionConfig.migrateV5Offsets(from);
+            if (V5_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+                WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+                LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
+                        from, CURRENT_CONFIG_VERSION);
+            }
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v6 -> v7: the Beta era shrank 5000 -> 3500, and the overworld gap into Amplified became the
+        // short sunk approach (ow:sunk:500). Only an order still exactly as v6 shipped moves; an
+        // edited order is a choice and is left alone.
+        if (from < 7 && V6_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v7 -> v8: the overworld gap after the legacy run shrank 2000 -> 650 and the gap between
+        // chuncks and stacks was dropped. Same rule: only an order still exactly as v7 shipped moves.
+        if (from < 8 && V7_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v8 -> v9: the chuncks core shrank 5000 -> 2000 and the mix zone (mix:4000) follows it. Same
+        // rule: only an order still exactly as v8 shipped moves.
+        if (from < 9 && V8_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v9 -> v10: Lap 1's Nether and End take the Biomes O' Plenty look from the second cycle on
+        // (vanilla>bop). Same rule: only an order still exactly as v9 shipped moves.
+        if (from < 10 && V9_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> BoP Nether/End on later cycles.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v10 -> v11: the Lost City era joined the legacy run between Amplified and Beta. Same rule: only
+        // an order still exactly as v10 shipped moves.
+        if (from < 11 && V10_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shipped default.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v11 -> v12: the laps were reordered (WWOO + a vanilla/BoP End on Lap 1, Lost City on Lap 2). Same
+        // rule: only an order still exactly as v11 shipped moves.
+        if (from < 12 && V11_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> reordered laps.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v12 -> v13: the Lost City run wears WWOO (legacy:wwoo:lost_city). Same rule: only an order still
+        // exactly as v12 first shipped moves.
+        if (from < 13 && V12_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> Lost City wears WWOO.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v13 -> v14: the upside-down's Reassembly shrank 6000 -> 5000. Same rule: only an order still
+        // exactly as v13 shipped moves.
+        if (from < 14 && V13_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shorter Reassembly.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
+        CONFIG_VERSION.set(CURRENT_CONFIG_VERSION);
+        CONFIG_VERSION.save();
+        CatchUpBurstAuto.invalidate();
+    }
+
+    /** One band-hold migration step: a hold still at the shipped {@code legacy} length becomes {@code target}. */
+    static void migrateBandHold(String key, ModConfigSpec.IntValue hold, int legacy, int target, int from) {
+        if (hold.get() != legacy) return;
+        hold.set(target);
+        LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: {} {} -> {}.",
+                from, CURRENT_CONFIG_VERSION, key, legacy, target);
     }
 
     /** Global default Compatible Terrain mode for new worlds; falls back to the hardcoded default pre-load. */
@@ -808,6 +1467,14 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? NETHER_CORE_HOLD_BLOCKS.get() : DEFAULT_NETHER_CORE_HOLD_BLOCKS;
     }
 
+    /**
+     * Ambient monsters allowed near one player before natural spawning is held off; falls back to the
+     * hardcoded default pre-load. 0 disables the cap.
+     */
+    public static int getAmbientMonsterCap() {
+        return isLoaded() ? AMBIENT_MONSTER_CAP.get() : DEFAULT_AMBIENT_MONSTER_CAP;
+    }
+
     /** Nether structures in the band core; falls back to the hardcoded default pre-load. */
     public static boolean isNetherStructuresEnabled() {
         return isLoaded() ? NETHER_STRUCTURES.get() : DEFAULT_NETHER_STRUCTURES;
@@ -879,6 +1546,10 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? UPSIDE_DOWN_BEDROCK_ROOF.get() : DEFAULT_UPSIDE_DOWN_BEDROCK_ROOF;
     }
 
+    public static boolean isUpsideDownTrackFlatten() {
+        return isLoaded() ? UPSIDE_DOWN_TRACK_FLATTEN.get() : DEFAULT_UPSIDE_DOWN_TRACK_FLATTEN;
+    }
+
     /** In-band cloud plane world-Y (clouds render below the train); falls back to the hardcoded default pre-load. */
     public static int getUpsideDownCloudY() {
         return isLoaded() ? UPSIDE_DOWN_CLOUD_Y.get() : DEFAULT_UPSIDE_DOWN_CLOUD_Y;
@@ -932,8 +1603,122 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? CHUNCKS_SLICE_RATIO.get() : DEFAULT_CHUNCKS_SLICE_RATIO;
     }
 
-    private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
+    /** Whether the spheres band is active; falls back to the hardcoded default pre-load. */
+    public static boolean isSpheresEnabled() {
+        return isLoaded() ? SPHERES_ENABLED.get() : DEFAULT_SPHERES_ENABLED;
+    }
+
+    /** Spheres band span (blocks); falls back to the hardcoded default pre-load. */
+    public static int getSpheresHoldBlocks() {
+        return isLoaded() ? SPHERES_HOLD_BLOCKS.get() : DEFAULT_SPHERES_HOLD_BLOCKS;
+    }
+
+    /** Spheres entry-fade span (blocks) where the terrain dissolves; falls back to the hardcoded default pre-load. */
+    public static int getSpheresFadeBlocks() {
+        return isLoaded() ? SPHERES_FADE_BLOCKS.get() : DEFAULT_SPHERES_FADE_BLOCKS;
+    }
+
+    /** Overworld lead-in gap (blocks) before the spheres band; falls back to the hardcoded default pre-load. */
+    public static int getSpheresLeadGapBlocks() {
+        return isLoaded() ? SPHERES_LEAD_GAP_BLOCKS.get() : DEFAULT_SPHERES_LEAD_GAP_BLOCKS;
+    }
+
+    /** Sphere placement cell edge (blocks); falls back to the hardcoded default pre-load. */
+    public static int getSpheresCellBlocks() {
+        return isLoaded() ? SPHERES_CELL_BLOCKS.get() : DEFAULT_SPHERES_CELL_BLOCKS;
+    }
+
+    /** Chance 0..1 a placement cell holds a sphere; falls back to the hardcoded default pre-load. */
+    public static double getSpheresDensity() {
+        return isLoaded() ? SPHERES_DENSITY.get() : DEFAULT_SPHERES_DENSITY;
+    }
+
+    /** Smallest sphere radius (blocks); falls back to the hardcoded default pre-load. */
+    public static int getSpheresMinRadius() {
+        return isLoaded() ? SPHERES_MIN_RADIUS.get() : DEFAULT_SPHERES_MIN_RADIUS;
+    }
+
+    /** Largest sphere radius (blocks), never below the minimum; falls back to the hardcoded default pre-load. */
+    public static int getSpheresMaxRadius() {
+        int max = isLoaded() ? SPHERES_MAX_RADIUS.get() : DEFAULT_SPHERES_MAX_RADIUS;
+        return Math.max(max, getSpheresMinRadius());
+    }
+
+    /** Lowest lifted-centre world Y; falls back to the hardcoded default pre-load. */
+    public static int getSpheresCenterMinY() {
+        return isLoaded() ? SPHERES_CENTER_MIN_Y.get() : DEFAULT_SPHERES_CENTER_MIN_Y;
+    }
+
+    /** Highest lifted-centre world Y, never below the minimum; falls back to the hardcoded default pre-load. */
+    public static int getSpheresCenterMaxY() {
+        int max = isLoaded() ? SPHERES_CENTER_MAX_Y.get() : DEFAULT_SPHERES_CENTER_MAX_Y;
+        return Math.max(max, getSpheresCenterMinY());
+    }
+
+    /** Fraction 0..1 of a sphere's diameter below the natural surface; falls back to the hardcoded default pre-load. */
+    public static double getSpheresSurfaceBias() {
+        return isLoaded() ? SPHERES_SURFACE_BIAS.get() : DEFAULT_SPHERES_SURFACE_BIAS;
+    }
+
+    /** Whether the spheres band's later part renders the End sky + lighting; falls back to the hardcoded default pre-load. */
+    public static boolean isSpheresEndSkyEnabled() {
+        return isLoaded() ? SPHERES_END_SKY.get() : DEFAULT_SPHERES_END_SKY;
+    }
+
+    /** Blocks into the spheres core before the End sky starts; falls back to the hardcoded default pre-load. */
+    public static int getSpheresEndSkyStartBlocks() {
+        return isLoaded() ? SPHERES_END_SKY_START_BLOCKS.get() : DEFAULT_SPHERES_END_SKY_START_BLOCKS;
+    }
+
+    /** Crossfade span (blocks) at each edge of the spheres End-sky half; falls back to the hardcoded default pre-load. */
+    public static int getSpheresEndSkyFadeBlocks() {
+        return isLoaded() ? SPHERES_END_SKY_FADE_BLOCKS.get() : DEFAULT_SPHERES_END_SKY_FADE_BLOCKS;
+    }
+
+    /** Whether the stacks band is active; falls back to the hardcoded default pre-load. */
+    public static boolean isStacksEnabled() {
+        return isLoaded() ? STACKS_ENABLED.get() : DEFAULT_STACKS_ENABLED;
+    }
+
+    /** Stacks band span (blocks); falls back to the hardcoded default pre-load. */
+    public static int getStacksHoldBlocks() {
+        return isLoaded() ? STACKS_HOLD_BLOCKS.get() : DEFAULT_STACKS_HOLD_BLOCKS;
+    }
+
+    /** Stacks entry-fade span (blocks) where void ramps in; falls back to the hardcoded default pre-load. */
+    public static int getStacksFadeBlocks() {
+        return isLoaded() ? STACKS_FADE_BLOCKS.get() : DEFAULT_STACKS_FADE_BLOCKS;
+    }
+
+    /** Overworld lead-in gap (blocks) before the stacks band; falls back to the hardcoded default pre-load. */
+    public static int getStacksLeadGapBlocks() {
+        return isLoaded() ? STACKS_LEAD_GAP_BLOCKS.get() : DEFAULT_STACKS_LEAD_GAP_BLOCKS;
+    }
+
+    /** Fraction 0..1 of stacks-band void chunks that hold a stack; falls back to the hardcoded default pre-load. */
+    /** Whether the mix zone is on; the shipped default pre-load. */
+    public static boolean isMixEnabled() {
+        return isLoaded() ? MIX_ENABLED.get() : DEFAULT_MIX_ENABLED;
+    }
+
+    /** The mix zone's excluded candidate tokens ({@code mixExclude}); blank pre-load. */
+    public static String getMixExclude() {
+        return isLoaded() ? MIX_EXCLUDE.get() : DEFAULT_MIX_EXCLUDE;
+    }
+
+    /** The band order spec ({@code worldgenCycleOrder}); the shipped default pre-load. */
+    public static String getWorldgenCycleOrder() {
+        return isLoaded() ? WORLDGEN_CYCLE_ORDER.get() : DEFAULT_WORLDGEN_CYCLE_ORDER;
+    }
+
+    public static double getStacksDensity() {
+        return isLoaded() ? STACKS_DENSITY.get() : DEFAULT_STACKS_DENSITY;
+    }
+
+    private record Holder(ModConfigSpec.IntValue configVersion,
+                          ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
+                          ModConfigSpec.IntValue ambientMonsterCap,
                           ModConfigSpec.BooleanValue compatibleTerrain,
                           ModConfigSpec.BooleanValue disintegrationEnabled,
                           ModConfigSpec.IntValue disintegrationStartBlocks,
@@ -966,12 +1751,36 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.DoubleValue upsideDownExitNoiseSkipEpsilon,
                           ModConfigSpec.IntValue upsideDownMaxCeilingHeight,
                           ModConfigSpec.BooleanValue upsideDownMirrorPrecompute,
+                          ModConfigSpec.BooleanValue upsideDownTrackFlatten,
                           ModConfigSpec.BooleanValue chuncksEnabled,
                           ModConfigSpec.IntValue chuncksHoldBlocks,
                           ModConfigSpec.IntValue chuncksFadeBlocks,
                           ModConfigSpec.IntValue chuncksLeadGapBlocks,
                           ModConfigSpec.DoubleValue chuncksKeepDensity,
                           ModConfigSpec.DoubleValue chuncksSliceRatio,
+                          ModConfigSpec.BooleanValue spheresEnabled,
+                          ModConfigSpec.IntValue spheresHoldBlocks,
+                          ModConfigSpec.IntValue spheresFadeBlocks,
+                          ModConfigSpec.IntValue spheresLeadGapBlocks,
+                          ModConfigSpec.IntValue spheresCellBlocks,
+                          ModConfigSpec.DoubleValue spheresDensity,
+                          ModConfigSpec.IntValue spheresMinRadius,
+                          ModConfigSpec.IntValue spheresMaxRadius,
+                          ModConfigSpec.IntValue spheresCenterMinY,
+                          ModConfigSpec.IntValue spheresCenterMaxY,
+                          ModConfigSpec.DoubleValue spheresSurfaceBias,
+                          ModConfigSpec.BooleanValue spheresEndSky,
+                          ModConfigSpec.IntValue spheresEndSkyStartBlocks,
+                          ModConfigSpec.IntValue spheresEndSkyFadeBlocks,
+                          ModConfigSpec.BooleanValue stacksEnabled,
+                          ModConfigSpec.IntValue stacksHoldBlocks,
+                          ModConfigSpec.IntValue stacksFadeBlocks,
+                          ModConfigSpec.IntValue stacksLeadGapBlocks,
+                          ModConfigSpec.DoubleValue stacksDensity,
+                          ModConfigSpec.BooleanValue mixEnabled,
+                          ModConfigSpec.ConfigValue<String> mixExclude,
+                          ModConfigSpec.ConfigValue<String> worldgenCycleOrder,
                           ModConfigSpec.BooleanValue breakBlocksOnContact,
-                          ModConfigSpec.DoubleValue backerNameWeight) {}
+                          ModConfigSpec.DoubleValue backerNameWeight,
+                          ModConfigSpec.EnumValue<CatchUpBurstMode> catchUpBurstMode) {}
 }

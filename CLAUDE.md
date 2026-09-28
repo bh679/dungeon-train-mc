@@ -91,8 +91,11 @@ Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 1. Push branch, open PR with conventional commit title
 2. **Log + confirm the changelog entry** — append it on the feature branch with
    `scripts/release-notes/append-entry.py` (curated player-facing notes) so it lands in the PR
-   diff, and present those notes to the user to confirm before merging — see
-   `.github/release-notes/README.md`
+   diff, and present those notes **and tags** to the user to confirm before merging — see
+   `.github/release-notes/README.md`. **You choose the tags, from the diff** — there is no
+   keyword classifier. Run `append-entry.py --tag-guide`, answer its question per tag, pass
+   `--tag` for each yes or `--no-topical-tags` if none apply (one or the other is required).
+   Tag what the change is *about*, not what its prose mentions; the type-derived tag is automatic.
 3. Verify CI green
 4. Squash-merge after explicit user approval of the changelog notes + diff
 5. Delete feature branch
@@ -253,16 +256,43 @@ Separate from the mod, there are **two modpacks** published from one config
   `project_id`/`file_id`. First publish is a **draft** → enters Modrinth's modpack review queue.
 
 After a successful mod upload `release.yml` dispatches **`release-modpack.yml`** (CurseForge —
-polls until CurseForge approves the new DT file, and fails without uploading if it never does) and **`release-modpack-modrinth.yml`**
+polls up to 300 min until CurseForge approves the new DT file, so the pack goes live within a
+minute of approval; if that takes longer the run
+**defers** — green, nothing uploaded — and `modpack-reconcile.yml`'s hourly catch-up
+(`scripts/modpack/catch-up.py`) publishes the newest release once its file is listed as
+approved. Approval routinely takes >1h — hence the long wait. Catch-up is **newest
+release only** — no backfill of older gaps.) and **`release-modpack-modrinth.yml`**
 (Modrinth — no wait), each gated on that platform's mod upload having produced a file/version id.
 **Modrinth fires for every release including the ~22 cascade ticks; CurseForge fires only for
 real, operator-dispatched releases** (`inputs.auto == false`) — CurseForge's pack validation
 returns sporadic 500s and silently rejects files, so the cascade is kept out of it. The two packs'
 version lists therefore differ by design. Both bundle that release's
 DT file + Sable + the pinned sibling and companion mods. Core entries are
-**Dungeon Train + Sable** (DT jarJars only DiscordPresence + EdibleBackpacks + joml-primitives);
+**Dungeon Train + Sable** (DT jarJars DiscordPresence + EdibleBackpacks + KeepTrim + DungeonBackup +
+SableFenceTrapdoorFix + joml-primitives);
 the sibling mods **AIN/AIS/PMOB/ECP/TE are un-bundled required downloads**, declared `<slug>(required)` so the
-CurseForge/Modrinth apps auto-install them and each sibling's own page gets the download credit.
+CurseForge/Modrinth apps auto-install them and each sibling's own page gets the download credit. The third-party
+**Fast Paintings + Moonlight** (`fast-paintings(required)`, `selene(required)`) are hard deps on the same
+contract — paintings are blocks under FP, and templates/shared carriages carry those blocks (see
+`compat/PaintingTransformProcessor` for why flipped stamps still work). **BetterNether: New Dawn** + its
+BCLib/WorldWeaver/WunderLib libraries (`betternether-neoforge(required)` etc., same slugs on both platforms)
+are hard deps too — every second Nether band's core uses BetterNether biomes
+(`worldgen/density/BetterNetherCoreBiomes`; `/dungeontrain debug nether-passes` lists each band's biomes). **BetterEnd: New
+Dawn** (`betterend-neoforge(required)`, same libraries) is a hard dep on the same contract — every second
+End-islands band copies real BetterEnd End chunks (`worldgen/EndBandStyle` + `EndBandSampler`); vanilla bands
+read `worldgen/density/VanillaEndBiomes`. DT's presets give the End WorldWeaver's `wover:end_biome_source` — the
+vanilla `minecraft:the_end` source yields no BetterEnd biomes (TerraBlender's patch wins `getNoiseBiome`) — and
+`data/wover/config/biome_config.json` keeps BoP out of the End (`EndPresetBiomeSourceTest` pins both). **William Wythers' Overhauled
+Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too. Lap 1 of every cycle is
+overworld → Nether → WWOO → one End band (1200 vanilla, then 2000 BoP — two back-to-back `end:` slots join into one
+band with a single void fade, each piece its own pass/look) → upside-down; Lap 2 is BoP → BetterNether → Lost City (its
+own `legacy:wwoo:` run — an order may hold several; it wears WWOO decoration, and its buildings start on the Nether's exit
+mountains via `CycleLayout#legacyLeadIn`; the track is flattened only where it would cut a mountain — `density/UpsideDownTrackFlatten#mountainGate`, also in the upside-down band; its buildings fade in from the foot of the Nether's fall, half the grid there rising to full 2900 blocks on, none on the range (`LostCityStructures#density`, `#fallFoot`; a 4% sprinkling also lands in Lap 1's WWOO stretch), start in every overworld biome, oceans included, seated on the footprint's 30th-percentile floor (`worldgen/LostCitySeating#seat`, from `StructureBasementMixin`); they generate with vanilla adaptation off (`StructureTerrainAdaptationMixin`) and a fill-only beard instead (`BeardifierMixin`), and yield their natural pad and air to WWOO's terrain and water, which climb over and flood them — `worldgen/LostCityGroundProcessor`, attached by `SinglePoolElementMixin`) → BetterEnd. From the second cycle on, Lap 1's Nether takes the Biomes O'
+Plenty look (`nether:vanilla>bop` in the order — a vanilla + BoP TerraBlender region mix in
+`density/NetherCoreBiomes`; the BoP End is sampled from `worldgen/BopEnd`) (`worldgen/SecondLapOverworld`;
+`/dungeontrain debug overworld-laps` / `nether-passes` list each lap's stretches and biomes). WWOO is confined at feature placement plus vanilla
+"twins" for its biome colours/climate/spawns outside the stretch, BoP at biome choice — see
+`worldgen/VanillaBiomeFeatures`, `worldgen/VanillaBiomeTwins` and `worldgen/density/OverworldStretchBiomes`.
 On top of those, `modpack.config.json` → `optional_mods[]` bundles the siblings (each carrying
 `dependency_type: required` + a `gradle_property` floor) and the companions, each with a
 `required` flag.
@@ -278,7 +308,14 @@ loads (Advancement Plaques needs Iceberg).
 - **Sable-pin coupling:** when you bump `sable_version` in `gradle.properties`, also update
   `modpack/modpack.config.json` → `sable.file_id` (CurseForge) **and** `sable.modrinth_version`
   (Modrinth) — both modpacks pin Sable to the tested version. Flagged in `gradle.properties`.
-- **Sibling-mod floors:** AIN/AIS/PMOB/ECP/TE each have TWO versions in `gradle.properties`.
+- **Hybrid siblings (KT/DB/SFF = Keep Trim, Dungeon Backup, Sable Fence & Trapdoor Fix):** jarJar'd inside the DT jar
+  (so Modrinth + manual installs have them built in) AND declared `<slug>(required)` on **CurseForge
+  only** + shipped as CurseForge modpack Includes (`curseforge_only: true` in `modpack.config.json`,
+  which keeps them out of the `.mrpack`). When the CF app installs the top-level copy, NeoForge's
+  JarSelector drops the nested one. No Modrinth listing/relation/`SiblingMod` entry by design.
+  Deptest Cases A (top-level present) and G (nested only) cover both layouts. Keep Trim is hybrid
+  only because its Modrinth listing is still in review (it was fully external 0.863.0–0.908.0).
+- **Sibling-mod floors:** AIN/AIS/PMOB/ECP/TE (+ hybrid KT/DB/SFF) each have TWO versions in `gradle.properties`.
   `<mod>_version` is what DT compiles/dev-runs against and the auto-release cascade bumps it every
   tick; `<mod>_min_version` is the floor end users must clear, rendered into `neoforge.mods.toml`
   as `[x,)`. They are separate on purpose — if mods.toml tracked `<mod>_version`, every cascade
@@ -292,9 +329,15 @@ loads (Advancement Plaques needs Iceberg).
   For a hard dependency (a sibling mod) use `dependency_type: required` in the config and
   `<slug>(required)` in release.yml instead. Note `required` (pack ships it ON) and
   `dependency_type` (mod won't load without it) answer different questions — don't conflate them.
+  **Also give it `mod_ids`** — the REAL modIds its jar loads (`python3 scripts/modpack/check-mod-ids.py
+  --fill` reads them from the pinned jar). Every modpack mod, sibling and declared dependency is
+  **auto-whitelisted for fair play at build time** (`gradle/approved-mods.gradle` →
+  `generateApprovedMods`); opt a mod out with `"whitelist": false` — Gate 3 step 3b asks the user.
+  Hand-judged third-party approvals live in `src/main/whitelist/approved_mods.curated.json`.
   Enforced in CI (`modpack-checks` job in `build.yml`): `check-relations.py` (CurseForge dep) +
   `build-mrpack.py --check-config` (Modrinth pins present) + `check-pins.py` (Sable chain +
-  sibling floors) + `check-overrides.py` (allowlist for `modpack/overrides/`).
+  sibling floors) + `check-overrides.py` (allowlist for `modpack/overrides/`) +
+  `check-mod-ids.py` (`mod_ids` present, and `--verify` against the pinned jars).
 - **`modpack/overrides/` is allowlisted.** The tree ships verbatim to every player, so a config
   file DT holds to its defaults landing there would put the whole player base into Free Play
   (`adventureitemstats.properties` → `AisDataIntegrity`). `check-overrides.py` fails CI on any
@@ -304,7 +347,7 @@ loads (Advancement Plaques needs Iceberg).
   unhandled exception occurred…"`), leaving the workflow green and the release missing from the
   pack — this is how the pack silently fell 13 releases behind in Aug 2026. `release-modpack.yml`
   now polls the public listing after uploading (`scripts/modpack/reconcile.py --verify`) and fails
-  the run if the version never appears. `modpack-reconcile.yml` re-checks every 6h as a backstop.
+  the run if the version never appears. `modpack-reconcile.yml` re-checks hourly as a backstop.
   Run the drift report any time with `python3 scripts/modpack/reconcile.py`.
   A 2026-08-22 re-upload of the identical rejected manifest was **accepted**, so those rejections
   were a transient CurseForge fault — missing versions can be recovered by re-uploading.

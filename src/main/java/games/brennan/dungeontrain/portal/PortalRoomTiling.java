@@ -33,6 +33,20 @@ import java.util.function.Predicate;
  * genuinely endless rather than merely large, and it is what bounds the cost — the resident set never
  * exceeds {@link #budgetTiles}, however far anyone walks.</p>
  *
+ * <h2>When the budget is smaller than the window</h2>
+ * <p>A big room's budget runs out before its window is full, and the two rules then disagree about
+ * which tiles the resident set should be. An 11&times;70&times;13 room is 10,010 blocks a tile, so
+ * {@link #budgetTiles} allows 92 of them against a window of 121: {@link #nextToAdd} wants the 92
+ * nearest tiles to the occupants, measured Euclidean, while {@link #nextToRemove} frees anything
+ * outside the Chebyshev radius. A tile the one gives up is a tile the other immediately refills.</p>
+ *
+ * <p>Which cost a full stamp <b>and</b> a full erase of a 10,010-block copy every tick, for as long
+ * as somebody stood in the room shifting between two tiles &mdash; the arrival doorway sits half a
+ * block from a tile boundary, so that is not a corner case. {@link #RETIRE_MARGIN} is the band that
+ * stops the two rules arguing, and {@link #retireRadius} is where it is applied.
+ * {@code PortalExitCopyTiler#nextToAdd} is the same fix for the same reason on the corridors, found
+ * first.</p>
+ *
  * <h2>One window per occupant, not one per room</h2>
  * <p>Every method that takes a centre takes a <b>set</b> of them — the tiles the players inside are
  * standing in. The window is their union: a tile is retired only once it has fallen outside the
@@ -88,6 +102,21 @@ public record PortalRoomTiling(Set<Tile> tiles) {
      * copies of a room nobody looked at.</p>
      */
     public static final int APPROACH_RADIUS = 1;
+
+    /**
+     * One tile of slack between the radius the add rule fills and the radius the retire rule frees,
+     * for a tiling that has spent its budget.
+     *
+     * <p>Hysteresis, in the same shape and for the same reason as the {@code reach} band in
+     * {@code PortalExitCopyTiler}: adding inside {@code radius} and retiring only beyond
+     * {@code radius + RETIRE_MARGIN} leaves a ring the two rules cannot both fire on, so a centre
+     * that shifts by one tile &mdash; a player standing at a tile boundary, which is where the
+     * arrival doorway puts them &mdash; moves no blocks at all.</p>
+     *
+     * <p>One tile is exactly enough for that: the resident set never reaches past {@code radius},
+     * so a one-tile step puts its far edge at {@code radius + 1} and no further.</p>
+     */
+    public static final int RETIRE_MARGIN = 1;
 
     /**
      * Ceiling on how much room the resident tiles may occupy, in blocks.
@@ -199,6 +228,24 @@ public record PortalRoomTiling(Set<Tile> tiles) {
         if (blocksPerTile <= 0) return MAX_WINDOW_TILES * centres;
         return Math.max(1, Math.min(MAX_WINDOW_TILES * centres,
             (MAX_RESIDENT_BLOCKS / blocksPerTile) * centres));
+    }
+
+    /**
+     * The radius the retire rule should be asked for, given the radius the add rule is filling,
+     * how many tiles are {@code resident} and the {@code budget} capping them.
+     *
+     * <p>{@link #RETIRE_MARGIN} wider than the add rule's, but <b>only while the budget is spent</b>,
+     * which is the only state the two rules can argue in: below budget a freed slot is never
+     * refilled from outside the window, so they converge on their own and the band would just hold
+     * stale copies for nothing.</p>
+     *
+     * <p>That gate is also what keeps {@link #APPROACH_RADIUS} shedding to one ring rather than two.
+     * A structure emptying out enters this at budget, so its first retire runs at radius two &mdash;
+     * one tile goes, the tiling drops below budget, the band goes with it, and the rest sheds exactly
+     * as it always did.</p>
+     */
+    public static int retireRadius(int radius, int resident, int budget) {
+        return resident >= budget ? radius + RETIRE_MARGIN : radius;
     }
 
     /** True when a copy of the room is standing at {@code tile}. */
@@ -318,6 +365,12 @@ public record PortalRoomTiling(Set<Tile> tiles) {
      * take into the world floor — and it does not have to be the tile they occupy, which was the only
      * one the caller could spare while the window followed a single player. Everything within a
      * radius of everybody stays, whatever it costs; growth is what the budget limits.</p>
+     *
+     * <p><b>The {@code radius} handed in here is not always the one the add rule was given.</b> A
+     * caller at budget passes {@link #retireRadius}, which is a tile wider &mdash; see
+     * {@link #RETIRE_MARGIN}. The asymmetry is the point and is not a bug to be tidied away: a wider
+     * radius retires strictly less, so it can only ever spare a floor this rule would otherwise have
+     * taken, and making the two agree is what made a room churn a copy a tick.</p>
      */
     public Tile nextToRemove(Set<Tile> centres, int radius, Predicate<Tile> removable) {
         if (centres.isEmpty()) return null;

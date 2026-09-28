@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -112,14 +111,29 @@ public final class CheatModList {
         // do anything (which OperatorIntegrity now catches on its own), but naming them lets the
         // login notice say WHAT tripped Free Play rather than just "someone has cheats".
         // "infinityeditor" is the original Ruukas build, "infinity_item_editor_re" the
-        // maintained NeoForge fork.
-        "infinityeditor", "infinity_item_editor_re"
+        // maintained NeoForge fork, and "cadeditor" the CAD (Component And Data) Editor — the
+        // IBE Editor successor, which edits the 1.20.5+ component set (attributes, enchantments,
+        // stack size, unbreakable, container contents, item type) from a GUI. "dine" (Dynamic
+        // In-Game NBT Editor) is the same idea aimed at entities and block entities — a live NBT
+        // tree you can rewrite mid-run. It drives the vanilla /data command, so its edits already
+        // need permission level 2, but naming it here lets the notice say what tripped Free Play.
+        // "ankinbt" (AnkiNBT) covers all three surfaces at once — items, live entities and
+        // villager trades — with a simple mode for names/enchantments/attributes and a full NBT
+        // tree behind it.
+        // "nbtedit" is In-game NBTEdit Reborn, the maintained continuation of the original
+        // NBTEdit — an /nbtedit tree over the held item or the entity you look at.
+        "infinityeditor", "infinity_item_editor_re", "cadeditor", "dine", "ankinbt", "nbtedit",
+        // mob-stat / spawn-rule rewriters — a GUI over every living entity's health, armour,
+        // speed, attack damage, damage-type immunities, and the biome + group-size rules that
+        // decide what spawns. That is DT's difficulty curve and spawn tables rewritten from a
+        // menu, so a run made under one is not comparable to anyone else's. Presence-based like
+        // the rest of the list: it flips Free Play whether the player tuned mobs down OR up.
+        "visual_mobs_edit"
     );
 
     /** Cache file under the loader config dir; written on each successful relay fetch. */
     static final String FILE_NAME = "dungeontrain-cheat-mods.json";
 
-    private static final int MAX_ID_LEN = 64;
     private static final int MAX_IDS = 500;
 
     /** Sanitized relay overlay — only ever swapped whole, never mutated. */
@@ -158,31 +172,17 @@ public final class CheatModList {
 
     /** New lowercase set holding only the entries that pass {@link #isValidModId}. */
     static Set<String> sanitize(Collection<String> raw) {
-        if (raw == null || raw.isEmpty()) return Set.of();
-        Set<String> out = new HashSet<>();
-        for (String id : raw) {
-            if (isValidModId(id)) out.add(id.trim().toLowerCase(Locale.ROOT));
-            if (out.size() >= MAX_IDS) break;
-        }
-        return Set.copyOf(out);
+        return ModIds.sanitize(raw, MAX_IDS);
     }
 
     /**
-     * A plausible mod ID: non-empty after trim, sane length, only {@code [a-z0-9_.-]} (after
-     * lowercasing). Anything else is dropped — the relay is trusted, but a malformed server value
-     * must never enter the match set (worst case it would false-positive some innocent mod).
+     * A plausible mod ID — see {@link ModIds#isValid}. Anything else is dropped: the relay is
+     * trusted, but a malformed server value must never enter the match set (worst case it would
+     * false-positive some innocent mod). Shared with {@link ApprovedModList} so the blacklist and
+     * the whitelist can never disagree about what an ID is.
      */
     static boolean isValidModId(String v) {
-        if (v == null) return false;
-        String s = v.trim().toLowerCase(Locale.ROOT);
-        if (s.isEmpty() || s.length() > MAX_ID_LEN) return false;
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            boolean ok = (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
-                || c == '_' || c == '-' || c == '.';
-            if (!ok) return false;
-        }
-        return true;
+        return ModIds.isValid(v);
     }
 
     /** Read the disk cache once per JVM, seeding {@code relay}. Best-effort — never throws. */

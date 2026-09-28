@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.builder;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -262,4 +265,32 @@ public final class BuilderNewOptions {
     public static boolean isValidName(String name) {
         return name != null && NAME_PATTERN.matcher(name).matches();
     }
+
+    /**
+     * {@code base_2}, or the next number after it that nothing already uses.
+     *
+     * <p>What a screen asking for a copy's name should start with. Stopping at {@code _2} means the
+     * second copy of a build is offered the name the first copy took, which the player only finds
+     * out about after committing to it — and the numbering has to be the same wherever the question
+     * is asked, so it is one function rather than a suggestion each screen writes for itself.</p>
+     *
+     * <p>Gives up after {@link #FREE_NAME_LIMIT} tries and answers {@code base_2}: a player who has
+     * that many copies of one build is naming it deliberately, and a screen that hung looking for a
+     * gap would be worse than one that opens on a name they have to change.</p>
+     *
+     * @param taken names already in use; null or empty is simply "nothing is taken"
+     */
+    public static String firstFreeName(String base, Collection<String> taken) {
+        if (base == null || base.isEmpty()) return "";
+        if (taken == null || taken.isEmpty()) return base + "_2";
+        Set<String> used = new HashSet<>(taken);
+        for (int n = 2; n < FREE_NAME_LIMIT; n++) {
+            String candidate = base + "_" + n;
+            if (!used.contains(candidate)) return candidate;
+        }
+        return base + "_2";
+    }
+
+    /** How far {@link #firstFreeName} counts before handing the question back to the player. */
+    private static final int FREE_NAME_LIMIT = 1000;
 }

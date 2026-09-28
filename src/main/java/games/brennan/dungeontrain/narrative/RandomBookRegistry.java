@@ -57,10 +57,11 @@ public final class RandomBookRegistry {
             // Overlay the host-locale variant on the English base, then fold in any
             // translation-editor overrides (integrated server only — see
             // NarrativeTranslationOverrides). The id stays identical, so pool weights and
-            // variant-count denominators are unaffected.
+            // variant-count denominators are unaffected — and baseWeighted() puts the English
+            // base's weight back, since the shipped locale copies carry a stale one of their own.
             try (InputStream in = NarrativeContentLocale.open(resourceManager, id, DIR, entry.getValue())) {
                 RandomBookFile book = RandomBookCodec.parse(in, id);
-                BOOKS.put(id, book);
+                BOOKS.put(id, baseWeighted(resourceManager, id, book, entry.getValue()));
                 loaded++;
             } catch (RandomBookCodec.RandomBookParseException e) {
                 LOGGER.error("[DungeonTrain] RandomBook: failed to parse {} — {}", file, e.getMessage());
@@ -72,6 +73,30 @@ public final class RandomBookRegistry {
         }
         LOGGER.info("[DungeonTrain] RandomBook registry loaded — {} books from '{}' (failed: {})",
             loaded, DIR, failed);
+    }
+
+    /**
+     * The parsed book, carrying the ENGLISH base file's {@code weight}.
+     *
+     * <p>A localized copy REPLACES the base wholesale, and every shipped
+     * {@code narrative_localizations/<locale>/random_books/*.json} carries its own {@code weight}
+     * — a stale {@code 1} frozen at translation time. Weight is tuning, not prose, so the base
+     * wins and a rarity change never has to be mirrored across 20 locale trees.</p>
+     *
+     * <p>Costs one extra small parse per book, and only when a localized copy actually replaced
+     * the base — in an English world the parsed record already IS the base.</p>
+     */
+    private static RandomBookFile baseWeighted(ResourceManager resourceManager, ResourceLocation id,
+                                               RandomBookFile parsed, Resource base) {
+        if (NarrativeContentLocale.localized(resourceManager, id, DIR).isEmpty()) return parsed;
+        try (InputStream baseIn = base.open()) {
+            double baseWeight = RandomBookCodec.parseWeight(baseIn);
+            return baseWeight == parsed.weight() ? parsed : parsed.withWeight(baseWeight);
+        } catch (Exception e) {
+            // Unreadable base — keep the localized copy's weight rather than dropping the book.
+            LOGGER.warn("[DungeonTrain] RandomBook: could not read base weight for {} — {}", id, e.toString());
+            return parsed;
+        }
     }
 
     /** Drop every loaded book (called on server stop). */
@@ -141,8 +166,8 @@ public final class RandomBookRegistry {
      * empty or every book has weight 0 — callers should treat 0 as
      * "skip the random-book substitution and emit nothing".
      */
-    public static synchronized int totalWeight() {
-        int total = 0;
+    public static synchronized double totalWeight() {
+        double total = 0;
         for (RandomBookFile b : BOOKS.values()) total += b.weight();
         return total;
     }
@@ -158,10 +183,9 @@ public final class RandomBookRegistry {
      */
     public static synchronized Optional<RandomBookFile> pickWeighted(long seed) {
         if (BOOKS.isEmpty()) return Optional.empty();
-        int total = totalWeight();
+        double total = totalWeight();
         if (total <= 0) return Optional.empty();
-        long unsigned = seed & 0x7FFFFFFFFFFFFFFFL;
-        int target = (int) (unsigned % total);
+        double target = WeightedPick.target(seed, total);
         // Iterate in the deterministic order returned by ids().
         for (ResourceLocation id : ids()) {
             RandomBookFile book = BOOKS.get(id);

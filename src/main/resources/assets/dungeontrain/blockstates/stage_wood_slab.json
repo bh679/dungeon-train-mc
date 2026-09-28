@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "dungeontrain:block/stage_wood_slab"
+    },
+    "type=double": {
+      "model": "dungeontrain:block/stage_planks"
+    },
+    "type=top": {
+      "model": "dungeontrain:block/stage_wood_slab_top"
+    }
+  }
+}

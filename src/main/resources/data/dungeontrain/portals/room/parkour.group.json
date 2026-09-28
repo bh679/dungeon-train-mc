@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 0,
+  "variants": [
+    {
+      "id": "skymaze",
+      "weight": 2,
+      "minLevel": 6
+    },
+    {
+      "id": "jumps",
+      "weight": 2,
+      "minLevel": 10
+    },
+    {
+      "id": "gemotricwalk",
+      "weight": 1,
+      "minLevel": 8
+    },
+    {
+      "id": "safe",
+      "weight": 1,
+      "maxLevel": 15
+    }
+  ]
+}

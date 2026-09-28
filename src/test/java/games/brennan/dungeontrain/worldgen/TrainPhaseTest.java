@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import java.util.EnumSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /** Pure tests for the TrainPhase bitmask + token helpers (phaseAt is covered by in-game tests). */
@@ -14,7 +16,7 @@ final class TrainPhaseTest {
     @Test
     @DisplayName("ALL_MASK has every phase bit set")
     void allMask() {
-        assertEquals(0b111111, TrainPhase.ALL_MASK);
+        assertEquals(0b1111111111111111111, TrainPhase.ALL_MASK);
         assertEquals(EnumSet.allOf(TrainPhase.class), TrainPhase.fromMask(TrainPhase.ALL_MASK));
     }
 
@@ -40,7 +42,40 @@ final class TrainPhaseTest {
         assertEquals(TrainPhase.UPSIDE_DOWN, TrainPhase.byToken("upsidedown"));
         assertEquals(TrainPhase.CHUNCKS, TrainPhase.byToken("chuncks"));
         assertEquals(TrainPhase.CHUNCKS, TrainPhase.byToken("CHUNCKS"));
+        assertEquals(TrainPhase.SPHERES, TrainPhase.byToken("spheres"));
+        assertEquals(TrainPhase.STACKS, TrainPhase.byToken("stacks"));
+        assertEquals(TrainPhase.BETA, TrainPhase.byToken("beta"));
+        assertEquals(TrainPhase.ALPHA, TrainPhase.byToken("alpha"));
+        assertEquals(TrainPhase.SKYLANDS, TrainPhase.byToken("skylands"));
+        assertEquals(TrainPhase.INFDEV, TrainPhase.byToken("infdev"));
+        assertEquals(TrainPhase.FLOATING, TrainPhase.byToken("floating"));
+        assertEquals(TrainPhase.FAR_LANDS, TrainPhase.byToken("far_lands"));
+        assertEquals(TrainPhase.FAR_LANDS, TrainPhase.byToken("farlands"));
+        assertEquals(TrainPhase.LARGE_BIOMES, TrainPhase.byToken("largebiomes"));
+        assertEquals(TrainPhase.AMPLIFIED, TrainPhase.byToken("amplified"));
+        assertEquals(TrainPhase.CAVES_OF_CHAOS, TrainPhase.byToken("caves_of_chaos"));
+        assertEquals(TrainPhase.CAVES_OF_CHAOS, TrainPhase.byToken("chaos"));
+        assertEquals(TrainPhase.CLASSIC, TrainPhase.byToken("classic"));
         assertNull(TrainPhase.byToken("nonsense"));
         assertNull(TrainPhase.byToken(null));
+    }
+
+    @Test
+    @DisplayName("letter() yields O N V E U C S S B A S I F F C C L A L in ordinal order")
+    void letters() {
+        StringBuilder sb = new StringBuilder();
+        for (TrainPhase p : TrainPhase.values()) sb.append(p.letter());
+        assertEquals("ONVEUCSSBASIFFCCLAL", sb.toString());
+    }
+
+    @Test
+    @DisplayName("displayName() is non-blank and distinct for every phase")
+    void displayNames() {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (TrainPhase p : TrainPhase.values()) {
+            assertFalse(p.displayName().isBlank(), p.name());
+            assertTrue(seen.add(p.displayName()), "duplicate label " + p.displayName());
+        }
+        assertEquals("Upside Down", TrainPhase.UPSIDE_DOWN.displayName());
     }
 }

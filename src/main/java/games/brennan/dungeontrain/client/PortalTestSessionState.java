@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.client.skybox.SkyboxSectionRebuild;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.PortalTestSessionPacket;
+import net.minecraft.client.Minecraft;
 
 /**
  * Client mirror of {@link games.brennan.dungeontrain.portal.PortalTestSession} — whether this player
@@ -14,12 +17,24 @@ public final class PortalTestSessionState {
 
     private static boolean active = false;
     private static String roomName = "";
+    private static boolean reseed = false;
 
     private PortalTestSessionState() {}
 
     public static void update(PortalTestSessionPacket packet) {
+        boolean was = active;
         active = packet.active();
         roomName = packet.roomName();
+        reseed = packet.reseed();
+        // A test puts Skybox Blocks back however the author's switch is set, and that changes what
+        // they cull as well as what they draw. The meshes standing when it starts or ends were
+        // built against the other answer, so they are rebuilt — but only when the switch is off,
+        // which is the only case where the two answers differ. Just the sections that hold one:
+        // a full allChanged() here is what froze a one-worker Sodium client on the way out of a
+        // test, landing on top of the teleport home and the sweep of the test window.
+        if (was != active && !ClientDisplayConfig.areSkyboxBlocksOn()) {
+            SkyboxSectionRebuild.rebuildAround(Minecraft.getInstance());
+        }
     }
 
     /** True while this player is standing in a stamped test carriage. */
@@ -27,4 +42,7 @@ public final class PortalTestSessionState {
 
     /** The room it was stamped from, for the row's label. Empty when nothing is active. */
     public static String roomName() { return roomName; }
+
+    /** The world's reseed-on-test switch, for the editor's toggle beside Test the Carriage. */
+    public static boolean reseed() { return reseed; }
 }

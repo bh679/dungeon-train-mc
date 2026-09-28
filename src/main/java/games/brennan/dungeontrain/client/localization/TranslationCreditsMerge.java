@@ -1,13 +1,17 @@
 package games.brennan.dungeontrain.client.localization;
 
 import games.brennan.dungeontrain.client.localization.edit.TranslationCoverageClient;
+import games.brennan.dungeontrain.client.localization.edit.TranslatorRenames;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.ToIntFunction;
 
 /**
@@ -37,7 +41,9 @@ public final class TranslationCreditsMerge {
     public static List<TranslationContributor> merged() {
         return merge(TranslationContributorsRegistry.all(),
             TranslationCoverageClient.allCredits(),
-            TranslationCreditsMerge::totalKeysFor);
+            TranslationCreditsMerge::totalKeysFor,
+            TranslatorRenames.snapshot(),
+            Set.of());
     }
 
     /**
@@ -48,14 +54,50 @@ public final class TranslationCreditsMerge {
     public static List<TranslationContributor> merge(List<TranslationContributor> baked,
                                                      Map<String, List<TranslationCoverageClient.Credit>> relay,
                                                      ToIntFunction<String> totalForLocale) {
-        // Insertion-ordered: the baked list's order is the one the screen has always shown, and
-        // people who appear only through the relay join the end rather than reshuffling it.
+        return merge(baked, relay, totalForLocale, Map.of());
+    }
+
+    /**
+     * As {@link #merge(List, Map, ToIntFunction)}, with {@code aliases} (old name → new name)
+     * applied to every name from BOTH sources before they are folded.
+     *
+     * <p>This is how a translator who renamed themself on the Credits page sees one line at once.
+     * The jar still carries their old name until the next release, and this client's cached relay
+     * credits until the next fetch; without the fold the page would thank the same person twice —
+     * the exact bug this class exists to prevent. Two baked entries resolving to one name (a
+     * rename onto an earlier name of one's own) fold by language, the first keeping its shares.</p>
+     */
+    public static List<TranslationContributor> merge(List<TranslationContributor> baked,
+                                                     Map<String, List<TranslationCoverageClient.Credit>> relay,
+                                                     ToIntFunction<String> totalForLocale,
+                                                     Map<String, String> aliases) {
+        return merge(baked, relay, totalForLocale, aliases, Set.of());
+    }
+
+    /**
+     * As {@link #merge(List, Map, ToIntFunction, Map)}, with {@code hidden} names — the ones this
+     * player has taken off the credits — folded into the one {@link TranslationContributor#ANONYMOUS}
+     * line, where the relay's own anonymous credits already land. The count stays; the name goes.
+     * The link goes with it: an anonymous line has nobody to link to.
+     */
+    public static List<TranslationContributor> merge(List<TranslationContributor> baked,
+                                                     Map<String, List<TranslationCoverageClient.Credit>> relay,
+                                                     ToIntFunction<String> totalForLocale,
+                                                     Map<String, String> aliases,
+                                                     Set<String> hidden) {
+        // Keyed by name so the two sources fold into one person. Whatever order the map ends up
+        // holding them in does not survive ranked() below.
         Map<String, TranslationContributor> byName = new LinkedHashMap<>();
         for (TranslationContributor person : baked) {
-            byName.put(person.name(), person);
+            String resolved = TranslatorRenames.resolve(aliases, person.name());
+            String name = hidden.contains(resolved) || hidden.contains(person.name())
+                ? TranslationContributor.ANONYMOUS : resolved;
+            TranslationContributor renamed = name.equals(person.name()) ? person
+                : new TranslationContributor(name, name.isEmpty() ? Optional.empty() : person.url(), person.languages());
+            byName.merge(name, renamed, TranslationCreditsMerge::foldLanguages);
         }
         if (relay == null) {
-            return List.copyOf(byName.values());
+            return ranked(byName.values());
         }
 
         for (Map.Entry<String, List<TranslationCoverageClient.Credit>> entry : relay.entrySet()) {
@@ -65,14 +107,76 @@ public final class TranslationCreditsMerge {
             }
             int total = Math.max(0, totalForLocale.applyAsInt(locale));
             for (TranslationCoverageClient.Credit credit : entry.getValue()) {
-                if (credit == null || credit.name() == null || credit.name().isBlank()) {
+                if (credit == null || credit.units() <= 0) {
                     continue;
                 }
-                byName.compute(credit.name(),
-                    (name, existing) -> withShare(name, existing, locale, credit.units(), total));
+                if (!credit.anonymous() && (credit.name() == null || credit.name().isBlank())) {
+                    continue;
+                }
+                String resolved = credit.anonymous() ? TranslationContributor.ANONYMOUS
+                    : TranslatorRenames.resolve(aliases, credit.name());
+                String name = hidden.contains(resolved) || hidden.contains(credit.name())
+                    ? TranslationContributor.ANONYMOUS : resolved;
+                byName.compute(name, (n, existing) -> withShare(n, existing, locale, credit.units(), total));
             }
         }
-        return List.copyOf(byName.values());
+        return ranked(byName.values());
+    }
+
+    /**
+     * Biggest contribution first: everybody's keys summed across every language they touched,
+     * descending, then by name so equal totals still have one fixed order.
+     *
+     * <p>The whole merged list is ranked, not just the baked half. Somebody the relay approved
+     * yesterday can easily have translated more of the mod than anyone in the jar — ru_ru arrived
+     * that way, 1,683 lines of it — and listing them last because their work had not been through
+     * a release yet put the page's order exactly backwards.</p>
+     *
+     * <p>A person's languages are ordered here too, by share, matching what
+     * {@code provenance_io.build_contributors} generates: {@link #withShare} appends a relay
+     * language to the end of a baked person's list, so without this their strongest language could
+     * sit below their weakest.</p>
+     */
+    private static List<TranslationContributor> ranked(Collection<TranslationContributor> people) {
+        return people.stream()
+            .map(TranslationCreditsMerge::withLanguagesByShare)
+            .sorted(Comparator.comparingInt(TranslationCreditsMerge::totalContributed).reversed()
+                .thenComparing(TranslationContributor::name))
+            .toList();
+    }
+
+    /** Every key this person contributed, across every language they are credited for. */
+    private static int totalContributed(TranslationContributor person) {
+        int total = 0;
+        for (TranslationContributor.LanguageShare share : person.languages()) {
+            total += share.contributed();
+        }
+        return total;
+    }
+
+    /** {@code person} with their languages strongest-share-first, then by locale. */
+    private static TranslationContributor withLanguagesByShare(TranslationContributor person) {
+        if (person.languages().size() < 2) {
+            return person;
+        }
+        List<TranslationContributor.LanguageShare> ordered = person.languages().stream()
+            .sorted(Comparator.comparingDouble(TranslationContributor.LanguageShare::fraction)
+                .reversed()
+                .thenComparing(TranslationContributor.LanguageShare::locale))
+            .toList();
+        return ordered.equals(person.languages()) ? person
+            : new TranslationContributor(person.name(), person.url(), ordered);
+    }
+
+    /** Two entries for one person: the first keeps its shares and its link, the second adds languages. */
+    private static TranslationContributor foldLanguages(TranslationContributor first,
+                                                        TranslationContributor second) {
+        TranslationContributor out = first.url().isPresent() || second.url().isEmpty() ? first
+            : new TranslationContributor(first.name(), second.url(), first.languages());
+        for (TranslationContributor.LanguageShare share : second.languages()) {
+            out = withShare(out.name(), out, share.locale(), share.contributed(), share.total());
+        }
+        return out;
     }
 
     /**

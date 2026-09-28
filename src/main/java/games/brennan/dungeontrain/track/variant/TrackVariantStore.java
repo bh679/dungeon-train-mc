@@ -197,6 +197,7 @@ public final class TrackVariantStore {
         CompoundTag tag = template.save(new CompoundTag());
         NbtIo.writeCompressed(tag, file);
         CACHE.put(key(kind, name), Optional.of(template));
+        games.brennan.dungeontrain.editor.ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved track template {}:{} to {}", kind.id(), name, file);
     }
 
@@ -229,6 +230,7 @@ public final class TrackVariantStore {
         Path file = fileFor(kind, name);
         boolean existed = Files.deleteIfExists(file);
         CACHE.put(key(kind, name), Optional.empty());
+        games.brennan.dungeontrain.editor.ProvenanceCache.invalidateAll();
         if (existed) LOGGER.info("[DungeonTrain] Deleted track template {}:{} ({})", kind.id(), name, file);
         return existed;
     }
@@ -250,6 +252,7 @@ public final class TrackVariantStore {
         Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
         Optional<StructureTemplate> cached = CACHE.remove(key(kind, sourceName));
         if (cached != null) CACHE.put(key(kind, targetName), cached);
+        games.brennan.dungeontrain.editor.ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Renamed track template {}:{} -> {}:{}", kind.id(), sourceName,
                 kind.id(), targetName);
         return true;
@@ -305,7 +308,7 @@ public final class TrackVariantStore {
     ) {
         StructureTemplate template = new StructureTemplate();
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-        template.load(blocks, tag);
+        template.load(blocks, games.brennan.dungeontrain.editor.DoubleBlockTemplateRepair.repair(tag, kind + ":" + name));
 
         Vec3i bounds = acceptableBounds(kind, dims);
         Vec3i size = template.getSize();

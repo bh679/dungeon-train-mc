@@ -19,15 +19,15 @@ public final class StageDuplicateNameScreen implements MenuScreen {
 
     @Override
     public String title() {
-        return "Duplicate stage '" + srcId + "'";
+        return MenuLang.t("stages.duplicate_title", srcId);
     }
 
     @Override
     public List<CommandMenuEntry> entries() {
         return List.of(
-            new CommandMenuEntry.Label("Copies the stage, its parts, and their carriage assignments."),
-            new CommandMenuEntry.TypeArg("New stage id", "id",
+            new CommandMenuEntry.Label(MenuLang.t("stages.duplicate_hint")),
+            new CommandMenuEntry.TypeArg(MenuLang.t("stages.new_id"), "id",
                 "dungeontrain editor stage duplicate " + srcId),
-            new CommandMenuEntry.Back("Cancel"));
+            new CommandMenuEntry.Back(MenuLang.t("common.cancel")));
     }
 }

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.portal.ClientPortalSwap;
+import games.brennan.dungeontrain.client.portal.PortalArrivalTrace;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.SectionOcclusionGraph;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
@@ -44,10 +45,14 @@ import javax.annotation.Nullable;
  * anyway, just on this thread: a few milliseconds, once per swap, in exchange for the flash.</p>
  *
  * <p><b>Bounded.</b> The wait has a timeout, so a saturated background executor degrades to the old
- * behaviour — a possible flash — rather than to a frozen client. {@code require = 0} for the same
- * shape of reason: a mod that replaces the chunk renderer wholesale (Sodium, which Sable ships
- * pipeline compatibility for) leaves this with nothing to attach to, and vanishing quietly is the
- * right outcome there.</p>
+ * behaviour — a possible flash — rather than to a frozen client.</p>
+ *
+ * <p><b>Sodium.</b> Safe ungated, and for a stronger reason than its siblings: this is a different
+ * class entirely, which Sodium's {@code LevelRendererMixin} never touches. Worth stating because the
+ * sibling hooks on {@code LevelRenderer.setupRender} are NOT safe — Sodium merges that method, and
+ * injecting into a merged method is a fatal {@code InvalidInjectionException} that aborts mod
+ * loading, which {@code require = 0} does not prevent (it covers only "no injection point matched").
+ * Those two are gated on Sodium's absence in {@code dungeontrain.vanillarenderer.mixins.json}.</p>
  */
 @Mixin(SectionOcclusionGraph.class)
 public abstract class SectionOcclusionGraphPortalSwapMixin {
@@ -67,7 +72,7 @@ public abstract class SectionOcclusionGraphPortalSwapMixin {
                                                           Frustum frustum,
                                                           List<SectionRenderDispatcher.RenderSection> sections,
                                                           CallbackInfo ci) {
-        if (!ClientPortalSwap.claimGraphWait()) return;
+        if (!ClientPortalSwap.inArrivalWindow()) return;
         if (ClientPortalSwap.claimFirstTrace()) {
             LogUtils.getLogger().info(
                 "[DungeonTrain] Portal swap: renderer is waiting out the occlusion rebuild before drawing");
@@ -78,8 +83,13 @@ public abstract class SectionOcclusionGraphPortalSwapMixin {
         // than vanilla cares about, or a previous frame's rebuild covered it. Either way, no wait.
         if (task == null || task.isDone()) return;
 
+        long startedAt = System.nanoTime();
         try {
             task.get(DUNGEONTRAIN$WAIT_MILLIS, TimeUnit.MILLISECONDS);
+            if (PortalArrivalTrace.TRACE) {
+                LogUtils.getLogger().info("[DungeonTrain] Portal arrival: occlusion rebuild waited {} ms",
+                    (System.nanoTime() - startedAt) / 1_000_000L);
+            }
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
         } catch (Exception failed) {
@@ -88,9 +98,10 @@ public abstract class SectionOcclusionGraphPortalSwapMixin {
             // says why in its log. The logger is fetched here rather than held in a field: a mixin's
             // static field would have to be merged into the target's initialiser, and this path is
             // rare enough not to be worth that.
-            LogUtils.getLogger().debug(
-                "[DungeonTrain] Portal swap: occlusion graph rebuild not ready in {} ms",
-                DUNGEONTRAIN$WAIT_MILLIS, failed);
+            LogUtils.getLogger().info(
+                "[DungeonTrain] Portal arrival: occlusion rebuild NOT ready in {} ms — the frame will "
+                    + "draw from the graph walked at the old camera",
+                DUNGEONTRAIN$WAIT_MILLIS);
         }
     }
 }

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -10,8 +11,11 @@ import net.minecraft.world.level.saveddata.SavedData;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -44,23 +48,32 @@ public final class PortalRegistry extends SavedData {
     private static final String TAG_DELTA_Y = "deltaY";
     private static final String TAG_SEVERED = "severed";
     private static final String TAG_STAMPED_PORTAL_PARTS = "stampedPortalParts";
+    private static final String TAG_STAMPED_STAGES = "stampedStages";
 
     private final List<PortalGeometry> portals = new ArrayList<>();
 
     /**
-     * Carriage indices whose way <b>in</b> has been severed by a break in their corridor's outer
-     * shell — see {@link PortalSever}.
+     * Portal <b>pairs</b> whose way <b>in</b> has been severed by a break in one of their corridors'
+     * outer shell — see {@link PortalSever}.
      *
-     * <p>Persisted because the severing is permanent. A carriage index is a fixed place along the
-     * track, so this stays meaningful across a reload, across the pair being re-stamped when the
-     * train rolls on, and across the world being reopened months later. Without persistence a
-     * player could break the illusion, quit, and come back to a portal that had quietly forgiven
-     * them.</p>
+     * <p><b>One entry per pair, keyed on the group's anchor</b> ({@link PortalCarriageRole#entryIndexOf}),
+     * never on the corridor that happened to be broken. A portal is a pair sharing one room, and it
+     * is the pair that is severed; storing the two corridor indices separately and asking with a
+     * third frame — whichever index the caller had in hand — is a shape that can only stay in step
+     * by luck, and when it fell out of step the entrance was dead while the exit still took people
+     * in. One key, asked one way, cannot disagree with itself.</p>
      *
-     * <p>Stored rather than derived: the hole itself does not survive, because a corridor's blocks
-     * are re-stamped from its template every time the rolling window brings it round again.</p>
+     * <p><b>Persisted, but not permanent.</b> It has to be stored rather than re-derived from the
+     * hole, because a corridor's blocks are re-stamped from its template every time the rolling
+     * window brings it round again and the hole itself is gone within a minute. Persistence is what
+     * keeps a player from breaking the illusion, quitting, and coming back to a portal that had
+     * quietly forgiven them. But it lasts exactly as long as the damage: {@code CarriagePlacer}
+     * calls {@link #repairPair} as it re-stamps a portal group, because the template it is about to
+     * write restores the shell — and a pair that is whole again has nothing left to refuse for. A
+     * record that outlived its blocks was how a dimensional carriage could stand there intact and
+     * still lead nowhere for the rest of the world's life.</p>
      */
-    private final Set<Integer> severedCarriages = new HashSet<>();
+    private final Set<Integer> severedPairs = new HashSet<>();
 
     /**
      * Carriage indices that were actually <b>stamped</b> as part of a portal group — the two
@@ -84,6 +97,28 @@ public final class PortalRegistry extends SavedData {
      * always describes what is standing there now, not what once was.</p>
      */
     private final Set<Integer> stampedPortalParts = new HashSet<>();
+
+    /**
+     * The worldgen stage each stamped portal part's placeholder blocks resolved through, keyed as
+     * {@link #stampedPortalParts} is. {@code ""} for a carriage that resolved through the default
+     * palette (no stage claimed its level/phase) — recorded, and distinct from an index nothing was
+     * ever recorded for.
+     *
+     * <p><b>Why the stage has to be recorded rather than re-derived.</b> A carriage picks its stage
+     * from the gate context it was placed with — the group's <i>real</i> world-X at that moment
+     * ({@code GateContext.forCarriageAtWorldX}). That X is gone once the train rolls on, and the
+     * static {@code pIdx → X} formula the twin stamps used instead drifts behind the real
+     * placement the further along the run a group sits — so a corridor built from warped wood in
+     * the Nether stretch got a twin built from oak, resolved for the overworld band the formula
+     * still believed it was in. The stage is fixed at stamp time; the record is what lets every
+     * copy of the corridor — twin, room tile, extra exit — resolve through the same one.</p>
+     *
+     * <p>Kept in step with {@link #stampedPortalParts}: forgotten for an index the rolling window
+     * re-stamps as an ordinary carriage. Absent for worlds saved before it existed and for groups
+     * that proved themselves from their own blocks ({@code PortalStampRecord#confirmGroup}) — those
+     * fall back to the formula, which is exactly what they did before.</p>
+     */
+    private final Map<Integer, String> stampedStages = new HashMap<>();
 
     /**
      * Anchor-grid spacing for auto-spawning, or {@link PortalAnchors#SPACING_OFF}. Persisted so the
@@ -194,28 +229,43 @@ public final class PortalRegistry extends SavedData {
         return carriageEverySet;
     }
 
-    /** True if this carriage's corridor no longer takes anyone in. The way out is never severed. */
-    public synchronized boolean isSevered(int carriageIndex) {
-        return severedCarriages.contains(carriageIndex);
+    /**
+     * True if this pair takes nobody in any more — asked of the pair's key, which is its group's
+     * anchor. Both of its corridors answer alike by construction. The way out is never severed.
+     */
+    public synchronized boolean isPairSevered(int pairKey) {
+        return severedPairs.contains(pairKey);
     }
 
     /** Record a severing. Returns false if it was already severed, so the effects fire only once. */
-    public synchronized boolean sever(int carriageIndex) {
-        if (!severedCarriages.add(carriageIndex)) return false;
+    public synchronized boolean severPair(int pairKey) {
+        if (!severedPairs.add(pairKey)) return false;
         setDirty();
         return true;
     }
 
-    /** The severed carriage indices, ascending, for {@code /dungeontrain portal severed list}. */
-    public synchronized List<Integer> severed() {
-        return severedCarriages.stream().sorted().toList();
+    /**
+     * Forget this pair's severing — its corridors are being re-stamped from their template, so the
+     * hole that severed them is about to stop existing.
+     *
+     * @return true if the pair was severed until now, so the caller can say so once
+     */
+    public synchronized boolean repairPair(int pairKey) {
+        if (!severedPairs.remove(pairKey)) return false;
+        setDirty();
+        return true;
     }
 
-    /** Repair every severed corridor, returning how many were restored. */
+    /** The severed pair keys, ascending, for {@code /dungeontrain portal severed list}. */
+    public synchronized List<Integer> severed() {
+        return severedPairs.stream().sorted().toList();
+    }
+
+    /** Repair every severed pair, returning how many were restored. */
     public synchronized int clearSevered() {
-        int restored = severedCarriages.size();
+        int restored = severedPairs.size();
         if (restored > 0) {
-            severedCarriages.clear();
+            severedPairs.clear();
             setDirty();
         }
         return restored;
@@ -237,10 +287,33 @@ public final class PortalRegistry extends SavedData {
      * round as an ordinary carriage must stop answering yes.</p>
      */
     public synchronized void noteStamped(int carriageIndex, boolean portalPart) {
-        boolean changed = portalPart
-            ? stampedPortalParts.add(carriageIndex)
-            : stampedPortalParts.remove(carriageIndex);
+        noteStamped(carriageIndex, portalPart, null);
+    }
+
+    /**
+     * As {@link #noteStamped(int, boolean)}, also recording the stage a portal part's placeholder
+     * blocks resolved through — {@code null} for the default palette. Ignored (and any earlier
+     * record forgotten) when {@code portalPart} is false. See {@link #stampedStages}.
+     */
+    public synchronized void noteStamped(int carriageIndex, boolean portalPart, String stageId) {
+        boolean changed;
+        if (portalPart) {
+            changed = stampedPortalParts.add(carriageIndex);
+            String stored = stageId == null ? "" : stageId;
+            changed |= !stored.equals(stampedStages.put(carriageIndex, stored));
+        } else {
+            changed = stampedPortalParts.remove(carriageIndex);
+            changed |= stampedStages.remove(carriageIndex) != null;
+        }
         if (changed) setDirty();
+    }
+
+    /**
+     * The stage carriage {@code carriageIndex} was stamped for: empty when nothing was recorded,
+     * {@code Optional.of("")} when it resolved through the default palette, else the stage id.
+     */
+    public synchronized Optional<String> stampedStageOf(int carriageIndex) {
+        return Optional.ofNullable(stampedStages.get(carriageIndex));
     }
 
     /** Forget every portal, returning how many were dropped. Blocks already stamped are left alone. */
@@ -253,7 +326,8 @@ public final class PortalRegistry extends SavedData {
         return removed;
     }
 
-    private static PortalRegistry load(CompoundTag tag) {
+    /** Package-private rather than private so {@code PortalRegistrySeveredPairsTest} can read a tag. */
+    static PortalRegistry load(CompoundTag tag) {
         PortalRegistry data = new PortalRegistry();
         if (tag.contains(TAG_AUTO_SPACING)) {
             data.autoSpacing = tag.getInt(TAG_AUTO_SPACING);
@@ -267,14 +341,38 @@ public final class PortalRegistry extends SavedData {
         data.carriageEverySet = tag.getBoolean(TAG_CARRIAGE_EVERY_SET);
         // Absent in worlds saved before severing existed, which read back as "nothing severed" —
         // the right answer for a world where no corridor had ever been broken into.
+        //
+        // A world saved before this became a per-PAIR record carries both corridors of every severed
+        // pair. One of those two is always the pair's own key, because a pair's key IS its entry
+        // corridor's index — so keeping only the entries that sit in the entry slot reads the old
+        // shape correctly and drops the partner rather than leaving a second key nothing ever asks
+        // about. A group size changed since the save can strand an entry; the worst that costs is
+        // one pair that has forgiven a break nobody remembers, which is the harmless direction.
+        int groupSize = DungeonTrainConfig.getGroupSize();
         for (int carriageIndex : tag.getIntArray(TAG_SEVERED)) {
-            data.severedCarriages.add(carriageIndex);
+            if (PortalCarriageSelection.slotOf(carriageIndex, groupSize)
+                != PortalCarriageSelection.SLOT_ENTRY) {
+                continue;
+            }
+            data.severedPairs.add(carriageIndex);
         }
         // Absent in worlds saved before the stamp record existed. Those read back as "nothing
         // recorded", and PortalCarriageEvents confirms such a carriage against its own blocks once
         // before trusting it — see PortalStampRecord.
         for (int carriageIndex : tag.getIntArray(TAG_STAMPED_PORTAL_PARTS)) {
             data.stampedPortalParts.add(carriageIndex);
+        }
+        // Absent in worlds saved before the stage was recorded — those twins fall back to the
+        // pIdx formula, as they always did. A key that is not an int is skipped, not fatal.
+        if (tag.contains(TAG_STAMPED_STAGES, Tag.TAG_COMPOUND)) {
+            CompoundTag stages = tag.getCompound(TAG_STAMPED_STAGES);
+            for (String key : stages.getAllKeys()) {
+                try {
+                    data.stampedStages.put(Integer.parseInt(key), stages.getString(key));
+                } catch (NumberFormatException ex) {
+                    LOGGER.warn("[DungeonTrain] Skipping stamped-stage entry with non-index key '{}'.", key);
+                }
+            }
         }
         if (!tag.contains(TAG_PORTALS)) return data;
 
@@ -306,9 +404,14 @@ public final class PortalRegistry extends SavedData {
         tag.putInt(TAG_AUTO_SPACING, autoSpacing);
         tag.putInt(TAG_CARRIAGE_EVERY, carriageEvery);
         tag.putBoolean(TAG_CARRIAGE_EVERY_SET, carriageEverySet);
-        tag.putIntArray(TAG_SEVERED, severedCarriages.stream().mapToInt(Integer::intValue).toArray());
+        tag.putIntArray(TAG_SEVERED, severedPairs.stream().mapToInt(Integer::intValue).toArray());
         tag.putIntArray(TAG_STAMPED_PORTAL_PARTS,
             stampedPortalParts.stream().mapToInt(Integer::intValue).toArray());
+        CompoundTag stages = new CompoundTag();
+        for (Map.Entry<Integer, String> e : stampedStages.entrySet()) {
+            stages.putString(Integer.toString(e.getKey()), e.getValue());
+        }
+        tag.put(TAG_STAMPED_STAGES, stages);
 
         ListTag list = new ListTag();
         for (PortalGeometry geo : portals) {

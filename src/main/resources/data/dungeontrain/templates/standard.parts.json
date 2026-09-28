@@ -7,7 +7,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -17,7 +26,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -27,7 +45,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -78,7 +105,7 @@
       "stage": "mud"
     },
     {
-      "name": "mudbricks_wood_oak",
+      "name": "mudbricks_wood",
       "weight": 1,
       "stage": "wood_oak"
     },
@@ -98,7 +125,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -108,7 +144,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -118,7 +163,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -126,6 +180,61 @@
       "name": "wool",
       "weight": 1,
       "stage": "deepdark"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "darkwood"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "spruce"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "acacia"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "birch"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "jungle"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "mangrove"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "cherry"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "bamboo"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "crimson"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "warped"
     }
   ],
   "walls": [
@@ -136,7 +245,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -147,7 +265,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -181,7 +308,7 @@
       "stage": "mud"
     },
     {
-      "name": "mudbricks_wood_oak",
+      "name": "mudbricks_wood",
       "weight": 1,
       "stage": "wood_oak"
     },
@@ -197,7 +324,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -208,9 +344,73 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "darkwood"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "spruce"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "acacia"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "birch"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "jungle"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "mangrove"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "cherry"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "bamboo"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "crimson"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "warped"
     }
   ],
   "roof": [
@@ -245,7 +445,7 @@
       "stage": "mud"
     },
     {
-      "name": "mud_wood_oak",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "wood_oak"
     },
@@ -258,6 +458,61 @@
       "name": "standard_deepdark",
       "weight": 1,
       "stage": "deepdark"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "darkwood"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "spruce"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "acacia"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "birch"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "jungle"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "mangrove"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "cherry"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "bamboo"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "crimson"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "warped"
     }
   ],
   "doors": [
@@ -268,7 +523,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -279,7 +543,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -290,7 +563,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -302,7 +584,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "stone"
     },
@@ -335,7 +626,7 @@
       "stage": "mud"
     },
     {
-      "name": "mud_wood_oak",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "wood_oak"
     },
@@ -351,7 +642,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -362,7 +662,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -373,7 +682,16 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
     },
@@ -385,9 +703,73 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "darkwood"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "spruce"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "acacia"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "birch"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "jungle"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "mangrove"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "cherry"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "bamboo"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "crimson"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "warped"
     }
   ]
 }

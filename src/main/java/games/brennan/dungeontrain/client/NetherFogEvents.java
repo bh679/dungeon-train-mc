@@ -8,7 +8,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.Biomes;
+import net.minecraft.tags.BiomeTags;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -43,10 +43,13 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class NetherFogEvents {
 
-    /** Target fog colour at full intensity — vanilla nether_wastes fog (0x330808). */
-    private static final float NETHER_FOG_R = 0.2f;
-    private static final float NETHER_FOG_G = 0.03f;
-    private static final float NETHER_FOG_B = 0.03f;
+    /**
+     * Target fog colour at full intensity — vanilla nether_wastes fog (0x330808). Shared with
+     * {@link PortalRoomSkyFogEvents}, so a room under a Nether sky fogs the same red as the band.
+     */
+    static final float NETHER_FOG_R = 0.2f;
+    static final float NETHER_FOG_G = 0.03f;
+    static final float NETHER_FOG_B = 0.03f;
 
     /**
      * The vanilla nether_wastes music ({@code minecraft:music.nether.nether_wastes}), but with
@@ -75,14 +78,18 @@ public final class NetherFogEvents {
         // Target colour: in the real-Nether core, the biome's own fog colour; elsewhere (the
         // crossfade's highland biome) the fixed nether_wastes red. Shared with NetherSkyRenderer
         // so the sky dome and the fog stay the same colour.
-        int target = netherTargetColor(mc.level, event.getCamera().getBlockPosition());
+        int target = smoothedNetherColor(mc.level, event.getCamera().getBlockPosition(), true);
         float fr = ((target >> 16) & 0xFF) / 255.0f;
         float fg = ((target >> 8) & 0xFF) / 255.0f;
         float fb = (target & 0xFF) / 255.0f;
 
+        int before = ShaderDiagnostics.recording() ? ShaderDiagnostics.packFog(event) : 0;
         event.setRed(lerp(event.getRed(), fr, t));
         event.setGreen(lerp(event.getGreen(), fg, t));
         event.setBlue(lerp(event.getBlue(), fb, t));
+        if (ShaderDiagnostics.recording()) {
+            ShaderDiagnostics.recordFogColor("nether", before, ShaderDiagnostics.packFog(event));
+        }
     }
 
     /**
@@ -94,7 +101,56 @@ public final class NetherFogEvents {
      * <p>Used by both the fog blend above and {@link NetherSkyRenderer} so the sky dome the player
      * sees and the fog they look through are painted the same colour.</p>
      */
-    static int netherTargetColor(Level level, net.minecraft.core.BlockPos pos) {
+    /**
+     * How fast the Nether colour crosses a biome boundary, as a fraction of the gap per frame.
+     *
+     * <p>The Nether biomes carry sharply different fog colours — crimson red against warped teal —
+     * and sampling the biome under the camera hands back a step change the moment a foot crosses the
+     * line. Vanilla hides that with its own biome blending; this path samples one block and so shows
+     * the step outright, which under a shader pack drives the pack's whole atmosphere and reads as
+     * the background snapping colour. Easing costs a few frames of lag entering a new biome and
+     * removes the step.</p>
+     */
+    private static final float BIOME_COLOUR_EASE = 0.04f;
+
+    /** The eased colour, as floats so a slow ease is not quantised to nothing. Render thread. */
+    private static float smoothR = -1.0f;
+    private static float smoothG;
+    private static float smoothB;
+
+    /**
+     * The Nether colour to draw right now: {@link #netherTargetColor} eased across biome changes.
+     *
+     * <p>Advanced once per frame from the fog-colour handler, which is the one caller guaranteed to
+     * run exactly once a frame. Everything else — the sky dome, the pack's {@code skyColor} uniform —
+     * reads it, so they all agree within a frame and move together across a boundary.</p>
+     */
+    public static int smoothedNetherColor(Level level, net.minecraft.core.BlockPos pos, boolean advance) {
+        int target = netherTargetColor(level, pos);
+        float tr = ((target >> 16) & 0xFF) / 255.0f;
+        float tg = ((target >> 8) & 0xFF) / 255.0f;
+        float tb = (target & 0xFF) / 255.0f;
+
+        if (smoothR < 0.0f) {
+            smoothR = tr;
+            smoothG = tg;
+            smoothB = tb;
+        } else if (advance) {
+            smoothR += (tr - smoothR) * BIOME_COLOUR_EASE;
+            smoothG += (tg - smoothG) * BIOME_COLOUR_EASE;
+            smoothB += (tb - smoothB) * BIOME_COLOUR_EASE;
+        }
+        return (Math.round(smoothR * 255.0f) << 16)
+            | (Math.round(smoothG * 255.0f) << 8)
+            | Math.round(smoothB * 255.0f);
+    }
+
+    /** Drop the ease, so one world's biome colour never bleeds into the next. */
+    public static void resetSmoothedColor() {
+        smoothR = -1.0f;
+    }
+
+    public static int netherTargetColor(Level level, net.minecraft.core.BlockPos pos) {
         try {
             Holder<Biome> biome = level.getBiome(pos);
             if (isNetherBiome(biome)) {
@@ -108,13 +164,12 @@ public final class NetherFogEvents {
                 | (int) (NETHER_FOG_B * 255.0f);
     }
 
-    /** True for the five vanilla Nether biomes (the only ones the core labels columns with). */
+    /**
+     * True for any Nether biome — the five vanilla ones the core labels even bands with, and the
+     * BetterNether ones on alternate bands. Both carry {@code #minecraft:is_nether}.
+     */
     private static boolean isNetherBiome(Holder<Biome> biome) {
-        return biome.is(Biomes.NETHER_WASTES)
-                || biome.is(Biomes.CRIMSON_FOREST)
-                || biome.is(Biomes.WARPED_FOREST)
-                || biome.is(Biomes.SOUL_SAND_VALLEY)
-                || biome.is(Biomes.BASALT_DELTAS);
+        return biome.is(BiomeTags.IS_NETHER);
     }
 
     @SubscribeEvent
@@ -160,7 +215,13 @@ public final class NetherFogEvents {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         ClientNetherBand.reset();
+        // A remote server's reverse slide must not leak into the next world. In singleplayer the
+        // integrated server shares the static and clears it itself once it has stopped generating.
+        if (!net.minecraft.client.Minecraft.getInstance().hasSingleplayerServer()) {
+            games.brennan.dungeontrain.worldgen.WorldGenCycle.setReverseSlide(0L);
+        }
         musicFadeActive = false;
+        resetSmoothedColor();
     }
 
     private static float lerp(float from, float to, float t) {

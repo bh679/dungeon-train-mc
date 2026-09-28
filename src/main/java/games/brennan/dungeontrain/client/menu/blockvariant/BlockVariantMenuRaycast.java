@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu.blockvariant;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.editor.RedstoneToggle;
 import games.brennan.dungeontrain.editor.RotationApplier;
 import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
@@ -89,7 +90,7 @@ public final class BlockVariantMenuRaycast {
         List<BlockVariantSyncPacket.Entry> entries = BlockVariantMenu.entries();
         int n = entries.size();
         int colCount = Math.max(1, (n + BlockVariantMenu.ROWS_PER_COLUMN - 1) / BlockVariantMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(BlockVariantMenuRenderer.MIN_PANEL_WIDTH, colCount * BlockVariantMenuRenderer.COLUMN_WIDTH);
+        double panelW = Math.max(BlockVariantMenuRenderer.minPanelWidth(), colCount * BlockVariantMenuRenderer.COLUMN_WIDTH);
         int displayedRows = Math.min(n, BlockVariantMenu.ROWS_PER_COLUMN);
         if (displayedRows == 0) displayedRows = 1;
         double gridH = displayedRows * BlockVariantMenuRenderer.ROW_HEIGHT;
@@ -99,6 +100,28 @@ public final class BlockVariantMenuRaycast {
         double colActualW = panelW / colCount;
 
         double gridTopAbs = halfH - BlockVariantMenuRenderer.HEADER_HEIGHT - BlockVariantMenuRenderer.TOOLBAR_HEIGHT;
+
+        // Span option strip (above the panel) — modal like the OPTIONS popup: an option is a pick,
+        // anywhere else in the panel closes it (secondary -2), outside both does nothing.
+        if (BlockVariantMenu.spanPopupOpen()) {
+            java.util.List<SpanPopupLayout.Row> rows = SpanPopupLayout.rows(panelW, halfH);
+            for (SpanPopupLayout.Row row : rows) {
+                if (hitY < row.bottom() || hitY > row.top()) continue;
+                double rel = hitX - row.buttonsLeft();
+                if (rel < 0 || rel > SpanPopupLayout.BUTTONS_WIDTH) continue;
+                int opt = Math.min(row.buttons().length - 1, (int) Math.floor(rel / row.buttonWidth()));
+                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.SPAN_OPTION, -1,
+                    SpanPopupLayout.encode(row.section(), opt));
+            }
+            double[] r = SpanPopupLayout.rect(rows);
+            if (hitX >= r[0] && hitX <= r[1] && hitY >= r[2] && hitY <= r[3]) {
+                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.SPAN_OPTION, -1, -1);
+            }
+            if (hitX >= -halfW && hitX <= halfW && hitY >= -halfH && hitY <= halfH) {
+                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.SPAN_OPTION, -1, -2);
+            }
+            return BlockVariantMenu.Hit.NONE;
+        }
 
         // Popup modal — when open, the popup absorbs every hit inside the
         // menu panel. Buttons toggle directions; anywhere else inside the
@@ -125,22 +148,14 @@ public final class BlockVariantMenuRaycast {
 
         if (hitY > headerBottom) return BlockVariantMenu.Hit.NONE;
 
-        // Toolbar — 7 cells: Copy | Save | Add | Lock | Remove | Clear | X.
+        // Toolbar — the same cells the renderer drew, in the same order, from the same list.
         if (hitY > toolbarBottom) {
-            double cellW = panelW / 7.0;
+            java.util.List<BlockVariantMenu.CellKind> toolbar = BlockVariantMenu.toolbarCells();
+            double cellW = panelW / toolbar.size();
             int idx = (int) Math.floor((hitX + halfW) / cellW);
             if (idx < 0) idx = 0;
-            if (idx > 6) idx = 6;
-            BlockVariantMenu.CellKind kind = switch (idx) {
-                case 0 -> BlockVariantMenu.CellKind.COPY;
-                case 1 -> BlockVariantMenu.CellKind.SAVE;
-                case 2 -> BlockVariantMenu.CellKind.ADD;
-                case 3 -> BlockVariantMenu.CellKind.LOCK;
-                case 4 -> BlockVariantMenu.CellKind.REMOVE;
-                case 5 -> BlockVariantMenu.CellKind.CLEAR;
-                default -> BlockVariantMenu.CellKind.CLOSE;
-            };
-            return new BlockVariantMenu.Hit(kind, -1);
+            if (idx >= toolbar.size()) idx = toolbar.size() - 1;
+            return new BlockVariantMenu.Hit(toolbar.get(idx), -1);
         }
 
         // Grid
@@ -168,6 +183,7 @@ public final class BlockVariantMenuRaycast {
         boolean concrete = !entry.isMob() && !entry.isGroupRef();
         boolean rotatable = parsed != null && concrete && RotationApplier.canRotate(parsed);
         boolean halfable = parsed != null && concrete && RotationApplier.canFlip(parsed);
+        boolean toggleable = parsed != null && concrete && RedstoneToggle.canToggle(parsed);
         VariantRotation.Mode rowMode = BlockVariantMenuRenderer.decodeMode(entry.rotMode());
         boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
         double rotDirsCellR = weightCellL;
@@ -176,10 +192,12 @@ public final class BlockVariantMenuRaycast {
         double rotModeCellL = rotatable ? rotModeCellR - BlockVariantMenuRenderer.ROT_MODE_CELL_WIDTH : rotModeCellR;
         double halfModeCellR = rotModeCellL;
         double halfModeCellL = halfable ? halfModeCellR - BlockVariantMenuRenderer.HALF_MODE_CELL_WIDTH : halfModeCellR;
+        double activeModeCellR = halfModeCellL;
+        double activeModeCellL = toggleable ? activeModeCellR - BlockVariantMenuRenderer.ACTIVE_MODE_CELL_WIDTH : activeModeCellR;
         // Difficulty cells (mob rows only) — mirror the renderer geometry: they
         // occupy the space the rotation/half cells leave free on a mob row.
         boolean showDiff = entry.isMob();
-        double diffMaxCellR = halfModeCellL;
+        double diffMaxCellR = activeModeCellL;
         double diffMaxCellL = showDiff ? diffMaxCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMaxCellR;
         double diffMinCellR = diffMaxCellL;
         double diffMinCellL = showDiff ? diffMinCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMinCellR;
@@ -198,6 +216,9 @@ public final class BlockVariantMenuRaycast {
         }
         if (halfable && hitX >= halfModeCellL && hitX <= halfModeCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_HALF_MODE, idx);
+        }
+        if (toggleable && hitX >= activeModeCellL && hitX <= activeModeCellR) {
+            return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_ACTIVE_MODE, idx);
         }
         if (showDiff && hitX >= diffMinCellL && hitX <= diffMinCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_DIFF_MIN, idx);
@@ -266,7 +287,7 @@ public final class BlockVariantMenuRaycast {
         int maxRows = BlockVariantMenu.ROWS_PER_COLUMN * 4;
         int n = Math.min(filtered.size(), maxRows);
         int colCount = Math.max(1, (n + BlockVariantMenu.ROWS_PER_COLUMN - 1) / BlockVariantMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(BlockVariantMenuRenderer.MIN_PANEL_WIDTH, colCount * BlockVariantMenuRenderer.COLUMN_WIDTH);
+        double panelW = Math.max(BlockVariantMenuRenderer.minPanelWidth(), colCount * BlockVariantMenuRenderer.COLUMN_WIDTH);
         int displayedRows = Math.min(n, BlockVariantMenu.ROWS_PER_COLUMN);
         if (displayedRows == 0) displayedRows = 1;
         double gridH = displayedRows * BlockVariantMenuRenderer.ROW_HEIGHT;

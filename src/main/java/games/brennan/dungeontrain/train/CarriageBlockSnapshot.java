@@ -56,7 +56,7 @@ public final class CarriageBlockSnapshot {
      * {@code DELTA_FORMAT_VERSION} must be raised in lockstep — it SKIPS deltas claiming a version above
      * its own, so a mod-only bump would freeze every build's history at its base snapshot.
      */
-    private static final int FORMAT_VERSION = 2;
+    static final int FORMAT_VERSION = 2;
     /** setBlock flag for placement: notify clients, skip neighbour-shape updates + drops. */
     private static final int PLACE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
 
@@ -70,6 +70,18 @@ public final class CarriageBlockSnapshot {
      */
     public record Captured(CompoundTag tag, String text) {}
 
+    /**
+     * The plot a capture reads from. Captures run on live ships resolved from {@code findAll()} that
+     * same tick, so a collected sub-level here is a caller bug, not a state to paper over.
+     */
+    private static LevelPlot plotOf(SableManagedShip ship) {
+        dev.ryanhcode.sable.sublevel.ServerSubLevel subLevel = ship.subLevel();
+        if (subLevel == null) {
+            throw new IllegalStateException("Cannot capture carriage " + ship.subLevelId() + ": its sub-level is gone");
+        }
+        return subLevel.getPlot();
+    }
+
     // ---- capture (read from a live sub-level's plot) ----
 
     /**
@@ -82,7 +94,7 @@ public final class CarriageBlockSnapshot {
     public static Captured capture(SableManagedShip ship, ServerLevel level, BlockPos origin,
                                    CarriageDims dims, int maxEntities) {
         HolderLookup.Provider registries = level.registryAccess();
-        LevelPlot plot = ship.subLevel().getPlot();
+        LevelPlot plot = plotOf(ship);
         ListTag cells = new ListTag();
         StringBuilder text = new StringBuilder();
         for (int dx = 0; dx < dims.length(); dx++) {
@@ -135,9 +147,15 @@ public final class CarriageBlockSnapshot {
      *
      * <p>{@code size} rather than {@link CarriageDims} because the builder authors things that are not
      * carriage-shaped — a portal room's volume is the author's, and a part's is its kind's.</p>
+     *
+     * <p>The build's free entities come with it, through {@link CarriageEntitySnapshot#captureLevel}
+     * — the no-ship twin of the sweep {@link #capture} uses, sharing its exclusion list and its text
+     * scrape. Every editor save captures its template with {@code includeEntities = true} (see
+     * {@code TemplateDecor.capture}), so the armour stands and item frames standing in a build are
+     * part of it; leaving them out here would upload something the author never saved.</p>
      */
     public static Captured captureLevel(ServerLevel level, BlockPos origin, Vec3i size,
-                                        HolderLookup.Provider registries) {
+                                        HolderLookup.Provider registries, int maxEntities) {
         ListTag cells = new ListTag();
         StringBuilder text = new StringBuilder();
         for (int dx = 0; dx < size.getX(); dx++) {
@@ -164,12 +182,16 @@ public final class CarriageBlockSnapshot {
                 }
             }
         }
+        CarriageEntitySnapshot.Captured entities =
+                CarriageEntitySnapshot.captureLevel(level, origin, size, maxEntities);
         CompoundTag root = new CompoundTag();
         root.putInt("v", FORMAT_VERSION);
         root.putInt("l", size.getX());
         root.putInt("h", size.getY());
         root.putInt("w", size.getZ());
         root.put("cells", cells);
+        root.put("ents", entities.ents());
+        if (!entities.text().isEmpty()) text.append(text.length() > 0 ? "\n" : "").append(entities.text());
         return new Captured(root, text.toString());
     }
 
@@ -187,7 +209,7 @@ public final class CarriageBlockSnapshot {
                                         CarriageDims dims, java.util.Collection<BlockPos> positions,
                                         int maxEntities) {
         HolderLookup.Provider registries = level.registryAccess();
-        LevelPlot plot = ship.subLevel().getPlot();
+        LevelPlot plot = plotOf(ship);
         ListTag set = new ListTag();
         ListTag del = new ListTag();
         StringBuilder text = new StringBuilder();
@@ -223,6 +245,61 @@ public final class CarriageBlockSnapshot {
         // would need its own change tracking — and the list is single digits, so wholesale is cheaper.
         CarriageEntitySnapshot.Captured entities =
                 CarriageEntitySnapshot.capture(ship, level, origin, dims, maxEntities);
+        CompoundTag root = new CompoundTag();
+        root.putInt("v", FORMAT_VERSION);
+        root.put("set", set);
+        root.put("del", del);
+        root.put("ents", entities.ents());
+        if (!entities.text().isEmpty()) text.append(text.length() > 0 ? "\n" : "").append(entities.text());
+        return new Captured(root, text.toString());
+    }
+
+    /**
+     * {@link #captureCells} for a build that has no ship — the no-plot twin of {@link #captureLevel},
+     * for the same reason it exists: a dimensional carriage's room is a box of ordinary world blocks
+     * under the floor, and a plot read there finds nothing.
+     *
+     * <p>{@code offsets} are <b>room-local</b> {@code (dx,dy,dz)} rather than world positions, which is
+     * how a room's registry queues them: the room is re-stamped further down the line as the train
+     * drifts, and an offset survives that where a world position would point at the old site.
+     * Anything outside {@code size} is ignored. Same delta tag shape, same {@link #encode}, same
+     * fold — a room's delta is indistinguishable on the wire from a carriage's.</p>
+     */
+    public static Captured captureLevelCells(ServerLevel level, BlockPos origin, Vec3i size,
+                                             java.util.Collection<BlockPos> offsets, int maxEntities) {
+        HolderLookup.Provider registries = level.registryAccess();
+        ListTag set = new ListTag();
+        ListTag del = new ListTag();
+        StringBuilder text = new StringBuilder();
+        for (BlockPos off : offsets) {
+            int dx = off.getX(), dy = off.getY(), dz = off.getZ();
+            if (dx < 0 || dy < 0 || dz < 0
+                    || dx >= size.getX() || dy >= size.getY() || dz >= size.getZ()) continue; // outside the box
+            BlockPos abs = origin.offset(dx, dy, dz);
+            BlockState state = level.getBlockState(abs);
+            if (state.isAir()) {
+                del.add(new net.minecraft.nbt.IntArrayTag(new int[]{dx, dy, dz}));
+                continue;
+            }
+            CompoundTag cell = new CompoundTag();
+            cell.put("p", new net.minecraft.nbt.IntArrayTag(new int[]{dx, dy, dz}));
+            cell.put("s", NbtUtils.writeBlockState(state));
+            if (state.hasBlockEntity()) {
+                BlockEntity be = level.getBlockEntity(abs);
+                if (be != null) {
+                    CompoundTag beTag = be.saveWithFullMetadata(registries);
+                    beTag.remove("x");
+                    beTag.remove("y");
+                    beTag.remove("z");
+                    cell.put("b", beTag);
+                    CarriageTextScan.appendBlockEntity(be, text);
+                }
+            }
+            set.add(cell);
+        }
+        // Whole entity list, as captureCells sends — the fold replaces rather than diffs it.
+        CarriageEntitySnapshot.Captured entities =
+                CarriageEntitySnapshot.captureLevel(level, origin, size, maxEntities);
         CompoundTag root = new CompoundTag();
         root.putInt("v", FORMAT_VERSION);
         root.put("set", set);
@@ -292,7 +369,8 @@ public final class CarriageBlockSnapshot {
 
     /**
      * Stamp a snapshot into {@code level} at {@code worldOrigin}: the footprint is cleared to air, then
-     * every stored cell is written (block state + block-entity NBT). Returns the set of NON-AIR world
+     * every stored cell is written (block state + block-entity NBT), stage placeholders swapped through
+     * {@link StagePlacementScope#resolve} when the caller has a scope open. Returns the set of NON-AIR world
      * positions that the level actually holds afterwards (the carriage's blocks, to hand to Sable's
      * {@code assemble}), or {@code null} on failure. Runs at spawn, before assembly, so host-level
      * writes at world coords are correct.
@@ -323,7 +401,11 @@ public final class CarriageBlockSnapshot {
                 int[] p = cell.getIntArray("p");
                 if (p.length != 3) continue;
                 BlockPos abs = worldOrigin.offset(p[0], p[1], p[2]);
-                BlockState state = NbtUtils.readBlockState(blocks, cell.getCompound("s"));
+                // Stage placeholders resolve for the stage the caller has in scope (the lease site
+                // enters one) — a build uploaded from the editor carries them verbatim, and the
+                // leasing train is the first place that knows which stage they land in.
+                BlockState state = StagePlacementScope.resolve(
+                        NbtUtils.readBlockState(blocks, cell.getCompound("s")));
                 if (state.isAir()) {
                     // An unresolvable state decodes to air — placing it would silently punch a hole.
                     LOGGER.warn("[DungeonTrain] shared-carriage cell at {} decoded to AIR from {} — skipping.",

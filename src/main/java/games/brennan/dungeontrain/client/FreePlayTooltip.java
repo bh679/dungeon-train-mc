@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.FreePlayText;
 import games.brennan.dungeontrain.cheat.RunIntegrity.FreePlayCause;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import net.minecraft.ChatFormatting;
@@ -52,7 +53,7 @@ public final class FreePlayTooltip {
             event.getTooltip().add(line);
         }
         event.getTooltip().add(
-            Component.translatable("effect.dungeontrain.free_play.desc.1").withStyle(ChatFormatting.GRAY));
+            FreePlayText.consequence().withStyle(ChatFormatting.GRAY));
     }
 
     /**

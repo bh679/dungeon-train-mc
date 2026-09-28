@@ -176,6 +176,20 @@ public enum StartingBookContext {
         };
     }
 
+    /**
+     * True for the folders whose titles the "Welcome Back"
+     * ({@code starting_books_all_titles}) milestone requires: every lifecycle
+     * folder (no stand-alone {@link #achievementSetId()}) except
+     * {@link #JOINED_WORLD}. That one is rolled only at first login on a world
+     * where another player was already welcomed — never on a respawn — so a
+     * solo player could never collect it, and even on a server it competes
+     * with {@link #NEW_WORLD} for the single first-login strike. It still
+     * counts toward the grand-slam {@code all_starting_books} set.
+     */
+    public boolean countsTowardWelcomeBack() {
+        return achievementSetId().isEmpty() && this != JOINED_WORLD;
+    }
+
     /** True for the three cursed pools — the Death Note story books, routed by {@code CursedBookFactory}. */
     public boolean isCursed() {
         return this == CURSED || this == CURSED_FULFILLED || this == CURSED_DEFIED;

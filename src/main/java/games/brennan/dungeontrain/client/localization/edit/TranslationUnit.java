@@ -16,9 +16,12 @@ package games.brennan.dungeontrain.client.localization.edit;
  *                  gap {@code build-review-package.py} documents
  * @param shipped   what the jar/resource packs translate this to, before any override
  * @param aiUnreviewed whether provenance says this is machine translation nobody has reviewed
+ * @param sourceChanged whether the English was edited after this line was last translated or
+ *                  reviewed — the translation may no longer say what {@code source} says. Read
+ *                  from the same shipped manifest as {@code aiUnreviewed}; a line can be both
  */
 public record TranslationUnit(Type type, String namespace, String id, String source,
-                              String shipped, boolean aiUnreviewed) {
+                              String shipped, boolean aiUnreviewed, boolean sourceChanged) {
 
     public enum Type {
         /** A flat lang key, applied client-side and instantly. */

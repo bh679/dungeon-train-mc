@@ -88,7 +88,7 @@ public final class WorldDisintegrationEvents {
         ChunkAccess chunk = event.getChunk();
         ChunkPos pos = chunk.getPos();
         int chunkMinX = pos.getMinBlockX();
-        if (chunkMinX + 15 < startX) return; // before the first band (or disabled)
+        if (startX == DisintegrationBand.OFF) return; // disabled (bands run both ways from the anchor)
 
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
@@ -117,7 +117,8 @@ public final class WorldDisintegrationEvents {
             // this erosion pass — DisintegrationBand.middleRampAt itself is untouched, so every other
             // consumer (End-band-wins precedence, mob spawning, BedrockFloorEvents) still treats this
             // stretch as the void/End band.
-            middle[dx] = UpsideDownBand.isInEntryLead(level, worldX) ? 0.0 : DisintegrationBand.middleRampAt(level, worldX);
+            middle[dx] = UpsideDownBand.isInEntryLead(level, worldX, pos.getMinBlockZ()) ? 0.0
+                    : DisintegrationBand.middleRampAt(level, worldX, pos.getMinBlockZ());
             if (middle[dx] > 0.0) anyMiddle = true;
         }
         if (!anyMiddle) return;

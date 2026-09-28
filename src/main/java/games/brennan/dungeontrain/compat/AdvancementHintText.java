@@ -1,10 +1,17 @@
 package games.brennan.dungeontrain.compat;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.LifeDisqualification;
+import games.brennan.dungeontrain.client.LifeDisqualificationClient;
+import games.brennan.dungeontrain.client.TrackedAdvancements;
+import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+
+import java.util.Set;
 
 /**
  * The fog-of-war masking rules for {@code dungeontrain:*} advancement tooltips, shared by every
@@ -27,6 +34,23 @@ public final class AdvancementHintText {
 
     /** Shown when an advancement has no {@code .hint} translation of its own. */
     private static final String PLACEHOLDER_KEY = "advancements.dungeontrain.hidden_description";
+    /** The red line under the hint while this life has ruled the advancement out. */
+    private static final String DISQUALIFIED_KEY = "advancements.dungeontrain.disqualified_this_life";
+    /** Tooltip footer on a trackable, unearned advancement: click to track / click to stop tracking. */
+    private static final String TRACK_CLICK_KEY = "advancements.dungeontrain.track.click";
+    private static final String TRACK_TRACKING_KEY = "advancements.dungeontrain.track.tracking";
+
+    /**
+     * The advancements worth tracking: the ones a single action rules out for a life, plus the
+     * streak ones whose count an action restarts.
+     */
+    private static final Set<ResourceLocation> TRACKABLE = trackableIds();
+
+    private static Set<ResourceLocation> trackableIds() {
+        java.util.LinkedHashSet<ResourceLocation> ids = new java.util.LinkedHashSet<>(LifeDisqualification.disqualifiableIds());
+        ids.addAll(LifeDisqualification.streakIds());
+        return Set.copyOf(ids);
+    }
 
     private AdvancementHintText() {
     }
@@ -52,6 +76,45 @@ public final class AdvancementHintText {
         if (path.endsWith("/root")) return false;
         if (path.startsWith("editor/")) return false;
         return progress == null || !progress.isDone();
+    }
+
+    /** True for an advancement the server can rule out for a life (and so the player may track). */
+    public static boolean isTrackable(ResourceLocation id) {
+        return id != null && TRACKABLE.contains(id);
+    }
+
+    /** Whether {@code id} should draw greyed out: a mod advancement this life has ruled out, not yet earned. */
+    public static boolean isGreyedOut(ResourceLocation id, AdvancementProgress progress) {
+        if (!isModAdvancement(id)) return false;
+        if (progress != null && progress.isDone()) return false;
+        return LifeDisqualificationClient.isDisqualified(id);
+    }
+
+    /**
+     * Cache key for a widget's masked description: changes whenever the disqualified mirror or the
+     * tracked set changes, so a tooltip split for one state is never shown in another.
+     */
+    public static int maskedDescriptionRevision() {
+        return LifeDisqualificationClient.revision() * 31 + TrackedAdvancements.revision();
+    }
+
+    /**
+     * The full masked tooltip body for an unearned advancement: the hint (or placeholder), then
+     * either a red "lost this life" line (when this life has ruled it out) or a grey
+     * track/tracking footer (when it is trackable and still open). Callers have already passed
+     * {@link #shouldMask}.
+     */
+    public static Component maskedDescription(ResourceLocation id) {
+        MutableComponent text = hintOrPlaceholder(id).copy();
+        if (LifeDisqualificationClient.isDisqualified(id)) {
+            // Nothing left to track once it is gone — the red line is the whole footer.
+            return text.append("\n").append(Component.translatable(DISQUALIFIED_KEY).withStyle(ChatFormatting.RED));
+        }
+        if (isTrackable(id)) {
+            String key = TrackedAdvancements.isTracked(id) ? TRACK_TRACKING_KEY : TRACK_CLICK_KEY;
+            text.append("\n").append(Component.translatable(key).withStyle(ChatFormatting.DARK_GRAY));
+        }
+        return text;
     }
 
     /**

@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/taking_notes",
+  "display": {
+    "icon": { "id": "dungeontrain:random_stat_book" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.burned_stat_book.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.burned_stat_book.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "burned_stat_book" }
+    }
+  },
+  "requirements": [["action"]]
+}

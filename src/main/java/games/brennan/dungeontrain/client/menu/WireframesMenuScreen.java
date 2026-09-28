@@ -23,7 +23,7 @@ import java.util.List;
  */
 public final class WireframesMenuScreen implements MenuScreen {
 
-    @Override public String title() { return "Wireframes"; }
+    @Override public String title() { return MenuLang.t("wireframes.title"); }
 
     @Override public List<CommandMenuEntry> entries() {
         boolean cubes = DebugFlagsState.gapCubes();
@@ -34,36 +34,36 @@ public final class WireframesMenuScreen implements MenuScreen {
 
         return List.of(
             new CommandMenuEntry.Split(
-                new CommandMenuEntry.Stay("All On", "dungeontrain debug wireframes all on"),
-                new CommandMenuEntry.Stay("All Off", "dungeontrain debug wireframes all off"),
+                new CommandMenuEntry.Stay(MenuLang.t("common.all_on"), "dungeontrain debug wireframes all on"),
+                new CommandMenuEntry.Stay(MenuLang.t("common.all_off"), "dungeontrain debug wireframes all off"),
                 0.50
             ),
             new CommandMenuEntry.Toggle(
-                "Gap Cubes", cubes,
+                MenuLang.t("wireframes.gap_cubes"), cubes,
                 "dungeontrain debug wireframes gap-cubes on",
                 "dungeontrain debug wireframes gap-cubes off"
             ),
             new CommandMenuEntry.Toggle(
-                "Gap Line", line,
+                MenuLang.t("wireframes.gap_line"), line,
                 "dungeontrain debug wireframes gap-line on",
                 "dungeontrain debug wireframes gap-line off"
             ),
             new CommandMenuEntry.Toggle(
-                "Next Spawn", nextSpawn,
+                MenuLang.t("wireframes.next_spawn"), nextSpawn,
                 "dungeontrain debug wireframes next-spawn on",
                 "dungeontrain debug wireframes next-spawn off"
             ),
             new CommandMenuEntry.Toggle(
-                "Collision", collision,
+                MenuLang.t("wireframes.collision"), collision,
                 "dungeontrain debug wireframes collision on",
                 "dungeontrain debug wireframes collision off"
             ),
             new CommandMenuEntry.Toggle(
-                "HUD Distance", hud,
+                MenuLang.t("wireframes.hud_distance"), hud,
                 "dungeontrain debug wireframes hud-distance on",
                 "dungeontrain debug wireframes hud-distance off"
             ),
-            new CommandMenuEntry.Back("< Back")
+            new CommandMenuEntry.Back(MenuLang.t("common.back"))
         );
     }
 }

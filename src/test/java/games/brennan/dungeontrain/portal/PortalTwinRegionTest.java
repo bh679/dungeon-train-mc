@@ -123,4 +123,23 @@ final class PortalTwinRegionTest {
         assertFalse(attic.contains(TRAIN_Y), "the train runs in the world, not in twin space");
         assertFalse(attic.contains(DT_BEDROCK_Y + 1), "nor does the terrain above the bedrock");
     }
+
+    @Test
+    @DisplayName("Twin space is the basement always, the attic only where a lid stands over it")
+    void twinSpaceCountsTheAtticOnlyUnderALid() {
+        PortalTwinRegion basement = PortalTwinRegion.basement(DT_MIN_Y, DT_BEDROCK_Y);
+        PortalTwinRegion attic = stockAttic();
+        int roomInBasement = PortalTwinLanes.floorY(DT_MIN_Y);
+        int roomInAttic = PortalTwinLanes.floorY(attic.base());
+
+        assertTrue(PortalTwinRegion.twinSpaceContains(roomInBasement, basement, false, attic));
+        assertTrue(PortalTwinRegion.twinSpaceContains(roomInBasement, basement, true, attic));
+        assertTrue(PortalTwinRegion.twinSpaceContains(roomInAttic, basement, true, attic));
+        // Outside the band the same height is a mountaintop, where a player's own farm must keep
+        // the vanilla light rule.
+        assertFalse(PortalTwinRegion.twinSpaceContains(roomInAttic, basement, false, attic),
+            "the attic height outside the band is ordinary world");
+        assertFalse(PortalTwinRegion.twinSpaceContains(TRAIN_Y, basement, true, attic),
+            "the open world between the two regions is never twin space");
+    }
 }

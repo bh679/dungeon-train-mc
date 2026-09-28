@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.MapCodec;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.util.LogFirstN;
+import games.brennan.dungeontrain.worldgen.EndBandSampler;
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
@@ -20,6 +21,7 @@ import net.minecraft.world.level.levelgen.structure.StructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructureType;
 import net.minecraft.world.level.levelgen.structure.pieces.StructurePiecesBuilder;
 import net.minecraft.world.level.levelgen.structure.structures.EndCityPieces;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -40,10 +42,11 @@ import java.util.Optional;
  * height and drop cities nowhere near an island.</p>
  *
  * <p>Spacing differs as a balance call. The set uses {@code spacing 40 / separation 15} against vanilla's
- * {@code 20 / 11} — a quarter the candidate density. The band is not the real End: its core is a ~5000-block
- * strip the train drives straight down the middle of, so a player sweeps a long thin corridor of the
- * placement grid rather than wandering a whole dimension, and vanilla's grid made cities read as furniture
- * rather than a find.</p>
+ * {@code 20 / 11} — a quarter the candidate density — and on top of that a {@code frequency} of
+ * {@code 0.2}, which keeps only one in five of those candidate chunks. The band is not the real End: its
+ * core is a ~5000-block strip the train drives straight down the middle of, so a player sweeps a long thin
+ * corridor of the placement grid rather than wandering a whole dimension, and vanilla's grid made cities
+ * read as furniture rather than a find.</p>
  *
  * <p>So {@link #findGenerationPoint} keeps vanilla's rule — random rotation, the 5×5 box offset 7 blocks,
  * take the <em>lowest</em> corner, reject if too low — but reads its heights from
@@ -96,6 +99,10 @@ public class BandEndCityStructure extends Structure {
             int spanZ = (rotation == Rotation.CLOCKWISE_180 || rotation == Rotation.COUNTERCLOCKWISE_90) ? -span : span;
 
             WorldGenCycle cycle = ctx.cycle();
+            // BetterEnd End bands aren't vanilla islands — no city to stand on them.
+            if (EndBandSampler.appliesTo(ServerLifecycleHooks.getCurrentServer(), cycle.endLookAt(anchorX))) {
+                return Optional.empty();
+            }
             // Bottom of the island geometry is the world's floor, not the level's — a city has to
             // site itself against the same range DisintegrationFeature stamped its islands over.
             EndIslandGeometry geometry = ctx.endIslands().open(

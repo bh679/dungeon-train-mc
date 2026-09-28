@@ -35,17 +35,26 @@ import java.util.Locale;
  * than that copy's.</p>
  *
  * <p>Under {@link #REPEATED} the plane belongs to the copy. It is stamped through a seal-less mask
- * and lays its own wall there, detail and all, and {@link PortalRoomSealRepair} closes whatever air
- * that leaves — because the plane may not have any: it is the only thing between the room and the
- * basement when the tile beyond it cannot be stamped.</p>
+ * and lays its own wall there, detail and all — and whatever the author left as air stays air. Until
+ * that copy lands, the mouth carries the base room's wall on where it has one and shows basement
+ * rock where it does not ({@code PortalCarriageBuilder.sealCorridorMouth}, wall-only).</p>
  *
  * <h2>Why it is a setting rather than simply the right answer</h2>
  * <p>The two read differently and an author may want either. A sealed mouth is a plain wall with a
  * door in it — the way back reads as a way back, and the endless room resumes past it. A repeated one
  * makes the room genuinely continuous through the carriage, which is what a hall or a library wants
- * and what a corridor-as-landmark does not. {@link #SEALED} is the default because it is what every
- * room built before this existed already does, and a setting whose default changes what is standing
- * in somebody's world is not a setting, it is a migration.</p>
+ * and what a corridor-as-landmark does not.</p>
+ *
+ * <h2>Kept is the default, and that was a migration</h2>
+ * <p>{@link #SEALED} was the default from the day this existed, on the argument that a setting whose
+ * default changes what is standing in somebody's world is not a setting but a migration. On
+ * 2026-09-05 Brennan chose the migration: every room tiles exactly as its author built it unless the
+ * author asks for the merged look, and the shipped endless rooms with no seventh segment change
+ * with it. What tipped it was an open-sided room — {@code bigger}, {@code distantenemies} — whose
+ * corridor mouths came out as a wall of the room's own floor block that nobody drew, and whose
+ * frontier tiles grew mirrored blocks that vanished a tick later. Under {@link #REPEATED} the tiler
+ * now invents nothing at all: no seam, no closed face, and a mouth plane that carries the room's
+ * wall on where there is one and leaves the rock where there is not.</p>
  *
  * <p>Stored as the seventh segment of the room's {@code mode} tag — see {@link PortalRoomSettings},
  * which owns the encoding.</p>
@@ -54,16 +63,19 @@ public enum PortalRoomDoorWall {
 
     /**
      * The walls are the tiler's. Seams between copies are carved open, outer faces are closed, and a
-     * corridor mouth's plane belongs to the mouth. The default, and what every room did before this
-     * existed.
+     * corridor mouth's plane belongs to the mouth. What every room did before the setting existed;
+     * opt-in since the default flipped.
      */
     SEALED("sealed", "Merged"),
 
-    /** The walls are the room's. Every tile keeps them exactly as the author built them. */
+    /**
+     * The walls are the room's. Every tile keeps them exactly as the author built them. The
+     * default.
+     */
     REPEATED("repeated", "Kept");
 
     /** What a variant with no door-wall segment — or an unreadable one — behaves as. */
-    public static final PortalRoomDoorWall DEFAULT = SEALED;
+    public static final PortalRoomDoorWall DEFAULT = REPEATED;
 
     private final String id;
     private final String displayName;
@@ -84,11 +96,11 @@ public enum PortalRoomDoorWall {
     }
 
     /**
-     * The value named by {@code segment}, or {@link #SEALED} when it is null, blank or unrecognised.
+     * The value named by {@code segment}, or {@link #DEFAULT} when it is null, blank or unrecognised.
      *
      * <p>Total, for the same reason {@link PortalRoomSky#parse} and {@link PortalRoomMode#parse} are:
-     * the tag is free text on disk, and a misspelling should stamp the room every previous build
-     * stamped rather than fail the pair.</p>
+     * the tag is free text on disk, and a misspelling should stamp a room rather than fail the
+     * pair.</p>
      */
     public static PortalRoomDoorWall parse(String segment) {
         if (segment == null) return DEFAULT;

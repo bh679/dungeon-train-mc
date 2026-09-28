@@ -89,9 +89,9 @@ class TranslationReplyAndDismissalTest {
     void dismissPayloadShape() {
         JsonObject body = TranslationDismissClient.buildPayload(UUID, "de_de", List.of(
             new TranslationUnit(TranslationUnit.Type.LANG, "dungeontrain", "gui.dungeontrain.x",
-                "Depart", "Abfahren", true),
+                "Depart", "Abfahren", true, false),
             new TranslationUnit(TranslationUnit.Type.BOOK, "dungeontrain", "random_books/x#title",
-                "Death Note", "Todesnotizbuch", true)));
+                "Death Note", "Todesnotizbuch", true, false)));
         assertEquals(UUID, body.get("uuid").getAsString());
         assertEquals("de_de", body.get("locale").getAsString());
         assertTrue(body.has("modVersion"));

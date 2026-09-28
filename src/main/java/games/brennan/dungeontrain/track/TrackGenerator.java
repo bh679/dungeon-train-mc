@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.track;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.compat.PaintingTransformProcessor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.template.GateContext;
@@ -27,6 +28,7 @@ import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import games.brennan.dungeontrain.template.TemplateDecor;
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -298,7 +300,7 @@ public final class TrackGenerator {
     private static int probeGroundY(ServerLevel level, int x, int z, int bedY) {
         Shipyard shipyard = Shipyards.of(level);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, x, z) + 1;
         for (int py = bedY - 1; py >= minY; py--) {
             pos.set(x, py, z);
             if (shipyard.isInShip(pos)) {
@@ -347,7 +349,7 @@ public final class TrackGenerator {
         int deepest = bedY;                            // bedSentinel = "no useful ground"
         int currentIdx = N / 2;                        // anchor = centre column
         int currentY = bedY - 1;
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, worldX, zMin) + 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         while (unresolved > 0) {
@@ -362,7 +364,8 @@ public final class TrackGenerator {
             }
             int currentZ = zMin + currentIdx;
 
-            int groundBlockY = -1;
+            // MIN_VALUE, not -1: ground below y 0 is real ground (the sunk Amplified band).
+            int groundBlockY = NO_GROUND;
             boolean shipAbort = false;
             for (int y = currentY; y >= minY; y--) {
                 pos.set(worldX, y, currentZ);
@@ -372,7 +375,7 @@ public final class TrackGenerator {
             resolved[currentIdx] = true;
             unresolved--;
 
-            if (shipAbort || groundBlockY < 0) {
+            if (shipAbort || groundBlockY == NO_GROUND) {
                 // Ship intercept or void — column doesn't contribute. Pick the
                 // next unresolved column from full bedY-1; can't reuse currentY
                 // because it was scoped to a different (now-skipped) column.
@@ -465,7 +468,7 @@ public final class TrackGenerator {
                 return Blocks.AIR.defaultBlockState();
             }
             return games.brennan.dungeontrain.editor.RotationApplier.apply(
-                picked.state(), picked.rotation(), picked.half(),
+                picked.state(), picked.rotation(), picked.half(), picked.active(),
                 local, worldSeed, (int) tileIndex,
                 sc.lockIdAt(local));
         }
@@ -720,7 +723,7 @@ public final class TrackGenerator {
                 return Blocks.AIR.defaultBlockState();
             }
             return games.brennan.dungeontrain.editor.RotationApplier.apply(
-                picked.state(), picked.rotation(), picked.half(),
+                picked.state(), picked.rotation(), picked.half(), picked.active(),
                 local, worldSeed, pillarIndex,
                 sidecar.lockIdAt(local));
         }
@@ -841,7 +844,7 @@ public final class TrackGenerator {
      */
     private static int probeGroundYWorldgen(WorldGenLevel level, int x, int z, int bedY) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, x, z) + 1;
         for (int py = bedY - 1; py >= minY; py--) {
             pos.set(x, py, z);
             BlockState state = level.getBlockState(pos);
@@ -867,7 +870,7 @@ public final class TrackGenerator {
         int deepest = bedY;
         int currentIdx = N / 2;
         int currentY = bedY - 1;
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, worldX, zMin) + 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         while (unresolved > 0) {
@@ -882,7 +885,8 @@ public final class TrackGenerator {
             }
             int currentZ = zMin + currentIdx;
 
-            int groundBlockY = -1;
+            // MIN_VALUE, not -1: ground below y 0 is real ground (the sunk Amplified band).
+            int groundBlockY = NO_GROUND;
             for (int y = currentY; y >= minY; y--) {
                 pos.set(worldX, y, currentZ);
                 if (!isPassable(level.getBlockState(pos))) { groundBlockY = y; break; }
@@ -890,7 +894,7 @@ public final class TrackGenerator {
             resolved[currentIdx] = true;
             unresolved--;
 
-            if (groundBlockY < 0) {
+            if (groundBlockY == NO_GROUND) {
                 currentY = bedY - 1;
                 continue;
             }
@@ -957,7 +961,6 @@ public final class TrackGenerator {
         if (probeZ < chunkMinZ || probeZ > chunkMaxZ) return;
 
         long worldSeed = level.getSeed();
-        int voidSentinel = WorldFloor.bedrockY(level) + 1;
 
         // Pre-compute pillar positions + heights in [chunkMinX - MIN_STAIRS_SPACING,
         // chunkMaxX + MIN_STAIRS_SPACING]. Used to apply the cross-chunk
@@ -972,7 +975,7 @@ public final class TrackGenerator {
         for (int x = scanMinX; x <= scanMaxX; x++) {
             int gy = probeGroundYWorldgen(level, x, probeZ, g.bedY());
             if (gy >= g.bedY()) continue;
-            if (gy == voidSentinel) continue;
+            if (gy == WorldFloor.terrainFloorAt(level, x, probeZ) + 1) continue; // void: no ground found
             int h = g.bedY() - 1 - gy;
             if (h < 0) continue;
             int sp = computeSpacing(h);
@@ -1122,6 +1125,9 @@ public final class TrackGenerator {
      * in that stretch and let them land on a more substantial pillar.
      */
     private static final int SHORT_PILLAR_THRESHOLD = 3;
+
+    /** Probe result for a column with no ground above the floor. Not -1: terrain can sit below y 0. */
+    private static final int NO_GROUND = Integer.MIN_VALUE;
 
     /** Pillar position metadata cached during the worldgen scan. */
     private record PillarInfo(int groundY, int height) {}
@@ -1384,19 +1390,19 @@ public final class TrackGenerator {
         // Walk up if terrain is solid at that level (hill rising past the
         // pillar) or down if air (cliff edge / down-slope).
         int centerStairsZ = originZ + (STAIRS_Z - 1) / 2;
-        int minY = WorldFloor.bedrockY(level) + 1;
+        int minY = WorldFloor.terrainFloorAt(level, centerX, centerStairsZ) + 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int deepestGroundY;
         pos.set(centerX, pillarBaseY, centerStairsZ);
         if (isPassable(level.getBlockState(pos))) {
             // Air at pillar base level — terrain is below. Walk down to
             // find the first non-passable block; anchor stairs one above.
-            int found = -1;
+            int found = NO_GROUND;   // not -1: sunk ground sits below y 0
             for (int y = pillarBaseY - 1; y >= minY; y--) {
                 pos.set(centerX, y, centerStairsZ);
                 if (!isPassable(level.getBlockState(pos))) { found = y; break; }
             }
-            if (found < 0) {
+            if (found == NO_GROUND) {
                 LOGGER.info("[stairs] centerX={} reject=void_below probeStart={}", centerX, pillarBaseY);
                 return;
             }
@@ -1405,12 +1411,12 @@ public final class TrackGenerator {
             // Solid at pillar base level — terrain extends at or above.
             // Walk up until we find air; anchor stairs at that air block
             // (= one above the highest non-passable).
-            int found = -1;
+            int found = NO_GROUND;
             for (int y = pillarBaseY + 1; y <= topInclusive + STAIRS_Y; y++) {
                 pos.set(centerX, y, centerStairsZ);
                 if (isPassable(level.getBlockState(pos))) { found = y; break; }
             }
-            if (found < 0) {
+            if (found == NO_GROUND) {
                 LOGGER.info("[stairs] centerX={} reject=terrain_above_cap probeStart={} topInclusive={}",
                     centerX, pillarBaseY, topInclusive);
                 return;
@@ -1425,7 +1431,9 @@ public final class TrackGenerator {
         // Capping at seaLevel-2 leaves stairs visibly anchored just under
         // the water surface and bounds the placement work to ~2 stamps
         // (16 rows) regardless of terrain depth.
-        int seaLevel = level.getSeaLevel();
+        // The column's own sea — the sunk zone's is AmplifiedDrop.drop lower than the level's, and
+        // capping at the level's would leave every staircase there ending ~80 blocks over the ground.
+        int seaLevel = WorldFloor.seaLevelAt(level, centerX, centerStairsZ);
         int seaFloorCap = seaLevel - 2;
         if (deepestGroundY < seaFloorCap) {
             LOGGER.debug("[stairs] centerX={} clamping deepest {} → seaFloorCap {} (seaLevel={})",
@@ -1512,10 +1520,12 @@ public final class TrackGenerator {
                 .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
             // No ShipFilterProcessor — no ships at chunkgen.
             if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
+            // Re-hang Fast Paintings block paintings under the mirror (they don't mirror themselves).
+            if (!flipped) settings.addProcessor(PaintingTransformProcessor.horizontal());
 
             // Position-pure random — only consumed for container LootTableSeeds (see StampRandom).
             template.placeInWorld(level, copyOrigin, copyOrigin, settings,
-                StampRandom.at(level.getSeed(), copyOrigin), Block.UPDATE_CLIENTS);
+                StampRandom.at(level.getSeed(), copyOrigin), CarriageStampGuard.STAMP_FLAGS);
             // The template's item frames and paintings — entities, so no block pass writes them.
             // Under the same settings as the blocks, which carry both the mirror and the terrain
             // clip box, so a picture on a cut-away half is not left hanging in open air.
@@ -1546,7 +1556,7 @@ public final class TrackGenerator {
                         continue;
                     }
                     BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
-                        picked.state(), picked.rotation(), picked.half(),
+                        picked.state(), picked.rotation(), picked.half(), picked.active(),
                         entry.localPos(), worldSeed, centerX,
                         stairsSidecar.lockIdAt(entry.localPos()));
                     level.setBlock(wpos, rotated, Block.UPDATE_CLIENTS);
@@ -1968,9 +1978,11 @@ public final class TrackGenerator {
                 // blocks (see TunnelPlacer.stampTemplateWorldgen for the full rationale).
                 .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
             if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
+            // Re-hang Fast Paintings block paintings under the mirror (they don't mirror themselves).
+            if (!flipped) settings.addProcessor(PaintingTransformProcessor.horizontal());
             // Position-pure random — only consumed for container LootTableSeeds (see StampRandom).
             template.placeInWorld(level, stampOrigin, stampOrigin, settings,
-                StampRandom.at(level.getSeed(), stampOrigin), Block.UPDATE_CLIENTS);
+                StampRandom.at(level.getSeed(), stampOrigin), CarriageStampGuard.STAMP_FLAGS);
             TemplateDecor.replace(level, stampOrigin, template, settings, null);
             // Sidecar pass — same shape as stairs stamp.
             if (!sidecar.isEmpty()) {
@@ -1991,7 +2003,7 @@ public final class TrackGenerator {
                         continue;
                     }
                     BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
-                        picked.state(), picked.rotation(), picked.half(),
+                        picked.state(), picked.rotation(), picked.half(), picked.active(),
                         entry.localPos(), worldSeed, centerX,
                         sidecar.lockIdAt(entry.localPos()));
                     level.setBlock(wpos, rotated, Block.UPDATE_CLIENTS);
@@ -2539,6 +2551,19 @@ public final class TrackGenerator {
             ship.id(), queued, skippedFeaturePainted, centerCx, viewDistance);
     }
 
+    /** Chunks beyond view distance a provider keeps remembering as painted before they are pruned. */
+    static final int FILLED_KEEP_MARGIN_CHUNKS = 16;
+
+    /**
+     * Drop every chunk key whose X is more than {@code halfWidthChunks} from {@code centerCx}.
+     * Returns how many were dropped. Minecraft-free so the window rule is unit-testable.
+     */
+    static int pruneOutsideX(java.util.Collection<Long> keys, int centerCx, int halfWidthChunks) {
+        int before = keys.size();
+        keys.removeIf(key -> Math.abs(ChunkPos.getX(key) - centerCx) > halfWidthChunks);
+        return before - keys.size();
+    }
+
     /**
      * Drain up to {@link #CHUNKS_PER_SCAN_BUDGET} chunks of work per call:
      * first from the pending-chunk queue populated by {@code TrackChunkEvents}
@@ -2559,6 +2584,17 @@ public final class TrackGenerator {
         Deque<Long> pending = provider.getPendingChunks();
         int budget = CHUNKS_PER_SCAN_BUDGET;
         int drainedFromPending = 0;
+
+        int viewDistance = level.getServer().getPlayerList().getViewDistance();
+        if (viewDistance <= 0) viewDistance = 10; // dedicated-server fallback
+        Vector3dc shipWorldPos = ship.currentWorldPosition();
+        int centerCx = (int) Math.floor(shipWorldPos.x()) >> 4;
+
+        // The dedupe set and the queue only matter within reach of the train; keys behind it are
+        // one boxed long each, forever, on a provider that lives for the session. Painting is
+        // idempotent, so a chunk that drops out of the window and reloads costs one redundant scan.
+        pruneOutsideX(filled, centerCx, viewDistance + FILLED_KEEP_MARGIN_CHUNKS);
+        pruneOutsideX(pending, centerCx, viewDistance + FILLED_KEEP_MARGIN_CHUNKS);
 
         // 1. Drain the pending queue first — FIFO so nearby chunks (loaded
         //    first around the player) paint before far-away chunks. poll()
@@ -2581,11 +2617,6 @@ public final class TrackGenerator {
         //    anything dropped from pending because filled/shipyard/unloaded).
         int scanned = 0;
         if (budget > 0) {
-            int viewDistance = level.getServer().getPlayerList().getViewDistance();
-            if (viewDistance <= 0) viewDistance = 10; // dedicated-server fallback
-
-            Vector3dc shipWorldPos = ship.currentWorldPosition();
-            int centerCx = (int) Math.floor(shipWorldPos.x()) >> 4;
             int centerCz = g.trackCenterZ() >> 4;
 
             for (int cz = centerCz - Z_CHUNK_MARGIN; cz <= centerCz + Z_CHUNK_MARGIN && budget > 0; cz++) {

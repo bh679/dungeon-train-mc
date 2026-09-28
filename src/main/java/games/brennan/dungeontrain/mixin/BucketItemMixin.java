@@ -71,6 +71,6 @@ public abstract class BucketItemMixin {
         if (level instanceof ServerLevel serverLevel) {
             return NetherBand.isInNetherBiome(serverLevel, worldX);
         }
-        return ClientNetherBand.netherIntensityAt(worldX) >= NetherBand.NETHER_CORE_RAMP;
+        return ClientNetherBand.netherBandIntensityAt(worldX) >= NetherBand.NETHER_CORE_RAMP;
     }
 }

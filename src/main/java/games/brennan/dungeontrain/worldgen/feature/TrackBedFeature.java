@@ -125,8 +125,8 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
             // Overworld-only (the band is overworld-only); a band/lead/exit-edge chunk defers its whole
             // corridor to the post-mirror lay, which covers all its columns.
             if (serverLevel.dimension().equals(Level.OVERWORLD)
-                    && (UpsideDownBand.isInBandEntryLeadOrExit(overworld, chunkPos.getMinBlockX())
-                        || UpsideDownBand.isInBandEntryLeadOrExit(overworld, chunkPos.getMaxBlockX()))) {
+                    && (UpsideDownBand.isInBandEntryLeadOrExit(overworld, chunkPos.getMinBlockX(), chunkPos.getMinBlockZ())
+                        || UpsideDownBand.isInBandEntryLeadOrExit(overworld, chunkPos.getMaxBlockX(), chunkPos.getMinBlockZ()))) {
                 return false;
             }
 

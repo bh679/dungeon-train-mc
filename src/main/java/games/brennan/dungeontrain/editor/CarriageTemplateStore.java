@@ -191,9 +191,12 @@ public final class CarriageTemplateStore {
         Path dir = directory();
         Files.createDirectories(dir);
         Path file = fileFor(variant);
-        CompoundTag tag = template.save(new CompoundTag());
+        CompoundTag tag = DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save");
         NbtIo.writeCompressed(tag, file);
-        CACHE.put(variant.id(), Optional.of(template));
+        // Dropped rather than replaced: the file on disk is the repaired copy
+        // (DoubleBlockTemplateRepair), and the next read picks that up.
+        CACHE.remove(variant.id());
+        ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved template {} to {}", variant.id(), file);
     }
 
@@ -224,7 +227,7 @@ public final class CarriageTemplateStore {
         }
         Path file = sourceFileForVariant(variant);
         Files.createDirectories(file.getParent());
-        CompoundTag tag = template.save(new CompoundTag());
+        CompoundTag tag = DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save");
         NbtIo.writeCompressed(tag, file);
         LOGGER.info("[DungeonTrain] Wrote bundled template {} to {}", variant.id(), file);
     }
@@ -276,6 +279,7 @@ public final class CarriageTemplateStore {
         Path file = fileFor(variant);
         boolean existed = Files.deleteIfExists(file);
         CACHE.put(variant.id(), Optional.empty());
+        ProvenanceCache.invalidateAll();
         if (existed) LOGGER.info("[DungeonTrain] Deleted template {} ({})", variant.id(), file);
         return existed;
     }
@@ -312,6 +316,20 @@ public final class CarriageTemplateStore {
     }
 
     /**
+     * True iff the mod jar carries a carriage template named {@code id}, whichever kind of variant
+     * it is registered as. Unlike {@link #bundled(CarriageVariant)}, a shipped custom variant counts:
+     * this answers "is the name the mod's", not "does a built-in have a default to fall back to".
+     */
+    public static boolean shipsId(String id) {
+        if (id == null || id.isEmpty()) return false;
+        try (InputStream in = CarriageTemplateStore.class.getResourceAsStream(RESOURCE_PREFIX + id + EXT)) {
+            return in != null;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
      * Move a custom template file from {@code sourceId} to {@code targetId}.
      * Used by the editor's save-with-rename path for custom-to-custom
      * renames. Returns false if the source file does not exist.
@@ -323,6 +341,7 @@ public final class CarriageTemplateStore {
         Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
         Optional<StructureTemplate> cached = CACHE.remove(sourceId);
         if (cached != null) CACHE.put(targetId, cached);
+        ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Renamed template file {} -> {}", src, dst);
         return true;
     }
@@ -362,7 +381,7 @@ public final class CarriageTemplateStore {
     ) {
         StructureTemplate template = new StructureTemplate();
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-        template.load(blocks, tag);
+        template.load(blocks, DoubleBlockTemplateRepair.repair(tag, id));
 
         Vec3i size = template.getSize();
         LOGGER.info("[DungeonTrain] Loaded template {} from {} ({}x{}x{})",
@@ -390,6 +409,17 @@ public final class CarriageTemplateStore {
         Path projectRoot = projectRootOrNull();
         if (projectRoot == null) return null;
         return projectRoot.resolve("src/main/resources");
+    }
+
+    /**
+     * The checkout root a dev session runs from — {@code FMLPaths.GAMEDIR}'s parent. Shared with
+     * the Whole section's stores so their source-tree paths resolve the same way this one's do.
+     * Throws when there is no parent (a packaged install); check {@link #sourceTreeAvailable} first.
+     */
+    static Path projectRoot() {
+        Path root = projectRootOrNull();
+        if (root == null) throw new IllegalStateException("Cannot resolve project root — FMLPaths.GAMEDIR has no parent.");
+        return root;
     }
 
     private static Path projectRootOrNull() {

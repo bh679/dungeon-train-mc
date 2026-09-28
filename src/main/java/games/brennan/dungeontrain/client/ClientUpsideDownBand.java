@@ -1,8 +1,12 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.portal.PortalTwinRegion;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.SunkZone;
+import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 
@@ -19,6 +23,13 @@ import net.minecraft.client.multiplayer.ClientLevel;
  * same two pure helpers the server calls.</p>
  */
 public final class ClientUpsideDownBand {
+
+    /**
+     * Sampling step for {@link #isFlipZoneWithin}. Every zone the flip covers — the core band, its entry
+     * lead-in and the exit crossfade — is hundreds of blocks long at the smallest configured settings, so
+     * a 64-block probe cannot step over one.
+     */
+    private static final int FLIP_ZONE_SAMPLE_STEP = 64;
 
     private static volatile boolean startsWithTrain = false;
     private static volatile int trainY = 0;
@@ -78,11 +89,20 @@ public final class ClientUpsideDownBand {
     }
 
     /**
+     * World-Y of this world's terrain floor — the bedrock row, as synced on join.
+     * {@link Integer#MIN_VALUE} before a sync has landed, which every caller reads as "not known
+     * yet" rather than as a depth.
+     */
+    public static int bedrockY() {
+        return bedrockY;
+    }
+
+    /**
      * World-Y of the in-band inverted bedrock lid — the client's copy of
      * {@code UpsideDownBand.roofY}, from the synced {@code trainY} and {@code bedrockY} plus COMMON
      * config. {@link Integer#MAX_VALUE} before a sync has landed, so nothing is treated as attic.
      */
-    private static int roofY() {
+    public static int roofY() {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null || bedrockY == Integer.MIN_VALUE) return Integer.MAX_VALUE;
         int mirror = plane();
@@ -114,6 +134,69 @@ public final class ClientUpsideDownBand {
     }
 
     /**
+     * The client's copy of the server's {@code PortalTwinSpace.isInside} — narrower than
+     * {@link #isInTwinSpace}, which counts everything over the lid height whether or not the band is
+     * there. This one counts the attic only inside the band's core, as the server does, because its
+     * caller ({@code CropBlockCarriageSurviveMixin}) must answer identically on both sides: a crop the
+     * server keeps and the client deletes flickers out and back in.
+     */
+    public static boolean isInPortalTwinSpace(int worldX, int y) {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null || bedrockY == Integer.MIN_VALUE) return false;
+        AmplifiedDrop drop = isInSunkZone(worldX) ? amplifiedDrop() : null;
+        if (drop != null) {
+            return PortalTwinSpace.amplifiedTwinSpaceContains(y, drop, bedrockY,
+                level.getMinBuildHeight(), level.getMaxBuildHeight());
+        }
+        PortalTwinRegion basement = PortalTwinRegion.basement(level.getMinBuildHeight(), bedrockY);
+        if (basement.contains(y)) return true;
+        boolean atticApplies = DungeonTrainCommonConfig.isUpsideDownBedrockRoof() && isInCoreBand(worldX);
+        return atticApplies && PortalTwinRegion.twinSpaceContains(y, basement, true,
+            PortalTwinRegion.attic(roofY(), level.getMaxBuildHeight(), PortalTwinSpace.CEILING_MARGIN));
+    }
+
+    /**
+     * This world's sunk-Amplified geometry — the same pure {@link AmplifiedDrop#compute} the server
+     * runs, from the synced terrain floor — or {@code null} before a sync, off the overworld, or in a
+     * world with nothing to sink into.
+     */
+    public static AmplifiedDrop amplifiedDrop() {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null || bedrockY == Integer.MIN_VALUE || !startsWithTrain) return null;
+        AmplifiedDrop drop = AmplifiedDrop.compute(bedrockY, level.getMinBuildHeight(),
+            level.getMaxBuildHeight(), PortalTwinSpace.CEILING_MARGIN);
+        return drop.active() ? drop : null;
+    }
+
+    /** Client mirror of {@code SunkZone.contains(level, x)}: the gap into Amplified, and Amplified's slot. */
+    public static boolean isInSunkZone(int worldX) {
+        return startsWithTrain && SunkZone.contains(WorldGenCycle.fromConfig(), worldX);
+    }
+
+    /**
+     * Whether the sunk zone reaches anywhere in {@code [worldX - margin, worldX + margin]} — so a
+     * camera on the approach, looking in, already sees the band's valleys. Same 64-block sampling as
+     * {@link #isFlipZoneWithin}; the zone is hundreds of blocks long at least, so no step can skip it.
+     */
+    public static boolean isSunkZoneWithin(int worldX, int margin) {
+        if (!startsWithTrain) return false;
+        int span = Math.max(0, margin);
+        for (int x = worldX - span; x < worldX + span; x += FLIP_ZONE_SAMPLE_STEP) {
+            if (isInSunkZone(x)) return true;
+        }
+        return isInSunkZone(worldX + span);
+    }
+
+    /** Client mirror of {@code UpsideDownBand.isInBand}: the core band only, no lead-in or fade. */
+    private static boolean isInCoreBand(int worldX) {
+        if (!startsWithTrain) return false;
+        if (!DungeonTrainCommonConfig.isUpsideDownEnabled()) return false;
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        if (cycle.period() <= 0L || cycle.upsideDownLen() <= 0L) return false;
+        return cycle.isInUpsideDownBand(worldX);
+    }
+
+    /**
      * True if {@code worldX} lies in the upside-down → overworld exit crossfade, where the block render
      * flip is applied with a Y-split (only at/above {@link #plane()}) — so the dispersing mirror islands
      * stay visually upside-down while the returning overworld renders upright. Distinct from
@@ -123,5 +206,29 @@ public final class ClientUpsideDownBand {
         if (!startsWithTrain) return false;
         if (!DungeonTrainCommonConfig.isUpsideDownEnabled()) return false;
         return WorldGenCycle.fromConfig().isInUpsideDownExitFade(worldX);
+    }
+
+    /**
+     * True if any world-X within {@code margin} blocks of {@code worldX} renders flipped — the core band,
+     * its entry lead-in ({@link #isInBand}) or the exit crossfade ({@link #isInExitFlip}).
+     *
+     * <p>Used to decide when Distant Horizons must stop drawing: DH renders its own LODs and never sees
+     * the block-model flip, so its horizon shows the band the right way up while the loaded terrain in
+     * front of the player hangs inverted. The margin covers the approach — band terrain sits inside DH's
+     * draw distance well before the camera reaches the band itself.</p>
+     *
+     * <p>Cheap enough for a per-frame call: a handful of the same integer comparisons {@link #isInBand}
+     * already does, and an immediate {@code false} when the band is off or this world has no train.</p>
+     */
+    public static boolean isFlipZoneWithin(int worldX, int margin) {
+        if (!startsWithTrain) return false;
+        if (!DungeonTrainCommonConfig.isUpsideDownEnabled()) return false;
+        int span = Math.max(0, margin);
+        for (int x = worldX - span; x < worldX + span; x += FLIP_ZONE_SAMPLE_STEP) {
+            if (isInBand(x) || isInExitFlip(x)) return true;
+        }
+        // The step can overshoot the far end, so the last block of the window is always tested.
+        int end = worldX + span;
+        return isInBand(end) || isInExitFlip(end);
     }
 }

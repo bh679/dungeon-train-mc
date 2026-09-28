@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Drilldown reached from the Editor menu's "Phases" row. Four
- * {@link CommandMenuEntry.Toggle} rows — Overworld / Nether / Void / End — let the author pick
+ * Drilldown reached from the Editor menu's "Phases" row. One
+ * {@link CommandMenuEntry.Toggle} row per {@link TrainPhase} — Overworld … Chuncks — lets the author pick
  * which worldgen phases the active weighted template may spawn in. Toggling a row dispatches
  * {@code /dungeontrain editor [contents|tracks] phase <id> [<name>] <phase> on|off} and the server
  * pushes a fresh {@link games.brennan.dungeontrain.net.EditorStatusPacket} carrying the updated
@@ -32,7 +32,7 @@ public final class PhaseSelectScreen implements MenuScreen {
 
     @Override
     public String title() {
-        return "Phases";
+        return MenuLang.t("editor.phases");
     }
 
     @Override
@@ -54,7 +54,7 @@ public final class PhaseSelectScreen implements MenuScreen {
                 ));
             }
         }
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
 
@@ -73,19 +73,14 @@ public final class PhaseSelectScreen implements MenuScreen {
             case PORTALS -> modelName.isEmpty() ? null
                 : "dungeontrain editor portals phase " + modelId + " " + modelName;
             // No per-template spawn gate to edit.
-            case PARTS, ARCHITECTURE -> null;
+            case WHOLE -> "dungeontrain editor whole phase " + modelId;
+            case WHOLE_GROUP -> "dungeontrain editor whole group phase " + modelId;
+            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null;
         };
     }
 
     private static String displayName(TrainPhase p) {
-        return switch (p) {
-            case OVERWORLD -> "Overworld";
-            case NETHER -> "Nether";
-            case VOID -> "Void";
-            case END -> "End";
-            case UPSIDE_DOWN -> "Upside Down";
-            case CHUNCKS -> "Chuncks";
-        };
+        return MenuLang.named("phase", p.token(), p.displayName());
     }
 
     /** Visible-for-test accessor. */

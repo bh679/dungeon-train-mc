@@ -1,0 +1,781 @@
+package games.brennan.dungeontrain.client.menu.editorscreen;
+
+import games.brennan.dungeontrain.net.BuilderProfilePacket;
+import games.brennan.dungeontrain.client.builder.BuilderProfileState;
+import games.brennan.dungeontrain.client.builder.BuilderSubmitNoteScreen;
+import games.brennan.dungeontrain.client.builder.BuilderSubmitHintsRequests;
+import games.brennan.dungeontrain.builder.relay.SubmitNote;
+import games.brennan.dungeontrain.client.menu.MenuLang;
+import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.PortalTestSessionState;
+import games.brennan.dungeontrain.client.builder.TemplateSummary;
+import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
+import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
+import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
+import games.brennan.dungeontrain.client.menu.MenuRowPainter;
+import games.brennan.dungeontrain.config.EditorScreenTheme;
+import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.EditorRosterPacket;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
+
+import java.util.List;
+
+/**
+ * The right pane: header, preview, data sheet, the icon row, the per-plot settings rows, and
+ * the pinned Test button. Reads what to show from {@link EditorScreenActions}; draws with the
+ * shared row painter so rows here look like rows everywhere else.
+ */
+public final class EditorDetailPane {
+
+    static final int ROW_H = 14;
+    static final int ICON_SIZE = 16;
+    static final int ICON_CELL = 20;
+    static final int ICON_GAP = 2;
+    static final int ICON_GROUP_GAP = 6;
+    /** Below this a button stops reading as one, so the spacing goes before the size does. */
+    static final int MIN_ICON_CELL = 12;
+    static final int HERE_TEXT = 0xFF55FF55;
+    /** The upload note's colours: the Submit icon's blue while going, a plain red when it did not. */
+    static final int UPLOADING_TEXT = 0xFF88BBFF;
+    static final int FAILED_TEXT = 0xFFFF6655;
+    static final int DIM_TEXT = 0xB0FFFFFF;
+    static final int DISABLED = 0x30FFFFFF;
+    static final int DISABLED_ICON = 0x60FFFFFF;
+
+    /** What a click landed on. */
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE }
+
+    private final VersionStrip versions = new VersionStrip();
+    /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
+    private int relayId;
+    private int seq;
+
+    /** The selected template's numbers, for the Loot page; null until its tile has been read. */
+    private TemplateSummary summary;
+    /** Every item the selection's loot can give, most valuable first — the Loot page's grid. */
+    private List<games.brennan.dungeontrain.editor.TemplateLoot.ItemEntry> lootItems = List.of();
+    private LootGrid lootGrid;
+    /** The selection's Submit for Review answers, from the player's own relay listing; empty when none. */
+    private SubmitNote submitNote = SubmitNote.EMPTY;
+    /** Which questions the selection earns and whether the player may edit them — asked of the server once. */
+    private BuilderSubmitHintsRequests.Answer submitAnswer = BuilderSubmitHintsRequests.Answer.UNKNOWN;
+    /** The Submitted answers page's Edit button as last drawn; null when not on screen. */
+    private InventoryEditorLayout.Rect editNoteRect;
+    /** The selection's display name as last drawn — what the edit screen's prompt names. */
+    private String shownName = "";
+
+    /** What the selection is made of. Set by the screen before each layout, like the version. */
+    public void showSummary(TemplateSummary summary) {
+        if (summary == this.summary) return;
+        this.summary = summary;
+        lootItems = summary == null ? List.of()
+            : games.brennan.dungeontrain.editor.TemplateLoot.allItems(summary.loot());
+    }
+
+    /** Which version of the selection the preview shows. Set by the screen before each render. */
+    public void showVersion(int relayId, int seq) {
+        this.relayId = relayId;
+        this.seq = seq;
+    }
+
+    public record Hit(HitKind kind, int index, int sub) {
+        public static final Hit NONE = new Hit(HitKind.NONE, -1, 0);
+    }
+
+    private InventoryEditorLayout layout;
+    private EditorScreenActions.Ctx ctx;
+    private List<EditorScreenActions.Icon> icons = List.of();
+    private List<CommandMenuEntry> rows = List.of();
+    private List<CommandMenuEntry> roomRows = List.of();
+    private List<TemplateDataSheet.Line> sheetLines = List.of();
+    private List<TemplateDataSheet.Placed> sheetCells = List.of();
+    private CommandMenuEntry test;
+    private int page;
+    private Pages pages = Pages.NONE;
+    private VariantKey pagedFor;
+    private Hit hovered = Hit.NONE;
+    private int[] iconX = new int[0];
+    private int iconCell = ICON_CELL;
+    private InventoryEditorLayout.Rect goHereRect;
+    private CommandMenuEntry goHere;
+    private CommandMenuEntry enterCentre;
+
+    public Hit hovered() { return hovered; }
+    public List<EditorScreenActions.Icon> icons() { return icons; }
+    public List<CommandMenuEntry> rows() { return rows; }
+    public CommandMenuEntry testEntry() { return test; }
+
+    /** The Reseed cell beside the test button — the world switch, or in a test the re-roll button. */
+    public CommandMenuEntry reseedEntry() { return EditorScreenActions.reseedEntry(); }
+
+    /** Where the Reseed cell sits: the right end of the test row. Null before the first layout. */
+    private InventoryEditorLayout.Rect reseedRect;
+    /** The teleport button in the header, or null when the author is already standing there. */
+    /** Go here, or Enter (into the plot's middle) while Shift is held and the plot has one. */
+    public CommandMenuEntry goHereEntry() {
+        return enterCentre != null && net.minecraft.client.gui.screens.Screen.hasShiftDown() ? enterCentre : goHere;
+    }
+    public EditorScreenActions.Ctx ctx() { return ctx; }
+
+    /** Build this frame's rows and icons from the selection. */
+    public void layout(InventoryEditorLayout layout, EditorScreenActions.Ctx ctx, long nowMillis) {
+        this.layout = layout;
+        this.ctx = ctx;
+        // The relay row of what is selected, which showVersion has already handed this pane for the
+        // version strip — it is what the Submit icon acts on.
+        icons = EditorScreenActions.icons(ctx, DungeonTrainNet::sendToServer, relayId);
+        // Read once: the Size line takes the room's own dimensions from these, and the rows below
+        // take everything else. Reading them twice could show two different numbers for one axis.
+        roomRows = EditorScreenActions.roomRows(ctx);
+        rows = EditorScreenActions.settingRows(ctx, () -> roomRows,
+            () -> EditorScreenActions.roomModeOf(ctx, EditorStatusHudOverlay::roomMode));
+        test = EditorScreenActions.testEntry(ctx);
+        // Standing somewhere else is not just a fact to report — it is the one thing in the way of
+        // half these controls, so the header offers the walk rather than only naming it. Offered
+        // while standing in the plot too: the walk lands in front of the plot's menu, which is
+        // somewhere to want to be from anywhere inside it.
+        goHere = ctx.hasSelection() ? EditorScreenActions.enterEntry(ctx, DungeonTrainNet::sendToServer) : null;
+        enterCentre = goHere != null ? EditorScreenActions.enterCentreEntry(ctx, DungeonTrainNet::sendToServer) : null;
+        // A new selection starts on its first page; a shorter list clamps the page it was on.
+        if (ctx.selection() == null || !ctx.selection().equals(pagedFor)) page = 0;
+        pagedFor = ctx.selection();
+        int perLootPage = LootGrid.of(lootGridArea(), 0).capacity();
+        int lootPages = lootItems.isEmpty() || perLootPage <= 0 ? 0
+            : (lootItems.size() + perLootPage - 1) / perLootPage;
+        // What the author answered on submitting it: read off this player's own relay listing, which
+        // is the only one that carries the answers. No answers, no page — as with the Loot page.
+        // Any template the relay holds has the page, answered or not: its questions are worth seeing,
+        // and editable, before the build is ever submitted.
+        BuilderProfilePacket.Entry own = BuilderProfileState.ownBuild(relayId);
+        submitNote = own == null ? SubmitNote.EMPTY : own.note();
+        submitAnswer = own == null ? BuilderSubmitHintsRequests.Answer.UNKNOWN
+            : BuilderSubmitHintsRequests.peek(relayId, "", false);
+        int submitPages = own == null ? 0 : 1;
+        pages = Pages.of(rows.size(), Math.max(0, body().h() / ROW_H), lootPages, submitPages);
+        page = pages.clamp(page);
+
+        IconRow row = layoutIcons(icons.size(), layout.icons().x(), layout.icons().w());
+        iconX = row.x();
+        iconCell = row.cell();
+    }
+
+    /** Icon-row geometry: how big each button is, and where each one starts. */
+    record IconRow(int cell, int[] x) {}
+
+    /**
+     * Fit {@code count} buttons across {@code width}.
+     *
+     * <p>The row is the pane's toolbar and every button in it matters, so it gives up looks before
+     * it gives up buttons. Size goes first: a button two pixels narrower still reads as one,
+     * whereas the wider breaks are what hold Remove and Clear apart from the buttons either side of
+     * them, and that is a safety cue rather than a decoration. Only once the buttons would shrink
+     * past legible does the grouping go, and then the spacing between them.</p>
+     */
+    static IconRow layoutIcons(int count, int x0, int width) {
+        if (count <= 0) return new IconRow(0, new int[0]);
+        int gap = ICON_GAP;
+        int groupGap = ICON_GROUP_GAP;
+        int cell = fit(count, width, gap, groupGap * groupBreaks(count));
+        if (cell < MIN_ICON_CELL) {
+            // Out of room to shrink: the grouping goes, the buttons stay.
+            groupGap = 0;
+            cell = fit(count, width, gap, 0);
+        }
+        if (cell < MIN_ICON_CELL) {
+            gap = 1;
+            cell = Math.max(1, fit(count, width, gap, 0));
+        }
+
+        int[] xs = new int[count];
+        int x = x0;
+        for (int i = 0; i < count; i++) {
+            if (isGroupBreak(i)) x += groupGap;
+            xs[i] = x;
+            x += cell + gap;
+        }
+        return new IconRow(cell, xs);
+    }
+
+    /** The widest cell that fits, never larger than a button wants to be. */
+    private static int fit(int count, int width, int gap, int groupGaps) {
+        return Math.min(ICON_CELL, (width - (count - 1) * gap - groupGaps) / count);
+    }
+
+    /** Save · Rename · Remove | Undo · Redo | Reset · Clear | Package — the breaks between groups. */
+    private static boolean isGroupBreak(int i) {
+        return i == 3 || i == 5 || i == 7;
+    }
+
+    private static int groupBreaks(int count) {
+        int n = 0;
+        for (int i = 0; i < count; i++) {
+            if (isGroupBreak(i)) n++;
+        }
+        return n;
+    }
+
+    /**
+     * The body: everything between the icon row and the Test button — preview, sheet and the space
+     * under the sheet, plus the pager slot the layout keeps below them. Paged as one.
+     */
+    InventoryEditorLayout.Rect body() {
+        InventoryEditorLayout.Rect p = layout.preview();
+        InventoryEditorLayout.Rect t = layout.test();
+        return new InventoryEditorLayout.Rect(layout.settings().x(), p.y(), layout.settings().w(),
+            Math.max(0, t.y() - 2 - p.y()));
+    }
+
+    /** The slots of the body a page of rows fills: all of it but the pager's slot. */
+    private InventoryEditorLayout.Rect rowArea() {
+        InventoryEditorLayout.Rect b = body();
+        return new InventoryEditorLayout.Rect(b.x(), b.y(), b.w(), Math.max(0, b.h() - ROW_H));
+    }
+
+    /** Where the pager sits: the body's last slot. */
+    private InventoryEditorLayout.Rect pagerRect() {
+        InventoryEditorLayout.Rect b = body();
+        return new InventoryEditorLayout.Rect(b.x(), b.bottom() - ROW_H, b.w(), ROW_H);
+    }
+
+    public boolean overSettings(double mx, double my) {
+        return layout != null && body().contains(mx, my);
+    }
+
+    public boolean overPreview(double mx, double my) {
+        return layout != null && layout.preview().contains(mx, my);
+    }
+
+    /**
+     * Turn the page — the wheel over the body, or the pager's arrows.
+     *
+     * <p>Pages rather than a scroll: the rows are controls, and a control half hidden under the
+     * pane's edge is one the author cannot read the value of before tapping it. A page shows whole
+     * rows or none, and the pager says where in the list they are.</p>
+     */
+    public boolean scrollBy(int dir) {
+        int next = pages.clamp(page + dir);
+        boolean moved = next != page;
+        page = next;
+        return moved || pages.pageCount() > 1;
+    }
+
+    /** Turn to the first Loot page (after the rows) — what clicking the sheet's Loot row does. False when there is none. */
+    public boolean showLootPage() {
+        if (pages.lootPages() == 0) return false;
+        page = pages.firstLootPage();
+        return true;
+    }
+
+    /** True while the Loot page is showing. */
+    public boolean onLootPage() { return pages.isLootPage(page); }
+
+    /** Open the selection's answers for editing — the Submitted answers page's Edit button. */
+    public void openNoteEditor() {
+        if (relayId <= 0 || !submitAnswer.canEdit()) return;
+        BuilderSubmitNoteScreen.openEditor(relayId, "", false, net.minecraft.network.chat.Component.literal(shownName),
+            submitAnswer.hints(), submitNote);
+    }
+
+    /** True while the Submitted answers page is showing. */
+    public boolean onSubmitPage() { return pages.isSubmitPage(page); }
+
+    /** The page the body is on, zero-based: 0 is the model and its sheet, the rest are the rows. */
+    public int page() { return page; }
+
+    /** How the body is cut into pages this frame. */
+    public Pages pages() { return pages; }
+
+    /** True while the model and its sheet are showing rather than a page of rows. */
+    public boolean onModelPage() { return page == 0; }
+
+    /**
+     * The body cut into pages.
+     *
+     * <p>The first page is always the model and its data sheet — path, size, blocks, weight, stage,
+     * levels. The room's rows come after, as many per page as the whole body holds less the pager's
+     * slot, so a long list of walls sub-options takes over the space the model had rather than
+     * squeezing under its sheet. The Loot pages, when the build has loot, come after them, and the
+     * Submitted answers page, when its author answered anything on submitting it, comes last. With
+     * none of those there is one page and no pager.</p>
+     *
+     * <p>Pure, so it can be tested without a screen.</p>
+     *
+     * @param count   how many rows there are
+     * @param perPage rows on each row page — the body's slots, less the pager's
+     */
+    public record Pages(int count, int perPage, int lootPages, int submitPages) {
+        public static final Pages NONE = new Pages(0, 0, 0, 0);
+
+        public static Pages of(int count, int bodySlots) {
+            return of(count, bodySlots, 0);
+        }
+
+        /** As {@link #of(int, int)}, with {@code lootPages} Loot pages after the rows. */
+        public static Pages of(int count, int bodySlots, int lootPages) {
+            return of(count, bodySlots, lootPages, 0);
+        }
+
+        /** As above, with {@code submitPages} Submitted answers pages (0 or 1) after the Loot pages. */
+        public static Pages of(int count, int bodySlots, int lootPages, int submitPages) {
+            return new Pages(Math.max(0, count), Math.max(0, bodySlots - 1), Math.max(0, lootPages),
+                Math.max(0, Math.min(1, submitPages)));
+        }
+
+        /** True when there is anything past the model page. */
+        public boolean paged() {
+            return hasRows() || lootPages > 0 || submitPages > 0;
+        }
+
+        private boolean hasRows() {
+            return count > 0 && perPage > 0;
+        }
+
+        /** How many row pages follow the model page. */
+        public int rowPages() {
+            return hasRows() ? (count + perPage - 1) / perPage : 0;
+        }
+
+        /** The first Loot page: straight after the last row page. */
+        public int firstLootPage() {
+            return 1 + rowPages();
+        }
+
+        /** The Submitted answers page: straight after the last Loot page. */
+        public int firstSubmitPage() {
+            return firstLootPage() + lootPages;
+        }
+
+        /** The model page, the row pages, the Loot pages, then the Submitted answers page; at least one. */
+        public int pageCount() {
+            return 1 + rowPages() + lootPages + submitPages;
+        }
+
+        public int clamp(int page) {
+            return Math.max(0, Math.min(page, pageCount() - 1));
+        }
+
+        public boolean isLootPage(int page) {
+            int p = clamp(page);
+            return lootPages > 0 && p >= firstLootPage() && p < firstSubmitPage();
+        }
+
+        public boolean isSubmitPage(int page) {
+            return submitPages > 0 && clamp(page) >= firstSubmitPage();
+        }
+
+        /** Which Loot page {@code page} is, from 0; meaningless off one. */
+        public int lootIndex(int page) {
+            return Math.max(0, clamp(page) - firstLootPage());
+        }
+
+        /** True when {@code page} is one of rows rather than the model or a Loot page. */
+        public boolean isRowPage(int page) {
+            int p = clamp(page);
+            return p >= 1 && p < firstLootPage();
+        }
+
+        /** The first row index on {@code page}; meaningless off a row page. */
+        public int first(int page) {
+            return Math.max(0, clamp(page) - 1) * perPage;
+        }
+
+        /** One past the last row index on {@code page}. */
+        public int end(int page) {
+            return isRowPage(page) ? Math.min(count, first(page) + perPage) : 0;
+        }
+
+        /** True when the pager is drawn — only when there is a page to turn to. */
+        public boolean hasPager() {
+            return paged();
+        }
+    }
+
+    public void render(GuiGraphics g, Font font, EditorScreenTheme theme, TemplateArt art,
+                       TemplateSummary summary, EditorRosterIndex.Tile tile, String pathLabel,
+                       float yaw, int mouseX, int mouseY) {
+        hovered = hitTest(mouseX, mouseY);
+        editNoteRect = null;
+        drawHeader(g, font, theme, art);
+        String name = tile == null ? "" : tile.variant().displayName();
+        shownName = name;
+        if (onModelPage()) {
+            PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
+            versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
+            drawUploadNoteOnPreview(g, font, art);
+            sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
+                tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
+                ctx.selection(), roomRows);
+            sheetCells = TemplateDataSheet.place(sheetLines, layout.sheet(), font);
+            TemplateDataSheet.draw(g, font, layout.sheet(), sheetLines, sheetCells,
+                hovered.kind() == HitKind.SHEET ? hovered.index() : -1);
+        } else {
+            // Nothing of the model page is hittable while another page is up.
+            sheetLines = List.of();
+            sheetCells = List.of();
+            if (onLootPage()) drawLootPage(g, font, theme);
+            else if (onSubmitPage()) editNoteRect = SubmissionPage.draw(g, font, rowArea(), submitNote,
+                submitAnswer.hints(), submitAnswer.canEdit(), mouseX, mouseY);
+            else drawRows(g, font, theme);
+        }
+        if (pages.hasPager()) drawPager(g, font);
+        drawIcons(g);
+        drawTest(g, font);
+    }
+
+    private void drawHeader(GuiGraphics g, Font font, EditorScreenTheme theme, TemplateArt art) {
+        InventoryEditorLayout.Rect h = layout.header();
+        int ty = h.y() + (h.h() - font.lineHeight) / 2;
+        String name = ctx.hasSelection() ? ctx.selection().displayName()
+            : EditorScreenLang.text(EditorScreenLang.NOTHING_SELECTED);
+        int x = h.x() + 2;
+        g.drawString(font, name, x, ty, theme.panelText(), theme.isLight() ? false : true);
+        x += font.width(name) + 6;
+        if (ctx.dirty()) {
+            g.fill(x, ty + 2, x + 4, ty + 6, TemplateTilePainter.DIRTY);
+            x += 8;
+        }
+        int saveX = h.right() - 1;
+        goHereRect = null;
+        String label = EditorScreenLang.text(goHereEntry() == enterCentre && enterCentre != null
+            ? EditorScreenLang.ENTER : EditorScreenLang.GO_HERE);
+        // As wide as the wider label, so holding Shift swaps the word without moving the button.
+        int w = Math.max(font.width(EditorScreenLang.text(EditorScreenLang.GO_HERE)),
+            font.width(EditorScreenLang.text(EditorScreenLang.ENTER))) + 8;
+        if (!onModelPage()) {
+            // The model box carries the note on the model page; on the others the header does,
+            // cut to whatever the Go here button leaves so the two never overlap.
+            int room = saveX - x - 4 - (goHere != null ? w + 4 : 0);
+            x = drawUploadNote(g, font, art, x, ty, room);
+        }
+        if (ctx.standingInSelection()) {
+            // The status keeps its place; the button follows it, so the sentence gives way to the
+            // button rather than the other way round when the header runs short.
+            String status = "● " + EditorScreenLang.text(EditorScreenLang.YOU_ARE_HERE);
+            int room = saveX - x - 4 - (goHere != null ? w + 4 : 0);
+            String shown = font.plainSubstrByWidth(status, Math.max(0, room));
+            g.drawString(font, shown, x, ty, HERE_TEXT, false);
+            x += font.width(shown) + 6;
+        }
+        if (goHere != null) {
+            // A button, not a sentence: the answer to "you are not there" is to go.
+            int bx = Math.min(x, Math.max(h.x(), saveX - w - 2));
+            goHereRect = new InventoryEditorLayout.Rect(bx, h.y() + 1, w, h.h() - 2);
+            boolean hot = hovered.kind() == HitKind.GO_HERE;
+            g.fill(goHereRect.x(), goHereRect.y(), goHereRect.right(), goHereRect.bottom(),
+                hot ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+            g.drawString(font, label, bx + 4, ty, hot ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
+        }
+    }
+
+    /** The upload note's words and colour, or null when there is nothing to say. */
+    private record UploadNote(String text, String widest, int colour) {}
+
+    /**
+     * The small note shown while a save goes up to the relay — "↑ Uploading…" — and, for a moment
+     * after, how it ended. The upload runs for seconds after the local save and is what the Submit
+     * icon and the version strip wait on, so without this the screen looked as if the save had not
+     * taken.
+     */
+    private static UploadNote uploadNote(TemplateArt art) {
+        UploadStatusBook.Shown shown = EditorUploadStatus.shown(art);
+        if (shown == null) return null;
+        return switch (shown) {
+            case UPLOADING -> {
+                String word = "↑ " + EditorScreenLang.text(EditorScreenLang.UPLOADING);
+                int dots = (int) ((System.currentTimeMillis() / 400L) % 4L);
+                // The widest the dots get, so nothing beside it shuffles on each beat.
+                yield new UploadNote(word + ".".repeat(dots), word + "...", UPLOADING_TEXT);
+            }
+            case UPLOADED -> {
+                String t = "✓ " + EditorScreenLang.text(EditorScreenLang.UPLOADED);
+                yield new UploadNote(t, t, HERE_TEXT);
+            }
+            case FAILED -> {
+                String t = "✗ " + EditorScreenLang.text(EditorScreenLang.UPLOAD_FAILED);
+                yield new UploadNote(t, t, FAILED_TEXT);
+            }
+        };
+    }
+
+    /** In the model box's top-right corner, beside the model it is about — the model page's home for it. */
+    private void drawUploadNoteOnPreview(GuiGraphics g, Font font, TemplateArt art) {
+        UploadNote note = uploadNote(art);
+        if (note == null) return;
+        InventoryEditorLayout.Rect p = layout.preview();
+        int x = p.right() - 4 - font.width(note.widest());
+        g.drawString(font, note.text(), Math.max(p.x() + 2, x), p.y() + 4, note.colour(), true);
+    }
+
+    /** In the header, cut to {@code room}; answers the x the header continues from. */
+    private static int drawUploadNote(GuiGraphics g, Font font, TemplateArt art, int x, int ty, int room) {
+        UploadNote note = uploadNote(art);
+        if (note == null || room <= 0) return x;
+        String shown = font.plainSubstrByWidth(note.text(), room);
+        g.drawString(font, shown, x, ty, note.colour(), false);
+        return x + Math.min(room, font.width(note.widest())) + 6;
+    }
+
+    private void drawIcons(GuiGraphics g) {
+        InventoryEditorLayout.Rect r = layout.icons();
+        for (int i = 0; i < icons.size(); i++) {
+            EditorScreenActions.Icon icon = icons.get(i);
+            int x = iconX[i];
+            boolean hov = hovered.kind() == HitKind.ICON && hovered.index() == i;
+            boolean danger = "remove".equals(icon.id()) || "clear".equals(icon.id());
+            int fill = !icon.enabled() ? DISABLED
+                : hov ? (danger ? 0xC0FF5544 : MenuRowPainter.CELL_HOVER) : MenuRowPainter.CELL_IDLE;
+            g.fill(x, r.y(), x + iconCell, r.y() + iconCell, fill);
+            if (!icon.enabled()) {
+                tint(g, DISABLED_ICON);
+            } else if ("save".equals(icon.id())) {
+                // Save says the state as well as offering the action: breathing green while this
+                // build has unsaved work, steady blue once it matches what is on disk. It is the
+                // only status the pane cannot show as a number, so it lives on its own button
+                // rather than on a second one beside it.
+                tint(g, EditorSaveStatus.tint(ctx.dirty(), System.currentTimeMillis()));
+            } else if ("submit".equals(icon.id()) || "withdraw".equals(icon.id())) {
+                // The same trick, for the other thing a build's state cannot be read off this pane:
+                // whether it has been offered to the train. Pulsing blue while it is only saved,
+                // steady green once submitted — and kept through the hover, like Save, because the
+                // state is the reason to press it.
+                tint(g, SubmitTint.of("withdraw".equals(icon.id()), System.currentTimeMillis()));
+            } else if (hov) {
+                tint(g, 0xFF000000);
+            }
+            int sprite = Math.min(ICON_SIZE, iconCell);
+            g.blitSprite(EditorIcons.forAction(icon.id()), x + (iconCell - sprite) / 2,
+                r.y() + (iconCell - sprite) / 2, sprite, sprite);
+            g.setColor(1f, 1f, 1f, 1f);
+        }
+    }
+
+    private void drawRows(GuiGraphics g, Font font, EditorScreenTheme theme) {
+        InventoryEditorLayout.Rect r = rowArea();
+        g.enableScissor(r.x(), r.y(), r.right(), r.bottom());
+        int first = pages.first(page);
+        int end = pages.end(page);
+        for (int idx = first; idx < end; idx++) {
+            int top = r.y() + (idx - first) * ROW_H;
+            boolean hov = hovered.kind() == HitKind.ROW && hovered.index() == idx;
+            MenuRowPainter.drawRow(g, font, rows.get(idx), r.x(), top, r.right(), ROW_H - 1,
+                idx, hov, hovered.sub(), null);
+        }
+        g.disableScissor();
+    }
+
+    /**
+     * The Loot page: the template's total value and item count, then every item it can give as a
+     * slot-sized icon, most valuable first. Hover names an item, its value and where it turns up.
+     */
+    private void drawLootPage(GuiGraphics g, Font font, EditorScreenTheme theme) {
+        InventoryEditorLayout.Rect r = rowArea();
+        double total = summary == null ? 0 : games.brennan.dungeontrain.editor.TemplateLoot.totalValue(summary.loot());
+        String header = EditorScreenLang.text(EditorScreenLang.LOOT_PAGE_HEADER,
+            TemplateDataSheet.formatValue(total), lootItems.size());
+        g.drawString(font, font.plainSubstrByWidth(header, r.w() - 4), r.x() + 2, r.y() + 2,
+            TemplateDataSheet.LABEL, false);
+        lootGrid = lootGridForPage();
+        for (int i = 0; i < lootGrid.shown(); i++) {
+            int x = lootGrid.cellX(i);
+            int y = lootGrid.cellY(i);
+            boolean hov = hovered.kind() == HitKind.LOOT_ITEM && hovered.index() == lootGrid.first() + i;
+            g.fill(x, y, x + LootGrid.CELL - 1, y + LootGrid.CELL - 1,
+                hov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+            g.renderItem(new net.minecraft.world.item.ItemStack(lootItems.get(lootGrid.first() + i).item()),
+                x + 1, y + 1);
+        }
+    }
+
+    /** This Loot page's slice of the grid: the items from its first on, as many as fit. */
+    private LootGrid lootGridForPage() {
+        LootGrid all = LootGrid.of(lootGridArea(), lootItems.size());
+        return all.page(pages.lootIndex(page));
+    }
+
+    /** The Loot page's grid: the row area under its header line. */
+    private InventoryEditorLayout.Rect lootGridArea() {
+        InventoryEditorLayout.Rect r = rowArea();
+        int top = r.y() + ROW_H;
+        return new InventoryEditorLayout.Rect(r.x() + 2, top, Math.max(0, r.w() - 4), Math.max(0, r.bottom() - top));
+    }
+
+    /** The Loot page's tooltip for one item: its name, its value, and the blocks it turns up in. */
+    private List<String> lootItemTooltip(int index) {
+        if (index < 0 || index >= lootItems.size()) return List.of();
+        games.brennan.dungeontrain.editor.TemplateLoot.ItemEntry e = lootItems.get(index);
+        String name = new net.minecraft.world.item.ItemStack(e.item()).getHoverName().getString();
+        List<String> sources = e.sources().stream()
+            .map(b -> b.count() > 1 ? b.block().getName().getString() + " ×" + b.count()
+                : b.block().getName().getString())
+            .distinct().toList();
+        return List.of(name,
+            EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_VALUE, TemplateDataSheet.formatValue(e.score())),
+            EditorScreenLang.text(EditorScreenLang.LOOT_PAGE_IN, String.join(", ", sources)));
+    }
+
+    /** {@code <  n / N  >} in the body's last slot, on every page. */
+    private void drawPager(GuiGraphics g, Font font) {
+        EditorPager.draw(g, font, pagerRect(), page, pages.pageCount(), switch (hovered.kind()) {
+            case PAGE_PREV -> EditorPager.Hit.PREV;
+            case PAGE_NEXT -> EditorPager.Hit.NEXT;
+            default -> EditorPager.Hit.NONE;
+        });
+    }
+
+    private void drawTest(GuiGraphics g, Font font) {
+        InventoryEditorLayout.Rect row = layout.test();
+        // The Reseed cell takes the right end of the row, with a one-pixel gap; the button the rest.
+        CommandMenuEntry reseed = reseedEntry();
+        int cellW = font.width(MenuRowPainter.labelFor(reseed)) + 2 * MenuRowPainter.CELL_PAD_X + 8;
+        reseedRect = new InventoryEditorLayout.Rect(row.right() - cellW, row.y(), cellW, row.h());
+        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(row.x(), row.y(),
+            Math.max(0, row.w() - cellW - 1), row.h());
+        MenuRowPainter.drawCell(g, font, reseed, reseedRect.x(), reseedRect.y(), reseedRect.right(),
+            reseedRect.h(), hovered.kind() == HitKind.RESEED, 0, 0, null);
+
+        boolean enabled = test != null;
+        boolean hov = enabled && hovered.kind() == HitKind.TEST;
+        g.fill(r.x(), r.y(), r.right(), r.bottom(), !enabled ? DISABLED : hov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+        String label = testLabel();
+        int tw = font.width(label) + 12;
+        int x = r.x() + (r.w() - tw) / 2;
+        if (!enabled) tint(g, DISABLED_ICON);
+        else if (hov) tint(g, 0xFF000000);
+        g.blitSprite(testIcon(), x, r.y() + (r.h() - 10) / 2, 10, 10);
+        g.setColor(1f, 1f, 1f, 1f);
+        g.drawString(font, label, x + 12, r.y() + (r.h() - font.lineHeight) / 2 + 1,
+            !enabled ? 0x80FFFFFF : hov ? 0xFF000000 : 0xFFFFFFFF, false);
+    }
+
+    /** The test button's name: the way in, or — while a test is running — the way back out. */
+    private static String testLabel() {
+        return EditorScreenLang.text(PortalTestSessionState.active()
+            ? EditorScreenLang.EXIT_TEST : EditorScreenLang.TEST_CARRIAGE);
+    }
+
+    private static ResourceLocation testIcon() {
+        return PortalTestSessionState.active() ? EditorIcons.EXIT : EditorIcons.PLAY;
+    }
+
+    private static void tint(GuiGraphics g, int argb) {
+        g.setColor(((argb >> 16) & 0xFF) / 255f, ((argb >> 8) & 0xFF) / 255f,
+            (argb & 0xFF) / 255f, ((argb >>> 24) & 0xFF) / 255f);
+    }
+
+    public Hit hitTest(double mx, double my) {
+        if (layout == null) return Hit.NONE;
+        if (onModelPage()) {
+            switch (versions.hit(mx, my)) {
+                case OLDER -> { return new Hit(HitKind.OLDER, 0, 0); }
+                case NEWER -> { return new Hit(HitKind.NEWER, 0, 0); }
+                case NONE -> { }
+            }
+        }
+        if (goHereRect != null && goHereRect.contains(mx, my)) return new Hit(HitKind.GO_HERE, 0, 0);
+        if (editNoteRect != null && onSubmitPage() && editNoteRect.contains(mx, my)) {
+            return new Hit(HitKind.EDIT_NOTE, 0, 0);
+        }
+        if (pages.hasPager() && pagerRect().contains(mx, my)) {
+            return switch (EditorPager.hit(pagerRect(), page, pages.pageCount(), mx, my)) {
+                case PREV -> new Hit(HitKind.PAGE_PREV, 0, 0);
+                case NEXT -> new Hit(HitKind.PAGE_NEXT, 0, 0);
+                case NONE -> Hit.NONE;
+            };
+        }
+        if (onModelPage() && layout.preview().contains(mx, my)) return new Hit(HitKind.PREVIEW, 0, 0);
+        int sheetCell = onModelPage() ? TemplateDataSheet.hit(sheetCells, mx, my) : -1;
+        if (sheetCell >= 0) return new Hit(HitKind.SHEET, sheetCell, 0);
+        InventoryEditorLayout.Rect ir = layout.icons();
+        if (my >= ir.y() && my < ir.y() + iconCell) {
+            for (int i = 0; i < iconX.length; i++) {
+                if (mx >= iconX[i] && mx < iconX[i] + iconCell) return new Hit(HitKind.ICON, i, 0);
+            }
+        }
+        InventoryEditorLayout.Rect r = rowArea();
+        if (onLootPage() && r.contains(mx, my)) {
+            int i = lootGrid == null ? -1 : lootGrid.hit(mx, my);
+            return i >= 0 ? new Hit(HitKind.LOOT_ITEM, lootGrid.first() + i, 0) : Hit.NONE;
+        }
+        if (!onModelPage() && r.contains(mx, my)) {
+            int k = (int) ((my - r.y()) / ROW_H);
+            int idx = pages.first(page) + k;
+            if (k < pages.perPage() && idx < pages.end(page)) {
+                int sub = MenuRowPainter.hitCell(rows.get(idx), (int) mx, r.x(), r.right());
+                if (sub >= 0) return new Hit(HitKind.ROW, idx, sub);
+            }
+            return Hit.NONE;
+        }
+        if (reseedRect != null && reseedRect.contains(mx, my)) return new Hit(HitKind.RESEED, 0, 0);
+        if (layout.test().contains(mx, my)) return new Hit(HitKind.TEST, 0, 0);
+        return Hit.NONE;
+    }
+
+    /**
+     * The tooltip for the hovered control: its name, and why it is off when it is.
+     *
+     * <p>Two lines rather than one long one — a name joined to a sentence ran off the edge of the
+     * screen, and the name is what the pointer is asking about.</p>
+     */
+    public List<String> tooltipAt(Hit hit) {
+        return switch (hit.kind()) {
+            case ICON -> {
+                if (hit.index() < 0 || hit.index() >= icons.size()) yield List.of();
+                EditorScreenActions.Icon icon = icons.get(hit.index());
+                String label = EditorScreenLang.text(icon.labelKey());
+                if (!icon.enabled()) {
+                    yield icon.disabledKey() == null ? List.of(label)
+                        : List.of(label, EditorScreenLang.text(icon.disabledKey()));
+                }
+                // Undo and Redo name the step they would apply; the rest speak for themselves.
+                yield icon.detail() == null ? List.of(label) : List.of(label, icon.detail());
+            }
+            case SHEET -> {
+                TemplateDataSheet.Placed placed = sheetCell(hit.index());
+                // A cell's tooltip may carry a second line (the step-gesture hint under a bound).
+                yield placed == null || placed.cell().tooltip() == null
+                    ? List.of() : List.of(placed.cell().tooltip().split("\n"));
+            }
+            case LOOT_ITEM -> lootItemTooltip(hit.index());
+            case GO_HERE -> goHere == null || ctx.selection() == null ? List.of()
+                : List.of(EditorScreenLang.text(EditorScreenLang.GO_HERE),
+                          EditorScreenLang.text(EditorScreenLang.STANDING_IN, ctx.selection().displayName()));
+            // Only dimensional carriages, carriages, contents and whole rooms / groups can be stood up, and that is the
+            // whole of why the button is off — it no longer asks the author to stand anywhere.
+            case RESEED -> List.of(EditorScreenLang.text(EditorScreenLang.RESEED),
+                EditorScreenLang.text(PortalTestSessionState.active() ? EditorScreenLang.RESEED_TIP_NOW
+                    : PortalTestSessionState.reseed() ? EditorScreenLang.RESEED_TIP_ON
+                    : EditorScreenLang.RESEED_TIP_OFF));
+            case TEST -> test == null
+                ? List.of(testLabel(),
+                          EditorScreenLang.text(EditorScreenLang.DISABLED_NOT_TESTABLE))
+                : List.of();
+            default -> List.of();
+        };
+    }
+
+    /** Item icons to draw under the hovered sheet cell's tooltip; empty for anything else. */
+    public List<net.minecraft.world.item.ItemStack> tooltipIconsAt(Hit hit) {
+        if (hit.kind() != HitKind.SHEET) return List.of();
+        TemplateDataSheet.Placed placed = sheetCell(hit.index());
+        return placed == null ? List.of() : placed.cell().tipIcons();
+    }
+
+    /** The sheet cell a click landed on, or null. */
+    public TemplateDataSheet.Placed sheetCell(int index) {
+        return index >= 0 && index < sheetCells.size() ? sheetCells.get(index) : null;
+    }
+
+    /** The roster group label for the sheet's Path line. */
+    public static String pathLabel(EditorRosterIndex index, VariantKey key) {
+        if (key == null) return "";
+        EditorRosterPacket.Group g = index.groupOf(key);
+        EditorCategoryFilter cell = EditorCategoryFilter.forCategory(key.category());
+        String pageName = cell == null ? key.category().displayName() : EditorScreenLang.text(cell.langKey());
+        String type = g == null ? "" : " › " + MenuLang.typeName(g.typeName());
+        String parent = key.isSubVariant() ? " › " + key.parentId() : "";
+        return pageName + type + parent;
+    }
+}

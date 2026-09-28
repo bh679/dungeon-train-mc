@@ -4,18 +4,20 @@
 Every non-English locale in ``src/main/resources/assets/dungeontrain/lang/`` has a
 sidecar at ``localization/provenance/<locale>.json`` (repo-side only — nothing under
 ``localization/`` ships in the jar) recording, for every translation key, who produced
-the current value and who human-reviewed it:
+the current value, who human-reviewed it, and a digest of the English it was produced from:
 
     {
-      "gui.dungeontrain.book_vote.ask_prefix": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
-      "gui.dungeontrain.support.title": {"author": "阿世xAsh", "reviewer": "阿世xAsh"}
+      "gui.dungeontrain.book_vote.ask_prefix": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "3a1f0c9e5b7d2a41"},
+      "gui.dungeontrain.support.title": {"author": "阿世xAsh", "reviewer": "阿世xAsh", "source_hash": "9c0b2e7f1d4a6b38"}
     }
 
 Format contract (enforced by check-provenance.py, produced by write_provenance):
   * flat object, keys in the SAME ORDER as that locale's lang file, so provenance
     diffs align line-for-line with lang-file diffs;
-  * each entry is exactly ``{"author": str, "reviewer": str}`` — author non-empty,
-    reviewer ``""`` meaning "not human-reviewed";
+  * each entry is exactly ``{"author": str, "reviewer": str, "source_hash": str}`` —
+    author non-empty, reviewer ``""`` meaning "not human-reviewed", source_hash the
+    16-hex digest (see source_hash) of the English this line was last stamped against,
+    or ``""`` when that English is not in this repo (the sibling namespaces);
   * one entry per line, raw UTF-8 (``ensure_ascii=False`` — translator names are CJK),
     trailing newline.
 
@@ -30,11 +32,15 @@ check-provenance.py, and rendered in-game as the blue AI-fraction ring around th
 DT logo in the language-selection list.
 
 Those counts answer "how much of this locale is machine-translated"; the in-game
-translation editor needs the finer question "WHICH lines are". That is the shipped
+translation editor needs the finer questions "WHICH lines are" and "which lines has
+the English moved on from since they were translated". That is the shipped
 ``localization_provenance/<locale>.json`` manifest (see build_manifest) — the only
 part of this per-line system that enters the jar, and likewise generated, never
-hand-edited.
+hand-edited. The second question is answered by comparing each entry's source_hash
+to the current English at manifest-build time, which is why an English edit needs
+``stamp-provenance.py --sync`` re-run before check-provenance.py passes again.
 """
+import hashlib
 import json
 import re
 from dataclasses import dataclass
@@ -77,7 +83,13 @@ CONTRIBUTORS_NOTE = (
 # The source language — dev-authored English, not a translation. Never gets a sidecar.
 SOURCE_LOCALE = "en_us"
 
-ENTRY_FIELDS = ("author", "reviewer")
+ENTRY_FIELDS = ("author", "reviewer", "source_hash")
+# The fields that hold a registered name — what apply-translator-renames.py rewrites.
+NAME_FIELDS = ("author", "reviewer")
+
+# source_hash is 16 hex chars (64 bits of SHA-256) or "" for "English not in this repo".
+SOURCE_HASH_LEN = 16
+SOURCE_HASH_RE = re.compile(r"^[0-9a-f]{16}$")
 
 # Sibling mods whose (community-contributed) translations are committed here in DT rather
 # than in their English-only source repos — so their provenance is tracked here too. Their
@@ -208,6 +220,26 @@ def load_author_urls(path: Path) -> dict[str, str]:
     return urls
 
 
+def load_author_optouts(path: Path) -> set[str]:
+    """Credited names that asked NOT to be named — object-form entries with ``"credit": false``.
+
+    Set by ``apply-translator-renames.py`` from the relay's opt-out log (a translator pressed
+    Remove on the in-game Credits page). The registry keeps the entry — the sidecars still name
+    them, and ``check-provenance.py`` still needs the name registered — but
+    ``build_contributors`` leaves them out of the shipped credits, so the jar stops naming them
+    at the next release. A restore drops the flag.
+    """
+    hidden: set[str] = set()
+    for name, value in _load_authors_raw(path).items():
+        if isinstance(value, dict) and "credit" in value:
+            credit = value["credit"]
+            if not isinstance(credit, bool):
+                raise ValueError(f"{path}: {name!r} credit must be true or false, got {type(credit).__name__}")
+            if credit is False:
+                hidden.add(name)
+    return hidden
+
+
 def load_provenance(path: Path) -> dict:
     """Parse a provenance sidecar. Parse only — validate with validate_entries()."""
     with open(path, encoding="utf-8") as f:
@@ -243,7 +275,80 @@ def validate_entries(prov: dict) -> list[str]:
                 )
         if isinstance(entry.get("author"), str) and not entry["author"].strip():
             errors.append(f"{key}: author must be non-empty (reviewer may be \"\", author may not)")
+        digest = entry.get("source_hash")
+        if isinstance(digest, str) and digest and not SOURCE_HASH_RE.match(digest):
+            errors.append(f"{key}: source_hash must be {SOURCE_HASH_LEN} lowercase hex chars or \"\"")
     return errors
+
+
+# ---- the English a line was translated from --------------------------------
+#
+# A translation (or a review) attests the English of that moment. Recording a digest of it
+# lets the repo tell "the English was edited after this was reviewed" without replaying git
+# history, and lets the shipped manifest tell the in-game editor the same thing.
+
+
+def source_hash(text: str) -> str:
+    """The digest stored in ``source_hash`` for one English lang value."""
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:SOURCE_HASH_LEN]
+
+
+def book_source_hash(book: dict | list) -> str:
+    """The digest for one English book: over its editable fields only (book_string_fields),
+    so a structural or whitespace-only edit to the English file does not flag every locale."""
+    fields = {field: book_field_value(book, field) for field in book_string_fields(book)}
+    canonical = json.dumps(fields, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return source_hash(canonical)
+
+
+def english_lang(ns: Namespace) -> dict[str, str]:
+    """``ns``'s English lang file, or ``{}`` when it is not in this repo (the siblings' English
+    lives in their own source repos, so their lines carry ``source_hash: ""``)."""
+    path = ns.lang_dir / f"{SOURCE_LOCALE}.json"
+    if not path.is_file():
+        return {}
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    return {k: v for k, v in data.items() if isinstance(v, str)}
+
+
+def english_book_path(english_dir: Path, book_path: str) -> Path:
+    """The English original for a locale-relative book path (the Python inverse of
+    ``TranslationCatalog.bookPathFor``): ``death_lore/`` is its own category, everything
+    else lives under ``narratives/``. ``english_dir`` is ``data/dungeontrain``."""
+    if book_path == "death_lore" or book_path.startswith("death_lore/"):
+        return english_dir / f"{book_path}.json"
+    return english_dir / "narratives" / f"{book_path}.json"
+
+
+def english_book_hash(english_dir: Path, book_path: str) -> str:
+    """``book_source_hash`` of the English book at ``book_path``, or ``""`` when it is missing
+    or unparseable — a missing original is check-book-placeholders.py's problem, not a
+    reason to refuse a stamp."""
+    path = english_book_path(english_dir, book_path)
+    if not path.is_file():
+        return ""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return book_source_hash(json.load(f))
+    except (json.JSONDecodeError, OSError):
+        return ""
+
+
+def source_changed_keys(prov: dict, current: dict[str, str]) -> list[str]:
+    """Keys whose recorded ``source_hash`` no longer matches ``current`` (key -> current
+    hash), in sidecar order. A ``""`` on either side never flags: it means "unknown"
+    (English not in the repo, or the English file missing), not "changed". Tolerant of
+    shape errors, like ai_unreviewed_keys."""
+    out: list[str] = []
+    for key, entry in prov.items():
+        if not isinstance(entry, dict):
+            continue
+        recorded = entry.get("source_hash")
+        now = current.get(key)
+        if recorded and now and now != recorded:
+            out.append(key)
+    return out
 
 
 def ai_counts(prov: dict, authors: dict[str, str]) -> tuple[int, int, int]:
@@ -322,17 +427,17 @@ def write_credit(path: Path, credit: dict) -> None:
 
 
 def build_contributors(lang_dir: Path, prov_dir: Path, authors: dict[str, str],
-                       urls: dict[str, str]) -> dict:
+                       urls: dict[str, str], hidden: set[str] | frozenset[str] = frozenset()) -> dict:
     """The canonical translator-credits object, derived purely from the sidecars + registry.
 
-    For every human in ``authors`` and every non-en_us locale, counts the keys that
+    For every human in ``authors`` not in ``hidden`` (see load_author_optouts) and every non-en_us locale, counts the keys that
     human authored or reviewed (contributed_keys); a human is listed once with a
     ``languages`` array of ``{locale, contributed, total}`` for each locale they touched.
     Contributors are ordered by their single strongest share (desc, then name); a
     contributor's languages by share (desc, then locale) — so the output is fully
     deterministic and the shipped file compares equal to a fresh build.
     """
-    humans = {name for name, kind in authors.items() if kind == "human"}
+    humans = {name for name, kind in authors.items() if kind == "human" and name not in hidden}
     per_person: dict[str, list[dict]] = {}
     for locale in locales(lang_dir):
         prov_path = prov_dir / f"{locale}.json"
@@ -388,7 +493,8 @@ MANIFEST_ALL = "*"
 MANIFEST_NOTE = (
     "Generated from localization/provenance + localization/narrative_provenance by "
     "scripts/localization/stamp-provenance.py — do not hand-edit. \"*\" = every unit in "
-    "that body is AI-authored and unreviewed."
+    "that body. lang/books: AI-authored and unreviewed. source_changed/books_source_changed: "
+    "the English was edited after the line was last translated or reviewed."
 )
 
 
@@ -430,8 +536,11 @@ def expand_flags(value, units: list[str]) -> list[str]:
 
 def build_manifest(locale: str, authors: dict[str, str],
                    ns_list: list[Namespace] | None = None,
-                   narrative_prov_dir: Path = DEFAULT_NARRATIVE_PROVENANCE_DIR) -> dict:
-    """The canonical shipped manifest for one locale, derived purely from the sidecars.
+                   narrative_prov_dir: Path = DEFAULT_NARRATIVE_PROVENANCE_DIR,
+                   english_dir: Path | None = None,
+                   english_cache: dict | None = None) -> dict:
+    """The canonical shipped manifest for one locale, derived from the sidecars plus the
+    current English (for the ``source_changed`` bodies).
 
     Spans BOTH provenance bodies — every lang namespace plus the narrative books — because
     the in-game editor lists all of them in one screen and needs one lookup. That is why
@@ -441,32 +550,62 @@ def build_manifest(locale: str, authors: dict[str, str],
     A body with no sidecar for this locale is omitted rather than emitted empty (e.g.
     discordpresence has no zh_cn — its Chinese lives in its own repo), so "absent" stays
     distinguishable from "nothing needs review".
+
+    ``english_dir`` is the ``data/dungeontrain`` tree holding the English books (defaults to
+    the repo's); ``english_cache`` lets build_all_manifests hash the English once rather
+    than once per locale.
     """
     manifest: dict = {"_note": MANIFEST_NOTE, "locale": locale}
+    cache = english_cache if english_cache is not None else {}
+    ns_all = ns_list if ns_list is not None else namespaces()
 
     lang: dict[str, str | list[str]] = {}
-    for ns in ns_list if ns_list is not None else namespaces():
+    source_changed: dict[str, str | list[str]] = {}
+    for ns in ns_all:
         prov_path = ns.prov_dir / f"{locale}.json"
         if not prov_path.is_file():
             continue
         prov = load_provenance(prov_path)
         lang[ns.name] = compact_flags(len(prov), ai_unreviewed_keys(prov, authors))
+        current = _cached_english_hashes(cache, ns)
+        source_changed[ns.name] = compact_flags(len(prov), source_changed_keys(prov, current))
     manifest["lang"] = lang
+    manifest["source_changed"] = source_changed
 
     books_path = narrative_prov_dir / f"{locale}.json"
     if books_path.is_file():
         books = load_provenance(books_path)
         manifest["books"] = compact_flags(len(books), ai_unreviewed_keys(books, authors))
+        current = _cached_book_hashes(cache, english_dir, list(books))
+        manifest["books_source_changed"] = compact_flags(
+            len(books), source_changed_keys(books, current))
     return manifest
+
+
+def _cached_english_hashes(cache: dict, ns: Namespace) -> dict[str, str]:
+    key = ("lang", ns.name)
+    if key not in cache:
+        cache[key] = {k: source_hash(v) for k, v in english_lang(ns).items()}
+    return cache[key]
+
+
+def _cached_book_hashes(cache: dict, english_dir: Path | None, book_paths: list[str]) -> dict[str, str]:
+    root = english_dir if english_dir is not None else DEFAULT_NARRATIVE_DIR.parent
+    hashes = cache.setdefault(("books", root), {})
+    for book in book_paths:
+        if book not in hashes:
+            hashes[book] = english_book_hash(root, book)
+    return hashes
 
 
 def build_all_manifests(authors: dict[str, str], lang_dir: Path = DEFAULT_LANG_DIR,
                         ns_list: list[Namespace] | None = None,
-                        narrative_prov_dir: Path = DEFAULT_NARRATIVE_PROVENANCE_DIR
-                        ) -> dict[str, dict]:
+                        narrative_prov_dir: Path = DEFAULT_NARRATIVE_PROVENANCE_DIR,
+                        english_dir: Path | None = None) -> dict[str, dict]:
     """locale -> manifest, for every locale that ships a lang file (the credits locale set)."""
+    cache: dict = {}
     return {
-        locale: build_manifest(locale, authors, ns_list, narrative_prov_dir)
+        locale: build_manifest(locale, authors, ns_list, narrative_prov_dir, english_dir, cache)
         for locale in locales(lang_dir)
     }
 
@@ -489,7 +628,8 @@ def write_manifest(path: Path, manifest: dict) -> None:
 def refresh_manifests(authors: dict[str, str], lang_dir: Path = DEFAULT_LANG_DIR,
                       ns_list: list[Namespace] | None = None,
                       narrative_prov_dir: Path = DEFAULT_NARRATIVE_PROVENANCE_DIR,
-                      manifest_dir: Path = DEFAULT_MANIFEST_DIR) -> list[Path]:
+                      manifest_dir: Path = DEFAULT_MANIFEST_DIR,
+                      english_dir: Path | None = None) -> list[Path]:
     """Rebuild every shipped manifest; returns the paths that changed (written or deleted).
 
     Global by design, and called by BOTH stamp scripts whatever their --locale/--namespace
@@ -502,7 +642,7 @@ def refresh_manifests(authors: dict[str, str], lang_dir: Path = DEFAULT_LANG_DIR
     (both filenames are hyphenated) — and because a second copy of this logic is exactly how
     the two bodies would drift apart.
     """
-    built = build_all_manifests(authors, lang_dir, ns_list, narrative_prov_dir)
+    built = build_all_manifests(authors, lang_dir, ns_list, narrative_prov_dir, english_dir)
     changed: list[Path] = []
     for locale, manifest in built.items():
         path = manifest_dir / f"{locale}.json"
@@ -660,11 +800,20 @@ def set_book_field_text(text: str, field: str, value: str) -> str | None:
     Books are edited at the text level for the same reason lang files are: 36 of them group
     array entries with blank lines and 34 are CRLF, both of which a json.dumps round trip
     would silently rewrite end to end. So this swaps the ENCODED old string for the encoded
-    new one, and only when that encoding occurs exactly once — two identical prose strings in
-    one book make the target ambiguous, and guessing would corrupt the wrong variant.
+    new one.
 
-    The result is parsed and compared against the tree the edit was supposed to produce, so a
-    replacement that landed anywhere unintended returns None instead of being written.
+    When that encoding occurs more than once the target is ambiguous by inspection, and this
+    used to give up — which cost real work: 11 approved Russian death_lore translations were
+    refused on 2026-08-30 because prose like "Всё это хорошие вопросы" is deliberately reused
+    across four entries. Ambiguity is not the same as danger, though. Each occurrence in turn is
+    replaced and the result parsed, and the one whose tree matches what the edit was supposed to
+    produce is the right one. Where two identical strings sit in different fields, only the
+    intended one yields the expected tree; where they sit in the SAME field (an entry repeated
+    verbatim), either replacement produces it, and they are interchangeable by construction.
+
+    Every candidate is verified this way, so a replacement that landed anywhere unintended is
+    never returned — the check that made the single-occurrence case safe is what makes the
+    ambiguous case safe too.
     """
     try:
         book = json.loads(text)
@@ -675,18 +824,20 @@ def set_book_field_text(text: str, field: str, value: str) -> str | None:
         return None
     if old == value:
         return text  # already the approved text — nothing to write, and not an error
-    encoded_old = json.dumps(old, ensure_ascii=False)
-    if text.count(encoded_old) != 1:
-        return None
-    edited = text.replace(encoded_old, json.dumps(value, ensure_ascii=False))
     if not set_book_field(book, field, value):
         return None
-    try:
-        if json.loads(edited) != book:
-            return None
-    except json.JSONDecodeError:
-        return None
-    return edited
+    encoded_old = json.dumps(old, ensure_ascii=False)
+    encoded_new = json.dumps(value, ensure_ascii=False)
+    at = text.find(encoded_old)
+    while at != -1:
+        edited = text[:at] + encoded_new + text[at + len(encoded_old):]
+        try:
+            if json.loads(edited) == book:
+                return edited
+        except json.JSONDecodeError:
+            pass  # this occurrence was inside some other string; keep looking
+        at = text.find(encoded_old, at + 1)
+    return None
 
 
 def book_field_value(book: dict | list, field: str) -> str | None:

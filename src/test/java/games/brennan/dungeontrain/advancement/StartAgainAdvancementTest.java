@@ -1,0 +1,93 @@
+package games.brennan.dungeontrain.advancement;
+
+import net.minecraft.resources.ResourceLocation;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * Locks down the two pure honesty gates on "It's Not That Simple"
+ * ({@link StartAgainAdvancement#shouldArm} / {@link StartAgainAdvancement#shouldBank}). The
+ * surrounding arm/grant path needs a live {@code ServerPlayer} and
+ * {@code ServerAdvancementManager}, so these tests exercise the part that actually encodes the
+ * rules — "the burrito must have been earned, not granted" and "a Free Play run never banks".
+ */
+final class StartAgainAdvancementTest {
+
+    @Test
+    @DisplayName("Arms only when the capstone is both live and banked")
+    void needsAnEarnedCapstone() {
+        assertTrue(StartAgainAdvancement.shouldArm(false, true, true));
+        // A burrito conjured by /advancement grant is live but was never banked — the case that
+        // let a Free Play run bank this reward.
+        assertFalse(StartAgainAdvancement.shouldArm(false, true, false));
+        // Banked from an earlier clean run, but not in this world's tree: nothing to wipe.
+        assertFalse(StartAgainAdvancement.shouldArm(false, false, true));
+        assertFalse(StartAgainAdvancement.shouldArm(false, false, false));
+    }
+
+    @Test
+    @DisplayName("Already banked never re-arms, however the capstone stands")
+    void alreadyBankedBlocks() {
+        assertFalse(StartAgainAdvancement.shouldArm(true, true, true));
+        assertFalse(StartAgainAdvancement.shouldArm(true, true, false));
+        assertFalse(StartAgainAdvancement.shouldArm(true, false, true));
+    }
+
+    @Test
+    @DisplayName("An unbanked live copy doesn't lock the player out of earning it honestly")
+    void liveOnlyLeftoverDoesNotBlock() {
+        // /advancement grant @s only …/start_again leaves a live copy that never banked. The
+        // arming rule reads the banked set, so the honest earn is still available.
+        assertTrue(StartAgainAdvancement.shouldArm(false, true, true));
+    }
+
+    @Test
+    @DisplayName("The self-selector grant admits a bare @s token and nothing that merely starts with it")
+    void bareSelfSelectorOnly() {
+        assertTrue(SelfSelectorGrant.isBareSelfSelector("@s"));
+        assertTrue(SelfSelectorGrant.isBareSelfSelector("@s everything"));
+        assertFalse(SelfSelectorGrant.isBareSelfSelector("@a"));
+        assertFalse(SelfSelectorGrant.isBareSelfSelector("@a everything"));
+        assertFalse(SelfSelectorGrant.isBareSelfSelector("@s2"));
+        assertFalse(SelfSelectorGrant.isBareSelfSelector("@self"));
+        assertFalse(SelfSelectorGrant.isBareSelfSelector("@s[limit=1]"));
+        assertFalse(SelfSelectorGrant.isBareSelfSelector("Dev everything"));
+        assertFalse(SelfSelectorGrant.isBareSelfSelector(""));
+    }
+
+    @Test
+    @DisplayName("Only a clean run banks")
+    void freePlayNeverBanks() {
+        assertTrue(StartAgainAdvancement.shouldBank(false));
+        assertFalse(StartAgainAdvancement.shouldBank(true));
+    }
+
+    @Test
+    @DisplayName("The wipe clears only the capstone's parts; what never counted towards it stays earned")
+    void wipeKeepsNonCapstoneAdvancements() {
+        assertTrue(StartAgainAdvancement.isWiped(ResourceLocation.parse("dungeontrain:dungeon_train/reached_nether"), true));
+        assertTrue(StartAgainAdvancement.isWiped(CompletionistAdvancement.ID, false));
+        assertTrue(StartAgainAdvancement.isWiped(StartAgainAdvancement.ID, false));
+        assertFalse(StartAgainAdvancement.isWiped(ResourceLocation.parse("dungeontrain:secrete_menu/reversed_nether"), false));
+        assertFalse(StartAgainAdvancement.isWiped(ResourceLocation.parse("dungeontrain:editor/root"), false));
+        assertFalse(StartAgainAdvancement.isWiped(ResourceLocation.parse("minecraft:story/mine_stone"), false));
+    }
+
+    @Test
+    @DisplayName("The whole Secrete Menu tab, and its Dungeon Train-tab twin, survive the wipe")
+    void wipeKeepsTheSecreteMenu() {
+        for (String path : BandAdvancements.reverseChain(null)) assertKept("secrete_menu/" + path);
+        assertKept("secrete_menu/root");
+        assertKept("dungeon_train/secrete_menu");
+        ResourceLocation forward = ResourceLocation.parse("dungeontrain:dungeon_train/reached_nether");
+        assertTrue(StartAgainAdvancement.isWiped(forward, CompletionistAdvancement.isRequiredId(forward, java.util.Set.of())));
+    }
+
+    private static void assertKept(String path) {
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath("dungeontrain", path);
+        assertFalse(StartAgainAdvancement.isWiped(id, CompletionistAdvancement.isRequiredId(id, java.util.Set.of())), path);
+    }
+}

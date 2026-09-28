@@ -5,8 +5,11 @@ import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -57,7 +60,55 @@ final class BuilderTemplateTile {
      */
     private static final String MORE_GLYPH = "»";
 
+    /** Breathing room either side of a caption, so a fitted one doesn't touch its own border. */
+    private static final int LABEL_PADDING = 6;
+
+    private static final String ELLIPSIS = "…";
+
+    /** Padding between the state badge and the two cell edges it sits in the corner of. */
+    private static final int BADGE_INSET = 3;
+
+    /**
+     * The favourite star, in four states.
+     *
+     * <p>Hollow when the build is not starred, filled when it is, and each swapping to a brighter
+     * version while the pointer is over it — the padlock precedent from the book vote page, where the
+     * hover state answers "what does this do" before the thing is pressed rather than only after.</p>
+     */
+    private static final ResourceLocation STAR_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/star");
+    private static final ResourceLocation STAR_HIGHLIGHTED_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/star_highlighted");
+    private static final ResourceLocation STAR_FILLED_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/star_filled");
+    private static final ResourceLocation STAR_FILLED_HIGHLIGHTED_SPRITE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/star_filled_highlighted");
+
+    /** A backing plate under the star, so a hollow one reads against a pale build behind it. */
+    private static final int STAR_BG = 0x90101010;
+    private static final int STAR_BG_HOVER = 0xC0303030;
+
     private BuilderTemplateTile() {}
+
+    /**
+     * A caption cut to fit its cell.
+     *
+     * <p>Centred text draws from the middle outwards, so an over-long one does not simply overflow its
+     * tile — it grows in BOTH directions and lands on top of the captions either side of it, which is
+     * how three names end up reading as one run-on string. Nothing clipped it before because every
+     * caption was a short template name; a caption that also carries a state is routinely wider than
+     * the cell.</p>
+     *
+     * <p>Cut rather than scissored: a scissor would slice a glyph in half at the tile edge and leave
+     * no sign that anything was missing, where an ellipsis says so.</p>
+     */
+    private static Component fit(Font font, Component label, int maxWidth) {
+        String text = label.getString();
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) return label;
+        int room = maxWidth - font.width(ELLIPSIS);
+        if (room <= 0) return Component.literal(ELLIPSIS);
+        return Component.literal(font.plainSubstrByWidth(text, room) + ELLIPSIS);
+    }
 
     /**
      * Draw one cell.
@@ -76,6 +127,27 @@ final class BuilderTemplateTile {
                        TrackKind trackKind, Component label,
                        int x, int y, int width, int height, boolean hovered, boolean openable,
                        float yaw) {
+        render(g, mode, modeArtAvailable, photoKind, id, partKind, trackKind, label,
+                x, y, width, height, hovered, openable, yaw, null, 0);
+    }
+
+    /**
+     * As above, badged with a submission state.
+     *
+     * <p>Only My Builds passes one: everywhere else a tile is a thing you might open, and its border
+     * says one thing — whether you are pointing at it. There a tile also has a STATE, and the state is
+     * what the screen is for, so it gets a coloured band and an icon in the corner. {@code null}
+     * means no state, and draws exactly what every other grid draws.</p>
+     *
+     * @param badgeSize the icon's edge in pixels, from the grid that laid this cell out — geometry
+     *                  the layout owns rather than the renderer, so the two can't disagree about
+     *                  where the corner is
+     */
+    static void render(GuiGraphics g, BuilderMode mode, boolean modeArtAvailable,
+                       BuilderPhotoPaths.Kind photoKind, String id, CarriagePartKind partKind,
+                       TrackKind trackKind, Component label,
+                       int x, int y, int width, int height, boolean hovered, boolean openable,
+                       float yaw, BuilderReviewBadge badge, int badgeSize) {
         BuilderTileMesh mesh = BuilderTileMeshCache.meshFor(photoKind, id, partKind, trackKind);
 
         if (mesh != null) {
@@ -97,12 +169,24 @@ final class BuilderTemplateTile {
             // Dim until hovered, so the focused option pops out of the wall.
             g.fill(x, y, x + width, y + height, IDLE_DIM);
         }
-        g.renderOutline(x, y, width, height, highlight ? BORDER_HOVER : BORDER_IDLE);
+        if (badge == null) {
+            g.renderOutline(x, y, width, height, highlight ? BORDER_HOVER : BORDER_IDLE);
+        } else {
+            // Two rings. The outer one is the ordinary hover border, so pointing at a tile reads the
+            // same here as anywhere; the inner one is the state, and it stays put underneath — a
+            // selected build must not lose the only mark saying where it stands.
+            g.renderOutline(x, y, width, height, highlight ? BORDER_HOVER : badge.borderColour());
+            g.renderOutline(x + 1, y + 1, width - 2, height - 2, badge.borderColour());
+            // Top-right: the drill-in chip has the bottom-right, and a badge that moved to dodge it
+            // would be a badge whose position meant something it doesn't.
+            g.blitSprite(badge.icon(), x + width - badgeSize - BADGE_INSET, y + BADGE_INSET,
+                    badgeSize, badgeSize);
+        }
 
         int stripTop = y + height - LABEL_STRIP_H;
         g.fill(x + 1, stripTop, x + width - 1, y + height - 1, LABEL_STRIP_BG);
         Minecraft mc = Minecraft.getInstance();
-        g.drawCenteredString(mc.font, label, x + width / 2,
+        g.drawCenteredString(mc.font, fit(mc.font, label, width - LABEL_PADDING), x + width / 2,
                 stripTop + (LABEL_STRIP_H - mc.font.lineHeight) / 2,
                 openable ? LABEL_COLOUR : LABEL_INACTIVE);
     }
@@ -129,6 +213,25 @@ final class BuilderTemplateTile {
             BuilderTileArt.render(g, mode, modeArtAvailable, x, y, width, height, 1.0F);
             g.fill(x, y, x + width, y + height, FALLBACK_DIM);
         }
+    }
+
+    /**
+     * The favourite star, in a cell's top-left corner.
+     *
+     * <p>Drawn as a separate call after the cell, exactly as {@link #renderMore} is and for the same
+     * reason: it is a second hit target inside one cell, and only the caller knows which entries can
+     * carry one. Its geometry comes from {@link BuilderTemplateGridLayout}, so what is drawn here and
+     * what a click tests cannot disagree.</p>
+     *
+     * @param favourite whether this build is starred — which fills the star rather than outlining it
+     * @param hovered   whether the pointer is on the STAR, not merely on the cell around it
+     */
+    static void renderStar(GuiGraphics g, int x, int y, int size, boolean favourite, boolean hovered) {
+        g.fill(x, y, x + size, y + size, hovered ? STAR_BG_HOVER : STAR_BG);
+        ResourceLocation sprite = favourite
+                ? (hovered ? STAR_FILLED_HIGHLIGHTED_SPRITE : STAR_FILLED_SPRITE)
+                : (hovered ? STAR_HIGHLIGHTED_SPRITE : STAR_SPRITE);
+        g.blitSprite(sprite, x, y, size, size);
     }
 
     /**

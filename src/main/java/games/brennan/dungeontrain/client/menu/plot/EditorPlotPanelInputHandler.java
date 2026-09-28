@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.plot;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CarriageContentsAllowScreen;
@@ -9,12 +10,16 @@ import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer.CellKind;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer.Hovered;
+import games.brennan.dungeontrain.client.menu.EditorPanelFacing;
+import games.brennan.dungeontrain.client.menu.EditorPanelFacingEvents;
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorPlotActionPacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.BlockPos;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
@@ -140,23 +145,34 @@ public final class EditorPlotPanelInputHandler {
 
         switch (hit.cell()) {
             case NAME -> dispatchTeleport(entry);
-            case WEIGHT_DEC -> dispatchWeight(entry, "dec");
-            case WEIGHT_INC -> dispatchWeight(entry, "inc");
+            case FACE -> {
+                BlockPos pos = entry.worldPos();
+                EditorPanelFacingEvents.onButton(pos,
+                    new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5),
+                    EditorPanelFacing.plotPanel());
+            }
+            // Cmd-click either arrow types the weight instead of stepping it — a walk from 1 to
+            // 40 is otherwise thirty-nine clicks. Both arrows open the same pad.
+            case WEIGHT_DEC -> { if (!openWeightEntry(entry)) dispatchWeight(entry, "dec"); }
+            case WEIGHT_INC -> { if (!openWeightEntry(entry)) dispatchWeight(entry, "inc"); }
             case LENGTH_DEC -> dispatchDimension(entry, "length", "dec");
             case LENGTH_INC -> dispatchDimension(entry, "length", "inc");
             case WIDTH_DEC -> dispatchDimension(entry, "width", "dec");
             case WIDTH_INC -> dispatchDimension(entry, "width", "inc");
             case HEIGHT_DEC -> dispatchDimension(entry, "height", "dec");
             case HEIGHT_INC -> dispatchDimension(entry, "height", "inc");
-            case LENGTH_TYPE -> openAxisEntry(entry, "length", "Length", entry.roomLength());
-            case WIDTH_TYPE -> openAxisEntry(entry, "width", "Width", entry.roomWidth());
-            case HEIGHT_TYPE -> openAxisEntry(entry, "height", "Height", entry.roomHeight());
+            case LENGTH_TYPE -> openAxisEntry(entry, "length", MenuLang.t("editor.length"), entry.roomLength());
+            case WIDTH_TYPE -> openAxisEntry(entry, "width", MenuLang.t("editor.width"), entry.roomWidth());
+            case HEIGHT_TYPE -> openAxisEntry(entry, "height", MenuLang.t("editor.height"), entry.roomHeight());
             case MODE_CYCLE -> dispatchModeCycle(entry);
+            case LOCK_HELD -> dispatchLockHeld(entry);
             case COPIES_CYCLE -> dispatchCopiesCycle(entry);
             case COPIES_FLOOR_HELD -> dispatchCopiesBlockHeld(entry,
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
             case COPIES_FLOOR_EDIT -> dispatchCopiesBlockEdit(entry,
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
+            case COPIES_FLOOR_HEIGHT_DEC -> dispatchCopiesFloorHeight(entry, "dec");
+            case COPIES_FLOOR_HEIGHT_INC -> dispatchCopiesFloorHeight(entry, "inc");
             case COPIES_ROOF_HELD -> dispatchCopiesBlockHeld(entry,
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
             case COPIES_ROOF_EDIT -> dispatchCopiesBlockEdit(entry,
@@ -166,6 +182,8 @@ public final class EditorPlotPanelInputHandler {
             case ROOM_BOOKS_EDIT -> openBookMix(entry);
             case DOOR_WALL_CYCLE -> dispatchDoorWallCycle(entry);
             case ROOM_SKY_CYCLE -> dispatchRoomSkyCycle(entry);
+            case ROOM_FOG_CYCLE -> dispatchRoomFogCycle(entry);
+            case ROOM_DRIFT_CYCLE -> dispatchRoomDriftCycle(entry);
             case EXITS_CYCLE -> dispatchExitsCycle(entry);
             case EXIT_EVERY_DEC -> dispatchExitEvery(entry, "dec");
             case EXIT_EVERY_INC -> dispatchExitEvery(entry, "inc");
@@ -220,6 +238,13 @@ public final class EditorPlotPanelInputHandler {
         CommandRunner.run(cmd);
     }
 
+    /** Write the shell of the portal room the player is standing in in whatever they hold. */
+    private static void dispatchLockHeld(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.lockHeldCommandFor(entry.plotCategory());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
     /** Step the portal room the player is standing in to its next copies sub-mode. */
     private static void dispatchCopiesCycle(EditorPlotLabelsPacket.Entry entry) {
         String cmd = EditorPlotTeleport.copiesCycleCommandFor(entry.plotCategory());
@@ -228,6 +253,13 @@ public final class EditorPlotPanelInputHandler {
     }
 
     /** Set the Copies block of the portal room the player is standing in to what they are holding. */
+    /** Step how deep the stood-in room's Single floor is laid. */
+    private static void dispatchCopiesFloorHeight(EditorPlotLabelsPacket.Entry entry, String dir) {
+        String cmd = EditorPlotTeleport.copiesFloorHeightCommandFor(entry.plotCategory(), dir);
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
     private static void dispatchCopiesBlockHeld(
         EditorPlotLabelsPacket.Entry entry,
         games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
@@ -275,6 +307,18 @@ public final class EditorPlotPanelInputHandler {
         CommandRunner.run(cmd);
     }
 
+    private static void dispatchRoomFogCycle(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.roomFogCycleCommandFor(entry.plotCategory());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    private static void dispatchRoomDriftCycle(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.roomDriftCycleCommandFor(entry.plotCategory());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
     /**
      * Open the weights-and-band editor for the room the player is standing in.
      *
@@ -313,7 +357,7 @@ public final class EditorPlotPanelInputHandler {
         int current = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
             .exits().every();
         CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
-            "exitevery", "Exits", "tiles", current));
+            "exitevery", MenuLang.t("plot.exits_short"), MenuLang.t("common.unit_tiles"), current));
     }
 
     /** Nudge how often the room walls off the base pair's exit. */
@@ -329,7 +373,7 @@ public final class EditorPlotPanelInputHandler {
         int current = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
             .exits().moveChance();
         CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
-            "exitmove", "Moved exit", "0-10", current));
+            "exitmove", MenuLang.t("plot.moved_exit_short"), "0-10", current));
     }
 
     /** Step one axis of the portal room the player is standing in. */
@@ -339,6 +383,29 @@ public final class EditorPlotPanelInputHandler {
         CommandRunner.run(cmd);
     }
 
+    /**
+     * Open the typed-weight pad for this row, or return false when the click was not a cmd-click
+     * (or the row has no weight to type) so the caller steps the arrow as usual.
+     *
+     * <p>Range: every weight pool behind these cells is 0-100 and the command tree rejects
+     * anything outside it, so the pad offers exactly that window.</p>
+     */
+    private static boolean openWeightEntry(EditorPlotLabelsPacket.Entry entry) {
+        if (!games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown()) return false;
+        if (entry.weight() == EditorPlotLabelsPacket.NO_WEIGHT) return false;
+        if (EditorPlotTeleport.weightCommandFor(
+                entry.plotCategory(), entry.modelId(), entry.modelName(), "inc") == null) {
+            return false;
+        }
+        Minecraft.getInstance().setScreen(new games.brennan.dungeontrain.client.menu.NumberInputScreen(
+            net.minecraft.network.chat.Component.translatable("gui.dungeontrain.number_input.weight"),
+            entry.weight(), 0, 100,
+            value -> dispatchWeight(entry, Integer.toString(value)),
+            null));
+        return true;
+    }
+
+    /** Step or set this row's weight — {@code dir} is {@code inc}, {@code dec} or a number. */
     private static void dispatchWeight(EditorPlotLabelsPacket.Entry entry, String dir) {
         String cmd = EditorPlotTeleport.weightCommandFor(entry.plotCategory(), entry.modelId(), entry.modelName(), dir);
         if (cmd == null) return;
@@ -352,8 +419,12 @@ public final class EditorPlotPanelInputHandler {
         // the renderer's decision not to draw an action row as the sole thing keeping a
         // category without one from reaching a handler that would drop it.
         if (!PlotCategory.fromId(entry.category()).filter(PlotCategory::hasActionRow).isPresent()) return;
+        // Enter lands in the doorway; shift at the click asks for the centre instead. Read here, at
+        // the click, so the modifier means the one the author was holding when they pressed.
+        boolean centre = action == EditorPlotActionPacket.Action.ENTER_INSIDE
+            && net.minecraft.client.gui.screens.Screen.hasShiftDown();
         DungeonTrainNet.sendToServer(new EditorPlotActionPacket(
-            entry.category(), entry.modelId(), entry.modelName(), action));
+            entry.category(), entry.modelId(), entry.modelName(), action, centre));
     }
 
     /**

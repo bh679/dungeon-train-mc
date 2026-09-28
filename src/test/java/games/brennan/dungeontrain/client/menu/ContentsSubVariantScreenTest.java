@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsGroup;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Contents template picker despite belonging to the {@code maze} group in the
  * data — the picker never consulted group membership.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 final class ContentsSubVariantScreenTest {
 
     private static CarriageContentsGroup mazeGroup() {

@@ -39,11 +39,11 @@ public final class ModCreativeTabs {
         "prefab_variants",
         () -> CreativeModeTab.builder()
             .title(Component.translatable("gui.dungeontrain.prefab_tab.variants"))
-            .icon(() -> new ItemStack(Items.COMMAND_BLOCK))
+            .icon(() -> new ItemStack(ModBlocks.VARIANT_PLACEHOLDER_ITEM.get()))
             .displayItems((parameters, output) -> {
                 for (PrefabRegistrySyncPacket.VariantEntry entry : PrefabTabState.variantEntries()) {
                     ItemStack stack = buildPrefabStack(
-                        entry.iconBlockId(), Items.COMMAND_BLOCK,
+                        entry.iconBlockId(), ModBlocks.VARIANT_PLACEHOLDER_ITEM.get(),
                         PrefabUseHandler.NBT_BV_PREFAB_ID, entry.id(), entry.committed());
                     output.accept(stack);
                 }
@@ -130,7 +130,28 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.RANDOM_LEADERBOARD_BOOK.get());
                 output.accept(ModItems.RANDOM_STAT_BOOK.get());
                 output.accept(ModItems.STATS_BOOK.get());
+                output.accept(ModItems.RANDOM_POTION.get());
+                output.accept(ModItems.RANDOM_GOOD_POTION.get());
+                output.accept(ModItems.RANDOM_BAD_POTION.get());
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
+            })
+            .build()
+    );
+
+    /**
+     * The stage placeholder blocks, in slot order — see
+     * {@link games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks}.
+     */
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> STAGE_BLOCKS = TABS.register(
+        "stage_blocks",
+        () -> CreativeModeTab.builder()
+            .title(Component.translatable("gui.dungeontrain.creative_tab.stage_blocks"))
+            .icon(() -> new ItemStack(
+                games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.items().get(0).get()))
+            .displayItems((parameters, output) -> {
+                for (var item : games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.items()) {
+                    output.accept(item.get());
+                }
             })
             .build()
     );

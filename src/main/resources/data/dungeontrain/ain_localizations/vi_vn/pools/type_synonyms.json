@@ -2,256 +2,508 @@
   "id": "adventureitemnames:type_synonyms",
   "entries": [
     {
-      "text": "Lưỡi Kiếm"
+      "text": "Lưỡi Kiếm",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Kiếm"
+      "text": "Kiếm",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Đại Kiếm"
+      "text": "Đại Kiếm",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Dao Bầu"
+      "text": "Dao Bầu",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Mã Tấu"
+      "text": "Mã Tấu",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Lưỡi Sắc"
+      "text": "Lưỡi Sắc",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Đao Cướp"
+      "text": "Đao Cướp",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Xiên"
+      "text": "Xiên",
+      "item_types": [
+        "minecraft:swords"
+      ]
     },
     {
-      "text": "Rìu"
+      "text": "Rìu",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Chiến Rìu"
+      "text": "Chiến Rìu",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Rựa"
+      "text": "Rựa",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Rìu Nhỏ"
+      "text": "Rìu Nhỏ",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Đồ Chẻ"
+      "text": "Đồ Chẻ",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Phủ Việt"
+      "text": "Phủ Việt",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Rìu Tomahawk"
+      "text": "Rìu Tomahawk",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Đồ Phá Gỗ"
+      "text": "Đồ Phá Gỗ",
+      "item_types": [
+        "minecraft:axes"
+      ]
     },
     {
-      "text": "Cuốc"
+      "text": "Cuốc",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Cúp Chim"
+      "text": "Cúp Chim",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Búa"
+      "text": "Búa",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Búa Tạ"
+      "text": "Búa Tạ",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Cuốc Chim"
+      "text": "Cuốc Chim",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Đồ Đẽo"
+      "text": "Đồ Đẽo",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Búa Nện"
+      "text": "Búa Nện",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Đồ Khoét Hầm"
+      "text": "Đồ Khoét Hầm",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Đồ Cắn Đá"
+      "text": "Đồ Cắn Đá",
+      "item_types": [
+        "minecraft:pickaxes"
+      ]
     },
     {
-      "text": "Xẻng"
+      "text": "Xẻng",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Mai"
+      "text": "Mai",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Bay"
+      "text": "Bay",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Muôi Xúc"
+      "text": "Muôi Xúc",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Gậy Đào"
+      "text": "Gậy Đào",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Đồ Dời Đất"
+      "text": "Đồ Dời Đất",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Máy Xúc"
+      "text": "Máy Xúc",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Đồ Xúc Cát"
+      "text": "Đồ Xúc Cát",
+      "item_types": [
+        "minecraft:shovels"
+      ]
     },
     {
-      "text": "Cuốc Xới"
+      "text": "Cuốc Xới",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Lưỡi Hái"
+      "text": "Lưỡi Hái",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Đồ Xới Đất"
+      "text": "Đồ Xới Đất",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Đồ Cày"
+      "text": "Đồ Cày",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Cào"
+      "text": "Cào",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Đồ Gặt"
+      "text": "Đồ Gặt",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Cày"
+      "text": "Cày",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Liềm"
+      "text": "Liềm",
+      "item_types": [
+        "minecraft:hoes"
+      ]
     },
     {
-      "text": "Mũ Giáp"
+      "text": "Mũ Giáp",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Nón"
+      "text": "Nón",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Mũ"
+      "text": "Mũ",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Vương Miện"
+      "text": "Vương Miện",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Mũ Trùm"
+      "text": "Mũ Trùm",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Đồ Đội Đầu"
+      "text": "Đồ Đội Đầu",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Mũ Vải"
+      "text": "Mũ Vải",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Mũ Chỏm"
+      "text": "Mũ Chỏm",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Mũ Miện"
+      "text": "Mũ Miện",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Xô Đội Đầu"
+      "text": "Xô Đội Đầu",
+      "item_types": [
+        "minecraft:head_armor"
+      ]
     },
     {
-      "text": "Áo Chẽn"
+      "text": "Áo Chẽn",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Áo"
+      "text": "Áo",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Giáp"
+      "text": "Giáp",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Giáp Ngực"
+      "text": "Giáp Ngực",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Áo Khoác"
+      "text": "Áo Khoác",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Giáp Lưới"
+      "text": "Giáp Lưới",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Áo Chẽn Cổ"
+      "text": "Áo Chẽn Cổ",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Yếm"
+      "text": "Yếm",
+      "item_types": [
+        "minecraft:chest_armor"
+      ]
     },
     {
-      "text": "Xà Cạp"
+      "text": "Xà Cạp",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Quần"
+      "text": "Quần",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Quần Dài"
+      "text": "Quần Dài",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Quần Tây"
+      "text": "Quần Tây",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Giáp Ống"
+      "text": "Giáp Ống",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Quần Cộc"
+      "text": "Quần Cộc",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Quần Thụng"
+      "text": "Quần Thụng",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Đồ Bó Chân"
+      "text": "Đồ Bó Chân",
+      "item_types": [
+        "minecraft:leg_armor"
+      ]
     },
     {
-      "text": "Giày"
+      "text": "Giày",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Ủng"
+      "text": "Ủng",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Dép"
+      "text": "Dép",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Móng Guốc"
+      "text": "Móng Guốc",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Dép Lê"
+      "text": "Dép Lê",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Ủng Cao Su"
+      "text": "Ủng Cao Su",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Đồ Giậm"
+      "text": "Đồ Giậm",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Bao Tay Chân"
+      "text": "Bao Tay Chân",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Đồ Lộp Cộp"
+      "text": "Đồ Lộp Cộp",
+      "item_types": [
+        "minecraft:foot_armor"
+      ]
     },
     {
-      "text": "Khiên"
+      "text": "Khiên",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     },
     {
-      "text": "Khiên Nhỏ"
+      "text": "Khiên Nhỏ",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     },
     {
-      "text": "Thuẫn Thần"
+      "text": "Thuẫn Thần",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     },
     {
-      "text": "Thành Lũy"
+      "text": "Thành Lũy",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     },
     {
-      "text": "Khiên Tròn"
+      "text": "Khiên Tròn",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     },
     {
-      "text": "Khiên Lớn"
+      "text": "Khiên Lớn",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     },
     {
-      "text": "Đồ Phòng Vệ"
+      "text": "Đồ Phòng Vệ",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     },
     {
-      "text": "Đồ Chặn"
+      "text": "Đồ Chặn",
+      "item_types": [
+        "adventureitemnames:shields"
+      ]
     }
   ]
 }

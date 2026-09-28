@@ -79,6 +79,25 @@ final class BuilderRelayKindsTest {
     }
 
     @Test
+    @DisplayName("every kind the builder authors may be offered to the operator")
+    void everyKindIsSubmittable() {
+        for (BuilderPhotoPaths.Kind kind : BuilderPhotoPaths.Kind.values()) {
+            assertTrue(BuilderRelayKinds.canSubmitForReview(kind),
+                    kind + " is a build a person can look at and accept");
+            assertTrue(BuilderRelayKinds.canSubmitForReview(BuilderRelayKinds.idOf(kind)),
+                    kind + " must be submittable from the relay's own name for it too");
+        }
+    }
+
+    @Test
+    @DisplayName("a kind this version has never heard of is not submittable")
+    void unknownKindIsNotSubmittable() {
+        assertFalse(BuilderRelayKinds.canSubmitForReview("something_new"));
+        assertFalse(BuilderRelayKinds.canSubmitForReview((String) null));
+        assertFalse(BuilderRelayKinds.canSubmitForReview((BuilderPhotoPaths.Kind) null));
+    }
+
+    @Test
     @DisplayName("the string form agrees with the enum form, including on nonsense")
     void stringFormAgrees() {
         for (BuilderPhotoPaths.Kind kind : BuilderPhotoPaths.Kind.values()) {

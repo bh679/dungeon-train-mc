@@ -19,6 +19,10 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * off an ungranted client applies here, and it keeps three strings per crossing off the wire for
  * every player who would never see them.</p>
  *
+ * <p>{@code flip} is which axes that interior's stamp came out flipped along, as
+ * {@code ContentsFlip.label} renders them ({@code none}, {@code X}, {@code X+Z}, …) — the one thing
+ * on the panel you cannot read off the standing carriage by eye.</p>
+ *
  * <p>{@code subVariantId} is empty when the parent's group draw landed on the parent's own
  * contents (the synthetic "self" member) or when it has no group sidecar at all — there is no
  * sub-variant to name in either case.</p>
@@ -36,7 +40,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * these name what would have generated rather than what is standing.</p>
  */
 public record TrainDebugCarriagePacket(boolean present, int pIdx, String cartType,
-                                       String contentsId, String subVariantId, String copy)
+                                       String contentsId, String subVariantId, String flip,
+                                       String copy)
         implements CustomPacketPayload {
 
     public static final Type<TrainDebugCarriagePacket> TYPE =
@@ -53,11 +58,19 @@ public record TrainDebugCarriagePacket(boolean present, int pIdx, String cartTyp
         copy = copy == null ? "" : copy;
         contentsId = contentsId == null ? "" : contentsId;
         subVariantId = subVariantId == null ? "" : subVariantId;
+        flip = flip == null ? "" : flip;
+        copy = copy == null ? "" : copy;
+    }
+
+    /** Back-compat constructor from before the flip and the copy were reported. */
+    public TrainDebugCarriagePacket(boolean present, int pIdx, String cartType,
+                                    String contentsId, String subVariantId) {
+        this(present, pIdx, cartType, contentsId, subVariantId, "", "");
     }
 
     /** The "not on a train" form — carries no ids. */
     public static TrainDebugCarriagePacket absent() {
-        return new TrainDebugCarriagePacket(false, 0, "", "", "", "");
+        return new TrainDebugCarriagePacket(false, 0, "", "", "", "", "");
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -67,6 +80,7 @@ public record TrainDebugCarriagePacket(boolean present, int pIdx, String cartTyp
             buf.writeUtf(cartType);
             buf.writeUtf(contentsId);
             buf.writeUtf(subVariantId);
+            buf.writeUtf(flip);
             buf.writeUtf(copy);
         }
     }
@@ -77,7 +91,8 @@ public record TrainDebugCarriagePacket(boolean present, int pIdx, String cartTyp
             return absent();
         }
         return new TrainDebugCarriagePacket(
-            true, buf.readVarInt(), buf.readUtf(), buf.readUtf(), buf.readUtf(), buf.readUtf());
+            true, buf.readVarInt(), buf.readUtf(), buf.readUtf(), buf.readUtf(), buf.readUtf(),
+            buf.readUtf());
     }
 
     @Override
@@ -88,6 +103,6 @@ public record TrainDebugCarriagePacket(boolean present, int pIdx, String cartTyp
     public static void handle(TrainDebugCarriagePacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> TrainDebugState.setCarriage(
             packet.present, packet.pIdx, packet.cartType, packet.contentsId, packet.subVariantId,
-            packet.copy));
+            packet.flip, packet.copy));
     }
 }

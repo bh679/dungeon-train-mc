@@ -48,7 +48,6 @@ import java.util.UUID;
  *   <li>{@link #mobKills} — entities killed by this player.</li>
  *   <li>{@link #distanceBlocks} — accumulated world-space movement while
  *       boarded; sums train-carried + on-train walking distance.</li>
- *   <li>{@link #runTicks} — server ticks elapsed since the run began.</li>
  *   <li>{@link #echoesKilled}, {@link #maxCarriagesNoChest} — per-run feats fed to the public
  *       leaderboards. Deliberately NOT in {@link #CODEC}, matching {@code booksWrittenCount} and the
  *       other transient death-screen stats here: the codec is already at RecordCodecBuilder's
@@ -86,7 +85,6 @@ public final class PlayerRunState {
         Codec.INT.optionalFieldOf("travelledCarriageIndex", 0).forGetter(PlayerRunState::travelledCarriageIndex),
         Codec.INT.optionalFieldOf("mobKills", 0).forGetter(PlayerRunState::mobKills),
         Codec.DOUBLE.optionalFieldOf("distanceBlocks", 0.0).forGetter(PlayerRunState::distanceBlocks),
-        Codec.LONG.optionalFieldOf("runTicks", 0L).forGetter(PlayerRunState::runTicks),
         Codec.INT.optionalFieldOf("containersOpened", 0).forGetter(PlayerRunState::containersOpened),
         Codec.INT.optionalFieldOf("booksReadCount", 0).forGetter(PlayerRunState::booksReadCount),
         Codec.unboundedMap(Codec.STRING, Codec.INT)
@@ -105,7 +103,6 @@ public final class PlayerRunState {
     private int travelledCarriageIndex;
     private int mobKills;
     private double distanceBlocks;
-    private long runTicks;
     private int containersOpened;
     private int booksReadCount;
     /** Item-id (e.g. {@code minecraft:iron_sword}) → number of mob kills credited to that weapon this run. */
@@ -129,6 +126,20 @@ public final class PlayerRunState {
     private final Set<UUID> encounteredMobs;
     /** Distinct PlayerMobs that liked this player (feeling above the friend threshold) this run — the death-screen "friends" tally. */
     private final Set<UUID> befriendedMobs;
+    /**
+     * PlayerMobs this player has KILLED this run. A killed passenger is struck from
+     * {@link #befriendedMobs} and can never re-enter it — you don't get to count someone
+     * as a friend you made after putting them down.
+     *
+     * <p>Also load-bearing against a re-add: a killed mob lingers in the level for its death
+     * animation, so the next proximity scan would otherwise see it (still liking you) and put
+     * it straight back in the friends set.</p>
+     *
+     * <p><b>In-memory only — deliberately NOT in {@link #CODEC}</b> (the 16-field cap, see
+     * {@link #narrativeLetters}). Nothing is lost: a dead mob never comes back, so after a
+     * relog it can neither be re-befriended nor re-killed.</p>
+     */
+    private final Set<UUID> killedMobs;
     /** Server ticks spent boarded this run (boarded-only; resets on death). Time twin of {@link #distanceBlocks}. */
     private long trainTimeTicks;
     /**
@@ -188,6 +199,12 @@ public final class PlayerRunState {
     /** Warmest feeling-toward-this-player (0–10) behind {@link #friendAppearance}; lower can be superseded. */
     private float friendFeeling = Float.NEGATIVE_INFINITY;
     /**
+     * UUID of the PlayerMob behind {@link #friendAppearance}, so killing that particular mob can
+     * drop the portrait. {@code null} when no friend has been captured. Transient, as the
+     * appearance beside it is.
+     */
+    private UUID friendUuid;
+    /**
      * Visual identity of the MOST-RECENT PlayerMob killed this run, or
      * {@code null} if none (last-wins — overwritten each kill). Same transient,
      * non-codec rationale as {@link #friendAppearance}.
@@ -239,7 +256,6 @@ public final class PlayerRunState {
         this.travelledCarriageIndex = 0;
         this.mobKills = 0;
         this.distanceBlocks = 0.0;
-        this.runTicks = 0L;
         this.containersOpened = 0;
         this.booksReadCount = 0;
         this.weaponKills = new HashMap<>();
@@ -248,6 +264,7 @@ public final class PlayerRunState {
         this.damageTaken = 0.0;
         this.encounteredMobs = new HashSet<>();
         this.befriendedMobs = new HashSet<>();
+        this.killedMobs = new HashSet<>();
         this.trainTimeTicks = 0L;
         this.echoesKilled = 0;
         this.carriagesSinceChest = 0;
@@ -265,7 +282,6 @@ public final class PlayerRunState {
                           int travelledCarriageIndex,
                           int mobKills,
                           double distanceBlocks,
-                          long runTicks,
                           int containersOpened,
                           int booksReadCount,
                           Map<String, Integer> weaponKills,
@@ -281,7 +297,6 @@ public final class PlayerRunState {
         this.travelledCarriageIndex = travelledCarriageIndex;
         this.mobKills = mobKills;
         this.distanceBlocks = distanceBlocks;
-        this.runTicks = runTicks;
         this.containersOpened = containersOpened;
         this.booksReadCount = booksReadCount;
         this.weaponKills = new HashMap<>(weaponKills);
@@ -290,6 +305,7 @@ public final class PlayerRunState {
         this.damageTaken = damageTaken;
         this.encounteredMobs = new HashSet<>(encounteredMobs);
         this.befriendedMobs = new HashSet<>(befriendedMobs);
+        this.killedMobs = new HashSet<>();
         this.trainTimeTicks = trainTimeTicks;
         this.echoesKilled = 0;
         this.carriagesSinceChest = 0;
@@ -354,10 +370,6 @@ public final class PlayerRunState {
 
     public double distanceBlocks() {
         return distanceBlocks;
-    }
-
-    public long runTicks() {
-        return runTicks;
     }
 
     public int containersOpened() {
@@ -481,13 +493,6 @@ public final class PlayerRunState {
         if (blocks <= 0.0 || !Double.isFinite(blocks)) return distanceBlocks;
         distanceBlocks += blocks;
         return distanceBlocks;
-    }
-
-    /** Add {@code ticks} to the per-run time counter. Negatives are ignored. */
-    public long addRunTicks(long ticks) {
-        if (ticks <= 0L) return runTicks;
-        runTicks += ticks;
-        return runTicks;
     }
 
     /** Server ticks spent boarded this run (boarded-only). Drives the single-life time advancements. */
@@ -684,10 +689,31 @@ public final class PlayerRunState {
      * Record a PlayerMob that likes this player (above the friend threshold) this
      * run — the death-screen "friends" tally; fed by the proximity scan.
      *
-     * @return {@code true} if newly recorded this run, {@code false} if already counted.
+     * <p>A mob this player has killed this run ({@link #recordKilledPlayerMob}) is never
+     * recorded — including on the scans that still see it during its death animation.</p>
+     *
+     * @return {@code true} if newly recorded this run, {@code false} if already counted or killed.
      */
     public boolean recordBefriended(UUID mobUuid) {
+        if (killedMobs.contains(mobUuid)) return false;
         return befriendedMobs.add(mobUuid);
+    }
+
+    /**
+     * Record a PlayerMob this player killed this run: it leaves the friends tally (and can't
+     * re-enter it), and if it was the friend portrait's subject that portrait is dropped so a
+     * still-living friend can take its place on a later scan.
+     *
+     * @return {@code true} if the kill un-friended a mob that was counted, {@code false} otherwise.
+     */
+    public boolean recordKilledPlayerMob(UUID mobUuid) {
+        killedMobs.add(mobUuid);
+        if (mobUuid.equals(friendUuid)) {
+            friendAppearance = null;
+            friendUuid = null;
+            friendFeeling = Float.NEGATIVE_INFINITY;
+        }
+        return befriendedMobs.remove(mobUuid);
     }
 
     /** Number of distinct PlayerMobs that liked this player (above the friend threshold) this run. */
@@ -706,9 +732,10 @@ public final class PlayerRunState {
     }
 
     /** Keep the warmest friend's appearance this run — a higher feeling supersedes the current one. */
-    public void captureFriendAppearance(PlayerMobAppearance appearance, float feeling) {
+    public void captureFriendAppearance(UUID mobUuid, PlayerMobAppearance appearance, float feeling) {
         if (appearance != null && feeling > friendFeeling) {
             friendAppearance = appearance;
+            friendUuid = mobUuid;
             friendFeeling = feeling;
         }
     }
@@ -734,7 +761,6 @@ public final class PlayerRunState {
     public void resetDeathStats() {
         mobKills = 0;
         distanceBlocks = 0.0;
-        runTicks = 0L;
         trainTimeTicks = 0L;
         containersOpened = 0;
         booksReadCount = 0;
@@ -750,7 +776,9 @@ public final class PlayerRunState {
         damageTaken = 0.0;
         encounteredMobs.clear();
         befriendedMobs.clear();
+        killedMobs.clear();
         friendAppearance = null;
+        friendUuid = null;
         friendFeeling = Float.NEGATIVE_INFINITY;
         killedAppearance = null;
         echoesKilled = 0;

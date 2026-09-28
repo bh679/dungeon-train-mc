@@ -15,9 +15,6 @@ import java.util.List;
  */
 public final class StageEditScreen implements MenuScreen {
 
-    private static final String[] PHASE_TOKENS = {"overworld", "nether", "void", "end"};
-    private static final String[] PHASE_LABELS = {"Overworld", "Nether", "Void", "End"};
-
     private final String stageId;
 
     public StageEditScreen(String stageId) {
@@ -26,7 +23,7 @@ public final class StageEditScreen implements MenuScreen {
 
     @Override
     public String title() {
-        return "Stage: " + stageId;
+        return MenuLang.t("stage.title", stageId);
     }
 
     @Override
@@ -38,24 +35,25 @@ public final class StageEditScreen implements MenuScreen {
         int phaseMask = s == null ? TrainPhase.ALL_MASK : s.phaseMask();
 
         // Min / Max Diff-Level steppers — [-] / value (typeable) / [+].
-        out.add(levelTriple("minlevel", "Min Lv (" + minLevel + ")", "0-1000"));
-        out.add(levelTriple("maxlevel", "Max Lv (" + (maxLevel < 0 ? "all" : Integer.toString(maxLevel)) + ")", "-1..1000"));
+        out.add(levelTriple("minlevel", MenuLang.t("editor.min_level", minLevel), "0-1000"));
+        out.add(levelTriple("maxlevel", MenuLang.t("editor.max_level", maxLevel < 0 ? MenuLang.t("editor.max_level_all") : Integer.toString(maxLevel)), "-1..1000"));
 
-        // Dimension toggles — plain click flips one, shift-click "toggle all but that one".
-        for (int i = 0; i < PHASE_TOKENS.length; i++) {
-            boolean on = (phaseMask & (1 << i)) != 0;
+        // Dimension toggles — one per TrainPhase; plain click flips one, shift-click "toggle all
+        // but that one".
+        for (TrainPhase p : TrainPhase.values()) {
+            boolean on = (phaseMask & p.bit()) != 0;
             out.add(new CommandMenuEntry.Toggle(
-                PHASE_LABELS[i], on,
-                EditorPlotTeleport.stagePhaseCommandFor(stageId, PHASE_TOKENS[i], "on"),
-                EditorPlotTeleport.stagePhaseCommandFor(stageId, PHASE_TOKENS[i], "off"),
+                MenuLang.named("phase", p.token(), p.displayName()), on,
+                EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "on"),
+                EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "off"),
                 true,
-                EditorPlotTeleport.stagePhaseCommandFor(stageId, PHASE_TOKENS[i], "others")));
+                EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "others")));
         }
 
-        out.add(new CommandMenuEntry.DrillIn("Delete Stage",
-            new ConfirmScreen("Delete stage '" + stageId + "'? Linked templates revert to their inline gate.",
+        out.add(new CommandMenuEntry.DrillIn(MenuLang.t("stage.delete"),
+            new ConfirmScreen(MenuLang.t("stage.delete_confirm", stageId),
                 "dungeontrain editor stage delete " + stageId)));
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
 

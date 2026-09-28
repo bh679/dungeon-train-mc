@@ -41,6 +41,8 @@ import java.util.Optional;
  *   <li>{@code maxed_backpack_slots} — unlocked every backpack slot the config allows</li>
  *   <li>{@code no_container_100_carts} / {@code no_container_1000_carts} — carriages
  *       travelled since the last chest/barrel open (decorated pots don't count)</li>
+ *   <li>{@code no_break_100_carts} / {@code no_break_1000_carts} — carriages
+ *       travelled since the last block broken (decorated pots DO count)</li>
  *   <li>{@code contained_loop} — died 1000+ carriages into a life that never opened an
  *       ender chest (fired from the death hook, not a live scan)</li>
  *   <li>{@code changed_engine_volume} — changed the train engine volume setting; the only
@@ -64,12 +66,20 @@ public final class GameplayActionTrigger extends SimpleCriterionTrigger<Gameplay
         trigger(player, instance -> instance.matches(actionId));
     }
 
-    public record Instance(Optional<ContextAwarePredicate> player, String actionId)
+    /**
+     * @param threshold the requirement number for actions that are a milestone (carriages without
+     *                  opening a chest, say). Not consulted here — the firing code compares its own
+     *                  counter against it via {@code AdvancementRequirements} — but carried in the
+     *                  JSON so the relay override and description argument treat these like every
+     *                  other milestone. Empty for actions that are a plain event.
+     */
+    public record Instance(Optional<ContextAwarePredicate> player, String actionId, Optional<Integer> threshold)
         implements SimpleCriterionTrigger.SimpleInstance {
 
         public static final Codec<Instance> CODEC = RecordCodecBuilder.create(in -> in.group(
             EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(Instance::player),
-            Codec.STRING.fieldOf("actionId").forGetter(Instance::actionId)
+            Codec.STRING.fieldOf("actionId").forGetter(Instance::actionId),
+            Codec.INT.optionalFieldOf("threshold").forGetter(Instance::threshold)
         ).apply(in, Instance::new));
 
         public boolean matches(String firedActionId) {

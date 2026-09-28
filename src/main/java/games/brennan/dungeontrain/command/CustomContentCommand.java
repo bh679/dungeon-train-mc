@@ -53,10 +53,14 @@ public final class CustomContentCommand {
         }
         String packages = String.join(", ", EditorContentIntegrity.contentPackageNames());
         boolean suppressed = EditorContentIntegrity.isSuppressed();
+        // On but not Free Play = the dev waiver is in force (DEV_IGNORE on a dev build).
+        boolean devIgnored = !suppressed && !EditorContentIntegrity.isSessionFreePlay();
         source.sendSuccess(() -> Component.translatable(
                 suppressed
                     ? "commands.dungeontrain.customcontent.status.off"
-                    : "commands.dungeontrain.customcontent.status.on",
+                    : devIgnored
+                        ? "commands.dungeontrain.customcontent.status.dev_ignored"
+                        : "commands.dungeontrain.customcontent.status.on",
                 packages)
             .withStyle(suppressed ? ChatFormatting.GRAY : ChatFormatting.AQUA), false);
         return 1;

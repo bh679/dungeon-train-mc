@@ -6,7 +6,15 @@
 # Mod keys:
 #   dt         the freshly built Dungeon Train jar (build/libs/)
 #   sable      the pinned Sable build
-#   ain ais pmob ecp te the five un-bundled sibling mods, at their pinned versions
+#   ain ais pmob ecp te  the five un-bundled sibling mods, at their pinned versions
+#   kt db sff  the three hybrid siblings (also jarJar'd in the DT jar), at their pinned versions
+#   fp moon    Fast Paintings + its Moonlight library (third-party required deps)
+#   bn bclib wover wunder  BetterNether: New Dawn + its three libraries (third-party required deps)
+#   be         BetterEnd: New Dawn (shares BetterNether's three libraries)
+#   wwoo cristel bop tb glitch  WWOO + Cristel Lib, Biomes O' Plenty + TerraBlender + GlitchCore
+#   blc                         Big Lost City
+#              (second-lap overworld mods, third-party required deps)
+#   sp         Sable Pathfinder (Modrinth-required, `optional` in mods.toml — absent on CurseForge)
 #   pmob-new   PlayerMob ABOVE the declared floor (uses playermob_version)
 #   pmob-old   PlayerMob BELOW the declared floor (downloaded, see README)
 #
@@ -62,6 +70,35 @@ resolve() {
     ais)      cached "bh679/adventureitemstats"      "$(prop adventureitemstats_version)" ;;
     ecp)      cached "bh679/enderchestpersistence"   "$(prop enderchestpersistence_version)" ;;
     te)       cached "bh679/tradeeverything"         "$(prop tradeeverything_version)" ;;
+    # Third-party required deps, keyed by Modrinth VERSION ID (see gradle.properties).
+    fp)       cached "maven.modrinth/fast-paintings" "$(prop fastpaintings_version)" ;;
+    moon)     cached "maven.modrinth/moonlight"      "$(prop moonlight_version)" ;;
+    sp)       cached "maven.modrinth/sable-pathfinder" "$(prop sablepathfinder_version)" ;;
+    bn)       cached "maven.modrinth/betternether-neoforge" "$(prop betternether_version)" ;;
+    bclib)    cached "maven.modrinth/bclib-neoforge"        "$(prop bclib_version)" ;;
+    wover)    cached "maven.modrinth/worldweaver-neoforge"  "$(prop worldweaver_version)" ;;
+    wunder)   cached "maven.modrinth/wunderlib-neoforge"    "$(prop wunderlib_version)" ;;
+    be)       cached "maven.modrinth/betterend-neoforge"    "$(prop betterend_version)" ;;
+    wwoo)     cached "maven.modrinth/wwoo"            "$(prop wwoo_version)" ;;
+    cristel)  cached "maven.modrinth/cristel-lib"     "$(prop cristellib_version)" ;;
+    bop)      cached "maven.modrinth/biomes-o-plenty" "$(prop biomesoplenty_version)" ;;
+    tb)       cached "maven.modrinth/terrablender"    "$(prop terrablender_version)" ;;
+    glitch)   cached "maven.modrinth/glitchcore"      "$(prop glitchcore_version)" ;;
+    # Big Lost City — required structure datapack mod for the Lost City era (#1599).
+    blc)      cached "maven.modrinth/big-lost-city"   "$(prop biglostcity_version)" ;;
+    # Hybrid siblings — ALSO jarJar'd inside the DT jar. Present as top-level jars they model the
+    # CurseForge-app install (nested copy must be skipped); absent they model Modrinth/manual.
+    kt)       cached "bh679/keeptrim"                "$(prop keeptrim_version)" ;;
+    db)       cached "bh679/dungeonbackup"           "$(prop dungeonbackup_version)" ;;
+    sff)      cached "bh679/sable_fence_trapdoor_fix" "$(prop sablefencetrapdoorfix_version)" ;;
+    # Stream Detect / DPI Bypass Detect — hybrid like kt/db/sff: ALSO jarJar'd inside the DT jar.
+    # Present (Case A) they model the CurseForge-app install (nested copy skipped); absent they
+    # model Modrinth/manual, loading from the nested copy.
+    sd)       cached "bh679/streamdetect"            "$(prop streamdetect_version)" ;;
+    dbd)      cached "bh679/dpibypassdetect"         "$(prop dpibypassdetect_version)" ;;
+    # Pigman Villagers — hybrid like sd/dbd: jarJar'd inside the DT jar; present (Case A) models the
+    # CurseForge-app install (nested copy skipped in favour of the top-level one).
+    pv)       cached "bh679/pigmanvillagers"         "$(prop pigmanvillagers_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;
     # Above the floor: whatever the cascade has moved playermob_version to. When those two
@@ -113,6 +150,10 @@ if grep -qaE "Missing or unsupported mandatory dependencies|Mod Loading has fail
     | sort -u | sed 's/^/    /'
 elif grep -qaE 'Done \([0-9.]+s\)! For help' "$LOG"; then
   echo "  RESULT: SERVER STARTED CLEANLY"
+  # Hybrid siblings (jarJar'd for Modrinth, separate Includes on CurseForge): when a top-level
+  # copy is in mods/ NeoForge's JarSelector must drop the nested one. Surface which ids it did.
+  grep -aoE "Attempted to select a dependency jar for JarJar which was passed in as source: [a-z_]+" "$LOG" \
+    | sed -E 's/.*source: /    JarJar: nested copy skipped, mods\/ copy wins: /' | sort -u
 else
   echo "  RESULT: INCONCLUSIVE — inspect the log"
   tail -5 "$LOG" | cut -c1-160 | sed 's/^/    /'

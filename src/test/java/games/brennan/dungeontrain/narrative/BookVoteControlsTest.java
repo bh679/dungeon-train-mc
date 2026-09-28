@@ -92,6 +92,31 @@ class BookVoteControlsTest {
     }
 
     @Test
+    @DisplayName("A loot copy of your own book reaches the SAME controls as one off your own shelf")
+    void lootCopyMatchesTheShelfCopy() {
+        // The two paths stamp the same tag from two different relay answers — the author's-own-shelf
+        // pool fetch (`mine=1`, inside an author-locked room) and the author-gated stats lookup that
+        // fires when you pick a loot copy up. If they ever diverge, a writer gets a stranger's page
+        // on their own book everywhere except that one room, which is the bug this closes.
+        net.minecraft.world.item.ItemStack shelfCopy =
+            new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.WRITTEN_BOOK);
+        BookModerationTag.stamp(shelfCopy, BookModerationState.fromStatus("approved"));
+
+        net.minecraft.world.item.ItemStack lootCopy =
+            new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.WRITTEN_BOOK);
+        FamiliarBookGreeter.stampOwnState(lootCopy,
+            new games.brennan.dungeontrain.net.relay.BookStatsClient.Stats(
+                true, 2, 1, 3, 0L, 0L, 0, 0, 0, 4, 1, "approved", false));
+
+        BookModerationState shelf = BookModerationTag.read(shelfCopy);
+        BookModerationState loot = BookModerationTag.read(lootCopy);
+        org.junit.jupiter.api.Assertions.assertEquals(shelf, loot);
+        assertFalse(showsThumbs(loot), "a loot copy of your own book is still the self-upvote hole");
+        assertFalse(showsReport(loot));
+        assertTrue(showsPrivate(loot), "the padlock is the whole point");
+    }
+
+    @Test
     @DisplayName("The action slot never holds more than one control")
     void theActionSlotHoldsAtMostOneControl() {
         // They share one row and one hitbox, so two at once would be a click landing on whichever

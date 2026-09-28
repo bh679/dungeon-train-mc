@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.portal.chunkframe.ChunkFrame;
+import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry;
+import games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.track.PillarAdjunct;
@@ -61,6 +64,7 @@ public final class EditorTypeMenus {
     /** Every visible type menu for {@code category} at the current world dims. */
     public static List<EditorTypeMenusPacket.Menu> forCategory(EditorCategory category, CarriageDims dims) {
         return switch (category) {
+            case WHOLE -> EditorWholeTypeMenus.menus(dims);
             case CARRIAGES -> carriageMenus(dims);
             case CONTENTS -> contentsMenus(dims);
             case TRACKS -> trackMenus(dims);
@@ -84,20 +88,7 @@ public final class EditorTypeMenus {
             if (firstOrigin != null) {
                 Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
                 BlockPos anchor = anchorForXRow(firstOrigin, footprint);
-                String cat = EditorCategory.CARRIAGES.name();
-                CarriageWeights weights = CarriageWeights.current();
-                List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(variants.size());
-                for (CarriageVariant v : variants) {
-                    EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
-                        CarriageTemplateStore.fileForId(v.id()));
-                    TemplateGate g = weights.gateFor(v.id());
-                    String stageId = weights.stageIdFor(v.id());
-                    rows.add(new EditorTypeMenusPacket.Variant(
-                        v.id(), weights.weightFor(v.id()),
-                        g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
-                        cat, v.id(), v.id(), p.isUser(), p.isImported(),
-                        stageId == null ? "" : stageId));
-                }
+                List<EditorTypeMenusPacket.Variant> rows = carriageRows(variants);
                 out.add(new EditorTypeMenusPacket.Menu(
                     anchor, "Carriages", rows, false,
                     activeId, categoryBar, typeStrip));
@@ -127,34 +118,14 @@ public final class EditorTypeMenus {
         if (firstOrigin == null) return;
         Vec3i footprint = kind.dims(dims);
         BlockPos anchor = anchorForXRow(firstOrigin, footprint);
-        // Parts have no weight pool — every variant row gets NO_WEIGHT so the
-        // renderer omits the weight cell and lets the name fill the row.
-        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
-        for (String name : names) {
-            EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
-                CarriagePartTemplateStore.fileFor(kind, name));
-            rows.add(new EditorTypeMenusPacket.Variant(
-                name, EditorPlotLabelsPacket.NO_WEIGHT, "PARTS", kind.id(), name,
-                p.isUser(), p.isImported()));
-        }
+        List<EditorTypeMenusPacket.Variant> rows = partRows(kind, names);
         out.add(new EditorTypeMenusPacket.Menu(
             anchor, typeName, rows, false,
             activeId, categoryBar, typeStrip));
     }
 
     private static List<EditorTypeMenusPacket.Menu> contentsMenus(CarriageDims dims) {
-        List<CarriageContents> all = CarriageContentsRegistry.allContents();
-        if (all.isEmpty()) return Collections.emptyList();
-        // Sub-variants live in their parent's +Z column, not in the top-level
-        // +X row. Filter them out of this menu — the per-plot sub-variants
-        // companion (see VariantOverlayRenderer.appendSubVariantsCompanion)
-        // lists them for the variant the player is editing.
-        java.util.Set<String> children = games.brennan.dungeontrain.editor.CarriageContentsGroupStore.allChildIds();
-        List<CarriageContents> topLevel = new ArrayList<>(all.size());
-        for (CarriageContents c : all) {
-            if (children.contains(c.id())) continue;
-            topLevel.add(c);
-        }
+        List<CarriageContents> topLevel = topLevelContents();
         if (topLevel.isEmpty()) return Collections.emptyList();
         CarriageContents first = topLevel.get(0);
         BlockPos firstOrigin = CarriageContentsEditor.plotOrigin(first, dims);
@@ -162,19 +133,7 @@ public final class EditorTypeMenus {
         Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
         BlockPos anchor = anchorForXRow(firstOrigin, footprint);
         String cat = EditorCategory.CONTENTS.name();
-        CarriageContentsWeights weights = CarriageContentsWeights.current();
-        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(topLevel.size());
-        for (CarriageContents c : topLevel) {
-            EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
-                CarriageContentsStore.fileForId(c.id()));
-            TemplateGate g = weights.gateFor(c.id());
-            String stageId = weights.stageIdFor(c.id());
-            rows.add(new EditorTypeMenusPacket.Variant(
-                c.id(), weights.weightFor(c.id()),
-                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
-                cat, c.id(), c.id(), p.isUser(), p.isImported(),
-                subVariantsFor(c.id(), cat), stageId == null ? "" : stageId));
-        }
+        List<EditorTypeMenusPacket.Variant> rows = contentsRows(topLevel);
         List<EditorTypeMenusPacket.CategoryButton> categoryBar = buildCategoryBar();
         List<EditorTypeMenusPacket.TypeTab> typeStrip = List.of(
             new EditorTypeMenusPacket.TypeTab("Contents", cat, first.id(), first.id()));
@@ -189,19 +148,8 @@ public final class EditorTypeMenus {
         List<EditorTypeMenusPacket.TypeTab> typeStrip = buildTracksTypeStrip();
         String activeId = EditorCategory.TRACKS.id();
 
-        addTrackKindMenu(out, TrackKind.TILE, "Track", dims, activeId, categoryBar, typeStrip);
-        for (PillarSection s : PillarSection.values()) {
-            addTrackKindMenu(out, PillarTemplateStore.pillarKind(s),
-                "Pillar " + capitalise(s.id()), dims, activeId, categoryBar, typeStrip);
-        }
-        for (PillarAdjunct a : PillarAdjunct.values()) {
-            addTrackKindMenu(out, PillarTemplateStore.adjunctKind(a),
-                capitalise(a.id()), dims, activeId, categoryBar, typeStrip);
-        }
-        for (TunnelVariant v : TunnelVariant.values()) {
-            addTrackKindMenu(out, TunnelTemplateStore.tunnelKind(v),
-                "Tunnel " + capitalise(v.name().toLowerCase(Locale.ROOT)), dims,
-                activeId, categoryBar, typeStrip);
+        for (java.util.Map.Entry<TrackKind, String> kind : trackKindsInOrder()) {
+            addTrackKindMenu(out, kind.getKey(), kind.getValue(), dims, activeId, categoryBar, typeStrip);
         }
         return out;
     }
@@ -214,7 +162,28 @@ public final class EditorTypeMenus {
 
         addTrackKindMenu(out, TrackKind.PORTAL_ROOM, "Dimensional Carriage", dims, activeId,
             categoryBar, typeStrip, EditorCategory.PORTALS);
+        // The frame row, stamped alongside the rooms the way carriage parts are alongside carriages.
+        List<String> frames = ChunkFrameRegistry.names();
+        if (!frames.isEmpty()) {
+            out.add(new EditorTypeMenusPacket.Menu(
+                anchorForXRow(ChunkFrameEditor.rowOrigin(), ChunkFrame.SIZE), FRAMES_TYPE_NAME,
+                chunkFrameRows(frames), false, activeId, categoryBar, typeStrip));
+        }
         return out;
+    }
+
+    /** The type label chunk frames go by in the Dimensions menus and the roster. */
+    static final String FRAMES_TYPE_NAME = "Frames";
+
+    static List<EditorTypeMenusPacket.Variant> chunkFrameRows(List<String> names) {
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
+        for (String name : names) {
+            EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(ChunkFrameStore.fileFor(name));
+            rows.add(new EditorTypeMenusPacket.Variant(
+                name, EditorPlotLabelsPacket.NO_WEIGHT, PlotCategory.CHUNK_FRAMES.name(),
+                ChunkFrameEditor.MODEL_ID, name, p.isUser(), p.isImported()));
+        }
+        return rows;
     }
 
     /**
@@ -228,6 +197,11 @@ public final class EditorTypeMenus {
         strip.add(new EditorTypeMenusPacket.TypeTab(
             "Dimensional Carriage", EditorCategory.PORTALS.name(),
             TrackKind.PORTAL_ROOM.id(), names.get(0)));
+        List<String> frames = ChunkFrameRegistry.names();
+        if (!frames.isEmpty()) {
+            strip.add(new EditorTypeMenusPacket.TypeTab(
+                FRAMES_TYPE_NAME, PlotCategory.CHUNK_FRAMES.name(), ChunkFrameEditor.MODEL_ID, frames.get(0)));
+        }
         return strip;
     }
 
@@ -255,6 +229,87 @@ public final class EditorTypeMenus {
         BlockPos firstOrigin = TrackSidePlots.plotOrigin(kind, names.get(0), dims);
         Vec3i footprint = TrackSidePlots.footprint(kind, names.get(0), dims);
         BlockPos anchor = anchorForZRow(firstOrigin, footprint);
+        List<EditorTypeMenusPacket.Variant> rows = trackKindRows(kind, names, owner);
+        out.add(new EditorTypeMenusPacket.Menu(
+            anchor, typeName, rows, false,
+            activeId, categoryBar, typeStrip));
+    }
+
+    // ---------- variant-row builders, shared with EditorRoster ----------
+    // The world-space menus and the inventory-style screen's roster must describe a template
+    // identically, so the per-row construction lives here once and both call it.
+
+    /** One packet row per carriage variant, in registry order. */
+    static List<EditorTypeMenusPacket.Variant> carriageRows(List<CarriageVariant> variants) {
+        String cat = EditorCategory.CARRIAGES.name();
+        CarriageWeights weights = CarriageWeights.current();
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(variants.size());
+        for (CarriageVariant v : variants) {
+            EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
+                CarriageTemplateStore.fileForId(v.id()));
+            TemplateGate g = weights.gateFor(v.id());
+            String stageId = weights.stageIdFor(v.id());
+            rows.add(new EditorTypeMenusPacket.Variant(
+                v.id(), weights.weightFor(v.id()),
+                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                cat, v.id(), v.id(), p.isUser(), p.isImported(),
+                stageId == null ? "" : stageId).withDisplayName(weights.nameFor(v.id()))
+                .withBuilder(builderUuid(TemplateBuilderLookup.carriage(weights, v.id())),
+                    builderName(TemplateBuilderLookup.carriage(weights, v.id()))));
+        }
+        return rows;
+    }
+
+    /** One packet row per registered part of {@code kind}; parts carry no weight or gate. */
+    static List<EditorTypeMenusPacket.Variant> partRows(CarriagePartKind kind, List<String> names) {
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
+        for (String name : names) {
+            EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
+                CarriagePartTemplateStore.fileFor(kind, name));
+            rows.add(new EditorTypeMenusPacket.Variant(
+                name, EditorPlotLabelsPacket.NO_WEIGHT, "PARTS", kind.id(), name,
+                p.isUser(), p.isImported()));
+        }
+        return rows;
+    }
+
+    /** Every top-level contents (group members excluded — they ride as sub-variants of their parent). */
+    static List<CarriageContents> topLevelContents() {
+        List<CarriageContents> all = CarriageContentsRegistry.allContents();
+        java.util.Set<String> children = CarriageContentsGroupStore.allChildIds();
+        List<CarriageContents> topLevel = new ArrayList<>(all.size());
+        for (CarriageContents c : all) {
+            if (children.contains(c.id())) continue;
+            topLevel.add(c);
+        }
+        return topLevel;
+    }
+
+    /** One packet row per top-level contents, each carrying its group's members as sub-variants. */
+    static List<EditorTypeMenusPacket.Variant> contentsRows(List<CarriageContents> topLevel) {
+        String cat = EditorCategory.CONTENTS.name();
+        CarriageContentsWeights weights = CarriageContentsWeights.current();
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(topLevel.size());
+        for (CarriageContents c : topLevel) {
+            EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
+                CarriageContentsStore.fileForId(c.id()));
+            TemplateGate g = weights.gateFor(c.id());
+            String stageId = weights.stageIdFor(c.id());
+            rows.add(new EditorTypeMenusPacket.Variant(
+                c.id(), weights.weightFor(c.id()),
+                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                cat, c.id(), c.id(), p.isUser(), p.isImported(),
+                subVariantsFor(c.id(), cat), stageId == null ? "" : stageId)
+                .withDisplayName(weights.nameFor(c.id()))
+                .withBuilder(builderUuid(TemplateBuilderLookup.contents(weights, c.id())),
+                    builderName(TemplateBuilderLookup.contents(weights, c.id()))));
+        }
+        return rows;
+    }
+
+    /** One packet row per top-level variant of a track-side kind, owned by {@code owner}'s category. */
+    static List<EditorTypeMenusPacket.Variant> trackKindRows(TrackKind kind, List<String> names,
+                                                             EditorCategory owner) {
         String cat = owner.name();
         String modelId = kind.id();
         List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
@@ -267,11 +322,29 @@ public final class EditorTypeMenus {
                 name, TrackVariantWeights.weightFor(kind, name),
                 g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
                 cat, modelId, name, p.isUser(), p.isImported(),
-                subVariantsFor(kind, name, cat, modelId), stageId == null ? "" : stageId));
+                subVariantsFor(kind, name, cat, modelId), stageId == null ? "" : stageId)
+                .withDisplayName(TrackVariantWeights.nameFor(kind, name))
+                .withBuilder(builderUuid(TemplateBuilderLookup.track(kind, name)),
+                    builderName(TemplateBuilderLookup.track(kind, name))));
         }
-        out.add(new EditorTypeMenusPacket.Menu(
-            anchor, typeName, rows, false,
-            activeId, categoryBar, typeStrip));
+        return rows;
+    }
+
+    /** The display name of each track-side kind, in the order the world lays their rows out. */
+    static List<java.util.Map.Entry<TrackKind, String>> trackKindsInOrder() {
+        List<java.util.Map.Entry<TrackKind, String>> out = new ArrayList<>();
+        out.add(java.util.Map.entry(TrackKind.TILE, "Track"));
+        for (PillarSection s : PillarSection.values()) {
+            out.add(java.util.Map.entry(PillarTemplateStore.pillarKind(s), "Pillar " + capitalise(s.id())));
+        }
+        for (PillarAdjunct a : PillarAdjunct.values()) {
+            out.add(java.util.Map.entry(PillarTemplateStore.adjunctKind(a), capitalise(a.id())));
+        }
+        for (TunnelVariant v : TunnelVariant.values()) {
+            out.add(java.util.Map.entry(TunnelTemplateStore.tunnelKind(v),
+                "Tunnel " + capitalise(v.name().toLowerCase(Locale.ROOT))));
+        }
+        return out;
     }
 
     // ---------- nav chrome builders ----------
@@ -283,7 +356,7 @@ public final class EditorTypeMenus {
      * stamped plots and clicking the button lands the player nowhere useful,
      * so we hide it from the bar until the category actually has content.
      */
-    private static List<EditorTypeMenusPacket.CategoryButton> buildCategoryBar() {
+    static List<EditorTypeMenusPacket.CategoryButton> buildCategoryBar() {
         List<EditorTypeMenusPacket.CategoryButton> bar = new ArrayList<>(EditorCategory.values().length);
         for (EditorCategory c : EditorCategory.values()) {
             if (c == EditorCategory.ARCHITECTURE) continue;
@@ -361,12 +434,22 @@ public final class EditorTypeMenus {
         List<games.brennan.dungeontrain.train.CarriageContentsGroup.Member> members = group.get().members();
         if (members.isEmpty()) return java.util.Collections.emptyList();
         List<EditorTypeMenusPacket.Variant> out = new ArrayList<>(members.size());
+        CarriageContentsWeights weights = CarriageContentsWeights.current();
         for (games.brennan.dungeontrain.train.CarriageContentsGroup.Member m : members) {
             EditorPlotLabels.Provenance prov = EditorPlotLabels.provenanceOf(
                 games.brennan.dungeontrain.editor.CarriageContentsStore.fileForId(m.id()));
+            // The member's effective gate and Stage links ride along, as the track-side builder's
+            // do, so a chip drawn from this row reads the Stage the member is on rather than Custom.
+            String primaryStage = m.stageIds().isEmpty() ? null : m.stageIds().get(0);
+            TemplateGate g = StageStore.effectiveGate(m.gate(), primaryStage);
             out.add(new EditorTypeMenusPacket.Variant(
-                m.id(), m.weight(), category, m.id(), m.id(),
-                prov.isUser(), prov.isImported()));
+                m.id(), m.weight(),
+                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                category, m.id(), m.id(),
+                prov.isUser(), prov.isImported(),
+                java.util.List.of(), m.stageIds()).withDisplayName(weights.nameFor(m.id()))
+                .withBuilder(builderUuid(TemplateBuilderLookup.contents(weights, m.id())),
+                    builderName(TemplateBuilderLookup.contents(weights, m.id()))));
         }
         return out;
     }
@@ -402,7 +485,9 @@ public final class EditorTypeMenus {
                 games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
                 category, modelId, m.id(),
                 prov.isUser(), prov.isImported(),
-                java.util.List.of(), m.stageIds()));
+                java.util.List.of(), m.stageIds()).withDisplayName(TrackVariantWeights.nameFor(kind, m.id()))
+                .withBuilder(builderUuid(TemplateBuilderLookup.track(kind, m.id())),
+                    builderName(TemplateBuilderLookup.track(kind, m.id()))));
         }
         return out;
     }
@@ -421,44 +506,11 @@ public final class EditorTypeMenus {
      * {@code -X} cage edge, lifted {@link #Y_ANCHOR_LIFT} blocks above the
      * cage top, centred over the footprint Z.
      */
-    private static BlockPos anchorForXRow(BlockPos firstOrigin, Vec3i footprint) {
+    static BlockPos anchorForXRow(BlockPos firstOrigin, Vec3i footprint) {
         return new BlockPos(
             firstOrigin.getX() - MENU_GAP,
             firstOrigin.getY() + footprint.getY() + Y_ANCHOR_LIFT,
             firstOrigin.getZ() + footprint.getZ() / 2
-        );
-    }
-
-    /**
-     * Z offset from the carriages nav menu's centre — mirrors
-     * {@code EditorHelpPanelRenderer.WORLD_OFFSET_BLOCKS} on the opposite
-     * side, so the carriages nav menu sits between the help/welcome panel
-     * ({@code +Z}) and the package menu ({@code -Z}). Same distance, opposite
-     * side — visually balanced trio at the editor's entry door.
-     */
-    private static final int PACKAGE_MENU_Z_OFFSET = -5;
-
-    /**
-     * Anchor for the floating package menu — the worldspace mirror of the
-     * X-menu's "Package" drilldown. Shares the carriages nav menu's
-     * {@code -X} depth and {@code Y} lift so the two read as siblings on
-     * the same horizontal plane, but offset on {@code +Z} so they appear
-     * side-by-side rather than stacked along the player's view axis.
-     *
-     * <p>Returns {@code null} when no carriage variants are registered —
-     * same fallthrough the carriages nav menu uses (no anchor without a
-     * first plot).</p>
-     */
-    public static BlockPos packageMenuAnchor(CarriageDims dims) {
-        List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
-        if (variants.isEmpty()) return null;
-        BlockPos firstOrigin = CarriageEditor.plotOrigin(variants.get(0), dims);
-        if (firstOrigin == null) return null;
-        Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
-        return new BlockPos(
-            firstOrigin.getX() - MENU_GAP,
-            firstOrigin.getY() + footprint.getY() + Y_ANCHOR_LIFT,
-            firstOrigin.getZ() + footprint.getZ() / 2 + PACKAGE_MENU_Z_OFFSET
         );
     }
 
@@ -470,10 +522,14 @@ public final class EditorTypeMenus {
     /** Sentinel modelId for the synthetic "+ New Stage" row (name-cell click opens the name dialog). */
     public static final String STAGE_NEW_SENTINEL = "__new_stage__";
 
-    /** Z offset for the Stages panel — one slot past the package menu, on the same {@code -Z} side. */
+    /**
+     * Z offset for the Stages panel — on the carriages nav menu's {@code -Z} side, which is the
+     * reader's right now the door panels hold a fixed {@code +X} facing (the Welcome panel takes the
+     * {@code +Z} side). Ten blocks clears the nav menu's half-width plus the Stages panel's.
+     */
     private static final int STAGES_MENU_Z_OFFSET = -10;
 
-    /** Anchor for the floating Stages panel — beside the carriages nav menu / package menu at the door. */
+    /** Anchor for the floating Stages panel — beside the carriages nav menu at the door. */
     public static BlockPos stagesMenuAnchor(CarriageDims dims) {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
         if (variants.isEmpty()) return null;
@@ -488,30 +544,27 @@ public final class EditorTypeMenus {
     }
 
     /**
-     * X offset for the Stage Blocks panel — it now sits at the <b>same Z</b> as the Stages panel
-     * ({@link #STAGES_MENU_Z_OFFSET}) but shifted this many blocks toward {@code +X}, so the two
-     * read as a side-by-side pair at the door rather than stacked along {@code -Z}. Tunable; the
-     * billboards face the player, so exact non-overlap is view-dependent — input handling is
-     * double-dispatch-guarded regardless.
+     * Z step from the Stages panel to the Stage Blocks panel (the "stage V menu"). The door panels
+     * hold a fixed {@code +X} facing, so siblings line up side by side along {@code -Z} — the
+     * reader's right. Must clear the Stages panel's half-width plus the Stage Blocks panel's (2.6).
      */
-    private static final int STAGE_PANEL_X_OFFSET = 6;
+    private static final int STAGE_PANEL_Z_STEP = -6;
+    /** Z step from the Stage Blocks panel to the Stage Palette — clears 2.6 + the palette's 3.2. */
+    private static final int STAGE_PALETTE_Z_STEP = -7;
+
+    /** Stage Palette panel: the Stage Blocks panel stepped a further {@code -Z}. */
+    public static BlockPos stagePaletteAnchor(CarriageDims dims) {
+        BlockPos stagePanel = stagePanelAnchor(dims);
+        return stagePanel == null ? null : stagePanel.offset(0, 0, STAGE_PALETTE_Z_STEP);
+    }
 
     /**
-     * Anchor for the Stage Blocks panel (the "stage V menu") — the sibling billboard beside the
-     * Stages panel: same Z, offset {@code +X}. Same fallthrough as {@link #stagesMenuAnchor}:
-     * {@code null} when no carriage variants are registered.
+     * Anchor for the Stage Blocks panel — the Stages panel stepped {@code -Z}. Same fallthrough as
+     * {@link #stagesMenuAnchor}: {@code null} when no carriage variants are registered.
      */
     public static BlockPos stagePanelAnchor(CarriageDims dims) {
-        List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
-        if (variants.isEmpty()) return null;
-        BlockPos firstOrigin = CarriageEditor.plotOrigin(variants.get(0), dims);
-        if (firstOrigin == null) return null;
-        Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
-        return new BlockPos(
-            firstOrigin.getX() - MENU_GAP + STAGE_PANEL_X_OFFSET,
-            firstOrigin.getY() + footprint.getY() + Y_ANCHOR_LIFT,
-            firstOrigin.getZ() + footprint.getZ() / 2 + STAGES_MENU_Z_OFFSET
-        );
+        BlockPos stages = stagesMenuAnchor(dims);
+        return stages == null ? null : stages.offset(0, 0, STAGE_PANEL_Z_STEP);
     }
 
     /**
@@ -524,18 +577,27 @@ public final class EditorTypeMenus {
         if (anchor == null) return null;
         List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>();
         for (games.brennan.dungeontrain.template.Stage s : StageStore.allStages()) {
-            TemplateGate g = s.gate();
-            // weight = NO_WEIGHT keeps the row weightless; the gated ctor still carries the gate so
-            // the row reads as (name + level/dimension) and the client edit screen can show values.
-            rows.add(new EditorTypeMenusPacket.Variant(
-                s.name(), EditorPlotLabelsPacket.NO_WEIGHT,
-                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
-                STAGES_CATEGORY, s.id(), s.id(), true, false));
+            rows.add(stageRow(s));
         }
         // The companion-menu renderer adds its own "+ New" footer row (routed to the StageNameScreen
         // by the input handler), so no synthetic create row is needed here.
         return new EditorTypeMenusPacket.Menu(
             anchor, "Stages", rows, false, "", List.of(), List.of(), false, true);
+    }
+
+    /**
+     * One Stage as a gated row: {@code modelId} = stage id, {@code name} = display name. Shared by
+     * the world-space Stages panel and the editor screen's roster so both read a stage identically.
+     */
+    public static EditorTypeMenusPacket.Variant stageRow(games.brennan.dungeontrain.template.Stage s) {
+        TemplateGate g = s.gate();
+        // weight = NO_WEIGHT keeps the row weightless; the gated ctor still carries the gate so
+        // the row reads as (name + level/dimension) and the client edit screen can show values.
+        EditorTypeMenusPacket.Variant row = new EditorTypeMenusPacket.Variant(
+            s.name(), EditorPlotLabelsPacket.NO_WEIGHT,
+            g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+            STAGES_CATEGORY, s.id(), s.id(), true, false);
+        return s.builder() == null ? row : row.withBuilder(s.builder().uuid(), s.builder().name());
     }
 
     /**
@@ -554,5 +616,15 @@ public final class EditorTypeMenus {
     private static String capitalise(String s) {
         if (s.isEmpty()) return s;
         return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
+    /** The wire form of a credit's uuid — {@code ""} for none. */
+    private static String builderUuid(games.brennan.dungeontrain.template.BuilderCredit c) {
+        return c == null ? "" : c.uuid();
+    }
+
+    /** The wire form of a credit's cached name — {@code ""} for none. */
+    private static String builderName(games.brennan.dungeontrain.template.BuilderCredit c) {
+        return c == null ? "" : c.name();
     }
 }

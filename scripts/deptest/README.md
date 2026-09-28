@@ -20,6 +20,12 @@ TradeEverything) are
 **not bundled** — they are required external downloads. Every existing player hits the
 missing-dependency path exactly once, on the update that un-bundled them.
 
+More siblings — KeepTrim, DungeonBackup, SableFenceTrapdoorFix, StreamDetect, DpiBypassDetect and
+PigmanVillagers — are **hybrid**: jarJar'd inside
+the DT jar (Modrinth + manual installs) *and* declared required + shipped as Includes on
+CurseForge, where the CF app installs them as their own jars. NeoForge's JarSelector drops the
+nested copy when a top-level one is present; Cases A and G cover both layouts.
+
 ## Running
 
 ```bash
@@ -38,12 +44,18 @@ The NeoForge version follows `neo_version` for the same reason.
 
 | Case | `mods/` contents | Expected |
 |---|---|---|
-| **A** | DT + Sable + all five siblings | Server starts cleanly |
+| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + BetterNether + BetterEnd and their three shared libraries + WWOO/BoP and their libraries + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids |
 | **B** | minus AIN | Fails — `adventureitemnames … Actual version: '[MISSING]'` |
-| **C** | DT + Sable only | Fails — names **all five**, with each declared range |
+| **C** | DT + Sable only | Fails — names **all five**, with each declared range (the hybrid trio is nested, so never missing) |
 | **D** | PlayerMob **above** the floor | Server starts cleanly |
 | **E** | PlayerMob **below** the floor | Fails — `Expected range: '[<floor>,)', Actual version: '0.50.0'` |
-| **F** | minus Sable | Fails — `Expected range: '[x,x]'` (exact pin, not a minimum) |
+| **F** | minus Sable | Fails — `Expected range: '[x,x]'` (exact pin, not a minimum); the fence fix's own `[2.0.5,)` Sable floor also fires |
+| **G** | DT + Sable + five siblings, no top-level hybrid jars (Modrinth / manual layout) | Server starts cleanly on the nested copies |
+| **H** | minus Fast Paintings + Moonlight | Fails — names `fastpaintings` and `moonlight` with their `[x,)` floors |
+| **I** | minus BetterNether (its libraries present) | Fails — names `betternether` with its `[x,)` floor |
+| **J** | minus BetterEnd (libraries present) | Fails — names `betterend` with its `[x,)` floor |
+| **K** | minus WWOO + Biomes O' Plenty (their libraries present) | Fails — names `wwoo` and `biomesoplenty` with their `[x,)` floors |
+| **L** | Case A minus Sable Pathfinder (CurseForge layout — it isn't listed there) | Server starts cleanly (`optional` in mods.toml). A, D and G include it, proving its mixins apply against production bytecode |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.
@@ -83,12 +95,12 @@ Run through this after the first release that un-bundles a mod:
 1. **Modrinth app** — fresh profile, install Dungeon Train from the platform. All five siblings
    should arrive without being asked for; DT should reach the main menu.
 2. **CurseForge app** — same, from a new instance.
-3. **Both modpacks** — install each and confirm seven mods are present *and all five siblings are
+3. **Both modpacks** — install each and confirm the expected mods are present *and all siblings are
    enabled*. A CurseForge `required:false` entry ships a mod switched **off**; for a hard
    dependency that breaks the pack. See `modpack/README.md` §"Enabled vs disabled by default".
 4. **Manual / vanilla NeoForge** — drop in only the DT jar + Sable. Expect Case C's error,
    rendered as a screen.
-5. **Check the download counters** on all five sibling project pages a day later.
+5. **Check the download counters** on all eight sibling project pages (the hybrid trio only counts CurseForge installs) a day later.
 
 Step 5 is the one that matters. Steps 1–4 verify mechanism; only the counters verify the
 *purpose* — un-bundling exists so those mods get credited for the installs they were always

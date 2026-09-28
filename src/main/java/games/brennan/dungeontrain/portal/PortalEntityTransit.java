@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.ship.sable.SableEntityCarry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -29,9 +30,12 @@ import java.util.List;
  * server is the only authority on where a villager is — so the hysteresis band alone settles it, and
  * the rule's idempotence does the rest.</p>
  *
- * <p><b>Momentum survives.</b> {@code teleportTo} moves an entity without touching its velocity,
- * which is what an ender pearl needs: it arrives in the twin still travelling, at the speed and
- * bearing it had, and carries on down the corridor as though nothing happened.</p>
+ * <p><b>Momentum survives — the train's share of it does not.</b> {@code teleportTo} moves an
+ * entity without touching its velocity, which is what an ender pearl needs: it arrives in the twin
+ * still travelling, at the bearing it had, and carries on down the corridor as though nothing
+ * happened. What it should not carry is the carriage's own motion, which Sable keeps on a living
+ * entity separately from its velocity and which means nothing in a room stamped into the static
+ * world — so on the way off the train it is shed. See {@code SableEntityCarry}.</p>
  */
 public final class PortalEntityTransit {
 
@@ -39,15 +43,21 @@ public final class PortalEntityTransit {
 
     private PortalEntityTransit() {}
 
-    /** Move every entity in the pair's corridors that is on the wrong side of its midpoint. */
+    /**
+     * Move every entity in the pair's corridors that is on the wrong side of its midpoint.
+     *
+     * @param disconnected whether the pair has stopped taking anything in — severed, or given up
+     *                     after a run of refusals. Handed in rather than read here so a mob and the
+     *                     player who led it in are answered by the same verdict on the same tick.
+     */
     public static void run(ServerLevel level, PortalFrames frames, List<Entity> entities,
-                           int carriageIndex) {
-        run(level, frames, entities, carriageIndex, null);
+                           int carriageIndex, boolean disconnected) {
+        run(level, frames, entities, carriageIndex, disconnected, null);
     }
 
     /**
-     * As {@link #run(ServerLevel, PortalFrames, List, int)}, but landing anything walking <b>in</b>
-     * at {@code twinOverride} instead of the frame's own twin.
+     * As {@link #run(ServerLevel, PortalFrames, List, int, boolean)}, but landing anything walking
+     * <b>in</b> at {@code twinOverride} instead of the frame's own twin.
      *
      * <p>What makes a led villager arrive where its player does. A player who came out through an
      * extra corridor eight rooms out walks back in to that corridor ({@link PortalExitBindings});
@@ -58,7 +68,8 @@ public final class PortalEntityTransit {
      * <p>Null means the original twin, so the ordinary call above is this one with nothing to say.</p>
      */
     public static void run(ServerLevel level, PortalFrames frames, List<Entity> entities,
-                           int carriageIndex, PortalFrames.Origin twinOverride) {
+                           int carriageIndex, boolean disconnected,
+                           PortalFrames.Origin twinOverride) {
         for (Entity entity : entities) {
             if (!eligible(entity)) continue;
 
@@ -66,14 +77,11 @@ public final class PortalEntityTransit {
             PortalFrames.Move move = frames.redirectedTo(frames.requiredMove(x, y, z), twinOverride);
             if (move == null) continue;
 
-            // Same one-way gate the player swap carries, and for the same reason: a severed corridor
-            // takes nothing in, but everything already in the room can still come back out. Without
-            // this a villager led in before the break would be walled off from the train while its
-            // player walked back through.
-            if (PortalSever.blocksMove(move.toFrame(),
-                PortalSever.isSevered(level, carriageIndex))) {
-                continue;
-            }
+            // Same one-way gate the player swap carries, and for the same reason: a pair that has
+            // stopped taking people in takes nothing else in either, but everything already in the
+            // room can still come back out. Without this a villager led in before the break would be
+            // walled off from the train while its player walked back through.
+            if (PortalSever.blocksMove(move.toFrame(), disconnected)) continue;
 
             // Grounded entities land on the destination floor's surface rather than the
             // carried-across local Y, for the reason the player swap does it: the two frames' block
@@ -86,6 +94,10 @@ public final class PortalEntityTransit {
             Vec3 velocity = entity.getDeltaMovement();
             entity.teleportTo(move.x(), targetY, move.z());
             entity.setDeltaMovement(velocity);
+            // Off the train, the carriage's own motion stays behind: the destination is not moving,
+            // and keeping it would send whatever crossed sliding down the twin corridor. Coming back
+            // the other way nothing is done — Sable picks a traveller up again by itself.
+            if (move.toFrame() == PortalFrames.FRAME_TWIN) SableEntityCarry.shed(entity);
 
             // The path it was following leads back to a place it is no longer near — in the twin's
             // case, forty-odd blocks straight up. Dropping it makes the mob look around and decide

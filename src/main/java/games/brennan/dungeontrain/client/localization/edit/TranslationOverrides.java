@@ -88,14 +88,15 @@ public final class TranslationOverrides {
      * cache written before that layer existed.</p>
      */
     public static TranslationEdits approvedFor(String locale) {
-        TranslationEdits all =
-            TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED_ALL, locale);
+        TranslationEdits all = TranslationOverrideStore.load(
+            TranslationOverrideStore.Layer.APPROVED_ALL, TranslationFilters.poolLocaleFor(locale));
         if (!all.isEmpty()) {
             return all;
         }
         return isLive(locale)
             ? approved()
-            : TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED, locale);
+            : TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED,
+                TranslationFilters.poolLocaleFor(locale));
     }
 
     /**
@@ -108,7 +109,8 @@ public final class TranslationOverrides {
     public static TranslationEdits appliedApprovedFor(String locale) {
         return isLive(locale)
             ? approved()
-            : TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED, locale);
+            : TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED,
+                TranslationFilters.poolLocaleFor(locale));
     }
 
     /** Both layers merged for {@code locale}, local winning. */
@@ -116,7 +118,8 @@ public final class TranslationOverrides {
         if (isLive(locale)) {
             return merged();
         }
-        return TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED, locale)
+        return reKey(TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED,
+                TranslationFilters.poolLocaleFor(locale)), locale)
             .mergedWith(TranslationOverrideStore.load(TranslationOverrideStore.Layer.LOCAL, locale));
     }
 
@@ -235,7 +238,12 @@ public final class TranslationOverrides {
             changed = !target.equals(locale);
             locale = target;
             local = TranslationOverrideStore.load(TranslationOverrideStore.Layer.LOCAL, target);
-            approved = TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED, target);
+            // The APPROVED layer is the POOL's, which for any English client is en_us whatever
+            // variant of English they display; the player's own edits stay keyed by the locale
+            // they were typed in. Re-keyed on the way in so everything downstream — merged, the
+            // exporter, the editor — still sees one consistent locale.
+            approved = reKey(TranslationOverrideStore.load(TranslationOverrideStore.Layer.APPROVED,
+                TranslationFilters.poolLocaleFor(target)), target);
             merged = approved.mergedWith(local);
         }
         install();
@@ -305,12 +313,13 @@ public final class TranslationOverrides {
      * clobber a player's in-progress work, and so the two survive in separate files.
      */
     public static boolean replaceApproved(TranslationEdits edits) {
-        TranslationEdits next = edits == null ? TranslationEdits.empty(locale()) : edits;
+        TranslationEdits next = edits == null
+            ? TranslationEdits.empty(TranslationFilters.poolLocaleFor(locale())) : edits;
         if (!TranslationOverrideStore.save(TranslationOverrideStore.Layer.APPROVED, next)) {
             return false;
         }
         synchronized (TranslationOverrides.class) {
-            approved = next;
+            approved = reKey(next, locale);
             merged = approved.mergedWith(local);
         }
         install();
@@ -327,6 +336,20 @@ public final class TranslationOverrides {
         }
         install();
         return true;
+    }
+
+    /**
+     * {@code edits} labelled with {@code locale}, or itself when it already is.
+     *
+     * <p>Only the label changes — the overrides are the same strings. It exists because the
+     * approved layer is fetched and stored per POOL while everything else here is per display
+     * locale, and the two differ for every English variant but {@code en_us} itself.</p>
+     */
+    private static TranslationEdits reKey(TranslationEdits edits, String locale) {
+        String target = locale == null ? "" : locale;
+        return target.equals(edits.locale())
+            ? edits
+            : new TranslationEdits(target, edits.lang(), edits.books());
     }
 
     /**

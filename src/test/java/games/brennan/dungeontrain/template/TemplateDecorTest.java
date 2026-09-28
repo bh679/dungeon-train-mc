@@ -29,6 +29,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TemplateDecorTest {
 
     /** One entry as {@code StructureTemplate.save} writes it: local {@code pos}, {@code blockPos}, {@code nbt}. */
+    /**
+     * An entry for a living entity — {@link #entry} plus the {@code Health} value every
+     * {@code LivingEntity} writes, which is what {@code TemplateDecor.carries} reads.
+     */
+    private static CompoundTag living(String id, double x, double y, double z) {
+        CompoundTag e = entry(id, x, y, z, (int) x, (int) y, (int) z);
+        e.getCompound("nbt").putFloat("Health", 20.0f);
+        return e;
+    }
+
     private static CompoundTag entry(String id, double x, double y, double z, int bx, int by, int bz) {
         CompoundTag e = new CompoundTag();
         ListTag pos = new ListTag();
@@ -61,26 +71,107 @@ class TemplateDecorTest {
     }
 
     @Test
-    void framesAndPaintingsAreDecorAndMobsAreNot() {
+    void decorAndLivingEntitiesAreCarriedAndLitterIsNot() {
         assertTrue(TemplateDecor.isDecor(entry("minecraft:item_frame", 1, 2, 3, 1, 2, 3)));
         assertTrue(TemplateDecor.isDecor(entry("minecraft:glow_item_frame", 1, 2, 3, 1, 2, 3)));
         assertTrue(TemplateDecor.isDecor(entry("minecraft:painting", 1, 2, 3, 1, 2, 3)));
-        assertFalse(TemplateDecor.isDecor(entry("minecraft:villager", 1, 2, 3, 1, 2, 3)));
-        assertFalse(TemplateDecor.isDecor(entry("minecraft:armor_stand", 1, 2, 3, 1, 2, 3)));
+
+        // A mob an author stands in a plot IS part of the build — the editor world switches natural
+        // spawning off so nothing else can wander in and be saved alongside it. Recognised by the
+        // Health tag every LivingEntity saves, which is what a real capture writes.
+        assertTrue(TemplateDecor.isDecor(living("minecraft:villager", 1, 2, 3)));
+        assertTrue(TemplateDecor.isDecor(living("minecraft:parrot", 1, 2, 3)));
+        assertTrue(TemplateDecor.isDecor(living("minecraft:zombie", 1, 2, 3)));
+
+        // Both of these are MobCategory.MISC, so the tempting "carried unless MISC" rule drops them
+        // both. That rule was written; the villager above is what caught it.
+        assertTrue(TemplateDecor.isDecor(living("minecraft:armor_stand", 1, 2, 3)),
+            "an armor stand is MISC, and still authored content");
+
+        // The minecarts an author parks in a build. No Health value to announce them, so they are
+        // named, like the pictures.
+        assertTrue(TemplateDecor.isDecor(entry("minecraft:minecart", 1, 2, 3, 1, 2, 3)));
+        assertTrue(TemplateDecor.isDecor(entry("minecraft:chest_minecart", 1, 2, 3, 1, 2, 3)));
+        assertTrue(TemplateDecor.isDecor(entry("minecraft:hopper_minecart", 1, 2, 3, 1, 2, 3)));
+
+        // A shared build is stamped into other people's worlds; a command block on wheels is not
+        // decoration, it is remote command execution.
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:command_block_minecart", 1, 2, 3, 1, 2, 3)),
+            "a command block minecart is never carried");
+
+        // Boats are refused: Sable carries one onto a moving carriage as loose cargo and it never
+        // sits right, so the editor tells the author on placement and the save leaves it out.
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:boat", 1, 2, 3, 1, 2, 3)));
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:chest_boat", 1, 2, 3, 1, 2, 3)));
+
+        // ...except in a dimensional carriage, which never moves. Same rule otherwise.
+        assertTrue(TemplateDecor.isDecor(entry("minecraft:boat", 1, 2, 3, 1, 2, 3), TemplateDecor.Rule.ROOM));
+        assertTrue(TemplateDecor.isDecor(entry("minecraft:chest_boat", 1, 2, 3, 1, 2, 3), TemplateDecor.Rule.ROOM));
+        assertTrue(TemplateDecor.isDecor(entry("minecraft:minecart", 1, 2, 3, 1, 2, 3), TemplateDecor.Rule.ROOM));
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:command_block_minecart", 1, 2, 3, 1, 2, 3), TemplateDecor.Rule.ROOM));
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:item", 1, 2, 3, 1, 2, 3), TemplateDecor.Rule.ROOM));
+
+        // A plot's litter, not its content: none of these save a Health value.
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:item", 1, 2, 3, 1, 2, 3)));
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:arrow", 1, 2, 3, 1, 2, 3)));
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:experience_orb", 1, 2, 3, 1, 2, 3)));
+
+        // A tag with neither a decor id nor a Health value — an entity type this build has never
+        // heard of, saved by a newer one — is refused rather than let into a template.
+        assertFalse(TemplateDecor.carries(new CompoundTag()));
+        assertFalse(TemplateDecor.carries(null));
     }
 
     @Test
-    void filteringKeepsDecorAndDropsEverythingElse() {
+    void filteringKeepsWhatIsCarriedAndDropsTheRest() {
         CompoundTag tag = saved(
             entry("minecraft:item_frame", 1, 2, 3, 1, 2, 3),
-            entry("minecraft:villager", 4, 0, 4, 4, 0, 4),
+            living("minecraft:villager", 4, 0, 4),
+            entry("minecraft:item", 2, 0, 2, 2, 0, 2),
+            entry("minecraft:minecart", 3, 0, 3, 3, 0, 3),
+            entry("minecraft:boat", 5, 0, 3, 5, 0, 3),
             entry("minecraft:painting", 0, 3, 5, 0, 3, 5));
 
-        assertTrue(TemplateDecor.filterEntities(tag), "a mob was present, so the tag needs reloading");
+        assertTrue(TemplateDecor.filterEntities(tag),
+            "a dropped item and a boat were present, so the tag needs reloading");
         ListTag kept = tag.getList("entities", Tag.TAG_COMPOUND);
-        assertEquals(2, kept.size());
+        assertEquals(4, kept.size(), "the mob and the minecart stay; the dropped item and the boat go");
         assertEquals("minecraft:item_frame", kept.getCompound(0).getCompound("nbt").getString("id"));
-        assertEquals("minecraft:painting", kept.getCompound(1).getCompound("nbt").getString("id"));
+        assertEquals("minecraft:villager", kept.getCompound(1).getCompound("nbt").getString("id"));
+        assertEquals("minecraft:minecart", kept.getCompound(2).getCompound("nbt").getString("id"));
+        assertEquals("minecraft:painting", kept.getCompound(3).getCompound("nbt").getString("id"));
+    }
+
+    @Test
+    void rebaseDropsAVehiclesPassengersBecauseTheRiderIsAnEntryOfItsOwn() {
+        CompoundTag e = entry("minecraft:minecart", 1.5, 0.0, 1.5, 1, 0, 1);
+        ListTag passengers = new ListTag();
+        CompoundTag rider = new CompoundTag();
+        rider.putString("id", "minecraft:villager");
+        passengers.add(rider);
+        e.getCompound("nbt").put("Passengers", passengers);
+        e.getCompound("nbt").put("Motion", new ListTag());
+
+        CompoundTag nbt = TemplateDecor.rebase(e, new Vec3(11, 12, 13), null);
+        assertFalse(nbt.contains("Passengers"), "the rider was captured standing where it sat");
+        assertFalse(nbt.contains("Motion"));
+        assertTrue(e.getCompound("nbt").contains("Passengers"), "the saved entry is left as it was");
+    }
+
+    @Test
+    void aRoomKeepsItsBoatWhereACarriageDropsIt() {
+        CompoundTag carriage = saved(
+            entry("minecraft:boat", 5, 0, 3, 5, 0, 3),
+            entry("minecraft:minecart", 3, 0, 3, 3, 0, 3));
+        CompoundTag room = saved(
+            entry("minecraft:boat", 5, 0, 3, 5, 0, 3),
+            entry("minecraft:minecart", 3, 0, 3, 3, 0, 3));
+
+        assertTrue(TemplateDecor.filterEntities(carriage), "the carriage save drops the boat");
+        assertEquals(1, carriage.getList("entities", Tag.TAG_COMPOUND).size());
+        assertFalse(TemplateDecor.filterEntities(room, TemplateDecor.Rule.ROOM),
+            "the room keeps both, so nothing needs reloading");
+        assertEquals(2, room.getList("entities", Tag.TAG_COMPOUND).size());
     }
 
     @Test

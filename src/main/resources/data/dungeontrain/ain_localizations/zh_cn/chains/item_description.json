@@ -32,8 +32,8 @@
     },
     {
       "chance": 0.25296757,
-      "connection": "\n",
-      "newline": false,
+      "connection": "",
+      "newline": true,
       "label": "第二句",
       "refs": [
         {
@@ -60,8 +60,8 @@
     },
     {
       "chance": 0.25448963,
-      "connection": "\n",
-      "newline": false,
+      "connection": "",
+      "newline": true,
       "label": "第三句",
       "refs": [
         {

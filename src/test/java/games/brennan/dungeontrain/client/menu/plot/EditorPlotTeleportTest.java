@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.menu.plot;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.editor.PlotCategory;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * and case has stopped deciding anything —
  * {@code stageApplyCommandFor} used to be the only builder that normalised it.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorPlotTeleportTest {
 
     @Test

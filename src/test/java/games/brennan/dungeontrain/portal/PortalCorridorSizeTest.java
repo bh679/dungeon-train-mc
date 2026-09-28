@@ -142,4 +142,32 @@ class PortalCorridorSizeTest {
         assertEquals(3 * d.length(),
             2 * PortalCorridorSize.corridorLength(d, k) + PortalCorridorSize.centreWallWidth(d, k));
     }
+
+    /**
+     * The tick handler anchors a pair's structure on the ENTRY corridor's origin from BOTH
+     * corridors, so the two origins have to be related by a number both can compute: two carriage
+     * lengths, less the exit's pull-back into the cart.
+     */
+    @Test
+    @DisplayName("The exit corridor's origin is the entry's plus two lengths, less the overrun")
+    void exitOriginRelatesToEntryOriginByTheOverrun() {
+        double groupMinX = 1234.56;
+        int padLen = 4;
+        for (int length : new int[] {9, 10, 12}) {
+            CarriageDims d = dims(length);
+            for (PortalCorridorKind k : PortalCorridorKind.values()) {
+                double entry = PortalCorridorSize.corridorOriginX(groupMinX, padLen,
+                    PortalCarriageSelection.SLOT_ENTRY, d, PortalCarriageRole.ENTRY, k);
+                double exit = PortalCorridorSize.corridorOriginX(groupMinX, padLen,
+                    PortalCarriageSelection.SLOT_EXIT, d, PortalCarriageRole.EXIT, k);
+                assertEquals(groupMinX + padLen, entry, 1e-9, "entry keeps its slot at " + length + " " + k);
+                assertEquals(2 * length - PortalCorridorSize.overrun(d, k), exit - entry, 1e-9,
+                    "exit offset at length " + length + " " + k);
+            }
+            assertEquals(2 * length,
+                PortalCorridorSize.corridorOriginX(0, 0, PortalCarriageSelection.SLOT_EXIT, d,
+                    PortalCarriageRole.EXIT, PortalCorridorKind.SHORT), 1e-9,
+                "SHORT pulls nothing back at length " + length);
+        }
+    }
 }

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.editor.EditorWorldLayout;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -69,9 +70,12 @@ public final class BuilderSpawn {
      * later.</p>
      */
     public static void startFlying(ServerPlayer player) {
+        // The editor world is void too: the player hovers over the plots for the half second
+        // before the editor command lifts them onto one.
         if (player == null
-                || !player.serverLevel().dimensionTypeRegistration()
-                        .is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
+                || !(player.serverLevel().dimensionTypeRegistration()
+                        .is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)
+                    || EditorWorldLayout.isEditorWorld(player.serverLevel()))) {
             return;
         }
         Abilities abilities = player.getAbilities();

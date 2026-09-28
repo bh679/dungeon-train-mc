@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.portal;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalRoomTiling.Tile;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.StagePlacementScope;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.Vec3i;
@@ -50,10 +51,13 @@ import java.util.Set;
  * than to what was asked for.</p>
  *
  * <h2>Faces</h2>
- * <p>One rule covers both axes and any authored room: <b>a face with a neighbour is carved open, a
- * face without one is closed</b> — except in {@link PortalRoomMode#ENDLESS_OPEN}, which never closes,
- * because that is what "the walls are open" means. Appending therefore moves the boundary wall
- * outward, which is what makes walking to the edge of one room add another.</p>
+ * <p>By default ({@link PortalRoomDoorWall#REPEATED}) the tiler leaves every face exactly as the
+ * stamp wrote it: copies meet through whatever openings the author drew. Under
+ * {@link PortalRoomDoorWall#SEALED} one rule covers both axes and any authored room: <b>a face with
+ * a neighbour is carved open, a face without one is closed</b> — except in
+ * {@link PortalRoomMode#ENDLESS_OPEN}, which never closes, because that is what "the walls are open"
+ * means. Appending then moves the boundary wall outward, which is what makes walking to the edge of
+ * one room add another.</p>
  *
  * <p>Carving is driven by what is <i>behind</i> each wall rather than by where the wall is: a cell in
  * the seam opens only when the cell one step inside each room is already air. So the passage that
@@ -138,13 +142,22 @@ public final class PortalRoomTiler {
         // what the budget says.
         PortalRoomTiling tiling = structure.tiling();
 
+        // The same number for both rules below, so they cannot come to disagree about whether the
+        // budget is spent — which is the state the whole of PortalRoomTiling#RETIRE_MARGIN is about.
+        int budget = structure.tileBudget(standingIn.size());
+
         // Build ahead of the player before shedding what is behind them. What is ahead is what they
         // can see — the fog sits at the edge of what has been built — whereas what is behind is
         // already out of sight. When the budget is spent this finds nothing, and the retire below
-        // frees a slot for the next tick, so a sliding window still slides.
-        Tile next = tiling.nextToAdd(standingIn, radius, structure.tileBudget(standingIn.size()),
+        // frees a slot only for tiles that have fallen a whole tile past the window — so a player
+        // genuinely walking still slides it, and a player shifting between two tiles moves nothing.
+        Tile next = tiling.nextToAdd(standingIn, radius, budget,
             candidate -> canStamp(level, dims, structure, candidate, neighbours));
-        if (next != null) return stampTile(level, dims, structure, next, pairKey);
+        if (next != null) {
+            // Same stage as the base room for the stage placeholders — PortalCarriageBuilder#stageIdFor.
+            return StagePlacementScope.with(PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
+                () -> stampTile(level, dims, structure, next, pairKey));
+        }
 
         // Spared as well as the tile somebody is standing in: the room a bound extra corridor opens
         // into. That corridor is held past the window (PortalExitCopies) so a player can walk back in
@@ -157,7 +170,11 @@ public final class PortalRoomTiler {
         // The occupied tiles themselves need no explicit sparing any more — they are centres, so
         // nextToRemove will not offer one up. Kept all the same: it costs a set lookup and it states
         // the rule at the point somebody reading the erase path will look for it.
-        Tile stale = tiling.nextToRemove(standingIn, radius,
+        // Wider than the radius the add rule was given, once the budget is spent: PortalRoomTiling
+        // #retireRadius. Without that band the two rules pass one tile back and forth forever in a
+        // room whose budget is smaller than its window — a full stamp and a full erase every tick.
+        Tile stale = tiling.nextToRemove(standingIn,
+            PortalRoomTiling.retireRadius(radius, tiling.size(), budget),
             candidate -> !standingIn.contains(candidate)
                 && !candidate.equals(structure.exitTile())
                 && !PortalExitBindings.anyBoundTo(pairKey, candidate));
@@ -180,6 +197,25 @@ public final class PortalRoomTiler {
     }
 
     // ---------- stamping ----------
+
+    /**
+     * Which liquids in the skin around a tile are a neighbouring copy's own plane, to be left alone
+     * by the fluid plug: the floor row when the floor palette is liquid, the roof row when the roof
+     * palette is. A natural aquifer that happens to sit at exactly those two heights is spared too,
+     * which costs nothing — that plane is water anyway, so water meets water. The rows below the
+     * floor and above the roof are still dammed.
+     */
+    private static java.util.function.Predicate<BlockPos> liquidPlaneKeep(
+            PortalRoomCopiesVariant single, BlockPos origin, Vec3i size) {
+        boolean floor = single.hasLiquid(PortalRoomCopiesVariant.Plane.FLOOR);
+        boolean roof = single.hasLiquid(PortalRoomCopiesVariant.Plane.ROOF);
+        if (!floor && !roof) return pos -> false;
+        int floorY = origin.getY();
+        int floorTop = floorY + PortalRoomSinglePlanes.floorHeightFor(single, size) - 1;
+        int ceilingY = floorY + size.getY() - 1;
+        return pos -> (floor && pos.getY() >= floorY && pos.getY() <= floorTop)
+            || (roof && pos.getY() == ceilingY);
+    }
 
     /**
      * Put a copy of the room at {@code tile} and settle the faces around it.
@@ -215,11 +251,15 @@ public final class PortalRoomTiler {
             writeMaskFor(structure, clearMask, origin, size, !single.isEmpty());
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, structure.roomName(), size,
             /*relight*/ true, clearMask, writeMask, structure.variantIndexFor(tile, pairKey),
+            // The base tile's index, which every copy computes the same — what a cell that
+            // overrides its room's Copies setting rolls from. See stampRoomAt.
+            structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey),
             pairKey, tile,
             PortalRoomMobs.liveCount(level, PortalCarriageBuilder.footprintOf(level, structure, dims), pairKey),
             // The structure's own setting, not a fresh read of the variant: a portal already standing
             // keeps what it was built with, the same promise planStructure makes about the room.
-            structure.settings().contents(), structure.settings().books());
+            structure.settings().contents(), structure.settings().books(),
+            liquidPlaneKeep(single, origin, size));
 
         // After the stamp, not instead of it: the stamp is what clears the rock this tile landed in,
         // and under Single its write half put nothing back. These two planes are the whole of what
@@ -227,12 +267,12 @@ public final class PortalRoomTiler {
         PortalRoomSinglePlanes.write(level, origin, size, single, clearMask, /*relight*/ true,
             level.getSeed(), structure.variantIndexFor(tile, pairKey));
 
-        // Then close whatever the copy's own wall left open in a mouth's seal plane. The plane may
-        // not have air in it — it is the only thing between the room and the basement when the tile
-        // beyond cannot be stamped — and an authored end wall legitimately does.
-        if (structure.settings().effectiveDoorWall().repeats()) {
-            PortalRoomSealRepair.repair(level, dims, structure, tile);
-        }
+        // Nothing closes what the copy's own wall left open in a mouth's seal plane. Under Kept
+        // (the default) the plane is that copy's end column, stamped as the author drew it — air
+        // included. A repair step used to refill that air by the mouth's three-tier rule, which for
+        // an open-sided room meant a wall of its floor block nobody drew; that is exactly the thing
+        // Kept exists not to do. What stands beyond an authored opening when the next tile cannot
+        // be stamped is basement rock, which is solid, and which the next tile replaces.
 
         PortalStructure grown = structure.withTiling(structure.tiling().with(tile));
         refreshFacesAround(level, dims, grown, tile);
@@ -318,13 +358,13 @@ public final class PortalRoomTiler {
      * at tile {@code (±1, 0)}. Masked, that copy never writes the wall that touches the portal
      * carriage and the mouth's flattened mirror fill stands in for it — so the authored wall does not
      * repeat, and under {@link PortalRoomCopies.Kind#DYNAMIC} the wall a player sees is the base
-     * room's roll. Released, the copy lays its own, and {@link PortalRoomSealRepair} closes whatever
-     * air that leaves, so the plane keeps the one property it must have.</p>
+     * room's roll. Released, the copy lays its own — air included, where the author drew air; nothing
+     * refills that plane behind it.</p>
      *
      * <p><b>The author decides which.</b> {@link PortalRoomDoorWall} is the setting and it defaults to
-     * {@link PortalRoomDoorWall#SEALED} — the behaviour every room had before it existed — so this
-     * returns the full mask unless a room has asked for the other. Read through
-     * {@code effectiveDoorWall}, so a value left over from a mode that cannot use it is not honoured.</p>
+     * {@link PortalRoomDoorWall#REPEATED}, so this returns the seal-less mask unless a room has asked
+     * for {@link PortalRoomDoorWall#SEALED}. Read through {@code effectiveDoorWall}, which pins the
+     * modes that cannot use the setting to Sealed whatever the default says.</p>
      *
      * <p><b>Only the seals, ever.</b> The corridor and plug boxes are never released whatever the
      * setting says — those hold the doorway.</p>
@@ -376,7 +416,10 @@ public final class PortalRoomTiler {
         // window is the other case — it should leave nothing behind. Without this the floor
         // disappears and the mobs stay, falling to the world floor, and since they are all
         // persistence-required that is a permanent leak rather than a passing mess.
-        PortalRoomMobs.reapTile(level, box, pairKey, tile);
+        //
+        // The whole volume, not only what this copy placed: a mob that had walked one tile over used
+        // to be matched by no copy's reap at all. See PortalRoomMobs#sweepVolume.
+        PortalRoomMobs.sweepVolume(level, box, pairKey, "copy " + tile.x() + "," + tile.z());
 
         PortalCorridorMask mask = maskFor(structure, dims, tile);
         PortalClear.clearBox(level, box, mask);

@@ -139,7 +139,7 @@ public final class ContainerContentsMenuRaycast {
         int colEnd = Math.min(n, colStart + ContainerContentsMenu.ROWS_PER_COLUMN);
         int idx = -1;
         for (int i = colStart; i < colEnd; i++) {
-            boolean hasSub = layout.showDur()[i] || layout.showEnch()[i];
+            boolean hasSub = layout.hasSubRow(i);
             double h = hasSub
                 ? ContainerContentsMenuRenderer.ENTRY_BLOCK_HEIGHT
                 : ContainerContentsMenuRenderer.ROW_HEIGHT;
@@ -153,8 +153,9 @@ public final class ContainerContentsMenuRaycast {
 
         boolean showDur = layout.showDur()[idx];
         boolean showEnch = layout.showEnch()[idx];
+        boolean showScale = layout.showScale()[idx];
         double yWithinBlock = yFromGridTop - layout.rowDispTop()[idx];
-        boolean inSubRow = (showDur || showEnch) && yWithinBlock > ContainerContentsMenuRenderer.ROW_HEIGHT;
+        boolean inSubRow = layout.hasSubRow(idx) && yWithinBlock > ContainerContentsMenuRenderer.ROW_HEIGHT;
 
         double colXL = -halfW + layout.colLeft()[col];
         double colXR = colXL + colActualW;
@@ -168,6 +169,12 @@ public final class ContainerContentsMenuRaycast {
             double dur1R = dur1L + subCellW;
             double dur2R = dur1R + subCellW;
             double ench1R = dur2R + subCellW;
+            if (showScale) {
+                // Random-potion placeholder: scale toggle on the left half, bottle form on the right.
+                return hitX <= dur2R
+                    ? new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_SCALE_TOGGLE, idx)
+                    : new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_POTION_FORM, idx);
+            }
             if (hitX <= dur1R) {
                 return showDur
                     ? new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_RAND_DUR_TOGGLE, idx)

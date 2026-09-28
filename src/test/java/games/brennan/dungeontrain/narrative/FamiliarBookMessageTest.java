@@ -38,7 +38,8 @@ class FamiliarBookMessageTest {
                                                long longestReadMs, long longestPageMs, int longestPageIndex,
                                                int pageTurns, int rereads, int votesUp, int votesDown) {
         return new BookStatsClient.Stats(true, held, completers, opens,
-                longestReadMs, longestPageMs, longestPageIndex, pageTurns, rereads, votesUp, votesDown);
+                longestReadMs, longestPageMs, longestPageIndex, pageTurns, rereads, votesUp, votesDown,
+                "approved", false);
     }
 
     /** The top-level translatable contents of the built line for {@code s} at {@code seed}. */

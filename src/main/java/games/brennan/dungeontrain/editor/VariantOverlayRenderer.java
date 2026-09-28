@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.EditorHistoryPacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorStrayBlocksPacket;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
@@ -19,6 +20,7 @@ import org.slf4j.Logger;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
+import games.brennan.dungeontrain.portal.PortalRoomSky;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -97,6 +99,9 @@ public final class VariantOverlayRenderer {
      * absent means "last sent was an empty snapshot (or none yet)", so a
      * fresh non-empty plot always pushes on first tick.
      */
+    /** Last undo/redo labels sent, so a steady editor generates no history packets. */
+    private static final Map<UUID, String> LAST_HISTORY_KEY = new HashMap<>();
+
     private static final Map<UUID, String> LAST_LOCK_SNAPSHOT_KEY = new HashMap<>();
 
     /**
@@ -134,6 +139,8 @@ public final class VariantOverlayRenderer {
      * inside this per-tick path.
      */
     private static final Map<UUID, String> LAST_STAGE_STRIPS_KEY = new HashMap<>();
+    /** Per-player dedup key for the stage icon palette push: index generation + effective stage. */
+    private static final Map<UUID, String> LAST_STAGE_ICON_KEY = new HashMap<>();
 
     /** Per-player dedup key for the part-visibility mirror — just {@code EditorPartVisibility.generation()}. */
     private static final Map<UUID, String> LAST_PART_VIS_KEY = new HashMap<>();
@@ -147,15 +154,31 @@ public final class VariantOverlayRenderer {
     private static final Map<UUID, String> LAST_STRAYS_KEY = new HashMap<>();
 
     /**
-     * Per-player dedup key for the amber portal-door ghosts — {@link EditorDoorGhosts#key}, which
-     * encodes each room plot's origin and size. Same {@code null}-means-empty convention and the
-     * same toggle behaviour as {@link #LAST_STRAYS_KEY}.
+     * The categories whose plots have two ends worth naming — see {@link #pushDoorGhostsSnapshot}.
+     * Portal rooms carry the full ghost door; carriages and contents carry the outline and the
+     * Entrance / Exit word over the doorway the author has already cut.
+     */
+    private static final java.util.Set<EditorCategory> DOOR_GHOST_CATEGORIES =
+        java.util.EnumSet.of(EditorCategory.PORTALS, EditorCategory.CARRIAGES, EditorCategory.CONTENTS);
+
+    /**
+     * Per-player dedup key for the door markers — {@link EditorDoorGhosts#key}, which encodes the
+     * stamped category and each of its plots' origin and size. Same {@code null}-means-empty
+     * convention and the same toggle behaviour as {@link #LAST_STRAYS_KEY}.
      *
      * <p>Keyed on the plot grid rather than on a generation counter because there is no sweep behind
      * these — a door's position is a function of its plot's box, so the boxes <i>are</i> the version
-     * number. A resize moves the key; a tick in a steady editor does not.</p>
+     * number. A resize, a new variant or a category switch moves the key; a tick in a steady editor
+     * does not.</p>
      */
     private static final Map<UUID, String> LAST_DOOR_GHOSTS_KEY = new HashMap<>();
+
+    /**
+     * Per-player dedup key for the variant-cell mob ghosts — the plot key plus every ghosted cell and
+     * its entity, so the packet goes out only when the preview frame actually changed. See
+     * {@link #pushMobGhostsSnapshot}.
+     */
+    private static final Map<UUID, String> LAST_MOB_GHOSTS_KEY = new HashMap<>();
 
     private VariantOverlayRenderer() {}
 
@@ -178,10 +201,13 @@ public final class VariantOverlayRenderer {
         LAST_PLOT_LABELS_KEY.clear();
         LAST_TYPE_MENUS_KEY.clear();
         LAST_STAGE_STRIPS_KEY.clear();
+        LAST_STAGE_ICON_KEY.clear();
         LAST_PART_VIS_KEY.clear();
         LAST_STRAYS_KEY.clear();
         LAST_DOOR_GHOSTS_KEY.clear();
+        LAST_MOB_GHOSTS_KEY.clear();
         EditorPlotSky.clearAll();
+        EditorMirrorPlotSync.clearAll();
     }
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -206,6 +232,11 @@ public final class VariantOverlayRenderer {
         if (lastStatus != null) {
             DungeonTrainNet.sendTo(player, EditorStatusPacket.empty());
         }
+        // The history stack itself survives leaving the build area, but the menu that reads these
+        // labels is gone with it — so stop describing steps until they come back.
+        if (LAST_HISTORY_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player, EditorHistoryPacket.empty());
+        }
         PartPositionMenuController.forget(player);
         // Take the plot's daylight back off — they have left the build area, and the client would
         // otherwise hold a box it can no longer be inside.
@@ -221,6 +252,8 @@ public final class VariantOverlayRenderer {
         clearPartVisibilityIfStale(player);
         clearStraysIfStale(player);
         clearDoorGhostsIfStale(player);
+        clearMobGhostsIfStale(player);
+        EditorMirrorPlotSync.forget(player);
     }
 
     /**
@@ -244,7 +277,34 @@ public final class VariantOverlayRenderer {
 
         sweepStrays(level, dims, players);
 
+        // A Train Builder world authors at y 4, which is below every gate this loop is built around.
+        // One dimension-type comparison per tick answers it for the whole level, and the builder arm
+        // below is what makes the Z menu's wireframe and lock labels show up down there.
+        boolean builderLevel = level.dimensionTypeRegistration().is(
+            games.brennan.dungeontrain.builder.BuilderWorldLayout.BUILDER_DIMENSION_TYPE);
+
+        long tickStart = System.nanoTime();
+        int atPlots = 0;
+        // Whether anyone is standing under a Day/Night sky this tick — what decides if the
+        // editor's clock runs or rests. See EditorClock.
+        boolean cycleSeen = false;
         for (ServerPlayer player : players) {
+            if (EditorLayout.isAtPlotHeight(player.getBlockY())) atPlots++;
+            // The two snapshots the block-variant menu draws itself against, and nothing else: the
+            // rest of the cascade below is about editor plots — a plot grid, per-plot labels, type
+            // menus, a plot sky — none of which a builder world has. Both are plot-driven and
+            // self-deduping, so a steady builder tick is two map lookups.
+            if (builderLevel) {
+                pushLockIdSnapshot(player);
+                // Honours the same overlay toggle the editor's wireframe does — one switch for the
+                // one overlay, wherever you are standing when you turn it off.
+                if (isEnabled(player)) {
+                    pushOutlineSnapshot(player);
+                } else {
+                    clearOutlineIfStale(player);
+                }
+                continue;
+            }
             // Editor plots live in the sky at EditorLayout.PLOT_Y; trains run far below. Skip the whole
             // editor-overlay locate cascade for anyone not up at the build area — this is the
             // ~9ms/tick the profiler flagged, which ran unconditionally during normal play.
@@ -255,16 +315,20 @@ public final class VariantOverlayRenderer {
                 continue;
             }
             updateEditorStatus(player, dims);
+            EditorMirrorPlotSync.push(player, dims);
+            pushHistorySnapshot(player);
             pushLockIdSnapshot(player);
             pushPlotLabelsSnapshot(player, dims);
             pushTypeMenusSnapshot(player, dims);
             pushStageStripsSnapshot(player, level);
+            pushStageIconPaletteSnapshot(player);
             pushPartVisibilitySnapshot(player);
             pushStraysSnapshot(player);
             pushDoorGhostsSnapshot(player, dims);
+            pushMobGhostsSnapshot(player, level, dims);
             // Light a portal room's plot with the room's own Sky — the lighting it will ship with,
             // rather than the dark box it was authored in until now.
-            EditorPlotSky.update(player, dims);
+            if (EditorPlotSky.update(player, dims) == PortalRoomSky.CYCLE) cycleSeen = true;
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
@@ -337,6 +401,20 @@ public final class VariantOverlayRenderer {
                 continue;
             }
 
+            // Chunk frame plot — beside the Dimensions rooms, and only while that category is
+            // resident; same order as BlockVariantPlot.resolveAtPos.
+            if (EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) {
+                java.util.Optional<String> frameName = ChunkFrameEditor.plotContaining(playerPos);
+                if (frameName.isPresent()) {
+                    ChunkFramePlot framePlot = ChunkFramePlot.of(frameName.get());
+                    Vec3i frameSize = framePlot.footprint();
+                    updateHoverPacket(player, framePlot.origin(),
+                        pos -> inBounds(pos, frameSize),
+                        framePlot::statesAt);
+                    continue;
+                }
+            }
+
             // Track-side plot (track tile / pillar section / stairs adjunct
             // / tunnel kind) — icon HUD for the kind's own variants.json
             // sidecar. {@code TrackVariantBlocks.entries()} returns the same
@@ -362,6 +440,40 @@ public final class VariantOverlayRenderer {
             // Outside every plot — clear any stale HUD state.
             clearHoverIfStale(player);
         }
+        EditorClock.tick(level, cycleSeen);
+        recordEditorTiming(level, System.nanoTime() - tickStart, atPlots);
+    }
+
+    // ---- [editor.timing] -------------------------------------------------------------------
+
+    /** Ticks folded into one {@code [editor.timing]} line — once a second at 20 TPS. */
+    private static final int EDITOR_TIMING_PERIOD_TICKS = 20;
+    private static long editorTimingSumNanos;
+    private static long editorTimingMaxNanos;
+    private static int editorTimingTicks;
+
+    /**
+     * Rolling cost of the per-player cascade above, logged at DEBUG once a second while someone is
+     * up at the plots. The {@code [stuck.timing] overlay=} bucket in {@code TrainTickEvents} never
+     * reaches the log in the editor world (it returns early with no train), so without this the
+     * editor's tick cost is invisible. Steady state with nobody at plot height records nothing.
+     */
+    private static void recordEditorTiming(ServerLevel level, long elapsedNanos, int playersAtPlots) {
+        if (playersAtPlots == 0 || !LOGGER.isDebugEnabled()) return;
+        editorTimingSumNanos += elapsedNanos;
+        editorTimingMaxNanos = Math.max(editorTimingMaxNanos, elapsedNanos);
+        editorTimingTicks++;
+        if (level.getGameTime() % EDITOR_TIMING_PERIOD_TICKS != 0) return;
+        double avgMs = editorTimingSumNanos / 1_000_000.0 / editorTimingTicks;
+        double maxMs = editorTimingMaxNanos / 1_000_000.0;
+        LOGGER.debug("[editor.timing] overlay avg={}ms max={}ms ticks={} players={} stamped={}",
+            String.format(java.util.Locale.ROOT, "%.2f", avgMs),
+            String.format(java.util.Locale.ROOT, "%.2f", maxMs),
+            editorTimingTicks, playersAtPlots,
+            EditorStampedCategoryState.current().map(Enum::name).orElse("none"));
+        editorTimingSumNanos = 0;
+        editorTimingMaxNanos = 0;
+        editorTimingTicks = 0;
     }
 
     /**
@@ -398,11 +510,33 @@ public final class VariantOverlayRenderer {
             // Parts have no weight pool — pass the part name as modelName for
             // consistency, but the menu won't render a weight row for parts.
             DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-                "Parts", partModel, partModel, partLoc.name(), partDevmode, EditorStatusPacket.NO_WEIGHT,
+                PlotCategory.PARTS.id(), partModel, partModel, partLoc.name(), partDevmode, EditorStatusPacket.NO_WEIGHT,
                 0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
                 partMenuEnabled, partMirror[0], partMirror[1], partMirror[2], partMirror[3],
                 Collections.emptySet(), ""));
             return;
+        }
+
+        // Chunk frame plots, the same synthetic way: they have no Template either. Only while
+        // Dimensions is resident, which is the only time they stand.
+        if (EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) {
+            Optional<String> chunk = ChunkFrameEditor.plotContaining(player.blockPosition());
+            if (chunk.isPresent()) {
+                String frame = chunk.get();
+                boolean chunkDevmode = EditorDevMode.isEnabled();
+                boolean[] chunkMirror = mirrorAxesAt(player, dims);
+                String chunkKey = "CHUNK_FRAMES|" + frame + "|" + chunkDevmode
+                    + "|" + chunkMirror[0] + chunkMirror[1] + chunkMirror[2] + chunkMirror[3];
+                if (chunkKey.equals(prev)) return;
+                LAST_STATUS.put(uuid, chunkKey);
+                DungeonTrainNet.sendTo(player, new EditorStatusPacket(
+                    PlotCategory.CHUNK_FRAMES.id(), frame, ChunkFrameEditor.MODEL_ID, frame,
+                    chunkDevmode, EditorStatusPacket.NO_WEIGHT,
+                    0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
+                    false, chunkMirror[0], chunkMirror[1], chunkMirror[2], chunkMirror[3],
+                    Collections.emptySet(), ""));
+                return;
+            }
         }
 
         Optional<EditorCategory.Located> located = EditorCategory.locate(player, dims);
@@ -451,17 +585,40 @@ public final class VariantOverlayRenderer {
         String roomMode = roomSize == null ? EditorStatusPacket.NO_MODE
             : games.brennan.dungeontrain.portal.PortalRoomSettings.of(modelName).toTag();
 
-        String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight
+        // Random-flip options — contents only; every other kind's stamp is never flipped, so its
+        // mask stays NO_FLIP and the client renders no Flip row. In the key so a toggle refreshes.
+        int flipMask = l.model() instanceof Template.Contents cm
+            ? EditorStatusPacket.flipMaskOf(
+                games.brennan.dungeontrain.train.CarriageContentsWeights.current().flipFor(cm.contents().id()))
+            : EditorStatusPacket.NO_FLIP;
+
+        // Header string: the weights.json display label for contents / portal rooms (falls back to
+        // the id when unlabelled) so a Rename reads the same here as on the panels; other kinds
+        // keep their richer Template.displayName(). modelId / modelName below stay the id —
+        // command dispatch never sees the label.
+        String headerName = l.model() instanceof Template.Contents cm
+            ? games.brennan.dungeontrain.train.CarriageContentsWeights.current().nameFor(cm.contents().id())
+            : l.category() == EditorCategory.PORTALS && roomSize != null
+                ? games.brennan.dungeontrain.track.variant.TrackVariantWeights.nameFor(
+                    games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, modelName)
+                : l.model().displayName();
+
+        String key = l.category().name() + "|" + headerName + "|" + devmode + "|" + weight
             + "|" + minLevel + "|" + maxLevel + "|" + phaseMask + "|" + stageId
             + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + mirror[3] + "|" + excludedKey
-            + "|" + roomLength + "x" + roomHeight + "x" + roomWidth + "/" + roomMode;
+            + "|" + roomLength + "x" + roomHeight + "x" + roomWidth + "/" + roomMode
+            + "|f" + flipMask;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
+        // A group is addressed as WHOLE_GROUP on the client (its own roster group and tab), the
+        // same way a part is addressed as PARTS while being stamped under CARRIAGES.
+        String statusCategory = l.model() instanceof Template.CarriageGroup
+            ? PlotCategory.WHOLE_GROUP.id() : l.category().id();
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-            l.category().displayName(), l.model().displayName(), l.model().id(), modelName,
+            statusCategory, headerName, l.model().id(), modelName,
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
             mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId,
-            roomLength, roomWidth, roomHeight, roomMode));
+            roomLength, roomWidth, roomHeight, roomMode, flipMask));
     }
 
     /**
@@ -742,7 +899,7 @@ public final class VariantOverlayRenderer {
                 l.category(), l.modelId(), l.modelName(),
                 l.inPlot(), l.isUser(), l.isImported(),
                 l.roomLength(), l.roomWidth(), l.roomHeight(), l.roomMode(),
-                l.copiesFloorBlock(), l.copiesRoofBlock()));
+                l.copiesFloorBlock(), l.copiesRoofBlock(), l.copiesFloorHeight()));
         }
         EditorPlotLabels.Label first = labels.get(0);
         LOGGER.info("[DungeonTrain] EditorPlotLabels: send {} entries (category {}, first '{}' weight={} @ {}) to {}",
@@ -788,7 +945,6 @@ public final class VariantOverlayRenderer {
         java.util.List<EditorTypeMenusPacket.Menu> menus = appendSubVariantsCompanion(
             baseMenus, player, dims, category);
         menus = appendCompanionMenu(menus, player, dims, category);
-        menus = appendPackageMenu(menus, dims);
         menus = appendStagesMenu(menus, dims);
 
         // Whether this player has closed the world-space Welcome panel in this world. World state
@@ -806,21 +962,21 @@ public final class VariantOverlayRenderer {
         // In the key as well as the packet, or closing / reopening the Welcome panel would be
         // deduped away and the panel would not react until something else changed the snapshot.
         keyBuf.append("help:").append(helpPanelDismissed).append('|');
+        // The WHOLE category's type-level setting rides with the menus; in the key so an edit re-pushes.
+        int wholeGroupEvery = games.brennan.dungeontrain.train.WholeGroupSettings.every();
+        keyBuf.append("every:").append(wholeGroupEvery).append('|');
         for (EditorTypeMenusPacket.Menu m : menus) {
             BlockPos p = m.worldPos();
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
                 .append(':').append(m.typeName()).append('[');
             for (EditorTypeMenusPacket.Variant v : m.variants()) {
-                // Include the spawn gate (min/max level + phase mask) in the dedup key so editing it
-                // from the world-space panel re-pushes the snapshot and the cells update live —
-                // otherwise only weight changes would refresh the panel.
-                keyBuf.append(v.name()).append('=').append(v.weight())
-                    .append('@').append(v.minLevel()).append('-').append(v.maxLevel())
-                    .append('p').append(v.phaseMask())
-                    // Include the Stage link(s) so linking / detaching / toggling re-pushes the
-                    // snapshot (the chip replaces the cells) and the stage rows refresh as stages are
-                    // added/edited. Joined so a multi-Stage member's edits change the key.
-                    .append('s').append(String.join("|", v.stageIds())).append(',');
+                appendVariantKey(keyBuf, v);
+                // Nested sub-variant chips ride inside the row; without them in the key a member's
+                // rename or gate edit would not re-push until the parent row itself changed.
+                for (EditorTypeMenusPacket.Variant sv : v.subVariants()) {
+                    keyBuf.append('>');
+                    appendVariantKey(keyBuf, sv);
+                }
             }
             keyBuf.append("];");
         }
@@ -840,10 +996,40 @@ public final class VariantOverlayRenderer {
             menus.size(), category, first.typeName(), first.variants().size(), first.worldPos(),
             player.getName().getString());
         DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(
-            menus, EditorStageSelection.effective(), helpPanelDismissed));
+            menus, EditorStageSelection.effective(), helpPanelDismissed, wholeGroupEvery));
+    }
+
+    /**
+     * Tell the client what Undo and Redo would step through, so the menu's two history buttons can
+     * name it. Deduped like every other snapshot — an editor nobody is editing sends nothing.
+     */
+    private static void pushHistorySnapshot(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        String undo = EditorEditHistory.peekUndoLabel(uuid);
+        String redo = EditorEditHistory.peekRedoLabel(uuid);
+        String key = undo + " " + redo;
+        if (key.equals(LAST_HISTORY_KEY.get(uuid))) return;
+        LAST_HISTORY_KEY.put(uuid, key);
+        DungeonTrainNet.sendTo(player, new EditorHistoryPacket(undo, redo));
     }
 
     /** Send the empty type-menus packet if the player previously had a non-empty snapshot. */
+    /**
+     * One row's contribution to the type-menus dedup key. Includes the spawn gate (min/max level +
+     * phase mask) so editing it from the world-space panel re-pushes the snapshot and the cells
+     * update live — otherwise only weight changes would refresh the panel. Includes the display
+     * label as well as the id so a Rename (weights.json {@code name}, id unchanged) re-pushes
+     * instead of waiting for some unrelated edit to move the key. Includes the Stage link(s) so
+     * linking / detaching / toggling re-pushes (the chip replaces the cells) and the stage rows
+     * refresh as stages are added/edited; joined so a multi-Stage member's edits change the key.
+     */
+    private static void appendVariantKey(StringBuilder keyBuf, EditorTypeMenusPacket.Variant v) {
+        keyBuf.append(v.name()).append('~').append(v.displayName()).append('=').append(v.weight())
+            .append('@').append(v.minLevel()).append('-').append(v.maxLevel())
+            .append('p').append(v.phaseMask())
+            .append('s').append(String.join("|", v.stageIds())).append(',');
+    }
+
     private static void clearTypeMenusIfStale(ServerPlayer player) {
         if (LAST_TYPE_MENUS_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player, EditorTypeMenusPacket.empty());
@@ -890,6 +1076,34 @@ public final class VariantOverlayRenderer {
             DungeonTrainNet.sendTo(player,
                 games.brennan.dungeontrain.net.StageBlockStripsPacket.empty());
         }
+        if (LAST_STAGE_ICON_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.StageIconPalettePacket.empty());
+        }
+    }
+
+    /**
+     * Push the effective stage's placeholder resolutions (the stage-aware item icons' feed) when
+     * the index generation or the selected stage changed since the player's last push. The
+     * strips push above already cleared it on editor exit.
+     */
+    private static void pushStageIconPaletteSnapshot(ServerPlayer player) {
+        if (EditorStampedCategoryState.current().isEmpty()) return;
+        String stageId = EditorStageSelection.effective();
+        if (stageId == null) return;
+        UUID uuid = player.getUUID();
+        String key = "g" + StageBlockIndex.generation() + ":" + stageId;
+        if (key.equals(LAST_STAGE_ICON_KEY.get(uuid))) return;
+        LAST_STAGE_ICON_KEY.put(uuid, key);
+        games.brennan.dungeontrain.template.StagePalette pal =
+            games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.paletteFor(stageId);
+        java.util.List<games.brennan.dungeontrain.net.StageIconPalettePacket.Entry> entries = new java.util.ArrayList<>();
+        for (games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.Placeholder p
+                : games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.placeholders()) {
+            entries.add(new games.brennan.dungeontrain.net.StageIconPalettePacket.Entry(p.name(),
+                games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.effectiveTarget(p, pal),
+                games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.isRepeat(p, pal)));
+        }
+        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.StageIconPalettePacket(stageId, entries));
     }
 
     /**
@@ -976,12 +1190,16 @@ public final class VariantOverlayRenderer {
     }
 
     /**
-     * Push the amber portal-door ghosts when the room plot grid has moved.
+     * Push the door markers when the stamped category's plot grid has moved — the portal rooms'
+     * corridor mouths, or a carriage / contents plot's two end doorways.
      *
-     * <p>Gated on {@link EditorCategory#PORTALS} being the stamped category, so this costs a map
-     * lookup and nothing else in every other category — the door cells are only meaningful where a
-     * room plot is actually standing, and painting them over a carriage row would be painting them
-     * in mid-air.</p>
+     * <p>Gated on the stamped category being one that <i>has</i> two ends to name, so this costs a
+     * map lookup and nothing else in the rest — a marker over a track or architecture plot would
+     * stand on a line nothing is ever cut on.</p>
+     *
+     * <p>The category rides in the dedup key as well as in the snapshot: the three grids are
+     * different places, and a key that named only the boxes could in principle repeat across a
+     * category switch and leave the previous category's markers standing.</p>
      *
      * <p>Same toggle shape as {@link #pushStraysSnapshot}: a player with the ghosts off goes down the
      * clear path, which drops their dedup key, so the packet that turns them off is sent exactly once
@@ -993,21 +1211,23 @@ public final class VariantOverlayRenderer {
             clearDoorGhostsIfStale(player);
             return;
         }
-        if (EditorStampedCategoryState.current().orElse(null) != EditorCategory.PORTALS) {
+        EditorCategory category = EditorStampedCategoryState.current().orElse(null);
+        if (!DOOR_GHOST_CATEGORIES.contains(category)) {
             clearDoorGhostsIfStale(player);
             return;
         }
-        String key = EditorDoorGhosts.key(dims);
+        String key = EditorDoorGhosts.key(category, dims);
         if (key.equals(LAST_DOOR_GHOSTS_KEY.get(uuid))) return;
 
-        List<BlockPos> cells = EditorDoorGhosts.snapshot(dims);
-        if (cells.isEmpty()) {
+        List<games.brennan.dungeontrain.net.EditorDoorGhostsPacket.Door> doors =
+            EditorDoorGhosts.snapshot(category, dims);
+        if (doors.isEmpty()) {
             clearDoorGhostsIfStale(player);
             return;
         }
         LAST_DOOR_GHOSTS_KEY.put(uuid, key);
         DungeonTrainNet.sendTo(player,
-            new games.brennan.dungeontrain.net.EditorDoorGhostsPacket(cells));
+            new games.brennan.dungeontrain.net.EditorDoorGhostsPacket(doors));
     }
 
     /** Send the empty door-ghost packet if the player previously had a non-empty snapshot. */
@@ -1015,6 +1235,63 @@ public final class VariantOverlayRenderer {
         if (LAST_DOOR_GHOSTS_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player,
                 games.brennan.dungeontrain.net.EditorDoorGhostsPacket.empty());
+        }
+    }
+
+    /**
+     * Push the mob ghosts for the plot the player stands in: one per cell whose variant pool's
+     * <b>current preview slot</b> is a mob entry, while the editor's Mobs setting is Blocks
+     * ({@link FrozenMobs#isBlocksMode}). The slot is the same one {@link VariantEditorPreviewTicker}
+     * shows — {@link VariantEditorPreviewTicker#pickEntryIndex} on the same {@code previewTick} — so a
+     * cell with a block and a mob alternates between the block and the ghost every three seconds, the
+     * way a cell of two blocks alternates, and the ticker airs the cell under the ghost.
+     *
+     * <p>Recomputed on the ticker's cadence ({@link VariantEditorPreviewTicker#TICK_PERIOD}) and
+     * deduped on the resulting list, so a plot whose slots did not move sends nothing. Leaving the
+     * plot, switching to Live, or a plot with no mob entries clears.</p>
+     */
+    private static void pushMobGhostsSnapshot(ServerPlayer player, ServerLevel level, CarriageDims dims) {
+        UUID uuid = player.getUUID();
+        if (!FrozenMobs.isBlocksMode(level)) {
+            clearMobGhostsIfStale(player);
+            return;
+        }
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) {
+            clearMobGhostsIfStale(player);
+            return;
+        }
+        long gameTime = level.getGameTime();
+        if (gameTime % VariantEditorPreviewTicker.TICK_PERIOD != 0) return;
+        long previewTick = gameTime / VariantEditorPreviewTicker.TICK_PERIOD;
+
+        List<games.brennan.dungeontrain.net.EditorMobGhostsPacket.Ghost> ghosts = new ArrayList<>();
+        StringBuilder key = new StringBuilder(plot.key());
+        for (BlockPos local : plot.allFlaggedPositions()) {
+            List<VariantState> states = plot.statesAt(local);
+            if (states == null || states.isEmpty()) continue;
+            VariantState shown = states.get(
+                VariantEditorPreviewTicker.pickEntryIndex(plot.key(), local, states.size(), previewTick));
+            if (!shown.isMob() || shown.entityId() == null) continue;
+            ghosts.add(new games.brennan.dungeontrain.net.EditorMobGhostsPacket.Ghost(
+                plot.origin().offset(local), shown.entityId().toString(), shown.blockEntityNbt()));
+            key.append('|').append(local.asLong()).append('=').append(shown.entityId());
+        }
+        if (ghosts.isEmpty()) {
+            clearMobGhostsIfStale(player);
+            return;
+        }
+        String k = key.toString();
+        if (k.equals(LAST_MOB_GHOSTS_KEY.get(uuid))) return;
+        LAST_MOB_GHOSTS_KEY.put(uuid, k);
+        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.EditorMobGhostsPacket(ghosts));
+    }
+
+    /** Send the empty mob-ghost packet if the player previously had a non-empty snapshot. */
+    private static void clearMobGhostsIfStale(ServerPlayer player) {
+        if (LAST_MOB_GHOSTS_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.EditorMobGhostsPacket.empty());
         }
     }
 
@@ -1091,37 +1368,8 @@ public final class VariantOverlayRenderer {
     public static final String SUB_VARIANTS_TYPE_NAME = "Sub-Variants";
 
     /**
-     * Append the floating package menu — the worldspace mirror of the X-menu's
-     * "Package" drilldown. One menu per snapshot, anchored at
-     * {@link EditorTypeMenus#packageMenuAnchor(CarriageDims)} so it sits beside
-     * the carriages nav menu at the editor's main entry door.
-     *
-     * <p>Data (package name / isActive / enabled) is NOT included in the
-     * packet — the client renderer reads from {@code PackageListClient} which
-     * is fed by {@code PackageListSyncPacket} on a separate channel. The
-     * snapshot-key dedupe in {@link #pushTypeMenusSnapshot} keys on
-     * {@code (anchor, typeName, variants)}; with empty variants the package
-     * menu's contribution to the key is stable, which is what we want — the
-     * data channel handles re-renders on package state changes.</p>
-     */
-    private static java.util.List<EditorTypeMenusPacket.Menu> appendPackageMenu(
-        java.util.List<EditorTypeMenusPacket.Menu> baseMenus, CarriageDims dims
-    ) {
-        BlockPos anchor = EditorTypeMenus.packageMenuAnchor(dims);
-        if (anchor == null) return baseMenus;
-        java.util.List<EditorTypeMenusPacket.Menu> out = new java.util.ArrayList<>(baseMenus.size() + 1);
-        out.addAll(baseMenus);
-        out.add(new EditorTypeMenusPacket.Menu(
-            anchor, "Packages", java.util.List.of(),
-            false, "", java.util.List.of(), java.util.List.of(),
-            /*isPackageMenu*/ true));
-        return out;
-    }
-
-    /**
      * Append the global Stages management panel (a {@code isStagesMenu} {@link EditorTypeMenusPacket.Menu})
-     * beside the carriages nav menu / package menu, mirroring {@link #appendPackageMenu}. Unlike the
-     * package menu its variant rows carry real data (one gated row per Stage + a "+ New Stage" row),
+     * beside the carriages nav menu. Its variant rows carry real data (one gated row per Stage + a "+ New Stage" row),
      * built by {@link EditorTypeMenus#buildStagesMenu}. Shown in every category so the Stages list is
      * always reachable next to the template-type list. Unchanged list when there is no anchor.
      */
@@ -1190,11 +1438,17 @@ public final class VariantOverlayRenderer {
             : games.brennan.dungeontrain.net.EditorPlotLabelsPacket.NO_WEIGHT;
         EditorPlotLabels.Provenance parentProv = EditorPlotLabels.provenanceOf(
             games.brennan.dungeontrain.editor.CarriageContentsStore.fileForId(parentId));
+        // Rows are keyed by id (name/modelId — click routing and the dedup key) but DRAWN by the
+        // weights.json display label, the same as the nav-menu chips in EditorTypeMenus, so a
+        // Rename shows here and not just on the per-plot label panel.
+        games.brennan.dungeontrain.train.CarriageContentsWeights weights =
+            games.brennan.dungeontrain.train.CarriageContentsWeights.current();
         rows.add(new EditorTypeMenusPacket.Variant(
             parentId + " (default)",
             defaultRowWeight,
             cat, parentId, parentId,
-            parentProv.isUser(), parentProv.isImported()));
+            parentProv.isUser(), parentProv.isImported())
+            .withDisplayName(weights.nameFor(parentId) + " (default)"));
         if (groupOpt.isPresent()) {
             for (var m : groupOpt.get().members()) {
                 EditorPlotLabels.Provenance memberProv = EditorPlotLabels.provenanceOf(
@@ -1213,7 +1467,7 @@ public final class VariantOverlayRenderer {
                     games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
                     cat, m.id(), m.id(),
                     memberProv.isUser(), memberProv.isImported(),
-                    java.util.List.of(), m.stageIds()));
+                    java.util.List.of(), m.stageIds()).withDisplayName(weights.nameFor(m.id())));
             }
         }
 
@@ -1271,9 +1525,12 @@ public final class VariantOverlayRenderer {
         List<EditorTypeMenusPacket.Variant> rows = new java.util.ArrayList<>();
         EditorPlotLabels.Provenance parentProv = EditorPlotLabels.provenanceOf(
             games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, parent));
+        // Drawn by the room's display label (id stays in name/modelId for routing), as the
+        // contents companion does.
         rows.add(new EditorTypeMenusPacket.Variant(
             parent + " (default)", selfRowWeight,
-            cat, parent, parent, parentProv.isUser(), parentProv.isImported()));
+            cat, parent, parent, parentProv.isUser(), parentProv.isImported())
+            .withDisplayName(games.brennan.dungeontrain.track.variant.TrackVariantWeights.nameFor(kind, parent) + " (default)"));
         if (hasMembers) {
             for (var m : groupOpt.get().members()) {
                 EditorPlotLabels.Provenance prov = EditorPlotLabels.provenanceOf(
@@ -1291,7 +1548,8 @@ public final class VariantOverlayRenderer {
                     games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
                     cat, m.id(), m.id(),
                     prov.isUser(), prov.isImported(),
-                    java.util.List.of(), m.stageIds()));
+                    java.util.List.of(), m.stageIds())
+                    .withDisplayName(games.brennan.dungeontrain.track.variant.TrackVariantWeights.nameFor(kind, m.id())));
             }
         }
 

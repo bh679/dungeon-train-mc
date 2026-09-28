@@ -200,6 +200,43 @@ def test_load_config_missing_optional_modrinth_project_rejected():
         raise AssertionError("expected ValueError on missing optional modrinth_project")
 
 
+def test_load_config_curseforge_only_needs_no_modrinth_keys():
+    import tempfile
+    tmp = tempfile.mkdtemp()
+    cfg = {**CONFIG, "optional_mods": [
+        {"name": "Dungeon Backup", "slug": "dungeon-train-backup", "required": True,
+         "dependency_type": "required", "curseforge_only": True},
+        {"name": "AppleSkin", "modrinth_project": "appleskin", "modrinth_version": "uAKA6Laj", "required": True},
+    ]}
+    loaded = bm.load_config(_write_config(tmp, cfg))
+    assert [o["name"] for o in bm.modrinth_entries(loaded)] == ["AppleSkin"]
+    assert [o["name"] for o in bm.curseforge_only_entries(loaded)] == ["Dungeon Backup"]
+    assert bm.pending_entries(loaded) == []
+
+
+def test_load_config_curseforge_only_with_modrinth_pin_rejected():
+    import tempfile
+    tmp = tempfile.mkdtemp()
+    cfg = {**CONFIG, "optional_mods": [
+        {"name": "X", "curseforge_only": True, "modrinth_project": "x", "modrinth_version": "v", "required": True},
+    ]}
+    try:
+        bm.load_config(_write_config(tmp, cfg))
+    except ValueError as e:
+        assert "curseforge_only" in str(e) and "modrinth_version" in str(e)
+    else:
+        raise AssertionError("expected ValueError on curseforge_only + modrinth_version")
+
+
+def test_resolve_files_skips_curseforge_only_entries():
+    cfg = {**CONFIG, "optional_mods": [
+        {"name": "Dungeon Backup", "curseforge_only": True, "required": True},
+        {"name": "Mouse Tweaks", "modrinth_project": "mouse-tweaks", "modrinth_version": "MTVER", "required": False},
+    ]}
+    resolved = bm.resolve_files(cfg, "DTVER", fetch=_fake_fetch())
+    assert [r["name"] for r in resolved] == ["Dungeon Train", "Sable", "Mouse Tweaks"]
+
+
 def test_load_config_non_boolean_required_rejected():
     import tempfile
     tmp = tempfile.mkdtemp()
@@ -296,9 +333,25 @@ def test_real_config_every_mod_has_modrinth_pins():
     real = os.path.join(REPO_ROOT, "modpack", "modpack.config.json")
     cfg = json.loads(open(real).read())
     assert cfg["sable"].get("modrinth_project") and cfg["sable"].get("modrinth_version")
-    for opt in cfg["optional_mods"]:
+    for opt in bm.modrinth_entries(cfg):
         assert opt.get("modrinth_project"), f"{opt.get('name')} missing modrinth_project"
-        assert opt.get("modrinth_version"), f"{opt.get('name')} missing modrinth_version"
+        assert opt.get("modrinth_version") or opt.get("modrinth_pending_url"), \
+            f"{opt.get('name')} missing modrinth_version / modrinth_pending_url"
+    # The pending-URL stopgap is for listings still in review — never both keys at once. No
+    # current rider: Keep Trim used it 0.863.0–0.908.x, then became a hybrid sibling instead.
+    pending = bm.pending_entries(cfg)
+    assert pending == [], pending
+    # The hybrid siblings: jarJar'd inside the DT jar for Modrinth, separate Includes on
+    # CurseForge only. They must stay out of the Modrinth pack (no double copy) and need no
+    # Modrinth keys. Keep Trim rides here while its Modrinth listing is in review.
+    cf_only = bm.curseforge_only_entries(cfg)
+    assert sorted(o["slug"] for o in cf_only) == [
+        "dpi-bypass-detect", "dungeon-train-backup", "keep-trim", "pigman-villagers",
+        "sable-fence-trapdoor-fix", "stream-detect",
+    ], cf_only
+    for opt in cf_only:
+        assert opt.get("dependency_type") == "required" and opt.get("gradle_property"), opt
+        assert not {"modrinth_version", "modrinth_pending_url"} & opt.keys(), opt
     # Hard pins mirrored from the CurseForge pack.
     sable = cfg["sable"]
     assert sable["modrinth_version"] == "U678xqle", sable  # Sable 2.0.5+mc1.21.1

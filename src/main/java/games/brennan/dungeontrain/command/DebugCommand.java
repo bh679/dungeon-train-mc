@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.command;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -7,6 +8,7 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
+import games.brennan.dungeontrain.debug.BackwardGenTrace;
 import games.brennan.dungeontrain.debug.CarriageDebug;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.ChiseledBookshelfSync;
@@ -18,10 +20,12 @@ import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
+import games.brennan.dungeontrain.ship.sable.PhysicsSubstepTuner;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.ContentsDespawnController;
 import games.brennan.dungeontrain.train.TrainAssembler;
+import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
@@ -62,6 +66,16 @@ public final class DebugCommand {
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("debug")
             .then(Commands.literal("scan").executes(ctx -> runScan(ctx.getSource())))
+            // /dungeontrain debug stage-placeholders — walks every live carriage's footprint and
+            // counts stage placeholder blocks that survived generation (expected: none) plus the
+            // top real blocks, so a build's placeholders can be proven resolved without a client.
+            .then(Commands.literal("stage-placeholders").executes(ctx -> runStagePlaceholderScan(ctx.getSource())))
+            // /dungeontrain debug editor-locate — the (category, model) the status HUD resolves for
+            // the running player, plus the resident category; editor-layer — blocks standing in the
+            // plot layer inside vs outside the resident category's plots (loaded chunks). Together
+            // they prove a category switch left nothing of the previous one, without a client HUD.
+            .then(Commands.literal("editor-locate").executes(ctx -> runEditorLocate(ctx.getSource())))
+            .then(Commands.literal("editor-layer").executes(ctx -> runEditorLayer(ctx.getSource())))
             // /dungeontrain debug physicsfreeze <on|off|status> — toggles the #646 physics-freeze
             // of untracked carriages. `off` restores every frozen body next tick. Drives the Gate 2
             // matched-toggle A/B (freeze off vs on, same seed/path — chunk-gen noise cancels).
@@ -69,6 +83,14 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setPhysicsFreeze(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setPhysicsFreeze(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> physicsFreezeStatus(ctx.getSource()))))
+            // /dungeontrain debug substep-tuner <on|off|status> — toggles the adaptive Sable
+            // substepsPerTick tuner (2→1 on a real train, see PhysicsSubstepTuner). `off` restores
+            // Sable's baseline next reconcile. Drives the Gate 2 matched-toggle A/B: same ride,
+            // compare [mspt] physMs= and avgTickMs= at equal carriages= with it on vs off.
+            .then(Commands.literal("substep-tuner")
+                .then(Commands.literal("on").executes(ctx -> setSubstepTuner(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setSubstepTuner(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> substepTunerStatus(ctx.getSource()))))
             // /dungeontrain debug contentsdespawn <on|off|status> — toggles the distance gate that
             // sweeps carriage contents mobs out of the level while no player is near. `off` restores
             // every held snapshot over the next few ticks. Drives the Gate 2 matched-toggle A/B
@@ -99,6 +121,40 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setBandEarlyOuts(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setBandEarlyOuts(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> bandEarlyOutsStatus(ctx.getSource()))))
+            // /dungeontrain debug nether-passes — core X range + core biomes of the first Nether bands
+            // (even passes vanilla, odd passes BetterNether). Also logged at INFO for RCON runs.
+            .then(Commands.literal("nether-passes").executes(ctx -> NetherPassesDebug.report(ctx.getSource())))
+            // /dungeontrain debug cycle-layout [runs] — every band slot's world-X range (run 0 and the doubled
+            // runs after it) with the phase read at its midpoint. Also logged at INFO for RCON runs.
+            // /dungeontrain debug mix-pick — the mix-zone band each chunk around you generates as (a letter grid,
+            // +X to the right), plus the candidate counts. Also logged at INFO for RCON runs.
+            .then(Commands.literal("mix-pick").executes(ctx -> MixPickDebug.report(ctx.getSource())))
+            .then(Commands.literal("cycle-layout")
+                .executes(ctx -> CycleLayoutDebug.report(ctx.getSource(), 2))
+                .then(Commands.argument("runs", IntegerArgumentType.integer(1, 8))
+                    .executes(ctx -> CycleLayoutDebug.report(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "runs")))))
+            // /dungeontrain debug band-advancements — the journey advancement chain in layout order (the
+            // parents the datapack rewriter applied at load). Also logged at INFO for RCON runs.
+            // `at <x>` probes every band trigger's column test at that world-X (what a player there would earn).
+            .then(Commands.literal("band-advancements")
+                .executes(ctx -> BandAdvancementsDebug.report(ctx.getSource()))
+                .then(Commands.literal("at")
+                    .then(Commands.argument("x", IntegerArgumentType.integer())
+                        .executes(ctx -> BandAdvancementsDebug.probe(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "x"))))))
+            // /dungeontrain debug overworld-laps — the overworld gaps either side of the first Nether bands,
+            // which second-lap mod owns each (WWOO before, Biomes O' Plenty after, odd laps) and a biome
+            // census sampled from the overworld source. Also logged at INFO for RCON runs.
+            .then(Commands.literal("overworld-laps").executes(ctx -> OverworldLapsDebug.report(ctx.getSource())))
+            // /dungeontrain debug portal-sites [count] — which stretch each overworld dimensional
+            // carriage's sample site sits in, old scattered rule vs the stretch rules. INFO-logged too.
+            .then(Commands.literal("portal-sites")
+                .executes(ctx -> PortalSitesDebug.report(ctx.getSource(), PortalSitesDebug.DEFAULT_COUNT))
+                .then(Commands.literal("probe-end")
+                    .executes(ctx -> PortalSitesDebug.probeEnd(ctx.getSource(), 3))
+                    .then(Commands.argument("count", IntegerArgumentType.integer(1, 20))
+                        .executes(ctx -> PortalSitesDebug.probeEnd(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))))
+                .then(Commands.argument("count", IntegerArgumentType.integer(1, 100_000))
+                    .executes(ctx -> PortalSitesDebug.report(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))))
             .then(Commands.literal("pair")
                 .executes(ctx -> runPair(ctx.getSource(), 0.0))
                 .then(Commands.argument("velocity", DoubleArgumentType.doubleArg())
@@ -168,6 +224,18 @@ public final class DebugCommand {
             .then(Commands.literal("loot-rolls")
                 .then(Commands.literal("on").executes(ctx -> setLogLootRolls(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setLogLootRolls(ctx.getSource(), false))))
+            // /dungeontrain debug traingen on|off|status — the backward-generation
+            // investigation switch. `on` arms EVERY probe the backward lane has in one
+            // go (the [bwdgen] decision trace, the spawn-stall detector, the
+            // [seamgap]/[anchor-div]/[bwd-place] probes, and their chat announcements)
+            // so a test ride needs a single command. `status` prints the newest
+            // backward-lane state per train IN CHAT — the point being that when the
+            // train visibly stops extending, one command names the gate that stopped it
+            // without leaving the game or reading a log.
+            .then(Commands.literal("traingen")
+                .then(Commands.literal("on").executes(ctx -> setTrainGenTrace(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setTrainGenTrace(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> trainGenStatus(ctx.getSource()))))
             // /dungeontrain debug seamgap-trace on|off — opt-in backward-seam-gap
             // diagnostic probes ([seamgap]/[bwd-place]/[anchor-div]/[capture-lag]).
             // Off by default; turn on for a backward-ride session to capture the
@@ -176,6 +244,31 @@ public final class DebugCommand {
             .then(Commands.literal("seamgap-trace")
                 .then(Commands.literal("on").executes(ctx -> setSeamGapTrace(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setSeamGapTrace(ctx.getSource(), false))))
+            // /dungeontrain debug trains-trace on|off — the per-call roster of every loaded
+            // carriage ([trains]). Off by default: byTrainId runs several times a tick, so this
+            // is a heavy line to leave on, and it used to be gated on LOGGER.isDebugEnabled(),
+            // which NeoForge leaves true for every player. Turn it on to see which sub-levels a
+            // train actually claims when membership looks wrong. Server-side logging only.
+            .then(Commands.literal("trains-trace")
+                .then(Commands.literal("on").executes(ctx -> setTrainsTrace(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setTrainsTrace(ctx.getSource(), false))))
+            // /dungeontrain debug puppet-trace on|off — where each portal puppet is described to be,
+            // every tick, and (single-player) where the client resolves the nearest one each frame.
+            // For chasing shimmer: it says whether the wobble is in the numbers the server sends or
+            // in how the client draws them.
+            .then(Commands.literal("puppet-trace")
+                .then(Commands.literal("on").executes(ctx -> setPuppetTrace(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setPuppetTrace(ctx.getSource(), false))))
+            // /dungeontrain debug dupe-guard on|off|status — the duplicate-anchor guard.
+            // Two live sub-levels can land on one anchor (a group reaped as gone and respawned,
+            // then resurrected from Sable's holding store), which reads in-game as two identical
+            // trains stacked on each other. on|off gates the DELETION half only: detection and
+            // its [dupe] logging stay on regardless, so a suspected false positive can be turned
+            // off without losing the diagnosis. status reports the counters and the holding index.
+            .then(Commands.literal("dupe-guard")
+                .then(Commands.literal("on").executes(ctx -> setDupeGuard(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setDupeGuard(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> dupeGuardStatus(ctx.getSource()))))
             // /dungeontrain debug reroll <prefabId> — scan every loaded ship's
             // bounding box for blocks whose state matches the prefab's source
             // block, then re-roll their NBT through the current pool. Fixes
@@ -186,11 +279,85 @@ public final class DebugCommand {
                     .executes(ctx -> runReroll(ctx.getSource(), StringArgumentType.getString(ctx, "prefabId")))));
     }
 
+    /**
+     * Arm (or disarm) every backward-generation probe at once. Deliberately a
+     * master switch rather than four separate toggles: the failure being
+     * investigated is intermittent, so a ride that has to be repeated because one
+     * probe was left off is a wasted test.
+     */
+    private static int setTrainGenTrace(CommandSourceStack source, boolean on) {
+        setTrainGenTraceProbes(source.getServer(), on);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Backward-generation trace " + (on ? "ON" : "OFF")
+                + (on ? " — [bwdgen] + stall detector + [seamgap]/[anchor-div] armed; "
+                        + "run '/dungeontrain debug traingen status' when the train stops extending"
+                      : "")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    /**
+     * The four train-generation probes behind {@code /dungeontrain debug traingen}, as one switch.
+     * Also armed by default on dev builds ({@link games.brennan.dungeontrain.debug.DevTraceDefaults})
+     * so a test ride never has to be repeated because the trace was off.
+     */
+    public static void setTrainGenTraceProbes(net.minecraft.server.MinecraftServer server, boolean on) {
+        BackwardGenTrace.setEnabled(on);
+        TrainCarriageAppender.setStallDetectionEnabled(on);
+        TrainCarriageAppender.setSeamGapTraceEnabled(on);
+        games.brennan.dungeontrain.train.Trains.setTrainsTraceEnabled(on);
+        DebugFlags.setChatStallTrain(server, on);
+    }
+
+    /**
+     * Print the newest backward-lane sample for every loaded train. Answers "why
+     * did the train stop growing behind me?" at the moment it happens.
+     */
+    private static int trainGenStatus(CommandSourceStack source) {
+        java.util.List<String> lines = BackwardGenTrace.statusLines();
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Backward-gen trace " + (BackwardGenTrace.enabled() ? "ON" : "OFF")
+                + " — " + lines.size() + " train(s) sampled"
+        ).withStyle(BackwardGenTrace.enabled() ? ChatFormatting.GREEN : ChatFormatting.GRAY), false);
+        if (lines.isEmpty()) {
+            source.sendSuccess(() -> Component.literal(
+                "  no samples yet — is the trace on, and is a train loaded?"
+            ).withStyle(ChatFormatting.GRAY), false);
+            return 1;
+        }
+        for (String line : lines) {
+            source.sendSuccess(() -> Component.literal("  " + line).withStyle(ChatFormatting.YELLOW), false);
+        }
+        return lines.size();
+    }
+
     private static int setPhysicsFreeze(CommandSourceStack source, boolean on) {
         PhysicsFreezeController.ENABLED = on;
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Physics-freeze " + (on ? "ON" : "OFF — all bodies restored next tick")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int runEditorLocate(CommandSourceStack source) {
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("editor-locate needs a player (execute as <name> run …)."));
+            return 0;
+        }
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        String line = games.brennan.dungeontrain.editor.EditorLayerDebug.locateLine(player, dims);
+        LOGGER.info(line);
+        source.sendSuccess(() -> Component.literal(line), false);
+        return 1;
+    }
+
+    private static int runEditorLayer(CommandSourceStack source) {
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        String line = games.brennan.dungeontrain.editor.EditorLayerDebug.layerLine(overworld, dims);
+        LOGGER.info(line);
+        source.sendSuccess(() -> Component.literal(line), false);
         return 1;
     }
 
@@ -200,6 +367,23 @@ public final class DebugCommand {
             PhysicsFreezeController.ENABLED ? "ON" : "OFF",
             PhysicsFreezeController.lastResident(), PhysicsFreezeController.lastActive(),
             PhysicsFreezeController.lastFrozen())), false);
+        return 1;
+    }
+
+    private static int setSubstepTuner(CommandSourceStack source, boolean on) {
+        PhysicsSubstepTuner.ENABLED = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Substep-tuner " + (on ? "ON" : "OFF — Sable baseline substeps restored next reconcile")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int substepTunerStatus(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal(String.format(
+            "[DungeonTrain] Substep-tuner %s — residents=%d substeps=%d (live overworld=%d)",
+            PhysicsSubstepTuner.ENABLED ? "ON" : "OFF",
+            PhysicsSubstepTuner.lastResidents(), PhysicsSubstepTuner.lastSubsteps(),
+            PhysicsSubstepTuner.currentSubsteps(source.getServer().overworld()))), false);
         return 1;
     }
 
@@ -385,6 +569,102 @@ public final class DebugCommand {
         return 1;
     }
 
+    private static int setPuppetTrace(CommandSourceStack source, boolean enabled) {
+        games.brennan.dungeontrain.portal.PortalPuppetTrace.setEnabled(enabled);
+        LOGGER.info("[DungeonTrain] puppet-trace diagnostic {}", enabled ? "ENABLED" : "DISABLED");
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Portal puppet trace " + (enabled ? "ON" : "OFF")
+                + (enabled ? " — grep [puppet] in latest.log" : "")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setTrainsTrace(CommandSourceStack source, boolean enabled) {
+        games.brennan.dungeontrain.train.Trains.setTrainsTraceEnabled(enabled);
+        LOGGER.info("[DungeonTrain] trains-trace diagnostic {}", enabled ? "ENABLED" : "DISABLED");
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Trains roster trace " + (enabled ? "ON" : "OFF")
+                + (enabled ? " — grep [trains] in latest.log" : "")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setDupeGuard(CommandSourceStack source, boolean enabled) {
+        games.brennan.dungeontrain.train.TrainCarriageAppender.setDupeGuardDeleteEnabled(enabled);
+        LOGGER.info("[DungeonTrain] duplicate-anchor guard deletion {}", enabled ? "ENABLED" : "DISABLED");
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Duplicate-anchor guard deletion " + (enabled ? "ON" : "OFF")
+                + " — detection and [dupe] logging stay on either way"
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int dupeGuardStatus(CommandSourceStack source) {
+        int[] c = games.brennan.dungeontrain.train.TrainCarriageAppender.dupeGuardCounters();
+        boolean deleting = games.brennan.dungeontrain.train.TrainCarriageAppender.isDupeGuardDeleteEnabled();
+        boolean indexOn = games.brennan.dungeontrain.ship.sable.SableHoldingIndex.isEnabled();
+        String line = "[DungeonTrain] dupe-guard: deletion=" + (deleting ? "ON" : "OFF")
+            + " observed=" + c[0] + " deleted=" + c[1] + " ambiguous=" + c[2]
+            + " | holding index: " + (indexOn ? "on" : "DISABLED")
+            + " held=" + games.brennan.dungeontrain.ship.sable.SableHoldingIndex.size()
+            + " filed=" + games.brennan.dungeontrain.ship.sable.SableHoldingIndex.filedCount()
+            + " gaveUp=" + games.brennan.dungeontrain.ship.sable.SableHoldingIndex.gaveUpCount();
+        LOGGER.info(line);
+        source.sendSuccess(() -> Component.literal(line)
+            .withStyle(c[0] == 0 ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        return 1;
+    }
+
+    private static int runStagePlaceholderScan(CommandSourceStack source) {
+        ServerLevel level = source.getLevel();
+        int leaked = 0;
+        int carriages = 0;
+        java.util.Map<String, Integer> tally = new java.util.HashMap<>();
+        for (java.util.List<games.brennan.dungeontrain.train.Trains.Carriage> train
+                : games.brennan.dungeontrain.train.Trains.byTrainId(level).values()) {
+            for (games.brennan.dungeontrain.train.Trains.Carriage c : train) {
+                CarriageDims dims = c.provider().dims();
+                BlockPos o = c.provider().getShipyardOrigin();
+                int here = 0;
+                for (int x = 0; x < dims.length(); x++) {
+                    for (int y = 0; y < dims.height(); y++) {
+                        for (int z = 0; z < dims.width(); z++) {
+                            BlockState s = level.getBlockState(o.offset(x, y, z));
+                            if (s.isAir()) continue;
+                            String id = net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                                .getKey(s.getBlock()).toString();
+                            tally.merge(id, 1, Integer::sum);
+                            if (games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.isPlaceholder(s)) here++;
+                        }
+                    }
+                }
+                if (here > 0) {
+                    final int fHere = here;
+                    final int pIdx = c.provider().getPIdx();
+                    source.sendSuccess(() -> Component.literal("pIdx " + pIdx + ": " + fHere
+                        + " placeholder block(s) LEAKED").withStyle(ChatFormatting.RED), false);
+                }
+                leaked += here;
+                carriages++;
+            }
+        }
+        java.util.List<java.util.Map.Entry<String, Integer>> top = new java.util.ArrayList<>(tally.entrySet());
+        top.sort((a, b) -> b.getValue() - a.getValue());
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(8, top.size()); i++) {
+            sb.append(top.get(i).getKey()).append('=').append(top.get(i).getValue()).append(' ');
+        }
+        final int fLeaked = leaked;
+        final int fCarriages = carriages;
+        final String fTop = sb.toString().trim();
+        source.sendSuccess(() -> Component.literal("Stage placeholders: " + fLeaked + " leaked across "
+            + fCarriages + " carriage(s). Top blocks: " + fTop)
+            .withStyle(fLeaked == 0 ? ChatFormatting.GREEN : ChatFormatting.RED), false);
+        LOGGER.info("[DungeonTrain] Stage placeholder scan: {} leaked across {} carriage(s); top {}",
+            leaked, carriages, fTop);
+        return leaked == 0 ? 1 : 0;
+    }
+
     private static int runScan(CommandSourceStack source) {
         ServerLevel level = source.getLevel();
         int totalStrays = 0;
@@ -508,6 +788,7 @@ public final class DebugCommand {
                 // hit the real BE positions.
                 if (!(ship instanceof SableManagedShip sableShip)) continue;
                 ServerSubLevel subLevel = sableShip.subLevel();
+                if (subLevel == null) continue;
                 LevelPlot plot = subLevel.getPlot();
                 int beInShip = 0;
                 int matched = 0;

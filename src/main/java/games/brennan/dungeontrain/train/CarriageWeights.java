@@ -6,9 +6,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.template.BuilderCredit;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.template.TemplateMeta;
 import games.brennan.dungeontrain.template.TemplateWeightCodec;
+import games.brennan.dungeontrain.template.TemplateWeightOverlay;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -38,8 +40,11 @@ import java.util.Map;
  * <ol>
  *   <li><b>Bundled default</b> — {@code /data/dungeontrain/templates/weights.json}
  *       on the classpath. Ships with the mod jar.</li>
- *   <li><b>Per-install override</b> — {@code config/dungeontrain/weights.json}.
- *       Per-id entries in this file replace entries from the bundled copy.</li>
+ *   <li><b>Per-install override</b> — {@code config/dungeontrain/user/weights.json}.
+ *       Per-id entries in this file replace entries from the bundled copy. Only entries that
+ *       differ from the bundled record are ever written there — see
+ *       {@link games.brennan.dungeontrain.template.TemplateWeightOverlay} — and the file is not
+ *       read at all while the world has disabled custom content.</li>
  * </ol>
  * Both files are optional. With neither present the map is empty and every
  * registered variant resolves to {@link #DEFAULT} (=1), which is the identity
@@ -67,11 +72,18 @@ public record CarriageWeights(Map<String, TemplateMeta> byId) {
     /** Shared empty instance — behaves identically to the pre-feature uniform pick. */
     public static final CarriageWeights EMPTY = new CarriageWeights(Map.of());
 
-    static final String BUNDLED_RESOURCE = "/data/dungeontrain/templates/weights.json";
+    /** Classpath path of the weights file that ships in the jar — also read by the Credits page. */
+    public static final String BUNDLED_RESOURCE = "/data/dungeontrain/templates/weights.json";
     static final String CONFIG_FILE = "weights.json";
 
     /** Cached weights for the active server. Loaded on ServerStartingEvent, cleared on stop. */
     private static volatile CarriageWeights current = EMPTY;
+
+    /**
+     * The bundled tier exactly as loaded, kept beside the merged view so {@link #writeConfig} can
+     * persist only what differs from it. See {@link TemplateWeightOverlay#diff}.
+     */
+    private static volatile Map<String, TemplateMeta> bundledCatalogue = Map.of();
 
     public CarriageWeights {
         byId = Map.copyOf(byId);
@@ -117,6 +129,23 @@ public record CarriageWeights(Map<String, TemplateMeta> byId) {
         return m == null ? null : m.stageId();
     }
 
+    /**
+     * The editor label for {@code id} — its display name when one is set, else the id itself. Never
+     * null, so a row builder can print it without branching. See {@link TemplateMeta#name()}.
+     */
+    public String nameFor(String id) {
+        if (id == null) return "";
+        TemplateMeta m = byId.get(id);
+        return m == null || m.name() == null ? id : m.name();
+    }
+
+    /** Who originally built {@code id}, or {@code null} when nobody is credited. See {@link TemplateMeta#builder()}. */
+    public BuilderCredit builderFor(String id) {
+        if (id == null) return null;
+        TemplateMeta m = byId.get(id);
+        return m == null ? null : m.builder();
+    }
+
     public static int clamp(int value) {
         if (value < MIN) return MIN;
         if (value > MAX) return MAX;
@@ -132,6 +161,7 @@ public record CarriageWeights(Map<String, TemplateMeta> byId) {
     public static synchronized void reload() {
         Map<String, TemplateMeta> merged = new HashMap<>();
         int bundled = loadInto(BUNDLED_RESOURCE, merged, true);
+        bundledCatalogue = Map.copyOf(merged);
         int config = loadInto(null, merged, false);
         current = new CarriageWeights(merged);
         LOGGER.info("[DungeonTrain] Carriage weights loaded — {} entries ({} bundled, {} config overlays).",
@@ -140,6 +170,7 @@ public record CarriageWeights(Map<String, TemplateMeta> byId) {
 
     public static synchronized void clear() {
         current = EMPTY;
+        bundledCatalogue = Map.of();
     }
 
     /**
@@ -203,13 +234,77 @@ public record CarriageWeights(Map<String, TemplateMeta> byId) {
         if (link == null && prev != null && prev.stageId() != null) {
             inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, prev.stageId());
         }
-        next.put(key, new TemplateMeta(weight, inline, link));
+        // Rebuild from `prev` rather than from parts so the entry's display label (and any other
+        // per-kind slot) survives a link/detach — a fresh 3-arg TemplateMeta would silently drop it.
+        next.put(key, prev == null
+            ? new TemplateMeta(weight, inline, link)
+            : prev.withGate(inline).withStage(link));
         current = new CarriageWeights(next);
         writeConfig(current);
         trySaveToSource(current);
         LOGGER.info("[DungeonTrain] Set carriage stage {}={} (persisted to {}).",
                 key, link == null ? "<custom>" : link, configPath());
         return link;
+    }
+
+    /**
+     * Set the editor display label for {@code id} ({@code null} / blank clears it back to the id),
+     * preserving weight, inline gate and Stage link, and persist. Returns the stored label, or
+     * {@code null} when cleared. Spawn behaviour is untouched — this is a rename in the editor's
+     * eyes only; the id (and its file) stays what it was. See {@link TemplateMeta#name()}.
+     */
+    public static synchronized String setName(String id, String name) throws IOException {
+        String key = id.toLowerCase(Locale.ROOT);
+        String label = TemplateMeta.normaliseName(name);
+        Map<String, TemplateMeta> next = new HashMap<>(current.byId());
+        TemplateMeta prev = next.get(key);
+        next.put(key, TemplateMeta.mergeName(prev, label, DEFAULT));
+        current = new CarriageWeights(next);
+        writeConfig(current);
+        trySaveToSource(current);
+        LOGGER.info("[DungeonTrain] Set carriage label {}={} (persisted to {}).",
+                key, label == null ? "<id>" : label, configPath());
+        return label;
+    }
+
+    /**
+     * Credit {@code builder} as the original builder of {@code id} ({@code null} clears the credit),
+     * preserving weight, inline gate, Stage link and label, and persist. Returns the stored credit,
+     * or {@code null} when cleared. Spawn behaviour is untouched. See {@link TemplateMeta#builder()}.
+     */
+    public static synchronized BuilderCredit setBuilder(String id, BuilderCredit builder) throws IOException {
+        String key = id.toLowerCase(Locale.ROOT);
+        BuilderCredit stored = builder == null || !builder.known() ? null : builder;
+        Map<String, TemplateMeta> next = new HashMap<>(current.byId());
+        TemplateMeta prev = next.get(key);
+        next.put(key, TemplateMeta.mergeBuilder(prev, stored, DEFAULT));
+        current = new CarriageWeights(next);
+        writeConfig(current);
+        trySaveToSource(current);
+        LOGGER.info("[DungeonTrain] Set carriage builder {}={} (persisted to {}).",
+                key, stored == null ? "<none>" : stored.display(), configPath());
+        return stored;
+    }
+
+    /**
+     * Give {@code to} a copy of {@code from}'s entry — weight, inline gate, Stage link, mode,
+     * flip and builder credit — leaving {@code from} as it was. The display label is the one
+     * field that stays behind: the copy is labelled by its own id until its author names it.
+     * A source with no entry has nothing to copy and answers false without touching the file.
+     */
+    public static synchronized boolean copy(String from, String to) throws IOException {
+        String src = from.toLowerCase(Locale.ROOT);
+        String dst = to.toLowerCase(Locale.ROOT);
+        TemplateMeta meta = current.byId().get(src);
+        if (meta == null) return false;
+        Map<String, TemplateMeta> next = new HashMap<>(current.byId());
+        next.put(dst, meta.asCopy());
+        current = new CarriageWeights(next);
+        writeConfig(current);
+        trySaveToSource(current);
+        LOGGER.info("[DungeonTrain] Copied carriage weight entry {} -> {} (persisted to {}).",
+                src, dst, configPath());
+        return true;
     }
 
     /**
@@ -237,9 +332,12 @@ public record CarriageWeights(Map<String, TemplateMeta> byId) {
     private static void writeConfig(CarriageWeights weights) throws IOException {
         Path file = configPath();
         Files.createDirectories(file.getParent());
+        // Only the player's own changes go to disk. Writing the whole merged view froze every
+        // bundled weight into the overlay and hid later retunes — see TemplateWeightOverlay.
+        Map<String, TemplateMeta> overlay = TemplateWeightOverlay.diff(weights.byId(), bundledCatalogue);
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
             new GsonBuilder().setPrettyPrinting().create()
-                    .toJson(TemplateWeightCodec.toJson(weights.byId()), w);
+                    .toJson(TemplateWeightCodec.toJson(overlay), w);
         }
     }
 
@@ -286,6 +384,8 @@ public record CarriageWeights(Map<String, TemplateMeta> byId) {
     }
 
     private static Reader openConfig() {
+        // A world that disabled custom content gets the bundled catalogue and nothing else.
+        if (!TemplateWeightOverlay.overlayReadable()) return null;
         Path file = configPath();
         if (!Files.isRegularFile(file)) return null;
         try {

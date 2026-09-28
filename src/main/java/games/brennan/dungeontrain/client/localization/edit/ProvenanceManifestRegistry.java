@@ -18,8 +18,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Which translation units are AI-authored and never human-reviewed, per locale — read from the
- * generated {@code assets/dungeontrain/localization_provenance/<locale>.json} manifests.
+ * Which translation units are AI-authored and never human-reviewed, and which ones the English
+ * has moved on from since they were translated, per locale — read from the generated
+ * {@code assets/dungeontrain/localization_provenance/<locale>.json} manifests.
  *
  * <p>This is the data behind the translation editor's default filter. The full per-line
  * provenance lives repo-side under {@code localization/} and never ships; these manifests are
@@ -49,6 +50,15 @@ public final class ProvenanceManifestRegistry {
     private static final Map<String, Map<String, Set<String>>> LANG = new HashMap<>();
     /** locale -> flagged book paths ({@code null} = the {@code "*"} marker, i.e. every book). */
     private static final Map<String, Set<String>> BOOKS = new HashMap<>();
+    /**
+     * locale -> namespace -> lang keys whose English was edited after the line was last
+     * translated or reviewed (the manifest's {@code source_changed} body; same {@code null} =
+     * {@code "*"} convention). Absent in manifests older than the field — those simply flag
+     * nothing, which is what the pre-field editor showed anyway.
+     */
+    private static final Map<String, Map<String, Set<String>>> SOURCE_LANG = new HashMap<>();
+    /** locale -> book paths whose English moved on ({@code books_source_changed}). */
+    private static final Map<String, Set<String>> SOURCE_BOOKS = new HashMap<>();
 
     private ProvenanceManifestRegistry() {}
 
@@ -56,6 +66,8 @@ public final class ProvenanceManifestRegistry {
     public static synchronized void load(ResourceManager resourceManager) {
         LANG.clear();
         BOOKS.clear();
+        SOURCE_LANG.clear();
+        SOURCE_BOOKS.clear();
         int loaded = 0;
         int failed = 0;
         Map<ResourceLocation, Resource> resources =
@@ -80,6 +92,8 @@ public final class ProvenanceManifestRegistry {
     public static synchronized void clear() {
         LANG.clear();
         BOOKS.clear();
+        SOURCE_LANG.clear();
+        SOURCE_BOOKS.clear();
     }
 
     public static synchronized int count() {
@@ -132,6 +146,31 @@ public final class ProvenanceManifestRegistry {
         return flagged == null || flagged.contains(bookPath);
     }
 
+    /**
+     * Whether the English behind {@code key} in {@code namespace} was edited after this locale's
+     * line was last translated or reviewed — so the translation may no longer say what the
+     * English says. False when the locale ships no manifest, for the same reason as
+     * {@link #isAiUnreviewedLang}.
+     */
+    public static synchronized boolean isSourceChangedLang(String locale, String namespace, String key) {
+        Map<String, Set<String>> byNamespace = SOURCE_LANG.get(normalize(locale));
+        if (byNamespace == null || !byNamespace.containsKey(namespace)) {
+            return false;
+        }
+        Set<String> flagged = byNamespace.get(namespace);
+        return flagged == null || flagged.contains(key);
+    }
+
+    /** Whether the English book behind {@code bookPath} moved on since this locale's was stamped. */
+    public static synchronized boolean isSourceChangedBook(String locale, String bookPath) {
+        String code = normalize(locale);
+        if (!SOURCE_BOOKS.containsKey(code)) {
+            return false;
+        }
+        Set<String> flagged = SOURCE_BOOKS.get(code);
+        return flagged == null || flagged.contains(bookPath);
+    }
+
     /** Whether any manifest at all was loaded for {@code locale}. */
     public static synchronized boolean hasData(String locale) {
         return LANG.containsKey(normalize(locale));
@@ -167,6 +206,17 @@ public final class ProvenanceManifestRegistry {
 
         if (root.has("books")) {
             BOOKS.put(locale, flagsOf(root.get("books")));
+        }
+
+        Map<String, Set<String>> sourceByNamespace = new HashMap<>();
+        if (root.has("source_changed") && root.get("source_changed").isJsonObject()) {
+            for (Map.Entry<String, JsonElement> e : root.getAsJsonObject("source_changed").entrySet()) {
+                sourceByNamespace.put(e.getKey(), flagsOf(e.getValue()));
+            }
+        }
+        SOURCE_LANG.put(locale, sourceByNamespace);
+        if (root.has("books_source_changed")) {
+            SOURCE_BOOKS.put(locale, flagsOf(root.get("books_source_changed")));
         }
         return true;
     }

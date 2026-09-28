@@ -11,7 +11,8 @@
   },
   "criteria": {
     "carried": {
-      "trigger": "minecraft:impossible"
+      "trigger": "dungeontrain:code_granted",
+      "conditions": { "threshold": 150 }
     }
   },
   "requirements": [["carried"]]

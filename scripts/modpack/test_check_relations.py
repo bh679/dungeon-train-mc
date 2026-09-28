@@ -136,6 +136,84 @@ def test_multiple_includes_one_missing_fails():
     assert "other-mod" in proc.stderr.lower()
 
 
+def release_yml_both(cf_relations, modrinth_lines):
+    """A release.yml fragment with both the Modrinth and the CurseForge relation blocks."""
+    mr = "\n".join(f"            {r}" for r in modrinth_lines)
+    cf = "\n".join(f"            {r}" for r in cf_relations)
+    return (
+        "jobs:\n"
+        "  publish:\n"
+        "    steps:\n"
+        "      - uses: example/mc-publish\n"
+        "        with:\n"
+        "          dependencies: |\n"
+        f"{mr}\n"
+        "          curseforge-dependencies: |\n"
+        f"{cf}\n"
+        "          java: 21\n"
+    )
+
+
+def _hard_dep(**overrides):
+    """A third-party hard dependency with a Modrinth project (e.g. Moonlight: selene/moonlight)."""
+    return {
+        "name": "Moonlight Lib",
+        "slug": "selene",
+        "project_id": 499980,
+        "file_id": 8850087,
+        "required": True,
+        "dependency_type": "required",
+        "modrinth_project": "moonlight",
+        **overrides,
+    }
+
+
+def test_hard_dep_declared_on_modrinth_passes():
+    proc = run(
+        {"optional_mods": [_hard_dep()]},
+        release_yml_both(["selene(required)"], ["sable(required)", "moonlight(required)"]),
+    )
+    assert proc.returncode == 0, proc.stderr
+
+
+def test_hard_dep_missing_from_modrinth_fails():
+    """The PR #1425 bug: required on CurseForge, absent from the Modrinth list."""
+    proc = run(
+        {"optional_mods": [_hard_dep()]},
+        release_yml_both(["selene(required)"], ["sable(required)"]),
+    )
+    assert proc.returncode != 0
+    assert "moonlight(required)" in proc.stderr
+
+
+def test_hard_dep_optional_on_modrinth_fails():
+    proc = run(
+        {"optional_mods": [_hard_dep()]},
+        release_yml_both(["selene(required)"], ["moonlight(optional)"]),
+    )
+    assert proc.returncode != 0
+
+
+def test_curseforge_only_hybrid_exempt_from_modrinth():
+    """KT/DB/SFF are jarJar'd for Modrinth, so they're absent from its list by design."""
+    proc = run(
+        {"optional_mods": [_hard_dep(curseforge_only=True)]},
+        release_yml_both(["selene(required)"], ["sable(required)"]),
+    )
+    assert proc.returncode == 0, proc.stderr
+
+
+def test_modrinth_block_comment_lines_tolerated():
+    proc = run(
+        {"optional_mods": [_hard_dep()]},
+        release_yml_both(
+            ["selene(required)"],
+            ["moonlight(required)", "# keep-trim is ABSENT by design:", "# jarJar'd on Modrinth."],
+        ),
+    )
+    assert proc.returncode == 0, proc.stderr
+
+
 def test_real_repo_config_is_consistent():
     """The shipped repo must satisfy the invariant — regression lock for AppleSkin."""
     proc = subprocess.run(

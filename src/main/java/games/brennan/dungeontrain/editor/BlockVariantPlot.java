@@ -27,9 +27,11 @@ import java.util.Map;
  * read / write entries without caring whether the player is standing in
  * a carriage variant, contents, part, or track-side editor plot.
  *
- * <p>Resolution at the player's position cascades through the same four
- * cases as {@link VariantOverlayRenderer#onLevelTick} so the menu's view
- * always matches the overlay HUD the player sees:
+ * <p>Resolution at a world position cascades through the same four cases as
+ * {@link VariantOverlayRenderer#onLevelTick} so the menu's view always matches
+ * the overlay HUD the player sees. {@link #resolveAt} asks it of the player's
+ * own position; {@link #resolveAtPos} asks it of any position, which is what
+ * lets live mirroring key off the edited block instead of the author's feet:
  * <ol>
  *   <li>{@link CarriageEditor#plotContaining} → carriage variant</li>
  *   <li>{@link CarriageContentsEditor#plotContaining} → contents</li>
@@ -72,6 +74,33 @@ public interface BlockVariantPlot {
     /** Persist to disk. */
     void save() throws IOException;
 
+    /**
+     * The {@link EditorPlotSnapshots} key the dirty scan reads this plot under, or null for a plot
+     * the scan has no row for (a part). What {@link #noteEdit} marks, so a variant-pool change
+     * shows up as unsaved until the template is saved — the sidecar is written on every edit, but
+     * the author still expects a Save to follow it.
+     */
+    @Nullable String dirtySnapshotKey();
+
+    /**
+     * Record a variant-pool edit on {@code plot} against its dirty-scan row. Every implementation's
+     * {@link #put} / {@link #remove} calls this with the cell and {@link #save} with none, so lock
+     * ids, mirror flags and copy settings — edits with no cell of their own — count too.
+     */
+    static void noteEdit(BlockVariantPlot plot, @Nullable BlockPos localPos) {
+        // Before the edit reaches disk: what the file holds now is what Save-as puts back.
+        EditorSidecarBaseline.remember(plot.dirtySnapshotKey(), plot.sidecarFile());
+        EditorPlotSnapshots.markSidecarEdit(plot.dirtySnapshotKey(), localPos);
+    }
+
+    /**
+     * The config-tier file this plot's sidecar is written to, or null where there is none to record.
+     * Read by {@link #noteEdit} for {@link EditorSidecarBaseline}.
+     */
+    default @Nullable java.nio.file.Path sidecarFile() {
+        return null;
+    }
+
     /** Editor mirror X (length) axis for this plot's sidecar. */
     boolean mirrorX();
 
@@ -98,6 +127,65 @@ public interface BlockVariantPlot {
 
     /** Positions in this plot sharing the given lock-id. Empty for {@code lockId == 0}. */
     java.util.Set<BlockPos> positionsWithLockId(int lockId);
+
+    /**
+     * True when this plot's template is one that <b>repeats</b> — a dimensional
+     * carriage room, whose endless modes stamp copy after copy of it. Only there
+     * do the two per-cell copy settings mean anything (which tiles a cell applies
+     * in, and whether it rerolls in each), so only there does the menu offer
+     * them.
+     *
+     * <p>False for every other plot, which is why this is a default: a carriage,
+     * a part and a contents plot are stamped once and have no copies to differ
+     * from.</p>
+     */
+    default boolean supportsCopySettings() {
+        return false;
+    }
+
+    /**
+     * How the cell at {@code localPos} rolls across a repeating room's copies.
+     * Always {@link VariantCopyRoll#DEFAULT} — follow the room — where
+     * {@link #supportsCopySettings} is false.
+     */
+    default VariantCopyRoll copyRollAt(BlockPos localPos) {
+        return VariantCopyRoll.DEFAULT;
+    }
+
+    /**
+     * Set that override. A no-op where the plot does not repeat — the menu never
+     * offers the button there, and the server re-checks
+     * {@link #supportsCopySettings} before calling this, so reaching the no-op
+     * means a hand-crafted packet rather than a state worth failing over.
+     */
+    default void setCopyRoll(BlockPos localPos, VariantCopyRoll roll) {
+    }
+
+    /**
+     * Which tiles of a repeating room the cell at {@code localPos} applies in.
+     * Always {@link VariantCopyScope#BOTH} where {@link #supportsCopySettings}
+     * is false — a plot stamped once applies everywhere it is, by definition.
+     */
+    default VariantCopyScope copyScopeAt(BlockPos localPos) {
+        return VariantCopyScope.BOTH;
+    }
+
+    /** Set it. A no-op for the plots that cannot repeat, like {@link #setCopyRoll}. */
+    default void setCopyScope(BlockPos localPos, VariantCopyScope scope) {
+    }
+
+    /**
+     * How a single block fills the two spaces of the cell at {@code localPos} when the cell also
+     * holds a door / bed / tall plant ({@link VariantSpan}). {@code AUTO} on plots that don't store
+     * it (portal-room plane palettes — one layer, no second space).
+     */
+    default VariantSpan spanAt(BlockPos localPos) {
+        return VariantSpan.NONE;
+    }
+
+    /** Set the cell's span. A no-op on plots that don't store it. */
+    default void setSpan(BlockPos localPos, VariantSpan span) {
+    }
 
     /**
      * This plot's v9 lock-group reference resolver. The menu uses it to tell
@@ -174,6 +262,35 @@ public interface BlockVariantPlot {
      */
     void restoreJson(String json) throws IOException;
 
+    // ---------- Keys ----------
+
+    /**
+     * The four key formats, stated once. {@link #resolveByKey} parses them and every implementation
+     * below emits one; the Train Builder names a template it is saving to with them as well, which
+     * is what made a second, drifting copy of the string concatenation worth avoiding — see
+     * {@link ContainerContentsStore#trackPlotKey} for the bug the last one caused.
+     */
+    static String carriageKey(String variantId) {
+        return "carriage:" + variantId;
+    }
+
+    static String contentsKey(String contentsId) {
+        return "contents:" + contentsId;
+    }
+
+    static String partKey(CarriagePartKind kind, String name) {
+        return "part:" + kind.id() + ":" + name;
+    }
+
+    static String trackKey(TrackKind kind, String name) {
+        return "track:" + kind.id() + ":" + name;
+    }
+
+    /** {@code whole:<id>} for a room, {@code whole_group:<id>} for a group — also the containers-store key. */
+    static String wholeKey(games.brennan.dungeontrain.train.WholeKind kind, String id) {
+        return (kind == games.brennan.dungeontrain.train.WholeKind.GROUP ? "whole_group:" : "whole:") + id;
+    }
+
     // ---------- Resolution ----------
 
     /**
@@ -185,6 +302,25 @@ public interface BlockVariantPlot {
      * <p>Returns {@code null} if the key doesn't parse, the registered
      * template no longer exists, or the plot's origin can't be resolved.</p>
      */
+    /**
+     * Resolve by key in a world that may be a Train Builder one.
+     *
+     * <p>The key-only form below asks the template registries where a plot is, and the builder's
+     * build is not in them — its key names a build, not a template. So that arm is answered here,
+     * from the level, and everything else falls through unchanged.</p>
+     *
+     * <p>This is the form the menus use once they are open: a menu is anchored to a plot, so what it
+     * re-syncs and edits should follow that anchor rather than the author's feet — which is what
+     * lets you stand off a plot, or outside the carriage you are building, and keep working on it.</p>
+     */
+    static @Nullable BlockVariantPlot resolveByKey(@Nullable net.minecraft.server.level.ServerLevel level,
+                                                   String key, CarriageDims dims) {
+        if (level != null && games.brennan.dungeontrain.builder.BuilderCarriagePlot.KEY.equals(key)) {
+            return games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(level, null, dims);
+        }
+        return resolveByKey(key, dims);
+    }
+
     static @Nullable BlockVariantPlot resolveByKey(String key, CarriageDims dims) {
         if (key == null) return null;
         if (key.startsWith("carriage:")) {
@@ -227,6 +363,24 @@ public interface BlockVariantPlot {
             net.minecraft.core.Vec3i partSize = kind.dims(dims);
             return new PartPlot(kind, name, origin, partSize);
         }
+        if (key.startsWith(ChunkFramePlot.KEY_PREFIX)) {
+            return ChunkFramePlot.of(key.substring(ChunkFramePlot.KEY_PREFIX.length()));
+        }
+        if (key.startsWith("whole:") || key.startsWith("whole_group:")) {
+            boolean group = key.startsWith("whole_group:");
+            String id = key.substring(group ? "whole_group:".length() : "whole:".length());
+            games.brennan.dungeontrain.train.WholeKind kind = group
+                ? games.brennan.dungeontrain.train.WholeKind.GROUP : games.brennan.dungeontrain.train.WholeKind.ROOM;
+            games.brennan.dungeontrain.template.Template model = group
+                ? games.brennan.dungeontrain.train.CarriageGroupRegistry.find(id)
+                    .map(games.brennan.dungeontrain.template.Template.CarriageGroup::new).orElse(null)
+                : games.brennan.dungeontrain.train.WholeCarriageRegistry.find(id)
+                    .map(games.brennan.dungeontrain.template.Template.WholeCarriage::new).orElse(null);
+            if (model == null) return null;
+            BlockPos origin = WholeCarriageEditor.plotOrigin(model, dims);
+            if (origin == null) return null;
+            return new WholePlot(kind, id, origin, WholeCarriageEditor.plotSize(kind, dims));
+        }
         if (key.startsWith("track:")) {
             String rest = key.substring("track:".length());
             int sep = rest.indexOf(':');
@@ -238,7 +392,13 @@ public interface BlockVariantPlot {
             if (kind == null) return null;
             BlockPos origin = TrackSidePlots.plotOrigin(kind, name, dims);
             if (origin == null) return null;
-            net.minecraft.core.Vec3i footprint = kind.dims(dims);
+            // This template's own box, not the kind's — a portal room is free-sized above its floor,
+            // so {@code kind.dims} is the built-in room's 11x7x13 whatever the author has since built.
+            // The open path (resolveAtPos → TrackSidePlots.locate) has always asked the name-aware
+            // one, and the two disagreeing is what made a big room editable everywhere and savable
+            // only in its first 11 blocks: the menu opened on a cell the edit then rejected as
+            // "localPos out of bounds".
+            net.minecraft.core.Vec3i footprint = TrackSidePlots.footprint(kind, name, dims);
             return new TrackPlot(kind, name, origin, footprint);
         }
         return null;
@@ -249,16 +409,38 @@ public interface BlockVariantPlot {
      * matches {@link VariantOverlayRenderer#onLevelTick} — carriage,
      * then contents, then part, then track-side. Returns {@code null} if
      * the player isn't in any plot.
+     *
+     * <p>For a plot that should be decided by an edited block rather than by
+     * the author's feet — live mirroring, which has to work when you build
+     * into a template from outside it — use {@link #resolveAtPos}.</p>
      */
     static @Nullable BlockVariantPlot resolveAt(ServerPlayer player, CarriageDims dims) {
-        BlockPos pos = player.blockPosition();
+        net.minecraft.server.level.ServerLevel level =
+            player.level() instanceof net.minecraft.server.level.ServerLevel sl ? sl : null;
+        return resolveAtPos(level, player.blockPosition(), dims);
+    }
+
+    /**
+     * Resolve the plot containing an arbitrary world position — the same
+     * cascade as {@link #resolveAt}, decided by {@code pos} instead of by a
+     * player. {@code level} may be {@code null}, which only skips the builder
+     * arm (the plot grid itself is purely positional).
+     */
+    static @Nullable BlockVariantPlot resolveAtPos(@Nullable net.minecraft.server.level.ServerLevel level,
+                                                   BlockPos pos, CarriageDims dims) {
         // A builder world holds one build and has no plot grid, so it answers from world data
-        // instead of from where the player stands — that's what makes mirror work out on the
+        // instead of from the position handed in — that's what makes mirror work out on the
         // platform. Checked first, and it costs ordinary worlds one dimension comparison.
-        if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+        if (level != null) {
             games.brennan.dungeontrain.builder.BuilderCarriagePlot builderPlot =
-                games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(serverLevel, pos, dims);
+                games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(level, pos, dims);
             if (builderPlot != null) return builderPlot;
+        }
+        WholeCarriageEditor.PlotLocation whole = WholeCarriageEditor.plotContaining(pos, dims);
+        if (whole != null) {
+            BlockPos origin = WholeCarriageEditor.plotOrigin(whole.template(), dims);
+            if (origin == null) return null;
+            return new WholePlot(whole.kind(), whole.id(), origin, WholeCarriageEditor.plotSize(whole.kind(), dims));
         }
         CarriageVariant carriage = CarriageEditor.plotContaining(pos, dims);
         if (carriage != null) {
@@ -286,7 +468,12 @@ public interface BlockVariantPlot {
             Vec3i partSize = partLoc.kind().dims(dims);
             return new PartPlot(partLoc.kind(), partLoc.name(), origin, partSize);
         }
-        TrackPlotLocator.PlotInfo trackLoc = TrackPlotLocator.locate(player, dims);
+        // Chunk frames stand beside the Dimensions rooms, and only while that category is resident.
+        if (EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) {
+            java.util.Optional<String> frame = ChunkFrameEditor.plotContaining(pos);
+            if (frame.isPresent()) return ChunkFramePlot.of(frame.get());
+        }
+        TrackPlotLocator.PlotInfo trackLoc = TrackSidePlots.locate(pos, dims);
         if (trackLoc != null) {
             return new TrackPlot(trackLoc.kind(), trackLoc.name(), trackLoc.origin(), trackLoc.footprint());
         }
@@ -314,13 +501,16 @@ public interface BlockVariantPlot {
             this.sidecar = CarriageVariantBlocks.loadFor(variant, CarriageEditor.plotDims(variant, dims));
         }
 
-        @Override public String key() { return "carriage:" + variant.id(); }
+        @Override public String key() { return carriageKey(variant.id()); }
+        @Override public String dirtySnapshotKey() { return EditorPlotSnapshots.key("carriages", variant.id()); }
+        @Override public java.nio.file.Path sidecarFile() { return CarriageVariantBlocks.configPathFor(variant); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
-        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
-        @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
+        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
+        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
         @Override public void save() throws IOException {
+            noteEdit(this, null);
             sidecar.save(variant);
             // Dev-mode write-through: shift-right-click edits should ship in
             // the next build, not stay trapped in run/config. Mirrors PR #75
@@ -344,6 +534,8 @@ public interface BlockVariantPlot {
         }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
+        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
+        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
         @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
@@ -358,6 +550,66 @@ public interface BlockVariantPlot {
     }
 
     /** Wraps a {@link CarriageContentsVariantBlocks} sidecar. */
+    /** A whole room or group plot — one {@link WholeVariantBlocks} sidecar over the whole build. */
+    final class WholePlot implements BlockVariantPlot {
+        private final games.brennan.dungeontrain.train.WholeKind kind;
+        private final String id;
+        private final BlockPos origin;
+        private final Vec3i footprint;
+        private final WholeVariantBlocks sidecar;
+
+        WholePlot(games.brennan.dungeontrain.train.WholeKind kind, String id, BlockPos origin, Vec3i footprint) {
+            this.kind = kind;
+            this.id = id;
+            this.origin = origin;
+            this.footprint = footprint;
+            this.sidecar = WholeVariantBlocks.loadFor(kind, id, footprint);
+        }
+
+        @Override public String key() { return wholeKey(kind, id); }
+        @Override public String dirtySnapshotKey() { return WholeCarriageEditor.snapshotKey(kind, id); }
+        @Override public java.nio.file.Path sidecarFile() { return WholeVariantBlocks.configPathFor(kind, id); }
+        @Override public BlockPos origin() { return origin; }
+        @Override public Vec3i footprint() { return footprint; }
+        @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
+        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
+        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
+        @Override public void save() throws IOException {
+            noteEdit(this, null);
+            sidecar.save(kind, id);
+            if (EditorDevMode.isEnabled()) {
+                try {
+                    sidecar.saveToSource(kind, id);
+                } catch (IOException e) {
+                    LOGGER.warn("[DungeonTrain] BlockVariantPlot: source write failed for whole {} {}: {}",
+                        kind.id(), id, e.toString());
+                }
+            }
+        }
+        @Override public String snapshotJson() { return sidecar.toJsonText(); }
+        @Override public void restoreJson(String json) throws IOException {
+            Path file = WholeVariantBlocks.configPathFor(kind, id);
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, json, StandardCharsets.UTF_8);
+            WholeVariantBlocks.invalidate(kind, id);
+        }
+        @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
+        @Override public void setLockId(BlockPos l, int lockId) { sidecar.setLockId(l, lockId); }
+        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
+        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
+        @Override public java.util.Set<BlockPos> positionsWithLockId(int lockId) { return sidecar.positionsWithLockId(lockId); }
+        @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
+        @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
+        @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
+        @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
+        @Override public boolean mirrorX() { return sidecar.mirrorX(); }
+        @Override public boolean mirrorY() { return sidecar.mirrorY(); }
+        @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
+        @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
+        @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
+        @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
+    }
+
     final class ContentsPlot implements BlockVariantPlot {
         private final CarriageContents contents;
         private final BlockPos origin;
@@ -371,13 +623,16 @@ public interface BlockVariantPlot {
             this.sidecar = CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
         }
 
-        @Override public String key() { return "contents:" + contents.id(); }
+        @Override public String key() { return contentsKey(contents.id()); }
+        @Override public String dirtySnapshotKey() { return EditorPlotSnapshots.key("contents", contents.id()); }
+        @Override public java.nio.file.Path sidecarFile() { return CarriageContentsVariantBlocks.configPathFor(contents); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
-        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
-        @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
+        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
+        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
         @Override public void save() throws IOException {
+            noteEdit(this, null);
             sidecar.save(contents);
             if (EditorDevMode.isEnabled()) {
                 try {
@@ -397,6 +652,8 @@ public interface BlockVariantPlot {
         }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
+        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
+        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
         @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
@@ -426,13 +683,17 @@ public interface BlockVariantPlot {
             this.sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
         }
 
-        @Override public String key() { return "part:" + kind.id() + ":" + name; }
+        @Override public String key() { return partKey(kind, name); }
+        /** Parts are stamped inside carriage plots and have no scan row of their own. */
+        @Override public @Nullable String dirtySnapshotKey() { return null; }
+        @Override public java.nio.file.Path sidecarFile() { return CarriagePartVariantBlocks.configPathFor(kind, name); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
-        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
-        @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
+        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
+        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
         @Override public void save() throws IOException {
+            noteEdit(this, null);
             sidecar.save(kind, name);
             if (EditorDevMode.isEnabled()) {
                 try {
@@ -452,6 +713,8 @@ public interface BlockVariantPlot {
         }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
+        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
+        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
         @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
@@ -487,13 +750,16 @@ public interface BlockVariantPlot {
             this.sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
         }
 
-        @Override public String key() { return "track:" + kind.name().toLowerCase(java.util.Locale.ROOT) + ":" + name; }
+        @Override public String key() { return trackKey(kind, name); }
+        @Override public String dirtySnapshotKey() { return EditorDirtyCheck.snapshotKeyFor(kind, name); }
+        @Override public java.nio.file.Path sidecarFile() { return TrackVariantBlocks.configPathFor(kind, name); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
-        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
-        @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
+        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
+        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
         @Override public void save() throws IOException {
+            noteEdit(this, null);
             sidecar.save(kind, name);
             if (EditorDevMode.isEnabled()) {
                 try {
@@ -513,6 +779,8 @@ public interface BlockVariantPlot {
         }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
+        @Override public VariantSpan spanAt(BlockPos l) { return sidecar.spanAt(l); }
+        @Override public void setSpan(BlockPos l, VariantSpan span) { sidecar.setSpan(l, span); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
         @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
@@ -524,6 +792,12 @@ public interface BlockVariantPlot {
         @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
         @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
         @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
+        // A portal room is the one track template that repeats — see PortalRoomCopies.
+        @Override public boolean supportsCopySettings() { return kind == TrackKind.PORTAL_ROOM; }
+        @Override public VariantCopyRoll copyRollAt(BlockPos l) { return sidecar.copyRollAt(l); }
+        @Override public void setCopyRoll(BlockPos l, VariantCopyRoll r) { sidecar.setCopyRoll(l, r); }
+        @Override public VariantCopyScope copyScopeAt(BlockPos l) { return sidecar.copyScopeAt(l); }
+        @Override public void setCopyScope(BlockPos l, VariantCopyScope s) { sidecar.setCopyScope(l, s); }
     }
 
     /**

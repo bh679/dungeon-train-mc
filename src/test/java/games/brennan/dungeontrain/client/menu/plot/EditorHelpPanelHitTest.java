@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.client.menu.plot;
 
+import games.brennan.dungeontrain.client.menu.EditorPanelFacing;
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.client.menu.plot.EditorHelpPanelRenderer.CellKind;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * close box is confined to the header row's right-hand square — a title click must not dismiss the
  * panel, and the wiki row must keep working at every x including under the X.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 class EditorHelpPanelHitTest {
 
     /** Panel-local y inside the header band (row 0). */
@@ -43,9 +47,19 @@ class EditorHelpPanelHitTest {
     void headerElsewhereIsInert() {
         assertEquals(CellKind.NONE, cellAt(0.0, HEADER_Y), "clicking the title must not close");
         assertEquals(CellKind.NONE, cellAt(-EditorHelpPanelRenderer.HALF_W + 0.01, HEADER_Y));
-        // Just left of the close box.
-        assertEquals(CellKind.NONE,
-            cellAt(EditorHelpPanelRenderer.HALF_W - EditorHelpPanelRenderer.CLOSE_W - 0.01, HEADER_Y));
+        // Just left of the face button, which sits left of the close box.
+        assertEquals(CellKind.NONE, cellAt(EditorHelpPanelRenderer.HALF_W - EditorHelpPanelRenderer.CLOSE_W
+            - EditorPanelFacing.BUTTON_W - 0.01, HEADER_Y));
+    }
+
+    @Test
+    @DisplayName("the square left of the close box is the face button")
+    void faceButton() {
+        double faceCentre = EditorHelpPanelRenderer.HALF_W - EditorHelpPanelRenderer.CLOSE_W
+            - EditorPanelFacing.BUTTON_W / 2.0;
+        assertEquals(CellKind.FACE_BUTTON, cellAt(faceCentre, HEADER_Y));
+        // Only on the header — the wiki row below it is still the wiki button.
+        assertEquals(CellKind.WIKI_BUTTON, cellAt(faceCentre, WIKI_Y));
     }
 
     @Test

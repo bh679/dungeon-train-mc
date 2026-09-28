@@ -1,18 +1,20 @@
 package games.brennan.dungeontrain.client.menu;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.EditorMenusModeState;
+import games.brennan.dungeontrain.client.EditorObserversState;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer;
 import games.brennan.dungeontrain.editor.EditorMenusMode;
-import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.portal.PortalRoomCopiesVariant;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -42,25 +44,18 @@ import java.util.Map;
 public final class EditorMenuScreen implements MenuScreen {
 
     /**
-     * Panel width while the Walls row is showing, in world units.
-     *
-     * <p>Sized for the longest mode label, "Walls: Endless Repetition", at
-     * {@link CommandMenuLayout#TEXT_SCALE} — the shared default fits about fifteen characters and
-     * that is twenty-five. A constant rather than a measurement because the row builders have no
-     * {@code Font} to hand, and the set of modes is fixed and small.</p>
+     * The two save commands, shared by the File-tab Save row and the header icon so the two
+     * surfaces cannot drift.
      */
-    private static final double WALLS_ROW_PANEL_WIDTH = 2.6;
+    public static final String SAVE_COMMAND = "dungeontrain save";
+    public static final String PART_SAVE_COMMAND = "dungeontrain editor part save";
+    /** Chunk frames save through their own subcommand, for the same reason carriage parts do. */
+    public static final String CHUNK_FRAME_SAVE_COMMAND = "dungeontrain editor chunkframe save";
 
-    /**
-     * Panel width while the Copies Block row is showing.
-     *
-     * <p>The same width the Walls row asks for. The row named a block id when it was added, which
-     * needed more than forty characters; it names the gesture now — {@code Blocks: + held} — and the
-     * palette itself is shown as icons on the plot panel, so there is nothing here to size for.</p>
-     */
-    private static final double COPIES_BLOCK_ROW_PANEL_WIDTH = WALLS_ROW_PANEL_WIDTH;
+    private static final ResourceLocation SAVE_ICON =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/save");
 
-    @Override public String title() { return "Editor"; }
+    @Override public String title() { return MenuLang.t("editor.title"); }
 
     /**
      * The tab strip is row 0 and stays pinned while the rest of the list scrolls — a tall Current
@@ -90,6 +85,7 @@ public final class EditorMenuScreen implements MenuScreen {
         }
 
         boolean isParts()   { return category == PlotCategory.PARTS; }
+        boolean isChunkFrames() { return category == PlotCategory.CHUNK_FRAMES; }
         boolean isPortals() { return category == PlotCategory.PORTALS; }
     }
 
@@ -179,11 +175,11 @@ public final class EditorMenuScreen implements MenuScreen {
             String[] kindName = partsKindName(ctx.model());
             if (kindName != null) {
                 out.add(new CommandMenuEntry.Split(
-                    new CommandMenuEntry.DrillIn("New",
+                    new CommandMenuEntry.DrillIn(MenuLang.t("common.new"),
                         new NewSourcePickerScreen(NewSourcePickerScreen.Category.PARTS,
                             kindName[0], kindName[1])),
-                    new CommandMenuEntry.DrillIn("Remove",
-                        new ConfirmScreen("Remove '" + ctx.model() + "'?",
+                    new CommandMenuEntry.DrillIn(MenuLang.t("common.remove"),
+                        new ConfirmScreen(MenuLang.t("confirm.remove", ctx.model()),
                             "dungeontrain editor part reset " + kindName[0] + " " + kindName[1])),
                     0.50));
             }
@@ -202,11 +198,13 @@ public final class EditorMenuScreen implements MenuScreen {
         out.add(myBuildsEntry());
 
         // Parts have their own Save — `dungeontrain save` dispatches via EditorCategory.locate,
-        // which doesn't see part plots.
-        out.add(new CommandMenuEntry.Split(
-            new CommandMenuEntry.Run("Save",
-                ctx.isParts() ? "dungeontrain editor part save" : "dungeontrain save"),
-            new CommandMenuEntry.Run("All",
+        // which doesn't see part plots. Chunk frames save alone: there is no "save all" for them.
+        if (ctx.isChunkFrames()) {
+            out.add(new CommandMenuEntry.Run(MenuLang.t("common.save"), CHUNK_FRAME_SAVE_COMMAND));
+        } else out.add(new CommandMenuEntry.Split(
+            new CommandMenuEntry.Run(MenuLang.t("common.save"),
+                ctx.isParts() ? PART_SAVE_COMMAND : SAVE_COMMAND),
+            new CommandMenuEntry.Run(MenuLang.t("editor.save_all"),
                 ctx.isParts() ? "dungeontrain editor part save all" : "dungeontrain save all"),
             0.80));
 
@@ -216,8 +214,8 @@ public final class EditorMenuScreen implements MenuScreen {
         // Undo | Redo — steps the per-plot editor history. Mirrors the Ctrl/Cmd+Z / Ctrl/Cmd+Y
         // keybindings through the same commands, so the two surfaces cannot drift apart.
         out.add(new CommandMenuEntry.Split(
-            new CommandMenuEntry.Run("Undo", "dungeontrain editor undo"),
-            new CommandMenuEntry.Run("Redo", "dungeontrain editor redo"),
+            new CommandMenuEntry.Run(MenuLang.t("editor.undo"), "dungeontrain editor undo"),
+            new CommandMenuEntry.Run(MenuLang.t("editor.redo"), "dungeontrain editor redo"),
             0.50));
 
         // Reset | Clear — paired destructive actions. Reset deletes the on-disk template; Clear
@@ -227,11 +225,11 @@ public final class EditorMenuScreen implements MenuScreen {
         if (ctx.isParts()) {
             if (clear != null) out.add(clear);
         } else {
-            CommandMenuEntry reset = new CommandMenuEntry.Run("Reset", "dungeontrain reset");
+            CommandMenuEntry reset = new CommandMenuEntry.Run(MenuLang.t("editor.reset"), "dungeontrain reset");
             out.add(clear != null ? new CommandMenuEntry.Split(reset, clear, 0.50) : reset);
         }
 
-        out.add(new CommandMenuEntry.DrillIn("Package", new PackageListScreen()));
+        out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.package"), new PackageListScreen()));
         return out;
     }
 
@@ -254,7 +252,7 @@ public final class EditorMenuScreen implements MenuScreen {
         // the author can exclude specific contents from this carriage's spawn pool. Only shown when
         // a concrete variant id is in scope.
         if (ctx.category() == PlotCategory.CARRIAGES && notEmpty(ctx.modelId())) {
-            out.add(new CommandMenuEntry.DrillIn("Contents",
+            out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.contents"),
                 CarriageContentsAllowScreen.forCarriage(ctx.modelId())));
         }
 
@@ -263,8 +261,13 @@ public final class EditorMenuScreen implements MenuScreen {
         // NAME, not modelId: modelId is the kind tag "portal_room", shared by every room.
         if (ctx.isPortals() && notEmpty(ctx.modelName())
             && PortalRoomSettings.parse(EditorStatusHudOverlay.roomMode()).contents().furnishes()) {
-            out.add(new CommandMenuEntry.DrillIn("Contents",
+            out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.contents"),
                 CarriageContentsAllowScreen.forPortalRoom(ctx.modelName())));
+        }
+
+        // A frame says which chunk dimensions it dresses, and its weight among the frames there.
+        if (ctx.isChunkFrames() && notEmpty(ctx.modelName())) {
+            out.add(new CommandMenuEntry.DrillIn("Chunk dimensions…", new ChunkFrameRoomsScreen(ctx.modelName())));
         }
 
         // Weight — Triple row: [-] / Weight (N) / [+] for every category that has a weight pool.
@@ -281,37 +284,83 @@ public final class EditorMenuScreen implements MenuScreen {
         // Stage chip shows; to change the gate the player edits the Stage or picks Custom.
         if (weightRow != null) out.addAll(spawnGateRows(ctx));
 
+        // Random flip — contents only. Which axes this template MAY be flipped along when it is
+        // stamped into a carriage (each enabled axis is rolled per carriage), plus "Rooms": whether
+        // that roll also applies when the template furnishes a portal room.
+        if (ctx.category() == PlotCategory.CONTENTS && notEmpty(ctx.modelId())) {
+            out.addAll(flipRows(ctx.modelId(),
+                EditorStatusHudOverlay.flipX(), EditorStatusHudOverlay.flipY(),
+                EditorStatusHudOverlay.flipZ(), EditorStatusHudOverlay.flipRooms()));
+        }
+
         return out;
     }
 
-    /** The portal-room block, in the order the settings read: box, then walls, then contents. */
-    private static List<CommandMenuEntry> portalRows() {
-        String mode = EditorStatusHudOverlay.roomMode();
+    /**
+     * The Flip label + X / Y / Z / Rooms quad for a contents template, shaped like the Settings
+     * tab's Mirror quad ({@link #addMirrorToggles}) — the two read alike because they mean related
+     * things, but this one is per-template spawn behaviour, not an editor authoring aid.
+     */
+    public static List<CommandMenuEntry> flipRows(String modelId, boolean x, boolean y, boolean z, boolean rooms) {
+        String prefix = "dungeontrain editor contents flip " + modelId + " ";
+        List<CommandMenuEntry> out = new ArrayList<>();
+        out.add(new CommandMenuEntry.Label(MenuLang.t("editor.flip")));
+        // showStateText=false → state shown by the green (on) / grey (off) tint only, as on Mirror.
+        CommandMenuEntry xCell = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_x"), x,
+            prefix + "x on", prefix + "x off", false);
+        CommandMenuEntry yCell = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_y"), y,
+            prefix + "y on", prefix + "y off", false);
+        CommandMenuEntry zCell = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_z"), z,
+            prefix + "z on", prefix + "z off", false);
+        CommandMenuEntry roomsCell = new CommandMenuEntry.Toggle(MenuLang.t("editor.flip_rooms"), rooms,
+            prefix + "rooms on", prefix + "rooms off", false);
+        out.add(new CommandMenuEntry.Quad(xCell, yCell, zCell, roomsCell, 0.25, 0.50, 0.75));
+        return out;
+    }
+
+    /**
+     * The portal-room block for the room the author is standing in, in the order the settings
+     * read: box, then walls, then contents. Values come from the stood-in plot's status packet, so
+     * they are tick-fresh, and the rows send to the bare {@code portals} root.
+     */
+    public static List<CommandMenuEntry> portalRows() {
+        return portalRows(EditorStatusHudOverlay.roomMode(), EditorStatusHudOverlay.roomLength(),
+            EditorStatusHudOverlay.roomWidth(), EditorStatusHudOverlay.roomHeight(),
+            EditorMenuPortalRows.STOOD_IN_PREFIX);
+    }
+
+    /**
+     * The same block for any room, from its settings tag and box — what the editor screen shows for
+     * a room the author is previewing rather than standing in, with the rows sent to
+     * {@link EditorMenuPortalRows#prefixFor}'s named root.
+     */
+    public static List<CommandMenuEntry> portalRows(String mode, int length, int width, int height,
+                                                    String prefix) {
         List<CommandMenuEntry> out = new ArrayList<>();
 
         // Size — a portal room is the one plot whose box the author chooses: length outright (it is
         // the distance walked underneath a portal, not a footprint) and width and height above the
         // floor the corridor mouth sets.
-        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor(
-            "length", "Length", EditorStatusHudOverlay.roomLength()));
-        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor(
-            "width", "Width", EditorStatusHudOverlay.roomWidth()));
-        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor(
-            "height", "Height", EditorStatusHudOverlay.roomHeight()));
+        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("length", MenuLang.t("editor.length"), length, prefix));
+        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("width", MenuLang.t("editor.width"), width, prefix));
+        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("height", MenuLang.t("editor.height"), height, prefix));
 
-        addIfPresent(out, EditorMenuPortalRows.wallsModeRowFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.copiesRowFor(mode));
+        addIfPresent(out, EditorMenuPortalRows.wallsModeRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.lockRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.copiesRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.copiesBlockRowFor(
-            mode, PortalRoomCopiesVariant.Plane.FLOOR));
+            mode, PortalRoomCopiesVariant.Plane.FLOOR, prefix));
+        addIfPresent(out, EditorMenuPortalRows.copiesFloorHeightRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.copiesBlockRowFor(
-            mode, PortalRoomCopiesVariant.Plane.ROOF));
-        addIfPresent(out, EditorMenuPortalRows.doorWallRowFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.roomContentsRowFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.roomBooksRowFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.roomSkyRowFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.exitsRowFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.exitEveryTripleFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.exitMoveTripleFor(mode));
+            mode, PortalRoomCopiesVariant.Plane.ROOF, prefix));
+        addIfPresent(out, EditorMenuPortalRows.doorWallRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.roomContentsRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.roomBooksRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.roomSkyRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.roomFogRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.exitsRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.exitEveryTripleFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.exitMoveTripleFor(mode, prefix));
 
         return out;
     }
@@ -327,7 +376,7 @@ public final class EditorMenuScreen implements MenuScreen {
         String stageId = EditorStatusHudOverlay.stageId();
         if (notEmpty(stageId)) {
             return List.of(new CommandMenuEntry.DrillIn(
-                "Stage: " + stageId + "  ▾",
+                MenuLang.t("editor.stage_linked", stageId),
                 new StagePickerScreen(ctx.category(), ctx.modelId(), ctx.modelName(), stageId)));
         }
 
@@ -335,14 +384,14 @@ public final class EditorMenuScreen implements MenuScreen {
         int minLv = EditorStatusHudOverlay.minLevel();
         int maxLv = EditorStatusHudOverlay.maxLevel();
         addIfPresent(out, levelTripleFor(ctx.category(), ctx.modelId(), ctx.modelName(),
-            "minlevel", "Min Lv (" + minLv + ")", "0-1000"));
+            "minlevel", MenuLang.t("editor.min_level", minLv), "0-1000"));
         addIfPresent(out, levelTripleFor(ctx.category(), ctx.modelId(), ctx.modelName(),
-            "maxlevel", "Max Lv (" + (maxLv < 0 ? "all" : Integer.toString(maxLv)) + ")",
+            "maxlevel", MenuLang.t("editor.max_level", maxLv < 0 ? MenuLang.t("editor.max_level_all") : Integer.toString(maxLv)),
             "-1..1000"));
-        out.add(new CommandMenuEntry.DrillIn("Phases",
+        out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.phases"),
             new PhaseSelectScreen(ctx.category(), ctx.modelId(), ctx.modelName())));
         // Stage / Custom picker — link this template to a Stage preset (or stay Custom).
-        out.add(new CommandMenuEntry.DrillIn("Stage: Custom  ▾",
+        out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.stage_custom"),
             new StagePickerScreen(ctx.category(), ctx.modelId(), ctx.modelName(), "")));
         return out;
     }
@@ -351,12 +400,17 @@ public final class EditorMenuScreen implements MenuScreen {
     // Settings — editor-wide preferences, outliving any one model
     // ------------------------------------------------------------------
 
+    /** The Settings rows for an explicit category and model name — what the inventory screen's Settings page shows. */
+    public static List<CommandMenuEntry> settingsRows(PlotCategory category, String modelName) {
+        return settingsRows(new Ctx(category, modelName, modelName, modelName, -1));
+    }
+
     private static List<CommandMenuEntry> settingsRows(Ctx ctx) {
         List<CommandMenuEntry> out = new ArrayList<>();
 
         if (shouldShowDevModeToggle(VersionInfo.BRANCH)) {
             out.add(new CommandMenuEntry.Toggle(
-                "DevMode", EditorStatusHudOverlay.isDevModeOn(),
+                MenuLang.t("editor.dev_mode"), EditorStatusHudOverlay.isDevModeOn(),
                 "dungeontrain editor devmode on",
                 "dungeontrain editor devmode off"));
         }
@@ -378,11 +432,20 @@ public final class EditorMenuScreen implements MenuScreen {
         // switched it off from a portal plot must be able to switch it back on from anywhere.
         out.add(plotLightingRow());
 
+        // Observers — Off keeps every observer inside an editor plot quiet, hand-placed blocks
+        // included, so a contraption can be wired without firing. World state (persisted), which is
+        // why it is a server round-trip rather than a client preference like Plot Lighting.
+        out.add(observersRow());
+
+        // Mobs — Blocks places a frozen, one-hit mob from a spawn egg and ghosts the mob entries of
+        // variant cells; Live is vanilla eggs. World state like Observers, so a server round-trip.
+        out.add(mobsRow());
+
         // Welcome Panel — the onboarding board floating beside the first nav menu. Its own close
         // (X) button writes the same per-player, per-world flag; this row is the only way back,
         // so it stays in the menu whether the panel is currently up or not.
         out.add(new CommandMenuEntry.Toggle(
-            "Welcome Panel", !EditorTypeMenuRenderer.helpPanelDismissed(),
+            MenuLang.t("editor.welcome_panel"), !EditorTypeMenuRenderer.helpPanelDismissed(),
             "dungeontrain editor helppanel on",
             "dungeontrain editor helppanel off"));
 
@@ -396,7 +459,7 @@ public final class EditorMenuScreen implements MenuScreen {
         }
 
         if (!ctx.isParts()) {
-            out.add(new CommandMenuEntry.DrillIn("Stages", new StagesListScreen()));
+            out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.stages"), new StagesListScreen()));
         }
         return out;
     }
@@ -407,19 +470,24 @@ public final class EditorMenuScreen implements MenuScreen {
 
     private static List<CommandMenuEntry> navRows(Ctx ctx) {
         List<CommandMenuEntry> out = new ArrayList<>();
-        out.add(new CommandMenuEntry.DrillIn("Enter", new EnterCategoryMenuScreen()));
+        out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.enter"), new EnterCategoryMenuScreen()));
 
-        // Go and stand in one. Portals only, because that is the only category where "the carriage"
-        // names something you can walk into. It stamps the room the player is standing in — under
-        // the world, corridor each side, no train — so there is nothing to pick and no save prompt
-        // to answer.
-        if (ctx.isPortals()) {
-            out.add(new CommandMenuEntry.Run("Test the Carriage", "dungeontrain portal test"));
+        // Go and stand in one: a dimensional carriage, a carriage or a contents template — the
+        // categories where "the carriage" names something you can walk into. It stamps a copy under
+        // the world, no train, so there is nothing to pick.
+        //
+        // It stamps it from the SAVED template, though, so an unsaved edit would be silently absent
+        // from what the author walked in to look at. PortalTestSaveCheckScreen asks first when this
+        // room is dirty, and dispatches straight through when it isn't.
+        MenuScreen testCheck = games.brennan.dungeontrain.client.menu.editorscreen.EditorScreenActions
+            .testCheckFor(ctx.category(), ctx.modelName());
+        if (testCheck != null) {
+            out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.test_carriage"), testCheck));
         }
 
         // Exit unwinds the active editor session, clears the editor plots, and teleports the player
         // back to where they entered the editor from.
-        out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
+        out.add(new CommandMenuEntry.Run(MenuLang.t("editor.exit"), "dungeontrain editor exit"));
         return out;
     }
 
@@ -454,10 +522,10 @@ public final class EditorMenuScreen implements MenuScreen {
     private static CommandMenuEntry editorMenusRow() {
         EditorMenusMode mode = EditorMenusModeState.mode();
         return new CommandMenuEntry.Quad(
-            new CommandMenuEntry.Label("Editor Menus"),
-            modeCell("Auto", EditorMenusMode.AUTO, mode),
-            modeCell("On", EditorMenusMode.ON, mode),
-            modeCell("Off", EditorMenusMode.OFF, mode),
+            new CommandMenuEntry.Label(MenuLang.t("editor.editor_menus")),
+            modeCell(MenuLang.t("editor.menus_auto"), EditorMenusMode.AUTO, mode),
+            modeCell(MenuLang.t("common.on"), EditorMenusMode.ON, mode),
+            modeCell(MenuLang.t("common.off"), EditorMenusMode.OFF, mode),
             0.46, 0.64, 0.82);
     }
 
@@ -478,7 +546,7 @@ public final class EditorMenuScreen implements MenuScreen {
             () -> ClientDisplayConfig.setMenuRenderDistance(
                 ClientDisplayConfig.stepMenuRenderDistanceDown(
                     ClientDisplayConfig.getMenuRenderDistance())));
-        CommandMenuEntry middle = new CommandMenuEntry.Label("Menu Distance: " + current);
+        CommandMenuEntry middle = new CommandMenuEntry.Label(MenuLang.t("editor.menu_distance", current));
         CommandMenuEntry plus = new CommandMenuEntry.ClientAction("+",
             () -> ClientDisplayConfig.setMenuRenderDistance(
                 ClientDisplayConfig.stepMenuRenderDistanceUp(
@@ -501,8 +569,27 @@ public final class EditorMenuScreen implements MenuScreen {
     private static CommandMenuEntry plotLightingRow() {
         boolean on = ClientDisplayConfig.isEditorPlotLighting();
         return new CommandMenuEntry.ClientAction(
-            "Plot Lighting  [" + (on ? "ON" : "OFF") + "]",
+            MenuLang.t("editor.plot_lighting", MenuLang.t(on ? "common.on_caps" : "common.off_caps")),
             () -> ClientDisplayConfig.setEditorPlotLighting(!ClientDisplayConfig.isEditorPlotLighting()));
+    }
+
+    /** Observers | On | Off — the same Label-plus-state-cells shape as Editor Menus. */
+    private static CommandMenuEntry observersRow() {
+        boolean on = EditorObserversState.on();
+        return new CommandMenuEntry.Triple(
+            new CommandMenuEntry.Label(MenuLang.t("editor.observers")),
+            new CommandMenuEntry.Stay(MenuLang.t("common.on"), "dungeontrain editor observers on", on),
+            new CommandMenuEntry.Stay(MenuLang.t("common.off"), "dungeontrain editor observers off", !on),
+            0.46, 0.73);
+    }
+
+    private static CommandMenuEntry mobsRow() {
+        boolean live = games.brennan.dungeontrain.client.EditorMobsModeState.live();
+        return new CommandMenuEntry.Triple(
+            new CommandMenuEntry.Label(MenuLang.t("editor.mobs")),
+            new CommandMenuEntry.Stay(MenuLang.t("editor.mobs_blocks"), "dungeontrain editor mobs blocks", !live),
+            new CommandMenuEntry.Stay(MenuLang.t("editor.mobs_live"), "dungeontrain editor mobs live", live),
+            0.46, 0.73);
     }
 
     private static CommandMenuEntry modeCell(String label, EditorMenusMode cell, EditorMenusMode active) {
@@ -511,20 +598,20 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     private static void addMirrorToggles(List<CommandMenuEntry> out) {
-        out.add(new CommandMenuEntry.Label("Mirror"));
+        out.add(new CommandMenuEntry.Label(MenuLang.t("editor.mirror")));
         // showStateText=false → state shown by the green (on) / grey (off) tint only.
-        CommandMenuEntry x = new CommandMenuEntry.Toggle("X", EditorStatusHudOverlay.mirrorX(),
+        CommandMenuEntry x = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_x"), EditorStatusHudOverlay.mirrorX(),
             "dungeontrain editor mirror x on", "dungeontrain editor mirror x off", false);
-        CommandMenuEntry y = new CommandMenuEntry.Toggle("Y", EditorStatusHudOverlay.mirrorY(),
+        CommandMenuEntry y = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_y"), EditorStatusHudOverlay.mirrorY(),
             "dungeontrain editor mirror y on", "dungeontrain editor mirror y off", false);
-        CommandMenuEntry z = new CommandMenuEntry.Toggle("Z", EditorStatusHudOverlay.mirrorZ(),
+        CommandMenuEntry z = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_z"), EditorStatusHudOverlay.mirrorZ(),
             "dungeontrain editor mirror z on", "dungeontrain editor mirror z off", false);
-        CommandMenuEntry v = new CommandMenuEntry.Toggle("V", EditorStatusHudOverlay.mirrorVariants(),
+        CommandMenuEntry v = new CommandMenuEntry.Toggle(MenuLang.t("editor.mirror_variants"), EditorStatusHudOverlay.mirrorVariants(),
             "dungeontrain editor mirror v on", "dungeontrain editor mirror v off", false);
         out.add(new CommandMenuEntry.Quad(x, y, z, v, 0.25, 0.50, 0.75));
         // Explicit re-mirror. Saving no longer rebuilds the far half from the master octant, so
         // this is the (deliberate) way to force it.
-        out.add(new CommandMenuEntry.Run("Rebuild", "dungeontrain editor mirror rebuild"));
+        out.add(new CommandMenuEntry.Run(MenuLang.t("editor.mirror_rebuild"), "dungeontrain editor mirror rebuild"));
     }
 
     /**
@@ -535,7 +622,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * Extracted as a pure predicate so the unit test can pin behavior without having to mutate
      * {@link VersionInfo}'s static initializer.
      */
-    static boolean shouldShowDevModeToggle(String branch) {
+    public static boolean shouldShowDevModeToggle(String branch) {
         return !"main".equals(branch);
     }
 
@@ -554,7 +641,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * <p>{@code modelId} (not {@code model}) is spliced into commands so track-side models with
      * friendly path strings ({@code "track / track2"}) don't break the parser.</p>
      */
-    static CommandMenuEntry weightTripleFor(PlotCategory category, String modelId, String modelName, int currentWeight) {
+    public static CommandMenuEntry weightTripleFor(PlotCategory category, String modelId, String modelName, int currentWeight) {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
         boolean named = modelName != null && !modelName.isEmpty();
         String prefix = switch (category) {
@@ -562,10 +649,12 @@ public final class EditorMenuScreen implements MenuScreen {
             case TRACKS -> named ? "dungeontrain editor tracks weight " + modelId + " " + modelName : null;
             case PORTALS -> named ? "dungeontrain editor portals weight " + modelId + " " + modelName : null;
             case CONTENTS -> "dungeontrain editor contents weight " + modelId;
-            case PARTS, ARCHITECTURE -> null; // no weight pool
+            case WHOLE -> "dungeontrain editor whole weight " + modelId;
+            case WHOLE_GROUP -> "dungeontrain editor whole group weight " + modelId;
+            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null; // no weight pool
         };
         if (prefix == null) return null;
-        String label = currentWeight >= 0 ? "Weight (" + currentWeight + ")" : "Weight";
+        String label = currentWeight >= 0 ? MenuLang.t("editor.weight_n", currentWeight) : MenuLang.t("editor.weight");
         CommandMenuEntry minus  = new CommandMenuEntry.Stay("-", prefix + " dec");
         CommandMenuEntry weight = new CommandMenuEntry.TypeArg(label, "0-100", prefix);
         CommandMenuEntry plus   = new CommandMenuEntry.Stay("+", prefix + " inc");
@@ -573,26 +662,31 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * Wider than the shared default while a Walls row is showing.
+     * The Save icon at the right of the breadcrumb band — one tap from any tab, where the
+     * File-tab row is two. Same command as that row, so what the icon saves is what Save saves.
      *
-     * <p>{@link CommandMenuLayout#PANEL_WIDTH} fits about fifteen characters, which covered every
-     * row this menu had until "Walls: Endless Repetition" — twenty-five — ran off both edges. The
-     * wide rows only exist in Current, so the panel widens only while that tab is the one showing;
-     * every other tab, and every other menu in the game, keeps the width it was tuned at.</p>
+     * <p>Its colour is its status: steady blue while the plot matches disk, breathing green while
+     * there is something to save — see {@link EditorSaveStatus}.</p>
      */
     @Override
-    public double panelWidth() {
-        if (EditorMenuTab.active() != EditorMenuTab.CURRENT) {
-            return CommandMenuLayout.PANEL_WIDTH;
-        }
-        String mode = EditorStatusHudOverlay.roomMode();
-        if (mode == null || EditorStatusPacket.NO_MODE.equals(mode)) {
-            return CommandMenuLayout.PANEL_WIDTH;
-        }
-        double widest = EditorPlotLabelsRenderer.hasCopiesBlockRowFor(mode)
-            ? Math.max(WALLS_ROW_PANEL_WIDTH, COPIES_BLOCK_ROW_PANEL_WIDTH)
-            : WALLS_ROW_PANEL_WIDTH;
-        return Math.max(CommandMenuLayout.PANEL_WIDTH, widest);
+    public MenuHeaderAction headerAction() {
+        return saveHeaderAction(Ctx.read().category(),
+            EditorSaveStatus.currentPlotDirty(), System.currentTimeMillis());
+    }
+
+    /** The save command a category's plot is saved with. */
+    public static String saveCommandFor(PlotCategory category) {
+        if (category == PlotCategory.PARTS) return PART_SAVE_COMMAND;
+        if (category == PlotCategory.CHUNK_FRAMES) return CHUNK_FRAME_SAVE_COMMAND;
+        return SAVE_COMMAND;
+    }
+
+    /** The header Save for a category: parts route through the part-aware subcommand. */
+    public static MenuHeaderAction saveHeaderAction(PlotCategory category, boolean dirty, long nowMillis) {
+        return new MenuHeaderAction(SAVE_ICON,
+            dirty ? MenuLang.t("editor.save_unsaved") : MenuLang.t("common.save"),
+            saveCommandFor(category),
+            EditorSaveStatus.tint(dirty, nowMillis));
     }
 
     /**
@@ -602,7 +696,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * label (caller formats the current value); {@code hint} is the typing-mode placeholder.
      * Command shapes mirror {@link #weightTripleFor}.
      */
-    static CommandMenuEntry levelTripleFor(PlotCategory category, String modelId, String modelName,
+    public static CommandMenuEntry levelTripleFor(PlotCategory category, String modelId, String modelName,
                                            String sub, String label, String hint) {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
         boolean named = modelName != null && !modelName.isEmpty();
@@ -611,7 +705,9 @@ public final class EditorMenuScreen implements MenuScreen {
             case TRACKS -> named ? "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName : null;
             case PORTALS -> named ? "dungeontrain editor portals " + sub + " " + modelId + " " + modelName : null;
             case CONTENTS -> "dungeontrain editor contents " + sub + " " + modelId;
-            case PARTS, ARCHITECTURE -> null; // no spawn gate
+            case WHOLE -> "dungeontrain editor whole " + sub + " " + modelId;
+            case WHOLE_GROUP -> "dungeontrain editor whole group " + sub + " " + modelId;
+            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null; // no spawn gate
         };
         if (prefix == null) return null;
         CommandMenuEntry minus  = new CommandMenuEntry.Stay("-", prefix + " dec");
@@ -621,7 +717,8 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * "New" drills into a {@link NewSourcePickerScreen} for carriages and contents (Blank / Current
+     * "New" drills into a {@link NewSourcePickerScreen} for carriages, contents and whole rooms /
+     * groups (Blank / Current
      * / Standard seed picker before naming). For {@code tracks} the {@code modelId} is the kind tag
      * the player is standing on ({@code track}, {@code pillar_top}, {@code tunnel_section},
      * {@code adjunct_stairs}, ...) — passed to {@code /dt editor tracks new <kind> <typed-name>},
@@ -629,29 +726,39 @@ public final class EditorMenuScreen implements MenuScreen {
      * them to the new plot. Returns null for categories that don't support author-authored new
      * models.
      */
-    static CommandMenuEntry newEntryFor(PlotCategory category, String modelId, String model) {
+    public static CommandMenuEntry newEntryFor(PlotCategory category, String modelId, String model) {
         if (category == null) return null;
         return switch (category) {
             case CARRIAGES -> new CommandMenuEntry.DrillIn(
-                "New",
+                MenuLang.t("common.new"),
                 new NewSourcePickerScreen(
                     NewSourcePickerScreen.Category.CARRIAGES, null, modelId));
             case CONTENTS -> new CommandMenuEntry.DrillIn(
-                "New",
+                MenuLang.t("common.new"),
                 new NewSourcePickerScreen(
                     NewSourcePickerScreen.Category.CONTENTS, null, modelId));
             case TRACKS -> {
                 if (modelId == null || modelId.isEmpty()) yield null;
                 yield new CommandMenuEntry.TypeArg(
-                    "New", "name",
+                    MenuLang.t("common.new"), "name",
                     "dungeontrain editor tracks new " + modelId);
             }
             case PORTALS -> {
                 if (modelId == null || modelId.isEmpty()) yield null;
                 yield new CommandMenuEntry.TypeArg(
-                    "New", "name",
+                    MenuLang.t("common.new"), "name",
                     "dungeontrain editor portals new " + modelId);
             }
+            case WHOLE -> new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.new"),
+                new NewSourcePickerScreen(NewSourcePickerScreen.Category.WHOLE, null, modelId));
+            case WHOLE_GROUP -> new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.new"),
+                new NewSourcePickerScreen(NewSourcePickerScreen.Category.WHOLE_GROUP, null, modelId));
+            // A new frame is blank or a copy of the one in hand.
+            case CHUNK_FRAMES -> new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.new"),
+                new NewSourcePickerScreen(NewSourcePickerScreen.Category.CHUNK_FRAMES, modelId, model));
             // Parts are created through their own picker; architecture has no models yet.
             case PARTS, ARCHITECTURE -> null;
         };
@@ -669,25 +776,38 @@ public final class EditorMenuScreen implements MenuScreen {
      * <p>{@code modelId} is what gets spliced into the command (must be a single command token);
      * {@code model} is the friendly path used in the confirm prompt label.</p>
      */
-    static CommandMenuEntry removeEntryFor(PlotCategory category, String modelId, String model) {
+    public static CommandMenuEntry removeEntryFor(PlotCategory category, String modelId, String model) {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
         return switch (category) {
             case CARRIAGES -> new CommandMenuEntry.DrillIn(
-                "Remove",
-                new ConfirmScreen("Remove '" + model + "'?",
+                MenuLang.t("common.remove"),
+                new ConfirmScreen(MenuLang.t("confirm.remove", model),
                     "dungeontrain editor reset " + modelId));
             case CONTENTS -> new CommandMenuEntry.DrillIn(
-                "Remove",
-                new ConfirmScreen("Remove '" + model + "'?",
+                MenuLang.t("common.remove"),
+                new ConfirmScreen(MenuLang.t("confirm.remove", model),
                     "dungeontrain editor contents reset " + modelId));
             case TRACKS -> new CommandMenuEntry.DrillIn(
-                "Remove",
-                new ConfirmScreen("Remove the current variant for '" + model + "'?",
+                MenuLang.t("common.remove"),
+                new ConfirmScreen(MenuLang.t("confirm.remove_variant", model),
                     "dungeontrain editor tracks reset " + modelId));
             case PORTALS -> new CommandMenuEntry.DrillIn(
-                "Remove",
-                new ConfirmScreen("Remove the current variant for '" + model + "'?",
+                MenuLang.t("common.remove"),
+                new ConfirmScreen(MenuLang.t("confirm.remove_variant", model),
                     "dungeontrain editor portals reset " + modelId));
+            case WHOLE -> new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.remove"),
+                new ConfirmScreen(MenuLang.t("confirm.remove", model),
+                    "dungeontrain editor whole reset " + modelId));
+            case WHOLE_GROUP -> new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.remove"),
+                new ConfirmScreen(MenuLang.t("confirm.remove", model),
+                    "dungeontrain editor whole group reset " + modelId));
+            // A frame is addressed by its name; modelId is the shared chunk_frame tag.
+            case CHUNK_FRAMES -> model == null || model.isEmpty() ? null : new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.remove"),
+                new ConfirmScreen(MenuLang.t("confirm.remove", model),
+                    "dungeontrain editor chunkframe delete " + model));
             // Parts have their own remove flow; architecture has no models yet.
             case PARTS, ARCHITECTURE -> null;
         };
@@ -699,12 +819,12 @@ public final class EditorMenuScreen implements MenuScreen {
      * Returns null for categories without a single addressable model id (tracks, pillars, tunnels,
      * architecture).
      */
-    private static CommandMenuEntry clearEntryFor(PlotCategory category, String model) {
+    public static CommandMenuEntry clearEntryFor(PlotCategory category, String model) {
         if (model == null || model.isEmpty() || category == null) return null;
         return switch (category) {
-            case CARRIAGES, CONTENTS, PARTS, PORTALS -> new CommandMenuEntry.DrillIn(
-                "Clear",
-                new ConfirmScreen("Clear all blocks in '" + model + "'?",
+            case CARRIAGES, CONTENTS, PARTS, CHUNK_FRAMES, PORTALS, WHOLE, WHOLE_GROUP -> new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.clear"),
+                new ConfirmScreen(MenuLang.t("confirm.clear_blocks", model),
                     "dungeontrain editor clear"));
             // No single addressable plot to clear.
             case TRACKS, ARCHITECTURE -> null;
@@ -719,36 +839,44 @@ public final class EditorMenuScreen implements MenuScreen {
      * author-authored renames.
      */
     private static CommandMenuEntry renameEntryFor(Ctx ctx) {
-        String model = ctx.model();
+        return renameEntryFor(ctx.category(), ctx.model());
+    }
+
+    /** As {@link #renameEntryFor(Ctx)} for an explicit category and friendly model path. */
+    public static CommandMenuEntry renameEntryFor(PlotCategory category, String model) {
         if (model == null || model.isEmpty()) return null;
-        if (ctx.isParts()) {
+        if (category == PlotCategory.PARTS) {
             String[] kindName = partsKindName(model);
             if (kindName == null) return null;
             return new CommandMenuEntry.TypeArg(
-                "Rename", "new_name", "dungeontrain editor part rename", "", kindName[1]);
+                MenuLang.t("common.rename"), "new_name", "dungeontrain editor part rename", "", kindName[1]);
         }
-        if (ctx.category() == null) return null;
-        return switch (ctx.category()) {
+        if (category == PlotCategory.CHUNK_FRAMES) {
+            return new CommandMenuEntry.TypeArg(
+                MenuLang.t("common.rename"), "new_name", "dungeontrain editor chunkframe rename " + model, "", model);
+        }
+        if (category == null) return null;
+        return switch (category) {
             case CARRIAGES -> isReservedCarriageBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
-                "Rename", "new_name",
+                MenuLang.t("common.rename"), "new_name",
                 "dungeontrain editor save",
                 "", model);
             case CONTENTS -> isReservedContentsBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
-                "Rename", "new_name",
+                MenuLang.t("common.rename"), "new_name",
                 "dungeontrain editor contents save",
                 "", model);
             // Parts are handled above; the rest have no rename subcommand.
-            case TRACKS, PORTALS, PARTS, ARCHITECTURE -> null;
+            case TRACKS, PORTALS, PARTS, CHUNK_FRAMES, ARCHITECTURE, WHOLE, WHOLE_GROUP -> null;
         };
     }
 
     /** Match server-side carriage built-in names so the Rename row hides for them. Mirrors PROTECTED_BUILTINS in EditorCommand. */
-    private static boolean isReservedCarriageBuiltin(String id) {
+    public static boolean isReservedCarriageBuiltin(String id) {
         return "standard".equals(id) || "flatbed".equals(id);
     }
 
     /** Match server-side contents built-in names. Server rejects rename for any builtin via {@code current.isBuiltin()}. */
-    private static boolean isReservedContentsBuiltin(String id) {
+    public static boolean isReservedContentsBuiltin(String id) {
         return "default".equals(id);
     }
 
@@ -769,7 +897,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * <p>The menu is closed first so the profile screen replaces it cleanly rather than stacking on
      * top of it. A null parent means Back returns to the game.</p>
      */
-    static CommandMenuEntry myBuildsEntry() {
+    public static CommandMenuEntry myBuildsEntry() {
         return new CommandMenuEntry.ClientAction(
             Component.translatable("gui.dungeontrain.builder.profile").getString(),
             () -> {

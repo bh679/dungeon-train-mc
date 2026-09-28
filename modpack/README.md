@@ -32,6 +32,18 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Adventure Item Stats | `1554362` | **enabled** | Sibling mod, un-bundled hard dep. **Pinned**; floor `adventureitemstats_min_version`. |
 | Interactive Player Mobs | `1559379` | **enabled** | Sibling mod, un-bundled hard dep. **Pinned**; floor `playermob_min_version`. |
 | Ender Chest Persistence | `1579341` | **enabled** | Sibling mod, un-bundled hard dep. **Pinned**; floor `enderchestpersistence_min_version`. |
+| Fast Paintings | `883287` | **enabled** | Third-party **hard dep** (MehVahdJukaar): turns paintings into blocks so they ride the train and stamp from templates. **Pinned**; floor `fastpaintings_min_version`. Requires **Moonlight**. |
+| Moonlight Lib | `499980` (slug `selene`) | **enabled** (library) | Fast Paintings' required library. Inert on its own. **Pinned**; floor `moonlight_min_version`. |
+| BetterNether: New Dawn | `1422293` (slug `betternether-neoforge`) | **enabled** | Third-party **hard dep** (Reijin2312, MIT — unofficial NeoForge continuation of BetterNether): its biomes fill every second Nether band's core. **Pinned**; floor `betternether_min_version`. Requires **BCLib**, **WorldWeaver**, **WunderLib**. |
+| BetterEnd: New Dawn | `1422294` (slug `betterend-neoforge`) | **enabled** | Third-party **hard dep** (Reijin2312, MIT — unofficial NeoForge continuation of BetterEnd): every second End-islands band copies its End. **Pinned**; floor `betterend_min_version`. Shares BetterNether's three libraries. |
+| BCLib: New Dawn | `1422283` (slug `bclib-neoforge`) | **enabled** (library) | BetterNether's + BetterEnd's required library. **Pinned**. |
+| WorldWeaver: New Dawn | `1422284` (slug `worldweaver-neoforge`) | **enabled** (library) | BetterNether's + BetterEnd's required worldgen library. **Pinned**. |
+| WunderLib: New Dawn | `1422273` (slug `wunderlib-neoforge`) | **enabled** (library) | BetterNether's + BetterEnd's required library. **Pinned**. |
+| William Wythers' Overhauled Overworld | `921022` (slug `william-wythers-overhauled-overworld`) | **enabled** | Third-party **hard dep**: on odd laps the overworld gap before the Nether band uses WWOO's features (confined by `worldgen/WwooDecorationPass`; vanilla elsewhere). **Pinned**; floor `wwoo_min_version`. Requires **Cristel Lib**. |
+| Cristel Lib | `856996` (slug `cristel-lib`) | **enabled** (library) | WWOO's required library. **Pinned**. |
+| Biomes O' Plenty | `220318` (slug `biomes-o-plenty`) | **enabled** | Third-party **hard dep**: on odd laps the overworld gap after the Nether band uses BoP biomes (`worldgen/density/OverworldStretchBiomes`; vanilla elsewhere, and kept out of the Nether/End bands). **Pinned**; floor `biomesoplenty_min_version` (not strict semver, so `check-pins.py` skips it). Requires **TerraBlender** + **GlitchCore**. |
+| TerraBlender (NeoForge) | `940057` (slug `terrablender-neoforge`) | **enabled** (library) | BoP's required library; DT also compiles against its Regions API. **Pinned**. |
+| GlitchCore | `955399` (slug `glitchcore`) | **enabled** (library) | BoP's required library. **Pinned**. |
 | AppleSkin | `248787` | **enabled** | Food saturation / hunger overlay. **Pinned** file ID. |
 | FerriteCore | `429235` | **enabled** | Memory-usage reducer (data-structure dedup) — no render/physics/chunk hooks, safe with Sable. **Pinned**. |
 | ModernFix | `790626` | **enabled** | Launch-time / world-load / memory optimiser. **Pinned**. |
@@ -49,9 +61,17 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Effortless Building | `302113` | off (opt-in) | Client-side building QoL (multi-block placement modes, mirror / array / radial). No dependencies. **Pinned** (4.2 — one multi-loader jar covers Fabric + NeoForge). |
 | Punchy! | `1374153` | off (opt-in) | First-person animation overhaul (swing/movement animations, visible hands with held items). Client-only render (`server_side=unsupported`, auto-skipped on dedicated servers), no dependencies. ARR licence, but the author explicitly permits modpack inclusion. **Pinned** (2.7d). |
 | WorldEdit | `225608` | off (opt-in) | In-game map editor (`//set`, `//copy`, brushes, schematics). Powerful and destructive, so opt-in — and its block writes know nothing about Sable sub-levels, so editing a **moving carriage** is unverified; use it on the static world. No dependencies (one multi-loader NeoForge/Fabric jar). **Pinned** (7.3.8 — the newest 1.21.1 build; 7.4.x is MC 26.x only). |
-| Just Enough Items (JEI) | `238222` | off (opt-in) | Recipe / item lookup overlay. Opt-in because it restyles every inventory screen — a change players should choose. No dependencies. 1.21.1 builds are published on the **beta** channel only (JEI ships no release-channel build for this MC line), same as Iris here. **Pinned** (19.39.0.372) — ⚠️ NOT the newest: JEI raised its NeoForge floor to `[21.1.238,)` in 19.42.0.379 (2026-07-27) and DT ships `neo_version=21.1.228`, so anything newer hard-fails at load with "Mod jei requires neoforge 21.1.238 or above". 19.39.0.372 is the last build declaring `[21.0.118-beta,)`. Re-check this pin whenever `neo_version` moves. |
+| Just Enough Items (JEI) | `238222` | off (opt-in) | Recipe / item lookup overlay. Opt-in because it restyles every inventory screen — a change players should choose. No dependencies. 1.21.1 builds are published on the **beta** channel only (JEI ships no release-channel build for this MC line), same as Iris here. **Pinned** (19.39.0.372) — ⚠️ NOT the newest: JEI raised its NeoForge floor to `[21.1.238,)` in 19.42.0.379 (2026-07-27) and DT ships `neo_version=21.1.230`, so anything newer hard-fails at load with "Mod jei requires neoforge 21.1.238 or above". 19.39.0.372 is the last build declaring `[21.0.118-beta,)`. Re-check this pin whenever `neo_version` moves. |
 | TrashSlot | `235577` | **enabled** | Inventory QoL — a draggable trash slot for binning unwanted items. Client + server. Shipped **on**, but with the slot itself **hidden and all of its keys unbound** — see "TrashSlot ships silent" below. Requires **Balm**. **Pinned** (21.1.11). |
 | Balm | `531761` | **enabled** (library) | TrashSlot's required dependency — BlayTheNinth's multi-loader abstraction layer. Inert library with no gameplay of its own; also jarJars the **Kuma** keybind library TrashSlot binds through. **Pinned** (21.0.65). |
+| Enchantment Descriptions | `250419` | **enabled** | Adds a plain-English description of what each enchantment does to item tooltips — DT hands out a lot of randomly-enchanted loot. Client-side tooltip text only, no render/physics/chunk hooks, safe with Sable. Requires **Bookshelf** and **Prickle** (both shipped enabled, below). **Pinned** (21.1.9) — ⚠️ NOT the newest: ED raised its NeoForge floor to `[21.1.233,)` in 21.1.11 (file 8693034) and DT ships `neo_version=21.1.230`, so that build hard-failed at load with "Mod enchdesc requires neoforge 21.1.233 or above" — same failure mode as the JEI floor above. 21.1.9 (file 7039849) is the newest 1.21.1 build still declaring `[21.1.61,)`, which DT clears. Re-check this pin whenever `neo_version` moves. |
+| Bookshelf | `228525` | **enabled** (library) | Enchantment Descriptions' required dependency — Darkhax's shared utility library. Inert, no gameplay of its own; enabled so ED loads on a default install. **Pinned** (21.1.81) — satisfies ED 21.1.9's `bookshelf [21.1, 21.2)`. |
+| Prickle | `1023259` | **enabled** (library) | Enchantment Descriptions' other required dependency — Darkhax's config library. Inert; enabled so ED loads on a default install. **Pinned** (21.1.11) — satisfies ED 21.1.9's `prickle [21.1, 21.2)`. |
+| Durability Tooltip | `511040` | **enabled** | Client-side QoL — draws the remaining durability on an item's tooltip instead of making players read the damage bar. No render/physics/chunk hooks, safe with Sable. Requires **SuperMartijn642's Config Lib**. **Pinned** (1.1.6). |
+| SuperMartijn642's Config Lib | `438332` | **enabled** (library) | Durability Tooltip's required dependency — not jarJar'd. Inert config library with no gameplay of its own; enabled so Durability Tooltip loads on a default install. **Pinned** (1.1.8). |
+| Crash Assistant | `1154099` | **enabled** | Post-crash GUI: analyses the crash report / logs / `hs_err` against ~40 known causes and offers a one-click upload of all of them to mclo.gs plus a ready-to-paste report message. Client-only (`server_side=unsupported` — auto-skipped on dedicated servers), no dependencies. Shipped **on**: a crash reporter is useless unless it is already installed when the crash happens. Configured via `overrides/config/crash_assistant/config.toml` to point players at **#bugs-feedback** on the Dungeon Train Discord — left at its default the help button would send them to the *NeoForge* Discord. **Pinned** (1.11.12). |
+| Particle Effects | `1120746` | **enabled** | Replaces the flat coloured swirl of every vanilla status effect with a unique textured particle per effect (Speed, Poison, Regeneration, …), so a glance tells you what a mob or player is under. Client-only render (`side="CLIENT"`, auto-skipped on dedicated servers), no dependencies on NeoForge (its only optional dep is Fabric API; declares `inventory_particles` <2.0.1 incompatible — not in this pack). Two client mixins on the particle engine — verified on the moving train under Sodium + Iris. CC-BY-ND 4.0 (attribution via the platform listing; bundled by reference, unmodified). **Pinned** (1.5.0). |
+| Advanced Shulkerboxes | `253861` | **enabled** | Open a Shulker Box straight from your hand (right-click it in the main hand) instead of placing it first. henkelmax; modId `shulkerbox`; no dependencies beyond NeoForge. Server-side logic (Modrinth lists client as unsupported/optional) with a few item-use mixins. All Rights Reserved — bundled by reference (CurseForge/Modrinth ID), unmodified. **Pinned** (1.21.1-2.0.5, the only NeoForge 1.21.1 build; beta channel). |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -77,9 +97,16 @@ flag straight into the manifest:
 
 - **Enabled by default, and mandatory (`required:true`)** — the five sibling mods **Adventure
   Item Names**, **Adventure Item Stats**, **Interactive Player Mobs**, **Ender Chest
-  Persistence** and **Trade Everything**. These are not companions: DT declares them as hard dependencies and will not
+  Persistence** and **Trade Everything** — plus the third-party **Fast Paintings** and its **Moonlight** library,
+  **BetterNether: New Dawn** and **BetterEnd: New Dawn** with their shared **BCLib**, **WorldWeaver** and **WunderLib** libraries, and the
+  second-lap overworld mods **William Wythers' Overhauled Overworld** (+ **Cristel Lib**) and **Biomes O' Plenty** (+
+  **TerraBlender**, **GlitchCore**). These are not companions: DT declares them as hard dependencies and will not
   load without them, so shipping any of them `required:false` (i.e. switched OFF) would break
-  the pack outright.
+  the pack outright. **Keep Trim**, **Dungeon Backup** and **Sable Fence & Trapdoor Fix** ride the same row on
+  CurseForge only (`curseforge_only: true`): they are also jarJar'd inside the DT jar, so the
+  Modrinth pack leaves them out and Modrinth players get them built in, while the CurseForge pack
+  ships them as Includes so the CF app installs them from their own pages (NeoForge drops the
+  nested copy when a top-level one is present).
 - **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, **Sodium**
   (rendering perf, works standalone), **Iris** (shader loader, shipped with no shaderpack so it's
   perf-neutral until a player adds one — Iris requires Sodium, which ships enabled above,
@@ -88,9 +115,16 @@ flag straight into the manifest:
   (block/item tooltip HUD) paired with **Jade Sable Compat** (the client-only mod that fixes Jade's
   tooltips on the moving train — the reason Jade is no longer opt-in), **Kinetic
   Hosting Integration** (partner banner on the multiplayer menu), plus their inert library deps
-  **CreativeCore** (AmbientSounds), **Iceberg** (Advancement Plaques) and **Balm** (TrashSlot).
+  **CreativeCore** (AmbientSounds), **Iceberg** (Advancement Plaques), **Balm** (TrashSlot) and
+  **Bookshelf** + **Prickle** (Enchantment Descriptions) and **SuperMartijn642's Config Lib**
+  (Durability Tooltip). **Enchantment Descriptions** and **Durability Tooltip** are on this
+  list too — tooltip readability every player benefits from.
+  **Particle Effects** is on too — a purely cosmetic status-effect readability upgrade with no
+  server side and no screens to restyle.
+  **Advanced Shulkerboxes** is on too — opening a Shulker Box from your hand is pure inventory QoL.
   The libraries ship enabled so their dependent loads on a default install (CreativeCore —
-  AmbientSounds is on; Iceberg — AP is on; Balm — TrashSlot is on). **TrashSlot** is on this list
+  AmbientSounds is on; Iceberg — AP is on; Balm — TrashSlot is on; Bookshelf + Prickle — ED is
+  on; Config Lib — Durability Tooltip is on). **TrashSlot** is on this list
   as an installed-and-loaded mod, but it ships deliberately inert — see "TrashSlot ships silent"
   below.
 - **Bundled but off by default (`required:false`)** — Mouse Tweaks, Nemo's Inventory Sorting,
@@ -174,7 +208,7 @@ The declared type is **`optional` by default** — regardless of whether the pac
 enabled (`required:true`) or off (`required:false`), the mod's relationship to a companion is
 "optional" either way, because DT runs fine without it.
 
-The exception is the five sibling mods, which DT genuinely cannot run without. They carry
+The exception is the sibling mods, which DT genuinely cannot run without. They carry
 `"dependency_type": "required"` in `modpack.config.json` and are declared `<slug>(required)` in
 `release.yml`. That `required` declaration is what makes the CurseForge and Modrinth apps
 auto-install them — the whole point of un-bundling.
@@ -203,6 +237,8 @@ release.yml (REAL release only — cascade ticks are skipped for CurseForge)
   └─ mc-publish uploads the DT jar to CurseForge  → file ID
   └─ dispatches release-modpack.yml with that file ID
         └─ scripts/modpack/wait-for-approval.py → polls until CurseForge APPROVES that file
+        │     not approved within the timeout? → run DEFERS (green + warning), nothing uploaded
+        │     modpack-reconcile.yml's catch-up (hourly) publishes it once approved ↓
         └─ scripts/modpack/build-manifest.py   → manifest.json
         └─ zip  manifest.json + overrides/      → dungeon-train-<version>.zip
         └─ scripts/modpack/publish-curseforge.sh → uploads to project 1556213
@@ -220,13 +256,37 @@ took longer, or never came at all (every DT file after v0.625.0 in Aug 2026 was 
 never approved), the pack was built around an unapproved file, uploaded, and rejected
 afterwards — leaving the workflow green and the release silently missing from the pack.
 
-`wait-for-approval.py` asks the real question instead, and **fails the run** if the answer is
-still no when `approval_timeout_minutes` (default `60`) runs out. Nothing is uploaded, so the
-fix is to get the file approved in the author dashboard and re-dispatch the workflow for that
-tag. It reads `api.curseforge.com` when `CURSEFORGE_API_KEY` is set (authoritative:
-`fileStatus == 4`), otherwise the caching cfwidget mirror — where the file appearing proves
-approval but its absence may just be cache lag. It fails closed either way, because a needless
-re-dispatch is cheap and a silently missing pack version is not.
+`wait-for-approval.py` asks the real question instead. If the answer is still no when
+`approval_timeout_minutes` (default `300` — the most the 360-min job limit allows after the upload + verify) runs out, the run **defers** (`--on-timeout defer`):
+nothing is uploaded, every later step is skipped, and the run ends green with a warning and a
+step-summary note. It reads `api.curseforge.com` when `CURSEFORGE_API_KEY` is set
+(authoritative: `fileStatus == 4`), otherwise the caching cfwidget mirror — where the file
+appearing proves approval but its absence may just be cache lag. Either way an unapproved file
+never reaches a manifest.
+
+### The catch-up (why a slow approval is a delay, not a loss)
+
+Approval **routinely takes longer than an hour** — which is why the wait above is 300 min; the
+deferral now only catches the rare approval slower than that.
+Until Sept 2026 that step *failed* the run instead, and nothing ever retried — the pack sat 41
+of the last 100 releases behind while every one of those DT files had, by then, been approved.
+
+`modpack-reconcile.yml` (hourly; skipped while a `release-modpack.yml` run is active) now runs `scripts/modpack/catch-up.py`, which inverts the
+question: instead of waiting for approval, it asks *which release is already approved?* A DT
+file being publicly listed on the mod project **is** the approval. If the **newest** GitHub
+release is missing from the pack and its file is listed, it dispatches `release-modpack.yml`
+for that tag (notes from the GitHub Release body). It never polls, so the retry is free.
+
+Scope is deliberately **newest release only** — bring the pack current, leave historical gaps
+as gaps. Players install the latest; 41 obsolete versions landing at once would bury the file
+list and multiply the odds of tripping CurseForge's flaky validation. If the newest release's
+file isn't approved yet it waits for *that* one rather than publishing an older release, so
+there is never a stale "latest" or two uploads for one catch-up.
+
+```bash
+python3 scripts/modpack/catch-up.py --dry-run          # read-only: what would it publish?
+gh workflow run modpack-reconcile.yml -f dry_run=true   # same, from CI
+```
 
 **The CurseForge pack publishes only on real, operator-dispatched releases.** The
 dispatch step in `release.yml` is gated on `inputs.auto == false`, so the ~22 quiet
@@ -258,7 +318,7 @@ Two guards now cover it:
 | Guard | Where | What it catches |
 |---|---|---|
 | `reconcile.py --verify <tag>` | last step of `release-modpack.yml` | polls the public listing for up to 30 min and **fails that release's run** if the version never appears |
-| `modpack-reconcile.yml` | scheduled every 6h | drift backstop — prints published-vs-released for both packs, fails after a 7-day CurseForge stall |
+| `modpack-reconcile.yml` | scheduled hourly | **repairs** a deferred release (`catch-up.py` → dispatches the pack once the DT file is approved) and prints published-vs-released for both packs; fails after a 7-day CurseForge stall, which with catch-up in place means catch-up itself is broken |
 
 Check drift yourself at any time:
 
@@ -376,12 +436,32 @@ Keep the two in sync so both packs ship the same build. A stale pin just ships a
 - **Advancement Plaques ↔ Iceberg.** AP requires Iceberg `[1.2.2,)` (not jarJar'd inside AP) —
   keep the bundled Iceberg at or above that. Both ship `required:true` so AP works on a default install.
 
+## `mod_ids` and the fair-play whitelist
+
+Every mod the pack ships is **approved for fair play automatically**: the `generateApprovedMods`
+Gradle task (`gradle/approved-mods.gradle`) builds the baked whitelist
+(`assets/dungeontrain/cheat/approved_mods.json` in the jar) from each entry's `mod_ids`, plus DT's
+jarJar'd siblings and the dependencies in `neoforge.mods.toml`. Hand-judged third-party approvals
+stay in `src/main/whitelist/approved_mods.curated.json`.
+
+- `mod_ids` are what `ModList` reports, **never store slugs** — `irisshaders` loads as `iris`,
+  `selene` as `moonlight` + `codecui`, `advanced-shulkerboxes` as `shulkerbox`. Include jar-in-jar
+  mods (Sable brings `veil` + `sablecompanion`). Don't type them: run
+  `python3 scripts/modpack/check-mod-ids.py --fill`, which reads the pinned jar.
+- After bumping a pin, run `check-mod-ids.py --verify` (CI does too) — a new version can add or
+  rename a module.
+- `"whitelist": false` opts an entry out (it then needs no `mod_ids`). That's Brennan's call, asked
+  at Gate 3 (step 3b) whenever an entry is added — creative-focused mods are the usual candidates.
+
+After a whitelist change ships, refresh the relay's copy (dp-relay
+`web/js/approved-mods-catalog.json`) from `build/generated/sources/approvedMods/…/approved_mods.json`.
+
 ## Files
 
 | File | Purpose |
 |---|---|
 | `modpack.config.json` | Editable config (drives **both** packs): pack name/author, DT project IDs, the pinned Sable project/file/version + `modrinth_project`/`modrinth_version`, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard, a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in — and a `modrinth_project`/`modrinth_version` pin; the five sibling mods additionally carry `dependency_type: required` plus `version` + `gradle_property` for the floor guard), and `curseforge_relations` (sable only). |
-| `overrides/` | Config files copied verbatim into the player's instance on install (shared by both packs). Currently ships `config/smoothswapping.json` (tuned Smooth Swapping) and `config/khi.toml` (the Kinetic Hosting affiliate URL + banner text, so every install gets the partner link pre-filled), plus the localization compat packs — see below. The tree is **allowlisted** — `check-overrides.py` fails CI on any file not named in its `ALLOWED` list, so a config the mod holds to its defaults can never be shipped here by accident. |
+| `overrides/` | Config files copied verbatim into the player's instance on install (shared by both packs). Currently ships `config/smoothswapping.json` (tuned Smooth Swapping) and `config/khi.toml` (the Kinetic Hosting affiliate URL + banner text, so every install gets the partner link pre-filled), `config/crash_assistant/config.toml` (Crash Assistant's help link + the #bugs-feedback wording), plus the localization compat packs — see below. The tree is **allowlisted** — `check-overrides.py` fails CI on any file not named in its `ALLOWED` list, so a config the mod holds to its defaults can never be shipped here by accident. |
 | `overrides/resourcepacks/DungeonTrain-zh_cn-compat.zip` | zh_cn translations for the bundled **companion** mods (Jade, Distant Horizons, Controlling, ModernFix, CreativeCore, Sable). The shipped zips also still carry legacy `tectonic` keys from when the pack bundled Tectonic — inert now that it is gone (a lang overlay for an absent mod does nothing), and left in place so the zips stay byte-identical. Dungeon Train's own namespaces (+ AIN/PlayerMob/DiscordPresence) ship their zh_cn `lang/` inside the mod jar, so they're not in here. **Auto-enabled by a client-side one-shot** in the mod (`CompanionResourcePackAutoEnabler`) — it selects this pack the first time it's found and writes a marker so it never fights a player who later disables it. This replaces a shipped `options.txt` (which a launcher would copy wholesale and reset the player's other options); the hook only ever touches the resource-pack selection. |
 | `../scripts/modpack/build-manifest.py` | CurseForge: renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
 | `../scripts/modpack/build-mrpack.py` | Modrinth: renders `modrinth.index.json` from this config + `gradle.properties` + the release's DT Modrinth version (resolving each pin's URL/hashes from the Modrinth API). `--check-config` validates pins with no network (CI). |
@@ -391,6 +471,8 @@ Keep the two in sync so both packs ship the same build. A stale pin just ships a
 | `../scripts/modpack/publish-modrinth.sh` | Zips the `.mrpack` + uploads to Modrinth using `MODRINTH_TOKEN`. |
 | `../scripts/modpack/lib/upload-retry.sh` | Shared curl-upload helper: retries 5xx + transport faults, never 4xx. Sourced by both publish scripts. |
 | `../scripts/modpack/reconcile.py` | `--verify <tag>` confirms an uploaded version actually went public (run by `release-modpack.yml`); with no args, prints a published-vs-released drift report for both packs. |
+| `../scripts/modpack/catch-up.py` | Picks the newest release missing from the CurseForge pack whose DT mod file is already approved, and hands its tag + file id to `modpack-reconcile.yml` to dispatch. `--dry-run` to preview. |
+| `../scripts/modpack/wait-for-approval.py` | Polls until a DT mod file is approved. `--on-timeout defer` (used by `release-modpack.yml`) exits 0 with `approved=false` so the run skips the upload and leaves it to catch-up; the default `fail` exits 1. |
 
 ## Local test (no upload)
 

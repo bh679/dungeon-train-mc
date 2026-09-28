@@ -27,20 +27,20 @@ import java.util.List;
  */
 public enum EditorMenuTab {
 
-    FILE("File"),
-    CURRENT("Current"),
-    SETTINGS("Settings"),
-    NAV("Nav");
+    FILE("file"),
+    CURRENT("current"),
+    SETTINGS("settings"),
+    NAV("nav");
 
-    private final String label;
+    private final String key;
 
-    EditorMenuTab(String label) {
-        this.label = label;
+    EditorMenuTab(String key) {
+        this.key = key;
     }
 
     /** Text shown on this tab's cell in the strip. */
     public String label() {
-        return label;
+        return MenuLang.t("tab." + key);
     }
 
     /**

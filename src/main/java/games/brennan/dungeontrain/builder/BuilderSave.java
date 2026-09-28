@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.editor.StageStore;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -111,12 +112,12 @@ public final class BuilderSave {
      * just been written exists nowhere else, and before backups were taken here a carriage authored
      * mid-session sat in no archive until the next world load. The request returns immediately and
      * is debounced, so saving repeatedly while iterating costs nothing extra — see
-     * {@link games.brennan.dungeontrain.data.PlayerDataBackupHook}.</p>
+     * {@link games.brennan.dungeontrain.data.DungeonTrainBackup#requestBackup}.</p>
      */
     public static Result save(ServerLevel level) {
         Result result = saveInternal(level);
         if (result.saved()) {
-            games.brennan.dungeontrain.data.PlayerDataBackupHook.onTemplateSaved();
+            games.brennan.dungeontrain.data.DungeonTrainBackup.requestBackup("template-save");
         }
         return result;
     }
@@ -244,12 +245,17 @@ public final class BuilderSave {
             TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
             mirrorTrackBeforeCapture(level, kind, name, origin, footprint, sidecar);
 
-            StructureTemplate template = new StructureTemplate();
             // Tunnels capture against STRUCTURE_VOID, everything else against AIR — the tunnel
             // templates use void to mean "leave whatever the world had here", and capturing one
             // against AIR would bake the builder-world sky into the arch's corner pockets. Same
             // split TunnelEditor.save makes, for the same reason.
-            template.fillFromWorld(level, origin, footprint, false, ignoreBlockFor(kind));
+            //
+            // Through TemplateDecor, not a bare fillFromWorld: the raw call drops every entity, so a
+            // tile saved here lost the pictures and mobs the same tile saved in the Train Editor
+            // keeps. A builder world has natural spawning off (BuilderQuietRules), so what is
+            // standing in the plot is what the builder put there.
+            StructureTemplate template =
+                TemplateDecor.capture(level, origin, footprint, ignoreBlockFor(kind));
             TrackVariantStore.save(kind, name, template);
             if (TrackVariantRegistry.register(kind, name)) {
                 LOGGER.info("[DungeonTrain] Builder save: registered new {} '{}'", kind.id(), name);
@@ -259,6 +265,8 @@ public final class BuilderSave {
             return Result.failed(t.getMessage() == null ? t.toString() : t.getMessage());
         }
 
+        BuilderSidecarCarry.carryToTemplate(level, BlockVariantPlot.trackKey(kind, name), dims,
+                BuilderSidecarCarry.offsetFor(BuilderPhotoPaths.Kind.TRACK, null, dims));
         EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(kind, name), level, origin,
                 footprint.getX(), footprint.getY(), footprint.getZ());
         LOGGER.info("[DungeonTrain] Builder save: wrote track {} '{}'", kind.id(), name);
@@ -328,6 +336,10 @@ public final class BuilderSave {
 
         CarriageTemplateStore.save(variant, template);
         linkStage(variant.id(), stageId);
+        // Pools before the mirror flags: both end up on the same CarriageVariantBlocks instance, and
+        // the mirror carry is the write that persists it.
+        BuilderSidecarCarry.carryToTemplate(level, BlockVariantPlot.carriageKey(variant.id()), dims,
+                BuilderSidecarCarry.offsetFor(BuilderPhotoPaths.Kind.CARRIAGE, null, dims));
         carryMirrorToTemplate(level, variant, dims);
         return new Written(BuilderPhotoPaths.Kind.CARRIAGE, name, "", origin,
                 new Vec3i(dims.length(), dims.height(), dims.width()));
@@ -385,9 +397,11 @@ public final class BuilderSave {
                 throw new IOException("'" + name + "' is a reserved contents name");
             }
             LOGGER.info("[DungeonTrain] Builder save: registered new contents '{}'", name);
+            carryContentsSidecars(level, dims, name);
             return written;
         }
         CarriageContentsStore.save(contents, template);
+        carryContentsSidecars(level, dims, name);
         return written;
     }
 
@@ -410,12 +424,14 @@ public final class BuilderSave {
         }
         BlockPos partOrigin = origin.offset(placements.get(0).originOffset());
         Vec3i partSize = kind.dims(dims);
-        StructureTemplate template = new StructureTemplate();
-        template.fillFromWorld(level, partOrigin, partSize, false, Blocks.AIR);
+        // TemplateDecor rather than a bare fillFromWorld — see saveTrack above for why.
+        StructureTemplate template = TemplateDecor.capture(level, partOrigin, partSize, Blocks.AIR);
         CarriagePartTemplateStore.save(kind, name, template);
         if (CarriagePartRegistry.register(kind, name)) {
             LOGGER.info("[DungeonTrain] Builder save: registered new {} part '{}'", kind.id(), name);
         }
+        BuilderSidecarCarry.carryToTemplate(level, BlockVariantPlot.partKey(kind, name), dims,
+                BuilderSidecarCarry.offsetFor(BuilderPhotoPaths.Kind.PART, kind, dims));
         // The master copy's region, mirroring the capture above — a part id is only unique within its
         // kind ('standard' is both a floor and a door), so the kind is the sub kind.
         return new Written(BuilderPhotoPaths.Kind.PART, name, kind.id(), partOrigin, partSize);
@@ -432,9 +448,25 @@ public final class BuilderSave {
      * {@code PortalRoomSizes.settle}, which makes the written template the authority and spends any
      * pending override the size control had set.</p>
      */
-    private static void savePortalRoom(ServerLevel level, BlockPos origin, Vec3i size, String name)
-            throws IOException {
+    private static void savePortalRoom(
+        ServerLevel level, BlockPos origin, Vec3i size, String name
+    ) throws IOException {
         PortalRoomEditor.saveRoomFrom(level, origin, size, name);
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        BuilderSidecarCarry.carryToTemplate(level,
+                BlockVariantPlot.trackKey(TrackKind.PORTAL_ROOM, name), dims,
+                BuilderSidecarCarry.offsetFor(BuilderPhotoPaths.Kind.PORTAL_ROOM, null, dims));
+    }
+
+    /**
+     * A carriage room's pools and contents, onto the template the save just wrote.
+     *
+     * <p>Its own helper because {@link #saveContents} returns from two places — a new registration
+     * and an overwrite — and the carry has to happen on both.</p>
+     */
+    private static void carryContentsSidecars(ServerLevel level, CarriageDims dims, String name) {
+        BuilderSidecarCarry.carryToTemplate(level, BlockVariantPlot.contentsKey(name), dims,
+                BuilderSidecarCarry.offsetFor(BuilderPhotoPaths.Kind.CONTENTS, null, dims));
     }
 
     /**

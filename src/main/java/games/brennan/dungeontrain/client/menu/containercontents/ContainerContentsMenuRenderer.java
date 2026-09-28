@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.containercontents;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -225,8 +226,8 @@ public final class ContainerContentsMenuRenderer {
         drawQuad(ps, buffer, -halfW, halfH - HEADER_HEIGHT, halfW, halfH, 0x4099CCFF);
         net.minecraft.core.BlockPos local = ContainerContentsMenu.localPos();
         String headerLabel = local == null
-            ? "Container Contents"
-            : "Container Contents @ " + local.getX() + "," + local.getY() + "," + local.getZ();
+            ? MenuLang.t("container.title")
+            : MenuLang.t("container.title_at", local.getX() + "," + local.getY() + "," + local.getZ());
         drawCenteredText(ps, buffer, font, headerLabel, 0, headerCY, 0xFF99CCFF);
 
         // Link sub-row (only when linked) — informational left, [X] unlink right.
@@ -241,7 +242,7 @@ public final class ContainerContentsMenuRenderer {
             drawQuad(ps, buffer, -halfW + 0.01, linkBottom + 0.005,
                 halfW - LINK_UNLINK_WIDTH - 0.005, linkTop - 0.005, rowTint);
             drawLeftText(ps, buffer, font,
-                "Linked: " + linkId,
+                MenuLang.t("container.linked", linkId),
                 -halfW + 0.06, linkCY,
                 0xFFFFE07A);
 
@@ -286,14 +287,14 @@ public final class ContainerContentsMenuRenderer {
             drawQuad(ps, buffer, xL + 0.01, toolbarBottom + 0.005,
                 xR - 0.01, toolbarTop - 0.005, tint);
             String label = switch (cellKind) {
-                case ADD -> "Add";
-                case SAVE -> "Save";
+                case ADD -> MenuLang.t("common.add");
+                case SAVE -> MenuLang.t("common.save");
                 case FILL_MIN -> Integer.toString(fmin);
                 case FILL_MAX -> {
-                    String shown = fmax < 0 ? "all" : Integer.toString(fmax);
+                    String shown = fmax < 0 ? MenuLang.t("stages.all") : Integer.toString(fmax);
                     yield cs > 0 ? shown + "/" + cs : shown;
                 }
-                case CLEAR -> "Clear";
+                case CLEAR -> MenuLang.t("common.clear");
                 case CLOSE -> "X";
                 default -> "";
             };
@@ -339,10 +340,10 @@ public final class ContainerContentsMenuRenderer {
                 drawQuad(ps, buffer, iconL + 0.01, rowBottom + 0.005,
                     iconR - 0.005, rowTop - 0.005, 0x60FFCC33);
             }
-            MenuBlockIcons.drawItemIcon(ps, buffer, entry.itemId(),
+            MenuBlockIcons.drawItemIcon(ps, buffer, entryIconId(entry),
                 iconL + ICON_CELL_WIDTH / 2.0, rowCY, ICON_SIZE, icons);
             if (ContainerContentsMenu.isExpanded(i)) {
-                drawLeftText(ps, buffer, font, shortenItemLabel(entry.itemId()),
+                drawLeftText(ps, buffer, font, entryLabel(entry),
                     iconL + ICON_CELL_WIDTH + NAME_PAD / 2.0, rowCY,
                     iconHover ? 0xFF000000 : 0xFFFFFFFF);
             }
@@ -373,10 +374,10 @@ public final class ContainerContentsMenuRenderer {
             int slotTint;
             String slotLabel;
             switch (slotOv) {
-                case 0  -> { slotTint = slotHover ? 0xC066AAFF : 0x6033AACC; slotLabel = "in"; }
-                case 1  -> { slotTint = slotHover ? 0xC0FFAA66 : 0x60CC7733; slotLabel = "fuel"; }
-                case 2  -> { slotTint = slotHover ? 0xC066FF99 : 0x6033CC66; slotLabel = "out"; }
-                default -> { slotTint = slotHover ? 0xC0AAAAAA : 0x40555555; slotLabel = "auto"; }
+                case 0  -> { slotTint = slotHover ? 0xC066AAFF : 0x6033AACC; slotLabel = MenuLang.t("container.slot_in"); }
+                case 1  -> { slotTint = slotHover ? 0xC0FFAA66 : 0x60CC7733; slotLabel = MenuLang.t("container.slot_fuel"); }
+                case 2  -> { slotTint = slotHover ? 0xC066FF99 : 0x6033CC66; slotLabel = MenuLang.t("container.slot_out"); }
+                default -> { slotTint = slotHover ? 0xC0AAAAAA : 0x40555555; slotLabel = MenuLang.t("container.slot_auto"); }
             }
             drawQuad(ps, buffer, slotL + 0.005, rowBottom + 0.005,
                 slotR - 0.005, rowTop - 0.005, slotTint);
@@ -398,7 +399,8 @@ public final class ContainerContentsMenuRenderer {
             // drawn.
             boolean showDur = layout.showDur[i];
             boolean showEnch = layout.showEnch[i];
-            if (!showDur && !showEnch) continue;
+            boolean showScale = layout.showScale[i];
+            if (!showDur && !showEnch && !showScale) continue;
 
             double subTop = rowBottom;
             double subBottom = subTop - SUB_ROW_HEIGHT;
@@ -417,6 +419,33 @@ public final class ContainerContentsMenuRenderer {
             double ench2L = ench1R;
             double ench2R = colXR - 0.01;
 
+            if (showScale) {
+                // Random-potion placeholder: scale-with-distance toggle. Potions are
+                // neither damageable nor enchantable, so this is the sub-row's only cell.
+                boolean scaleHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_SCALE_TOGGLE && hovered.index() == i;
+                boolean scaleOn = entry.scaleWithDistance();
+                int scaleTint = scaleHover
+                    ? (scaleOn ? 0xC0FFCC99 : 0xC0AAAAAA)
+                    : (scaleOn ? 0x60CC8833 : 0x40555555);
+                drawQuad(ps, buffer, dur1L + 0.005, subBottom + 0.005,
+                    dur2R - 0.005, subTop - 0.005, scaleTint);
+                drawCenteredText(ps, buffer, font, MenuLang.t(scaleOn ? "container.scale_on" : "container.scale_off"),
+                    (dur1L + dur2R) / 2.0, subCY,
+                    scaleHover ? 0xFF000000 : 0xFFFFFFFF);
+
+                // Bottle form cell: Any / Potion / Splash / Lingering, click to step.
+                boolean formHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_POTION_FORM && hovered.index() == i;
+                int formTint = formHover ? 0xC0FFCC33 : 0x40FFFFFF;
+                drawQuad(ps, buffer, ench1L + 0.005, subBottom + 0.005,
+                    ench2R - 0.005, subTop - 0.005, formTint);
+                drawCenteredText(ps, buffer, font,
+                    MenuLang.t("container.form", MenuLang.named("container.potion_form",
+                        games.brennan.dungeontrain.editor.PotionForm.byOrdinal(entry.potionForm()).id(),
+                        games.brennan.dungeontrain.editor.PotionForm.byOrdinal(entry.potionForm()).label())),
+                    (ench1L + ench2R) / 2.0, subCY,
+                    formHover ? 0xFF000000 : 0xFFFFFFFF);
+            }
+
             if (showDur) {
                 // Random-durability toggle.
                 boolean durTogHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_RAND_DUR_TOGGLE && hovered.index() == i;
@@ -426,7 +455,7 @@ public final class ContainerContentsMenuRenderer {
                     : (durOn ? 0x6033CC66 : 0x40555555);
                 drawQuad(ps, buffer, dur1L + 0.005, subBottom + 0.005,
                     dur1R - 0.005, subTop - 0.005, durTogTint);
-                drawCenteredText(ps, buffer, font, durOn ? "Dur ✓" : "Dur ✗",
+                drawCenteredText(ps, buffer, font, MenuLang.t(durOn ? "container.dur_on" : "container.dur_off"),
                     (dur1L + dur1R) / 2.0, subCY,
                     durTogHover ? 0xFF000000 : 0xFFFFFFFF);
 
@@ -449,7 +478,7 @@ public final class ContainerContentsMenuRenderer {
                     : (enchOn ? 0x6033AACC : 0x40555555);
                 drawQuad(ps, buffer, ench1L + 0.005, subBottom + 0.005,
                     ench1R - 0.005, subTop - 0.005, enchTogTint);
-                drawCenteredText(ps, buffer, font, enchOn ? "Ench ✓" : "Ench ✗",
+                drawCenteredText(ps, buffer, font, MenuLang.t(enchOn ? "container.ench_on" : "container.ench_off"),
                     (ench1L + ench1R) / 2.0, subCY,
                     enchTogHover ? 0xFF000000 : 0xFFFFFFFF);
 
@@ -482,8 +511,14 @@ public final class ContainerContentsMenuRenderer {
      * the same record so hover and render never disagree about where a cell
      * is.</p>
      */
-    record EntryLayout(double[] rowDispTop, boolean[] showDur, boolean[] showEnch, double gridHeight,
-                       double[] colWidth, double[] colLeft, double panelWidth) {}
+    record EntryLayout(double[] rowDispTop, boolean[] showDur, boolean[] showEnch, boolean[] showScale,
+                       double gridHeight, double[] colWidth, double[] colLeft, double panelWidth) {
+
+        /** True when entry {@code i} draws a sub-row (any of its per-entry options applies). */
+        boolean hasSubRow(int i) {
+            return showDur[i] || showEnch[i] || showScale[i];
+        }
+    }
 
     static EntryLayout computeLayout(List<ContainerContentsSyncPacket.Entry> entries, int colCount) {
         int n = entries.size();
@@ -491,6 +526,7 @@ public final class ContainerContentsMenuRenderer {
         double[] rowDispTop = new double[n];
         boolean[] showDur = new boolean[n];
         boolean[] showEnch = new boolean[n];
+        boolean[] showScale = new boolean[n];
         double[] colTotalH = new double[cols];
         // Extra width each column needs for the longest name revealed inside it.
         double[] colNameW = new double[cols];
@@ -500,7 +536,8 @@ public final class ContainerContentsMenuRenderer {
             String id = entries.get(i).itemId();
             showDur[i] = isDamageable(id);
             showEnch[i] = isEnchantable(id);
-            double h = (showDur[i] || showEnch[i]) ? ENTRY_BLOCK_HEIGHT : ROW_HEIGHT;
+            showScale[i] = isRandomPotionPlaceholder(id);
+            double h = (showDur[i] || showEnch[i] || showScale[i]) ? ENTRY_BLOCK_HEIGHT : ROW_HEIGHT;
             rowDispTop[i] = colTotalH[col];
             colTotalH[col] += h;
             if (ContainerContentsMenu.isExpanded(i)) {
@@ -530,7 +567,7 @@ public final class ContainerContentsMenuRenderer {
         }
         double[] colLeft = new double[cols];
         for (int c = 1; c < cols; c++) colLeft[c] = colLeft[c - 1] + colWidth[c - 1];
-        return new EntryLayout(rowDispTop, showDur, showEnch, gridH, colWidth, colLeft, sumW);
+        return new EntryLayout(rowDispTop, showDur, showEnch, showScale, gridH, colWidth, colLeft, sumW);
     }
 
     /**
@@ -550,6 +587,30 @@ public final class ContainerContentsMenuRenderer {
     static boolean isEnchantable(String itemId) {
         Item item = resolveItem(itemId);
         return item != null && new ItemStack(item).isEnchantable();
+    }
+
+    /**
+     * Icon id for an entry row. A random-potion placeholder whose Form is pinned shows the
+     * pinned vanilla bottle (potion / splash / lingering) so the row reads at a glance;
+     * everything else shows its own item.
+     */
+    static String entryIconId(ContainerContentsSyncPacket.Entry entry) {
+        if (!isRandomPotionPlaceholder(entry.itemId())) return entry.itemId();
+        Item pinned = games.brennan.dungeontrain.editor.PotionForm.byOrdinal(entry.potionForm()).item();
+        return pinned == null ? entry.itemId() : BuiltInRegistries.ITEM.getKey(pinned).toString();
+    }
+
+    /**
+     * True for the {@code dungeontrain:random_potion} / {@code random_good_potion} /
+     * {@code random_bad_potion} placeholders — the only entries that carry the
+     * scale-with-distance toggle.
+     */
+    static boolean isRandomPotionPlaceholder(String itemId) {
+        Item item = resolveItem(itemId);
+        return item != null
+            && (item == games.brennan.dungeontrain.registry.ModItems.RANDOM_POTION.get()
+                || item == games.brennan.dungeontrain.registry.ModItems.RANDOM_GOOD_POTION.get()
+                || item == games.brennan.dungeontrain.registry.ModItems.RANDOM_BAD_POTION.get());
     }
 
     private static Item resolveItem(String itemId) {
@@ -585,12 +646,12 @@ public final class ContainerContentsMenuRenderer {
         int backTint = backHover ? 0xC0FFCC33 : 0x6099CCFF;
         drawQuad(ps, buffer, backCellL + 0.01, headerBottom + 0.005,
             backCellR - 0.005, headerTop - 0.005, backTint);
-        drawCenteredText(ps, buffer, font, "< Back",
+        drawCenteredText(ps, buffer, font, MenuLang.t("common.back"),
             (backCellL + backCellR) / 2.0, headerCY,
             backHover ? 0xFF000000 : 0xFFFFFFFF);
         drawQuad(ps, buffer, backCellR + 0.005, headerBottom + 0.005,
             halfW, headerTop - 0.005, 0x4099CCFF);
-        drawCenteredText(ps, buffer, font, "Add Item",
+        drawCenteredText(ps, buffer, font, MenuLang.t("container.add_title"),
             (backCellR + halfW) / 2.0, headerCY, 0xFF99CCFF);
 
         double searchTop = halfH - HEADER_HEIGHT;
@@ -600,7 +661,7 @@ public final class ContainerContentsMenuRenderer {
         int searchTint = searchHover ? 0xB033FF99 : 0x60339966;
         drawQuad(ps, buffer, -halfW + 0.02, searchBottom + 0.01,
             halfW - 0.02, searchTop - 0.01, searchTint);
-        String shown = "Search: " + ContainerContentsMenu.searchBuffer() + "_";
+        String shown = MenuLang.t("common.search", ContainerContentsMenu.searchBuffer()) + "_";
         drawLeftText(ps, buffer, font, shown, -halfW + 0.06, searchCY, 0xFFFFFFFF);
 
         double colActualW = panelW / colCount;
@@ -620,6 +681,16 @@ public final class ContainerContentsMenuRenderer {
             int textColour = isHover ? 0xFF000000 : 0xFFFFFFFF;
             drawLeftText(ps, buffer, font, filtered.get(i), colXL + 0.04, rowCY, textColour);
         }
+    }
+
+    /**
+     * Row label for an entry: the short item id, plus the stored potion in parentheses for a
+     * potion entry so "potion (healing)" and "potion (water)" are told apart at a glance.
+     */
+    static String entryLabel(ContainerContentsSyncPacket.Entry entry) {
+        String base = shortenItemLabel(entry.itemId());
+        if (!entry.hasPotion()) return base;
+        return base + " (" + shortenItemLabel(entry.potionId()) + ")";
     }
 
     /** Drop {@code modid:} prefix for the row label. */

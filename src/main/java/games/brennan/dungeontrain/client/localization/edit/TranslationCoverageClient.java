@@ -66,8 +66,15 @@ public final class TranslationCoverageClient {
     /** Locale to everyone credited for an approved translation of it, and how much they did. */
     private static final Map<String, List<Credit>> CREDITS = new HashMap<>();
 
-    /** One person's credited work in one language, as the relay reports it. */
-    public record Credit(String name, int units) {}
+    /**
+     * One person's credited work in one language, as the relay reports it. {@code anonymous} is a
+     * translator who took their name off the credits ({@code CreditEditClient}): counted, unnamed.
+     */
+    public record Credit(String name, int units, boolean anonymous) {
+        public Credit(String name, int units) {
+            this(name, units, false);
+        }
+    }
 
     private TranslationCoverageClient() {}
 
@@ -103,6 +110,17 @@ public final class TranslationCoverageClient {
     /** Every locale the relay has credited anybody for. */
     public static synchronized Map<String, List<Credit>> allCredits() {
         return Map.copyOf(CREDITS);
+    }
+
+    /**
+     * Fetch again, keeping what is cached until the answer lands. For the Credits page after a
+     * rename: clearing first would empty the page of everybody the jar does not know — including
+     * the person who just renamed themself — for the seconds the refetch takes, and a re-laid-out
+     * page would read that as "my name is gone". Never throws, never blocks.
+     */
+    public static void refetch() {
+        FETCHED.set(true);
+        fetchAsync();
     }
 
     /** For tests, and for a client that has changed relay. */
@@ -216,8 +234,10 @@ public final class TranslationCoverageClient {
                         ? obj.get("name").getAsString().trim() : "";
                     int units = obj.has("units") && obj.get("units").isJsonPrimitive()
                         ? obj.get("units").getAsInt() : 0;
-                    if (!name.isEmpty() && units > 0) {
-                        credits.add(new Credit(name, units));
+                    boolean anonymous = obj.has("anonymous") && obj.get("anonymous").isJsonPrimitive()
+                        && obj.get("anonymous").getAsBoolean();
+                    if ((anonymous || !name.isEmpty()) && units > 0) {
+                        credits.add(new Credit(anonymous ? "" : name, units, anonymous));
                     }
                 }
                 if (!credits.isEmpty()) {

@@ -6,7 +6,10 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "dungeontrain.refmap.json",
   "mixins": [
-    "effortlessbuilding.EffortlessBuildingPacketHandlerMixin"
+    "effortlessbuilding.EffortlessBuildingPacketHandlerMixin",
+    "effortlessbuilding.EffortlessBuildingTriggerItemMixin",
+    "effortlessbuilding.EffortlessBuildingUndoManagerMixin",
+    "effortlessbuilding.EffortlessBuildingPreviewMirrorMixin"
   ],
   "client": [],
   "server": [],

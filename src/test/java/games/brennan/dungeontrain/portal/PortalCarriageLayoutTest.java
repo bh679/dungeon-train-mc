@@ -77,9 +77,10 @@ final class PortalCarriageLayoutTest {
 
     /**
      * The puppet pass asks the level for every entity in a corridor, which needs the volume as a box
-     * rather than as a predicate. Both have to describe the same region: a search box larger than the
-     * containment rule would stand a puppet up for someone the swap says is not in the corridor at
-     * all, and a smaller one would drop them at the walls.
+     * rather than as a predicate. The search box is the containment rule everywhere except the two
+     * end-face slabs, where it is deliberately the larger of the two: over-collecting costs a
+     * candidate that {@code PortalPuppets.describe} then drops, while a smaller box would lose
+     * entities standing at the walls.
      */
     @Test
     @DisplayName("localBounds and insideCorridor describe the same volume, face by face")
@@ -94,19 +95,54 @@ final class PortalCarriageLayoutTest {
             double midX = (b.minX() + b.maxX()) / 2;
             assertTrue(l.insideCorridor(midX, midY, midZ), "centre at length " + length);
 
-            assertTrue(l.insideCorridor(b.minX(), midY, midZ));
-            assertTrue(l.insideCorridor(b.maxX(), midY, midZ));
+            // The X faces lie past the end planes, so they are inside only in the doorway column.
+            double doorY = l.floorY() + 1, doorLineZ = l.doorZ() + 0.5;
+            assertTrue(l.insideCorridor(b.minX(), doorY, doorLineZ));
+            assertTrue(l.insideCorridor(b.maxX(), doorY, doorLineZ));
+
             assertTrue(l.insideCorridor(midX, b.minY(), midZ));
             assertTrue(l.insideCorridor(midX, b.maxY(), midZ));
             assertTrue(l.insideCorridor(midX, midY, b.minZ()));
             assertTrue(l.insideCorridor(midX, midY, b.maxZ()));
 
-            assertTrue(!l.insideCorridor(b.minX() - nudge, midY, midZ));
-            assertTrue(!l.insideCorridor(b.maxX() + nudge, midY, midZ));
+            assertTrue(!l.insideCorridor(b.minX() - nudge, doorY, doorLineZ));
+            assertTrue(!l.insideCorridor(b.maxX() + nudge, doorY, doorLineZ));
             assertTrue(!l.insideCorridor(midX, b.minY() - nudge, midZ));
             assertTrue(!l.insideCorridor(midX, b.maxY() + nudge, midZ));
             assertTrue(!l.insideCorridor(midX, midY, b.minZ() - nudge));
             assertTrue(!l.insideCorridor(midX, midY, b.maxZ() + nudge));
+        }
+    }
+
+    /**
+     * The clip this pins: a player standing <b>outside</b> the carriage, pressed against the solid
+     * part of an end wall, sat inside the padded box at local X {@code -0.3} — so the facing rule
+     * teleported them the moment they looked the wrong way, and they crossed through the shell
+     * instead of through the door. Only the doorway column may reach past an end plane.
+     */
+    @Test
+    @DisplayName("past an end plane, only the doorway column is inside the corridor")
+    void outsideAnEndWallIsNotInside() {
+        for (int length : new int[] {7, 9, 16}) {
+            PortalCarriageLayout l = layout(length);
+            double standingY = l.floorY() + 1;
+            double onTheDoorLine = l.doorZ() + 0.5;
+            double offTheDoorLine = l.doorZ() - 0.5;   // one block over: solid end plane
+
+            for (double x : new double[] {-0.3, length + 0.3}) {
+                assertTrue(!l.insideCorridor(x, standingY, offTheDoorLine),
+                    "outside the end wall at x=" + x + ", length " + length);
+                assertTrue(l.insideCorridor(x, standingY, onTheDoorLine),
+                    "in the doorway at x=" + x + ", length " + length);
+            }
+
+            // On the door line but at roof height is still outside — that is the ceiling, not a door.
+            assertTrue(!l.insideCorridor(-0.3, l.ceilingY(), onTheDoorLine));
+
+            // And nothing about the corridor's own footprint changed: just inside each end plane,
+            // off the door line, is still inside.
+            assertTrue(l.insideCorridor(0.3, standingY, offTheDoorLine));
+            assertTrue(l.insideCorridor(length - 0.3, standingY, offTheDoorLine));
         }
     }
 }

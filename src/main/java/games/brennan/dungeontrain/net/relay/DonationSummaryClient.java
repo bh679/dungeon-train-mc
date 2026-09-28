@@ -63,6 +63,41 @@ public final class DonationSummaryClient {
                        int percent, boolean complete) {}
 
     /**
+     * The updates ledger the death screen's card reads: how many updates shipped in the last week,
+     * in the last 30 days, and across the longest window on offer, plus when the newest release was
+     * published (epoch millis, {@code 0} when the relay has no release timestamp).
+     *
+     * <p>{@code windowMonths} sizes {@code count}: the project's own age in months, capped at the
+     * twelve the card renders as "1 year". The relay re-derives every figure at read time, so the
+     * window widens on its own without a jar or a deploy.</p>
+     */
+    public record Updates(int count, int windowMonths, int month, int week, int day, int year,
+                          long latestReleaseAtMs, String latestVersion) {}
+
+    /**
+     * One arm of a running UI experiment: an id this jar may or may not know how to draw, and its
+     * relative weight. Weights are relative, not percentages — the client normalises over the arms
+     * it can actually render (see {@code DonateExperiment}).
+     */
+    public record Arm(String id, double weight) {}
+
+    /**
+     * The running UI experiment, as published by the relay ({@code experiments.js}): an id, a salt
+     * and the weighted arms. The client hashes {@code salt + id + its own uuid} to pick one, which
+     * is what keeps this payload anonymous and cacheable while leaving the weights operator-owned.
+     *
+     * <p>Null against a relay that predates experiments, or one with none running — both of which
+     * every jar reads as "draw the control layout".</p>
+     */
+    public record Experiment(String id, String salt, List<Arm> arms) {}
+
+    /**
+     * When work last landed on the project: the newest commit across the mod, its siblings and the
+     * relay, as epoch millis. Null when the relay predates the block or its poll has not resolved.
+     */
+    public record Activity(long lastCommitAtMs, String repo) {}
+
+    /**
      * The parsed ledger. {@code monthlyCostUsd}/{@code percentCovered} are -1 when the relay has no
      * cost snapshot yet; {@code hasYou} is false when the player hasn't consented / isn't a donor.
      * {@code goals} is empty (and {@code activeGoalId} null) against a relay that predates the
@@ -73,7 +108,8 @@ public final class DonationSummaryClient {
                           int percentCovered, int patronCount, int patronMonthlyUsd,
                           List<Entry> monthly, List<Entry> allTime,
                           boolean hasYou, int youMonthlyUsd, int youTotalUsd,
-                          List<Goal> goals, String activeGoalId) {}
+                          List<Goal> goals, String activeGoalId, Updates updates,
+                          Activity activity, Experiment experiment) {}
 
     /**
      * Fetch the donation summary off-thread and hand the parsed result to {@code callback} (invoked
@@ -143,7 +179,63 @@ public final class DonationSummaryClient {
                 you != null ? optInt(you, "totalUsd", 0) : 0,
                 parseGoals(o),
                 o.has("activeGoalId") && o.get("activeGoalId").isJsonPrimitive()
-                        ? o.get("activeGoalId").getAsString() : null);
+                        ? o.get("activeGoalId").getAsString() : null,
+                parseUpdates(o),
+                parseActivity(o),
+                parseExperiment(o));
+    }
+
+    /**
+     * The activity block, or null against a relay that predates it or one whose commit poll has
+     * never resolved — which the death screen reads as "draw no Last Active card". A non-positive
+     * timestamp is treated the same way; the screen also declines a timestamp in the future, which
+     * it can judge and this parser cannot (it has no clock).
+     */
+    private static Activity parseActivity(JsonObject o) {
+        if (!o.has("activity") || !o.get("activity").isJsonObject()) return null;
+        JsonObject a = o.getAsJsonObject("activity");
+        long at = 0L;
+        try {
+            if (a.has("lastCommitAt") && a.get("lastCommitAt").isJsonPrimitive()) {
+                at = a.get("lastCommitAt").getAsLong();
+            }
+        } catch (RuntimeException ignored) { /* unparseable timestamp — treat as unknown */ }
+        if (at <= 0L) return null;
+        String repo = a.has("repo") && a.get("repo").isJsonPrimitive() ? a.get("repo").getAsString() : "";
+        return new Activity(at, repo);
+    }
+
+    /**
+     * The running experiment, or null when the relay serves none — which every jar reads as "draw
+     * the control layout". Arms without an id, or with a negative or unparseable weight, are
+     * dropped rather than defaulted: a weight this jar had to invent would silently skew the split
+     * away from what the operator configured. Fewer than two surviving arms is not an experiment,
+     * so it resolves to null.
+     */
+    private static Experiment parseExperiment(JsonObject o) {
+        if (!o.has("experiment") || !o.get("experiment").isJsonObject()) return null;
+        JsonObject e = o.getAsJsonObject("experiment");
+        String id = e.has("id") && e.get("id").isJsonPrimitive() ? e.get("id").getAsString() : null;
+        String salt = e.has("salt") && e.get("salt").isJsonPrimitive() ? e.get("salt").getAsString() : null;
+        if (id == null || id.isBlank() || salt == null || salt.isBlank()) return null;
+        if (!e.has("arms") || !e.get("arms").isJsonArray()) return null;
+
+        List<Arm> arms = new ArrayList<>();
+        for (JsonElement el : e.getAsJsonArray("arms")) {
+            if (!el.isJsonObject()) continue;
+            JsonObject a = el.getAsJsonObject();
+            String armId = a.has("id") && a.get("id").isJsonPrimitive() ? a.get("id").getAsString() : null;
+            if (armId == null || armId.isBlank()) continue;
+            double weight;
+            try {
+                weight = a.has("weight") && a.get("weight").isJsonPrimitive() ? a.get("weight").getAsDouble() : -1;
+            } catch (RuntimeException ex) {
+                continue;
+            }
+            if (!Double.isFinite(weight) || weight < 0) continue;
+            arms.add(new Arm(armId, weight));
+        }
+        return arms.size() >= 2 ? new Experiment(id, salt, List.copyOf(arms)) : null;
     }
 
     /**
@@ -166,6 +258,30 @@ public final class DonationSummaryClient {
                     optInt(g, "percent", 0), complete));
         }
         return out;
+    }
+
+    /**
+     * The updates block, or null against a relay that predates it (or one whose own upstream poll
+     * has never resolved) — which the death screen reads as "fall back to the baked numbers".
+     * A block with no count is treated the same way: an unknown figure is never rendered.
+     */
+    private static Updates parseUpdates(JsonObject o) {
+        if (!o.has("updates") || !o.get("updates").isJsonObject()) return null;
+        JsonObject u = o.getAsJsonObject("updates");
+        int count = optInt(u, "count", 0);
+        if (count <= 0) return null;
+        long latestAt = 0L;
+        try {
+            if (u.has("latestReleaseAt") && u.get("latestReleaseAt").isJsonPrimitive()) {
+                latestAt = u.get("latestReleaseAt").getAsLong();
+            }
+        } catch (RuntimeException ignored) { /* unparseable timestamp — treat as unknown */ }
+        String latestVersion = u.has("latestVersion") && u.get("latestVersion").isJsonPrimitive()
+                ? u.get("latestVersion").getAsString() : "";
+        return new Updates(count, Math.max(0, optInt(u, "windowMonths", 0)),
+                Math.max(0, optInt(u, "month", 0)), Math.max(0, optInt(u, "week", 0)),
+                Math.max(0, optInt(u, "day", 0)), Math.max(0, optInt(u, "year", 0)),
+                Math.max(0L, latestAt), latestVersion);
     }
 
     private static List<Entry> parseEntries(JsonObject o, String key) {

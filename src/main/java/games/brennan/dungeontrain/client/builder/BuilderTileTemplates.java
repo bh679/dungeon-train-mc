@@ -1,13 +1,10 @@
 package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
-import games.brennan.dungeontrain.editor.CarriageContentsStore;
-import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
-import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
-import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.builder.BuilderTemplateFiles;
 import games.brennan.dungeontrain.editor.TemplateCells;
+import games.brennan.dungeontrain.editor.TemplateLoot;
 import games.brennan.dungeontrain.track.variant.TrackKind;
-import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -59,13 +56,24 @@ final class BuilderTileTemplates {
      */
     static Map<BlockPos, BlockState> cells(BuilderPhotoPaths.Kind kind, String id,
                                            CarriagePartKind partKind, TrackKind trackKind) {
+        return load(kind, id, partKind, trackKind).cells();
+    }
+
+    /** A template's blocks and the numbers its data sheet shows, read together from one file. */
+    record Loaded(Map<BlockPos, BlockState> cells, TemplateSummary summary) {
+        static final Loaded EMPTY = new Loaded(Map.of(), TemplateSummary.NONE);
+    }
+
+    /** As {@link #cells}, also tallying the template for its data sheet. */
+    static Loaded load(BuilderPhotoPaths.Kind kind, String id,
+                       CarriagePartKind partKind, TrackKind trackKind) {
         Optional<CompoundTag> tag = rawTag(kind, id, partKind, trackKind);
         if (tag.isEmpty()) {
-            return Map.of();
+            return Loaded.EMPTY;
         }
         HolderGetter<Block> blocks = blockRegistry();
         if (blocks == null) {
-            return Map.of();
+            return Loaded.EMPTY;
         }
         StructureTemplate template = new StructureTemplate();
         try {
@@ -73,29 +81,26 @@ final class BuilderTileTemplates {
         } catch (RuntimeException e) {
             // A malformed or future-version template is a tile that shows its photo, not a crash
             // in the middle of a screen render.
-            return Map.of();
+            return Loaded.EMPTY;
         }
-        return TemplateCells.of(template);
+        Map<BlockPos, BlockState> cells = TemplateCells.of(template);
+        TemplateCells.NbtTally tally = TemplateCells.tallyBlockEntities(template);
+        TemplateSummary summary = new TemplateSummary(cells.size(), template.getSize(),
+                tally.blockEntities(), tally.containers(), TemplateCells.entityCount(tag.get()),
+                TemplateCells.lights(cells), TemplateLoot.of(template, kind, subKindOf(partKind, trackKind), id));
+        return new Loaded(cells, summary);
     }
 
-    /** The same store-per-kind switch {@link BuilderPhotoPaths#photoFor} makes, for the NBT. */
+    /** The sub kind a part or track is keyed by in its sidecars, or null for every other kind. */
+    private static String subKindOf(CarriagePartKind partKind, TrackKind trackKind) {
+        if (partKind != null) return partKind.id();
+        return trackKind == null ? null : trackKind.id();
+    }
+
+    /** The template file — see {@link BuilderTemplateFiles}. */
     private static Optional<CompoundTag> rawTag(BuilderPhotoPaths.Kind kind, String id,
                                                 CarriagePartKind partKind, TrackKind trackKind) {
-        if (kind == null || id == null || id.isEmpty()) {
-            return Optional.empty();
-        }
-        return switch (kind) {
-            case CARRIAGE -> CarriageTemplateStore.rawTag(id);
-            case CARRIAGE_GROUP -> CarriageGroupTemplateStore.rawTag(id);
-            case CONTENTS -> CarriageContentsStore.rawTag(id);
-            case PART -> partKind == null
-                    ? Optional.empty()
-                    : CarriagePartTemplateStore.rawTag(partKind, id);
-            case TRACK -> trackKind == null
-                    ? Optional.empty()
-                    : TrackVariantStore.rawTag(trackKind, id);
-            case PORTAL_ROOM -> TrackVariantStore.rawTag(TrackKind.PORTAL_ROOM, id);
-        };
+        return BuilderTemplateFiles.rawTag(kind, id, partKind, trackKind);
     }
 
     /**

@@ -121,68 +121,85 @@ public final class BlockVariantLockIdRenderer {
             origin = cacheOrigin;
         }
 
+        // Only the faces an author can actually read: toward the camera, not buried against another
+        // labelled cell, and near enough for a 0.36-block badge to be legible. A big template (a
+        // chunk frame locks thousands of cells) otherwise asks for six labels per cell every frame.
+        java.util.List<Face> faces = new java.util.ArrayList<>();
         for (Map.Entry<BlockPos, Integer> e : snapshot.entrySet()) {
             BlockPos local = e.getKey();
             int lockId = e.getValue();
             if (lockId <= 0) continue;
             BlockPos world = origin.offset(local);
+            if (cam.distanceToSqr(world.getX() + 0.5, world.getY() + 0.5, world.getZ() + 0.5) > MAX_DISTANCE_SQR) continue;
             String label = Integer.toString(lockId);
             for (Direction face : Direction.values()) {
-                drawLabelOnFace(ps, buffer, font, cam, world, face, label);
+                Integer neighbour = snapshot.get(local.relative(face));
+                if (neighbour != null && neighbour > 0) continue;
+                if (!facesCamera(cam, world, face)) continue;
+                faces.add(new Face(world, face, label));
             }
         }
+        if (faces.isEmpty()) return;
 
+        // Two passes, one render type each: interleaving the backdrop with the digit's glyph type
+        // flushes the batch on every switch, i.e. two draw calls per face.
+        for (Face f : faces) {
+            withFacePose(ps, cam, f.world(), f.face(), () ->
+                drawQuad(ps, buffer, -BADGE_HALF, -BADGE_HALF, BADGE_HALF, BADGE_HALF, 0xC0202020));
+        }
         buffer.endBatch(PANEL_QUAD);
+        for (Face f : faces) {
+            withFacePose(ps, cam, f.world(), f.face(), () -> drawDigit(ps, buffer, font, f.label()));
+        }
+        buffer.endBatch();
     }
 
-    private static void drawLabelOnFace(PoseStack ps, MultiBufferSource buffer, Font font,
-                                        Vec3 cam, BlockPos world, Direction face, String label) {
+    /** Past this, a badge is a few pixels and unreadable — not worth a draw. */
+    private static final double MAX_DISTANCE_SQR = 32.0 * 32.0;
+
+    private record Face(BlockPos world, Direction face, String label) {}
+
+    /** True when {@code face} of the block at {@code world} is turned toward the camera. */
+    private static boolean facesCamera(Vec3 cam, BlockPos world, Direction face) {
+        double dx = cam.x - (world.getX() + 0.5 + face.getStepX() * FACE_INSET);
+        double dy = cam.y - (world.getY() + 0.5 + face.getStepY() * FACE_INSET);
+        double dz = cam.z - (world.getZ() + 0.5 + face.getStepZ() * FACE_INSET);
+        return dx * face.getStepX() + dy * face.getStepY() + dz * face.getStepZ() > 0;
+    }
+
+    /** Run {@code draw} in the face's badge space: centred on the face, digit-up, at the UI scale. */
+    private static void withFacePose(PoseStack ps, Vec3 cam, BlockPos world, Direction face, Runnable draw) {
         Vec3 normal = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
-        Vec3 anchor = new Vec3(
-            world.getX() + 0.5 + face.getStepX() * FACE_INSET,
-            world.getY() + 0.5 + face.getStepY() * FACE_INSET,
-            world.getZ() + 0.5 + face.getStepZ() * FACE_INSET);
-        Vec3 up;
-        if (face.getAxis() == Direction.Axis.Y) {
-            // Top / bottom faces — pick a stable horizontal up so the digit
-            // doesn't flip as the player rotates. World +Z (south) is fine.
-            up = new Vec3(0, 0, 1);
-        } else {
-            up = new Vec3(0, 1, 0);
-        }
+        // Top / bottom faces take a stable horizontal up (world +Z) so the digit doesn't flip as the
+        // player turns.
+        Vec3 up = face.getAxis() == Direction.Axis.Y ? new Vec3(0, 0, 1) : new Vec3(0, 1, 0);
         Vec3 right = up.cross(normal).normalize();
 
         ps.pushPose();
-        ps.translate(anchor.x - cam.x, anchor.y - cam.y, anchor.z - cam.z);
+        ps.translate(world.getX() + 0.5 + face.getStepX() * FACE_INSET - cam.x,
+            world.getY() + 0.5 + face.getStepY() * FACE_INSET - cam.y,
+            world.getZ() + 0.5 + face.getStepZ() * FACE_INSET - cam.z);
         Matrix3f basis = new Matrix3f(
             (float) right.x, (float) right.y, (float) right.z,
             (float) up.x, (float) up.y, (float) up.z,
             (float) normal.x, (float) normal.y, (float) normal.z
         );
         ps.mulPose(new Quaternionf().setFromNormalized(basis));
-
-        // Same world-space scale used by the X menu / block-variant menu —
-        // applied here so the lock-ID badge (backdrop + digit) shrinks
-        // proportionally with the rest of the editor UI.
+        // Same world-space scale the X menu uses, so the badge shrinks with the rest of the editor UI.
         float worldScale = (float) ClientDisplayConfig.getWorldspaceScale();
-        if (worldScale != 1.0f) {
-            ps.scale(worldScale, worldScale, worldScale);
-        }
+        if (worldScale != 1.0f) ps.scale(worldScale, worldScale, worldScale);
+        draw.run();
+        ps.popPose();
+    }
 
-        // Tinted backdrop so the digit reads against any block colour.
-        drawQuad(ps, buffer, -BADGE_HALF, -BADGE_HALF, BADGE_HALF, BADGE_HALF, 0xC0202020);
-
-        // Digit, centered.
+    private static void drawDigit(PoseStack ps, MultiBufferSource buffer, Font font, String label) {
         ps.pushPose();
         ps.translate(0, 0, 0.001f);
         ps.scale(TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE);
-        int textWidth = font.width(label);
-        Matrix4f mat = ps.last().pose();
         font.drawInBatch(label,
-            -textWidth / 2f, -font.lineHeight / 2f,
-            0xFFFFEEBB, false, mat, buffer,
+            -font.width(label) / 2f, -font.lineHeight / 2f,
+            0xFFFFEEBB, false, ps.last().pose(), buffer,
             Font.DisplayMode.SEE_THROUGH, 0, LightTexture.FULL_BRIGHT);
-        ps.popPose();
         ps.popPose();
     }
 

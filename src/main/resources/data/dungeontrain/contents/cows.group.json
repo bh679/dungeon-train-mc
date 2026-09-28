@@ -65,6 +65,11 @@
     {
       "id": "cat",
       "weight": 1
+    },
+    {
+      "id": "bear",
+      "weight": 1,
+      "minLevel": 6
     }
   ]
 }

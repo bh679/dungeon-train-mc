@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer.Hovere
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Direction;
@@ -58,6 +59,15 @@ public final class EditorTypeMenuInputHandler {
     private static boolean pressArmed;
     /** Captured at press time so the release knows whether it was a shift-click. */
     private static boolean pressShift;
+
+    /**
+     * Range offered by the typed-weight pad. Every weight pool behind these cells is 0-100
+     * ({@code CarriageWeights}, {@code CarriageContentsWeights}, {@code TrackVariantWeights} and
+     * both group pools), and the command tree rejects anything outside it, so the pad offers
+     * exactly that window.
+     */
+    private static final int TYPED_WEIGHT_MIN = 0;
+    private static final int TYPED_WEIGHT_MAX = 100;
 
     private EditorTypeMenuInputHandler() {}
 
@@ -135,6 +145,16 @@ public final class EditorTypeMenuInputHandler {
             mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
         }
 
+        // ↻ on any menu's top row — turn it (and whatever shares its anchor) to face the player,
+        // or with shift snap it back to the grid.
+        if (hit.cell() == EditorTypeMenuRenderer.CellKind.FACE) {
+            games.brennan.dungeontrain.client.menu.EditorPanelFacingEvents.onButton(
+                EditorTypeMenuRenderer.facingKey(menu),
+                net.minecraft.world.phys.Vec3.atCenterOf(menu.worldPos()),
+                EditorTypeMenuRenderer.gridDefault(menu));
+            return;
+        }
+
         // Stages management panel — toolbar (Add / Remove) + inline-editable stage rows.
         if (menu.isStagesMenu()) {
             handleStagesMenu(hit, menu, shift);
@@ -149,6 +169,18 @@ public final class EditorTypeMenuInputHandler {
             EditorTypeMenusPacket.CategoryButton btn = menu.categoryBar().get(slot);
             String cmd = "dt editor " + btn.id();
             LOGGER.debug("[DungeonTrain] EditorTypeMenu category click: {}", cmd);
+            CommandRunner.run(cmd);
+            return;
+        }
+
+        // WHOLE's "whole group every N" settings row — click +1, shift-click -1, cmd-click types.
+        if (hit.cell() == EditorTypeMenuRenderer.CellKind.WHOLE_EVERY) {
+            if (games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown()) {
+                openWholeEveryEntry();
+                return;
+            }
+            String cmd = "dungeontrain editor whole every " + (shift ? "dec" : "inc");
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu whole-every: {}", cmd);
             CommandRunner.run(cmd);
             return;
         }
@@ -299,31 +331,14 @@ public final class EditorTypeMenuInputHandler {
                 CommandRunner.run(cmd);
             }
             case WEIGHT -> {
-                String dir = shift ? "dec" : "inc";
-                // Sub-variants companion menu: weight cells reference per-member
-                // weights (and the parent's editable selfWeight on row 0) inside
-                // the parent's .group.json sidecar — route to the group-member
-                // weight command, not the top-level contents weight pool (which
-                // the spawn pipeline ignores for members). The same command
-                // path handles the (default) row by passing parent == child;
-                // the server interprets that as a selfWeight edit.
-                boolean isSubVariants = games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
-                    .equals(menu.typeName());
-                if (isSubVariants) {
-                    String parentId = menu.variants().get(0).modelId();
-                    String memberId = variant.modelId();
-                    // Portal rooms carry the same panel one template layer up — same parent/member
-                    // shape, different command prefix.
-                    String cmd = isPortalRoom(variant)
-                        ? EditorPlotTeleport.portalRoomGroupWeightCommandFor(parentId, memberId, dir)
-                        : EditorPlotTeleport.groupMemberWeightCommandFor(parentId, memberId, dir);
-                    LOGGER.debug("[DungeonTrain] EditorTypeMenu weight (group {}): {}",
-                        parentId.equals(memberId) ? "self" : "member", cmd);
-                    CommandRunner.run(cmd);
+                // Cmd-click types the weight instead of stepping it. The commands take a literal
+                // value in the same slot as inc / dec, so only the token changes.
+                if (games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown()
+                    && variant.weight() != games.brennan.dungeontrain.net.EditorPlotLabelsPacket.NO_WEIGHT) {
+                    openWeightEntry(menu, variant);
                     return;
                 }
-                String cmd = EditorPlotTeleport.weightCommandFor(
-                    variant.plotCategory(), variant.modelId(), variant.modelName(), dir);
+                String cmd = weightCommandFor(menu, variant, shift ? "dec" : "inc");
                 if (cmd == null) return;
                 LOGGER.debug("[DungeonTrain] EditorTypeMenu weight: {}", cmd);
                 CommandRunner.run(cmd);
@@ -367,14 +382,12 @@ public final class EditorTypeMenuInputHandler {
             variant.plotCategory(), variant.modelId(), variant.modelName(), variant.primaryStageId()));
     }
 
-    /** Lowercase phase tokens for the Stages panel's inline dimension cells (TrainPhase ordinal order). */
-    private static final String[] STAGE_PHASE_TOKENS = {"overworld", "nether", "void", "end"};
-
     /**
      * Click routing for the world-space Stages panel:
      * <ul>
      *   <li>{@code + Add} → opens the Stages window (with its create-stage typing row).</li>
      *   <li>{@code – Remove} → toggles remove-mode; a stage-row click then deletes that stage.</li>
+     *   <li>A column title → sorts the rows by that column; the same title again flips the direction.</li>
      *   <li>A stage row's {@code ≥ / ≤ / O N V E} cells edit that stage's gate live (inline).</li>
      *   <li>A stage row's name → its edit screen (or deletes it while remove-mode is on).</li>
      * </ul>
@@ -384,6 +397,12 @@ public final class EditorTypeMenuInputHandler {
             case STAGE_ADD, HEADER -> CommandMenuState.openAt(
                 new games.brennan.dungeontrain.client.menu.StagesListScreen());
             case STAGE_REMOVE -> EditorTypeMenuRenderer.toggleStagesRemoveMode();
+            // Column title: sort by it, or flip the direction if it is already the sort. View state
+            // only — nothing goes to the server.
+            case STAGE_SORT -> {
+                StagesSort.Column[] columns = StagesSort.Column.values();
+                if (hit.slotIdx() >= 0 && hit.slotIdx() < columns.length) StagesSort.click(columns[hit.slotIdx()]);
+            }
             case NAME -> {
                 String id = stageIdAt(menu, hit);
                 if (id == null) return;
@@ -410,11 +429,12 @@ public final class EditorTypeMenuInputHandler {
             case PHASE -> {
                 String id = stageIdAt(menu, hit);
                 int slot = hit.slotIdx();
-                if (id == null || slot < 0 || slot >= STAGE_PHASE_TOKENS.length) return;
+                if (id == null || slot < 0 || slot >= TrainPhase.values().length) return;
+                TrainPhase phase = TrainPhase.values()[slot];
                 int mask = menu.variants().get(hit.variantIdx()).phaseMask();
-                boolean on = (mask & (1 << slot)) != 0;
+                boolean on = (mask & phase.bit()) != 0;
                 String action = shift ? "others" : (on ? "off" : "on");
-                CommandRunner.run(EditorPlotTeleport.stagePhaseCommandFor(id, STAGE_PHASE_TOKENS[slot], action));
+                CommandRunner.run(EditorPlotTeleport.stagePhaseCommandFor(id, phase.token(), action));
             }
             case STAGE_BLOCKS -> {
                 // The row's icon strip just SELECTS the stage (which auto-opens/closes its panel) —
@@ -433,9 +453,6 @@ public final class EditorTypeMenuInputHandler {
         if (hit.variantIdx() < 0 || hit.variantIdx() >= menu.variants().size()) return null;
         return menu.variants().get(hit.variantIdx()).modelId();
     }
-
-    /** Lowercase phase tokens indexed by {@code TrainPhase} ordinal (OVERWORLD/NETHER/VOID/END). */
-    private static final String[] PHASE_TOKENS = {"overworld", "nether", "void", "end"};
 
     /**
      * Bump a per-template gate level bound. On Sub-Variants rows this targets the group member's
@@ -469,29 +486,41 @@ public final class EditorTypeMenuInputHandler {
      */
     private static void dispatchPhase(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant,
                                       int slot, boolean shift) {
-        if (slot < 0 || slot >= PHASE_TOKENS.length) return;
-        boolean on = (variant.phaseMask() & (1 << slot)) != 0;
+        if (slot < 0 || slot >= TrainPhase.values().length) return;
+        TrainPhase phase = TrainPhase.values()[slot];
+        boolean on = (variant.phaseMask() & phase.bit()) != 0;
         String action = shift ? "others" : (on ? "off" : "on");
         if (isSubVariants(menu)) {
             String parentId = menu.variants().get(0).modelId();
             String cmd = isPortalRoom(variant)
                 ? EditorPlotTeleport.portalRoomGroupPhaseCommandFor(
-                    parentId, variant.modelId(), PHASE_TOKENS[slot], action)
+                    parentId, variant.modelId(), phase.token(), action)
                 : EditorPlotTeleport.groupMemberPhaseCommandFor(
-                    parentId, variant.modelId(), PHASE_TOKENS[slot], action);
-            LOGGER.debug("[DungeonTrain] EditorTypeMenu group phase {} {}: {}", PHASE_TOKENS[slot], action, cmd);
+                    parentId, variant.modelId(), phase.token(), action);
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu group phase {} {}: {}", phase.token(), action, cmd);
             CommandRunner.run(cmd);
             return;
         }
         String cmd = EditorPlotTeleport.phaseCommandFor(
             variant.plotCategory(), variant.modelId(), variant.modelName(),
-            PHASE_TOKENS[slot], action);
+            phase.token(), action);
         if (cmd == null) return;
-        LOGGER.debug("[DungeonTrain] EditorTypeMenu phase {} {}: {}", PHASE_TOKENS[slot], action, cmd);
+        LOGGER.debug("[DungeonTrain] EditorTypeMenu phase {} {}: {}", phase.token(), action, cmd);
         CommandRunner.run(cmd);
     }
 
     /** {@code value} unless it is null or blank, in which case {@code fallback}. */
+    /**
+     * The HUD's active model id when the player stands in a plot of {@code category}, else empty —
+     * so a picker never offers a plot of another kind as "Current".
+     */
+    private static String standingKindId(PlotCategory category) {
+        boolean same = PlotCategory.fromId(EditorStatusHudOverlay.category())
+            .map(c -> c == category).orElse(false);
+        String id = EditorStatusHudOverlay.modelId();
+        return same && id != null ? id : "";
+    }
+
     private static String nonEmptyOr(String value, String fallback) {
         return (value != null && !value.isEmpty()) ? value : fallback;
     }
@@ -506,6 +535,65 @@ public final class EditorTypeMenuInputHandler {
      * share the panel and its cells but not their command prefixes, so every group-edit dispatch has
      * to pick one. Category is the discriminator the server already sets on the row.
      */
+    /**
+     * The weight command for one row, with {@code token} in the slot that takes {@code inc},
+     * {@code dec} or an outright number — the command tree accepts all three there, so stepping
+     * and typing differ only in what is spliced in.
+     *
+     * <p>Sub-variants companion menu: weight cells reference per-member weights (and the parent's
+     * editable selfWeight on row 0) inside the parent's .group.json sidecar — route to the
+     * group-member weight command, not the top-level contents weight pool (which the spawn
+     * pipeline ignores for members). The same command path handles the (default) row by passing
+     * parent == child; the server interprets that as a selfWeight edit. Portal rooms carry the
+     * same panel one template layer up — same parent/member shape, different command prefix.</p>
+     */
+    private static String weightCommandFor(EditorTypeMenusPacket.Menu menu,
+                                           EditorTypeMenusPacket.Variant variant, String token) {
+        if (games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
+                .equals(menu.typeName())) {
+            if (menu.variants().isEmpty()) return null;
+            String parentId = menu.variants().get(0).modelId();
+            String memberId = variant.modelId();
+            return isPortalRoom(variant)
+                ? EditorPlotTeleport.portalRoomGroupWeightCommandFor(parentId, memberId, token)
+                : EditorPlotTeleport.groupMemberWeightCommandFor(parentId, memberId, token);
+        }
+        return EditorPlotTeleport.weightCommandFor(
+            variant.plotCategory(), variant.modelId(), variant.modelName(), token);
+    }
+
+    /**
+     * Open the typed-weight pad for one row. The world-space panel is a HUD overlay drawn behind
+     * the modal, so closing returns to the world with the menu still up.
+     */
+    /** Type N for "whole group every N" — 0 is off. */
+    private static void openWholeEveryEntry() {
+        int current = Math.max(0, EditorTypeMenuRenderer.wholeGroupEvery());
+        Minecraft.getInstance().setScreen(new games.brennan.dungeontrain.client.menu.NumberInputScreen(
+            net.minecraft.network.chat.Component.translatable("gui.dungeontrain.number_input.whole_every"),
+            current, 0, games.brennan.dungeontrain.train.WholeGroupSettings.MAX_EVERY,
+            value -> {
+                String cmd = "dungeontrain editor whole every " + value;
+                LOGGER.debug("[DungeonTrain] EditorTypeMenu whole-every (typed): {}", cmd);
+                CommandRunner.run(cmd);
+            },
+            null));
+    }
+
+    private static void openWeightEntry(EditorTypeMenusPacket.Menu menu,
+                                        EditorTypeMenusPacket.Variant variant) {
+        Minecraft.getInstance().setScreen(new games.brennan.dungeontrain.client.menu.NumberInputScreen(
+            net.minecraft.network.chat.Component.translatable("gui.dungeontrain.number_input.weight"),
+            variant.weight(), TYPED_WEIGHT_MIN, TYPED_WEIGHT_MAX,
+            value -> {
+                String cmd = weightCommandFor(menu, variant, Integer.toString(value));
+                if (cmd == null) return;
+                LOGGER.debug("[DungeonTrain] EditorTypeMenu weight (typed): {}", cmd);
+                CommandRunner.run(cmd);
+            },
+            null));
+    }
+
     private static boolean isPortalRoom(EditorTypeMenusPacket.Variant variant) {
         return variant.plotCategory() == PlotCategory.PORTALS;
     }
@@ -572,6 +660,11 @@ public final class EditorTypeMenuInputHandler {
             // entry, so leave currentId blank.
             case PARTS -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.PARTS, first.modelId(), "");
+            // Chunk parts: modelId is the kind id; "Current" copies the chunk part plot the player
+            // stands in, when it is one of this kind.
+            case CHUNK_FRAMES -> new NewSourcePickerScreen(
+                NewSourcePickerScreen.Category.CHUNK_FRAMES, first.modelId(),
+                first.modelId().equals(EditorStatusHudOverlay.modelId()) ? EditorStatusHudOverlay.modelName() : "");
             // Tracks have no source choice today — picker collapses to a
             // single name TypeArg row. Kind tag is the variant's modelId
             // (the server's track-new parser expects the prefixed forms,
@@ -582,6 +675,12 @@ public final class EditorTypeMenuInputHandler {
             // Kind tag is the variant's modelId (portal_room).
             case PORTALS -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.PORTALS, first.modelId(), "");
+            // Whole rooms / groups: Blank / Current. "Current" only when standing in a plot of the
+            // same kind — a room id is no source for a group.
+            case WHOLE, WHOLE_GROUP -> new NewSourcePickerScreen(
+                plotCategory == PlotCategory.WHOLE_GROUP
+                    ? NewSourcePickerScreen.Category.WHOLE_GROUP : NewSourcePickerScreen.Category.WHOLE,
+                null, standingKindId(plotCategory));
             // No models to seed a new one from.
             case ARCHITECTURE -> null;
         };

@@ -10,9 +10,9 @@ import org.slf4j.Logger;
 
 /**
  * POSTs a per-LIFE run summary (spawn → death) to the Dungeon Train relay, so the private data
- * explorer (dp-relay) can show a player's <em>single-life</em> playtime — the same run timer the
- * death report prints as {@code H:MM:SS}. A "life" ends at each death ({@code PlayerRunState.runTicks}
- * resets on respawn), so one record is posted per death.
+ * explorer (dp-relay) can show a player's <em>single-life</em> time on the train — the same clock the
+ * death report prints as {@code H:MM:SS}. A "life" ends at each death
+ * ({@code PlayerRunState.trainTimeTicks} resets on respawn), so one record is posted per death.
  *
  * <p>Mirrors {@link DeathEquipmentReporter}: same relay destination, the same
  * {@link DungeonTrainConfig#isWorldInfoToRelay()} gate (reused rather than a new toggle), and the same
@@ -37,17 +37,18 @@ public final class RunSummaryReporter {
      * lifetime displacement counter, so no two of them can describe the same death differently.
      * Its {@code distanceTravelled} is what the public distance leaderboard is built from.</p>
      */
-    public static void report(ServerPlayer player, DeathStatsPacket packet, RunPosition pos) {
+    public static void report(ServerPlayer player, DeathStatsPacket packet, RunPosition pos,
+                              boolean freePlay) {
         try {
             if (!DungeonTrainConfig.isWorldInfoToRelay()) {
                 return;
             }
             String uuid = player.getUUID().toString().replace("-", "");
             String name = player.getGameProfile().getName();
-            long runSec = Math.max(0L, packet.runTicks() / TICKS_PER_SECOND);
+            long runSec = Math.max(0L, packet.trainTimeTicks() / TICKS_PER_SECOND);
             int carriage = packet.cartsTravelled();
             int distanceBlocks = (int) Math.round(packet.distanceBlocks());
-            JsonObject payload = buildPayload(uuid, name, runSec, carriage, distanceBlocks, pos);
+            JsonObject payload = buildPayload(uuid, name, runSec, carriage, distanceBlocks, pos, freePlay);
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] run-summary relay report failed: {}", t.toString());
@@ -56,15 +57,16 @@ public final class RunSummaryReporter {
 
     /**
      * Pure payload assembly over plain data (no Minecraft types) — package-private so the shape can
-     * be unit-tested without bootstrapping the game. {@code runSec} is the life's elapsed seconds
-     * ({@code runTicks / 20}); {@code carriage} + {@code distanceBlocks} are cheap extras.
+     * be unit-tested without bootstrapping the game. {@code runSec} is the life's time on the train
+     * in seconds ({@code trainTimeTicks / 20}); {@code carriage} + {@code distanceBlocks} are cheap
+     * extras.
      *
      * <p>{@code distanceBlocks} keeps its long-standing meaning — the 3D path-length odometer. The
      * {@link RunPosition} fields are the newer positional metric and are independent of it; both
      * ship so the relay can fall back to the odometer for lives predating the origin capture.</p>
      */
     static JsonObject buildPayload(String uuid, String player, long runSec, int carriage, int distanceBlocks,
-                                   RunPosition pos) {
+                                   RunPosition pos, boolean freePlay) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         if (player != null && !player.isEmpty()) {
@@ -74,6 +76,11 @@ public final class RunSummaryReporter {
         body.addProperty("carriage", carriage);
         body.addProperty("distanceBlocks", distanceBlocks);
         DeathReporter.addPosition(body, pos);
+        // Was this life Free Play? Same flag, same reason, same ALWAYS-sent rule as
+        // DeathDetailReporter — see the note there. This is the payload the one-life distance,
+        // playtime and carriage boards are built from, so it is the one that was showing
+        // world-border "distances" before the flag existed.
+        body.addProperty("freePlay", freePlay);
         return body;
     }
 

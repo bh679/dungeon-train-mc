@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 10,
+  "variants": {
+    "15,8,14": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:drowned"}],
+    "17,8,14": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:drowned"}],
+    "16,9,14": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:drowned"}],
+    "16,8,14": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:drowned"}],
+    "16,10,14": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:drowned"}],
+    "17,3,14": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:drowned"}],
+    "17,3,12": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:drowned"}],
+    "14,3,16": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:drowned"}],
+    "9,2,20": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:drowned"}],
+    "9,2,10": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:drowned"}]
+  }
+}

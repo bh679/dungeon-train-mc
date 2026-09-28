@@ -1,0 +1,236 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "big_lost_city"
+    }
+  ],
+  "structures": [
+    {
+      "structure": "big_lost_city:bigshippingcontainer",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:blackskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "big_lost_city:car_1",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:car_2",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:car_3",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:car_4",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:car_5",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:car_6",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:car_7",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:car_8",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:car_9",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:car_10",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:deco_1",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:deco_2",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:deco_3",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:deco_4",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:deco_5",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:deco_6",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:deco_7",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:deco_8",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:deco_9",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:deco_10",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:deco_11",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:deco_12",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:deco_13",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:deco_14",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:ferriswheel",
+      "weight": 3
+    },
+    {
+      "structure": "big_lost_city:house_1",
+      "weight": 5
+    },
+    {
+      "structure": "big_lost_city:house_2",
+      "weight": 5
+    },
+    {
+      "structure": "big_lost_city:house_3",
+      "weight": 5
+    },
+    {
+      "structure": "big_lost_city:powerplant",
+      "weight": 3
+    },
+    {
+      "structure": "big_lost_city:redskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "big_lost_city:ruindedredskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "big_lost_city:ruinedblackskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "big_lost_city:ruinedskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "big_lost_city:smallshippingcontainer",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:store_1",
+      "weight": 5
+    },
+    {
+      "structure": "big_lost_city:tallskyscraper",
+      "weight": 5
+    },
+    {
+      "structure": "big_lost_city:tent_1",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:tent_2",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:tent_3",
+      "weight": 2
+    },
+    {
+      "structure": "big_lost_city:warehouse",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/blackskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "dungeontrain:lost_city/redskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "dungeontrain:lost_city/ruindedredskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "dungeontrain:lost_city/ruinedblackskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "dungeontrain:lost_city/ruinedskyscraper",
+      "weight": 6
+    },
+    {
+      "structure": "dungeontrain:lost_city/tallskyscraper",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/powerplant",
+      "weight": 3
+    },
+    {
+      "structure": "dungeontrain:lost_city/house_1",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/house_2",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/house_3",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/store_1",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/warehouse",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/ferriswheel",
+      "weight": 3
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 6,
+    "separation": 4,
+    "salt": 61837201
+  }
+}

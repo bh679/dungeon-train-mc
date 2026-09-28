@@ -165,6 +165,25 @@ public record PortalGeometry(int originX, int floorY, int originZ,
      * <p>The midpoint tie ({@code x == midX()}) resolves to NEAR via the strict {@code >}, so
      * exactly one of the two branches can ever fire.</p>
      */
+    /**
+     * The Y displacement to the <b>other</b> copy from wherever a position is now, or {@code 0} when
+     * it is in neither.
+     *
+     * <p>What {@link #requiredShift} is not: that one answers "should this be moved?", so it carries
+     * the midpoint rule and is {@code 0} for most of the walk down a corridor. A position inside
+     * either copy has a counterpart in the other one at every moment, on both sides of the midpoint,
+     * which is what a prewarm needs — the destination has to be known while there is still time to
+     * build it. The same distinction {@code PortalFrames.mirror} draws for the carriage portals.</p>
+     */
+    public int mirrorShift(double x, double y, double z) {
+        if (!withinCorridorXZ(x, z)) return 0;
+        return switch (copyAt(y)) {
+            case COPY_NEAR -> deltaY;
+            case COPY_FAR -> -deltaY;
+            default -> 0;
+        };
+    }
+
     public int requiredShift(double x, double y, double z) {
         if (!withinCorridorXZ(x, z)) return 0;
         int copy = copyAt(y);

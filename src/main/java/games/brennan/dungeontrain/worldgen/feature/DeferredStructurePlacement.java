@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
@@ -32,15 +33,22 @@ public final class DeferredStructurePlacement {
 
     /** True if this chunk's structure pieces must wait for the core fill. Never throws. */
     public static boolean isDeferred(WorldGenLevel level, ChunkPos chunkPos) {
+        return DungeonTrainCommonConfig.isNetherStructuresEnabled() && touchesCore(level, chunkPos);
+    }
+
+    /**
+     * True if any column of this overworld chunk (widened by the edge-wave margin) belongs to the real-Nether
+     * core — the chunks whose decoration lands on core terrain. Never throws.
+     */
+    public static boolean touchesCore(WorldGenLevel level, ChunkPos chunkPos) {
         try {
             ServerLevel serverLevel = level.getLevel();
             if (!serverLevel.dimension().equals(Level.OVERWORLD)) return false;
-            if (!DungeonTrainCommonConfig.isNetherStructuresEnabled()) return false;
 
             ServerLevel overworld = serverLevel.getServer() == null ? null : serverLevel.getServer().overworld();
             if (overworld == null || NetherBand.startX(overworld) == NetherBand.OFF) return false;
 
-            WorldGenCycle cycle = WorldGenCycle.fromConfig();
+            WorldGenCycle cycle = MixBand.cycleAt(overworld, chunkPos.x, chunkPos.z);   // mix zone pick
             int margin = NetherMountainTerrain.maxEdgeShift();
             for (int worldX = chunkPos.getMinBlockX() - margin; worldX <= chunkPos.getMaxBlockX() + margin; worldX++) {
                 // The End band always wins any overlap, exactly as the core fill yields those columns.
@@ -48,7 +56,7 @@ public final class DeferredStructurePlacement {
             }
             return false;
         } catch (Throwable t) {
-            return false;   // never block generation over this — worst case, structures place as they used to
+            return false;   // never block generation over this — worst case, the chunk decorates as it used to
         }
     }
 }

@@ -16,9 +16,9 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * The Dungeon Train debug panel — an F3-style read-out of the four facts a bug report needs:
- * mod build, the world's train generation seed, the player's carriage index, and that carriage's
- * cart type. Toggled with <b>F3 + 4</b>, captured by
+ * The Dungeon Train debug panel — an F3-style read-out of the facts a bug report needs:
+ * mod build, the world's train generation seed, the band and lap the player is in, the player's
+ * carriage index, and that carriage's cart type. Toggled with <b>F3 + 4</b>, captured by
  * {@link games.brennan.dungeontrain.mixin.client.KeyboardHandlerDebugChordMixin}.
  *
  * <p>Access is grant-gated: {@link TrainDebugState#permitted()} is false until the server says
@@ -110,6 +110,13 @@ public final class TrainDebugHudOverlay {
         List<Line> lines = new ArrayList<>(8);
         lines.add(new Line(VersionInfo.DISPLAY, COLOR_TITLE));
         lines.add(new Line("Train seed: " + TrainDebugState.seed(), COLOR_BODY));
+        // Where along the cycle the player stands, on or off the train. Lap is the number
+        // /dtp <band> <distance> <lap> takes, so a report can be jumped straight back to.
+        String band = TrainDebugState.band();
+        lines.add(new Line("Band: " + (band.isEmpty() ? NONE : band), COLOR_BODY));
+        String stage = TrainDebugState.stage();
+        lines.add(new Line("Stage: " + (stage.isEmpty() ? NONE : stage), COLOR_BODY));
+        lines.add(new Line("Lap: " + (band.isEmpty() ? NONE : Long.toString(TrainDebugState.lap())), COLOR_BODY));
 
         boolean onTrain = TrainDebugState.carriagePresent();
         lines.add(new Line("Carriage: "
@@ -120,8 +127,11 @@ public final class TrainDebugHudOverlay {
         // Empty is meaningful here rather than unknown: the group draw landed on the parent's own
         // contents, or the parent has no group at all. Either way there is no sub-variant.
         lines.add(new Line("Sub variant: " + fieldOr(onTrain, TrainDebugState.subVariantId()), COLOR_BODY));
-        // Only meaningful inside a portal corridor's stacked copies; elsewhere "no" is the answer
-        // rather than a missing value, so this says so rather than showing a dash.
+        // The one thing on the panel you cannot read off the carriage by eye: whether this stamp of
+        // the interior came out authored or mirrored.
+        lines.add(new Line("Flip: " + fieldOr(onTrain, TrainDebugState.flip()), COLOR_BODY));
+        // Only meaningful inside a portal corridor's twins or a room's tiles; elsewhere "no" is the
+        // answer rather than a missing value, so say so rather than showing a dash.
         String copy = TrainDebugState.copy();
         lines.add(new Line("Copy: " + (copy.isEmpty() ? "no" : copy), COLOR_BODY));
 

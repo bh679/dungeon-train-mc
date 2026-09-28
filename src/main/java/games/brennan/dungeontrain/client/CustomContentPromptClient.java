@@ -59,7 +59,7 @@ public final class CustomContentPromptClient {
         if (!remembered.asks()) {
             LOGGER.info("[DungeonTrain] Custom content prompt answered from the remembered preference: {}",
                 remembered);
-            DungeonTrainNet.sendToServer(new CustomContentChoicePacket(remembered.keepsContent()));
+            DungeonTrainNet.sendToServer(new CustomContentChoicePacket(remembered.toChoice()));
             return;
         }
         LOGGER.info("[DungeonTrain] Custom content prompt received ({}) — waiting for a clear screen.",

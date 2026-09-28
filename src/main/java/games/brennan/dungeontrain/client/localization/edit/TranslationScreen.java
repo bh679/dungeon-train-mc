@@ -99,6 +99,12 @@ public final class TranslationScreen extends Screen {
      */
     private enum StateFilter {
         AI_UNREVIEWED("ai_unreviewed"),
+        /**
+         * Lines whose English was edited after they were last translated or reviewed — the
+         * "↻" rows on their own, so a translator can sweep what a batch of English rewrites
+         * left behind without wading through the whole machine-translation queue.
+         */
+        SOURCE_CHANGED("source_changed"),
         EDITED("edited"),
         /**
          * The working queue: machine translation nobody has reviewed, minus whatever this player
@@ -118,10 +124,16 @@ public final class TranslationScreen extends Screen {
         }
     }
 
-    /** Which body the list shows. */
+    /**
+     * Which body the list shows. The three named bodies partition the catalog: a lang line is
+     * either the build editor's ({@link TranslationFilters#isEditorKey}) or the game's, and a book
+     * is neither — so "Menus & messages" is the game a player sees, and the editor's jargon is a
+     * body of its own that a translator takes or leaves whole.
+     */
     private enum BodyFilter {
         ALL("all"),
         UI("ui"),
+        EDITOR("editor"),
         BOOKS("books");
 
         final String key;
@@ -598,8 +610,8 @@ public final class TranslationScreen extends Screen {
      * closed: no verdict, no unlock.</p>
      */
     private List<StateFilter> offeredStates() {
-        List<StateFilter> out = new ArrayList<>(
-            List.of(StateFilter.AI_UNREVIEWED, StateFilter.EDITED, StateFilter.TODO));
+        List<StateFilter> out = new ArrayList<>(List.of(StateFilter.AI_UNREVIEWED,
+            StateFilter.SOURCE_CHANGED, StateFilter.EDITED, StateFilter.TODO));
         // Unlocked by contributing — or, on a language with no machine translation to review, from
         // the start: the gate exists to point a newcomer at the review queue first, and where there
         // is no queue it would only hide the entire catalog behind work they cannot do yet.
@@ -782,7 +794,8 @@ public final class TranslationScreen extends Screen {
     private boolean matchesBody(TranslationUnit unit) {
         return switch (bodyFilter) {
             case ALL -> true;
-            case UI -> unit.type() == TranslationUnit.Type.LANG;
+            case UI -> unit.type() == TranslationUnit.Type.LANG && !TranslationFilters.isEditor(unit);
+            case EDITOR -> TranslationFilters.isEditor(unit);
             case BOOKS -> unit.type() == TranslationUnit.Type.BOOK;
         };
     }
@@ -797,6 +810,8 @@ public final class TranslationScreen extends Screen {
             case TODO -> TranslationFilters.needsHuman(unit, approved, this::isDismissed)
                 && overrideOf(unit, edits) == null;
             case AI_UNREVIEWED -> TranslationFilters.needsHuman(unit, approved, this::isDismissed);
+            case SOURCE_CHANGED -> TranslationFilters.sourceChanged(unit, approved)
+                && !isDismissed(unit);
             case EDITED -> overrideOf(unit, edits) != null;
         };
     }
@@ -865,6 +880,11 @@ public final class TranslationScreen extends Screen {
             },
             Component.translatable("gui.dungeontrain.translate.revert_all.confirm"),
             Component.translatable("gui.dungeontrain.translate.revert_all.detail", local.size())));
+    }
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        InWorldBackdrop.render(this, g, () -> super.renderBackground(g, mouseX, mouseY, partialTick));
     }
 
     @Override

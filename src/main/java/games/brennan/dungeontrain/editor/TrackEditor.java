@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateStamp;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
@@ -79,11 +80,16 @@ public final class TrackEditor {
      * margin used uniformly across the track-side grid.
      */
     public static String resolveName(BlockPos pos, CarriageDims dims) {
+        // Answers only while TRACKS is the resident category — every category shares the origin.
+        if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) return null;
         for (String name : TrackVariantRegistry.namesFor(TrackKind.TILE)) {
             BlockPos o = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
             int w = dims.width();
+            // +2 Y headroom — see CarriageEditor.plotContaining. Without it the roof landing was
+            // "outside" here while TrackSidePlots.containsWithMargin (the HUD) said inside, so a
+            // Go here from the roof restamped and discarded edits.
             if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + TrackPlacer.TILE_LENGTH
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TrackPlacer.HEIGHT
+                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TrackPlacer.HEIGHT + 2
                 && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + w) {
                 return name;
             }
@@ -99,22 +105,41 @@ public final class TrackEditor {
         enter(player, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the default plot — a relay Load that installed a new
+     * variant arrives here and its plot must be stamped. The walk that keeps unsaved edits is
+     * {@link #walkTo}.
+     */
     public static void enter(ServerPlayer player, boolean onTop) {
+        enter(player, onTop, true);
+    }
+
+    /**
+     * Go here / the panel's Enter: a walk to the default tile plot, not a reload — restamps only
+     * when the player is not already standing in it.
+     */
+    public static void walkTo(ServerPlayer player, boolean onTop) {
+        enter(player, onTop, !EditorPlotScope.standingIn(player, new Template.Track()));
+    }
+
+    /**
+     * @param stamp whether to erase + restamp the plots before teleporting. The category entry
+     *              passes {@code false}: it has stamped, or queued, every plot itself.
+     */
+    public static void enter(ServerPlayer player, boolean onTop, boolean stamp) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
         CarriageEditor.rememberReturn(player);
-        stampAllPlots(overworld, dims);
+        if (stamp) stampAllPlots(overworld, dims);
 
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
-        double tx = origin.getX() + TrackPlacer.TILE_LENGTH / 2.0;
-        double ty = onTop
-            ? origin.getY() + TrackPlacer.HEIGHT + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + dims.width() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        // The label's footprint, so the roof landing sits in front of the panel it draws.
+        Vec3i footprint = TrackSidePlots.footprint(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, EditorPlotArrival.Inside.CENTRE, null);
 
         LOGGER.info("[DungeonTrain] Track editor enter: {} -> default plot at {} ({} variants registered, {})",
             player.getName().getString(), origin,
@@ -233,6 +258,8 @@ public final class TrackEditor {
     }
 
     private static void stampAllPlots(ServerLevel overworld, CarriageDims dims) {
+        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
+        EditorStampQueue.flush();
         List<String> names = TrackVariantRegistry.namesFor(TrackKind.TILE);
         for (String name : names) {
             BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
@@ -259,8 +286,7 @@ public final class TrackEditor {
         Optional<StructureTemplate> stored = TrackVariantStore.get(level, TrackKind.TILE, name, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
-            TemplateDecor.replace(level, origin, stored.get(), settings, null);
+            TemplateStamp.placeWithDecor(level, origin, stored.get(), settings);
             return;
         }
         // Fallback for unauthored "default" — hardcoded bed + 2-rail stamp.

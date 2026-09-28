@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/reached_caves_of_chaos",
+  "display": {
+    "icon": { "id": "minecraft:feather" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_skylands.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.reached_skylands.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "reached_skylands" }
+    }
+  },
+  "requirements": [["reached"]]
+}

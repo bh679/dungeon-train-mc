@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 2,
+  "floor": ["minecraft:moss_block"],
+  "roof": ["dungeontrain:skybox_block"]
+}

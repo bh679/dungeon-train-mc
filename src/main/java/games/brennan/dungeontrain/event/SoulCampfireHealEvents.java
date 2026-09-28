@@ -123,6 +123,7 @@ public final class SoulCampfireHealEvents {
             BlockPos shipCentre = BlockPos.containing(local.x, local.y, local.z);
 
             ServerSubLevel subLevel = sableShip.subLevel();
+            if (subLevel == null) continue;
             LevelPlot plot = subLevel.getPlot();
             int campfiresSeen = 0;
             for (PlotChunkHolder holder : plot.getLoadedChunks()) {

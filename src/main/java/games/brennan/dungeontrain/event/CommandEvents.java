@@ -5,9 +5,8 @@ import games.brennan.dungeontrain.command.BugCommand;
 import games.brennan.dungeontrain.command.DtpCommand;
 import games.brennan.dungeontrain.command.EchoEncounterTestCommand;
 import games.brennan.dungeontrain.command.FixAisConfigCommand;
-import games.brennan.dungeontrain.command.BackupCommand;
 import games.brennan.dungeontrain.command.FixConfigCommand;
-import games.brennan.dungeontrain.command.RestoreCommand;
+import games.brennan.dungeontrain.command.RebuildCommand;
 import games.brennan.dungeontrain.command.ReportCarriageCommand;
 import games.brennan.dungeontrain.command.TrainCommand;
 import games.brennan.dungeontrain.editor.EditorEditRecorder;
@@ -32,6 +31,10 @@ public final class CommandEvents {
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         TrainCommand.register(event.getDispatcher(), event.getBuildContext());
+        // Vanilla /advancement is op-only. Open exactly `revoke <targets> everything` to a player who
+        // holds the banked "Everything Burrito" — the command that earns "It's Not That Simple" —
+        // so it autocompletes for them and only them. See SelfRevokeCommandAccess.
+        games.brennan.dungeontrain.advancement.SelfRevokeCommandAccess.open(event.getDispatcher());
         // /bug — opens the feedback survey jumped to the bug-report question (logs ship on a
         // real-bug answer, same as the death screen). Bundled DP is always present.
         BugCommand.register(event.getDispatcher());
@@ -43,8 +46,10 @@ public final class CommandEvents {
         // /fixconfig — moves every governed config aside so defaults regenerate (the DT-config
         // Free Play fix action; the same reset the title-screen prompt offers).
         FixConfigCommand.register(event.getDispatcher());
-        BackupCommand.register(event.getDispatcher());
-        RestoreCommand.register(event.getDispatcher());
+        // /dtbackup and /dtrestore are registered by Dungeon Backup as DT's aliases of
+        // /dungeonbackup backup|restore — see DungeonTrainBackup.register().
+        // /dtrebuild [backups] — re-upload builds the relay has lost (the card's work, on demand).
+        RebuildCommand.register(event.getDispatcher());
         // /reportcarriage [reason] — player-facing report of the shared carriage underfoot (also a
         // subcommand of the op-gated /dungeontrain root). Any player, any game mode.
         ReportCarriageCommand.register(event.getDispatcher());

@@ -29,6 +29,12 @@ import java.util.Optional;
  */
 public enum BuilderMode {
 
+    /**
+     * Whole carriages — rooms and groups saved as one build, the editor's WHOLE category. First
+     * because the Whole section leads the editor's row. Authored on the same platform as Train
+     * Outside, so a builder world in this mode lays out like that one.
+     */
+    WHOLE_CARRIAGES("whole_carriages", BuilderWorldLayout.OUTSIDE_CARRIAGES),
     TRAIN_OUTSIDE("train_outside", BuilderWorldLayout.OUTSIDE_CARRIAGES),
     INSIDE_CARRIAGE("inside_carriage", BuilderWorldLayout.INSIDE_CARRIAGES),
     TRACKS_TUNNELS("tracks_tunnels", 0),
@@ -62,6 +68,17 @@ public enum BuilderMode {
     /** Translation key for the tile label and the "coming soon" line. */
     public String labelKey() {
         return "gui.dungeontrain.builder." + id;
+    }
+
+    /**
+     * Translation key for the sentence or two that says what this mode is for.
+     *
+     * <p>Shown as the tile's tooltip on the title-screen picker and as the body of the editor's
+     * Nav tab — the same words in both places, so the picker teaches the vocabulary the editor
+     * then uses.</p>
+     */
+    public String descriptionKey() {
+        return labelKey() + ".description";
     }
 
     /**

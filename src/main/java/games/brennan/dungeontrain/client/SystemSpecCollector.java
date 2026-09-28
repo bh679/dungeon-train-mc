@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.GlUtil;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.discord.LauncherInfo;
+import games.brennan.dungeontrain.util.MachineSpecs;
 import net.minecraft.client.Minecraft;
 import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
@@ -79,7 +80,7 @@ public final class SystemSpecCollector {
             if (!flags.isEmpty()) {
                 lines.add("Launcher memory flags: " + flags);
             }
-            long physical = physicalMemoryBytes();
+            long physical = MachineSpecs.physicalMemoryBytes();
             if (physical > 0) {
                 lines.add("System RAM (physical): " + mib(physical));
             }
@@ -158,21 +159,6 @@ public final class SystemSpecCollector {
             return String.join(" ", out);
         } catch (Throwable t) {
             return "";
-        }
-    }
-
-    /** Total physical RAM via the {@code com.sun} OS bean, reflectively so a non-HotSpot JVM degrades. */
-    private static long physicalMemoryBytes() {
-        try {
-            Object os = ManagementFactory.getOperatingSystemMXBean();
-            Class<?> sun = Class.forName("com.sun.management.OperatingSystemMXBean");
-            if (!sun.isInstance(os)) {
-                return 0L;
-            }
-            Object v = sun.getMethod("getTotalMemorySize").invoke(os);
-            return v instanceof Long l ? l : 0L;
-        } catch (Throwable t) {
-            return 0L;
         }
     }
 

@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 2,
+  "floor": ["minecraft:grass_block[snowy=false]", "minecraft:moss_block"],
+  "roof": ["minecraft:command_block[conditional=false,facing=north]"]
+}

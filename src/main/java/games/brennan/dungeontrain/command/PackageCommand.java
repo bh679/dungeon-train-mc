@@ -83,7 +83,7 @@ public final class PackageCommand {
     private static int runList(CommandSourceStack source) {
         List<PackageInfo> all = PackageRegistry.all();
         PackageInfo active = PackageRegistry.active();
-        source.sendSuccess(() -> Component.literal("dtpacks (" + all.size() + " package" + (all.size() == 1 ? "" : "s") + "):")
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.package.dtpacks_package", all.size(), Component.translatable(all.size() == 1 ? "chat.dungeontrain.common.noun.package.singular" : "chat.dungeontrain.common.noun.package.plural"))
             .withStyle(ChatFormatting.AQUA), false);
         for (PackageInfo p : all) {
             boolean enabled = PackageRegistry.isEnabledByName(p.name());

@@ -14,12 +14,21 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
  *
  * <p>Versioning: protocol version is a literal string. NeoForge's payload
  * handshake uses this to reject mismatched clients — bump
- * {@link #PROTOCOL_VERSION} any time packet layouts change.</p>
+ * {@link #PROTOCOL_VERSION} any time packet layouts change. Missing the bump admits an
+ * older client at login and then kicks it mid-session when a widened payload is decoded
+ * past its end (PR #1449 shipped that way) — so CI
+ * ({@code scripts/net/check-protocol-version.py}) fails a PR that changes a packet's
+ * encode/decode body without touching this constant.</p>
+ *
+ * <p>Bump it for a new <em>meaning</em> too, not only a new field: an ordinal-encoded enum
+ * that gains a constant decodes on an older peer as that decoder's fallback — a new client's
+ * {@code EditorPlotActionPacket.Action.GO_HERE} would read as {@code SAVE} on a v73 server.
+ * The layout check cannot see that, so the author has to.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "56";
+    public static final String PROTOCOL_VERSION = "98";
 
     private DungeonTrainNet() {}
 
@@ -34,7 +43,11 @@ public final class DungeonTrainNet {
 
         registrar.playToClient(VariantHoverPacket.TYPE, VariantHoverPacket.STREAM_CODEC, VariantHoverPacket::handle);
         registrar.playToClient(CarriageIndexPacket.TYPE, CarriageIndexPacket.STREAM_CODEC, CarriageIndexPacket::handle);
+
+        // Dev-HUD read-out: is time on the train banking, and if not, which idle rule stopped it.
+        registrar.playToClient(ActivityStatePacket.TYPE, ActivityStatePacket.STREAM_CODEC, ActivityStatePacket::handle);
         registrar.playToClient(EditorStatusPacket.TYPE, EditorStatusPacket.STREAM_CODEC, EditorStatusPacket::handle);
+        registrar.playToClient(EditorMirrorPlotPacket.TYPE, EditorMirrorPlotPacket.STREAM_CODEC, EditorMirrorPlotPacket::handle);
         registrar.playToClient(BookSuspensionSyncPacket.TYPE, BookSuspensionSyncPacket.STREAM_CODEC, BookSuspensionSyncPacket::handle);
         registrar.playToServer(VariantHotkeyPacket.TYPE, VariantHotkeyPacket.STREAM_CODEC, VariantHotkeyPacket::handle);
         registrar.playToClient(PartAssignmentSyncPacket.TYPE, PartAssignmentSyncPacket.STREAM_CODEC, PartAssignmentSyncPacket::handle);
@@ -54,12 +67,19 @@ public final class DungeonTrainNet {
         registrar.playToServer(EditorPlotActionPacket.TYPE, EditorPlotActionPacket.STREAM_CODEC, EditorPlotActionPacket::handle);
         registrar.playToClient(EditorTypeMenusPacket.TYPE, EditorTypeMenusPacket.STREAM_CODEC, EditorTypeMenusPacket::handle);
         registrar.playToClient(EditorMenusModePacket.TYPE, EditorMenusModePacket.STREAM_CODEC, EditorMenusModePacket::handle);
+        registrar.playToClient(EditorObserversPacket.TYPE, EditorObserversPacket.STREAM_CODEC, EditorObserversPacket::handle);
+        registrar.playToClient(EditorMobsModePacket.TYPE, EditorMobsModePacket.STREAM_CODEC, EditorMobsModePacket::handle);
+        registrar.playToClient(EditorMobGhostsPacket.TYPE, EditorMobGhostsPacket.STREAM_CODEC, EditorMobGhostsPacket::handle);
         registrar.playToClient(CarriageGroupGapPacket.TYPE, CarriageGroupGapPacket.STREAM_CODEC, CarriageGroupGapPacket::handle);
+        registrar.playToClient(PortalTwinBoxesPacket.TYPE, PortalTwinBoxesPacket.STREAM_CODEC, PortalTwinBoxesPacket::handle);
         registrar.playToClient(CarriageNextSpawnPacket.TYPE, CarriageNextSpawnPacket.STREAM_CODEC, CarriageNextSpawnPacket::handle);
         registrar.playToClient(CarriageSpawnCollisionPacket.TYPE, CarriageSpawnCollisionPacket.STREAM_CODEC, CarriageSpawnCollisionPacket::handle);
         registrar.playToServer(ManualSpawnRequestPacket.TYPE, ManualSpawnRequestPacket.STREAM_CODEC, ManualSpawnRequestPacket::handle);
         registrar.playToClient(DebugFlagsPacket.TYPE, DebugFlagsPacket.STREAM_CODEC, DebugFlagsPacket::handle);
         registrar.playToClient(BoardingProgressPacket.TYPE, BoardingProgressPacket.STREAM_CODEC, BoardingProgressPacket::handle);
+        // Dev-HUD read-out: is this player's movement being booked as travel on the train, and if
+        // not, what is withholding it (an elytra glide outside the train, or simply being off it).
+        registrar.playToClient(TravelCreditPacket.TYPE, TravelCreditPacket.STREAM_CODEC, TravelCreditPacket::handle);
         // Carried static contents entities (End Crystals / paintings / item frames): server → client
         // hands the entity its constant plot coordinate so the client positions it from the carriage's
         // own synced sub-level pose (phase-locked, no shimmer). See TrainStaticContentsCarrier.
@@ -82,9 +102,19 @@ public final class DungeonTrainNet {
         // the renderer has to be told to finish its occlusion rebuild before drawing, or the first
         // frames in the twin draw nothing at all. See client/portal/ClientPortalSwap.
         registrar.playToClient(PortalSwapPacket.TYPE, PortalSwapPacket.STREAM_CODEC, PortalSwapPacket::handle);
+        // …and the same thing said early enough to act on: where the swap WOULD put this player, sent
+        // while they are still walking down the corridor. Repairing the arrival frame cannot build
+        // meshes that take longer than a frame to build, so the destination is built during the walk
+        // instead. See client/portal/ClientPortalPrewarm.
+        registrar.playToClient(PortalPrewarmPacket.TYPE, PortalPrewarmPacket.STREAM_CODEC, PortalPrewarmPacket::handle);
         // …and the same region trick for the engine sound: a twin corridor is not a sub-level, so the
         // client cannot work out from the train's geometry that it should still sound like one.
         registrar.playToClient(PortalTrainAudioPacket.TYPE, PortalTrainAudioPacket.STREAM_CODEC, PortalTrainAudioPacket::handle);
+        // …and the same region trick once more for the debug screen: a twin corridor stands in the
+        // carriage's own chunk columns, so F3 already agrees about X and Z and then prints the Y of
+        // the sealed lane it was stamped into. The box and the shift go over; the client rewrites its
+        // own readout. See client/ClientPortalRoomDepth.
+        registrar.playToClient(PortalRoomDepthPacket.TYPE, PortalRoomDepthPacket.STREAM_CODEC, PortalRoomDepthPacket::handle);
         // …and the swing back the other way: a puppet is not an entity, so a hit on one needs its own
         // round trip. The id is re-validated against the live pairing before anything is damaged.
         registrar.playToServer(PortalPuppetAttackPacket.TYPE, PortalPuppetAttackPacket.STREAM_CODEC, PortalPuppetAttackPacket::handle);
@@ -96,7 +126,11 @@ public final class DungeonTrainNet {
         registrar.playToClient(PrefabRegistrySyncPacket.TYPE, PrefabRegistrySyncPacket.STREAM_CODEC, PrefabRegistrySyncPacket::handle);
         registrar.playToServer(SaveBlockVariantPrefabPacket.TYPE, SaveBlockVariantPrefabPacket.STREAM_CODEC, SaveBlockVariantPrefabPacket::handle);
         registrar.playToServer(SaveLootPrefabPacket.TYPE, SaveLootPrefabPacket.STREAM_CODEC, SaveLootPrefabPacket::handle);
+        registrar.playToServer(DeletePrefabPacket.TYPE, DeletePrefabPacket.STREAM_CODEC, DeletePrefabPacket::handle);
         registrar.playToServer(EditorUnsavedRequestPacket.TYPE, EditorUnsavedRequestPacket.STREAM_CODEC, EditorUnsavedRequestPacket::handle);
+        registrar.playToServer(EditorRosterRequestPacket.TYPE, EditorRosterRequestPacket.STREAM_CODEC, EditorRosterRequestPacket::handle);
+        registrar.playToClient(EditorRosterPacket.TYPE, EditorRosterPacket.STREAM_CODEC, EditorRosterPacket::handle);
+        registrar.playToClient(EditorHistoryPacket.TYPE, EditorHistoryPacket.STREAM_CODEC, EditorHistoryPacket::handle);
         registrar.playToClient(EditorUnsavedListPacket.TYPE, EditorUnsavedListPacket.STREAM_CODEC, EditorUnsavedListPacket::handle);
         registrar.playToServer(EditorChangesRequestPacket.TYPE, EditorChangesRequestPacket.STREAM_CODEC, EditorChangesRequestPacket::handle);
         registrar.playToClient(EditorChangesListPacket.TYPE, EditorChangesListPacket.STREAM_CODEC, EditorChangesListPacket::handle);
@@ -104,6 +138,8 @@ public final class DungeonTrainNet {
         // Package menu V2 — client requests a snapshot, server pushes back with
         // package list + flags + per-package content basenames.
         registrar.playToServer(PackageListRequestPacket.TYPE, PackageListRequestPacket.STREAM_CODEC, PackageListRequestPacket::handle);
+        registrar.playToServer(ChunkFrameRoomsRequestPacket.TYPE, ChunkFrameRoomsRequestPacket.STREAM_CODEC, ChunkFrameRoomsRequestPacket::handle);
+        registrar.playToClient(ChunkFrameRoomsSyncPacket.TYPE, ChunkFrameRoomsSyncPacket.STREAM_CODEC, ChunkFrameRoomsSyncPacket::handle);
         registrar.playToClient(PackageListSyncPacket.TYPE, PackageListSyncPacket.STREAM_CODEC, PackageListSyncPacket::handle);
 
         // Starting-book close-detection: client ScreenEvent.Closing → server burn flow.
@@ -116,6 +152,14 @@ public final class DungeonTrainNet {
         // Client-only actions the server can't see (currently: the train engine volume setting
         // changing). Allowlisted server-side — see ClientActionPacket.
         registrar.playToServer(ClientActionPacket.TYPE, ClientActionPacket.STREAM_CODEC, ClientActionPacket::handle);
+
+        // Pause-screen open/close. The server can't see a client's screen, and on a dedicated
+        // server the world keeps ticking behind the menu — see PlayerActivityTracker.
+        registrar.playToServer(PlayerPausedPacket.TYPE, PlayerPausedPacket.STREAM_CODEC, PlayerPausedPacket::handle);
+
+        // Mouse movement / clicks inside an open screen, which freeze the camera and so are
+        // invisible to the server's own look sampling — see PlayerActivityTracker.
+        registrar.playToServer(ClientInputPacket.TYPE, ClientInputPacket.STREAM_CODEC, ClientInputPacket::handle);
 
         // Book vote: client casts 👍/👎 from the virtual vote page (buttons or Y/N hotkeys); server
         // re-validates the held stack's identity, stamps dt_book_vote (offline burn color), and
@@ -135,6 +179,11 @@ public final class DungeonTrainNet {
         // closed WITHOUT signing, so the server leaves the unsigned book on the lectern as a draft.
         registrar.playToClient(OpenLetterEditorPacket.TYPE, OpenLetterEditorPacket.STREAM_CODEC, OpenLetterEditorPacket::handle);
         registrar.playToServer(LetterDraftToLecternPacket.TYPE, LetterDraftToLecternPacket.STREAM_CODEC, LetterDraftToLecternPacket::handle);
+
+        // Editor prop books: client → server with the custom author name typed on the sign screen
+        // inside an editor plot, sent just ahead of vanilla's edit-book packet (see
+        // EditorBookAuthorPending + ServerGamePacketListenerImplSignBookMixin).
+        registrar.playToServer(EditorBookAuthorPacket.TYPE, EditorBookAuthorPacket.STREAM_CODEC, EditorBookAuthorPacket::handle);
 
         // Mod recommendation: the death screen's Mod Recommendations page sends one mod + comment per
         // submit (or a typed name, for a mod the player doesn't have); server consent-gates, posts it
@@ -169,6 +218,7 @@ public final class DungeonTrainNet {
         // advancement. The client decides whether to show it (gated on its local
         // "opened advancements" flag) and renders it with the live keybind.
         registrar.playToClient(AdvancementsHintPacket.TYPE, AdvancementsHintPacket.STREAM_CODEC, AdvancementsHintPacket::handle);
+        registrar.playToClient(LifeDisqualifiedPacket.TYPE, LifeDisqualifiedPacket.STREAM_CODEC, LifeDisqualifiedPacket::handle);
 
         // Free Play confirmation: server holds a tainting action (creative/spectator
         // switch or cheat command) and asks before it commits; client replies
@@ -203,8 +253,38 @@ public final class DungeonTrainNet {
         registrar.playToServer(BuilderProfileRequestPacket.TYPE, BuilderProfileRequestPacket.STREAM_CODEC, BuilderProfileRequestPacket::handle);
         registrar.playToClient(BuilderProfilePacket.TYPE, BuilderProfilePacket.STREAM_CODEC, BuilderProfilePacket::handle);
         registrar.playToServer(BuilderProfileActionPacket.TYPE, BuilderProfileActionPacket.STREAM_CODEC, BuilderProfileActionPacket::handle);
+        registrar.playToServer(BuilderProfileDeletePacket.TYPE, BuilderProfileDeletePacket.STREAM_CODEC, BuilderProfileDeletePacket::handle);
+        registrar.playToClient(BuilderProfileDeleteResultPacket.TYPE, BuilderProfileDeleteResultPacket.STREAM_CODEC, BuilderProfileDeleteResultPacket::handle);
         registrar.playToServer(BuilderProfileDownloadPacket.TYPE, BuilderProfileDownloadPacket.STREAM_CODEC, BuilderProfileDownloadPacket::handle);
         registrar.playToClient(BuilderProfileDownloadResultPacket.TYPE, BuilderProfileDownloadResultPacket.STREAM_CODEC, BuilderProfileDownloadResultPacket::handle);
+        // Blocks for a tile-sized picture of somebody's relay build — a read, where the download
+        // above is a write. See RelayBuildPreviewRequestPacket.
+        registrar.playToServer(RelayBuildPreviewRequestPacket.TYPE, RelayBuildPreviewRequestPacket.STREAM_CODEC, RelayBuildPreviewRequestPacket::handle);
+        registrar.playToClient(RelayBuildPreviewPacket.TYPE, RelayBuildPreviewPacket.STREAM_CODEC, RelayBuildPreviewPacket::handle);
+        // Which extra questions a Submit for Review note asks (redstone, loot) — read from the build's
+        // blocks on the server before the note screen opens. See BuilderSubmitHintsRequestPacket.
+        registrar.playToServer(BuilderSubmitHintsRequestPacket.TYPE, BuilderSubmitHintsRequestPacket.STREAM_CODEC, BuilderSubmitHintsRequestPacket::handle);
+        registrar.playToClient(BuilderSubmitHintsPacket.TYPE, BuilderSubmitHintsPacket.STREAM_CODEC, BuilderSubmitHintsPacket::handle);
+        // Editing a build's Submit for Review answers after the fact — owner or developer.
+        registrar.playToServer(BuilderNoteEditPacket.TYPE, BuilderNoteEditPacket.STREAM_CODEC, BuilderNoteEditPacket::handle);
+        // The Stages tab's model: a carriage stamped with a stage's parts and rolled variants,
+        // composed on the server and drawn on the client. See StagePreviewRequestPacket.
+        registrar.playToServer(StagePreviewRequestPacket.TYPE, StagePreviewRequestPacket.STREAM_CODEC, StagePreviewRequestPacket::handle);
+        registrar.playToClient(StagePreviewPacket.TYPE, StagePreviewPacket.STREAM_CODEC, StagePreviewPacket::handle);
+        // Builds the relay has lost, asked for from in-world (/dtrebuild). The title-screen card
+        // does the same work client-side, where there is no server to ask.
+        registrar.playToServer(BuilderReconcileStartPacket.TYPE, BuilderReconcileStartPacket.STREAM_CODEC, BuilderReconcileStartPacket::handle);
+        // Dev builds only: find another player by name, so their profile can be listed and one of
+        // their builds pulled into this install. Refused server-side on a release build, and refused
+        // again by the relay, which answers this search on the dev cap alone.
+        registrar.playToServer(BuilderCreatorSearchPacket.TYPE, BuilderCreatorSearchPacket.STREAM_CODEC, BuilderCreatorSearchPacket::handle);
+        registrar.playToClient(BuilderCreatorResultsPacket.TYPE, BuilderCreatorResultsPacket.STREAM_CODEC, BuilderCreatorResultsPacket::handle);
+        // Favourites: a private per-player list of builds and builders worth coming back to. The star
+        // is fire-and-forget — the screen flips it and this follows — and the request/reply pair is
+        // what re-reads the truth. Nothing here is counted or shown to anyone else.
+        registrar.playToServer(BuilderFavouritePacket.TYPE, BuilderFavouritePacket.STREAM_CODEC, BuilderFavouritePacket::handle);
+        registrar.playToServer(BuilderFavouritesRequestPacket.TYPE, BuilderFavouritesRequestPacket.STREAM_CODEC, BuilderFavouritesRequestPacket::handle);
+        registrar.playToClient(BuilderFavouritesPacket.TYPE, BuilderFavouritesPacket.STREAM_CODEC, BuilderFavouritesPacket::handle);
 
         // Remote-echo encounter screenshot: server → player at first eye-contact to frame + capture the
         // echo; client → server with the resulting PNG, buffered on the encounter journal for its story embed.
@@ -235,6 +315,7 @@ public final class DungeonTrainNet {
         // carriage length + train flag, so the client can fade the sky/fog toward
         // the End look across the band.
         registrar.playToClient(VoidBandSyncPacket.TYPE, VoidBandSyncPacket.STREAM_CODEC, VoidBandSyncPacket::handle);
+        registrar.playToClient(ReverseSlideSyncPacket.TYPE, ReverseSlideSyncPacket.STREAM_CODEC, ReverseSlideSyncPacket::handle);
 
         // Stage Blocks panel: per-stage row icon strips for the Stages panel (S2C, own channel —
         // pushed only when StageBlockIndex.generation() moves), the panel detail sync (S2C), and
@@ -242,6 +323,9 @@ public final class DungeonTrainNet {
         registrar.playToClient(StageBlockStripsPacket.TYPE, StageBlockStripsPacket.STREAM_CODEC, StageBlockStripsPacket::handle);
         registrar.playToClient(StageBlocksSyncPacket.TYPE, StageBlocksSyncPacket.STREAM_CODEC, StageBlocksSyncPacket::handle);
         registrar.playToServer(StagePanelEditPacket.TYPE, StagePanelEditPacket.STREAM_CODEC, StagePanelEditPacket::handle);
+        registrar.playToClient(StagePaletteSyncPacket.TYPE, StagePaletteSyncPacket.STREAM_CODEC, StagePaletteSyncPacket::handle);
+        registrar.playToClient(StageIconPalettePacket.TYPE, StageIconPalettePacket.STREAM_CODEC, StageIconPalettePacket::handle);
+        registrar.playToServer(StagePaletteEditPacket.TYPE, StagePaletteEditPacket.STREAM_CODEC, StagePaletteEditPacket::handle);
 
         // Per-part editor-grid visibility (hidden set) — S2C mirror for the part-list ☑/☐ glyphs.
         registrar.playToClient(PartVisibilityPacket.TYPE, PartVisibilityPacket.STREAM_CODEC, PartVisibilityPacket::handle);
@@ -254,6 +338,14 @@ public final class DungeonTrainNet {
         registrar.playToClient(FreePlayCausePacket.TYPE, FreePlayCausePacket.STREAM_CODEC, FreePlayCausePacket::handle);
         registrar.playToClient(TrainDebugSyncPacket.TYPE, TrainDebugSyncPacket.STREAM_CODEC, TrainDebugSyncPacket::handle);
         registrar.playToClient(TrainDebugCarriagePacket.TYPE, TrainDebugCarriagePacket.STREAM_CODEC, TrainDebugCarriagePacket::handle);
+        registrar.playToClient(TrainDebugBandPacket.TYPE, TrainDebugBandPacket.STREAM_CODEC, TrainDebugBandPacket::handle);
+        // Where a save's relay upload has got to — drives the editor screen's "Uploading…" note and
+        // its refresh once the build lands. See BuilderUploadStatusPacket.
+        registrar.playToClient(BuilderUploadStatusPacket.TYPE, BuilderUploadStatusPacket.STREAM_CODEC, BuilderUploadStatusPacket::handle);
+        registrar.playToClient(EditorSaveAsPromptPacket.TYPE, EditorSaveAsPromptPacket.STREAM_CODEC, EditorSaveAsPromptPacket::handle);
+        registrar.playToServer(EditorSaveAsPacket.TYPE, EditorSaveAsPacket.STREAM_CODEC, EditorSaveAsPacket::handle);
+        // /dt flyspeed: the local player's creative sprint-fly multiplier. See player/SprintFlyBoost.
+        registrar.playToClient(SprintFlyBoostPacket.TYPE, SprintFlyBoostPacket.STREAM_CODEC, SprintFlyBoostPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

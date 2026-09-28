@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.train.CarriageDims;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -26,6 +28,75 @@ class PortalRoomResizeTest {
 
     private static Vec3i sizeAt(CarriageDims dims, PortalRoomResize.Axis axis, int value) {
         return PortalRoomResize.with(PortalRoomLayout.builtInSize(dims), axis, value);
+    }
+
+    @Test
+    @DisplayName("A grow's blank row is the near end when the MIN face moved, the far end when MAX did")
+    void slabBox_coversTheRowTheStepAdded() {
+        BlockPos origin = new BlockPos(100, 64, -20);
+        PortalRoomResize.Axis axis = PortalRoomResize.Axis.LENGTH;
+        int base = PortalRoomResize.minOf(DEFAULT_DIMS, axis);
+        Vec3i from = sizeAt(DEFAULT_DIMS, axis, base);
+
+        List<PortalRoomResize.Step> steps = PortalRoomResize.plan(DEFAULT_DIMS, axis, from, base + 2);
+        assertEquals(2, steps.size());
+
+        for (PortalRoomResize.Step step : steps) {
+            Vec3i after = step.sizeAfter();
+            BoundingBox box = PortalRoomResize.slabBox(origin, after, step);
+
+            // One block thick on the axis that moved, the room's full cross-section on the others.
+            assertEquals(1, box.getXSpan(), "the added row is one block thick");
+            assertEquals(after.getY(), box.getYSpan());
+            assertEquals(after.getZ(), box.getZSpan());
+            assertEquals(origin.getY(), box.minY());
+            assertEquals(origin.getZ(), box.minZ());
+
+            int expectedX = step.side() == PortalRoomResize.Side.MIN
+                ? origin.getX()                        // the near end, before everything that shifted
+                : origin.getX() + after.getX() - 1;    // the far end
+            assertEquals(expectedX, box.minX(),
+                "a " + step.side() + " grow adds the row at " + expectedX);
+        }
+    }
+
+    @Test
+    @DisplayName("A height grow's blank row is the new ceiling")
+    void slabBox_heightAddsTheTopRow() {
+        BlockPos origin = new BlockPos(0, 200, 0);
+        PortalRoomResize.Axis axis = PortalRoomResize.Axis.HEIGHT;
+        int base = PortalRoomResize.minOf(DEFAULT_DIMS, axis);
+        Vec3i from = sizeAt(DEFAULT_DIMS, axis, base);
+
+        PortalRoomResize.Step step =
+            PortalRoomResize.plan(DEFAULT_DIMS, axis, from, base + 1).get(0);
+        Vec3i after = step.sizeAfter();
+        BoundingBox box = PortalRoomResize.slabBox(origin, after, step);
+
+        assertEquals(1, box.getYSpan());
+        assertEquals(origin.getY() + after.getY() - 1, box.minY(), "the row added is the ceiling");
+        assertEquals(after.getX(), box.getXSpan());
+        assertEquals(after.getZ(), box.getZSpan());
+    }
+
+    @Test
+    @DisplayName("The row a shrink files is the row the grow that undoes it blanks")
+    void slabBox_shrinkAndGrowNameTheSameRow() {
+        BlockPos origin = new BlockPos(-8, 70, 12);
+        for (PortalRoomResize.Axis axis : PortalRoomResize.Axis.values()) {
+            int base = PortalRoomResize.minOf(DEFAULT_DIMS, axis);
+            Vec3i small = sizeAt(DEFAULT_DIMS, axis, base);
+            PortalRoomResize.Step grow =
+                PortalRoomResize.plan(DEFAULT_DIMS, axis, small, base + 1).get(0);
+            Vec3i big = grow.sizeAfter();
+            PortalRoomResize.Step shrink =
+                PortalRoomResize.plan(DEFAULT_DIMS, axis, big, base).get(0);
+
+            // The shrink indexes into the box it is cropping, which is the grow's result.
+            assertEquals(PortalRoomResize.slabBox(origin, big, grow),
+                PortalRoomResize.slabBox(origin, big, shrink),
+                axis + ": the filed row and the blanked row must be the same cells");
+        }
     }
 
     @Test

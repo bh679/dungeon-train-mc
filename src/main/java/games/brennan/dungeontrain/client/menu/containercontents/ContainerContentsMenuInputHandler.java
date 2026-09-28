@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.containercontents;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.net.ContainerContentsEditPacket;
@@ -41,6 +42,12 @@ public final class ContainerContentsMenuInputHandler {
 
     private static boolean pressArmed;
     private static boolean pressShift;
+
+    /**
+     * Ceiling for a typed weight. The stepper has no cap of its own — this is a sanity bound on
+     * the number pad so a mistyped digit run can't drown every other entry in the pool.
+     */
+    private static final int TYPED_WEIGHT_MAX = 1000;
 
     private ContainerContentsMenuInputHandler() {}
 
@@ -151,8 +158,8 @@ public final class ContainerContentsMenuInputHandler {
                     Minecraft mc = Minecraft.getInstance();
                     if (mc.player != null) {
                         mc.player.displayClientMessage(
-                            net.minecraft.network.chat.Component.literal(
-                                "Linked to '" + linked + "' — edits save automatically")
+                            net.minecraft.network.chat.Component.translatable(
+                                MenuLang.PREFIX + "container.linked_autosave", linked)
                                 .withStyle(net.minecraft.ChatFormatting.AQUA),
                             true);
                     }
@@ -187,9 +194,17 @@ public final class ContainerContentsMenuInputHandler {
             }
             case ENTRY_WEIGHT_PLUS -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
+                int row = hit.index();
+                // Cmd-click types the weight instead of stepping it — a walk from 1 to 40 is
+                // otherwise thirty-nine clicks.
+                if (games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown()) {
+                    openWeightEntry(plotKey, local, row,
+                        ContainerContentsMenu.entries().get(row).weight());
+                    return;
+                }
                 int delta = shift ? -1 : 1;
                 DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
-                    ContainerContentsEditPacket.Op.BUMP_WEIGHT, plotKey, local, hit.index(), "", delta));
+                    ContainerContentsEditPacket.Op.BUMP_WEIGHT, plotKey, local, row, "", delta));
             }
             case ENTRY_ICON -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
@@ -211,6 +226,16 @@ public final class ContainerContentsMenuInputHandler {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
                 DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.TOGGLE_RAND_ENCH, plotKey, local, hit.index(), "", 0));
+            }
+            case ENTRY_SCALE_TOGGLE -> {
+                if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                    ContainerContentsEditPacket.Op.TOGGLE_SCALE, plotKey, local, hit.index(), "", 0));
+            }
+            case ENTRY_POTION_FORM -> {
+                if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                    ContainerContentsEditPacket.Op.CYCLE_POTION_FORM, plotKey, local, hit.index(), "", 0));
             }
             case ENTRY_DUR_CHANCE -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
@@ -234,6 +259,21 @@ public final class ContainerContentsMenuInputHandler {
             // LINK_INDICATOR is informational — no click action.
             default -> {}
         }
+    }
+
+    /**
+     * Open the typed-weight pad for one entry. Returns to the panel screen when the menu is
+     * screen-space and to the world when it is world-space — same rule as the Save cell, whose
+     * panel is a HUD overlay that is still drawn behind the modal.
+     */
+    private static void openWeightEntry(String plotKey, net.minecraft.core.BlockPos local,
+                                        int row, int currentWeight) {
+        Minecraft.getInstance().setScreen(new games.brennan.dungeontrain.client.menu.NumberInputScreen(
+            net.minecraft.network.chat.Component.translatable("gui.dungeontrain.number_input.weight"),
+            currentWeight, 1, TYPED_WEIGHT_MAX,
+            value -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                ContainerContentsEditPacket.Op.SET_WEIGHT, plotKey, local, row, "", value)),
+            ContainerContentsMenu.space().isScreenspace() ? new ContainerContentsMenuScreen() : null));
     }
 
     private static void dispatchSearch(ContainerContentsMenu.Hit hit) {

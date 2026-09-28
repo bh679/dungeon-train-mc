@@ -300,6 +300,55 @@ class PortalRoomCopiesVariantTest {
     }
 
     @Test
+    @DisplayName("Floor height defaults to one plane and round-trips through the file")
+    void floorHeightRoundTrips() {
+        PortalRoomCopiesVariant plain = PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE)));
+        assertEquals(1, plain.floorHeight(), "a file written before the field laid one plane");
+        assertEquals(1, PortalRoomCopiesVariant.empty().floorHeight());
+
+        PortalRoomCopiesVariant deep = plain.withFloorHeight(4);
+        assertEquals(4, deep.floorHeight());
+        assertEquals(List.of("minecraft:stone"), deep.blockIds(Plane.FLOOR), "palettes untouched");
+
+        PortalRoomCopiesVariant back = reread(deep);
+        assertEquals(4, back.floorHeight(), deep.toJsonText());
+        // Setting a plane keeps the depth: the two are authored by different rows.
+        assertEquals(4, back.withStates(Plane.ROOF, List.of(of(Blocks.SANDSTONE))).floorHeight());
+    }
+
+    @Test
+    @DisplayName("Floor height is clamped to its storage bounds, and a v1 file reads as one deep")
+    void floorHeightClampsAndLegacyReadsAsOne() {
+        PortalRoomCopiesVariant plain = PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE)));
+        assertEquals(PortalRoomCopiesVariant.MIN_FLOOR_HEIGHT, plain.withFloorHeight(0).floorHeight());
+        assertEquals(PortalRoomCopiesVariant.MIN_FLOOR_HEIGHT, plain.withFloorHeight(-5).floorHeight());
+        assertEquals(PortalRoomCopiesVariant.MAX_FLOOR_HEIGHT, plain.withFloorHeight(999).floorHeight());
+
+        PortalRoomCopiesVariant legacy = PortalRoomCopiesVariant.parse(
+            new StringReader("{\"schemaVersion\": 1, \"blocks\": [\"minecraft:stone\"]}"),
+            "test", "memory");
+        assertEquals(1, legacy.floorHeight());
+        assertEquals(List.of("minecraft:stone"), legacy.blockIds(Plane.ROOF));
+
+        PortalRoomCopiesVariant garbage = PortalRoomCopiesVariant.parse(
+            new StringReader("{\"schemaVersion\": 2, \"floor\": [\"minecraft:stone\"], \"roof\": [], \"floor_height\": \"deep\"}"),
+            "test", "memory");
+        assertEquals(1, garbage.floorHeight(), "an unreadable depth is one, never a failed stamp");
+    }
+
+    @Test
+    @DisplayName("The stamp holds the floor under the room's height so the roof survives")
+    void stampClampsFloorHeightToRoom() {
+        PortalRoomCopiesVariant deep = PortalRoomCopiesVariant.of(List.of(of(Blocks.STONE))).withFloorHeight(10);
+        net.minecraft.core.Vec3i room = new net.minecraft.core.Vec3i(9, 7, 9);
+        assertEquals(5, PortalRoomSinglePlanes.floorHeightFor(deep, room), "7 tall: floor 5, one open row, roof");
+        assertEquals(3, PortalRoomSinglePlanes.floorHeightFor(deep.withFloorHeight(3), room));
+        assertEquals(1, PortalRoomSinglePlanes.floorHeightFor(deep.withFloorHeight(1), room));
+        assertEquals(2, PortalRoomSinglePlanes.floorHeightFor(deep, new net.minecraft.core.Vec3i(9, 4, 9)),
+            "the shortest room still keeps two rows free");
+    }
+
+    @Test
     @DisplayName("An empty palette resolves to nothing rather than to air")
     void emptyResolvesToNull() {
         assertNull(PortalRoomCopiesVariant.empty().resolve(Plane.FLOOR, BlockPos.ZERO, 1L, 1));

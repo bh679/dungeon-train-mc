@@ -1,16 +1,23 @@
 package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.worldgen.density.BetterNetherCoreBiomes;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandConfig;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacySpan;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The single repeating world-gen cycle the train crosses, laying out ALL special
  * phases in one fixed order along +X from a shared anchor:
  *
  * <pre>
- *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → Upside-down → exit-fade → OW → Chuncks → OW (repeat)
+ *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → Upside-down → exit-fade → OW → Chuncks → OW → Spheres → OW → Stacks → (OW → legacy band)… → (repeat)
  * </pre>
  *
- * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [upside-down band] [udExitFade] [udExitGap] [chuncks band]}. The
+ * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [upside-down band] [udExitFade] [udExitGap] [chuncks band] [spheresLeadGap] [spheresFade] [spheres band] [stacksLeadGap] [stacksFade] [stacks band] ([legacyLeadGap] [legacyFade] [legacy band] [legacyFade])…}. The
  * nether/End sub-bands reuse the existing ramp math ({@link NetherTransition} and
  * {@link Disintegration}) evaluated at a <em>local</em> offset with {@code owHold = 0}; the
  * upside-down band uses a simple trapezoid ({@link #upsideDownRamp}) and is realised as a
@@ -30,7 +37,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * the one runtime convenience that reads COMMON config. The per-world
  * {@code startsWithTrain} gate lives in the callers.</p>
  *
- * @param startX     world-X the cycle is anchored at (before it: plain overworld)
+ * @param startX     world-X the cycle is anchored at (behind it, after a lead-gap-long overworld buffer, a layout runs in reverse; classic: plain overworld)
  * @param owGap      overworld blocks before each special band (two gaps per period)
  * @param stageBlocks length of EACH mountain stage
  * @param stageMultipliers heightmap multiplier per stage (stage 1 = first value, 1 = natural)
@@ -62,6 +69,28 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  *                   (the rest are void); a per-chunk seed-stable noise gate. 0 = all void
  * @param chuncksSliceRatio fraction {@code 0..1} of the KEPT chunks that are a top-down slice (surface
  *                   kept, flat bottom cut) rather than vertically complete
+ * @param spheresHold length of the "spheres" band core — open void scattered with floating spheres of
+ *                   natural overworld terrain, each lifted to its own height (see {@code SphereField} /
+ *                   {@code WorldSpheresEvents}). Appended after the chuncks band. 0 disables the band
+ *                   (period byte-identical to the pre-spheres cycle)
+ * @param spheresFade length of the entry fade zone before the band: the natural terrain outside the
+ *                   spheres dissolves into void across it (void ramp 0 → 1). 0 = hard edge
+ * @param spheresLeadGap plain-overworld gap inserted before the spheres band (after the chuncks core),
+ *                   before the spheres entry fade. 0 = none
+ * @param stacksHold length of the "stacks" band — a mostly-void stretch where scattered chunks each hold
+ *                   a vertical stack of one vanilla structure piece repeated from the world floor to near
+ *                   build height. Appended after the spheres band (plus its own lead gap + fade). 0 disables
+ *                   the band (period byte-identical to the pre-stacks cycle)
+ * @param stacksFade length of the entry fade zone before the band: the fraction of chunks turned to void
+ *                   ramps from 0 (all real terrain) to 1 (all void) across it. 0 = hard edge
+ * @param stacksLeadGap plain-overworld gap inserted between the end of the spheres band and the stacks
+ *                   entry fade. 0 = none
+ * @param stacksDensity fraction {@code 0..1} of the band's void chunks that hold a stack (the rest are
+ *                   empty void); a per-chunk seed-stable noise gate
+ * @param legacy     legacy bands appended after the stacks band, in {@link LegacyBandKind} (cycle)
+ *                   order — each {@code [leadGap] [fade] [hold] [fade]} of terrain from an old Minecraft
+ *                   generator (see {@link LegacySpan}). Disabled spans have zero length; an empty array
+ *                   keeps {@link #period()} byte-identical to the pre-legacy cycle. Never mutated.
  * @param phaseShift blocks the whole cycle is shifted at {@code startX} so the FIRST overworld gap
  *                   (to the nether band) is shorter than the recurring {@code owGap}; {@code
  *                   max(0, owGap − firstOverworld)}, 0 = no shift. Shared with the End band's
@@ -74,7 +103,97 @@ public record WorldGenCycle(long startX, int owGap,
                             int udFade, int udHold, int udExit, int udExitFade,
                             int chuncksHold, int chuncksFade, int chuncksLeadGap,
                             double chuncksKeepDensity, double chuncksSliceRatio,
+                            int spheresHold, int spheresFade, int spheresLeadGap,
+                            int stacksHold, int stacksFade, int stacksLeadGap, double stacksDensity,
+                            LegacySpan[] legacy,
+                            CycleLayout layout,
                             int phaseShift) {
+
+    /**
+     * Back-compat constructor for the classic single-period shape (every band once, in the fixed
+     * order, legacy spans with their own lead gaps): no {@link CycleLayout}, so every helper takes its
+     * classic chained-offset branch and {@link #period()} is the classic sum.
+     */
+    public WorldGenCycle(long startX, int owGap,
+                         int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
+                         int coreFade, int coreHold,
+                         int eFade, int eVoid, int eEnd,
+                         int udFade, int udHold, int udExit, int udExitFade,
+                         int chuncksHold, int chuncksFade, int chuncksLeadGap,
+                         double chuncksKeepDensity, double chuncksSliceRatio,
+                         int spheresHold, int spheresFade, int spheresLeadGap,
+                         int stacksHold, int stacksFade, int stacksLeadGap, double stacksDensity,
+                         LegacySpan[] legacy,
+                         int phaseShift) {
+        this(startX, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold, coreFade, coreHold,
+                eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade,
+                chuncksHold, chuncksFade, chuncksLeadGap, chuncksKeepDensity, chuncksSliceRatio,
+                spheresHold, spheresFade, spheresLeadGap,
+                stacksHold, stacksFade, stacksLeadGap, stacksDensity,
+                legacy, null, phaseShift);
+    }
+
+    /**
+     * Back-compat constructor for the pre-legacy 28-arg shape (every band through stacks, no legacy
+     * bands). Passes no legacy spans so {@link #period()} is byte-identical to the pre-legacy cycle.
+     */
+    public WorldGenCycle(long startX, int owGap,
+                         int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
+                         int coreFade, int coreHold,
+                         int eFade, int eVoid, int eEnd,
+                         int udFade, int udHold, int udExit, int udExitFade,
+                         int chuncksHold, int chuncksFade, int chuncksLeadGap,
+                         double chuncksKeepDensity, double chuncksSliceRatio,
+                         int spheresHold, int spheresFade, int spheresLeadGap,
+                         int stacksHold, int stacksFade, int stacksLeadGap, double stacksDensity,
+                         int phaseShift) {
+        this(startX, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold, coreFade, coreHold,
+                eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade,
+                chuncksHold, chuncksFade, chuncksLeadGap, chuncksKeepDensity, chuncksSliceRatio,
+                spheresHold, spheresFade, spheresLeadGap,
+                stacksHold, stacksFade, stacksLeadGap, stacksDensity,
+                NO_LEGACY, phaseShift);
+    }
+
+    /**
+     * Back-compat constructor for the pre-stacks 24-arg shape (chuncks + spheres bands present, no stacks
+     * band). Passes {@code stacksHold = 0} so {@link #period()} is byte-identical to the pre-stacks cycle —
+     * existing callers and unit tests keep the old layout unchanged.
+     */
+    public WorldGenCycle(long startX, int owGap,
+                         int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
+                         int coreFade, int coreHold,
+                         int eFade, int eVoid, int eEnd,
+                         int udFade, int udHold, int udExit, int udExitFade,
+                         int chuncksHold, int chuncksFade, int chuncksLeadGap,
+                         double chuncksKeepDensity, double chuncksSliceRatio,
+                         int spheresHold, int spheresFade, int spheresLeadGap,
+                         int phaseShift) {
+        this(startX, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold, coreFade, coreHold,
+                eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade,
+                chuncksHold, chuncksFade, chuncksLeadGap, chuncksKeepDensity, chuncksSliceRatio,
+                spheresHold, spheresFade, spheresLeadGap,
+                0, 0, 0, 0.0, phaseShift);
+    }
+
+    /**
+     * Back-compat constructor for the pre-spheres 21-arg shape (chuncks band present, no spheres
+     * band). Passes {@code spheresHold = 0} so {@link #period()} is byte-identical to the pre-spheres
+     * cycle — existing callers and unit tests keep the old layout unchanged.
+     */
+    public WorldGenCycle(long startX, int owGap,
+                         int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
+                         int coreFade, int coreHold,
+                         int eFade, int eVoid, int eEnd,
+                         int udFade, int udHold, int udExit, int udExitFade,
+                         int chuncksHold, int chuncksFade, int chuncksLeadGap,
+                         double chuncksKeepDensity, double chuncksSliceRatio,
+                         int phaseShift) {
+        this(startX, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold, coreFade, coreHold,
+                eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade,
+                chuncksHold, chuncksFade, chuncksLeadGap, chuncksKeepDensity, chuncksSliceRatio,
+                0, 0, 0, 0, 0, 0, 0.0, phaseShift);
+    }
 
     /**
      * Back-compat constructor for the pre-chuncks 16-arg shape (with {@code udExitFade}, no chuncks
@@ -148,6 +267,36 @@ public record WorldGenCycle(long startX, int owGap,
         boolean end = DungeonTrainCommonConfig.isDisintegrationEnabled();
         boolean ud = DungeonTrainCommonConfig.isUpsideDownEnabled();
         boolean chuncks = DungeonTrainCommonConfig.isChuncksEnabled();
+        boolean spheres = DungeonTrainCommonConfig.isSpheresEnabled();
+        boolean stacks = DungeonTrainCommonConfig.isStacksEnabled();
+        LegacySpan[] legacySpans = LegacyBandConfig.spans();
+        int riseLen = nether ? Math.max(0, DungeonTrainCommonConfig.getNetherBeachBlocks())
+                + DungeonTrainCommonConfig.getNetherStageMultipliers().length * Math.max(0, DungeonTrainCommonConfig.getNetherStageBlocks()) : 0;
+        CycleLayout.Fades fades = new CycleLayout.Fades(
+                riseLen,
+                nether ? DungeonTrainCommonConfig.getNetherMountainHoldBlocks() : 0,
+                nether ? DungeonTrainCommonConfig.getNetherCoreFadeBlocks() : 0,
+                end ? DungeonTrainCommonConfig.getDisintegrationFadeBlocks() : 0,
+                end ? DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks() : 0,
+                ud ? DungeonTrainCommonConfig.getUpsideDownFadeBlocks() : 0,
+                ud ? DungeonTrainCommonConfig.getUpsideDownExitGapBlocks() : 0,
+                ud ? DungeonTrainCommonConfig.getUpsideDownExitFadeBlocks() : 0,
+                chuncks ? DungeonTrainCommonConfig.getChuncksFadeBlocks() : 0,
+                spheres ? DungeonTrainCommonConfig.getSpheresFadeBlocks() : 0,
+                stacks ? DungeonTrainCommonConfig.getStacksFadeBlocks() : 0,
+                legacyFadeOf(legacySpans));
+        CycleLayout layout = CycleLayout.parse(DungeonTrainCommonConfig.getWorldgenCycleOrder(), fades, legacySpans,
+                t -> switch (t) {
+                    case OVERWORLD, LEGACY_RUN -> true;
+                    case NETHER -> nether;
+                    case END -> end;
+                    case UPSIDE_DOWN -> ud;
+                    case CHUNCKS -> chuncks;
+                    case SPHERES -> spheres;
+                    case STACKS -> stacks;
+                    case MIX -> DungeonTrainCommonConfig.isMixEnabled();
+                },
+                msg -> LOGGER.warn("[DungeonTrain] worldgenCycleOrder: {}", msg));
         return new WorldGenCycle(
                 DungeonTrainCommonConfig.getDisintegrationStartBlocks(),
                 DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks(),
@@ -169,7 +318,26 @@ public record WorldGenCycle(long startX, int owGap,
                 chuncks ? DungeonTrainCommonConfig.getChuncksLeadGapBlocks() : 0,
                 chuncks ? DungeonTrainCommonConfig.getChuncksKeepDensity() : 0.0,
                 chuncks ? DungeonTrainCommonConfig.getChuncksSliceRatio() : 0.0,
+                spheres ? DungeonTrainCommonConfig.getSpheresHoldBlocks() : 0,
+                spheres ? DungeonTrainCommonConfig.getSpheresFadeBlocks() : 0,
+                spheres ? DungeonTrainCommonConfig.getSpheresLeadGapBlocks() : 0,
+                stacks ? DungeonTrainCommonConfig.getStacksHoldBlocks() : 0,
+                stacks ? DungeonTrainCommonConfig.getStacksFadeBlocks() : 0,
+                stacks ? DungeonTrainCommonConfig.getStacksLeadGapBlocks() : 0,
+                stacks ? DungeonTrainCommonConfig.getStacksDensity() : 0.0,
+                legacySpans,
+                layout,
                 DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks());
+    }
+
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(WorldGenCycle.class);
+
+    /** The legacy eras' shared crossfade: the first enabled span's fade (480 by default). */
+    private static int legacyFadeOf(LegacySpan[] spans) {
+        for (LegacySpan sp : spans) {
+            if (sp.holdLen() > 0L) return sp.fade();
+        }
+        return 480;
     }
 
     private int stageCount() {
@@ -188,16 +356,28 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     public long netherLen() {
-        return NetherTransition.bandLength(riseLen(), megaHold, coreFade, coreHold);
+        return NetherTransition.bandLength(riseLen(), megaHold, coreFade, netherCoreOf(0));
+    }
+
+    /** Core length of the {@code i}-th Nether occurrence of a run (classic: the single {@code coreHold}); 0 if none. */
+    private int netherCoreOf(int i) {
+        if (layout == null) return coreHold;
+        int seen = 0;
+        for (int j = 0; j < layout.count(); j++) {
+            if (layout.slot(j).type() == CycleLayout.Type.NETHER && seen++ == i) return layout.slot(j).core();
+        }
+        return 0;
     }
 
     public long endLen() {
-        return Disintegration.bandLength(eFade, eVoid, eEnd);
+        if (layout == null) return Disintegration.bandLength(eFade, eVoid, eEnd);
+        int first = layout.firstIndexOf(CycleLayout.Type.END);
+        return first < 0 ? Disintegration.bandLength(eFade, eVoid, 0) : layout.endGroupLength(first);
     }
 
     /** Combined length of the upside-down band ({@code 2·udFade + udHold}); 0 when the band is disabled. */
     public long upsideDownLen() {
-        return 2L * Math.max(0, udFade) + Math.max(0, udHold);
+        return 2L * Math.max(0, udFade) + Math.max(0, layout == null ? udHold : layout.firstCoreOf(CycleLayout.Type.UPSIDE_DOWN));
     }
 
     /**
@@ -221,7 +401,7 @@ public record WorldGenCycle(long startX, int owGap,
 
     /** Length of the chuncks band core (the full-density {@code chuncksHold}); 0 when disabled. */
     public long chuncksLen() {
-        return Math.max(0, chuncksHold);
+        return Math.max(0, layout == null ? chuncksHold : layout.firstCoreOf(CycleLayout.Type.CHUNCKS));
     }
 
     /**
@@ -241,11 +421,63 @@ public record WorldGenCycle(long startX, int owGap,
         return chuncksLen() > 0L ? Math.max(0, chuncksLeadGap) : 0L;
     }
 
-    /** {@code 2·owGap + netherLen + endLen + udLen + udExitFade + udExitGap + chuncksLeadGap + chuncksFade + chuncksLen}. */
+    /** Length of the spheres band core (the full-void {@code spheresHold}); 0 when disabled. */
+    public long spheresLen() {
+        return Math.max(0, layout == null ? spheresHold : layout.firstCoreOf(CycleLayout.Type.SPHERES));
+    }
+
+    /**
+     * Length of the spheres entry fade zone before the band core; gated on {@code spheresLen > 0} so a
+     * disabled band — or a zero {@code spheresFade} — keeps {@link #period()} byte-identical.
+     */
+    public long spheresFadeLen() {
+        return spheresLen() > 0L ? Math.max(0, spheresFade) : 0L;
+    }
+
+    /**
+     * Plain-overworld gap before the spheres band (after the chuncks core); gated on
+     * {@code spheresLen > 0} so it collapses to 0 — and keeps {@link #period()} byte-identical — when
+     * the band is disabled.
+     */
+    public long spheresLeadGapLen() {
+        return spheresLen() > 0L ? Math.max(0, spheresLeadGap) : 0L;
+    }
+
+    /** Length of the stacks band core (the {@code stacksHold}); 0 when disabled. */
+    public long stacksLen() {
+        return Math.max(0, layout == null ? stacksHold : layout.firstCoreOf(CycleLayout.Type.STACKS));
+    }
+
+    /**
+     * Length of the stacks entry fade zone before the band core; gated on {@code stacksLen > 0} so a
+     * disabled band — or a zero {@code stacksFade} — keeps {@link #period()} byte-identical.
+     */
+    public long stacksFadeLen() {
+        return stacksLen() > 0L ? Math.max(0, stacksFade) : 0L;
+    }
+
+    /**
+     * Plain-overworld gap between the spheres band and the stacks entry fade; gated on
+     * {@code stacksLen > 0} so it collapses to 0 — and keeps {@link #period()} byte-identical — when
+     * the band is disabled.
+     */
+    public long stacksLeadGapLen() {
+        return stacksLen() > 0L ? Math.max(0, stacksLeadGap) : 0L;
+    }
+
+    /**
+     * {@code 2·owGap + netherLen + endLen + udLen + udExitFade + udExitGap + chuncksLeadGap + chuncksFade
+     * + chuncksLen + spheresLeadGap + spheresFade + spheresLen + stacksLeadGap + stacksFade + stacksLen
+     * + Σ legacy spans}.
+     */
     public long period() {
+        if (layout != null) return layout.period();
         return 2L * Math.max(0, owGap) + netherLen() + endLen()
                 + upsideDownLen() + udExitFadeLen() + udExitGap()
-                + chuncksLeadGapLen() + chuncksFadeLen() + chuncksLen();
+                + chuncksLeadGapLen() + chuncksFadeLen() + chuncksLen()
+                + spheresLeadGapLen() + spheresFadeLen() + spheresLen()
+                + stacksLeadGapLen() + stacksFadeLen() + stacksLen()
+                + legacyTotalLen();
     }
 
     /**
@@ -257,6 +489,516 @@ public record WorldGenCycle(long startX, int owGap,
         long p = period();
         if (p <= 0L || worldX < startX) return -1L;
         return Math.floorMod((long) worldX - startX + phaseShift, p);
+    }
+
+    // ---- ordered-layout plumbing ------------------------------------------------------------
+    // With a CycleLayout every band helper asks "which slot is worldX in, and how far into it" instead of
+    // subtracting a chained start. Run k (doubling) is folded away first: the anchored offset is mapped to
+    // its base coordinate u in [0, period) and every ramp is evaluated there, so cores AND fades stretch
+    // ×2^k together. Classic (layout == null) keeps the chained-start arithmetic byte-for-byte.
+
+    /** True when this cycle is an ordered slot layout rather than the classic fixed period. */
+    public boolean hasLayout() {
+        return layout != null;
+    }
+
+    // Behind the anchor the layout runs in REVERSE: after a plain-overworld buffer as long as the lead gap
+    // ({@link #mirrorBuffer}), backward run k is a copy of forward run k laid down towards -X, so walking
+    // backwards meets the slots last-first. Each copy keeps its +X orientation (u still rises with X), so a
+    // band's ramps, entrance side and core anchors read exactly as they do ahead of spawn — only the order
+    // you reach them in is reversed. Every query still depends on X only through worldX - startX.
+
+    /** Blocks past the anchor, or {@code -1} before it. Layout only (no phase shift: the first slot is explicit). */
+    private long anchored(long worldX) {
+        return worldX < startX ? -1L : worldX - startX;
+    }
+
+    /**
+     * Plain-overworld run-in directly behind the anchor before the reversed cycle begins: the length of
+     * the layout's lead overworld slot, so spawn has overworld on both sides, plus the world's
+     * {@link #reverseSlide()} — how far the reversed bands have been pushed back by players walking
+     * off-train past the on-train frontier. Layout only.
+     */
+    private long mirrorBuffer() {
+        long lead = layout.count() > 0 && layout.slot(0).type() == CycleLayout.Type.OVERWORLD ? layout.length(0) : 0L;
+        return lead + reverseSlide;
+    }
+
+    /**
+     * Blocks the reversed cycle behind spawn is pushed back for the running world ({@code worldgen.ReverseSlide}).
+     * Runtime state rather than config: it only grows, and only affects chunks generated after it grows —
+     * terrain already on disk keeps what it was generated as. Set on server start, on every change, and on
+     * the client from {@code ReverseSlideSyncPacket}; 0 with no world.
+     */
+    private static volatile long reverseSlide;
+
+    /** The live reverse slide — see {@link #reverseSlide}. */
+    public static long reverseSlide() {
+        return reverseSlide;
+    }
+
+    /** Set the live reverse slide (never negative). */
+    public static void setReverseSlide(long slide) {
+        reverseSlide = Math.max(0L, slide);
+    }
+
+    /** Blocks behind the start of the reversed cycle, or {@code -1} ahead of the anchor / inside the buffer. Layout only. */
+    private long backDist(long worldX) {
+        if (worldX >= startX) return -1L;
+        long d = startX - 1L - worldX - mirrorBuffer();
+        return d < 0L ? -1L : d;
+    }
+
+    /** Lowest world X of reversed run {@code k} behind the anchor — it ends at {@code startX − buffer}, less the later runs. Layout only. */
+    public long reversedRunLowX(int k) {
+        return startX - mirrorBuffer() - CycleLayout.runStart(k + 1, layout.period());
+    }
+
+    /** True when {@code worldX} lies in the reversed cycle behind the anchor (past the overworld buffer). */
+    public boolean isMirroredAt(long worldX) {
+        return layout != null && backDist(worldX) >= 0L;
+    }
+
+    /** Doubling run index at {@code worldX} (0 inside the buffer). Layout only. */
+    private int runAt(long worldX) {
+        long off = anchored(worldX);
+        if (off >= 0L) return CycleLayout.runIndex(off, layout.period());
+        long d = backDist(worldX);
+        return d < 0L ? 0 : CycleLayout.runIndex(d, layout.period());
+    }
+
+    /** Lowest world X of the run containing {@code worldX}, or {@link Long#MIN_VALUE} inside the buffer. Layout only. */
+    private long runLowX(long worldX) {
+        long p = layout.period();
+        long off = anchored(worldX);
+        if (off >= 0L) return startX + CycleLayout.runStart(CycleLayout.runIndex(off, p), p);
+        long d = backDist(worldX);
+        if (d < 0L) return Long.MIN_VALUE;
+        return startX - mirrorBuffer() - CycleLayout.runStart(CycleLayout.runIndex(d, p) + 1, p);
+    }
+
+    /** Base coordinate {@code u} of {@code worldX}, or {@code -1} inside the buffer. Layout only. */
+    private long baseAt(long worldX) {
+        long low = runLowX(worldX);
+        return low == Long.MIN_VALUE ? -1L : (worldX - low) >> runAt(worldX);
+    }
+
+    /** Slot index at {@code worldX} or {@code -1}. Layout only. */
+    private int slotAt(long worldX) {
+        long u = baseAt(worldX);
+        return u < 0L ? -1 : layout.indexAt(u);
+    }
+
+    /** Public read of {@link #slotAt}: the layout slot at {@code worldX}, or {@code -1} (no layout, or in the overworld buffer). */
+    public int slotIndexAt(int worldX) {
+        return layout == null ? -1 : slotAt(worldX);
+    }
+
+    /** Base-coordinate offset into the slot {@link #slotIndexAt} reports, or {@code -1} when there is none. */
+    public long slotLocal(int worldX) {
+        int i = slotIndexAt(worldX);
+        return i < 0 ? -1L : baseAt(worldX) - layout.start(i);
+    }
+
+    /**
+     * World X of the column {@code local} base blocks into the slot occurrence containing {@code worldX} (the
+     * inverse of {@link #slotLocal}, scaled by that run's doubling), or {@link Long#MIN_VALUE} when
+     * {@code worldX} has no slot (behind spawn a real answer can be negative).
+     */
+    public long slotWorldX(int worldX, long local) {
+        int i = slotIndexAt(worldX);
+        return i < 0 ? Long.MIN_VALUE : worldOf(worldX, layout.start(i) + local);
+    }
+
+    /** Doubling scale ({@code 2^run}) at {@code worldX}: world blocks per base block. 1 without a layout. */
+    public long runScaleAt(int worldX) {
+        return layout == null ? 1L : 1L << runAt(worldX);
+    }
+
+    /**
+     * World X of base coordinate {@code u} in the run {@code worldX} is in — the inverse of {@link #baseAt}
+     * (forward or reversed). Only meaningful where {@code worldX} has a slot; callers check that first.
+     */
+    private long worldOf(long worldX, long u) {
+        return runLowX(worldX) + (u << runAt(worldX));
+    }
+
+    /**
+     * Offset into the span of band {@code t} at {@code worldX} — the whole slot, fades included — or
+     * {@code -1} outside it. Classic spans are the chained-start segments the fixed period was always
+     * made of; a layout answers from its slot table.
+     */
+    private long spanLocal(CycleLayout.Type t, int worldX) {
+        if (layout != null) {
+            int i = slotAt(worldX);
+            if (i < 0 || layout.slot(i).type() != t) return -1L;
+            // back-to-back End slots are one band: its ramps run from the joined band's start
+            long start = t == CycleLayout.Type.END ? layout.endGroupStart(i) : layout.start(i);
+            return baseAt(worldX) - start;
+        }
+        long o = offset(worldX);
+        if (o < 0L) return -1L;
+        long start;
+        long len;
+        switch (t) {
+            case NETHER -> { start = netherStart(); len = netherLen(); }
+            case END -> { start = endStart(); len = endLen(); }
+            case UPSIDE_DOWN -> { start = udStart(); len = upsideDownLen() + udExitFadeLen() + udExitGap(); }
+            case CHUNCKS -> { start = chuncksFadeStart(); len = chuncksFadeLen() + chuncksLen(); }
+            case SPHERES -> { start = spheresFadeStart(); len = spheresFadeLen() + spheresLen(); }
+            case STACKS -> { start = stacksFadeStart(); len = stacksFadeLen() + stacksLen(); }
+            default -> { return -1L; }
+        }
+        long l = o - start;
+        return (l < 0L || l >= len) ? -1L : l;
+    }
+
+    /** Core length of the {@code t} occurrence at {@code worldX} (layout), or the classic single core. */
+    private int spanCore(CycleLayout.Type t, int worldX) {
+        if (layout != null) {
+            int i = slotAt(worldX);
+            if (i >= 0 && layout.slot(i).type() == t) {
+                return t == CycleLayout.Type.END ? layout.endGroupCore(i) : layout.slot(i).core();
+            }
+            if (t == CycleLayout.Type.END) {
+                int first = layout.firstIndexOf(t);
+                return first < 0 ? 0 : layout.endGroupCore(first);
+            }
+            return layout.firstCoreOf(t);
+        }
+        return switch (t) {
+            case NETHER -> coreHold;
+            case END -> eEnd;
+            case UPSIDE_DOWN -> udHold;
+            case CHUNCKS -> chuncksHold;
+            case SPHERES -> spheresHold;
+            case STACKS -> stacksHold;
+            default -> 0;
+        };
+    }
+
+    /** Style of the {@code t} occurrence at {@code worldX}; {@code null} when not in one (or classic). */
+    private CycleLayout.Style styleAt(CycleLayout.Type t, int worldX) {
+        if (layout == null) return null;
+        int i = slotAt(worldX);
+        if (i < 0 || layout.slot(i).type() != t) return null;
+        return resolveStyle(i, runAt(worldX));
+    }
+
+    /**
+     * The concrete style of slot {@code i} in doubling run {@code run}: its first-run look on run 0, its
+     * later look on every run after ({@code first>later} in the order — see {@link CycleLayout.Slot}).
+     */
+    private CycleLayout.Style resolveStyle(int i, long run) {
+        return layout.slot(i).styleOnRun(run);
+    }
+
+    /** Which look the Nether band at {@code worldX} wears ({@code BETTER} = BetterNether); {@code null} outside one. */
+    public CycleLayout.Style netherStyleAt(int worldX) {
+        return styleAt(CycleLayout.Type.NETHER, worldX);
+    }
+
+    /** Which look the End band at {@code worldX} wears ({@code BETTER} = BetterEnd); {@code null} outside one. */
+    public CycleLayout.Style endStyleAt(int worldX) {
+        return styleAt(CycleLayout.Type.END, worldX);
+    }
+
+    /** Which look the overworld gap at {@code worldX} wears ({@code WWOO} / {@code BOP}); {@code null} outside one. */
+    public CycleLayout.Style overworldStyleAt(int worldX) {
+        return styleAt(CycleLayout.Type.OVERWORLD, worldX);
+    }
+
+    /**
+     * The look of the stretch at {@code worldX}: an overworld gap's, or a legacy run's
+     * ({@code legacy:wwoo:lost_city=…} — the Lost City wears WWOO decoration over its vanilla terrain).
+     * {@code null} anywhere else. Drives the WWOO / BoP confinement ({@link SecondLapOverworld#at});
+     * {@link #overworldStyleAt} stays the gap alone (advancements, portal sites).
+     */
+    public CycleLayout.Style stretchStyleAt(int worldX) {
+        CycleLayout.Style gap = overworldStyleAt(worldX);
+        return gap != null ? gap : styleAt(CycleLayout.Type.LEGACY_RUN, worldX);
+    }
+
+    /**
+     * The look ({@code WWOO} / {@code BOP}) of a modded overworld gap that carries on into the band
+     * transition at {@code worldX}, or {@code null}. The overworld-looking part of a band's transition
+     * wears the look of the overworld gap it borders, so a modded stretch doesn't stop at a hard line:
+     * <ul>
+     *   <li>upside-down — the last ~28% of the Reassembly ({@link #UD_BLEED_REASSEMBLY_FRACTION}) and
+     *       the exit gap, from the gap after it (its entry is all mirror);</li>
+     *   <li>Nether — the beach, mountain stages and core crossfade on each side, from that side's gap;</li>
+     *   <li>End — the overworld→void erosion fade on each side, from that side's gap.</li>
+     * </ul>
+     * Layout only (classic cycles have no styled gaps). In base coordinates, so stretched runs scale.
+     */
+    public CycleLayout.Style bleedingOverworldStyleAt(int worldX) {
+        if (layout == null) return null;
+        int i = slotAt(worldX);
+        if (i < 0) return null;
+        CycleLayout.Slot slot = layout.slot(i);
+        long local = baseAt(worldX) - layout.start(i);
+        long len = layout.length(i);
+        long side;
+        switch (slot.type()) {
+            case UPSIDE_DOWN -> {
+                long bleedStart = udBandLenAt(worldX)
+                        + Math.round(udExitFadeLenAt(worldX) * UD_BLEED_REASSEMBLY_FRACTION);
+                return local >= bleedStart ? moddedOverworldStyle(i + 1, runAt(worldX)) : null;
+            }
+            case NETHER -> side = (len - Math.max(0, slot.core())) / 2L;
+            case END -> {
+                // a joined End band bleeds only at its outer edges, from the gaps around the whole band
+                int first = layout.endGroupFirst(i);
+                local = baseAt(worldX) - layout.start(first);
+                len = layout.endGroupLength(i);
+                side = Math.max(0, eFade);
+                if (local < side) return moddedOverworldStyle(first - 1, runAt(worldX));
+                if (local >= len - side) return moddedOverworldStyle(first + layout.endGroupSize(i), runAt(worldX));
+                return null;
+            }
+            default -> { return null; }
+        }
+        if (local < side) return moddedOverworldStyle(i - 1, runAt(worldX));
+        if (local >= len - side) return moddedOverworldStyle(i + 1, runAt(worldX));
+        return null;
+    }
+
+    /**
+     * How far into the upside-down Reassembly the next gap's modded look begins. Most of it is still
+     * visibly reassembling, so the look waits until the world has nearly settled (shipped layout:
+     * X ≈ 21 577 instead of the Reassembly's start at 17 994).
+     */
+    static final double UD_BLEED_REASSEMBLY_FRACTION = 43.0 / 60.0;
+
+    /** Style of slot {@code i} when it is a WWOO / BoP overworld gap (or a legacy run wearing one), else {@code null}. */
+    private CycleLayout.Style moddedOverworldStyle(int i, long run) {
+        if (i < 0 || i >= layout.count()) return null;
+        CycleLayout.Slot s = layout.slot(i);
+        if (s.type() != CycleLayout.Type.OVERWORLD && s.type() != CycleLayout.Type.LEGACY_RUN) return null;
+        CycleLayout.Style style = resolveStyle(i, run);
+        return (style == CycleLayout.Style.WWOO || style == CycleLayout.Style.BOP) ? style : null;
+    }
+
+    /**
+     * 0-based occurrence pass of band {@code t} at {@code worldX}: {@code run × perRun + occurrence}, so the
+     * second Nether of run 0 is pass 1 and the first Nether of run 1 is pass 2. Between occurrences it is
+     * the last one started; {@code -1} before the anchor. Classic layouts (one occurrence per period) fall
+     * back to {@link #cycleIndex}.
+     */
+    private long passIndex(CycleLayout.Type t, int worldX) {
+        if (layout == null) return cycleIndex(worldX);
+        long u = baseAt(worldX);
+        if (u < 0L) return -1L;
+        return (long) runAt(worldX) * layout.typeCount(t) + layout.occurrencesStarted(t, u);
+    }
+
+    /** The Nether-band pass at {@code worldX} — see {@link #passIndex} and {@link #isBetterNetherPass}. */
+    public long netherPassIndex(int worldX) {
+        return passIndex(CycleLayout.Type.NETHER, worldX);
+    }
+
+    /**
+     * True if Nether pass {@code pass} is a BetterNether one. The single rule worldgen, advancements and
+     * {@code /dtp} share: with a layout, the style the order gives that occurrence ({@code nether:better});
+     * the classic layout keeps its alternation ({@link BetterNetherCoreBiomes#isBetterNetherPass}).
+     */
+    public boolean isBetterNetherPass(long pass) {
+        if (layout == null) return BetterNetherCoreBiomes.isBetterNetherPass(pass);
+        return occurrenceStyle(CycleLayout.Type.NETHER, pass) == CycleLayout.Style.BETTER;
+    }
+
+    /**
+     * The look of Nether pass {@code pass}: {@code VANILLA}, {@code BETTER} (BetterNether) or {@code BOP}
+     * (vanilla + Biomes O' Plenty Nether). Classic layouts keep their alternation (never BoP).
+     */
+    public CycleLayout.Style netherStyleOfPass(long pass) {
+        if (layout == null) return BetterNetherCoreBiomes.isBetterNetherPass(pass) ? CycleLayout.Style.BETTER : CycleLayout.Style.VANILLA;
+        CycleLayout.Style s = occurrenceStyle(CycleLayout.Type.NETHER, pass);
+        return s == null ? CycleLayout.Style.VANILLA : s;
+    }
+
+    /** The End twin of {@link #netherStyleOfPass}: {@code VANILLA}, {@code BETTER} (BetterEnd) or {@code BOP}. */
+    public CycleLayout.Style endStyleOfPass(long pass) {
+        if (layout == null) return EndBandStyle.isBetterEndPass(pass) ? CycleLayout.Style.BETTER : CycleLayout.Style.VANILLA;
+        CycleLayout.Style s = occurrenceStyle(CycleLayout.Type.END, pass);
+        return s == null ? CycleLayout.Style.VANILLA : s;
+    }
+
+    /** {@link #netherStyleOfPass} of the Nether pass at {@code worldX} (the last one started between bands). */
+    public CycleLayout.Style netherLookAt(int worldX) {
+        return netherStyleOfPass(netherPassIndex(worldX));
+    }
+
+    /** {@link #endStyleOfPass} of the End pass at {@code worldX} (the last one started between bands). */
+    public CycleLayout.Style endLookAt(int worldX) {
+        return endStyleOfPass(endPassIndex(worldX));
+    }
+
+    /** True if the Nether pass at {@code worldX} is a Biomes O' Plenty one. */
+    public boolean isBopNetherAt(int worldX) {
+        return netherLookAt(worldX) == CycleLayout.Style.BOP;
+    }
+
+    /** True if the End pass at {@code worldX} is a Biomes O' Plenty one. */
+    public boolean isBopEndAt(int worldX) {
+        return endLookAt(worldX) == CycleLayout.Style.BOP;
+    }
+
+    /** True if End pass {@code pass} is a BetterEnd one — the End twin of {@link #isBetterNetherPass}. */
+    public boolean isBetterEndPass(long pass) {
+        if (layout == null) return EndBandStyle.isBetterEndPass(pass);
+        return occurrenceStyle(CycleLayout.Type.END, pass) == CycleLayout.Style.BETTER;
+    }
+
+    /** {@link #isBetterNetherPass} of the Nether pass at {@code worldX} (the last one started between bands). */
+    public boolean isBetterNetherAt(int worldX) {
+        return isBetterNetherPass(netherPassIndex(worldX));
+    }
+
+    /** {@link #isBetterEndPass} of the End pass at {@code worldX} (the last one started between bands). */
+    public boolean isBetterEndAt(int worldX) {
+        return isBetterEndPass(endPassIndex(worldX));
+    }
+
+    /**
+     * Half-width, in base blocks, of the crossfade across the seam between two joined End pieces (Lap 1's
+     * vanilla → Biomes O' Plenty End). Clamped to half of either piece's core so a short piece keeps a core
+     * of its own.
+     */
+    static final int END_SEAM_HALF_BLEND = 200;
+
+    /** Coherent-noise cell scale for the seam crossfade: clumps of whole island columns, not salt-and-pepper. */
+    private static final int END_SEAM_NOISE_SCALE = 3;
+
+    /** Salt so the seam dither is independent of the other coherent-noise users. */
+    private static final long END_SEAM_SALT = 0x3E5D_A11CL;
+
+    /**
+     * The End pass whose look owns column {@code (worldX, worldZ)}. Away from a seam that is simply
+     * {@link #endPassIndex}. Across the seam between two joined End pieces the two looks crossfade: the
+     * later piece's share rises {@code 0 → 1} over {@code ±END_SEAM_HALF_BLEND} base blocks, and a seed-stable
+     * column noise picks which piece owns each column — so vanilla and BoP islands interleave in clumps
+     * instead of meeting at a chunk-aligned wall. Every consumer (the vanilla island stamp, the sampled
+     * copy-in and the End-core biomes) asks this one function, so no column gets both looks or neither.
+     */
+    public long endSourcePassAt(int worldX, int worldZ, long seed) {
+        long pass = endPassIndex(worldX);
+        if (layout == null || pass < 0L) return pass;
+        int i = slotAt(worldX);
+        if (i < 0 || layout.slot(i).type() != CycleLayout.Type.END) return pass;
+        long u = baseAt(worldX);
+        int first = layout.endGroupFirst(i);
+        int last = first + layout.endGroupSize(i) - 1;
+        // the seam at this piece's start (from the previous piece) or at its end (into the next one)
+        for (int seam = i; seam <= i + 1; seam++) {
+            if (seam <= first || seam > last) continue;
+            long half = Math.min(END_SEAM_HALF_BLEND,
+                    Math.min(layout.slot(seam - 1).core(), layout.slot(seam).core()) / 2L);
+            if (half <= 0L) continue;
+            long d = u - layout.start(seam);
+            if (d < -half || d >= half) continue;
+            double later = (d + half + 0.5) / (2.0 * half);
+            long base = (long) runAt(worldX) * layout.typeCount(CycleLayout.Type.END);
+            double n = Disintegration.coherentNoise(seed ^ END_SEAM_SALT, worldX, 0, worldZ, END_SEAM_NOISE_SCALE);
+            int owner = n < later ? seam : seam - 1;
+            return base + layout.occurrence(owner);
+        }
+        return pass;
+    }
+
+    /** {@link #endStyleOfPass} of {@link #endSourcePassAt}: the look column {@code (worldX, worldZ)} wears. */
+    public CycleLayout.Style endSourceLookAt(int worldX, int worldZ, long seed) {
+        return endStyleOfPass(endSourcePassAt(worldX, worldZ, seed));
+    }
+
+    /** Style of the occurrence behind {@code t}-pass {@code pass} ({@code run × perRun + occurrence}); {@code null} if none. */
+    private CycleLayout.Style occurrenceStyle(CycleLayout.Type t, long pass) {
+        int n = layout.typeCount(t);
+        if (n == 0 || pass < 0L) return null;
+        int i = layout.indexOfOccurrence(t, (int) (pass % n));
+        return i < 0 ? null : resolveStyle(i, pass / n);
+    }
+
+    /**
+     * World-X range {@code [start, end)} of Nether pass {@code pass} (the debug report): classic, the
+     * band of period {@code pass}; layout, the {@code pass % perRun}-th Nether slot of run
+     * {@code pass / perRun}, stretched by that run's doubling. {@code null} when there is no Nether band.
+     */
+    public long[] netherPassRange(int pass) {
+        if (layout == null) {
+            if (netherLen() <= 0L) return null;
+            long start = startX - phaseShift + (long) pass * period() + netherStart();
+            return new long[] {start, start + netherLen()};
+        }
+        int n = layout.typeCount(CycleLayout.Type.NETHER);
+        if (n == 0 || pass < 0) return null;
+        int k = pass / n;
+        int occ = pass % n;
+        for (int i = 0; i < layout.count(); i++) {
+            if (layout.slot(i).type() != CycleLayout.Type.NETHER || layout.occurrence(i) != occ) continue;
+            long runStart = startX + CycleLayout.runStart(k, layout.period());
+            return new long[] {runStart + (layout.start(i) << k), runStart + ((layout.start(i) + layout.length(i)) << k)};
+        }
+        return null;
+    }
+
+    /** World-block length of the overworld gap that leads into Nether pass {@code pass} (classic: {@code owGap}). */
+    public long overworldGapBefore(int pass) {
+        return overworldGapBeside(pass, -1);
+    }
+
+    /** World-block length of the overworld gap that follows Nether pass {@code pass} (classic: {@code owGap}). */
+    public long overworldGapAfter(int pass) {
+        return overworldGapBeside(pass, +1);
+    }
+
+    /**
+     * World-X ranges {@code [start, end)} of the overworld gaps in the first {@code laps} laps, in X
+     * order — every overworld slot of runs {@code 0..laps-1} (layout), or each period's lead and
+     * post-Nether gap (classic, the only gaps a stretch style can sit in). Clamped to the anchor;
+     * empty gaps dropped. Pair with {@link SecondLapOverworld#at} to find a given look's stretches.
+     */
+    public List<long[]> overworldGapRanges(int laps) {
+        List<long[]> out = new ArrayList<>();
+        if (layout != null) {
+            for (int k = 0; k < laps; k++) {
+                long runStart = startX + CycleLayout.runStart(k, layout.period());
+                for (int i = 0; i < layout.count(); i++) {
+                    if (layout.slot(i).type() != CycleLayout.Type.OVERWORLD) continue;
+                    addRange(out, runStart + (layout.start(i) << k),
+                            runStart + ((layout.start(i) + layout.length(i)) << k));
+                }
+            }
+            return out;
+        }
+        long p = period();
+        if (p <= 0L) return out;
+        for (int lap = 0; lap < laps; lap++) {
+            long base = startX - phaseShift + (long) lap * p;
+            addRange(out, base, base + netherStart());
+            addRange(out, base + netherStart() + netherLen(), base + endStart());
+        }
+        return out;
+    }
+
+    private void addRange(List<long[]> out, long start, long end) {
+        long s = Math.max(start, startX);
+        if (s < end) out.add(new long[] {s, end});
+    }
+
+    private long overworldGapBeside(int pass, int dir) {
+        if (layout == null) return Math.max(0, owGap);
+        int n = layout.typeCount(CycleLayout.Type.NETHER);
+        if (n == 0 || pass < 0) return 0L;
+        int k = pass / n;
+        int occ = pass % n;
+        for (int i = 0; i < layout.count(); i++) {
+            if (layout.slot(i).type() != CycleLayout.Type.NETHER || layout.occurrence(i) != occ) continue;
+            int j = i + dir;
+            if (j < 0 || j >= layout.count() || layout.slot(j).type() != CycleLayout.Type.OVERWORLD) return 0L;
+            return layout.length(j) << k;
+        }
+        return 0L;
     }
 
     private long netherStart() {
@@ -273,24 +1015,26 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     private long netherOffset(int worldX) {
-        long o = offset(worldX);
-        if (o < 0L) return -1L;
-        long ln = o - netherStart();
-        return (ln < 0L || ln >= netherLen()) ? -1L : ln;
+        return spanLocal(CycleLayout.Type.NETHER, worldX);
+    }
+
+    /** Length of the Nether occurrence at {@code worldX} (classic: {@link #netherLen}). */
+    private long netherLenAt(int worldX) {
+        return NetherTransition.bandLength(riseLen(), megaHold, coreFade, spanCore(CycleLayout.Type.NETHER, worldX));
     }
 
     /** Nether band-presence ramp (0 outside the nether segment) — drives in-band gating. */
     public double netherHeightRamp(int worldX) {
         long ln = netherOffset(worldX);
         if (ln < 0L) return 0.0;
-        return NetherTransition.heightRamp((int) ln, 0L, riseLen(), megaHold, coreFade, coreHold, 0);
+        return NetherTransition.heightRamp((int) ln, 0L, riseLen(), megaHold, coreFade, spanCore(CycleLayout.Type.NETHER, worldX), 0);
     }
 
     /** Nether intensity ramp (netherrack → real Nether) at a world-X (0 outside the nether segment). */
     public double netherRamp(int worldX) {
         long ln = netherOffset(worldX);
         if (ln < 0L) return 0.0;
-        return NetherTransition.netherRamp((int) ln, 0L, riseLen(), megaHold, coreFade, coreHold, 0);
+        return NetherTransition.netherRamp((int) ln, 0L, riseLen(), megaHold, coreFade, spanCore(CycleLayout.Type.NETHER, worldX), 0);
     }
 
     /**
@@ -307,6 +1051,27 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * How many blocks past the leading edge of the real-Nether <b>core</b> {@code worldX} sits:
+     * {@code 0} at the first full-Nether column (where the netherrack crossfade finishes), growing to
+     * {@code coreHold - 1} at the last one, and {@code -1} anywhere else — both crossfades, the
+     * mountain rise/plateau, and outside the nether segment entirely.
+     *
+     * <p>The layout offsets mirror {@link NetherTransition#netherRamp}: the crossfade-in runs
+     * {@code [riseLen + megaHold, +coreFade)} and the core {@code [+coreFade, +coreHold)} after it. A
+     * depth is what {@link #netherRamp} alone cannot give: the ramp reads {@code 1.0} across the whole
+     * core, so it can say "in the Nether" but not "how far in". {@code NetherMobSpawner} uses this to
+     * hold ghasts back until the player is properly inside the Nether rather than still crossfading
+     * into it.</p>
+     */
+    public long netherCoreDepth(int worldX) {
+        long ln = netherOffset(worldX);
+        if (ln < 0L) return -1L;
+        long coreStart = (long) riseLen() + Math.max(0, megaHold) + Math.max(0, coreFade);
+        long d = ln - coreStart;
+        return (d < 0L || d >= Math.max(0, spanCore(CycleLayout.Type.NETHER, worldX))) ? -1L : d;
+    }
+
+    /**
      * Heightmap multiplier at a world-X: 1 outside the nether segment, {@code 1} across
      * stage 1, ramping {@code 1→stage2Mult} across stage 2, {@code stage2Mult→stage3Mult}
      * across stage 3, then held at {@code stage3Mult} across the mega plateau + core, and
@@ -315,7 +1080,7 @@ public record WorldGenCycle(long startX, int owGap,
     public double netherMountainMultiplier(int worldX) {
         long ln = netherOffset(worldX);
         if (ln < 0L) return 1.0;
-        long band = netherLen();
+        long band = netherLenAt(worldX);
         int rise = riseLen();
         long edge = rise + Math.max(0, megaHold);
         if (ln < edge) return riseMult(ln, rise);
@@ -364,7 +1129,7 @@ public record WorldGenCycle(long startX, int owGap,
         int fade = Math.max(0, stageBlocks);                        // ease in over the first stage
         if (fade == 0) return 1.0;
         long lead = ln - Math.max(0, beachBlocks);                 // blocks past the leading gate
-        long trail = netherLen() - ln;                             // blocks to the trailing gate
+        long trail = netherLenAt(worldX) - ln;                     // blocks to the trailing gate
         double e = Math.min(lead, trail) / (double) fade;
         if (e <= 0.0) return 0.0;
         if (e >= 1.0) return 1.0;
@@ -394,6 +1159,16 @@ public record WorldGenCycle(long startX, int owGap,
 
     /** World-X where the current nether band's rise begins (for ocean detection), or {@code Long.MIN_VALUE}. */
     public long netherBandEntranceX(int worldX) {
+        if (layout != null) {
+            long u = baseAt(worldX);
+            if (u < 0L) return Long.MIN_VALUE;
+            // The Nether slot at or before u in this run; before the run's first, the run start stands in.
+            long entrance = 0L;
+            for (int i = 0; i < layout.count() && layout.start(i) <= u; i++) {
+                if (layout.slot(i).type() == CycleLayout.Type.NETHER) entrance = layout.start(i);
+            }
+            return worldOf(worldX, entrance);
+        }
         long o = offset(worldX);
         if (o < 0L) return Long.MIN_VALUE;
         return (long) worldX - o + netherStart();
@@ -442,11 +1217,13 @@ public record WorldGenCycle(long startX, int owGap,
 
         /** {@link WorldGenCycle#netherInfluence} evaluated against the snapshot — byte-identical. */
         public boolean nether(long worldX, int margin) {
+            if (owner.layout != null) return owner.layoutInfluence(CycleLayout.Type.NETHER, worldX, margin);
             return contains(worldX, margin, netherStart, netherLen);
         }
 
         /** {@link WorldGenCycle#endSegmentInfluence} evaluated against the snapshot — byte-identical. */
         public boolean end(long worldX) {
+            if (owner.layout != null) return owner.layoutInfluence(CycleLayout.Type.END, worldX, 0);
             return contains(worldX, 0, endStart, endLen);
         }
 
@@ -479,11 +1256,39 @@ public record WorldGenCycle(long startX, int owGap,
      */
     private static volatile Influence influenceCache;
 
+    /**
+     * Layout form of the influence test: does any {@code t} slot overlap the window
+     * {@code [worldX − margin, worldX + margin]}? Conservative — a window straddling two doubling runs
+     * answers {@code true} rather than folding both.
+     */
+    boolean layoutInfluence(CycleLayout.Type t, long worldX, int margin) {
+        long m = Math.max(0, margin);
+        long a = worldX - m;
+        long b = worldX + m;
+        boolean ahead = b >= startX && sideInfluence(t, Math.max(a, startX), b);
+        if (ahead) return true;
+        long backEnd = startX - 1L - mirrorBuffer();                 // the buffer between is plain overworld
+        return a <= backEnd && sideInfluence(t, a, Math.min(b, backEnd));
+    }
+
+    /** {@link #layoutInfluence} over a window {@code [a, b]} lying wholly ahead of the anchor or wholly behind the buffer. */
+    private boolean sideInfluence(CycleLayout.Type t, long a, long b) {
+        long low = runLowX(a);
+        if (low != runLowX(b)) return true;
+        int k = runAt(a);
+        long ua = (a - low) >> k;
+        long ub = (b - low) >> k;
+        // A mix-zone chunk may pick any band, so the zone counts as influence for every type: the caller
+        // then resolves the chunk's own (mix-shifted) cycle and answers exactly.
+        return layout.anyOfTypeIn(t, ua, ub) || layout.anyOfTypeIn(CycleLayout.Type.MIX, ua, ub);
+    }
+
     /** The precomputed {@link Influence} snapshot for this cycle (identity-cached, thread-safe). */
     public Influence influence() {
         Influence inf = influenceCache;
         if (inf == null || inf.owner() != this) {
-            inf = new Influence(this, period(), netherStart(), netherLen(), endStart(), endLen());
+            inf = new Influence(this, period(), layout == null ? netherStart() : 0L, netherLen(),
+                    layout == null ? endStart() : 0L, endLen());
             influenceCache = inf;                             // benign race — same-value replace
         }
         return inf;
@@ -491,20 +1296,16 @@ public record WorldGenCycle(long startX, int owGap,
 
     /** End erosion / sky ramp at a world-X (0 outside the End segment). */
     public double endMiddleRamp(int worldX) {
-        long o = offset(worldX);
-        if (o < 0L) return 0.0;
-        long le = o - endStart();
-        if (le < 0L || le >= endLen()) return 0.0;
-        return Disintegration.middleRamp((int) le, 0L, eFade, eVoid, eEnd, 0);
+        long le = spanLocal(CycleLayout.Type.END, worldX);
+        if (le < 0L) return 0.0;
+        return Disintegration.middleRamp((int) le, 0L, eFade, eVoid, spanCore(CycleLayout.Type.END, worldX), 0);
     }
 
     /** End-island fill ramp at a world-X (0 outside the End segment). */
     public double endIslandRamp(int worldX) {
-        long o = offset(worldX);
-        if (o < 0L) return 0.0;
-        long le = o - endStart();
-        if (le < 0L || le >= endLen()) return 0.0;
-        return Disintegration.endRamp((int) le, 0L, eFade, eVoid, eEnd, 0);
+        long le = spanLocal(CycleLayout.Type.END, worldX);
+        if (le < 0L) return 0.0;
+        return Disintegration.endRamp((int) le, 0L, eFade, eVoid, spanCore(CycleLayout.Type.END, worldX), 0);
     }
 
     /**
@@ -520,16 +1321,74 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
-     * Which repeat of the world-gen cycle {@code worldX} falls in (0-based), or {@code -1} before the
-     * anchor / when the cycle is empty. The general form behind {@link #endPassIndex}: because the Nether
+     * Which repeat of the world-gen cycle {@code worldX} falls in (0-based), or {@code -1} in the
+     * overworld buffer behind the anchor / when the cycle is empty (further back, the reversed run's index). The general form behind {@link #endPassIndex}: because the Nether
      * band is the first special band of every period, this doubles as the Nether-band pass index (repeat
      * 0 = first Nether band, ≥ 1 = second onward), which the "Nether Return Again" advancement keys off
      * via {@link games.brennan.dungeontrain.worldgen.NetherBand#netherPassIndex}.
      */
     public long cycleIndex(int worldX) {
+        if (layout != null) {
+            return runLowX(worldX) == Long.MIN_VALUE ? -1L : runAt(worldX);      // the doubling run index
+        }
         long p = period();
         if (p <= 0L || worldX < startX) return -1L;
         return Math.floorDiv((long) worldX - startX + phaseShift, p);
+    }
+
+    /**
+     * First world-X of lap {@code lap} — the inverse of {@link #cycleIndex}: the start of doubling run
+     * {@code lap} (layout), or of period {@code lap} (classic, lap 0 clamped to the anchor since
+     * {@code phaseShift} starts it part-way in). {@code -1} when the cycle is empty or {@code lap < 0}.
+     */
+    public long lapStartX(int lap) {
+        long p = period();
+        if (p <= 0L || lap < 0) return -1L;
+        if (layout != null) return startX + CycleLayout.runStart(Math.min(lap, 62), p);
+        return Math.max(startX, startX + (long) lap * p - phaseShift);
+    }
+
+    /** Which plain-overworld gap a world-X sits in — see {@link #overworldGapAt}. */
+    public enum OverworldGap { LEAD, POST_NETHER, NONE }
+
+    /**
+     * The overworld gap on either side of the Nether band at this world-X: {@link OverworldGap#LEAD} for
+     * the {@code owGap} that opens every cycle and runs into the Nether band, {@link OverworldGap#POST_NETHER}
+     * for the {@code owGap} between the Nether band and the End band, {@link OverworldGap#NONE} anywhere
+     * else (a special band, the later lead gaps, or before the anchor). Pair with {@link #cycleIndex}
+     * for the lap. The lead gap of cycle 0 is shortened by {@code phaseShift} — it starts at the anchor.
+     */
+    public OverworldGap overworldGapAt(int worldX) {
+        if (layout != null) {
+            int i = slotAt(worldX);
+            if (i < 0 || layout.slot(i).type() != CycleLayout.Type.OVERWORLD) return OverworldGap.NONE;
+            if (i + 1 < layout.count() && layout.slot(i + 1).type() == CycleLayout.Type.NETHER) return OverworldGap.LEAD;
+            if (i > 0 && layout.slot(i - 1).type() == CycleLayout.Type.NETHER) return OverworldGap.POST_NETHER;
+            return OverworldGap.NONE;
+        }
+        long o = offset(worldX);
+        if (o < 0L) return OverworldGap.NONE;
+        if (o < netherStart()) return OverworldGap.LEAD;
+        long postStart = netherStart() + netherLen();
+        if (o >= postStart && o < endStart()) return OverworldGap.POST_NETHER;
+        return OverworldGap.NONE;
+    }
+
+    /**
+     * True when this world-X is ordinary overworld — no band (fades included) and no legacy era over
+     * it. Before the anchor counts: the cycle has not started there. Says nothing about which look the
+     * stretch wears; pair with {@link SecondLapOverworld#at} for that.
+     */
+    public boolean isOverworldGapAt(int worldX) {
+        if (layout != null) {
+            int i = slotAt(worldX);
+            return i < 0 || layout.slot(i).type() == CycleLayout.Type.OVERWORLD;
+        }
+        for (CycleLayout.Type t : CycleLayout.Type.values()) {
+            if (t == CycleLayout.Type.OVERWORLD || t == CycleLayout.Type.LEGACY_RUN) continue;
+            if (spanLocal(t, worldX) >= 0L) return false;
+        }
+        return legacyAt(worldX) == null;
     }
 
     /**
@@ -541,7 +1400,7 @@ public record WorldGenCycle(long startX, int owGap,
      * repeat, so its pass index is the cycle index.
      */
     public long endPassIndex(int worldX) {
-        return cycleIndex(worldX);
+        return passIndex(CycleLayout.Type.END, worldX);
     }
 
     /**
@@ -551,19 +1410,28 @@ public record WorldGenCycle(long startX, int owGap,
      * {@code skyOffset == 0} reproduces {@link #endMiddleRamp} exactly.
      */
     public double endSkyRamp(int worldX, int skyOffset) {
-        long o = offset(worldX);
-        if (o < 0L) return 0.0;
-        long le = o - endStart();
-        if (le < 0L || le >= endLen()) return 0.0;
-        return Disintegration.skyRamp((int) le, 0L, eFade, eVoid, eEnd, 0, skyOffset);
+        long le = spanLocal(CycleLayout.Type.END, worldX);
+        if (le < 0L) return 0.0;
+        return Disintegration.skyRamp((int) le, 0L, eFade, eVoid, spanCore(CycleLayout.Type.END, worldX), 0, skyOffset);
     }
 
     /** Offset into the upside-down band at a world-X, or {@code -1} outside it. */
     private long udOffset(int worldX) {
-        long o = offset(worldX);
-        if (o < 0L) return -1L;
-        long lu = o - udStart();
-        return (lu < 0L || lu >= upsideDownLen()) ? -1L : lu;
+        long l = spanLocal(CycleLayout.Type.UPSIDE_DOWN, worldX);
+        return (l < 0L || l >= udBandLenAt(worldX)) ? -1L : l;
+    }
+
+    /** {@code 2·udFade + core} of the upside-down occurrence at {@code worldX}. */
+    private long udBandLenAt(int worldX) {
+        return 2L * Math.max(0, udFade) + Math.max(0, spanCore(CycleLayout.Type.UPSIDE_DOWN, worldX));
+    }
+
+    /** Reassembly (exit-crossfade) length of the upside-down occurrence at {@code worldX}. */
+    private long udExitFadeLenAt(int worldX) {
+        if (layout == null) return udExitFadeLen();
+        int i = slotAt(worldX);
+        if (i >= 0 && layout.slot(i).type() == CycleLayout.Type.UPSIDE_DOWN) return layout.udReassembly(layout.slot(i));
+        return udExitFadeLen();
     }
 
     /**
@@ -576,16 +1444,16 @@ public record WorldGenCycle(long startX, int owGap,
         if (lu >= 0L) {                                        // inside the band core + edge fades
             int fade = Math.max(0, udFade);
             if (fade == 0) return 1.0;
-            long band = upsideDownLen();
+            long band = udBandLenAt(worldX);
             if (lu < fade) return (double) lu / fade;          // leading fade-in
             long holdEnd = band - fade;
             if (lu < holdEnd) return 1.0;                      // core hold
-            if (udExitFadeLen() > 0L) return 1.0;              // exit crossfade present → hold at 1, it carries the fade-out
+            if (udExitFadeLenAt(worldX) > 0L) return 1.0;      // exit crossfade present → hold at 1, it carries the fade-out
             return Math.max(0.0, (double) (band - lu) / fade); // trailing fade-out (byte-identical when no exit fade)
         }
         long ex = udExitFadeOffset(worldX);                    // exit crossfade: sky/light fades 1→0 across the whole zone
         if (ex >= 0L) {
-            long len = udExitFadeLen();
+            long len = udExitFadeLenAt(worldX);
             return len > 0L ? Math.max(0.0, (double) (len - ex) / len) : 0.0;
         }
         return 0.0;
@@ -620,12 +1488,29 @@ public record WorldGenCycle(long startX, int owGap,
      * {@link #isInUpsideDownBand}: a column is in at most one of the two.
      */
     public boolean isInUpsideDownEntryLead(int worldX) {
-        long o = offset(worldX);
-        if (o < 0L) return false;
+        return udEntryLeadLocal(worldX) >= 0L;
+    }
+
+    /**
+     * Offset into the upside-down entry lead at {@code worldX}, or {@code -1}. The lead is the last
+     * {@link #udEntryLeadLen} blocks of the End band <em>when the upside-down band follows it directly</em> —
+     * always so in the classic order; in a layout only where the next slot is upside-down (lap 1), never
+     * where the End flows on into the spheres (lap 2).
+     */
+    private long udEntryLeadLocal(int worldX) {
         long lead = udEntryLeadLen();
-        if (lead <= 0L) return false;
+        if (lead <= 0L) return -1L;
+        if (layout != null) {
+            int i = slotAt(worldX);
+            if (i < 0 || layout.slot(i).type() != CycleLayout.Type.END) return -1L;
+            if (i + 1 >= layout.count() || layout.slot(i + 1).type() != CycleLayout.Type.UPSIDE_DOWN) return -1L;
+            long l = baseAt(worldX) - (layout.start(i) + layout.length(i) - lead);
+            return (l < 0L || l >= lead) ? -1L : l;
+        }
+        long o = offset(worldX);
+        if (o < 0L) return -1L;
         long l = o - udEntryLeadStart();
-        return l >= 0L && l < lead;
+        return (l < 0L || l >= lead) ? -1L : l;
     }
 
     /**
@@ -635,11 +1520,9 @@ public record WorldGenCycle(long startX, int owGap,
      * {@code WorldUpsideDownEvents} — the terrain analogue of {@link #upsideDownRamp}'s atmosphere fade.
      */
     public double upsideDownEntryRevealRamp(int worldX) {
-        if (!isInUpsideDownEntryLead(worldX)) return 0.0;
-        long lead = udEntryLeadLen();
-        if (lead <= 0L) return 0.0;
-        long l = offset(worldX) - udEntryLeadStart();
-        return (double) l / lead;
+        long l = udEntryLeadLocal(worldX);
+        if (l < 0L) return 0.0;
+        return (double) l / udEntryLeadLen();
     }
 
     /**
@@ -659,10 +1542,10 @@ public record WorldGenCycle(long startX, int owGap,
 
     /** Offset into the exit crossfade at a world-X, or {@code -1} outside it. */
     private long udExitFadeOffset(int worldX) {
-        long o = offset(worldX);
-        if (o < 0L) return -1L;
-        long l = o - udExitFadeStart();
-        return (l < 0L || l >= udExitFadeLen()) ? -1L : l;
+        long sl = spanLocal(CycleLayout.Type.UPSIDE_DOWN, worldX);
+        if (sl < 0L) return -1L;
+        long l = sl - udBandLenAt(worldX);
+        return (l < 0L || l >= udExitFadeLenAt(worldX)) ? -1L : l;
     }
 
     /**
@@ -675,6 +1558,30 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * True if {@code worldX} lies anywhere the upside-down mirror touches — entry lead-in, band, or exit
+     * crossfade. The stretch whose source terrain {@code UpsideDownTrackFlatten} keeps low near the track.
+     */
+    public boolean isInUpsideDownStretch(int worldX) {
+        return isInUpsideDownBand(worldX) || isInUpsideDownEntryLead(worldX) || isInUpsideDownExitFade(worldX);
+    }
+
+    /**
+     * True iff ANY x′ in {@code [worldX − margin, worldX + margin]} could lie in the upside-down stretch
+     * ({@link #isInUpsideDownStretch}) of some cycle repeat. O(1) and conservative in the same way as
+     * {@link #netherInfluence} — a {@code false} proves the whole window is clear of the stretch, a
+     * {@code true} may be a false positive (it also covers the trailing exit gap, and a layout window is
+     * widened by the entry lead so the lead-in inside the preceding End slot is never missed).
+     */
+    public boolean upsideDownInfluence(long worldX, int margin) {
+        long lead = udEntryLeadLen();
+        int m = (int) Math.min(Integer.MAX_VALUE, Math.max(0, margin) + lead);
+        if (layout != null) return layoutInfluence(CycleLayout.Type.UPSIDE_DOWN, worldX, m);
+        long len = upsideDownLen() + udExitFadeLen();
+        if (len <= 0L) return false;
+        return influence().contains(worldX, m, udStart(), len);
+    }
+
+    /**
      * Overworld-reveal ramp {@code 0..1} across the exit crossfade: {@code 0} at the band's trailing
      * edge (full mirror, no overworld yet) climbing to {@code 1} at the zone end (solid overworld). 0
      * outside the zone. Drives how much of the normal terrain is un-eroded back in
@@ -683,7 +1590,7 @@ public record WorldGenCycle(long startX, int owGap,
     public double upsideDownExitOwRevealRamp(int worldX) {
         long l = udExitFadeOffset(worldX);
         if (l < 0L) return 0.0;
-        long len = udExitFadeLen();
+        long len = udExitFadeLenAt(worldX);
         return len > 0L ? (double) l / len : 0.0;
     }
 
@@ -697,7 +1604,7 @@ public record WorldGenCycle(long startX, int owGap,
     public double upsideDownExitMirrorDisperseRamp(int worldX) {
         long l = udExitFadeOffset(worldX);
         if (l < 0L) return 0.0;
-        long len = udExitFadeLen();
+        long len = udExitFadeLenAt(worldX);
         return len > 0L ? (double) (len - l) / len : 0.0;
     }
 
@@ -718,10 +1625,40 @@ public record WorldGenCycle(long startX, int owGap,
 
     /** Offset into the chuncks band core at a world-X, or {@code -1} outside it. */
     private long chuncksOffset(int worldX) {
-        long o = offset(worldX);
-        if (o < 0L) return -1L;
-        long lc = o - chuncksStart();
-        return (lc < 0L || lc >= chuncksLen()) ? -1L : lc;
+        return coreLocal(CycleLayout.Type.CHUNCKS, chuncksFadeLen(), worldX);
+    }
+
+    /** Offset into the core of the fade-in band {@code t} at {@code worldX} (its span = fade + core), or {@code -1}. */
+    private long coreLocal(CycleLayout.Type t, long fade, int worldX) {
+        long l = spanLocal(t, worldX);
+        if (l < 0L) return -1L;
+        long c = l - fade;
+        return (c < 0L || c >= spanCore(t, worldX)) ? -1L : c;
+    }
+
+    /**
+     * Fade-in ramp of band {@code t} at {@code worldX}: {@code 0 → 1} across the entry fade, {@code 1} in the
+     * core, {@code 0} elsewhere. The chuncks, spheres and stacks bands all enter this way.
+     */
+    private double fadeInRamp(CycleLayout.Type t, long fade, int worldX) {
+        long l = spanLocal(t, worldX);
+        if (l < 0L) return 0.0;
+        if (l >= fade) return 1.0;
+        return fade > 0L ? (double) l / fade : 1.0;
+    }
+
+    /**
+     * Layout form of the approach-or-band windows: from the end of the nearest earlier non-overworld slot
+     * through the end of the {@code t} slot (any occurrence). Gates "Re-Over-World".
+     */
+    private boolean layoutApproachOrBand(CycleLayout.Type t, int worldX) {
+        long u = baseAt(worldX);
+        if (u < 0L) return false;
+        for (int j = 0; j < layout.count(); j++) {
+            if (layout.slot(j).type() != t) continue;
+            if (u >= layout.approachStart(j) && u < layout.start(j) + layout.length(j)) return true;
+        }
+        return false;
     }
 
     /**
@@ -735,6 +1672,36 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * Fraction of kept chuncks chunks that are top-down slices at {@code worldX}: {@code chuncksSliceRatio},
+     * except across the stacks exit fade, where it eases to 0 with the fade — so the last chunks before the
+     * overworld are whole columns and the pieces close into solid terrain without a sliced seam.
+     */
+    public double chuncksSliceRatioAt(int worldX) {
+        double exit = stacksExitRamp(worldX);
+        return exit >= 0.0 ? chuncksSliceRatio * exit : chuncksSliceRatio;
+    }
+
+    /**
+     * True if {@code worldX} lies anywhere in the run-up to the chuncks band or the band core itself —
+     * the whole stretch from the end of the upside-down exit crossfade ({@code udExitGap}, the chuncks
+     * {@code leadGap}, the entry fade, then the core). The intervening gaps read as plain overworld to
+     * {@link DisintegrationBand#zoneAt}, but the world has not settled back yet: the chunks are still to
+     * come. Used by the {@code reached_overworld_again} advancement gate ({@code ZoneProgressEvents}) so
+     * "Re-Over-World" waits for the overworld that follows the band, not the one leading into it.
+     *
+     * <p>False when the chuncks band is disabled ({@code chuncksLen == 0}) — with no band there is
+     * nothing to wait for, and the pre-chuncks gating is preserved exactly.</p>
+     */
+    public boolean isInChuncksApproachOrBand(int worldX) {
+        if (chuncksLen() <= 0L) return false;
+        if (layout != null) return layoutApproachOrBand(CycleLayout.Type.CHUNCKS, worldX);
+        long o = offset(worldX);
+        if (o < 0L) return false;
+        long approachStart = udExitFadeStart() + udExitFadeLen();
+        return o >= approachStart && o < chuncksStart() + chuncksLen();
+    }
+
+    /**
      * Effective keep-density at a world-X, driving the entry transition: {@code chuncksKeepDensity}
      * across the band core, ramping linearly from {@code 1.0} (all real terrain, no void) at the entry
      * fade start up to {@code chuncksKeepDensity} at the core edge, and {@code 1.0} everywhere else (so
@@ -742,18 +1709,634 @@ public record WorldGenCycle(long startX, int owGap,
      */
     public double chuncksKeepDensityAt(int worldX) {
         if (chuncksLen() <= 0L) return 1.0;                         // band disabled → all real terrain
+        if (isInChuncksStacksCrossfade(worldX)) return chuncksKeepDensity;   // chuncks carries on under the stacks fade
+        double exit = stacksExitRamp(worldX);
+        if (exit >= 0.0) return 1.0 + (chuncksKeepDensity - 1.0) * exit;   // stacks exit: chunks close back into terrain
+        double t = fadeInRamp(CycleLayout.Type.CHUNCKS, chuncksFadeLen(), worldX);   // 0 at fade start → 1 at core edge
+        return 1.0 + (chuncksKeepDensity - 1.0) * t;                // lerp 1 → keepDensity (1.0 outside the band + fade)
+    }
+
+    /**
+     * True inside a stacks slot's entry fade when the slot straight before it is chuncks (layout only).
+     * There the two bands crossfade: a chunk the stacks ramp claims stays stacks, and every other chunk
+     * is classified by chuncks at its core density ({@link #chuncksKeepDensityAt}) instead of falling back
+     * to plain overworld — so chuncks fades out as stacks fades in, with no overworld wall between them.
+     */
+    public boolean isInChuncksStacksCrossfade(int worldX) {
+        return stacksFadeAfter(CycleLayout.Type.CHUNCKS, worldX) && chuncksLen() > 0L;
+    }
+
+    /**
+     * True inside a stacks slot's entry fade when the slot straight before it is the mix zone. The same
+     * crossfade as {@link #isInChuncksStacksCrossfade}, but the chunks stacks doesn't claim take a mix pick.
+     */
+    public boolean isInMixStacksCrossfade(int worldX) {
+        return stacksFadeAfter(CycleLayout.Type.MIX, worldX);
+    }
+
+    private boolean stacksFadeAfter(CycleLayout.Type before, int worldX) {
+        if (layout == null || stacksLen() <= 0L) return false;
+        int i = slotAt(worldX);
+        if (i <= 0 || layout.slot(i).type() != CycleLayout.Type.STACKS
+                || layout.slot(i - 1).type() != before) return false;
+        return baseAt(worldX) - layout.start(i) < stacksFadeLen();
+    }
+
+    // ---- mix zone ------------------------------------------------------------------------
+
+    /** True if {@code worldX} lies in a mix slot (layout only; hard-edged, no fades). */
+    public boolean isInMixZone(int worldX) {
+        if (layout == null) return false;
+        int i = slotAt(worldX);
+        return i >= 0 && layout.slot(i).type() == CycleLayout.Type.MIX;
+    }
+
+    /** True where a chunk takes a mix pick: the mix zone itself, or the stacks fade straight after it. */
+    public boolean mixPicksAt(int worldX) {
+        return isInMixZone(worldX) || isInMixStacksCrossfade(worldX);
+    }
+
+    /**
+     * This cycle moved {@code dx} blocks west: {@code shifted(dx).q(x) == q(x + dx)} for every X query,
+     * because every query depends on X only through {@code worldX - startX}. The mix zone hands a chunk
+     * the cycle shifted onto a representative chunk of the band it picked, so every band helper answers
+     * for that band without knowing the zone exists. Absolute-X outputs come back in the shifted frame.
+     */
+    public WorldGenCycle shifted(long dx) {
+        if (dx == 0L) return this;
+        return new WorldGenCycle(startX - dx, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold,
+                coreFade, coreHold, eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade,
+                chuncksHold, chuncksFade, chuncksLeadGap, chuncksKeepDensity, chuncksSliceRatio,
+                spheresHold, spheresFade, spheresLeadGap, stacksHold, stacksFade, stacksLeadGap, stacksDensity,
+                legacy, layout, phaseShift);
+    }
+
+    /** World X where the mix slot of the run containing {@code worldX} starts, or {@code -1} when there is none. */
+    public long mixZoneStartX(int worldX) {
+        if (!isInMixZone(worldX) && !isInMixStacksCrossfade(worldX)) return -1L;
+        int i = layout.firstIndexOf(CycleLayout.Type.MIX);
+        return i < 0 ? -1L : worldOf(worldX, layout.start(i));
+    }
+
+    /** Doubling run index at {@code worldX}; {@code 0} without a layout. */
+    public int runIndexAt(int worldX) {
+        return layout == null ? 0 : runAt(worldX);
+    }
+
+    /** World X of base coordinate {@code u} in forward doubling run {@code k} (layout only). */
+    public long worldXOfBase(int k, long u) {
+        return startX + CycleLayout.runStart(k, layout.period()) + (u << k);
+    }
+
+    /** World X of base coordinate {@code u} in the run containing {@code worldX}, forward or reversed (layout only). */
+    public long worldXOfBaseNear(int worldX, long u) {
+        return worldOf(worldX, u);
+    }
+
+    // ---- spheres band --------------------------------------------------------
+
+    /**
+     * Offset (into the cycle) where the spheres entry fade zone begins — after the chuncks band core
+     * and the spheres lead-in gap ({@code spheresLeadGap}). When the chuncks band is disabled all its
+     * spans are 0, so this collapses to right after the upside-down exit gap (plus the lead gap); the
+     * spheres band's placement is independent of whether chuncks is present.
+     */
+    private long spheresFadeStart() {
+        return chuncksStart() + chuncksLen() + spheresLeadGapLen();
+    }
+
+    /** Offset where the full-void spheres core begins — after the entry fade zone. */
+    private long spheresStart() {
+        return spheresFadeStart() + spheresFadeLen();
+    }
+
+    /** Offset into the spheres band core at a world-X, or {@code -1} outside it. */
+    /**
+     * Blocks into the spheres band core at {@code worldX} ({@code 0} = first core column), or {@code -1}
+     * outside the core (the entry fade included). The coordinate {@link SpheresSegments} offsets use.
+     */
+    public long spheresCoreOffset(int worldX) {
+        return spheresOffset(worldX);
+    }
+
+    private long spheresOffset(int worldX) {
+        return coreLocal(CycleLayout.Type.SPHERES, spheresFadeLen(), worldX);
+    }
+
+    /**
+     * True if {@code worldX} lies in the full-void spheres band core (not the entry fade). Membership is
+     * binary (per-column) like {@link #isInChuncksBand}; which blocks survive inside a column is the
+     * seed-stable sphere field ({@code SphereField}) applied on top, not part of the pure layout.
+     */
+    public boolean isInSpheresBand(int worldX) {
+        return spheresOffset(worldX) >= 0L;
+    }
+
+    /**
+     * True if {@code worldX} lies in the entry fade zone {@code [spheresFadeStart, spheresStart)} —
+     * immediately before the spheres core, where the natural terrain dissolves into void. Disjoint from
+     * {@link #isInSpheresBand}: a column is in at most one of the two.
+     */
+    public boolean isInSpheresFade(int worldX) {
+        long l = spanLocal(CycleLayout.Type.SPHERES, worldX);
+        return l >= 0L && l < spheresFadeLen();
+    }
+
+    /**
+     * Void ramp {@code 0..1} for the spheres band: {@code 0} outside the band, climbing linearly from
+     * {@code 0} at the entry fade start to {@code 1} at the core edge, and held at {@code 1} across the
+     * core. Drives how much of the natural terrain outside the spheres is dissolved (the carve pass
+     * dithers removal against it) and the bedrock-floor skip. Pure (seed-independent), like the other
+     * ramps. Hard far edge: {@code 0} again immediately after the core.
+     */
+    public double spheresVoidRamp(int worldX) {
+        if (spheresLen() <= 0L) return 0.0;
+        return fadeInRamp(CycleLayout.Type.SPHERES, spheresFadeLen(), worldX);
+    }
+
+    /**
+     * End sky/light ramp {@code 0..1} over the <b>later part</b> of the spheres band core: {@code 0}
+     * across the entry fade and the core's first {@code startBlocks} (normal overworld sky), climbing
+     * {@code 0 → 1} over {@code fade} blocks from there, held at {@code 1}, then back {@code 1 → 0} over
+     * the core's last {@code fade} blocks — so the overworld sky is fully restored exactly where the
+     * terrain snaps back to overworld at the core's hard far edge. {@code startBlocks} at or past the
+     * core length means no End sky at all; {@code fade} is clamped to a quarter of the core and {@code 0}
+     * is a hard switch. Pure (seed-independent), like the other ramps.
+     */
+    public double spheresEndSkyRamp(int worldX, int startBlocks, int fade) {
+        return spheresSkyWindowRamp(worldX, startBlocks, Long.MAX_VALUE, fade);
+    }
+
+    /**
+     * Sky ramp {@code 0..1} over a window {@code [startBlocks, endBlocks)} of the spheres band core
+     * (offsets from the first core column): climbs {@code 0 → 1} over {@code fade} blocks from
+     * {@code startBlocks}, holds, then falls {@code 1 → 0} over the {@code fade} blocks before
+     * {@code endBlocks}. {@code endBlocks} is clamped to the core length, so a window running to the
+     * band's end hands back to the overworld sky exactly at the core's hard far edge. {@code fade} is
+     * clamped to a quarter of the core; {@code 0} is a hard switch. Two windows that meet at {@code B}
+     * crossfade when one ends at {@code B + fade/2} and the other starts at {@code B − fade/2}.
+     */
+    public double spheresSkyWindowRamp(int worldX, long startBlocks, long endBlocks, int fade) {
+        return spheresSkyWindowRamp(worldX, startBlocks, endBlocks, fade, fade);
+    }
+
+    /**
+     * {@link #spheresSkyWindowRamp(int, long, long, int)} with separate spans: climbs over {@code fadeIn}
+     * blocks from {@code startBlocks} and falls over the {@code fadeOut} blocks before {@code endBlocks}.
+     * Each is clamped to a quarter of the core; {@code 0} is a hard switch on that edge.
+     */
+    public double spheresSkyWindowRamp(int worldX, long startBlocks, long endBlocks, int fadeIn, int fadeOut) {
+        long len = spheresLen();
+        if (len <= 0L) return 0.0;
+        long ls = spheresOffset(worldX);
+        if (ls < 0L) return 0.0;
+        long start = Math.max(0L, startBlocks);
+        long end = Math.min(len, endBlocks);
+        if (ls < start || ls >= end) return 0.0;
+        long fi = Math.max(0L, Math.min(fadeIn, len / 4L));
+        long fo = Math.max(0L, Math.min(fadeOut, len / 4L));
+        double in = fi == 0L ? 1.0 : (double) (ls - start + 1L) / fi;   // entering: reaches 1 after fi blocks
+        double out = fo == 0L ? 1.0 : (double) (end - ls) / fo;         // leaving: 1/fo on the window's last column
+        return Math.min(1.0, Math.min(in, out));
+    }
+
+    /**
+     * True if {@code worldX} lies anywhere in the run-up to the spheres band or the band core itself —
+     * the whole stretch from the end of the chuncks core (the spheres {@code leadGap}, the entry fade,
+     * then the core). The lead gap reads as plain overworld to {@link DisintegrationBand#zoneAt} and to
+     * {@code ChuncksBand.isInApproachOrBand}, but the world has not settled back yet: the spheres are
+     * still to come. Used by the {@code reached_overworld_again} advancement gate
+     * ({@code ZoneProgressEvents}) alongside the chuncks predicate, so "Re-Over-World" waits for the
+     * overworld that follows the LAST band of the cycle.
+     *
+     * <p>False when the spheres band is disabled ({@code spheresLen == 0}) — with no band there is
+     * nothing to wait for, and the pre-spheres gating is preserved exactly.</p>
+     */
+    public boolean isInSpheresApproachOrBand(int worldX) {
+        if (spheresLen() <= 0L) return false;
+        if (layout != null) return layoutApproachOrBand(CycleLayout.Type.SPHERES, worldX);
         long o = offset(worldX);
-        if (o < 0L) return 1.0;
-        long holdStart = chuncksStart();
-        if (o >= holdStart && o < holdStart + chuncksLen()) return chuncksKeepDensity;  // full-density core
-        long fadeLen = chuncksFadeLen();
-        if (fadeLen > 0L) {
-            long fadeStart = holdStart - fadeLen;
-            if (o >= fadeStart && o < holdStart) {
-                double t = (double) (o - fadeStart) / fadeLen;      // 0 at fade start → 1 at core edge
-                return 1.0 + (chuncksKeepDensity - 1.0) * t;        // lerp 1 → keepDensity
-            }
+        if (o < 0L) return false;
+        long approachStart = chuncksStart() + chuncksLen();
+        return o >= approachStart && o < spheresStart() + spheresLen();
+    }
+
+    // ---- stacks band -----------------------------------------------------------
+
+    /**
+     * Offset (into the cycle) where the stacks entry fade zone begins — after the spheres band core and
+     * the stacks lead-in gap. When the spheres band is disabled all its spans are 0, so this collapses to
+     * right after the chuncks core (plus the lead gap), and likewise past chuncks when that is off too;
+     * the stacks band's placement is independent of which earlier bands are present.
+     */
+    private long stacksFadeStart() {
+        return spheresStart() + spheresLen() + stacksLeadGapLen();
+    }
+
+    /** Offset where the stacks band core begins — after the entry fade zone. */
+    private long stacksStart() {
+        return stacksFadeStart() + stacksFadeLen();
+    }
+
+    /** Offset into the stacks band core at a world-X, or {@code -1} outside it. */
+    private long stacksOffset(int worldX) {
+        return coreLocal(CycleLayout.Type.STACKS, stacksFadeLen(), worldX);
+    }
+
+    /**
+     * True if {@code worldX} lies in the stacks band core (not the entry fade). Membership is binary
+     * (per-column) like {@link #isInChuncksBand}; the per-<em>chunk</em> terrain/void/stack decision is a
+     * seed-stable noise gate applied on top of the {@link #stacksVoidRampAt void ramp} (see
+     * {@code StacksBand}), not part of the pure layout.
+     */
+    public boolean isInStacksBand(int worldX) {
+        return stacksOffset(worldX) >= 0L;
+    }
+
+    /**
+     * True if {@code worldX} lies anywhere from the end of the spheres band core through the stacks lead
+     * gap, entry fade and core. The lead gap reads as plain overworld to {@link DisintegrationBand#zoneAt},
+     * but the world has not settled back yet: the towers are still to come. Used by the
+     * {@code reached_overworld_again} advancement gate ({@code ZoneProgressEvents}) so "Re-Over-World"
+     * waits for the overworld that follows the LAST band of the cycle.
+     *
+     * <p>False when the stacks band is disabled ({@code stacksLen == 0}) — with no band there is nothing
+     * to wait for, and the pre-stacks gating is preserved exactly.</p>
+     */
+    public boolean isInStacksApproachOrBand(int worldX) {
+        if (stacksLen() <= 0L) return false;
+        if (layout != null) return layoutApproachOrBand(CycleLayout.Type.STACKS, worldX);
+        long o = offset(worldX);
+        if (o < 0L) return false;
+        long approachStart = spheresStart() + spheresLen();
+        return o >= approachStart && o < stacksStart() + stacksLen();
+    }
+
+    /**
+     * Fraction {@code 0..1} of chunks that become void at a world-X, driving the entry transition:
+     * {@code 1.0} across the band core (every chunk is void, some holding a stack), ramping linearly
+     * from {@code 0.0} (all real terrain) at the entry fade start up to {@code 1.0} at the core edge,
+     * and {@code 0.0} everywhere else. Pure (seed-independent), like the other ramps.
+     */
+    public double stacksVoidRampAt(int worldX) {
+        if (stacksLen() <= 0L) return 0.0;                          // band disabled → all real terrain
+        double exit = stacksExitRamp(worldX);
+        if (exit >= 0.0) return exit;                               // exit fade: void thins out towards the overworld
+        return fadeInRamp(CycleLayout.Type.STACKS, stacksFadeLen(), worldX);   // 0 at fade start → 1 in the core
+    }
+
+    /**
+     * Base-block length of the stacks exit fade: the last stretch of a stacks slot that hands straight over
+     * to plain overworld. Much shorter than the chuncks → stacks crossfade it borrows its look from.
+     */
+    static final long STACKS_EXIT_FADE_BLOCKS = 300L;
+
+    /**
+     * True in the last {@link #STACKS_EXIT_FADE_BLOCKS} of a stacks slot whose next slot is an overworld gap
+     * (the last slot wraps to the next run's slot 0 — ahead of spawn the next run, behind it the buffer).
+     * There stacks' void thins out towards the overworld and every chunk it doesn't claim is classified by
+     * chuncks, so floating chunks grow denser until they close into solid terrain. Layout only.
+     */
+    public boolean isInStacksExitFade(int worldX) {
+        return stacksExitRamp(worldX) >= 0.0;
+    }
+
+    /**
+     * Stacks void fraction across the exit fade — 1 at the stacks side, falling to 1/len at the overworld
+     * edge — or {@code -1} outside it. Evaluated in base coordinates, so the fade stretches with the run.
+     */
+    private double stacksExitRamp(int worldX) {
+        if (layout == null || stacksLen() <= 0L) return -1.0;
+        int i = slotAt(worldX);
+        if (i < 0 || layout.slot(i).type() != CycleLayout.Type.STACKS) return -1.0;
+        int next = (i + 1) % layout.count();
+        if (layout.slot(next).type() != CycleLayout.Type.OVERWORLD || layout.length(next) <= 0L) return -1.0;
+        long fade = Math.min(STACKS_EXIT_FADE_BLOCKS, Math.max(0L, layout.slot(i).core()));
+        long toEnd = layout.start(i) + layout.length(i) - baseAt(worldX);   // 1 at the last block
+        if (fade <= 0L || toEnd > fade) return -1.0;
+        return (double) toEnd / fade;
+    }
+
+    // ---- legacy bands ------------------------------------------------------------
+
+    /** Shared empty legacy layout for the back-compat constructors. */
+    private static final LegacySpan[] NO_LEGACY = new LegacySpan[0];
+
+    /**
+     * What a legacy chunk at a world-X may be: it rolls {@code to} with probability {@code t}, else
+     * {@code from}; {@code null} on either side means modern terrain. So a core is {@code (era, era, 1)},
+     * the entry fade {@code (null, era, t)}, an era-to-era crossfade {@code (a, b, t)} — never modern —
+     * and the exit fade {@code (era, null, t)}. {@link #kind()} and {@link #ramp()} are the old
+     * one-band view: the era in play and the probability of it.
+     */
+    public record LegacyHit(LegacyBandKind from, LegacyBandKind to, double t) {
+
+        /** Classic entry/core form: modern → {@code kind} with probability {@code ramp}. */
+        public LegacyHit(LegacyBandKind kind, double ramp) {
+            this(ramp >= 1.0 ? kind : null, kind, ramp);
         }
-        return 1.0;                                                 // outside the band + fade
+
+        /** The era in play (the destination, or the source on the exit fade). */
+        public LegacyBandKind kind() {
+            return to != null ? to : from;
+        }
+
+        /** Probability of {@link #kind()}. */
+        public double ramp() {
+            return to != null ? t : 1.0 - t;
+        }
+    }
+
+    /** Combined length of every legacy span; 0 when none is enabled. */
+    public long legacyTotalLen() {
+        if (layout != null) {
+            long total = 0L;
+            for (int i = 0; i < layout.count(); i++) {
+                if (layout.slot(i).type() == CycleLayout.Type.LEGACY_RUN) total += layout.length(i);
+            }
+            return total;
+        }
+        if (legacy == null) return 0L;
+        long total = 0L;
+        for (LegacySpan span : legacy) total += span.totalLen();
+        return total;
+    }
+
+    /** Offset (into the cycle) where the first legacy span's lead gap begins — right after the stacks core. */
+    private long legacyBase() {
+        return stacksStart() + stacksLen();
+    }
+
+    /** The enabled span for {@code kind}, or {@code null}. */
+    private LegacySpan spanOf(LegacyBandKind kind) {
+        if (legacy == null) return null;
+        for (LegacySpan span : legacy) {
+            if (span.kind() == kind && span.holdLen() > 0L) return span;
+        }
+        return null;
+    }
+
+    /** Offset where {@code kind}'s lead gap begins, or {@code -1} when that band is disabled. */
+    private long legacySlotStart(LegacyBandKind kind) {
+        long start = legacyBase();
+        for (LegacySpan span : legacy == null ? NO_LEGACY : legacy) {
+            if (span.kind() == kind) return span.holdLen() > 0L ? start : -1L;
+            start += span.totalLen();
+        }
+        return -1L;
+    }
+
+    /** Length of the legacy band {@code kind}'s core, or 0 when it is disabled. */
+    public long legacyLen(LegacyBandKind kind) {
+        if (layout != null) {
+            int e = layout.eraIndex(kind);
+            return e < 0 ? 0L : layout.eraCoreLen(layout.legacySlotOf(kind), e);
+        }
+        LegacySpan span = spanOf(kind);
+        return span == null ? 0L : span.holdLen();
+    }
+
+    /**
+     * The legacy band at {@code worldX} and how strongly the old generator applies there: {@code 1.0}
+     * across the core, ramping linearly {@code 0 → 1} over the entry fade and {@code 1 → 0} over the exit
+     * fade. {@code null} outside every legacy band (and in the lead gaps). Pure, seed-independent — the
+     * per-chunk old/new decision is a seed-stable roll against this ramp (see {@code LegacyBands}).
+     */
+    public LegacyHit legacyAt(int worldX) {
+        if (layout != null) return layoutLegacyAt(worldX);
+        if (legacy == null || legacy.length == 0) return null;
+        long o = offset(worldX);
+        if (o < 0L) return null;
+        long start = legacyBase();
+        for (LegacySpan span : legacy) {
+            long total = span.totalLen();
+            if (total > 0L && o >= start && o < start + total) {
+                double ramp = legacyRamp(span, o - start);
+                return ramp > 0.0 ? new LegacyHit(span.kind(), ramp) : null;
+            }
+            start += total;
+        }
+        return null;
+    }
+
+    // ---- legacy runs (ordered layout): entry fade, era cores with one shared crossfade between, exit fade.
+    // An order may hold several legacy-run slots; each era lives in exactly one of them.
+
+    /** Local offset into the legacy-run slot at {@code worldX}, or {@code -1}. Layout only. */
+    private long legacyRunLocal(int worldX) {
+        return spanLocal(CycleLayout.Type.LEGACY_RUN, worldX);
+    }
+
+    /**
+     * Local offset into the legacy-run slot at {@code worldX} when that slot is the one running era
+     * {@code kind}, else {@code -1}. Layout only.
+     */
+    private long eraRunLocal(LegacyBandKind kind, int worldX) {
+        int i = slotAt(worldX);
+        if (i < 0 || i != layout.legacySlotOf(kind)) return -1L;
+        return legacyRunLocal(worldX);
+    }
+
+    /** {@link CycleLayout#fadeBefore} in era {@code kind}'s own legacy slot. */
+    private long eraFadeBefore(LegacyBandKind kind, int e) {
+        return layout.fadeBefore(layout.legacySlotOf(kind), e);
+    }
+
+    private LegacyHit layoutLegacyAt(int worldX) {
+        int slot = slotAt(worldX);
+        if (slot < 0) return null;
+        if (layout.slot(slot).type() != CycleLayout.Type.LEGACY_RUN) return legacyLeadInHit(slot, worldX);
+        long l = baseAt(worldX) - layout.start(slot);
+        LegacySpan[] eras = layout.eras(slot);
+        long leadIn = layout.legacyLeadIn(slot);
+        long at = 0L;
+        LegacyBandKind prev = null;
+        for (int e = 0; e <= eras.length; e++) {
+            LegacyBandKind next = e < eras.length ? eras[e].kind() : null;
+            long f = layout.fadeBefore(slot, e);
+            if (l < at + f) {                                      // the fade / crossfade before era e
+                // the run's entry fade carries on from a lead-in in the slot before (see legacyLeadInHit)
+                long pre = e == 0 ? leadIn : 0L;
+                double t = (double) (pre + l - at + 1) / (pre + f + 1);
+                return new LegacyHit(prev, next, t);
+            }
+            at += f;
+            if (next == null) break;
+            long len = eras[e].holdLen();
+            if (l < at + len) return new LegacyHit(next, next, 1.0); // era e core
+            at += len;
+            prev = next;
+        }
+        return null;
+    }
+
+    /**
+     * The first half of a lead-in entry fade: the last {@link CycleLayout#legacyLeadIn} blocks of the slot
+     * before a legacy run (the Nether's exit mountains before the Lost City), where the run's first era
+     * already rolls in, rising towards where the run itself continues the ramp. {@code null} elsewhere.
+     */
+    private LegacyHit legacyLeadInHit(int slot, int worldX) {
+        int run = slot + 1;
+        if (run >= layout.count()) return null;
+        long leadIn = layout.legacyLeadIn(run);
+        if (leadIn <= 0L) return null;
+        long toRun = layout.start(run) - baseAt(worldX);          // 1..slot length
+        if (toRun <= 0L || toRun > leadIn) return null;
+        long l = leadIn - toRun;
+        long f = leadIn + layout.fadeBefore(run, 0);
+        return new LegacyHit(null, layout.eras(run)[0].kind(), (double) (l + 1) / (f + 1));
+    }
+
+    /** True if {@code worldX} is in the lead-in of legacy era {@code kind}'s run (before its slot). Layout only. */
+    public boolean isInLegacyLeadIn(LegacyBandKind kind, int worldX) {
+        if (layout == null) return false;
+        int slot = slotAt(worldX);
+        if (slot < 0 || slot + 1 != layout.legacySlotOf(kind) || layout.eraIndex(kind) != 0) return false;
+        return legacyLeadInHit(slot, worldX) != null;
+    }
+
+    /** Offset of {@code kind}'s core from the legacy-run slot start, or {@code -1} when not in the run. Layout only. */
+    private long eraCoreStart(LegacyBandKind kind) {
+        int e = layout.eraIndex(kind);
+        return e < 0 ? -1L : layout.eraCoreStart(layout.legacySlotOf(kind), e);
+    }
+
+    /** Ramp at {@code local} blocks into {@code span}'s slot (lead gap first). */
+    static double legacyRamp(LegacySpan span, long local) {
+        long fadeStart = span.leadGapLen();
+        long holdStart = fadeStart + span.fadeLen();
+        long holdEnd = holdStart + span.holdLen();
+        long exitEnd = holdEnd + span.fadeLen();
+        if (local < fadeStart || local >= exitEnd) return 0.0;
+        if (local >= holdStart && local < holdEnd) return 1.0;
+        if (local < holdStart) return (double) (local - fadeStart + 1) / (span.fadeLen() + 1);
+        return (double) (exitEnd - local) / (span.fadeLen() + 1);
+    }
+
+    /**
+     * How far {@code worldX} is through legacy band {@code kind}, {@code 0..1} from the start of its entry
+     * fade to the end of its exit fade (the stretch where its chunks can appear), or {@code -1} outside it
+     * (lead gap, other bands, disabled). Lets one band step through sub-versions along its length.
+     */
+    public double legacyProgress(LegacyBandKind kind, int worldX) {
+        if (layout != null) {
+            long l = eraRunLocal(kind, worldX);
+            long cs = eraCoreStart(kind);
+            if (l < 0L || cs < 0L) return -1.0D;
+            int e = layout.eraIndex(kind);
+            long from = cs - eraFadeBefore(kind, e);
+            long len = eraFadeBefore(kind, e) + legacyLen(kind) + eraFadeBefore(kind, e + 1);
+            long local = l - from;
+            return (local < 0L || local >= len) ? -1.0D : (double) local / len;
+        }
+        LegacySpan span = spanOf(kind);
+        if (span == null) return -1.0D;
+        long o = offset(worldX);
+        if (o < 0L) return -1.0D;
+        long from = legacySlotStart(kind) + span.leadGapLen();
+        long len = 2L * span.fadeLen() + span.holdLen();
+        long local = o - from;
+        if (local < 0L || local >= len) return -1.0D;
+        return (double) local / len;
+    }
+
+    /** True if {@code worldX} lies in the core of legacy band {@code kind} (not its fades). */
+    public boolean isInLegacyBand(LegacyBandKind kind, int worldX) {
+        if (layout != null) {
+            long l = eraRunLocal(kind, worldX);
+            long cs = eraCoreStart(kind);
+            return l >= 0L && cs >= 0L && l >= cs && l < cs + legacyLen(kind);
+        }
+        LegacySpan span = spanOf(kind);
+        if (span == null) return false;
+        long o = offset(worldX);
+        if (o < 0L) return false;
+        long holdStart = legacySlotStart(kind) + span.leadGapLen() + span.fadeLen();
+        return o >= holdStart && o < holdStart + span.holdLen();
+    }
+
+    /**
+     * {@link #legacyLen} in <em>world</em> blocks for the run {@code worldX} is in — the same number on
+     * run 0, doubled on each later run — so a generator laying its script along the core
+     * ({@code FarLandsShift}) stretches with the band.
+     */
+    public long legacyCoreLenBlocks(LegacyBandKind kind, int worldX) {
+        long len = legacyLen(kind);
+        return layout == null ? len : len << runAt(worldX);
+    }
+
+    /** Sentinel for {@link #legacyCoreStartX}: {@code worldX} is outside that band's slot. */
+    public static final long NOT_IN_LEGACY_SLOT = Long.MIN_VALUE;
+
+    /**
+     * World X where the core of the legacy band {@code kind} instance containing {@code worldX} begins —
+     * the anchor for a generator that lays its terrain out along the band (Far Lands: where the wall
+     * falls). Defined across the whole slot (lead gap, both fades, core), so the entry-fade chunks share
+     * the core's anchor; {@link #NOT_IN_LEGACY_SLOT} outside it or when the band is disabled.
+     */
+    public long legacyCoreStartX(LegacyBandKind kind, int worldX) {
+        if (layout != null) {
+            long l = eraRunLocal(kind, worldX);
+            long cs = eraCoreStart(kind);
+            if (l < 0L || cs < 0L) return NOT_IN_LEGACY_SLOT;
+            int e = layout.eraIndex(kind);
+            if (l < cs - eraFadeBefore(kind, e) || l >= cs + legacyLen(kind) + eraFadeBefore(kind, e + 1)) {
+                return NOT_IN_LEGACY_SLOT;
+            }
+            int i = slotAt(worldX);
+            return worldOf(worldX, layout.start(i) + cs);
+        }
+        LegacySpan span = spanOf(kind);
+        if (span == null) return NOT_IN_LEGACY_SLOT;
+        long o = offset(worldX);
+        if (o < 0L) return NOT_IN_LEGACY_SLOT;
+        long start = legacySlotStart(kind);
+        if (o < start || o >= start + span.totalLen()) return NOT_IN_LEGACY_SLOT;
+        long coreStart = start + span.leadGapLen() + span.fadeLen();
+        return (long) worldX - (o - coreStart);
+    }
+
+    /**
+     * Where {@code worldX} sits along legacy band {@code kind}'s core: {@code 0} at the first core block,
+     * {@code 1} one past the last, below 0 in the lead gap / entry fade and above 1 in the exit fade.
+     * {@code NaN} outside the band's slot or when it is disabled. Pure.
+     */
+    public double legacyCoreProgress(LegacyBandKind kind, int worldX) {
+        if (layout != null) {
+            long l = eraRunLocal(kind, worldX);
+            long cs = eraCoreStart(kind);
+            if (l < 0L || cs < 0L) return Double.NaN;
+            int e = layout.eraIndex(kind);
+            long len = legacyLen(kind);
+            if (l < cs - eraFadeBefore(kind, e) || l >= cs + len + eraFadeBefore(kind, e + 1)) return Double.NaN;
+            return (double) (l - cs) / len;
+        }
+        LegacySpan span = spanOf(kind);
+        if (span == null) return Double.NaN;
+        long o = offset(worldX);
+        if (o < 0L) return Double.NaN;
+        long start = legacySlotStart(kind);
+        if (o < start || o >= start + span.totalLen()) return Double.NaN;
+        long holdStart = start + span.leadGapLen() + span.fadeLen();
+        return (double) (o - holdStart) / span.holdLen();
+    }
+
+    /**
+     * True if {@code worldX} lies anywhere from the start of legacy band {@code kind}'s lead gap through
+     * the end of its exit fade — the world has not settled back into plain overworld yet. Used by the
+     * {@code reached_overworld_again} gate so "Re-Over-World" waits for the overworld after the LAST band.
+     */
+    public boolean isInLegacyApproachOrBand(LegacyBandKind kind, int worldX) {
+        if (layout != null) {
+            int slot = layout.legacySlotOf(kind);
+            long u = baseAt(worldX);
+            return slot >= 0 && u >= 0L && u >= layout.approachStart(slot) && u < layout.start(slot) + layout.length(slot);
+        }
+        LegacySpan span = spanOf(kind);
+        if (span == null) return false;
+        long o = offset(worldX);
+        if (o < 0L) return false;
+        long start = legacySlotStart(kind);
+        return o >= start && o < start + span.totalLen();
     }
 }

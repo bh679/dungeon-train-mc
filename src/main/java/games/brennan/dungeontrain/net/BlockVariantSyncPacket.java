@@ -39,8 +39,33 @@ public record BlockVariantSyncPacket(
     int lockId,
     Vec3 anchorPos,
     Vec3 anchorRight,
-    Vec3 anchorUp
+    Vec3 anchorUp,
+    byte copyRoll,
+    boolean copySettingsSupported,
+    byte copyScope,
+    byte spanMode
 ) implements CustomPacketPayload {
+
+    /** Pre-span shape: {@code spanMode} defaults to {@code VariantSpan.NONE} (auto). */
+    public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
+                                  int lockId, Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp,
+                                  byte copyRoll, boolean copySettingsSupported, byte copyScope) {
+        this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp,
+            copyRoll, copySettingsSupported, copyScope,
+            (byte) games.brennan.dungeontrain.editor.VariantSpan.NONE.toByte());
+    }
+
+    /**
+     * The shape every call site had before the per-copy reroll flag — a cell in
+     * a plot that does not repeat, which is every plot but a dimensional
+     * carriage room's.
+     */
+    public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
+                                  int lockId, Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp) {
+        this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp,
+            (byte) games.brennan.dungeontrain.editor.VariantCopyRoll.DEFAULT.ordinal(), false,
+            (byte) games.brennan.dungeontrain.editor.VariantCopyScope.BOTH.ordinal());
+    }
 
     /**
      * Single per-cell candidate, mirrored on the wire. Lock semantics live
@@ -84,7 +109,19 @@ public record BlockVariantSyncPacket(
     public record Entry(String stateString, @Nullable String beNbt, int weight,
                         byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
                         @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
-                        int groupRef, boolean groupRefLive) {
+                        int groupRef, boolean groupRefLive, byte activeMode) {
+
+        /** Wire default for {@link #activeMode}: {@code VariantActive.Mode.INACTIVE}. */
+        public static final byte ACTIVE_MODE_DEFAULT = (byte) 2;
+
+        /** Backward-compat constructor for call sites that don't carry a redstone-toggle mode (defaults to INACTIVE). */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                     @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
+                     int groupRef, boolean groupRefLive) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId,
+                halfMode, minDiff, maxDiff, groupRef, groupRefLive, ACTIVE_MODE_DEFAULT);
+        }
 
         /** Backward-compat constructor for call sites that carry a difficulty band but no group reference. */
         public Entry(String stateString, @Nullable String beNbt, int weight,
@@ -157,6 +194,16 @@ public record BlockVariantSyncPacket(
         buf.writeVarInt(localPos.getY());
         buf.writeVarInt(localPos.getZ());
         buf.writeVarInt(lockId);
+        // The cell's two repeating-room settings, plus whether the plot repeats at all. The last
+        // is what decides whether the menu draws the two buttons, and the client cannot work it
+        // out — only the server knows which template the plot is a view of. Both settings ride as
+        // ordinals; out of range on the read side is the default, so a client and server that
+        // disagree about an enum draw the default rather than throwing.
+        buf.writeByte(copyRoll);
+        buf.writeBoolean(copySettingsSupported);
+        buf.writeByte(copyScope);
+        // The cell-wide multi-space span (door / bed / tall-plant cells), as an ordinal.
+        buf.writeByte(spanMode);
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
         writeVec3(buf, anchorUp);
@@ -180,6 +227,7 @@ public record BlockVariantSyncPacket(
             buf.writeVarInt(e.maxDiff());
             buf.writeVarInt(e.groupRef());
             buf.writeBoolean(e.groupRefLive());
+            buf.writeByte(e.activeMode());
         }
     }
 
@@ -193,6 +241,10 @@ public record BlockVariantSyncPacket(
         }
         BlockPos local = new BlockPos(buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
         int lockId = buf.readVarInt();
+        byte copyRoll = buf.readByte();
+        boolean copySettingsSupported = buf.readBoolean();
+        byte copyScope = buf.readByte();
+        byte spanMode = buf.readByte();
         Vec3 anchor = readVec3(buf);
         Vec3 right = readVec3(buf);
         Vec3 up = readVec3(buf);
@@ -214,10 +266,12 @@ public record BlockVariantSyncPacket(
             int maxDiff = buf.readVarInt();
             int groupRef = buf.readVarInt();
             boolean groupRefLive = buf.readBoolean();
+            byte activeMode = buf.readByte();
             entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
-                linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive));
+                linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode));
         }
-        return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up);
+        return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
+            copyRoll, copySettingsSupported, copyScope, spanMode);
     }
 
     @Override

@@ -42,13 +42,10 @@ public final class ClientPortalSwap {
      * invalidate anything, or a mixin that did not apply — and it is what stops any of this outliving
      * the swap it belongs to.</p>
      */
-    private static final long TTL_NANOS = 250_000_000L;
+    private static final long TTL_NANOS = 400_000_000L;
 
     /** {@link System#nanoTime()} the token was armed at, or {@link Long#MIN_VALUE} for "not armed". */
     private static volatile long armedAt = Long.MIN_VALUE;
-
-    /** Whether this swap's occlusion-graph wait has already happened. */
-    private static volatile boolean graphAwaited = true;
 
     /** Whether this swap's frame of synchronous nearby section builds has already happened. */
     private static volatile boolean nearbyCompiled = true;
@@ -58,25 +55,38 @@ public final class ClientPortalSwap {
 
     private ClientPortalSwap() {}
 
-    /** Called from the packet handler: the next frame is an arrival and needs both fixes. */
+    /** Called from the packet handler: the frames that follow are an arrival and need both fixes. */
     public static void arm() {
-        graphAwaited = false;
         nearbyCompiled = false;
         armedAt = System.nanoTime();
+        PortalArrivalTrace.beginArrival();
     }
 
     /** Forget an armed swap outright. */
     public static void reset() {
         armedAt = Long.MIN_VALUE;
-        graphAwaited = true;
         nearbyCompiled = true;
     }
 
-    /** True for the one frame that should wait out the occlusion-graph rebuild. */
-    public static boolean claimGraphWait() {
-        if (graphAwaited || !live()) return false;
-        graphAwaited = true;
-        return true;
+    /**
+     * Whether this frame is part of an arrival, and should both wait out the occlusion rebuild and
+     * re-derive the visible sections afterwards.
+     *
+     * <p><b>A window, not a claim, and that was the bug.</b> This used to be a one-shot token spent
+     * by the first frame to ask — which is not necessarily the first frame of the arrival. A swap
+     * arrives as two messages, the position and then this one, and a frame drawn between the token
+     * being armed and the camera actually moving finds nothing scheduled to wait for, spends the
+     * token on nothing, and leaves the real rebuild — queued a frame later — unwaited.</p>
+     *
+     * <p>The window closes on its own ({@link #TTL_NANOS}) rather than on being read, so it does not
+     * matter which frame is the real one. That also fixes the half nobody was covering: vanilla
+     * re-derives {@code visibleSections} only when the graph reports a finished rebuild <i>or the
+     * camera rotates</i>, so a player who lands and holds still keeps drawing the list from where
+     * they used to be until they move the mouse. Every frame of this window re-derives it, which is
+     * what moving the mouse was doing by hand.</p>
+     */
+    public static boolean inArrivalWindow() {
+        return live();
     }
 
     /**

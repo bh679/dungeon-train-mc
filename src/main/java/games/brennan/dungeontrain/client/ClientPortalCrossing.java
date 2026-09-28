@@ -27,14 +27,21 @@ public final class ClientPortalCrossing {
 
     /**
      * How fast the lift comes up or goes down, as a fraction of the remaining gap per lightmap
-     * rebuild — the same rate {@link ClientPortalRoomSky} eases at, and per rebuild rather than per
-     * frame for the same reason: {@code LightTexture} refreshes on a tick flag, so this steps at
-     * roughly 20 Hz and crosses most of the way in about a second.
+     * rebuild — per rebuild rather than per frame because {@code LightTexture} refreshes on a tick
+     * flag, so this steps at roughly 20 Hz.
      *
      * <p>The server's own ramp already moves a block at a time as the player walks. This is what
      * turns those steps into a slope, and what covers the tick a packet arrives late.</p>
+     *
+     * <p><b>Faster than {@link ClientPortalRoomSky}'s {@code 0.10}</b>, which is easing across a
+     * threshold a player crosses in one step and can afford half a second of lag. This one is
+     * chasing a value that moves the whole way along a nine-block walk — at {@code 0.10} the lift
+     * trailed about two blocks behind and finished after the player had arrived, which is precisely
+     * the "it all happens at the end" this is meant not to do. {@code 0.20} lands the lag near a
+     * block while still turning the server's per-block steps into a slope.</p>
      */
-    private static final float EASE_PER_REBUILD = 0.10f;
+    private static final float FADE_SECONDS = 0.8f;
+    private static final long[] FADE_CLOCK = new long[1];
 
     /** Below this the lift is not worth applying, and the mixin hands the lightmap back to vanilla. */
     private static final float OFF_EPSILON = 0.004f;
@@ -73,6 +80,44 @@ public final class ClientPortalCrossing {
     }
 
     /**
+     * How strongly the crossing is currently applied, without touching the ease.
+     *
+     * <p>For the other two corridor effects — {@link ClientPortalRoomFog} and
+     * {@link ClientPortalRoomSky} — which ramp along the same walk but are driven from the render
+     * pass rather than from the lightmap rebuild, and so must not be the ones stepping this. Reading
+     * a value {@link #advance} stepped earlier in the same rebuild is the point: all three effects
+     * then move together, which is what makes the corridor read as one transition.</p>
+     */
+
+    /**
+     * Shape a linear 0..1 progress into a fade that eases at both ends.
+     *
+     * <p>The ease this replaced was exponential — {@code applied += (want - applied) * rate} — whose
+     * largest step is its <em>first</em>. For a lift that brightens unlit cells that is backwards:
+     * the change was most abrupt exactly where it should have been imperceptible, and under a shader
+     * pack, which leans on the lightmap for ambient, it read as the lighting snapping on.</p>
+     */
+    private static float shaped(float progress) {
+        float x = Math.max(0.0f, Math.min(1.0f, progress));
+        return x * x * (3.0f - 2.0f * x);
+    }
+
+    /** Move {@code from} toward {@code to} at a fixed pace in real seconds, frame rate be damned. */
+    private static float approach(float from, float to, float seconds, long[] lastNanos) {
+        long now = System.nanoTime();
+        float dt = lastNanos[0] == 0L ? 0.0f : (now - lastNanos[0]) / 1_000_000_000.0f;
+        lastNanos[0] = now;
+        dt = Math.max(0.0f, Math.min(0.25f, dt));
+        float step = seconds <= 0.0f ? 1.0f : dt / seconds;
+        if (to > from) return Math.min(to, from + step);
+        return Math.max(to, from - step);
+    }
+
+    public static float current() {
+        return shaped(applied);
+    }
+
+    /**
      * Advance the ease and return how strongly the crossing's constant should be applied this
      * rebuild, {@code 0} for "leave the lightmap alone".
      *
@@ -95,11 +140,11 @@ public final class ClientPortalCrossing {
 
         if (wanted <= 0.0f && applied <= 0.0f) return 0.0f;
 
-        applied += (wanted - applied) * EASE_PER_REBUILD;
+        applied = approach(applied, wanted, FADE_SECONDS, FADE_CLOCK);
         if (wanted <= 0.0f && applied <= OFF_EPSILON) {
             applied = 0.0f;
             return 0.0f;
         }
-        return applied;
+        return shaped(applied);
     }
 }

@@ -67,17 +67,19 @@ public final class ClientStages {
 
     /** Human-readable gate summary for a Stage row, e.g. {@code "lvl 10..all · N"}. */
     public static String gateSummary(Info s) {
-        String max = s.maxLevel() < 0 ? "all" : Integer.toString(s.maxLevel());
-        return "lvl " + s.minLevel() + ".." + max + " · " + dims(s.phaseMask());
+        String max = s.maxLevel() < 0 ? MenuLang.t("stages.all") : Integer.toString(s.maxLevel());
+        return MenuLang.t("stages.gate_summary", s.minLevel(), max, dims(s.phaseMask()));
     }
 
-    /** Compact dimension letters for a 4-bit mask (OVERWORLD/NETHER/VOID/END); "all" when every bit set. */
+    /**
+     * Compact dimension letters for a {@link TrainPhase#bit()} mask — one {@link TrainPhase#letter()}
+     * per set phase in ordinal order (e.g. {@code "VUC"}); "all" when every bit set, an em dash when none.
+     */
     public static String dims(int mask) {
-        if ((mask & TrainPhase.ALL_MASK) == TrainPhase.ALL_MASK) return "all";
-        String[] letters = {"O", "N", "V", "E"};
+        if ((mask & TrainPhase.ALL_MASK) == TrainPhase.ALL_MASK) return MenuLang.t("stages.all");
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < letters.length; i++) {
-            if ((mask & (1 << i)) != 0) sb.append(letters[i]);
+        for (TrainPhase p : TrainPhase.values()) {
+            if ((mask & p.bit()) != 0) sb.append(p.letter());
         }
         return sb.length() == 0 ? "—" : sb.toString();
     }

@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "dungeontrain:block/stage_stone_feature_slab"
+    },
+    "type=double": {
+      "model": "dungeontrain:block/stage_stone_feature_slab"
+    },
+    "type=top": {
+      "model": "dungeontrain:block/stage_stone_feature_slab_top"
+    }
+  }
+}

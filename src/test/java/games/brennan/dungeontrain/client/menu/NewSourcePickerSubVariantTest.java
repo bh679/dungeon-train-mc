@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * whenever they opened the menu from inside one, while the command still targets the group's root.
  * Those two ids being distinct is the part worth pinning.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 final class NewSourcePickerSubVariantTest {
 
     private static List<CommandMenuEntry> entriesFor(String parentId, String sourceId) {

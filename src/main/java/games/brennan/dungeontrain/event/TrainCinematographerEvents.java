@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import dev.ryanhcode.sable.sublevel.plot.SubLevelPlayerChunkSender;
@@ -84,7 +85,9 @@ public final class TrainCinematographerEvents {
             ship.worldToShip(local);
             BlockPos shipCenter = BlockPos.containing(local.x, local.y, local.z);
 
-            LevelPlot plot = sableShip.subLevel().getPlot();
+            ServerSubLevel subLevel = sableShip.subLevel();
+            if (subLevel == null) continue;
+            LevelPlot plot = subLevel.getPlot();
             Consumer<net.minecraft.network.protocol.Packet<? super ClientGamePacketListener>> sender =
                     packet -> player.connection.send(packet);
 

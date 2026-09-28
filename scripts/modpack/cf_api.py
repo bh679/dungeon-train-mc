@@ -13,6 +13,7 @@ the helpers live here rather than being duplicated:
 
 Stdlib only, matching the other scripts here.
 """
+import http.client
 import json
 import os
 import time
@@ -33,7 +34,10 @@ def get_json(url, headers=None, retries=3, backoff=2.0):
             req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **(headers or {})})
             with urllib.request.urlopen(req, timeout=30) as resp:
                 return json.loads(resp.read().decode("utf-8"))
-        except (urllib.error.URLError, json.JSONDecodeError, TimeoutError) as exc:
+        # OSError covers URLError, TimeoutError and connection resets; HTTPException covers
+        # a body truncated mid-transfer (IncompleteRead), which GitHub's releases listing
+        # does under load. All of them are transient and belong inside the retry.
+        except (OSError, http.client.HTTPException, json.JSONDecodeError) as exc:
             last = exc
             if attempt < retries:
                 time.sleep(backoff * attempt)

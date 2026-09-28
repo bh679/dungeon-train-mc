@@ -51,10 +51,10 @@ public final class TrackSidePlots {
 
     /**
      * Z baseline for the track-side row — sourced from {@link
-     * EditorLayout#TRACKS_FIRST_Z}. Sits past every other view's Z range
-     * (CARRIAGES extends through the parts grid; CONTENTS sits between)
-     * so {@link #locate} can never claim a position that also belongs to
-     * a parts, contents, or carriage plot.
+     * EditorLayout#TRACKS_FIRST_Z}: the origin every category shares. The
+     * carriage, parts and contents plots predict the same positions, which
+     * is fine because only one category is ever stamped at a time and
+     * {@link #locate} answers only while its category is the resident one.
      */
     public static final int Z_BASELINE = EditorLayout.TRACKS_FIRST_Z;
 
@@ -158,6 +158,10 @@ public final class TrackSidePlots {
      */
     public static TrackPlotLocator.PlotInfo locate(BlockPos pos, CarriageDims dims) {
         for (TrackKind kind : TrackKind.values()) {
+            // Every category shares the origin, so a kind answers only while its category is the
+            // resident one — the room column belongs to PORTALS, the rest to TRACKS.
+            EditorCategory owner = kind == TrackKind.PORTAL_ROOM ? EditorCategory.PORTALS : EditorCategory.TRACKS;
+            if (!EditorStampedCategoryState.isActive(owner)) continue;
             List<String> names = TrackVariantRegistry.namesFor(kind);
             for (String name : names) {
                 BlockPos origin = plotOrigin(kind, name, dims);
@@ -232,10 +236,31 @@ public final class TrackSidePlots {
      */
     public static int slotZ(TrackKind kind, String name, CarriageDims dims) {
         int base = kind.dims(dims).getZ() + EditorLayout.GAP;
-        int needed = footprint(kind, name, dims).getZ() + SLOT_MIN_CLEARANCE;
+        int needed = deepestZ(kind, name, dims) + SLOT_MIN_CLEARANCE;
         if (needed <= base) return base;
         int steps = (needed - base + SLOT_STEP - 1) / SLOT_STEP;
         return base + steps * SLOT_STEP;
+    }
+
+    /**
+     * The Z a top-level name's row has to hold: its own depth, or a member's when one is deeper.
+     *
+     * <p>A group's members sit on their parent's Z line, {@code +X} of it, so the slot the parent
+     * reserves along the row is the slot every member stands in too. Sizing it from the parent alone
+     * is how an eleven-deep House with a forty-eight-deep member let that member reach twenty-odd
+     * blocks into the row below — the row was packed against a number nothing in the group was
+     * bounded by.</p>
+     */
+    static int deepestZ(TrackKind kind, String name, CarriageDims dims) {
+        int deepest = footprint(kind, name, dims).getZ();
+        if (!kind.freeSizeAboveFloor()) return deepest;
+        java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> group =
+            TrackVariantGroupStore.get(kind, name);
+        if (group.isEmpty()) return deepest;
+        for (games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member member : group.get().members()) {
+            deepest = Math.max(deepest, footprint(kind, member.id(), dims).getZ());
+        }
+        return deepest;
     }
 
     /**

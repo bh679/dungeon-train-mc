@@ -46,9 +46,17 @@ public final class BookStatsClient {
      * opens; durations in ms; {@code longestPageIndex} is 0-based. {@code votesUp}/{@code votesDown} are
      * the book's 👍/👎 tally (0 when unvoted; the relay folds them in additively — see server.js).
      */
+    /**
+     * {@code status} is where the train stands on this book, as the relay names it — {@code null}
+     * when it did not say, which is what an older relay (and only an older relay) answers, since the
+     * endpoint is already author-gated. Absent is NOT the same as {@code "approved"}: the mod stamps
+     * nothing on absent, so a book already carrying a state from the author's-own-shelf pool path
+     * keeps it. {@code isPrivate} is the author's own withdrawal, false unless the relay says so.
+     */
     public record Stats(boolean isAuthor, int held, int completers, int opens,
                         long longestReadMs, long longestPageMs, int longestPageIndex,
-                        int pageTurns, int rereads, int votesUp, int votesDown) {}
+                        int pageTurns, int rereads, int votesUp, int votesDown,
+                        String status, boolean isPrivate) {}
 
     /**
      * Fetch stats for {@code bookId} off-thread and hand the parsed result to {@code callback} (invoked
@@ -89,8 +97,13 @@ public final class BookStatsClient {
         }
     }
 
-    /** Parse the relay JSON body into {@link Stats}, or null when it isn't a well-formed ok response. */
-    private static Stats parse(String body) {
+    /**
+     * Parse the relay JSON body into {@link Stats}, or null when it isn't a well-formed ok response.
+     *
+     * <p>Package-private for its test, like {@link BookAuthorsClient#parse}: this runs on a network
+     * reply and what it does with a malformed or truncated one is the part worth pinning.</p>
+     */
+    static Stats parse(String body) {
         JsonElement root = JsonParser.parseString(body);
         if (!root.isJsonObject()) return null;
         JsonObject o = root.getAsJsonObject();
@@ -101,7 +114,8 @@ public final class BookStatsClient {
                 optInt(o, "held"), optInt(o, "completers"), optInt(o, "opens"),
                 optLong(o, "longestReadMs"), optLong(o, "longestPageMs"), optInt(o, "longestPageIndex"),
                 optInt(o, "pageTurns"), optInt(o, "rereads"),
-                optInt(o, "votesUp"), optInt(o, "votesDown"));
+                optInt(o, "votesUp"), optInt(o, "votesDown"),
+                optStr(o, "status"), optBool(o, "private"));
     }
 
     private static int optInt(JsonObject o, String k) {
@@ -109,6 +123,31 @@ public final class BookStatsClient {
             return o.has(k) && o.get(k).isJsonPrimitive() ? o.get(k).getAsInt() : 0;
         } catch (RuntimeException e) {
             return 0;
+        }
+    }
+
+    /**
+     * A string field, or null when absent / blank / not a string. Null is load-bearing here — see
+     * {@link Stats} — so a garbled value reads as "the relay did not say" rather than as a state.
+     */
+    private static String optStr(JsonObject o, String k) {
+        try {
+            // isString(), not merely isJsonPrimitive(): a number or boolean here is a garbled reply,
+            // and reading it as text would hand fromStatus a "state" to fail open on.
+            if (!o.has(k) || !o.get(k).isJsonPrimitive() || !o.get(k).getAsJsonPrimitive().isString()) return null;
+            String v = o.get(k).getAsString();
+            return v == null || v.isBlank() ? null : v;
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** A boolean field, false when absent — the relay omits it entirely rather than sending false. */
+    private static boolean optBool(JsonObject o, String k) {
+        try {
+            return o.has(k) && o.get(k).isJsonPrimitive() && o.get(k).getAsBoolean();
+        } catch (RuntimeException e) {
+            return false;
         }
     }
 

@@ -7,8 +7,38 @@
       "languages": [
         {
           "locale": "zh_cn",
-          "contributed": 1018,
-          "total": 1637
+          "contributed": 1011,
+          "total": 3641
+        }
+      ]
+    },
+    {
+      "name": "helluvaboy",
+      "languages": [
+        {
+          "locale": "ru_ru",
+          "contributed": 978,
+          "total": 3713
+        }
+      ]
+    },
+    {
+      "name": "SandRuin",
+      "languages": [
+        {
+          "locale": "ru_ru",
+          "contributed": 41,
+          "total": 3713
+        }
+      ]
+    },
+    {
+      "name": "ShadowsVoid_vn",
+      "languages": [
+        {
+          "locale": "vi_vn",
+          "contributed": 30,
+          "total": 3627
         }
       ]
     },
@@ -18,12 +48,22 @@
         {
           "locale": "zh_cn",
           "contributed": 14,
-          "total": 1637
+          "total": 3641
         },
         {
           "locale": "zh_tw",
           "contributed": 14,
-          "total": 1637
+          "total": 3641
+        }
+      ]
+    },
+    {
+      "name": "WeeKsT",
+      "languages": [
+        {
+          "locale": "ru_ru",
+          "contributed": 3,
+          "total": 3713
         }
       ]
     },
@@ -33,7 +73,37 @@
         {
           "locale": "zh_cn",
           "contributed": 2,
-          "total": 1637
+          "total": 3641
+        }
+      ]
+    },
+    {
+      "name": "gogogockj",
+      "languages": [
+        {
+          "locale": "ko_kr",
+          "contributed": 1,
+          "total": 3627
+        }
+      ]
+    },
+    {
+      "name": "DyingDol",
+      "languages": [
+        {
+          "locale": "zh_cn",
+          "contributed": 1,
+          "total": 3641
+        }
+      ]
+    },
+    {
+      "name": "ecodead",
+      "languages": [
+        {
+          "locale": "ru_ru",
+          "contributed": 1,
+          "total": 3713
         }
       ]
     }

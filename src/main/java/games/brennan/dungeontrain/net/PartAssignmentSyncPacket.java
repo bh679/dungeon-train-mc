@@ -79,7 +79,7 @@ public record PartAssignmentSyncPacket(
             // Per-entry spawn gate: Diff-Level band + dimension mask (maxLevel == ALL is -1).
             buf.writeVarInt(e.gate().minLevel());
             buf.writeVarInt(e.gate().maxLevel());
-            buf.writeByte(TrainPhase.toMask(e.gate().phases()));
+            buf.writeVarInt(TrainPhase.toMask(e.gate().phases()));
             // Optional Stage link — empty when Custom (inline gate).
             buf.writeUtf(e.stageId() == null ? "" : e.stageId());
         }
@@ -115,7 +115,7 @@ public record PartAssignmentSyncPacket(
                 ? EndMode.values()[endOrd] : EndMode.BOTH;
             int minLevel = buf.readVarInt();
             int maxLevel = buf.readVarInt();
-            int phaseMask = buf.readByte() & 0xFF;
+            int phaseMask = buf.readVarInt();
             TemplateGate gate = new TemplateGate(minLevel, maxLevel, TrainPhase.fromMask(phaseMask));
             String stageId = buf.readUtf(64);
             entries.add(new WeightedName(name, weight, mode, endMode, gate, stageId));

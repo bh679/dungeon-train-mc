@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.support.DonateCards;
 import games.brennan.dungeontrain.client.support.FundingGoals;
 import games.brennan.dungeontrain.net.relay.DonationSummaryClient;
 import games.brennan.dungeontrain.net.relay.DonationSummaryClient.Entry;
@@ -58,7 +59,33 @@ public final class DonationLedgerPreviewCommand {
                         .executes(ctx -> apply(ctx.getSource(), costsMet(), "costs-met")))
                 .then(Commands.literal("goal-met")
                         .executes(ctx -> apply(ctx.getSource(), goalMet(), "goal-met")));
+        // Which A/B arm the donation page draws, independent of the ladder state above — the two
+        // compose, so every arm can be screenshotted in every state. `off` returns to whatever the
+        // player's own uuid buckets into, which is what a real client does.
+        LiteralArgumentBuilder<CommandSourceStack> arm = Commands.literal("arm")
+                .executes(ctx -> armUsage(ctx.getSource()))
+                .then(Commands.literal("off").executes(ctx -> forceArm(ctx.getSource(), null)));
+        for (DonateCards.Arm a : DonateCards.Arm.values()) {
+            arm = arm.then(Commands.literal(a.id()).executes(ctx -> forceArm(ctx.getSource(), a)));
+        }
+        root = root.then(arm);
         dispatcher.register(root);
+    }
+
+    private static int forceArm(CommandSourceStack source, DonateCards.Arm arm) {
+        DonateArmOverride.set(arm);
+        source.sendSuccess(() -> Component.literal("Donate arm: "
+                + (arm == null ? "off (bucketed from your uuid)" : arm.id()))
+                .withStyle(ChatFormatting.GRAY), false);
+        return 1;
+    }
+
+    private static int armUsage(CommandSourceStack source) {
+        StringBuilder ids = new StringBuilder("off");
+        for (DonateCards.Arm a : DonateCards.Arm.values()) ids.append('|').append(a.id());
+        source.sendSuccess(() -> Component.literal("/dt-ledger-preview arm <" + ids + ">")
+                .withStyle(ChatFormatting.GRAY), false);
+        return 1;
     }
 
     private static int apply(CommandSourceStack source, Summary summary, String name) {
@@ -93,8 +120,18 @@ public final class DonationLedgerPreviewCommand {
         List<Entry> board = List.of(
                 new Entry("PreviewPatron", 25, "patreon"),
                 new Entry("PreviewDonor", 10, "revolut"));
+        // A relay-shaped updates block, so the preview exercises the live path the settled page
+        // takes rather than falling through to the jar's baked numbers.
+        DonationSummaryClient.Updates updates = new DonationSummaryClient.Updates(
+                770, 5, 249, 122, 9, 770,
+                System.currentTimeMillis() - java.time.Duration.ofHours(3).toMillis(), "0.768.0");
+        // A commit three hours ago, so the preview draws a live "Last Active" card rather than the
+        // withheld-when-unknown state a relay-less dev client would otherwise show.
+        DonationSummaryClient.Activity activity = new DonationSummaryClient.Activity(
+                System.currentTimeMillis() - java.time.Duration.ofHours(3).toMillis(),
+                "bh679/dungeon-train-mc");
         return new DonationSummaryClient.Summary(
                 210, 1450, 120, 175, 3, 45,
-                board, board, false, 0, 0, goals, activeGoalId);
+                board, board, false, 0, 0, goals, activeGoalId, updates, activity, null);
     }
 }

@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageDoorCells;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -16,6 +17,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.Template;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -47,11 +49,11 @@ public final class CarriageContentsEditor {
     private static final int PLOT_Y = EditorLayout.PLOT_Y;
     /**
      * Contents row Z-origin — sourced from {@link
-     * EditorLayout#CONTENTS_FIRST_Z}. Sits in its own Z range past the
-     * CARRIAGES view (which extends through the parts grid), so the
-     * contents row never overlaps a parts plot in plan view and the FLOOR
-     * parts editor's air column can't pick up stale contents-interior
-     * blocks from a prior CONTENTS visit.
+     * EditorLayout#CONTENTS_FIRST_Z}: the origin every category shares.
+     * The row overlaps the carriage row and the parts grid in plan view;
+     * that is fine because a category switch erases the previous
+     * category's plots before this one is stamped, and
+     * {@link #plotContaining} answers only while CONTENTS is resident.
      */
     private static final int PLOT_Z = EditorLayout.CONTENTS_FIRST_Z;
     private static final int FIRST_PLOT_X = 0;
@@ -106,10 +108,24 @@ public final class CarriageContentsEditor {
      * {@link CarriageContentsPlacer#isPortalContents} rather than comparing ids: those two are the
      * same question, and when the shell asked it separately a sub-variant got a corridor-sized plot
      * with a carriage built around it.</p>
+     *
+     * <p>Everything else stands in a carriage the train would really put it in: one whose contents
+     * list has it enabled, drawn by carriage weight — the rule Test the Carriage follows too, via
+     * {@link games.brennan.dungeontrain.train.ContentsShellPicker}. Fixed per template, so the plot
+     * shows the same carriage every visit. The standard carriage only when no carriage enables it
+     * (the plot still needs a shell to stand in).</p>
      */
     public static CarriageVariant shellFor(CarriageContents contents) {
         PortalCorridorKind kind = CarriageContentsPlacer.portalCorridorKindOf(contents);
-        return kind == null ? DEFAULT_SHELL : PortalCarriageBuilder.portalVariant(kind);
+        if (kind != null) return PortalCarriageBuilder.portalVariant(kind);
+        try {
+            return games.brennan.dungeontrain.train.ContentsShellPicker.stableFor(contents.id())
+                .orElse(DEFAULT_SHELL);
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Contents plot shell for '{}' fell back to standard: {}",
+                contents.id(), e.toString());
+            return DEFAULT_SHELL;
+        }
     }
 
     /**
@@ -141,7 +157,7 @@ public final class CarriageContentsEditor {
         // interior to a snapshot of just the interior keeps shell blocks
         // (which the contents save deliberately excludes) out of the diff.
         BlockPos interiorOrigin = origin.offset(1, 1, 1);
-        net.minecraft.core.Vec3i interior = CarriageContentsPlacer.interiorSize(box);
+        Vec3i interior = CarriageContentsPlacer.interiorSize(box);
         EditorPlotSnapshots.capture(
             EditorPlotSnapshots.key("contents", contents.id()),
             overworld, interiorOrigin, interior.getX(), interior.getY(), interior.getZ()
@@ -206,10 +222,9 @@ public final class CarriageContentsEditor {
      *       two rows down, etc.</li>
      * </ul>
      *
-     * <p>The CONTENTS view's reserved Z extent
-     * ({@link EditorLayout#CONTENTS_VIEW_MAX_Z}) bounds sub-variant columns
-     * so they don't overflow into the TRACKS view at typical group sizes —
-     * see {@link EditorLayout#MAX_SUB_VARIANTS_PER_PARENT}.</p>
+     * <p>A group's column runs as far along {@code +Z} as it has members —
+     * nothing else is laid out past it while CONTENTS is resident, so there
+     * is no cap to overflow.</p>
      */
     public static BlockPos plotOrigin(CarriageContents contents, CarriageDims dims) {
         String target = contents.id();
@@ -240,18 +255,38 @@ public final class CarriageContentsEditor {
      * {@link CarriageContentsGroupStore#allChildIds}.
      */
     private static BlockPos topLevelPlotOrigin(String targetId, CarriageDims dims) {
-        java.util.Set<String> children = CarriageContentsGroupStore.allChildIds();
+        Integer index = topLevelSlotIndex().get(targetId);
+        if (index == null) return null;
+        return new BlockPos(FIRST_PLOT_X + index * plotStep(dims), PLOT_Y, PLOT_Z);
+    }
+
+    // ---- id → +X slot index, memoised on (registry snapshot, group child set) ------------------
+
+    private static List<CarriageContents> slotIndexSource;
+    private static java.util.Set<String> slotIndexChildren;
+    private static java.util.Map<String, Integer> SLOT_INDEX = java.util.Map.of();
+
+    /**
+     * Top-level contents id → row slot (group children claim no slot). This was the editor's
+     * hottest frame: the overlay resolves every template's origin every tick, and the linear walk
+     * here — over a registry list that was itself rebuilt per call — made a pass O(n²) with
+     * n≈230. Both inputs are now immutable objects that the registry / group store replace on
+     * mutation, so two reference compares decide whether the map is stale.
+     */
+    private static synchronized java.util.Map<String, Integer> topLevelSlotIndex() {
         List<CarriageContents> all = CarriageContentsRegistry.allContents();
-        int step = plotStep(dims);
-        int index = 0;
+        java.util.Set<String> children = CarriageContentsGroupStore.allChildIds();
+        if (all == slotIndexSource && children == slotIndexChildren) return SLOT_INDEX;
+        java.util.Map<String, Integer> index = new java.util.HashMap<>(all.size() * 2);
+        int slot = 0;
         for (CarriageContents c : all) {
             if (children.contains(c.id())) continue;
-            if (c.id().equals(targetId)) {
-                return new BlockPos(FIRST_PLOT_X + index * step, PLOT_Y, PLOT_Z);
-            }
-            index++;
+            if (index.putIfAbsent(c.id(), slot) == null) slot++;
         }
-        return null;
+        SLOT_INDEX = java.util.Map.copyOf(index);
+        slotIndexSource = all;
+        slotIndexChildren = children;
+        return SLOT_INDEX;
     }
 
     /** Index of {@code memberId} in {@code parentId}'s group, or {@code -1} if absent. */
@@ -274,6 +309,8 @@ public final class CarriageContentsEditor {
      * {@code EditorCommand} can dispatch on the same {@link CarriageDims}.
      */
     public static CarriageContents plotContaining(BlockPos pos, CarriageDims dims) {
+        // Answers only while CONTENTS is the resident category — every category shares the origin.
+        if (!EditorStampedCategoryState.isActive(EditorCategory.CONTENTS)) return null;
         for (CarriageContents contents : CarriageContentsRegistry.allContents()) {
             BlockPos o = plotOrigin(contents, dims);
             if (o == null) continue;
@@ -302,7 +339,47 @@ public final class CarriageContentsEditor {
         enter(player, contents, shellVariant, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the plot — a relay Load that replaced the file on disk
+     * arrives here and must show the new blocks. The walk that keeps unsaved edits is
+     * {@link #walkTo} / {@link #enterInside}.
+     */
     public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant, boolean onTop) {
+        enter(player, contents, shellVariant, onTop, true);
+    }
+
+    /**
+     * The X menu's Go here: a walk to the plot under its natural shell, not a reload — restamps
+     * only when the player is not already standing in it.
+     */
+    public static void walkTo(ServerPlayer player, CarriageContents contents, boolean onTop) {
+        enter(player, contents, null, onTop, !EditorPlotScope.standingIn(player, new Template.Contents(contents)));
+    }
+
+    /**
+     * The panel's Enter button: land inside at {@code inside} under the contents' natural shell,
+     * restamping unless the player is already standing in this plot.
+     */
+    public static void enterInside(ServerPlayer player, CarriageContents contents, EditorPlotArrival.Inside inside) {
+        enter(player, contents, null, false, !EditorPlotScope.standingIn(player, new Template.Contents(contents)), inside);
+    }
+
+    /**
+     * @param stamp whether to erase + restamp the shell and contents before teleporting. The
+     *              category entry passes {@code false}: it has just stamped this plot itself.
+     */
+    public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant,
+                             boolean onTop, boolean stamp) {
+        enter(player, contents, shellVariant, onTop, stamp, EditorPlotArrival.Inside.FRONT_DOOR);
+    }
+
+    /**
+     * @param inside where an {@code onTop == false} landing aims: the -X doorway facing in, or the
+     *               centre. Either way it steps to the nearest free column if that cell is built up.
+     */
+    public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant,
+                             boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -319,26 +396,25 @@ public final class CarriageContentsEditor {
 
         CarriageEditor.rememberReturn(player);
 
-        CarriagePlacer.eraseAt(overworld, origin, box);
-        // Also discard any entities left from a previous edit session
-        // (armor stands / item frames / paintings don't get cleared by the
-        // block-only erase above). Must run before the shell + contents stamp
-        // so the freshly stamped NBT entities don't get caught up in this.
-        CarriageContentsPlacer.eraseAt(overworld, origin, box);
-        // Stamp the shell first — this fills floor/walls/ceiling as context.
-        // Uses the 4-arg placeAt so variant-block sidecar entries don't get
-        // applied here (the author is editing contents, not the shell).
-        CarriagePlacer.placeAt(overworld, origin, shell, dims);
-        // Stamp the current contents template on top of the air interior.
-        CarriageContentsPlacer.placeAt(overworld, origin, contents, dims);
-        setOutline(overworld, origin, OUTLINE_BLOCK, box);
+        if (stamp) {
+            CarriagePlacer.eraseAt(overworld, origin, box);
+            // Also discard any entities left from a previous edit session
+            // (armor stands / item frames / paintings don't get cleared by the
+            // block-only erase above). Must run before the shell + contents stamp
+            // so the freshly stamped NBT entities don't get caught up in this.
+            CarriageContentsPlacer.eraseAt(overworld, origin, box);
+            // Stamp the shell first — this fills floor/walls/ceiling as context.
+            // Uses the 4-arg placeAt so variant-block sidecar entries don't get
+            // applied here (the author is editing contents, not the shell).
+            CarriagePlacer.placeAt(overworld, origin, shell, dims);
+            // Stamp the current contents template on top of the air interior.
+            CarriageContentsPlacer.placeAt(overworld, origin, contents, dims);
+            setOutline(overworld, origin, OUTLINE_BLOCK, box);
+        }
 
-        double tx = origin.getX() + box.length() / 2.0;
-        double ty = onTop
-            ? origin.getY() + box.height() + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + box.width() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        Vec3i footprint = new Template.Contents(contents).plotSize(dims);
+        BlockPos door = EditorPlotArrival.firstOrNull(CarriageDoorCells.doorBases(origin, box));
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, inside, door);
 
         LOGGER.info("[DungeonTrain] Contents editor enter: {} -> {} (shell={}) plot at {} dims={}x{}x{} ({})",
             player.getName().getString(), contents.id(), shell.id(), origin,
@@ -380,7 +456,7 @@ public final class CarriageContentsEditor {
         // Refresh the dirty-check baseline so the just-saved state reads as
         // clean on the next /dt editor unsaved-list query.
         BlockPos interiorOrigin = origin.offset(1, 1, 1);
-        net.minecraft.core.Vec3i interiorSnapshotSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
+        Vec3i interiorSnapshotSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
         EditorPlotSnapshots.capture(
             EditorPlotSnapshots.key("contents", contents.id()),
             overworld, interiorOrigin,
@@ -402,7 +478,7 @@ public final class CarriageContentsEditor {
             // Promote the variants sidecar too — without this, shift-right-click
             // variant authoring stayed in run/config and was lost on worktree
             // delete (the bug PR #79's vase update silently shipped without).
-            net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
+            Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
             CarriageContentsVariantBlocks sidecar =
                 CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
             sidecar.saveToSource(contents);
@@ -507,28 +583,76 @@ public final class CarriageContentsEditor {
         StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, sourceBox);
         CarriageContentsStore.save(target, template);
 
-        // Copy the source's variants sidecar onto the duplicate so authors get
-        // the random-pick set "for free" — same pattern as CarriageEditor.
-        net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(source, dims);
-        CarriageContentsVariantBlocks sourceSidecar = CarriageContentsVariantBlocks.loadFor(source, interiorSize);
-        if (!sourceSidecar.isEmpty()) {
-            CarriageContentsVariantBlocks copy = CarriageContentsVariantBlocks.empty();
-            for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
-                copy.put(e.localPos(), e.states());
-            }
-            // Carry over the lock-id grouping so duplicated cells that share a
-            // random pick stay grouped (states pass only copies candidate lists).
-            for (java.util.Map.Entry<net.minecraft.core.BlockPos, Integer> lk : sourceSidecar.allLockIds().entrySet()) {
-                copy.setLockId(lk.getKey(), lk.getValue());
-            }
-            copy.save(target);
-        }
+        // Everything beside the .nbt goes with it — the variants sidecar (random-pick sets,
+        // lock-ids, mirror flags), the container links and the weights entry — same path as
+        // CarriageEditor.duplicate.
+        TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CONTENTS, null,
+            source.id(), target.id());
 
         setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
 
         LOGGER.info("[DungeonTrain] Contents editor duplicate: {} created '{}' from '{}' at {}",
             player.getName().getString(), target.id(), source.id(), targetOrigin);
         return targetOrigin;
+    }
+
+    /**
+     * As {@link #duplicate}, for a copy that belongs in {@code parentId}'s group: it joins the group
+     * <b>before</b> anything is stamped, so its first plot is its own place in the parent's column.
+     *
+     * <p>{@code duplicate} then append — the order {@code editor contents group new} uses — registers
+     * the copy as a top-level template first, and stamps it into whichever top-level slot that gives
+     * it: another template's plot, drawn over until the next restamp. Appending first costs nothing
+     * and lands it where it will stay. The box is {@code source}'s, which is a member of the same
+     * group — the size a portal corridor's sub-variants are held to.</p>
+     */
+    public static BlockPos duplicateIntoGroup(ServerPlayer player, CarriageContents source,
+                                              CarriageContents.Custom target, String parentId) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        if (!CarriageContentsRegistry.register(target)) {
+            throw new IOException("Contents '" + target.id() + "' is already registered.");
+        }
+        games.brennan.dungeontrain.train.CarriageContentsGroup existing = CarriageContentsGroupStore.get(parentId)
+            .orElse(games.brennan.dungeontrain.train.CarriageContentsGroup.EMPTY);
+        try {
+            CarriageContentsGroupStore.save(parentId, existing.withMember(
+                new games.brennan.dungeontrain.train.CarriageContentsGroup.Member(
+                    target.id(), games.brennan.dungeontrain.train.CarriageContentsGroup.DEFAULT_WEIGHT)));
+        } catch (IOException e) {
+            CarriageContentsRegistry.unregister(target.id());
+            throw e;
+        }
+
+        BlockPos targetOrigin = plotOrigin(target, dims);
+        if (targetOrigin == null) {
+            throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
+        }
+        CarriageDims box = plotDims(source, dims);
+        CarriagePlacer.eraseAt(overworld, targetOrigin, box);
+        CarriageContentsPlacer.eraseAt(overworld, targetOrigin, box);
+        CarriagePlacer.placeAt(overworld, targetOrigin, shellFor(source), dims);
+        CarriageContentsPlacer.placeAt(overworld, targetOrigin, source, dims);
+
+        StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, box);
+        CarriageContentsStore.save(target, template);
+        TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CONTENTS, null,
+            source.id(), target.id());
+        // Restamp through the ordinary path so the cage and the dirty baseline match every other plot.
+        stampPlot(overworld, target, dims);
+
+        LOGGER.info("[DungeonTrain] Contents editor duplicate into group '{}': {} created '{}' from '{}' at {}",
+            parentId, player.getName().getString(), target.id(), source.id(), targetOrigin);
+        return targetOrigin;
+    }
+
+    /** The top-level row slot {@code id} occupies, or -1 for a group member or an unknown id. */
+    public static int topLevelSlotOf(String id) {
+        Integer index = topLevelSlotIndex().get(id);
+        return index == null ? -1 : index;
     }
 
     /**
@@ -581,7 +705,7 @@ public final class CarriageContentsEditor {
         if (EditorDevMode.isEnabled()) {
             try {
                 CarriageContentsStore.saveToSource(renamed, template);
-                net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(current, dims);
+                Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(current, dims);
                 CarriageContentsVariantBlocks newSidecar =
                     CarriageContentsVariantBlocks.loadFor(renamed, interiorSize);
                 newSidecar.saveToSource(renamed);

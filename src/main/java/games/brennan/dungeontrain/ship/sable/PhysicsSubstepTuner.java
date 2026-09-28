@@ -26,11 +26,23 @@ import java.util.Set;
  * the native {@code physicsTick()} ({@code Rapier3D.step}) — that many times.
  * Dropping 2→1 therefore halves the whole physics cost, native and Java alike.</p>
  *
- * <p><b>Why adaptive.</b> Fewer substeps means coarser collision on a moving
- * kinematic deck (riders/mobs/loot can clip). Short/medium trains sit comfortably
- * under budget at the default 2 substeps, so we keep full fidelity there and only
- * shed to 1 once the resident sub-level count climbs toward the budget. A
+ * <p><b>Why adaptive.</b> Substeps only matter to Rapier's solver, and DT's scene has
+ * nothing for it to solve: every carriage is a kinematic body teleported once per tick
+ * from {@code SableManagedShip.applyTickOutput}, with no constraints, ropes, boxes or
+ * dynamic bodies, and riders/mobs/loot meet the deck through Sable's own entity
+ * collision, which reads the pose rather than solver output. A single substep is
+ * therefore free of gameplay cost for a real train; the tuner still keeps Sable's
+ * baseline for a tiny train (a handful of sub-levels costs nothing either way) and a
  * hysteresis band avoids flapping at the boundary.</p>
+ *
+ * <p><b>Why the band sits at 12/8.</b> The original 24/18 was set for dedicated servers
+ * and never engaged in single-player, whose integrated-server view distance caps the
+ * resident train at ~18–22 sub-levels — exactly the regime where a survival rider
+ * mines and fights. Measured there (2026-09-18): ~70% of the server thread inside
+ * {@code Rapier3D.step}, MSPT 40–105 ms, and every survival dig landing seconds late
+ * because {@code ServerPlayerGameMode} counts break time in <em>server</em> ticks.
+ * Twelve engages for any real train while leaving the 3–8 sub-level spawn-up phase
+ * alone.</p>
  *
  * <p><b>Why this is safe (and not the #642 freeze that crashes).</b> This only
  * mutates a per-level config field via public Sable API — it never removes a body
@@ -52,14 +64,27 @@ public final class PhysicsSubstepTuner {
     /**
      * Drop to {@link #LOW_SUBSTEPS} at or above this resident sub-level count, and
      * restore the captured baseline at or below {@link #LOW_WATER}; the gap between
-     * them is hysteresis. Initial estimates — tune against the live {@code [mspt]}
-     * intercept/slope so the transition lands before the 50ms budget without
-     * degrading shorter trains. Package-private so the pure-logic test tracks them.
+     * them is hysteresis. Read the live {@code [mspt]} line's {@code physMs=} field to
+     * re-tune: it is the per-tick cost of the substep block this class halves.
+     * Package-private so the pure-logic test tracks them.
      */
-    static final int HIGH_WATER = 24;
-    static final int LOW_WATER = 18;
+    static final int HIGH_WATER = 12;
+    static final int LOW_WATER = 8;
     /** The reduced substep count applied on long trains. */
     static final int LOW_SUBSTEPS = 1;
+
+    /**
+     * Master switch. {@code /dungeontrain debug substep-tuner <on|off>} drives the Gate 2
+     * matched-toggle A/B (same ride, compare {@code [mspt] physMs=} at equal {@code carriages=})
+     * and doubles as a safety valve. When off, the next reconcile restores the captured baseline.
+     * Command thread writes, server thread reads — hence {@code volatile}, as with
+     * {@link PhysicsFreezeController#ENABLED}.
+     */
+    public static volatile boolean ENABLED = true;
+
+    // Last reconcile snapshot, for the status command.
+    private static volatile int lastResidents;
+    private static volatile int lastSubsteps;
 
     /**
      * The level's original {@code substepsPerTick}, captured once (before we ever
@@ -98,10 +123,17 @@ public final class PhysicsSubstepTuner {
      * currently hold trains, so it never touches unrelated dimensions.
      */
     public static void reconcile(ServerLevel level, int residentCount) {
+        lastResidents = residentCount;
+        if (!ENABLED) {
+            restoreIfTuned(level);
+            lastSubsteps = currentSubsteps(level);
+            return;
+        }
         SubLevelPhysicsSystem system = SubLevelPhysicsSystem.get(level);
         if (system == null) return;
         PhysicsConfigData config = system.getConfig();
         if (config == null) return;
+        lastSubsteps = config.substepsPerTick;
 
         ResourceKey<Level> key = level.dimension();
         Integer baseline = BASELINE_BY_LEVEL.get(key);
@@ -119,6 +151,7 @@ public final class PhysicsSubstepTuner {
         if (desired == current) return;
 
         config.substepsPerTick = desired; // read live by tickPipelinePhysics; effective next tick
+        lastSubsteps = desired;
         if (desired < baseline) {
             LOWERED_LEVELS.add(key);
         } else {
@@ -146,4 +179,20 @@ public final class PhysicsSubstepTuner {
         JITTER_LOGGER.debug("[substep-tuner] dim={} train gone — restore {}->{}",
             key.location(), prev, baseline);
     }
+
+    /**
+     * The level's live Sable {@code substepsPerTick} — what {@code tickPipelinePhysics} will run
+     * next tick — or {@code -1} when the level has no physics system / config yet. Read by the
+     * {@code [mspt]} line so the A/B can be checked from the log.
+     */
+    public static int currentSubsteps(ServerLevel level) {
+        SubLevelPhysicsSystem system = SubLevelPhysicsSystem.get(level);
+        if (system == null) return -1;
+        PhysicsConfigData config = system.getConfig();
+        return config == null ? -1 : config.substepsPerTick;
+    }
+
+    /** Snapshot from the last {@link #reconcile} — for {@code /dungeontrain debug substep-tuner status}. */
+    public static int lastResidents() { return lastResidents; }
+    public static int lastSubsteps() { return lastSubsteps; }
 }

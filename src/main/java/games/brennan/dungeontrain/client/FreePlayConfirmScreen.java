@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.cheat.FreePlayText;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.FreePlayConfirmResponsePacket;
@@ -50,11 +51,9 @@ public final class FreePlayConfirmScreen extends Screen {
 
     // Layout, computed in init() and reused by render().
     private int panelX, panelY, panelW, panelH;
-    private int titleRelY, bodyRelY, desc1RelY, desc2RelY, desc3RelY, triggerRelY;
+    private int titleRelY, bodyRelY, conseqRelY, triggerRelY;
     private List<FormattedCharSequence> bodyLines = List.of();
-    private List<FormattedCharSequence> conseq1 = List.of();
-    private List<FormattedCharSequence> conseq2 = List.of();
-    private List<FormattedCharSequence> conseq3 = List.of();
+    private List<FormattedCharSequence> conseqLines = List.of();
     private FormattedCharSequence triggerLine = FormattedCharSequence.EMPTY;
 
     public FreePlayConfirmScreen(String triggerLabel) {
@@ -69,18 +68,14 @@ public final class FreePlayConfirmScreen extends Screen {
         int lh = this.font.lineHeight;
 
         bodyLines = this.font.split(Component.translatable("gui.dungeontrain.free_play.confirm.body"), innerW);
-        conseq1 = this.font.split(Component.translatable("effect.dungeontrain.free_play.desc.1"), innerW);
-        conseq2 = this.font.split(Component.translatable("effect.dungeontrain.free_play.desc.2"), innerW);
-        conseq3 = this.font.split(Component.translatable("effect.dungeontrain.free_play.desc.3"), innerW);
+        conseqLines = this.font.split(FreePlayText.consequence(), innerW);
         triggerLine = Component.translatable("gui.dungeontrain.free_play.confirm.trigger", triggerLabel)
                 .getVisualOrderText();
 
         int y = PADDING;
         titleRelY = y;   y += lh + TITLE_SEP_GAP;
         bodyRelY = y;    y += bodyLines.size() * (lh + LINE_GAP) + SECTION_GAP;
-        desc1RelY = y;   y += conseq1.size() * (lh + LINE_GAP);
-        desc2RelY = y;   y += conseq2.size() * (lh + LINE_GAP);
-        desc3RelY = y;   y += conseq3.size() * (lh + LINE_GAP) + SECTION_GAP;
+        conseqRelY = y;  y += conseqLines.size() * (lh + LINE_GAP) + SECTION_GAP;
         triggerRelY = y; y += lh + SECTION_GAP;
         int checkboxRelY = y; y += CHECKBOX_H + SECTION_GAP;
         int continueRelY = y; y += BUTTON_H + BUTTON_GAP;
@@ -140,12 +135,8 @@ public final class FreePlayConfirmScreen extends Screen {
 
         int y = panelY + bodyRelY;
         for (FormattedCharSequence line : bodyLines) { g.drawCenteredString(this.font, line, cx, y, COLOUR_BODY); y += lh + LINE_GAP; }
-        y = panelY + desc1RelY;
-        for (FormattedCharSequence line : conseq1) { g.drawCenteredString(this.font, line, cx, y, COLOUR_CONSEQ); y += lh + LINE_GAP; }
-        y = panelY + desc2RelY;
-        for (FormattedCharSequence line : conseq2) { g.drawCenteredString(this.font, line, cx, y, COLOUR_CONSEQ); y += lh + LINE_GAP; }
-        y = panelY + desc3RelY;
-        for (FormattedCharSequence line : conseq3) { g.drawCenteredString(this.font, line, cx, y, COLOUR_CONSEQ); y += lh + LINE_GAP; }
+        y = panelY + conseqRelY;
+        for (FormattedCharSequence line : conseqLines) { g.drawCenteredString(this.font, line, cx, y, COLOUR_CONSEQ); y += lh + LINE_GAP; }
         g.drawCenteredString(this.font, triggerLine, cx, panelY + triggerRelY, COLOUR_TRIGGER);
     }
 

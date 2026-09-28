@@ -2,8 +2,12 @@ package games.brennan.dungeontrain.discord;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import com.google.gson.JsonObject;
 import games.brennan.dungeontrain.narrative.NoteKind;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -15,7 +19,7 @@ class DeathNoteReporterTest {
     @Test
     void payloadMatchesTheRelayContract() {
         JsonObject body = DeathNoteReporter.buildPayload(
-                "aaaa", "Author", "Victim", "bbbb", 7, "seed-123", "skin:x", true, NoteKind.DEATH);
+                "aaaa", "Author", "Victim", "bbbb", 7, "seed-123", "skin:x", true, NoteKind.DEATH, List.of());
         assertEquals("aaaa", body.get("authorUuid").getAsString());
         assertEquals("Author", body.get("authorName").getAsString());
         assertEquals("Victim", body.get("targetName").getAsString());
@@ -30,7 +34,7 @@ class DeathNoteReporterTest {
     @Test
     void loveNotesRideTheSameSubmitBodyAndDifferOnlyByKind() {
         JsonObject body = DeathNoteReporter.buildPayload(
-                "aaaa", "Author", "Beloved", "bbbb", 7, "seed-123", "skin:x", false, NoteKind.LOVE);
+                "aaaa", "Author", "Beloved", "bbbb", 7, "seed-123", "skin:x", false, NoteKind.LOVE, List.of());
         assertEquals("love", body.get("kind").getAsString());
         assertEquals("Beloved", body.get("targetName").getAsString());
         assertEquals(9, body.size()); // same eight fields as a curse, plus the kind
@@ -41,14 +45,14 @@ class DeathNoteReporterTest {
         // Matches the relay's own fallback (deathnotes.js normKind) and NoteKind.fromId: anything
         // that isn't explicitly a Love Note is the curse, which is what every note used to be.
         JsonObject body = DeathNoteReporter.buildPayload(
-                "aaaa", "Author", "Victim", "bbbb", 7, "seed-123", "", false, null);
+                "aaaa", "Author", "Victim", "bbbb", 7, "seed-123", "", false, null, null);
         assertEquals("death", body.get("kind").getAsString());
     }
 
     @Test
     void nullStringsBecomeEmptyAndNegativeCarriageIsKept() {
         JsonObject body = DeathNoteReporter.buildPayload(
-                null, null, null, null, -3, null, null, false, NoteKind.DEATH);
+                null, null, null, null, -3, null, null, false, NoteKind.DEATH, null);
         assertEquals("", body.get("authorUuid").getAsString());
         assertEquals("", body.get("authorName").getAsString());
         assertEquals("", body.get("targetName").getAsString());
@@ -57,6 +61,32 @@ class DeathNoteReporterTest {
         assertEquals("", body.get("worldKey").getAsString());
         assertEquals("", body.get("authorSkinRef").getAsString());
         assertEquals(false, body.get("freePlay").getAsBoolean());
+    }
+
+    @Test
+    void theSpokenBodyRidesAlongAsAnArrayOfLines() {
+        JsonObject body = DeathNoteReporter.buildPayload(
+                "aaaa", "Author", "Victim", "bbbb", 7, "seed-123", "", false, NoteKind.DEATH,
+                List.of("I remember the lamp.", "Now I take yours."));
+        var lines = body.getAsJsonArray("body");
+        assertEquals(2, lines.size());
+        assertEquals("I remember the lamp.", lines.get(0).getAsString());
+        assertEquals("Now I take yours.", lines.get(1).getAsString());
+    }
+
+    @Test
+    void aNoteWithNothingToSayOmitsTheBodyEntirely() {
+        // An absent body is exactly what a jar older than spoken echoes sends — the relay treats the
+        // two identically, and the echo simply arrives silent.
+        assertFalse(DeathNoteReporter.buildPayload(
+                "aaaa", "Author", "Victim", "bbbb", 7, "seed-123", "", false, NoteKind.DEATH, List.of())
+                .has("body"));
+        assertFalse(DeathNoteReporter.buildPayload(
+                "aaaa", "Author", "Victim", "bbbb", 7, "seed-123", "", false, NoteKind.DEATH, null)
+                .has("body"));
+        assertFalse(DeathNoteReporter.buildPayload(
+                "aaaa", "Author", "Victim", "bbbb", 7, "seed-123", "", false, NoteKind.DEATH,
+                Arrays.asList(null, "   ")).has("body"), "blank-only lines are not a body");
     }
 
     @Test

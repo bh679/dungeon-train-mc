@@ -1,13 +1,18 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
+import games.brennan.dungeontrain.worldgen.MixBand;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.EndBandSampler;
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.density.EndCoreBiomes;
+import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.MinecraftServer;
@@ -89,12 +94,28 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
 
             long startX = DisintegrationBand.startX(overworld);
             int chunkMinX = cp.getMinBlockX();
-            if (chunkMinX + 15 < startX) return false; // before the first band (or disabled)
+            if (startX == DisintegrationBand.OFF) return false; // disabled (bands run both ways from the anchor)
 
             ServerLevel end = server.getLevel(Level.END);
             if (end == null) return false;
-
+            // A sampled End look (BetterEnd / BoP in the order) gets real End chunks copied in by
+            // WorldEndBandEvents instead, so no end stone or chorus is stamped in its columns. Per column:
+            // across the seam of a joined End band the two looks crossfade (WorldGenCycle#endSourcePassAt).
             DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+            WorldGenCycle cycle = MixBand.cycleAt(overworld, cp.x, cp.z);
+            long genSeed = data.getGenerationSeed();
+            boolean[] sampledColumn = new boolean[256];
+            boolean anyStamped = false;
+            for (int dx = 0; dx < 16; dx++) {
+                for (int dz = 0; dz < 16; dz++) {
+                    boolean sampled = EndBandSampler.appliesTo(server,
+                            cycle.endSourceLookAt(chunkMinX + dx, cp.getMinBlockZ() + dz, genSeed));
+                    sampledColumn[dx * 16 + dz] = sampled;
+                    if (!sampled) anyStamped = true;
+                }
+            }
+            if (!anyStamped) return false;
+
             CarriageDims dims = data.dims();
             TrackGeometry g = TrackGeometry.from(dims, data.getTrainY());
             int bedY = g.bedY();
@@ -104,7 +125,7 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             double[] endRamp = new double[16];
             boolean anyEnd = false;
             for (int dx = 0; dx < 16; dx++) {
-                endRamp[dx] = DisintegrationBand.endIslandRampAt(overworld, chunkMinX + dx);
+                endRamp[dx] = DisintegrationBand.endIslandRampAt(overworld, chunkMinX + dx, cp.getMinBlockZ());
                 if (endRamp[dx] > 0.0) anyEnd = true;
             }
             if (!anyEnd) return false;
@@ -133,13 +154,14 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             // so anything already in it is an End city placed at the earlier surface_structures step.
             // Stamp around it rather than through it. Outside the core there are no cities, and real
             // terrain is still present, so the stamp keeps overwriting as before.
-            boolean protectExisting = DisintegrationBand.isChunkFullyEroded(overworld, chunkMinX);
+            boolean protectExisting = DisintegrationBand.isChunkFullyEroded(overworld, chunkMinX, chunkMinZ);
 
             for (int dx = 0; dx < 16; dx++) {
                 double e = endRamp[dx];
                 if (e <= 0.0) continue;
                 int worldX = chunkMinX + dx;
                 for (int dz = 0; dz < 16; dz++) {
+                    if (sampledColumn[dx * 16 + dz]) continue;          // the copied-in look owns this column
                     int worldZ = chunkMinZ + dz;
                     int[] top = {Integer.MIN_VALUE};
                     boolean[] wrote = {false};
@@ -165,27 +187,29 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
 
             // Grow real chorus plants — matching vanilla's distribution exactly: 0-4 attempts per chunk
             // (CountPlacement), random X/Z (InSquarePlacement), and ONLY in the end_highlands biome (the
-            // sole End biome that carries CHORUS_PLANT). We query the real End biome source at the sample
-            // column so chorus lands in the same places it would in the real End — the same patch of outer
-            // End that BandEndCityStructure asks about before standing an End city on the island.
-            net.minecraft.world.level.biome.BiomeSource endBiomes = end.getChunkSource().getGenerator().getBiomeSource();
-            net.minecraft.world.level.biome.Climate.Sampler endSampler = end.getChunkSource().randomState().sampler();
+            // sole End biome that carries CHORUS_PLANT). We ask the island-field biome (the vanilla End
+            // biome layout, even with BetterEnd installed) at the sample column so chorus lands in the same
+            // places it would in the vanilla End — the same patch of outer End that BandEndCityStructure
+            // asks about before standing an End city on the island.
+            NetherBandContext bandCtx = NetherBandContext.current();
+            EndCoreBiomes endBiomes = bandCtx != null ? bandCtx.endCoreBiomes() : null;
+            if (endBiomes == null) {
+                chunk.setUnsaved(true);
+                return true;
+            }
             ChunkGenerator generator = ctx.chunkGenerator();
             RandomSource random = ctx.random();
             int count = random.nextInt(CHORUS_COUNT_BOUND);
             for (int i = 0; i < count; i++) {
                 int dx = random.nextInt(16);
                 int dz = random.nextInt(16);
-                if (endRamp[dx] <= 0.0) continue;
+                if (endRamp[dx] <= 0.0 || sampledColumn[dx * 16 + dz]) continue;
                 int top = islandTop[dx * 16 + dz];
                 if (top == Integer.MIN_VALUE || top + 1 > maxY) continue;
-                int sampleX = chunkMinX + dx + EndIslandGeometry.ISLAND_SAMPLE_OFFSET_X;
                 int worldZ = chunkMinZ + dz;
                 int endY = EndIslandGeometry.END_ISLAND_CENTER_Y + (top - bedY);
-                net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> biome = endBiomes.getNoiseBiome(
-                        net.minecraft.core.QuartPos.fromBlock(sampleX),
-                        net.minecraft.core.QuartPos.fromBlock(endY),
-                        net.minecraft.core.QuartPos.fromBlock(worldZ), endSampler);
+                net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> biome =
+                        endBiomes.islandFieldBiomeAt(chunkMinX + dx, endY, worldZ);
                 if (!biome.is(net.minecraft.world.level.biome.Biomes.END_HIGHLANDS)) continue;
                 for (int dy = 1; dy <= CHORUS_POCKET && top + dy <= maxY; dy++) {
                     setRaw(chunk, dx, top + dy, dz, Blocks.AIR.defaultBlockState());

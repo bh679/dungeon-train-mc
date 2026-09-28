@@ -115,7 +115,7 @@ public final class BuilderStructureNeeds {
         }
         List<BuilderStructure.Placement> out = new ArrayList<>();
         switch (ctx.mode()) {
-            case TRAIN_OUTSIDE -> trainOutside(out, ctx);
+            case WHOLE_CARRIAGES, TRAIN_OUTSIDE -> trainOutside(out, ctx);
             case INSIDE_CARRIAGE -> insideCarriage(out, ctx);
             case TRACKS_TUNNELS -> trackSide(out, ctx);
             case TRAIN_DIMENSIONS -> dimensionalCarriages(out, ctx);
@@ -199,7 +199,7 @@ public final class BuilderStructureNeeds {
         }
         return switch (ctx.mode()) {
             case TRACKS_TUNNELS -> openTrack(ctx);
-            case TRAIN_OUTSIDE, INSIDE_CARRIAGE -> openCarriage(ctx);
+            case WHOLE_CARRIAGES, TRAIN_OUTSIDE, INSIDE_CARRIAGE -> openCarriage(ctx);
             // A room's copies are RoomTile/RoomBedrock, which read the open build directly and have
             // never gone through a store at all. Nothing here to redirect.
             case TRAIN_DIMENSIONS -> null;

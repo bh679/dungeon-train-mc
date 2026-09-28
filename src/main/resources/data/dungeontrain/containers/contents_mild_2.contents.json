@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+    "4,1,0": {
+      "fillMin": 2,
+      "entries": [
+        { "id": "dungeontrain:random_good_potion", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "form": "splash" }
+      ]
+    }
+  }
+}

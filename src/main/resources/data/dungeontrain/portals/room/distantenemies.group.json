@@ -5,6 +5,18 @@
     {
       "id": "zombies",
       "weight": 1
+    },
+    {
+      "id": "ender",
+      "weight": 1
+    },
+    {
+      "id": "icebears",
+      "weight": 1
+    },
+    {
+      "id": "slime",
+      "weight": 1
     }
   ]
 }

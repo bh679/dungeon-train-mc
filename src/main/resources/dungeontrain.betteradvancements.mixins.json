@@ -9,7 +9,9 @@
   "client": [
     "betteradvancements.BetterAdvancementWidgetCompatMixin",
     "betteradvancements.BetterAdvancementsCriteriaMixin",
-    "betteradvancements.BetterAdvancementTabScrollMixin"
+    "betteradvancements.BetterAdvancementTabScrollMixin",
+    "betteradvancements.BetterAdvancementsScreenEditorTabMixin",
+    "betteradvancements.BetterAdvancementsScreenClickMixin"
   ],
   "server": [],
   "injectors": {

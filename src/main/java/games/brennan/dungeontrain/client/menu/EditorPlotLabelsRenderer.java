@@ -34,9 +34,9 @@ import java.util.List;
  * model name plus interactive controls (weight arrows, save / reset / clear,
  * and template-specific buttons like Contents for carriages).
  *
- * <p>Cylindrical billboard around world-up so the panel rotates to face the
- * camera horizontally but stays upright in Y — same basis the older labels
- * used.</p>
+ * <p>Fixed facing ({@link EditorPanelFacing#plotPanel()}): the panel faces
+ * {@code -X}, toward a player standing on the plot, and holds still as the
+ * camera moves rather than turning to follow it.</p>
  *
  * <p>Layout (top → bottom, only the rows applicable to the entry's category
  * are rendered):
@@ -90,12 +90,17 @@ public final class EditorPlotLabelsRenderer {
         HEIGHT_TYPE,
         /** The whole mode row — one button, clicking it steps to the next mode. */
         MODE_CYCLE,
+        /** The seal row — only shown while the mode seals. Takes the block from the hand. */
+        LOCK_HELD,
         /** The sub-mode row — only shown while the mode makes copies. */
         COPIES_CYCLE,
         /** The floor row under it — sets the floor palette from the hand. */
         COPIES_FLOOR_HELD,
         /** The Edit half of that row — opens the Block Variant menu on the floor palette. */
         COPIES_FLOOR_EDIT,
+        /** The [-] and [+] between the floor's icon and its Edit button — how deep the floor is laid. */
+        COPIES_FLOOR_HEIGHT_DEC,
+        COPIES_FLOOR_HEIGHT_INC,
         /** The roof row — the same two halves, aimed at the plane over the player's head. */
         COPIES_ROOF_HELD,
         COPIES_ROOF_EDIT,
@@ -105,6 +110,10 @@ public final class EditorPlotLabelsRenderer {
         DOOR_WALL_CYCLE,
         /** The sky row — whether the room is lit as though it stood outdoors, and under which sky. */
         ROOM_SKY_CYCLE,
+        /** The fog row — Auto (the walls mode's answer), On or Off. */
+        ROOM_FOG_CYCLE,
+        /** The drift row — whether a Bedrock Lock room is shared through the relay. */
+        ROOM_DRIFT_CYCLE,
         /** The author-lock row — whether the room stocks its shelves from one person. */
         ROOM_BOOKS_CYCLE,
         /** The Edit half of that row — the weights and the band, which only a stocking room has. */
@@ -118,7 +127,9 @@ public final class EditorPlotLabelsRenderer {
         /** The stepper for how often the base pair's exit is walled off. */
         EXIT_MOVE_DEC,
         EXIT_MOVE_INC,
-        EXIT_MOVE_TYPE
+        EXIT_MOVE_TYPE,
+        /** Top-right {@code ↻} on the name row — face the player; shift resets to the grid. */
+        FACE
     }
 
     /**
@@ -130,8 +141,9 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, COPIES_FLOOR, COPIES_ROOF, DOOR_WALL,
-        ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
+        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, LOCK, COPIES, COPIES_FLOOR, COPIES_ROOF, DOOR_WALL,
+        DOOR_OFFSET, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, ROOM_FOG, ROOM_DRIFT, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
+        ACTION, CONTENTS
     }
 
     /**
@@ -153,15 +165,19 @@ public final class EditorPlotLabelsRenderer {
             buf[n++] = RowKind.HEIGHT;
         }
         if (hasModeRow(entry)) buf[n++] = RowKind.MODE;
+        if (hasLockRow(entry)) buf[n++] = RowKind.LOCK;
         if (hasCopiesRow(entry)) buf[n++] = RowKind.COPIES;
         if (hasCopiesBlockRow(entry)) {
             buf[n++] = RowKind.COPIES_FLOOR;
             buf[n++] = RowKind.COPIES_ROOF;
         }
         if (hasDoorWallRow(entry)) buf[n++] = RowKind.DOOR_WALL;
+        if (hasDoorOffsetRow(entry)) buf[n++] = RowKind.DOOR_OFFSET;
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
         if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
         if (hasRoomSkyRow(entry)) buf[n++] = RowKind.ROOM_SKY;
+        if (hasRoomFogRow(entry)) buf[n++] = RowKind.ROOM_FOG;
+        if (hasRoomDriftRow(entry)) buf[n++] = RowKind.ROOM_DRIFT;
         if (hasExitsRow(entry)) buf[n++] = RowKind.EXITS;
         if (hasExitEveryRow(entry)) buf[n++] = RowKind.EXIT_EVERY;
         if (hasExitMoveRow(entry)) buf[n++] = RowKind.EXIT_MOVE;
@@ -216,6 +232,47 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /**
+     * Whether the Lock row shows: only when the walls seal, since a shell is the one thing the
+     * block describes.
+     *
+     * <p>Both sealing modes — Bedrock Lock and Chunk Dimension — because both write the same skin;
+     * see {@code PortalRoomSettings.lockApplies}. Hidden rather than dimmed elsewhere, the same way
+     * the Copies row is absent under walls that make no copies.</p>
+     */
+    public static boolean hasLockRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry) && hasLockRowFor(entry.roomMode());
+    }
+
+    /** The same question asked of a mode tag alone — what the command menu has to hand. */
+    public static boolean hasLockRowFor(String modeTag) {
+        return games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).lockApplies();
+    }
+
+    /** The block this room's shell is written in, as a namespaced id. */
+    public static String lockBlockId(String modeTag) {
+        return games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .effectiveLock().blockId();
+    }
+
+    /**
+     * What the Lock row reads where it cannot draw an icon — the command menu, which is text-only.
+     *
+     * <p>Names the block, unlike the Copies rows: this value is a plain id in the mode tag rather
+     * than a variant list living server-side, so there is a single honest answer to print. The path
+     * is dropped ({@code minecraft:obsidian} → {@code obsidian}) because the namespace is noise at
+     * this width, and air reads as "nothing", the word the Block Variant menu already uses for
+     * it.</p>
+     */
+    public static String lockLabel(String modeTag) {
+        String id = lockBlockId(modeTag);
+        if (games.brennan.dungeontrain.portal.PortalRoomLock.AIR_BLOCK.equals(id)) {
+            return MenuLang.t("plot.lock", MenuLang.t("plot.nothing"));
+        }
+        int colon = id.indexOf(':');
+        return MenuLang.t("plot.lock", colon < 0 ? id : id.substring(colon + 1));
+    }
+
+    /**
      * Whether the Copies row shows: only when the walls are endless, since those are the only modes
      * that append tiles for the setting to describe.
      */
@@ -227,8 +284,10 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the Copies row reads, e.g. {@code "Copies: Dynamic"}. */
     public static String copiesLabel(String modeTag) {
-        return "Copies: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .copies().displayName();
+        games.brennan.dungeontrain.portal.PortalRoomCopies copies =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).copies();
+        return MenuLang.t("plot.copies",
+            MenuLang.named("portal.copies", copies.kind().id(), copies.displayName()));
     }
 
     /**
@@ -261,12 +320,13 @@ public final class EditorPlotLabelsRenderer {
      * True when {@code blockId} is the empty-placeholder sentinel — the author asked for air.
      *
      * <p>Id-only because that is all the row is sent: the label packet carries one block id per
-     * plane for the icon, never a state. Same three command-block kinds
-     * {@code CarriageVariantBlocks.isEmptyPlaceholder} covers, which is where the sentinel is
-     * defined.</p>
+     * plane for the icon, never a state. Same blocks {@code CarriageVariantBlocks.isEmptyPlaceholder}
+     * covers, which is where the sentinel is defined — the mod's {@code variant_placeholder} plus
+     * the three legacy command-block kinds.</p>
      */
     public static boolean isAirSentinelId(String blockId) {
-        return "minecraft:command_block".equals(blockId)
+        return "dungeontrain:variant_placeholder".equals(blockId)
+            || "minecraft:command_block".equals(blockId)
             || "minecraft:chain_command_block".equals(blockId)
             || "minecraft:repeating_command_block".equals(blockId);
     }
@@ -292,6 +352,27 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /**
+     * Where the Floor row's depth stepper starts: just right of the icon's slot. The stepper runs
+     * from here to the Edit split, in thirds — [-] depth [+] — so the row reads
+     * {@code Floor: [icon] [-] 3 [+] [Edit]}. The Roof row has no stepper and keeps its two halves.
+     */
+    static double copiesFloorStepperLeft(double halfW) {
+        return copiesIconCentre(halfW) + COPIES_ICON_SLOT * 0.5;
+    }
+
+    /** The Floor row's cell at {@code hitX}: held value, depth [-], depth [+], or Edit. */
+    public static CellKind copiesFloorCell(double halfW, double hitX) {
+        if (copiesBlockHitIsEdit(halfW, hitX)) return CellKind.COPIES_FLOOR_EDIT;
+        double left = copiesFloorStepperLeft(halfW);
+        if (hitX < left) return CellKind.COPIES_FLOOR_HELD;
+        double third = (copiesEditLeft(halfW) - left) / 3.0;
+        if (hitX < left + third) return CellKind.COPIES_FLOOR_HEIGHT_DEC;
+        if (hitX >= copiesEditLeft(halfW) - third) return CellKind.COPIES_FLOOR_HEIGHT_INC;
+        // The number itself is display only — stepping covers the few values a room can hold.
+        return CellKind.NONE;
+    }
+
+    /**
      * What the Blocks row reads where it cannot draw icons — the command menu, which is text-only.
      *
      * <p>Names the gesture rather than the value. The value lives server-side and may be a variant
@@ -301,7 +382,8 @@ public final class EditorPlotLabelsRenderer {
      * at every width.</p>
      */
     public static String copiesBlockLabel(games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane) {
-        return plane.displayName() + ": + held";
+        return MenuLang.t("plot.plane_held",
+            MenuLang.named("portal.plane", plane.id(), plane.displayName()));
     }
 
     /**
@@ -317,8 +399,10 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the Contents row reads, e.g. {@code "Contents: Fit"}. */
     public static String roomContentsLabel(String modeTag) {
-        return "Contents: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .contents().displayName();
+        games.brennan.dungeontrain.portal.PortalRoomContents contents =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).contents();
+        return MenuLang.t("plot.contents",
+            MenuLang.named("portal.contents", contents.id(), contents.displayName()));
     }
 
     /**
@@ -334,8 +418,10 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the Books row reads, e.g. {@code "Books: Random Signature"}. */
     public static String roomBooksLabel(String modeTag) {
-        return "Books: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .books().displayName();
+        games.brennan.dungeontrain.portal.PortalRoomBooks books =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).books();
+        return MenuLang.t("plot.books",
+            MenuLang.named("portal.books", books.kind().id(), books.displayName()));
     }
 
     /**
@@ -351,8 +437,49 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the Sky row reads, e.g. {@code "Sky: Daylight"}. */
     public static String roomSkyLabel(String modeTag) {
-        return "Sky: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .sky().displayName();
+        games.brennan.dungeontrain.portal.PortalRoomSky sky =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).sky();
+        return MenuLang.t("plot.sky", MenuLang.named("portal.sky", sky.id(), sky.displayName()));
+    }
+
+    /** Whether the Fog row shows: every portal room, on the same reasoning as Sky. */
+    public static boolean hasRoomFogRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry);
+    }
+
+    /**
+     * What the Fog row reads, e.g. {@code "Fog: Auto (On)"} or {@code "Fog: Off"}.
+     *
+     * <p>Auto shows what it resolves to under the current walls, so an author sees the effect of
+     * the mode they picked without stepping the button to find out.</p>
+     */
+    public static String roomFogLabel(String modeTag) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);
+        String label = MenuLang.t("plot.fog",
+            MenuLang.named("portal.fog", settings.fog().id(), settings.fog().displayName()));
+        if (settings.fog() == games.brennan.dungeontrain.portal.PortalRoomFog.AUTO) {
+            label += " " + MenuLang.t(settings.fogs() ? "plot.fog_resolved_on" : "plot.fog_resolved_off");
+        }
+        return label;
+    }
+
+    /**
+     * Whether the Drift row shows: a portal room whose walls are Bedrock Lock — the one mode a single
+     * blob can describe, and so the only one the setting means anything under. Hidden elsewhere
+     * rather than shown greyed, the way the Door Wall row is under a mode with no wall to carry.
+     */
+    public static boolean hasRoomDriftRow(EditorPlotLabelsPacket.Entry entry) {
+        if (!hasModeRow(entry)) return false;
+        return games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode()).driftApplies();
+    }
+
+    /** What the Drift row reads, e.g. {@code "Drift: On"}. */
+    public static String roomDriftLabel(String modeTag) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);
+        return MenuLang.t("plot.drift",
+            MenuLang.named("portal.drift", settings.drift().id(), settings.drift().displayName()));
     }
 
     /**
@@ -377,8 +504,44 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the Room Walls row reads, e.g. {@code "Room Walls: Kept"}. */
     public static String doorWallLabel(String modeTag) {
-        return "Room Walls: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .effectiveDoorWall().displayName();
+        games.brennan.dungeontrain.portal.PortalRoomDoorWall wall =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).effectiveDoorWall();
+        return MenuLang.t("plot.room_walls",
+            MenuLang.named("portal.door_wall", wall.id(), wall.displayName()));
+    }
+
+    /**
+     * Whether the Door Position row shows: any portal room, in its plot — the same reach as the
+     * dimension rows, since this is a property of the room's own box rather than of its walls.
+     *
+     * <p>Read-only: unlike every other row here, there is no control behind it. The value is
+     * whatever {@code PortalRoomDoorPointer} last set from a right-click with a door in hand, on the
+     * doorway's own surface — the same surface {@link EditorDoorGhosts} ghosts. This row exists
+     * purely so that value is visible without counting blocks by eye.</p>
+     */
+    public static boolean hasDoorOffsetRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry);
+    }
+
+    /**
+     * What the Door Position row reads, e.g. {@code "Door Position: Centred, at the floor"} or
+     * {@code "Door Position: +2, 3 blocks up"}.
+     *
+     * <p>Signed for the across component: {@link games.brennan.dungeontrain.portal.PortalRoomLayout}
+     * treats that offset as a direction along {@code Z}, and "off to one side" reads better as a sign
+     * than as an unlabelled magnitude an author has to remember the meaning of. The height component
+     * is unsigned — it only ever moves up from the room's own floor.</p>
+     */
+    public static String doorOffsetLabel(String modeTag) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);
+        int value = settings.doorOffset().value();
+        int height = settings.doorHeightOffset().value();
+        String across = value == 0 ? MenuLang.t("plot.door_centred")
+            : (value > 0 ? "+" + value : Integer.toString(value));
+        String up = height == 0 ? MenuLang.t("plot.door_at_floor")
+            : MenuLang.plural("plot.door_up", height);
+        return MenuLang.t("plot.door_position", across, up);
     }
 
     /**
@@ -396,8 +559,10 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the Exits row reads, e.g. {@code "Exits: Random"}. */
     public static String exitsLabel(String modeTag) {
-        return "Exits: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .exits().displayName();
+        games.brennan.dungeontrain.portal.PortalRoomExits exits =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).exits();
+        return MenuLang.t("plot.exits",
+            MenuLang.named("portal.exits", exits.kind().id(), exits.displayName()));
     }
 
     /**
@@ -424,8 +589,8 @@ public final class EditorPlotLabelsRenderer {
         games.brennan.dungeontrain.portal.PortalRoomExits exits =
             games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).exits();
         return exits.kind() == games.brennan.dungeontrain.portal.PortalRoomExits.Kind.RANDOM
-            ? "1 in " + exits.every()
-            : "Every " + exits.every();
+            ? MenuLang.t("plot.exit_one_in", exits.every())
+            : MenuLang.t("plot.exit_every", exits.every());
     }
 
     /**
@@ -443,8 +608,8 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the moved-exit stepper reads, e.g. {@code "Moved exit: 7/10"}. */
     public static String exitMoveLabel(String modeTag) {
-        return "Moved exit: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .exits().moveChance() + "/10";
+        return MenuLang.t("plot.moved_exit", games.brennan.dungeontrain.portal.PortalRoomSettings
+            .parse(modeTag).exits().moveChance());
     }
 
     /**
@@ -455,16 +620,17 @@ public final class EditorPlotLabelsRenderer {
      * rather than the misspelling.</p>
      */
     public static String modeLabel(String modeTag) {
-        return "Walls: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .mode().displayName();
+        games.brennan.dungeontrain.portal.PortalRoomMode mode =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).mode();
+        return MenuLang.t("plot.walls", MenuLang.named("portal.mode", mode.id(), mode.displayName()));
     }
 
     /** Short prefix drawn to the left of a dimension row's number. */
     public static String dimensionLabel(RowKind kind) {
         return switch (kind) {
-            case LENGTH -> "L";
-            case WIDTH -> "W";
-            case HEIGHT -> "H";
+            case LENGTH -> MenuLang.t("common.dim_l");
+            case WIDTH -> MenuLang.t("common.dim_w");
+            case HEIGHT -> MenuLang.t("common.dim_h");
             default -> "";
         };
     }
@@ -649,16 +815,22 @@ public final class EditorPlotLabelsRenderer {
      */
     public static double halfWidth(EditorPlotLabelsPacket.Entry entry,
                                    java.util.function.ToIntFunction<String> measure) {
-        double w = Math.max(MIN_HALF_W * 2.0, measure.applyAsInt(entry.name()) * TEXT_SCALE + 2 * PAD_X);
+        // The name stays centred, so the face button's square is reserved on both sides of it.
+        double w = Math.max(MIN_HALF_W * 2.0,
+            measure.applyAsInt(entry.name()) * TEXT_SCALE + 2 * PAD_X + 2 * EditorPanelFacing.BUTTON_W);
         if (hasModeRow(entry)) {
             w = Math.max(w, measure.applyAsInt(modeLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
+        }
+        if (hasLockRow(entry)) {
+            // Label and one icon — no Edit button, so it is the Copies plane row minus a third.
+            w = Math.max(w, measure.applyAsInt(MenuLang.t("plot.lock_prefix")) * TEXT_SCALE + 3 * PAD_X + COPIES_ICON_SLOT);
         }
         if (hasCopiesRow(entry)) {
             w = Math.max(w, measure.applyAsInt(copiesLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
         if (hasCopiesBlockRow(entry)) {
             // Label, one icon, and an Edit button — the same three-part shape the Books row has.
-            w = Math.max(w, (measure.applyAsInt("Block:") + measure.applyAsInt("Edit")) * TEXT_SCALE
+            w = Math.max(w, (measure.applyAsInt(MenuLang.t("plot.block_prefix")) + measure.applyAsInt(MenuLang.t("common.edit"))) * TEXT_SCALE
                 + 4 * PAD_X + COPIES_ICON_SLOT);
         }
         if (hasExitsRow(entry)) {
@@ -731,8 +903,9 @@ public final class EditorPlotLabelsRenderer {
 
     /**
      * Build a cylindrical-billboard basis facing {@code cam} from {@code anchor}.
-     * Shared by renderer and raycast so the click hit math matches the visible
-     * panel exactly. Returns {@code [right, up, normal]}.
+     * Returns {@code [right, up, normal]}. The editor menus no longer use it —
+     * they hold a fixed facing ({@link EditorPanelFacing}); only the door-ghost
+     * labels still billboard.
      */
     public static Vec3[] basis(Vec3 anchor, Vec3 cam) {
         Vec3 toCam = cam.subtract(anchor);
@@ -770,6 +943,7 @@ public final class EditorPlotLabelsRenderer {
         // y range for row N: [halfH - (N+1)*ROW_H, halfH - N*ROW_H].
         int rowFromTop = (int) Math.floor((halfH - hitY) / ROW_H);
         if (rowFromTop < 0 || rowFromTop >= rows.length) return CellKind.NONE;
+        if (rowFromTop == 0 && hitX >= halfW - EditorPanelFacing.BUTTON_W) return CellKind.FACE;
 
         return switch (rows[rowFromTop]) {
             // Name — clickable teleport target, except on parts plots, which have an empty
@@ -786,15 +960,22 @@ public final class EditorPlotLabelsRenderer {
             // One button rather than a stepper: there are three modes, and naming the one you want
             // costs no more clicks than aiming at an arrow for it.
             case MODE -> CellKind.MODE_CYCLE;
+            // One cell, no Edit half: the value is a block id, and turning it into a variant would
+            // mean a shell of mixed blocks, which is not what a seal is for.
+            case LOCK -> CellKind.LOCK_HELD;
             case COPIES -> CellKind.COPIES_CYCLE;
-            case COPIES_FLOOR -> copiesBlockHitIsEdit(halfW, hitX)
-                ? CellKind.COPIES_FLOOR_EDIT : CellKind.COPIES_FLOOR_HELD;
+            case COPIES_FLOOR -> copiesFloorCell(halfW, hitX);
             case COPIES_ROOF -> copiesBlockHitIsEdit(halfW, hitX)
                 ? CellKind.COPIES_ROOF_EDIT : CellKind.COPIES_ROOF_HELD;
             case DOOR_WALL -> CellKind.DOOR_WALL_CYCLE;
+            // Read-only — there is nothing to click. The door offset is detected from a placed door,
+            // not dialled in here; see PortalRoomDoorDetection.
+            case DOOR_OFFSET -> CellKind.NONE;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
             case ROOM_SKY -> CellKind.ROOM_SKY_CYCLE;
+            case ROOM_FOG -> CellKind.ROOM_FOG_CYCLE;
+            case ROOM_DRIFT -> CellKind.ROOM_DRIFT_CYCLE;
             case EXITS -> CellKind.EXITS_CYCLE;
             case EXIT_EVERY -> stepperCell(hitX, halfW,
                 CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC, CellKind.EXIT_EVERY_TYPE);
@@ -864,7 +1045,7 @@ public final class EditorPlotLabelsRenderer {
         Vec3 cam, Vec3 anchor,
         EditorPlotLabelsPacket.Entry entry, CellKind hovered
     ) {
-        Vec3[] b = basis(anchor, cam);
+        Vec3[] b = EditorPanelFacing.basis(entry.worldPos(), anchor, cam);
         Vec3 right = b[0], up = b[1], normal = b[2];
 
         ps.pushPose();
@@ -934,11 +1115,19 @@ public final class EditorPlotLabelsRenderer {
                 case NAME -> {
                     // Hover-highlight when the player is aiming at it and the row is
                     // teleport-clickable (i.e. the entry has a category).
+                    double faceLeft = halfW - EditorPanelFacing.BUTTON_W;
                     if (hovered == CellKind.NAME) {
                         drawQuad(ps, buffer, -halfW + 0.005, rBot + 0.005,
-                            halfW - 0.005, rTop - 0.005, HOVER_COLOR);
+                            faceLeft - 0.005, rTop - 0.005, HOVER_COLOR);
                     }
                     drawCenteredText(ps, buffer, font, entry.name(), 0, rCY, NAME_COLOR);
+                    drawQuad(ps, buffer, faceLeft, rBot, halfW, rTop, EditorPanelFacing.BUTTON_BG);
+                    if (hovered == CellKind.FACE) {
+                        drawQuad(ps, buffer, faceLeft + 0.005, rBot + 0.005,
+                            halfW - 0.005, rTop - 0.005, HOVER_COLOR);
+                    }
+                    drawCenteredText(ps, buffer, font, EditorPanelFacing.BUTTON_GLYPH,
+                        faceLeft + EditorPanelFacing.BUTTON_W / 2.0, rCY, EditorPanelFacing.BUTTON_COLOR);
                 }
                 // Weight — display always when there's a weight pool; arrows only when inside
                 // the plot (the player has to step into the cage to edit).
@@ -987,6 +1176,23 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, modeLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
+                // Lock — the block this room's shell is written in, present only while it seals.
+                // Clicking takes what the author is holding; an empty hand means no shell at all.
+                case LOCK -> {
+                    int bg = hovered == CellKind.LOCK_HELD ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawLeftText(ps, buffer, font, MenuLang.t("plot.lock_prefix"), -halfW + PAD_X, rCY, WEIGHT_COLOR);
+                    String lockBlock = lockBlockId(entry.roomMode());
+                    if (games.brennan.dungeontrain.portal.PortalRoomLock.AIR_BLOCK.equals(lockBlock)) {
+                        // No shell at all. Drawing air would be an empty slot the author could not
+                        // tell from an unset one, so it says so in the word the Copies rows use.
+                        drawLeftText(ps, buffer, font, MenuLang.t("plot.nothing"), copiesIconCentre(halfW) - PAD_X,
+                            rCY, WEIGHT_COLOR);
+                    } else {
+                        MenuBlockIcons.drawBlockIcon(ps, buffer, lockBlock, copiesIconCentre(halfW),
+                            rCY, COPIES_ICON_SIZE);
+                    }
+                }
                 // Copies — the sub-mode under Walls, present only while the walls repeat the room.
                 case COPIES -> {
                     int bg = hovered == CellKind.COPIES_CYCLE ? HOVER_COLOR : BUTTON_BG;
@@ -996,11 +1202,15 @@ public final class EditorPlotLabelsRenderer {
                 // Floor and Roof — the two variants Single repeats, as icons. Clicking a row takes
                 // what the author is holding (a block, or a variant copied from a cell); its Edit
                 // half opens the Block Variant menu on that plane alone.
-                case COPIES_FLOOR -> drawCopiesPlaneRow(ps, buffer, font, halfW, rBot, rTop, rCY,
-                    hovered, "Floor:", entry.copiesFloorBlock(),
-                    CellKind.COPIES_FLOOR_HELD, CellKind.COPIES_FLOOR_EDIT);
+                case COPIES_FLOOR -> {
+                    drawCopiesPlaneRow(ps, buffer, font, halfW, rBot, rTop, rCY,
+                        hovered, MenuLang.t("plot.floor_prefix"), entry.copiesFloorBlock(),
+                        CellKind.COPIES_FLOOR_HELD, CellKind.COPIES_FLOOR_EDIT);
+                    drawCopiesFloorHeight(ps, buffer, font, halfW, rBot, rTop, rCY, hovered,
+                        entry.copiesFloorHeight());
+                }
                 case COPIES_ROOF -> drawCopiesPlaneRow(ps, buffer, font, halfW, rBot, rTop, rCY,
-                    hovered, "Roof:", entry.copiesRoofBlock(),
+                    hovered, MenuLang.t("plot.roof_prefix"), entry.copiesRoofBlock(),
                     CellKind.COPIES_ROOF_HELD, CellKind.COPIES_ROOF_EDIT);
                 // Contents — whether this room is furnished from the contents pool, and how a
                 // furnishing smaller than the room is fitted into it. Off by default.
@@ -1020,7 +1230,7 @@ public final class EditorPlotLabelsRenderer {
                         drawQuad(ps, buffer, split + 0.005, rBot + 0.005, halfW - 0.01, rTop - 0.005, editBg);
                         drawCenteredText(ps, buffer, font, roomBooksLabel(entry.roomMode()),
                             (-halfW + split) / 2.0, rCY, WEIGHT_COLOR);
-                        drawCenteredText(ps, buffer, font, "Edit",
+                        drawCenteredText(ps, buffer, font, MenuLang.t("common.edit"),
                             (split + halfW) / 2.0, rCY, BUTTON_TEXT_COLOR);
                     } else {
                         int bg = hovered == CellKind.ROOM_BOOKS_CYCLE ? HOVER_COLOR : BUTTON_BG;
@@ -1036,12 +1246,29 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, doorWallLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
+                // Door Position — read-only. Detected from a door the author placed one column
+                // outside the room box, on the doorway's own surface (PortalRoomDoorDetection), not
+                // set here — so there is nothing to draw but the text.
+                case DOOR_OFFSET ->
+                    drawCenteredText(ps, buffer, font, doorOffsetLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 // Sky — whether this room is lit as though it stood outdoors, and under which sky.
                 // Off by default, which is every room lit only by whatever its own build gives it.
                 case ROOM_SKY -> {
                     int bg = hovered == CellKind.ROOM_SKY_CYCLE ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, roomSkyLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Fog — Auto (what the walls say), On or Off. Same one-cell cycle as Sky above it.
+                case ROOM_FOG -> {
+                    int bg = hovered == CellKind.ROOM_FOG_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, roomFogLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Drift — whether this locked room is shared through the relay. Same one-cell cycle.
+                case ROOM_DRIFT -> {
+                    int bg = hovered == CellKind.ROOM_DRIFT_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, roomDriftLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
                 // Exits — how many extra ways back to the train this room scatters through its
                 // copies. Only an endless room has anywhere to put one.
@@ -1083,14 +1310,14 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
                     int bg = hovered == CellKind.BUTTON_ENTER_INSIDE ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
-                    drawCenteredText(ps, buffer, font, "Enter", 0, rCY, BUTTON_TEXT_COLOR);
+                    drawCenteredText(ps, buffer, font, MenuLang.t("editor.enter"), 0, rCY, BUTTON_TEXT_COLOR);
                 }
                 case ACTION -> drawActionRow(ps, buffer, font, halfW, rTop, rBot, rCY, hovered);
                 case CONTENTS -> {
                     int bg = hovered == CellKind.BUTTON_CONTENTS ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
-                    drawCenteredText(ps, buffer, font, "Contents", 0, rCY, BUTTON_TEXT_COLOR);
+                    drawCenteredText(ps, buffer, font, MenuLang.t("editor.contents"), 0, rCY, BUTTON_TEXT_COLOR);
                 }
             }
         }
@@ -1139,9 +1366,9 @@ public final class EditorPlotLabelsRenderer {
             drawQuad(ps, buffer, saveR + 0.005, aBot + 0.005, resetR - 0.005, aTop - 0.005, resetBg);
             drawQuad(ps, buffer, resetR + 0.005, aBot + 0.005, halfW - 0.01, aTop - 0.005, clearBg);
 
-            drawCenteredText(ps, buffer, font, "Save", saveCX, aCY, BUTTON_TEXT_COLOR);
-            drawCenteredText(ps, buffer, font, "R", resetCX, aCY, BUTTON_TEXT_COLOR);
-            drawCenteredText(ps, buffer, font, "C", clearCX, aCY, BUTTON_TEXT_COLOR);
+            drawCenteredText(ps, buffer, font, MenuLang.t("common.save"), saveCX, aCY, BUTTON_TEXT_COLOR);
+            drawCenteredText(ps, buffer, font, MenuLang.t("plot.reset_short"), resetCX, aCY, BUTTON_TEXT_COLOR);
+            drawCenteredText(ps, buffer, font, MenuLang.t("plot.clear_short"), clearCX, aCY, BUTTON_TEXT_COLOR);
         }
     }
 
@@ -1152,6 +1379,30 @@ public final class EditorPlotLabelsRenderer {
      * report — written once so the two cannot drift apart in geometry, which is what the hit-test
      * assumes when it splits both of them at {@link #copiesEditLeft}.</p>
      */
+    /**
+     * The Floor row's depth stepper, drawn over the value half's right end: {@code [-] N [+]} in the
+     * thirds {@link #copiesFloorCell} answers for. Its own quad separates it from the held-value
+     * cell to its left, so a click on the number is visibly not a click on the icon.
+     */
+    private static void drawCopiesFloorHeight(
+        PoseStack ps, MultiBufferSource buffer, Font font,
+        double halfW, double rBot, double rTop, double rCY,
+        CellKind hovered, int height
+    ) {
+        double left = copiesFloorStepperLeft(halfW);
+        double right = copiesEditLeft(halfW) - 0.005;
+        double third = (right - left) / 3.0;
+        drawQuad(ps, buffer, left, rBot + 0.005, right, rTop - 0.005, BUTTON_BG);
+        if (hovered == CellKind.COPIES_FLOOR_HEIGHT_DEC) {
+            drawQuad(ps, buffer, left + 0.005, rBot + 0.005, left + third - 0.005, rTop - 0.005, HOVER_COLOR);
+        } else if (hovered == CellKind.COPIES_FLOOR_HEIGHT_INC) {
+            drawQuad(ps, buffer, right - third + 0.005, rBot + 0.005, right - 0.005, rTop - 0.005, HOVER_COLOR);
+        }
+        drawCenteredText(ps, buffer, font, "-", left + third * 0.5, rCY, ARROW_COLOR);
+        drawCenteredText(ps, buffer, font, Integer.toString(height), left + third * 1.5, rCY, WEIGHT_COLOR);
+        drawCenteredText(ps, buffer, font, "+", right - third * 0.5, rCY, ARROW_COLOR);
+    }
+
     private static void drawCopiesPlaneRow(
         PoseStack ps, MultiBufferSource buffer, Font font,
         double halfW, double rBot, double rTop, double rCY,
@@ -1165,13 +1416,13 @@ public final class EditorPlotLabelsRenderer {
 
         if (block.isEmpty()) {
             // Nothing set yet: say what to do rather than showing an empty slot.
-            drawLeftText(ps, buffer, font, "hold one", copiesIconCentre(halfW) - PAD_X,
+            drawLeftText(ps, buffer, font, MenuLang.t("plot.hold_one"), copiesIconCentre(halfW) - PAD_X,
                 rCY, LABEL_COLOR);
         } else if (isAirSentinelId(block)) {
             // The plane is authored as air. Drawing the sentinel's own icon would put a command
             // block in the author's roof row, which is a block they never chose; the Block Variant
             // menu calls this entry "nothing" and so does this row.
-            drawLeftText(ps, buffer, font, "nothing", copiesIconCentre(halfW) - PAD_X,
+            drawLeftText(ps, buffer, font, MenuLang.t("plot.nothing"), copiesIconCentre(halfW) - PAD_X,
                 rCY, WEIGHT_COLOR);
         } else {
             MenuBlockIcons.drawBlockIcon(ps, buffer, block, copiesIconCentre(halfW),
@@ -1180,7 +1431,7 @@ public final class EditorPlotLabelsRenderer {
 
         int editBg = hovered == editCell ? HOVER_COLOR : BUTTON_BG;
         drawQuad(ps, buffer, split + 0.005, rBot + 0.005, halfW - 0.01, rTop - 0.005, editBg);
-        drawCenteredText(ps, buffer, font, "Edit", (split + halfW) / 2.0, rCY, BUTTON_TEXT_COLOR);
+        drawCenteredText(ps, buffer, font, MenuLang.t("common.edit"), (split + halfW) / 2.0, rCY, BUTTON_TEXT_COLOR);
     }
 
     /** {@link #drawCenteredText} anchored at its left edge — what a row with a strip beside it needs. */

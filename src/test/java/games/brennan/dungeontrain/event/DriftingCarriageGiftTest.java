@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.event;
 
 import org.junit.jupiter.api.Test;
 
+import games.brennan.dungeontrain.event.SharedCarriageAdvancementEvents.CloseAction;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -9,9 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The "left something behind" rule for {@code drift_gift_left}: a drifting-carriage container counts
  * as a gift only when it holds MORE at close than it did at open.
  *
- * <p>The one-directional part matters beyond the achievement — the same predicate decides whether the
- * cell is queued for upload, and queuing on a REMOVAL would make ordinary looting dirty (and re-upload)
- * every carriage a player empties.</p>
+ * <p>Plus {@code closeAction}: a gift is sent at once, any other change is only parked locally (it
+ * travels when the player leaves, and only from a block-edited carriage — see
+ * {@code SharedCarriageRegistryTest}).</p>
  */
 class DriftingCarriageGiftTest {
 
@@ -41,5 +44,36 @@ class DriftingCarriageGiftTest {
         // Close with nothing snapshotted (opened before the world loaded this carriage, or a menu we
         // never saw opened) — we cannot claim the player put anything there.
         assertFalse(SharedCarriageAdvancementEvents.isGift(null, 7));
+    }
+
+    // ---------------- Close action ----------------
+
+    private static final long SIG_A = 111L;
+    private static final long SIG_B = 222L;
+
+    @Test
+    void aGiftIsSentAtOnce() {
+        assertEquals(CloseAction.SEND_NOW, SharedCarriageAdvancementEvents.closeAction(0, 1, SIG_A, SIG_B));
+    }
+
+    @Test
+    void takingItemsIsParkedNotSent() {
+        assertEquals(CloseAction.PARK, SharedCarriageAdvancementEvents.closeAction(4, 3, SIG_A, SIG_B));
+        assertEquals(CloseAction.PARK, SharedCarriageAdvancementEvents.closeAction(9, 0, SIG_A, SIG_B));
+    }
+
+    @Test
+    void anEvenSwapOrRearrangeIsParked() {
+        assertEquals(CloseAction.PARK, SharedCarriageAdvancementEvents.closeAction(5, 5, SIG_A, SIG_B));
+    }
+
+    @Test
+    void openingAndClosingWithoutChangeDoesNothing() {
+        assertEquals(CloseAction.NONE, SharedCarriageAdvancementEvents.closeAction(5, 5, SIG_A, SIG_A));
+    }
+
+    @Test
+    void noRecordedOpenDoesNothing() {
+        assertEquals(CloseAction.NONE, SharedCarriageAdvancementEvents.closeAction(null, 7, SIG_A, SIG_B));
     }
 }

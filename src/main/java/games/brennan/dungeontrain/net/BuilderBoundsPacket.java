@@ -3,8 +3,11 @@ package games.brennan.dungeontrain.net;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderBounds;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
+import games.brennan.dungeontrain.builder.BuilderTemplateIdentity;
 import games.brennan.dungeontrain.builder.BuilderTrackBuild;
+import games.brennan.dungeontrain.builder.relay.BuildCredits;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
+import games.brennan.dungeontrain.builder.BuilderBuiltins;
 import games.brennan.dungeontrain.builder.BuilderWorldSetup;
 import games.brennan.dungeontrain.builder.structure.BuilderStructureMode;
 import games.brennan.dungeontrain.builder.structure.BuilderStructureRefresh;
@@ -60,13 +63,41 @@ import java.util.List;
  * @param dims            the world's carriage dimensions. Sent rather than assumed: the client used
  *                        to draw its track ghosts against {@code CarriageDims.DEFAULT}, which is
  *                        right until somebody configures a world that isn't the default
+ * @param creator         who originally built the open template, when it was downloaded from
+ *                        somebody else; empty for a draft and for the player's own work. Read from
+ *                        {@link BuildCredits}, which only the server has — the client cannot work
+ *                        it out, and it changes when the open build does
+ * @param builtin         the open build goes by a name the mod ships, outside a dev checkout — see
+ *                        {@link BuilderBuiltins#isProtected}. What makes Save ask for a name of the
+ *                        player's own instead of writing over the built-in and uploading it
  */
 public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, String buildName,
                                   int mirrorMask, String subTypeId, String partKindId,
                                   String stageId, int weight, String trackKindId,
                                   String structureModeId, String structureRefreshId,
-                                  int parked, String variantId, CarriageDims dims)
+                                  int parked, String variantId, CarriageDims dims, String creator,
+                                  boolean builtin)
         implements CustomPacketPayload {
+
+    /** Back-compat form, from before a build could say it goes by a shipped name. */
+    public BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, String buildName,
+                               int mirrorMask, String subTypeId, String partKindId,
+                               String stageId, int weight, String trackKindId,
+                               String structureModeId, String structureRefreshId,
+                               int parked, String variantId, CarriageDims dims, String creator) {
+        this(volumes, modeId, buildName, mirrorMask, subTypeId, partKindId, stageId, weight,
+                trackKindId, structureModeId, structureRefreshId, parked, variantId, dims, creator, false);
+    }
+
+    /** Back-compat form, from before a build could say who built it. */
+    public BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, String buildName,
+                               int mirrorMask, String subTypeId, String partKindId,
+                               String stageId, int weight, String trackKindId,
+                               String structureModeId, String structureRefreshId,
+                               int parked, String variantId, CarriageDims dims) {
+        this(volumes, modeId, buildName, mirrorMask, subTypeId, partKindId, stageId, weight,
+                trackKindId, structureModeId, structureRefreshId, parked, variantId, dims, "");
+    }
 
     /** Guards against a malformed or hostile payload allocating an unbounded list. */
     private static final int MAX_VOLUMES = 64;
@@ -87,6 +118,8 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
                 buf.writeUtf(packet.structureModeId, 16);
                 buf.writeUtf(packet.structureRefreshId, 16);
                 buf.writeUtf(packet.variantId, 64);
+                buf.writeUtf(packet.creator, 64);
+                buf.writeBoolean(packet.builtin);
                 buf.writeVarInt(Math.max(0, packet.parked));
                 buf.writeVarInt(packet.dims.length());
                 buf.writeVarInt(packet.dims.width());
@@ -110,6 +143,8 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
                 String structureModeId = buf.readUtf(16);
                 String structureRefreshId = buf.readUtf(16);
                 String variantId = buf.readUtf(64);
+                String creator = buf.readUtf(64);
+                boolean builtin = buf.readBoolean();
                 int parked = buf.readVarInt();
                 // Clamped, not trusted: these size every loop the structure renderer runs, and a
                 // hostile zero would divide by nothing while a hostile million would allocate.
@@ -125,7 +160,7 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
                 }
                 return new BuilderBoundsPacket(boxes, modeId, buildName, mirrorMask,
                         subTypeId, partKindId, stageId, weight, trackKindId,
-                        structureModeId, structureRefreshId, parked, variantId, dims);
+                        structureModeId, structureRefreshId, parked, variantId, dims, creator, builtin);
             }
         );
 
@@ -159,7 +194,23 @@ public record BuilderBoundsPacket(List<BoundingBox> volumes, String modeId, Stri
                 BuilderStructureMode.orDefault(data.builderStructureMode()).id(),
                 BuilderStructureRefresh.orDefault(data.builderStructureRefresh()).id(),
                 BuilderWorldSetup.parkedCarriages(data), orEmpty(data.builderVariant()),
-                data.dims());
+                data.dims(), creatorOf(data), BuilderBuiltins.isProtected(overworld));
+    }
+
+    /**
+     * Who built the open template, when this install downloaded it from them.
+     *
+     * <p>Empty for a draft, for a build nothing was ever recorded about, and for the player's own
+     * work — an absent byline is the ordinary case, and the panel omits the line rather than
+     * captioning every build with a blank.</p>
+     */
+    private static String creatorOf(DungeonTrainWorldData data) {
+        return BuilderTemplateIdentity.of(data.builderMode(), data.builderSubType(),
+                        data.builderPartKind(), data.builderTrackKind(), data.builderName(),
+                        BuilderWorldSetup.parkedCarriages(data))
+                .map(id -> BuildCredits.get(id.kind(), id.subKind(), id.id()))
+                .map(BuildCredits.Credit::display)
+                .orElse("");
     }
 
     /**

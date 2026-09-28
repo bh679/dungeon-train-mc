@@ -1,11 +1,14 @@
 package games.brennan.dungeontrain.net.relay;
 
+import games.brennan.dungeontrain.builder.relay.BuilderProfileCap;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.relay.SubmitNote;
+import games.brennan.dungeontrain.editor.TemplateLootPrefabs;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -14,6 +17,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -47,8 +51,42 @@ public final class SharedCarriageClient {
 
     private SharedCarriageClient() {}
 
-    /** Outcome of a save/heartbeat/return call. */
-    public enum CallStatus { OK, FORBIDDEN, UNKNOWN, ERROR }
+    /**
+     * Outcome of a save/heartbeat/return call.
+     *
+     * <p>{@link #TIMEOUT} is only ever produced by {@link #fetchBuild}: it is the one call where the
+     * clock running out means something different to the caller than a refused connection or a
+     * 5xx — "the relay is slow, press Load again" rather than "the relay is down". Everything else
+     * folds a timeout into {@link #ERROR} as it always has.</p>
+     */
+    public enum CallStatus { OK, FORBIDDEN, UNKNOWN, ERROR, TIMEOUT }
+
+    /**
+     * How hard {@link #fetchBuild} tries before giving up.
+     *
+     * <p>{@link #QUICK} is one attempt within {@link #REQUEST_TIMEOUT} — the budget every other relay
+     * call has, sized for the in-play heartbeat cadence. Right for a preview tile, which has its own
+     * ask-again-later loop and of which seven may be in flight at once.</p>
+     *
+     * <p>{@link #PATIENT} is for a deliberate press of Load: a bigger first budget, and one more try
+     * after a transport failure. A fetch pulls a whole blocks blob (50–90 KB for a portal room) from
+     * a relay whose quiet-moment round trip is already a couple of seconds, so a flat 10 s dies under
+     * modest load — which is exactly when a player has just pressed a button and will wait. Safe to
+     * retry because {@code /carriages/fetch} is a read: no lease taken, nothing written, so a
+     * duplicate is harmless. Do not lend this to {@code claim} or {@code submit}, which are not.</p>
+     */
+    public enum FetchPatience {
+        QUICK(List.of(REQUEST_TIMEOUT), Duration.ZERO),
+        PATIENT(List.of(Duration.ofSeconds(20), Duration.ofSeconds(30)), Duration.ofSeconds(1));
+
+        final List<Duration> budgets;
+        final Duration pause;
+
+        FetchPatience(List<Duration> budgets, Duration pause) {
+            this.budgets = budgets;
+            this.pause = pause;
+        }
+    }
 
     /** A relay lease handle: the row id + lease token (token may be null on a dedupe we couldn't claim). */
     public record LeaseResult(int id, String token, boolean deduped) {}
@@ -107,7 +145,32 @@ public final class SharedCarriageClient {
      */
     public record PoolLease(int id, String token, String blocks, int l, int h, int w,
                             int baseSeq, List<DeltaRec> deltas, String owner, Credits credits,
-                            Deaths deaths) {}
+                            Deaths deaths, String kind, String subKind) {
+
+        /** The relay's name for a whole carriage — what every lease was before rooms could drift. */
+        public static final String KIND_CARRIAGE = "carriage";
+        /** The relay's name for a dimensional carriage's room. */
+        public static final String KIND_PORTAL_ROOM = "portal_room";
+
+        public PoolLease {
+            // A relay older than the kind field says nothing, and the only thing it can have served is
+            // a carriage — the SQL literal saw to that.
+            if (kind == null || kind.isEmpty()) kind = KIND_CARRIAGE;
+            if (subKind == null) subKind = "";
+        }
+
+        /** The shape this record had before a lease could name its kind. */
+        public PoolLease(int id, String token, String blocks, int l, int h, int w,
+                         int baseSeq, List<DeltaRec> deltas, String owner, Credits credits,
+                         Deaths deaths) {
+            this(id, token, blocks, l, h, w, baseSeq, deltas, owner, credits, deaths, KIND_CARRIAGE, "");
+        }
+
+        /** True when the relay served a dimensional carriage's room rather than a carriage. */
+        public boolean isRoom() {
+            return KIND_PORTAL_ROOM.equals(kind);
+        }
+    }
 
     /** Outcome of a delta POST: transport status + whether the holder should re-baseline (soft/hard). */
     public record DeltaResult(CallStatus status, boolean compactNeeded, boolean mustCompact) {}
@@ -118,7 +181,22 @@ public final class SharedCarriageClient {
                                                                   String blocksBase64,
                                                                   int l, int h, int w, String text, String stage,
                                                                   String mode) {
+        return submit(ownerUuid, ownerName, blocksBase64, l, h, w, text, stage, mode, null, null);
+    }
+
+    /**
+     * {@link #submit} naming what shape the build is. {@code kind} is {@link PoolLease#KIND_CARRIAGE}
+     * or {@link PoolLease#KIND_PORTAL_ROOM}; {@code subKind} is a room's template name, which is what
+     * a room lease later matches on — a room is only ever served back into the same room. Null for
+     * either sends nothing, which the relay reads as a carriage.
+     */
+    public static CompletableFuture<Optional<LeaseResult>> submit(String ownerUuid, String ownerName,
+                                                                  String blocksBase64,
+                                                                  int l, int h, int w, String text, String stage,
+                                                                  String mode, String kind, String subKind) {
         JsonObject body = new JsonObject();
+        if (kind != null && !kind.isEmpty()) body.addProperty("kind", kind);
+        if (subKind != null && !subKind.isEmpty()) body.addProperty("subKind", subKind);
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
         // The builder's name, so other worlds can credit them by name rather than an unresolvable uuid.
         // Only ever sent for a player who has granted network consent (see SharedCarriageGate).
@@ -152,10 +230,33 @@ public final class SharedCarriageClient {
      * @param flag       the moderation verdict; a flagged build is withheld from the pool however
      *                   published it is, which is the only way the player can be told why theirs
      *                   isn't turning up
+     * @param review     where it stands in the operator's submission queue — a SECOND axis, see
+     *                   {@link games.brennan.dungeontrain.builder.relay.BuilderReviewState}. Empty
+     *                   from a relay that predates the queue, which reads as never-submitted.
+     * @param templateCopy whether the relay recognises it as an unmodified copy of a template the
+     *                   mod ships — a stock part opened and saved, not something the player made.
+     *                   The relay only ever lists these to their owner (and leaves them out of every
+     *                   count), so the flag exists for the owner's own screen to say why the tile
+     *                   is not a build. False from a relay that predates the fingerprint table.
      */
     public record ProfileBuild(int id, String kind, String subKind, String buildName, String visibility,
-                               String source, String stage, String flag, int l, int h, int w,
-                               int changeCount, long updatedTs) {}
+                               String source, String stage, String flag, String review, int l, int h, int w,
+                               int changeCount, long updatedTs,
+                               boolean favourite, String ownerUuid, String ownerName,
+                               boolean templateCopy, SubmitNote note) {
+        public ProfileBuild {
+            note = note == null ? SubmitNote.EMPTY : note;
+        }
+
+        /** A row with no submission answers — every listing but {@code /carriages/mine}. */
+        public ProfileBuild(int id, String kind, String subKind, String buildName, String visibility,
+                            String source, String stage, String flag, String review, int l, int h, int w,
+                            int changeCount, long updatedTs, boolean favourite, String ownerUuid,
+                            String ownerName, boolean templateCopy) {
+            this(id, kind, subKind, buildName, visibility, source, stage, flag, review, l, h, w, changeCount,
+                    updatedTs, favourite, ownerUuid, ownerName, templateCopy, SubmitNote.EMPTY);
+        }
+    }
 
     /**
      * Upload a Train Builder save. {@code visibility} is {@code profile} for a build that is only in
@@ -171,7 +272,23 @@ public final class SharedCarriageClient {
                                                                        String blocksBase64, int l, int h, int w,
                                                                        String text, String stage, String mode,
                                                                        String kind, String subKind, String buildName,
-                                                                       String visibility) {
+                                                                       String visibility, String sidecars) {
+        return submitBuild(ownerUuid, ownerName, blocksBase64, l, h, w, text, stage, mode, kind, subKind,
+                buildName, visibility, sidecars, null);
+    }
+
+    /**
+     * As above, carrying the loot prefabs the build's chests link to as well.
+     *
+     * @param lootPrefabs the document from {@code TemplateLootPrefabs.collect}; null or empty says
+     *                    nothing, and the relay leaves the build's prefab links as they were
+     */
+    public static CompletableFuture<Optional<BuildUpload>> submitBuild(String ownerUuid, String ownerName,
+                                                                       String blocksBase64, int l, int h, int w,
+                                                                       String text, String stage, String mode,
+                                                                       String kind, String subKind, String buildName,
+                                                                       String visibility, String sidecars,
+                                                                       String lootPrefabs) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
         if (ownerName != null && !ownerName.isEmpty()) body.addProperty("name", ownerName);
@@ -181,6 +298,11 @@ public final class SharedCarriageClient {
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
         if (stage != null && !stage.isEmpty()) body.addProperty("stage", stage);
         if (mode != null && !mode.isEmpty()) body.addProperty("mode", mode);
+        // Everything about the template that is not its blocks — variant lists, part assignments,
+        // contents allow-lists, weights (a portal room's door position among them). Opaque to the
+        // relay, which stores and returns it verbatim.
+        if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
+        addLootPrefabs(body, lootPrefabs);
         body.addProperty("kind", kind == null ? "" : kind);
         if (subKind != null && !subKind.isEmpty()) body.addProperty("subKind", subKind);
         if (buildName != null && !buildName.isEmpty()) body.addProperty("buildName", buildName);
@@ -210,9 +332,165 @@ public final class SharedCarriageClient {
      * two, so they must not collapse into one another.</p>
      */
     public static CompletableFuture<List<ProfileBuild>> listMine(String ownerUuid) {
+        return listMine(ownerUuid, RelayTarget.dev());
+    }
+
+    /** As above against a named relay — the live toggle's path. */
+    public static CompletableFuture<List<ProfileBuild>> listMine(String ownerUuid, String baseUrl) {
+        return listMine(ownerUuid, ownerUuid, baseUrl);
+    }
+
+    /**
+     * As above, saying separately WHOSE builds to list and WHOSE stars to stamp on them.
+     *
+     * <p>The two are the same player almost always, and differ on the one path that matters: a dev
+     * build looking at somebody else's profile, where the builds are theirs and the stars on them are
+     * still the viewer's own. Passing the owner for both — which the two-argument overload does — is
+     * what reading your own profile means.</p>
+     */
+    public static CompletableFuture<List<ProfileBuild>> listMine(String ownerUuid, String viewerUuid,
+                                                                 String baseUrl) {
+        return listMineWithCap(ownerUuid, viewerUuid, baseUrl).thenApply(mine -> mine == null ? null : mine.builds());
+    }
+
+    /**
+     * A profile listing together with how many unpublished builds its owner may keep.
+     *
+     * @param cap the relay's {@code cap} for this owner — the shared default for most players, a
+     *            per-player exception for a few (the dev client's {@code Dev}). A relay that predates
+     *            the field answers without it, and {@link BuilderProfileCap#DEFAULT_PROFILE_BUILDS}
+     *            stands in, which is exactly what the mod assumed before the relay reported one.
+     */
+    public record Mine(List<ProfileBuild> builds, int cap) {}
+
+    /** {@link #listMine(String, String, String)}, keeping the owner's cap the relay reports beside it. */
+    public static CompletableFuture<Mine> listMineWithCap(String ownerUuid, String viewerUuid, String baseUrl) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
-        return post("/carriages/mine", body).thenApply(resp -> {
+        body.addProperty("viewer", viewerUuid == null ? "" : viewerUuid);
+        return post(baseUrl, "/carriages/mine", body).thenApply(resp -> parseMine(okJson(resp)));
+    }
+
+    /** The {@code /carriages/mine} reply, or {@code null} when it is unusable. Package-private for tests. */
+    static Mine parseMine(JsonObject o) {
+        if (o == null || !o.has("carriages") || !o.get("carriages").isJsonArray()) return null;
+        List<ProfileBuild> out = new java.util.ArrayList<>();
+        for (JsonElement el : o.getAsJsonArray("carriages")) {
+            if (!el.isJsonObject()) continue;
+            JsonObject r = el.getAsJsonObject();
+            if (!r.has("id")) continue;
+            out.add(parseBuild(r));
+        }
+        int cap = o.has("cap") && o.get("cap").isJsonPrimitive() && o.get("cap").getAsJsonPrimitive().isNumber()
+                ? o.get("cap").getAsInt() : 0;
+        return new Mine(List.copyOf(out), cap > 0 ? cap : BuilderProfileCap.DEFAULT_PROFILE_BUILDS);
+    }
+
+    /**
+     * One build row as every listing spells it — {@code /carriages/mine} and {@code /carriages/favourites}
+     * answer in the same shape, so they are parsed by the same code and cannot drift apart.
+     *
+     * <p>{@code ownerUuid}/{@code ownerName} are redundant on a profile listing, where every build has
+     * the same author, and load-bearing on a favourites listing, which spans owners and has to caption
+     * each tile with whose work it is.</p>
+     */
+    private static ProfileBuild parseBuild(JsonObject r) {
+        JsonObject d = r.has("dims") && r.get("dims").isJsonObject() ? r.getAsJsonObject("dims") : null;
+        return new ProfileBuild(r.get("id").getAsInt(), str(r, "kind"), str(r, "subKind"),
+                str(r, "buildName"), str(r, "visibility"), str(r, "source"), str(r, "stage"),
+                str(r, "flag"), str(r, "review"), intOf(d, "l"), intOf(d, "h"), intOf(d, "w"),
+                intOf(r, "changeCount"), longOf(r, "updatedTs"),
+                r.has("favourite") && r.get("favourite").getAsBoolean(),
+                str(r, "ownerUuid"), str(r, "ownerName"),
+                r.has("templateCopy") && r.get("templateCopy").isJsonPrimitive()
+                        && r.get("templateCopy").getAsJsonPrimitive().isBoolean()
+                        && r.get("templateCopy").getAsBoolean(),
+                noteOf(r));
+    }
+
+    /**
+     * The author's Submit for Review answers on a row, as {@code /carriages/mine} spells them:
+     * {@code submitNote: {redstone?, loot?, notes?}} or null. Anything else — absent, null, a bare
+     * string — is no answers rather than a failed row. Package-private for tests.
+     */
+    static SubmitNote noteOf(JsonObject r) {
+        if (r == null || !r.has("submitNote") || !r.get("submitNote").isJsonObject()) return SubmitNote.EMPTY;
+        JsonObject n = r.getAsJsonObject("submitNote");
+        return new SubmitNote(str(n, "redstone"), str(n, "loot"), str(n, "notes"));
+    }
+
+    /** One builder the relay knows, as a creator search names them. */
+    public record Creator(String uuid, String name, int builds) {}
+
+    /**
+     * Builders whose display name (or uuid) contains {@code query} — the name→uuid step that lets a
+     * dev build look at somebody else's builds through {@link #listMine}.
+     *
+     * <p>The relay answers this on the DEV cap only, so on a release build it comes back {@code null}
+     * exactly as an unreachable relay does. That is deliberate and not worth distinguishing in game:
+     * nothing on a release build asks in the first place.</p>
+     *
+     * <p>{@code null} on an unreachable or unusable answer, an empty list when nobody matched — the
+     * same two-answer convention {@link #listMine} follows.</p>
+     */
+    public static CompletableFuture<List<Creator>> searchCreators(String query, int limit) {
+        return searchCreators(query, limit, false);
+    }
+
+    /**
+     * As above, against the live pool when {@code useLive}.
+     *
+     * <p>A different route, not just a different base URL: the relay answers the search on the dev cap
+     * alone, so the live one goes through the operator route and the admin secret this machine holds
+     * ({@link RelayTarget#adminSearchBase()}). No admin URL configured resolves to {@code null} — the
+     * same "could not search" the screen shows for an unreachable relay, which is what it is.</p>
+     */
+    public static CompletableFuture<List<Creator>> searchCreators(String query, int limit, boolean useLive) {
+        String q = query == null ? "" : query;
+        if (useLive) {
+            String admin = RelayTarget.adminSearchBase();
+            if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
+            String url = admin + "/carriages/creators?cap=live&q=" + urlEncode(q)
+                    + (limit > 0 ? "&limit=" + limit : "");
+            return get(url).thenApply(SharedCarriageClient::parseCreators);
+        }
+        JsonObject body = new JsonObject();
+        body.addProperty("q", q);
+        if (limit > 0) body.addProperty("limit", limit);
+        return post("/carriages/creators", body).thenApply(SharedCarriageClient::parseCreators);
+    }
+
+    /**
+     * Every builder-authored build in a pool, newest first — what the browser's <b>All builders</b>
+     * lists, across owners rather than within one profile.
+     *
+     * <p>The operator's listing rather than a new endpoint: {@code GET /<admin>/carriages} already
+     * answers with every row, metadata only, in the same shape {@link #listMine} does — so the rows
+     * come back through {@link #parseBuild} and cannot drift from the ones a profile shows. Admin cap
+     * only, like {@link #searchCreators}, and {@code null} without an admin URL for the same reason:
+     * no shipped jar carries the secret that reaches it.</p>
+     *
+     * <p>Three narrowings applied here rather than left to the screen. Rows authored in ordinary PLAY
+     * are dropped — a shared carriage picked up by a train is not a builder's submission, and a pool
+     * is mostly those. So are unmodified copies of the templates this mod ships ({@code templateCopy},
+     * which the operator's listing flags rather than omits): a stock part somebody opened and saved
+     * is not a build of theirs, and the relay's own builder search leaves those out for the same
+     * reason. What survives is trimmed to {@code limit}, because the endpoint takes no limit
+     * of its own and the packet that carries the answer holds 512 rows: trimming late would mean the
+     * newest builds silently falling off the end of the wire.</p>
+     *
+     * <p>It is a big answer — the live pool was 7,989 rows / 6.6 MB on 2026-09-05, of which 552 were
+     * builder rows — so this is asked on a press rather than on a timer, and only ever by an operator
+     * build.</p>
+     *
+     * <p>{@code null} on an unreachable or unusable answer, empty when the pool holds nothing — the
+     * same two-answer convention every listing here follows.</p>
+     */
+    public static CompletableFuture<List<ProfileBuild>> listAll(boolean useLive, int limit) {
+        String admin = RelayTarget.adminSearchBase();
+        if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
+        String url = admin + "/carriages?cap=" + (useLive ? "live" : "dev");
+        return get(url).thenApply(resp -> {
             JsonObject o = okJson(resp);
             if (o == null || !o.has("carriages") || !o.get("carriages").isJsonArray()) return null;
             List<ProfileBuild> out = new java.util.ArrayList<>();
@@ -220,14 +498,186 @@ public final class SharedCarriageClient {
                 if (!el.isJsonObject()) continue;
                 JsonObject r = el.getAsJsonObject();
                 if (!r.has("id")) continue;
-                JsonObject d = r.has("dims") && r.get("dims").isJsonObject() ? r.getAsJsonObject("dims") : null;
-                out.add(new ProfileBuild(r.get("id").getAsInt(), str(r, "kind"), str(r, "subKind"),
-                        str(r, "buildName"), str(r, "visibility"), str(r, "source"), str(r, "stage"),
-                        str(r, "flag"), intOf(d, "l"), intOf(d, "h"), intOf(d, "w"),
-                        intOf(r, "changeCount"), longOf(r, "updatedTs")));
+                ProfileBuild build = parseBuild(r);
+                if (SOURCE_PLAY.equals(build.source()) || build.templateCopy()) continue;
+                out.add(build);
+            }
+            out.sort((a, b) -> Long.compare(b.updatedTs(), a.updatedTs()));
+            return List.copyOf(limit > 0 && out.size() > limit ? out.subList(0, limit) : out);
+        });
+    }
+
+    /** What the relay calls a row uploaded by ordinary play rather than by the Train Builder. */
+    private static final String SOURCE_PLAY = "play";
+
+    /** One reconstructable frame of a build's history: a full snapshot and the deltas since it. */
+    public record HistoryFrame(int seq, int baseSeq, String base, List<String> deltas) {}
+
+    /**
+     * The seqs at which a build's change history was recorded, oldest first — the relay's admin
+     * scrubber index, metadata only. Empty when there is none; null when it could not be asked.
+     *
+     * <p>Admin cap only, like {@link #searchCreators}: the history is the operator's view of how a
+     * build came to be, and a release build has no admin URL to ask with.</p>
+     */
+    public static CompletableFuture<List<Integer>> historyIndex(int id, boolean useLive) {
+        String admin = RelayTarget.adminSearchBase();
+        if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
+        String url = admin + "/carriages/" + id + "/history?cap=" + (useLive ? "live" : "dev");
+        return get(url).thenApply(resp -> {
+            JsonObject o = okJson(resp);
+            if (o == null || !o.has("history") || !o.get("history").isJsonArray()) return null;
+            List<Integer> out = new java.util.ArrayList<>();
+            for (JsonElement el : o.getAsJsonArray("history")) {
+                if (el.isJsonObject() && el.getAsJsonObject().has("seq")) {
+                    out.add(el.getAsJsonObject().get("seq").getAsInt());
+                }
             }
             return List.copyOf(out);
         });
+    }
+
+    /** The build as it stood at {@code seq}: newest full snapshot at or before it, and the deltas up to it. */
+    public static CompletableFuture<HistoryFrame> historyFrame(int id, int seq, boolean useLive) {
+        String admin = RelayTarget.adminSearchBase();
+        if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
+        String url = admin + "/carriages/" + id + "/history/" + seq + "?cap=" + (useLive ? "live" : "dev");
+        return get(url).thenApply(resp -> {
+            JsonObject o = okJson(resp);
+            if (o == null || !o.has("frame") || !o.get("frame").isJsonObject()) return null;
+            JsonObject f = o.getAsJsonObject("frame");
+            List<String> deltas = new java.util.ArrayList<>();
+            if (f.has("deltas") && f.get("deltas").isJsonArray()) {
+                for (JsonElement el : f.getAsJsonArray("deltas")) deltas.add(el.getAsString());
+            }
+            return new HistoryFrame(intOf(f, "seq"), intOf(f, "baseSeq"), str(f, "base"), List.copyOf(deltas));
+        });
+    }
+
+    /** The creator rows in a search answer, or null when there was no usable answer. */
+    private static List<Creator> parseCreators(HttpResponse<String> resp) {
+        return parseCreatorArray(okJson(resp));
+    }
+
+    /**
+     * The {@code creators} array of an already-parsed answer, or null when there isn't a usable one.
+     *
+     * <p>Split out because a favourites listing carries its builders under the same key and in the
+     * same shape as a creator search — one parser, so a change to what a builder row looks like cannot
+     * reach one screen and miss the other.</p>
+     */
+    private static List<Creator> parseCreatorArray(JsonObject o) {
+        if (o == null || !o.has("creators") || !o.get("creators").isJsonArray()) return null;
+        List<Creator> out = new java.util.ArrayList<>();
+        for (JsonElement el : o.getAsJsonArray("creators")) {
+            if (!el.isJsonObject()) continue;
+            JsonObject r = el.getAsJsonObject();
+            String uuid = str(r, "uuid");
+            if (uuid.isEmpty()) continue;
+            // A builder whose builds all predate name capture is still a builder: fall back to the
+            // uuid so the row can be picked rather than dropped for having nothing to print.
+            String name = str(r, "name");
+            out.add(new Creator(uuid, name.isEmpty() ? uuid : name, intOf(r, "builds")));
+        }
+        return List.copyOf(out);
+    }
+
+    // ---- favourites ---------------------------------------------------------
+    //
+    // A star is PRIVATE: the relay never aggregates it, never counts it, and never shows one player's
+    // to another. It says "show me this again", not "this is good" — so there is nothing here to
+    // display as a score and nothing for a build to be ranked by.
+
+    /**
+     * Star or un-star one build for this player.
+     *
+     * <p>Resolves to {@code true} when the relay confirmed the star is now in the state asked for, and
+     * {@code false} for every way it might not be — refused, unreachable, unknown build. The screen
+     * flips its star optimistically and uses this only to put it back, so "we don't know" and "no" want
+     * the same answer: a star left showing filled on a relay that never took it would be a lie the
+     * player only discovers on their next visit.</p>
+     *
+     * <p>Idempotent at the far end — a repeat of a star that already landed answers OK rather than
+     * being refused — so a retry costs nothing.</p>
+     */
+    public static CompletableFuture<Boolean> setFavourite(String uuid, int relayId, boolean on,
+                                                          String baseUrl) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid == null ? "" : uuid);
+        body.addProperty("id", relayId);
+        body.addProperty("favourite", on);
+        return post(baseUrl, "/carriages/favourite", body)
+                .thenApply(resp -> okJson(resp) != null);
+    }
+
+    /** As above for a BUILDER rather than one of their builds. */
+    public static CompletableFuture<Boolean> setBuilderFavourite(String uuid, String builderUuid,
+                                                                 boolean on, String baseUrl) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid == null ? "" : uuid);
+        body.addProperty("builderUuid", builderUuid == null ? "" : builderUuid);
+        body.addProperty("favourite", on);
+        return post(baseUrl, "/carriages/favourite-builder", body)
+                .thenApply(resp -> okJson(resp) != null);
+    }
+
+    /** Everything one player has starred: the builds, and the builders. */
+    public record Favourites(List<ProfileBuild> builds, List<Creator> builders) {}
+
+    /**
+     * This player's whole favourites list.
+     *
+     * <p>{@code null} on an unreachable or unusable answer, and a {@link Favourites} with two empty
+     * lists when they simply have not starred anything — the same two-answer convention
+     * {@link #listMine} follows, and for the same reason: "we couldn't ask" and "you have none" are
+     * different things to put on a screen.</p>
+     *
+     * <p>The relay answers builds in {@code /carriages/mine}'s shape and builders in
+     * {@code /carriages/creators}', so both halves are parsed by the code those already use.</p>
+     */
+    public static CompletableFuture<Favourites> listFavourites(String uuid, String baseUrl) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid == null ? "" : uuid);
+        return post(baseUrl, "/carriages/favourites", body).thenApply(resp -> {
+            JsonObject o = okJson(resp);
+            if (o == null) return null;
+            List<ProfileBuild> builds = new java.util.ArrayList<>();
+            if (o.has("carriages") && o.get("carriages").isJsonArray()) {
+                for (JsonElement el : o.getAsJsonArray("carriages")) {
+                    if (!el.isJsonObject()) continue;
+                    JsonObject r = el.getAsJsonObject();
+                    if (!r.has("id")) continue;
+                    builds.add(parseBuild(r));
+                }
+            }
+            List<Creator> builders = parseCreatorArray(o);
+            return new Favourites(List.copyOf(builds), builders == null ? List.of() : builders);
+        });
+    }
+
+    /** GET a JSON URL; resolves to the HttpResponse, or null on transport failure. */
+    private static CompletableFuture<HttpResponse<String>> get(String url) {
+        try {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                    .timeout(REQUEST_TIMEOUT)
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+            return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                    .exceptionally(e -> {
+                        // The URL carries the admin capability, so it is never logged — only the fact.
+                        LOGGER.debug("[DungeonTrain] admin carriage GET failed: {}", e.toString());
+                        return null;
+                    });
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] admin carriage GET failed to start: {}", t.toString());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    /** Percent-encode one query value. */
+    private static String urlEncode(String value) {
+        return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8);
     }
 
     /**
@@ -239,10 +689,22 @@ public final class SharedCarriageClient {
      * player is told to try again rather than the relay silently doing nothing.</p>
      */
     public static CompletableFuture<VisibilityResult> publish(int id, String secret, boolean publish) {
+        return publish(id, secret, publish, SubmitNote.EMPTY);
+    }
+
+    /**
+     * As above, with the author's note to the reviewer. Sent on every submit, as
+     * {@code note: {redstone?, loot?, notes?}} with the empty fields left out — an empty object clears
+     * the stored answers; a relay that does not read the field ignores it.
+     */
+    public static CompletableFuture<VisibilityResult> publish(int id, String secret, boolean publish, SubmitNote note) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("secret", secret == null ? "" : secret);
         body.addProperty("publish", publish);
+        // Always on a submit, empty included: the relay keeps the stored answers when a submit carries
+        // no note at all, so sending one is what lets clearing every box clear them.
+        if (publish && note != null) body.add("note", noteJson(note));
         return post("/carriages/publish", body).thenApply(resp -> {
             if (resp == null) return new VisibilityResult(CallStatus.ERROR, false, false, "");
             int sc = resp.statusCode();
@@ -257,10 +719,93 @@ public final class SharedCarriageClient {
     }
 
     /**
+     * Replace one build's Submit for Review answers, as its owner — authorised by the owner secret,
+     * like publish. Leaves the build and its review state alone.
+     */
+    public static CompletableFuture<CallStatus> setNote(int id, String secret, SubmitNote note) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("secret", secret == null ? "" : secret);
+        body.add("note", noteJson(note == null ? SubmitNote.EMPTY : note));
+        return post("/carriages/note", body).thenApply(SharedCarriageClient::noteStatus);
+    }
+
+    /**
+     * Replace anybody's build's answers, as the developer — through the admin cap, so only an install
+     * holding the admin URL can. {@link CallStatus#ERROR} straight away when there is none.
+     */
+    public static CompletableFuture<CallStatus> adminSetNote(int id, boolean useLive, SubmitNote note) {
+        String admin = RelayTarget.adminSearchBase();
+        if (admin.isEmpty()) return CompletableFuture.completedFuture(CallStatus.ERROR);
+        JsonObject body = new JsonObject();
+        body.add("note", noteJson(note == null ? SubmitNote.EMPTY : note));
+        return post(admin, "/carriages/" + id + "/note?cap=" + (useLive ? "live" : "dev"), body)
+                .thenApply(SharedCarriageClient::noteStatus);
+    }
+
+    /** What a note write came back with. */
+    private static CallStatus noteStatus(HttpResponse<String> resp) {
+        if (resp == null) {
+            logFailure("/carriages/note", null);
+            return CallStatus.ERROR;
+        }
+        int sc = resp.statusCode();
+        if (sc == 403) return CallStatus.FORBIDDEN;
+        if (sc == 404) return CallStatus.UNKNOWN;
+        JsonObject o = sc / 100 == 2 ? asObject(resp) : null;
+        return o != null && o.has("ok") && o.get("ok").getAsBoolean() ? CallStatus.OK : CallStatus.ERROR;
+    }
+
+    /** The note as the relay reads it: only the fields the author filled in. Package-private for tests. */
+    static JsonObject noteJson(SubmitNote note) {
+        JsonObject o = new JsonObject();
+        if (!note.redstone().isEmpty()) o.addProperty("redstone", note.redstone());
+        if (!note.loot().isEmpty()) o.addProperty("loot", note.loot());
+        if (!note.notes().isEmpty()) o.addProperty("notes", note.notes());
+        return o;
+    }
+
+    /**
      * Outcome of a publish/withdraw: whether it took, whether the build is out on someone's train right
      * now, and — on a withdraw — the fresh lease token the relay handed back so editing can continue.
      */
     public record VisibilityResult(CallStatus status, boolean ok, boolean inUse, String token) {}
+
+    /**
+     * Remove one of this player's builds from the relay for good — the My Builds trash button. Authed
+     * by the build's owner {@code secret}, like {@link #publish}; answered in the same shape, because
+     * the two refusals are the same: {@link VisibilityResult#inUse()} while another world is holding
+     * the build, {@link CallStatus#UNKNOWN} when the relay has no such id (already gone). The token
+     * is always empty — nothing is handed back from a delete.
+     *
+     * <p>This world's own id rides along so a lease it holds itself — the one its last save took —
+     * never counts as "in use"; {@code force} is the player's "delete anyway" past a lease that
+     * genuinely belongs to somebody else.</p>
+     */
+    public static CompletableFuture<VisibilityResult> deleteBuild(int id, String secret, boolean force) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("secret", secret == null ? "" : secret);
+        body.addProperty("world", WORLD);
+        if (force) body.addProperty("force", true);
+        return post("/carriages/delete", body).thenApply(resp -> {
+            if (resp == null) {
+                logFailure("/carriages/delete", null);
+                return new VisibilityResult(CallStatus.ERROR, false, false, "");
+            }
+            int sc = resp.statusCode();
+            if (sc == 403) return new VisibilityResult(CallStatus.FORBIDDEN, false, false, "");
+            if (sc == 404) return new VisibilityResult(CallStatus.UNKNOWN, false, false, "");
+            JsonObject o = sc / 100 == 2 ? asObject(resp) : null;
+            if (o == null) {
+                logFailure("/carriages/delete", resp);
+                return new VisibilityResult(CallStatus.ERROR, false, false, "");
+            }
+            boolean ok = o.has("ok") && o.get("ok").getAsBoolean();
+            boolean inUse = !ok && "in_use".equals(str(o, "reason"));
+            return new VisibilityResult(ok ? CallStatus.OK : CallStatus.ERROR, ok, inUse, "");
+        });
+    }
 
     /**
      * Take a lease on one build this player owns, so a later save can write to it. Needed whenever the
@@ -304,14 +849,26 @@ public final class SharedCarriageClient {
      * {@code blocks} blob, the delta log to fold on top of it ({@code baseSeq} is the drop-watermark,
      * exactly as on a {@link PoolLease}), and the owner {@code secret}.</p>
      *
-     * <p>The secret is the load-bearing one. It is the durable capability the relay issued to whoever
-     * first uploaded the build, and without it the downloading world could open the build but never
-     * save back to its row — the next save would upload a second profile entry instead of updating
-     * this one.</p>
+     * <p>The secret is the durable capability the relay issued to whoever first uploaded the build;
+     * without it the downloading world could open the build but never save back to its row. It is
+     * empty unless the fetch carried an {@link OwnerProof} the relay accepted.</p>
      */
     public record BuildFetch(int id, String kind, String subKind, String buildName, String stage,
                              String visibility, String blocks, int l, int h, int w, int baseSeq,
-                             List<DeltaRec> deltas, String secret) {
+                             List<DeltaRec> deltas, String secret, String sidecars,
+                             Map<String, String> lootPrefabs) {
+
+        public BuildFetch {
+            lootPrefabs = lootPrefabs == null ? Map.of() : Map.copyOf(lootPrefabs);
+        }
+
+        /** A fetch from a relay that said nothing about loot prefabs. */
+        public BuildFetch(int id, String kind, String subKind, String buildName, String stage,
+                          String visibility, String blocks, int l, int h, int w, int baseSeq,
+                          List<DeltaRec> deltas, String secret, String sidecars) {
+            this(id, kind, subKind, buildName, stage, visibility, blocks, l, h, w, baseSeq, deltas,
+                    secret, sidecars, Map.of());
+        }
 
         /** Whether the relay has this build out on the train rather than sitting in the profile. */
         public boolean published() {
@@ -327,42 +884,111 @@ public final class SharedCarriageClient {
     }
 
     /**
-     * Pull one build this player owns down in full, blocks and all.
+     * Proof that the caller is the Minecraft account it names: the {@code serverId} this client
+     * joined with, and the account name the relay asks Mojang's {@code hasJoined} about.
+     */
+    public record OwnerProof(String name, String serverId) {}
+
+    /**
+     * Ask the relay for a {@code serverId} to join with, as the first half of an {@link OwnerProof}.
+     * Completes with {@code ""} when the relay has no such route (an older relay, which still hands the
+     * secret out without one) or cannot be reached — the caller then fetches without a proof.
+     */
+    public static CompletableFuture<String> ownerProofChallenge(String uuid, String baseUrl) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid == null ? "" : uuid);
+        return post(baseUrl, "/carriages/owner-proof", body).thenApply(resp -> {
+            JsonObject o = resp == null ? null : okJson(resp);
+            if (o == null) {
+                if (resp == null || resp.statusCode() != 404) logFailure("/carriages/owner-proof", resp);
+                return "";
+            }
+            return str(o, "serverId");
+        });
+    }
+
+    /**
+     * Pull one build down in full, blocks and all.
      *
-     * <p>Authed by {@code ownerUuid} rather than by the build's secret, and that is the point: the
-     * world asking is typically one that has never uploaded this build — a fresh save, a reinstall,
-     * another machine — so it holds no secret to present. {@link #claim} is the opposite shape and
-     * cannot serve this: it needs the secret this call exists to recover, and it takes a lease, which
-     * would displace whoever is out riding a published build.</p>
+     * <p>The blocks are served on {@code ownerUuid} alone — previews and downloads of other creators'
+     * builds read them this way. The owner {@code secret} is not: owner uuids are public, so the relay
+     * hands it back only with an {@link OwnerProof} it has had Mojang confirm (see
+     * {@code RelayOwnerProof}). Without one {@link BuildFetch#secret} is empty.
+     * {@link #claim} is the opposite shape and cannot serve this: it needs the secret this call
+     * recovers, and it takes a lease, which would displace whoever is out riding a published build.</p>
      *
      * <p>{@link CallStatus#FORBIDDEN} means the build belongs to somebody else and
      * {@link CallStatus#UNKNOWN} that the relay no longer has it (evicted, or admin-removed); the
      * caller says different things about those, so they must not collapse into one another.</p>
      */
     public static CompletableFuture<FetchResult> fetchBuild(int id, String ownerUuid) {
+        return fetchBuild(id, ownerUuid, RelayTarget.dev());
+    }
+
+    /** As above against a named relay — a build is always fetched from the pool it was listed from. */
+    public static CompletableFuture<FetchResult> fetchBuild(int id, String ownerUuid, String baseUrl) {
+        return fetchBuild(id, ownerUuid, baseUrl, null, FetchPatience.QUICK);
+    }
+
+    /** As above with an owner proof, so the relay may hand the secret back; {@code proof} may be null. */
+    public static CompletableFuture<FetchResult> fetchBuild(int id, String ownerUuid, String baseUrl,
+                                                            OwnerProof proof) {
+        return fetchBuild(id, ownerUuid, baseUrl, proof, FetchPatience.QUICK);
+    }
+
+    /**
+     * As above, with a say in how long to keep trying — see {@link FetchPatience}.
+     *
+     * <p>A transport failure on the last attempt resolves to {@link CallStatus#TIMEOUT} when it was
+     * the clock and {@link CallStatus#ERROR} otherwise; the two read differently to a player. A
+     * response the relay actually sent is never retried, whatever its status.</p>
+     */
+    public static CompletableFuture<FetchResult> fetchBuild(int id, String ownerUuid, String baseUrl,
+                                                            OwnerProof proof, FetchPatience patience) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
-        return post("/carriages/fetch", body).thenApply(resp -> {
-            if (resp == null) {
-                logFailure("/carriages/fetch", null);
-                return FetchResult.failed(CallStatus.ERROR);
-            }
-            int sc = resp.statusCode();
-            if (sc == 403) return FetchResult.failed(CallStatus.FORBIDDEN);
-            if (sc == 404) return FetchResult.failed(CallStatus.UNKNOWN);
-            JsonObject o = okJson(resp);
-            if (o == null || !o.has("id") || !o.has("blocks") || o.get("blocks").isJsonNull()) {
-                logFailure("/carriages/fetch", resp);
-                return FetchResult.failed(CallStatus.ERROR);
-            }
-            JsonObject d = o.has("dims") && o.get("dims").isJsonObject() ? o.getAsJsonObject("dims") : null;
-            return new FetchResult(CallStatus.OK, new BuildFetch(
-                    o.get("id").getAsInt(), str(o, "kind"), str(o, "subKind"), str(o, "buildName"),
-                    str(o, "stage"), str(o, "visibility"), o.get("blocks").getAsString(),
-                    intOf(d, "l"), intOf(d, "h"), intOf(d, "w"), intOf(o, "baseSeq"),
-                    parseDeltas(o), str(o, "secret")));
-        });
+        if (proof != null && !proof.serverId().isEmpty()) {
+            body.addProperty("name", proof.name() == null ? "" : proof.name());
+            body.addProperty("serverId", proof.serverId());
+        }
+        FetchPatience p = patience == null ? FetchPatience.QUICK : patience;
+        long started = System.currentTimeMillis();
+        return RelayRetry.run(p.budgets, p.pause,
+                        budget -> postAttempt(baseUrl, "/carriages/fetch", body, budget))
+                .thenApply(outcome -> {
+                    RelayRetry.Transport last = outcome.last();
+                    if (!last.answered()) {
+                        logNoResponse("/carriages/fetch", p, outcome.attempts(), last,
+                                System.currentTimeMillis() - started);
+                        return FetchResult.failed(last.timedOut() ? CallStatus.TIMEOUT : CallStatus.ERROR);
+                    }
+                    return parseFetch(last.resp());
+                });
+    }
+
+    /** Read a fetch response into a result — the HTTP status first, then the body's shape. */
+    private static FetchResult parseFetch(HttpResponse<String> resp) {
+        int sc = resp.statusCode();
+        if (sc == 403) return FetchResult.failed(CallStatus.FORBIDDEN);
+        if (sc == 404) return FetchResult.failed(CallStatus.UNKNOWN);
+        JsonObject o = okJson(resp);
+        if (o == null || !o.has("id") || !o.has("blocks") || o.get("blocks").isJsonNull()) {
+            logFailure("/carriages/fetch", resp);
+            return FetchResult.failed(CallStatus.ERROR);
+        }
+        JsonObject d = o.has("dims") && o.get("dims").isJsonObject() ? o.getAsJsonObject("dims") : null;
+        return new FetchResult(CallStatus.OK, new BuildFetch(
+                o.get("id").getAsInt(), str(o, "kind"), str(o, "subKind"), str(o, "buildName"),
+                str(o, "stage"), str(o, "visibility"), o.get("blocks").getAsString(),
+                intOf(d, "l"), intOf(d, "h"), intOf(d, "w"), intOf(o, "baseSeq"),
+                // Empty from a relay that predates the field, which reads as "said nothing" all
+                // the way down to TemplateSidecars.apply — an install that leaves local sidecars
+                // exactly as they were rather than clearing them.
+                parseDeltas(o), str(o, "secret"), str(o, "sidecars"),
+                // Empty from a relay that predates the field — "nothing to install", the same
+                // way blank sidecars read as "leave mine alone".
+                TemplateLootPrefabs.decode(o.get("lootPrefabs"))));
     }
 
     /** An int field, or 0 when absent/garbled — the same tolerance {@link #str} has for strings. */
@@ -405,7 +1031,30 @@ public final class SharedCarriageClient {
                                                                int l, int h, int w,
                                                                List<Integer> exclude, String stage,
                                                                String ownerUuid, String mode) {
+        return lease(holderUuid, holderName, l, h, w, exclude, stage, ownerUuid, mode, null, null);
+    }
+
+    /**
+     * {@link #lease} for a build of a particular shape. {@code kind} null or
+     * {@link PoolLease#KIND_CARRIAGE} asks for a carriage exactly as before and sends nothing new on
+     * the wire; {@link PoolLease#KIND_PORTAL_ROOM} asks for a dimensional carriage's room of template
+     * {@code subKind} at these dims.
+     *
+     * <p><b>A room lease is checked on the way back.</b> A relay older than the kind field ignores
+     * it and serves whatever carriage matches the dims — and a carriage stamped into a room's box
+     * is a wall with a corridor door in it. So a room request whose answer does not say
+     * {@code portal_room} is handed straight back to the relay and reported as none; the relay has
+     * to ship first, and this is what makes the mod safe to ship second.</p>
+     */
+    public static CompletableFuture<Optional<PoolLease>> lease(String holderUuid, String holderName,
+                                                               int l, int h, int w,
+                                                               List<Integer> exclude, String stage,
+                                                               String ownerUuid, String mode,
+                                                               String kind, String subKind) {
+        boolean wantsRoom = PoolLease.KIND_PORTAL_ROOM.equals(kind);
         JsonObject body = new JsonObject();
+        if (kind != null && !kind.isEmpty()) body.addProperty("kind", kind);
+        if (subKind != null && !subKind.isEmpty()) body.addProperty("subKind", subKind);
         body.addProperty("uuid", holderUuid == null ? "" : holderUuid);
         // Names this world's holder on the relay, so OUR edits are credited by name in the next world.
         if (holderName != null && !holderName.isEmpty()) body.addProperty("name", holderName);
@@ -436,9 +1085,17 @@ public final class SharedCarriageClient {
             int dw = d != null && d.has("w") ? d.get("w").getAsInt() : w;
             int baseSeq = o.has("baseSeq") && !o.get("baseSeq").isJsonNull() ? o.get("baseSeq").getAsInt() : 0;
             String owner = o.has("owner") && !o.get("owner").isJsonNull() ? o.get("owner").getAsString() : "";
-            return Optional.of(new PoolLease(o.get("id").getAsInt(), o.get("token").getAsString(),
+            PoolLease lease = new PoolLease(o.get("id").getAsInt(), o.get("token").getAsString(),
                     o.get("blocks").getAsString(), dl, dh, dw, baseSeq, parseDeltas(o), owner,
-                    parseCredits(o), parseDeaths(o)));
+                    parseCredits(o), parseDeaths(o), str(o, "kind"), str(o, "subKind"));
+            if (wantsRoom && (!lease.isRoom() || !lease.subKind().equals(subKind))) {
+                LOGGER.warn("[DungeonTrain] asked the relay for room '{}' and was served kind={} subKind='{}' "
+                        + "(id={}) — an older relay ignores the kind; returning it unused. Update the relay.",
+                        subKind, lease.kind(), lease.subKind(), lease.id());
+                returnLease(lease.id(), lease.token(), null, null, 0);
+                return Optional.empty();
+            }
+            return Optional.of(lease);
         });
     }
 
@@ -582,15 +1239,107 @@ public final class SharedCarriageClient {
 
     // ---- save / heartbeat / return ----
 
-    /** Full save (also a compaction on the relay: clears the delta log, advances {@code baseSeq}). */
+    /**
+     * Full save (also a compaction on the relay: clears the delta log, advances {@code baseSeq}),
+     * saying nothing about the build's sidecars.
+     *
+     * <p>This is the in-play path — a rider's edits to a leased carriage. Saying nothing is the point:
+     * the relay leaves the field it is not told about alone, so a save made by somebody riding a build
+     * cannot blank the sidecars its author uploaded. Only the authoring tool, through
+     * {@link #save(int, String, String, String, int, String)}, ever speaks for them.</p>
+     */
     public static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text, int baseSeq) {
+        return save(id, token, blocksBase64, text, baseSeq, null);
+    }
+
+    /**
+     * As above, replacing the build's sidecar document too — the builder/editor re-save path.
+     *
+     * @param sidecars the document from {@code TemplateSidecars.collect}; null or empty leaves whatever
+     *                 the relay already holds, which is what the in-play overload above relies on
+     */
+    public static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text,
+                                                     int baseSeq, String sidecars) {
+        return save(id, token, blocksBase64, text, baseSeq, sidecars, null);
+    }
+
+    /** As above, with the loot prefabs the build's chests link to — see {@link #submitBuild}. */
+    public static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text,
+                                                     int baseSeq, String sidecars, String lootPrefabs) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("token", token);
         body.addProperty("blocks", blocksBase64);
         body.addProperty("baseSeq", baseSeq);
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
+        if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
+        addLootPrefabs(body, lootPrefabs);
         return statusPost("/carriages/save", body);
+    }
+
+    /**
+     * The {@code lootPrefabs} field: the prefab document is a JSON object of id → file text, sent as
+     * an object rather than a string so the relay can file each prefab under the author without a
+     * second parse. Silence (null/blank/unparseable) sends nothing, which the relay reads as
+     * "leave the links alone".
+     */
+    private static void addLootPrefabs(JsonObject body, String lootPrefabs) {
+        if (lootPrefabs == null || lootPrefabs.isBlank()) return;
+        try {
+            JsonElement doc = JsonParser.parseString(lootPrefabs);
+            if (doc.isJsonObject() && doc.getAsJsonObject().size() > 0) body.add("lootPrefabs", doc);
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Loot prefabs document would not parse — sending the build without it");
+        }
+    }
+
+    /**
+     * Full save of a build this player OWNS, authed by the build's durable owner {@code secret} rather
+     * than by a lease token.
+     *
+     * <p>The author's counterpart to {@link #save}, which is the rider's path. A lease is a
+     * drifting-carriage rule — it keeps two worlds from fighting over one carriage mid-ride — and
+     * putting an authored build behind it let any live rider lock its own author out: the save had to
+     * {@link #claim} first, and a claim answers {@code in_use} while somebody is out on their train,
+     * so an editor save silently stopped syncing. This needs no lease, and takes none: whoever is
+     * riding keeps riding.</p>
+     *
+     * <p>{@code world} is this process's holder token, carried only so the edit trail records where
+     * the save came from. {@link CallStatus#UNKNOWN} is a 404, which on this path is ambiguous by
+     * design — an unknown build, or a relay too old to have the route — and the caller falls back
+     * accordingly.</p>
+     */
+    public static CompletableFuture<CallStatus> ownerSave(int id, String secret, String blocksBase64,
+                                                          String text, int baseSeq) {
+        return ownerSave(id, secret, blocksBase64, text, baseSeq, null);
+    }
+
+    /**
+     * As above, replacing the build's sidecar document too — the author's re-save path, and the
+     * counterpart of {@link #save(int, String, String, String, int, String)} on the lease path.
+     *
+     * @param sidecars the document from {@code TemplateSidecars.collect}; null or empty leaves
+     *                 whatever the relay already holds
+     */
+    public static CompletableFuture<CallStatus> ownerSave(int id, String secret, String blocksBase64,
+                                                          String text, int baseSeq, String sidecars) {
+        return ownerSave(id, secret, blocksBase64, text, baseSeq, sidecars, null);
+    }
+
+    /** As above, with the loot prefabs the build's chests link to — see {@link #submitBuild}. */
+    public static CompletableFuture<CallStatus> ownerSave(int id, String secret, String blocksBase64,
+                                                          String text, int baseSeq, String sidecars,
+                                                          String lootPrefabs) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("secret", secret == null ? "" : secret);
+        body.addProperty("blocks", blocksBase64);
+        body.addProperty("baseSeq", baseSeq);
+        body.addProperty("world", WORLD);
+        if (text != null && !text.isEmpty()) body.addProperty("text", text);
+        if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
+        addLootPrefabs(body, lootPrefabs);
+        return statusPost("/carriages/owner-save", body);
     }
 
     public static CompletableFuture<CallStatus> heartbeat(int id, String token, String holderUuid, String holderName) {
@@ -659,24 +1408,70 @@ public final class SharedCarriageClient {
         return d;
     }
 
-    /** POST the JSON body; resolves to the HttpResponse (status < 0 on transport failure). */
+    /** POST the JSON body to this build's own relay — see {@link RelayTarget#dev()}. */
     private static CompletableFuture<HttpResponse<String>> post(String path, JsonObject body) {
+        return post(RelayTarget.dev(), path, body);
+    }
+
+    /**
+     * POST the JSON body to a named relay; resolves to the HttpResponse (null on transport failure).
+     *
+     * <p>The base URL is a parameter for one reason only: My Builds' live toggle, which reads the
+     * production pool from a dev build. Everything else goes through {@link #post(String, JsonObject)}
+     * and cannot address another relay by accident.</p>
+     */
+    private static CompletableFuture<HttpResponse<String>> post(String baseUrl, String path, JsonObject body) {
+        return postAttempt(baseUrl, path, body, REQUEST_TIMEOUT).thenApply(RelayRetry.Transport::resp);
+    }
+
+    /**
+     * One POST within {@code budget}, keeping the failure when there is one.
+     *
+     * <p>{@link #post} collapses every transport failure to null, which is all its callers can act on.
+     * A retrying caller needs more: whether the relay answered at all (the only thing that decides a
+     * retry) and, at the end, whether it was the clock — so this resolves to a
+     * {@link RelayRetry.Transport} and never completes exceptionally.</p>
+     */
+    private static CompletableFuture<RelayRetry.Transport> postAttempt(String baseUrl, String path,
+                                                                        JsonObject body, Duration budget) {
         try {
-            HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + path))
-                    .timeout(REQUEST_TIMEOUT)
+            HttpRequest req = HttpRequest.newBuilder(URI.create(baseUrl + path))
+                    .timeout(budget == null ? REQUEST_TIMEOUT : budget)
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
                     .build();
             return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(RelayRetry.Transport::of)
                     .exceptionally(e -> {
                         LOGGER.debug("[DungeonTrain] carriage {} failed: {}", path, e.toString());
-                        return null;
+                        return RelayRetry.Transport.failed(e);
                     });
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] carriage {} failed to start: {}", path, t.toString());
-            return CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(RelayRetry.Transport.failed(t));
         }
+    }
+
+    /**
+     * Say that no attempt got an answer, at WARN — with how many were made and how long each had,
+     * so a log line can tell "the relay was slow" from "the relay was gone" at a glance.
+     */
+    private static void logNoResponse(String path, FetchPatience patience, int attempts,
+                                      RelayRetry.Transport last, long elapsedMs) {
+        StringBuilder budgets = new StringBuilder();
+        for (int i = 0; i < attempts && i < patience.budgets.size(); i++) {
+            if (i > 0) budgets.append(", ");
+            budgets.append(patience.budgets.get(i).toSeconds()).append('s');
+        }
+        // The elapsed time is here because the budgets alone mislead: a connect that never lands
+        // dies on the HttpClient's connect timeout, well inside the budget, and a line reading
+        // "(20s, 30s): timed out" after 17s sends the reader hunting for a slow relay that was
+        // in fact never reached.
+        LOGGER.warn("[DungeonTrain] relay {} failed after {} attempt(s) (budgets {}) in {}ms: {}",
+                path, attempts, budgets, elapsedMs,
+                last.connectFailed() ? "could not connect"
+                        : last.timedOut() ? "timed out" : "no response");
     }
 
     /** POST that only cares about success/forbidden/unknown for save/heartbeat/return. */

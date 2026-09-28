@@ -96,10 +96,12 @@ public final class BuilderSwitchConfirmScreen extends Screen {
 
     private void saveThenProceed() {
         Minecraft mc = Minecraft.getInstance();
-        if (BuilderBoundsState.isDraft()) {
-            // Nowhere to save to yet — name it first, and leave the follow-up for the builder to
-            // repeat rather than firing it behind a screen they didn't expect.
-            mc.setScreen(BuilderNewScreen.saveAs(lastScreen));
+        Screen naming = BuilderNewScreen.forSave(lastScreen);
+        if (naming != null) {
+            // Nowhere of its own to save to yet — a draft, or a build still wearing a shipped name.
+            // Name it first, and leave the follow-up for the builder to repeat rather than firing it
+            // behind a screen they didn't expect.
+            mc.setScreen(naming);
             return;
         }
         mc.setScreen(null);

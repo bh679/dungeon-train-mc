@@ -1,0 +1,735 @@
+{
+  "_comment": [
+    "Book placeholder divergences that are tolerated. See check-book-placeholders.py.",
+    "Every entry here is a death_lore epitaph where a locale replaced {deaths_nth} with",
+    "{deaths} plus its own ordinal glue. They render CORRECTLY — LocaleNumberWords gives",
+    "these languages a plain digit, so 'als {deaths}. gefallen' is right German — but they",
+    "are the same edit shape as the ru_ru bug this guard exists to stop, so they are named",
+    "one by one rather than excused by a rule.",
+    "An entry excuses exactly these token lists and nothing else. Fixing a file makes its",
+    "entry stale, which FAILS: the list is meant to shrink.",
+    "Follow-up: convert these to {deaths_nth}. Roughly twelve are output-identical under",
+    "LocaleOrdinalWords.digits; ja/zh_cn/zh_tw/th/it/es_mx/pt_br need a translator because",
+    "digits prefixes or wraps ('第2', 'thứ 2') rather than suffixing."
+  ],
+  "de_de/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "de_de/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "de_de/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "de_de/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "de_de/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "es_es/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "es_es/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "es_es/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "es_es/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "es_es/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "es_mx/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "es_mx/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "es_mx/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "es_mx/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "es_mx/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "fil_ph/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "fil_ph/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "fil_ph/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "fil_ph/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "fil_ph/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "fr_fr/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "fr_fr/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "fr_fr/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "fr_fr/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "fr_fr/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "id_id/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "id_id/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "id_id/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "id_id/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "id_id/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "it_it/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "it_it/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "it_it/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "it_it/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "it_it/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ja_jp/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ja_jp/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ja_jp/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ja_jp/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ja_jp/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ko_kr/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ko_kr/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ko_kr/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ko_kr/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ko_kr/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ms_my/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ms_my/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ms_my/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ms_my/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "ms_my/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "nl_nl/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "nl_nl/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "nl_nl/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "nl_nl/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "nl_nl/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pl_pl/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pl_pl/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pl_pl/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pl_pl/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pl_pl/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pt_br/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pt_br/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pt_br/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pt_br/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pt_br/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pt_pt/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pt_pt/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pt_pt/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pt_pt/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "pt_pt/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "th_th/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "th_th/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "th_th/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "th_th/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "th_th/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "vi_vn/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "vi_vn/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "vi_vn/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "vi_vn/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "vi_vn/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "zh_cn/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "zh_cn/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "zh_cn/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "zh_cn/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "zh_cn/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "zh_tw/death_lore/default#11.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "zh_tw/death_lore/default#13.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "zh_tw/death_lore/default#36.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "zh_tw/death_lore/default#37.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  },
+  "zh_tw/death_lore/default#38.epitaph": {
+    "english": [
+      "{deaths_nth}"
+    ],
+    "translated": [
+      "{deaths}"
+    ]
+  }
+}

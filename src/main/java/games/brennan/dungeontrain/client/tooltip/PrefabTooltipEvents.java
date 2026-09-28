@@ -5,10 +5,13 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.PrefabTabState;
 import games.brennan.dungeontrain.event.PrefabUseHandler;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -80,8 +83,18 @@ public final class PrefabTooltipEvents {
             } else if (tag.contains(PrefabUseHandler.NBT_LOOT_PREFAB_ID, Tag.TAG_STRING)) {
                 data = buildLootData(tag.getString(PrefabUseHandler.NBT_LOOT_PREFAB_ID));
             }
-            if (data == null) return;
-            event.getTooltipElements().add(Either.right(data));
+            if (data != null) event.getTooltipElements().add(Either.right(data));
+            addDeleteHint(event, stack);
+        }
+
+        /** Grey "Cmd-click to delete" line, only on prefabs the viewer may delete. */
+        private static void addDeleteHint(RenderTooltipEvent.GatherComponents event, ItemStack stack) {
+            Optional<PrefabTabState.PrefabRef> ref = PrefabTabState.refOf(stack);
+            if (ref.isEmpty() || !PrefabTabState.deletableByViewer(ref.get().kind(), ref.get().id())) return;
+            String modifier = Minecraft.ON_OSX ? "Cmd" : "Ctrl";
+            event.getTooltipElements().add(Either.left(
+                Component.translatable("gui.dungeontrain.prefab_delete.hint", modifier)
+                    .withStyle(ChatFormatting.DARK_GRAY)));
         }
     }
 

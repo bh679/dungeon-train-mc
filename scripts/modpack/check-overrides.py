@@ -44,6 +44,7 @@ ALLOWED = (
     ".gitkeep",                                     # stripped at build time by the publish scripts
     "*/.gitkeep",
     "config/khi.toml",                              # Kinetic Hosting affiliate URL + banner text
+    "config/crash_assistant/config.toml",           # Crash Assistant: help link + #bugs-feedback text
     "config/smoothswapping.json",                   # tuned Smooth Swapping animation
     "resourcepacks/DungeonTrain-*-compat.zip",      # companion-mod lang overlays, one per locale
     "TrashSlotSaveState.default.json",              # seeds TrashSlot's trash slot hidden on every screen

@@ -61,13 +61,10 @@ done
 [ -f "$MANIFEST" ] || { echo "::error::manifest not found: $MANIFEST"; exit 1; }
 
 VERSION="${TAG#v}"
-MAJOR="${VERSION%%.*}"
-# Match release.yml: pre-1.0 (MAJOR==0) ships as a beta, 1.0+ as a full release.
-if [ "$MAJOR" -gt 0 ] 2>/dev/null; then
-  RELEASE_TYPE="release"
-else
-  RELEASE_TYPE="beta"
-fi
+# Same channel as the DT mod file for this tag — the rule is single-sourced in
+# scripts/release/release-type.sh (shared with release.yml + reupload-curseforge.yml).
+RELEASE_TYPE=$("$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../release/release-type.sh" "$TAG" | sed -n 's/^type=//p')
+[ -n "$RELEASE_TYPE" ] || { echo "::error::could not derive release type for tag $TAG"; exit 1; }
 
 MC_VERSION=$(jq -r '.minecraft.version // empty' "$MANIFEST")
 [ -n "$MC_VERSION" ] || { echo "::error::manifest is missing .minecraft.version"; exit 1; }

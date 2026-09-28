@@ -12,6 +12,7 @@
     "dirt",
     "enchant",
     "enemies",
+    "featurefancy",
     "features",
     "fire",
     "kitchen",
@@ -20,10 +21,12 @@
     "nature",
     "pigs",
     "portal",
+    "portal_short",
     "sand",
     "sheep",
     "shop",
     "smelt",
+    "traps",
     "upgrade",
     "vase"
   ]

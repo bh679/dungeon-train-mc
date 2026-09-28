@@ -57,6 +57,21 @@ final class DimensionTypeBasementTest {
      */
     private static final java.util.Set<String> VOID_DIMENSIONS = java.util.Set.of("builder.json");
 
+    /**
+     * Dimension types whose preset generates with {@code minecraft:flat} rather than noise. A flat
+     * generator's floor is not in any noise settings file — {@code FlatLevelSource.getMinY()} is
+     * hard-coded to {@code 0} — so its basement is simply {@code 0 - min_y}. These are held to every
+     * basement invariant the noise presets are, with that floor standing in for the noise
+     * {@code min_y}.
+     *
+     * <p>The Train Editor's world is the one today: void like the builder's, but with the plots at
+     * y=230 and {@code /dt portal test} stamping into the basement, it needs the full DT shape.</p>
+     */
+    private static final java.util.Map<String, Integer> FLAT_FLOOR_DIMENSIONS =
+        java.util.Map.of("editor.json", 0);
+
+    private static final String PRESETS = "src/main/resources/data/dungeontrain/worldgen/world_preset";
+
     @Test
     @DisplayName("every DT dimension type is a legal one vanilla will load")
     void dimensionTypesAreLegal() throws IOException {
@@ -94,7 +109,7 @@ final class DimensionTypeBasementTest {
         for (Path f : overworldPresets()) {
             String name = f.getFileName().toString();
             int minY = read(f).get("min_y").getAsInt();
-            int bedrockY = read(noiseFor(f)).getAsJsonObject("noise").get("min_y").getAsInt();
+            int bedrockY = bedrockFor(f);
 
             assertTrue(bedrockY > minY,
                 name + ": dimension type must run below its noise settings, or there is no basement");
@@ -117,7 +132,7 @@ final class DimensionTypeBasementTest {
         for (Path f : overworldPresets()) {
             String name = f.getFileName().toString();
             int minY = read(f).get("min_y").getAsInt();
-            int bedrockY = read(noiseFor(f)).getAsJsonObject("noise").get("min_y").getAsInt();
+            int bedrockY = bedrockFor(f);
             int tallest = PortalTwinLanes.maxStructureHeight(minY, bedrockY);
 
             assertTrue(tallest > builtIn,
@@ -132,6 +147,9 @@ final class DimensionTypeBasementTest {
     @DisplayName("terrain generation is untouched — noise settings still start at the bedrock")
     void noiseSettingsAreUnchanged() throws IOException {
         for (Path f : overworldPresets()) {
+            if (FLAT_FLOOR_DIMENSIONS.containsKey(f.getFileName().toString())) {
+                continue; // a flat generator has no noise settings to hold to the ceiling
+            }
             JsonObject noise = read(noiseFor(f)).getAsJsonObject("noise");
             String name = f.getFileName().toString();
             // The noise region is what NoiseSettings.clampToHeightAccessor intersects with the level,
@@ -154,6 +172,39 @@ final class DimensionTypeBasementTest {
             "Compatible Terrain mode must keep vanilla's dimension type, so terrain mods still apply");
     }
 
+    @Test
+    @DisplayName("the editor world is the builder recipe at full DT height: flat void, overworld only")
+    void editorPresetIsFlatVoidOverworldOnly() throws IOException {
+        JsonObject dims = read(repoFile(PRESETS + "/dungeon_train_editor.json")).getAsJsonObject("dimensions");
+        assertEquals(java.util.Set.of("minecraft:overworld"), dims.keySet(),
+            "the editor never leaves the overworld, so the nether and end are load time spent on nothing");
+        JsonObject overworld = dims.getAsJsonObject("minecraft:overworld");
+        assertEquals("dungeontrain:editor", overworld.get("type").getAsString(),
+            "the editor world is identified by its own dimension type (EditorWorldLayout)");
+        JsonObject generator = overworld.getAsJsonObject("generator");
+        // FLAT_FLOOR_DIMENSIONS pins the editor's floor at 0 — that is only true of a flat generator.
+        assertEquals("minecraft:flat", generator.get("type").getAsString(),
+            "the basement maths above assume FlatLevelSource's floor of 0");
+        assertEquals(0, generator.getAsJsonObject("settings").getAsJsonArray("layers").size(),
+            "void: nothing exists in the editor world until the editor stamps it");
+        // And the type it names must be the one the flat-floor table describes.
+        JsonObject type = read(repoFile(DIM_TYPES + "/editor.json"));
+        assertEquals(DT_SKY_TOP, type.get("min_y").getAsInt() + type.get("height").getAsInt(),
+            "plots at EditorLayout.PLOT_Y plus an 80-tall room need the same 320 ceiling as every DT preset");
+    }
+
+    /**
+     * Where terrain stops and the basement begins: the noise {@code min_y} for a noise preset, or
+     * the flat generator's fixed floor for a {@link #FLAT_FLOOR_DIMENSIONS} entry.
+     */
+    private static int bedrockFor(Path dimensionType) throws IOException {
+        Integer flatFloor = FLAT_FLOOR_DIMENSIONS.get(dimensionType.getFileName().toString());
+        if (flatFloor != null) {
+            return flatFloor;
+        }
+        return read(noiseFor(dimensionType)).getAsJsonObject("noise").get("min_y").getAsInt();
+    }
+
     /** The noise settings a dimension type's preset pairs with — same file name in both folders. */
     private static Path noiseFor(Path dimensionType) {
         Path noise = repoFile(NOISE).resolve(dimensionType.getFileName());
@@ -170,14 +221,19 @@ final class DimensionTypeBasementTest {
         List<Path> all = dimensionTypes();
         List<Path> out = new ArrayList<>(all.size());
         List<String> voidsSeen = new ArrayList<>();
+        List<String> flatsSeen = new ArrayList<>();
         for (Path p : all) {
             String name = p.getFileName().toString();
             if (VOID_DIMENSIONS.contains(name)) {
                 voidsSeen.add(name);
             } else {
+                if (FLAT_FLOOR_DIMENSIONS.containsKey(name)) flatsSeen.add(name);
                 out.add(p);
             }
         }
+        assertEquals(FLAT_FLOOR_DIMENSIONS.size(), flatsSeen.size(),
+            "FLAT_FLOOR_DIMENSIONS names a dimension type that no longer exists: expected "
+                + FLAT_FLOOR_DIMENSIONS.keySet() + ", found " + flatsSeen);
         // A rename would otherwise quietly re-admit a void world to the basement invariants, or
         // quietly exempt nothing at all. Neither should pass in silence.
         assertEquals(VOID_DIMENSIONS.size(), voidsSeen.size(),

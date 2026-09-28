@@ -30,6 +30,20 @@ final class BuilderRelayBuildsTest {
     }
 
     @Test
+    @DisplayName("a key reads back the kind it was filed under — what decides if the pool has a say")
+    void kindReadsBackOutOfTheKey() {
+        assertEquals("carriage", BuilderRelayBuilds.kindOfKey(
+                BuilderRelayBuilds.keyOf("carriage", "", "brick_cabin")));
+        assertEquals("portal_room", BuilderRelayBuilds.kindOfKey(
+                BuilderRelayBuilds.keyOf("portal_room", null, "library")));
+        assertEquals("part", BuilderRelayBuilds.kindOfKey(
+                BuilderRelayBuilds.keyOf("part", "floor", "standard")));
+        // Nothing filed under a null or malformed key is a carriage, so no kind test can match it.
+        assertEquals("", BuilderRelayBuilds.kindOfKey(null));
+        assertEquals("", BuilderRelayBuilds.kindOfKey("carriage"));
+    }
+
+    @Test
     @DisplayName("entries survive a save/load round trip, credentials and all")
     void roundTrips() {
         BuilderRelayBuilds builds = new BuilderRelayBuilds();

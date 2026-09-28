@@ -176,6 +176,7 @@ public final class PortalStampRecord {
         // an unloaded plot reports air for every cell — indistinguishable from an ordinary carriage
         // if the difference is not drawn here.
         if (!(ship instanceof SableManagedShip sable)
+            || sable.subLevel() == null
             || sable.subLevel().getPlot().getLoadedChunks().isEmpty()) {
             return Proof.UNREADABLE;
         }

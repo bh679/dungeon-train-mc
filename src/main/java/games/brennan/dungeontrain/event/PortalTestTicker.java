@@ -2,18 +2,25 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.command.PortalTestCommand;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageLayout;
+import games.brennan.dungeontrain.portal.PortalChunkTerrain;
 import games.brennan.dungeontrain.portal.PortalRoomTiler;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalStructure;
+import games.brennan.dungeontrain.portal.PortalTestPending;
 import games.brennan.dungeontrain.portal.PortalTestSession;
+import games.brennan.dungeontrain.portal.PortalTestWindow;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
@@ -52,11 +59,17 @@ public final class PortalTestTicker {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (level.dimension() != Level.OVERWORLD) return;
 
+        drainPending(level);
+
         Set<Map.Entry<UUID, PortalTestSession.Session>> trips = PortalTestSession.entries();
         if (trips.isEmpty()) return;
 
         MinecraftServer server = level.getServer();
-        CarriageDims dims = DungeonTrainWorldData.get(server.overworld()).dims();
+        DungeonTrainWorldData worldData = DungeonTrainWorldData.get(server.overworld());
+        CarriageDims dims = worldData.dims();
+        // What the debug screen's Y disguise is measured against, exactly as the live path measures
+        // it — a test room read at a different depth from a live one is a room inspected wrong.
+        int groundY = worldData.getTrainY();
 
         for (Map.Entry<UUID, PortalTestSession.Session> trip : trips) {
             ServerPlayer player = server.getPlayerList().getPlayer(trip.getKey());
@@ -81,17 +94,62 @@ public final class PortalTestTicker {
                     next.roomName(), player.getName().getString(), next.tiling().tiles().size());
             }
 
-            // The same fog, sky and train audio a live room sends its occupants, through the same
-            // senders — a room inspected under different light is a room inspected wrong.
-            PortalCarriageEvents.sendRoomAmbience(dims, layout, next, List.of(player));
+            // The same fog, sky, train audio and depth disguise a live room sends its occupants,
+            // through the same senders — a room inspected under different light is a room inspected
+            // wrong.
+            PortalCarriageEvents.sendRoomAmbience(dims, layout, next, groundY, List.of(player));
+        }
+    }
+
+    /**
+     * Finish every Test the Carriage press whose chunk sample has landed, and let go of any that
+     * never will — the player left, the sample found no ground, or it has taken far too long.
+     *
+     * <p>Asks {@link PortalChunkTerrain#slice} rather than peeking, so a press whose sample was
+     * displaced from the shared test key (another room tested meanwhile) asks for it again.</p>
+     */
+    private static void drainPending(ServerLevel level) {
+        if (PortalTestPending.isEmpty()) return;
+        MinecraftServer server = level.getServer();
+        long now = level.getGameTime();
+        for (Map.Entry<UUID, PortalTestPending.Pending> entry : List.copyOf(PortalTestPending.entries())) {
+            UUID id = entry.getKey();
+            PortalTestPending.Pending pending = entry.getValue();
+            ServerPlayer player = server.getPlayerList().getPlayer(id);
+            if (player == null) {
+                PortalTestPending.remove(id, pending);
+                continue;
+            }
+            String room = pending.roomName();
+            if (PortalChunkTerrain.failed(PortalTestSession.PAIR_KEY, room)) {
+                PortalTestPending.remove(id, pending);
+                player.sendSystemMessage(Component.translatable(
+                    "chat.dungeontrain.portal.test_sample_failed", room).withStyle(ChatFormatting.RED));
+                continue;
+            }
+            if (PortalChunkTerrain.slice(level, PortalTestSession.PAIR_KEY, room) != null) {
+                PortalTestPending.remove(id, pending);
+                PortalTestCommand.runPending(player, room, pending.freshRoll());
+                continue;
+            }
+            if (pending.expired(now)) {
+                PortalTestPending.remove(id, pending);
+                LOGGER.warn("[DungeonTrain] portal test: gave up waiting on the chunk sample for '{}' ({})",
+                    room, player.getName().getString());
+                player.sendSystemMessage(Component.translatable(
+                    "chat.dungeontrain.portal.test_sample_timed_out", room).withStyle(ChatFormatting.RED));
+            }
         }
     }
 
     /**
      * The tile this player occupies, as a set so it reads the way the tiler's parameter does.
      *
-     * <p>Bounded by the room's own tiled span rather than by a fixed box: the window is what they
-     * are walking through, and a player past its edge is the signal to drain.</p>
+     * <p>Bounded by {@link PortalTestWindow#occupancyBox} rather than by a fixed box: the window is
+     * what they are walking through, and a player past its edge is the signal to drain. The box is
+     * over there rather than here so it can be swept by a test — and so that it reads the room's
+     * own floor and the corridors' own bounds, which a room that has moved either of its doorways
+     * off the corridor lane needs it to.</p>
      */
     private static Set<PortalRoomTiling.Tile> occupiedTiles(ServerPlayer player, CarriageDims dims,
                                                             PortalCarriageLayout layout,
@@ -100,16 +158,8 @@ public final class PortalTestTicker {
         double y = player.getY();
         double z = player.getZ();
 
-        int minX = Math.min(structure.origin().getX() - 1, structure.tiledMinX(dims, layout) - 1);
-        int maxX = Math.max(structure.origin().getX() + structure.spanX(dims) + 1,
-            structure.tiledMaxX(dims, layout) + 2);
-        int minZ = Math.min(structure.origin().getZ() - 1, structure.tiledMinZ(dims, layout) - 1);
-        int maxZ = Math.max(structure.origin().getZ() + dims.width() + 1,
-            structure.tiledMaxZ(dims, layout) + 2);
-        int minY = structure.origin().getY() - 1;
-        int maxY = structure.origin().getY() + Math.max(dims.height(), structure.roomSize().getY()) + 2;
-
-        if (x < minX || x > maxX || z < minZ || z > maxZ || y < minY || y > maxY) return Set.of();
+        BoundingBox window = PortalTestWindow.occupancyBox(structure, dims, layout);
+        if (!PortalTestWindow.contains(window, x, y, z)) return Set.of();
         return Set.of(structure.tileAt(dims, layout, x, z));
     }
 }

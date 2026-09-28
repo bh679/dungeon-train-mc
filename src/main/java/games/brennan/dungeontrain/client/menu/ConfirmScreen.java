@@ -24,8 +24,8 @@ public final class ConfirmScreen implements MenuScreen {
 
     @Override public List<CommandMenuEntry> entries() {
         return List.of(
-            new CommandMenuEntry.Run("Yes, confirm", onConfirmCommand),
-            new CommandMenuEntry.Back("Cancel")
+            new CommandMenuEntry.Run(MenuLang.t("confirm.yes"), onConfirmCommand),
+            new CommandMenuEntry.Back(MenuLang.t("common.cancel"))
         );
     }
 }

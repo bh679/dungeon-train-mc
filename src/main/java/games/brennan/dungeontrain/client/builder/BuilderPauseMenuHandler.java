@@ -158,7 +158,7 @@ public final class BuilderPauseMenuHandler {
         // What you're working on, over the main column too — the tools panel is suppressed on a
         // narrow window, and that's exactly when you can least afford to lose the one line saying
         // whether this build has been saved. No metrics here: this is identity, not inspection.
-        int mainInfoH = BuilderInfoPanel.heightFor(BuilderInfoPanel.Content.IDENTITY.maxLines());
+        int mainInfoH = BuilderInfoPanel.currentHeight(BuilderInfoPanel.Content.IDENTITY);
         int mainInfoY = firstRowY - BuilderPauseMenuLayout.GAP - mainInfoH;
         if (mainInfoY >= 0) {
             event.addListener(new BuilderInfoPanel(slotX, mainInfoY, slotW, mainInfoH,
@@ -445,11 +445,14 @@ public final class BuilderPauseMenuHandler {
      * Save the builder's carriage — position-independent, unlike the editor's own save.
      *
      * <p>A build with no name has nowhere to be written, so the first save asks for one, using the
-     * New screen with its other choices already filled in and locked.</p>
+     * New screen with its other choices already filled in and locked. A build that goes by a name
+     * the mod ships gets the same screen, with keeping it as a local edit offered beside it — see
+     * {@link BuilderNewScreen#forSave}.</p>
      */
     private static void save(Screen parent) {
-        if (BuilderBoundsState.isDraft()) {
-            Minecraft.getInstance().setScreen(BuilderNewScreen.saveAs(parent));
+        Screen naming = BuilderNewScreen.forSave(parent);
+        if (naming != null) {
+            Minecraft.getInstance().setScreen(naming);
             return;
         }
         Minecraft.getInstance().setScreen(null);

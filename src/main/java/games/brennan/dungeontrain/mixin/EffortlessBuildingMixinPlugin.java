@@ -16,8 +16,10 @@ import java.util.Set;
  * Without this gate Mixin would log an error applying a mixin to a missing class; with it,
  * {@link #shouldApplyMixin} short-circuits to a clean no-op.
  *
- * <p>Mirrors {@link VivecraftMixinPlugin} exactly, including its use of {@link LoadingModList}: the
- * check runs during early class transformation, before {@code ModList.get()} is populated.</p>
+ * <p>Uses {@link LoadingModList} rather than {@code ModList.get()} because the check runs during
+ * early class transformation, before the latter is populated. ({@code VivecraftMixinPlugin} is the
+ * other such gate; it asks the same question about Vivecraft, plus whether the standalone
+ * vivecraft-sable-compat addon is already handling the fix.)</p>
  */
 public final class EffortlessBuildingMixinPlugin implements IMixinConfigPlugin {
 

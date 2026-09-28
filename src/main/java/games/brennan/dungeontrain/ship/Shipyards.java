@@ -40,6 +40,15 @@ public final class Shipyards {
     }
 
     /**
+     * Drop every cached shipyard. Server stop: the map is weak on its key, but each shipyard holds
+     * its {@link ServerLevel} strongly, so without this a single-player world switch (which reuses
+     * the JVM) keeps the previous world — and every chunk it had loaded — alive.
+     */
+    public static void clear() {
+        CACHE.clear();
+    }
+
+    /**
      * Convenience for {@link net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor}
      * and other code paths that hold a {@link LevelReader} rather than a
      * {@link ServerLevel}. Returns {@code false} on the client.

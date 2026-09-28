@@ -39,7 +39,8 @@ public abstract class CreativeModeInventoryScreenPrefabMixin extends AbstractCon
         int yTop = this.topPos + 4;
         int yBottom = yTop + PrefabSideTabButton.HEIGHT + 4;
 
-        ItemStack variantIcon = new ItemStack(Items.COMMAND_BLOCK);
+        ItemStack variantIcon = new ItemStack(
+            games.brennan.dungeontrain.registry.ModBlocks.VARIANT_PLACEHOLDER_ITEM.get());
         ItemStack lootIcon = new ItemStack(Items.CHEST);
 
         this.addRenderableWidget(new PrefabSideTabButton(

@@ -19,7 +19,7 @@ public final class StagesListScreen implements MenuScreen {
 
     @Override
     public String title() {
-        return "Stages";
+        return MenuLang.t("editor.stages");
     }
 
     @Override
@@ -29,16 +29,16 @@ public final class StagesListScreen implements MenuScreen {
             // Whole row toggles this stage as the focused preview (re-click deselects); highlighted
             // while it is the selection. Stay keeps the menu open so the toggle is visible.
             out.add(new CommandMenuEntry.Stay(
-                s.name() + "  [" + ClientStages.gateSummary(s) + "]",
+                MenuLang.t("stages.row", s.name(), ClientStages.gateSummary(s)),
                 "dungeontrain editor stage select " + s.id(),
                 ClientStages.isSelected(s.id())));
         }
         if (ClientStages.isEmpty()) {
-            out.add(new CommandMenuEntry.Label("No stages yet."));
+            out.add(new CommandMenuEntry.Label(MenuLang.t("stages.none")));
         }
         // Create — types an id, Enter dispatches `editor stage new <id>` (id lower-cased server-side).
-        out.add(new CommandMenuEntry.TypeArg("+ New Stage", "id", "dungeontrain editor stage new"));
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.TypeArg(MenuLang.t("stages.new"), "id", "dungeontrain editor stage new"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
 }

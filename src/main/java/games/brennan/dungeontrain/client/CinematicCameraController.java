@@ -97,6 +97,15 @@ public final class CinematicCameraController {
     private static Input savedInput;
     private static boolean savedHideGui;
 
+    // Preview hold: the render camera parked at the shot's frame-0 pose while the loading
+    // screen's 100% state waits for Space. No clock, no input freeze, no release blend —
+    // the screen already owns input; this only composes the shot behind the dim.
+    private static Vec3 previewPos;
+    private static float previewYaw;
+    private static float previewPitch;
+    private static boolean previewing;
+    private static boolean previewSavedHideGui;
+
     private CinematicCameraController() {}
 
     /** Resolved camera pose for one render frame. */
@@ -104,6 +113,43 @@ public final class CinematicCameraController {
 
     public static boolean isActive() {
         return active;
+    }
+
+    /**
+     * Park the render camera at the cinematic's opening pose while
+     * {@link CinematicPreloadGate} holds at 100% — the world behind the loading screen is then
+     * the shot itself, already framed, so pressing Space starts the fly-up with no camera pop.
+     *
+     * <p>The HUD is hidden for the duration (nothing should show through the dim) and restored
+     * by {@link #endPreview()}, which the gate calls <em>before</em> {@link #start} so the
+     * cinematic's own save/restore of {@code hideGui} sees the player's real setting.</p>
+     */
+    public static void beginPreview(Vec3 pos, float yaw, float pitch) {
+        if (active || previewing) return;
+        previewPos = pos;
+        previewYaw = yaw;
+        previewPitch = pitch;
+        previewSavedHideGui = Minecraft.getInstance().options.hideGui;
+        Minecraft.getInstance().options.hideGui = true;
+        previewing = true;
+    }
+
+    /** End the preview hold and give the HUD back. Safe to call when not previewing. */
+    public static void endPreview() {
+        if (!previewing) return;
+        previewing = false;
+        previewPos = null;
+        Minecraft.getInstance().options.hideGui = previewSavedHideGui;
+    }
+
+    /** True while the camera is parked at the shot's opening pose (see {@link #beginPreview}). */
+    public static boolean isPreviewing() {
+        return previewing;
+    }
+
+    /** The parked pose, or null when not previewing. */
+    public static Pose previewPose() {
+        return previewing && previewPos != null ? new Pose(previewPos, previewYaw, previewPitch) : null;
     }
 
     /** Begin the cinematic (called from {@link CinematicIntroPacket#handle}). */

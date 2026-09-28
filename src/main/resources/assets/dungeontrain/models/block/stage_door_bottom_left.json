@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/door_bottom_left",
+  "textures": {
+    "bottom": "dungeontrain:block/stage_door_bottom",
+    "top": "dungeontrain:block/stage_door_top"
+  }
+}

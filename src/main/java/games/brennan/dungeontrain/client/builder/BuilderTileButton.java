@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.builder.BuilderMode;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
@@ -11,7 +10,8 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * One image tile on the {@link TrainBuilderScreen} picker: a screenshot of what you'd be
- * building, with the mode name on a dark strip along the bottom and a white border on hover.
+ * building, with the mode name on a dark strip along the bottom and a white border while it is
+ * the picked one.
  *
  * <p>The image itself — and the slate fallback for art that isn't in the repo yet — is
  * {@link BuilderTileArt}, shared with the New screen's mode row so both fail the same way.
@@ -27,21 +27,26 @@ import net.neoforged.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 final class BuilderTileButton extends Button {
 
-    private static final int BORDER_HOVER = 0xFFFFFFFF;
-    private static final int BORDER_IDLE = 0xFF000000;
-    private static final int LABEL_STRIP_BG = 0xC0101010;
-    private static final int LABEL_COLOUR = 0xFFFFFF;
-    private static final int IDLE_DIM = 0x40000000;
-
-    private static final int LABEL_STRIP_H = 16;
-
     private final BuilderMode mode;
     private final boolean textureAvailable;
     private final boolean captioned;
     private final boolean selected;
+    private final boolean hoverLights;
 
     BuilderTileButton(int x, int y, int width, int height, BuilderMode mode, OnPress onPress) {
-        this(x, y, width, height, mode, true, false, onPress);
+        this(x, y, width, height, mode, true, false, true, onPress);
+    }
+
+    /**
+     * A tile on the {@link TrainBuilderScreen} picker: captioned, lit only while it is the
+     * choice, and without a tooltip — the picker's detail column already shows the mode's
+     * description, so nothing is left for a hover to say. No hover lighting either: on that
+     * screen a tile is picked by clicking it, and the cursor passing over should not look like
+     * the choice moving.
+     */
+    static BuilderTileButton pickerTile(int x, int y, int width, int height, BuilderMode mode,
+                                        boolean selected, OnPress onPress) {
+        return new BuilderTileButton(x, y, width, height, mode, true, selected, false, onPress);
     }
 
     /**
@@ -54,13 +59,26 @@ final class BuilderTileButton extends Button {
      */
     BuilderTileButton(int x, int y, int width, int height, BuilderMode mode,
                       boolean captioned, boolean selected, OnPress onPress) {
+        this(x, y, width, height, mode, captioned, selected, true, onPress);
+    }
+
+    /**
+     * @param hoverLights whether the cursor resting on the tile lights it. Off for the picker,
+     *                    where only the chosen tile is lit and there is no tooltip.
+     */
+    private BuilderTileButton(int x, int y, int width, int height, BuilderMode mode,
+                              boolean captioned, boolean selected, boolean hoverLights, OnPress onPress) {
         super(x, y, width, height, Component.translatable(mode.labelKey()), onPress, DEFAULT_NARRATION);
         this.mode = mode;
         this.captioned = captioned;
         this.selected = selected;
+        this.hoverLights = hoverLights;
         this.textureAvailable = BuilderTileArt.isAvailable(mode);
-        if (!captioned) {
-            this.setTooltip(Tooltip.create(Component.translatable(mode.labelKey())));
+        // A captioned tile already says its name, so its tooltip can say what the mode is for; an
+        // uncaptioned thumbnail has to spend the tooltip on the name itself.
+        if (hoverLights) {
+            this.setTooltip(Tooltip.create(Component.translatable(
+                    captioned ? mode.descriptionKey() : mode.labelKey())));
         }
     }
 
@@ -74,27 +92,9 @@ final class BuilderTileButton extends Button {
         int y = this.getY();
         int w = this.getWidth();
         int h = this.getHeight();
-        boolean hovered = this.isHoveredOrFocused();
-
-        boolean lit = hovered || selected;
-
-        BuilderTileArt.render(g, mode, textureAvailable, x, y, w, h, this.alpha);
-
-        // Dim the whole tile slightly until it's hovered — or, on the strip, until it's the one
-        // chosen — so the live option pops out of the row.
-        if (!lit) {
-            g.fill(x, y, x + w, y + h, IDLE_DIM);
-        }
-
-        g.renderOutline(x, y, w, h, lit ? BORDER_HOVER : BORDER_IDLE);
-
-        if (!captioned) {
-            return;
-        }
-        int stripTop = y + h - LABEL_STRIP_H;
-        g.fill(x + 1, stripTop, x + w - 1, y + h - 1, LABEL_STRIP_BG);
-        Minecraft mc = Minecraft.getInstance();
-        g.drawCenteredString(mc.font, this.getMessage(), x + w / 2,
-                stripTop + (LABEL_STRIP_H - mc.font.lineHeight) / 2, LABEL_COLOUR);
+        // On the strip the chosen tile stays lit, so "chosen" reads differently from "under the
+        // cursor"; on the picker only the chosen tile is ever lit.
+        boolean lit = selected || (hoverLights && this.isHoveredOrFocused());
+        BuilderTileArt.renderTile(g, mode, textureAvailable, x, y, w, h, captioned, lit, this.alpha);
     }
 }

@@ -8,6 +8,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
@@ -73,6 +74,14 @@ public final class EffortlessBuildingHistory {
      * so it goes.</p>
      */
     public static void begin(ServerPlayer player, String label) {
+        begin(player, label, null);
+    }
+
+    /**
+     * As {@link #begin(ServerPlayer, String)}, also capturing the variant sidecar of
+     * {@code sidecarPlotKey} so pools the action removes come back with its blocks on undo.
+     */
+    public static void begin(ServerPlayer player, String label, @Nullable String sidecarPlotKey) {
         if (player == null) return;
         try {
             EditorRegionDiff.Capture stale = PENDING.remove(player.getUUID());
@@ -80,7 +89,7 @@ public final class EffortlessBuildingHistory {
                 LOGGER.debug("[DungeonTrain] Discarding a stale Effortless Building capture over {}"
                     + " — the previous action did not finish cleanly.", stale.plotKey());
             }
-            EditorRegionDiff.Capture capture = EditorRegionDiff.open(player, label, null);
+            EditorRegionDiff.Capture capture = EditorRegionDiff.open(player, label, sidecarPlotKey);
             if (capture != null) PENDING.put(player.getUUID(), capture);
         } catch (Throwable t) {
             PENDING.remove(player.getUUID());

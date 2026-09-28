@@ -3,7 +3,10 @@ package games.brennan.dungeontrain.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
+import games.brennan.dungeontrain.player.EnderChestExpansion;
+import games.brennan.dungeontrain.player.FreePlayEnderChestMenu;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
@@ -22,6 +25,11 @@ import java.util.OptionalInt;
  * per-game-mode chest EnderChestPersistence keeps, the per-difficulty one
  * {@code DifficultyPartition} adds, or a Free Play run's locked chest. See
  * {@code EnderChestLabel} for what the title says and why.
+ *
+ * <p>A Free Play run additionally gets DT's own chest menu instead of vanilla's three-row one — the
+ * same live container, but at whatever size the player has expanded it to, with the expand button when
+ * they haven't yet. See {@link EnderChestExpansion}. That path uses the open-screen variant that carries
+ * extra data, so it replaces the wrapped call rather than delegating to it.</p>
  *
  * <p>Vanilla builds the title as a constant inside {@code useWithoutItem} and hands it straight to
  * {@code openMenu}, so there is no event or data-driven seam to reach it — the one call is wrapped
@@ -44,7 +52,28 @@ public abstract class EnderChestBlockLabelMixin {
             target = "Lnet/minecraft/world/entity/player/Player;openMenu(Lnet/minecraft/world/MenuProvider;)Ljava/util/OptionalInt;"))
     private OptionalInt dungeontrain$labelEnderChestMenu(
             Player player, MenuProvider provider, Operation<OptionalInt> original) {
-        return original.call(player, labelled(player, provider));
+        MenuProvider labelled = labelled(player, provider);
+        OptionalInt freePlay = openFreePlayChest(player, labelled);
+        return freePlay != null ? freePlay : original.call(player, labelled);
+    }
+
+    /**
+     * Open the Free Play chest menu for a Free Play run, or return null to fall through to vanilla's.
+     * Fail-open like the label: a fault here means the vanilla three-row menu, never a chest that won't open.
+     */
+    private static OptionalInt openFreePlayChest(Player player, MenuProvider labelled) {
+        try {
+            if (!(player instanceof ServerPlayer serverPlayer)
+                    || !EnderChestExpansion.available()
+                    || !RunIntegrity.isCheated(serverPlayer)) {
+                return null;
+            }
+            FreePlayEnderChestMenu.open(serverPlayer, labelled.getDisplayName());
+            return OptionalInt.of(serverPlayer.containerMenu.containerId);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Free Play Ender Chest menu unavailable; using vanilla's", t);
+            return null;
+        }
     }
 
     /** {@code provider} with a profile-named display name, or unchanged for the default profile. */

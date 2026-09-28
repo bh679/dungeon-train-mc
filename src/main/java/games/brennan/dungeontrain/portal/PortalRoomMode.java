@@ -71,7 +71,17 @@ public enum PortalRoomMode {
     ENDLESS_OPEN("endless_open", "Endless Open"),
 
     /** Sealed in nothing at all: no skin, no repetition, and empty space out to the clearance. */
-    BEDROCKLESS("bedrockless", "Bedrockless");
+    BEDROCKLESS("bedrockless", "Bedrockless"),
+
+    /**
+     * A single chunk of ordinary world generation, sealed in bedrock, with its surface on the
+     * corridor doors — see {@link PortalChunkTerrain}.
+     *
+     * <p>The one mode whose room is not something a person built. The variant's template is still
+     * stamped, and is what a player sees until the sample lands and if it never does, but what fills
+     * the box is a 16-block cube of Overworld, Nether or End terrain, rolled per pair.</p>
+     */
+    CHUNK_DIMENSION("chunk_dimension", "Chunk Dimension");
 
     /** What a variant with no mode tag — or an unreadable one — behaves as. */
     public static final PortalRoomMode DEFAULT = BEDROCK_LOCK;
@@ -138,7 +148,30 @@ public enum PortalRoomMode {
      * corridors stay as they are.</p>
      */
     public boolean sealsCorridors() {
-        return this == BEDROCK_LOCK;
+        return sealsRoomBox();
+    }
+
+    /**
+     * True when the room's own box is wrapped in a block of bedrock.
+     *
+     * <p>{@link #BEDROCK_LOCK} and {@link #CHUNK_DIMENSION}. The second wraps for a reason of its
+     * own rather than by inheriting the first's: a chunk dimension is a slice of terrain with no
+     * walls of its own worth speaking of — a sampled hillside runs straight into the box's faces —
+     * so what stops a player digging out of it and into the basement rock is the skin, and nothing
+     * else. Asked as a question of its own so a later mode that seals its corridors without sealing
+     * its box, or the other way round, has somewhere to say so.</p>
+     */
+    public boolean sealsRoomBox() {
+        return this == BEDROCK_LOCK || this == CHUNK_DIMENSION;
+    }
+
+    /**
+     * True when the room's interior is generated rather than authored — {@link #CHUNK_DIMENSION}
+     * alone. The flag {@code stampPairStructure} branches on to pour a sampled chunk into the box
+     * once the template is down.
+     */
+    public boolean generatesTerrain() {
+        return this == CHUNK_DIMENSION;
     }
 
     /**

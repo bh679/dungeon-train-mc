@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalClear;
@@ -89,10 +90,34 @@ public final class PortalRoomEditor {
     }
 
     /**
+     * The lower cell of each of room {@code name}'s two corridor doors — entry ({@code -X}) end
+     * first — clamped to what the room's own box can spend, exactly as the real corridors are cut.
+     *
+     * <p>One place for the clamps so the door ghosts the editor paints and the doorway the Enter
+     * button lands in are always the same cells: a ghost drawn where the teleport does not go, or
+     * the reverse, would be the editor contradicting itself about where its own door is.</p>
+     */
+    public static List<BlockPos> doorBases(String name, BlockPos origin, Vec3i size, CarriageDims dims) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        int offset = PortalRoomLayout.clampDoorOffset(dims, size.getZ(), settings.doorOffset().value());
+        int heightOffset = PortalRoomLayout.clampDoorHeightOffset(
+            dims, size.getY(), settings.doorHeightOffset().value());
+        // The exit door on its own clamps, not the entry door's: the two ends may stand apart.
+        int exitOffset = PortalRoomLayout.clampDoorOffset(dims, size.getZ(), settings.exitDoorOffset().value());
+        int exitHeightOffset = PortalRoomLayout.clampDoorHeightOffset(
+            dims, size.getY(), settings.exitDoorHeightOffset().value());
+        return games.brennan.dungeontrain.portal.PortalRoomDoorCells.doorBases(
+            origin, size, offset, heightOffset, exitOffset, exitHeightOffset);
+    }
+
+    /**
      * The room name whose plot contains {@code pos}, or null. Includes the 1-block outline-cage
      * margin and the same +2 Y headroom every other plot uses for a player who landed on the cage.
      */
     public static String plotContaining(BlockPos pos, CarriageDims dims) {
+        // Answers only while PORTALS is the resident category — every category shares the origin.
+        if (!EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) return null;
         for (String name : names()) {
             BlockPos o = plotOrigin(name, dims);
             Vec3i size = plotSize(name, dims);
@@ -110,7 +135,50 @@ public final class PortalRoomEditor {
         enter(player, name, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the room — a relay Load that replaced the file on disk
+     * arrives here and must show the new blocks. The walk that keeps unsaved edits is
+     * {@link #walkTo} / {@link #enterInside}.
+     */
     public static void enter(ServerPlayer player, String name, boolean onTop) {
+        enter(player, name, onTop, true);
+    }
+
+    /**
+     * The X menu's Go here: a walk to the room, not a reload — restamps only when the player is
+     * not already standing in it, since a restamp would throw away every unsaved edit in every room.
+     */
+    public static void walkTo(ServerPlayer player, String name, boolean onTop) {
+        enter(player, name, onTop, !EditorPlotScope.standingIn(player, new Template.PortalRoom(name)));
+    }
+
+    /**
+     * The panel's Enter button: land inside at {@code inside}, restamping unless the player is
+     * already standing in this room.
+     */
+    public static void enterInside(ServerPlayer player, String name, EditorPlotArrival.Inside inside) {
+        enter(player, name, false, !EditorPlotScope.standingIn(player, new Template.PortalRoom(name)), inside);
+    }
+
+    /**
+     * @param stamp whether to erase + restamp every room plot before teleporting. The category
+     *              entry passes {@code false}: it stamps the first room itself and queues the rest
+     *              on {@link EditorStampQueue}, so a full pass here would double the whole cost.
+     *              Sizes are still primed either way — the layout needs them before the teleport.
+     */
+    public static void enter(ServerPlayer player, String name, boolean onTop, boolean stamp) {
+        enter(player, name, onTop, stamp, EditorPlotArrival.Inside.FRONT_DOOR);
+    }
+
+    /**
+     * @param inside where an {@code onTop == false} landing aims: the entry doorway facing in, or
+     *               the centre. Either way it steps to the nearest free column if that cell is
+     *               built up — the doorway itself stands in the bedrock cage, so the door landing
+     *               normally comes to rest one block inside the room.
+     */
+    public static void enter(ServerPlayer player, String name, boolean onTop, boolean stamp,
+                             EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -137,17 +205,16 @@ public final class PortalRoomEditor {
             }
         }
 
-        stampAllPlots(overworld, dims);
+        if (stamp) stampAllPlots(overworld, dims);
 
-        double tx = origin.getX() + size.getX() / 2.0;
-        double ty = onTop ? origin.getY() + size.getY() + 1.0 : origin.getY() + 1.0;
-        double tz = origin.getZ() + size.getZ() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        List<BlockPos> doors = doorBases(name, origin, size, dims);
+        EditorPlotArrival.land(player, overworld, origin, size, onTop, inside, EditorPlotArrival.firstOrNull(doors));
 
         player.sendSystemMessage(Component.literal(
             "[DungeonTrain] Dimensional carriage editor: this is the room between a portal's two corridors. "
-            + "Keep the way through clear on the walkway centre line — the corridors open onto it "
-            + "at both ends. Resize it from the X menu, or with "
+            + "The amber ghosts mark where the two doorways open — keep the way through clear there. "
+            + "Right-click a ghost with a door in hand to move both doorways along the wall or up it; "
+            + "resize the room from the X menu, or with "
             + "/dt editor portals length|width|height <blocks>."));
 
         LOGGER.info("[DungeonTrain] Editor enter: {} -> portal room '{}' plot at {} ({}x{}x{}, {} variants)",
@@ -166,11 +233,51 @@ public final class PortalRoomEditor {
         }
     }
 
-    /** Erase + restamp every registered room plot. Idempotent. */
+    /**
+     * Erase + restamp every registered room plot. Idempotent.
+     *
+     * <p>Sizes are primed first, all of them, before the first plot goes down. A plot's position
+     * depends on the sizes of the rooms before it in the row <em>and</em> of its group's members,
+     * which sit later in the alphabet; loading each template only as its own plot came up meant
+     * House was placed while Miniword was still assumed to be built-in sized, and the row shifted
+     * under the plots already stamped.</p>
+     */
     public static void stampAllPlots(ServerLevel overworld, CarriageDims dims) {
-        for (String name : names()) {
+        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
+        EditorStampQueue.flush();
+        primeSizes(overworld, dims);
+        for (String name : stampOrder()) {
             stampPlot(overworld, name, dims);
         }
+    }
+
+    /**
+     * The order plots go down in: each top-level room, then its sub-variants one at a time, then the
+     * next top-level room.
+     *
+     * <p>This is the dependency order of the layout. A sub-variant's X depends on the sizes of the
+     * members before it; a row's Z depends on the deepest room in every row before it. Stamping in
+     * this order means every size a plot's position rests on belongs to a plot already stamped —
+     * and {@link #stampPlot} reads its own template first — so nothing is placed against a size
+     * that is still a guess, whether or not priming got to it.</p>
+     */
+    static java.util.List<String> stampOrder() {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (String parent : TrackVariantGroupStore.topLevelNames(TrackKind.PORTAL_ROOM)) {
+            if (seen.add(parent)) out.add(parent);
+            TrackVariantGroupStore.get(TrackKind.PORTAL_ROOM, parent).ifPresent(group -> {
+                for (games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member m : group.members()) {
+                    if (seen.add(m.id())) out.add(m.id());
+                }
+            });
+        }
+        // A registered name that is in no row and no group — nothing the layout knows how to place
+        // beyond slot 0 — still gets stamped rather than silently dropped.
+        for (String name : names()) {
+            if (seen.add(name)) out.add(name);
+        }
+        return out;
     }
 
     /**
@@ -178,13 +285,32 @@ public final class PortalRoomEditor {
      * the plot's current size, the built-in room otherwise.
      */
     public static void stampPlot(ServerLevel overworld, String name, CarriageDims dims) {
-        // Load first: the plot's size comes from the template, and until it has been read once
-        // this session PortalRoomSizes only knows the built-in figure. Without this a room
-        // authored at 21 blocks stamps as an 11-block built-in one after every server restart.
-        PortalRoomTemplateStore.get(overworld, name, dims);
+        // Every size first, not just this room's. Where this plot goes depends on the rooms before
+        // it in the row and on its group's members, and until each template has been read once
+        // this session PortalRoomSizes only knows the built-in figure for it. The category switch
+        // stamps rooms one at a time in alphabetical order, so without this a plot placed early
+        // was positioned against guesses — and once the guesses were replaced, stamped again
+        // somewhere else, with the first copy left standing. Cached after the first read, so this
+        // costs a map lookup per room from then on.
+        primeSizes(overworld, dims);
 
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
+
+        // If this plot is standing somewhere else, erase it there before it goes down here. This
+        // is what stops a plot that moved between two stamps leaving a copy of itself behind.
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        int[] was = data.portalPlotBox(name);
+        if (was != null && !(was[0] == origin.getX() && was[1] == origin.getY() && was[2] == origin.getZ()
+                && was[3] == size.getX() && was[4] == size.getY() && was[5] == size.getZ())) {
+            clearBox(overworld, new PlotBox(new BlockPos(was[0], was[1], was[2]),
+                new Vec3i(was[3], was[4], was[5])), name);
+        }
+
+        LOGGER.info("[DungeonTrain] Portal room plot '{}' at {} size {}x{}x{}{}", name, origin.toShortString(),
+            size.getX(), size.getY(), size.getZ(),
+            TrackVariantGroupStore.findParentOf(TrackKind.PORTAL_ROOM, name)
+                .map(p -> " (sub-variant of " + p + ")").orElse(""));
 
         stampRoomInto(overworld, origin, size, name, dims, /*outline*/ true);
         captureSnapshot(overworld, origin, size, name);
@@ -361,11 +487,48 @@ public final class PortalRoomEditor {
             origin.getZ() + size.getZ() - 1);
     }
 
-    /** Erase every room plot. */
+    /**
+     * Erase every room plot — at the box each one was actually stamped at, not only where the layout
+     * says it should be.
+     *
+     * <p>The two differ whenever a size was learned after a stamp, and erasing the predicted box
+     * then leaves a room standing in the sky with nothing left to clear it. The recorded boxes are
+     * the world's memory of where its plots are; the predicted ones are still swept for a world saved
+     * before boxes were recorded, and for a name whose record was lost.</p>
+     */
     public static void clearAllPlots(ServerLevel overworld, CarriageDims dims) {
-        for (String name : names()) {
-            clearPlot(overworld, name, dims);
+        primeSizes(overworld, dims);
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        Map<String, int[]> recorded = data.portalPlotBoxes();
+        for (Map.Entry<String, int[]> e : recorded.entrySet()) {
+            int[] b = e.getValue();
+            clearBox(overworld, new PlotBox(new BlockPos(b[0], b[1], b[2]), new Vec3i(b[3], b[4], b[5])), e.getKey());
         }
+        for (String name : names()) {
+            PlotBox predicted = new PlotBox(plotOrigin(name, dims), plotSize(name, dims));
+            int[] b = recorded.get(name);
+            if (b != null && predicted.equals(new PlotBox(new BlockPos(b[0], b[1], b[2]), new Vec3i(b[3], b[4], b[5])))) {
+                continue;   // already erased above
+            }
+            clearBox(overworld, predicted, name);
+        }
+    }
+
+    /**
+     * One box around every room plot — the recorded ones and the predicted ones — or null when
+     * there are none. The footprint of the {@link #clearAllPlots} job, so a category entry knows
+     * whether that job has to run before its landing plot is stamped.
+     */
+    public static BoundingBox allPlotsBox(ServerLevel overworld, CarriageDims dims) {
+        primeSizes(overworld, dims);
+        List<BoundingBox> boxes = new java.util.ArrayList<>();
+        for (int[] b : DungeonTrainWorldData.get(overworld).portalPlotBoxes().values()) {
+            boxes.add(EditorLayerSweep.plotBox(new BlockPos(b[0], b[1], b[2]), new Vec3i(b[3], b[4], b[5])));
+        }
+        for (String name : names()) {
+            boxes.add(EditorLayerSweep.plotBox(plotOrigin(name, dims), plotSize(name, dims)));
+        }
+        return EditorLayerSweep.unionOf(boxes);
     }
 
     /** Erase a single room plot — interior + outline cleared to air. */
@@ -386,6 +549,7 @@ public final class PortalRoomEditor {
         PortalClear.clearBoxRelit(overworld, boxOf(origin, size), PortalCorridorMask.NONE);
         setOutline(overworld, origin, size, air);
         EditorPlotSnapshots.clear(snapshotKey(name));
+        DungeonTrainWorldData.get(overworld).forgetPortalPlotBox(name);
     }
 
     /**
@@ -413,7 +577,7 @@ public final class PortalRoomEditor {
 
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
-        StructureTemplate template = TemplateDecor.capture(overworld, origin, size, Blocks.STRUCTURE_VOID);
+        StructureTemplate template = TemplateDecor.capture(overworld, origin, size, Blocks.STRUCTURE_VOID, TemplateDecor.Rule.ROOM);
         PortalRoomTemplateStore.save(name, template);
 
         // Fresh baseline, or the brand-new plot reads as already edited.
@@ -441,7 +605,7 @@ public final class PortalRoomEditor {
                                 int value, CarriageDims dims) {
         Vec3i current = plotSize(name, dims);
         Vec3i clamped = heldUnderTheSky(overworld, dims, PortalRoomLayout.clampSize(dims,
-            PortalRoomResize.with(current, axis, value)));
+            PortalRoomLayout.heldForAuthoring(current, PortalRoomResize.with(current, axis, value))));
         applySteps(overworld, name, dims, PortalRoomResize.plan(dims, axis, current,
             PortalRoomResize.of(clamped, axis)));
 
@@ -495,7 +659,7 @@ public final class PortalRoomEditor {
      */
     private static void relayout(ServerLevel overworld, CarriageDims dims, Runnable change,
                                  String resizing, PortalRoomResize.Step step) {
-        Map<String, PlotBox> before = snapshotBoxes(dims);
+        Map<String, PlotBox> before = standingBoxes(overworld, dims);
         // Nothing in `change` touches the world — it moves numbers in PortalRoomSizes — so the plots
         // are still standing untouched after it runs, and which ones actually move is known.
         change.run();
@@ -554,17 +718,29 @@ public final class PortalRoomEditor {
      */
     private static StructureTemplate captureLive(ServerLevel overworld, String name, PlotBox box) {
         if (!EditorPlotSnapshots.has(snapshotKey(name))) return null;
-        StructureTemplate template = TemplateDecor.capture(overworld, box.origin(), box.size(), Blocks.STRUCTURE_VOID);
+        StructureTemplate template = TemplateDecor.capture(overworld, box.origin(), box.size(), Blocks.STRUCTURE_VOID, TemplateDecor.Rule.ROOM);
         return template;
     }
 
-    /** Lay a captured plot back down at its new box, applying {@code step}'s shift and stashed row. */
+    /**
+     * Lay a captured plot back down at its new box, applying {@code step}'s shift and stashed row.
+     *
+     * <p>A grow's new row is left <b>empty</b>. The built-in shell used to fill it — a floor, walls,
+     * a ceiling and its lights — which is a guess at what the author wants in space they have not
+     * built yet, and one they then had to demolish. The only blocks that may appear there are the
+     * ones an earlier shrink filed for this exact size, which {@link PortalRoomResizeSlabs#restore}
+     * puts back below.</p>
+     */
     private static void restampLive(ServerLevel overworld, String name, CarriageDims dims,
                                     PlotBox box, StructureTemplate captured,
                                     PortalRoomResize.Step step) {
         Vec3i shift = step == null ? Vec3i.ZERO : step.shift();
+        PortalCorridorMask blank = step != null && step.grow()
+            ? PortalCorridorMask.NONE.plus(
+                PortalRoomResize.slabBox(box.origin(), box.size(), step))
+            : PortalCorridorMask.NONE;
         PortalCarriageBuilder.stampRoomFromLive(overworld, box.origin(), box.size(), captured,
-            shift, /*relight*/ true);
+            shift, /*relight*/ true, blank);
 
         // Cells first, then the row: both are addressed in plot-local coordinates, and a restored
         // row's coordinates are already in the new frame.
@@ -575,6 +751,23 @@ public final class PortalRoomEditor {
 
         setOutline(overworld, box.origin(), box.size(), OUTLINE_BLOCK);
         captureSnapshot(overworld, box.origin(), box.size(), name);
+    }
+
+    /**
+     * The boxes the plots are actually standing in: the recorded box where the world has one, the
+     * predicted box otherwise. What a relayout has to erase is where things are, not where the
+     * layout would have put them.
+     */
+    private static Map<String, PlotBox> standingBoxes(ServerLevel overworld, CarriageDims dims) {
+        Map<String, PlotBox> predicted = snapshotBoxes(dims);
+        Map<String, int[]> recorded = DungeonTrainWorldData.get(overworld).portalPlotBoxes();
+        Map<String, PlotBox> out = new java.util.LinkedHashMap<>();
+        for (Map.Entry<String, PlotBox> e : predicted.entrySet()) {
+            int[] b = recorded.get(e.getKey());
+            out.put(e.getKey(), b == null ? e.getValue()
+                : new PlotBox(new BlockPos(b[0], b[1], b[2]), new Vec3i(b[3], b[4], b[5])));
+        }
+        return out;
     }
 
     private static Map<String, PlotBox> snapshotBoxes(CarriageDims dims) {
@@ -595,7 +788,8 @@ public final class PortalRoomEditor {
      * @return the size actually applied, after clamping to what this world's corridor allows
      */
     public static Vec3i setSize(ServerLevel overworld, String name, Vec3i wanted, CarriageDims dims) {
-        Vec3i clamped = heldUnderTheSky(overworld, dims, PortalRoomLayout.clampSize(dims, wanted));
+        Vec3i clamped = heldUnderTheSky(overworld, dims, PortalRoomLayout.clampSize(dims,
+            PortalRoomLayout.heldForAuthoring(plotSize(name, dims), wanted)));
         applySteps(overworld, name, dims,
             PortalRoomResize.plan(dims, plotSize(name, dims), clamped));
         LOGGER.info("[DungeonTrain] Portal room '{}' plot restamped at {}x{}x{} (typed {}x{}x{})",
@@ -608,7 +802,7 @@ public final class PortalRoomEditor {
      * {@code size} with its height held to what a plot can actually show.
      *
      * <p>Plots sit in the sky at {@link TrackSidePlots#Y_BASELINE}, which leaves 90 blocks under a
-     * stock DT world's build ceiling — enough for the whole of {@link PortalRoomLayout#MAX_HEIGHT},
+     * stock DT world's build ceiling — exactly {@link PortalRoomLayout#MAX_HEIGHT},
      * so in an ordinary world this holds nothing back. It is not dead code: the plot floor is what
      * sets the room ceiling, and at the floor's old height (250) it was 70. Without it a stepper
      * would report a height the plot cannot hold, the rows above the ceiling would go nowhere, and a
@@ -636,6 +830,10 @@ public final class PortalRoomEditor {
     private static void captureSnapshot(ServerLevel overworld, BlockPos origin, Vec3i size, String name) {
         EditorPlotSnapshots.capture(snapshotKey(name), overworld, origin,
             size.getX(), size.getY(), size.getZ());
+        // The world remembers where this plot stands, so a later clear erases what is there rather
+        // than what the layout — with whatever it has learned since — now predicts.
+        DungeonTrainWorldData.get(overworld).recordPortalPlotBox(name,
+            origin.getX(), origin.getY(), origin.getZ(), size.getX(), size.getY(), size.getZ());
     }
 
     /** Snapshot key shared with {@link EditorDirtyCheck}. */
@@ -689,7 +887,7 @@ public final class PortalRoomEditor {
         // Through TemplateDecor, not a bare fillFromWorld: the raw call passes includeEntities=false
         // and so drops the room's item frames and paintings. Folded in here rather than at the
         // caller so the Train Builder's save keeps them too.
-        StructureTemplate template = TemplateDecor.capture(level, origin, size, Blocks.STRUCTURE_VOID);
+        StructureTemplate template = TemplateDecor.capture(level, origin, size, Blocks.STRUCTURE_VOID, TemplateDecor.Rule.ROOM);
 
         PortalRoomTemplateStore.save(name, template);
 
@@ -732,6 +930,11 @@ public final class PortalRoomEditor {
 
     /** Draw the bedrock cage along the 12 edges of the plot. */
     private static void setOutline(ServerLevel level, BlockPos origin, Vec3i size, BlockState state) {
+        // Flag-3 writes on the plot boundary: an observer on the template's outer face sees them.
+        CarriageStampGuard.run(() -> setOutlineGuarded(level, origin, size, state));
+    }
+
+    private static void setOutlineGuarded(ServerLevel level, BlockPos origin, Vec3i size, BlockState state) {
         int x0 = origin.getX() - 1;
         int y0 = origin.getY() - 1;
         int z0 = origin.getZ() - 1;

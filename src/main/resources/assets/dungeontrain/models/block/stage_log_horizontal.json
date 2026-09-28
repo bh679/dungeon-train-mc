@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column_horizontal",
+  "textures": {
+    "end": "dungeontrain:block/stage_log_top",
+    "side": "dungeontrain:block/stage_log"
+  }
+}

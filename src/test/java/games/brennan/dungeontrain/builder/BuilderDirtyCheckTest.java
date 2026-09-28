@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,6 +34,8 @@ final class BuilderDirtyCheckTest {
     private static final BlockState STONE = Blocks.STONE.defaultBlockState();
     private static final BlockState OAK = Blocks.OAK_PLANKS.defaultBlockState();
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
+    /** What a variant cell shows mid-preview — a rotated frame the baseline never captured. */
+    private static final BlockState STAIRS = Blocks.OAK_STAIRS.defaultBlockState();
 
     @Test
     @DisplayName("No baseline reads clean — a restart must not flag everything as unsaved")
@@ -84,6 +87,31 @@ final class BuilderDirtyCheckTest {
         Map<BlockPos, BlockState> live = new HashMap<>();
         live.put(new BlockPos(DIMS.length(), DIMS.height(), DIMS.width()), OAK);
         assertFalse(BuilderDirtyCheck.isDirty(baseline, BOX, BuilderDirtyCheck.liveFrom(live)));
+    }
+
+    @Test
+    @DisplayName("A variant cell showing a different preview frame is clean")
+    void variantCellPreviewIsClean() {
+        BlockPos cell = new BlockPos(1, 1, 1);
+        Map<BlockPos, BlockState> baseline = new HashMap<>();
+        baseline.put(cell, STONE);
+        Map<BlockPos, BlockState> live = new HashMap<>();
+        live.put(cell, STAIRS);
+        assertFalse(BuilderDirtyCheck.isDirty(baseline, BOX, Set.of(cell),
+                BuilderDirtyCheck.liveFrom(live)));
+    }
+
+    @Test
+    @DisplayName("The skip set only covers the variant cells — an edit next to one is still dirty")
+    void editBesideAVariantCellIsDirty() {
+        BlockPos cell = new BlockPos(1, 1, 1);
+        Map<BlockPos, BlockState> baseline = new HashMap<>();
+        baseline.put(cell, STONE);
+        Map<BlockPos, BlockState> live = new HashMap<>();
+        live.put(cell, STAIRS);
+        live.put(new BlockPos(2, 1, 1), OAK);
+        assertTrue(BuilderDirtyCheck.isDirty(baseline, BOX, Set.of(cell),
+                BuilderDirtyCheck.liveFrom(live)));
     }
 
     @Test

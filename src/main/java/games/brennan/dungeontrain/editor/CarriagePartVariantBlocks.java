@@ -59,7 +59,7 @@ public final class CarriagePartVariantBlocks {
     public static final int MIN_STATES_PER_ENTRY = CarriageVariantBlocks.MIN_STATES_PER_ENTRY;
 
     static final String SUBDIR_BASE = "parts";
-    private static final String EXT = ".variants.json";
+    static final String EXT = ".variants.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/parts/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/parts";
 
@@ -85,12 +85,33 @@ public final class CarriagePartVariantBlocks {
     /** Opt-in flag (the "V" toggle): mirror the variant pools, not just structural blocks. */
     private boolean mirrorVariants;
 
+    /**
+     * The whole sidecar this instance is a bounded <em>view</em> of, or null when this <em>is</em>
+     * the whole sidecar — see
+     * {@link games.brennan.dungeontrain.track.variant.TrackVariantBlocks#source}. Mutations and both
+     * write paths go through to it, so a bounded read can never become a truncated write.
+     */
+    private final CarriagePartVariantBlocks source;
+
+    /**
+     * pos → per-cell {@link VariantSpan} — how a single block fills a two-space cell (door /
+     * bed / tall plant). Only non-default values are stored; see {@link #spanAt}.
+     */
+    private final Map<BlockPos, VariantSpan> spans = new LinkedHashMap<>();
+
     private CarriagePartVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
         this(entries, lockIds, false, false, false, false);
     }
 
     private CarriagePartVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
                                       boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
+        this(entries, lockIds, mirrorX, mirrorY, mirrorZ, mirrorVariants, null);
+    }
+
+    private CarriagePartVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
+                                      boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants,
+                                      CarriagePartVariantBlocks source) {
+        this.source = source;
         this.entries = entries;
         this.lockIds = lockIds;
         this.groupRefs = new VariantGroupResolver(entries, lockIds);
@@ -123,6 +144,7 @@ public final class CarriagePartVariantBlocks {
 
     /** Set all three editor mirror axes — used by the {@code editor mirror} command before {@link #save}. */
     public synchronized void setMirrorAxes(boolean x, boolean y, boolean z) {
+        if (source != null) source.setMirrorAxes(x, y, z);
         this.mirrorX = x;
         this.mirrorY = y;
         this.mirrorZ = z;
@@ -130,6 +152,7 @@ public final class CarriagePartVariantBlocks {
 
     /** Set the mirror-variants ("V") opt-in — used by {@code editor mirror v on|off} before {@link #save}. */
     public synchronized void setMirrorVariants(boolean v) {
+        if (source != null) source.setMirrorVariants(v);
         this.mirrorVariants = v;
     }
 
@@ -154,17 +177,50 @@ public final class CarriagePartVariantBlocks {
     public static synchronized CarriagePartVariantBlocks loadFor(CarriagePartKind kind, String name, Vec3i partSize) {
         String key = cacheKey(kind, name);
         CarriagePartVariantBlocks cached = CACHE.get(key);
-        if (cached != null) return cached;
-        CarriagePartVariantBlocks loaded = loadFromDisk(kind, name, partSize);
-        CACHE.put(key, loaded);
-        return loaded;
+        if (cached == null) {
+            cached = loadFromDisk(kind, name);
+            CACHE.put(key, cached);
+        }
+        return cached.croppedTo(kind, name, partSize);
     }
 
-    private static CarriagePartVariantBlocks loadFromDisk(CarriagePartKind kind, String name, Vec3i partSize) {
+    /**
+     * This sidecar bounded to {@code size} — {@code this} when every cell already fits, otherwise a
+     * detached, unsaveable copy without the out-of-bounds cells. The bound is applied per caller so
+     * one caller's footprint cannot prune what the rest of the session sees.
+     */
+    private synchronized CarriagePartVariantBlocks croppedTo(CarriagePartKind kind, String name, Vec3i size) {
+        if (size == null) return this;
+        List<BlockPos> outside = null;
+        for (BlockPos pos : entries.keySet()) {
+            if (inBounds(pos, size)) continue;
+            if (outside == null) outside = new ArrayList<>();
+            outside.add(pos);
+        }
+        if (outside == null) return this;
+
+        Map<BlockPos, List<VariantState>> kept = new LinkedHashMap<>(entries);
+        Map<BlockPos, Integer> keptLocks = new LinkedHashMap<>(lockIds);
+        String contextId = kind.id() + ":" + name;
+        for (BlockPos pos : outside) {
+            kept.remove(pos);
+            keptLocks.remove(pos);
+            LOGGER.warn("[DungeonTrain] Part variant sidecar {}: pos {} outside part footprint {}x{}x{}, skipping.",
+                contextId, pos, size.getX(), size.getY(), size.getZ());
+        }
+        return withSpans(new CarriagePartVariantBlocks(kept, keptLocks, mirrorX, mirrorY, mirrorZ,
+            mirrorVariants, this), spans);
+    }
+
+    /** True when this instance is a bounded view — see {@link #cropped}. */
+    public boolean isCropped() { return source != null; }
+
+
+    private static CarriagePartVariantBlocks loadFromDisk(CarriagePartKind kind, String name) {
         Path cfg = UserContentPaths.findFile(SUBDIR_BASE + "/" + kind.id(), name + EXT);
         if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
-                return parse(r, kind, name, "config " + cfg, partSize);
+                return parse(r, kind, name, "config " + cfg);
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] Failed to read part variant sidecar {}: {}", cfg, e.toString());
             }
@@ -173,7 +229,7 @@ public final class CarriagePartVariantBlocks {
         try (InputStream in = CarriagePartVariantBlocks.class.getResourceAsStream(resource)) {
             if (in == null) return empty();
             try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-                return parse(r, kind, name, "bundled " + resource, partSize);
+                return parse(r, kind, name, "bundled " + resource);
             }
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled part variant sidecar {}: {}", resource, e.toString());
@@ -181,8 +237,12 @@ public final class CarriagePartVariantBlocks {
         }
     }
 
+    /**
+     * Parse the whole sidecar, keeping every cell however far outside any footprint — bounding is
+     * {@link #croppedTo}'s job.
+     */
     private static CarriagePartVariantBlocks parse(Reader reader, CarriagePartKind kind, String name,
-                                                    String origin, Vec3i partSize) {
+                                                    String origin) {
         JsonElement root = JsonParser.parseReader(reader);
         if (!root.isJsonObject()) {
             LOGGER.warn("[DungeonTrain] Part variant sidecar {}:{} ({}) is not a JSON object — ignoring.",
@@ -217,17 +277,13 @@ public final class CarriagePartVariantBlocks {
         JsonObject variants = obj.getAsJsonObject("variants");
         Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
         Map<BlockPos, Integer> outLocks = new LinkedHashMap<>();
+        Map<BlockPos, VariantSpan> outSpans = new LinkedHashMap<>();
         String contextId = kind.id() + ":" + name;
         for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
             BlockPos pos = parsePos(field.getKey());
             if (pos == null) {
                 LOGGER.warn("[DungeonTrain] Part variant sidecar {}: bad pos '{}', skipping.",
                     contextId, field.getKey());
-                continue;
-            }
-            if (!inBounds(pos, partSize)) {
-                LOGGER.warn("[DungeonTrain] Part variant sidecar {}: pos {} outside part footprint {}x{}x{}, skipping.",
-                    contextId, pos, partSize.getX(), partSize.getY(), partSize.getZ());
                 continue;
             }
             CarriageVariantBlocks.ParsedCell cell = CarriageVariantBlocks.parseCellValue(
@@ -240,11 +296,12 @@ public final class CarriagePartVariantBlocks {
             }
             BlockPos posI = pos.immutable();
             out.put(posI, List.copyOf(cell.states()));
+            if (!cell.span().isDefault()) outSpans.put(posI, cell.span());
             if (cell.lockId() > 0) outLocks.put(posI, cell.lockId());
         }
         LOGGER.info("[DungeonTrain] Loaded {} part variant entries for {} from {}",
             out.size(), contextId, origin);
-        return new CarriagePartVariantBlocks(out, outLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants);
+        return withSpans(new CarriagePartVariantBlocks(out, outLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants), outSpans);
     }
 
     static BlockPos parsePos(String key) {
@@ -298,11 +355,37 @@ public final class CarriagePartVariantBlocks {
         for (VariantState s : states) {
             if (s == null) throw new IllegalArgumentException("null state");
         }
+        if (source != null) source.put(localPos, states);
         entries.put(localPos.immutable(), List.copyOf(states));
         groupRefs.invalidate();
     }
 
+    /** The cell's multi-space {@link VariantSpan}; {@code AUTO} when unset or no cell. */
+    public synchronized VariantSpan spanAt(BlockPos localPos) {
+        return spans.getOrDefault(localPos, VariantSpan.NONE);
+    }
+
+    /** Set the cell's multi-space span (default clears it). Throws if no cell exists at {@code localPos}. */
+    public synchronized void setSpan(BlockPos localPos, VariantSpan span) {
+        if (source != null) source.setSpan(localPos, span);
+        if (!entries.containsKey(localPos)) {
+            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
+        }
+        if (span == null || span.isDefault()) spans.remove(localPos);
+        else spans.put(localPos.immutable(), span);
+    }
+
+    /** Copy {@code from}'s spans for the cells {@code target} holds — parse and crop both end here. */
+    private static CarriagePartVariantBlocks withSpans(CarriagePartVariantBlocks target, Map<BlockPos, VariantSpan> from) {
+        for (Map.Entry<BlockPos, VariantSpan> e : from.entrySet()) {
+            if (target.entries.containsKey(e.getKey())) target.spans.put(e.getKey(), e.getValue());
+        }
+        return target;
+    }
+
     public synchronized boolean remove(BlockPos localPos) {
+        spans.remove(localPos);
+        if (source != null) source.remove(localPos);
         lockIds.remove(localPos);
         groupRefs.invalidate();
         return entries.remove(localPos) != null;
@@ -314,6 +397,7 @@ public final class CarriagePartVariantBlocks {
      * wipe doesn't leave orphaned variant metadata pointing at now-air cells.
      */
     public synchronized int clearAll() {
+        spans.clear();
         int n = entries.size();
         entries.clear();
         lockIds.clear();
@@ -331,6 +415,7 @@ public final class CarriagePartVariantBlocks {
      * no cell exists at {@code localPos}.
      */
     public synchronized void setLockId(BlockPos localPos, int lockId) {
+        if (source != null) source.setLockId(localPos, lockId);
         if (!entries.containsKey(localPos)) {
             throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
         }
@@ -378,6 +463,12 @@ public final class CarriagePartVariantBlocks {
     }
 
     public synchronized void save(CarriagePartKind kind, String name) throws IOException {
+        if (source != null) { source.save(kind, name); return; }
+        writeConfig(kind, name);
+    }
+
+    /** The user-tier write behind {@link #save}, shared with {@link #rename}'s carry path. */
+    private void writeConfig(CarriagePartKind kind, String name) throws IOException {
         Path file = configPathFor(kind, name);
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
@@ -397,6 +488,7 @@ public final class CarriagePartVariantBlocks {
      * bundled resource.
      */
     public synchronized void saveToSource(CarriagePartKind kind, String name) throws IOException {
+        if (source != null) { source.saveToSource(kind, name); return; }
         Path file = sourcePathFor(kind, name);
         if (file == null) {
             throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
@@ -434,7 +526,8 @@ public final class CarriagePartVariantBlocks {
             if (!first) sb.append(",");
             int lockId = lockIds.getOrDefault(e.getKey(), 0);
             sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
-            CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId);
+            CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId,
+                VariantCopyRoll.DEFAULT, VariantCopyScope.BOTH, spanAt(e.getKey()));
             first = false;
         }
         sb.append("\n  }\n}\n");
@@ -462,6 +555,35 @@ public final class CarriagePartVariantBlocks {
         StageBlockIndex.invalidateAll();
         if (existed) LOGGER.info("[DungeonTrain] Deleted part variant sidecar {}:{} ({})", kind.id(), name, file);
         return existed;
+    }
+
+    /**
+     * Carry the sidecar from {@code sourceName} to {@code targetName} within {@code kind} so a part
+     * save-as keeps its variants — same contract as
+     * {@link CarriageContentsVariantBlocks#rename}: a user-tier file is moved; a sidecar that only
+     * exists in the session cache, an imported package or the bundled resource is written out under
+     * the new name instead. Returns false when there was nothing to carry.
+     */
+    public static synchronized boolean rename(CarriagePartKind kind, String sourceName, String targetName)
+            throws IOException {
+        Path src = configPathFor(kind, sourceName);
+        Path dst = configPathFor(kind, targetName);
+        if (Files.isRegularFile(src)) {
+            Files.createDirectories(dst.getParent());
+            Files.move(src, dst, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            CarriagePartVariantBlocks cached = CACHE.remove(cacheKey(kind, sourceName));
+            if (cached != null) CACHE.put(cacheKey(kind, targetName), cached);
+            StageBlockIndex.invalidateAll();
+            LOGGER.info("[DungeonTrain] Renamed part variant sidecar {} -> {}", src, dst);
+            return true;
+        }
+        CarriagePartVariantBlocks carried = CACHE.remove(cacheKey(kind, sourceName));
+        if (carried == null) carried = loadFromDisk(kind, sourceName);
+        if (carried.isEmpty() && carried.isDefaultMirror()) return false;
+        carried.writeConfig(kind, targetName);
+        LOGGER.info("[DungeonTrain] Carried {} part variant entries {}:{} -> {}:{} (no user-tier file to move)",
+            carried.entries.size(), kind.id(), sourceName, kind.id(), targetName);
+        return true;
     }
 
     public static synchronized void invalidate(CarriagePartKind kind, String name) {

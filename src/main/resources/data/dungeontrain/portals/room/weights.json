@@ -1,14 +1,22 @@
 {
   "abandonedroom": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
+  },
+  "author_new": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/mix:2:1:0:1:5:0"
   },
   "backrooms": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
   },
   "beam": {
-    "weight": 4,
+    "weight": 3,
     "minLevel": 1,
     "maxLevel": 20,
     "mode": "bedrockless"
@@ -21,6 +29,11 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "bearcave": 1,
+  "bigger": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/end"
+  },
   "biggerlibrary": {
     "weight": 1,
     "mode": "bedrock_lock"
@@ -30,13 +43,49 @@
     "mode": "endless_repetition"
   },
   "book": {
-    "weight": 4,
+    "weight": 3,
     "minLevel": 3,
     "mode": "endless_repetition"
   },
+  "chess": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/0/0/dungeontrain:skybox_end",
+    "builder": {
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
+    }
+  },
+  "chunk_dimension": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9/0/9/dungeontrain:skybox_surface"
+  },
+  "chunk_dimension_bop": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9/0/9/dungeontrain:skybox_surface"
+  },
+  "chunk_dimension_end": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/end/sealed/0/9/0/9/dungeontrain:skybox_end"
+  },
+  "chunk_dimension_end_better": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/end/sealed/0/9/0/9/dungeontrain:skybox_end"
+  },
+  "chunk_dimension_nether": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/nether/sealed/0/9/0/9/dungeontrain:skybox_nether"
+  },
+  "chunk_dimension_nether_better": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/nether/sealed/0/9/0/9/dungeontrain:skybox_nether"
+  },
+  "chunk_dimension_wwoo": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9/0/9/dungeontrain:skybox_surface"
+  },
   "cubes": {
     "weight": 1,
-    "mode": "endless_repetition"
+    "mode": "endless_repetition/exact/off/on/off/end"
   },
   "cvspharmacy": {
     "weight": 1,
@@ -46,9 +95,25 @@
       "VOID",
       "END",
       "UPSIDE_DOWN",
-      "CHUNCKS"
+      "CHUNCKS",
+      "SPHERES",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "SKYLANDS",
+      "FLOATING",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY",
+      "CAVES_OF_CHAOS"
     ],
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock",
+    "builder": {
+      "uuid": "d3bf88f298b74343a19152a8a445e49b",
+      "name": "CorporalJackShep"
+    }
   },
   "default": {
     "weight": 2,
@@ -56,7 +121,16 @@
       "OVERWORLD",
       "NETHER",
       "VOID",
-      "END"
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY",
+      "CAVES_OF_CHAOS"
     ],
     "mode": "endless_open/single:minecraft:stone"
   },
@@ -66,29 +140,108 @@
       "OVERWORLD",
       "NETHER",
       "VOID",
-      "END"
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY",
+      "CAVES_OF_CHAOS"
     ],
     "mode": "bedrock_lock"
   },
   "deserter": {
     "weight": 1,
-    "mode": "endless_open/single:minecraft:stone"
+    "mode": "endless_open/single:minecraft:stone",
+    "builder": {
+      "uuid": "f02ad784e5ca41f5b645ce9c5c780670",
+      "name": "ZesCrew2"
+    }
   },
   "distantenemies": {
     "weight": 2,
     "minLevel": 1,
     "mode": "endless_repetition/dynamic"
   },
+  "dreamcore": 1,
   "end": {
+    "weight": 1,
+    "mode": "bedrockless",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
+  },
+  "ender": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
+  "evilhouse": {
+    "weight": 1,
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
+  },
+  "foundation": {
+    "weight": 1,
+    "mode": "endless_repetition/exact/off/off/off/end/repeated/0/30",
+    "builder": {
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
+    }
+  },
+  "gemotricwalk": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/none/repeated/-1/7"
+  },
+  "grandisolagenerator": {
+    "weight": 1,
+    "minLevel": 376,
+    "maxLevel": 415,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "SKYLANDS",
+      "FLOATING",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY",
+      "CAVES_OF_CHAOS"
+    ],
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
+  },
+  "gravityfalls": 1,
+  "house": {
+    "weight": 1,
+    "mode": "bedrock_lock",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
+  },
+  "icebears": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/end"
+  },
+  "jumps": {
     "weight": 1,
     "mode": "bedrockless"
   },
-  "house": {
-    "weight": 1,
-    "mode": "bedrock_lock"
-  },
+  "kfc": 1,
   "labrynth": {
-    "weight": 3,
+    "weight": 2,
     "mode": "endless_repetition/dynamic"
   },
   "library_dimension": {
@@ -96,24 +249,67 @@
     "minLevel": 5,
     "mode": "endless_repetition/dynamic/off/on/off/none/repeated"
   },
+  "lowkeyabridge": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone/off/off/off/day/sealed/0/9/0/7"
+  },
+  "man": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone/off/off/off/end",
+    "builder": {
+      "uuid": "f02ad784e5ca41f5b645ce9c5c780670",
+      "name": "ZesCrew2"
+    }
+  },
+  "medievalhouse": {
+    "weight": 1,
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
+  },
   "midlibrary": {
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/mix:3:1:1:1:24:120"
   },
   "miniword": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/day"
+    "mode": "bedrock_lock/exact/off/off/off/day",
+    "builder": {
+      "uuid": "753c591dc29a49adadaca1770b1ccf8d",
+      "name": "dot_cheeselover"
+    }
+  },
+  "moria": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
   },
   "nobeam": {
     "weight": 1,
     "mode": "bedrockless"
   },
-  "parkour": {
+  "nostalgia": {
     "weight": 1,
-    "minLevel": 10,
+    "mode": "bedrock_lock/exact/off/off/off/day",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
+  },
+  "outsidethebox": {
+    "weight": 0,
+    "mode": "endless_open/single:minecraft:stone"
+  },
+  "parkour": {
+    "weight": 2,
+    "minLevel": 2,
     "mode": "bedrockless"
   },
   "paths": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
+  "pathsforever": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
   },
@@ -122,17 +318,51 @@
     "minLevel": 5,
     "mode": "endless_repetition"
   },
+  "peateargriffin": {
+    "weight": 1,
+    "mode": "bedrockless/exact/off/off/off/day/sealed/0/0/0/0/minecraft:bedrock/off",
+    "builder": {
+      "uuid": "753c591dc29a49adadaca1770b1ccf8d",
+      "name": "dot_cheeselover"
+    }
+  },
+  "pistons": {
+    "weight": 1,
+    "mode": "endless_open"
+  },
   "pretty": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
   },
   "randomized": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/fit"
+    "mode": "endless_repetition/dynamic/fit",
+    "builder": {
+      "uuid": "8182522180174312afab35464181a12b",
+      "name": "AutisticMime"
+    }
   },
+  "romanhuge": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
+  "romanpillars": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
+  "safe": {
+    "weight": 2,
+    "minLevel": 4,
+    "mode": "bedrockless/exact/off/off/off/none/sealed/0/8"
+  },
+  "safehaven": 1,
   "sanemaze": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
   },
   "singlepillar": {
     "weight": 4,
@@ -140,9 +370,103 @@
     "maxLevel": 40,
     "mode": "endless_open"
   },
+  "singlepillar2": {
+    "weight": 1,
+    "mode": "endless_open"
+  },
+  "singlesomething": {
+    "weight": 1,
+    "mode": "endless_open"
+  },
+  "skymaze": {
+    "weight": 1,
+    "mode": "bedrockless/exact/off/off/off/none/sealed/0/5"
+  },
+  "slime": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/day/repeated/0/1"
+  },
+  "sloped": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/nether"
+  },
   "smalllibrary": {
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/mix:1:1:1:0:10:0"
+  },
+  "smallpat": 1,
+  "squidwardshouse_2": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/1/-1/1"
+  },
+  "statue2": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone/off/off/off/cycle"
+  },
+  "statue3": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone/off/off/off/cycle"
+  },
+  "statue4": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone/off/off/off/cycle"
+  },
+  "statue5": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone/off/off/off/cycle"
+  },
+  "statue6": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone/off/off/off/cycle"
+  },
+  "statue7": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone/off/off/off/cycle"
+  },
+  "statue9": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone"
+  },
+  "statues": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "SKYLANDS",
+      "FLOATING",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY",
+      "CAVES_OF_CHAOS"
+    ],
+    "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
+  },
+  "superflat": {
+    "weight": 1,
+    "mode": "endless_repetition/exact/off/on:20/off/none/repeated/0/1"
+  },
+  "suspiciousfurniturestore": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/day",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
+  },
+  "terrarium": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/day/sealed/0/73/0/19",
+    "builder": {
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
+    }
   },
   "trap": {
     "weight": 1,
@@ -151,16 +475,24 @@
   },
   "upsidedown": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
   },
   "window": {
-    "weight": 2,
+    "weight": 1,
     "maxLevel": 10,
     "mode": "bedrockless"
   },
   "window_contents": {
     "weight": 1,
     "mode": "bedrockless/exact/fit"
+  },
+  "woodpillars": {
+    "weight": 1,
+    "mode": "endless_repetition"
   },
   "zombies": {
     "weight": 1,

@@ -76,4 +76,16 @@ public interface MenuScreen {
     default int stickyRows() {
         return 0;
     }
+
+    /**
+     * An optional icon button at the right end of the breadcrumb band, or {@code null} (the
+     * default) for none.
+     *
+     * <p>Only the main panel draws it; a side panel's header stays plain text. It exists for the
+     * one action worth reaching from every tab — the editor's Save — without spending a row on
+     * it, and the renderer hit-tests it separately from the rows so it never shadows row 0.</p>
+     */
+    default MenuHeaderAction headerAction() {
+        return null;
+    }
 }

@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "dungeontrain:block/stage_slab_2"
+    },
+    "type=double": {
+      "model": "dungeontrain:block/stage_slab_2"
+    },
+    "type=top": {
+      "model": "dungeontrain:block/stage_slab_2_top"
+    }
+  }
+}

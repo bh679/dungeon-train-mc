@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab_top",
+  "textures": {
+    "bottom": "dungeontrain:block/stage_stone_feature",
+    "side": "dungeontrain:block/stage_stone_feature",
+    "top": "dungeontrain:block/stage_stone_feature"
+  }
+}

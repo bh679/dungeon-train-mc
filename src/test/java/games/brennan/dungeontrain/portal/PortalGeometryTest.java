@@ -239,4 +239,34 @@ final class PortalGeometryTest {
             () -> new PortalGeometry(ORIGIN_X, FLOOR_Y, ORIGIN_Z, LENGTH, WIDTH,
                 PortalGeometry.MIN_HEIGHT - 1, DELTA_Y));
     }
+
+    // ---- prewarm counterpart -------------------------------------------------
+
+    @Test
+    @DisplayName("mirrorShift answers on both sides of the midpoint, where requiredShift stays silent")
+    void mirrorShiftIsNotTheSwapDecision() {
+        PortalGeometry g = geo();
+
+        // Standing in the near copy, short of the midpoint: no swap is wanted, and the destination is
+        // still the far copy — which is the whole point of asking a different question.
+        assertEquals(0, g.requiredShift(MID_X - 4, NEAR_Y, IN_Z));
+        assertEquals(DELTA_Y, g.mirrorShift(MID_X - 4, NEAR_Y, IN_Z));
+
+        // And in the far copy walking back, the mirror is the way it came.
+        assertEquals(0, g.requiredShift(MID_X + 4, FAR_Y, IN_Z));
+        assertEquals(-DELTA_Y, g.mirrorShift(MID_X + 4, FAR_Y, IN_Z));
+
+        // Past the midpoint the two agree, because there the swap is the move to the mirror.
+        assertEquals(DELTA_Y, g.requiredShift(MID_X + 4, NEAR_Y, IN_Z));
+        assertEquals(DELTA_Y, g.mirrorShift(MID_X + 4, NEAR_Y, IN_Z));
+    }
+
+    @Test
+    @DisplayName("nothing outside either copy has a counterpart")
+    void mirrorShiftOutsideIsZero() {
+        PortalGeometry g = geo();
+        assertEquals(0, g.mirrorShift(ORIGIN_X - 5, NEAR_Y, IN_Z), "beyond the near door");
+        assertEquals(0, g.mirrorShift(MID_X, NEAR_Y, ORIGIN_Z + WIDTH + 2), "outside the width");
+        assertEquals(0, g.mirrorShift(MID_X, FLOOR_Y + DELTA_Y / 2.0, IN_Z), "in the gap between them");
+    }
 }

@@ -34,7 +34,11 @@ public final class TranslationEditScreen extends Screen {
     private static final int TOP = 30;
     private static final int LABEL_COLOUR = 0xFFA0A0A0;
     private static final int NOTE_COLOUR = 0xFFD8A657;
+    /** The soft red this package already uses for errors (TranslationScreen.STATUS_ERROR). */
+    private static final int ERROR_COLOUR = 0xFFDD7F7F;
     private static final int AI_COLOUR = 0xFF5B9BD5;
+    /** The list widget's ↻ amber: the English moved on after this line was translated. */
+    private static final int STALE_COLOUR = 0xFFE8A33D;
     /** The gap between the English and the edit box, which is also the divider's grab area. */
     private static final int SPLITTER_H = GAP * 3;
     /** The set readout's colour — the same blue the AI badge and the AI heading use. */
@@ -73,6 +77,10 @@ public final class TranslationEditScreen extends Screen {
     /** The way on to the next variation; relabelled in place, like the dismiss button beside it. */
     private Button nextButton;
 
+    /** Why the typed text will not render, or null. Recomputed on every keystroke. */
+    private TranslationFormatCheck.Problem formatProblem;
+    private Button saveButton;
+
     public TranslationEditScreen(TranslationScreen parent, String locale, TranslationUnit unit,
                                  List<TranslationUnit> groupMembers) {
         super(Component.literal(unit.label()));
@@ -104,11 +112,15 @@ public final class TranslationEditScreen extends Screen {
         Component replyBy = reply == null ? CommonComponents.EMPTY
             : Component.translatable("gui.dungeontrain.translate.edit.reply",
                 reply.noteBy() == null || reply.noteBy().isBlank() ? "admin" : reply.noteBy());
-        Component heading = unit.aiUnreviewed()
-            ? Component.translatable("gui.dungeontrain.translate.edit.source_ai")
-            : Component.translatable("gui.dungeontrain.translate.edit.source");
+        // Stale outranks AI in the heading: "the English changed under this" is the fact the
+        // translator has to act on, whoever wrote the current line. The list row carries both.
+        Component heading = unit.sourceChanged()
+            ? Component.translatable("gui.dungeontrain.translate.edit.source_changed")
+            : unit.aiUnreviewed()
+                ? Component.translatable("gui.dungeontrain.translate.edit.source_ai")
+                : Component.translatable("gui.dungeontrain.translate.edit.source");
         sourcePane = TranslationSourcePane.wrap(font, contentWidth, heading,
-            unit.aiUnreviewed() ? AI_COLOUR : LABEL_COLOUR,
+            unit.sourceChanged() ? STALE_COLOUR : unit.aiUnreviewed() ? AI_COLOUR : LABEL_COLOUR,
             // Styled, not flat: every %s in the English is underlined and hovers what the game
             // actually puts there. A translator who cannot tell a placeholder from prose moves it
             // into a slot the real value does not fit — the commonest way a translation breaks.
@@ -151,6 +163,7 @@ public final class TranslationEditScreen extends Screen {
             Component.translatable("gui.dungeontrain.translate.edit.label"));
         editor.setCharacterLimit(TranslationEdits.MAX_VALUE_CHARS);
         editor.setValue(currentValue());
+        editor.setValueListener(value -> revalidate());
         addRenderableWidget(editor);
         setInitialFocus(editor);
 
@@ -160,7 +173,7 @@ public final class TranslationEditScreen extends Screen {
         int buttons = 4;
         int buttonWidth = (contentWidth - GAP * (buttons - 1)) / buttons;
         int x = MARGIN;
-        addRenderableWidget(Button.builder(
+        saveButton = addRenderableWidget(Button.builder(
             Component.translatable("gui.dungeontrain.translate.edit.save"), b -> save())
             .bounds(x, bottomRow, buttonWidth, ROW_H).build());
         x += buttonWidth + GAP;
@@ -175,6 +188,10 @@ public final class TranslationEditScreen extends Screen {
         x += buttonWidth + GAP;
         addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose())
             .bounds(x, bottomRow, buttonWidth, ROW_H).build());
+
+        // Once up front, not only on edit: an override stored before this check existed — or one
+        // pulled down from the relay — can already be broken when the screen opens.
+        revalidate();
     }
 
     /**
@@ -252,6 +269,10 @@ public final class TranslationEditScreen extends Screen {
         minecraft.setScreen(new TranslationUnsavedScreen(choice -> {
             switch (choice) {
                 case SAVE -> {
+                    if (formatProblem != null) {
+                        minecraft.setScreen(this);   // cannot save this; stay and show why
+                        return;
+                    }
                     store(editor.getValue());
                     openInSet(target);
                 }
@@ -345,10 +366,16 @@ public final class TranslationEditScreen extends Screen {
         editor.setHeight(Math.max(ROW_H * 2, bottomRow - GAP - noteHeight - editorTop));
     }
 
-    /** The one-line warning under the edit box, when this string gets one. */
+    /**
+     * The one-line warning row under the edit box.
+     *
+     * <p>Always reserved, including for an ordinary lang string in a live locale that has nothing
+     * to say today. A format error appears and disappears as the translator types, and a row that
+     * only exists while the text is wrong would resize the edit box under their cursor — so the
+     * space is held whether or not it is used.</p>
+     */
     private int noteHeight() {
-        return unit.type() == TranslationUnit.Type.BOOK || !TranslationOverrides.isLive(locale)
-            ? font.lineHeight + GAP : 0;
+        return font.lineHeight + GAP;
     }
 
     private boolean isDismissed() {
@@ -385,7 +412,48 @@ public final class TranslationEditScreen extends Screen {
         return override != null ? override : unit.shipped();
     }
 
+    /**
+     * Re-check the typed text and grey out Save when it will not render.
+     *
+     * <p>Greyed rather than silently accepted: the translator finds out now, with the text in
+     * front of them, instead of after the relay has approved it and the weekly import has set it
+     * aside — which is what happened to a Russian translation of {@code clear_backups.confirm.both}
+     * that had lost one of its two {@code %s}.</p>
+     */
+    private void revalidate() {
+        formatProblem = problemWith(editor.getValue());
+        if (saveButton == null) {
+            return;
+        }
+        saveButton.active = formatProblem == null;
+        saveButton.setTooltip(formatProblem == null ? null
+            : Tooltip.create(formatMessage(formatProblem)));
+    }
+
+    /**
+     * What is wrong with {@code typed}, or null.
+     *
+     * <p>Books are asked a different question, not spared one. Their prose is rendered with
+     * {@code Component.literal} ({@code narrative/BookFactory}) and never reaches the format
+     * parser, so a {@code %} in a story is just a percent sign — but it writes its figures as
+     * {@code {deaths}} instead, and losing one of those costs the sentence its number just as
+     * surely.</p>
+     */
+    private TranslationFormatCheck.Problem problemWith(String typed) {
+        if (unit.type() == TranslationUnit.Type.BOOK) {
+            return TranslationFormatCheck.checkBookTyped(unit.source(), typed);
+        }
+        return TranslationFormatCheck.checkTyped(unit.source(), typed);
+    }
+
+    private Component formatMessage(TranslationFormatCheck.Problem problem) {
+        return Component.translatable(problem.messageKey(), problem.tokens());
+    }
+
     private void save() {
+        if (formatProblem != null) {
+            return;     // the button is disabled; this guards the keyboard path to it
+        }
         store(editor.getValue());
         close();
     }
@@ -417,6 +485,11 @@ public final class TranslationEditScreen extends Screen {
     }
 
     @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        InWorldBackdrop.render(this, g, () -> super.renderBackground(g, mouseX, mouseY, partialTick));
+    }
+
+    @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
         g.drawCenteredString(font, title, width / 2, 8, 0xFFFFFFFF);
@@ -426,7 +499,13 @@ public final class TranslationEditScreen extends Screen {
         }
 
         Component note = null;
-        if (!TranslationOverrides.isLive(locale)) {
+        int noteColour = NOTE_COLOUR;
+        if (formatProblem != null) {
+            // Takes the line: a translation that will not render is more urgent than either of
+            // the informational notes, and both cannot be shown in one reserved row.
+            note = formatMessage(formatProblem);
+            noteColour = ERROR_COLOUR;
+        } else if (!TranslationOverrides.isLive(locale)) {
             // Nothing on screen will change when this saves — the game is rendering another
             // language entirely.
             note = Component.literal("Dev: editing " + locale
@@ -436,7 +515,7 @@ public final class TranslationEditScreen extends Screen {
         }
         if (note != null) {
             g.drawString(font, note, MARGIN, height - MARGIN - ROW_H - GAP - font.lineHeight,
-                NOTE_COLOUR, false);
+                noteColour, false);
         }
     }
 

@@ -1,17 +1,20 @@
 package games.brennan.dungeontrain.client.menu.plot;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.menu.EditorPanelFacing;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
@@ -29,6 +32,7 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.slf4j.Logger;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -48,9 +52,9 @@ import java.util.List;
  * column anchored next to a per-plot panel) keep their pre-nav single
  * column layout — no category bar, no tab strip.</p>
  *
- * <p>Same world-space billboarded panel chrome as
- * {@link EditorPlotLabelsRenderer} — backdrop quad, cylindrical billboard
- * around world up, single SEE_THROUGH text pass. Layout constants are
+ * <p>Same world-space panel chrome as
+ * {@link EditorPlotLabelsRenderer} — backdrop quad at a fixed facing
+ * ({@link #basisFor}), single SEE_THROUGH text pass. Layout constants are
  * package-private so {@link EditorTypeMenuRaycast} shares the same numbers
  * for hit detection.</p>
  */
@@ -106,6 +110,8 @@ public final class EditorTypeMenuRenderer {
         STAGE_REMOVE,
         /** Stages panel row icon strip — click toggles the Stage Blocks panel for that stage. */
         STAGE_BLOCKS,
+        /** Stages panel column title — {@code slotIdx} = {@link StagesSort.Column} ordinal; click sorts by it. */
+        STAGE_SORT,
         /** Package row — clicking activates that package. */
         PKG_NAME,
         /** Package Save cell — falls through to the X-menu's flat package screen for typing. */
@@ -117,7 +123,11 @@ public final class EditorTypeMenuRenderer {
         /** Top-row Reload cell — runs {@code dungeontrain editor import}. */
         PKG_RELOAD,
         /** Top-row Open Packages cell — opens the dtpacks root. */
-        PKG_OPEN_FOLDER
+        PKG_OPEN_FOLDER,
+        /** The WHOLE category's "whole group every N" settings row — click +1, shift-click -1, cmd-click types. */
+        WHOLE_EVERY,
+        /** Top-right {@code ↻} on the top row — face the player; shift resets to the grid. */
+        FACE
     }
 
     /**
@@ -161,13 +171,25 @@ public final class EditorTypeMenuRenderer {
     /** Fraction of panel width allocated to the weight cell on rows that have one. */
     static final double WEIGHT_CELL_FRACTION = 0.25;
     /**
-     * Fraction of panel width allocated to the gate area (weight | min | max | phase) on rows that
-     * carry a per-template spawn gate. Wider than {@link #WEIGHT_CELL_FRACTION} to fit the four
-     * cells; the name fills the remaining {@code 1 - GATE_AREA_FRACTION}.
+     * Fraction of panel width allocated to the gate area (weight | [stage] | min | max | phase) on
+     * rows that carry a per-template spawn gate. Wider than {@link #WEIGHT_CELL_FRACTION} to fit
+     * the cells — including one letter per {@link TrainPhase}; the name fills the remaining
+     * {@code 1 - GATE_AREA_FRACTION}.
      */
-    static final double GATE_AREA_FRACTION = 0.62;
-    /** Phase-cell letter labels, indexed by {@code TrainPhase} ordinal (OVERWORLD/NETHER/VOID/END). */
-    static final String[] PHASE_LETTERS = {"O", "N", "V", "E"};
+    static final double GATE_AREA_FRACTION = 0.68;
+    /**
+     * Phase-cell letter labels, indexed by {@link TrainPhase} ordinal ({@code O N V E U C}) — derived
+     * from {@link TrainPhase#letter()} so a new phase shows up without touching the renderer.
+     */
+    static final String[] PHASE_LETTERS = Arrays.stream(TrainPhase.values())
+        .map(TrainPhase::letter).toArray(String[]::new);
+    /** Gate-area layout units per phase letter (the min/max cells are 1 unit each). */
+    static final double PHASE_LETTER_UNITS = 0.4;
+
+    /** Gate-area layout units of the whole phase cell — one {@link #PHASE_LETTER_UNITS} per phase. */
+    static double phaseUnits() {
+        return PHASE_LETTER_UNITS * PHASE_LETTERS.length;
+    }
     /** Visible gap (panel-local units) between the per-plot panel and a companion type menu. */
     static final double COMPANION_GAP = 0.15;
     /** Minimum width of a collapsed tab column — keeps single-character type names readable. */
@@ -182,10 +204,10 @@ public final class EditorTypeMenuRenderer {
     private static final double SUB_VARIANT_GAP = 0.10;
 
     private static final int BACKDROP_COLOR = 0xC8000000;
-    private static final int HOVER_COLOR = 0x60FFCC33;
+    static final int HOVER_COLOR = 0x60FFCC33;
     private static final int ROW_SEP_COLOR = 0x40FFFFFF;
     private static final int COLUMN_SEP_COLOR = 0x30FFFFFF;
-    private static final int HEADER_BG = 0x60FFEEBB;
+    static final int HEADER_BG = 0x60FFEEBB;
     /** Stronger green band behind the active category button — distinct from active-row tint. */
     private static final int ACTIVE_CATEGORY_BG = 0x8055FF55;
     /** Dim band behind every collapsed tab so they read as inactive columns. */
@@ -203,7 +225,7 @@ public final class EditorTypeMenuRenderer {
     /** Faint green band behind the bottom "+ New" row. Lower alpha than {@link #ACTIVE_ROW_COLOR} so the two never read as the same row. */
     private static final int NEW_ROW_BG = 0x4055FF55;
 
-    private static final int HEADER_COLOR = 0xFFFFEEBB;
+    static final int HEADER_COLOR = 0xFFFFEEBB;
     private static final int NAME_COLOR = 0xFFFFFFFF;
     private static final int WEIGHT_COLOR = 0xFFFFEEBB;
     /** Light-blue text for the min/max spawn-level cells, distinct from the warm weight colour. */
@@ -227,6 +249,11 @@ public final class EditorTypeMenuRenderer {
 
     /** Marker drawn in the Stage selector cell on a Custom (unlinked) template row. */
     private static final String STAGE_CUSTOM_MARKER = "◆?";
+
+    /** Rows above the first stage row in the Stages panel: header, Add/Remove toolbar, column titles. */
+    private static final int STAGE_ROWS_ABOVE = 3;
+    /** Dimmed title for a column that is not the sort key. */
+    private static final int STAGE_TITLE_COLOR = 0xFFBBAA88;
 
     /** Client-only "remove mode" for the Stages panel — a stage-row click then deletes that stage. */
     private static volatile boolean stagesRemoveMode = false;
@@ -252,7 +279,8 @@ public final class EditorTypeMenuRenderer {
     /** Slightly dimmed text on inactive category buttons. */
     private static final int CATEGORY_COLOR = 0xFFCCCCCC;
     /** Label rendered in the bottom-row New button. */
-    private static final String NEW_LABEL = "+ New";
+    /** The "+ New" row's text, read each time so it follows the language. */
+    private static String newLabel() { return MenuLang.t("type_menu.new"); }
 
     private static volatile List<EditorTypeMenusPacket.Menu> CACHE = List.of();
     /** Global "focused stage" id for the per-stage carriage preview ("" = none); mirrors the server selection. */
@@ -264,39 +292,51 @@ public final class EditorTypeMenuRenderer {
      * defaulted flag there would pop a dismissed panel back up.
      */
     private static volatile boolean HELP_PANEL_DISMISSED = false;
+    /** The WHOLE category's "every N", or {@link EditorTypeMenusPacket#NO_WHOLE_GROUP_EVERY}. */
+    private static volatile int WHOLE_GROUP_EVERY = EditorTypeMenusPacket.NO_WHOLE_GROUP_EVERY;
     private static volatile Hovered HOVERED = Hovered.NONE;
-
-    /**
-     * Sticky billboard basis for the package menu — captured on the first
-     * render frame after the menu appears, reused every frame after. Unlike
-     * the cylindrical billboards used elsewhere, the package panel pins its
-     * initial orientation toward the player's spawn-in camera and stays
-     * fixed thereafter, so it reads as a stationary signpost rather than a
-     * follower panel. Cleared on editor exit (empty snapshot) so re-entry
-     * recaptures from the new camera.
-     */
-    private static volatile Vec3[] PACKAGE_BASIS = null;
 
     private EditorTypeMenuRenderer() {}
 
     /**
-     * Returns the billboard basis to use for {@code menu}. For the package
-     * menu this is sticky — captured on first call, reused thereafter.
-     * For every other menu kind this is the live cylindrical billboard.
+     * The basis {@code menu} is drawn in, from {@link EditorPanelFacing}: it faces the player when it
+     * first appears (and after each teleport), then holds still until its own {@code ↻} is clicked.
+     * {@code centre} is where the menu is drawn — {@link #centreFor}, not the raw anchor.
      *
-     * <p>Shared by the renderer and {@link EditorTypeMenuRaycast} so the
-     * hit-test plane matches the visible panel exactly even after the
-     * camera moves.</p>
+     * <p>Shared by the renderer and {@link EditorTypeMenuRaycast} so the hit-test plane matches the
+     * visible panel exactly.</p>
      */
-    public static Vec3[] basisFor(EditorTypeMenusPacket.Menu menu, Vec3 anchor, Vec3 cam) {
-        if (!menu.isPackageMenu()) {
-            return EditorPlotLabelsRenderer.basis(anchor, cam);
-        }
-        Vec3[] cached = PACKAGE_BASIS;
-        if (cached != null) return cached;
-        Vec3[] fresh = EditorPlotLabelsRenderer.basis(anchor, cam);
-        PACKAGE_BASIS = fresh;
-        return fresh;
+    public static Vec3[] basisFor(EditorTypeMenusPacket.Menu menu, Vec3 centre, Vec3 cam) {
+        return EditorPanelFacing.basis(facingKey(menu), centre, cam);
+    }
+
+    /**
+     * The key {@code menu}'s facing is held under. Companions share their per-plot panel's anchor
+     * block, so they key on that plus their type name — each spins on its own, apart from the plot
+     * panel and from each other.
+     */
+    public static Object facingKey(EditorTypeMenusPacket.Menu menu) {
+        if (!menu.isCompanion()) return menu.worldPos();
+        return "companion|" + menu.worldPos().toShortString() + "|" + menu.typeName();
+    }
+
+    /**
+     * World centre {@code menu} is drawn about. Companions sit beside their per-plot panel, stepped
+     * along the plot's <b>grid</b> right axis rather than its current facing — so spinning the plot
+     * panel leaves them where they are, and each companion spins about its own centre.
+     */
+    public static Vec3 centreFor(EditorTypeMenusPacket.Menu menu, Vec3 anchor, Font font,
+                                 double priorCompanionWidth) {
+        double shift = companionShiftX(menu, font, priorCompanionWidth);
+        if (shift == 0) return anchor;
+        Vec3 gridRight = EditorPanelFacing.plotPanel()[0];
+        return anchor.add(gridRight.scale(shift * ClientDisplayConfig.getWorldspaceScale()));
+    }
+
+    /** What shift + {@code ↻} resets {@code menu} to: the plot facing for companions, else the door facing. */
+    public static Vec3[] gridDefault(EditorTypeMenusPacket.Menu menu) {
+        if (menu.isCompanion()) return EditorPanelFacing.plotPanel();
+        return EditorPanelFacing.doorPanel(EditorPanelFacing.isZRow(menu.activeCategoryId()));
     }
 
     /**
@@ -311,17 +351,24 @@ public final class EditorTypeMenuRenderer {
     }
 
     public static void applySnapshot(EditorTypeMenusPacket packet) {
+        // The server only re-sends this when the stamped category's templates changed, which is
+        // exactly when the inventory screen's roster has gone stale too.
+        games.brennan.dungeontrain.client.menu.editorscreen.EditorRosterClient.onTypeMenusChanged();
         if (packet.isEmpty()) {
             CACHE = List.of();
+            // Editor exited — the next entry's panels face the player afresh.
+            EditorPanelFacing.clearAll();
             SELECTED_STAGE = "";
             HELP_PANEL_DISMISSED = packet.helpPanelDismissed();
+            WHOLE_GROUP_EVERY = packet.wholeGroupEvery();
             HOVERED = Hovered.NONE;
-            PACKAGE_BASIS = null;
             stagesRemoveMode = false;
+            StagesSort.clear();
             // Editor exited — drop the row icon strips and close the Stage Blocks panel too.
             games.brennan.dungeontrain.client.menu.ClientStageBlocks.clear();
             games.brennan.dungeontrain.client.menu.ClientPartVisibility.clear();
             games.brennan.dungeontrain.client.menu.stagepanel.StagePanelMenu.closeLocal();
+            games.brennan.dungeontrain.client.menu.stagepalette.StagePaletteMenu.closeLocal();
             LOGGER.info("[DungeonTrain] EditorTypeMenus: snapshot cleared");
             return;
         }
@@ -329,15 +376,7 @@ public final class EditorTypeMenuRenderer {
         CACHE = menus;
         SELECTED_STAGE = packet.selectedStageId();
         HELP_PANEL_DISMISSED = packet.helpPanelDismissed();
-        // Keep PACKAGE_BASIS sticky across snapshots that still carry a
-        // package menu (so category switches don't reorient the panel); drop
-        // it if the new snapshot has no package menu, so the next appearance
-        // recaptures from the player's current camera.
-        boolean hasPackageMenu = false;
-        for (EditorTypeMenusPacket.Menu m : menus) {
-            if (m.isPackageMenu()) { hasPackageMenu = true; break; }
-        }
-        if (!hasPackageMenu) PACKAGE_BASIS = null;
+        WHOLE_GROUP_EVERY = packet.wholeGroupEvery();
         EditorTypeMenusPacket.Menu first = menus.get(0);
         LOGGER.info("[DungeonTrain] EditorTypeMenus: client received {} menus (first: '{}' with {} variants @ {})",
             menus.size(), first.typeName(), first.variants().size(), first.worldPos());
@@ -355,6 +394,16 @@ public final class EditorTypeMenuRenderer {
     /** True when this player has closed the editor's world-space Welcome panel in this world. */
     public static boolean helpPanelDismissed() {
         return HELP_PANEL_DISMISSED;
+    }
+
+    /** The WHOLE category's "whole group every N" as last pushed, or {@code NO_WHOLE_GROUP_EVERY}. */
+    public static int wholeGroupEvery() {
+        return WHOLE_GROUP_EVERY;
+    }
+
+    /** Category bar + tab strip, plus the settings row when the menu carries one. */
+    static int navChromeRows(EditorTypeMenusPacket.Menu menu) {
+        return 2 + EditorTypeMenuSettingsRow.rows(menu);
     }
 
     public static Hovered hovered() {
@@ -445,14 +494,20 @@ public final class EditorTypeMenuRenderer {
      * padding.
      */
     private static double companionHalfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
-        double headerW = font.width(menu.typeName()) * TEXT_SCALE + 2 * PAD_X;
-        double newW = font.width(NEW_LABEL) * TEXT_SCALE + 2 * PAD_X;
+        double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+        // The top row ends in the ↻ face button; the centred title keeps clear of it both sides.
+        headerW += 2 * EditorPanelFacing.BUTTON_W;
+        // The Group companion's header also carries "Whole group every N" beside the title.
+        if (EditorTypeMenuSettingsRow.headerEvery(menu)) {
+            headerW += font.width(EditorTypeMenuSettingsRow.label()) * TEXT_SCALE + 2 * PAD_X;
+        }
+        double newW = font.width(newLabel()) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         boolean anyWeight = false;
         boolean anyGate = false;
         boolean anyPart = false;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
-            double w = font.width(v.name()) * TEXT_SCALE + 2 * PAD_X;
+            double w = font.width(v.displayName()) * TEXT_SCALE + 2 * PAD_X;
             if (w > maxNameW) maxNameW = w;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT) anyWeight = true;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT
@@ -481,14 +536,16 @@ public final class EditorTypeMenuRenderer {
      * column.
      */
     private static double expandedColumnWidth(EditorTypeMenusPacket.Menu menu, Font font) {
-        double headerW = font.width(menu.typeName()) * TEXT_SCALE + 2 * PAD_X;
-        double newW = font.width(NEW_LABEL) * TEXT_SCALE + 2 * PAD_X;
+        double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+        // The top row ends in the ↻ face button; the centred title keeps clear of it both sides.
+        headerW += 2 * EditorPanelFacing.BUTTON_W;
+        double newW = font.width(newLabel()) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         boolean anyWeight = false;
         boolean anyGate = false;
         boolean anyPart = false;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
-            double w = font.width(v.name()) * TEXT_SCALE + 2 * PAD_X;
+            double w = font.width(v.displayName()) * TEXT_SCALE + 2 * PAD_X;
             if (w > maxNameW) maxNameW = w;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT) anyWeight = true;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT
@@ -518,7 +575,7 @@ public final class EditorTypeMenuRenderer {
      * padding, clamped to {@link #COLLAPSED_TAB_MIN_W}.
      */
     private static double collapsedTabWidth(String typeName, Font font) {
-        double w = font.width(typeName) * TEXT_SCALE + 2 * PAD_X;
+        double w = font.width(MenuLang.typeName(typeName)) * TEXT_SCALE + 2 * PAD_X;
         return Math.max(w, COLLAPSED_TAB_MIN_W);
     }
 
@@ -533,7 +590,7 @@ public final class EditorTypeMenuRenderer {
         for (EditorTypeMenusPacket.CategoryButton b : menu.categoryBar()) {
             total += font.width(b.displayName()) * TEXT_SCALE + 2 * PAD_X;
         }
-        return total;
+        return total + EditorPanelFacing.BUTTON_W;
     }
 
     /** Maximum growth factor for accommodating wide sub-variant rows — beyond this the sub-variant row wraps to a new line. */
@@ -603,7 +660,7 @@ public final class EditorTypeMenuRenderer {
             if (v.subVariants().isEmpty()) continue;
             double rowW = SUB_VARIANT_GAP;
             for (EditorTypeMenusPacket.Variant sv : v.subVariants()) {
-                rowW += subVariantCellWidth(sv.name(), font);
+                rowW += subVariantCellWidth(sv.displayName(), font);
             }
             if (rowW > maxW) maxW = rowW;
         }
@@ -731,7 +788,7 @@ public final class EditorTypeMenuRenderer {
         // Nav: category bar + tab strip + total variant rows (1 per variant
         // plus extra rows for wrapped sub-variants) + "+ New" footer.
         if (menu.isNavMenu()) {
-            int total = 2;
+            int total = navChromeRows(menu);
             double availableSubW = availableSubVariantWidth(menu, font);
             for (EditorTypeMenusPacket.Variant v : menu.variants()) {
                 total += variantRowSpan(v, availableSubW, font);
@@ -739,9 +796,9 @@ public final class EditorTypeMenuRenderer {
             if (!menu.variants().isEmpty()) total += 1;
             return total;
         }
-        // Stages: header + Add/Remove toolbar + one row per stage (no "+ New" footer).
+        // Stages: header + Add/Remove toolbar + column titles + one row per stage (no "+ New" footer).
         if (menu.isStagesMenu()) {
-            return 2 + menu.variants().size();
+            return STAGE_ROWS_ABOVE + menu.variants().size();
         }
         return 1 + menu.variants().size() + (menu.variants().isEmpty() ? 0 : 1);
     }
@@ -800,6 +857,7 @@ public final class EditorTypeMenuRenderer {
         if (menu.isPackageMenu()) {
             return hitForPackageMenu(menuIdx, menu, font, hitX, hitY);
         }
+        if (onFaceButton(menu, font, hitX, hitY)) return new Hovered(menuIdx, -1, CellKind.FACE);
         if (menu.isNavMenu()) {
             return hitForNav(menuIdx, menu, font, hitX, hitY);
         }
@@ -807,6 +865,30 @@ public final class EditorTypeMenuRenderer {
             return hitForStagesMenu(menuIdx, menu, font, hitX, hitY);
         }
         return hitForCompanion(menuIdx, menu, font, hitX, hitY);
+    }
+
+    /** True when a panel-local hit lands on the top-right {@code ↻} square of {@code menu}'s top row. */
+    static boolean onFaceButton(EditorTypeMenusPacket.Menu menu, Font font, double hitX, double hitY) {
+        double halfW = halfWidth(menu, font);
+        double halfH = halfHeight(menu, font);
+        return hitX >= halfW - EditorPanelFacing.BUTTON_W && hitX <= halfW
+            && hitY <= halfH && hitY >= halfH - ROW_H;
+    }
+
+    /** Draw the top-right {@code ↻} square over {@code menu}'s top row (every menu kind but packages). */
+    private static void drawFaceButton(PoseStack ps, MultiBufferSource buffer, Font font,
+                                       EditorTypeMenusPacket.Menu menu, Hovered hovered) {
+        double halfW = halfWidth(menu, font);
+        double top = halfHeight(menu, font);
+        double bottom = top - ROW_H;
+        double left = halfW - EditorPanelFacing.BUTTON_W;
+        drawQuad(ps, buffer, left, bottom, halfW, top, BACKDROP_COLOR);
+        drawQuad(ps, buffer, left, bottom, halfW, top, EditorPanelFacing.BUTTON_BG);
+        if (hovered.cell == CellKind.FACE) {
+            drawQuad(ps, buffer, left + 0.005, bottom + 0.005, halfW - 0.005, top - 0.005, HOVER_COLOR);
+        }
+        drawCenteredText(ps, buffer, font, EditorPanelFacing.BUTTON_GLYPH,
+            left + EditorPanelFacing.BUTTON_W / 2.0, (top + bottom) / 2.0, EditorPanelFacing.BUTTON_COLOR);
     }
 
     private static Hovered hitForCompanion(int menuIdx, EditorTypeMenusPacket.Menu menu, Font font,
@@ -822,7 +904,13 @@ public final class EditorTypeMenuRenderer {
         // Row 0 is the header — clickable as a "teleport to first variant"
         // shortcut, with variantIdx=-1 (the dispatch resolves the actual
         // first variant from menu.variants().get(0)).
-        if (rowFromTop == 0) return new Hovered(menuIdx, -1, CellKind.HEADER);
+        if (rowFromTop == 0) {
+            if (EditorTypeMenuSettingsRow.headerEvery(menu)) {
+                double titleW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+                if (hitX >= -halfW + titleW) return new Hovered(menuIdx, -1, CellKind.WHOLE_EVERY);
+            }
+            return new Hovered(menuIdx, -1, CellKind.HEADER);
+        }
 
         int variantIdx = rowFromTop - 1;
         // Last row beyond the variant list is the "+ New" footer (only present
@@ -884,7 +972,7 @@ public final class EditorTypeMenuRenderer {
         if (rowFromTop == 0) {
             int n = menu.categoryBar().size();
             if (n == 0) return Hovered.NONE;
-            double buttonW = (halfW * 2.0) / n;
+            double buttonW = (halfW * 2.0 - EditorPanelFacing.BUTTON_W) / n;
             int slot = (int) Math.floor((hitX + halfW) / buttonW);
             if (slot < 0) slot = 0;
             if (slot >= n) slot = n - 1;
@@ -911,7 +999,12 @@ public final class EditorTypeMenuRenderer {
             return Hovered.NONE;
         }
 
-        // Rows 2..end — variant rows + wrapped sub-variant lines + +New.
+        // Row 2 — the settings row, on the menus that carry one (WHOLE's Group menu).
+        if (rowFromTop == 2 && EditorTypeMenuSettingsRow.present(menu)) {
+            return EditorTypeMenuSettingsRow.hit(menuIdx, menu, halfW, hitX);
+        }
+
+        // Rows after the chrome — variant rows + wrapped sub-variant lines + +New.
         // Each variant occupies {@link #variantRowSpan} consecutive rows;
         // walk through variants accumulating spans until rowFromTop lands
         // inside one (or past the last one = +New footer).
@@ -919,7 +1012,7 @@ public final class EditorTypeMenuRenderer {
         double colRight = -halfW + expandedColumnWidth(menu, font);
         double availableSubW = availableSubVariantWidth(menu, font);
 
-        int rowAfterChrome = rowFromTop - 2;
+        int rowAfterChrome = rowFromTop - navChromeRows(menu);
         int variantIdx = -1;
         int spanOffset = 0;
         int cursor = 0;
@@ -989,7 +1082,7 @@ public final class EditorTypeMenuRenderer {
         if (rc.showStage() && hitX < rc.stageR()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE);
         if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
         if (hitX < rc.maxR()) return new Hovered(menuIdx, variantIdx, CellKind.MAX_LEVEL);
-        // Phase cell — resolve which of the 4 letters was hit.
+        // Phase cell — resolve which phase letter was hit.
         double subW = rc.phaseSubW(colRight);
         int slot = subW > 0 ? (int) ((hitX - rc.maxR()) / subW) : 0;
         if (slot < 0) slot = 0;
@@ -1006,6 +1099,7 @@ public final class EditorTypeMenuRenderer {
         EditorTypeMenusPacket.Menu menu, Hovered hovered,
         double priorCompanionWidth
     ) {
+        anchor = centreFor(menu, anchor, font, priorCompanionWidth);
         Vec3[] b = basisFor(menu, anchor, cam);
         Vec3 right = b[0], up = b[1], normal = b[2];
 
@@ -1027,16 +1121,6 @@ public final class EditorTypeMenuRenderer {
             ps.scale(worldScale, worldScale, worldScale);
         }
 
-        // Companion menus share the per-plot panel's anchor + basis; shift
-        // them in panel-local +X so they sit beside the panel like a second
-        // column of a single extended UI. When multiple companions share an
-        // anchor, each shifts past its predecessors (priorCompanionWidth
-        // accumulated by the caller).
-        double shiftX = companionShiftX(menu, font, priorCompanionWidth);
-        if (shiftX != 0) {
-            ps.translate(shiftX, 0, 0);
-        }
-
         if (menu.isPackageMenu()) {
             drawPackageMenu(ps, buffer, font, menu, hovered);
         } else if (menu.isNavMenu()) {
@@ -1046,6 +1130,7 @@ public final class EditorTypeMenuRenderer {
         } else {
             drawCompanionMenu(ps, buffer, font, menu, hovered);
         }
+        if (!menu.isPackageMenu()) drawFaceButton(ps, buffer, font, menu, hovered);
 
         ps.popPose();
     }
@@ -1066,11 +1151,25 @@ public final class EditorTypeMenuRenderer {
         double headerBottom = headerTop - ROW_H;
         double headerCY = (headerTop + headerBottom) / 2.0;
         drawQuad(ps, buffer, -halfW, headerBottom, halfW, headerTop, HEADER_BG);
-        if (hovered.cell == CellKind.HEADER) {
-            drawQuad(ps, buffer, -halfW + 0.005, headerBottom + 0.005,
-                halfW - 0.005, headerTop - 0.005, HOVER_COLOR);
+        if (EditorTypeMenuSettingsRow.headerEvery(menu)) {
+            // Title in the left part, the "every N" cell in the right — split where the title ends.
+            double titleW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+            double split = -halfW + titleW;
+            if (hovered.cell == CellKind.HEADER) {
+                drawQuad(ps, buffer, -halfW + 0.005, headerBottom + 0.005, split - 0.005, headerTop - 0.005, HOVER_COLOR);
+            } else if (hovered.cell == CellKind.WHOLE_EVERY) {
+                drawQuad(ps, buffer, split + 0.005, headerBottom + 0.005, halfW - 0.005, headerTop - 0.005, HOVER_COLOR);
+            }
+            drawQuad(ps, buffer, split - COLUMN_DIVIDER_W / 2.0, headerBottom, split + COLUMN_DIVIDER_W / 2.0, headerTop, COLUMN_SEP_COLOR);
+            drawCenteredText(ps, buffer, font, MenuLang.typeName(menu.typeName()), (-halfW + split) / 2.0, headerCY, HEADER_COLOR);
+            drawCenteredText(ps, buffer, font, EditorTypeMenuSettingsRow.label(), (split + halfW) / 2.0, headerCY, HEADER_COLOR);
+        } else {
+            if (hovered.cell == CellKind.HEADER) {
+                drawQuad(ps, buffer, -halfW + 0.005, headerBottom + 0.005,
+                    halfW - 0.005, headerTop - 0.005, HOVER_COLOR);
+            }
+            drawCenteredText(ps, buffer, font, MenuLang.typeName(menu.typeName()), 0, headerCY, HEADER_COLOR);
         }
-        drawCenteredText(ps, buffer, font, menu.typeName(), 0, headerCY, HEADER_COLOR);
 
         String activeModelId = activeModelId();
         String activeModelName = activeModelName();
@@ -1108,7 +1207,7 @@ public final class EditorTypeMenuRenderer {
                 drawQuad(ps, buffer, -halfW + 0.005, newRowBottom + 0.005,
                     halfW - 0.005, newRowTop - 0.005, HOVER_COLOR);
             }
-            drawCenteredText(ps, buffer, font, NEW_LABEL, 0, newRowCY, NEW_COLOR);
+            drawCenteredText(ps, buffer, font, newLabel(), 0, newRowCY, NEW_COLOR);
         }
     }
 
@@ -1130,7 +1229,8 @@ public final class EditorTypeMenuRenderer {
         double catCY = (catTop + catBottom) / 2.0;
         int catN = menu.categoryBar().size();
         if (catN > 0) {
-            double buttonW = panelW / catN;
+            // The last square of the row is the ↻ face button.
+            double buttonW = (panelW - EditorPanelFacing.BUTTON_W) / catN;
             for (int i = 0; i < catN; i++) {
                 EditorTypeMenusPacket.CategoryButton btn = menu.categoryBar().get(i);
                 double btnLeft = -halfW + i * buttonW;
@@ -1188,7 +1288,7 @@ public final class EditorTypeMenuRenderer {
                     tabRight - 0.005, tabTop - 0.005, HOVER_COLOR);
             }
             int color = isExpanded ? HEADER_COLOR : COLLAPSED_TAB_COLOR;
-            drawCenteredText(ps, buffer, font, tab.typeName(),
+            drawCenteredText(ps, buffer, font, MenuLang.typeName(tab.typeName()),
                 (tabLeft + tabRight) / 2.0, tabCY, color);
 
             if (isExpanded) {
@@ -1205,13 +1305,20 @@ public final class EditorTypeMenuRenderer {
         // Row separator below the tab strip.
         drawQuad(ps, buffer, -halfW, tabBottom - 0.005, halfW, tabBottom + 0.005, ROW_SEP_COLOR);
 
+        // The settings row, on the menus that carry one — the variant body starts below it.
+        if (EditorTypeMenuSettingsRow.present(menu)) {
+            EditorTypeMenuSettingsRow.draw(ps, buffer, font, menu, hovered, halfW, tabBottom);
+            tabBottom -= ROW_H;
+            drawQuad(ps, buffer, -halfW, tabBottom - 0.005, halfW, tabBottom + 0.005, ROW_SEP_COLOR);
+        }
+
         // Faint tint behind the entire right-of-expanded area so the
         // reserved sub-variant region reads as part of the menu instead of
         // an unused gap. Drawn under the variant rows so it doesn't
         // obscure the row separators / sub-variant cells. Height includes
         // every wrapped sub-variant line — derived from the total row
         // count below the tab strip.
-        int variantBodyRows = rowCount(menu, font) - 2;
+        int variantBodyRows = rowCount(menu, font) - navChromeRows(menu);
         double rightAreaLeft = expColRight;
         double rightAreaRight = halfW;
         double varBodyTop = tabBottom;
@@ -1265,7 +1372,7 @@ public final class EditorTypeMenuRenderer {
                     double subCursor = expColRight + SUB_VARIANT_GAP;
                     for (int ci = 0; ci < line.size(); ci++) {
                         EditorTypeMenusPacket.Variant child = line.get(ci);
-                        double cellW = subVariantCellWidth(child.name(), font);
+                        double cellW = subVariantCellWidth(child.displayName(), font);
                         double cellLeft = subCursor;
                         double cellRight = subCursor + cellW;
                         int flatIdx = slotBase + ci;
@@ -1290,7 +1397,7 @@ public final class EditorTypeMenuRenderer {
                             drawQuad(ps, buffer, cellLeft + 0.005, lineBottom + 0.005,
                                 cellRight - 0.005, lineTop - 0.005, HOVER_COLOR);
                         }
-                        drawCenteredText(ps, buffer, font, child.name(),
+                        drawCenteredText(ps, buffer, font, child.displayName(),
                             (cellLeft + cellRight) / 2.0, lineCY, NAME_COLOR);
                         if (ci + 1 < line.size()) {
                             drawQuad(ps, buffer, cellRight - COLUMN_DIVIDER_W / 2.0, lineBottom,
@@ -1318,7 +1425,7 @@ public final class EditorTypeMenuRenderer {
                 drawQuad(ps, buffer, expColLeft + 0.005, newRowBottom + 0.005,
                     expColRight - 0.005, newRowTop - 0.005, HOVER_COLOR);
             }
-            drawCenteredText(ps, buffer, font, NEW_LABEL,
+            drawCenteredText(ps, buffer, font, newLabel(),
                 (expColLeft + expColRight) / 2.0, newRowCY, NEW_COLOR);
         }
     }
@@ -1361,23 +1468,24 @@ public final class EditorTypeMenuRenderer {
         }
         double gateLeft = rowRight - colW * GATE_AREA_FRACTION;
         if (showStage && linked) {
-            // weight | Stage chip (spans the rest). No min/max/phase cells.
-            double unit = (rowRight - gateLeft) / 4.6;
+            // weight | Stage chip (spans the rest). No min/max/phase cells; the weight cell keeps the
+            // legacy gate row's width so it lines up with unlinked rows.
+            double unit = (rowRight - gateLeft) / (3.0 + phaseUnits());
             double weightR = gateLeft + unit;
             return new RightCells(true, true, true, true, gateLeft, gateLeft, weightR,
                 rowRight, rowRight, rowRight);
         }
         if (showStage) {
-            // weight | stage | min | max | phase. Units: 1 | 1.1 | 1 | 1 | 1.6 = 5.7.
-            double unit = (rowRight - gateLeft) / 5.7;
+            // weight | stage | min | max | phase. Units: 1 | 1.1 | 1 | 1 | phaseUnits().
+            double unit = (rowRight - gateLeft) / (4.1 + phaseUnits());
             double weightR = gateLeft + unit;
             double stageR = weightR + 1.1 * unit;
             double minR = stageR + unit;
             double maxR = minR + unit;
             return new RightCells(true, true, true, false, gateLeft, gateLeft, weightR, stageR, minR, maxR);
         }
-        // Legacy gate row (no stage selector): weight | min | max | phase = 4.6 units.
-        double unit = (rowRight - gateLeft) / 4.6;
+        // Legacy gate row (no stage selector): weight | min | max | phase = 1 | 1 | 1 | phaseUnits().
+        double unit = (rowRight - gateLeft) / (3.0 + phaseUnits());
         double weightR = gateLeft + unit;
         double minR = weightR + unit;
         double maxR = minR + unit;
@@ -1460,9 +1568,9 @@ public final class EditorTypeMenuRenderer {
             boolean shown = pk == null
                 || games.brennan.dungeontrain.client.menu.ClientPartVisibility.isDisplayed(pk, variant.name());
             drawCenteredText(ps, buffer, font, shown ? "[x]" : "[ ]", (rowLeft + visR) / 2.0, rowCY, NAME_COLOR);
-            drawCenteredText(ps, buffer, font, variant.name(), (visR + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
+            drawCenteredText(ps, buffer, font, variant.displayName(), (visR + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
         } else {
-            drawCenteredText(ps, buffer, font, variant.name(), (rowLeft + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
+            drawCenteredText(ps, buffer, font, variant.displayName(), (rowLeft + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
         }
 
         if (!rc.hasWeight()) return;
@@ -1497,7 +1605,7 @@ public final class EditorTypeMenuRenderer {
         // Phase letters — one per phase, bright when enabled.
         double subW = rc.phaseSubW(rowRight);
         for (int slot = 0; slot < PHASE_LETTERS.length; slot++) {
-            boolean on = (variant.phaseMask() & (1 << slot)) != 0;
+            boolean on = (variant.phaseMask() & TrainPhase.values()[slot].bit()) != 0;
             double cx = rc.maxR() + (slot + 0.5) * subW;
             drawCenteredText(ps, buffer, font, PHASE_LETTERS[slot], cx, rowCY,
                 on ? PHASE_ON_COLOR : PHASE_OFF_COLOR);
@@ -1519,11 +1627,13 @@ public final class EditorTypeMenuRenderer {
 
     /** Half-width for the Stages panel — fits the widest stage name + the icons band beside the gate cells. */
     private static double stagesHalfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
-        double headerW = font.width(menu.typeName()) * TEXT_SCALE + 2 * PAD_X;
-        double toolbarW = font.width("+ Add    – Remove ✓") * TEXT_SCALE + 2 * PAD_X;
+        double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+        // The top row ends in the ↻ face button; the centred title keeps clear of it both sides.
+        headerW += 2 * EditorPanelFacing.BUTTON_W;
+        double toolbarW = font.width(MenuLang.t("type_menu.stage_add") + "    " + MenuLang.t("type_menu.stage_remove_on")) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
-            double w = font.width(v.name()) * TEXT_SCALE + 2 * PAD_X;
+            double w = font.width(v.displayName()) * TEXT_SCALE + 2 * PAD_X;
             if (w > maxNameW) maxNameW = w;
         }
         // Stage rows reserve GATE_AREA_FRACTION for min|max|phase; the fixed icons band sits just
@@ -1541,16 +1651,17 @@ public final class EditorTypeMenuRenderer {
     private static StageRowCells stageRowCells(double rowLeft, double rowRight) {
         double colW = rowRight - rowLeft;
         double gateLeft = rowRight - colW * GATE_AREA_FRACTION;
-        double unit = (rowRight - gateLeft) / 3.6; // min | max | phase = 1 | 1 | 1.6
+        double unit = (rowRight - gateLeft) / (2.0 + phaseUnits()); // min | max | phase = 1 | 1 | phaseUnits()
         double minR = gateLeft + unit;
         double maxR = minR + unit;
         return new StageRowCells(gateLeft - STAGE_ICON_STRIP_W, gateLeft, minR, maxR);
     }
 
     /**
-     * The global Stages management panel: a "Stages" header, an Add / Remove toolbar row, and one
-     * inline-editable row per stage ({@code name | ≥min | ≤max | O N V E}). In remove-mode every stage
-     * row tints red and a click deletes it; otherwise the gate cells edit the stage's gate live.
+     * The global Stages management panel: a "Stages" header, an Add / Remove toolbar row, a row of
+     * column titles (click to sort, again to flip — {@link StagesSort}), and one inline-editable row
+     * per stage ({@code name | ≥min | ≤max | O N V E}). In remove-mode every stage row tints red and a
+     * click deletes it; otherwise the gate cells edit the stage's gate live.
      */
     private static void drawStagesMenu(PoseStack ps, MultiBufferSource buffer, Font font,
                                        EditorTypeMenusPacket.Menu menu, Hovered hovered) {
@@ -1564,7 +1675,7 @@ public final class EditorTypeMenuRenderer {
         // Header.
         double headerTop = topY, headerBottom = topY - ROW_H, headerCY = (headerTop + headerBottom) / 2.0;
         drawQuad(ps, buffer, -halfW, headerBottom, halfW, headerTop, HEADER_BG);
-        drawCenteredText(ps, buffer, font, menu.typeName(), 0, headerCY, HEADER_COLOR);
+        drawCenteredText(ps, buffer, font, MenuLang.typeName(menu.typeName()), 0, headerCY, HEADER_COLOR);
 
         // Toolbar row: [+ Add] | [– Remove].
         double tbTop = headerBottom, tbBottom = tbTop - ROW_H, tbCY = (tbTop + tbBottom) / 2.0;
@@ -1574,13 +1685,19 @@ public final class EditorTypeMenuRenderer {
             drawQuad(ps, buffer, -halfW + 0.005, tbBottom + 0.005, -0.005, tbTop - 0.005, HOVER_COLOR);
         if (hovered.cell == CellKind.STAGE_REMOVE)
             drawQuad(ps, buffer, 0.005, tbBottom + 0.005, halfW - 0.005, tbTop - 0.005, HOVER_COLOR);
-        drawCenteredText(ps, buffer, font, "+ Add", -halfW / 2.0, tbCY, STAGE_ADD_COLOR);
-        drawCenteredText(ps, buffer, font, removeMode ? "– Remove ✓" : "– Remove", halfW / 2.0, tbCY, STAGE_REMOVE_COLOR);
+        drawCenteredText(ps, buffer, font, MenuLang.t("type_menu.stage_add"), -halfW / 2.0, tbCY, STAGE_ADD_COLOR);
+        drawCenteredText(ps, buffer, font, MenuLang.t(removeMode ? "type_menu.stage_remove_on" : "type_menu.stage_remove"), halfW / 2.0, tbCY, STAGE_REMOVE_COLOR);
 
-        // Stage rows.
-        for (int vi = 0; vi < menu.variants().size(); vi++) {
+        // Column titles: click one to sort by it, again to flip. Same cell bounds as the rows below.
+        drawStageColumnTitles(ps, buffer, font, halfW, tbBottom, hovered);
+
+        // Stage rows, in the sorted order: display row -> server index. The hit test walks the same
+        // permutation, so a click on a sorted row is sent back as the stage drawn there.
+        int[] order = stageOrder(menu);
+        for (int row = 0; row < order.length; row++) {
+            int vi = order[row];
             EditorTypeMenusPacket.Variant v = menu.variants().get(vi);
-            double rowTop = topY - (vi + 2) * ROW_H;
+            double rowTop = topY - (row + STAGE_ROWS_ABOVE) * ROW_H;
             double rowBottom = rowTop - ROW_H;
             double rowCY = (rowTop + rowBottom) / 2.0;
             drawQuad(ps, buffer, -halfW, rowTop - 0.005, halfW, rowTop + 0.005, ROW_SEP_COLOR);
@@ -1607,7 +1724,7 @@ public final class EditorTypeMenuRenderer {
             }
 
             double nameCX = (-halfW + rc.nameRight()) / 2.0;
-            drawCenteredText(ps, buffer, font, v.name(), nameCX, rowCY, removeMode ? STAGE_REMOVE_COLOR : NAME_COLOR);
+            drawCenteredText(ps, buffer, font, v.displayName(), nameCX, rowCY, removeMode ? STAGE_REMOVE_COLOR : NAME_COLOR);
             drawStageBlockStrip(ps, buffer, font, v.modelId(), rc.nameRight(), rowCY);
             double minCX = (rc.iconsRight() + rc.minR()) / 2.0;
             drawCenteredText(ps, buffer, font, "≥" + v.minLevel(), minCX, rowCY, LEVEL_COLOR);
@@ -1615,11 +1732,61 @@ public final class EditorTypeMenuRenderer {
             drawCenteredText(ps, buffer, font, v.maxLevel() < 0 ? "≤∞" : "≤" + v.maxLevel(), maxCX, rowCY, LEVEL_COLOR);
             double subW = rc.phaseSubW(halfW);
             for (int slot = 0; slot < PHASE_LETTERS.length; slot++) {
-                boolean on = (v.phaseMask() & (1 << slot)) != 0;
+                boolean on = (v.phaseMask() & TrainPhase.values()[slot].bit()) != 0;
                 double cx = rc.maxR() + (slot + 0.5) * subW;
                 drawCenteredText(ps, buffer, font, PHASE_LETTERS[slot], cx, rowCY, on ? PHASE_ON_COLOR : PHASE_OFF_COLOR);
             }
         }
+    }
+
+    /** Display row → server index for the Stages panel under the live sort. */
+    private static int[] stageOrder(EditorTypeMenusPacket.Menu menu) {
+        return StagesSort.order(menu.variants(),
+            id -> games.brennan.dungeontrain.client.menu.ClientStageBlocks.stripFor(id).totalUnique());
+    }
+
+    /**
+     * The Stages panel's column-title row, directly under the toolbar: {@code Name | Blocks | Min |
+     * Max | Phases} over the same cell bounds the stage rows use. The sorted column is drawn bright
+     * with a {@code ▲} / {@code ▼}; the rest are dimmed so the row reads as labels, not data.
+     */
+    private static void drawStageColumnTitles(PoseStack ps, MultiBufferSource buffer, Font font,
+                                              double halfW, double rowTop, Hovered hovered) {
+        double rowBottom = rowTop - ROW_H, rowCY = (rowTop + rowBottom) / 2.0;
+        drawQuad(ps, buffer, -halfW, rowTop - 0.005, halfW, rowTop + 0.005, ROW_SEP_COLOR);
+        StageRowCells rc = stageRowCells(-halfW, halfW);
+        StagesSort.Column[] columns = StagesSort.Column.values();
+        for (int c = 0; c < columns.length; c++) {
+            double l = stageColumnLeft(rc, halfW, c), r = stageColumnRight(rc, halfW, c);
+            if (hovered.cell == CellKind.STAGE_SORT && hovered.slotIdx() == c) {
+                drawQuad(ps, buffer, l + 0.005, rowBottom + 0.005, r - 0.005, rowTop - 0.005, HOVER_COLOR);
+            }
+            boolean sorted = StagesSort.column() == columns[c];
+            String label = columns[c].title() + (sorted ? (StagesSort.descending() ? " ▼" : " ▲") : "");
+            drawCenteredText(ps, buffer, font, label, (l + r) / 2.0, rowCY, sorted ? HEADER_COLOR : STAGE_TITLE_COLOR);
+        }
+    }
+
+    /** Left edge of Stages-panel column {@code c} (ordinal of {@link StagesSort.Column}). */
+    private static double stageColumnLeft(StageRowCells rc, double halfW, int c) {
+        return switch (c) {
+            case 0 -> -halfW;
+            case 1 -> rc.nameRight();
+            case 2 -> rc.iconsRight();
+            case 3 -> rc.minR();
+            default -> rc.maxR();
+        };
+    }
+
+    /** Right edge of Stages-panel column {@code c}; the phase column runs to the panel's edge. */
+    private static double stageColumnRight(StageRowCells rc, double halfW, int c) {
+        return switch (c) {
+            case 0 -> rc.nameRight();
+            case 1 -> rc.iconsRight();
+            case 2 -> rc.minR();
+            case 3 -> rc.maxR();
+            default -> halfW;
+        };
     }
 
     /**
@@ -1663,9 +1830,16 @@ public final class EditorTypeMenuRenderer {
             return hitX < 0 ? new Hovered(menuIdx, -1, CellKind.STAGE_ADD)
                             : new Hovered(menuIdx, -1, CellKind.STAGE_REMOVE);
         }
-        int variantIdx = rowFromTop - 2;
-        if (variantIdx < 0 || variantIdx >= menu.variants().size()) return Hovered.NONE;
         StageRowCells rc = stageRowCells(-halfW, halfW);
+        if (rowFromTop == 2) {
+            int column = hitX < rc.nameRight() ? 0 : hitX < rc.iconsRight() ? 1
+                : hitX < rc.minR() ? 2 : hitX < rc.maxR() ? 3 : 4;
+            return new Hovered(menuIdx, -1, CellKind.STAGE_SORT, column);
+        }
+        int displayRow = rowFromTop - STAGE_ROWS_ABOVE;
+        int[] order = stageOrder(menu);
+        if (displayRow < 0 || displayRow >= order.length) return Hovered.NONE;
+        int variantIdx = order[displayRow];
         if (hitX < rc.nameRight()) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
         if (hitX < rc.iconsRight()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE_BLOCKS);
         if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
@@ -1746,7 +1920,7 @@ public final class EditorTypeMenuRenderer {
         double headerBottom = headerTop - ROW_H;
         double headerCY = (headerTop + headerBottom) / 2.0;
         drawQuad(ps, buffer, -halfW, headerBottom, halfW, headerTop, HEADER_BG);
-        drawCenteredText(ps, buffer, font, "Packages", 0, headerCY, HEADER_COLOR);
+        drawCenteredText(ps, buffer, font, MenuLang.t("packages.title"), 0, headerCY, HEADER_COLOR);
 
         // Top split row — Reload | Open Packages.
         double topRowTop = headerBottom;
@@ -1762,9 +1936,9 @@ public final class EditorTypeMenuRenderer {
             drawQuad(ps, buffer, topSplitX + 0.005, topRowBottom + 0.005,
                 halfW - 0.005, topRowTop - 0.005, HOVER_COLOR);
         }
-        drawCenteredText(ps, buffer, font, "Reload",
+        drawCenteredText(ps, buffer, font, MenuLang.t("packages.reload"),
             (-halfW + topSplitX) / 2.0, topRowCY, NAME_COLOR);
-        drawCenteredText(ps, buffer, font, "Open Packages",
+        drawCenteredText(ps, buffer, font, MenuLang.t("packages.open_folder"),
             (topSplitX + halfW) / 2.0, topRowCY, NAME_COLOR);
         drawQuad(ps, buffer, topSplitX - COLUMN_DIVIDER_W / 2.0, topRowBottom,
             topSplitX + COLUMN_DIVIDER_W / 2.0, topRowTop, COLUMN_SEP_COLOR);
@@ -1823,15 +1997,15 @@ public final class EditorTypeMenuRenderer {
             String nameLabel = (entry.isActive() ? "● " : "  ") + entry.name();
             drawCenteredText(ps, buffer, font, nameLabel,
                 (-halfW + cellBound1X) / 2.0, rowCY, NAME_COLOR);
-            drawCenteredText(ps, buffer, font, "Save",
+            drawCenteredText(ps, buffer, font, MenuLang.t("common.save"),
                 (cellBound1X + cellBound2X) / 2.0, rowCY, NAME_COLOR);
-            drawCenteredText(ps, buffer, font, "Open",
+            drawCenteredText(ps, buffer, font, MenuLang.t("packages.open"),
                 (cellBound2X + cellBound3X) / 2.0, rowCY, NAME_COLOR);
             String enableLabel;
             if (isUnsaved) {
                 enableLabel = "—";
             } else {
-                enableLabel = entry.enabled() ? "Disable" : "Enable";
+                enableLabel = MenuLang.t(entry.enabled() ? "packages.disable" : "packages.enable");
             }
             drawCenteredText(ps, buffer, font, enableLabel,
                 (cellBound3X + halfW) / 2.0, rowCY, NAME_COLOR);
@@ -1891,7 +2065,7 @@ public final class EditorTypeMenuRenderer {
         return new Hovered(menuIdx, pkgIdx, CellKind.PKG_ENABLE);
     }
 
-    private static void drawCenteredText(
+    static void drawCenteredText(
         PoseStack ps, MultiBufferSource buffer, Font font,
         String text, double worldX, double worldY, int colour
     ) {
@@ -1908,7 +2082,7 @@ public final class EditorTypeMenuRenderer {
         ps.popPose();
     }
 
-    private static void drawQuad(
+    static void drawQuad(
         PoseStack ps, MultiBufferSource buffer,
         double x1, double y1, double x2, double y2, int argb
     ) {

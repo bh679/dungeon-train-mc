@@ -1,0 +1,27 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "games.brennan.dungeontrain.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "dungeontrain.refmap.json",
+  "mixins": [
+    "betterend.BetterEndChorusCosmeticMixin",
+    "betterend.BetterEndDebugItemsMixin",
+    "betterend.BetterEndDirPerThreadMixin",
+    "betterend.BetterEndDirectionsPerThreadMixin",
+    "betterend.BetterEndHorizontalPerThreadMixin",
+    "betterend.BetterEndStaticShuffleMixin",
+    "betterend.BetterEndWallScatterShuffleMixin",
+    "wover.WoverBiomePickerOrderMixin",
+    "wover.WoverPossibleBiomesCompatOrderMixin",
+    "wover.WoverPossibleBiomesOrderMixin"
+  ],
+  "client": [
+    "bclib.BclibFixPromptMixin",
+    "wover.WoverStartupScreensMixin"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

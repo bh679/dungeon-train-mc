@@ -80,7 +80,7 @@ public final class DeathNoteEvents {
             // orphaned; the relay is pulled by the target in their next world (login + arrival scan).
             // worldKey is still sent (the relay requires it) but is no longer used to scope the pull.
             DeathNoteReporter.submit(player.getUUID(), note.authorName(), note.targetName(),
-                    note.targetUuid(), deathCarriage, worldKey, "", freePlay, note.kind());
+                    note.targetUuid(), deathCarriage, worldKey, "", freePlay, note.kind(), note.lines());
         }
     }
 

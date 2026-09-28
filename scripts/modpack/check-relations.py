@@ -11,12 +11,18 @@ shipping silently.
 
 The expected relation type is per-entry: ``optional`` by default (a recommended companion),
 or ``required`` for entries carrying ``"dependency_type": "required"`` — the un-bundled
-sibling mods AIN/AIS/PlayerMob/EnderChestPersistence/TradeEverything, which DT hard-depends on. See
+sibling mods AIN/AIS/PlayerMob/EnderChestPersistence/TradeEverything/KeepTrim (plus the hybrid
+DungeonBackup/SableFenceTrapdoorFix, jarJar'd for Modrinth but separate CurseForge Includes), which DT hard-depends on. See
 ``expected_dependency_type``.
 
 This is intentionally one-directional: an Include implies a mod optional dependency, but a
 mod optional dependency need NOT be a pack Include (e.g. mouse-tweaks / jade are declared
 relations that the pack doesn't bundle). So we only check ``optional_mods`` -> relations.
+
+Second check: every *hard* dependency (``dependency_type: required``) that has a
+``modrinth_project`` and isn't ``curseforge_only`` must also be ``<modrinth_project>(required)``
+in the Modrinth ``dependencies`` list, or the Modrinth app won't install it (PR #1425 declared
+Fast Paintings + Moonlight on CurseForge only). See ``find_modrinth_drift``.
 
 Stdlib only (no PyYAML) so it runs on a bare runner. The ``curseforge-dependencies`` value
 is a YAML literal block scalar of ``slug(type)`` lines, which we extract by indentation.
@@ -71,9 +77,14 @@ def extract_block_scalar(text: str, key: str) -> list[str]:
 
 
 def parse_relations(content_lines: list[str]) -> dict[str, str]:
-    """Parse ``slug(type)`` relation lines into a ``{slug: type}`` dict."""
+    """Parse ``slug(type)`` relation lines into a ``{slug: type}`` dict.
+
+    ``#`` comment lines are skipped — the Modrinth ``dependencies`` block carries some.
+    """
     relations: dict[str, str] = {}
     for raw in content_lines:
+        if raw.startswith("#"):
+            continue
         m = _RELATION_RE.match(raw)
         if not m:
             raise ValueError(f"unparseable relation line: {raw!r}")
@@ -101,6 +112,9 @@ def find_drift(config: dict, relations: dict[str, str]) -> list[str]:
     errors: list[str] = []
     for i, opt in enumerate(config.get("optional_mods", [])):
         name = opt.get("name", f"optional_mods[{i}]")
+        if opt.get("modrinth_only"):
+            # Not on CurseForge: never a CF Include, so no CF relation to check.
+            continue
         slug = opt.get("slug")
         if not slug:
             errors.append(
@@ -123,6 +137,38 @@ def find_drift(config: dict, relations: dict[str, str]) -> list[str]:
     return errors
 
 
+def needs_modrinth_relation(opt: dict) -> bool:
+    """True if ``opt`` must be a ``required`` relation in the Modrinth ``dependencies`` list.
+
+    A hard dependency (``dependency_type: required``) with a Modrinth project must be declared
+    there too, or the Modrinth app won't auto-install it — PR #1425 added Fast Paintings +
+    Moonlight to CurseForge only. ``curseforge_only`` hybrids (jarJar'd for Modrinth) are exempt.
+    """
+    return (
+        expected_dependency_type(opt) == "required"
+        and bool(opt.get("modrinth_project"))
+        and not opt.get("curseforge_only", False)
+    )
+
+
+def find_modrinth_drift(config: dict, modrinth_relations: dict[str, str]) -> list[str]:
+    """Return errors for hard dependencies missing from the Modrinth ``dependencies`` list."""
+    errors: list[str] = []
+    for i, opt in enumerate(config.get("optional_mods", [])):
+        if not needs_modrinth_relation(opt):
+            continue
+        name = opt.get("name", f"optional_mods[{i}]")
+        project = opt["modrinth_project"]
+        dep_type = modrinth_relations.get(project)
+        if dep_type != "required":
+            found = "absent" if dep_type is None else f"'{project}({dep_type})'"
+            errors.append(
+                f"{name} ({project}): a hard dependency must be declared in release.yml "
+                f"Modrinth dependencies as '{project}(required)', but it is {found}."
+            )
+    return errors
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -136,6 +182,11 @@ def main(argv: list[str] | None = None) -> int:
     relations = parse_relations(extract_block_scalar(release_text, "curseforge-dependencies"))
 
     errors = find_drift(config, relations)
+    # Only parse the Modrinth block when something needs checking against it, so minimal
+    # release.yml fixtures without one still work; a missing block then fails loudly.
+    if any(needs_modrinth_relation(o) for o in config.get("optional_mods", [])):
+        modrinth_relations = parse_relations(extract_block_scalar(release_text, "dependencies"))
+        errors += find_modrinth_drift(config, modrinth_relations)
     if errors:
         print(
             "Modpack/mod dependency drift — every Include must be a mod optional dependency:",

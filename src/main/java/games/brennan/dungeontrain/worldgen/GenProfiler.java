@@ -66,7 +66,28 @@ public final class GenProfiler {
         /** {@code WorldChuncksEvents.onChunkLoad} — chuncks-band top-down slice erosion (MAIN-thread, like
          *  {@link #EROSION}; excluded from {@link Sample#dtTotalMs}). The band's only real gen cost — void
          *  chunks skip fill + decoration, so this bucket staying ~0 confirms the band is near-free at gen. */
-        CHUNCKS_SLICE
+        CHUNCKS_SLICE,
+        /** {@code WorldSpheresEvents.onChunkLoad} — spheres-band carve + lift rewrite (MAIN-thread, like
+         *  {@link #EROSION}; excluded from {@link Sample#dtTotalMs}). Void chunks skip fill + decoration, so
+         *  this is the band's only real gen cost. */
+        SPHERES_CARVE,
+        /** {@code StacksFeature.place} — stacks-band tower stamping (worker-thread; in {@link Sample#dtTotalMs}). */
+        STACKS_FEATURE,
+        /** Legacy-band terrain fill + decoration — the old generators replacing vanilla noise (worker-thread;
+         *  in {@link Sample#dtTotalMs}; replaces vanilla's own fill cost for those chunks rather than adding to it). */
+        LEGACY,
+        /** {@code ForeignSphereSampler} — off-thread generation of other-dimension / structure spheres (its
+         *  own sampler threads, never the server thread; excluded from {@link Sample#dtTotalMs}). */
+        SPHERES_FOREIGN_SAMPLE,
+        /** {@code WorldSpheresEvents} — writing a finished foreign-sphere sample into its live chunk
+         *  (MAIN-thread, like {@link #SPHERES_CARVE}; excluded from {@link Sample#dtTotalMs}). */
+        SPHERES_FOREIGN_APPLY,
+        /** {@code EndBandSampler} — off-thread generation of a BetterEnd End-band pass's real End chunks
+         *  (its own sampler threads; excluded from {@link Sample#dtTotalMs}). */
+        END_BAND_SAMPLE,
+        /** {@code WorldEndBandEvents} — writing a finished End-band sample into its live chunk (MAIN-thread;
+         *  excluded from {@link Sample#dtTotalMs}). */
+        END_BAND_APPLY
     }
 
     private static final int N = Bucket.values().length;
@@ -101,6 +122,11 @@ public final class GenProfiler {
         if (start != 0L) NANOS[bucket.ordinal()].add(System.nanoTime() - start);
     }
 
+    /** Accumulate {@code nanos} into {@code bucket} — for work timed on a thread that can't use {@link #t0}. No-op when disabled. */
+    public static void addNanos(Bucket bucket, long nanos) {
+        if (enabled) NANOS[bucket.ordinal()].add(nanos);
+    }
+
     /** Tally one newly-generated chunk reaching FULL (main-thread call site). No-op when disabled. */
     public static void countChunk() {
         if (enabled) CHUNKS.increment();
@@ -121,7 +147,8 @@ public final class GenProfiler {
          *  (already inside NETHER_FEATURE) and {@link Bucket#EROSION} (main-thread, not a worker slice). */
         public double dtTotalMs() {
             return ms(Bucket.DF) + ms(Bucket.NETHER_FEATURE) + ms(Bucket.BIOME_FORCE)
-                    + ms(Bucket.MIRROR_PRECOMPUTE) + ms(Bucket.TRACK_FEATURE) + ms(Bucket.DISINTEGRATION);
+                    + ms(Bucket.MIRROR_PRECOMPUTE) + ms(Bucket.TRACK_FEATURE) + ms(Bucket.DISINTEGRATION)
+                    + ms(Bucket.LEGACY);
         }
 
         public double dtTotalPerChunkMs() {

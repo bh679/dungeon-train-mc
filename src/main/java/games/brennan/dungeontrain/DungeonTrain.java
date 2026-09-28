@@ -29,6 +29,7 @@ import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.registry.ModSounds;
+import games.brennan.dungeontrain.registry.ModMenuTypes;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
@@ -139,6 +140,23 @@ public class DungeonTrain {
         return !"main".equals(VersionInfo.BRANCH);
     }
 
+    /**
+     * The LIVE relay capability, whatever branch this is.
+     *
+     * <p>Everything routed by branch goes through {@link #relayBaseUrl()} instead — this exists for the
+     * one dev-build affordance that deliberately looks at production data (My Builds\' live toggle),
+     * and is a read of the cap that every release jar already carries, not a way around any gate.</p>
+     */
+    public static String liveRelayBaseUrl() {
+        // Dev/test override, the live-pool twin of DUNGEONTRAIN_RELAY_BASE_URL: a local relay run
+        // with both a dev and a live cap can then stand in for both pools at once.
+        String override = System.getenv("DUNGEONTRAIN_RELAY_LIVE_BASE_URL");
+        if (override != null && !override.isBlank()) {
+            return override;
+        }
+        return RELAY_LIVE_BASE_URL;
+    }
+
     /** The relay capability this build reports through: the dev channel for dev builds, live on main. */
     private static String discordRelayBaseUrl() {
         return relayBaseUrlForBranch(VersionInfo.BRANCH);
@@ -220,11 +238,22 @@ public class DungeonTrain {
     public DungeonTrain(IEventBus modBus, ModContainer modContainer) {
         modBus.addListener(this::commonSetup);
 
+        // Farmers' Delight: switch its stackable soups off once, before NeoForge loads any COMMON
+        // config, and ask before a menu switches it back on. No-op without the mod; fails open.
+        games.brennan.dungeontrain.cheat.FarmersDelightSoupStacking.init(
+            net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get());
+
         // Bundled Edible Backpacks: in Dungeon Train, backpack space resets on
         // death (the standalone mod's default is persist-through-death). This
         // only steers the sibling's `resetOnDeath = DEFAULT` config value — a
         // server operator's explicit ON/OFF still wins.
         games.brennan.ediblebackpacks.EdibleBackpacksApi.setHostDefaultResetOnDeath(true);
+
+        // Bundled Dungeon Backup: describe DT's player data ONCE (root, extra trees, legacy
+        // config/ locations, probes, hooks). The library migrates it out of config/, takes the
+        // restore points, mirrors them outside the instance and offers the recovery card. Must
+        // exist before the first ServerStartingEvent, which is why it is here and not in setup.
+        games.brennan.dungeontrain.data.DungeonTrainBackup.register();
 
         // First DeferredRegister in the project — wires the variant
         // clipboard item produced by the block-variant menu's Copy button.
@@ -239,11 +268,18 @@ public class DungeonTrain {
         ModStructureTypes.register(modBus);
         ModMobEffects.register(modBus);
         ModSounds.register(modBus);
+        ModMenuTypes.register(modBus);
+        // Strips BetterNether/BetterEnd/BoP gear and ores from all loot (see compat.DisabledModContent).
+        games.brennan.dungeontrain.compat.StripDisabledItemsLootModifier.register(modBus);
 
         // Global achievements (advancements) — custom criterion triggers
         // + per-player run-state attachment.
         ModAdvancementTriggers.register(modBus);
         ModDataAttachments.register(modBus);
+        // The relay's live milestone values (e.g. carts_1000's threshold), fetched once per
+        // session and applied at datapack load. Kicked off here rather than at client init so
+        // dedicated servers — where advancements are actually evaluated — get them too.
+        games.brennan.dungeontrain.advancement.requirement.AdvancementRequirementOverrides.ensureFetched();
 
         modContainer.registerConfig(
                 ModConfig.Type.SERVER,
@@ -274,6 +310,16 @@ public class DungeonTrain {
             if (event.getConfig().getSpec() == DungeonTrainCommonConfig.SPEC) {
                 games.brennan.dungeontrain.worldgen.WorldGenCycle.invalidateCache();
                 games.brennan.dungeontrain.worldgen.ChuncksBand.invalidateCache();
+                games.brennan.dungeontrain.worldgen.SpheresBand.invalidateCache();
+                games.brennan.dungeontrain.worldgen.StacksBand.invalidateCache();
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBands.invalidateCache();
+                games.brennan.dungeontrain.worldgen.MixBand.invalidateCache();
+                // The catch-up pacing may now be a different stored value, or AUTO where it wasn't.
+                games.brennan.dungeontrain.train.CatchUpBurstAuto.invalidate();
+                // Same reasoning as the server-config step below — the common file needs its own
+                // migration pass, and AUTO is the first shipped default that has to reach existing
+                // installs rather than only fresh ones.
+                DungeonTrainCommonConfig.runPendingMigrations();
             }
             // Deliver shipped default changes to installs that already have a server config on disk.
             // NeoForge writes a default only for a MISSING key, so without this a changed DEFAULT_*
@@ -281,6 +327,14 @@ public class DungeonTrain {
             // stamped and idempotent, so the write it performs re-entering here is a no-op.
             if (event.getConfig().getSpec() == DungeonTrainConfig.SPEC) {
                 DungeonTrainConfig.runPendingMigrations();
+            }
+            // A balance key edited while a world runs (Configured, the settings screen, a hand edit)
+            // is Free Play from that moment — see DtConfigIntegrity. Reloading only: Loading is the
+            // boot path, which DtConfigIntegrity already scans at server start.
+            if (event instanceof net.neoforged.fml.event.config.ModConfigEvent.Reloading
+                    && (event.getConfig().getSpec() == DungeonTrainConfig.SPEC
+                        || event.getConfig().getSpec() == DungeonTrainCommonConfig.SPEC)) {
+                games.brennan.dungeontrain.cheat.DtConfigIntegrity.onConfigReloaded();
             }
         });
 
@@ -313,8 +367,9 @@ public class DungeonTrain {
         // Suppress ONE spammy Sable log line — the per-call stack-trace-capturing "Aborting entity
         // get for abnormally large AABB" ERROR — without touching Sable's log level. It fires on the
         // render thread ~15×/sec when a Vivecraft (VR) player stands on a sub-level (train carriage),
-        // hitching frames. Root-caused for Vivecraft by SwingTrackerSubLevelAabbMixin; this is the
-        // always-on belt so the storm can't resurface from any other trigger. See SableAabbLogFilter.
+        // hitching frames. Root-caused by the Vivecraft Sable Compat addon, with DT carrying a
+        // temporary copy of the melee half (VivecraftMixinPlugin) for players without it; this is the
+        // always-on belt under both, for any other trigger. See SableAabbLogFilter.
         SableAabbLogFilter.install();
 
         LOGGER.info("Dungeon Train constructor — mod loading");
@@ -531,7 +586,8 @@ public class DungeonTrain {
         }
 
         // Price DT-relevant items in Trade Everything's villager "Trade Anything"
-        // slot (narrative books, ominous banners, edible backpacks). TE is bundled
+        // slot (narrative books, ominous banners, armor trim templates, edible
+        // backpacks). TE is bundled
         // (jarJar), but tolerate a build predating the valuation API: degrade to
         // default valuation.
         if (ModList.get().isLoaded("tradeeverything")) {

@@ -104,7 +104,9 @@ final class PortalRoomModeTest {
         assertTrue(PortalRoomMode.ENDLESS_REPETITION.fogs());
         assertTrue(PortalRoomMode.ENDLESS_OPEN.fogs());
         assertTrue(PortalRoomMode.BEDROCKLESS.fogs());
-        assertEquals(4, PortalRoomMode.values().length,
+        // A chunk dimension is one sealed box with nothing beyond it — no edge, nothing to hide.
+        assertFalse(PortalRoomMode.CHUNK_DIMENSION.fogs());
+        assertEquals(5, PortalRoomMode.values().length,
             "a new mode must decide for itself whether it fogs — add it to this test");
     }
 
@@ -121,7 +123,9 @@ final class PortalRoomModeTest {
         assertTrue(PortalRoomMode.ENDLESS_OPEN.copiesApply());
         assertFalse(PortalRoomMode.BEDROCK_LOCK.copiesApply());
         assertFalse(PortalRoomMode.BEDROCKLESS.copiesApply());
-        assertEquals(4, PortalRoomMode.values().length,
+        // A chunk dimension appends nothing: its terrain is one sample, sliced once.
+        assertFalse(PortalRoomMode.CHUNK_DIMENSION.copiesApply());
+        assertEquals(5, PortalRoomMode.values().length,
             "a new mode must decide for itself whether it takes a Copies setting — add it to this test");
     }
 
@@ -131,13 +135,17 @@ final class PortalRoomModeTest {
      * corridors that stand off them, and a mode added later has to answer it deliberately.
      */
     @Test
-    @DisplayName("Bedrock Lock alone seals its corridors — every other mode leaves them as they are")
+    @DisplayName("the two sealed modes seal their corridors — the rest leave them as they are")
     void corridorSealing() {
         assertTrue(PortalRoomMode.BEDROCK_LOCK.sealsCorridors());
         assertFalse(PortalRoomMode.ENDLESS_REPETITION.sealsCorridors());
         assertFalse(PortalRoomMode.ENDLESS_OPEN.sealsCorridors());
         assertFalse(PortalRoomMode.BEDROCKLESS.sealsCorridors());
-        assertEquals(4, PortalRoomMode.values().length,
+        // Sealed for a reason of its own rather than by inheriting Bedrock Lock's: a sampled
+        // hillside has no walls, so the skin is the only thing between a player and the basement.
+        assertTrue(PortalRoomMode.CHUNK_DIMENSION.sealsCorridors());
+        assertTrue(PortalRoomMode.CHUNK_DIMENSION.sealsRoomBox());
+        assertEquals(5, PortalRoomMode.values().length,
             "a new mode must decide for itself whether it seals its corridors — add it to this test");
     }
 

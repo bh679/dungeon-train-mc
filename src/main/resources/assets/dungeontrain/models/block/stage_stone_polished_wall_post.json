@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/template_wall_post",
+  "textures": {
+    "wall": "dungeontrain:block/stage_stone_polished"
+  }
+}

@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.portal.PortalRoomMode;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
@@ -70,8 +71,19 @@ public final class EditorPlotLabels {
         int roomHeight,
         String roomMode,
         String copiesFloorBlock,
-        String copiesRoofBlock
+        String copiesRoofBlock,
+        int copiesFloorHeight
     ) {
+        /** The shape before the floor had a depth — one plane. */
+        public Label(BlockPos worldPos, String name, int weight, String category,
+                     String modelId, String modelName,
+                     boolean inPlot, boolean isUser, boolean isImported,
+                     int roomLength, int roomWidth, int roomHeight, String roomMode,
+                     String copiesFloorBlock, String copiesRoofBlock) {
+            this(worldPos, name, weight, category, modelId, modelName, inPlot, isUser, isImported,
+                roomLength, roomWidth, roomHeight, roomMode, copiesFloorBlock, copiesRoofBlock, 1);
+        }
+
         /** Back-compat shape for every category but PORTALS — no authored size or mode to show. */
         public Label(BlockPos worldPos, String name, int weight, String category,
                      String modelId, String modelName,
@@ -94,7 +106,7 @@ public final class EditorPlotLabels {
         public Label withInPlot(boolean newInPlot) {
             return new Label(worldPos, name, weight, category, modelId, modelName,
                 newInPlot, isUser, isImported, roomLength, roomWidth, roomHeight, roomMode,
-                copiesFloorBlock, copiesRoofBlock);
+                copiesFloorBlock, copiesRoofBlock, copiesFloorHeight);
         }
     }
 
@@ -108,12 +120,43 @@ public final class EditorPlotLabels {
      */
     public static List<Label> forCategory(EditorCategory category, CarriageDims dims) {
         return switch (category) {
+            case WHOLE -> wholeLabels(dims);
             case CARRIAGES -> carriageLabels(dims);
             case CONTENTS -> contentsLabels(dims);
             case TRACKS -> trackLabels(dims);
             case PORTALS -> portalLabels(dims);
             case ARCHITECTURE -> Collections.emptyList();
         };
+    }
+
+    /**
+     * One label per whole room (category {@code "WHOLE"}) and per group ({@code "WHOLE_GROUP"}).
+     * A group holding a different carriage count than this world's group reads
+     * {@code "<label> (N carriages)"} so the author can see why its plot stamped empty.
+     */
+    private static List<Label> wholeLabels(CarriageDims dims) {
+        List<Label> out = new ArrayList<>();
+        Vec3i roomFootprint = WholeCarriageEditor.plotSize(games.brennan.dungeontrain.train.WholeKind.ROOM, dims);
+        for (games.brennan.dungeontrain.train.WholeCarriage r : games.brennan.dungeontrain.train.WholeCarriageRegistry.all()) {
+            BlockPos origin = WholeCarriageEditor.roomPlotOrigin(r, dims);
+            if (origin == null) continue;
+            Provenance p = provenanceOf(WholeCarriageTemplateStore.fileForId(r.id()));
+            out.add(new Label(anchorAbove(origin, roomFootprint),
+                games.brennan.dungeontrain.train.WholeWeights.nameFor(games.brennan.dungeontrain.train.WholeKind.ROOM, r.id()),
+                games.brennan.dungeontrain.train.WholeWeights.weightFor(games.brennan.dungeontrain.train.WholeKind.ROOM, r.id()),
+                PlotCategory.WHOLE.name(), r.id(), r.id(), false, p.isUser, p.isImported));
+        }
+        Vec3i groupFootprint = WholeCarriageEditor.plotSize(games.brennan.dungeontrain.train.WholeKind.GROUP, dims);
+        for (games.brennan.dungeontrain.train.CarriageGroup g : games.brennan.dungeontrain.train.CarriageGroupRegistry.all()) {
+            BlockPos origin = WholeCarriageEditor.groupPlotOrigin(g, dims);
+            if (origin == null) continue;
+            Provenance p = provenanceOf(CarriageGroupTemplateStore.fileForId(g.id()));
+            out.add(new Label(anchorAbove(origin, groupFootprint),
+                games.brennan.dungeontrain.train.WholeWeights.nameFor(games.brennan.dungeontrain.train.WholeKind.GROUP, g.id()),
+                games.brennan.dungeontrain.train.WholeWeights.weightFor(games.brennan.dungeontrain.train.WholeKind.GROUP, g.id()),
+                PlotCategory.WHOLE_GROUP.name(), g.id(), g.id(), false, p.isUser, p.isImported));
+        }
+        return out;
     }
 
     private static List<Label> carriageLabels(CarriageDims dims) {
@@ -126,16 +169,21 @@ public final class EditorPlotLabels {
         List<Label> out = new ArrayList<>(
             variants.size() + floors.size() + walls.size() + roofs.size() + doors.size());
 
-        Vec3i carriageFootprint = new Vec3i(dims.length(), dims.height(), dims.width());
         CarriageWeights weights = CarriageWeights.current();
         String category = EditorCategory.CARRIAGES.name();
         for (CarriageVariant v : variants) {
             BlockPos origin = CarriageEditor.plotOrigin(v, dims);
             if (origin == null) continue;
+            // The plot's own box, not the world's: the portal corridor is longer than a carriage,
+            // and {@code CarriageEditor.enter} lands the player from this same call — so the label
+            // sits over the corridor's real +X end, straight ahead of them.
+            Vec3i footprint = new Template.Carriage(v).plotSize(dims);
             int w = weights.weightFor(v.id());
             Provenance p = provenanceOf(CarriageTemplateStore.fileForId(v.id()));
-            out.add(new Label(anchorAbove(origin, carriageFootprint),
-                v.id(), w, category, v.id(), v.id(), false, p.isUser, p.isImported));
+            // `name` is the sign's text and nothing else reads it as an id (parts already put
+            // "kind:name" there), so the display label goes straight in; modelName stays the id.
+            out.add(new Label(anchorAbove(origin, footprint),
+                weights.nameFor(v.id()), w, category, v.id(), v.id(), false, p.isUser, p.isImported));
         }
 
         addPartLabels(out, CarriagePartKind.FLOOR, floors, dims);
@@ -170,16 +218,18 @@ public final class EditorPlotLabels {
     private static List<Label> contentsLabels(CarriageDims dims) {
         List<CarriageContents> all = CarriageContentsRegistry.allContents();
         List<Label> out = new ArrayList<>(all.size());
-        Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
         CarriageContentsWeights weights = CarriageContentsWeights.current();
         String category = EditorCategory.CONTENTS.name();
         for (CarriageContents c : all) {
             BlockPos origin = CarriageContentsEditor.plotOrigin(c, dims);
             if (origin == null) continue;
+            // Per plot, as for carriages: a portal corridor's contents are authored in the
+            // corridor's longer box, and the roof landing is derived from this same call.
+            Vec3i footprint = new Template.Contents(c).plotSize(dims);
             int w = weights.weightFor(c.id());
             Provenance p = provenanceOf(CarriageContentsStore.fileForId(c.id()));
             out.add(new Label(anchorAbove(origin, footprint),
-                c.id(), w, category, c.id(), c.id(), false, p.isUser, p.isImported));
+                weights.nameFor(c.id()), w, category, c.id(), c.id(), false, p.isUser, p.isImported));
         }
         return out;
     }
@@ -234,9 +284,14 @@ public final class EditorPlotLabels {
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
             String copiesRoofBlock = palettes.iconBlockId(
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
+            // As the stamp will lay it: clamped to the room, so the row never promises a depth
+            // the roof would not survive.
+            int copiesFloorHeight = games.brennan.dungeontrain.portal.PortalRoomSinglePlanes
+                .floorHeightFor(palettes, size);
             out.set(i, new Label(l.worldPos(), l.name(), l.weight(), l.category(),
                 l.modelId(), l.modelName(), l.inPlot(), l.isUser(), l.isImported(),
-                size.getX(), size.getZ(), size.getY(), mode, copiesFloorBlock, copiesRoofBlock));
+                size.getX(), size.getZ(), size.getY(), mode, copiesFloorBlock, copiesRoofBlock,
+                copiesFloorHeight));
         }
         return out;
     }
@@ -261,7 +316,8 @@ public final class EditorPlotLabels {
             Provenance p = provenanceOf(
                 games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, name));
             out.add(new Label(anchorAbove(origin, footprint),
-                name, w, category, modelId, name, false, p.isUser, p.isImported));
+                TrackVariantWeights.nameFor(kind, name), w, category, modelId, name,
+                false, p.isUser, p.isImported));
         }
     }
 
@@ -296,7 +352,35 @@ public final class EditorPlotLabels {
         java.nio.file.Path parent = relPath.getParent();
         String subSlug = parent == null ? "" : parent.toString().replace('\\', '/');
         UserContentPaths.Provenance p = UserContentPaths.provenanceOf(subSlug, filename);
-        return new Provenance(p.isUser(), p.isImported());
+        return credited(p, hasCredit(subSlug, filename));
+    }
+
+    /**
+     * Whether this template carries somebody else's byline.
+     *
+     * <p>A credit is filed only for work that is not the player's own — {@code BuilderRelayDownload}
+     * clears it when the build is theirs and files one otherwise — so its presence IS the answer,
+     * with no player to compare against (this runs where the roster is built, which has none).</p>
+     */
+    private static boolean hasCredit(String subSlug, String filename) {
+        return games.brennan.dungeontrain.builder.relay.BuilderTemplateSource.identityOf(subSlug, filename)
+                .map(id -> games.brennan.dungeontrain.builder.relay.BuildCredits
+                        .get(id.kind(), id.subKind(), id.id()) != null)
+                .orElse(false);
+    }
+
+    /**
+     * The directory's answer, corrected by the byline.
+     *
+     * <p>A build downloaded from another player lands in the active package and would otherwise read
+     * as the player's own from that moment on — and stay that way however much they edit it, since
+     * nothing on disk said whose work it was. A credit says, and outranks the directory in that one
+     * direction only: a bundled file cannot carry one, and a file already in another package is
+     * imported for a reason that does not need this one.</p>
+     */
+    static Provenance credited(UserContentPaths.Provenance dir, boolean credited) {
+        if (credited && dir == UserContentPaths.Provenance.USER) return new Provenance(false, true);
+        return new Provenance(dir.isUser(), dir.isImported());
     }
 
     /** Lightweight pair returned by {@link #provenanceOf(java.nio.file.Path)}. Lives here so the call sites stay one line each. */
@@ -309,7 +393,7 @@ public final class EditorPlotLabels {
      * adding {@code footprint.y + 2} clears the top of the cage with a
      * one-block gap.
      */
-    private static BlockPos anchorAbove(BlockPos origin, Vec3i footprint) {
+    public static BlockPos anchorAbove(BlockPos origin, Vec3i footprint) {
         return new BlockPos(
             origin.getX() + footprint.getX() - 1,
             origin.getY() + footprint.getY() + 2,

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalRoomResize;
 import games.brennan.dungeontrain.template.TemplateDecor;
@@ -63,7 +64,7 @@ final class PortalRoomResizeSlabs {
         Vec3i slabSize = PortalRoomResize.with(sizeBefore, axis, 1);
         BlockPos slabOrigin = origin.offset(PortalRoomResize.along(axis, step.slabIndex()));
 
-        StructureTemplate blocks = TemplateDecor.capture(overworld, slabOrigin, slabSize, Blocks.STRUCTURE_VOID);
+        StructureTemplate blocks = TemplateDecor.capture(overworld, slabOrigin, slabSize, Blocks.STRUCTURE_VOID, TemplateDecor.Rule.ROOM);
 
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, sizeBefore);
         TrackVariantBlocks slabSidecar = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
@@ -72,6 +73,10 @@ final class PortalRoomResizeSlabs {
             BlockPos local = e.getKey().subtract(PortalRoomResize.along(axis, step.slabIndex()));
             slabSidecar.put(local, sidecar.statesAt(e.getKey()));
             if (e.getValue() > 0) slabSidecar.setLockId(local, e.getValue());
+            // Authored on the cell, so they travel with the row a shrink files away — otherwise
+            // growing the room back returns cells that have forgotten what they were set to.
+            slabSidecar.setCopyRoll(local, sidecar.copyRollAt(e.getKey()));
+            slabSidecar.setCopyScope(local, sidecar.copyScopeAt(e.getKey()));
             sidecar.remove(e.getKey());
             cells++;
         }
@@ -136,10 +141,10 @@ final class PortalRoomResizeSlabs {
                 origin.getX() + sizeAfter.getX() - 1,
                 origin.getY() + sizeAfter.getY() - 1,
                 origin.getZ() + sizeAfter.getZ() - 1));
-        blocks.placeInWorld(overworld, at, at, settings, overworld.getRandom(), 3);
+        CarriageStampGuard.run(() -> blocks.placeInWorld(overworld, at, at, settings, overworld.getRandom(), CarriageStampGuard.STAMP_FLAGS));
         // The row's own decoration comes back with it — a picture the author hung on the wall a
         // shrink took away is part of the row, not of the box it was cut from.
-        TemplateDecor.replace(overworld, at, blocks, settings, null);
+        TemplateDecor.replace(overworld, at, blocks, settings, null, TemplateDecor.Rule.ROOM);
 
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, sizeAfter);
         TrackVariantBlocks slabSidecar = TrackVariantBlocks.fromJsonText(
@@ -151,6 +156,8 @@ final class PortalRoomResizeSlabs {
             sidecar.put(target, e.states());
             int lock = slabSidecar.lockIdAt(e.localPos());
             if (lock > 0) sidecar.setLockId(target, lock);
+            sidecar.setCopyRoll(target, slabSidecar.copyRollAt(e.localPos()));
+            sidecar.setCopyScope(target, slabSidecar.copyScopeAt(e.localPos()));
         }
 
         if (!slab.contentsJson().isEmpty()) {
@@ -186,16 +193,24 @@ final class PortalRoomResizeSlabs {
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, sizeAfter);
         Map<BlockPos, List<VariantState>> moved = new LinkedHashMap<>();
         Map<BlockPos, Integer> movedLocks = new LinkedHashMap<>();
+        Map<BlockPos, VariantCopyRoll> movedRolls = new LinkedHashMap<>();
+        Map<BlockPos, VariantCopyScope> movedScopes = new LinkedHashMap<>();
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
             BlockPos target = e.localPos().offset(shift);
             int lock = sidecar.lockIdAt(e.localPos());
+            VariantCopyRoll roll = sidecar.copyRollAt(e.localPos());
+            VariantCopyScope scope = sidecar.copyScopeAt(e.localPos());
             sidecar.remove(e.localPos());
             if (!inBounds(target, sizeAfter)) continue;
             moved.put(target, e.states());
             if (lock > 0) movedLocks.put(target, lock);
+            if (!roll.isDefault()) movedRolls.put(target, roll);
+            if (!scope.isDefault()) movedScopes.put(target, scope);
         }
         moved.forEach(sidecar::put);
         movedLocks.forEach(sidecar::setLockId);
+        movedRolls.forEach(sidecar::setCopyRoll);
+        movedScopes.forEach(sidecar::setCopyScope);
 
         ContainerContentsStore store = ContainerContentsStore.loadFor(plotKey(name));
         Map<BlockPos, String> movedLinks = new LinkedHashMap<>();

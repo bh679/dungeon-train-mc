@@ -80,7 +80,7 @@ public final class CarriageDeck {
             Vector3d local = new Vector3d(ex, ey, ez);
             ship.worldToShip(local);
             BlockPos feet = BlockPos.containing(local.x, local.y, local.z);
-            if (isSupportedByCarriage(sableShip.subLevel().getPlot(), feet)) {
+            if (sableShip.subLevel() != null && isSupportedByCarriage(sableShip.subLevel().getPlot(), feet)) {
                 return true;
             }
         }
@@ -106,7 +106,7 @@ public final class CarriageDeck {
             Vector3d local = new Vector3d(ex, ey, ez);
             ship.worldToShip(local);
             BlockPos feet = BlockPos.containing(local.x, local.y, local.z);
-            if (isSupportedByCarriage(sableShip.subLevel().getPlot(), feet)) {
+            if (sableShip.subLevel() != null && isSupportedByCarriage(sableShip.subLevel().getPlot(), feet)) {
                 return c;
             }
         }
@@ -138,7 +138,9 @@ public final class CarriageDeck {
      * reads as air), so it presents as "the feature does nothing" rather than as an error.</p>
      */
     public static BlockState blockAt(ManagedShip ship, BlockPos worldPos) {
-        if (!(ship instanceof SableManagedShip sableShip)) return Blocks.AIR.defaultBlockState();
+        if (!(ship instanceof SableManagedShip sableShip) || sableShip.subLevel() == null) {
+            return Blocks.AIR.defaultBlockState();
+        }
         Vector3d local = new Vector3d(worldPos.getX() + 0.5, worldPos.getY() + 0.5, worldPos.getZ() + 0.5);
         ship.worldToShip(local);
         return blockInPlot(sableShip.subLevel().getPlot(), BlockPos.containing(local.x, local.y, local.z));

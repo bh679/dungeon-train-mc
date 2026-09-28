@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 2,
+  "floor": ["dungeontrain:skybox_end"],
+  "roof": ["dungeontrain:skybox_end"]
+}

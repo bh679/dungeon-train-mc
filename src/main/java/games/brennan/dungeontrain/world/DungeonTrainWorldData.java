@@ -53,6 +53,10 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_CARRIAGE_WIDTH = "carriageWidth";
     private static final String TAG_CARRIAGE_HEIGHT = "carriageHeight";
     private static final String TAG_GENERATION_SEED = "generationSeed";
+    private static final String TAG_REVERSE_ORIGIN_X = "reverseOriginX";
+    private static final String TAG_REVERSE_REACH_X = "reverseReachX";
+    private static final String TAG_REVERSE_EARNED = "reverseEarned";
+    private static final String TAG_REVERSE_SLIDE = "reverseSlide";
     private static final String TAG_STARTING_DIMENSION = "startingDimension";
     private static final String TAG_PLAYER_MOB_SPAWN_OVERRIDE = "playerMobSpawnOneInOverride";
     private static final String TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE = "playerMobBehindSpawnPercentOverride";
@@ -76,12 +80,63 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_PORTAL_RATE_TUNED = "portalRateTuned";
     private static final String TAG_KEEP_INVENTORY_USED = "keepInventoryUsed";
     private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
+    private static final String TAG_PORTAL_TEST_RESEED = "portalTestReseed";
+    private static final String TAG_EDITOR_OBSERVERS_ON = "editorObserversOn";
+    private static final String TAG_EDITOR_MOBS_LIVE = "editorMobsLive";
     private static final String TAG_DEBUG_GRANTS = "DebugGrants";
+    private static final String TAG_EDITOR_PLOTS_STAMPED = "editorPlotsStamped";
+    private static final String TAG_EDITOR_PORTAL_PLOT_BOXES = "editorPortalPlotBoxes";
+    private static final String TAG_EDITOR_STAMPED_CATEGORY = "editorStampedCategory";
 
     private int trainY;
     private boolean startsWithTrain;
     private CarriageDims dims;
+
+    /**
+     * Whether the sky editor has ever stamped a plot in this world. {@code EditorCategory.clearAllPlots}
+     * erases every plot of every category — several hundred chunk columns at the plot height — and
+     * on a world where nothing was ever stamped that is several hundred chunks generated for nothing.
+     * Defaults to {@code true} (and loads as {@code true} when the tag is absent) so every save made
+     * before the flag existed keeps the full clear; only {@link #createDefault()} starts it false.
+     */
+    private boolean editorPlotsStamped = true;
+    /**
+     * The {@code EditorCategory} id whose plots stand in the sky right now, or empty when none does.
+     * The in-memory copy ({@code EditorStampedCategoryState}) is what every editor reads; this is
+     * how it survives a restart, so the plots still standing after a reload keep answering to the
+     * HUD and to {@code /dt save}. Empty on a world saved before it was recorded — those worlds
+     * erase every category on the next entry instead of just the last one.
+     */
+    private String editorStampedCategory = "";
+    /**
+     * Where each portal-room plot was last stamped, by room name: {@code [x, y, z, sx, sy, sz]}.
+     *
+     * <p>The layout predicts where a plot <em>should</em> be from the sizes it knows; this records
+     * where one <em>is</em>. The two disagree whenever a size is learned after a stamp — a template
+     * read for the first time this session, a sub-variant deeper than its parent — and a clear that
+     * erases the predicted box leaves the real one standing in the sky. Persisted, because the
+     * blocks are.</p>
+     */
+    private final java.util.Map<String, int[]> editorPortalPlotBoxes = new java.util.LinkedHashMap<>();
     private long generationSeed;
+    /**
+     * World X where a player first stood on the train — "spawn" for the reversed bands: distance behind
+     * it is what riders earn, and the bands start their lead-gap distance behind it. {@link Long#MAX_VALUE}
+     * until someone boards.
+     */
+    private long reverseOriginX = Long.MAX_VALUE;
+    /**
+     * Lowest world X any counted player has reached, on the train or off it ({@code worldgen.ReverseSlide}),
+     * or {@link Long#MAX_VALUE} before anyone has gone behind the origin. World space, never train-relative.
+     */
+    private long reverseReachX = Long.MAX_VALUE;
+    /**
+     * World blocks behind the origin covered by walking back along the train into new ground — the only
+     * distance that brings the reversed bands closer. Flying, teleporting or walking off-train never adds.
+     */
+    private long reverseEarned;
+    /** Blocks the reversed bands have slid back because players walked off-train past the frontier. Only grows. */
+    private long reverseSlide;
     private StartingDimension startingDimension;
     /** Per-world override of the PlayerMob 1-in-N spawn rate; null = use the global COMMON default. */
     private Integer playerMobSpawnOneInOverride;
@@ -236,6 +291,20 @@ public final class DungeonTrainWorldData extends SavedData {
     private final java.util.Set<java.util.UUID> helpPanelDismissed = new java.util.LinkedHashSet<>();
 
     /**
+     * Whether {@code /dungeontrain portal test} rolls fresh room contents each time. World-wide, off
+     * by default: a test then stamps the same roll every time, which is what it always did.
+     */
+    private boolean portalTestReseed = false;
+    /** Editor Settings → Observers. Off mutes every observer inside an editor plot; see {@code EditorObservers}. */
+    private boolean editorObserversOn = true;
+    /**
+     * Editor Settings → Mobs. Default Blocks ({@code false}): a spawn egg used in an editor plot places a
+     * frozen, one-hit mob and variant cells with mob entries show a ghost; Live restores vanilla eggs.
+     * See {@code FrozenMobs}.
+     */
+    private boolean editorMobsLive = false;
+
+    /**
      * Transient scheduling set of chunk keys ({@link net.minecraft.world.level.ChunkPos#toLong}) whose
      * upside-down mirror is deferred and still pending. NOT serialized — the durable truth is the
      * {@code NEEDS_UPSIDE_DOWN_MIRROR} chunk attachment; this set is only a fast-path work list, rebuilt
@@ -366,13 +435,16 @@ public final class DungeonTrainWorldData extends SavedData {
     }
 
     static DungeonTrainWorldData createDefault() {
-        return new DungeonTrainWorldData(
+        DungeonTrainWorldData data = new DungeonTrainWorldData(
                 DungeonTrainConfig.getTrainY(),
                 true,
                 CarriageDims.DEFAULT,
                 0L,
                 StartingDimension.OVERWORLD
         );
+        // A brand-new world has no plots to clear — the only case the flag may honestly be false.
+        data.editorPlotsStamped = false;
+        return data;
     }
 
     static DungeonTrainWorldData load(CompoundTag tag) {
@@ -407,6 +479,18 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE)) {
             data.breakBlocksOnContactOverride = tag.getBoolean(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE);
         }
+        // Absent on worlds saved before the flag existed → true → plots are cleared as they always were.
+        if (tag.contains(TAG_EDITOR_PLOTS_STAMPED)) {
+            data.editorPlotsStamped = tag.getBoolean(TAG_EDITOR_PLOTS_STAMPED);
+        }
+        if (tag.contains(TAG_EDITOR_STAMPED_CATEGORY)) {
+            data.editorStampedCategory = tag.getString(TAG_EDITOR_STAMPED_CATEGORY);
+        }
+        // Absent on worlds saved before the reverse slide existed → no frontier yet, no slide.
+        if (tag.contains(TAG_REVERSE_ORIGIN_X)) data.reverseOriginX = tag.getLong(TAG_REVERSE_ORIGIN_X);
+        if (tag.contains(TAG_REVERSE_REACH_X)) data.reverseReachX = tag.getLong(TAG_REVERSE_REACH_X);
+        if (tag.contains(TAG_REVERSE_EARNED)) data.reverseEarned = Math.max(0L, tag.getLong(TAG_REVERSE_EARNED));
+        if (tag.contains(TAG_REVERSE_SLIDE)) data.reverseSlide = Math.max(0L, tag.getLong(TAG_REVERSE_SLIDE));
         // Absent on legacy worlds → false → the join-info report fires once on the next join.
         if (tag.contains(TAG_JOIN_REPORT_POSTED)) {
             data.joinReportPosted = tag.getBoolean(TAG_JOIN_REPORT_POSTED);
@@ -436,6 +520,15 @@ public final class DungeonTrainWorldData extends SavedData {
         // dropped by loadFrom, so a save that outlived its grants comes back granting nothing.
         data.debugGrants.loadFrom(
                 tag.getList(TAG_DEBUG_GRANTS, net.minecraft.nbt.Tag.TAG_COMPOUND));
+        // Absent on every world saved before plot boxes were recorded; those clear at the predicted
+        // layout, as they always did, until their next stamp records where things really are.
+        if (tag.contains(TAG_EDITOR_PORTAL_PLOT_BOXES, net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            CompoundTag boxes = tag.getCompound(TAG_EDITOR_PORTAL_PLOT_BOXES);
+            for (String name : boxes.getAllKeys()) {
+                int[] box = boxes.getIntArray(name);
+                if (box.length == 6) data.editorPortalPlotBoxes.put(name, box);
+            }
+        }
         // Absent in every non-builder world (and in builder worlds saved before the stamp ran).
         if (tag.contains(TAG_BUILDER_MODE)) {
             data.builderMode = tag.getString(TAG_BUILDER_MODE);
@@ -481,6 +574,15 @@ public final class DungeonTrainWorldData extends SavedData {
         // Absent until somebody closes the editor Welcome panel, which is most worlds. Unparseable
         // entries are skipped rather than failing the whole load — a malformed uuid only costs that
         // one player their dismissal.
+        if (tag.contains(TAG_PORTAL_TEST_RESEED)) {
+            data.portalTestReseed = tag.getBoolean(TAG_PORTAL_TEST_RESEED);
+        }
+        if (tag.contains(TAG_EDITOR_OBSERVERS_ON)) {
+            data.editorObserversOn = tag.getBoolean(TAG_EDITOR_OBSERVERS_ON);
+        }
+        if (tag.contains(TAG_EDITOR_MOBS_LIVE)) {
+            data.editorMobsLive = tag.getBoolean(TAG_EDITOR_MOBS_LIVE);
+        }
         if (tag.contains(TAG_HELP_PANEL_DISMISSED)) {
             net.minecraft.nbt.ListTag dismissed =
                     tag.getList(TAG_HELP_PANEL_DISMISSED, net.minecraft.nbt.Tag.TAG_STRING);
@@ -503,6 +605,10 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putInt(TAG_CARRIAGE_WIDTH, dims.width());
         tag.putInt(TAG_CARRIAGE_HEIGHT, dims.height());
         tag.putLong(TAG_GENERATION_SEED, generationSeed);
+        if (reverseOriginX != Long.MAX_VALUE) tag.putLong(TAG_REVERSE_ORIGIN_X, reverseOriginX);
+        if (reverseReachX != Long.MAX_VALUE) tag.putLong(TAG_REVERSE_REACH_X, reverseReachX);
+        if (reverseEarned > 0L) tag.putLong(TAG_REVERSE_EARNED, reverseEarned);
+        if (reverseSlide > 0L) tag.putLong(TAG_REVERSE_SLIDE, reverseSlide);
         tag.putString(TAG_STARTING_DIMENSION, startingDimension.nbtId());
         // Only persist the override when set, so "unset" stays distinguishable from "0 (disabled)".
         if (playerMobSpawnOneInOverride != null) {
@@ -515,6 +621,8 @@ public final class DungeonTrainWorldData extends SavedData {
             tag.putBoolean(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE, breakBlocksOnContactOverride);
         }
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
+        tag.putBoolean(TAG_EDITOR_PLOTS_STAMPED, editorPlotsStamped);
+        tag.putString(TAG_EDITOR_STAMPED_CATEGORY, editorStampedCategory);
         tag.putInt(TAG_DIFFICULTY_TRAVELLED_OFFSET, difficultyTravelledOffset);
         tag.putString(TAG_CUSTOM_CONTENT_CHOICE, customContentChoice.nbtId());
         tag.putBoolean(TAG_PORTAL_RATE_TUNED, portalRateTuned);
@@ -525,6 +633,13 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         if (!debugGrants.isEmpty()) {
             tag.put(TAG_DEBUG_GRANTS, debugGrants.toTag());
+        }
+        if (!editorPortalPlotBoxes.isEmpty()) {
+            CompoundTag boxes = new CompoundTag();
+            for (java.util.Map.Entry<String, int[]> e : editorPortalPlotBoxes.entrySet()) {
+                boxes.putIntArray(e.getKey(), e.getValue());
+            }
+            tag.put(TAG_EDITOR_PORTAL_PLOT_BOXES, boxes);
         }
         if (builderMode != null) {
             tag.putString(TAG_BUILDER_MODE, builderMode);
@@ -566,12 +681,88 @@ public final class DungeonTrainWorldData extends SavedData {
             }
             tag.put(TAG_HELP_PANEL_DISMISSED, dismissed);
         }
+        if (portalTestReseed) tag.putBoolean(TAG_PORTAL_TEST_RESEED, true);
+        if (!editorObserversOn) tag.putBoolean(TAG_EDITOR_OBSERVERS_ON, false);
+        if (editorMobsLive) tag.putBoolean(TAG_EDITOR_MOBS_LIVE, true);
         return tag;
     }
 
     /** True when {@code playerId} has closed the editor's world-space Welcome panel in this world. */
     public boolean isHelpPanelDismissed(java.util.UUID playerId) {
         return helpPanelDismissed.contains(playerId);
+    }
+
+    /** True when each {@code portal test} should roll fresh room contents. */
+    public boolean isPortalTestReseed() {
+        return portalTestReseed;
+    }
+
+    /** True unless the editor's Observers setting is Off — the default, and every play world. */
+    public boolean isEditorObserversOn() {
+        return editorObserversOn;
+    }
+
+    /** Editor Settings → Observers On / Off. */
+    public void setEditorObserversOn(boolean on) {
+        if (editorObserversOn == on) return;
+        editorObserversOn = on;
+        setDirty();
+    }
+
+    /** True when the editor's Mobs setting is Live — eggs spawn wandering mobs, no variant ghosts. */
+    public boolean isEditorMobsLive() {
+        return editorMobsLive;
+    }
+
+    /** Editor Settings → Mobs Blocks ({@code false}) / Live ({@code true}). */
+    public void setEditorMobsLive(boolean live) {
+        if (editorMobsLive == live) return;
+        editorMobsLive = live;
+        setDirty();
+    }
+
+    /** World X of the first boarding, or {@link Long#MAX_VALUE} before anyone has boarded. */
+    public long getReverseOriginX() {
+        return reverseOriginX;
+    }
+
+    /** Lowest world X any counted player has reached, or {@link Long#MAX_VALUE} before anyone has. */
+    public long getReverseReachX() {
+        return reverseReachX;
+    }
+
+    /** World blocks behind the origin earned on the train. */
+    public long getReverseEarned() {
+        return reverseEarned;
+    }
+
+    /** Blocks the reversed bands behind spawn have slid back (see {@code worldgen.ReverseSlide}). */
+    public long getReverseSlide() {
+        return reverseSlide;
+    }
+
+    /**
+     * Record the first-boarding origin (set once), the reach, earned distance and slide; reach, earned
+     * and slide only ever move one way. Saved when anything changes.
+     */
+    public void setReverseSlideState(long originX, long reachX, long earned, long slide) {
+        long o = reverseOriginX == Long.MAX_VALUE ? originX : reverseOriginX;
+        long r = Math.min(reachX, reverseReachX);
+        long e = Math.max(earned, reverseEarned);
+        long sl = Math.max(slide, reverseSlide);
+        if (o == reverseOriginX && r == reverseReachX && e == reverseEarned && sl == reverseSlide) return;
+        reverseOriginX = o;
+        reverseReachX = r;
+        reverseEarned = e;
+        reverseSlide = sl;
+        setDirty();
+    }
+
+    /** Set whether {@code portal test} reseeds its room each time. */
+    public void setPortalTestReseed(boolean reseed) {
+        if (portalTestReseed == reseed) return;
+        portalTestReseed = reseed;
+        setDirty();
     }
 
     /** Record (or clear) {@code playerId}'s dismissal of the editor Welcome panel. */
@@ -716,6 +907,59 @@ public final class DungeonTrainWorldData extends SavedData {
 
     public boolean startsWithTrain() {
         return startsWithTrain;
+    }
+
+    /** Whether any editor plot has ever been stamped here — false only on a world made since the flag existed and never edited. */
+    public boolean editorPlotsStamped() {
+        return editorPlotsStamped;
+    }
+
+    /** Where {@code name}'s portal-room plot was last stamped, or null when nothing records one. */
+    public int[] portalPlotBox(String name) {
+        int[] box = editorPortalPlotBoxes.get(name);
+        return box == null ? null : box.clone();
+    }
+
+    /** Every recorded portal-room plot box, by name. A copy — write through the methods below. */
+    public java.util.Map<String, int[]> portalPlotBoxes() {
+        java.util.Map<String, int[]> out = new java.util.LinkedHashMap<>();
+        for (java.util.Map.Entry<String, int[]> e : editorPortalPlotBoxes.entrySet()) {
+            out.put(e.getKey(), e.getValue().clone());
+        }
+        return out;
+    }
+
+    /** {@code name}'s plot now stands at this box. */
+    public void recordPortalPlotBox(String name, int x, int y, int z, int sx, int sy, int sz) {
+        if (name == null || name.isEmpty()) return;
+        int[] box = {x, y, z, sx, sy, sz};
+        int[] was = editorPortalPlotBoxes.put(name, box);
+        if (was == null || !java.util.Arrays.equals(was, box)) setDirty();
+    }
+
+    /** {@code name}'s plot has been erased — or was never there. */
+    public void forgetPortalPlotBox(String name) {
+        if (name != null && editorPortalPlotBoxes.remove(name) != null) setDirty();
+    }
+
+    /** The id of the category whose plots are stamped, or empty — see {@link #setEditorStampedCategory}. */
+    public String editorStampedCategory() {
+        return editorStampedCategory;
+    }
+
+    /** Record which category's plots stand in the sky ({@code ""} for none). */
+    public void setEditorStampedCategory(String id) {
+        String next = id == null ? "" : id;
+        if (next.equals(editorStampedCategory)) return;
+        editorStampedCategory = next;
+        setDirty();
+    }
+
+    /** Record that plots may now hold blocks; from here on every clear has to actually erase them. */
+    public void markEditorPlotsStamped() {
+        if (editorPlotsStamped) return;
+        editorPlotsStamped = true;
+        setDirty();
     }
 
     public CarriageDims dims() {

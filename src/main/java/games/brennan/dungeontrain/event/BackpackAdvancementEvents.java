@@ -66,7 +66,7 @@ public final class BackpackAdvancementEvents {
     @SubscribeEvent
     public static void onItemCrafted(PlayerEvent.ItemCraftedEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!event.getCrafting().is(ModItems.UPGRADED_BACKPACK.get())) return;
+        if (!event.getCrafting().is(ModItems.GOLDEN_EDIBLE_BACKPACK.get())) return;
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "crafted_upgraded_backpack");
     }
 }

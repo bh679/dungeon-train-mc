@@ -1,8 +1,18 @@
 package games.brennan.dungeontrain.train;
 
+import net.minecraft.world.level.block.Block;
+
 /**
- * Marks the current thread as being inside a Dungeon Train <b>carriage stamp</b> — a template being
- * written into the world, whether for a spawning train carriage or an editor preview plot.
+ * Marks the current thread as being inside a Dungeon Train <b>system block write</b> — a template
+ * being stamped into the world, whether for a spawning train carriage (place, Sable lift, contents),
+ * an editor preview plot, or a loader restoring a saved carriage, tunnel, track or pillar — and the
+ * editor's display-only rewrites of a plot: the variant preview ticker, menu previews, the variant
+ * mirror's cosmetic stamp, and the reset / delete-and-restamp commands.
+ *
+ * <p><b>Consumers.</b> {@code CropBlockCarriageSurviveMixin} relaxes the crop light check while the
+ * guard is held (the original reason for it, below), and {@code ObserverBlockStampMixin} keeps
+ * observers from pulsing at our own placement — only a player or a gameplay cause should fire one.
+ * Any loader that writes a template with a cascading flag belongs inside this guard.</p>
  *
  * <p><b>Why:</b> a template is authoritative. Whatever the author saved into the {@code .nbt} is what
  * should stand in the carriage. But a carriage is written a cell at a time across several passes, and
@@ -37,6 +47,28 @@ package games.brennan.dungeontrain.train;
  * thread for the rest of the process's life, which is the one catastrophic failure mode here.</p>
  */
 public final class CarriageStampGuard {
+
+    /**
+     * The flags every Dungeon Train template {@code placeInWorld} passes — {@link Block#UPDATE_CLIENTS}
+     * (flag 2), <b>never</b> {@link Block#UPDATE_ALL} (flag 3, the value vanilla structure blocks and
+     * {@code /place} use). This is the single owner of that choice; a source-scan unit test
+     * ({@code StampFlagsSourceScanTest}) fails the build on any {@code placeInWorld} that passes
+     * anything else.
+     *
+     * <p><b>Why not flag 3.</b> {@code UPDATE_ALL} fires {@code neighborChanged} on every cell already
+     * down each time the next one lands, and Fast Paintings answers that with {@code canSurvive}, which
+     * wants the picture's master block entity AND every one of its cells present already. Half-way
+     * through a 3×2 picture that is false, the mod removes the whole group and drops the item — every
+     * picture in a relay build popped on load until #1451 moved the loaders to flag 2. With flag 2 the
+     * neighbour cascade still happens, once, in {@code placeInWorld}'s own final pass, after every cell
+     * and its NBT are in. The play-side stamps ({@code TrackGenerator}, {@code TunnelPlacer}) had
+     * always used flag 2 for the same reason, which is why they kept their pictures.</p>
+     *
+     * <p>Most stamps should go through {@link games.brennan.dungeontrain.template.TemplateStamp}, which
+     * pairs this flag with the guard (and, optionally, the {@code TemplateDecor} pass). Sites that need
+     * their own settings or wrap more work inside the guard reference the constant directly.</p>
+     */
+    public static final int STAMP_FLAGS = Block.UPDATE_CLIENTS;
 
     private static final ThreadLocal<int[]> DEPTH = ThreadLocal.withInitial(() -> new int[1]);
 

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.templateblocks;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -166,7 +167,7 @@ public final class TemplateBlocksMenuRenderer {
         double headerBottom = halfH - HEADER_HEIGHT;
         double headerCY = (headerTop + headerBottom) / 2.0;
         drawQuad(ps, buffer, -halfW, headerBottom, halfW, headerTop, 0x40FFEEBB);
-        String title = n == 0 ? "No blocks in plot" : "Blocks used  (" + n + ")";
+        String title = n == 0 ? MenuLang.t("template_blocks.none") : MenuLang.t("template_blocks.used", n);
         drawCenteredText(ps, buffer, font, title, -CLOSE_CELL_WIDTH / 2.0, headerCY, 0xFFFFEEBB);
 
         boolean closeHover = hovered.kind() == TemplateBlocksMenu.CellKind.CLOSE;
@@ -206,7 +207,7 @@ public final class TemplateBlocksMenuRenderer {
             String label = TemplateBlocksMenu.shortLabel(entry.blockId());
             drawLeftText(ps, buffer, font, label, colXL + NAME_TEXT_LEFT_OFFSET, rowCY, 0xFFFFFFFF);
             drawCenteredText(ps, buffer, font, "x" + entry.count(), (countL + countR) / 2.0, rowCY, 0xFFCCCCCC);
-            drawCenteredText(ps, buffer, font, "Swap", (swapL + swapR) / 2.0, rowCY, 0xFFEAFFEA);
+            drawCenteredText(ps, buffer, font, MenuLang.t("template_blocks.swap"), (swapL + swapR) / 2.0, rowCY, 0xFFEAFFEA);
         }
     }
 

@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.narrative.NoteKind;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -40,14 +41,23 @@ public final class PendingDeathNotes extends SavedData {
     private static final String TAG_TARGET_NAME = "targetName";
     private static final String TAG_TARGET_UUID = "targetUuid";
     private static final String TAG_KIND = "kind";
+    private static final String TAG_LINES = "lines";
 
     /**
      * One signed, awaiting-death note. {@code targetUuid} is "" when unresolved at sign time;
      * {@code kind} is which book was signed (a note saved before Love Notes existed reads back as
-     * {@link NoteKind#DEATH}, which is what it was).
+     * {@link NoteKind#DEATH}, which is what it was); {@code lines} is what the author wrote below
+     * the target's name — the script their echo will read aloud when it reaches them
+     * ({@code NoteSpokenLines}), empty for a note that is only a name and for every note saved
+     * before echoes could speak.
      */
     public record PendingDeathNote(UUID authorUuid, String authorName, String targetName,
-                                   String targetUuid, NoteKind kind) {}
+                                   String targetUuid, NoteKind kind, List<String> lines) {
+
+        public PendingDeathNote {
+            lines = lines == null ? List.of() : List.copyOf(lines);
+        }
+    }
 
     private final List<PendingDeathNote> notes;
 
@@ -119,7 +129,8 @@ public final class PendingDeathNotes extends SavedData {
 
     // ---- persistence ------------------------------------------------------------
 
-    private static PendingDeathNotes load(CompoundTag tag) {
+    /** Package-private (not private) so the NBT round-trip can be tested without a live world save. */
+    static PendingDeathNotes load(CompoundTag tag) {
         List<PendingDeathNote> loadedPending = new ArrayList<>();
         ListTag list = tag.getList(TAG_NOTES, Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
@@ -130,7 +141,7 @@ public final class PendingDeathNotes extends SavedData {
                 // NoteKind.fromId reads that as DEATH, which is exactly what it was.
                 loadedPending.add(new PendingDeathNote(author, n.getString(TAG_AUTHOR_NAME),
                     n.getString(TAG_TARGET_NAME), n.getString(TAG_TARGET_UUID),
-                    NoteKind.fromId(n.getString(TAG_KIND))));
+                    NoteKind.fromId(n.getString(TAG_KIND)), readLines(n)));
             } catch (IllegalArgumentException ignored) {
                 // skip a corrupt entry rather than fail the whole load
             }
@@ -138,6 +149,14 @@ public final class PendingDeathNotes extends SavedData {
         // Any legacy "armed" list from the old dev-local flow is intentionally ignored (the curse is
         // relay-backed now); it simply drops out of the save on the next write.
         return new PendingDeathNotes(loadedPending);
+    }
+
+    /** The spoken script stored on one note; empty when absent (every save older than the feature). */
+    private static List<String> readLines(CompoundTag noteTag) {
+        ListTag stored = noteTag.getList(TAG_LINES, Tag.TAG_STRING);
+        List<String> lines = new ArrayList<>(stored.size());
+        for (int i = 0; i < stored.size(); i++) lines.add(stored.getString(i));
+        return lines;
     }
 
     @Override
@@ -150,6 +169,11 @@ public final class PendingDeathNotes extends SavedData {
             c.putString(TAG_TARGET_NAME, n.targetName());
             c.putString(TAG_TARGET_UUID, n.targetUuid());
             c.putString(TAG_KIND, n.kind().id());
+            if (!n.lines().isEmpty()) {
+                ListTag lines = new ListTag();
+                for (String line : n.lines()) lines.add(StringTag.valueOf(line));
+                c.put(TAG_LINES, lines);
+            }
             list.add(c);
         }
         tag.put(TAG_NOTES, list);

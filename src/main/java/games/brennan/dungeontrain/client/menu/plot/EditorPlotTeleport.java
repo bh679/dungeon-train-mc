@@ -30,6 +30,8 @@ public final class EditorPlotTeleport {
         return switch (category) {
             case CARRIAGES -> "dungeontrain editor enter " + modelId;
             case CONTENTS -> "dungeontrain editor contents enter " + modelId;
+            case WHOLE -> "dungeontrain editor whole enter " + modelId;
+            case WHOLE_GROUP -> "dungeontrain editor whole group enter " + modelId;
             case TRACKS -> trackTeleportCommand(modelId);
             // Portals address a specific room by name — there is only one kind, so modelId
             // carries no information the command needs.
@@ -38,6 +40,8 @@ public final class EditorPlotTeleport {
             // modelName is the variant name. Server command is
             // {@code /dt editor part enter <kind> <name>}.
             case PARTS -> "dungeontrain editor part enter " + modelId + " " + modelName;
+            // Chunk frames have no kinds: modelName is the frame.
+            case CHUNK_FRAMES -> "dungeontrain editor chunkframe enter " + modelName;
             // Nothing authored yet, so no plot to stand in.
             case ARCHITECTURE -> null;
         };
@@ -56,7 +60,9 @@ public final class EditorPlotTeleport {
             case CONTENTS -> "dungeontrain editor contents weight " + modelId + " " + dir;
             case TRACKS -> "dungeontrain editor tracks weight " + modelId + " " + modelName + " " + dir;
             case PORTALS -> "dungeontrain editor portals weight " + modelId + " " + modelName + " " + dir;
-            case PARTS, ARCHITECTURE -> null; // no weight pool — refused by the guard above
+            case WHOLE -> "dungeontrain editor whole weight " + modelId + " " + dir;
+            case WHOLE_GROUP -> "dungeontrain editor whole group weight " + modelId + " " + dir;
+            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null; // no weight pool — refused by the guard above
         };
     }
 
@@ -85,6 +91,17 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals mode next";
     }
 
+    /**
+     * As {@link #modeCycleCommandFor}, for the block a sealing room's shell is written in.
+     *
+     * <p>Not a cycle: the value is a block out of the whole registry, so the row takes what the
+     * author is holding — an empty hand meaning no shell at all.</p>
+     */
+    public static String lockHeldCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
+        return "dungeontrain editor portals lock held";
+    }
+
     /** As {@link #modeCycleCommandFor}, for the Copies sub-mode under Endless Repetition. */
     public static String copiesCycleCommandFor(PlotCategory category) {
         if (category == null || !category.hasRoomBox()) return null;
@@ -105,6 +122,12 @@ public final class EditorPlotTeleport {
     ) {
         if (category == null || !category.hasRoomBox()) return null;
         return "dungeontrain editor portals copies " + plane.id() + " held";
+    }
+
+    /** As {@link #dimensionCommandFor}, for how deep the Single floor is laid ({@code inc}/{@code dec}). */
+    public static String copiesFloorHeightCommandFor(PlotCategory category, String dir) {
+        if (category == null || !category.hasRoomBox()) return null;
+        return "dungeontrain editor portals copies floor height " + dir;
     }
 
     /** As {@link #copiesBlockHeldCommandFor}, for opening the Block Variant menu on that plane. */
@@ -134,6 +157,18 @@ public final class EditorPlotTeleport {
     public static String roomSkyCycleCommandFor(PlotCategory category) {
         if (category == null || !category.hasRoomBox()) return null;
         return "dungeontrain editor portals sky next";
+    }
+
+    /** As {@link #modeCycleCommandFor}, for whether the room is fogged. */
+    public static String roomFogCycleCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
+        return "dungeontrain editor portals fog next";
+    }
+
+    /** As {@link #modeCycleCommandFor}, for whether a locked room drifts through the relay. */
+    public static String roomDriftCycleCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
+        return "dungeontrain editor portals drift next";
     }
 
     /** As {@link #modeCycleCommandFor}, for how many extra corridors an endless room lays. */
@@ -174,7 +209,9 @@ public final class EditorPlotTeleport {
             case CONTENTS -> "dungeontrain editor contents " + sub + " " + modelId + " " + dir;
             case TRACKS -> "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName + " " + dir;
             case PORTALS -> "dungeontrain editor portals " + sub + " " + modelId + " " + modelName + " " + dir;
-            case PARTS, ARCHITECTURE -> null; // no spawn gate — refused by the guard above
+            case WHOLE -> "dungeontrain editor whole " + sub + " " + modelId + " " + dir;
+            case WHOLE_GROUP -> "dungeontrain editor whole group " + sub + " " + modelId + " " + dir;
+            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null; // no spawn gate — refused by the guard above
         };
     }
 
@@ -193,7 +230,9 @@ public final class EditorPlotTeleport {
             case CONTENTS -> "dungeontrain editor contents phase " + modelId + " " + phaseToken + " " + action;
             case TRACKS -> "dungeontrain editor tracks phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
             case PORTALS -> "dungeontrain editor portals phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
-            case PARTS, ARCHITECTURE -> null; // no spawn gate — refused by the guard above
+            case WHOLE -> "dungeontrain editor whole phase " + modelId + " " + phaseToken + " " + action;
+            case WHOLE_GROUP -> "dungeontrain editor whole group phase " + modelId + " " + phaseToken + " " + action;
+            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null; // no spawn gate — refused by the guard above
         };
     }
 
@@ -292,7 +331,9 @@ public final class EditorPlotTeleport {
             case TRACKS -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
             // Rooms are a TrackKind under the hood, so the stage-apply route is the tracks one.
             case PORTALS -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
-            case PARTS, ARCHITECTURE -> null; // no stage link — refused by the guard above
+            case WHOLE -> "dungeontrain editor stage apply whole " + modelId + " " + stageToken;
+            case WHOLE_GROUP -> "dungeontrain editor stage apply whole_group " + modelId + " " + stageToken;
+            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null; // no stage link — refused by the guard above
         };
     }
 

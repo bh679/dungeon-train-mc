@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.worldgen.SpheresSky;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 
 /**
@@ -29,6 +31,7 @@ public final class ClientVoidBand {
     public static void update(int length, boolean starts) {
         carriageLength = Math.max(1, length);
         startsWithTrain = starts;
+        games.brennan.dungeontrain.worldgen.VanillaBiomeTwins.setClientWorldHasTrain(starts);
     }
 
     /** Reset to safe defaults on disconnect so a band never leaks into the next world. */
@@ -51,9 +54,28 @@ public final class ClientVoidBand {
      */
     public static double endSkyIntensityAt(double worldX) {
         if (!startsWithTrain) return 0.0;
-        if (!DungeonTrainCommonConfig.isDisintegrationEnabled()) return 0.0;
-        return WorldGenCycle.fromConfig().endSkyRamp(
-                (int) Math.floor(worldX), DungeonTrainCommonConfig.getDisintegrationSkyFadeOffsetBlocks());
+        int x = (int) Math.floor(worldX);
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        double end = DungeonTrainCommonConfig.isDisintegrationEnabled()
+                ? cycle.endSkyRamp(x, DungeonTrainCommonConfig.getDisintegrationSkyFadeOffsetBlocks())
+                : 0.0;
+        // The two bands never overlap, so max() just picks whichever one the camera is in.
+        return Math.max(end, spheresEndSkyIntensity(cycle, x));
+    }
+
+    /**
+     * End-sky intensity over the spheres band's End-sky window ({@link SpheresSky#endSky}), so the whole
+     * End atmosphere keyed off {@link #endSkyIntensityAt} — sky, fog, lighting, clouds, music — takes
+     * over {@code spheresEndSkyStartBlocks} into the spheres and fades back to the overworld sky over the
+     * {@code spheresEndSkyExitFadeBlocks} before its closing void.
+     */
+    private static double spheresEndSkyIntensity(WorldGenCycle cycle, int worldX) {
+        if (!DungeonTrainCommonConfig.isSpheresEnabled() || !DungeonTrainCommonConfig.isSpheresEndSkyEnabled()) {
+            return 0.0;
+        }
+        return SpheresSky.endSky(cycle, SpheresProgressionConfig.segments(), worldX,
+                DungeonTrainCommonConfig.getSpheresEndSkyFadeBlocks(), SpheresProgressionConfig.endSkyExitFadeBlocks(),
+                SpheresProgressionConfig.exitVoidBlocks());
     }
 
     /** End-sky intensity {@code t} crosses this point: below it the Overworld track plays, above it the End track. */

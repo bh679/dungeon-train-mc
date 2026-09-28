@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/reached_far_lands",
+  "display": {
+    "icon": { "id": "minecraft:cobbled_deepslate" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_caves_of_chaos.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.reached_caves_of_chaos.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "reached_caves_of_chaos" }
+    }
+  },
+  "requirements": [["reached"]]
+}

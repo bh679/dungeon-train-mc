@@ -114,10 +114,13 @@ public final class CarriagePartTemplateStore {
         Path dir = directory(kind);
         Files.createDirectories(dir);
         Path file = fileFor(kind, name);
-        CompoundTag tag = template.save(new CompoundTag());
+        CompoundTag tag = DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save");
         NbtIo.writeCompressed(tag, file);
-        CACHE.put(key(kind, name), Optional.of(template));
+        // Dropped rather than replaced: the file on disk is the repaired copy
+        // (DoubleBlockTemplateRepair), and the next read picks that up.
+        CACHE.remove(key(kind, name));
         StageBlockIndex.invalidateAll();
+        ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved part template {}:{} to {}", kind.id(), name, file);
     }
 
@@ -127,7 +130,7 @@ public final class CarriagePartTemplateStore {
         }
         Path file = sourceFileFor(kind, name);
         Files.createDirectories(file.getParent());
-        CompoundTag tag = template.save(new CompoundTag());
+        CompoundTag tag = DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save");
         NbtIo.writeCompressed(tag, file);
         LOGGER.info("[DungeonTrain] Wrote bundled part template {}:{} to {}", kind.id(), name, file);
     }
@@ -157,6 +160,7 @@ public final class CarriagePartTemplateStore {
         boolean existed = Files.deleteIfExists(file);
         CACHE.put(key(kind, name), Optional.empty());
         StageBlockIndex.invalidateAll();
+        ProvenanceCache.invalidateAll();
         if (existed) LOGGER.info("[DungeonTrain] Deleted part template {}:{} ({})", kind.id(), name, file);
         return existed;
     }
@@ -177,6 +181,7 @@ public final class CarriagePartTemplateStore {
         Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
         Optional<StructureTemplate> cached = CACHE.remove(key(kind, sourceName));
         if (cached != null) CACHE.put(key(kind, targetName), cached);
+        ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Renamed part template {}:{} -> {}:{}", kind.id(), sourceName,
                 kind.id(), targetName);
         return true;
@@ -232,7 +237,7 @@ public final class CarriagePartTemplateStore {
     ) {
         StructureTemplate template = new StructureTemplate();
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-        template.load(blocks, tag);
+        template.load(blocks, DoubleBlockTemplateRepair.repair(tag, kind.id() + ":" + name));
 
         Vec3i expected = kind.dims(dims);
         Vec3i size = template.getSize();

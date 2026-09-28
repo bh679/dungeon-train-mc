@@ -1,22 +1,29 @@
 package games.brennan.dungeontrain.command;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
+import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
 import games.brennan.dungeontrain.event.PortalCarriageEvents;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalTestSessionPacket;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageLayout;
 import games.brennan.dungeontrain.portal.PortalClear;
+import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalRoomDoorCells;
+import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalStructure;
+import games.brennan.dungeontrain.portal.PortalTestPending;
 import games.brennan.dungeontrain.portal.PortalTestSession;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
+import games.brennan.dungeontrain.portal.PortalTwinRegion;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
@@ -71,49 +78,287 @@ public final class PortalTestCommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("test")
-            .executes(ctx -> runTest(ctx.getSource()))
-            .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())));
+            .executes(ctx -> runTest(ctx.getSource(), unforced(null), false))
+            .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())))
+            // A chunk frame, shown on a chunk dimension picked by the dimensions group's weights
+            // among the ones the frame dresses. A literal, like reseed, so it can't shadow a room.
+            .then(Commands.literal("frame")
+                .then(Commands.argument("frame", StringArgumentType.word())
+                    .suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
+                        games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names(), builder))
+                    .executes(ctx -> runFrameTest(ctx.getSource(), StringArgumentType.getString(ctx, "frame")))))
+            // Reseed — bare, it re-rolls the test the author is standing in, right now. With on|off
+            // it is the world switch: on, each test rolls the room's contents afresh; off, every
+            // test stands up the same roll, which is what it always did. A literal, so a room that
+            // happens to be called "reseed" is reached by the argument below, never here.
+            // Reseed focus (Shift) — re-roll only the template under test and keep what it stands in:
+            // a frame test re-rolls the frame on the same ground, a room test the room on the same
+            // chunk. A carriage or contents test does the same with its shell and its contents.
+            .then(Commands.literal("reseed")
+                .executes(ctx -> runReseedNow(ctx.getSource(), false))
+                .then(Commands.literal("focus").executes(ctx -> runReseedNow(ctx.getSource(), true)))
+                .then(Commands.literal("on").executes(ctx -> runReseed(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runReseed(ctx.getSource(), false))))
+            // Naming the room tests one the author is not standing in — what the X menu's button
+            // sends, since a tile can be selected from anywhere in the browser.
+            .then(Commands.argument("room", StringArgumentType.word())
+                .suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
+                    games.brennan.dungeontrain.track.variant.TrackVariantRegistry.namesFor(
+                        games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM), builder))
+                .executes(ctx -> runTest(ctx.getSource(), unforced(StringArgumentType.getString(ctx, "room")), false)));
     }
 
-    private static int runTest(CommandSourceStack source) {
+    /** A room test of the room itself: whatever frame an earlier frame test forced is dropped. */
+    private static String unforced(String room) {
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.force(PortalTestSession.PAIR_KEY, null);
+        return room;
+    }
+
+    /**
+     * What a focused reseed re-rolls, keeping the rest of the test as it stands: the room (its
+     * contents, on the same chunk and under the same frame roll) or the frame (on the same chunk and
+     * room roll). Null is every other press — the terrain, the room and the frame all follow
+     * {@code freshRoll} and the world switch.
+     */
+    private enum Focus { ROOM, FRAME }
+
+    /** The parent every chunk dimension sub-variant hangs under. */
+    private static final String CHUNK_DIMENSIONS_GROUP = "chunk_dimension";
+
+    /**
+     * Test {@code frame}: pick a chunk dimension by the dimensions group's weights — the parent's own
+     * and each member's — among the ones the frame dresses, force the frame onto the test pair, and
+     * stand the room up as any room test would. A reseed, or a press that has to wait for its sample,
+     * keeps the frame: the force lives on the pair until Back or a plain room test.
+     */
+    private static int runFrameTest(CommandSourceStack source, String frame) {
+        if (!games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names().contains(frame)) {
+            source.sendFailure(Component.literal("No frame named " + frame + "."));
+            return 0;
+        }
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMeta meta =
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.get(frame);
+        java.util.List<String> chunkRooms = games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.chunkRooms();
+        var group = games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(
+            games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, CHUNK_DIMENSIONS_GROUP)
+            .orElse(games.brennan.dungeontrain.track.variant.TrackVariantGroup.EMPTY);
+        java.util.List<String> ids = new java.util.ArrayList<>();
+        java.util.List<Integer> weights = new java.util.ArrayList<>();
+        java.util.function.BiConsumer<String, Integer> offer = (id, weight) -> {
+            if (weight > 0 && chunkRooms.contains(id) && meta.appliesTo(id)) { ids.add(id); weights.add(weight); }
+        };
+        offer.accept(CHUNK_DIMENSIONS_GROUP, group.selfWeight());
+        for (var member : group.members()) offer.accept(member.id(), member.weight());
+        // Chunk dimensions outside the group (an author's own) still count, at weight 1.
+        for (String room : chunkRooms) {
+            if (!ids.contains(room) && room != null && meta.appliesTo(room)
+                    && !CHUNK_DIMENSIONS_GROUP.equals(room) && group.member(room).isEmpty()) {
+                ids.add(room); weights.add(1);
+            }
+        }
+        if (ids.isEmpty()) {
+            source.sendFailure(Component.literal("Frame '" + frame + "' dresses no chunk dimension — pick some under Chunk dimensions."));
+            return 0;
+        }
+        int total = weights.stream().mapToInt(Integer::intValue).sum();
+        int roll = java.util.concurrent.ThreadLocalRandom.current().nextInt(total);
+        String room = ids.get(ids.size() - 1);
+        for (int i = 0; i < ids.size(); i++) {
+            roll -= weights.get(i);
+            if (roll < 0) { room = ids.get(i); break; }
+        }
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.force(PortalTestSession.PAIR_KEY, frame);
+        final String picked = room;
+        source.sendSuccess(() -> Component.literal("Testing frame '" + frame + "' on " + picked + "."), false);
+        return runTest(source, picked, true);
+    }
+
+    /**
+     * Stand up {@code roomName}, or the room whose plot the player is standing in when it is null.
+     *
+     * <p>Standing in it was once the only way to name one, which made Test the Carriage unreachable
+     * for a tile selected from across the browser — the room is stamped in its own band in the
+     * basement either way, and where the author happens to be standing has never been part of what
+     * it tests.</p>
+     */
+    /**
+     * @param freshRoll salt the rolls whatever the world switch says — a reseed of the test the
+     *                  author is already standing in
+     */
+    private static int runTest(CommandSourceStack source, String roomArg, boolean freshRoll) {
+        return runTest(source, roomArg, freshRoll, true);
+    }
+
+    /**
+     * @param mayResample whether a fresh roll may also cut a chunk dimension a fresh chunk — false
+     *                    only for a press finishing after its sample landed, which must stamp the
+     *                    chunk it waited for rather than start waiting on another
+     */
+    private static int runTest(CommandSourceStack source, String roomArg, boolean freshRoll,
+                               boolean mayResample) {
+        return runTest(source, roomArg, freshRoll, mayResample, null);
+    }
+
+    private static int runTest(CommandSourceStack source, String roomArg, boolean freshRoll,
+                               boolean mayResample, Focus focus) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
 
         ServerLevel overworld = source.getServer().overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        DungeonTrainWorldData worldData = DungeonTrainWorldData.get(overworld);
+        CarriageDims dims = worldData.dims();
 
-        // Already inside one: stamping a second would leave the first standing and lose the way home
-        // to the plot. Send them back first, then in again, so the button is idempotent.
-        if (PortalTestSession.has(player.getUUID())) {
-            runBack(source);
+        // This press supersedes any earlier one still waiting on its sample — the author asked for
+        // this room now, and should not be pulled into the other one a second later.
+        PortalTestPending.cancel(player.getUUID());
+
+        PortalTestSession.Session current = PortalTestSession.get(player.getUUID());
+        String roomName;
+        if (roomArg != null && !roomArg.isBlank()) {
+            roomName = games.brennan.dungeontrain.track.variant.TrackVariantRegistry
+                .find(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, roomArg)
+                .orElse(null);
+            if (roomName == null) {
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_dimensional_carriage", roomArg)
+                    .withStyle(ChatFormatting.RED));
+                return 0;
+            }
+        } else if (current != null) {
+            // Standing in a test with nothing named: that test's room, the one Back would have
+            // returned them to the plot of.
+            roomName = current.roomName();
+        } else {
+            roomName = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+            if (roomName == null) {
+                source.sendFailure(Component.translatable("chat.dungeontrain.portal.name_dimensional_carriage_test").withStyle(ChatFormatting.RED));
+                return 0;
+            }
         }
 
-        String roomName = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
-        if (roomName == null) {
-            source.sendFailure(Component.literal(
-                "Stand in a dimensional carriage plot first — this tests the room you are in. "
-                    + "Try /dungeontrain editor portals.").withStyle(ChatFormatting.RED));
-            return 0;
+        // A chunk dimension stands its doorways on the ground its sample landed, so there is nothing
+        // to stamp until that sample is in hand. It is sampled on a worker and lands a moment later,
+        // so the press waits for it: PortalTestTicker finishes this same test the tick it arrives.
+        // Asked here, before anything is said to the author, so the re-run does not say it twice.
+        //
+        // A fresh roll of a chunk dimension is a fresh chunk: its contents ARE the terrain, so
+        // re-salting the contents alone stamped the same ground back every time.
+        games.brennan.dungeontrain.portal.PortalChunkSlice slice = null;
+        if (PortalRoomSettings.of(roomName).mode().generatesTerrain()) {
+            if (focus == null && mayResample && (freshRoll || worldData.isPortalTestReseed())) {
+                games.brennan.dungeontrain.portal.PortalChunkTerrain.reroll(PortalTestSession.PAIR_KEY);
+            }
+            slice = games.brennan.dungeontrain.portal.PortalChunkTerrain.slice(
+                overworld, PortalTestSession.PAIR_KEY, roomName);
+            if (slice == null) {
+                PortalTestPending.put(player.getUUID(), roomName, freshRoll, overworld.getGameTime());
+                source.sendSuccess(() -> Component.translatable(
+                    "chat.dungeontrain.portal.test_waiting_for_sample", roomName)
+                    .withStyle(ChatFormatting.YELLOW), false);
+                return 1;
+            }
+        }
+
+        // Already inside one: stamping a second would leave the first standing and lose the way home
+        // to the plot. Send them back first, then in again, so the button is idempotent. After the
+        // sample check rather than before it, so an author waiting on a fresh chunk keeps standing
+        // in the room they have until the new one is ready.
+        // The room's salt a frame-only reseed keeps, read before Back takes the session.
+        int keptSalt = current != null ? current.structure().seedSalt() : PortalStructure.NO_SALT;
+        if (current != null) {
+            // Back drops a frame test's force — right for the Back button, wrong for this trip
+            // straight back in, which is the same frame test re-rolled.
+            String frame = games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.forced(
+                PortalTestSession.PAIR_KEY);
+            runBack(source);
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.force(PortalTestSession.PAIR_KEY, frame);
+        }
+        // Or inside a carriage/contents test: the same rule, the other command's way home.
+        if (games.brennan.dungeontrain.train.CarriageTestSession.has(player.getUUID())) {
+            CarriageTestCommand.runBack(source);
         }
 
         // The room as authored, so what is tested is what was built: its own size and its own
-        // settings (walls mode, contents, books), not the defaults.
-        Vec3i roomSize = PortalRoomSizes.sizeOf(roomName, dims);
-        PortalRoomSettings settings = PortalRoomSettings.of(roomName);
+        // settings (walls mode, contents, books), not the defaults. Its HEIGHT is held to what this
+        // world's basement can stand up, exactly as PortalCarriageBuilder.planStructure holds it in
+        // play: a test that stamped a taller room than a player will ever meet would be testing a
+        // room that does not exist, and would push it up through the bedrock to do so.
+        //
+        // The basement rather than PortalTwinSpace.regionFor, because the basement is the region this
+        // command actually stamps into — originFor stands the lane on the build floor.
+        //
+        // Read off the TEMPLATE, not off PortalRoomSizes: the box and the blocks put into it have to
+        // be the same size, and only the template can answer for both. PortalRoomSizes is a
+        // process-wide cache with a `pending` override for a plot resize that disk does not have
+        // yet, so it drifts from the template in both directions — and a box that disagrees sends
+        // stampRoomAt down its resize branch, which lays the built-in shell and clips the authored
+        // room to the box. Either way an edge of the room is not the author's. Under endless
+        // repetition every tile inherits it, because the tiler stamps all of them from this one
+        // size. This is the call planStructure makes in play, so a test now sizes the room exactly
+        // as a player would meet it.
+        Vec3i authoredSize = PortalRoomTemplateStore.sizeOf(overworld, roomName, dims);
+        PortalRoomSettings authored = PortalRoomSettings.of(roomName);
+
+        // A plot resized but not saved: the test can only stand up what is on disk, so say so rather
+        // than stamping the last save and letting the author read it as their new room.
+        Vec3i plot = PortalRoomSizes.sizeOf(roomName, dims);
+        if (!plot.equals(authoredSize)) {
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.xx_plot_but_xx", roomName, plot.getX(), plot.getY(), plot.getZ(), authoredSize.getX(), authoredSize.getY(), authoredSize.getZ()).withStyle(ChatFormatting.YELLOW), false);
+        }
+        PortalTwinRegion region = PortalTwinSpace.basementOf(overworld);
+        Vec3i roomSize = PortalCarriageBuilder.heldInRegion(region, authoredSize);
+
+        // The one thing a twin has to do is fit in the space it is stamped into, and this command
+        // never asked. In play a pair that does not fit simply goes without a twin
+        // (PortalCarriageEvents.ensureStructure); here an author asked out loud, so answer them —
+        // rather than stamping through the world's floor and failing somewhere in the block writes.
+        int structureHeight = Math.max(dims.height(), roomSize.getY());
+        int twinY = PortalTwinLanes.floorY(region.base());
+        if (!PortalTwinLanes.fitsUnderWorld(region.base(), region.ceiling(), twinY, structureHeight)) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.portal.needs_blocks_and_sealed", roomName, structureHeight, PortalTwinLanes.maxStructureHeight(region.base(), region.ceiling())).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (roomSize.getY() < authoredSize.getY()) {
+            int held = roomSize.getY();
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.tall_and_world_can", roomName, authoredSize.getY(), held).withStyle(ChatFormatting.YELLOW), false);
+        }
+        // The doorways onto the sampled ground, fetched above.
+        PortalRoomSettings settings = authored;
+        if (slice != null) {
+            settings = games.brennan.dungeontrain.portal.PortalChunkDoors.fit(authored, slice, dims,
+                PortalCarriageBuilder.layoutFor(dims, PortalCorridorKind.DEFAULT), roomSize);
+        }
+
+        // Both entry-door offsets, clamped exactly as roomOrigin will clamp them: the raw authored
+        // values can sit outside what this room's width and height can spend, and re-deriving either
+        // the stamp height or the doorway from an unclamped number lands beside the opening rather
+        // than in it. The exit door's offsets are deliberately not read here — a test session
+        // arrives at the entry mouth, and the exit corridor can never hang below the room's floor.
+        int doorOffset = PortalRoomLayout.clampDoorOffset(
+            dims, roomSize.getZ(), settings.doorOffset().value());
+        int doorHeightOffset = PortalRoomLayout.clampDoorHeightOffset(
+            dims, roomSize.getY(), settings.doorHeightOffset().value());
+
         PortalStructure structure = new PortalStructure(
-            originFor(player, overworld, dims), roomName, roomSize, settings,
+            originFor(player, overworld, doorHeightOffset), roomName, roomSize, settings,
             // Starts at the base tile and grows from there: PortalTestTicker drives the real
             // PortalRoomTiler around the player, so an endless room repeats here exactly as it does
             // on the train, block variants and all.
             PortalRoomTiling.base(), games.brennan.dungeontrain.portal.PortalExitCopies.NONE,
-            PortalRoomTiling.Tile.BASE);
-
-        PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY);
+            PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT,
+            focus == Focus.FRAME ? keptSalt
+                : focus == Focus.ROOM ? freshSalt(overworld)
+                : saltFor(worldData, overworld, freshRoll));
+        // The frame's roll: a frame reseed alone re-rolls it, a room reseed alone keeps it, and every
+        // other press rolls it with the room.
+        if (focus != Focus.ROOM) {
+            games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.salt(PortalTestSession.PAIR_KEY,
+                focus == Focus.FRAME ? freshSalt(overworld) : saltFor(worldData, overworld, freshRoll));
+        }
 
         // In the ENTRY DOORWAY looking down the room, not dropped in the middle of it — the same
         // view an author gets walking in off the train, which is the one they are building for.
@@ -124,41 +369,199 @@ public final class PortalTestCommand {
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         BlockPos arrival = new BlockPos(
             roomOrigin.getX() - 1,
-            roomOrigin.getY() + 1,
-            PortalRoomDoorCells.doorZ(roomOrigin, roomSize));
+            // The CORRIDOR's floor, which is the room's own only while the door sits at it.
+            roomOrigin.getY() + doorHeightOffset + 1,
+            // roomOrigin already has the door offset baked into where it sits — the SAME offset has
+            // to be handed to doorZ, or this re-derives a symmetric centre off a box that is no
+            // longer symmetric about the corridor and lands off the real doorway.
+            PortalRoomDoorCells.doorZ(roomOrigin, roomSize, doorOffset));
 
         GameType previous = player.gameMode.getGameModeForPlayer();
+        // Registered BEFORE the stamp: the room's mob cells ask PortalTestSession.isTestStamp while
+        // they are placed, and a test is the one stamp that spawns its hostiles as authored — the
+        // gentle-onboarding ramp reads the author's zero carriages travelled as the opening stretch of
+        // a run and would otherwise withhold every hostile in the build they are here to check.
         PortalTestSession.put(player.getUUID(), new PortalTestSession.Session(
             player.level().dimension(), player.position(), player.getYRot(), player.getXRot(),
             previous, structure, roomName, arrival));
+
+        // Test rig: no stage ⇒ placeholders resolve through the default palette. Via the shared
+        // lookup (the session is registered above, so it reads as a test stamp) so the tiler's
+        // copies resolve through the same palette as this base room.
+        games.brennan.dungeontrain.train.StagePlacementScope.run(
+            PortalCarriageBuilder.stageIdFor(overworld, PortalTestSession.PAIR_KEY, dims),
+            () -> PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY));
+
         if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);
 
         player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
             FACE_EAST, 0.0f);
-        DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, roomName));
+        DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, roomName,
+            worldData.isPortalTestReseed()));
+        // The room's own light. In play PortalCarriageEvents sends this to whoever stands inside a
+        // live pair's room, on the same box; a test session is not a pair, so nothing there sees
+        // it, and a room set to Daylight tested dark — which is precisely what the test is for.
+        sendSky(player, dims, layout, structure);
 
-        LOGGER.info("[DungeonTrain] portal test: stamped '{}' ({}x{}x{}) at {} for {} — arrival {}",
+        LOGGER.info("[DungeonTrain] portal test: stamped '{}' ({}x{}x{}) at {} for {} — arrival {}, salt={}",
             roomName, roomSize.getX(), roomSize.getY(), roomSize.getZ(), structure.origin(),
-            player.getName().getString(), arrival);
+            player.getName().getString(), arrival, structure.seedSalt());
 
-        source.sendSuccess(() -> Component.literal(
-            "You're in the doorway of '" + roomName + "' — a corridor each side, no train attached. "
-                + "Back in the menu returns you to the plot.").withStyle(ChatFormatting.AQUA), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.you_re_doorway_corridor", roomName).withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
 
-    private static int runBack(CommandSourceStack source) {
+    /**
+     * Finish a press that was waiting on its room's chunk sample — called by
+     * {@code PortalTestTicker} the tick the sample lands, with what the press asked for.
+     */
+    public static void runPending(ServerPlayer player, String roomName, boolean freshRoll) {
+        runTest(player.createCommandSourceStack(), roomName, freshRoll, false);
+    }
+
+    /**
+     * The salt this test's rolls are folded with: none while the switch is off, so the test stamps
+     * what it always did; a fresh random one while it is on. Never zero when on — zero is the
+     * unsalted roll, and a reseed that landed on it would silently repeat the last test.
+     */
+    private static int saltFor(DungeonTrainWorldData worldData, ServerLevel level, boolean freshRoll) {
+        if (!freshRoll && !worldData.isPortalTestReseed()) return PortalStructure.NO_SALT;
+        return freshSalt(level);
+    }
+
+    /** A salt no roll has used — never zero, which is the unsalted roll. */
+    private static int freshSalt(ServerLevel level) {
+        return level.random.nextInt() | 1;
+    }
+
+    /**
+     * {@code portal test reseed} — re-roll the test the author is standing in. The same room, a
+     * fresh salt: runTest already sends them back and in again when a session is live, so this is
+     * that trip with the roll forced.
+     *
+     * <p><b>They stay where they were.</b> The trip lands them in the doorway, but an author looking
+     * at a chest wants the chest re-rolled under their nose, not a walk back to it. So where they
+     * stood is put back afterwards — provided it is still inside the stamped box and the new roll
+     * left it open. A spot the reseed filled (a wall variant, a bookcase where there was floor)
+     * would suffocate them, and they are left in the doorway instead.</p>
+     */
+    /**
+     * @param focus re-roll only the template under test (Shift): see {@link Focus}. Without it a
+     *              frame test re-rolls everything, down to which chunk dimension the frame dresses
+     */
+    private static int runReseedNow(CommandSourceStack source, boolean focus) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
+        // The client's Reseed button sends this command whatever kind of test is running; a carriage
+        // or contents test is re-rolled by its own command.
+        if (games.brennan.dungeontrain.train.CarriageTestSession.has(player.getUUID())) {
+            return CarriageTestCommand.runReseedNow(source, focus);
+        }
+        PortalTestSession.Session session = PortalTestSession.get(player.getUUID());
+        if (session == null) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.portal.not_test_carriage_test")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        ServerLevel overworld = source.getServer().overworld();
+        boolean wasHere = player.level() == overworld;
+        Vec3 stood = player.position();
+        float yaw = player.getYRot();
+        float pitch = player.getXRot();
 
+        String frame = games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.forced(
+            PortalTestSession.PAIR_KEY);
+        int result;
+        if (focus) {
+            result = runTest(source, session.roomName(), false, false, frame != null ? Focus.FRAME : Focus.ROOM);
+        } else if (frame != null) {
+            // The whole frame test again: a fresh pick of the chunk dimension, its ground and both rolls.
+            result = runFrameTest(source, frame);
+        } else {
+            result = runTest(source, session.roomName(), true);
+        }
+        if (result == 0 || !wasHere) return result;
+
+        PortalTestSession.Session fresh = PortalTestSession.get(player.getUUID());
+        if (fresh == null) return result;
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        BoundingBox box = PortalCarriageBuilder.footprintOf(overworld, fresh.structure(), dims);
+        if (!box.isInside(BlockPos.containing(stood))) return result;
+        // The player's own box, moved to where they stood, against what the reseed just wrote.
+        if (!overworld.noCollision(player, player.getBoundingBox().move(stood.subtract(player.position())))) {
+            return result;
+        }
+        player.teleportTo(overworld, stood.x, stood.y, stood.z, yaw, pitch);
+        return result;
+    }
+
+    /** {@code portal test reseed on|off} — flip the world switch and tell the client what it now holds. */
+    private static int runReseed(CommandSourceStack source, boolean on) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception e) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
+            return 0;
+        }
+        DungeonTrainWorldData.get(source.getServer().overworld()).setPortalTestReseed(on);
+        DungeonTrainNet.sendTo(player, PortalTestSessionPacket.of(player));
+        source.sendSuccess(() -> (on ? Component.translatable("chat.dungeontrain.portal.reseed_test_each_test") : Component.translatable("chat.dungeontrain.portal.reseed_test_off_each"))
+            .withStyle(ChatFormatting.AQUA), false);
+        return 1;
+    }
+
+    /** Remove every entity but a player from a test window — nothing else lives in the test band. */
+    private static int discardMobs(ServerLevel level, BoundingBox box) {
+        int removed = 0;
+        for (net.minecraft.world.entity.Entity entity : level.getEntities(
+                (net.minecraft.world.entity.Entity) null, net.minecraft.world.phys.AABB.of(box),
+                entity -> !(entity instanceof net.minecraft.world.entity.player.Player))) {
+            entity.discard();
+            removed++;
+        }
+        return removed;
+    }
+
+    /** The same lift the live path sends — {@code PortalCarriageEvents.sendSkyFor} — for this one player. */
+    private static void sendSky(ServerPlayer player, CarriageDims dims, PortalCarriageLayout layout,
+                                PortalStructure structure) {
+        games.brennan.dungeontrain.portal.PortalRoomSky sky = structure.settings().sky();
+        if (!sky.lights() || !games.brennan.dungeontrain.config.DungeonTrainConfig.isPortalRoomDaylight()) return;
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.PortalRoomSkyPacket.inWorld(
+            structure.tiledMinX(dims, layout), roomOrigin.getY(), structure.tiledMinZ(dims, layout),
+            structure.tiledMaxX(dims, layout), roomOrigin.getY() + structure.roomSize().getY() - 1,
+            structure.tiledMaxZ(dims, layout), sky.ordinal()));
+    }
+
+    static int runBack(CommandSourceStack source) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception e) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
+            return 0;
+        }
+        // Back also withdraws a press still waiting on its sample: an author who changed their mind
+        // should not be pulled in a second later.
+        boolean withdrew = PortalTestPending.cancel(player.getUUID());
+        // The client's Exit button and Back row send this command whatever kind of test is running;
+        // a carriage or contents test goes home by its own command.
+        if (!PortalTestSession.has(player.getUUID())
+            && games.brennan.dungeontrain.train.CarriageTestSession.has(player.getUUID())) {
+            return CarriageTestCommand.runBack(source);
+        }
+        games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.force(PortalTestSession.PAIR_KEY, null);
         PortalTestSession.Session session = PortalTestSession.take(player.getUUID());
         if (session == null) {
-            source.sendFailure(Component.literal("You aren't in a test dimensional carriage."));
+            if (withdrew) return 1;
+            source.sendFailure(Component.translatable("chat.dungeontrain.portal.you_aren_t_test"));
             return 0;
         }
 
@@ -173,30 +576,40 @@ public final class PortalTestCommand {
         if (player.gameMode.getGameModeForPlayer() != session.previousGameType()) {
             player.setGameMode(session.previousGameType());
         }
-        DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none());
+        DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none(
+            DungeonTrainWorldData.get(source.getServer().overworld()).isPortalTestReseed()));
+        DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.PortalRoomSkyPacket.none());
 
-        // Take the room's fog, daylight and train audio back. The same call the ticker makes, run
-        // once more now that the player is standing outside the structure: the send pass finds
-        // nobody inside and the clear pass lifts all three. Without it the ticker simply stops —
-        // the session is gone — and they would walk around the plot still fogged.
+        // Take the room's fog, daylight, train audio and depth disguise back. The same call the
+        // ticker makes, run once more now that the player is standing outside the structure: the send
+        // pass finds nobody inside and the clear pass lifts all four. Without it the ticker simply
+        // stops — the session is gone — and they would walk around the plot still fogged.
+        //
+        // groundY only reaches the send pass, which finds nobody; it is read off the world anyway so
+        // that this call cannot be the one that disagrees with the ticker about the disguise.
         PortalCarriageEvents.sendRoomAmbience(dims,
             PortalCarriageBuilder.layoutFor(dims, session.structure().kind()),
-            session.structure(), java.util.List.of(player));
+            session.structure(),
+            DungeonTrainWorldData.get(overworld).getTrainY(),
+            java.util.List.of(player));
 
         // Sweep the whole WINDOW, not just the base room. footprintOf is deliberately blind to
         // tiling — copies are laid around the corridors rather than through them — so clearing only
         // that box would leave every copy the ticker grew standing under the world. The structure
         // knows its own tiled bounds; union them with the footprint and clear the lot. Blunt is
         // right here: the test band holds nothing else to protect.
-        int cleared = PortalClear.clearBox(overworld, windowBox(overworld, session.structure(), dims),
-            PortalCorridorMask.NONE);
+        BoundingBox window = windowBox(overworld, session.structure(), dims);
+        int cleared = PortalClear.clearBox(overworld, window, PortalCorridorMask.NONE);
+        // And the room's mobs. A live room's are carried to its next site, so the clear leaves them;
+        // a test room has no next site, and the next test is stamped on this same spot — so a chunk
+        // dimension's villagers used to turn up in the Nether room tested after it.
+        int removed = discardMobs(overworld, window);
 
-        LOGGER.info("[DungeonTrain] portal test back: returned {} to {} and cleared {} block(s) of '{}'",
-            player.getName().getString(), fmt(session.pos()), cleared, session.roomName());
+        LOGGER.info("[DungeonTrain] portal test back: returned {} to {} and cleared {} block(s) and {} "
+                + "mob(s) of '{}'",
+            player.getName().getString(), fmt(session.pos()), cleared, removed, session.roomName());
 
-        source.sendSuccess(() -> Component.literal(
-            "Back at the plot — the test '" + session.roomName() + "' has been cleared away."
-        ).withStyle(ChatFormatting.GRAY), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.back_plot_test_has", session.roomName()).withStyle(ChatFormatting.GRAY), false);
         return 1;
     }
 
@@ -219,11 +632,25 @@ public final class PortalTestCommand {
      *
      * <p>The X is theirs only so a structure is near the region they already have loaded; nothing
      * about it has to line up with anything, because nothing it is stamped beside is a train.</p>
+     *
+     * <h2>{@code doorHeightOffset} is what stands the room ON the lane floor</h2>
+     * <p>This returns the <b>corridor lane</b>, and a room spends its door-height offset by dropping
+     * its own floor below that line ({@link games.brennan.dungeontrain.portal.PortalRoomLayout#roomOrigin}).
+     * The lowest lane's floor is {@link PortalTwinLanes#FLOOR_MARGIN} blocks over the bottom of the
+     * world, so a room that hung below it hung out of the world — and {@code setBlock} out of range
+     * is a <b>silent no-op</b>, so the bottom of the author's build was quietly never written. A room
+     * with a 47-block offset lost 46 of its 70 rows and stood on nothing.</p>
+     *
+     * <p>Lifting the lane by the offset puts the room's floor exactly on the lane floor, so the
+     * structure occupies {@code [laneFloor, laneFloor + roomHeight]} — which is the span a lane is
+     * sized for in the first place ({@link PortalTwinLanes#laneHeight}), and what every room without
+     * an offset has always occupied. Clamped by the caller, because an unclamped offset would lift
+     * the structure further than the room's own height can spend.</p>
      */
-    private static BlockPos originFor(ServerPlayer player, ServerLevel level, CarriageDims dims) {
+    private static BlockPos originFor(ServerPlayer player, ServerLevel level, int doorHeightOffset) {
         return new BlockPos(
             player.blockPosition().getX(),
-            PortalTwinLanes.floorY(level.getMinBuildHeight()),
+            PortalTwinLanes.floorY(level.getMinBuildHeight()) + doorHeightOffset,
             TEST_Z_OFFSET);
     }
 

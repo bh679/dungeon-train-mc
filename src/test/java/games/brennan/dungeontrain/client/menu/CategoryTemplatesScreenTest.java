@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * teleport never happened. Track and tunnel rows go through different command
  * paths and are exercised here as untouched-control assertions.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 final class CategoryTemplatesScreenTest {
 
     @Test

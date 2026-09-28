@@ -34,7 +34,7 @@ class PendingDeathNoteDuplicateTest {
     private static final UUID OTHER_AUTHOR = UUID.fromString("00000000-0000-0000-0000-0000000000b2");
 
     private static PendingDeathNote note(UUID author, String target, NoteKind kind) {
-        return new PendingDeathNote(author, "Author", target, "", kind);
+        return new PendingDeathNote(author, "Author", target, "", kind, java.util.List.of());
     }
 
     @Test

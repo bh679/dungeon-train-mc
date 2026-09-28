@@ -133,8 +133,13 @@ public final class EditorContentIntegrity {
      * content exists AND this world hasn't disabled it. Note {@link CustomContentChoice#UNSET}
      * counts as active — the content is loading whether or not anyone has answered yet, so the
      * run is Free Play from the first tick rather than only after the player clicks Continue.
+     *
+     * <p>{@link CustomContentChoice#DEV_IGNORE} waives the taint, but only on a dev build — this is
+     * the single choke point for that rule, so the prompt, {@code /customcontent} and a save
+     * carried onto a release build all agree without each having to check the branch.</p>
      */
     public static boolean isSessionFreePlay() {
+        if (worldChoice.exemptsFreePlay() && DungeonTrain.isDevBuild()) return false;
         return !isSuppressed() && hasCustomContent();
     }
 

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Assembly tests for {@link BuilderTimeReporter#buildPayload}. The relay reads {@code builderSec} as
@@ -30,5 +31,15 @@ class BuilderTimeReporterTest {
     void playerOptional() {
         assertFalse(BuilderTimeReporter.buildPayload(UUID, null, 10L).has("player"));
         assertFalse(BuilderTimeReporter.buildPayload(UUID, "", 10L).has("player"));
+    }
+
+    @Test
+    @DisplayName("builder time always vouches for itself — the board is empty without it")
+    void alwaysVouchesForItself() {
+        // The relay ranks a score only when the payload asserts its trust level. Building is never
+        // Free Play (creative is how a Train Builder world is worked in), but it still has to SAY so.
+        JsonObject out = BuilderTimeReporter.buildPayload(UUID, "x", 10L);
+        assertTrue(out.has("freePlay"));
+        assertFalse(out.get("freePlay").getAsBoolean());
     }
 }

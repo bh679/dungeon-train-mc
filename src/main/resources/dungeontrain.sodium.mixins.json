@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "games.brennan.dungeontrain.mixin",
+  "plugin": "games.brennan.dungeontrain.mixin.SodiumMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "dungeontrain.refmap.json",
+  "mixins": [],
+  "client": [
+    "client.sodium.BlockRendererUpsideDownMixin",
+    "client.sodium.ViewportPortalSealMixin",
+    "client.sodium.SodiumWorldRendererPortalSealMixin",
+    "client.sodium.RenderSectionPrewarmMixin",
+    "client.sodium.RenderSectionManagerPrewarmMixin"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

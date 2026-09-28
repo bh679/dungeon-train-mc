@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 2,
+  "selfWeight": 1,
   "variants": [
     {
       "id": "beamlong",
@@ -13,7 +13,7 @@
     {
       "id": "nobeam",
       "weight": 1,
-      "minLevel": 5
+      "minLevel": 12
     }
   ]
 }

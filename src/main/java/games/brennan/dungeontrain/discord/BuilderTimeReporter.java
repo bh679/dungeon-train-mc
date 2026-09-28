@@ -65,6 +65,12 @@ public final class BuilderTimeReporter {
             body.addProperty("player", player);
         }
         body.addProperty("builderSec", builderSec);
+        // Always false, and always sent. The relay ranks a score only when the payload vouches for
+        // it, so omitting this would leave the builder_time board permanently empty. Hard-coded
+        // rather than passed in because building is not a run: creative is how a Train Builder world
+        // is worked in, which is the same reason RunIntegrity keeps the editor/* advancements
+        // mode-agnostic. There is no Free Play state here to report.
+        body.addProperty("freePlay", false);
         return body;
     }
 

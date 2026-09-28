@@ -99,7 +99,7 @@ public final class RandomBookFactory {
     private static Optional<PickedBook> tryPickUnseen(NarrativeProgressData data,
                                                       long bookSeed, long variantSeed) {
         List<RandomBookFile> candidates = new ArrayList<>();
-        int totalWeight = 0;
+        double totalWeight = 0;
         for (ResourceLocation id : RandomBookRegistry.ids()) {
             Optional<RandomBookFile> bookOpt = RandomBookRegistry.get(id);
             if (bookOpt.isEmpty()) continue;
@@ -113,8 +113,7 @@ public final class RandomBookFactory {
         if (candidates.isEmpty() || totalWeight <= 0) return Optional.empty();
 
         // Weighted pick across candidates.
-        long unsignedBook = bookSeed & 0x7FFFFFFFFFFFFFFFL;
-        int target = (int) (unsignedBook % totalWeight);
+        double target = WeightedPick.target(bookSeed, totalWeight);
         RandomBookFile picked = candidates.get(candidates.size() - 1);
         for (RandomBookFile c : candidates) {
             target -= c.weight();

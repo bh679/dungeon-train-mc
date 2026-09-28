@@ -56,11 +56,20 @@ import java.util.Objects;
  * @param tiling     which copies of the room are currently standing
  * @param exitCopies which of the room's extra corridors are currently standing
  * @param kind       which of the two corridor shapes this pair's two corridors are
+ * @param blob       the room's blocks as one captured snapshot, standing in for its template on the
+ *                   next stamp — another world's drifted copy, or this world's own room carried
+ *                   across a relocation; null for a room stamped from its template
+ * @param seedSalt   folded into every roll this structure makes, so a test can stand up a fresh
+ *                   furnishing of the same room; {@code 0} — every live pair — rolls exactly as
+ *                   before the salt existed
  */
 public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
                               PortalRoomSettings settings, PortalRoomTiling tiling,
                               PortalExitCopies exitCopies, PortalRoomTiling.Tile exitTile,
-                              PortalCorridorKind kind) {
+                              PortalCorridorKind kind, int seedSalt, PortalRoomBlob blob) {
+
+    /** No salt: the roll is a function of the pair's position alone. */
+    public static final int NO_SALT = 0;
 
     public PortalStructure {
         Objects.requireNonNull(origin, "origin");
@@ -71,6 +80,22 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         if (exitCopies == null) exitCopies = PortalExitCopies.NONE;
         if (exitTile == null) exitTile = PortalRoomTiling.Tile.BASE;
         if (kind == null) kind = PortalCorridorKind.DEFAULT;
+    }
+
+    /** The nine-part form, before a room's blocks could stand in for its template. */
+    public PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
+                           PortalRoomSettings settings, PortalRoomTiling tiling,
+                           PortalExitCopies exitCopies, PortalRoomTiling.Tile exitTile,
+                           PortalCorridorKind kind, int seedSalt) {
+        this(origin, roomName, roomSize, settings, tiling, exitCopies, exitTile, kind, seedSalt, null);
+    }
+
+    /** The eight-part form, before a test could reseed a room. */
+    public PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
+                           PortalRoomSettings settings, PortalRoomTiling tiling,
+                           PortalExitCopies exitCopies, PortalRoomTiling.Tile exitTile,
+                           PortalCorridorKind kind) {
+        this(origin, roomName, roomSize, settings, tiling, exitCopies, exitTile, kind, NO_SALT);
     }
 
     /** Back-compat 3-arg form — a default-mode structure with only its base room standing. */
@@ -126,6 +151,11 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         return settings.effectiveExits();
     }
 
+    /** What this room's shell is written in — the setting as its walls can actually use it. */
+    public PortalRoomLock lock() {
+        return settings.effectiveLock();
+    }
+
     /** What this room's appended tiles are made of — the setting as its walls can actually use it. */
     public PortalRoomCopies copies() {
         return settings.effectiveCopies();
@@ -158,7 +188,11 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * rather than a fresh roll.</p>
      */
     public int variantIndexFor(PortalRoomTiling.Tile tile, int pairKey) {
-        int base = Objects.hash(roomName.hashCode(), pairKey);
+        // The unsalted hash is exactly what it was before the salt existed: a live pair must
+        // reproduce the room a player walked out of, across restarts and across mod updates.
+        int base = seedSalt == NO_SALT
+            ? Objects.hash(roomName.hashCode(), pairKey)
+            : Objects.hash(roomName.hashCode(), pairKey, seedSalt);
         if (settings.effectiveCopies().kind() != PortalRoomCopies.Kind.DYNAMIC) return base;
         return Objects.hash(base, tile.x(), tile.z());
     }
@@ -199,10 +233,30 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * that is about shifting it per tick, as the tiling grows. This offset is fixed for the life of
      * the structure and survives a relocation ({@link #movedTo}), so every reader still agrees with
      * every other, which is the property that warning is really protecting.</p>
+     *
+     * <h2>Y and Z: the room's two doorways, placed apart</h2>
+     * <p>{@link #roomOrigin} spends this room's width and height slack to put the <b>box</b> where the
+     * <i>entry</i> door asks for it. The exit door is then a displacement of this corridor within that
+     * box — {@link PortalRoomLayout#exitDoorDeltaZ} and {@link PortalRoomLayout#exitDoorDeltaY}, each
+     * zero for the mirrored rooms that are nearly all of them, so nothing an existing world is
+     * standing in moves.</p>
+     *
+     * <p><b>Why this does not disturb the swap.</b> {@code PortalFrames} maps a carriage corridor to
+     * <i>its own</i> twin — an entry carriage to the entry twin, an exit carriage to the exit twin —
+     * and never one twin to the other. So it carries a corridor-local offset between two frames whose
+     * origins it is told, and moving this one is a change to an origin it already reads from here.
+     * The two corridors' <i>interiors</i> stay identical, which is the property the illusion actually
+     * rests on: nothing here touches {@link PortalCarriageLayout}, whose {@code doorZ}/{@code floorY}
+     * must keep describing every corridor in the world alike — the carriages on the train share a
+     * walkway line and cannot bend off it.</p>
      */
     public BlockPos exitOrigin(CarriageDims dims) {
         return origin.offset(
-            exitTwinOffsetX(dims) + exitTile.x() * roomLength(), 0, exitTile.z() * roomWidth());
+            exitTwinOffsetX(dims) + exitTile.x() * roomLength(),
+            PortalRoomLayout.exitDoorDeltaY(dims, roomSize.getY(),
+                settings.doorHeightOffset().value(), settings.exitDoorHeightOffset().value()),
+            exitTile.z() * roomWidth() + PortalRoomLayout.exitDoorDeltaZ(dims, roomSize.getZ(),
+                settings.doorOffset().value(), settings.exitDoorOffset().value()));
     }
 
     /**
@@ -223,8 +277,12 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
     /** Minimum corner of the room box, centred on the corridor's doorway line. */
     public BlockPos roomOrigin(CarriageDims dims, PortalCarriageLayout layout) {
         // Centred on this pair's OWN room width, not the world minimum — a wider authored room
-        // still has to line its interior centre up with the corridor's doorway.
-        return PortalRoomLayout.roomOrigin(origin, dims, layout, roomSize.getZ());
+        // still has to line its interior centre up with the corridor's doorway, offset by whatever
+        // slack the author has spent moving the door off that centre — and, on Y, however far below
+        // the corridor's own fixed floor line the author has spent the room's height instead.
+        return PortalRoomLayout.roomOrigin(
+            origin, dims, layout, roomSize.getZ(), roomSize.getY(),
+            settings.doorOffset().value(), settings.doorHeightOffset().value());
     }
 
     /**
@@ -343,25 +401,40 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      */
     public PortalStructure movedTo(BlockPos newOrigin) {
         return new PortalStructure(newOrigin, roomName, roomSize, settings, PortalRoomTiling.base(),
-            PortalExitCopies.NONE, exitTile, kind);
+            PortalExitCopies.NONE, exitTile, kind, seedSalt, blob);
+    }
+
+    /**
+     * The same structure with {@code newBlob} standing in for its template on the next stamp — or
+     * back on its template, for null. What a relocation hands the re-stamp: the room as the player
+     * left it, captured just before the old site is erased.
+     */
+    public PortalStructure withBlob(PortalRoomBlob newBlob) {
+        return new PortalStructure(origin, roomName, roomSize, settings, tiling, exitCopies,
+            exitTile, kind, seedSalt, newBlob);
+    }
+
+    /** True when the next stamp lays a captured snapshot rather than the room's template. */
+    public boolean stampsFromBlob() {
+        return blob != null;
     }
 
     /** The same structure with a different set of room copies standing. */
     public PortalStructure withTiling(PortalRoomTiling newTiling) {
         return new PortalStructure(origin, roomName, roomSize, settings, newTiling, exitCopies,
-            exitTile, kind);
+            exitTile, kind, seedSalt, blob);
     }
 
     /** The same structure with a different set of extra corridors standing. */
     public PortalStructure withExitCopies(PortalExitCopies newCopies) {
         return new PortalStructure(origin, roomName, roomSize, settings, tiling, newCopies,
-            exitTile, kind);
+            exitTile, kind, seedSalt, blob);
     }
 
     /** The same structure standing its exit beside a different tile. */
     public PortalStructure withExitTile(PortalRoomTiling.Tile newExitTile) {
         return new PortalStructure(origin, roomName, roomSize, settings, tiling, exitCopies,
-            newExitTile, kind);
+            newExitTile, kind, seedSalt, blob);
     }
 
     /**
@@ -394,7 +467,7 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         return new PortalStructure(
             origin.offset(tile.x() * roomLength(), 0, tile.z() * roomWidth()),
             roomName, roomSize, settings, PortalRoomTiling.base(), PortalExitCopies.NONE,
-            PortalRoomTiling.Tile.BASE, kind);
+            PortalRoomTiling.Tile.BASE, kind, seedSalt, null);
     }
 
     /** Minimum corner of the corridor an extra {@code role} copy anchored at {@code tile} occupies. */

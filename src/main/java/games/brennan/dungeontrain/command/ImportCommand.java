@@ -42,7 +42,7 @@ public final class ImportCommand {
             return 1;
         } catch (Exception e) {
             LOGGER.error("[DungeonTrain] Import/reload failed: {}", e.toString());
-            source.sendFailure(Component.literal("Import failed: " + e.getMessage()));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.import_failed", e.getMessage()));
             return 0;
         }
     }

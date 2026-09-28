@@ -22,7 +22,7 @@ final class TrainDebugCarriagePacketTest {
     @DisplayName("round-trip keeps variant, contents and sub-variant in their own fields")
     void roundTrip_distinctIds_doNotTranspose() {
         TrainDebugCarriagePacket original =
-            new TrainDebugCarriagePacket(true, 12, "cargo", "container_wooden", "cagedzombie", "far");
+            new TrainDebugCarriagePacket(true, 12, "cargo", "container_wooden", "cagedzombie", "X", "far");
 
         TrainDebugCarriagePacket decoded = roundTrip(original);
 
@@ -30,6 +30,7 @@ final class TrainDebugCarriagePacketTest {
         assertEquals("cargo", decoded.cartType());
         assertEquals("container_wooden", decoded.contentsId());
         assertEquals("cagedzombie", decoded.subVariantId());
+        assertEquals("X", decoded.flip());
         assertEquals("far", decoded.copy());
     }
 
@@ -37,7 +38,7 @@ final class TrainDebugCarriagePacketTest {
     @DisplayName("an empty sub-variant round-trips as empty — the parent's own contents won the draw")
     void roundTrip_noSubVariant() {
         TrainDebugCarriagePacket original =
-            new TrainDebugCarriagePacket(true, -3, "flatbed", "piglin", "", "");
+            new TrainDebugCarriagePacket(true, -3, "flatbed", "piglin", "", "", "");
 
         TrainDebugCarriagePacket decoded = roundTrip(original);
 
@@ -50,7 +51,7 @@ final class TrainDebugCarriagePacketTest {
     @DisplayName("an empty copy means \"not in a copy\" and survives the round trip")
     void roundTrip_emptyCopy_isTheAnswerNotAGap() {
         TrainDebugCarriagePacket decoded =
-            roundTrip(new TrainDebugCarriagePacket(true, 5, "standard", "piglin", "", ""));
+            roundTrip(new TrainDebugCarriagePacket(true, 5, "standard", "piglin", "", "", ""));
 
         assertTrue(decoded.copy().isEmpty(), "empty is the panel's \"no\", not a missing field");
     }
@@ -68,11 +69,12 @@ final class TrainDebugCarriagePacketTest {
     @Test
     @DisplayName("null ids are normalised to empty at construction")
     void nullIds_normalised() {
-        TrainDebugCarriagePacket packet = new TrainDebugCarriagePacket(true, 1, null, null, null, null);
+        TrainDebugCarriagePacket packet = new TrainDebugCarriagePacket(true, 1, null, null, null, null, null);
 
         assertEquals("", packet.cartType());
         assertEquals("", packet.contentsId());
         assertEquals("", packet.subVariantId());
+        assertEquals("", packet.flip());
         assertEquals("", packet.copy());
     }
 

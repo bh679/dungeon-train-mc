@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/reached_classic",
+  "display": {
+    "icon": { "id": "minecraft:grass_block" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_superflat.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.reached_superflat.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "reached_superflat" }
+    }
+  },
+  "requirements": [["reached"]]
+}

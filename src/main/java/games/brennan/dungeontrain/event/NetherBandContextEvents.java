@@ -8,11 +8,18 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.StrongholdRingGate;
+import games.brennan.dungeontrain.worldgen.UpsideDownBand;
+import games.brennan.dungeontrain.worldgen.VanillaBiomeFeatures;
+import games.brennan.dungeontrain.worldgen.VanillaBiomeTwins;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.EndCoreBiomes;
 import games.brennan.dungeontrain.worldgen.density.NetherBandBiomeSet;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import games.brennan.dungeontrain.worldgen.density.NetherCoreBiomes;
+import games.brennan.dungeontrain.worldgen.density.OverworldBiomeSourceMark;
+import games.brennan.dungeontrain.worldgen.density.OverworldStretchBiomes;
+import games.brennan.dungeontrain.worldgen.density.UpsideDownTrackFlatten;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
@@ -24,8 +31,9 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
-import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
 
 /**
@@ -40,11 +48,17 @@ import org.slf4j.Logger;
  * All of this completes before the first chunk bakes, so no chunk ever generates against a null
  * context (the old {@code ServerStartedEvent}-only publish lost that race for spawn-region and
  * pregen chunks). A {@link ServerStartedEvent} refresh is kept as an idempotent last word for
- * dimensions registered late by other mods. Runs at {@link EventPriority#LOW} so
+ * dimensions registered late by other mods. The overworld's stronghold ring search starts from the
+ * first publish too ({@link StrongholdRingGate}), so the rings never sample a half-published context.
+ * Runs at {@link EventPriority#LOW} so
  * {@code WorldLifecycleEvents.onOverworldLoad} (HIGH, client-only) has already committed pending
  * world-creation choices into {@link DungeonTrainWorldData} (train geometry,
- * {@code startsWithTrain}) on the same event. Cleared on stop so a singleplayer world-switch in
- * the same JVM never reuses a stale seed/layout.</p>
+ * {@code startsWithTrain}) on the same event. Cleared once the server has <b>stopped</b> so a
+ * singleplayer world-switch in the same JVM never reuses a stale seed/layout — not on
+ * {@link net.neoforged.neoforge.event.server.ServerStoppingEvent}, which fires before
+ * {@code stopServer()} drains the in-flight chunk generation and saves it: clearing there would
+ * bake those final chunks without DT's worldgen state (e.g. Biomes O' Plenty biomes leaking into
+ * vanilla stretches) and write them to disk for good.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NetherBandContextEvents {
@@ -56,6 +70,17 @@ public final class NetherBandContextEvents {
     private static final int NETHER_TOP_ABOVE_BED = 80;
 
     private NetherBandContextEvents() {}
+
+    /**
+     * The vanilla feature lists that keep WWOO inside its stretch. Built once, before any level exists —
+     * so before the first chunk decorates — from registries that are final by now.
+     */
+    @SubscribeEvent
+    public static void onServerAboutToStart(ServerAboutToStartEvent event) {
+        VanillaBiomeFeatures.publish(VanillaBiomeFeatures.resolve(event.getServer()));
+        VanillaBiomeTwins.clear();
+        VanillaBiomeTwins.build(event.getServer().registryAccess(), "server");
+    }
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onLevelLoad(LevelEvent.Load event) {
@@ -83,11 +108,14 @@ public final class NetherBandContextEvents {
             int seaLevel = overworld.getSeaLevel();
             int worldCeiling = overworld.getMaxBuildHeight() - 1;
             int baseRelief = DungeonTrainCommonConfig.getNetherBaseReliefBlocks();
-            int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();
+            TrackGeometry track = TrackGeometry.from(data.dims(), data.getTrainY());
+            int bedY = track.bedY();
             int netherTop = bedY + NETHER_TOP_ABOVE_BED;
 
             // Overworld biome source (identity gate) + resolved highland palette for the biome-source mixin.
             BiomeSource overworldBiomeSource = overworld.getChunkSource().getGenerator().getBiomeSource();
+            // Mark it rather than rely on identity: TerraBlender fills chunks through clones of it.
+            if (overworldBiomeSource instanceof OverworldBiomeSourceMark mark) mark.dungeontrain$markOverworld();
             NetherBandBiomeSet highlandBiomes = NetherBandBiomeSet.resolve(
                     overworld.registryAccess().lookupOrThrow(Registries.BIOME), data.getGenerationSeed());
             // Core columns sample ALL five real Nether biomes the way the Nether does (red/teal/blue/grey
@@ -113,10 +141,24 @@ public final class NetherBandContextEvents {
             // fossils and ruined portals into. Null with no Nether dimension.
             NetherCoreGeometry.Source netherCore = NetherCoreGeometry.Source.resolve(server, bedY);
 
+            games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.publish(overworld);
+            games.brennan.dungeontrain.worldgen.legacy.SuperflatHeight.publish(overworld);
+            games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.publish(overworld);
             NetherBandContext.publish(new NetherBandContext(
                     enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
                     overworldBiomeSource, highlandBiomes, netherCoreBiomes, endCoreBiomes, endIslands,
                     netherCore));
+            // Second-lap overworld stretches: BoP only in its stretch, vanilla elsewhere. Published
+            // alongside the band context so it is live before the first chunk bakes too.
+            OverworldStretchBiomes.publish(OverworldStretchBiomes.resolve(server));
+            // Upside-down band and the Lost City era: keep the source terrain low near the track
+            // (erosion weighting).
+            boolean lostCity = data.startsWithTrain()
+                    && cycle.legacyLen(games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.LOST_CITY) > 0L;
+            boolean flatten = DungeonTrainCommonConfig.isUpsideDownTrackFlatten()
+                    && (UpsideDownBand.startX(overworld) != UpsideDownBand.OFF || lostCity);
+            UpsideDownTrackFlatten.publish(new UpsideDownTrackFlatten.Context(flatten, cycle, track.trackCenterZ(),
+                    data.getGenerationSeed()));
             // Intermediate per-dimension-load republishes log at debug to avoid 3+ identical
             // info lines per start; the ServerStarted refresh logs the final snapshot at info.
             if (logInfo) {
@@ -128,12 +170,29 @@ public final class NetherBandContextEvents {
         } catch (Throwable t) {
             // Never block server start on the band snapshot — a missing context just leaves terrain vanilla.
             NetherBandContext.clear();
+            games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.clear();
+            games.brennan.dungeontrain.worldgen.legacy.SuperflatHeight.clear();
+            games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.clear();
+            OverworldStretchBiomes.clear();
+            UpsideDownTrackFlatten.clear();
             LOGGER.error("[DungeonTrain] Failed to publish nether-band terrain context; mountains stay flat this session", t);
+        } finally {
+            // Only now may the stronghold rings sample the overworld's biomes — see StrongholdRingGate.
+            StrongholdRingGate.start(server.overworld());
         }
     }
 
     @SubscribeEvent
-    public static void onServerStopping(ServerStoppingEvent event) {
+    public static void onServerStopped(ServerStoppedEvent event) {
+        // After stopServer(): the last generated chunks have been baked and saved against a live context.
         NetherBandContext.clear();
+        games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.clear();
+        games.brennan.dungeontrain.worldgen.legacy.SuperflatHeight.clear();
+        games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain.clear();
+        games.brennan.dungeontrain.worldgen.legacy.LegacyBands.releaseGenerators();
+        OverworldStretchBiomes.clear();
+        UpsideDownTrackFlatten.clear();
+        VanillaBiomeFeatures.clear();
+        VanillaBiomeTwins.clear();
     }
 }

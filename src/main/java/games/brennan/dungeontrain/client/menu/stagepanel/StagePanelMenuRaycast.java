@@ -36,7 +36,7 @@ public final class StagePanelMenuRaycast {
             StagePanelMenu.setHovered(StagePanelMenu.Hit.NONE);
             return;
         }
-        Vec3[] basis = EditorPlotLabelsRenderer.basis(anchor, rayOrigin);
+        Vec3[] basis = games.brennan.dungeontrain.client.menu.EditorPanelFacing.basis(pos, anchor, rayOrigin);
         Vec3 right = basis[0], up = basis[1], normal = basis[2];
 
         Vec3 offset = rayOrigin.subtract(anchor);

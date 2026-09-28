@@ -119,6 +119,11 @@ public final class StagePanelMenuInputHandler {
             case HIDE_TOGGLE -> DungeonTrainNet.sendToServer(
                 new StagePanelEditPacket(StagePanelEditPacket.Op.TOGGLE_HIDE_UNUSED, stageId, ""));
             case DUPLICATE -> CommandMenuState.openAt(new StageDuplicateNameScreen(stageId));
+            case FACE -> {
+                net.minecraft.core.BlockPos pos = StagePanelMenu.anchor();
+                games.brennan.dungeontrain.client.menu.EditorPanelFacingEvents.onButton(pos,
+                    net.minecraft.world.phys.Vec3.atCenterOf(pos), games.brennan.dungeontrain.client.menu.EditorPanelFacing.doorPanel(false));
+            }
             case BLOCK_ROW -> {
                 var blocks = StagePanelMenu.blocks();
                 if (hit.index() >= 0 && hit.index() < blocks.size()) {

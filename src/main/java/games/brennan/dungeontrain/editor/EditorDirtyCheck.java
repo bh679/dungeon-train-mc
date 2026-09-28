@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
@@ -21,6 +22,8 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
+
+import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,6 +56,11 @@ import java.util.Set;
  * them every 1–3 seconds; comparing the live state at those positions
  * to the snapshot's frozen frame would false-positive on every cycle.
  *
+ * <p>A plot whose variant sidecar changed since that snapshot is unsaved too
+ * ({@link EditorPlotSnapshots#sidecarEdited}) — the pool is written to disk on
+ * every edit, but the author still expects a Save to follow it, and the
+ * block compare skips exactly those cells.
+ *
  * <p>"Unpromoted" means the config-dir copy of the NBT differs from
  * the bundled source-tree copy — only meaningful in DevMode and only
  * for built-in models that have a bundled tier.
@@ -83,6 +91,7 @@ public final class EditorDirtyCheck {
         List<DirtyEntry> out = new ArrayList<>();
         boolean devmode = EditorDevMode.isEnabled();
 
+        scanWhole(overworld, dims, devmode, out);
         scanCarriages(overworld, dims, devmode, out);
         scanContents(overworld, dims, devmode, out);
         scanTrackTiles(overworld, dims, devmode, out);
@@ -90,8 +99,38 @@ public final class EditorDirtyCheck {
         scanAdjuncts(overworld, dims, devmode, out);
         scanTunnels(overworld, dims, devmode, out);
         scanPortalRooms(overworld, dims, devmode, out);
+        scanChunkFrames(overworld, out);
 
         return out;
+    }
+
+    /**
+     * The Whole section's rows — rooms under {@code "whole"}, groups under {@code "whole_group"},
+     * each keyed by its bare id. No variant sidecar to skip: a whole template is stamped verbatim.
+     */
+    private static void scanWhole(ServerLevel level, CarriageDims dims, boolean devmode,
+                                  List<DirtyEntry> out) {
+        for (games.brennan.dungeontrain.template.Template model : EditorCategory.WHOLE.models()) {
+            BlockPos origin = WholeCarriageEditor.plotOrigin(model, dims);
+            if (origin == null) continue;
+            boolean group = model instanceof games.brennan.dungeontrain.template.Template.CarriageGroup;
+            games.brennan.dungeontrain.train.WholeKind kind = group
+                ? games.brennan.dungeontrain.train.WholeKind.GROUP : games.brennan.dungeontrain.train.WholeKind.ROOM;
+            String key = WholeCarriageEditor.snapshotKey(kind, model.id());
+            Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
+            Vec3i fp = model.plotSize(dims);
+            Set<BlockPos> skip = variantCellPositions(WholeVariantBlocks.loadFor(kind, model.id(), fp).entries());
+            boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                || (snapshot != null && !regionMatchesSnapshot(key, level, origin,
+                    fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
+            boolean unpromoted = devmode && model.isBuiltin() && WholeCarriageTemplateStore.sourceTreeAvailable()
+                && !filesEqualOrAbsent(
+                    group ? CarriageGroupTemplateStore.fileForId(model.id()) : WholeCarriageTemplateStore.fileForId(model.id()),
+                    group ? CarriageGroupTemplateStore.sourceFileForId(model.id()) : WholeCarriageTemplateStore.sourceFileForId(model.id()));
+            if (unsaved || unpromoted) {
+                out.add(new DirtyEntry(group ? "whole_group" : "whole", model.id(), model.displayName(), unsaved, unpromoted));
+            }
+        }
     }
 
     private static void scanCarriages(ServerLevel level, CarriageDims dims, boolean devmode,
@@ -106,10 +145,10 @@ public final class EditorDirtyCheck {
             // x=8 in the longer portal corridor and report it clean.
             CarriageDims box = CarriageEditor.plotDims(v, dims);
             Set<BlockPos> skip = variantCellPositions(CarriageVariantBlocks.loadFor(v, box).entries());
-            boolean unsaved = snapshot != null
-                && !regionMatchesSnapshot(key, level, origin,
+            boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                || (snapshot != null && !regionMatchesSnapshot(key, level, origin,
                     box.length(), box.height(), box.width(),
-                    snapshot, skip);
+                    snapshot, skip));
 
             boolean unpromoted = devmode
                 && (v instanceof CarriageVariant.Builtin builtin)
@@ -138,10 +177,10 @@ public final class EditorDirtyCheck {
 
             Set<BlockPos> skip = variantCellPositions(
                 CarriageContentsVariantBlocks.loadFor(c, interior).entries());
-            boolean unsaved = snapshot != null
-                && !regionMatchesSnapshot(key, level, interiorOrigin,
+            boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                || (snapshot != null && !regionMatchesSnapshot(key, level, interiorOrigin,
                     interior.getX(), interior.getY(), interior.getZ(),
-                    snapshot, skip);
+                    snapshot, skip));
 
             // Contents has no separate bundled tier — the editor's save command
             // write-throughs handle source promotion in one step.
@@ -161,8 +200,8 @@ public final class EditorDirtyCheck {
             Vec3i fp = new Vec3i(TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
             Set<BlockPos> skip = variantCellPositions(
                 TrackVariantBlocks.loadFor(TrackKind.TILE, name, fp).entries());
-            boolean unsaved = snapshot != null
-                && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+            boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                || (snapshot != null && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
 
             boolean unpromoted = devmode
                 && games.brennan.dungeontrain.track.variant.TrackVariantStore.sourceTreeAvailable()
@@ -189,8 +228,8 @@ public final class EditorDirtyCheck {
                 Vec3i fp = new Vec3i(1, section.height(), dims.width());
                 Set<BlockPos> skip = variantCellPositions(
                     TrackVariantBlocks.loadFor(kind, name, fp).entries());
-                boolean unsaved = snapshot != null
-                    && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+                boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                    || (snapshot != null && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
 
                 boolean unpromoted = devmode
                     && games.brennan.dungeontrain.track.variant.TrackVariantStore.sourceTreeAvailable()
@@ -221,8 +260,8 @@ public final class EditorDirtyCheck {
                 Vec3i fp = new Vec3i(adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
                 Set<BlockPos> skip = variantCellPositions(
                     TrackVariantBlocks.loadFor(kind, name, fp).entries());
-                boolean unsaved = snapshot != null
-                    && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+                boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                    || (snapshot != null && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
 
                 boolean unpromoted = devmode
                     && games.brennan.dungeontrain.track.variant.TrackVariantStore.sourceTreeAvailable()
@@ -253,8 +292,8 @@ public final class EditorDirtyCheck {
                 Vec3i fp = new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
                 Set<BlockPos> skip = variantCellPositions(
                     TrackVariantBlocks.loadFor(kind, name, fp).entries());
-                boolean unsaved = snapshot != null
-                    && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+                boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                    || (snapshot != null && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
 
                 if (unsaved) {
                     String tunnelLabel = variant.name().toLowerCase(java.util.Locale.ROOT);
@@ -268,24 +307,59 @@ public final class EditorDirtyCheck {
         }
     }
 
+    /** Frame plots: the live blocks against the baseline taken at stamp and at save, plus sidecar edits. */
+    private static void scanChunkFrames(ServerLevel level, List<DirtyEntry> out) {
+        Vec3i size = games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.SIZE;
+        for (String name : games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names()) {
+            String key = ChunkFrameEditor.snapshotKey(name);
+            if (!EditorPlotSnapshots.has(key) && !EditorPlotSnapshots.sidecarEdited(key)) continue;
+            BlockPos origin = ChunkFrameEditor.registeredPlotOrigin(name);
+            if (origin == null) continue;
+            Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
+            Set<BlockPos> skip = variantCellPositions(
+                games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.loadFor(name).entries());
+            boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                || (snapshot != null && !regionMatchesSnapshot(key, level, origin, size.getX(), size.getY(), size.getZ(), snapshot, skip));
+            if (unsaved) {
+                out.add(new DirtyEntry(PlotCategory.CHUNK_FRAMES.id(), ChunkFrameEditor.MODEL_ID + "." + name,
+                    "frame / " + name, true, false));
+            }
+        }
+    }
+
     private static void scanPortalRooms(ServerLevel level, CarriageDims dims, boolean devmode,
                                         List<DirtyEntry> out) {
         for (String name : TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM)) {
-            BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             String key = PortalRoomEditor.snapshotKey(name);
+            // Nothing below can report a room with no snapshot, no sidecar edit and no pending size:
+            // the block compare needs a snapshot, and a resize always goes through
+            // PortalRoomSizes.pending. Skipping here matters because plotOrigin and sizeOf each
+            // read every room's template on a cold cache — seconds on the server thread for rooms
+            // that are not even standing in the world.
+            if (!EditorPlotSnapshots.has(key) && !EditorPlotSnapshots.sidecarEdited(key)
+                    && !games.brennan.dungeontrain.portal.PortalRoomSizes.hasPending(name)) {
+                continue;
+            }
+            BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
+
+            // Load the template BEFORE reading the plot size. A room's size lives in its template
+            // and nowhere else, and PortalRoomSizes answers with the built-in room's footprint until
+            // that load has happened — so reading plotSize first sized every not-yet-loaded room at
+            // 11x7x13, which both cropped its variant sidecar and reported a clean room as resized.
+            Vec3i saved = PortalRoomTemplateStore.sizeOf(level, name, dims);
 
             Vec3i fp = PortalRoomEditor.plotSize(name, dims);
             Set<BlockPos> skip = variantCellPositions(
                 TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, fp).entries());
-            boolean unsaved = snapshot != null
-                && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+            boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                || (snapshot != null && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
 
             // A resize is an unsaved change the block compare cannot see: it re-stamps the plot and
             // re-takes the snapshot, so the live blocks match their baseline exactly while the plot
             // stands at a size no saved template has. Only /dt save makes a size permanent, and
             // without this the panel would report a resized room as clean.
-            boolean resized = !fp.equals(PortalRoomTemplateStore.sizeOf(level, name, dims));
+            boolean resized = !fp.equals(saved);
 
             if (unsaved || resized) {
                 out.add(new DirtyEntry("portals", "portal_room." + name,
@@ -335,7 +409,39 @@ public final class EditorDirtyCheck {
      */
     public static List<DiffEntry> findChanges(ServerLevel overworld, CarriageDims dims,
                                               String categoryId, String modelId) {
+        List<DiffEntry> out = new ArrayList<>(findBlockChanges(overworld, dims, categoryId, modelId));
+        String key = snapshotKeyFor(categoryId, modelId);
+        if (key != null && EditorPlotSnapshots.sidecarEdited(key)) {
+            Set<BlockPos> cells = EditorPlotSnapshots.sidecarEdits(key);
+            if (cells.isEmpty()) {
+                out.add(new DiffEntry(BlockPos.ZERO, "variant settings", "edited"));
+            }
+            for (BlockPos cell : cells) {
+                out.add(new DiffEntry(cell, "variants", "edited"));
+            }
+        }
+        return out;
+    }
+
+    /** The block half of {@link #findChanges}. */
+    private static List<DiffEntry> findBlockChanges(ServerLevel overworld, CarriageDims dims,
+                                                    String categoryId, String modelId) {
         List<DiffEntry> out = new ArrayList<>();
+        if ("whole".equals(categoryId) || "whole_group".equals(categoryId)) {
+            boolean group = "whole_group".equals(categoryId);
+            games.brennan.dungeontrain.train.WholeKind kind = group
+                ? games.brennan.dungeontrain.train.WholeKind.GROUP : games.brennan.dungeontrain.train.WholeKind.ROOM;
+            games.brennan.dungeontrain.template.Template model = group
+                ? new games.brennan.dungeontrain.template.Template.CarriageGroup(new games.brennan.dungeontrain.train.CarriageGroup(modelId))
+                : new games.brennan.dungeontrain.template.Template.WholeCarriage(new games.brennan.dungeontrain.train.WholeCarriage(modelId));
+            BlockPos origin = WholeCarriageEditor.plotOrigin(model, dims);
+            if (origin == null) return out;
+            Vec3i fp = model.plotSize(dims);
+            Set<BlockPos> skip = variantCellPositions(WholeVariantBlocks.loadFor(kind, modelId, fp).entries());
+            collectDiffs(overworld, origin, fp.getX(), fp.getY(), fp.getZ(),
+                EditorPlotSnapshots.get(WholeCarriageEditor.snapshotKey(kind, modelId)), skip, out);
+            return out;
+        }
         if ("carriages".equals(categoryId)) {
             CarriageVariant variant = CarriageVariantRegistry.find(modelId).orElse(null);
             if (variant == null) return out;
@@ -411,6 +517,8 @@ public final class EditorDirtyCheck {
         if ("portals".equals(categoryId) && modelId.contains(".")) {
             String name = modelId.substring(modelId.indexOf('.') + 1);
             BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
+            // Primes PortalRoomSizes before plotSize is read — see scanPortalRooms.
+            PortalRoomTemplateStore.sizeOf(overworld, name, dims);
             Vec3i fp = PortalRoomEditor.plotSize(name, dims);
             Set<BlockPos> skip = variantCellPositions(
                 TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, fp).entries());
@@ -490,9 +598,115 @@ public final class EditorDirtyCheck {
         return switch (model.kind()) {
             case CARRIAGE, CONTENTS -> model.id();
             case TRACK -> "track." + model.variantName();
-            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL, PORTAL_ROOM ->
+            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL ->
                 model.id() + "." + model.variantName();
-            case PART, WHOLE_CARRIAGE -> null;
+            // Template.PortalRoom has no variantName of its own — it would answer its id, giving
+            // portal_room.portal_room, which no scan row carries. scanPortalRooms keys by the name.
+            case PORTAL_ROOM -> model instanceof Template.PortalRoom room
+                ? "portal_room." + room.name()
+                : model.id() + "." + model.variantName();
+            // Whole rows are keyed by the bare id under their own category ids — see scanWhole.
+            case WHOLE_CARRIAGE, CARRIAGE_GROUP -> model.id();
+            // Neither is covered by a scan pass yet.
+            case CHUNK_FRAME -> ChunkFrameEditor.MODEL_ID + "." + model.variantName();
+            case PART -> null;
+        };
+    }
+
+    /**
+     * As {@link #dirtyKeyFor(Template)}, from the kind a <em>relay download</em> carries — which is
+     * all a build has before it is installed and the registries have caught up, so there is no
+     * {@link Template} to ask.
+     *
+     * <p>Read by the download path to answer one question before it writes: does the template this
+     * build is about to land on have in-world edits nobody has saved? The strings have to be exactly
+     * the {@link DirtyEntry#modelId()} keys the scan passes emit, so they are built from the same
+     * {@link PillarSection}, {@link PillarAdjunct} and {@link TunnelVariant} ids those passes use
+     * rather than written out as literals.</p>
+     *
+     * @return null when there is nothing to compare against — a kind with no plot of its own (a part
+     *         is stamped inside the carriages plots, a carriage group is a builder-world build), or a
+     *         track sub-kind this build of the mod does not know. A null key means no prompt.
+     */
+    public static String dirtyKeyFor(BuilderPhotoPaths.Kind kind, String subKind, String id) {
+        if (kind == null || id == null || id.isEmpty()) return null;
+        return switch (kind) {
+            case CARRIAGE, CONTENTS -> id;
+            case PORTAL_ROOM -> "portal_room." + id;
+            case TRACK -> trackDirtyKeyFor(TrackKind.fromId(subKind), id);
+            case CHUNK_FRAME -> ChunkFrameEditor.MODEL_ID + "." + id;
+            case PART, CARRIAGE_GROUP -> null;
+        };
+    }
+
+    /**
+     * The {@link EditorPlotSnapshots} key a track-side plot's baseline is stored under — the
+     * inverse of the scan passes' {@code key = …} lines, so a sidecar edit on a
+     * {@code BlockVariantPlot.TrackPlot} lands on the row the scan will read.
+     */
+    @Nullable
+    public static String snapshotKeyFor(@Nullable TrackKind kind, String name) {
+        if (kind == null || name == null) return null;
+        return switch (kind) {
+            case TILE -> TrackEditor.snapshotKey(name);
+            case PILLAR_TOP -> PillarEditor.sectionSnapshotKey(PillarSection.TOP, name);
+            case PILLAR_MIDDLE -> PillarEditor.sectionSnapshotKey(PillarSection.MIDDLE, name);
+            case PILLAR_BOTTOM -> PillarEditor.sectionSnapshotKey(PillarSection.BOTTOM, name);
+            case ADJUNCT_STAIRS -> PillarEditor.adjunctSnapshotKey(PillarAdjunct.STAIRS, name);
+            case ADJUNCT_STAIRS_ENTRANCE -> PillarEditor.adjunctSnapshotKey(PillarAdjunct.STAIRS_ENTRANCE, name);
+            case TUNNEL_SECTION -> TunnelEditor.tunnelSnapshotKey(TunnelVariant.SECTION, name);
+            case TUNNEL_PORTAL -> TunnelEditor.tunnelSnapshotKey(TunnelVariant.PORTAL, name);
+            case PORTAL_ROOM -> PortalRoomEditor.snapshotKey(name);
+        };
+    }
+
+    /**
+     * As {@link #snapshotKeyFor(TrackKind, String)}, from a scan row's
+     * ({@link DirtyEntry#categoryId()}, {@link DirtyEntry#modelId()}) — what the changes-list
+     * drilldown has in hand. Null for a row shape the scan never emits.
+     */
+    @Nullable
+    static String snapshotKeyFor(String categoryId, String modelId) {
+        if (categoryId == null || modelId == null) return null;
+        switch (categoryId) {
+            case "carriages", "contents", "whole", "whole_group" -> {
+                return EditorPlotSnapshots.key(categoryId, modelId);
+            }
+            case "portals" -> {
+                int sep = modelId.indexOf('.');
+                return sep < 0 ? null : PortalRoomEditor.snapshotKey(modelId.substring(sep + 1));
+            }
+            case "tracks" -> {
+                int sep = modelId.indexOf('.');
+                if (sep < 0) return null;
+                String prefix = modelId.substring(0, sep);
+                String name = modelId.substring(sep + 1);
+                for (TrackKind kind : TrackKind.values()) {
+                    if (kind == TrackKind.PORTAL_ROOM) continue;
+                    String key = trackDirtyKeyFor(kind, name);
+                    if (key != null && key.equals(prefix + "." + name)) return snapshotKeyFor(kind, name);
+                }
+                return null;
+            }
+            default -> {
+                return null;
+            }
+        }
+    }
+
+    /** The {@link #dirtyKeyFor} arm for the track-side kinds, one key shape per editor. */
+    private static String trackDirtyKeyFor(TrackKind kind, String id) {
+        if (kind == null) return null;
+        return switch (kind) {
+            case TILE -> "track." + id;
+            case PILLAR_TOP -> "pillar_" + PillarSection.TOP.id() + "." + id;
+            case PILLAR_MIDDLE -> "pillar_" + PillarSection.MIDDLE.id() + "." + id;
+            case PILLAR_BOTTOM -> "pillar_" + PillarSection.BOTTOM.id() + "." + id;
+            case ADJUNCT_STAIRS -> "adjunct_" + PillarAdjunct.STAIRS.id() + "." + id;
+            case ADJUNCT_STAIRS_ENTRANCE -> "adjunct_" + PillarAdjunct.STAIRS_ENTRANCE.id() + "." + id;
+            case TUNNEL_SECTION -> "tunnel_" + TunnelVariant.SECTION.id() + "." + id;
+            case TUNNEL_PORTAL -> "tunnel_" + TunnelVariant.PORTAL.id() + "." + id;
+            case PORTAL_ROOM -> "portal_room." + id;
         };
     }
 

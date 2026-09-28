@@ -11,7 +11,19 @@
         "VOID",
         "END",
         "UPSIDE_DOWN",
-        "CHUNCKS"
+        "CHUNCKS",
+        "SPHERES",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ]
     },
     {
@@ -27,13 +39,25 @@
         "OVERWORLD",
         "NETHER",
         "UPSIDE_DOWN",
-        "CHUNCKS"
+        "CHUNCKS",
+        "SPHERES",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ]
     },
     {
       "id": "cvspharmacy",
       "weight": 1,
-      "minLevel": 80
+      "minLevel": 65
     },
     {
       "id": "abandonedroom",
@@ -62,6 +86,114 @@
     },
     {
       "id": "deserter",
+      "weight": 1,
+      "maxLevel": 10
+    },
+    {
+      "id": "man",
+      "weight": 1,
+      "minLevel": 7,
+      "maxLevel": 17
+    },
+    {
+      "id": "terrarium",
+      "weight": 1,
+      "minLevel": 11
+    },
+    {
+      "id": "suspiciousfurniturestore",
+      "weight": 1,
+      "minLevel": 66,
+      "maxLevel": 108
+    },
+    {
+      "id": "peateargriffin",
+      "weight": 1,
+      "minLevel": 31,
+      "maxLevel": 34
+    },
+    {
+      "id": "foundation",
+      "weight": 1,
+      "minLevel": 18
+    },
+    {
+      "id": "chess",
+      "weight": 1
+    },
+    {
+      "id": "nostalgia",
+      "weight": 1
+    },
+    {
+      "id": "squidwardshouse_2",
+      "weight": 1,
+      "minLevel": 30,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
+      ]
+    },
+    {
+      "id": "bearcave",
+      "weight": 1,
+      "minLevel": 16
+    },
+    {
+      "id": "gravityfalls",
+      "weight": 1,
+      "minLevel": 27
+    },
+    {
+      "id": "dreamcore",
+      "weight": 1
+    },
+    {
+      "id": "kfc",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "NETHER",
+        "UPSIDE_DOWN",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
+      ]
+    },
+    {
+      "id": "safehaven",
+      "weight": 1,
+      "maxLevel": 9
+    },
+    {
+      "id": "grandisolagenerator",
+      "weight": 1,
+      "minLevel": 19,
+      "maxLevel": 35
+    },
+    {
+      "id": "lowkeyabridge",
       "weight": 1
     }
   ]

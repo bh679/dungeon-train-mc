@@ -205,16 +205,22 @@ public final class PlayerJoinEvents {
         // rather than keeping whatever the last session left behind.
         DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.EditorMenusModePacket.of(
             games.brennan.dungeontrain.editor.PartPositionMenuController.mode(player)));
+        // And the world's editor Observers setting, for the same reason — it is persisted with the
+        // world, and the client's default is On.
+        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.EditorObserversPacket(
+            games.brennan.dungeontrain.world.DungeonTrainWorldData.get(player.serverLevel().getServer().overworld())
+                .isEditorObserversOn()));
+        // Likewise the editor Mobs setting (Blocks / Live) — world-persisted, client default Blocks.
+        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.EditorMobsModePacket(
+            games.brennan.dungeontrain.world.DungeonTrainWorldData.get(player.serverLevel().getServer().overworld())
+                .isEditorMobsLive()));
         // Somebody who quit standing in a test dimensional carriage comes back standing in it, and
         // the client assumes no session until told otherwise — without this the Back row is gone and
         // the only way out of a sealed basement is a manual /tp. The session itself is server-side
-        // and outlived their absence.
-        games.brennan.dungeontrain.portal.PortalTestSession.Session testTrip =
-            games.brennan.dungeontrain.portal.PortalTestSession.get(player.getUUID());
-        if (testTrip != null) {
-            DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.PortalTestSessionPacket(
-                true, testTrip.roomName()));
-        }
+        // and outlived their absence. Sent whether or not they are on a trip: the same packet carries
+        // the world's reseed-on-test switch, which the editor's toggle shows before any test is run.
+        DungeonTrainNet.sendTo(player,
+            games.brennan.dungeontrain.net.PortalTestSessionPacket.of(player));
         // Sync the disintegration-band geometry (per-world carriage length + train
         // flag) so the client can fade the sky/fog toward the End across the band.
         ServerLevel bandLevel = player.serverLevel().getServer().overworld();
@@ -224,6 +230,8 @@ public final class PlayerJoinEvents {
         // leave that space alone. See ClientUpsideDownBand#isInTwinSpace.
         DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(),
                 bandData.startsWithTrain(), bandData.getTrainY(), WorldFloor.bedrockY(bandLevel)));
+        // How far the reversed bands behind spawn have slid back (worldgen.ReverseSlide).
+        DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.worldgen.ReverseSlide.packetFor(bandData, player, false));
         // Reopening a saved Train Builder world: re-stamp it from what the world records it is
         // holding, so a world always comes back up as a scene its mode can explain rather than as
         // whatever the last session's blocks happened to be. No-op in every ordinary world, and in
@@ -275,6 +283,8 @@ public final class PlayerJoinEvents {
             // locked room is greeted again when they come back — the line is the only thing that
             // says whose books these are, and a rejoin is exactly when it is worth repeating.
             games.brennan.dungeontrain.narrative.PortalLibraryGreeter.forget(player.getUUID());
+            // Same for the builder line: a rejoin inside a credited room is worth repeating it.
+            games.brennan.dungeontrain.narrative.PortalBuilderGreeter.forget(player.getUUID());
         }
     }
 

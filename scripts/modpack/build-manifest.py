@@ -3,15 +3,16 @@
 
 A CurseForge modpack manifest lists the Minecraft version, the modloader, and an
 explicit set of CurseForge mod files (by ``projectID`` + ``fileID``). Dungeon Train
-jarJars only DiscordPresence + joml-primitives *inside* its own jar; the sibling mods
-AIN/AIS/PlayerMob/EnderChestPersistence are un-bundled required downloads (so their own
+jarJars only DiscordPresence + EdibleBackpacks + joml-primitives *inside* its own jar; the sibling mods
+AIN/AIS/PlayerMob/EnderChestPersistence/TradeEverything/KeepTrim are un-bundled required downloads (so their own
 project pages get credited), which means the pack must list them explicitly:
 
   * Dungeon Train — project from ``modpack.config.json``, file ID passed in per release
     (the freshly uploaded CurseForge file, surfaced by mc-publish in ``release.yml``).
   * Sable — an un-bundled runtime dep, *pinned* in ``modpack.config.json`` to the
     exact version DT is built against (PolyForm Shield forbids bundling it).
-  * Each ``optional_mods`` entry — including the five siblings, which carry
+  * Each ``optional_mods`` entry — including the six siblings plus the two hybrid ones (DungeonBackup +
+    SableFenceTrapdoorFix — jarJar'd for Modrinth, separate CurseForge Includes), which carry
     ``required: true`` so the pack ships them switched ON (a CurseForge ``required:false``
     entry ships a mod *disabled*, which for a hard dependency would break the pack).
 
@@ -66,7 +67,16 @@ def load_config(path: Path) -> dict:
     # Each becomes a CurseForge manifest file whose "required" flag is taken from the entry's
     # own "required" field (default False): True => bundled & ENABLED by default; False =>
     # bundled but DISABLED by default (CurseForge's opt-in "Include"). See modpack/README.md.
+    # A ``modrinth_only`` entry (not listed on CurseForge, e.g. Sable Pathfinder) has no CF ids
+    # and is left out of this manifest entirely.
     for i, opt in enumerate(config.get("optional_mods", [])):
+        if "modrinth_only" in opt and not isinstance(opt["modrinth_only"], bool):
+            raise ValueError(
+                f"{path} optional_mods[{i}] 'modrinth_only' must be a boolean, got "
+                f"{opt['modrinth_only']!r}"
+            )
+        if opt.get("modrinth_only"):
+            continue
         opt_missing = [k for k in ("project_id", "file_id") if k not in opt]
         if opt_missing:
             raise ValueError(
@@ -110,6 +120,8 @@ def build_manifest(
     #                    Building). NOTE: in the CurseForge app required=False means the
     #                    mod ships OFF — see modpack/README.md. Pins maintained like Sable.
     for opt in config.get("optional_mods", []):
+        if opt.get("modrinth_only"):
+            continue
         files.append(
             {
                 "projectID": int(opt["project_id"]),

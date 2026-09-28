@@ -37,9 +37,21 @@ public final class ClientNetherBand {
      * cycle along +X.
      */
     public static double netherIntensityAt(double worldX) {
+        return netherBandIntensityAt(worldX);
+    }
+
+    /**
+     * The real Nether transition band's ramp. For gameplay rules that belong to the real Nether (water
+     * evaporating from a bucket). Today identical to {@link #netherIntensityAt}, which is atmosphere.
+     */
+    public static double netherBandIntensityAt(double worldX) {
         if (!startsWithTrain) return 0.0;
+        return netherBandRampAt(WorldGenCycle.fromConfig(), (int) Math.floor(worldX));
+    }
+
+    private static double netherBandRampAt(WorldGenCycle cycle, int worldX) {
         if (!DungeonTrainCommonConfig.isNetherTransitionEnabled()) return 0.0;
-        return WorldGenCycle.fromConfig().netherRamp((int) Math.floor(worldX));
+        return cycle.netherRamp(worldX);
     }
 
     /** Nether intensity {@code n} crosses this point: below it the Overworld track plays, above it the Nether track. */

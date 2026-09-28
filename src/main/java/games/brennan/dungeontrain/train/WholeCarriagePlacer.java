@@ -3,9 +3,9 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
@@ -57,11 +57,36 @@ public final class WholeCarriagePlacer {
                 wholeCarriage.id());
             return false;
         }
-        CarriagePlacer.eraseAt(level, origin, dims);
-        // Entities are ignored to match the capture, which fills from world without them.
-        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-        template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_ALL);
+        CarriageStampGuard.run(() -> {
+            CarriagePlacer.eraseAt(level, origin, dims);
+            // Vanilla's own entity pass stays off, as it does at every stamp site in this mod — the
+            // processor chain is in charge of what lands. The decoration follows separately, through
+            // TemplateDecor, exactly as CarriagePlacer.stampTemplate does for a shell. It has to:
+            // captureTemplate below keeps the author's armor stands, pictures, mobs and minecarts,
+            // so a stamp that put none back would lose them on the next save.
+            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+            template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
+            // replace, not spawn: a caller may stamp over a plot nobody cleared first
+            // (Template.Carriage, BuilderWorldSetup's open path), and a re-stamp must not hang a
+            // second copy of every picture through the first.
+            TemplateDecor.replace(level, origin, template.get(), new StructurePlaceSettings(),
+                    /*mark*/ null, TemplateDecor.Rule.CARRIAGE);
+        });
         return true;
+    }
+
+    /**
+     * The train path: stamp {@code template} section-local with no relight — the lift into the
+     * Sable sub-level relights — and return the footprint the shipyard assembles. Erases first for
+     * the reason {@link #placeAt} gives. The caller holds the stage scope.
+     */
+    public static java.util.Set<BlockPos> placeForTrain(ServerLevel level, BlockPos origin,
+                                                        StructureTemplate template, CarriageDims dims) {
+        return CarriageStampGuard.call(() -> {
+            CarriagePlacer.eraseAt(level, origin, dims);
+            CarriagePlacer.stampTemplateAt(level, origin, template, /*relight*/ false);
+            return CarriagePlacer.collectFootprint(level, origin, dims);
+        });
     }
 
     /**

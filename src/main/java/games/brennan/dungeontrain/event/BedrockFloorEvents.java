@@ -1,12 +1,17 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.editor.EditorWorldLayout;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
+import games.brennan.dungeontrain.worldgen.StacksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
+import games.brennan.dungeontrain.worldgen.SunkZone;
+import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -71,9 +76,14 @@ public final class BedrockFloorEvents {
         // gates above — but it is meant to be void outside its one 300×300 platform. Floor it and
         // the "platform in the void" becomes an infinite bedrock plane instead.
         if (level.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) return;
+        // Same for the Train Editor's void world — its plots hang in the sky over nothing.
+        if (EditorWorldLayout.isEditorWorld(level)) return;
 
         ChunkAccess chunk = event.getChunk();
         int chunkMinX = chunk.getPos().getMinBlockX();
+
+        // Before any of the floor skips below: the lid is independent of whether this chunk gets a floor.
+        stampSunkLid(level, chunk);
 
         // Chuncks band: a VOID chunk is pure void and a SLICE chunk is a floating slab (flat cut-off
         // bottom) — neither gets a bedrock floor at minY. A FULL (vertically complete) chuncks chunk
@@ -83,6 +93,34 @@ public final class BedrockFloorEvents {
         if (chuncksKind == ChuncksBand.Kind.VOID || chuncksKind == ChuncksBand.Kind.SLICE) {
             return;
         }
+        // Stacks band: VOID chunks are pure void and STACK chunks are towers hanging in it from the
+        // world floor up — neither gets a bedrock floor. TERRAIN (outside the band, or the real terrain
+        // left in the entry fade) keeps its floor like normal overworld.
+        if (StacksBand.kindOf(level, chunk.getPos().x, chunk.getPos().z) != StacksBand.Kind.TERRAIN) {
+            return;
+        }
+
+        // Spheres band: floating spheres over open void, and a fade where the ground dissolves — no
+        // bedrock floor anywhere the void ramp is non-zero. Per-chunk + deterministic, order-independent
+        // with the carve handler (which would erase the floor anyway outside the spheres).
+        if (SpheresBand.chunkTouchesBand(level, chunkMinX, chunk.getPos().getMinBlockZ())) {
+            return;
+        }
+
+        // Spheres band: floating spheres over open void, and a fade where the ground dissolves — no
+        // bedrock floor anywhere the void ramp is non-zero. Per-chunk + deterministic, order-independent
+        // with the carve handler (which would erase the floor anyway outside the spheres).
+        if (SpheresBand.chunkTouchesBand(level, chunkMinX, chunk.getPos().getMinBlockZ())) {
+            return;
+        }
+
+        // Void-below legacy bands (Skylands): islands over open void — a chunk the old generator owns
+        // gets no floor. Fade chunks that rolled modern keep theirs, leaving old/new chunk walls.
+        games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind legacyKind =
+            games.brennan.dungeontrain.worldgen.legacy.LegacyBands.kindOfChunk(level, chunk.getPos().x, chunk.getPos().z);
+        if (legacyKind != null && legacyKind.voidBelow()) {
+            return;
+        }
 
         // The disintegration band's void has no floor — skip bedrock in columns whose band
         // phase is void/End (middleRamp > 0). Computed per column so a chunk straddling a
@@ -90,7 +128,7 @@ public final class BedrockFloorEvents {
         // event ordering vs the erosion handler. (The nether phase keeps its floor: its
         // middleRamp is 0, so bedrock is placed normally there.)
         long bandStartX = DisintegrationBand.startX(level);
-        boolean maybeBand = chunkMinX + 15 >= bandStartX;
+        boolean maybeBand = bandStartX != DisintegrationBand.OFF;
 
         // The upside-down band flips the world's bedrock caps to the roof (WorldUpsideDownEvents),
         // so it has no floor either — skip bedrock in its columns when that inversion is enabled.
@@ -98,12 +136,13 @@ public final class BedrockFloorEvents {
         // like the void skip, so the two ChunkEvent.Load handlers stay order-independent.
         boolean roofInvert = DungeonTrainCommonConfig.isUpsideDownBedrockRoof();
         long upsideStartX = roofInvert ? UpsideDownBand.startX(level) : UpsideDownBand.OFF;
-        boolean maybeUpside = upsideStartX != UpsideDownBand.OFF && chunkMinX + 15 >= upsideStartX;
+        boolean maybeUpside = upsideStartX != UpsideDownBand.OFF;
 
         // The floor of TERRAIN, not of the level: a DT overworld's dimension type runs below its
         // noise settings so the portal system has an empty basement to work in, and the bedrock
         // belongs at the top of that basement — under the world, not under the basement.
-        int floorY = WorldFloor.bedrockY(level);
+        // A sunk Amplified chunk's terrain runs down into the basement, so its floor is lower too.
+        int floorY = WorldFloor.terrainFloorY(level, chunk.getPos().x, chunk.getPos().z);
         int sectionIdx = chunk.getSectionIndex(floorY);
         LevelChunkSection section = chunk.getSection(sectionIdx);
         int sectionBaseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sectionIdx));
@@ -112,20 +151,52 @@ public final class BedrockFloorEvents {
         for (int dx = 0; dx < 16; dx++) {
             int worldX = chunkMinX + dx;
             boolean voidColumn = maybeBand
-                    && DisintegrationBand.middleRampAt(level, worldX) > 0.0;
+                    && DisintegrationBand.middleRampAt(level, worldX, chunk.getPos().getMinBlockZ()) > 0.0;
             boolean upsideColumn = maybeUpside
-                    && UpsideDownBand.isInBand(level, worldX);
+                    && UpsideDownBand.isInBand(level, worldX, chunk.getPos().getMinBlockZ());
             // In the exit crossfade the underside stays open void until the overworld coalesces —
             // WorldUpsideDownEvents clears the floor there while !exitFloorPresent, so match it here so
             // the two handlers agree per column. Once the floor has returned, bedrock is stamped normally.
             boolean exitVoidColumn = maybeUpside
-                    && UpsideDownBand.isInExitFade(level, worldX)
-                    && !UpsideDownBand.exitFloorPresent(level, worldX);
+                    && UpsideDownBand.isInExitFade(level, worldX, chunk.getPos().getMinBlockZ())
+                    && !UpsideDownBand.exitFloorPresent(level, worldX, chunk.getPos().getMinBlockZ());
             if (voidColumn || upsideColumn || exitVoidColumn) continue;
             for (int dz = 0; dz < 16; dz++) {
                 section.setBlockState(dx, localY, dz, bedrock, false);
             }
         }
         chunk.setUnsaved(true);
+    }
+
+    /**
+     * The sunk zone's attic seal: a row of barrier at {@link AmplifiedDrop#lidY} over every column of the
+     * {@link SunkZone} (the gap leading into Amplified, and Amplified's fades and core — sunk terrain fills
+     * the basement there, so twins use the attic). Barrier rather than bedrock so the sky stays open.
+     *
+     * <p>Only air is replaced: a fade chunk that rolled ordinary overworld can carry a peak through the
+     * lid height, and a barrier sheet through that peak would be a wall a player walks into. Same raw
+     * section writes as the floor, for the same Sable reason.</p>
+     */
+    private static void stampSunkLid(ServerLevel level, ChunkAccess chunk) {
+        int chunkMinX = chunk.getPos().getMinBlockX();
+        int chunkMinZ = chunk.getPos().getMinBlockZ();
+        boolean anyInSlot = SunkZone.contains(level, chunkMinX, chunkMinZ) || SunkZone.contains(level, chunkMinX + 15, chunkMinZ);
+        if (!anyInSlot) return;
+        AmplifiedDrop drop = AmplifiedDrop.of(level);
+        if (!drop.active() || drop.lidY() >= level.getMaxBuildHeight()) return;
+        int sectionIdx = chunk.getSectionIndex(drop.lidY());
+        LevelChunkSection section = chunk.getSection(sectionIdx);
+        int localY = drop.lidY() - SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sectionIdx));
+        BlockState barrier = Blocks.BARRIER.defaultBlockState();
+        boolean wrote = false;
+        for (int dx = 0; dx < 16; dx++) {
+            if (!SunkZone.contains(level, chunkMinX + dx, chunkMinZ)) continue;
+            for (int dz = 0; dz < 16; dz++) {
+                if (!section.getBlockState(dx, localY, dz).isAir()) continue;
+                section.setBlockState(dx, localY, dz, barrier, false);
+                wrote = true;
+            }
+        }
+        if (wrote) chunk.setUnsaved(true);
     }
 }

@@ -175,8 +175,8 @@ public final class NarrativeCommand {
                 int variants = story.letters().stream().mapToInt(l -> l.variants().size()).sum();
                 String tail = id.getPath().substring(id.getPath().lastIndexOf('/') + 1);
                 source.sendSuccess(() -> Component.literal(
-                    String.format("  %s (%d letters, %d variants) — %s",
-                        tail, letters, variants, story.story())
+                    String.format("  %s (%d letters, %d variants%s) — %s",
+                        tail, letters, variants, story.deferred() ? ", held back" : "", story.story())
                 ), false);
             });
         }
@@ -211,19 +211,28 @@ public final class NarrativeCommand {
             return 0;
         }
         source.sendSuccess(() -> Component.literal(
-            "Random books loaded: " + total + " (total weight: " + RandomBookRegistry.totalWeight() + ")"
+            "Random books loaded: " + total + " (total weight: " + formatWeight(RandomBookRegistry.totalWeight()) + ")"
         ).withStyle(ChatFormatting.GREEN), false);
         for (var id : RandomBookRegistry.ids()) {
             RandomBookRegistry.get(id).ifPresent(book -> {
                 String tail = id.getPath().substring(id.getPath().lastIndexOf('/') + 1);
                 source.sendSuccess(() -> Component.literal(
-                    String.format("  %s — %s by %s (%d variants, weight %d, gen %d)",
+                    String.format("  %s — %s by %s (%d variants, weight %s, gen %d)",
                         tail, book.title(), book.author(),
-                        book.variants().size(), book.weight(), book.generation())
+                        book.variants().size(), formatWeight(book.weight()), book.generation())
                 ), false);
             });
         }
         return total;
+    }
+
+    /**
+     * Book weights are fractional (a meta book sits at {@code 0.1}), so print a whole weight as
+     * {@code 1} rather than {@code 1.0} and keep the decimals only where they carry meaning.
+     */
+    private static String formatWeight(double weight) {
+        if (weight == Math.rint(weight) && Math.abs(weight) < 1e9) return Long.toString((long) weight);
+        return String.valueOf(Math.round(weight * 1000d) / 1000d);
     }
 
     private static int runRandomBookGiveRandom(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
@@ -304,15 +313,15 @@ public final class NarrativeCommand {
             return 0;
         }
         source.sendSuccess(() -> Component.literal(
-            "Starting books loaded: " + total + " (total weight: " + StartingBookRegistry.totalWeight() + ")"
+            "Starting books loaded: " + total + " (total weight: " + formatWeight(StartingBookRegistry.totalWeight()) + ")"
         ).withStyle(ChatFormatting.GREEN), false);
         for (var id : StartingBookRegistry.ids()) {
             StartingBookRegistry.get(id).ifPresent(book -> {
                 String tail = id.getPath().substring(id.getPath().lastIndexOf('/') + 1);
                 source.sendSuccess(() -> Component.literal(
-                    String.format("  %s — %s by %s (%d variants, weight %d, gen %d)",
+                    String.format("  %s — %s by %s (%d variants, weight %s, gen %d)",
                         tail, book.title(), book.author(),
-                        book.variants().size(), book.weight(), book.generation())
+                        book.variants().size(), formatWeight(book.weight()), book.generation())
                 ), false);
             });
         }

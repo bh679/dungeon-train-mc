@@ -3,17 +3,25 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Server-side singleton that records the block geometry of each editor
@@ -50,8 +58,26 @@ public final class EditorPlotSnapshots {
      * so hanging one changes no {@link BlockState} anywhere and the position compare reads the plot
      * as untouched. Before templates carried decor that was correct; now it means an author can
      * decorate a carriage, walk out, and be told they had nothing to save.</p>
+     *
+     * <p>Only taken and compared while the plot's entities are visible — see {@link DecorBaselines}.</p>
      */
-    private static final Map<String, Long> DECOR = new HashMap<>();
+    private static final DecorBaselines<DecorRegion> DECOR = new DecorBaselines<>();
+
+    /** Where a pending decoration baseline is to be taken from. */
+    private record DecorRegion(ResourceKey<Level> dimension, BlockPos origin,
+                               int length, int height, int width) {}
+
+    /**
+     * {@code "carriages:standard"} → the local positions whose variant pool changed since the
+     * baseline was taken. An empty set is still "edited" — a lock id, mirror flag or copy setting
+     * has no cell of its own.
+     *
+     * <p>Variant cells are the one thing the block compare cannot see: {@link EditorDirtyCheck}
+     * skips them because the preview ticker rewrites them every second, and the sidecar itself is
+     * written to disk on every Z-menu edit. So an author could add a whole variant pool, walk out,
+     * and be told there was nothing to save — the same gap decoration used to have.</p>
+     */
+    private static final Map<String, Set<BlockPos>> SIDECAR_EDITS = new HashMap<>();
 
     private EditorPlotSnapshots() {}
 
@@ -75,28 +101,106 @@ public final class EditorPlotSnapshots {
             }
         }
         SNAPSHOTS.put(key, snap);
-        DECOR.put(key, decorFingerprint(level, origin, length, height, width));
+        DECOR.capture(key, new DecorRegion(level.dimension(), origin.immutable(), length, height, width),
+            entitiesObservable(level, origin, length, width),
+            () -> decorFingerprint(level, origin, length, height, width));
+        SIDECAR_EDITS.remove(key);
+        // Every stamp and every save lands here, and after either the sidecar on disk is the plot's
+        // baseline again — see EditorSidecarBaseline.
+        EditorSidecarBaseline.forget(key);
+    }
+
+    /**
+     * Record that {@code key}'s variant sidecar changed at {@code localPos} — or somewhere with no
+     * cell, when null. Cleared by the next {@link #capture}, which every stamp and every save runs.
+     */
+    public static synchronized void markSidecarEdit(@Nullable String key, @Nullable BlockPos localPos) {
+        if (key == null) return;
+        Set<BlockPos> cells = SIDECAR_EDITS.computeIfAbsent(key, k -> new LinkedHashSet<>());
+        if (localPos != null) cells.add(localPos.immutable());
+    }
+
+    /** Whether {@code key}'s variant sidecar changed since its baseline was taken. */
+    public static synchronized boolean sidecarEdited(String key) {
+        return SIDECAR_EDITS.containsKey(key);
+    }
+
+    /** The cells {@link #markSidecarEdit} recorded for {@code key}; empty when none or unknown. */
+    public static synchronized Set<BlockPos> sidecarEdits(String key) {
+        Set<BlockPos> cells = SIDECAR_EDITS.get(key);
+        return cells == null ? Set.of() : new LinkedHashSet<>(cells);
     }
 
     /**
      * Whether the plot's decoration still matches its baseline.
      *
      * <p>{@code true} when no baseline was recorded, so a missing snapshot never produces a false
-     * positive — the same contract {@link #get} documents.</p>
+     * positive — the same contract {@link #get} documents. {@code true} as well while the plot's
+     * entities are out of sight: the query would see none of them and read the plot as emptied.</p>
      */
     public static synchronized boolean decorMatches(String key, ServerLevel level, BlockPos origin,
                                                     int length, int height, int width) {
-        Long baseline = DECOR.get(key);
-        return baseline == null
-            || baseline == decorFingerprint(level, origin, length, height, width);
+        return DECOR.matches(key, entitiesObservable(level, origin, length, width),
+            () -> decorFingerprint(level, origin, length, height, width));
     }
 
     /**
-     * A value summarising which decoration hangs where in a plot.
+     * Whether an entity query over the box would see every entity in it: each chunk it spans is
+     * entity-ticking (its sections are visible) and has its entities loaded from disk.
+     */
+    private static boolean entitiesObservable(ServerLevel level, BlockPos origin, int length, int width) {
+        int minX = SectionPos.blockToSectionCoord(origin.getX());
+        int maxX = SectionPos.blockToSectionCoord(origin.getX() + Math.max(0, length - 1));
+        int minZ = SectionPos.blockToSectionCoord(origin.getZ());
+        int maxZ = SectionPos.blockToSectionCoord(origin.getZ() + Math.max(0, width - 1));
+        for (int cx = minX; cx <= maxX; cx++) {
+            for (int cz = minZ; cz <= maxZ; cz++) {
+                BlockPos corner = new BlockPos(SectionPos.sectionToBlockCoord(cx), origin.getY(),
+                    SectionPos.sectionToBlockCoord(cz));
+                if (!level.isPositionEntityTicking(corner)
+                        || !level.areEntitiesLoaded(ChunkPos.asLong(cx, cz))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Take the decoration baselines that were stamped out of sight, once their plots come into
+     * view. Runs before a player can reach the plot — entity-ticking starts at simulation distance —
+     * so an author's edit never becomes part of the baseline.
+     */
+    @SubscribeEvent
+    public static void onLevelTick(LevelTickEvent.Post event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        synchronized (EditorPlotSnapshots.class) {
+            if (!DECOR.hasPending()) return;
+            for (Map.Entry<String, DecorRegion> e : DECOR.pending().entrySet()) {
+                DecorRegion r = e.getValue();
+                if (r.dimension() != level.dimension()) continue;
+                if (!entitiesObservable(level, r.origin(), r.length(), r.width())) continue;
+                DECOR.resolve(e.getKey(),
+                    decorFingerprint(level, r.origin(), r.length(), r.height(), r.width()));
+            }
+        }
+    }
+
+    /**
+     * A value summarising which carried entities stand where in a plot.
+     *
+     * <p>{@link TemplateDecor#carried}, not the wall-hung three: a template carries the mobs an
+     * author places as well, so placing one has to count as a change or the plot reads clean and
+     * the editor never offers to save it.</p>
      *
      * <p>Order-independent (the entity query's order is not stable) and position-rounded to a third
      * of a block — finer than any deliberate reposition, coarser than float drift. Facing is folded
      * in because turning a picture to the opposite wall moves it barely at all.</p>
+     *
+     * <p>A mob contributes its type only. It turns to look at the author and wanders where its AI
+     * takes it, so its position and facing change on their own; folding them in had every plot
+     * with a mob in it pulsing "unsaved" for as long as the mob was awake. Placing or removing one
+     * still changes the sum, which is the edit the fingerprint exists to catch.</p>
      */
     private static long decorFingerprint(ServerLevel level, BlockPos origin,
                                          int length, int height, int width) {
@@ -104,8 +208,12 @@ public final class EditorPlotSnapshots {
             origin.getX(), origin.getY(), origin.getZ(),
             origin.getX() + length, origin.getY() + height, origin.getZ() + width);
         long sum = 0L;
-        for (Entity e : level.getEntities((Entity) null, box, TemplateDecor::isDecor)) {
+        for (Entity e : level.getEntities((Entity) null, box, TemplateDecor::carried)) {
             long h = e.getType().hashCode();
+            if (e instanceof LivingEntity) {
+                sum += h;
+                continue;
+            }
             h = h * 31 + Math.round((e.getX() - origin.getX()) * 3.0);
             h = h * 31 + Math.round((e.getY() - origin.getY()) * 3.0);
             h = h * 31 + Math.round((e.getZ() - origin.getZ()) * 3.0);
@@ -141,13 +249,17 @@ public final class EditorPlotSnapshots {
     /** Drop the snapshot for a specific (category, model). Called from each editor's {@code clearPlot} so a switched-away category doesn't leave stale snapshots that the next dirty check would compare an empty plot against. */
     public static synchronized void clear(String key) {
         SNAPSHOTS.remove(key);
-        DECOR.remove(key);
+        DECOR.clear(key);
+        SIDECAR_EDITS.remove(key);
+        EditorSidecarBaseline.forget(key);
     }
 
     /** Wipe all snapshots. */
     public static synchronized void clearAll() {
         SNAPSHOTS.clear();
-        DECOR.clear();
+        DECOR.clearAll();
+        SIDECAR_EDITS.clear();
+        EditorSidecarBaseline.clearAll();
     }
 
     /**

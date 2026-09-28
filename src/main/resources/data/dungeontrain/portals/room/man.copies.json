@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 2,
+  "floor": ["minecraft:black_concrete"],
+  "roof": ["dungeontrain:skybox_night"]
+}

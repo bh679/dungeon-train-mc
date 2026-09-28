@@ -2,11 +2,17 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +63,80 @@ public final class TemplateCells {
             }
         }
         return cells;
+    }
+
+    /**
+     * Every block of the template's first palette with its NBT — air included, as authored. Empty
+     * when the template is null or the reflection fails.
+     */
+    public static List<StructureTemplate.StructureBlockInfo> blockInfos(StructureTemplate template) {
+        if (template == null) return List.of();
+        List<StructureTemplate.Palette> palettes = palettesOf(template);
+        return palettes.isEmpty() ? List.of() : palettes.get(0).blocks();
+    }
+
+    /** One kind of light-giving block, how many there are, and the brightest level among them. */
+    public record LightBlock(Block block, int count, int emission) {}
+
+    /**
+     * The blocks in {@code cells} that give off light — torches, lanterns, glowstone, lit furnaces —
+     * one entry per kind, most numerous first (brightest breaking ties). A kind is the item a block
+     * is placed from, so a wall torch and a standing torch are one torch.
+     */
+    public static List<LightBlock> lights(Map<BlockPos, BlockState> cells) {
+        Map<Object, Block> first = new LinkedHashMap<>();
+        Map<Object, int[]> tallies = new LinkedHashMap<>();
+        for (BlockState state : cells.values()) {
+            int emission = state.getLightEmission();
+            if (emission <= 0) continue;
+            Block block = state.getBlock();
+            Object kind = block.asItem() == Items.AIR ? block : block.asItem();
+            first.putIfAbsent(kind, block);
+            int[] tally = tallies.computeIfAbsent(kind, k -> new int[2]);
+            tally[0]++;
+            tally[1] = Math.max(tally[1], emission);
+        }
+        List<LightBlock> out = new ArrayList<>(tallies.size());
+        tallies.forEach((kind, t) -> out.add(new LightBlock(first.get(kind), t[0], t[1])));
+        out.sort(Comparator.comparingInt(LightBlock::count).reversed()
+            .thenComparing(Comparator.comparingInt(LightBlock::emission).reversed()));
+        return List.copyOf(out);
+    }
+
+    /** What a template's block-entity NBT adds up to: how many blocks carry any, and how many hold items. */
+    public record NbtTally(int blockEntities, int containers) {}
+
+    /**
+     * Tally the block-entity tags of a template's first palette.
+     *
+     * <p>Every block with a tag is a block entity; one whose tag carries an {@code Items} list is
+     * a container. That covers chests, barrels, shulker boxes, hoppers, furnaces and the like
+     * without naming any of them.</p>
+     */
+    public static NbtTally tallyBlockEntities(StructureTemplate template) {
+        if (template == null) return new NbtTally(0, 0);
+        List<StructureTemplate.Palette> palettes = palettesOf(template);
+        if (palettes.isEmpty()) return new NbtTally(0, 0);
+        List<CompoundTag> tags = new java.util.ArrayList<>();
+        for (StructureTemplate.StructureBlockInfo info : palettes.get(0).blocks()) {
+            if (info.nbt() != null) tags.add(info.nbt());
+        }
+        return tallyNbt(tags);
+    }
+
+    /** The pure half of {@link #tallyBlockEntities}: count tags, and tags with an {@code Items} list. */
+    public static NbtTally tallyNbt(List<CompoundTag> tags) {
+        int containers = 0;
+        for (CompoundTag tag : tags) {
+            if (tag != null && tag.contains("Items", Tag.TAG_LIST)) containers++;
+        }
+        return new NbtTally(tags.size(), containers);
+    }
+
+    /** How many entities a raw template tag carries — the {@code entities} list's length. */
+    public static int entityCount(CompoundTag templateTag) {
+        if (templateTag == null || !templateTag.contains("entities", Tag.TAG_LIST)) return 0;
+        return templateTag.getList("entities", Tag.TAG_COMPOUND).size();
     }
 
     @SuppressWarnings("unchecked")

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.blockvariant;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -9,7 +10,9 @@ import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.client.menu.PanelIconBatch;
 import games.brennan.dungeontrain.client.menu.PrefabTabState;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.editor.RedstoneToggle;
 import games.brennan.dungeontrain.editor.RotationApplier;
+import games.brennan.dungeontrain.editor.VariantActive;
 import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
 import net.minecraft.client.Minecraft;
@@ -76,8 +79,31 @@ public final class BlockVariantMenuRenderer {
     static final double TOOLBAR_HEIGHT = 0.32;
     /** A grid column = name cell + weight + (optional) X. */
     static final double COLUMN_WIDTH = 1.7;
-    /** Six-cell toolbar (Copy/Add/Lock/Remove/Clear/X) needs more width. */
+    /** Multi-cell toolbar (Copy/Save/Add/Lock/Remove/Clear/X) needs more width. */
     static final double MIN_PANEL_WIDTH = 3.2;
+
+    /**
+     * Wider minimum for a repeating room, where the toolbar carries two more cells and one of
+     * them reads "Not copies". At 3.2 the nine labels run into each other.
+     *
+     * <p>Read through {@link #minPanelWidth()} rather than directly, so the renderer and the
+     * raycaster cannot end up sizing the same panel differently — the failure that would put every
+     * click one cell off. Same shape as {@code PartPositionMenuRenderer.DOOR_MIN_PANEL_WIDTH}.</p>
+     */
+    static final double COPY_SETTINGS_MIN_PANEL_WIDTH = 4.6;
+
+    /**
+     * Extra minimum width while the Span button is on the toolbar (door / bed / tall-plant cells):
+     * one more toolbar cell, and room for the five-option strip it opens.
+     */
+    static final double SPAN_EXTRA_PANEL_WIDTH = 0.5;
+
+    /** The minimum width this opening of the panel draws at — see {@link #COPY_SETTINGS_MIN_PANEL_WIDTH}. */
+    static double minPanelWidth() {
+        double base = BlockVariantMenu.copySettingsSupported() ? COPY_SETTINGS_MIN_PANEL_WIDTH : MIN_PANEL_WIDTH;
+        return BlockVariantMenu.spanButtonShown() ? base + SPAN_EXTRA_PANEL_WIDTH : base;
+    }
+
     static final double X_CELL_WIDTH = 0.30;
     static final double WEIGHT_CELL_WIDTH = 0.40;
     /** Per-cell width for a mob row's difficulty min / max cells (matches the weight cell). */
@@ -87,6 +113,12 @@ public final class BlockVariantMenuRenderer {
     static final double ROT_DIRS_CELL_WIDTH = 0.32;
     /** T/R/B pill width — matches the L/R/O pill so the two read as a pair on stairs/trapdoors. */
     static final double HALF_MODE_CELL_WIDTH = 0.34;
+    /**
+     * On/R/Off pill width — the redstone-toggle control for trapdoors, doors, gates, levers, copper bulbs. Wider than
+     * the single-letter T/R/B pill because "Off" is three glyphs: at the shared width the labels
+     * overran into the neighbouring pill (Gate 2 screenshot, v0.928.1).
+     */
+    static final double ACTIVE_MODE_CELL_WIDTH = 0.78;
     static final double TEXT_SCALE = 0.012;
     static final double POPUP_BUTTON_SIZE = 0.20;
     static final double ICON_SIZE = 0.22;
@@ -162,7 +194,7 @@ public final class BlockVariantMenuRenderer {
                 BlockVariantMenu.ROWS_PER_COLUMN * 4);
         }
         int colCount = Math.max(1, (n + BlockVariantMenu.ROWS_PER_COLUMN - 1) / BlockVariantMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(MIN_PANEL_WIDTH, colCount * COLUMN_WIDTH);
+        double panelW = Math.max(minPanelWidth(), colCount * COLUMN_WIDTH);
         int displayedRows = Math.max(1, Math.min(n, BlockVariantMenu.ROWS_PER_COLUMN));
         return new PanelSize(panelW, HEADER_HEIGHT + TOOLBAR_HEIGHT + displayedRows * ROW_HEIGHT);
     }
@@ -188,7 +220,7 @@ public final class BlockVariantMenuRenderer {
         List<BlockVariantSyncPacket.Entry> entries = BlockVariantMenu.entries();
         int n = entries.size();
         int colCount = Math.max(1, (n + BlockVariantMenu.ROWS_PER_COLUMN - 1) / BlockVariantMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(MIN_PANEL_WIDTH, colCount * COLUMN_WIDTH);
+        double panelW = Math.max(minPanelWidth(), colCount * COLUMN_WIDTH);
         int displayedRows = Math.min(n, BlockVariantMenu.ROWS_PER_COLUMN);
         if (displayedRows == 0) displayedRows = 1;
         double gridH = displayedRows * ROW_HEIGHT;
@@ -206,29 +238,25 @@ public final class BlockVariantMenuRenderer {
         drawQuad(ps, buffer, -halfW, halfH - HEADER_HEIGHT, halfW, halfH, 0x40FFEEBB);
         net.minecraft.core.BlockPos local = BlockVariantMenu.localPos();
         int cellLockId = BlockVariantMenu.lockId();
-        String lockLabel = cellLockId > 0 ? "  ·  lock " + cellLockId : "";
+        String lockLabel = cellLockId > 0 ? "  ·  " + MenuLang.t("block_variant.lock_n", cellLockId) : "";
         String headerLabel = local == null
-            ? "Block Variants"
-            : "Block Variants @ " + local.getX() + "," + local.getY() + "," + local.getZ() + lockLabel;
+            ? MenuLang.t("block_variant.title")
+            : MenuLang.t("block_variant.title_at", local.getX() + "," + local.getY() + "," + local.getZ()) + lockLabel;
         drawCenteredText(ps, buffer, font, headerLabel, 0, headerCY, 0xFFFFEEBB);
 
-        // Toolbar — 7 cells: Copy | Save | Add | Lock | Remove | Clear | X.
+        // Toolbar — Copy | Save | Add | Lock | (Reroll) | Remove | Clear | X. The Reroll cell is
+        // there only for a template that repeats; see BlockVariantMenu.toolbarCells().
         double toolbarTop = halfH - HEADER_HEIGHT;
         double toolbarBottom = toolbarTop - TOOLBAR_HEIGHT;
         double toolbarCY = (toolbarTop + toolbarBottom) / 2.0;
-        double cellW = panelW / 7.0;
-        for (int i = 0; i < 7; i++) {
+        List<BlockVariantMenu.CellKind> toolbar = BlockVariantMenu.toolbarCells();
+        games.brennan.dungeontrain.editor.VariantCopyRoll copyRoll = BlockVariantMenu.copyRoll();
+        games.brennan.dungeontrain.editor.VariantCopyScope copyScope = BlockVariantMenu.copyScope();
+        double cellW = panelW / toolbar.size();
+        for (int i = 0; i < toolbar.size(); i++) {
             double xL = -halfW + i * cellW;
             double xR = xL + cellW;
-            BlockVariantMenu.CellKind cellKind = switch (i) {
-                case 0 -> BlockVariantMenu.CellKind.COPY;
-                case 1 -> BlockVariantMenu.CellKind.SAVE;
-                case 2 -> BlockVariantMenu.CellKind.ADD;
-                case 3 -> BlockVariantMenu.CellKind.LOCK;
-                case 4 -> BlockVariantMenu.CellKind.REMOVE;
-                case 5 -> BlockVariantMenu.CellKind.CLEAR;
-                default -> BlockVariantMenu.CellKind.CLOSE;
-            };
+            BlockVariantMenu.CellKind cellKind = toolbar.get(i);
             boolean isHover = hovered.kind() == cellKind;
             int tint;
             if (cellKind == BlockVariantMenu.CellKind.REMOVE && removeMode) {
@@ -246,21 +274,44 @@ public final class BlockVariantMenuRenderer {
                 } else {
                     tint = isHover ? 0xC0AAAAAA : 0x60777777;
                 }
+            } else if (cellKind == BlockVariantMenu.CellKind.COPY_ROLL) {
+                // Same treatment as Lock: lit when the cell overrides its room, grey when it is
+                // simply following it — which is the thing worth seeing from across the panel.
+                tint = copyRoll.isDefault()
+                    ? (isHover ? 0xC0AAAAAA : 0x60777777)
+                    : (isHover ? 0xC066DDFF : 0x803388AA);
+            } else if (cellKind == BlockVariantMenu.CellKind.SPAN) {
+                // Lit once the author picks a span; grey while it follows the first row. Held lit
+                // while its option strip is open so the strip reads as coming from it.
+                tint = BlockVariantMenu.spanExplicit() || BlockVariantMenu.spanPopupOpen()
+                    ? (isHover ? 0xC0D98CFF : 0x808A4FB3)
+                    : (isHover ? 0xC0AAAAAA : 0x60777777);
+            } else if (cellKind == BlockVariantMenu.CellKind.COPY_SCOPE) {
+                // Lit in either restricted scope — the cell is somewhere other than everywhere,
+                // which is the thing worth seeing at a glance from across the panel.
+                tint = copyScope.isDefault()
+                    ? (isHover ? 0xC0AAAAAA : 0x60777777)
+                    : (isHover ? 0xC0CC99FF : 0x80775599);
             } else {
                 tint = isHover ? 0xB0FFCC33 : 0x30FFFFFF;
             }
             drawQuad(ps, buffer, xL + 0.01, toolbarBottom + 0.005,
                 xR - 0.01, toolbarTop - 0.005, tint);
             String label = switch (cellKind) {
-                case COPY -> "Copy";
-                case SAVE -> "Save";
-                case ADD -> "Add";
+                case COPY -> MenuLang.t("common.copy");
+                case SAVE -> MenuLang.t("common.save");
+                case ADD -> MenuLang.t("common.add");
                 // Lock label shows current cell lock-id: "-" unlocked, or
                 // the digit (e.g. "2") when locked. Cycles to next free
                 // when 0, back to 0 when set.
                 case LOCK -> cellLockId > 0 ? Integer.toString(cellLockId) : "-";
-                case REMOVE -> removeMode ? "Cancel" : "Remove";
-                case CLEAR -> "Clear";
+                // "Exact" is the word the room's own Copies setting uses for repeating one roll,
+                // so the cell says whether it is following that or breaking from it.
+                case COPY_ROLL -> copyRoll.displayName();
+                case COPY_SCOPE -> copyScope.displayName();
+                case SPAN -> SpanPopupLayout.shortLabel(BlockVariantMenu.resolvedSpan());
+                case REMOVE -> MenuLang.t(removeMode ? "common.cancel" : "common.remove");
+                case CLEAR -> MenuLang.t("common.clear");
                 case CLOSE -> "X";
                 default -> "";
             };
@@ -292,19 +343,21 @@ public final class BlockVariantMenuRenderer {
             //   [RotDirs]   (only when block is rotatable AND mode != RANDOM)
             //   [RotMode]   (only when block is rotatable)
             //   [HalfMode]  (only when block has SLAB_TYPE or HALF)
+            //   [ActiveMode] (only on latching blocks — RedstoneToggle.canToggle)
             //   [Name] (fills the remaining left)
             double xCellW = removeMode ? X_CELL_WIDTH : 0.0;
             BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
             // Mob entries have no rotation property in the block sense — the
-            // state is the COMMAND_BLOCK sentinel which IS rotatable, so
-            // suppress the rotation cells explicitly to avoid an irrelevant
-            // FACING editor on a mob row.
+            // state is the empty-placeholder sentinel (rotatable in its legacy
+            // command-block form), so suppress the rotation cells explicitly
+            // to avoid an irrelevant FACING editor on a mob row.
             // A group-reference row owns none of these: rotation, half and
             // difficulty all come from whatever entry the referenced group
             // resolves to, so the cells collapse (matching the raycaster).
             boolean concrete = !entry.isMob() && !entry.isGroupRef();
             boolean rotatable = parsed != null && concrete && RotationApplier.canRotate(parsed);
             boolean halfable = parsed != null && concrete && RotationApplier.canFlip(parsed);
+            boolean toggleable = parsed != null && concrete && RedstoneToggle.canToggle(parsed);
             VariantRotation.Mode rowMode = decodeMode(entry.rotMode());
             boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
             double weightCellR = colXR - xCellW;
@@ -315,12 +368,14 @@ public final class BlockVariantMenuRenderer {
             double rotModeCellL = rotatable ? rotModeCellR - ROT_MODE_CELL_WIDTH : rotModeCellR;
             double halfModeCellR = rotModeCellL;
             double halfModeCellL = halfable ? halfModeCellR - HALF_MODE_CELL_WIDTH : halfModeCellR;
+            double activeModeCellR = halfModeCellL;
+            double activeModeCellL = toggleable ? activeModeCellR - ACTIVE_MODE_CELL_WIDTH : activeModeCellR;
             // Difficulty min/max cells (mob rows only) sit between the name and
             // weight, reusing the space the rotation/half cells leave free on a
             // mob row. They collapse to zero width on block rows, so nameCellR
             // is unchanged there.
             boolean showDiff = entry.isMob();
-            double diffMaxCellR = halfModeCellL;
+            double diffMaxCellR = activeModeCellL;
             double diffMaxCellL = showDiff ? diffMaxCellR - DIFF_CELL_WIDTH : diffMaxCellR;
             double diffMinCellR = diffMaxCellL;
             double diffMinCellL = showDiff ? diffMinCellR - DIFF_CELL_WIDTH : diffMinCellR;
@@ -354,7 +409,7 @@ public final class BlockVariantMenuRenderer {
                 // A dead reference (group deleted, or the row was pasted into
                 // a template that has no such group) renders red, the same
                 // warning a dangling loot-prefab link gets.
-                label = "→ Group " + entry.groupRef();
+                label = MenuLang.t("block_variant.group_ref", entry.groupRef());
                 labelColour = entry.groupRefLive()
                     ? (nameHover ? 0xFF000000 : 0xFF7FD4FF)
                     : (nameHover ? 0xFF660000 : 0xFFFF5555);
@@ -368,7 +423,7 @@ public final class BlockVariantMenuRenderer {
                     // Equipped entity (armor stand + loadout) — show
                     // "<entity>: <prefab>" so two loadouts read distinctly. A
                     // dangling link (prefab gone) renders red like block rows.
-                    label = base + ": " + linkedId;
+                    label = MenuLang.t("common.name_value", base, linkedId);
                     boolean dangling = !PrefabTabState.findLootItems(linkedId).isPresent();
                     labelColour = dangling
                         ? (nameHover ? 0xFF660000 : 0xFFFF5555)
@@ -405,6 +460,12 @@ public final class BlockVariantMenuRenderer {
                     halfModeCellL, halfModeCellR, rowBottom, rowTop, rowCY, hovered);
             }
 
+            // Redstone-toggle pill (trapdoors / doors / gates / levers / copper bulbs)
+            if (toggleable) {
+                drawActiveModeCell(ps, buffer, font, i, entry,
+                    activeModeCellL, activeModeCellR, rowBottom, rowTop, rowCY, hovered);
+            }
+
             // Difficulty band cells (mob rows only)
             if (showDiff) {
                 drawDifficultyCells(ps, buffer, font, i, entry,
@@ -434,11 +495,46 @@ public final class BlockVariantMenuRenderer {
             }
         }
 
+        // Span option strip, floating just above the panel.
+        if (BlockVariantMenu.spanPopupOpen()) {
+            drawSpanPopup(ps, buffer, font, panelW, halfH, hovered);
+        }
+
         // OPTIONS popup is drawn last so it shadows the row underneath.
         int popupRow = BlockVariantMenu.rotPopupRowIndex();
         if (popupRow >= 0 && popupRow < n) {
             drawRotationOptionsPopup(ps, buffer, font, popupRow, entries.get(popupRow),
                 colActualW, gridTop, halfW, hovered);
+        }
+    }
+
+    /**
+     * The Span popup: the visible sections of {@link SpanPopupLayout}, each a label and its
+     * buttons, the cell's current (resolved) choice highlighted in every section.
+     */
+    private static void drawSpanPopup(PoseStack ps, MultiBufferSource buffer, Font font,
+                                      double panelW, double halfH, BlockVariantMenu.Hit hovered) {
+        List<SpanPopupLayout.Row> rows = SpanPopupLayout.rows(panelW, halfH);
+        double[] r = SpanPopupLayout.rect(rows);
+        drawQuad(ps, buffer, r[0], r[2], r[1], r[3], 0xE0202020);
+        for (SpanPopupLayout.Row row : rows) {
+            double bBot = row.bottom() + 0.02;
+            double bTop = row.top() - 0.02;
+            double cy = (bBot + bTop) / 2.0;
+            drawLeftText(ps, buffer, font, row.label(), row.left() + SpanPopupLayout.PAD + 0.03, cy, 0xFFCCCCCC);
+            for (int i = 0; i < row.buttons().length; i++) {
+                double bL = row.buttonLeft(i);
+                double bR = bL + row.buttonWidth();
+                boolean selected = i == row.selected();
+                boolean hover = hovered.kind() == BlockVariantMenu.CellKind.SPAN_OPTION
+                    && hovered.secondary() == SpanPopupLayout.encode(row.section(), i);
+                int tint = selected
+                    ? (hover ? 0xC0D98CFF : 0x808A4FB3)
+                    : (hover ? 0x60AAAAAA : 0x30777777);
+                drawQuad(ps, buffer, bL + 0.005, bBot, bR - 0.005, bTop, tint);
+                drawCenteredText(ps, buffer, font, row.buttons()[i], (bL + bR) / 2.0, cy,
+                    selected || hover ? 0xFFFFFFFF : 0xFFAAAAAA);
+            }
         }
     }
 
@@ -478,9 +574,9 @@ public final class BlockVariantMenuRenderer {
             }
             drawQuad(ps, buffer, sL, pillBot, sR, pillTop, tint);
             String label = switch (seg) {
-                case 0 -> "L";
-                case 1 -> "R";
-                default -> "O";
+                case 0 -> MenuLang.t("block_variant.mode_lock");
+                case 1 -> MenuLang.t("block_variant.mode_random");
+                default -> MenuLang.t("block_variant.mode_options");
             };
             drawCenteredText(ps, buffer, font, label,
                 (sL + sR) / 2.0, rowCY,
@@ -603,13 +699,56 @@ public final class BlockVariantMenuRenderer {
             }
             drawQuad(ps, buffer, sL, pillBot, sR, pillTop, tint);
             String label = switch (seg) {
-                case 0 -> "T";
-                case 1 -> "R";
-                default -> "B";
+                case 0 -> MenuLang.t("block_variant.plane_top");
+                case 1 -> MenuLang.t("block_variant.plane_random");
+                default -> MenuLang.t("block_variant.plane_bottom");
             };
             drawCenteredText(ps, buffer, font, label,
                 (sL + sR) / 2.0, rowCY,
                 active ? 0xFFFFFFFF : 0xFF888888);
+        }
+    }
+
+    /**
+     * Draw the per-row redstone-toggle pill — On / R / Off (Active / Random /
+     * Inactive) for blocks with a signal-driven property (see
+     * {@link RedstoneToggle#propertyFor}). Red for active so it reads as
+     * "powered", the shared blue for random, grey-teal for inactive.
+     */
+    private static void drawActiveModeCell(PoseStack ps, MultiBufferSource buffer, Font font,
+                                           int rowIndex, BlockVariantSyncPacket.Entry entry,
+                                           double cellL, double cellR,
+                                           double rowBottom, double rowTop, double rowCY,
+                                           BlockVariantMenu.Hit hovered) {
+        VariantActive.Mode mode = decodeActiveMode(entry.activeMode());
+        boolean modeHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_ACTIVE_MODE && hovered.index() == rowIndex;
+
+        double pillBot = rowBottom + 0.02;
+        double pillTop = rowTop - 0.02;
+        double segW = (cellR - cellL - 0.02) / 3.0;
+        for (int seg = 0; seg < 3; seg++) {
+            double sL = cellL + 0.01 + seg * segW;
+            double sR = sL + segW - 0.005;
+            boolean selected = seg == mode.ordinal();
+            int tint;
+            if (selected) {
+                tint = switch (seg) {
+                    case 0 -> modeHover ? 0xC0FF6655 : 0x80CC3322; // ACTIVE red (powered)
+                    case 1 -> modeHover ? 0xC066AAFF : 0x8033679B; // RANDOM blue (shared)
+                    default -> modeHover ? 0xC099AAAA : 0x80557777; // INACTIVE slate
+                };
+            } else {
+                tint = modeHover ? 0x60AAAAAA : 0x30777777;
+            }
+            drawQuad(ps, buffer, sL, pillBot, sR, pillTop, tint);
+            String label = switch (seg) {
+                case 0 -> MenuLang.t("block_variant.active_on");
+                case 1 -> MenuLang.t("block_variant.active_random");
+                default -> MenuLang.t("block_variant.active_off");
+            };
+            drawCenteredText(ps, buffer, font, label,
+                (sL + sR) / 2.0, rowCY,
+                selected ? 0xFFFFFFFF : 0xFF888888);
         }
     }
 
@@ -632,7 +771,7 @@ public final class BlockVariantMenuRenderer {
             minHover ? 0xC0B266FF : 0x40663399);
         drawCenteredText(ps, buffer, font, Integer.toString(entry.minDiff()),
             (minL + minR) / 2.0, rowCY, minHover ? 0xFF000000 : 0xFFE39DFF);
-        String maxLabel = entry.maxDiff() < 0 ? "all" : Integer.toString(entry.maxDiff());
+        String maxLabel = entry.maxDiff() < 0 ? MenuLang.t("stages.all") : Integer.toString(entry.maxDiff());
         drawQuad(ps, buffer, maxL + 0.005, rowBottom + 0.005, maxR - 0.005, rowTop - 0.005,
             maxHover ? 0xC0B266FF : 0x40663399);
         drawCenteredText(ps, buffer, font, maxLabel,
@@ -653,6 +792,14 @@ public final class BlockVariantMenuRenderer {
         games.brennan.dungeontrain.editor.VariantHalf.Mode[] values =
             games.brennan.dungeontrain.editor.VariantHalf.Mode.values();
         if (ord < 0 || ord >= values.length) return games.brennan.dungeontrain.editor.VariantHalf.Mode.RANDOM;
+        return values[ord];
+    }
+
+    /** Decode wire byte → active mode enum, defaulting to INACTIVE on out-of-range. */
+    static VariantActive.Mode decodeActiveMode(byte raw) {
+        int ord = raw & 0xFF;
+        VariantActive.Mode[] values = VariantActive.Mode.values();
+        if (ord < 0 || ord >= values.length) return VariantActive.Mode.INACTIVE;
         return values[ord];
     }
 
@@ -683,7 +830,7 @@ public final class BlockVariantMenuRenderer {
         int maxRows = BlockVariantMenu.ROWS_PER_COLUMN * 4;
         int n = Math.min(filtered.size(), maxRows);
         int colCount = Math.max(1, (n + BlockVariantMenu.ROWS_PER_COLUMN - 1) / BlockVariantMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(MIN_PANEL_WIDTH, colCount * COLUMN_WIDTH);
+        double panelW = Math.max(minPanelWidth(), colCount * COLUMN_WIDTH);
         int displayedRows = Math.min(n, BlockVariantMenu.ROWS_PER_COLUMN);
         if (displayedRows == 0) displayedRows = 1;
         double gridH = displayedRows * ROW_HEIGHT;
@@ -705,12 +852,12 @@ public final class BlockVariantMenuRenderer {
         int backTint = backHover ? 0xC0FFCC33 : 0x60FFEEBB;
         drawQuad(ps, buffer, backCellL + 0.01, headerBottom + 0.005,
             backCellR - 0.005, headerTop - 0.005, backTint);
-        drawCenteredText(ps, buffer, font, "< Back",
+        drawCenteredText(ps, buffer, font, MenuLang.t("common.back"),
             (backCellL + backCellR) / 2.0, headerCY,
             backHover ? 0xFF000000 : 0xFFFFFFFF);
         drawQuad(ps, buffer, backCellR + 0.005, headerBottom + 0.005,
             halfW, headerTop - 0.005, 0x40FFEEBB);
-        drawCenteredText(ps, buffer, font, "Add Block Variant",
+        drawCenteredText(ps, buffer, font, MenuLang.t("block_variant.add_title"),
             (backCellR + halfW) / 2.0, headerCY, 0xFFFFEEBB);
 
         // Search field row
@@ -721,7 +868,7 @@ public final class BlockVariantMenuRenderer {
         int searchTint = searchHover ? 0xB033FF99 : 0x60339966;
         drawQuad(ps, buffer, -halfW + 0.02, searchBottom + 0.01,
             halfW - 0.02, searchTop - 0.01, searchTint);
-        String shown = "Search: " + BlockVariantMenu.searchBuffer() + "_";
+        String shown = MenuLang.t("common.search", BlockVariantMenu.searchBuffer()) + "_";
         drawLeftText(ps, buffer, font, shown, -halfW + 0.06, searchCY, 0xFFFFFFFF);
 
         double colActualW = panelW / colCount;
@@ -751,24 +898,38 @@ public final class BlockVariantMenuRenderer {
      * full state is preserved in the underlying entry; tooltip / search
      * still uses it.
      *
-     * <p>Special-case: any vanilla command-block kind is the
-     * empty-placeholder sentinel (see
-     * {@code CarriageVariantBlocks.isEmptyPlaceholder}) and renders as
-     * {@code "nothing"} so authors immediately read it as the
+     * <p>Special-case: the empty-placeholder sentinel — the mod's
+     * {@code variant_placeholder} block, or its legacy form, any vanilla
+     * command-block kind (see {@code CarriageVariantBlocks.isEmptyPlaceholder})
+     * — renders as {@code "nothing"} so authors immediately read it as the
      * "leave this position empty / air at spawn time" entry.</p>
      */
     static String shortenStateLabel(String stateString) {
         if (stateString == null) return "";
+        if (isNothingSentinel(stateString)) {
+            return MenuLang.t("plot.nothing");
+        }
         // Drop properties section "[...]"
         int bracket = stateString.indexOf('[');
         String trimmed = bracket >= 0 ? stateString.substring(0, bracket) : stateString;
-        if (trimmed.equals("minecraft:command_block")
-            || trimmed.equals("minecraft:chain_command_block")
-            || trimmed.equals("minecraft:repeating_command_block")) {
-            return "nothing";
-        }
         int colon = trimmed.indexOf(':');
         return colon >= 0 ? trimmed.substring(colon + 1) : trimmed;
+    }
+
+    /** Whether {@code stateString} is the empty-placeholder sentinel the editor reads as "nothing". */
+    static boolean isNothingSentinel(String stateString) {
+        if (stateString == null) return false;
+        int bracket = stateString.indexOf('[');
+        String trimmed = bracket >= 0 ? stateString.substring(0, bracket) : stateString;
+        return isEmptyPlaceholderId(trimmed);
+    }
+
+    /** Id-only twin of {@code CarriageVariantBlocks.isEmptyPlaceholder} — the row is sent a state string, not a state. */
+    static boolean isEmptyPlaceholderId(String blockId) {
+        return blockId.equals("dungeontrain:variant_placeholder")
+            || blockId.equals("minecraft:command_block")
+            || blockId.equals("minecraft:chain_command_block")
+            || blockId.equals("minecraft:repeating_command_block");
     }
 
     /**
@@ -784,7 +945,7 @@ public final class BlockVariantMenuRenderer {
     static void drawBlockIcon(PoseStack ps, MultiBufferSource buffer, String stateString,
                               double cellLeftX, double rowCY, @Nullable PanelIconBatch icons) {
         if (stateString == null || stateString.isEmpty()) return;
-        if ("nothing".equals(shortenStateLabel(stateString))) return;
+        if (isNothingSentinel(stateString)) return;
         BlockState state = BlockVariantMenu.parseState(stateString);
         if (state == null) return;
         Item item = state.getBlock().asItem();
@@ -864,10 +1025,10 @@ public final class BlockVariantMenuRenderer {
      * the row reads distinctly from a similarly-named block.
      */
     static String mobLabel(String entityId) {
-        if (entityId == null || entityId.isEmpty()) return "(mob)";
+        if (entityId == null || entityId.isEmpty()) return MenuLang.t("block_variant.mob_suffix");
         int colon = entityId.indexOf(':');
         String path = colon >= 0 ? entityId.substring(colon + 1) : entityId;
-        return path + " (mob)";
+        return path + " " + MenuLang.t("block_variant.mob_suffix");
     }
 
     /**

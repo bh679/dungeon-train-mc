@@ -32,11 +32,22 @@ class ClientPortalRoomFogTest {
     /** What vanilla would have drawn — a render distance well past the room's fog. */
     private static final float VANILLA_FAR = 192.0f;
 
+    /** Not in a portal corridor: the ordinary case, and what every pre-corridor test asserts. */
+    private static final float NO_CROSSING = 0.0f;
+
+    /** A spot well outside {@link #ROOM}, standing in for a corridor's world position. */
+    private static final double CORRIDOR_X = 200.0;
+
     /** Ask enough times that the ease has converged, then report where it landed. */
     private static float settled(double x, double y, double z) {
+        return settled(x, y, z, NO_CROSSING);
+    }
+
+    /** The same, for a camera partway along a portal corridor. */
+    private static float settled(double x, double y, double z, float crossing) {
         float value = 0.0f;
         for (int i = 0; i < 400; i++) {
-            value = ClientPortalRoomFog.fogDistanceAt(x, y, z, VANILLA_FAR);
+            value = ClientPortalRoomFog.fogDistanceAt(x, y, z, VANILLA_FAR, crossing);
         }
         return value;
     }
@@ -49,7 +60,7 @@ class ClientPortalRoomFogTest {
     @Test
     @DisplayName("no region means no fog — a fresh client leaves the view alone")
     void freshClientHasNoFog() {
-        assertEquals(0.0f, ClientPortalRoomFog.fogDistanceAt(0, -55, 0, VANILLA_FAR));
+        assertEquals(0.0f, ClientPortalRoomFog.fogDistanceAt(0, -55, 0, VANILLA_FAR, NO_CROSSING));
     }
 
     @Test
@@ -85,7 +96,7 @@ class ClientPortalRoomFogTest {
         ClientPortalRoomFog.update(ROOM);
         settled(0, -55, 0);
         ClientPortalRoomFog.reset();
-        assertEquals(0.0f, ClientPortalRoomFog.fogDistanceAt(0, -55, 0, VANILLA_FAR));
+        assertEquals(0.0f, ClientPortalRoomFog.fogDistanceAt(0, -55, 0, VANILLA_FAR, NO_CROSSING));
     }
 
     @Test
@@ -101,8 +112,8 @@ class ClientPortalRoomFogTest {
     @DisplayName("the fog eases rather than snapping, because the room's edges move under the player")
     void fogEasesIn() {
         ClientPortalRoomFog.update(ROOM);
-        float first = ClientPortalRoomFog.fogDistanceAt(0, -55, 0, VANILLA_FAR);
-        float second = ClientPortalRoomFog.fogDistanceAt(0, -55, 0, VANILLA_FAR);
+        float first = ClientPortalRoomFog.fogDistanceAt(0, -55, 0, VANILLA_FAR, NO_CROSSING);
+        float second = ClientPortalRoomFog.fogDistanceAt(0, -55, 0, VANILLA_FAR, NO_CROSSING);
         assertTrue(first < VANILLA_FAR, "should have started closing in, sat at " + first);
         assertTrue(second < first, "should keep closing in, went " + first + " → " + second);
     }
@@ -111,7 +122,7 @@ class ClientPortalRoomFogTest {
     @DisplayName("arriving in a room changes nothing on the first frame — the ease starts at vanilla's")
     void firstFrameMatchesVanilla() {
         ClientPortalRoomFog.update(ROOM);
-        float first = ClientPortalRoomFog.fogDistanceAt(0, -55, 0, VANILLA_FAR);
+        float first = ClientPortalRoomFog.fogDistanceAt(0, -55, 0, VANILLA_FAR, NO_CROSSING);
         // One frame of an 8% ease off a 192-block plane. The point is that it is a hair under what was
         // already on screen, not a fraction of it: this is the frame a portal swap lands on.
         assertEquals(182.0f, first, 2.0f);
@@ -122,10 +133,10 @@ class ClientPortalRoomFogTest {
     void neverDrawsCloserThanTheRadius() {
         ClientPortalRoomFog.update(ROOM);
         // Walk in, stand a while, walk out, stand a while. Every frame of it.
-        for (int i = 0; i < 200; i++) assertNotFlashing(ClientPortalRoomFog.fogDistanceAt(0, -55, 0, VANILLA_FAR));
-        for (int i = 0; i < 200; i++) assertNotFlashing(ClientPortalRoomFog.fogDistanceAt(900, 80, 900, VANILLA_FAR));
+        for (int i = 0; i < 200; i++) assertNotFlashing(ClientPortalRoomFog.fogDistanceAt(0, -55, 0, VANILLA_FAR, NO_CROSSING));
+        for (int i = 0; i < 200; i++) assertNotFlashing(ClientPortalRoomFog.fogDistanceAt(900, 80, 900, VANILLA_FAR, NO_CROSSING));
         // …and back in again, from a cache that has been all the way round once.
-        for (int i = 0; i < 200; i++) assertNotFlashing(ClientPortalRoomFog.fogDistanceAt(0, -55, 0, VANILLA_FAR));
+        for (int i = 0; i < 200; i++) assertNotFlashing(ClientPortalRoomFog.fogDistanceAt(0, -55, 0, VANILLA_FAR, NO_CROSSING));
     }
 
     private static void assertNotFlashing(float distance) {
@@ -139,7 +150,7 @@ class ClientPortalRoomFogTest {
         ClientPortalRoomFog.update(ROOM);
         settled(0, -55, 0);
         // First frame outside: opening out, not snapping shut and not released yet.
-        float first = ClientPortalRoomFog.fogDistanceAt(900, 80, 900, VANILLA_FAR);
+        float first = ClientPortalRoomFog.fogDistanceAt(900, 80, 900, VANILLA_FAR, NO_CROSSING);
         assertTrue(first > 65.0f && first < VANILLA_FAR, "should be opening out, sat at " + first);
         assertEquals(0.0f, settled(900, 80, 900), "should end up back in vanilla's hands");
     }
@@ -150,7 +161,7 @@ class ClientPortalRoomFogTest {
         ClientPortalRoomFog.update(ROOM);
         // Render distance 4: vanilla's plane is already closer than the room's 65.
         for (int i = 0; i < 50; i++) {
-            assertEquals(0.0f, ClientPortalRoomFog.fogDistanceAt(0, -55, 0, 60.0f));
+            assertEquals(0.0f, ClientPortalRoomFog.fogDistanceAt(0, -55, 0, 60.0f, NO_CROSSING));
         }
     }
 
@@ -221,11 +232,72 @@ class ClientPortalRoomFogTest {
         // Render distance 2 chunks: vanilla's plane is 32, already inside the room's nominal 50, so
         // standing in the room is vanilla's business. The walk out is not — the ramp goes below it.
         float inRoom = 0.0f;
-        for (int i = 0; i < 400; i++) inRoom = ClientPortalRoomFog.fogDistanceAt(0, -55, 0, 32.0f);
+        for (int i = 0; i < 400; i++) inRoom = ClientPortalRoomFog.fogDistanceAt(0, -55, 0, 32.0f, NO_CROSSING);
         assertEquals(0.0f, inRoom, "a room fogging past the far plane has nothing to say");
 
         float atEdge = 0.0f;
-        for (int i = 0; i < 400; i++) atEdge = ClientPortalRoomFog.fogDistanceAt(59.5, -55, 0, 32.0f);
+        for (int i = 0; i < 400; i++) atEdge = ClientPortalRoomFog.fogDistanceAt(59.5, -55, 0, 32.0f, NO_CROSSING);
         assertEquals(8.0f, atEdge, 0.5f, "the whiteout is well inside 32 blocks and must still draw");
+    }
+
+    @Test
+    @DisplayName("a corridor fogs partway — the walk in is where the transition happens")
+    void corridorRampsOnTheWayIn() {
+        ClientPortalRoomFog.update(ROOM);
+        // Halfway along, halfway between what vanilla was drawing and what the room asks for.
+        assertEquals(128.5f, settled(CORRIDOR_X, -55, 0, 0.5f), 1.0f);
+    }
+
+    @Test
+    @DisplayName("the room-side door plane is already the room's own distance — nothing left to snap")
+    void corridorMeetsTheRoomAtTheDoor() {
+        ClientPortalRoomFog.update(ROOM);
+        float atDoor = settled(CORRIDOR_X, -55, 0, 1.0f);
+        ClientPortalRoomFog.reset();
+        ClientPortalRoomFog.update(ROOM);
+        assertEquals(settled(0, -55, 0), atDoor, 0.5f);
+    }
+
+    @Test
+    @DisplayName("the fog closes in with every step down the corridor, and never past vanilla's plane")
+    void corridorRampIsMonotonic() {
+        ClientPortalRoomFog.update(ROOM);
+        float previous = VANILLA_FAR;
+        for (int step = 0; step <= 8; step++) {
+            float here = settled(CORRIDOR_X, -55, 0, step / 8.0f);
+            if (step == 0) {
+                assertEquals(0.0f, here, "no corridor, no fog");
+                continue;
+            }
+            assertTrue(here <= VANILLA_FAR, "must only ever shrink the view, drew " + here);
+            assertTrue(here < previous, "should keep closing in, went " + previous + " → " + here);
+            previous = here;
+        }
+    }
+
+    @Test
+    @DisplayName("no cached room means a corridor ramps into nothing")
+    void corridorWithoutARoomDoesNothing() {
+        ClientPortalRoomFog.update(PortalRoomFogPacket.none());
+        assertEquals(0.0f, settled(CORRIDOR_X, -55, 0, 0.75f));
+    }
+
+    @Test
+    @DisplayName("a room fogging past the far plane is left to vanilla in the corridor too")
+    void corridorRespectsAShortRenderDistance() {
+        ClientPortalRoomFog.update(ROOM);
+        // Render distance 4: vanilla is already closer than the room's 65, so there is nothing to
+        // ramp toward — and ramping anyway would be letting the player see further, not less far.
+        for (int i = 0; i < 50; i++) {
+            assertEquals(0.0f, ClientPortalRoomFog.fogDistanceAt(CORRIDOR_X, -55, 0, 60.0f, 0.5f));
+        }
+    }
+
+    @Test
+    @DisplayName("walking out of the corridor into the train hands the fog back to vanilla")
+    void corridorReleasesAtTheTrainDoor() {
+        ClientPortalRoomFog.update(ROOM);
+        assertTrue(settled(CORRIDOR_X, -55, 0, 1.0f) < VANILLA_FAR);
+        assertEquals(0.0f, settled(CORRIDOR_X, -55, 0, NO_CROSSING));
     }
 }

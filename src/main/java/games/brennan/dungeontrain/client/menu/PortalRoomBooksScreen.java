@@ -33,31 +33,42 @@ import java.util.List;
 public final class PortalRoomBooksScreen implements MenuScreen {
 
     private final String modeTag;
+    private final String prefix;
 
     /** @param modeTag the room's whole settings tag, as the panel already carries it */
     public PortalRoomBooksScreen(String modeTag) {
+        this(modeTag, EditorMenuPortalRows.STOOD_IN_PREFIX);
+    }
+
+    /**
+     * @param prefix the {@code /dt editor portals…} root the steppers send to — the bare root for
+     *               the room the author is standing in, {@code portals room <name>} for one they
+     *               are only looking at. See {@link EditorMenuPortalRows#prefixFor}.
+     */
+    public PortalRoomBooksScreen(String modeTag, String prefix) {
         this.modeTag = modeTag;
+        this.prefix = prefix;
     }
 
     @Override public String title() {
-        return "Books — mix";
+        return MenuLang.t("books.title");
     }
 
     @Override public List<CommandMenuEntry> entries() {
         PortalRoomBooks books = PortalRoomSettings.parse(modeTag).books();
         List<CommandMenuEntry> out = new ArrayList<>();
         for (PortalRoomBooks.Share share : PortalRoomBooks.Share.values()) {
-            out.add(stepper(share.displayName(), commandFor(share),
+            out.add(stepper(MenuLang.named("portal.share", share.id(), share.displayName()), commandFor(share),
                 books.weightFor(share), "0-" + PortalRoomBooks.MAX_WEIGHT));
         }
-        out.add(stepper("Min books", "booksmin", books.minBooks(),
+        out.add(stepper(MenuLang.t("books.min"), "booksmin", books.minBooks(),
             PortalRoomBooks.MIN_BOOK_BOUND + "-" + PortalRoomBooks.MAX_BOOK_BOUND));
         // Zero reads as "no ceiling", so it is spelled out rather than shown as a bare 0 the author
         // has to guess the meaning of.
-        out.add(stepper(books.maxBooks() == PortalRoomBooks.NO_MAXIMUM ? "Max books (any)" : "Max books",
+        out.add(stepper(MenuLang.t(books.maxBooks() == PortalRoomBooks.NO_MAXIMUM ? "books.max_any" : "books.max"),
             "booksmax", books.maxBooks(),
             PortalRoomBooks.MIN_BOOK_BOUND + "-" + PortalRoomBooks.MAX_BOOK_BOUND));
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
 
@@ -67,12 +78,12 @@ public final class PortalRoomBooksScreen implements MenuScreen {
     }
 
     /** One {@code [-] Label: N [+]} row, the same geometry every other portal stepper uses. */
-    private static CommandMenuEntry stepper(String label, String token, int value, String hint) {
-        String prefix = "dungeontrain editor portals " + token;
+    private CommandMenuEntry stepper(String label, String token, int value, String hint) {
+        String command = prefix + " " + token;
         return new CommandMenuEntry.Triple(
-            new CommandMenuEntry.Stay("-", prefix + " dec"),
-            new CommandMenuEntry.TypeArg(label + ": " + value, hint, prefix),
-            new CommandMenuEntry.Stay("+", prefix + " inc"),
+            new CommandMenuEntry.Stay("-", command + " dec"),
+            new CommandMenuEntry.TypeArg(label + ": " + value, hint, command),
+            new CommandMenuEntry.Stay("+", command + " inc"),
             0.10, 0.90);
     }
 }

@@ -25,6 +25,18 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
  * Books or Sky existed has one to five segments and still parses, to a room that behaves exactly as
  * it did.</p>
  *
+ * <h2>A room's two doorways are stored as one door and a difference</h2>
+ * <p>{@code doorOffset} / {@code doorHeightOffset} place the room's box; the exit pair says where
+ * the <b>exit</b> doorway sits on that same box. An absent exit segment does not mean "centred", it
+ * means "wherever the entry door is" — which is what makes every tag written before this parse to
+ * the mirrored behaviour it has always had, and what keeps {@link #toTag} writing the shorter form
+ * for the rooms (nearly all of them) whose two doors agree.</p>
+ *
+ * <p><b>That inheritance is a rule about reading a tag, not about editing one.</b> It resolves once,
+ * on the way in. Every wither then moves the one door it names and leaves the other alone, so an
+ * author who places a door on one mouth moves that mouth and nothing else — see
+ * {@link #withDoorOffset}.</p>
+ *
  * <h2>Exits is the one setting whose default depends on another</h2>
  * <p>An absent Exits segment does not mean "off", it means "whatever this mode wants" — see
  * {@link PortalRoomMode#defaultExits}. That is what lets the shipped {@code labrynth} room, tagged
@@ -40,18 +52,34 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
  * @param sky      whether it is lit as though it stood outdoors, and under which sky
  * @param doorWall whether the copies standing against the portal carriages carry their own end wall
  *                 through the corridor mouth's plane, or leave it to the mouth's seal ring
+ * @param doorOffset how far the shared walkway line sits from dead centre of the room's own width
+ * @param doorHeightOffset how far the corridor's floor line sits above the room's own bottom edge
+ * @param exitDoorOffset the same, for the room's <b>exit</b> doorway — null means "not said", which
+ *                       resolves to {@code doorOffset} so the two doors mirror as they always did
+ * @param exitDoorHeightOffset the vertical twin of {@code exitDoorOffset}, null meaning the same
+ * @param lock which block a sealing room's shell is written in — bedrock unless the author said
+ *             otherwise, and read only under a mode that seals at all
+ * @param fog  whether the room is fogged — Auto leaves it to the walls mode, On and Off override it
+ * @param drift whether the room takes part in the shared-carriage relay — read only under Bedrock
+ *              Lock, the one mode a single blob can describe
  */
 public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                                  PortalRoomContents contents, PortalRoomExits exits,
                                  PortalRoomBooks books, PortalRoomSky sky,
-                                 PortalRoomDoorWall doorWall) {
+                                 PortalRoomDoorWall doorWall, PortalRoomDoorOffset doorOffset,
+                                 PortalRoomDoorHeightOffset doorHeightOffset,
+                                 PortalRoomDoorOffset exitDoorOffset,
+                                 PortalRoomDoorHeightOffset exitDoorHeightOffset,
+                                 PortalRoomLock lock, PortalRoomFog fog, PortalRoomDrift drift) {
 
     /** Separates the mode from the settings that follow it in the stored tag. */
     private static final String SEPARATOR = "/";
 
     public static final PortalRoomSettings DEFAULT = new PortalRoomSettings(
         PortalRoomMode.DEFAULT, PortalRoomCopies.DEFAULT, PortalRoomContents.DEFAULT, null,
-        PortalRoomBooks.DEFAULT, PortalRoomSky.NONE, PortalRoomDoorWall.DEFAULT);
+        PortalRoomBooks.DEFAULT, PortalRoomSky.NONE, PortalRoomDoorWall.DEFAULT,
+        PortalRoomDoorOffset.DEFAULT, PortalRoomDoorHeightOffset.DEFAULT, null, null,
+        PortalRoomLock.DEFAULT, PortalRoomFog.DEFAULT, PortalRoomDrift.DEFAULT);
 
     public PortalRoomSettings {
         if (mode == null) mode = PortalRoomMode.DEFAULT;
@@ -63,33 +91,109 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         if (books == null) books = PortalRoomBooks.DEFAULT;
         if (sky == null) sky = PortalRoomSky.NONE;
         if (doorWall == null) doorWall = PortalRoomDoorWall.DEFAULT;
+        if (doorOffset == null) doorOffset = PortalRoomDoorOffset.DEFAULT;
+        if (doorHeightOffset == null) doorHeightOffset = PortalRoomDoorHeightOffset.DEFAULT;
+        // After the two entry offsets have been settled, never before — on exactly the reasoning the
+        // `exits` line above uses. A null here means "this room said nothing about its exit door",
+        // and what that resolves to is the entry door, which is what mirroring is.
+        if (exitDoorOffset == null) exitDoorOffset = doorOffset;
+        if (exitDoorHeightOffset == null) exitDoorHeightOffset = doorHeightOffset;
+        if (lock == null) lock = PortalRoomLock.DEFAULT;
+        if (fog == null) fog = PortalRoomFog.DEFAULT;
+        if (drift == null) drift = PortalRoomDrift.DEFAULT;
+    }
+
+    /** The thirteen settings this record carried before a room could be kept off the relay. */
+    public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
+                              PortalRoomContents contents, PortalRoomExits exits,
+                              PortalRoomBooks books, PortalRoomSky sky, PortalRoomDoorWall doorWall,
+                              PortalRoomDoorOffset doorOffset,
+                              PortalRoomDoorHeightOffset doorHeightOffset,
+                              PortalRoomDoorOffset exitDoorOffset,
+                              PortalRoomDoorHeightOffset exitDoorHeightOffset,
+                              PortalRoomLock lock, PortalRoomFog fog) {
+        this(mode, copies, contents, exits, books, sky, doorWall, doorOffset, doorHeightOffset,
+            exitDoorOffset, exitDoorHeightOffset, lock, fog, PortalRoomDrift.DEFAULT);
+    }
+
+    /** The twelve settings this record carried before the fog could be overridden. */
+    public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
+                              PortalRoomContents contents, PortalRoomExits exits,
+                              PortalRoomBooks books, PortalRoomSky sky, PortalRoomDoorWall doorWall,
+                              PortalRoomDoorOffset doorOffset,
+                              PortalRoomDoorHeightOffset doorHeightOffset,
+                              PortalRoomDoorOffset exitDoorOffset,
+                              PortalRoomDoorHeightOffset exitDoorHeightOffset,
+                              PortalRoomLock lock) {
+        this(mode, copies, contents, exits, books, sky, doorWall, doorOffset, doorHeightOffset,
+            exitDoorOffset, exitDoorHeightOffset, lock, PortalRoomFog.DEFAULT);
+    }
+
+    /** The eleven settings this record carried before the seal's block could be chosen. */
+    public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
+                              PortalRoomContents contents, PortalRoomExits exits,
+                              PortalRoomBooks books, PortalRoomSky sky, PortalRoomDoorWall doorWall,
+                              PortalRoomDoorOffset doorOffset,
+                              PortalRoomDoorHeightOffset doorHeightOffset,
+                              PortalRoomDoorOffset exitDoorOffset,
+                              PortalRoomDoorHeightOffset exitDoorHeightOffset) {
+        this(mode, copies, contents, exits, books, sky, doorWall, doorOffset, doorHeightOffset,
+            exitDoorOffset, exitDoorHeightOffset, PortalRoomLock.DEFAULT);
+    }
+
+    /** The nine settings this record carried before the two doors could differ — both mirrored. */
+    public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
+                              PortalRoomContents contents, PortalRoomExits exits,
+                              PortalRoomBooks books, PortalRoomSky sky, PortalRoomDoorWall doorWall,
+                              PortalRoomDoorOffset doorOffset,
+                              PortalRoomDoorHeightOffset doorHeightOffset) {
+        this(mode, copies, contents, exits, books, sky, doorWall, doorOffset, doorHeightOffset,
+            null, null);
+    }
+
+    /** The eight settings this record carried before Door Height Offset existed, corridor at the floor. */
+    public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
+                              PortalRoomContents contents, PortalRoomExits exits,
+                              PortalRoomBooks books, PortalRoomSky sky, PortalRoomDoorWall doorWall,
+                              PortalRoomDoorOffset doorOffset) {
+        this(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
+            PortalRoomDoorHeightOffset.DEFAULT);
+    }
+
+    /** The seven settings this record carried before Door Offset existed, with the door kept centred. */
+    public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
+                              PortalRoomContents contents, PortalRoomExits exits,
+                              PortalRoomBooks books, PortalRoomSky sky, PortalRoomDoorWall doorWall) {
+        this(mode, copies, contents, exits, books, sky, doorWall, PortalRoomDoorOffset.DEFAULT,
+            PortalRoomDoorHeightOffset.DEFAULT);
     }
 
     /** The six settings this record carried before Door Wall existed, with the mouth's seal kept. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                               PortalRoomContents contents, PortalRoomExits exits,
                               PortalRoomBooks books, PortalRoomSky sky) {
-        this(mode, copies, contents, exits, books, sky, PortalRoomDoorWall.DEFAULT);
+        this(mode, copies, contents, exits, books, sky, PortalRoomDoorWall.DEFAULT,
+            PortalRoomDoorOffset.DEFAULT);
     }
 
     /** The boundary settings alone, unfurnished — the pair this record was before Contents existed. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies) {
         this(mode, copies, PortalRoomContents.DEFAULT, null, PortalRoomBooks.DEFAULT,
-            PortalRoomSky.NONE, PortalRoomDoorWall.DEFAULT);
+            PortalRoomSky.NONE, PortalRoomDoorWall.DEFAULT, PortalRoomDoorOffset.DEFAULT);
     }
 
     /** The three settings this record carried before Exits existed, at the mode's own default. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                               PortalRoomContents contents) {
         this(mode, copies, contents, null, PortalRoomBooks.DEFAULT, PortalRoomSky.NONE,
-            PortalRoomDoorWall.DEFAULT);
+            PortalRoomDoorWall.DEFAULT, PortalRoomDoorOffset.DEFAULT);
     }
 
     /** The four settings this record carried before Books existed, with no author lock. */
     public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                               PortalRoomContents contents, PortalRoomExits exits) {
         this(mode, copies, contents, exits, PortalRoomBooks.DEFAULT, PortalRoomSky.NONE,
-            PortalRoomDoorWall.DEFAULT);
+            PortalRoomDoorWall.DEFAULT, PortalRoomDoorOffset.DEFAULT);
     }
 
     /** The five settings this record carried before Sky existed, lit only by its own lamps. */
@@ -97,7 +201,7 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                               PortalRoomContents contents, PortalRoomExits exits,
                               PortalRoomBooks books) {
         this(mode, copies, contents, exits, books, PortalRoomSky.NONE,
-            PortalRoomDoorWall.DEFAULT);
+            PortalRoomDoorWall.DEFAULT, PortalRoomDoorOffset.DEFAULT);
     }
 
     /**
@@ -119,7 +223,16 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
             exitsSegment == null ? null : PortalRoomExits.parse(exitsSegment),
             PortalRoomBooks.parse(segment(parts, 4)),
             PortalRoomSky.parse(segment(parts, 5)),
-            PortalRoomDoorWall.parse(segment(parts, 6)));
+            PortalRoomDoorWall.parse(segment(parts, 6)),
+            PortalRoomDoorOffset.parse(segment(parts, 7)),
+            PortalRoomDoorHeightOffset.parse(segment(parts, 8)),
+            // Null rather than the centred default when absent: an unsaid exit door mirrors the
+            // entry door, and only the constructor knows what that is.
+            segment(parts, 9) == null ? null : PortalRoomDoorOffset.parse(segment(parts, 9)),
+            segment(parts, 10) == null ? null : PortalRoomDoorHeightOffset.parse(segment(parts, 10)),
+            PortalRoomLock.parse(segment(parts, 11)),
+            PortalRoomFog.parse(segment(parts, 12)),
+            PortalRoomDrift.parse(segment(parts, 13)));
     }
 
     /** Segment {@code index} of a split tag, or null when the tag is shorter than that. */
@@ -151,10 +264,74 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         PortalRoomCopies effectiveCopies = effectiveCopies();
         PortalRoomExits effectiveExits = effectiveExits();
         PortalRoomDoorWall effectiveDoorWall = effectiveDoorWall();
-        if (effectiveDoorWall != PortalRoomDoorWall.DEFAULT) {
-            // The longest tag this class writes. Every earlier segment goes out at whatever it
+        PortalRoomLock effectiveLock = effectiveLock();
+        if (driftApplies() && drift != PortalRoomDrift.DEFAULT) {
+            // The longest tag this class writes. On is never written — it is what every tag from
+            // before the setting existed already means — and, like Door Wall, the raw value is
+            // tested only where the control applies: an endless room carrying Off from before its
+            // walls changed must not grow a segment for a choice nothing reads.
+            return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
+                + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
+                + SEPARATOR + effectiveDoorWall.id() + SEPARATOR + doorOffset.id()
+                + SEPARATOR + doorHeightOffset.id()
+                + SEPARATOR + exitDoorOffset.id() + SEPARATOR + exitDoorHeightOffset.id()
+                + SEPARATOR + effectiveLock.id() + SEPARATOR + fog.id() + SEPARATOR + drift.id();
+        }
+        if (fog != PortalRoomFog.DEFAULT) {
+            // The longest tag with the drift at its default. Auto is never written — it is what
+            // every tag from before the setting existed already means — so only an author's
+            // override grows the tag, and every earlier segment goes out at its effective value
+            // as placeholder.
+            return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
+                + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
+                + SEPARATOR + effectiveDoorWall.id() + SEPARATOR + doorOffset.id()
+                + SEPARATOR + doorHeightOffset.id()
+                + SEPARATOR + exitDoorOffset.id() + SEPARATOR + exitDoorHeightOffset.id()
+                + SEPARATOR + effectiveLock.id() + SEPARATOR + fog.id();
+        }
+        if (!PortalRoomLock.DEFAULT.equals(effectiveLock)) {
+            // The longest tag with the fog at Auto. Effective and not the raw value, so a room still
+            // carrying a seal block from before its walls were changed to an endless mode does not
+            // grow a segment for a shell nothing writes — the same reasoning every other effective
+            // read here uses. Both door segments go out as placeholders when the two doors agree,
+            // which parse reads back as the mirroring it always was.
+            return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
+                + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
+                + SEPARATOR + effectiveDoorWall.id() + SEPARATOR + doorOffset.id()
+                + SEPARATOR + doorHeightOffset.id()
+                + SEPARATOR + exitDoorOffset.id() + SEPARATOR + exitDoorHeightOffset.id()
+                + SEPARATOR + effectiveLock.id();
+        }
+        if (doorsDiffer()) {
+            // The longest tag with a default seal, and the shortest that names the exit door at all.
+            // "Would change something" here means differs from the ENTRY door rather than from a
+            // fixed value, on the same reasoning Exits uses against its mode's default: a room whose
+            // two doors agree is saying what the entry segment already says.
+            return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
+                + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
+                + SEPARATOR + effectiveDoorWall.id() + SEPARATOR + doorOffset.id()
+                + SEPARATOR + doorHeightOffset.id()
+                + SEPARATOR + exitDoorOffset.id() + SEPARATOR + exitDoorHeightOffset.id();
+        }
+        if (!PortalRoomDoorHeightOffset.DEFAULT.equals(doorHeightOffset)) {
+            // Every earlier segment goes out at whatever it
             // effectively is — a later segment cannot be written without the ones in front of it,
             // and each parse reads its own placeholder back as the same value.
+            return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
+                + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
+                + SEPARATOR + effectiveDoorWall.id() + SEPARATOR + doorOffset.id()
+                + SEPARATOR + doorHeightOffset.id();
+        }
+        if (!PortalRoomDoorOffset.DEFAULT.equals(doorOffset)) {
+            return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
+                + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
+                + SEPARATOR + effectiveDoorWall.id() + SEPARATOR + doorOffset.id();
+        }
+        // The raw value gated on the control applying, not the effective one: effectiveDoorWall
+        // pins every non-repetition mode to Merged, which is no longer the default, and testing it
+        // here would grow a "/sealed" segment onto every Endless Open and Bedrock Lock tag on its
+        // next save — a segment that says nothing, since parse pins those modes the same way.
+        if (doorWallApplies() && doorWall != PortalRoomDoorWall.DEFAULT) {
             return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
                 + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
                 + SEPARATOR + effectiveDoorWall.id();
@@ -201,16 +378,23 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
 
     /**
      * What this room actually does at the corridor mouths: {@link #doorWall} where the control
-     * applies, and {@link PortalRoomDoorWall#DEFAULT} where it does not.
+     * applies, and {@link PortalRoomDoorWall#SEALED} where it does not.
      *
      * <p>Read this rather than {@link #doorWall} anywhere the answer drives block writes, for the
      * same reason {@link #effectiveCopies} and {@link #effectiveExits} exist. A room whose walls were
      * changed from Endless Repetition to Endless Open still carries whatever Door Wall value it had,
      * and honouring it there would hand a copy a plane it has no wall to fill — which is a hole in
      * the one boundary that may not have one.</p>
+     *
+     * <p><b>{@code SEALED} by name, not {@code DEFAULT}.</b> The default is Kept, and Kept answers
+     * "leave it alone" to every face question the tiler asks: {@code PortalRoomTiler.faceAction}
+     * returns {@code NONE} for anything that repeats, and {@code stampMaskFor} releases the seal
+     * planes. Endless Open depends on both being the other way — its faces are <i>opened</i>, and
+     * its floor-and-ceiling copies are masked off the mouth plane they have no wall to fill. So the
+     * modes the control does not apply to are pinned to Merged whatever the default says.</p>
      */
     public PortalRoomDoorWall effectiveDoorWall() {
-        return doorWallApplies() ? doorWall : PortalRoomDoorWall.DEFAULT;
+        return doorWallApplies() ? doorWall : PortalRoomDoorWall.SEALED;
     }
 
     /** True when the Copies control applies at all — either endless mode appends tiles to roll. */
@@ -253,6 +437,40 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         return withCopies(copies.withBlock(blockId));
     }
 
+    /**
+     * True when the seal block applies at all — either mode that wraps the room in a shell.
+     *
+     * <p>{@link PortalRoomMode#sealsRoomBox}, which is the writer's own question rather than the
+     * name of a mode: {@link PortalRoomMode#CHUNK_DIMENSION} seals for a reason of its own, and a
+     * setting gated on {@link PortalRoomMode#BEDROCK_LOCK} alone would leave one mode whose shell
+     * ignored the author.</p>
+     */
+    public boolean lockApplies() {
+        return mode.sealsRoomBox();
+    }
+
+    /**
+     * What this room's shell is actually made of: {@link #lock} where the control applies, and
+     * {@link PortalRoomLock#DEFAULT} where it does not.
+     *
+     * <p>Read this rather than {@link #lock} anywhere the answer drives block writes, for the same
+     * reason {@link #effectiveCopies} and {@link #effectiveExits} exist — a room carries whatever
+     * setting it was last given, and an endless room has no shell for one to describe.</p>
+     */
+    public PortalRoomLock effectiveLock() {
+        return lockApplies() ? lock : PortalRoomLock.DEFAULT;
+    }
+
+    /** The same settings with the seal written in {@code blockId}. */
+    public PortalRoomSettings withLockBlock(String blockId) {
+        return withLock(lock.withBlock(blockId));
+    }
+
+    public PortalRoomSettings withLock(PortalRoomLock newLock) {
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, newLock, fog, drift);
+    }
+
     /** True when the Exits control applies at all — only an endless room has anywhere to put one. */
     public boolean exitsApply() {
         return mode.exitsApply();
@@ -283,35 +501,159 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
     public PortalRoomSettings withMode(PortalRoomMode newMode) {
         boolean inherited = exits.equals(mode.defaultExits());
         return new PortalRoomSettings(newMode, copies, contents, inherited ? null : exits, books, sky,
-            doorWall);
+            doorWall, doorOffset, doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock, fog, drift);
     }
 
     public PortalRoomSettings withCopies(PortalRoomCopies newCopies) {
-        return new PortalRoomSettings(mode, newCopies, contents, exits, books, sky, doorWall);
+        return new PortalRoomSettings(mode, newCopies, contents, exits, books, sky, doorWall, doorOffset,
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock, fog, drift);
     }
 
     public PortalRoomSettings withContents(PortalRoomContents newContents) {
-        return new PortalRoomSettings(mode, copies, newContents, exits, books, sky, doorWall);
+        return new PortalRoomSettings(mode, copies, newContents, exits, books, sky, doorWall, doorOffset,
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock, fog, drift);
     }
 
     public PortalRoomSettings withExits(PortalRoomExits newExits) {
-        return new PortalRoomSettings(mode, copies, contents, newExits, books, sky, doorWall);
+        return new PortalRoomSettings(mode, copies, contents, newExits, books, sky, doorWall, doorOffset,
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock, fog, drift);
     }
 
     public PortalRoomSettings withBooks(PortalRoomBooks newBooks) {
-        return new PortalRoomSettings(mode, copies, contents, exits, newBooks, sky, doorWall);
+        return new PortalRoomSettings(mode, copies, contents, exits, newBooks, sky, doorWall, doorOffset,
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock, fog, drift);
     }
 
     public PortalRoomSettings withSky(PortalRoomSky newSky) {
-        return new PortalRoomSettings(mode, copies, contents, exits, books, newSky, doorWall);
+        return new PortalRoomSettings(mode, copies, contents, exits, books, newSky, doorWall, doorOffset,
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock, fog, drift);
+    }
+
+    public PortalRoomSettings withFog(PortalRoomFog newFog) {
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock, newFog, drift);
+    }
+
+    /** The same settings at the next Fog value — what the editor's one cycling button steps to. */
+    public PortalRoomSettings nextFog() {
+        return withFog(fog.next());
+    }
+
+    /**
+     * Whether this room is fogged — the one question the server asks before describing the fogged
+     * region to a client. {@link PortalRoomFog#AUTO} hands it to the walls mode
+     * ({@link PortalRoomMode#fogs}); On and Off answer for themselves.
+     */
+    public boolean fogs() {
+        return fog.fogs(mode);
+    }
+
+    public PortalRoomSettings withDrift(PortalRoomDrift newDrift) {
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock, fog, newDrift);
+    }
+
+    /** The same settings at the next Drift value — what the editor's one cycling button steps to. */
+    public PortalRoomSettings nextDrift() {
+        return withDrift(drift.next());
+    }
+
+    /**
+     * True when the Drift control applies at all — {@link PortalRoomMode#BEDROCK_LOCK} alone.
+     *
+     * <p>A locked room is one sealed box with no copies, no generated interior and no open wall, so
+     * a single blob describes the whole of it and another world can stamp that blob back into the
+     * same box. Nothing else the modes make is one thing: an endless room is a sliding window of
+     * copies, a Bedrockless room is a box standing in a swept void it does not own, and a chunk
+     * dimension's interior is sampled terrain no author drew. Asked of the mode by name rather than
+     * through {@link PortalRoomMode#sealsRoomBox}, which Chunk Dimension also answers yes to.</p>
+     */
+    public boolean driftApplies() {
+        return mode == PortalRoomMode.BEDROCK_LOCK;
+    }
+
+    /**
+     * Whether this room actually drifts: {@link #drift} where the control applies, and
+     * {@link PortalRoomDrift#OFF} where it does not.
+     *
+     * <p>Read this rather than {@link #drift} anywhere the answer decides whether a room is
+     * registered with the relay, for the same reason {@link #effectiveLock} exists — a room carries
+     * whatever setting it was last given, and an endless room has nothing a single blob describes.</p>
+     */
+    public PortalRoomDrift effectiveDrift() {
+        return driftApplies() ? drift : PortalRoomDrift.OFF;
+    }
+
+    /** True when this room is uploaded when edited and may be served from the pool. */
+    public boolean drifts() {
+        return effectiveDrift() == PortalRoomDrift.ON;
     }
 
     public PortalRoomSettings withDoorWall(PortalRoomDoorWall newDoorWall) {
-        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, newDoorWall);
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, newDoorWall, doorOffset,
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock, fog, drift);
     }
 
     /** The same settings at the next Door Wall value — what the editor's one cycling button steps to. */
     public PortalRoomSettings nextDoorWall() {
         return withDoorWall(doorWall.next());
+    }
+
+    /**
+     * The same settings with the door offset set to {@code newDoorOffset}, unclamped.
+     *
+     * <p>Unclamped because the legal range depends on the room's own width and the world's
+     * {@code CarriageDims}, neither of which this record carries — the door pointer clamps via
+     * {@link PortalRoomLayout#clampDoorOffset} before calling this.</p>
+     *
+     * <p><b>The exit door is left exactly where it is</b>, mirroring or not — deliberately unlike the
+     * way {@link #withMode} re-derives Exits. An author moves a doorway by placing a door on <i>that
+     * doorway</i>, so the door they placed is the only one that may move; a room whose two doors
+     * happened to agree simply stops agreeing, which is the author saying so. Re-deriving here would
+     * mean a click on the near mouth silently dragged the far one with it, and there would then be no
+     * gesture that moves one door of a mirrored room at all.</p>
+     */
+    public PortalRoomSettings withDoorOffset(PortalRoomDoorOffset newDoorOffset) {
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, newDoorOffset,
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock, fog, drift);
+    }
+
+    /**
+     * The same settings with the door height offset set to {@code newDoorHeightOffset}, unclamped —
+     * see {@link #withDoorOffset} for why unclamped is correct here too, and for why the exit door
+     * stays where it is rather than following this one.
+     */
+    public PortalRoomSettings withDoorHeightOffset(PortalRoomDoorHeightOffset newDoorHeightOffset) {
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
+            newDoorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock, fog, drift);
+    }
+
+    /**
+     * The same settings with the <b>exit</b> door offset set to {@code newExitDoorOffset}, unclamped —
+     * see {@link #withDoorOffset} for why unclamped is correct here too.
+     */
+    public PortalRoomSettings withExitDoorOffset(PortalRoomDoorOffset newExitDoorOffset) {
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
+            doorHeightOffset, newExitDoorOffset, exitDoorHeightOffset, lock, fog, drift);
+    }
+
+    /** The vertical twin of {@link #withExitDoorOffset}, likewise unclamped. */
+    public PortalRoomSettings withExitDoorHeightOffset(
+        PortalRoomDoorHeightOffset newExitDoorHeightOffset) {
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
+            doorHeightOffset, exitDoorOffset, newExitDoorHeightOffset, lock, fog, drift);
+    }
+
+    /**
+     * True when this room's two doorways are authored apart — the one question every writer of the
+     * exit corridor's position, and {@link #toTag}, actually asks.
+     *
+     * <p>Compared as stored rather than as clamped: two offsets that clamp to the same place in
+     * today's room still differ as authored, and a room later widened should recover the author's
+     * intent rather than have had it silently folded away on the last save.</p>
+     */
+    public boolean doorsDiffer() {
+        return !doorOffset.equals(exitDoorOffset)
+            || !doorHeightOffset.equals(exitDoorHeightOffset);
     }
 }

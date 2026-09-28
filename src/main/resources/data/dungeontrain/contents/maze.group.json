@@ -38,7 +38,16 @@
       "weight": 1,
       "phases": [
         "OVERWORLD",
-        "UPSIDE_DOWN"
+        "UPSIDE_DOWN",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
       ]
     },
     {
@@ -82,6 +91,22 @@
       "id": "bamboo",
       "weight": 1,
       "minLevel": 10
+    },
+    {
+      "id": "pris",
+      "weight": 2
+    },
+    {
+      "id": "craftingmaze",
+      "weight": 2
+    },
+    {
+      "id": "leaves",
+      "weight": 5
+    },
+    {
+      "id": "ice",
+      "weight": 1
     }
   ]
 }

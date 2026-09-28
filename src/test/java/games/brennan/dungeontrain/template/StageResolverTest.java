@@ -64,6 +64,19 @@ final class StageResolverTest {
         assertEquals("deepdark", at(87, TrainPhase.OVERWORLD));
         assertEquals("mud", at(121, TrainPhase.OVERWORLD));
         assertEquals("wood_oak", at(131, TrainPhase.OVERWORLD));
+        // The wood stages run on from oak in the author's order and lengths, up to the open-ended top.
+        assertEquals("wood_oak", at(160, TrainPhase.OVERWORLD));
+        assertEquals("birch", at(161, TrainPhase.OVERWORLD));
+        assertEquals("acacia", at(176, TrainPhase.OVERWORLD));
+        assertEquals("jungle", at(206, TrainPhase.OVERWORLD));
+        assertEquals("mangrove", at(226, TrainPhase.OVERWORLD));
+        assertEquals("cherry", at(266, TrainPhase.OVERWORLD));
+        assertEquals("crimson", at(286, TrainPhase.OVERWORLD));
+        assertEquals("warped", at(321, TrainPhase.OVERWORLD));
+        assertEquals("bamboo", at(356, TrainPhase.OVERWORLD));
+        assertEquals("darkwood", at(376, TrainPhase.OVERWORLD));
+        assertEquals("bamboo_mosaic", at(416, TrainPhase.OVERWORLD));
+        assertEquals("spruce", at(436, TrainPhase.OVERWORLD));
     }
 
     /**
@@ -110,15 +123,16 @@ final class StageResolverTest {
     /**
      * The top overworld band is open-ended on purpose. It used to stop at level 200, so a long run
      * eventually rode into levels no stage covered — every shared slot there was skipped as
-     * {@code NO_STAGE}, silently, for the rest of the run.
+     * {@code NO_STAGE}, silently, for the rest of the run. Whichever wood is last in the sequence
+     * holds that open end — {@code spruce} today — so adding a wood means moving this, not capping it.
      */
     @Test
     @DisplayName("a level above every named band still resolves — the top band runs open-ended")
     void aboveAllBandsResolvesToTheTopStage() {
-        assertEquals("wood_oak", at(201, TrainPhase.OVERWORLD));
-        assertEquals("wood_oak", at(5000, TrainPhase.OVERWORLD));
+        assertEquals("spruce", at(436, TrainPhase.OVERWORLD));
+        assertEquals("spruce", at(5000, TrainPhase.OVERWORLD));
         // The top band runs open-ended in every phase it lists — but not END, which it no longer lists.
-        assertEquals("wood_oak", at(5000, TrainPhase.CHUNCKS));
+        assertEquals("spruce", at(5000, TrainPhase.CHUNCKS));
     }
 
     /** The chuncks band is on by default; a slot there must belong to its level's stage, not to nothing. */
@@ -127,7 +141,7 @@ final class StageResolverTest {
     void chuncksPhaseResolvesToTheLevelBand() {
         assertEquals("stone", at(5, TrainPhase.CHUNCKS));
         assertEquals("copper", at(40, TrainPhase.CHUNCKS));
-        assertEquals("wood_oak", at(300, TrainPhase.CHUNCKS));
+        assertEquals("crimson", at(300, TrainPhase.CHUNCKS));
     }
 
     /** A genuinely uncovered {@code (level, phase)} still resolves to null rather than guessing. */

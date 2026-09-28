@@ -44,9 +44,7 @@ import java.util.List;
  * <ul>
  *   <li>Player is holding the variant-place key and inside an editor plot.</li>
  *   <li>They look at a block inside the plot footprint.</li>
- *   <li>They right-click it with a placeable block, a spawn egg, or a filled
- *       bucket in main hand. A bucket contributes the fluid's <b>source</b>
- *       state — see {@link VariantLiquids}.</li>
+ *   <li>They right-click it with a placeable block in main hand.</li>
  * </ul>
  *
  * <p>Instead of the vanilla "place the held block on the neighbouring face"
@@ -98,27 +96,14 @@ public final class VariantBlockInteractions {
         if (held.isEmpty()) return;
 
         VariantState newVariant;
-        BlockState bucketSource = VariantLiquids.sourceStateFrom(held);
         if (held.getItem() instanceof BlockItem blockItem) {
             newVariant = captureVariant(event, level, player, blockItem, held, clicked);
         } else if (held.getItem() instanceof SpawnEggItem egg) {
             newVariant = captureMobVariant(egg, held, player);
-        } else if (bucketSource != null) {
-            // Filled bucket → the fluid's SOURCE state. Liquids have no
-            // directional properties and no block entity, so there is nothing
-            // to orient or carry: NONE rotation, null NBT.
-            newVariant = new VariantState(bucketSource, null, 1, VariantRotation.NONE);
         } else {
-            // Empty / milk bucket and every other non-block item: fall through
-            // to vanilla use rather than swallowing the interaction.
             return;
         }
         if (newVariant == null) return;
-
-        // Snapshot the sidecar before any of the four per-kind branches touches
-        // it, so this add joins the tick's undo step. One call covers all four:
-        // they differ in which sidecar they write, not in whether they write.
-        EditorEditRecorder.notePendingSidecar(player, "Variant add");
 
         // Part plot takes priority: if the clicked position falls inside a
         // part plot, route the shift-click into the part's own variants
@@ -383,7 +368,7 @@ public final class VariantBlockInteractions {
 
     /**
      * Build a mob {@link VariantState} from a held vanilla spawn egg. The
-     * resulting entry's {@code state} is auto-stamped to the COMMAND_BLOCK
+     * resulting entry's {@code state} is auto-stamped to the empty-placeholder
      * sentinel by the canonical constructor, so existing applier branches
      * AIR the cell at spawn; a parallel entity pass spawns the mob (subject
      * to the existing 48-block player-distance gate). Entity NBT from the
@@ -432,13 +417,9 @@ public final class VariantBlockInteractions {
      * sign / banner round-trips into the variant list with its contents.
      * Returns {@code null} for air — the caller surfaces the "place a base
      * block first" toast separately.
-     *
-     * <p>A liquid base is normalised to its source state: a captured {@code level=3} flow has
-     * nothing feeding it once stamped into a carriage and would drain to air.</p>
      */
-    private static @Nullable VariantState captureBaseVariant(ServerLevel level, BlockPos clicked, BlockState rawBaseState) {
-        if (rawBaseState.isAir()) return null;
-        BlockState baseState = VariantLiquids.toSource(rawBaseState);
+    private static @Nullable VariantState captureBaseVariant(ServerLevel level, BlockPos clicked, BlockState baseState) {
+        if (baseState.isAir()) return null;
         CompoundTag beNbt = null;
         if (baseState.hasBlockEntity()) {
             BlockEntity be = level.getBlockEntity(clicked);
@@ -467,7 +448,7 @@ public final class VariantBlockInteractions {
                     // would have only one candidate and short-circuit any
                     // weight authoring.
                     updated.add(VariantState.of(
-                        net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState()));
+                        CarriageVariantBlocks.emptyPlaceholder()));
                 } else {
                     player.displayClientMessage(
                         Component.literal("Target block is air — place a base block first.")

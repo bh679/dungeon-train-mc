@@ -6,8 +6,8 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * The five worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
- * single 5-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
+ * The fifteen worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
+ * single 15-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
  * Used by the per-template spawn gate
  * ({@link games.brennan.dungeontrain.template.TemplateGate}): a weighted template may restrict
  * itself to a subset of phases, and the generator filters the candidate pool by the phase of the
@@ -29,7 +29,33 @@ public enum TrainPhase {
     END,
     UPSIDE_DOWN,
     /** Mostly-void band of scattered overworld chunks (some full, some top-down slices); see {@link ChuncksBand}. */
-    CHUNCKS;
+    CHUNCKS,
+    /** Open void scattered with floating spheres of lifted natural terrain; see {@link SpheresBand}. */
+    SPHERES,
+    /** Mostly-void band of scattered vertical towers, each one vanilla structure piece repeated up; see {@link StacksBand}. */
+    STACKS,
+    /** Terrain from a port of Beta 1.7.3's world generator; see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
+    BETA,
+    /** Terrain from a port of Alpha 1.1.2's world generator (normal and winter halves); see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
+    ALPHA,
+    /** Floating islands over void from a port of Beta 1.7.3's unused Sky generator; see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
+    SKYLANDS,
+    /** Terrain from ports of the Infdev snapshots' world generators; see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
+    INFDEV,
+    /** Stacked layers of islands over void from a port of Indev's Floating level type; see {@link games.brennan.dungeontrain.worldgen.legacy.indev.IndevLevels}. */
+    FLOATING,
+    /** The Far Lands — Beta's generator past its 32-bit noise overflow; see {@link games.brennan.dungeontrain.worldgen.legacy.farlands.FarLandsShift}. */
+    FAR_LANDS,
+    /** Terrain from a port of Classic 0.30's finite level generator; see {@link games.brennan.dungeontrain.worldgen.legacy.classic.ClassicLevels}. */
+    CLASSIC,
+    /** The Caves of Chaos preset on the Beta pipeline — cavernous stone to y 256 over void; see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
+    CAVES_OF_CHAOS,
+    /** Vanilla's Large Biomes preset; see {@link games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain}. */
+    LARGE_BIOMES,
+    /** Vanilla's Amplified preset; see {@link games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain}. */
+    AMPLIFIED,
+    /** Modern overworld dense with ruined cities; see {@link LostCityStructures}. Last: phase masks are {@code 1 << ordinal}. */
+    LOST_CITY;
 
     /** Bitmask with every phase set ({@code 1<<ordinal} per value) — the "all phases" wire value. */
     public static final int ALL_MASK = (1 << values().length) - 1;
@@ -55,17 +81,75 @@ public enum TrainPhase {
         return set;
     }
 
+    /**
+     * Single-letter label for compact phase pickers/indicators — the first letter of the constant
+     * name, so the eighteen phases read {@code O N V E U C S S B A S I F F C C L A}. A new phase is picked up automatically.
+     */
+    public String letter() {
+        return String.valueOf(name().charAt(0));
+    }
+
+    /** Human-readable name for editor phase toggles ({@code "Upside Down"}, …). Exhaustive on purpose: a new phase must add its label here. */
+    public String displayName() {
+        return switch (this) {
+            case OVERWORLD -> "Overworld";
+            case NETHER -> "Nether";
+            case VOID -> "Void";
+            case END -> "End";
+            case UPSIDE_DOWN -> "Upside Down";
+            case CHUNCKS -> "Chuncks";
+            case SPHERES -> "Spheres";
+            case STACKS -> "Stacks";
+            case BETA -> "Beta";
+            case ALPHA -> "Alpha";
+            case SKYLANDS -> "Skylands";
+            case INFDEV -> "Infdev";
+            case FLOATING -> "Floating";
+            case FAR_LANDS -> "Far Lands";
+            case CLASSIC -> "Classic";
+            case CAVES_OF_CHAOS -> "Caves of Chaos";
+            case LARGE_BIOMES -> "Large Biomes";
+            case AMPLIFIED -> "Amplified";
+            case LOST_CITY -> "Lost City";
+        };
+    }
+
+    /**
+     * Short command aliases beside each {@link #token()} — one table shared by {@link #byToken} and
+     * {@code /dtp}'s literals so the two can't drift apart. Insertion-ordered and unmodifiable.
+     */
+    public static java.util.Map<String, TrainPhase> aliases() {
+        return Aliases.MAP;
+    }
+
+    private static final class Aliases {
+        static final java.util.Map<String, TrainPhase> MAP;
+        static {
+            java.util.Map<String, TrainPhase> m = new java.util.LinkedHashMap<>();
+            m.put("ow", OVERWORLD);
+            m.put("ud", UPSIDE_DOWN);
+            m.put("upsidedown", UPSIDE_DOWN);
+            m.put("farlands", FAR_LANDS);
+            m.put("largebiomes", LARGE_BIOMES);
+            m.put("large", LARGE_BIOMES);
+            m.put("chaos", CAVES_OF_CHAOS);
+            m.put("cavesofchaos", CAVES_OF_CHAOS);
+            m.put("lostcity", LOST_CITY);
+            MAP = java.util.Collections.unmodifiableMap(m);
+        }
+    }
+
     /** Lower-cased command token for this phase ({@code overworld}, {@code nether}, …). */
     public String token() {
         return name().toLowerCase(java.util.Locale.ROOT);
     }
 
-    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}); null if unknown. */
+    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}/{@code spheres}/{@code stacks}/{@code beta}/{@code alpha}/{@code skylands}/{@code infdev}/{@code floating}/{@code far_lands}/{@code caves_of_chaos} (alias {@code chaos})); null if unknown. */
     public static TrainPhase byToken(String token) {
         if (token == null) return null;
         String t = token.trim().toLowerCase(java.util.Locale.ROOT);
-        if (t.equals("ow")) return OVERWORLD;
-        if (t.equals("ud") || t.equals("upsidedown")) return UPSIDE_DOWN;
+        TrainPhase alias = aliases().get(t);
+        if (alias != null) return alias;
         for (TrainPhase p : values()) {
             if (p.token().equals(t)) return p;
         }
@@ -80,9 +164,68 @@ public enum TrainPhase {
      */
     public static TrainPhase phaseAt(ServerLevel overworld, int worldX) {
         // The special bands occupy disjoint cycle sub-ranges, so a column is in at most one. Test the
-        // chuncks and upside-down bands first (they are the bands the nether/End classifiers don't know
+        // spheres, chuncks and upside-down bands first (they are the bands the nether/End classifiers don't know
         // about; chuncks sits after the upside-down exit gap, where the End classifier reads OVERWORLD).
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.VOID, worldX)) {
+            return VOID;                                       // the legacy run's closing void reads as the void phase
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.FAR_LANDS, worldX)) {
+            return FAR_LANDS;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.CAVES_OF_CHAOS, worldX)) {
+            return CAVES_OF_CHAOS;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.LARGE_BIOMES, worldX)) {
+            return LARGE_BIOMES;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.AMPLIFIED, worldX)) {
+            return AMPLIFIED;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.LOST_CITY, worldX)) {
+            return LOST_CITY;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.BETA, worldX)) {
+            return BETA;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.SKYLANDS, worldX)) {
+            return SKYLANDS;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.ALPHA, worldX)) {
+            return ALPHA;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.INFDEV, worldX)) {
+            return INFDEV;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.FLOATING, worldX)) {
+            return FLOATING;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.CLASSIC, worldX)) {
+            return CLASSIC;
+        }
+        if (StacksBand.isInBand(overworld, worldX)) {
+            return STACKS;
+        }
+        if (SpheresBand.isInBand(overworld, worldX)) {
+            return SPHERES;
+        }
         if (ChuncksBand.isInBand(overworld, worldX)) {
+            return CHUNCKS;
+        }
+        // The mix zone remixes the bands behind it chunk by chunk; as a phase it is the tail of chuncks.
+        if (WorldGenCycle.fromConfig().isInMixZone(worldX)
+                && games.brennan.dungeontrain.world.DungeonTrainWorldData.get(overworld).startsWithTrain()) {
             return CHUNCKS;
         }
         if (UpsideDownBand.isInBand(overworld, worldX)) {

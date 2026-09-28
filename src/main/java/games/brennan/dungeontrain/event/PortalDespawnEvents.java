@@ -13,7 +13,9 @@ import net.neoforged.neoforge.event.entity.living.MobDespawnEvent;
  * <p>A mob in a twin corridor is, as far as vanilla is concerned, a mob at the bottom of the world
  * with the nearest player riding a train away from it — so the distance rule discards it, and a
  * villager walked through a portal is gone before its player comes back. The room is an illusion
- * vanilla knows nothing about, so the answer has to be given here.</p>
+ * vanilla knows nothing about, so the answer has to be given here. The same rule, seen from the
+ * other end, is a mob on the <i>carriage</i> whose player has just walked into the twin — 140
+ * blocks below it — so both corridors of a pair are registered, not only the structure.</p>
  *
  * <p>{@link MobDespawnEvent.Result#DENY} rather than {@code Mob.setPersistenceRequired()}: it
  * cancels the distance despawn <i>and</i> resets {@code noActionTime}, which is the second way a

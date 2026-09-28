@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 0,
+  "variants": [
+    {
+      "id": "mild_1",
+      "weight": 1,
+      "minLevel": 2,
+      "maxLevel": 21
+    },
+    {
+      "id": "dangerous_1",
+      "weight": 1,
+      "minLevel": 15
+    },
+    {
+      "id": "mild_3",
+      "weight": 1,
+      "minLevel": 3
+    },
+    {
+      "id": "mild_4",
+      "weight": 1,
+      "minLevel": 10
+    },
+    {
+      "id": "mild_2",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
+      ]
+    },
+    {
+      "id": "trap_easy",
+      "weight": 1,
+      "maxLevel": 12
+    },
+    {
+      "id": "trapeasy2",
+      "weight": 1,
+      "maxLevel": 31,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END",
+        "CHUNCKS",
+        "SPHERES",
+        "BETA",
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY",
+        "CAVES_OF_CHAOS"
+      ]
+    },
+    {
+      "id": "trapmid",
+      "weight": 1,
+      "minLevel": 3
+    },
+    {
+      "id": "trapmid2",
+      "weight": 1,
+      "minLevel": 8
+    },
+    {
+      "id": "tntpressplate",
+      "weight": 1,
+      "minLevel": 9
+    },
+    {
+      "id": "tnteasy",
+      "weight": 1,
+      "minLevel": 4
+    },
+    {
+      "id": "wallminer",
+      "weight": 1,
+      "minLevel": 17
+    },
+    {
+      "id": "very_dangerouds_1",
+      "weight": 1,
+      "minLevel": 61
+    }
+  ]
+}

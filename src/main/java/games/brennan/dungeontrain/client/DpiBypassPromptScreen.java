@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * The one-time "connection blocker detected" notice, shown on the title screen when
- * {@link DpiBypassDetector} finds a DPI-bypass tool running (see {@link DpiBypassPromptHandler} for
+ * {@link games.brennan.dungeontrain.compat.DpiBypassDetectBridge} (the optional DPI Bypass Detect add-on) finds a DPI-bypass tool running (see {@link DpiBypassPromptHandler} for
  * who is shown it and when).
  *
  * <p>Same flat card as {@link PoliticalFilterPromptScreen}, so every one-time message a player can

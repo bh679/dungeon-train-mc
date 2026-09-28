@@ -35,4 +35,19 @@ public interface DtFreezable {
 
     /** Updated each reconcile tick by {@link PhysicsFreezeController}. */
     void dt$setInactiveTicks(int ticks);
+
+    /**
+     * World X/Y/Z the body was parked at, captured by {@link PhysicsFreeze#freeze} — the one place
+     * the native body is left behind while the pose keeps following the train. Diffed against the
+     * live pose at unfreeze to log how far the body lagged (what the resume teleport heals).
+     * Meaningless while not frozen.
+     */
+    double dt$parkedX();
+    double dt$parkedY();
+    double dt$parkedZ();
+
+    /** Game tick the body was parked on; {@code -1} while not frozen. */
+    long dt$parkedGameTick();
+
+    void dt$setParked(double x, double y, double z, long gameTick);
 }

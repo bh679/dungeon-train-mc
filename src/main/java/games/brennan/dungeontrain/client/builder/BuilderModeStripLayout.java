@@ -6,7 +6,7 @@ import games.brennan.dungeontrain.builder.BuilderMode;
  * Pure geometry for the Open screen's mode strip — every builder mode on one row, the selected one
  * large and captioned, the rest small thumbnails beside it.
  *
- * <p>The sibling of {@link BuilderGridLayout} and {@link BuilderTemplateGridLayout}, split out for
+ * <p>The sibling of {@link BuilderPickerLayout} and {@link BuilderTemplateGridLayout}, split out for
  * the same reason: this arithmetic has to survive GUI scale 1 (a very wide, short viewport) through
  * scale 4 (a small one) without tiles overlapping each other or running off the edge, and that is
  * cheap to test here and tedious to eyeball in-game at four scales.</p>
@@ -32,14 +32,16 @@ record BuilderModeStripLayout(int originX, int topY, int selectedSlot,
 
     static final int GAP = 4;
 
-    private static final int SIDE_MARGIN = 16;
+    // Eight rather than sixteen since the fifth mode (Whole): at Minecraft's 320 floor the extra
+    // margin is exactly what pushed the selected tile under the width the controls beneath it need.
+    private static final int SIDE_MARGIN = 8;
 
     /** How tall a thumbnail is against the selected tile, before any shrinking to fit. */
     private static final int SMALL_HEIGHT_NUMERATOR = 5;
     private static final int SMALL_HEIGHT_DENOMINATOR = 8;
 
     /** Floors, so a narrow window yields small tiles rather than invisible or negative ones. */
-    private static final int MIN_SMALL_WIDTH = 24;
+    private static final int MIN_SMALL_WIDTH = 20;
     private static final int MIN_SELECTED_WIDTH = 120;
 
     /**

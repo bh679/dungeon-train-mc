@@ -74,31 +74,28 @@ jobs:
           fi
 
       # Feeds both mc-publish's `version-type:` and the GitHub Release `prerelease:` flag.
+      # The rule (test → alpha, pre-1.0 → beta, 1.0+ → release) lives in ONE place —
+      # scripts/release/release-type.sh — shared with reupload-curseforge.yml and both modpack
+      # publish scripts, so no publisher can drift onto a different channel.
       - name: Compute release type from tag
         id: release_type
         env:
           IS_TEST: ${{ inputs.test_release }}
         run: |
-          TAG_NUMERIC="${RELEASE_TAG#v}"
-          MAJOR="${TAG_NUMERIC%%.*}"
-          # A test build goes to the alpha channel regardless of version. CurseForge instances
-          # default to the Release channel, so an alpha file isn't offered to ordinary users —
-          # the quietest either platform allows (neither has a private published file).
+          set -euo pipefail
           if [ "$IS_TEST" = "true" ]; then
-            echo "type=alpha" >> "$GITHUB_OUTPUT"
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
-            echo "Release type: alpha (test_release=true, tag $RELEASE_TAG)"
-          elif [ "$MAJOR" -gt 0 ] 2>/dev/null; then
-            echo "type=release" >> "$GITHUB_OUTPUT"
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
-            echo "Release type: release (tag $RELEASE_TAG, MAJOR=$MAJOR > 0)"
+            scripts/release/release-type.sh "$RELEASE_TAG" --test >> "$GITHUB_OUTPUT"
           else
-            echo "type=beta" >> "$GITHUB_OUTPUT"
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
-            echo "Release type: beta (tag $RELEASE_TAG, MAJOR=$MAJOR — pre-1.0)"
+            scripts/release/release-type.sh "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           fi
 
       - run: ./gradlew build --no-daemon
+
+      # STEP ORDER: every player-facing output (GitHub, wiki, Modrinth, CurseForge upload, both
+      # modpack dispatches, update.json, Discord) runs as early as it can. Anything that only
+      # WAITS or is invisible to players (relay fingerprints, the CurseForge listing poll) sits
+      # at the END so it never delays a publish. v0.982.0 spent 30 of its 34 minutes with every
+      # downstream output queued behind the CurseForge poll.
 
       - name: Generate release notes
         env:
@@ -239,7 +236,9 @@ jobs:
           # NOTE: AIN's Modrinth slug is `adventureitemnames` (no hyphens) while its
           # CurseForge slug is `adventure-item-names`; AIS is `adventure-items-stats` on
           # Modrinth vs `adventure-item-stats` on CurseForge. The spellings differ per
-          # platform on purpose — don't "fix" one to match the other.
+          # platform on purpose — don't "fix" one to match the other. Likewise Moonlight
+          # (Fast Paintings' library) is `moonlight` on Modrinth but `selene` on CurseForge.
+          # check-relations.py asserts every non-curseforge_only required dep is listed here.
           dependencies: |
             sable(required)
             adventureitemnames(required)
@@ -247,6 +246,28 @@ jobs:
             interactive-player-mobs(required)
             ender-chest-persistence(required)
             trade-everything(required)
+            betterend-neoforge(required)
+            fast-paintings(required)
+            moonlight(required)
+            betternether-neoforge(required)
+            bclib-neoforge(required)
+            worldweaver-neoforge(required)
+            wunderlib-neoforge(required)
+            wwoo(required)
+            cristel-lib(required)
+            biomes-o-plenty(required)
+            terrablender(required)
+            glitchcore(required)
+            big-lost-city(required)
+            sable-pathfinder(required)
+            # keep-trim + dungeon-train-backup + sable-fence-trapdoor-fix are ABSENT by design:
+            # on Modrinth they stay jarJar'd inside the DT jar; only CurseForge treats them as
+            # separate mods. (keep-trim's Modrinth listing is also still in review — mc-publish
+            # cannot resolve a non-public slug — which is why it was re-bundled in 0.909.x.)
+          # keep-trim + dungeon-train-backup + sable-fence-trapdoor-fix are hybrid siblings: also jarJar'd in
+          # the DT jar (Modrinth/manual installs), but declared required here so the CurseForge
+          # app installs them from their own pages. NeoForge drops the nested copy when the
+          # top-level one is present. (No comments inside the list — check-relations.py parses it.)
           curseforge-dependencies: |
             sable(required)
             adventure-item-names(required)
@@ -254,6 +275,25 @@ jobs:
             interactive-player-mobs(required)
             ender-chest-persistence(required)
             trade-everything(required)
+            keep-trim(required)
+            dungeon-train-backup(required)
+            sable-fence-trapdoor-fix(required)
+            stream-detect(required)
+            dpi-bypass-detect(required)
+            pigman-villagers(required)
+            fast-paintings(required)
+            selene(required)
+            betterend-neoforge(required)
+            betternether-neoforge(required)
+            bclib-neoforge(required)
+            worldweaver-neoforge(required)
+            wunderlib-neoforge(required)
+            william-wythers-overhauled-overworld(required)
+            cristel-lib(required)
+            biomes-o-plenty(required)
+            terrablender-neoforge(required)
+            glitchcore(required)
+            big-lost-city(required)
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)
@@ -287,37 +327,18 @@ jobs:
             shulkerboxtooltip(optional)
             trashslot(optional)
             balm(optional)
+            enchantment-descriptions(optional)
+            bookshelf(optional)
+            prickle(optional)
+            durability-tooltip(optional)
+            supermartijn642s-config-lib(optional)
+            crash-assistant(optional)
+            particle-effects(optional)
+            advanced-shulkerboxes(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
           fail-mode: warn
-
-      # An upload returning 200 is not a publish, and mc-publish runs with `fail-mode: warn` so a
-      # CurseForge 500 leaves this job GREEN with the jar live on Modrinth and missing on
-      # CurseForge. That is exactly how v0.692.0 shipped three-quarters of the way: two 500s, no
-      # third attempt, success. This is the guard the MODPACK already had and the mod did not.
-      #
-      # Verification only — recovery is `reupload-curseforge.yml`, which re-publishes the tag's
-      # existing artifact without burning a version number.
-      - name: Verify the CurseForge mod upload landed
-        if: ${{ always() && steps.publish_check.outputs.curseforge == 'true' }}
-        env:
-          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
-          CF_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID }}
-          RELEASE_TAG: ${{ env.RELEASE_TAG }}
-        run: |
-          set -euo pipefail
-          if [ -z "${{ steps.mcpublish.outputs.curseforge-version }}" ]; then
-            echo "::error::CurseForge upload produced no file id — the upload failed. Recover with:"
-            echo "::error::  gh workflow run reupload-curseforge.yml -f tag=$RELEASE_TAG"
-            exit 1
-          fi
-          python3 scripts/modpack/reconcile.py \
-            --verify "$RELEASE_TAG" \
-            --platform curseforge \
-            --curseforge-project "$CF_PROJECT" \
-            --timeout-minutes 30 \
-            --poll-seconds 60
 
       # Mirror REAL (operator-dispatched) mod releases into the CurseForge modpack.
       # Dispatches release-modpack.yml (which polls until CurseForge has APPROVED the
@@ -503,3 +524,56 @@ jobs:
           CURSEFORGE_VERSION: ${{ steps.mcpublish.outputs.curseforge-version }}
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/notify-discord.sh
+
+      # ---- Nothing below here is player-facing: it runs AFTER every publish so it can't delay one.
+
+      # Teach the relay which builds are unmodified copies of the templates this release ships, so
+      # the builder search and profile counts leave them out (relay: bundled_fingerprints). The set is
+      # cumulative on the relay, so every release adds only what changed. Never blocks a release:
+      # a relay hiccup here means the next release's push catches up. always() so an earlier
+      # failure (e.g. a lost changelog push race) doesn't also skip this.
+      - name: Push shipped-template fingerprints to the relay
+        if: ${{ always() && env.RELEASE_TAG != '' }}
+        continue-on-error: true
+        env:
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+        run: |
+          if [ -z "$DUNGEONTRAIN_RELAY_ADMIN_BASE" ]; then
+            echo "::warning::RELAY_ADMIN_BASE is not set — shipped-template fingerprints not pushed."
+            exit 0
+          fi
+          ./gradlew bundledFingerprints --no-daemon
+          python3 scripts/relay/push-bundled-fingerprints.py
+
+      # An upload returning 200 is not a publish, and mc-publish runs with `fail-mode: warn` so a
+      # CurseForge 500 leaves this job GREEN with the jar live on Modrinth and missing on
+      # CurseForge. That is exactly how v0.692.0 shipped three-quarters of the way: two 500s, no
+      # third attempt, success. This is the guard the MODPACK already had and the mod did not.
+      #
+      # LAST on purpose: it polls the public listing for up to 30 min (the full 30 whenever
+      # CURSEFORGE_API_KEY is unset, since the cfwidget mirror can't prove absence). Nothing
+      # downstream needs it — the CurseForge modpack runs its own approval wait — so it only
+      # decides whether the run ends red, never when anything goes live.
+      #
+      # Verification only — recovery is `reupload-curseforge.yml`, which re-publishes the tag's
+      # existing artifact without burning a version number.
+      - name: Verify the CurseForge mod upload landed
+        if: ${{ always() && steps.publish_check.outputs.curseforge == 'true' }}
+        env:
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          CF_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          CF_FILE_ID: ${{ steps.mcpublish.outputs.curseforge-version }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CF_FILE_ID" ]; then
+            echo "::error::CurseForge upload produced no file id — the upload failed. Recover with:"
+            echo "::error::  gh workflow run reupload-curseforge.yml -f tag=$RELEASE_TAG"
+            exit 1
+          fi
+          python3 scripts/modpack/reconcile.py \
+            --verify "$RELEASE_TAG" \
+            --platform curseforge \
+            --curseforge-project "$CF_PROJECT" \
+            --timeout-minutes 30 \
+            --poll-seconds 60

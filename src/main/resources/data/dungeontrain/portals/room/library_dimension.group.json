@@ -13,6 +13,10 @@
     {
       "id": "pretty",
       "weight": 1
+    },
+    {
+      "id": "author_new",
+      "weight": 2
     }
   ]
 }

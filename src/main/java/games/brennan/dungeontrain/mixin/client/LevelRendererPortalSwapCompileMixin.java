@@ -30,10 +30,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * and leaves the player's actual choice alone otherwise. Roughly twenty sections, once per swap: a
  * single frame's work in exchange for the flash.</p>
  *
- * <p>{@code require = 0} on both members — a mod that replaces the chunk renderer (Sodium, which Sable
- * ships pipeline compatibility for) leaves this nothing to attach to, and vanishing quietly is the right
- * outcome there. The token is time-bounded too, so even a missed {@code RETURN} cannot leave a client
- * building chunks synchronously for good.</p>
+ * <p><b>Sodium.</b> This one is safe to leave ungated: Sodium's {@code LevelRendererMixin} merges
+ * only {@code setupRender}, so this target is untouched and the injection simply finds nothing to do
+ * when Sodium has replaced the surrounding pipeline. That is a real distinction, not a courtesy —
+ * {@code require = 0} suppresses "no injection point matched" and <b>nothing else</b>. Injecting into
+ * a method another mixin has MERGED is a fatal {@code InvalidInjectionException} raised before the
+ * injection is even prepared, and it aborts mod loading. The two hooks that do target
+ * {@code setupRender} therefore live in {@code dungeontrain.vanillarenderer.mixins.json}, gated on
+ * Sodium being absent; see {@code VanillaRendererMixinPlugin}.</p>
+ *
+ * <p>The token is time-bounded too, so even a missed {@code RETURN} cannot leave a client building
+ * chunks synchronously for good.</p>
  */
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererPortalSwapCompileMixin {

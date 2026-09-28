@@ -160,8 +160,8 @@ public final class BuilderStructureCells {
         if (kind instanceof BuilderStructure.Kind.RoomTile tile) {
             return roomTile(tile.detail(), src);
         }
-        if (kind instanceof BuilderStructure.Kind.RoomBedrock) {
-            return bedrockSkin(src.openSize());
+        if (kind instanceof BuilderStructure.Kind.RoomBedrock bedrock) {
+            return bedrockSkin(src.openSize(), bedrock.name());
         }
         // While the open build stands in for its own template, a kind cannot be cached whole: a run
         // of tiles is reassembled every sweep because one of them may be the tile being edited, and
@@ -451,17 +451,26 @@ public final class BuilderStructureCells {
     }
 
     /**
-     * A one-block bedrock skin around the room — what Bedrock Lock actually writes outside the box.
+     * A one-block skin around the room — what a sealing mode actually writes outside the box.
      *
-     * <p>Real bedrock rather than an outlined box, so the tile that says "Bedrock" and the thing
+     * <p>Real blocks rather than an outlined box, so the tile that says "Bedrock" and the thing
      * standing around the room are visibly the same claim. Local to the room's own origin, so the
      * skin's own cells sit at −1 and at the size on each axis.</p>
+     *
+     * <p>Whatever block the room's author picked, read from its own settings by name — a preview in
+     * bedrock of a shell that will be stamped in obsidian is the one thing this is meant not to
+     * be. An author who emptied their hand on the row gets no skin here, which is what they will
+     * get in the world.</p>
      */
-    private static Map<BlockPos, BlockState> bedrockSkin(Vec3i size) {
+    private static Map<BlockPos, BlockState> bedrockSkin(Vec3i size, String roomName) {
         if (size == null || size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) {
             return Map.of();
         }
-        BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
+        games.brennan.dungeontrain.portal.PortalRoomLock lock =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(roomName).effectiveLock();
+        if (lock.isAir()) return Map.of();
+        BlockState bedrock = games.brennan.dungeontrain.portal.PortalRoomSinglePlanes
+            .stateFor(lock.blockId()).orElseGet(Blocks.BEDROCK::defaultBlockState);
         Map<BlockPos, BlockState> out = new LinkedHashMap<>();
         for (int x = -1; x <= size.getX(); x++) {
             for (int y = -1; y <= size.getY(); y++) {

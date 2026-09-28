@@ -21,7 +21,7 @@ public final class DisintegrationBand {
     /**
      * World-X where the cycle is anchored (shared with the nether phase via
      * {@link WorldGenCycle}), or {@link #OFF} if disintegration is disabled or this world
-     * has no train. Past this X the cycle repeats forever; before it is plain overworld.
+     * has no train. Past this X the cycle repeats forever; behind it (after an overworld buffer) it runs in reverse.
      */
     public static long startX(ServerLevel overworld) {
         if (!DungeonTrainCommonConfig.isDisintegrationEnabled()) return OFF;
@@ -37,8 +37,13 @@ public final class DisintegrationBand {
      * 0 in overworld stretches, before the cycle, and across the nether segment.
      */
     public static double middleRampAt(ServerLevel overworld, int worldX) {
+        return middleRampAt(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #middleRampAt(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static double middleRampAt(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return 0.0;
-        return WorldGenCycle.fromConfig().endMiddleRamp(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).endMiddleRamp(worldX);
     }
 
     /**
@@ -47,8 +52,13 @@ public final class DisintegrationBand {
      * the End band sits in the same place the combined nether+End layout positions it.
      */
     public static double endIslandRampAt(ServerLevel overworld, int worldX) {
+        return endIslandRampAt(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #endIslandRampAt(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static double endIslandRampAt(ServerLevel overworld, int worldX, int worldZ) {
         if (startX(overworld) == OFF) return 0.0;
-        return WorldGenCycle.fromConfig().endIslandRamp(worldX);
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).endIslandRamp(worldX);
     }
 
     /**
@@ -57,7 +67,31 @@ public final class DisintegrationBand {
      * ramps are 0). Drives the reach-the-void / End-islands / overworld-again advancements.
      */
     public static Disintegration.Zone zoneAt(ServerLevel overworld, int worldX) {
-        return Disintegration.zoneOf(middleRampAt(overworld, worldX), endIslandRampAt(overworld, worldX));
+        return zoneAt(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #zoneAt(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static Disintegration.Zone zoneAt(ServerLevel overworld, int worldX, int worldZ) {
+        return Disintegration.zoneOf(middleRampAt(overworld, worldX, worldZ), endIslandRampAt(overworld, worldX, worldZ));
+    }
+
+    /**
+     * Which repeat of the world-gen cycle (0-based) {@code worldX} falls in, or {@code -1} before the
+     * anchor / when disintegration is disabled or this world has no train. Repeat {@code 0} is the first
+     * pass through every band; {@code >= 1} means the whole first cycle (Nether, End, upside-down, chuncks)
+     * is behind the column. Drives the "Re-Over-World" advancement gate in
+     * {@link games.brennan.dungeontrain.event.ZoneProgressEvents}: positional (not advancement-based)
+     * so a returning player's cross-world achievement sidecar — which re-grants {@code reached_void} on
+     * login — can't satisfy it from the spawn overworld. Mirrors {@link NetherBand#netherPassIndex}.
+     */
+    public static long cyclePassIndex(ServerLevel overworld, int worldX) {
+        return cyclePassIndex(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #cyclePassIndex(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static long cyclePassIndex(ServerLevel overworld, int worldX, int worldZ) {
+        if (startX(overworld) == OFF) return -1L;
+        return MixBand.cycleAtColumn(overworld, worldX, worldZ).cycleIndex(worldX);
     }
 
     /**
@@ -70,8 +104,13 @@ public final class DisintegrationBand {
      * disintegration is off.
      */
     public static boolean isChunkFullyEroded(ServerLevel overworld, int chunkMinX) {
+        return isChunkFullyEroded(overworld, chunkMinX, MixBand.NO_Z);
+    }
+
+    /** {@link #isChunkFullyEroded(ServerLevel, int)} for the chunk at {@code (chunkMinX, chunkMinZ)} — its mix-zone pick included. */
+    public static boolean isChunkFullyEroded(ServerLevel overworld, int chunkMinX, int chunkMinZ) {
         if (startX(overworld) == OFF) return false;
-        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        WorldGenCycle cycle = MixBand.cycleAtColumn(overworld, chunkMinX, chunkMinZ);
         for (int dx = 0; dx < 16; dx++) {
             int worldX = chunkMinX + dx;
             if (cycle.endMiddleRamp(worldX) < 1.0) return false;

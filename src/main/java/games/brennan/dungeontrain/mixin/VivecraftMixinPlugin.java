@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.client.vivecraft.VivecraftFixGate;
 import net.neoforged.fml.loading.LoadingModList;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -9,34 +10,40 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Gates {@code dungeontrain.vivecraft.mixins.json} so its mixins apply <em>only</em> when Vivecraft
- * is installed. Vivecraft is an optional, player-added mod (NOT a compile dependency and NOT in the
- * Dungeon Train modpack), so its target class {@code org.vivecraft.client_vr.gameplay.trackers.SwingTracker}
- * is absent from most installs. Without this gate, Mixin would log an error trying to apply a mixin
- * to a missing class; with it, {@link #shouldApplyMixin} short-circuits to a clean no-op.
+ * Gates {@code dungeontrain.vivecraft.mixins.json} so DT's VR melee fix applies only when it is
+ * actually needed. This class does one job — read the loader state — and hands the decision to
+ * {@link VivecraftFixGate#shouldApply(boolean, boolean)}, which documents the full matrix, explains
+ * why DT carries a copy at all, and says when to delete all of this.
  *
  * <p>The check runs during early class transformation, before {@code ModList.get()} is populated, so
- * it uses {@link LoadingModList} (available at that phase) rather than the runtime {@code ModList}.</p>
+ * it uses {@link LoadingModList} (available at that phase) rather than the runtime {@code ModList}.
+ * Contrast {@code VrCompat}, which asks the same question about Vivecraft long after load and can
+ * use {@code ModList}.</p>
  */
 public final class VivecraftMixinPlugin implements IMixinConfigPlugin {
 
-    private static final String VIVECRAFT_MODID = "vivecraft";
-
     /** Resolved once — mod presence is fixed for the JVM lifetime. */
-    private final boolean vivecraftLoaded = detectVivecraft();
+    private final boolean apply = VivecraftFixGate.shouldApply(
+            isLoaded(VivecraftFixGate.VIVECRAFT_MODID),
+            isLoaded(VivecraftFixGate.COMPAT_MODID));
 
-    private static boolean detectVivecraft() {
+    /**
+     * Is {@code modId} in the load list? {@code false} when the loader state cannot be read.
+     *
+     * <p>That failure direction is safe: an unreadable state reports Vivecraft absent, which skips
+     * the mixin entirely, so the addon answer never gets to matter on its own.</p>
+     */
+    private static boolean isLoaded(String modId) {
         try {
-            return LoadingModList.get().getModFileById(VIVECRAFT_MODID) != null;
+            return LoadingModList.get().getModFileById(modId) != null;
         } catch (Throwable t) {
-            // If the loader state can't be read for any reason, fail safe: do not apply the mixin.
             return false;
         }
     }
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        return vivecraftLoaded;
+        return apply;
     }
 
     @Override

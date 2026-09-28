@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.parts;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -23,7 +24,7 @@ import org.lwjgl.glfw.GLFW;
 public final class PartMenuSearchScreen extends Screen {
 
     public PartMenuSearchScreen() {
-        super(Component.literal("DT part-menu search"));
+        super(Component.translatable(MenuLang.PREFIX + "parts.search_title"));
     }
 
     @Override

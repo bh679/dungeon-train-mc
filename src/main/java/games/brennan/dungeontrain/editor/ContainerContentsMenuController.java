@@ -96,12 +96,6 @@ public final class ContainerContentsMenuController {
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
 
-        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
-        if (plot == null) {
-            actionBar(player, "Not in an editor plot", ChatFormatting.YELLOW);
-            return;
-        }
-
         // Block raycast first — chest/barrel/etc.
         HitResult blockHit = player.pick(TOGGLE_REACH, 1.0f, false);
         BlockHitResult validBlockHit = null;
@@ -122,16 +116,30 @@ public final class ContainerContentsMenuController {
         double entityDist2 = entityHit == null ? Double.POSITIVE_INFINITY
             : entityHit.getLocation().distanceToSqr(eye);
 
-        if (validBlockHit != null && blockDist2 <= entityDist2) {
+        if (validBlockHit == null && entityHit == null) {
+            actionBar(player, "Look at a chest, barrel, armor stand, or item frame",
+                ChatFormatting.YELLOW);
+            return;
+        }
+
+        // Resolved from what is being looked at, not from where the player is standing: authoring
+        // into a plot from outside it is ordinary — you back off a carriage to see the wall you are
+        // filling — and a menu that refused there was reading the wrong end of the gesture.
+        boolean blockFirst = validBlockHit != null && blockDist2 <= entityDist2;
+        BlockPos target = blockFirst
+            ? validBlockHit.getBlockPos()
+            : BlockPos.containing(entityHit.getLocation());
+        BlockVariantPlot plot = BlockVariantPlot.resolveAtPos(level, target, dims);
+        if (plot == null) {
+            actionBar(player, "That block isn't in an editor plot", ChatFormatting.YELLOW);
+            return;
+        }
+
+        if (blockFirst) {
             openAtBlock(player, plot, level, validBlockHit);
             return;
         }
-        if (entityHit != null) {
-            openAtEntity(player, plot, level, entityHit);
-            return;
-        }
-        actionBar(player, "Look at a chest, barrel, armor stand, or item frame",
-            ChatFormatting.YELLOW);
+        openAtEntity(player, plot, level, entityHit);
     }
 
     /** Open the menu for a container block hit — the original code path. */
@@ -273,7 +281,10 @@ public final class ContainerContentsMenuController {
                 e.itemId().toString(), e.count(), e.weight(),
                 e.randomDurability(), e.durabilityChance(),
                 e.randomEnchantment(), e.enchantmentChance(),
-                e.slotOverride()));
+                e.slotOverride(),
+                e.potionId() == null ? "" : e.potionId().toString(),
+                e.scaleWithDistance(),
+                e.potionForm().ordinal()));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
             pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link);
@@ -332,8 +343,8 @@ public final class ContainerContentsMenuController {
         if (!open.localPos().equals(localPos)) return;
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
-        if (plot == null || !plot.key().equals(plotKey)) return;
+        BlockVariantPlot plot = BlockVariantPlot.resolveByKey(level, plotKey, dims);
+        if (plot == null) return;
         BlockPos worldPos = plot.origin().offset(localPos);
         sendSync(player, plot, localPos, worldPos, open.face(), open.up());
     }
@@ -346,10 +357,19 @@ public final class ContainerContentsMenuController {
         }
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
-        if (plot == null || !plot.key().equals(packet.plotKey())) {
-            LOGGER.warn("[DungeonTrain] ContainerContentsMenu edit rejected: player {} not in plot for '{}'",
+        // Authorised against the menu the server itself opened for this player, rather than against
+        // where they are standing now — which is both stronger (the key came from the server, not
+        // the packet) and what lets the author step off the plot while the menu is up.
+        OpenMenu open = OPEN.get(player.getUUID());
+        if (open == null || !open.plotKey().equals(packet.plotKey())) {
+            LOGGER.warn("[DungeonTrain] ContainerContentsMenu edit rejected: player {} has no open menu for '{}'",
                 player.getName().getString(), packet.plotKey());
+            return;
+        }
+        BlockVariantPlot plot = BlockVariantPlot.resolveByKey(level, packet.plotKey(), dims);
+        if (plot == null) {
+            LOGGER.warn("[DungeonTrain] ContainerContentsMenu edit rejected: no plot for '{}'",
+                packet.plotKey());
             return;
         }
         BlockPos localPos = packet.localPos();
@@ -368,6 +388,7 @@ public final class ContainerContentsMenuController {
             case ADD -> {
                 ResourceLocation id;
                 int count;
+                ResourceLocation potionId = null;
                 if (packet.itemId() != null && !packet.itemId().isEmpty()) {
                     id = ResourceLocation.tryParse(packet.itemId());
                     if (id == null) {
@@ -386,13 +407,16 @@ public final class ContainerContentsMenuController {
                     Item item = held.getItem();
                     id = BuiltInRegistries.ITEM.getKey(item);
                     count = held.getCount();
+                    // A potion added from the hand keeps its exact potion — a Potion of
+                    // Healing spawns as one, not as a bare bottle for the roller to reinterpret.
+                    potionId = ContainerContentsPotions.potionIdOf(held);
                 }
                 if (current.size() >= ContainerContentsPool.MAX_ENTRIES) {
                     actionBar(player, "Pool full (max " + ContainerContentsPool.MAX_ENTRIES + ")",
                         ChatFormatting.YELLOW);
                     return;
                 }
-                next = current.added(new ContainerContentsEntry(id, count, 1));
+                next = current.added(new ContainerContentsEntry(id, count, 1).withPotion(potionId));
                 dirty = true;
             }
             case REMOVE -> {
@@ -412,6 +436,17 @@ public final class ContainerContentsMenuController {
                 if (idx < 0 || idx >= current.size()) return;
                 ContainerContentsEntry e = current.entries().get(idx);
                 int newWeight = Math.max(1, e.weight() + packet.delta());
+                next = current.replaced(idx, e.withWeight(newWeight));
+                dirty = true;
+            }
+            // Typed weight from the cmd-click number pad. Same clamp as the stepper,
+            // so typing can't reach a value the arrows couldn't.
+            case SET_WEIGHT -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                int newWeight = Math.max(1, packet.delta());
+                if (newWeight == e.weight()) return;
                 next = current.replaced(idx, e.withWeight(newWeight));
                 dirty = true;
             }
@@ -501,6 +536,20 @@ public final class ContainerContentsMenuController {
                 if (idx < 0 || idx >= current.size()) return;
                 ContainerContentsEntry e = current.entries().get(idx);
                 next = current.replaced(idx, e.cycleSlotOverride());
+                dirty = true;
+            }
+            case TOGGLE_SCALE -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                next = current.replaced(idx, e.withScaleWithDistance(!e.scaleWithDistance()));
+                dirty = true;
+            }
+            case CYCLE_POTION_FORM -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                next = current.replaced(idx, e.cyclePotionForm());
                 dirty = true;
             }
             case UNLINK -> {

@@ -73,6 +73,14 @@ public final class CarriageContentsRegistry {
     /** Sorted custom contents names. Mutations go through register/unregister/reload. */
     private static final TreeSet<String> CUSTOMS = new TreeSet<>();
 
+    /**
+     * Immutable snapshot handed out by {@link #allContents()}, rebuilt lazily after any
+     * {@link #CUSTOMS} mutation. The editor overlay resolves plot origins for every template on
+     * every tick, and each resolution used to allocate a fresh list plus a new {@code Custom}
+     * record per custom id — O(n²) record constructions per pass. Every mutator nulls this.
+     */
+    private static List<CarriageContents> SNAPSHOT;
+
     /** Classpath prefix for shipped contents NBTs (and the legacy customs manifest). */
     static final String BUNDLED_RESOURCE_PREFIX = "/data/dungeontrain/contents/";
 
@@ -84,10 +92,19 @@ public final class CarriageContentsRegistry {
      * thread mutates the registry.
      */
     public static synchronized List<CarriageContents> allContents() {
+        List<CarriageContents> cached = SNAPSHOT;
+        if (cached != null) return cached;
         List<CarriageContents> all = new ArrayList<>(BUILTINS.size() + CUSTOMS.size());
         all.addAll(BUILTINS);
         for (String name : CUSTOMS) all.add(new CarriageContents.Custom(name));
-        return all;
+        cached = List.copyOf(all);
+        SNAPSHOT = cached;
+        return cached;
+    }
+
+    /** Drop the {@link #allContents()} snapshot — call after every {@link #CUSTOMS} mutation. */
+    private static void customsChanged() {
+        SNAPSHOT = null;
     }
 
     public static synchronized List<CarriageContents> builtins() {
@@ -116,7 +133,9 @@ public final class CarriageContentsRegistry {
      */
     public static synchronized boolean register(CarriageContents.Custom contents) {
         if (CarriageContents.isReservedBuiltinName(contents.name())) return false;
-        return CUSTOMS.add(contents.name());
+        boolean added = CUSTOMS.add(contents.name());
+        if (added) customsChanged();
+        return added;
     }
 
     /**
@@ -127,6 +146,7 @@ public final class CarriageContentsRegistry {
         if (CarriageContents.isReservedBuiltinName(id)) return false;
         boolean removed = CUSTOMS.remove(id.toLowerCase(Locale.ROOT));
         if (removed) {
+            customsChanged();
             games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks.invalidate(
                 id.toLowerCase(Locale.ROOT));
         }
@@ -526,6 +546,7 @@ public final class CarriageContentsRegistry {
     /** Reload custom contents from the bundled classpath scan + the per-install config dir. */
     public static synchronized void reload() {
         CUSTOMS.clear();
+        customsChanged();
         int bundled = loadBundledScan();
         int config = loadConfigDir();
 
@@ -541,6 +562,8 @@ public final class CarriageContentsRegistry {
                 .portalContents(kind).id());
         }
         validateGroups();
+        // The loaders above may have handed out a partial snapshot to anything they consulted.
+        customsChanged();
 
         LOGGER.info("[DungeonTrain] Carriage contents registry loaded — {} built-in + {} custom ({} bundled, {} config)",
             BUILTINS.size(), CUSTOMS.size(), bundled, config);
@@ -657,6 +680,7 @@ public final class CarriageContentsRegistry {
 
     public static synchronized void clear() {
         CUSTOMS.clear();
+        customsChanged();
         CarriageVariantContentsAllowStore.clearCache();
         CarriageContentsGroupStore.clearCache();
         ZERO_WARNED = false;

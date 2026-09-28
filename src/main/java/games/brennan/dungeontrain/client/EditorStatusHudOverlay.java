@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.client.Minecraft;
@@ -68,7 +69,7 @@ public final class EditorStatusHudOverlay {
     private static int roomHeight = EditorStatusPacket.NO_SIZE;
     /** What that room does at its walls, or {@link EditorStatusPacket#NO_MODE} outside a portal plot. */
     private static String roomMode = EditorStatusPacket.NO_MODE;
-    /** Active model's spawn gate: min Diff-Level (default 0), max Diff-Level ({@code -1} = no upper bound), and a 4-bit phase mask (default all four set). */
+    /** Active model's spawn gate: min Diff-Level (default 0), max Diff-Level ({@code -1} = no upper bound), and a {@link TrainPhase#bit()} phase mask (default {@link TrainPhase#ALL_MASK}). */
     private static int minLevel = 0;
     private static int maxLevel = -1;
     private static int phaseMask = TrainPhase.ALL_MASK;
@@ -85,6 +86,13 @@ public final class EditorStatusHudOverlay {
     private static boolean mirrorY = false;
     private static boolean mirrorZ = false;
     private static boolean mirrorVariants = false;
+    /**
+     * Which axes the active CONTENTS template may be randomly flipped along at spawn, plus the
+     * portal-room scope flag, as an {@link EditorStatusPacket} bitmask. The Current tab's Flip quad
+     * reads these. {@link EditorStatusPacket#NO_FLIP} out of context and for every other category —
+     * which is why the quad is only rendered for contents, where the mask is meaningful.
+     */
+    private static int flipMask = EditorStatusPacket.NO_FLIP;
     /**
      * Content ids the active carriage variant has explicitly disallowed. Empty
      * for non-carriage statuses and for carriages with no exclusions. The
@@ -122,7 +130,7 @@ public final class EditorStatusHudOverlay {
                                  boolean newPartMenuEnabled, boolean newMirrorX, boolean newMirrorY, boolean newMirrorZ,
                                  boolean newMirrorVariants, Set<String> newExcludedContents, String newStageId,
                                  int newRoomLength, int newRoomWidth, int newRoomHeight,
-                                 String newRoomMode) {
+                                 String newRoomMode, int newFlipMask) {
         category = newCategory == null ? "" : newCategory;
         model = newModel == null ? "" : newModel;
         modelId = newModelId == null ? "" : newModelId;
@@ -145,6 +153,20 @@ public final class EditorStatusHudOverlay {
         roomWidth = newRoomWidth;
         roomHeight = newRoomHeight;
         roomMode = newRoomMode == null ? EditorStatusPacket.NO_MODE : newRoomMode;
+        flipMask = newFlipMask;
+    }
+
+    /** Back-compat overload from before contents carried flip options. */
+    public static void setStatus(String newCategory, String newModel, String newModelId, String newModelName,
+                                 boolean newDevmode, int newWeight, int newMinLevel, int newMaxLevel, int newPhaseMask,
+                                 boolean newPartMenuEnabled, boolean newMirrorX, boolean newMirrorY, boolean newMirrorZ,
+                                 boolean newMirrorVariants, Set<String> newExcludedContents, String newStageId,
+                                 int newRoomLength, int newRoomWidth, int newRoomHeight,
+                                 String newRoomMode) {
+        setStatus(newCategory, newModel, newModelId, newModelName, newDevmode, newWeight, newMinLevel,
+            newMaxLevel, newPhaseMask, newPartMenuEnabled, newMirrorX, newMirrorY, newMirrorZ,
+            newMirrorVariants, newExcludedContents, newStageId, newRoomLength, newRoomWidth, newRoomHeight,
+            newRoomMode, EditorStatusPacket.NO_FLIP);
     }
 
     /**
@@ -196,7 +218,10 @@ public final class EditorStatusHudOverlay {
         return !category.isEmpty() || !model.isEmpty();
     }
 
-    /** Current editor category name (e.g. "carriages"), or empty string when not in an editor plot. */
+    /**
+     * Current editor category id (e.g. {@code "carriages"}, {@code "portals"}), or empty string when
+     * not in an editor plot. An id, never the on-screen label — see {@link #categoryLabel}.
+     */
     public static String category() {
         return category;
     }
@@ -236,7 +261,7 @@ public final class EditorStatusHudOverlay {
         return maxLevel;
     }
 
-    /** Active model's 4-bit worldgen-phase mask (bit per {@code TrainPhase} ordinal: OW/Nether/Void/End). */
+    /** Active model's worldgen-phase mask (one {@link TrainPhase#bit()} per phase). */
     public static int phaseMask() {
         return phaseMask;
     }
@@ -290,6 +315,14 @@ public final class EditorStatusHudOverlay {
     public static boolean mirrorVariants() {
         return mirrorVariants;
     }
+
+    /** Random-flip axis flags for the active contents template (Current tab's Flip quad state). */
+    public static boolean flipX() { return (flipMask & EditorStatusPacket.FLIP_X) != 0; }
+    public static boolean flipY() { return (flipMask & EditorStatusPacket.FLIP_Y) != 0; }
+    public static boolean flipZ() { return (flipMask & EditorStatusPacket.FLIP_Z) != 0; }
+
+    /** Whether the active contents template's flip roll also applies to portal-room furnishing. */
+    public static boolean flipRooms() { return (flipMask & EditorStatusPacket.FLIP_ROOMS) != 0; }
 
     /**
      * Content ids the active carriage variant currently has disallowed.
@@ -371,15 +404,29 @@ public final class EditorStatusHudOverlay {
             boolean d = devmode;
             int w = weight;
             if (c.isEmpty() && m.isEmpty()) return;
-            drawBar(graphics, mc.font, c, m, d, w, graphics.guiWidth());
+            drawBar(graphics, mc.font, categoryLabel(c), m, d, w, graphics.guiWidth());
         };
         event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_status"), overlay);
         LOGGER.info("Editor status HUD overlay registered");
     }
 
+    /**
+     * The bar's word for a category id — <b>Dimensions</b> for {@code portals}.
+     *
+     * <p>The packet carries the id because every reader but this one treats it as one: the
+     * menus, the save status and the "am I already there" checks all compare it to command tokens.
+     * The label is looked up only at the point of drawing, so renaming a category on screen can
+     * never change what those comparisons see.</p>
+     */
+    static String categoryLabel(String categoryId) {
+        return PlotCategory.fromId(categoryId)
+            .map(c -> games.brennan.dungeontrain.client.menu.MenuLang.named("hud.category", c.id(), c.displayName()))
+            .orElse(categoryId);
+    }
+
     private static void drawBar(GuiGraphics graphics, Font font, String categoryText, String modelText,
                                 boolean devmodeOn, int weightValue, int screenWidth) {
-        Component label = Component.literal("Editor: " + categoryText + " / " + modelText);
+        Component label = Component.translatable("gui.dungeontrain.editor_menu.hud.status", categoryText, modelText);
         int textWidth = HudText.scaledWidth(font, label);
         int lineHeight = HudText.scaledLineHeight(font);
         int x = (screenWidth - textWidth) / 2;
@@ -392,7 +439,7 @@ public final class EditorStatusHudOverlay {
         if (devmodeOn) {
             // Yellow [DEV] badge to the right of the status — visually obvious
             // that saves will also write-through to the source tree.
-            Component devBadge = Component.literal("[DEV]");
+            Component devBadge = Component.translatable("gui.dungeontrain.editor_menu.hud.dev_badge");
             int badgeWidth = HudText.scaledWidth(font, devBadge);
             int bx = x + textWidth + PAD + 4;
             graphics.fill(bx - PAD, y - PAD, bx + badgeWidth + PAD, y + lineHeight + PAD, 0x80000000);
@@ -403,7 +450,7 @@ public final class EditorStatusHudOverlay {
             // Second line below the main bar — shows the variant's random-pick
             // weight (0..100). Updates live as `/dt editor weight <id> <n>`
             // runs and the server pushes a new packet.
-            Component weightLine = Component.literal("weight = " + weightValue);
+            Component weightLine = Component.translatable("gui.dungeontrain.editor_menu.hud.weight", weightValue);
             int ww = HudText.scaledWidth(font, weightLine);
             int wx = (screenWidth - ww) / 2;
             int wy = y + lineHeight + PAD + LINE_GAP;

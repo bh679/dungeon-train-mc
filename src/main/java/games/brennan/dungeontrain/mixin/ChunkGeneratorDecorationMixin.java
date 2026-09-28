@@ -1,12 +1,27 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.LegacyUnderground;
+import games.brennan.dungeontrain.worldgen.SpheresBand;
+import games.brennan.dungeontrain.worldgen.StacksBand;
+import games.brennan.dungeontrain.worldgen.UpsideDownSpawnerStructures;
+import games.brennan.dungeontrain.worldgen.OfflineChunkSampler;
+import games.brennan.dungeontrain.worldgen.VanillaOnlySample;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.Registries;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
+import games.brennan.dungeontrain.worldgen.legacy.SuperflatHeight;
+import games.brennan.dungeontrain.worldgen.WwooDecorationPass;
 import games.brennan.dungeontrain.worldgen.feature.DeferredStructurePlacement;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -70,10 +85,79 @@ public abstract class ChunkGeneratorDecorationMixin {
     @Unique
     private static final ThreadLocal<Boolean> dungeontrain$deferStructures = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
+    /**
+     * Per-decoration-call registry access while decorating a chunk that touches the Nether core, else
+     * {@code null} — the {@link #dungeontrain$isCoreVetoedFeature} veto reads feature ids through it. Same
+     * lifecycle as the flags above.
+     */
+    @Unique
+    private static final ThreadLocal<RegistryAccess> dungeontrain$netherCore = new ThreadLocal<>();
+
+    /**
+     * Overworld features kept out of chunks that touch the Nether core. The core is stamped at CARVERS, so
+     * the overworld decoration of the low, overworld-labelled rows now lands on it; amethyst geodes (placed
+     * up to y30, shells reaching past y50) would bore calcite/amethyst pockets into the Nether floor.
+     */
+    @Unique
+    private static final java.util.Set<ResourceLocation> dungeontrain$CORE_VETOED_FEATURES =
+        java.util.Set.of(ResourceLocation.withDefaultNamespace("amethyst_geode"));
+
+    /**
+     * Per-decoration-call registry access while decorating a legacy or sunk chunk, else {@code null} —
+     * the {@link LegacyUnderground} veto reads feature / structure ids through it. Same lifecycle as the
+     * flags above.
+     */
+    @Unique
+    private static final ThreadLocal<RegistryAccess> dungeontrain$legacyUnderground = new ThreadLocal<>();
+
+    /**
+     * Per-decoration-call registry access while decorating a Superflat-band chunk, else {@code null} — the
+     * one legacy band that keeps vanilla's villages, as vanilla Superflat did. Same lifecycle as the flags above.
+     */
+    @Unique
+    private static final ThreadLocal<RegistryAccess> dungeontrain$superflatVillages = new ThreadLocal<>();
+
+    /**
+     * Per-decoration-call registry access while decorating an upside-down band chunk, else {@code null} —
+     * the {@link UpsideDownSpawnerStructures} veto reads feature / structure ids through it. Same lifecycle
+     * as the flags above.
+     */
+    @Unique
+    private static final ThreadLocal<RegistryAccess> dungeontrain$upsideDownSpawners = new ThreadLocal<>();
+
     @Inject(method = "applyBiomeDecoration", at = @At("HEAD"))
     private void dungeontrain$computeSkip(WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager, CallbackInfo ci) {
-        dungeontrain$skipDecoration.set(dungeontrain$isFullyErodedBandChunk(level, chunk));
+        boolean skip = dungeontrain$isFullyErodedBandChunk(level, chunk);
+        dungeontrain$skipDecoration.set(skip);
+        dungeontrain$legacyUnderground.set(dungeontrain$appliesLegacyUnderground(level, chunk)
+                ? level.registryAccess() : null);
+        dungeontrain$upsideDownSpawners.set(dungeontrain$appliesUpsideDownSpawners(level, chunk)
+                ? level.registryAccess() : null);
         dungeontrain$deferStructures.set(DeferredStructurePlacement.isDeferred(level, chunk.getPos()));
+        dungeontrain$netherCore.set(DeferredStructurePlacement.touchesCore(level, chunk.getPos())
+                ? level.registryAccess() : null);
+        dungeontrain$superflatVillages.set(skip && dungeontrain$isSuperflatChunk(level, chunk)
+                ? level.registryAccess() : null);
+        WwooDecorationPass.begin(level, chunk, skip);
+    }
+
+    /**
+     * Each decoration step starts by asking whether structures generate — the one per-step call in
+     * {@code applyBiomeDecoration}. Just before it, the vanilla features WWOO removed from the previous
+     * step are placed (outside the WWOO stretch; see {@link WwooDecorationPass}).
+     */
+    @Inject(method = "applyBiomeDecoration",
+        at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/level/StructureManager;shouldGenerateStructures()Z"))
+    private void dungeontrain$vanillaFeaturesBeforeStep(WorldGenLevel level, ChunkAccess chunk,
+                                                        StructureManager structureManager, CallbackInfo ci) {
+        WwooDecorationPass.beforeStep(level, (ChunkGenerator) (Object) this);
+    }
+
+    @Inject(method = "applyBiomeDecoration", at = @At("TAIL"))
+    private void dungeontrain$vanillaFeaturesLastStep(WorldGenLevel level, ChunkAccess chunk,
+                                                      StructureManager structureManager, CallbackInfo ci) {
+        WwooDecorationPass.finish(level, (ChunkGenerator) (Object) this);
     }
 
     @Redirect(
@@ -82,8 +166,33 @@ public abstract class ChunkGeneratorDecorationMixin {
             target = "Lnet/minecraft/world/level/levelgen/placement/PlacedFeature;placeWithBiomeCheck(Lnet/minecraft/world/level/WorldGenLevel;Lnet/minecraft/world/level/chunk/ChunkGenerator;Lnet/minecraft/util/RandomSource;Lnet/minecraft/core/BlockPos;)Z"))
     private boolean dungeontrain$filterFeature(PlacedFeature feature, WorldGenLevel level, ChunkGenerator generator,
                                                RandomSource random, BlockPos origin) {
+        if (OfflineChunkSampler.isSampling() && dungeontrain$isDtNamespaceFeature(feature)) {
+            return false; // offline sample: DT's corridor and band features belong to the display world only
+        }
+        if (VanillaOnlySample.isActive() && !dungeontrain$isVanillaPlacedFeature(level, feature)) {
+            return false; // vanilla Nether/End carriage: BetterEnd/BetterNether inject into vanilla biomes
+        }
         if (dungeontrain$skipDecoration.get() && !dungeontrain$isDtFeature(feature)) {
             return false; // fully-eroded core: skip the vanilla feature (it would be erased anyway)
+        }
+        if (WwooDecorationPass.vetoes(feature)) {
+            return false; // outside the WWOO stretch: WWOO-only or overridden (vanilla version places later)
+        }
+        if (dungeontrain$isCoreVetoedFeature(feature)) {
+            return false; // Nether core: no overworld geodes boring into the stamped Nether floor
+        }
+        if (dungeontrain$isDisabledOreFeature(level, feature)) {
+            return false; // BetterNether/BetterEnd/BoP ores are disabled in DT (see DisabledModContent)
+        }
+        RegistryAccess legacy = dungeontrain$legacyUnderground.get();
+        if (legacy != null && LegacyUnderground.excludesFeature(
+                legacy.registryOrThrow(Registries.PLACED_FEATURE).getKey(feature))) {
+            return false; // legacy / sunk chunk: no geodes, dungeons or fossils at vanilla's absolute depths
+        }
+        RegistryAccess upsideDown = dungeontrain$upsideDownSpawners.get();
+        if (upsideDown != null && UpsideDownSpawnerStructures.excludesFeature(
+                upsideDown.registryOrThrow(Registries.PLACED_FEATURE).getKey(feature))) {
+            return false; // upside-down band: no dungeon spawners hanging in the mirrored ceiling
         }
         return feature.placeWithBiomeCheck(level, generator, random, origin);
     }
@@ -116,10 +225,47 @@ public abstract class ChunkGeneratorDecorationMixin {
         if (dungeontrain$deferStructures.get()) {
             return List.of();
         }
-        if (dungeontrain$skipDecoration.get() && !dungeontrain$isDtStructure(structure)) {
+        if (dungeontrain$skipDecoration.get() && !dungeontrain$isDtStructure(structure)
+                && !dungeontrain$isSuperflatVillage(structure)) {
+            return List.of();
+        }
+        // Legacy / sunk chunk: no pieces of the underground set, even from a start just outside the band.
+        RegistryAccess legacy = dungeontrain$legacyUnderground.get();
+        if (legacy != null && LegacyUnderground.excludesStructure(
+                legacy.registryOrThrow(Registries.STRUCTURE).getKey(structure))) {
+            return List.of();
+        }
+        // Upside-down band: no spawner structures, even pieces reaching in from a start outside the band.
+        RegistryAccess upsideDown = dungeontrain$upsideDownSpawners.get();
+        if (upsideDown != null && UpsideDownSpawnerStructures.excludesStructure(
+                upsideDown.registryOrThrow(Registries.STRUCTURE).getKey(structure))) {
             return List.of();
         }
         return structureManager.startsForStructure(sectionPos, structure);
+    }
+
+    /** A village being placed into a Superflat-band chunk. Unclassifiable → not a village (skip it, as before). */
+    @Unique
+    private static boolean dungeontrain$isSuperflatVillage(Structure structure) {
+        RegistryAccess registries = dungeontrain$superflatVillages.get();
+        if (registries == null) return false;
+        try {
+            return SuperflatHeight.isVillage(registries, structure);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** A Superflat-band chunk of the overworld. Unresolvable → no (villages stay off, as before). */
+    @Unique
+    private static boolean dungeontrain$isSuperflatChunk(WorldGenLevel level, ChunkAccess chunk) {
+        try {
+            ServerLevel serverLevel = level.getLevel();
+            return LegacyBands.kindOfChunk(serverLevel, chunk.getPos().x, chunk.getPos().z) == LegacyBandKind.SUPERFLAT;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] superflat-village resolve failed at {}; no villages", chunk.getPos(), t);
+            return false;
+        }
     }
 
     /** The band's own structures are the only ones kept in the eroded core. */
@@ -146,11 +292,18 @@ public abstract class ChunkGeneratorDecorationMixin {
             if (!serverLevel.dimension().equals(Level.OVERWORLD)) return false;
             int chunkMinX = chunk.getPos().getMinBlockX();
             long startX = DisintegrationBand.startX(serverLevel);
-            if (startX != DisintegrationBand.OFF && chunkMinX + 15 >= startX
-                    && DisintegrationBand.isChunkFullyEroded(serverLevel, chunkMinX)) {
+            if (startX != DisintegrationBand.OFF
+                    && DisintegrationBand.isChunkFullyEroded(serverLevel, chunkMinX, chunk.getPos().getMinBlockZ())) {
                 return true;
             }
-            return ChuncksBand.isVoidChunk(serverLevel, chunkMinX, chunk.getPos().getMinBlockZ());
+            int chunkMinZ = chunk.getPos().getMinBlockZ();
+            return ChuncksBand.isVoidChunk(serverLevel, chunkMinX, chunkMinZ)
+                    || SpheresBand.isVoidChunk(serverLevel, chunkMinX, chunkMinZ)
+                    || StacksBand.isVoidOrStackChunk(serverLevel, chunkMinX, chunkMinZ)
+                    // Legacy band: not void, but its old generator decorates it (LegacyDecorateFeature) —
+                    // vanilla features and structure pieces would be modern things on old terrain
+                    // (Superflat villages are the one exception — see dungeontrain$isSuperflatVillage).
+                    || dungeontrain$isOldGeneratorChunk(serverLevel, chunk);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] decoration-skip resolve failed at {}; running vanilla decoration",
                     chunk.getPos(), t);
@@ -158,12 +311,93 @@ public abstract class ChunkGeneratorDecorationMixin {
         }
     }
 
+    /** Any feature registered under DT's namespace — vetoed inside offline samples. Unreadable → not vetoed. */
+    @Unique
+    private static boolean dungeontrain$isDtNamespaceFeature(PlacedFeature feature) {
+        try {
+            ResourceLocation key = BuiltInRegistries.FEATURE.getKey(feature.feature().value().feature());
+            return key != null && DungeonTrain.MOD_ID.equals(key.getNamespace());
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** An overworld feature kept off the Nether core ({@link #dungeontrain$CORE_VETOED_FEATURES}). Unreadable → kept. */
+    @Unique
+    private static boolean dungeontrain$isCoreVetoedFeature(PlacedFeature feature) {
+        RegistryAccess registries = dungeontrain$netherCore.get();
+        if (registries == null) return false;
+        try {
+            return dungeontrain$CORE_VETOED_FEATURES.contains(
+                registries.registryOrThrow(Registries.PLACED_FEATURE).getKey(feature));
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** A disabled mod ore placed feature, by its registry key. Unreadable → kept (never drop blind). */
+    @Unique
+    private static boolean dungeontrain$isDisabledOreFeature(WorldGenLevel level, PlacedFeature feature) {
+        try {
+            return games.brennan.dungeontrain.compat.DisabledModContent.isDisabledOreFeature(
+                level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE).getKey(feature));
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** A {@code minecraft:} placed feature, by its registry key. Unreadable → kept (never drop blind). */
+    @Unique
+    private static boolean dungeontrain$isVanillaPlacedFeature(WorldGenLevel level, PlacedFeature feature) {
+        try {
+            return VanillaOnlySample.allowsHere(
+                level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE).getKey(feature));
+        } catch (Throwable t) {
+            return true;
+        }
+    }
+
+    /** A legacy or sunk overworld chunk — see {@link LegacyUnderground}. Unresolvable → no veto. */
+    @Unique
+    private static boolean dungeontrain$appliesLegacyUnderground(WorldGenLevel level, ChunkAccess chunk) {
+        try {
+            ServerLevel serverLevel = level.getLevel();
+            if (!serverLevel.dimension().equals(Level.OVERWORLD)) return false;
+            return LegacyUnderground.appliesTo(serverLevel, chunk.getPos().x, chunk.getPos().z);
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] legacy-underground resolve failed at {}; decorating as vanilla",
+                    chunk.getPos(), t);
+            return false;
+        }
+    }
+
+    /** An overworld chunk in the upside-down band — see {@link UpsideDownSpawnerStructures}. Unresolvable → no veto. */
+    @Unique
+    private static boolean dungeontrain$appliesUpsideDownSpawners(WorldGenLevel level, ChunkAccess chunk) {
+        try {
+            return UpsideDownSpawnerStructures.appliesTo(level.getLevel(), chunk.getPos().x, chunk.getPos().z);
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] upside-down spawner resolve failed at {}; decorating as vanilla",
+                    chunk.getPos(), t);
+            return false;
+        }
+    }
+
+    /** A legacy chunk owned by an OLD generator — preset and Lost City chunks keep vanilla decoration. */
+    @Unique
+    private static boolean dungeontrain$isOldGeneratorChunk(ServerLevel serverLevel, ChunkAccess chunk) {
+        games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind kind =
+                LegacyBands.kindOfChunk(serverLevel, chunk.getPos().x, chunk.getPos().z);
+        return kind != null && kind.usesOldGenerator();
+    }
+
     /** The track bed + End-island features are the only ones kept in the eroded core. */
     @Unique
     private static boolean dungeontrain$isDtFeature(PlacedFeature feature) {
         try {
             Feature<?> f = feature.feature().value().feature();
-            return f == ModFeatures.TRACK_BED.get() || f == ModFeatures.DISINTEGRATION.get();
+            return f == ModFeatures.TRACK_BED.get() || f == ModFeatures.DISINTEGRATION.get()
+                    || f == ModFeatures.STACKS.get() || f == ModFeatures.LEGACY_DECORATE.get();
         } catch (Throwable t) {
             return true; // unclassifiable → keep it (never drop a feature we can't identify)
         }

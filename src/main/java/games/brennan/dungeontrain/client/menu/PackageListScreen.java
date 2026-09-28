@@ -53,7 +53,7 @@ public final class PackageListScreen implements MenuScreen {
      */
     @Override public double panelWidth() { return 3.6; }
 
-    @Override public String title() { return "Packages"; }
+    @Override public String title() { return MenuLang.t("packages.title"); }
 
     @Override public List<CommandMenuEntry> entries() {
         // Cache may be stale or absent. Request a fresh snapshot but don't
@@ -64,21 +64,21 @@ public final class PackageListScreen implements MenuScreen {
         List<CommandMenuEntry> out = new ArrayList<>();
 
         out.add(new CommandMenuEntry.Split(
-            new CommandMenuEntry.Stay("Reload", "dungeontrain editor import"),
-            new CommandMenuEntry.ClientAction("Open Packages", PackageMenuActions::openDtpacksFolder),
+            new CommandMenuEntry.Stay(MenuLang.t("packages.reload"), "dungeontrain editor import"),
+            new CommandMenuEntry.ClientAction(MenuLang.t("packages.open_folder"), PackageMenuActions::openDtpacksFolder),
             0.55
         ));
 
         List<PackageListSyncPacket.Entry> packages = PackageListClient.entries();
         if (packages.isEmpty()) {
-            out.add(new CommandMenuEntry.Label("Loading..."));
+            out.add(new CommandMenuEntry.Label(MenuLang.t("common.loading")));
         } else {
             for (PackageListSyncPacket.Entry entry : packages) {
                 out.add(buildRow(entry));
             }
         }
 
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
 
@@ -109,7 +109,7 @@ public final class PackageListScreen implements MenuScreen {
         if (isActive) {
             String saveInitial = isUnsaved ? "" : entry.name();
             save = new CommandMenuEntry.TypeArg(
-                "Save",
+                MenuLang.t("common.save"),
                 "name",
                 "dungeontrain package save",
                 "",
@@ -121,7 +121,7 @@ public final class PackageListScreen implements MenuScreen {
 
         final String packageName = entry.name();
         CommandMenuEntry open = new CommandMenuEntry.ClientAction(
-            "Open",
+            MenuLang.t("packages.open"),
             () -> PackageMenuActions.openWorkingFolder(packageName)
         );
 
@@ -132,7 +132,7 @@ public final class PackageListScreen implements MenuScreen {
             // so the row stays visually aligned.
             enableCell = new CommandMenuEntry.Label("—");
         } else {
-            String enableLabel = enabled ? "Disable" : "Enable";
+            String enableLabel = MenuLang.t(enabled ? "packages.disable" : "packages.enable");
             String enableCmd = "dungeontrain package "
                 + (enabled ? "disable " : "enable ")
                 + packageName;

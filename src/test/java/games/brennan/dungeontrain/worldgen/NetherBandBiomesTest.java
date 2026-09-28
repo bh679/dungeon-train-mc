@@ -70,4 +70,17 @@ final class NetherBandBiomesTest {
         }
         assertTrue(differs, "distinct seeds should produce distinct biome layouts");
     }
+
+    @Test
+    @DisplayName("the BoP palette shares the vanilla altitude zones, all BoP keys, peaks left to vanilla")
+    void bopZonesMatch() {
+        assertEquals(NetherBandBiomes.ZONES.size(), NetherBandBiomes.BOP_ZONES.size());
+        for (int z = 0; z < 3; z++) {
+            org.junit.jupiter.api.Assertions.assertFalse(NetherBandBiomes.BOP_ZONES.get(z).isEmpty(), "zone " + z);
+            for (var key : NetherBandBiomes.BOP_ZONES.get(z)) {
+                assertEquals("biomesoplenty", key.location().getNamespace());
+            }
+        }
+        org.junit.jupiter.api.Assertions.assertTrue(NetherBandBiomes.BOP_ZONES.get(3).isEmpty());
+    }
 }

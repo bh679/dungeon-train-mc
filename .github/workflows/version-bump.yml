@@ -91,6 +91,16 @@ jobs:
           sed -i "s/^mod_version=.*/mod_version=$NEW_VERSION/" gradle.properties
           echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
+      # The death screen counts shipped updates (MINOR bumps) and the relay serves that count
+      # from this committed index, so it has to move in lockstep with the bump itself. The
+      # collector reads the version out of the working tree, so the version this job just wrote
+      # is included even though it isn't committed yet. A failure here must not block the bump —
+      # a stale index degrades to a slightly low count, a missing bump breaks the release chain.
+      - name: Refresh the version-history index
+        if: steps.bump.outputs.skipped != 'true'
+        continue-on-error: true
+        run: python3 scripts/version-history/collect.py
+
       - name: Commit and push
         if: steps.bump.outputs.skipped != 'true'
         env:
@@ -98,7 +108,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add gradle.properties
+          git add gradle.properties docs/version-history/index.json
           # [skip ci] avoids triggering build.yml on a 1-line gradle.properties
           # change. The bump can't break the build; running CI on it is waste.
           # version-bump.yml itself is gated by the message-prefix check above

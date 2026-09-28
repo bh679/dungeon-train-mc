@@ -6,6 +6,7 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import games.brennan.dungeonbackup.api.Located;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
 import org.slf4j.Logger;
 
@@ -59,7 +60,7 @@ public final class GlobalBookBurnStats {
         return located(playerUuid).read();
     }
 
-    static PlayerDataPaths.Located located(UUID playerUuid) {
+    static Located located(UUID playerUuid) {
         return PlayerDataPaths.locate(
             PlayerDataPaths.STATS, LEGACY_DIR_NAME, playerUuid + FILE_SUFFIX);
     }

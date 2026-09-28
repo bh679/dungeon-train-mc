@@ -36,32 +36,32 @@ import java.util.Locale;
  */
 public final class OptionsMenuScreen implements MenuScreen {
 
-    @Override public String title() { return "Options"; }
+    @Override public String title() { return MenuLang.t("options.title"); }
 
     @Override public List<CommandMenuEntry> entries() {
         return List.of(
-            scaleStepper("All Displays", ClientDisplayConfig.getAllScale(),
+            scaleStepper(MenuLang.t("options.all_displays"), ClientDisplayConfig.getAllScale(),
                 () -> ClientDisplayConfig.setAllScale(ClientDisplayConfig.getAllScale() - ClientDisplayConfig.STEP),
                 () -> ClientDisplayConfig.setAllScale(ClientDisplayConfig.getAllScale() + ClientDisplayConfig.STEP)),
-            scaleStepper("Worldspace", ClientDisplayConfig.getWorldspaceChannel(),
+            scaleStepper(MenuLang.t("options.worldspace"), ClientDisplayConfig.getWorldspaceChannel(),
                 () -> ClientDisplayConfig.setWorldspaceChannel(ClientDisplayConfig.getWorldspaceChannel() - ClientDisplayConfig.STEP),
                 () -> ClientDisplayConfig.setWorldspaceChannel(ClientDisplayConfig.getWorldspaceChannel() + ClientDisplayConfig.STEP)),
-            scaleStepper("HUD", ClientDisplayConfig.getHudChannel(),
+            scaleStepper(MenuLang.t("options.hud"), ClientDisplayConfig.getHudChannel(),
                 () -> ClientDisplayConfig.setHudChannel(ClientDisplayConfig.getHudChannel() - ClientDisplayConfig.STEP),
                 () -> ClientDisplayConfig.setHudChannel(ClientDisplayConfig.getHudChannel() + ClientDisplayConfig.STEP)),
             trainVolumeStepper(),
             snapshotChatLogRow(),
             snapshotMaxResolutionRow(),
             bookAuthorChatRow(),
-            menuSpaceRow("X Menu", ClientDisplayConfig.getCommandMenuSpace(),
+            menuSpaceRow(MenuLang.t("options.x_menu"), ClientDisplayConfig.getCommandMenuSpace(),
                 ClientDisplayConfig::setCommandMenuSpace),
-            menuSpaceRow("V Blocks Menu", ClientDisplayConfig.getTemplateBlocksMenuSpace(),
+            menuSpaceRow(MenuLang.t("options.v_menu"), ClientDisplayConfig.getTemplateBlocksMenuSpace(),
                 ClientDisplayConfig::setTemplateBlocksMenuSpace),
-            menuSpaceRow("C Contents Menu", ClientDisplayConfig.getContainerContentsMenuSpace(),
+            menuSpaceRow(MenuLang.t("options.c_menu"), ClientDisplayConfig.getContainerContentsMenuSpace(),
                 ClientDisplayConfig::setContainerContentsMenuSpace),
-            menuSpaceRow("Z Variant Menu", ClientDisplayConfig.getBlockVariantMenuSpace(),
+            menuSpaceRow(MenuLang.t("options.z_menu"), ClientDisplayConfig.getBlockVariantMenuSpace(),
                 ClientDisplayConfig::setBlockVariantMenuSpace),
-            new CommandMenuEntry.Back("< Back")
+            new CommandMenuEntry.Back(MenuLang.t("common.back"))
         );
     }
 
@@ -76,7 +76,8 @@ public final class OptionsMenuScreen implements MenuScreen {
      */
     private static CommandMenuEntry snapshotMaxResolutionRow() {
         int current = ClientDisplayConfig.getRideSnapshotMaxResolution();
-        String label = "Snapshot Max Resolution: " + (current <= 0 ? "AUTO" : current + "p");
+        String label = MenuLang.t("options.snapshot_max_resolution",
+            current <= 0 ? MenuLang.t("options.auto_caps") : current + "p");
         return new CommandMenuEntry.ClientAction(label,
             () -> ClientDisplayConfig.setRideSnapshotMaxResolution(nextResolution(
                 ClientDisplayConfig.getRideSnapshotMaxResolution())));
@@ -98,7 +99,7 @@ public final class OptionsMenuScreen implements MenuScreen {
      */
     private static CommandMenuEntry snapshotChatLogRow() {
         boolean on = ClientDisplayConfig.isRideSnapshotChatLogEnabled();
-        String label = "Snapshot Chat Log: " + (on ? "ON" : "OFF");
+        String label = MenuLang.t("options.snapshot_chat_log", MenuLang.t(on ? "common.on_caps" : "common.off_caps"));
         return new CommandMenuEntry.ClientAction(label,
             () -> ClientDisplayConfig.setRideSnapshotChatLog(!ClientDisplayConfig.isRideSnapshotChatLogEnabled()));
     }
@@ -110,7 +111,7 @@ public final class OptionsMenuScreen implements MenuScreen {
      */
     private static CommandMenuEntry bookAuthorChatRow() {
         boolean on = ClientDisplayConfig.isBookAuthorBurnChatEnabled();
-        String label = "Book Author Chat: " + (on ? "ON" : "OFF");
+        String label = MenuLang.t("options.book_author_chat", MenuLang.t(on ? "common.on_caps" : "common.off_caps"));
         return new CommandMenuEntry.ClientAction(label,
             () -> ClientDisplayConfig.setBookAuthorBurnChat(!ClientDisplayConfig.isBookAuthorBurnChatEnabled()));
     }
@@ -121,8 +122,8 @@ public final class OptionsMenuScreen implements MenuScreen {
      */
     private static CommandMenuEntry trainVolumeStepper() {
         double current = ClientDisplayConfig.getTrainEngineVolume();
-        String value = current <= 0.0 ? "OFF" : Math.round(current * 100) + "%";
-        return stepper("Train Volume: " + value,
+        String value = current <= 0.0 ? MenuLang.t("common.off_caps") : Math.round(current * 100) + "%";
+        return stepper(MenuLang.t("options.train_volume", value),
             () -> ClientDisplayConfig.setTrainEngineVolume(
                 ClientDisplayConfig.getTrainEngineVolume() - ClientDisplayConfig.STEP),
             () -> ClientDisplayConfig.setTrainEngineVolume(
@@ -141,12 +142,13 @@ public final class OptionsMenuScreen implements MenuScreen {
      */
     private static CommandMenuEntry menuSpaceRow(String name, EditorMenuSpace current,
                                                  java.util.function.Consumer<EditorMenuSpace> set) {
-        String label = name + ": " + (current.isScreenspace() ? "Screen" : "World");
+        String label = MenuLang.t("common.name_value", name,
+            MenuLang.t(current.isScreenspace() ? "options.space_screen" : "options.space_world"));
         return new CommandMenuEntry.ClientAction(label, () -> set.accept(current.toggled()));
     }
 
     private static CommandMenuEntry scaleStepper(String name, double currentValue, Runnable onMinus, Runnable onPlus) {
-        return stepper(name + ": " + String.format(Locale.ROOT, "%.1f", currentValue), onMinus, onPlus);
+        return stepper(MenuLang.t("common.name_value", name, String.format(Locale.ROOT, "%.1f", currentValue)), onMinus, onPlus);
     }
 
     /** The shared {@code [-] / label / [+]} row: each {@code ±} a client action, so the menu stays open. */

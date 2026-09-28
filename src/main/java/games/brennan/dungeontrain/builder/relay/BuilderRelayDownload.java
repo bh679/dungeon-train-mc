@@ -2,6 +2,11 @@ package games.brennan.dungeontrain.builder.relay;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.editor.EditorDirtyCheck;
+import games.brennan.dungeontrain.editor.TemplateLootPrefabs;
+import games.brennan.dungeontrain.editor.TemplateSidecars;
+import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
+import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import games.brennan.dungeontrain.train.CarriageSnapshotTemplate;
@@ -14,9 +19,13 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -41,20 +50,63 @@ public final class BuilderRelayDownload {
     /**
      * What the player is told happened.
      *
-     * <p>Six outcomes and not one blanket failure, because they send the player to six different
-     * places: a build that is already here needs nothing, one the relay never heard of is gone for
-     * good, one that is not theirs is a bug or a stale screen, and a relay that could not be reached
-     * is worth trying again in a minute.</p>
+     * <p>Not one blanket failure, because they send the player to different places: a build that is
+     * already here needs nothing, one the relay never heard of is gone for good, one that is not
+     * theirs is a bug or a stale screen, and a relay that could not be reached is worth trying again
+     * in a minute.</p>
+     *
+     * <p>{@link #UNSAVED_EDITS} is a question rather than a refusal, and the only one raised before
+     * anything is read off the wire is written: the template this build would land on has in-world
+     * edits nobody has saved, and installing would put them beyond reach. The player answers it and
+     * presses again — see {@link #download(ServerPlayer, ServerLevel, int, BuilderRelayInstall.Resolution, String, String, String, boolean, boolean)}.</p>
+     *
+     * <p>{@link #PREFAB_CONFLICT} is the other question: the build arrived with loot prefabs whose
+     * ids this install already holds, with different contents. Installing would either silently
+     * change the loot of every local template sharing those ids, or silently leave this build's
+     * chests rolling something its author never meant — so the player is shown both and chooses,
+     * per prefab, and presses again. Asked before anything is written, like the edits question,
+     * and only ever once: a replay carries the answers.</p>
+     *
+     * <p>{@link #TIMED_OUT} is {@link #UNAVAILABLE}'s slow cousin: the relay was reached but never
+     * answered inside the patient budget ({@link SharedCarriageClient.FetchPatience#PATIENT}, two
+     * attempts). Kept apart because the remedy differs — a slow relay wants "press Load again", an
+     * unreachable one does not — and because the two look identical from the old single line.</p>
      */
-    public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, NOT_YOURS, GONE, UNAVAILABLE, UNSUPPORTED, FAILED }
+    public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, UNSAVED_EDITS, NOT_YOURS, GONE, UNAVAILABLE, TIMED_OUT, UNSUPPORTED, FAILED, PREFAB_CONFLICT }
 
     /**
      * What an install produced: the outcome, and — when something landed — enough to name it, so the
      * screen can offer to open the thing that was just written.
      */
-    public record Result(Outcome outcome, BuilderPhotoPaths.Kind kind, String id, String subKind) {
+    public record Result(Outcome outcome, BuilderPhotoPaths.Kind kind, String id, String subKind,
+                         List<String> takenNames, List<TemplateLootPrefabs.Conflict> conflicts) {
+        public Result(Outcome outcome, BuilderPhotoPaths.Kind kind, String id, String subKind,
+                      List<String> takenNames) {
+            this(outcome, kind, id, subKind, takenNames, List.of());
+        }
+
+        Result(Outcome outcome, BuilderPhotoPaths.Kind kind, String id, String subKind) {
+            this(outcome, kind, id, subKind, List.of(), List.of());
+        }
+
         static Result of(Outcome outcome) {
-            return new Result(outcome, null, "", "");
+            return new Result(outcome, null, "", "", List.of(), List.of());
+        }
+
+        /** {@link Outcome#PREFAB_CONFLICT}, carrying what the player has to decide between. */
+        static Result askingAbout(BuilderPhotoPaths.Kind kind, String id, String subKind,
+                                  List<TemplateLootPrefabs.Conflict> conflicts) {
+            return new Result(Outcome.PREFAB_CONFLICT, kind, id, subKind, List.of(), conflicts);
+        }
+
+        /**
+         * The same answer, carrying the names this install will not write over.
+         *
+         * <p>Only worth sending on an outcome that asks the player to name something — see
+         * {@link BuilderRelayInstall#takenNames}.</p>
+         */
+        Result withTakenNames(List<String> names) {
+            return new Result(outcome, kind, id, subKind, names, conflicts);
         }
     }
 
@@ -67,7 +119,7 @@ public final class BuilderRelayDownload {
      * is not asked to accept them coming down either.</p>
      */
     public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId) {
-        return download(player, level, relayId, BuilderRelayInstall.Resolution.AS_IS, "");
+        return download(player, level, relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", "", false, false, "");
     }
 
     /**
@@ -78,19 +130,71 @@ public final class BuilderRelayDownload {
      * and the second names the choice. The build is fetched again for that second press rather than
      * held between the two — a cached blob would have to be keyed to a player and expired somehow,
      * and this is one HTTP call on a deliberate button press.</p>
+     *
+     * @param parentId the variant parent to file the build under once installed, or blank to leave
+     *                 it at top level — see {@link BuilderRelaySubVariant}
      */
     public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId,
                                                      BuilderRelayInstall.Resolution resolution,
-                                                     String newName) {
+                                                     String newName, String ownerUuid, String ownerName,
+                                                     boolean live, boolean overwriteUnsaved, String parentId) {
+        return download(player, level, relayId, resolution, newName, ownerUuid, ownerName, live,
+                overwriteUnsaved, parentId, PrefabAnswer.UNASKED);
+    }
+
+    /**
+     * The player's answer to {@link Outcome#PREFAB_CONFLICT}: which of the build's loot prefabs to
+     * write over this install's own. {@link #UNASKED} is the first press — a conflict stops the
+     * download to ask. A resolved answer never asks again, and any conflicting id it does not
+     * name is kept as it is here.
+     */
+    public record PrefabAnswer(boolean resolved, Set<String> overwrite, Map<String, String> renames) {
+        public static final PrefabAnswer UNASKED = new PrefabAnswer(false, Set.of(), Map.of());
+
+        public PrefabAnswer {
+            overwrite = overwrite == null ? Set.of() : Set.copyOf(overwrite);
+            renames = renames == null ? Map.of() : Map.copyOf(renames);
+        }
+
+        /** @param renames old id → the new id the build's version is filed under instead */
+        public static PrefabAnswer resolved(Collection<String> overwrite, Map<String, String> renames) {
+            return new PrefabAnswer(true, Set.copyOf(overwrite), renames);
+        }
+    }
+
+    /**
+     * As above, carrying the player's answer to the loot-prefab question as well — the third of the
+     * second-press replays, after the name and the unsaved edits.
+     */
+    public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId,
+                                                     BuilderRelayInstall.Resolution resolution,
+                                                     String newName, String ownerUuid, String ownerName,
+                                                     boolean live, boolean overwriteUnsaved, String parentId,
+                                                     PrefabAnswer prefabs) {
         if (player == null || level == null || !BuilderRelayUpload.canUpload(player)) {
             return CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
         }
-        return SharedCarriageClient.fetchBuild(relayId, player.getUUID().toString())
+        String own = player.getUUID().toString();
+        String owner = ownerUuid == null || ownerUuid.isBlank() ? own : ownerUuid.trim();
+        boolean mine = owner.equals(own);
+        String relay = RelayTarget.of(live);
+        // Only a download of the player's OWN build wants the secret (to remember the link, below),
+        // and the relay serves it only with a proof — so only that one pays for proving.
+        CompletableFuture<SharedCarriageClient.OwnerProof> proof = mine
+                ? RelayOwnerProof.obtain(player, relay)
+                : CompletableFuture.completedFuture(null);
+        // PATIENT: this is a button press, and the fetch is a read — see FetchPatience.
+        return proof.thenCompose(p -> SharedCarriageClient.fetchBuild(relayId, owner, relay, p,
+                        SharedCarriageClient.FetchPatience.PATIENT))
                 .thenCompose(result -> switch (result.status()) {
                     case FORBIDDEN -> CompletableFuture.completedFuture(Result.of(Outcome.NOT_YOURS));
                     case UNKNOWN -> CompletableFuture.completedFuture(Result.of(Outcome.GONE));
                     case ERROR -> CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
-                    case OK -> onServer(level, () -> install(level, result.build(), resolution, newName));
+                    case TIMEOUT -> CompletableFuture.completedFuture(Result.of(Outcome.TIMED_OUT));
+                    case OK -> onServer(level, () -> install(level, result.build(), resolution, newName,
+                            new BuildCredits.Credit(owner, ownerName, System.currentTimeMillis()), mine,
+                            overwriteUnsaved, parentId == null ? "" : parentId,
+                            prefabs == null ? PrefabAnswer.UNASKED : prefabs));
                 });
     }
 
@@ -103,7 +207,9 @@ public final class BuilderRelayDownload {
      * as it is now.</p>
      */
     private static Result install(ServerLevel level, SharedCarriageClient.BuildFetch build,
-                                  BuilderRelayInstall.Resolution resolution, String newName) {
+                                  BuilderRelayInstall.Resolution resolution, String newName,
+                                  BuildCredits.Credit credit, boolean mine, boolean overwriteUnsaved,
+                                  String parentId, PrefabAnswer prefabs) {
         BuilderPhotoPaths.Kind kind = BuilderRelayKinds.kindOf(build.kind());
         if (kind == null || build.buildName().isEmpty()) {
             // A kind this build of the mod does not know, or a build the relay never named. Neither
@@ -130,47 +236,165 @@ public final class BuilderRelayDownload {
             return Result.of(Outcome.FAILED);
         }
 
-        BuilderRelayInstall.Outcome installed = BuilderRelayInstall.install(
-                kind, build.buildName(), build.subKind(), build.stage(), template, resolution, newName);
-        // Which name the build ended up under: its own, unless the player asked for it to arrive as
-        // something else. This is what the screen opens, so it has to be the name that was written.
-        String installedAs = resolution == BuilderRelayInstall.Resolution.LOAD_AS_NEW
+        // The name this build will land on, asked before anything is written. Installing over a
+        // template whose editor plot holds edits nobody has saved puts those blocks beyond reach —
+        // the file is replaced and the next stamp restamps from it — so the player is asked first.
+        // A fetch is a read, so answering "no" here leaves both the file and the plot as they were.
+        String landsOn = resolution == BuilderRelayInstall.Resolution.LOAD_AS_NEW
                 ? newName.trim()
                 : build.buildName();
+        if (!overwriteUnsaved && hasUnsavedEdits(level, kind, build.subKind(), landsOn)) {
+            return new Result(Outcome.UNSAVED_EDITS, kind, landsOn, build.subKind());
+        }
+        // The loot prefabs the build brought, against the ones already here — asked about before
+        // anything is written, for the same reason as the edits question above: a fetch is a read,
+        // and "no" has to leave the install exactly as it was. Once answered, never asked again.
+        //
+        // Held until the NAME is settled: a first press on a build already here answers ALREADY_HERE
+        // and the collision screen replays with a resolution — asking about prefabs before that
+        // would ask, and then ask again on the replay. So only once install would actually go ahead.
+        boolean nameSettled = BuilderRelayInstall.refusal(kind, build.buildName(), build.subKind(),
+                resolution, newName, mine) == null;
+        if (nameSettled && !prefabs.resolved()) {
+            List<TemplateLootPrefabs.Conflict> conflicts = TemplateLootPrefabs.conflicts(build.lootPrefabs());
+            if (!conflicts.isEmpty()) {
+                return Result.askingAbout(kind, landsOn, build.subKind(), conflicts);
+            }
+        }
+
+        // The "Whole carriage room" destination: the build goes into the Whole pool and nowhere else.
+        boolean wholeRoom = BuilderRelayWholeRoom.requested(parentId) && BuilderRelayWholeRoom.supports(kind);
+        BuilderRelayInstall.Outcome installed = wholeRoom
+            ? BuilderRelayWholeRoom.install(level, kind, build.buildName(), build.stage(), template, resolution,
+                newName, build.sidecars(), mine)
+            : BuilderRelayInstall.install(
+                kind, build.buildName(), build.subKind(), build.stage(), template, resolution, newName,
+                build.sidecars(), mine);
+        // Which name the build ended up under: its own, unless the player asked for it to arrive as
+        // something else. This is what the screen opens, so it has to be the name that was written —
+        // the same name the unsaved-edits question above was asked about.
+        String installedAs = landsOn;
         if (installed != BuilderRelayInstall.Outcome.INSTALLED) {
-            return new Result(switch (installed) {
+            Result refusal = new Result(switch (installed) {
                 case ALREADY_HERE -> Outcome.ALREADY_HERE;
                 case NAME_TAKEN -> Outcome.NAME_TAKEN;
                 case UNSUPPORTED -> Outcome.UNSUPPORTED;
                 default -> Outcome.FAILED;
             }, kind, build.buildName(), build.subKind());
+            // The two outcomes that send the player to a name box are the two worth telling which
+            // names are gone — the box can then open on a free one and refuse a used one itself.
+            return refusal.outcome() == Outcome.ALREADY_HERE || refusal.outcome() == Outcome.NAME_TAKEN
+                    ? refusal.withTakenNames(BuilderRelayInstall.takenNames(kind, build.subKind(), mine))
+                    : refusal;
         }
 
         // Only a build that kept its relay name is still that relay row. A copy loaded under a new
         // name is a new build as far as the relay is concerned — recording the link would point this
         // world's saves of it at a row whose name no longer matches, quietly renaming the original.
-        if (resolution != BuilderRelayInstall.Resolution.LOAD_AS_NEW) {
+        //
+        // Somebody ELSE's build is the same case: the relay withholds their secret, and this world has
+        // no business saving over their row anyway. A foreign build lands here as a local copy and
+        // nothing more.
+        if (resolution != BuilderRelayInstall.Resolution.LOAD_AS_NEW && mine) {
             remember(level, build, kind);
         }
+        credit(kind, build.subKind(), installedAs, credit, mine,
+                TemplateSidecars.hasCredit(build.sidecars()));
+        // The prefabs the chests link to, now that the links themselves are on disk: every id this
+        // install lacks, plus whichever conflicts the player answered "use theirs" to. The rest —
+        // identical files and "keep mine" — are left exactly as they were.
+        List<String> prefabsWritten = TemplateLootPrefabs.install(build.lootPrefabs(), prefabs.overwrite(),
+                prefabs.renames());
+        // Against the plot the build actually landed on. A whole room is filed under `whole:<id>`, not
+        // under the carriage/contents plot key its source kind would name — re-linking there would edit
+        // a plot this download never wrote.
+        if (wholeRoom) {
+            TemplateLootPrefabs.relinkPlot(
+                games.brennan.dungeontrain.editor.BlockVariantPlot.wholeKey(
+                    games.brennan.dungeontrain.train.WholeKind.ROOM, installedAs),
+                prefabs.renames(), prefabsWritten);
+        } else {
+            TemplateLootPrefabs.relink(kind, build.subKind(), installedAs, prefabs.renames(), prefabsWritten);
+        }
+        // The creative tab lists prefabs from a client-side copy of the registry, pushed on join and
+        // after an in-game save. A prefab that arrived with a build is a new entry too, and without
+        // this push it exists on disk but not in the tab until the next join.
+        if (!prefabsWritten.isEmpty()) {
+            PacketDistributor.sendToAllPlayers(PrefabRegistrySyncPacket.fromRegistries());
+        }
+        // Last, and only once the template is a template: a refused join leaves the build where it
+        // installed, which is still the INSTALLED the screen was promised — the roster says where.
+        if (!wholeRoom && !parentId.isBlank() && BuilderRelaySubVariant.supports(kind)) {
+            BuilderRelaySubVariant.join(level, kind, installedAs, parentId, template);
+        }
         return new Result(Outcome.INSTALLED, kind, installedAs, build.subKind());
+    }
+
+    /**
+     * File whose work this build is, under the name it actually landed under.
+     *
+     * <p>Under {@code installedAs} rather than the relay's own name, because {@code Load as new}
+     * installs the build as something else and a byline filed against a name this install does not
+     * hold is a byline nothing will ever read.</p>
+     *
+     * <p>The player's OWN build is the opposite case and clears instead: fetching your work back
+     * onto a fresh save is not somebody else handing it to you, and a stale credit left over from
+     * whatever held that name before would caption it with a stranger. Unless the build itself
+     * arrived carrying a byline — one of their builds that is a copy of somebody else's work — in
+     * which case that name is the only record of who made it and stands.</p>
+     *
+     * <p>Somebody else's build never overwrites either: {@link BuildCredits#put} keeps the first
+     * credit filed, and the sidecars have already laid theirs down by the time this runs. That is
+     * what stops a build passing through a second player's profile from being re-attributed to
+     * them.</p>
+     */
+    private static void credit(BuilderPhotoPaths.Kind kind, String subKind, String installedAs,
+                               BuildCredits.Credit credit, boolean mine, boolean carriesCredit) {
+        if (mine) {
+            if (!carriesCredit) BuildCredits.forget(kind, subKind, installedAs);
+            return;
+        }
+        if (BuildCredits.put(kind, subKind, installedAs, credit)) {
+            LOGGER.info("[DungeonTrain] Builder relay download: '{}' is credited to {}",
+                    installedAs, credit.display());
+        }
+    }
+
+    /**
+     * Whether the template {@code id} names has in-world edits that have not been saved to disk.
+     *
+     * <p>The same scan the editor's own "save before switch" list runs
+     * ({@link EditorDirtyCheck#unsavedModelIds}), narrowed to the one template a download is about to
+     * write over. Answers false for anything with no plot of its own to lose — a part, a carriage
+     * group — and for a template nobody has stamped this session, which is what a name this install
+     * has never held looks like.</p>
+     */
+    private static boolean hasUnsavedEdits(ServerLevel level, BuilderPhotoPaths.Kind kind,
+                                           String subKind, String id) {
+        String categoryId = BuilderRelayKinds.categoryIdFor(kind, subKind);
+        String modelId = EditorDirtyCheck.dirtyKeyFor(kind, subKind, id);
+        if (categoryId == null || modelId == null) return false;
+        return EditorDirtyCheck.unsavedModelIds(level, DungeonTrainWorldData.get(level).dims(), categoryId)
+                .contains(modelId);
     }
 
     /**
      * Record what the relay calls this build, so a later save in THIS world updates that row instead
      * of uploading a second copy of the same build.
      *
-     * <p>The secret is what makes that possible and is the reason the fetch returns one: it is the
-     * durable owner capability, issued once to whoever first uploaded the build, and no world can
-     * re-derive it. The lease token is left empty on purpose — this download took no lease, so the
+     * <p>The secret is what makes that possible: it is the durable owner capability, issued once to
+     * whoever first uploaded the build, and no world can re-derive it. The relay returns it only to a
+     * fetch carrying a {@link RelayOwnerProof}, so a download made where the player cannot prove who
+     * they are installs the build without this link. The lease token is left empty on purpose — this download took no lease, so the
      * next save claims one, which is exactly the path
      * {@link BuilderRelayUpload#afterSave} already takes for a build it knows but is not holding.</p>
      */
     private static void remember(ServerLevel level, SharedCarriageClient.BuildFetch build,
                                  BuilderPhotoPaths.Kind kind) {
         if (build.secret().isEmpty()) {
-            // An older relay, or a build stored before secrets existed. The template is installed and
-            // usable; only the link back to its relay row is missing, and a later save re-establishes
-            // that by re-uploading (the relay dedupes an identical builder submit per author).
+            // No owner proof (a dedicated server, a LAN guest, an offline account), or a build stored
+            // before secrets existed. The template is installed and usable; only the link back to its
+            // relay row is missing, so a later save from this world uploads it as a new build.
             LOGGER.info("[DungeonTrain] Builder relay download: id={} came back without a secret — "
                     + "installed, but this world cannot save to that row", build.id());
             return;
@@ -183,7 +407,7 @@ public final class BuilderRelayDownload {
     }
 
     /** Fold the build's delta log onto its base blob — the lease path's rule, on a fetched build. */
-    private static CompoundTag fold(CompoundTag base, SharedCarriageClient.BuildFetch build) {
+    static CompoundTag fold(CompoundTag base, SharedCarriageClient.BuildFetch build) {
         List<SharedCarriageClient.DeltaRec> pending =
                 SharedCarriageClient.pendingDeltas(build.deltas(), build.baseSeq());
         CompoundTag folded = base;

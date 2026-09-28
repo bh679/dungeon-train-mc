@@ -8,10 +8,12 @@ sibling-mod UI, narrative books):
                               translation nobody has checked. Read straight from the sidecars.
   source_changed_since_review the line IS human-reviewed, but the ENGLISH has been edited
                               since that review landed — so the review attests a translation
-                              of text that no longer exists. Nothing in the schema records
-                              this (``stamp-provenance.py`` resets the reviewer when the
-                              *translation* changes, not when the *source* does), so it is
-                              derived from git history here.
+                              of text that no longer exists. Read from the sidecar too: every
+                              stamp records a ``source_hash`` of the English it attested, and
+                              the line is stale when the current English no longer hashes to
+                              it (the same comparison the shipped manifest ships in-game).
+                              Git history is consulted only to DATE the two events for the
+                              ``english_changed_at`` / ``reviewed_at`` columns.
 
 Output is one CSV per locale per body under ``localization/review/`` (gitignored — generated),
 each row carrying the English, the current translation, and two empty columns for the
@@ -114,17 +116,18 @@ def stamp(when: int | None) -> str:
 
 # ---------------------------------------------------------------- row building
 
-def classify(entry: dict, authors: dict[str, str], en_changed: int | None,
-             reviewed: int | None) -> str | None:
+def classify(entry: dict, authors: dict[str, str], current_hash: str | None) -> str | None:
     """Which condition this line falls under, or None when it needs no review.
 
-    A source change at the SAME timestamp as the review is not stale: a squash merge can
-    carry an English edit and its review in one commit, and the review wins there.
+    ``current_hash`` is the digest of the English as it is now (None when that English is
+    not in this repo — the siblings — which can therefore only ever be NEEDS_FIRST). A
+    sidecar ``source_hash`` of "" means "unknown", never "changed".
     """
     author, reviewer = entry.get("author", ""), entry.get("reviewer", "")
     if not reviewer:
         return NEEDS_FIRST if authors.get(author) == "ai" else None
-    if en_changed and reviewed and en_changed > reviewed:
+    recorded = entry.get("source_hash", "")
+    if recorded and current_hash and current_hash != recorded:
         return SOURCE_CHANGED
     return None
 
@@ -150,7 +153,8 @@ def ui_rows(ns: pio.Namespace, locale: str, authors: dict[str, str],
 
     rows = []
     for key, entry in prov.items():
-        reason = classify(entry, authors, en_times.get(key), reviewed_times.get(key))
+        current = pio.source_hash(english[key]) if key in english else None
+        reason = classify(entry, authors, current)
         if not reason:
             continue
         rows.append({
@@ -175,13 +179,14 @@ def book_rows(locale: str, authors: dict[str, str], en_book_times: dict[str, int
         return []
     prov = pio.load_provenance(prov_path)
     reviewed_times = review_stamp_times(prov_path)
+    english_dir = pio.DEFAULT_NARRATIVE_DIR.parent
 
     rows = []
     for book, entry in prov.items():
-        reason = classify(entry, authors, en_book_times.get(book), reviewed_times.get(book))
+        reason = classify(entry, authors, pio.english_book_hash(english_dir, book) or None)
         if not reason:
             continue
-        en_file = NARRATIVE_EN_DIR / f"{book}.json"
+        en_file = pio.english_book_path(english_dir, book)
         rows.append({
             "book": book,
             "reason": reason,
@@ -317,6 +322,11 @@ def main() -> None:
         p.relative_to(NARRATIVE_EN_DIR).with_suffix("").as_posix(): file_change_time(p)
         for p in sorted(NARRATIVE_EN_DIR.rglob("*.json"))
     }
+    death_lore_dir = NARRATIVE_EN_DIR.parent / "death_lore"
+    en_book_times.update({
+        p.relative_to(NARRATIVE_EN_DIR.parent).with_suffix("").as_posix(): file_change_time(p)
+        for p in sorted(death_lore_dir.rglob("*.json"))
+    })
     en_book_times = {k: v for k, v in en_book_times.items() if v}
     print(f"  {len(en_book_times)} books dated")
 

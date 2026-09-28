@@ -1,11 +1,13 @@
 package games.brennan.dungeontrain.discord;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import org.slf4j.Logger;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -38,15 +40,20 @@ public final class DeathNoteReporter {
      *                       spawns for a target who is also in Free Play (provenance match)
      * @param kind           which book was signed — decides how the echo feels about the target when
      *                       it arrives (see {@link NoteKind})
+     * @param body           the note's own lines, which the echo reads aloud when it reaches the
+     *                       target ({@code NoteSpokenLines}). Empty for a note that is only a name.
+     *                       This is player-written text bound for another player's chat, so the relay
+     *                       screens it and serves it back only once approved — a withheld body costs
+     *                       the echo its voice, never the curse itself.
      */
     public static void submit(UUID authorId, String authorName, String targetName, String targetUuid,
                               int deathCarriage, String worldKey, String authorSkinRef, boolean freePlay,
-                              NoteKind kind) {
+                              NoteKind kind, List<String> body) {
         try {
             if (authorId == null) return;
             String uuid = authorId.toString().replace("-", "");
             JsonObject payload = buildPayload(uuid, authorName, targetName, targetUuid,
-                    deathCarriage, worldKey, authorSkinRef, freePlay, kind);
+                    deathCarriage, worldKey, authorSkinRef, freePlay, kind, body);
             RelayOutbox.get().enqueue("/deathnotes/submit", payload.toString());
             LOGGER.debug("[DungeonTrain] DeathNote submit (target {}, carriage {}) queued to the relay outbox.",
                     targetName, deathCarriage);
@@ -151,7 +158,7 @@ public final class DeathNoteReporter {
      */
     static JsonObject buildPayload(String authorUuid, String authorName, String targetName, String targetUuid,
                                    int deathCarriage, String worldKey, String authorSkinRef, boolean freePlay,
-                                   NoteKind kind) {
+                                   NoteKind kind, List<String> spokenLines) {
         JsonObject body = new JsonObject();
         body.addProperty("kind", (kind == null ? NoteKind.DEATH : kind).id());
         body.addProperty("authorUuid", authorUuid == null ? "" : authorUuid);
@@ -162,6 +169,13 @@ public final class DeathNoteReporter {
         body.addProperty("worldKey", worldKey == null ? "" : worldKey);
         body.addProperty("authorSkinRef", authorSkinRef == null ? "" : authorSkinRef);
         body.addProperty("freePlay", freePlay);
+        // Omitted entirely when there is nothing to say — the relay treats an absent body exactly as
+        // it treats one from a jar that predates spoken echoes.
+        if (spokenLines != null && !spokenLines.isEmpty()) {
+            JsonArray lines = new JsonArray();
+            for (String line : spokenLines) if (line != null && !line.isBlank()) lines.add(line);
+            if (!lines.isEmpty()) body.add("body", lines);
+        }
         return body;
     }
 }

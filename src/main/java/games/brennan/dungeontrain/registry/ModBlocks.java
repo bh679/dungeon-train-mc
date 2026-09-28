@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.registry;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.block.SkyboxBlock;
 import games.brennan.dungeontrain.block.SkyboxSky;
+import games.brennan.dungeontrain.block.VariantPlaceholderBlock;
+import games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks;
 import games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -133,6 +135,38 @@ public final class ModBlocks {
     public static final DeferredItem<BlockItem> SKYBOX_SUNRISE_ITEM = BLOCK_ITEMS.register(
         SkyboxSky.SUNRISE.blockName(), () -> new BlockItem(SKYBOX_SUNRISE.get(), new Item.Properties()));
 
+    /**
+     * The block-variant editor's empty-placeholder sentinel — see {@link VariantPlaceholderBlock}.
+     * Same unmineable / blast-proof / no-drop pair as the skyboxes, but {@code noOcclusion()} so the
+     * translucent cube does not cull the faces of whatever the author builds behind it.
+     */
+    public static final DeferredBlock<VariantPlaceholderBlock> VARIANT_PLACEHOLDER = BLOCKS.register(
+        "variant_placeholder",
+        () -> new VariantPlaceholderBlock(
+            BlockBehaviour.Properties.of()
+                .mapColor(MapColor.NONE)
+                .strength(-1.0F, 3600000.8F)
+                .noLootTable()
+                .noOcclusion()
+                .noTerrainParticles()
+                .isValidSpawn((state, level, pos, type) -> false)
+                .pushReaction(PushReaction.BLOCK)
+                .sound(SoundType.GLASS)
+        )
+    );
+
+    public static final DeferredItem<BlockItem> VARIANT_PLACEHOLDER_ITEM = BLOCK_ITEMS.register(
+        "variant_placeholder", () -> new BlockItem(VARIANT_PLACEHOLDER.get(), new Item.Properties()));
+
+    /**
+     * The stage placeholder blocks ({@code stage_block_1..10}, stairs/slab slots, button, plate and
+     * the wood set) — registered in bulk by {@link StagePlaceholderBlocks}, which owns the catalogue.
+     * Static-init ordering: this runs after the fields above, so the deferred registers exist.
+     */
+    static {
+        StagePlaceholderBlocks.register(BLOCKS, BLOCK_ITEMS);
+    }
+
     private ModBlocks() {}
 
     /** Call from the mod constructor to attach both registers to the mod-event bus. */
@@ -156,6 +190,7 @@ public final class ModBlocks {
             event.accept(SKYBOX_UPSIDE_DOWN_ITEM.get());
             event.accept(SKYBOX_NIGHT_ITEM.get());
             event.accept(SKYBOX_SUNRISE_ITEM.get());
+            event.accept(VARIANT_PLACEHOLDER_ITEM.get());
         }
     }
 }

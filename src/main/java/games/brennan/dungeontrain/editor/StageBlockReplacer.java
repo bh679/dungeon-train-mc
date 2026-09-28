@@ -111,7 +111,7 @@ public final class StageBlockReplacer {
     }
 
     /** {@code to.defaultBlockState()} with every property shared with {@code fromState} copied over. */
-    static BlockState transfer(BlockState fromState, Block to) {
+    public static BlockState transfer(BlockState fromState, Block to) {
         BlockState out = to.defaultBlockState();
         for (Property<?> p : fromState.getProperties()) {
             out = copyProperty(fromState, out, p);

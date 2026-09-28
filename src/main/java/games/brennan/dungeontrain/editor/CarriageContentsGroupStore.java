@@ -369,7 +369,7 @@ public final class CarriageContentsGroupStore {
         if (!sourceTreeAvailable()) return;
         try {
             Path file = sourceFileForId(key);
-            if (Files.deleteIfExists(file)) {
+            if (SourceTreeFiles.deleteWithClasspathTwin(file)) {
                 LOGGER.info("[DungeonTrain] Deleted bundled contents group {} (devmode promote).", file);
             }
         } catch (IOException e) {

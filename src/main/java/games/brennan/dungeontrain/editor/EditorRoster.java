@@ -1,0 +1,296 @@
+package games.brennan.dungeontrain.editor;
+
+import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
+import games.brennan.dungeontrain.net.EditorRosterPacket;
+import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantGroup;
+import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsGroup;
+import games.brennan.dungeontrain.train.CarriagePartKind;
+import games.brennan.dungeontrain.train.CarriageVariant;
+import games.brennan.dungeontrain.train.CarriageVariantRegistry;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+/**
+ * Every template in every editor category at once — what the inventory-style editor screen
+ * browses.
+ *
+ * <p>The world-space type menus ({@link EditorTypeMenus}) describe one stamped category and hang
+ * their rows on world anchors. The inventory screen shows all four categories with no anchors, so
+ * it asks for this instead. Both are built from the same per-row helpers in
+ * {@link EditorTypeMenus}, which is what keeps a template's weight, gate, stage links, provenance
+ * and sub-variants identical between the two surfaces.</p>
+ *
+ * <p>Server side: reads the registries and the config-dir sidecars, so it runs where the stamping
+ * commands run and answers the same on a dedicated server as in single-player.</p>
+ */
+public final class EditorRoster {
+
+    private EditorRoster() {}
+
+    /** Every group of every category, in the order the screen's tabs and type strips show them. */
+    public static List<EditorRosterPacket.Group> all() {
+        return all(null);
+    }
+
+    /**
+     * The roster, with each template's relay row attached where {@code overworld}'s world data
+     * records one — what lets the previewer page through the versions the relay kept of it. Null
+     * attaches none.
+     */
+    public static List<EditorRosterPacket.Group> all(net.minecraft.server.level.ServerLevel overworld) {
+        RELAY_ROWS.set(overworld == null ? null
+            : games.brennan.dungeontrain.world.DungeonTrainWorldData.get(overworld).builderRelayBuilds());
+        ROOM_DIMS.set(overworld == null ? null
+            : games.brennan.dungeontrain.world.DungeonTrainWorldData.get(overworld).dims());
+        try {
+            List<EditorRosterPacket.Group> out = new ArrayList<>();
+            addWhole(out);
+            addCarriages(out);
+            addParts(out);
+            addContents(out);
+            addTracks(out);
+            addPortals(out);
+            addChunkFrames(out);
+            return out;
+        } finally {
+            RELAY_ROWS.set(null);
+            ROOM_DIMS.set(null);
+        }
+    }
+
+    /**
+     * Every Stage with the blocks its linked carriage parts use, for the screen's Stages tab — the
+     * same per-stage index the world-space Stage Blocks panel shows, capped the same way. The index
+     * memoises per stage until a store write invalidates it, so this is a map walk in the steady
+     * state. Null {@code overworld} (no world to read part templates from) lists the stages with no
+     * blocks.
+     */
+    public static List<EditorRosterPacket.StageEntry> stages(net.minecraft.server.level.ServerLevel overworld) {
+        List<EditorRosterPacket.StageEntry> out = new ArrayList<>();
+        for (games.brennan.dungeontrain.template.Stage stage : StageStore.allStages()) {
+            EditorTypeMenusPacket.Variant row = EditorTypeMenus.stageRow(stage);
+            if (overworld == null) {
+                out.add(new EditorRosterPacket.StageEntry(row, List.of(), 0, List.of()));
+                continue;
+            }
+            StageBlockIndex.StageBlocks blocks = StageBlockIndex.blocksForStage(overworld, stage.id());
+            List<games.brennan.dungeontrain.net.StageBlocksSyncPacket.BlockCount> counts = new ArrayList<>();
+            int cap = games.brennan.dungeontrain.net.StageBlocksSyncPacket.BLOCKS_CAP;
+            for (StageBlockIndex.BlockUse use : blocks.aggregated()) {
+                if (counts.size() >= cap) break;
+                counts.add(new games.brennan.dungeontrain.net.StageBlocksSyncPacket.BlockCount(use.blockId(), use.count()));
+            }
+            List<String> parts = new ArrayList<>(blocks.parts().size());
+            for (StageBlockIndex.PartBlocks part : blocks.parts()) {
+                parts.add(part.part().kind().id() + ":" + part.part().name());
+            }
+            out.add(new EditorRosterPacket.StageEntry(row, counts, blocks.aggregated().size(), parts, paletteOf(stage.id())));
+        }
+        return out;
+    }
+
+    /**
+     * The stage's placeholder palette as the Stage Palette panel would list it: every placeholder's
+     * effective block, plus the families and their locks — what the screen's Palette pages show.
+     */
+    static EditorRosterPacket.Palette paletteOf(String stageId) {
+        games.brennan.dungeontrain.template.StagePalette pal =
+            games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.paletteFor(stageId);
+        List<games.brennan.dungeontrain.net.StagePaletteSyncPacket.Entry> entries = new ArrayList<>();
+        for (games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.Placeholder p
+                : games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.placeholders()) {
+            entries.add(new games.brennan.dungeontrain.net.StagePaletteSyncPacket.Entry(p.name(),
+                games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.effectiveTarget(p, pal),
+                pal.override(p.name()) != null));
+        }
+        return new EditorRosterPacket.Palette(entries, pal.wood(), pal.stone(), pal.woodLocked(), pal.stoneLocked());
+    }
+
+    /** The world's carriage footprint, which a portal room's box is measured against; null when unknown. */
+    private static final ThreadLocal<games.brennan.dungeontrain.train.CarriageDims> ROOM_DIMS =
+        new ThreadLocal<>();
+
+    /**
+     * A portal room's settings tag and box, or the entry unchanged for every other row — what lets
+     * the detail pane show the room's Walls / Copies / Sky / Fog rows and edit its size for a
+     * selection the author is not standing in. Read the same way {@code EditorPlotLabels} reads
+     * them for the plot panel, so the two surfaces cannot disagree about a room.
+     */
+    private static EditorRosterPacket.Entry withRoomData(String categoryId, EditorRosterPacket.Entry entry) {
+        if (!EditorCategory.PORTALS.id().equals(categoryId)) return entry;
+        games.brennan.dungeontrain.train.CarriageDims dims = ROOM_DIMS.get();
+        if (dims == null) return entry;
+        String name = entry.variant().modelName();
+        // Resolved rather than passed through raw, as the plot panel does, so the rows show the
+        // mode the room will actually behave as even when the tag on disk is absent or misspelt.
+        String mode = games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).toTag();
+        net.minecraft.core.Vec3i size = games.brennan.dungeontrain.portal.PortalRoomSizes.sizeOf(name, dims);
+        return entry.withRoom(mode, size.getX(), size.getZ(), size.getY());
+    }
+
+    /** A contents template's random-flip axes, or the entry unchanged for every other row. */
+    private static EditorRosterPacket.Entry withFlipData(String categoryId, EditorRosterPacket.Entry entry) {
+        if (!EditorCategory.CONTENTS.id().equals(categoryId)) return entry;
+        return entry.withFlipMask(games.brennan.dungeontrain.net.EditorStatusPacket.FLIP_KNOWN
+            | games.brennan.dungeontrain.net.EditorStatusPacket.flipMaskOf(
+                games.brennan.dungeontrain.train.CarriageContentsWeights.current().flipFor(entry.variant().modelId())));
+    }
+
+    /** The world's relay rows for the roster being built, on this thread; null when not attaching. */
+    private static final ThreadLocal<games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds> RELAY_ROWS =
+        new ThreadLocal<>();
+
+    /**
+     * The relay row a template lives in, or 0.
+     *
+     * <p>Keyed the way an upload keys it — relay kind, sub-kind, id — from what a roster row knows:
+     * a carriage or contents template is named by its model id, a part or track-side template by
+     * its name under its kind. A portal room has been filed under both its own kind and as a track
+     * kind over time, so both are asked.</p>
+     */
+    private static int relayIdFor(String categoryId, String groupModelId, EditorTypeMenusPacket.Variant v) {
+        games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds rows = RELAY_ROWS.get();
+        if (rows == null) return 0;
+        java.util.List<String> keys = new ArrayList<>(2);
+        String K = null;
+        if (EditorCategory.CARRIAGES.id().equals(categoryId) || PlotCategory.WHOLE.id().equals(categoryId)) {
+            // A whole room rides the relay under the carriage kind — see BuilderRelayInstall.
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE, "", v.modelId()));
+        } else if (PlotCategory.WHOLE_GROUP.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE_GROUP, "", v.modelId()));
+        } else if (PlotCategory.PARTS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PART, groupModelId, v.modelName()));
+        } else if (EditorCategory.CONTENTS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CONTENTS, "", v.modelId()));
+        } else if (EditorCategory.TRACKS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.TRACK, groupModelId, v.modelName()));
+        } else if (EditorCategory.PORTALS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PORTAL_ROOM, "", v.modelName()));
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.TRACK, TrackKind.PORTAL_ROOM.id(), v.modelName()));
+        }
+        for (String key : keys) {
+            games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.Entry row = rows.get(key);
+            if (row != null && row.relayId() > 0) return row.relayId();
+        }
+        return 0;
+    }
+
+    /** The Whole section first — rooms then groups — matching the category bar and the world rows. */
+    private static void addWhole(List<EditorRosterPacket.Group> out) {
+        List<games.brennan.dungeontrain.train.WholeCarriage> rooms = games.brennan.dungeontrain.train.WholeCarriageRegistry.all();
+        if (!rooms.isEmpty()) {
+            out.add(group(PlotCategory.WHOLE.id(), EditorWholeTypeMenus.ROOM_TYPE_NAME, "",
+                EditorWholeTypeMenus.roomRows(rooms), null));
+        }
+        List<games.brennan.dungeontrain.train.CarriageGroup> groups = games.brennan.dungeontrain.train.CarriageGroupRegistry.all();
+        if (!groups.isEmpty()) {
+            out.add(group(PlotCategory.WHOLE_GROUP.id(), EditorWholeTypeMenus.GROUP_TYPE_NAME, "",
+                EditorWholeTypeMenus.groupRows(groups), null));
+        }
+    }
+
+    private static void addCarriages(List<EditorRosterPacket.Group> out) {
+        List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
+        if (variants.isEmpty()) return;
+        out.add(group(EditorCategory.CARRIAGES.id(), "Carriages", "",
+            EditorTypeMenus.carriageRows(variants), null));
+    }
+
+    private static void addParts(List<EditorRosterPacket.Group> out) {
+        for (CarriagePartKind kind : CarriagePartKind.values()) {
+            List<String> names = CarriagePartRegistry.registeredNames(kind);
+            if (names.isEmpty()) continue;
+            out.add(group(PlotCategory.PARTS.id(), partTypeName(kind), kind.id(),
+                EditorTypeMenus.partRows(kind, names), null));
+        }
+    }
+
+    private static void addContents(List<EditorRosterPacket.Group> out) {
+        List<CarriageContents> topLevel = EditorTypeMenus.topLevelContents();
+        if (topLevel.isEmpty()) return;
+        out.add(group(EditorCategory.CONTENTS.id(), "Contents", "",
+            EditorTypeMenus.contentsRows(topLevel), EditorRoster::contentsSelfWeight));
+    }
+
+    private static void addTracks(List<EditorRosterPacket.Group> out) {
+        for (Map.Entry<TrackKind, String> kind : EditorTypeMenus.trackKindsInOrder()) {
+            List<String> names = TrackVariantGroupStore.topLevelNames(kind.getKey());
+            if (names.isEmpty()) continue;
+            out.add(group(EditorCategory.TRACKS.id(), kind.getValue(), kind.getKey().id(),
+                EditorTypeMenus.trackKindRows(kind.getKey(), names, EditorCategory.TRACKS),
+                v -> trackSelfWeight(kind.getKey(), v)));
+        }
+    }
+
+    private static void addPortals(List<EditorRosterPacket.Group> out) {
+        List<String> names = TrackVariantGroupStore.topLevelNames(TrackKind.PORTAL_ROOM);
+        if (names.isEmpty()) return;
+        out.add(group(EditorCategory.PORTALS.id(), "Dimensional Carriage", TrackKind.PORTAL_ROOM.id(),
+            EditorTypeMenus.trackKindRows(TrackKind.PORTAL_ROOM, names, EditorCategory.PORTALS),
+            v -> trackSelfWeight(TrackKind.PORTAL_ROOM, v)));
+    }
+
+    /** The chunk frames, one group, browsed under Dimensions beside the rooms they dress. */
+    private static void addChunkFrames(List<EditorRosterPacket.Group> out) {
+        List<String> names = games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names();
+        if (names.isEmpty()) return;
+        out.add(group(PlotCategory.CHUNK_FRAMES.id(), EditorTypeMenus.FRAMES_TYPE_NAME, ChunkFrameEditor.MODEL_ID,
+            EditorTypeMenus.chunkFrameRows(names), null));
+    }
+
+    private static EditorRosterPacket.Group group(
+        String categoryId, String typeName, String modelId,
+        List<EditorTypeMenusPacket.Variant> rows, SelfWeight selfWeight
+    ) {
+        List<EditorRosterPacket.Entry> entries = new ArrayList<>(rows.size());
+        for (EditorTypeMenusPacket.Variant v : rows) {
+            int self = selfWeight == null ? EditorPlotLabelsPacket.NO_WEIGHT : selfWeight.of(v);
+            entries.add(withFlipData(categoryId, withRoomData(categoryId,
+                new EditorRosterPacket.Entry(v, self, relayIdFor(categoryId, modelId, v)))));
+        }
+        return new EditorRosterPacket.Group(categoryId, typeName, modelId, entries);
+    }
+
+
+    /** How a group parent's own template is weighted against its members — see the sidecars. */
+    @FunctionalInterface
+    private interface SelfWeight {
+        int of(EditorTypeMenusPacket.Variant parent);
+    }
+
+    /** The parent's editable self weight, or NO_WEIGHT when it has no members to compete with. */
+    static int contentsSelfWeight(EditorTypeMenusPacket.Variant parent) {
+        Optional<CarriageContentsGroup> group = CarriageContentsGroupStore.get(parent.modelId());
+        if (group.isEmpty() || group.get().isEmpty()) return EditorPlotLabelsPacket.NO_WEIGHT;
+        return group.get().selfWeight();
+    }
+
+    static int trackSelfWeight(TrackKind kind, EditorTypeMenusPacket.Variant parent) {
+        Optional<TrackVariantGroup> group = TrackVariantGroupStore.get(kind, parent.modelName());
+        if (group.isEmpty() || group.get().isEmpty()) return EditorPlotLabelsPacket.NO_WEIGHT;
+        return group.get().selfWeight();
+    }
+
+    /** The type-strip label for a part kind, matching the world-space strip. */
+    static String partTypeName(CarriagePartKind kind) {
+        return switch (kind) {
+            case FLOOR -> "Floor";
+            case WALLS -> "Walls";
+            case ROOF -> "Roof";
+            case DOORS -> "Doors";
+        };
+    }
+}

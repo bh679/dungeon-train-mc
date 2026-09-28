@@ -8,17 +8,25 @@ which references mods by ``projectID`` + ``fileID`` — Modrinth references each
 at build time from the *pinned Modrinth version id* of each mod (``modpack.config.json``),
 exactly mirroring the builds the CurseForge pack ships.
 
-Dungeon Train jarJars DiscordPresence + TradeEverything + EdibleBackpacks + joml-primitives
-*inside* its own jar; the sibling
-mods AIN/AIS/PlayerMob/EnderChestPersistence are un-bundled required downloads (so their own
-project pages get credited), so the pack lists:
+Dungeon Train jarJars DiscordPresence + EdibleBackpacks + DungeonBackup + SableFenceTrapdoorFix +
+joml-primitives *inside* its own jar; the sibling mods AIN/AIS/PlayerMob/EnderChestPersistence/
+TradeEverything/KeepTrim are un-bundled required downloads (so their own project pages get
+credited), so the pack lists:
 
   * Dungeon Train — Modrinth version id passed in per release (``--dt-version``); the freshly
     uploaded Modrinth version, surfaced by mc-publish (``modrinth-version``) in ``release.yml``.
   * Sable — an un-bundled runtime dep, *pinned* in ``modpack.config.json`` to the exact
     version DT is built against. Sable is on Modrinth so it is referenced by URL (no bundling,
     so its PolyForm-Shield no-redistribution clause is not engaged).
-  * Each ``optional_mods`` entry — pinned by ``modrinth_version``.
+  * Each ``optional_mods`` entry — pinned by ``modrinth_version``, OR, for a sibling whose
+    Modrinth listing is still in review, by ``modrinth_pending_url``: a direct download URL on
+    one of the hosts Modrinth's pack format allows (``PENDING_URL_HOSTS``), hashed at build time.
+    Keep Trim shipped this way first (CurseForge approved, Modrinth pending). Swap the URL for a
+    ``modrinth_version`` the moment the listing goes public — the URL is a stopgap, not a home.
+  * NOT the ``curseforge_only`` entries (Dungeon Backup, Sable Fence & Trapdoor Fix): those are
+    jarJar'd inside the DT jar for Modrinth players and only exist as separate Includes in the
+    CurseForge pack, where the CF app installs them from their own pages. ``modrinth_entries``
+    filters them out; they need no Modrinth keys at all.
 
 The Minecraft + NeoForge versions are read from ``gradle.properties`` so they never drift from
 the shipped jar. The only side effect is the rendered index, written to stdout (or ``--output``).
@@ -36,6 +44,7 @@ Usage:
       --output modrinth.index.json
 """
 import argparse
+import hashlib
 import json
 import sys
 import time
@@ -49,6 +58,14 @@ DEFAULT_CONFIG = REPO_ROOT / "modpack" / "modpack.config.json"
 DEFAULT_GRADLE_PROPERTIES = REPO_ROOT / "gradle.properties"
 
 MODRINTH_API = "https://api.modrinth.com/v2"
+# Hosts Modrinth accepts in a pack index's ``downloads`` array. Anything else is rejected at
+# upload, so a pending URL is validated against this list before we ever get that far.
+PENDING_URL_HOSTS = (
+    "https://cdn.modrinth.com/",
+    "https://github.com/",
+    "https://raw.githubusercontent.com/",
+    "https://gitlab.com/",
+)
 # Modrinth asks for a descriptive User-Agent (project/version + contact).
 USER_AGENT = "bh679/dungeon-train-mc modpack builder (brennan@brennanhatton.com)"
 
@@ -82,11 +99,35 @@ def load_config(path: Path) -> dict:
             f"{path} sable block is missing Modrinth keys: {', '.join(sable_missing)}"
         )
     for i, opt in enumerate(config.get("optional_mods", [])):
-        opt_missing = [k for k in ("modrinth_project", "modrinth_version") if k not in opt]
-        if opt_missing:
+        if "curseforge_only" in opt and not isinstance(opt["curseforge_only"], bool):
+            raise ValueError(
+                f"{path} optional_mods[{i}] 'curseforge_only' must be a boolean, got "
+                f"{opt['curseforge_only']!r}"
+            )
+        if opt.get("curseforge_only"):
+            for key in ("modrinth_version", "modrinth_pending_url"):
+                if key in opt:
+                    raise ValueError(
+                        f"{path} optional_mods[{i}] ({opt.get('name', '?')}) is curseforge_only "
+                        f"(embedded in the DT jar for Modrinth) but carries {key} — drop one or "
+                        f"the other, the pack cannot both embed and list it"
+                    )
+            continue
+        if "modrinth_project" not in opt:
             raise ValueError(
                 f"{path} optional_mods[{i}] ({opt.get('name', '?')}) is missing Modrinth keys: "
-                f"{', '.join(opt_missing)}"
+                f"modrinth_project"
+            )
+        if "modrinth_version" not in opt and "modrinth_pending_url" not in opt:
+            raise ValueError(
+                f"{path} optional_mods[{i}] ({opt.get('name', '?')}) is missing Modrinth keys: "
+                f"modrinth_version (or modrinth_pending_url while its listing is in review)"
+            )
+        pending = opt.get("modrinth_pending_url")
+        if pending is not None and not pending.startswith(PENDING_URL_HOSTS):
+            raise ValueError(
+                f"{path} optional_mods[{i}] ({opt.get('name', '?')}) modrinth_pending_url must be on "
+                f"one of {', '.join(PENDING_URL_HOSTS)}: {pending}"
             )
         if "required" in opt and not isinstance(opt["required"], bool):
             raise ValueError(
@@ -166,7 +207,74 @@ def resolve_version(version_id: str, *, fetch=_http_get_json) -> dict:
     }
 
 
-def resolve_files(config: dict, dt_version_id: str, *, fetch=_http_get_json) -> list[dict]:
+def modrinth_entries(config: dict) -> list[dict]:
+    """The ``optional_mods`` entries the Modrinth pack lists — everything not ``curseforge_only``.
+
+    A ``curseforge_only`` entry is a mod jarJar'd inside the DT jar (so Modrinth players already
+    have it) that the CurseForge pack additionally ships as its own Include for the CF app's
+    dependency install + download credit. Listing it here too would put the same mod id in the
+    pack twice (nested + top-level); NeoForge would drop the nested copy, but there is nothing to
+    gain and a Modrinth listing may not even exist.
+    """
+    return [o for o in config.get("optional_mods", []) if not o.get("curseforge_only")]
+
+
+def curseforge_only_entries(config: dict) -> list[dict]:
+    """The ``optional_mods`` entries excluded from the Modrinth pack (see ``modrinth_entries``)."""
+    return [o for o in config.get("optional_mods", []) if o.get("curseforge_only")]
+
+
+def pending_entries(config: dict) -> list[dict]:
+    """The ``optional_mods`` entries riding on ``modrinth_pending_url`` instead of a version pin."""
+    return [o for o in modrinth_entries(config) if "modrinth_pending_url" in o]
+
+
+def _http_get_bytes(url: str, *, retries: int = 3, backoff: float = 2.0) -> bytes:
+    """GET ``url`` raw (follows redirects — GitHub release assets 302 to a CDN)."""
+    last_err: Exception | None = None
+    for attempt in range(1, retries + 1):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                return resp.read()
+        except (urllib.error.URLError, TimeoutError) as err:
+            last_err = err
+            if isinstance(err, urllib.error.HTTPError) and err.code == 404:
+                break
+            if attempt < retries:
+                time.sleep(backoff * attempt)
+    raise RuntimeError(f"failed to GET {url}: {last_err}")
+
+
+def resolve_pending_url(url: str, *, fetch_bytes=_http_get_bytes) -> dict:
+    """Resolve a ``modrinth_pending_url`` to the same descriptor ``resolve_version`` returns.
+
+    Downloads the asset and hashes it here, since there is no Modrinth version to read hashes
+    from. Filename is the URL's last path segment. Sides default to both-required: the only
+    users of this path are DT's own sibling mods, which are all both-sided.
+    """
+    if not url.startswith(PENDING_URL_HOSTS):
+        raise ValueError(f"pending URL host not allowed by Modrinth: {url}")
+    filename = url.rstrip("/").rsplit("/", 1)[-1]
+    if not filename.endswith(".jar"):
+        raise ValueError(f"pending URL does not name a .jar: {url}")
+    data = fetch_bytes(url)
+    if not data:
+        raise ValueError(f"pending URL returned an empty body: {url}")
+    return {
+        "filename": filename,
+        "url": url,
+        "sha1": hashlib.sha1(data).hexdigest(),
+        "sha512": hashlib.sha512(data).hexdigest(),
+        "size": len(data),
+        "client_side": "required",
+        "server_side": "required",
+    }
+
+
+def resolve_files(
+    config: dict, dt_version_id: str, *, fetch=_http_get_json, fetch_bytes=_http_get_bytes
+) -> list[dict]:
     """Resolve every pinned mod (DT + Sable + optional_mods) to a descriptor for ``build_index``.
 
     Each descriptor: ``{name, required, filename, url, sha1, sha512, size, client_side,
@@ -176,17 +284,21 @@ def resolve_files(config: dict, dt_version_id: str, *, fetch=_http_get_json) -> 
         {"name": config.get("name", "Dungeon Train"), "version": dt_version_id, "required": True},
         {"name": "Sable", "version": config["sable"]["modrinth_version"], "required": True},
     ]
-    for opt in config.get("optional_mods", []):
+    for opt in modrinth_entries(config):
         pins.append(
             {
                 "name": opt.get("name", "?"),
-                "version": opt["modrinth_version"],
+                "version": opt.get("modrinth_version"),
+                "pending_url": opt.get("modrinth_pending_url"),
                 "required": bool(opt.get("required", False)),
             }
         )
     resolved: list[dict] = []
     for pin in pins:
-        meta = resolve_version(pin["version"], fetch=fetch)
+        if pin.get("version"):
+            meta = resolve_version(pin["version"], fetch=fetch)
+        else:
+            meta = resolve_pending_url(pin["pending_url"], fetch_bytes=fetch_bytes)
         resolved.append({"name": pin["name"], "required": pin["required"], **meta})
     return resolved
 
@@ -273,8 +385,22 @@ def main(argv: list[str] | None = None) -> int:
     config = load_config(args.config)
 
     if args.check_config:
-        n = len(config.get("optional_mods", []))
-        print(f"OK: sable + all {n} optional_mods carry modrinth_project + modrinth_version.")
+        n = len(modrinth_entries(config))
+        pending = pending_entries(config)
+        cf_only = curseforge_only_entries(config)
+        print(f"OK: sable + all {n} Modrinth-listed optional_mods carry modrinth_project + a version pin.")
+        if cf_only:
+            names = ", ".join(o.get("name", "?") for o in cf_only)
+            print(
+                f"INFO: {len(cf_only)} optional_mods are curseforge_only (embedded in the DT jar for "
+                f"Modrinth, separate Includes on CurseForge): {names}."
+            )
+        if pending:
+            names = ", ".join(o.get("name", "?") for o in pending)
+            print(
+                f"WARNING: {len(pending)} optional_mods use modrinth_pending_url (Modrinth listing "
+                f"not yet public): {names}. Swap for modrinth_version once approved."
+            )
         return 0
 
     if not args.dt_version or not args.version:

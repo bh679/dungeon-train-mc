@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.IntArrayTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -83,11 +84,187 @@ final class CarriageSnapshotTemplateTest {
         assertEquals(0, out.getList("blocks", Tag.TAG_COMPOUND).size());
         assertEquals(0, out.getList("palette", Tag.TAG_COMPOUND).size());
         assertTrue(out.contains("entities", Tag.TAG_LIST), "shaped like a tag vanilla saves");
-        assertFalse(out.getList("entities", Tag.TAG_COMPOUND).size() > 0,
-                "entities are dropped: no local template has ever carried one");
+        assertEquals(0, out.getList("entities", Tag.TAG_COMPOUND).size(),
+                "a blob with no ents list still produces the empty list vanilla writes");
+    }
+
+    @Test
+    @DisplayName("a blob's decor becomes the template's, positioned in the build's own frame")
+    void entitiesComeAcross() {
+        CompoundTag snapshot = snapshot(4, 4, 4, cell(0, 0, 0, "minecraft:stone", null));
+        snapshot.put("ents", ents(ent("minecraft:item_frame", 1.5, 2.25, 3.5)));
+
+        ListTag entities = CarriageSnapshotTemplate.toTemplateTag(snapshot)
+                .getList("entities", Tag.TAG_COMPOUND);
+
+        assertEquals(1, entities.size());
+        CompoundTag entity = entities.getCompound(0);
+        assertEquals("minecraft:item_frame", entity.getCompound("nbt").getString("id"));
+        ListTag pos = entity.getList("pos", Tag.TAG_DOUBLE);
+        assertEquals(1.5, pos.getDouble(0));
+        assertEquals(2.25, pos.getDouble(1));
+        assertEquals(3.5, pos.getDouble(2));
+        // Floored, not rounded: blockPos is the block the entity stands IN.
+        assertEquals(List3.of(1, 2, 3), List3.of(entity.getList("blockPos", Tag.TAG_INT)));
+    }
+
+    @Test
+    @DisplayName("an entity with no type is skipped rather than written as one nothing can spawn")
+    void skipsUntypedEntities() {
+        CompoundTag snapshot = snapshot(4, 4, 4);
+        CompoundTag typeless = ent("minecraft:item_frame", 1.0, 1.0, 1.0);
+        typeless.getCompound("n").remove("id");
+        snapshot.put("ents", ents(typeless, ent("minecraft:painting", 2.0, 2.0, 2.0)));
+
+        ListTag entities = CarriageSnapshotTemplate.toTemplateTag(snapshot)
+                .getList("entities", Tag.TAG_COMPOUND);
+
+        assertEquals(1, entities.size(), "the good one still comes across");
+        assertEquals("minecraft:painting", entities.getCompound(0).getCompound("nbt").getString("id"));
+    }
+
+    @Test
+    @DisplayName("a downloaded build holds what a local save holds — the mobs, not the litter")
+    void carriesWhatALocalSaveWouldKeep() {
+        // The same rule TemplateDecor.keepOnlyDecor applies as a template is written. A mob the
+        // author placed is part of the build, and so is the minecart they parked; an item dropped
+        // in the plot is not, nor is a boat (refused at the editor), and a downloaded template that
+        // kept either would hold something the author's own file never did.
+        CompoundTag snapshot = snapshot(4, 4, 4);
+        snapshot.put("ents", ents(
+                ent("minecraft:parrot", 1.0, 1.0, 1.0),
+                ent("minecraft:minecart", 2.0, 1.0, 2.0),
+                ent("minecraft:item", 2.5, 1.0, 2.5),
+                ent("minecraft:boat", 2.5, 1.0, 1.5),
+                ent("minecraft:glow_item_frame", 3.0, 1.0, 3.0)));
+
+        ListTag entities = CarriageSnapshotTemplate.toTemplateTag(snapshot)
+                .getList("entities", Tag.TAG_COMPOUND);
+
+        assertEquals(3, entities.size(), "the parrot, the minecart and the frame; not the item or the boat");
+        assertEquals("minecraft:parrot", entities.getCompound(0).getCompound("nbt").getString("id"));
+        assertEquals("minecraft:minecart", entities.getCompound(1).getCompound("nbt").getString("id"));
+        assertEquals("minecraft:glow_item_frame",
+                entities.getCompound(2).getCompound("nbt").getString("id"));
+    }
+
+    // ---- the way back up: template NBT into a snapshot ----
+
+    @Test
+    @DisplayName("a template round-trips through a snapshot unchanged")
+    void roundTripsBackToASnapshot() {
+        CompoundTag chest = new CompoundTag();
+        chest.putString("id", "minecraft:chest");
+        chest.putString("LootTable", "dungeontrain:carriage");
+        CompoundTag original = snapshot(3, 2, 1,
+                cell(0, 0, 0, "minecraft:stone", null),
+                cell(1, 0, 0, "minecraft:stone", null),
+                cell(2, 1, 0, "minecraft:chest", chest));
+
+        CompoundTag back = CarriageSnapshotTemplate.fromTemplateTag(
+                CarriageSnapshotTemplate.toTemplateTag(original));
+
+        // The whole point: a build that went down and came back up is the same build. Compared as one
+        // value, so a lost cell, a swapped position or a dropped block entity all fail here.
+        assertEquals(original, back);
+    }
+
+    @Test
+    @DisplayName("the reshaping produces the same tag a capture would have")
+    void matchesACapture() {
+        CompoundTag out = CarriageSnapshotTemplate.fromTemplateTag(
+                CarriageSnapshotTemplate.toTemplateTag(snapshot(2, 3, 4,
+                        cell(1, 1, 1, "minecraft:stone", null))));
+
+        assertEquals(CarriageBlockSnapshot.FORMAT_VERSION, out.getInt("v"));
+        assertEquals(List3.of(2, 3, 4), List3.of(out.getInt("l"), out.getInt("h"), out.getInt("w")));
+        assertFalse(out.contains("ents"),
+                "captureLevel writes no ents key, and a re-upload must be indistinguishable from it");
+    }
+
+    @Test
+    @DisplayName("a block entry outside the volume or off the palette is skipped, never fatal")
+    void skipsBadBlockEntries() {
+        CompoundTag template = CarriageSnapshotTemplate.toTemplateTag(
+                snapshot(2, 2, 2, cell(0, 0, 0, "minecraft:stone", null)));
+        ListTag blocks = template.getList("blocks", Tag.TAG_COMPOUND);
+        blocks.add(blockEntry(9, 0, 0, 0));   // outside the declared volume
+        blocks.add(blockEntry(1, 1, 1, 7));   // palette index that isn't there
+
+        CompoundTag out = CarriageSnapshotTemplate.fromTemplateTag(template);
+
+        assertEquals(1, out.getList("cells", Tag.TAG_COMPOUND).size(),
+                "one bad entry costs one block, never the whole build");
+    }
+
+    @Test
+    @DisplayName("a template with no readable size yields an empty snapshot rather than throwing")
+    void toleratesAMissingSize() {
+        CompoundTag out = CarriageSnapshotTemplate.fromTemplateTag(new CompoundTag());
+
+        assertEquals(0, out.getInt("l"));
+        assertEquals(0, out.getList("cells", Tag.TAG_COMPOUND).size());
+    }
+
+    @Test
+    @DisplayName("a variant template's first palette is read rather than refused")
+    void readsTheFirstOfSeveralPalettes() {
+        CompoundTag template = CarriageSnapshotTemplate.toTemplateTag(
+                snapshot(1, 1, 1, cell(0, 0, 0, "minecraft:stone", null)));
+        ListTag palettes = new ListTag();
+        palettes.add(template.getList("palette", Tag.TAG_COMPOUND));
+        template.remove("palette");
+        template.put("palettes", palettes);
+
+        CompoundTag out = CarriageSnapshotTemplate.fromTemplateTag(template);
+
+        assertEquals(1, out.getList("cells", Tag.TAG_COMPOUND).size());
+        assertEquals("minecraft:stone",
+                out.getList("cells", Tag.TAG_COMPOUND).getCompound(0).getCompound("s").getString("Name"));
     }
 
     // ---- helpers ----
+
+    /** Which of the ids used above are living, for {@link #ent}'s Health tag. */
+    private static final java.util.Set<String> LIVING =
+            java.util.Set.of("minecraft:parrot", "minecraft:armor_stand");
+
+    private static ListTag ents(CompoundTag... entries) {
+        ListTag list = new ListTag();
+        for (CompoundTag entry : entries) list.add(entry);
+        return list;
+    }
+
+    /**
+     * The shape {@code CarriageEntitySnapshot.encodeEntity} produces, trimmed to what matters here.
+     * Living types carry the {@code Health} value a real save writes, which is what
+     * {@code TemplateDecor.carries} reads to tell a mob from a minecart.
+     */
+    private static CompoundTag ent(String id, double x, double y, double z) {
+        CompoundTag nbt = new CompoundTag();
+        nbt.putString("id", id);
+        if (LIVING.contains(id)) nbt.putFloat("Health", 20.0f);
+        CompoundTag entry = new CompoundTag();
+        entry.putString("id", id);
+        ListTag pos = new ListTag();
+        pos.add(DoubleTag.valueOf(x));
+        pos.add(DoubleTag.valueOf(y));
+        pos.add(DoubleTag.valueOf(z));
+        entry.put("p", pos);
+        entry.put("n", nbt);
+        return entry;
+    }
+
+    private static CompoundTag blockEntry(int x, int y, int z, int stateIndex) {
+        ListTag pos = new ListTag();
+        pos.add(net.minecraft.nbt.IntTag.valueOf(x));
+        pos.add(net.minecraft.nbt.IntTag.valueOf(y));
+        pos.add(net.minecraft.nbt.IntTag.valueOf(z));
+        CompoundTag entry = new CompoundTag();
+        entry.put("pos", pos);
+        entry.putInt("state", stateIndex);
+        return entry;
+    }
 
     private static CompoundTag snapshot(int l, int h, int w, CompoundTag... cells) {
         ListTag list = new ListTag();

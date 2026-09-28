@@ -11,6 +11,8 @@ import games.brennan.dungeontrain.train.WholeCarriage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -276,5 +278,30 @@ final class BuilderNewOptionsTest {
         // Tolerant of case and stray whitespace, the way BuilderMode.fromId is.
         assertEquals(BuilderNewOptions.SubType.CARRIAGE_ROOM,
                 BuilderNewOptions.SubType.fromId(" Carriage_Room ").orElse(null));
+    }
+
+    @Test
+    @DisplayName("a copy is offered the first free number, not always _2")
+    void firstFreeNameSkipsWhatIsTaken() {
+        assertEquals("testtt_2", BuilderNewOptions.firstFreeName("testtt", Set.of()),
+                "with nothing in the way the second copy is _2");
+        assertEquals("testtt_3", BuilderNewOptions.firstFreeName("testtt", Set.of("testtt", "testtt_2")),
+                "offering a name the last load already took wastes the press it takes to find out");
+        assertEquals("testtt_5",
+                BuilderNewOptions.firstFreeName("testtt", Set.of("testtt_2", "testtt_3", "testtt_4")),
+                "the run of taken numbers is walked, not just the first one");
+        assertEquals("testtt_2", BuilderNewOptions.firstFreeName("testtt", Set.of("other_2")),
+                "another build's numbering says nothing about this one");
+    }
+
+    @Test
+    @DisplayName("every name it suggests is one that could be saved")
+    void firstFreeNameStaysValid() {
+        assertTrue(BuilderNewOptions.isValidName(BuilderNewOptions.firstFreeName("testtt", Set.of())));
+        assertTrue(BuilderNewOptions.isValidName(
+                BuilderNewOptions.firstFreeName("testtt", Set.of("testtt_2", "testtt_3"))));
+        // Nothing to build a name out of — the caller has no build name, so there is no suggestion.
+        assertEquals("", BuilderNewOptions.firstFreeName("", Set.of()));
+        assertEquals("", BuilderNewOptions.firstFreeName(null, Set.of()));
     }
 }

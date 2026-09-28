@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.editor.relay;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderSave;
+import games.brennan.dungeontrain.editor.EditorShipped;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayUpload;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -35,22 +38,41 @@ public final class EditorRelaySave {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /**
+     * Set while a save runs whose result must not be uploaded — the flush inside Save-as, which
+     * writes the player's edits onto the shipped template only long enough to copy them to the new
+     * name before the shipped one is put back. A thread-local rather than a parameter because the
+     * upload is reached from inside every editor's own save, several layers below the caller.
+     */
+    private static final ThreadLocal<Boolean> SUPPRESSED = ThreadLocal.withInitial(() -> false);
+
     private EditorRelaySave() {}
+
+    /** Run {@code save} with the relay upload switched off — see {@link #SUPPRESSED}. */
+    public static <T> T withoutUpload(java.util.concurrent.Callable<T> save) throws Exception {
+        boolean previous = SUPPRESSED.get();
+        SUPPRESSED.set(true);
+        try {
+            return save.call();
+        } finally {
+            SUPPRESSED.set(previous);
+        }
+    }
 
     /**
      * Upload what an editor save just wrote.
      *
      * <p>Only templates the player authored. The Train Editor is the tool Dungeon Train's own
      * content is made in, so without this gate a single {@code /dt save all} in a dev world would
-     * push the shipped carriages into somebody's personal profile under their name. {@code
-     * isBuiltin()} is already the line between "ships with the mod" and "yours" — a
-     * {@code CarriageVariant.Custom}, or a track-side variant with a name other than {@code
-     * default} — so the rule is that existing predicate rather than a second idea of what a new
-     * template is.</p>
+     * push the shipped carriages into somebody's personal profile under their name. The line
+     * between "ships with the mod" and "yours" is {@link EditorShipped#isShipped} — the jar, per
+     * kind — because {@code isBuiltin()} alone called most shipped templates the player's.</p>
      *
-     * <p>Everything here is best-effort and silent on the way out: a save that cannot be located in
-     * a plot, or a player with no server, simply does not upload. The local write already
-     * succeeded.</p>
+     * <p>Everything here is best-effort: a save that cannot be located in a plot, or a player with
+     * no server, simply does not upload, and the local write already succeeded either way. Silent,
+     * with one exception — a template refused for having a built-in name says so. That case is the
+     * author editing something and expecting to find it in My Builds, and the quiet version of it
+     * is indistinguishable from the relay having lost their work.</p>
      */
     public static void afterSave(ServerPlayer player, Template model) {
         // Nothing here may fail the save. This runs inside each editor's save(), after the template
@@ -65,10 +87,23 @@ public final class EditorRelaySave {
     }
 
     private static void upload(ServerPlayer player, Template model) {
-        if (player == null || model == null || model.isBuiltin()) {
+        if (player == null || model == null || SUPPRESSED.get()) {
             return;
         }
         if (!BuilderRelayUpload.canUpload(player)) {
+            // Profiles off, or no network consent. A deliberate configuration rather than a surprise,
+            // so this one stays silent.
+            return;
+        }
+        if (EditorShipped.isShipped(model)) {
+            // Said out loud, unlike the other early returns. A shipped NAME is the whole test — a
+            // dimensional carriage called 'default' is one, and so is 'black' — so an author who
+            // poses a camel in the default room, saves, and then loads that room back from the relay
+            // gets the copy from before the camel and no hint as to why. Silence there reads exactly
+            // like data loss. The jar decides, not isBuiltin() alone: see EditorShipped.
+            player.sendSystemMessage(Component.translatable(
+                    "gui.dungeontrain.builder.profile.builtin_not_uploaded", model.displayName())
+                .withStyle(ChatFormatting.YELLOW));
             return;
         }
         MinecraftServer server = player.getServer();

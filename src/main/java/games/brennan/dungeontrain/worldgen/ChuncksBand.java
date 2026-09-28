@@ -67,6 +67,18 @@ public final class ChuncksBand {
     }
 
     /**
+     * True if the column at {@code worldX} lies in the chuncks band OR anywhere in the plain-overworld
+     * run-up to it (the upside-down exit gap, the chuncks lead gap, the entry fade) — see
+     * {@link WorldGenCycle#isInChuncksApproachOrBand}. The advancement gate for
+     * {@code reached_overworld_again} uses this so "Re-Over-World" is held back until the overworld that
+     * follows the band. False when the band is disabled or the world has no train.
+     */
+    public static boolean isInApproachOrBand(ServerLevel overworld, int worldX) {
+        if (startX(overworld) == OFF) return false;
+        return WorldGenCycle.fromConfig().isInChuncksApproachOrBand(worldX);
+    }
+
+    /**
      * Classify the chunk at {@code (chunkX, chunkZ)}. Uses the position-driven keep-density
      * ({@link WorldGenCycle#chuncksKeepDensityAt}) so the entry fade zone naturally produces sparse void
      * that thickens toward the core. A density {@code ≥ 1.0} — outside the band + fade, or when the band
@@ -79,14 +91,21 @@ public final class ChuncksBand {
      * in-band chunks reach the per-world seed lookup, and those are memoised (see {@link #cachedKind}).</p>
      */
     public static Kind kindOf(ServerLevel overworld, int chunkX, int chunkZ) {
-        if (!DungeonTrainCommonConfig.isChuncksEnabled()) return Kind.FULL;
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        // Mix zone: as sparse as the chuncks core — its void chunks are chuncks void; a kept chunk is the
+        // band it picked (MixBand), which chuncks leaves alone.
+        if (cycle.mixPicksAt(chunkX << 4)) return MixBand.isVoidAt(overworld, chunkX, chunkZ) ? Kind.VOID : Kind.FULL;
+        if (!DungeonTrainCommonConfig.isChuncksEnabled()) return Kind.FULL;
         if (cycle.chuncksLen() <= 0L) return Kind.FULL;
         double density = cycle.chuncksKeepDensityAt(chunkX << 4);
         if (density >= 1.0) return Kind.FULL;                        // outside the band + fade → normal terrain
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
         if (!data.startsWithTrain()) return Kind.FULL;               // no train → no bands
-        return cachedKind(data.getGenerationSeed(), chunkX, chunkZ, density, cycle.chuncksSliceRatio());
+        if ((cycle.isInChuncksStacksCrossfade(chunkX << 4) || cycle.isInStacksExitFade(chunkX << 4))
+                && StacksBand.kindOf(overworld, chunkX, chunkZ) != StacksBand.Kind.TERRAIN) {
+            return Kind.FULL;                                        // stacks crossfade / exit fade: stacks owns this chunk
+        }
+        return cachedKind(data.getGenerationSeed(), chunkX, chunkZ, density, cycle.chuncksSliceRatioAt(chunkX << 4));
     }
 
     /**

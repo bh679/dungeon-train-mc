@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -61,17 +62,25 @@ public final class EditorVariantMirror {
         // Mirror the source cell's lock-id too so the reflected cells join the
         // same lock group (a pasted lock-group cell stays grouped on both sides).
         int srcLockId = plot.lockIdAt(localEdited);
+        // And its two repeating-room settings, for the same reason: a reflected cell that repeated
+        // while its source varied would make the two halves of a mirrored room disagree copy by copy.
+        VariantCopyRoll srcRoll = plot.copyRollAt(localEdited);
+        VariantCopyScope srcScope = plot.copyScopeAt(localEdited);
+        VariantSpan srcSpan = plot.spanAt(localEdited);
         boolean changed = false;
         for (EditorMirror.Image img : EditorMirror.imagesOf(localEdited, f, mx, my, mz)) {
             BlockPos tgtWorld = origin.offset(img.local().getX(), img.local().getY(), img.local().getZ());
             if (updatedOrNull == null) {
                 plot.remove(img.local());
-                SilentBlockOps.clearBlockSilent(level, tgtWorld);
+                CarriageStampGuard.run(() -> SilentBlockOps.clearBlockSilent(level, tgtWorld));
             } else {
                 List<VariantState> reflected =
                     EditorMirror.reflectStates(updatedOrNull, img.flipX(), img.flipY(), img.flipZ());
                 plot.put(img.local(), reflected);
                 plot.setLockId(img.local(), srcLockId); // 0 clears — mirrors the source's lock state
+                plot.setCopyRoll(img.local(), srcRoll);
+                plot.setCopyScope(img.local(), srcScope);
+                plot.setSpan(img.local(), srcSpan);
                 stampMirrorBase(level, tgtWorld, reflected.get(0).state());
             }
             changed = true;
@@ -104,6 +113,9 @@ public final class EditorVariantMirror {
                     BlockPos masterLocal = new BlockPos(dx, dy, dz);
                     List<VariantState> masterPool = plot.statesAt(masterLocal);
                     int masterLockId = plot.lockIdAt(masterLocal);
+                    VariantCopyRoll masterRoll = plot.copyRollAt(masterLocal);
+                    VariantCopyScope masterScope = plot.copyScopeAt(masterLocal);
+                    VariantSpan masterSpan = plot.spanAt(masterLocal);
                     for (EditorMirror.Image img : EditorMirror.imagesOf(masterLocal, f, mx, my, mz)) {
                         if (masterPool == null || masterPool.isEmpty()) {
                             // No master pool — drop any stale far entry; the
@@ -114,6 +126,9 @@ public final class EditorVariantMirror {
                                 EditorMirror.reflectStates(masterPool, img.flipX(), img.flipY(), img.flipZ());
                             plot.put(img.local(), reflected);
                             plot.setLockId(img.local(), masterLockId); // join the master's lock group
+                            plot.setCopyRoll(img.local(), masterRoll);
+                            plot.setCopyScope(img.local(), masterScope);
+                            plot.setSpan(img.local(), masterSpan);
                             BlockPos tgtWorld = origin.offset(
                                 img.local().getX(), img.local().getY(), img.local().getZ());
                             stampMirrorBase(level, tgtWorld, reflected.get(0).state());
@@ -139,7 +154,9 @@ public final class EditorVariantMirror {
     private static void stampMirrorBase(ServerLevel level, BlockPos tgtWorld,
                                         net.minecraft.world.level.block.state.BlockState state) {
         if (VariantLiquids.isLiquid(state)) return;
-        SilentBlockOps.setBlockSilent(level, tgtWorld, state);
+        // This write cascades (plain setBlockSilent); the guard keeps an observer facing the
+        // reflected cell from pulsing on what is DT's own stamp (ObserverBlockStampMixin).
+        CarriageStampGuard.run(() -> SilentBlockOps.setBlockSilent(level, tgtWorld, state));
     }
 
     private static void trySave(BlockVariantPlot plot) {

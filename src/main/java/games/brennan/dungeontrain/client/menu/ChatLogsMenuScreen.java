@@ -23,7 +23,7 @@ import java.util.List;
  */
 public final class ChatLogsMenuScreen implements MenuScreen {
 
-    @Override public String title() { return "Chat Logs"; }
+    @Override public String title() { return MenuLang.t("chat_logs.title"); }
 
     @Override public List<CommandMenuEntry> entries() {
         boolean trainSpawn = DebugFlagsState.chatTrainSpawn();
@@ -32,26 +32,26 @@ public final class ChatLogsMenuScreen implements MenuScreen {
 
         return List.of(
             new CommandMenuEntry.Split(
-                new CommandMenuEntry.Stay("All On", "dungeontrain debug chatlogs all on"),
-                new CommandMenuEntry.Stay("All Off", "dungeontrain debug chatlogs all off"),
+                new CommandMenuEntry.Stay(MenuLang.t("common.all_on"), "dungeontrain debug chatlogs all on"),
+                new CommandMenuEntry.Stay(MenuLang.t("common.all_off"), "dungeontrain debug chatlogs all off"),
                 0.50
             ),
             new CommandMenuEntry.Toggle(
-                "Train Spawn", trainSpawn,
+                MenuLang.t("chat_logs.train_spawn"), trainSpawn,
                 "dungeontrain debug chatlogs train-spawn on",
                 "dungeontrain debug chatlogs train-spawn off"
             ),
             new CommandMenuEntry.Toggle(
-                "Stall", stall,
+                MenuLang.t("chat_logs.stall"), stall,
                 "dungeontrain debug chatlogs stall on",
                 "dungeontrain debug chatlogs stall off"
             ),
             new CommandMenuEntry.Toggle(
-                "Collision", collision,
+                MenuLang.t("wireframes.collision"), collision,
                 "dungeontrain debug chatlogs collision on",
                 "dungeontrain debug chatlogs collision off"
             ),
-            new CommandMenuEntry.Back("< Back")
+            new CommandMenuEntry.Back(MenuLang.t("common.back"))
         );
     }
 }

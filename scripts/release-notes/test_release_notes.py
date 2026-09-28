@@ -18,6 +18,9 @@ APPEND = os.path.join(HERE, "append-entry.py")
 RENDER = os.path.join(HERE, "render-unreleased.py")
 RENDER_LAST = os.path.join(HERE, "render-last-released.py")
 MARK = os.path.join(HERE, "mark-released.py")
+SET_TAGS = os.path.join(HERE, "set-tags.py")
+sys.path.insert(0, HERE)
+import changelog_io  # noqa: E402
 SCHEMA_FILE = os.path.join(
     REPO_ROOT, ".github/release-notes/schema/changelog.schema.json"
 )
@@ -79,6 +82,9 @@ def append(ws: str, entry_id: str, *args: str, **extra_env: str) -> subprocess.C
         "--title", f"Title {entry_id}",
         "--summary", f"Summary for {entry_id}.",
     ]
+    # A tag decision is mandatory; tests that don't make one get the explicit "none".
+    if "--tag" not in args and "--no-topical-tags" not in args:
+        base.append("--no-topical-tags")
     return run(APPEND, ws, *base, *args, **extra_env)
 
 
@@ -124,6 +130,7 @@ def test_append_records_all_fields() -> None:
         "--summary", "It fixes things.",
         "--highlight", "one",
         "--highlight", "two",
+        "--tag", "ui",
         "--pr", "360",
     )
     assert r.returncode == 0, r.stderr
@@ -163,6 +170,164 @@ def test_append_creates_file_when_missing() -> None:
     assert not os.path.exists(changelog_path(ws))
     assert append(ws, "first").returncode == 0
     assert len(read_changelog(ws)["entries"]) == 1
+
+
+def test_append_type_derived_tag_always_present() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = append(ws, "tagged-feat")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["tags"] == ["feature"]
+    # tags sits right after type, in the same slot make_entry uses.
+    keys = list(e.keys())
+    assert keys.index("tags") == keys.index("type") + 1
+
+
+def test_append_topical_tags_merged_and_ordered() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = run(
+        APPEND, ws, "--id", "tagged-fix", "--type", "fix",
+        "--title", "t", "--summary", "s",
+        "--tag", "editor", "--tag", "fix", "--tag", "ui", "--tag", "editor",
+    )
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["tags"] == ["fix", "editor", "ui"]
+
+
+def test_append_unknown_tag_rejected() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = append(ws, "bad-tag", "--tag", "nonsense")
+    assert r.returncode != 0
+    assert not os.path.exists(changelog_path(ws))
+
+
+def test_normalise_tags_chore_derives_internal() -> None:
+    assert changelog_io.normalise_tags("chore", []) == ["internal"]
+    assert changelog_io.normalise_tags("chore", ["ui"]) == ["ui", "internal"]
+    assert changelog_io.normalise_tags("ci", ["internal"]) == ["internal"]
+    assert changelog_io.normalise_tags("feat", ["internal"]) == ["feature", "internal"]
+    assert changelog_io.normalise_tags("perf", None) == ["performance"]
+    try:
+        changelog_io.normalise_tags("feat", ["feature", "bogus"])
+    except ValueError as e:
+        assert "bogus" in str(e)
+    else:
+        raise AssertionError("unknown tag accepted")
+
+
+# ---------------------------------------------------------------------------
+# tag decision is mandatory
+# ---------------------------------------------------------------------------
+
+def test_append_refuses_without_tag_decision() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = run(APPEND, ws, "--id", "undecided", "--type", "feat", "--title", "t", "--summary", "s")
+    assert r.returncode != 0
+    assert "no tag decision" in r.stderr, r.stderr
+    assert "multiplayer" in r.stderr, "error should print the tag guide"
+    assert not os.path.exists(changelog_path(ws))
+
+
+def test_append_no_topical_tags_is_explicit_opt_out() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = run(APPEND, ws, "--id", "perf-only", "--type", "perf", "--title", "t", "--summary", "s",
+            "--no-topical-tags")
+    assert r.returncode == 0, r.stderr
+    assert read_changelog(ws)["entries"][0]["tags"] == ["performance"]
+    r = run(APPEND, ws, "--id", "contradiction", "--type", "fix", "--title", "t", "--summary", "s",
+            "--no-topical-tags", "--tag", "ui")
+    assert r.returncode != 0
+    assert len(read_changelog(ws)["entries"]) == 1
+
+
+def test_append_tag_guide_prints_every_topical_tag() -> None:
+    ws = make_workspace()
+    r = run(APPEND, ws, "--tag-guide")
+    assert r.returncode == 0, r.stderr
+    for tag in changelog_io.VALID_TAGS:
+        assert tag in r.stdout, f"{tag} missing from guide"
+    # Every tag the agent can choose has a question; the three pure type-derived ones do not.
+    assert set(changelog_io.TAG_GUIDE) == set(changelog_io.VALID_TAGS) - {"feature", "content", "fix"}
+
+
+# ---------------------------------------------------------------------------
+# set-tags.py
+# ---------------------------------------------------------------------------
+
+def _tagged(entry_id: str, entry_type: str, tags: list[str], title: str = "T") -> dict:
+    return {
+        "id": entry_id, "version": "0.1.0", "type": entry_type, "tags": tags, "title": title,
+        "summary": "s", "highlights": [], "date": "2026-01-01",
+        "released": True, "released_in": "v0.1.0", "released_at": "2026-01-01T00:00:00Z",
+    }
+
+
+def _write_mapping(ws: str, mapping: dict) -> str:
+    path = os.path.join(ws, "mapping.json")
+    with open(path, "w") as f:
+        json.dump(mapping, f)
+    return path
+
+
+def test_set_tags_applies_mapping_and_rederives_type_tag() -> None:
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [
+        _tagged("a", "fix", ["fix", "ui", "train"]),
+        _tagged("b", "feat", ["feature", "editor"]),
+        _tagged("c", "chore", []),
+    ]})
+    r = run(SET_TAGS, ws, _write_mapping(ws, {"a": ["multiplayer"], "c": ["ui"]}), "--show-changes")
+    assert r.returncode == 0, r.stderr
+    by_id = {e["id"]: e for e in read_changelog(ws)["entries"]}
+    assert by_id["a"]["tags"] == ["fix", "multiplayer"], "topical tags replaced, type tag kept"
+    assert by_id["b"]["tags"] == ["feature", "editor"], "unmapped entry untouched"
+    assert by_id["c"]["tags"] == ["ui", "internal"]
+    assert "2 changed" in r.stdout, r.stdout
+    assert "- a: ['fix', 'ui', 'train'] -> ['fix', 'multiplayer']" in r.stdout, r.stdout
+
+
+def test_set_tags_rejects_unknown_id_or_tag_without_writing() -> None:
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [_tagged("a", "fix", ["fix"])]})
+    before = read_changelog(ws)
+    r = run(SET_TAGS, ws, _write_mapping(ws, {"a": ["ui"], "ghost": ["ui"]}))
+    assert r.returncode != 0 and "ghost" in r.stderr, r.stderr
+    r = run(SET_TAGS, ws, _write_mapping(ws, {"a": ["bogus"]}))
+    assert r.returncode != 0 and "bogus" in r.stderr, r.stderr
+    assert read_changelog(ws) == before
+
+
+def test_set_tags_dry_run_writes_nothing() -> None:
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [_tagged("a", "fix", ["fix"])]})
+    r = run(SET_TAGS, ws, _write_mapping(ws, {"a": ["ui"]}), "--dry-run")
+    assert r.returncode == 0, r.stderr
+    assert "1 changed" in r.stdout and "ui" in r.stdout, r.stdout
+    assert read_changelog(ws)["entries"][0]["tags"] == ["fix"]
+
+
+def test_render_leads_with_tag_counts() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    run(APPEND, ws, "--id", "one", "--type", "feat", "--title", "One", "--summary", "s",
+        "--tag", "editor")
+    run(APPEND, ws, "--id", "two", "--type", "fix", "--title", "Two", "--summary", "s",
+        "--tag", "editor", "--version", "0.292.0")
+    out = run(RENDER, ws).stdout
+    first = out.splitlines()[0]
+    assert first == "**Editor ×2 · New Feature ×1 · Bug Fix ×1**", first
+    assert out.index(first) < out.index("### 0.292.0")
+
+
+def test_render_tag_line_empty_when_untagged() -> None:
+    assert changelog_io.render_tag_line([{"tags": []}, {}]) == ""
+    assert changelog_io.tag_counts([{"tags": ["ui", "fix"]}, {"tags": ["ui"]}]) == [("ui", 2), ("fix", 1)]
 
 
 # ---------------------------------------------------------------------------
@@ -377,7 +542,7 @@ def test_produced_and_shipped_changelog_match_schema() -> None:
     run(
         APPEND, ws, "--id", "schema-feat", "--type", "feat",
         "--title", "Schema feat", "--summary", "Validates.",
-        "--highlight", "h1", "--pr", "42",
+        "--highlight", "h1", "--pr", "42", "--tag", "train",
     )
     run(MARK, ws, "--released-in", "v0.291.0")
     jsonschema.validate(read_changelog(ws), schema)
@@ -392,6 +557,18 @@ def main() -> int:
         test_append_duplicate_id_refused,
         test_append_bad_version_override_rejected,
         test_append_creates_file_when_missing,
+        test_append_type_derived_tag_always_present,
+        test_append_topical_tags_merged_and_ordered,
+        test_append_unknown_tag_rejected,
+        test_normalise_tags_chore_derives_internal,
+        test_append_refuses_without_tag_decision,
+        test_append_no_topical_tags_is_explicit_opt_out,
+        test_append_tag_guide_prints_every_topical_tag,
+        test_set_tags_applies_mapping_and_rederives_type_tag,
+        test_set_tags_rejects_unknown_id_or_tag_without_writing,
+        test_set_tags_dry_run_writes_nothing,
+        test_render_leads_with_tag_counts,
+        test_render_tag_line_empty_when_untagged,
         test_render_groups_by_version_newest_first,
         test_render_only_unreleased,
         test_render_empty_when_nothing_unreleased,

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.parts;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -26,6 +27,7 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -88,8 +90,10 @@ public final class PartPositionMenuRenderer {
     static final double MIN_LEVEL_CELL_WIDTH = 0.34;
     /** Width of the max-level gate cell (≤N / ≤∞) — all kinds. */
     static final double MAX_LEVEL_CELL_WIDTH = 0.34;
-    /** Width of the dimension (phase) gate cell — four toggle letters O N V E — all kinds. */
-    static final double PHASE_CELL_WIDTH = 0.56;
+    /** Width of one phase toggle letter within the dimension (phase) gate cell. */
+    static final double PHASE_LETTER_WIDTH = 0.14;
+    /** Width of the dimension (phase) gate cell — one toggle letter per {@link TrainPhase} (O N V E U C) — all kinds. */
+    static final double PHASE_CELL_WIDTH = PHASE_LETTER_WIDTH * TrainPhase.values().length;
     /** Width of the side-mode cell (walls/doors only) — fits "(1|2)" with padding. */
     static final double SIDE_MODE_CELL_WIDTH = 0.50;
     /** Width of the end-mode cell (doors only) — fits "end+mid" with padding. */
@@ -97,8 +101,9 @@ public final class PartPositionMenuRenderer {
     /** Text scale matches CommandMenuRenderer's. */
     static final double TEXT_SCALE = 0.012;
 
-    /** Phase letters, indexed by {@link games.brennan.dungeontrain.worldgen.TrainPhase} ordinal. */
-    static final String[] PHASE_LETTERS = {"O", "N", "V", "E"};
+    /** Phase letters, indexed by {@link TrainPhase} ordinal — derived from {@link TrainPhase#letter()}. */
+    static final String[] PHASE_LETTERS = Arrays.stream(TrainPhase.values())
+        .map(TrainPhase::letter).toArray(String[]::new);
     /** Min/max-level text colour — matches the template-type editor's LEVEL_COLOR. */
     static final int LEVEL_COLOR = 0xFFBBD0FF;
     /** Phase letter colour when the dimension is enabled. */
@@ -190,7 +195,7 @@ public final class PartPositionMenuRenderer {
         // Header
         double headerCY = halfH - HEADER_HEIGHT / 2.0;
         drawQuad(ps, buffer, -halfW, halfH - HEADER_HEIGHT, halfW, halfH, 0x40FFEEBB);
-        drawCenteredText(ps, buffer, font, capitalize(kind.id()), 0, headerCY, 0xFFFFEEBB);
+        drawCenteredText(ps, buffer, font, kindLabel(kind), 0, headerCY, 0xFFFFEEBB);
 
         // Toolbar — Add | Remove | Clear | X (close)
         double toolbarTop = halfH - HEADER_HEIGHT;
@@ -218,9 +223,9 @@ public final class PartPositionMenuRenderer {
             drawQuad(ps, buffer, xL + 0.01, toolbarBottom + 0.005,
                 xR - 0.01, toolbarTop - 0.005, tint);
             String label = switch (cellKind) {
-                case ADD -> "Add";
-                case REMOVE -> removeMode ? "Cancel" : "Remove";
-                case CLEAR -> "Clear";
+                case ADD -> MenuLang.t("common.add");
+                case REMOVE -> MenuLang.t(removeMode ? "common.cancel" : "common.remove");
+                case CLEAR -> MenuLang.t("common.clear");
                 case CLOSE -> "X";
                 default -> "";
             };
@@ -317,7 +322,7 @@ public final class PartPositionMenuRenderer {
             }
 
             // Gate cells — Diff-Level band (≥min / ≤max) + dimension letters
-            // (O N V E). Shown for every kind; mirrors the template-type editor. Hidden behind the
+            // (O N V E U C). Shown for every kind; mirrors the template-type editor. Hidden behind the
             // Stage chip while linked.
             var gate = entry.gate();
             if (!stageLinked) {
@@ -337,7 +342,7 @@ public final class PartPositionMenuRenderer {
             drawCenteredText(ps, buffer, font, maxLabel,
                 (maxCellL + maxCellR) / 2.0, rowCY, maxHover ? 0xFF000000 : LEVEL_COLOR);
 
-            // Phase cell: four letters O N V E; click a letter to toggle that dimension.
+            // Phase cell: one letter per TrainPhase (O N V E U C); click a letter to toggle that dimension.
             double phaseLetterW = (phaseCellR - phaseCellL) / PHASE_LETTERS.length;
             TrainPhase[] phases = TrainPhase.values();
             for (int slot = 0; slot < PHASE_LETTERS.length; slot++) {
@@ -418,12 +423,12 @@ public final class PartPositionMenuRenderer {
         int backTint = backHover ? 0xC0FFCC33 : 0x60FFEEBB;
         drawQuad(ps, buffer, backCellL + 0.01, headerBottom + 0.005,
             backCellR - 0.005, headerTop - 0.005, backTint);
-        drawCenteredText(ps, buffer, font, "< Back",
+        drawCenteredText(ps, buffer, font, MenuLang.t("common.back"),
             (backCellL + backCellR) / 2.0, headerCY,
             backHover ? 0xFF000000 : 0xFFFFFFFF);
         drawQuad(ps, buffer, backCellR + 0.005, headerBottom + 0.005,
             halfW, headerTop - 0.005, 0x40FFEEBB);
-        drawCenteredText(ps, buffer, font, "Add " + capitalize(kind.id()) + " Part",
+        drawCenteredText(ps, buffer, font, MenuLang.t("parts.add_title", kindLabel(kind)),
             (backCellR + halfW) / 2.0, headerCY, 0xFFFFEEBB);
 
         // Search field row (acts like the typing buffer field)
@@ -434,7 +439,7 @@ public final class PartPositionMenuRenderer {
         int searchTint = searchHover ? 0xB033FF99 : 0x60339966;
         drawQuad(ps, buffer, -halfW + 0.02, searchBottom + 0.01,
             halfW - 0.02, searchTop - 0.01, searchTint);
-        String shown = "Search: " + PartPositionMenu.searchBuffer() + "_";
+        String shown = MenuLang.t("common.search", PartPositionMenu.searchBuffer()) + "_";
         drawLeftText(ps, buffer, font, shown, -halfW + 0.06, searchCY, 0xFFFFFFFF);
 
         double colActualW = panelW / colCount;
@@ -454,6 +459,11 @@ public final class PartPositionMenuRenderer {
             int textColour = isHover ? 0xFF000000 : 0xFFFFFFFF;
             drawLeftText(ps, buffer, font, filtered.get(i), colXL + 0.04, rowCY, textColour);
         }
+    }
+
+    /** The part kind's name in the current language — Floor / Walls / Roof / Doors. */
+    private static String kindLabel(CarriagePartKind kind) {
+        return MenuLang.named("parts.kind", kind.id(), capitalize(kind.id()));
     }
 
     private static String capitalize(String s) {

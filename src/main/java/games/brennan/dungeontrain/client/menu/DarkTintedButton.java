@@ -35,14 +35,32 @@ public class DarkTintedButton extends Button {
 
     private static final float TINT = 0.6F;
 
+    private final float tintR;
+    private final float tintG;
+    private final float tintB;
+
     public DarkTintedButton(int x, int y, int width, int height, Component message, OnPress onPress) {
+        this(x, y, width, height, message, onPress, TINT, TINT, TINT);
+    }
+
+    /**
+     * The same button tinted a colour rather than plain dark — for an action whose colour is
+     * carrying meaning, like the red of a delete or the blue of a link out. The tint multiplies the
+     * vanilla button sprite, so values above 1 are legitimate when a channel needs to survive the
+     * sprite's own shading.
+     */
+    public DarkTintedButton(int x, int y, int width, int height, Component message, OnPress onPress,
+                            float tintR, float tintG, float tintB) {
         super(x, y, width, height, message, onPress, DEFAULT_NARRATION);
+        this.tintR = tintR;
+        this.tintG = tintG;
+        this.tintB = tintB;
     }
 
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         Minecraft mc = Minecraft.getInstance();
-        g.setColor(TINT, TINT, TINT, this.alpha);
+        g.setColor(tintR, tintG, tintB, this.alpha);
         RenderSystem.enableBlend();
         RenderSystem.enableDepthTest();
         g.blitSprite(SPRITES.get(this.active, this.isHoveredOrFocused()),

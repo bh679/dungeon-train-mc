@@ -23,12 +23,12 @@ class TranslationGroupsTest {
 
     private static TranslationUnit lang(String key, boolean aiUnreviewed) {
         return new TranslationUnit(TranslationUnit.Type.LANG, "dungeontrain", key,
-            "Depart", "Abfahren", aiUnreviewed);
+            "Depart", "Abfahren", aiUnreviewed, false);
     }
 
     private static TranslationUnit book(String id, boolean aiUnreviewed) {
         return new TranslationUnit(TranslationUnit.Type.BOOK, "dungeontrain", id,
-            "The Lost Conductor", "Der verlorene Schaffner", aiUnreviewed);
+            "The Lost Conductor", "Der verlorene Schaffner", aiUnreviewed, false);
     }
 
     /** The type/namespace scope is an implementation detail; these tests assert the path shape. */

@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.PortalSwapPacket;
 import games.brennan.dungeontrain.portal.PortalGeometry;
+import games.brennan.dungeontrain.portal.PortalPrewarmHints;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
@@ -88,6 +89,15 @@ public final class PortalTransitEvents {
                 if (!geo.insideCorridor(px, py, pz)) continue;
                 occupied = true;
 
+                // Where the swap would put them, the whole time they are in the corridor rather than
+                // on the tick it fires — the client needs the destination while there is still a walk
+                // left to build it in. See net/PortalPrewarmPacket.
+                int mirrored = geo.mirrorShift(px, py, pz);
+                if (mirrored != 0) {
+                    PortalPrewarmHints.send(player, BlockPos.containing(px, py + mirrored, pz),
+                        level.getGameTime());
+                }
+
                 int shift = geo.requiredShift(px, py, pz);
                 if (shift == 0) continue;
 
@@ -102,7 +112,8 @@ public final class PortalTransitEvents {
                 // this frame or the copy is not drawn on the one the player arrives in. Harmless when
                 // the shift is small enough that vanilla never invalidated the graph in the first
                 // place. See client/portal/ClientPortalSwap.
-                PacketDistributor.sendToPlayer(player, new PortalSwapPacket());
+                // none(): a shift within one frame — nothing was carrying the player that is not still.
+                PacketDistributor.sendToPlayer(player, PortalSwapPacket.none());
 
                 // Logged because the swap is meant to be invisible: without a trace there is no
                 // way to tell "it worked perfectly" from "it never fired" after the fact, in a

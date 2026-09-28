@@ -9,37 +9,36 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The hours figure's two decisions: when it takes the engine-room ledger's lead slot, and how the
- * number reads. The one that matters is the first — the tile displaces a funding goal, so it must
- * only appear once that goal is actually settled, and never on a build that could not work out an
- * hour count (which bakes 0, meaning unknown, not "no work").
+ * The hours figure's two decisions: whether there is a count worth drawing at all, and how the
+ * number reads. The first is the one that matters — a build that could not work out an hour count
+ * bakes 0, which means unknown, not "no work", and an unknown figure must never reach a player as
+ * a zero.
  */
 class DevHoursTest {
 
     @Test
-    void theHoursTileLeadsOnlyOnceBothRungsAreFunded() {
-        assertTrue(DevHours.takesGoalSlot(1394, true, true));
+    void aRealCountIsDrawn() {
+        assertTrue(DevHours.known(1394));
     }
 
     @Test
-    void aGoalStillBeingAskedForKeepsTheLeadSlot() {
-        assertFalse(DevHours.takesGoalSlot(1394, true, false), "the goal is still the ask");
-        assertFalse(DevHours.takesGoalSlot(1394, false, false), "the server bill is still the ask");
-        // Belt and braces: the goal cannot outrank an unpaid bill, but if the relay ever reported
-        // that shape the bill must still lead.
-        assertFalse(DevHours.takesGoalSlot(1394, false, true));
-    }
-
-    @Test
-    void anUnknownCountNeverTakesTheSlot() {
+    void anUnknownCountIsWithheld() {
         // 0 is what build.gradle bakes when it could read neither the snapshot nor git history.
-        assertFalse(DevHours.takesGoalSlot(0, true, true), "0 means unknown — leave the layout alone");
-        assertFalse(DevHours.takesGoalSlot(-1, true, true), "a nonsense count must not reach a player");
+        assertFalse(DevHours.known(0), "0 means unknown — draw no card rather than a zero");
+        assertFalse(DevHours.known(-1), "a nonsense count must not reach a player");
     }
 
     @Test
     void oneHourIsStillAFigureWorthShowing() {
-        assertTrue(DevHours.takesGoalSlot(1, true, true));
+        assertTrue(DevHours.known(1));
+    }
+
+    @Test
+    void theCountIsNoLongerGatedOnTheFundingLadder() {
+        // The card used to appear only once every goal was funded — a layout constraint (one free
+        // slot, and the ask had first claim) rather than anything about the figure, which is just
+        // as true while the bill is unpaid. The ask now holds its own slot, so the gate is gone.
+        assertTrue(DevHours.known(1394), "no ladder state can withhold a known figure");
     }
 
     @Test

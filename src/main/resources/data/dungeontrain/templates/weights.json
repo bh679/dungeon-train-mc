@@ -13,6 +13,30 @@
   "portal_middle": 0,
   "portal_short": 1,
   "shared": 1,
-  "standard": 19,
+  "standard": {
+    "weight": 20,
+    "minLevel": 51,
+    "maxLevel": 70,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "SKYLANDS",
+      "FLOATING",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY",
+      "CAVES_OF_CHAOS"
+    ]
+  },
+  "whole": 0,
   "windowed": 20
 }

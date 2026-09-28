@@ -74,6 +74,9 @@ public final class TemplateStores {
         // A pack may have just been saved, imported, enabled or disabled — re-scan what counts as
         // custom content so the Free Play gate reflects the new state on the very next read.
         games.brennan.dungeontrain.cheat.EditorContentIntegrity.invalidate();
+        // Which tier backs each template file may have changed with the package set — drop the
+        // editor overlay's memo so the next tick re-tints against the new search dirs.
+        games.brennan.dungeontrain.editor.ProvenanceCache.invalidateAll();
 
         // Plot snapshots are post-stamp baselines. Active-package switches
         // (and enable/disable) change what's loaded, so a stale snapshot
@@ -131,6 +134,7 @@ public final class TemplateStores {
         games.brennan.dungeontrain.editor.PillarTemplateStore.clearCache();
         games.brennan.dungeontrain.editor.ContainerContentsStore.clearCache();
         games.brennan.dungeontrain.editor.WholeCarriageTemplateStore.clearCache();
+        games.brennan.dungeontrain.editor.CarriageGroupTemplateStore.clearCache();
         games.brennan.dungeontrain.track.variant.TrackVariantStore.clearCache();
         games.brennan.dungeontrain.track.variant.TrackVariantBlocks.clearCache();
         // Group sidecars travel with their kind's templates, so a package switch can change which
@@ -146,10 +150,12 @@ public final class TemplateStores {
         games.brennan.dungeontrain.train.CarriageVariantRegistry.reload();
         games.brennan.dungeontrain.train.CarriageContentsRegistry.reload();
         games.brennan.dungeontrain.train.WholeCarriageRegistry.reload();
+        games.brennan.dungeontrain.train.CarriageGroupRegistry.reload();
         games.brennan.dungeontrain.editor.CarriagePartRegistry.reload();
         games.brennan.dungeontrain.editor.CarriageTemplateStore.reload();
         games.brennan.dungeontrain.editor.CarriageContentsStore.reload();
         games.brennan.dungeontrain.editor.WholeCarriageTemplateStore.reload();
+        games.brennan.dungeontrain.editor.CarriageGroupTemplateStore.reload();
         games.brennan.dungeontrain.editor.LootPrefabStore.reload();
         games.brennan.dungeontrain.editor.BlockVariantPrefabStore.reload();
     }
@@ -161,6 +167,8 @@ public final class TemplateStores {
         games.brennan.dungeontrain.train.CarriageWeights.reload();
         games.brennan.dungeontrain.train.CarriageContentsWeights.reload();
         games.brennan.dungeontrain.track.variant.TrackVariantWeights.reload();
+        games.brennan.dungeontrain.train.WholeWeights.reload();
+        games.brennan.dungeontrain.train.WholeGroupSettings.reload();
         // Global Stage presets — reloaded here too so an import/reload barrier refreshes the live
         // gate every linked template resolves through (the store is global, so this is idempotent
         // when nothing changed on disk).

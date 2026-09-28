@@ -1,13 +1,27 @@
 package games.brennan.dungeontrain.client.credits;
 
+import games.brennan.dungeontrain.client.chat.RelayChatClient;
+import games.brennan.dungeontrain.client.credits.CreditEditClient.Action;
+import games.brennan.dungeontrain.client.credits.CreditEditClient.Section;
 import games.brennan.dungeontrain.client.localization.TranslationContributor;
+import games.brennan.dungeontrain.client.localization.TranslationContributorsRegistry;
 import games.brennan.dungeontrain.client.localization.TranslationCreditsMerge;
+import games.brennan.dungeontrain.client.localization.LocalizationCreditRegistry;
+import games.brennan.dungeontrain.client.localization.edit.TranslationCoverageClient;
+import games.brennan.dungeontrain.client.localization.edit.TranslatorName;
+import games.brennan.dungeontrain.client.localization.edit.TranslatorOwnNames;
+import games.brennan.dungeontrain.client.localization.edit.TranslatorRenames;
+import games.brennan.dungeontrain.template.BuilderCredit;
+import games.brennan.dungeontrain.client.menu.AiPolicyIconButton;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
+import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
 import games.brennan.dungeontrain.client.support.SupportScreen;
+import games.brennan.dungeontrain.client.ui.CardCanvas;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.resources.language.LanguageInfo;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.CommonComponents;
@@ -17,223 +31,672 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.util.Mth;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The <b>Credits</b> page, opened from the title-screen book icon (see
- * {@code TitleScreenCreditsButton}). A vertically-scrolling column over the
- * blurred menu panorama, organised into three sections:
+ * {@code TitleScreenCreditsButton}). A vertically-scrolling column over the blurred menu panorama,
+ * organised into cards:
  *
  * <ol>
- *   <li><b>Created by</b> — Brennan Hatton, with an inline link to the original
- *       itch.io game.</li>
- *   <li><b>Built with</b> — Minecraft/NeoForge, Sable physics, bundled libraries
- *       (static copy).</li>
- *   <li><b>Translations</b> — every translator credit loaded by
- *       {@link LocalizationCreditRegistry} (across all locales, not just the
- *       selected one), each name clickable when the credit carries a URL. The
- *       whole section is omitted on stock installs where no credits exist.</li>
+ *   <li><b>Made by</b> — Brennan as the large lead card row, Wilson as a small secondary credit
+ *       below him, the two separated by a hairline rather than nested boxes.</li>
+ *   <li><b>Translations</b> — every translator credit from {@link TranslationCreditsMerge} (the
+ *       build-time list plus anyone the relay has approved since), each name clickable when the
+ *       credit carries a URL. The whole card is omitted on stock installs where no credits exist,
+ *       which is the normal en_us release-build path rather than an edge case.</li>
+ *   <li><b>Writers</b> and <b>Builders</b> — the relay's most-praised writers and everyone credited
+ *       as a shipped template's builder ({@link RelayWriters}, {@link TemplateBuilderCredits}).</li>
+ *   <li><b>Funders</b> — everyone in the relay's donation ledger, biggest contribution first, with
+ *       the figure beside the name ({@link RelayFunders}). Skipped when the ledger is empty.</li>
+ *   <li><b>Community</b> — the Discord's Value Adders by MEE6 level ({@link RelayCommunity}). Always
+ *       drawn: its footer is where a player links their Discord ({@link DiscordLinkScreen}).</li>
  * </ol>
  *
- * <p>The content column is laid out once in {@link #init} into a flat list of
- * positioned {@link Line}s (canvas-relative Y), then drawn in a scissor-clipped
- * viewport in {@link #render} offset by {@link #scrollY}. Inline links are
- * hit-tested in {@link #mouseClicked} against the same lines and opened through
- * vanilla's {@link ConfirmLinkScreen}, returning to this page. The {@code Done}
- * button is fixed below the viewport.</p>
+ * <p>Any line that is this player's own — a translator name they submitted under
+ * ({@link TranslatorOwnNames}), the writer / funder / community row the relay ranks their uuid at,
+ * a builder credit carrying their uuid — gets an <b>Edit</b> button opening
+ * {@link CreditEditScreen}: rename, be listed as Anonymous, or come back; on the Funders card also
+ * hide or show the figure. What the relay has not caught up with yet is laid over by
+ * {@link CreditsSelfEdits} (and {@link TranslatorRenames} for translator names).</p>
+ *
+ * <p>Scrolling, clipping, the card/rule/photo draw order, inline-link hit-testing and the palette
+ * all live in {@link CardCanvas}, shared with the AI Policy page so the two cannot drift apart —
+ * which they did once already, this page being the copy that one was made from. This class is only
+ * the content and the bottom button row.</p>
  */
 public final class CreditsScreen extends Screen {
 
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
-    private static final int MAX_COL_W  = 360;
+    private static final int MAX_COL_W   = 360;
     private static final int SIDE_MARGIN = 40;
-    private static final int PANEL_PAD  = 10;
-    private static final int TOP        = 16;
-    private static final int HEADER_GAP = 3;
-    private static final int DESC_GAP   = 4;
-    private static final int SECTION_GAP = 10;
-    private static final int SCROLL_STEP = 12;
+    private static final int TOP         = 16;
+    private static final int DESC_GAP    = 4;
 
-    private static final int COLOUR_PANEL  = 0xC0101010;
-    private static final int COLOUR_HEADER = 0xFFFFFFFF;
-    private static final int COLOUR_DESC   = 0xFFCACACA;
-    /** Blue used for inline links (RGB, no alpha). */
-    private static final int COLOUR_LINK   = 0x5B9BFF;
+    /** Amber for the people who made it — the same accent the death screen titles use. */
+    private static final int ACCENT_TEAM = 0xFFE0B56A;
+    /** Green for the translators. */
+    private static final int ACCENT_TRANSLATIONS = 0xFF5FBF5F;
+    /** Copper for the builders — the colour of the train they built. */
+    private static final int ACCENT_BUILDERS = 0xFFC98A5B;
+    /** Parchment for the writers. */
+    private static final int ACCENT_WRITERS = 0xFFD9C08A;
+    /** Gold for the funders — brighter than the team's amber, the colour of what they gave. */
+    private static final int ACCENT_FUNDERS = 0xFFF2C230;
+    /** Discord's blurple for the community — where they are. */
+    private static final int ACCENT_COMMUNITY = 0xFF7289DA;
 
-    /** Team photos (128×128), one card each in the Made-by section. */
+    /** Team photos are 128×128 sources. */
     private static final int TEX = 128;
     /** Lead creator (Brennan) gets a large photo; the secondary credit (Wilson) a small one. */
     private static final int PHOTO_LEAD = 72;
     private static final int PHOTO_SUB = 32;
-    /** Gap between a card's photo and the text beside it. */
-    private static final int PHOTO_GAP = 6;
-    /** Vertical gap between the stacked, full-width team cards. */
-    private static final int CARD_GAP = 8;
+    /** Vertical gap either side of the hairline between the two team rows. */
+    private static final int CARD_ROW_GAP = 7;
+
     private static final ResourceLocation BRENNAN_PHOTO =
             ResourceLocation.fromNamespaceAndPath("dungeontrain", "textures/gui/credits/brennan.png");
     private static final ResourceLocation WILSON_PHOTO =
             ResourceLocation.fromNamespaceAndPath("dungeontrain", "textures/gui/credits/wilson.png");
 
-    private final Screen parent;
-
-    // Computed in init(), consumed in render()/click handling.
-    private int colX;
-    private int colW;
-    private int viewportTop;
-    private int viewportBottom;
-    private int contentHeight;
-    private int scrollY;
-    private int maxScroll;
-    private final List<Line> lines = new ArrayList<>();
-    private final List<Img> imgs = new ArrayList<>();
+    /** The Edit button beside a translator's own name: a compact row-height button. */
+    private static final int EDIT_W = 34;
+    private static final int EDIT_H = 14;
+    /** Space kept between a wrapped name line and its Edit button. */
+    private static final int EDIT_GAP = 6;
 
     /**
-     * One laid-out text line at a canvas-relative Y. {@code centered} lines are
-     * horizontally centred on the screen (title/subtitle); the rest draw at {@code x}
-     * (the content column for body copy, or a card's column for the team cards). The
-     * {@link FormattedCharSequence} carries any inline-link {@link Style}, so both drawing
-     * and hit-testing use it directly.
+     * An Edit button and the canvas Y of the line it belongs to. The button is a real widget for
+     * input, but is drawn by hand after the canvas so it scrolls with its line and sits on top of
+     * the card rather than under it — see {@link #render}.
      */
-    private record Line(FormattedCharSequence text, int canvasY, boolean centered, int x, int colour) {}
+    private record EditSlot(DarkTintedButton button, int canvasY) {}
 
-    /** One laid-out image (a team photo) at a canvas-relative Y, drawn scaled from its {@link #TEX}² source. */
-    private record Img(ResourceLocation tex, int x, int canvasY, int w, int h) {}
+    private final Screen parent;
+    private final CardCanvas canvas;
+    /** Names this player submitted translations under; empty until the relay answers. */
+    private Set<String> ownNames = Set.of();
+    /** This player's profile uuid, undashed — what a builder credit or a relay row carries. */
+    private final String ownUuid;
+    /** Where the relay ranks this player among the writers; null until it answers (or unranked). */
+    private RelayWriters.Standing writerStanding;
+    /** The same for the funders and the community; the latter stays null until they have linked their Discord. */
+    private RelayFunders.Standing fundersStanding;
+    private RelayCommunity.Standing communityStanding;
+    /** How much of each long list is showing — survives a re-layout, not a fresh screen. */
+    private CreditsPaging translatorsPaging = CreditsPaging.START;
+    private CreditsPaging buildersPaging = CreditsPaging.START;
+    private CreditsPaging writersPaging = CreditsPaging.START;
+    private CreditsPaging fundersPaging = CreditsPaging.START;
+    private CreditsPaging communityPaging = CreditsPaging.START;
+    /** In-page control links carry this prefix in a RUN_COMMAND click event; see {@link #mouseClicked}. */
+    private static final String CONTROL_PREFIX = "dt:credits/";
+    private boolean askedForOwnNames;
+    private final List<EditSlot> editSlots = new ArrayList<>();
 
     public CreditsScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.credits.title"));
         this.parent = parent;
+        this.canvas = new CardCanvas(Minecraft.getInstance().font);
+        Minecraft mc = Minecraft.getInstance();
+        this.ownUuid = mc != null && mc.getUser() != null && mc.getUser().getProfileId() != null
+                ? BuilderCredit.normaliseUuid(mc.getUser().getProfileId().toString()) : "";
     }
 
     @Override
     protected void init() {
-        lines.clear();
-        imgs.clear();
-        colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
-        colX = (this.width - colW) / 2;
-        int lh = this.font.lineHeight;
+        editSlots.clear();
+        CreditsSelfEdits.beginPage();
+        int colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
+        canvas.beginLayout((this.width - colW) / 2, colW);
 
         int y = 0;
 
-        // Title + subtitle, centred.
-        y = addCentered(this.title, y, lh, COLOUR_HEADER);
-        y += 6;
-        y = addCenteredWrapped(Component.translatable("gui.dungeontrain.credits.subtitle"), y, lh, COLOUR_DESC);
-        y += SECTION_GAP;
+        // Title + subtitle, centred and un-carded — they frame the page.
+        y = canvas.addCentered(this.title, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.PARA_GAP;
+        y = canvas.addCenteredWrapped(Component.translatable("gui.dungeontrain.credits.subtitle"),
+                y, CardCanvas.COLOUR_DESC);
+        y += CardCanvas.SECTION_GAP;
 
-        // Made by — Brennan as the large lead card, Wilson as a small secondary credit below.
-        y = addLeft(Component.translatable("gui.dungeontrain.credits.team.header"), y, lh, COLOUR_HEADER);
-        y += HEADER_GAP;
-        y = addTeamCard(colX, colW, Math.min(PHOTO_LEAD, colW), y, lh, BRENNAN_PHOTO,
-                "Brennan Hatton", "gui.dungeontrain.credits.team.designer",
-                "gui.dungeontrain.credits.team.brennan.bio");
-        y += CARD_GAP;
-        y = addTeamCard(colX, colW, Math.min(PHOTO_SUB, colW), y, lh, WILSON_PHOTO,
-                "Wilson Taylor", "gui.dungeontrain.credits.team.narrative",
-                "gui.dungeontrain.credits.team.wilson.bio");
-        y += SECTION_GAP;
+        y = addTeamCard(y);
 
-        // Translations — the generated, human-grouped translator list (one line per person,
-        // listing every language they worked on with a %). Fully derived from the provenance
-        // data at build time, so it never needs a hand-authored credit file. Skipped when empty.
-        // The build-time list PLUS anyone the relay has approved since — see TranslationCreditsMerge
-        // for why they are merged into one list rather than thanked twice in two.
-        List<TranslationContributor> contributors = TranslationCreditsMerge.merged();
+        // The generated, human-grouped translator list (one line per person, listing every language
+        // they worked on with a %). Fully derived from the provenance data at build time, so it
+        // never needs a hand-authored credit file. The build-time list PLUS anyone the relay has
+        // approved since — see TranslationCreditsMerge for why they are merged into one list rather
+        // than thanked twice in two. Skipped entirely when empty, so no empty card is drawn.
+        List<TranslationContributor> contributors = TranslationCreditsMerge.merge(
+                TranslationContributorsRegistry.all(), TranslationCoverageClient.allCredits(),
+                LocalizationCreditRegistry::totalKeysFor, TranslatorRenames.snapshot(),
+                CreditsSelfEdits.get().hidden() ? ownNames : Set.of());
         if (!contributors.isEmpty()) {
-            y = addLeft(Component.translatable("gui.dungeontrain.credits.translations.header"), y, lh, COLOUR_HEADER);
-            y += HEADER_GAP;
-            y = addLeftWrapped(Component.translatable("gui.dungeontrain.credits.translations.desc"), y, lh, COLOUR_DESC);
-            y += DESC_GAP;
-            for (TranslationContributor contributor : contributors) {
-                y = addLeftWrapped(personLine(contributor), y, lh, COLOUR_DESC);
-            }
-            y += SECTION_GAP;
+            y += CardCanvas.CARD_GAP;
+            y = addTranslationsCard(contributors, y);
         }
 
-        contentHeight = y;
+        // The community's writers — the relay's Most Praised Writers board, past the bar
+        // RelayWriters sets. Relay-only: a book is written on the relay, never in the jar.
+        List<RelayWriters.Writer> writers = RelayWriters.current();
+        if (!writers.isEmpty()) {
+            y += CardCanvas.CARD_GAP;
+            y = addWritersCard(writers, y);
+        }
 
-        // One bottom row: "Support the Developer" beside Done. The viewport ends just
-        // above the row so scrolling content never overlaps the buttons.
+        // Everyone credited as the original builder of a template that ships with the mod — the
+        // jar's own weights files PLUS whoever the relay has credited since this build was cut (see
+        // TemplateBuilderCredits.merged). Skipped entirely when nobody is credited, so no empty card
+        // is drawn.
+        List<TemplateBuilderCredits.Builder> builders = TemplateBuilderCredits.merged();
+        LOGGER.info("[DungeonTrain] Credits: builders card — {} bundled, {} from the relay, {} merged.",
+                TemplateBuilderCredits.all().size(), RelayTemplateBuilders.current().size(), builders.size());
+        if (!builders.isEmpty()) {
+            y += CardCanvas.CARD_GAP;
+            y = addBuildersCard(builders, y);
+        }
+
+        // Everyone who has funded the game, biggest contribution first — the relay's ledger, the
+        // same names and figures the death screen's donation page shows. Skipped when empty.
+        List<RelayFunders.Funder> funders = RelayFunders.current();
+        if (!funders.isEmpty()) {
+            y += CardCanvas.CARD_GAP;
+            y = addFundersCard(funders, y);
+        }
+
+        // The Discord's Value Adders by level. Drawn even when the relay has nothing (or is
+        // unreachable): the card's footer is the only way onto it — a player links their Discord
+        // there — so it has to be on the page for a fresh install too.
+        y += CardCanvas.CARD_GAP;
+        y = addCommunityCard(RelayCommunity.current(), y);
+
+        // One bottom row: "Support the Developer" and the AI Policy icon beside Done. The viewport
+        // ends just above the row so scrolling content never overlaps the buttons.
         int rowY = this.height - 28;
-        viewportTop = TOP;
-        viewportBottom = rowY - 8;
-        if (viewportBottom < viewportTop) {
-            viewportBottom = viewportTop;
-        }
-        maxScroll = Math.max(0, contentHeight - (viewportBottom - viewportTop));
-        scrollY = Mth.clamp(scrollY, 0, maxScroll);
+        canvas.finishLayout(y, TOP, rowY - 8);
+        CreditsSelfEdits.endPage();
 
         int gap = 4;
         int supportW = 150;
+        // Square, so it costs the row only its own height — the two text buttons keep their widths.
+        int policyW = 20;
         int doneW = 100;
-        int rowX = (this.width - (supportW + gap + doneW)) / 2;
+        int rowX = (this.width - (supportW + gap + policyW + gap + doneW)) / 2;
 
         // Shortcut to the "Ways to Help" hub; parent is this page so its Done returns here.
         addRenderableWidget(new DarkTintedButton(rowX, rowY, supportW, 20,
                 Component.translatable("gui.dungeontrain.credits.support_button"),
                 b -> Minecraft.getInstance().setScreen(new SupportScreen(this))));
 
+        // "Who made this" and "was any of it made by AI" are the same question, so the AI Policy
+        // sits on the page that answers the first half. Also reachable from Dungeon Train Options.
+        // An icon rather than a labelled button: the row already carries two of those, and the
+        // glyph is unlabelled, so the tooltip below is what names it — it is not optional.
+        Component policyLabel = Component.translatable("gui.dungeontrain.credits.ai_policy_button");
+        AiPolicyIconButton policy = new AiPolicyIconButton(rowX + supportW + gap, rowY, policyW,
+                policyLabel, b -> Minecraft.getInstance().setScreen(new AiPolicyScreen(this)));
+        policy.setTooltip(Tooltip.create(policyLabel));
+        addRenderableWidget(policy);
+
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-                .bounds(rowX + supportW + gap, rowY, doneW, 20)
+                .bounds(rowX + supportW + gap + policyW + gap, rowY, doneW, 20)
                 .build());
+
+        // Once per screen (not per re-layout — a See more press must not be a relay round trip):
+        // which of these names are this player's, and who else the relay credits as a builder.
+        // Each answer arrives later on the render thread and re-lays the page — the same shape as
+        // the submit screen's history list. Consent off answers "none" to the first; the second is
+        // anonymous and always asked.
+        if (!askedForOwnNames) {
+            askedForOwnNames = true;
+            RelayTemplateBuilders.refresh(() -> Minecraft.getInstance().execute(() -> {
+                if (Minecraft.getInstance().screen == this) rebuildWidgets();
+            }));
+            RelayWriters.refresh(() -> Minecraft.getInstance().execute(() -> {
+                if (Minecraft.getInstance().screen == this) rebuildWidgets();
+            }));
+            RelayFunders.refresh(() -> Minecraft.getInstance().execute(() -> {
+                if (Minecraft.getInstance().screen == this) rebuildWidgets();
+            }));
+            RelayCommunity.refresh(() -> Minecraft.getInstance().execute(() -> {
+                if (Minecraft.getInstance().screen == this) rebuildWidgets();
+            }));
+            TranslatorOwnNames.fetch(names -> {
+                if (!names.equals(ownNames) && Minecraft.getInstance().screen == this) {
+                    ownNames = names;
+                    rebuildWidgets();
+                }
+            });
+            // Which writer row is mine — the board is uuid-free, so the relay is asked where this
+            // uuid stands and the row at that rank is the one. Carries the uuid: consent-gated.
+            if (!ownUuid.isEmpty() && RelayChatClient.canConnect()) {
+                RelayWriters.fetchStanding(ownUuid, standing -> Minecraft.getInstance().execute(() -> {
+                    if (Minecraft.getInstance().screen != this) return;
+                    writerStanding = standing;
+                    rebuildWidgets();
+                }));
+                // Same question of the other two uuid-free lists. Community answers "unranked"
+                // until the player has linked their Discord (DiscordLinkScreen).
+                RelayFunders.fetchStanding(ownUuid, standing -> Minecraft.getInstance().execute(() -> {
+                    if (Minecraft.getInstance().screen != this) return;
+                    fundersStanding = standing;
+                    rebuildWidgets();
+                }));
+                RelayCommunity.fetchStanding(ownUuid, standing -> Minecraft.getInstance().execute(() -> {
+                    if (Minecraft.getInstance().screen != this) return;
+                    communityStanding = standing;
+                    rebuildWidgets();
+                }));
+            }
+        }
     }
 
     /**
-     * Lay out one full-width team card at {@code x} (width {@code w}): photo on the left,
-     * name / role / wrapped bio in the column beside it. Returns the canvas Y just below
-     * the card — the taller of the photo and the text block.
+     * The relay accepted an edit. Remember it locally so the page shows it at once (the jar, the
+     * cached relay credits and the relay's own boards all lag — see {@link CreditsSelfEdits} and
+     * {@link TranslatorRenames}), refresh the live lists, and come back to a freshly laid-out page.
      */
-    private int addTeamCard(int x, int w, int photo, int y, int lh, ResourceLocation tex,
-                            String name, String roleKey, String bioKey) {
-        imgs.add(new Img(tex, x, y, photo, photo));
-        int textX = x + photo + PHOTO_GAP;
-        int textW = Math.max(1, w - photo - PHOTO_GAP);
-        int ty = y;
-        ty = addLineAt(Component.literal(name).getVisualOrderText(), textX, ty, lh, COLOUR_HEADER);
-        ty = addLineAt(Component.translatable(roleKey).getVisualOrderText(), textX, ty, lh, COLOUR_DESC);
+    private void onEdited(Section section, Action action, String from, String to) {
+        Set<String> names = new java.util.HashSet<>(ownNames);
+        switch (action) {
+            case RENAME -> {
+                // One identity: every name the player translated under is now `to` on the relay
+                // (translations.renameAll), so every own name folds into it here too.
+                for (String old : ownNames) TranslatorRenames.record(old, to);
+                if (!from.isEmpty()) TranslatorRenames.record(from, to);
+                TranslatorName.set(to);
+                names.clear();
+                names.add(to);
+                CreditsSelfEdits.recordRename(from, to);
+            }
+            case REMOVE -> CreditsSelfEdits.setHidden(true);
+            case RESTORE -> CreditsSelfEdits.setHidden(false);
+            case HIDE_AMOUNT -> CreditsSelfEdits.setAmountHidden(true);
+            case SHOW_AMOUNT -> CreditsSelfEdits.setAmountHidden(false);
+        }
+        // Refetch WITHOUT clearing: the overlay already renders the change from the cached lists,
+        // and an empty cache while the answer is in flight would drop them from the page.
+        TranslationCoverageClient.refetch();
+        RelayWriters.refresh(null);
+        RelayTemplateBuilders.refresh(null);
+        RelayFunders.refresh(null);
+        RelayCommunity.refresh(null);
+        CreditsScreen fresh = new CreditsScreen(parent);
+        fresh.ownNames = Set.copyOf(names);
+        fresh.writerStanding = writerStanding;
+        fresh.fundersStanding = fundersStanding;
+        fresh.communityStanding = communityStanding;
+        fresh.askedForOwnNames = true;
+        Minecraft.getInstance().setScreen(fresh);
+    }
+
+    /**
+     * One credited line, with an Edit button riding its first line when it is this player's own.
+     * The text then wraps short of the button's column so the two never overlap. {@code name} is
+     * what the edit screen opens with; {@code hidden} makes it offer Restore instead.
+     */
+    private int addCreditRow(Component line, boolean own, Section section, String name, boolean hidden,
+                             int innerX, int innerW, int y) {
+        return addCreditRow(line, own, section, name, hidden, false, innerX, innerW, y);
+    }
+
+    /** As above, with the Funders card's extra fact: whether the player's figure is currently hidden. */
+    private int addCreditRow(Component line, boolean own, Section section, String name, boolean hidden,
+                             boolean amountHidden, int innerX, int innerW, int y) {
+        if (!own) {
+            return canvas.addWrappedAt(line, innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        }
+        DarkTintedButton edit = new DarkTintedButton(innerX + innerW - EDIT_W, 0, EDIT_W, EDIT_H,
+                Component.translatable("gui.dungeontrain.credits.translations.edit"),
+                b -> Minecraft.getInstance().setScreen(
+                        new CreditEditScreen(this, section, name, hidden, amountHidden, this::onEdited)));
+        edit.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.credits.rename.title")));
+        addWidget(edit);
+        editSlots.add(new EditSlot(edit, y));
+        return canvas.addWrappedAt(line, innerX, Math.max(1, innerW - EDIT_W - EDIT_GAP), y, CardCanvas.COLOUR_DESC);
+    }
+
+    /** "Anonymous", or "Anonymous (you)" for this player's own line. */
+    private static Component anonymousName(boolean own) {
+        return Component.translatable(own ? "gui.dungeontrain.credits.anonymous_you" : "gui.dungeontrain.credits.anonymous");
+    }
+
+    /** The "Made by" card: heading, accent bar, then the two people separated by a hairline. */
+    private int addTeamCard(int top) {
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+        int y = top + CardCanvas.CARD_PAD;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.team.header"),
+                innerX, innerW, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), ACCENT_TEAM);
+        y += CardCanvas.RULE_TO_BODY;
+
+        y = addPersonRow(innerX, innerW, Math.min(PHOTO_LEAD, innerW), y, BRENNAN_PHOTO,
+                "Brennan Hatton", "gui.dungeontrain.credits.team.designer",
+                "gui.dungeontrain.credits.team.brennan.bio");
+
+        y += CARD_ROW_GAP;
+        y = canvas.addDivider(innerX, y, innerW);
+        y += CARD_ROW_GAP;
+
+        y = addPersonRow(innerX, innerW, Math.min(PHOTO_SUB, innerW), y, WILSON_PHOTO,
+                "Wilson Taylor", "gui.dungeontrain.credits.team.narrative",
+                "gui.dungeontrain.credits.team.wilson.bio");
+
+        y += CardCanvas.CARD_PAD;
+        canvas.addCard(top, y - top);
+        return y;
+    }
+
+    /**
+     * One person inside the team card: photo on the left, name / role / wrapped bio in the column
+     * beside it. Returns the Y just below the row — the taller of the photo and the text block.
+     */
+    private int addPersonRow(int x, int w, int photo, int y, ResourceLocation tex,
+                             String name, String roleKey, String bioKey) {
+        canvas.addImg(tex, x, y, photo, photo, TEX);
+        int textX = x + photo + CardCanvas.ICON_GAP;
+        int textW = Math.max(1, w - photo - CardCanvas.ICON_GAP);
+
+        int ty = canvas.addLineAt(Component.literal(name).getVisualOrderText(), textX, y,
+                CardCanvas.COLOUR_HEADER);
+        ty = canvas.addLineAt(Component.translatable(roleKey).getVisualOrderText(), textX, ty,
+                CardCanvas.COLOUR_DESC);
         ty += 2;
-        ty = addWrappedAt(Component.translatable(bioKey), textX, textW, ty, lh, COLOUR_DESC);
+        ty = canvas.addWrappedAt(Component.translatable(bioKey), textX, textW, ty,
+                CardCanvas.COLOUR_DESC);
         return Math.max(y + photo, ty);
     }
 
-    private int addCentered(Component text, int y, int lh, int colour) {
-        lines.add(new Line(text.getVisualOrderText(), y, true, 0, colour));
-        return y + lh;
-    }
+    /** The "Builders" card: heading, accent bar, the thank-you line, then one line per builder. */
+    private int addBuildersCard(List<TemplateBuilderCredits.Builder> builders, int top) {
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+        int y = top + CardCanvas.CARD_PAD;
 
-    private int addCenteredWrapped(Component text, int y, int lh, int colour) {
-        for (FormattedCharSequence line : this.font.split(text, colW)) {
-            lines.add(new Line(line, y, true, 0, colour));
-            y += lh;
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.builders.header"),
+                innerX, innerW, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), ACCENT_BUILDERS);
+        y += CardCanvas.RULE_TO_BODY;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.builders.desc"),
+                innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        y += DESC_GAP;
+        // Top five first; See more opens the whole list, ten to a page.
+        List<TemplateBuilderCredits.Builder> topFive = builders.subList(0,
+                Math.min(builders.size(), CreditsPaging.BUILDERS_COLLAPSED));
+        CreditsPaging.View<TemplateBuilderCredits.Builder> view = buildersPaging.view(topFive, builders);
+        for (TemplateBuilderCredits.Builder builder : view.rows()) {
+            boolean own = !ownUuid.isEmpty() && ownUuid.equals(builder.uuid());
+            CreditsSelfEdits.Shown shown = own
+                    ? CreditsSelfEdits.apply(Section.BUILDERS, builder.name(), builder.anonymous())
+                    : new CreditsSelfEdits.Shown(builder.name(), builder.anonymous());
+            Component name = shown.anonymous() ? anonymousName(own)
+                    : Component.literal(shown.name().isEmpty() ? builder.display() : shown.name());
+            y = addCreditRow(builderLine(builder, name), own, Section.BUILDERS, shown.name(), shown.anonymous(),
+                    innerX, innerW, y);
         }
+        y = addControls(view, "builders", innerX, innerW, y);
+
+        y += CardCanvas.CARD_PAD;
+        canvas.addCard(top, y - top);
         return y;
     }
 
-    private int addLeft(Component text, int y, int lh, int colour) {
-        return addLineAt(text.getVisualOrderText(), colX, y, lh, colour);
-    }
+    /** The "Writers" card: heading, accent bar, the thank-you line, then one line per writer. */
+    private int addWritersCard(List<RelayWriters.Writer> writers, int top) {
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+        int y = top + CardCanvas.CARD_PAD;
 
-    private int addLeftWrapped(Component text, int y, int lh, int colour) {
-        return addWrappedAt(text, colX, colW, y, lh, colour);
-    }
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.writers.header"),
+                innerX, innerW, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), ACCENT_WRITERS);
+        y += CardCanvas.RULE_TO_BODY;
 
-    /** A single left-aligned line drawn at {@code x}. */
-    private int addLineAt(FormattedCharSequence text, int x, int y, int lh, int colour) {
-        lines.add(new Line(text, y, false, x, colour));
-        return y + lh;
-    }
-
-    /** Text wrapped to {@code wrapW} and left-aligned at {@code x}. */
-    private int addWrappedAt(Component text, int x, int wrapW, int y, int lh, int colour) {
-        for (FormattedCharSequence line : this.font.split(text, wrapW)) {
-            lines.add(new Line(line, y, false, x, colour));
-            y += lh;
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.writers.desc"),
+                innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        y += DESC_GAP;
+        List<RelayWriters.Writer> topFive = writers.subList(0, Math.min(writers.size(), CreditsPaging.BUILDERS_COLLAPSED));
+        CreditsPaging.View<RelayWriters.Writer> view = writersPaging.view(topFive, writers);
+        for (RelayWriters.Writer writer : view.rows()) {
+            boolean own = writerStanding != null && writer.rank() > 0 && writer.rank() == writerStanding.rank();
+            CreditsSelfEdits.Shown shown = own
+                    ? CreditsSelfEdits.apply(Section.WRITERS, writer.name(), writer.anonymous())
+                    : new CreditsSelfEdits.Shown(writer.name(), writer.anonymous());
+            Component name = shown.anonymous() ? anonymousName(own) : Component.literal(shown.name());
+            y = addCreditRow(Component.translatable("gui.dungeontrain.credits.writers.person_line",
+                    name, Component.literal(Integer.toString(writer.books()))),
+                    own, Section.WRITERS, shown.name(), shown.anonymous(), innerX, innerW, y);
         }
+        y = addControls(view, "writers", innerX, innerW, y);
+        // How to get on the list — only at the very end of it: the last page once See more has
+        // been pressed, or straight away when the whole list already fits without one.
+        if (view.atEnd()) {
+            y += DESC_GAP;
+            y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.writers.how",
+                    Component.literal(Integer.toString(RelayWriters.MIN_BOOKS))),
+                    innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        }
+
+        y += CardCanvas.CARD_PAD;
+        canvas.addCard(top, y - top);
         return y;
+    }
+
+    /**
+     * The "Funders" card: heading, accent bar, the thank-you line, then one line per funder —
+     * "&lt;Name&gt; — A$N", or the name alone when they hid the figure. The player's own line is
+     * the one at the rank the relay gave for their uuid; their hidden-amount choice is laid over
+     * what the relay currently says, like the name edits.
+     */
+    private int addFundersCard(List<RelayFunders.Funder> funders, int top) {
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+        int y = top + CardCanvas.CARD_PAD;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.funders.header"),
+                innerX, innerW, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), ACCENT_FUNDERS);
+        y += CardCanvas.RULE_TO_BODY;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.funders.desc"),
+                innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        y += DESC_GAP;
+        List<RelayFunders.Funder> topFive = funders.subList(0, Math.min(funders.size(), CreditsPaging.BUILDERS_COLLAPSED));
+        CreditsPaging.View<RelayFunders.Funder> view = fundersPaging.view(topFive, funders);
+        for (RelayFunders.Funder funder : view.rows()) {
+            boolean own = fundersStanding != null && funder.rank() > 0 && funder.rank() == fundersStanding.rank();
+            CreditsSelfEdits.Shown shown = own
+                    ? CreditsSelfEdits.apply(Section.FUNDERS, funder.name(), funder.anonymous())
+                    : new CreditsSelfEdits.Shown(funder.name(), funder.anonymous());
+            boolean amountHidden = own ? CreditsSelfEdits.amountHidden(funder.amountHidden()) : funder.amountHidden();
+            Component name = shown.anonymous() ? anonymousName(own) : Component.literal(shown.name());
+            Component line = amountHidden
+                    ? Component.translatable("gui.dungeontrain.credits.funders.person_line_hidden", name)
+                    : Component.translatable("gui.dungeontrain.credits.funders.person_line", name,
+                            Component.literal(Integer.toString(funder.amountAud())));
+            y = addCreditRow(line, own, Section.FUNDERS, shown.name(), shown.anonymous(), amountHidden,
+                    innerX, innerW, y);
+        }
+        y = addControls(view, "funders", innerX, innerW, y);
+
+        y += CardCanvas.CARD_PAD;
+        canvas.addCard(top, y - top);
+        return y;
+    }
+
+    /**
+     * The "Community" card: heading, accent bar, the thank-you line, one line per Value Adder —
+     * "&lt;Name&gt; — Level N" — and, at the end of the list, the way onto it: a link to
+     * {@link DiscordLinkScreen}. The player's own line is the one at the rank the relay gave for
+     * their uuid, which it only can once they have linked.
+     */
+    private int addCommunityCard(List<RelayCommunity.Member> members, int top) {
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+        int y = top + CardCanvas.CARD_PAD;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.community.header"),
+                innerX, innerW, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), ACCENT_COMMUNITY);
+        y += CardCanvas.RULE_TO_BODY;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.community.desc"),
+                innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        y += DESC_GAP;
+        List<RelayCommunity.Member> topFive = members.subList(0, Math.min(members.size(), CreditsPaging.BUILDERS_COLLAPSED));
+        CreditsPaging.View<RelayCommunity.Member> view = communityPaging.view(topFive, members);
+        for (RelayCommunity.Member member : view.rows()) {
+            boolean own = communityStanding != null && member.rank() > 0 && member.rank() == communityStanding.rank();
+            CreditsSelfEdits.Shown shown = own
+                    ? CreditsSelfEdits.apply(Section.COMMUNITY, member.name(), member.anonymous())
+                    : new CreditsSelfEdits.Shown(member.name(), member.anonymous());
+            Component name = shown.anonymous() ? anonymousName(own) : Component.literal(shown.name());
+            y = addCreditRow(Component.translatable("gui.dungeontrain.credits.community.person_line",
+                    name, Component.literal(Integer.toString(member.level()))),
+                    own, Section.COMMUNITY, shown.name(), shown.anonymous(), innerX, innerW, y);
+        }
+        y = addControls(view, "community", innerX, innerW, y);
+        // The on-ramp, at the end of the list like the Writers card's "how": once linked there is
+        // nothing left to do here, so the line only shows while the player is not yet on the card.
+        if (view.atEnd() && communityStanding == null) {
+            y += DESC_GAP;
+            MutableComponent footer = Component.translatable("gui.dungeontrain.credits.community.link_footer")
+                    .append(" ")
+                    .append(control("gui.dungeontrain.credits.community.link_action", "community/link"));
+            y = canvas.addWrappedAt(footer, innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        }
+
+        y += CardCanvas.CARD_PAD;
+        canvas.addCard(top, y - top);
+        return y;
+    }
+
+    /** "&lt;Name&gt; — N templates" (or "1 template"): one line per builder. */
+    private static Component builderLine(TemplateBuilderCredits.Builder builder, Component name) {
+        String key = builder.templates() == 1
+                ? "gui.dungeontrain.credits.builders.person_line_one"
+                : "gui.dungeontrain.credits.builders.person_line";
+        return Component.translatable(key, name, Component.literal(Integer.toString(builder.templates())));
+    }
+
+    /** The "Translations" card: heading, accent bar, the thank-you line, then one line per person. */
+    private int addTranslationsCard(List<TranslationContributor> contributors, int top) {
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+        int y = top + CardCanvas.CARD_PAD;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.translations.header"),
+                innerX, innerW, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), ACCENT_TRANSLATIONS);
+        y += CardCanvas.RULE_TO_BODY;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.translations.desc"),
+                innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        y += DESC_GAP;
+        // Everyone above 1% of a language first; See more opens the whole list, ten to a page.
+        List<TranslationContributor> notable = contributors.stream().filter(CreditsScreen::aboveMinShare).toList();
+        CreditsPaging.View<TranslationContributor> view = translatorsPaging.view(notable, contributors);
+        boolean hiddenSelf = CreditsSelfEdits.get().hidden() && !ownNames.isEmpty();
+        for (TranslationContributor contributor : view.rows()) {
+            // The Anonymous line is this player's own while they have asked to be on it — that is
+            // where their names were folded (see merge above) and where Restore lives.
+            boolean own = contributor.isAnonymous() ? hiddenSelf : ownNames.contains(contributor.name());
+            String name = contributor.isAnonymous() ? ownNames.iterator().next() : contributor.name();
+            y = addCreditRow(personLine(contributor, own), own, Section.TRANSLATIONS, name,
+                    contributor.isAnonymous(), innerX, innerW, y);
+        }
+        y = addControls(view, "translators", innerX, innerW, y);
+
+        y += CardCanvas.CARD_PAD;
+        canvas.addCard(top, y - top);
+        return y;
+    }
+
+    /** True when the contributor's strongest known language share clears the collapsed-list bar. */
+    static boolean aboveMinShare(TranslationContributor contributor) {
+        for (TranslationContributor.LanguageShare share : contributor.languages()) {
+            if (share.total() > 0 && share.fraction() > CreditsPaging.TRANSLATOR_MIN_SHARE) return true;
+        }
+        return false;
+    }
+
+    /**
+     * The line under a paged list: Prev · Page n of m · Next when there is more than one page, then
+     * <i>See more</i> while collapsed or <i>See less</i> once expanded. Nothing at all when the
+     * whole list already fits.
+     */
+    private int addControls(CreditsPaging.View<?> view, String card, int x, int w, int y) {
+        MutableComponent line = Component.empty();
+        if (view.pages() > 1) {
+            if (view.prev()) line.append(control("gui.dungeontrain.credits.prev", card + "/prev")).append("  ");
+            line.append(Component.translatable("gui.dungeontrain.credits.page",
+                    Component.literal(Integer.toString(view.page() + 1)),
+                    Component.literal(Integer.toString(view.pages()))));
+            if (view.next()) line.append("  ").append(control("gui.dungeontrain.credits.next", card + "/next"));
+        }
+        if (view.seeMore() || view.seeLess()) {
+            if (view.pages() > 1) line.append("   ");
+            line.append(view.seeMore()
+                    ? control("gui.dungeontrain.credits.see_more", card + "/more")
+                    : control("gui.dungeontrain.credits.see_less", card + "/less"));
+        }
+        if (line.getSiblings().isEmpty()) return y;
+        y += DESC_GAP;
+        return canvas.addWrappedAt(line, x, w, y, CardCanvas.COLOUR_DESC);
+    }
+
+    /** A link-styled in-page control; the click is routed by {@link #mouseClicked}, never run as a command. */
+    private static Component control(String key, String action) {
+        return Component.translatable(key).withStyle(s -> s
+                .withColor(CardCanvas.COLOUR_LINK)
+                .withUnderlined(true)
+                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, CONTROL_PREFIX + action)));
+    }
+
+    /** A See more / Prev / Next press: move that card's paging and re-lay the page in place. */
+    private void onControl(String action) {
+        String[] parts = action.split("/");
+        if (parts.length != 2) return;
+        if ("community".equals(parts[0]) && "link".equals(parts[1])) {
+            // Done-after-linking lands on a new page, which asks afresh where the player stands.
+            Minecraft.getInstance().setScreen(new DiscordLinkScreen(this, () -> new CreditsScreen(parent)));
+            return;
+        }
+        CreditsPaging paging = switch (parts[0]) {
+            case "builders" -> buildersPaging;
+            case "writers" -> writersPaging;
+            case "funders" -> fundersPaging;
+            case "community" -> communityPaging;
+            default -> translatorsPaging;
+        };
+        CreditsPaging next = switch (parts[1]) {
+            case "more" -> paging.expand();
+            case "less" -> paging.collapse();
+            case "next" -> paging.nextPage();
+            case "prev" -> paging.prevPage();
+            default -> paging;
+        };
+        switch (parts[0]) {
+            case "builders" -> buildersPaging = next;
+            case "writers" -> writersPaging = next;
+            case "funders" -> fundersPaging = next;
+            case "community" -> communityPaging = next;
+            default -> translatorsPaging = next;
+        }
+        rebuildWidgets();
     }
 
     /**
@@ -241,8 +704,8 @@ public final class CreditsScreen extends Screen {
      * languages in the generated (strongest-share-first) order. The name links when the
      * contributor has a URL.
      */
-    private Component personLine(TranslationContributor contributor) {
-        Component nameComp = contributor.url()
+    private Component personLine(TranslationContributor contributor, boolean own) {
+        Component nameComp = contributor.isAnonymous() ? anonymousName(own) : contributor.url()
                 .map(u -> link(Component.literal(contributor.name()), u))
                 .orElseGet(() -> Component.literal(contributor.name()));
 
@@ -267,9 +730,12 @@ public final class CreditsScreen extends Screen {
             // and the language are real; the percentage would be invented, so it is left off.
             return language;
         }
-        // At least 1% so a small-but-real contribution never reads as "0%". The "%" lives in the
-        // literal (not the translation format) so no locale has to escape it.
-        int percent = Math.max(1, (int) Math.round(share.fraction() * 100));
+        // At least 1% so a small-but-real contribution never reads as "0%", and never above 100%:
+        // LanguageShare's contributed <= total invariant is the GENERATOR's, and a relay credit
+        // counts approved submissions (books and narrative units included) against a denominator
+        // that is only the locale's lang-key count. The "%" lives in the literal (not the
+        // translation format) so no locale has to escape it.
+        int percent = Math.min(100, Math.max(1, (int) Math.round(share.fraction() * 100)));
         return Component.translatable("gui.dungeontrain.credits.translations.lang_percent",
                 language, Component.literal(percent + "%"));
     }
@@ -277,7 +743,7 @@ public final class CreditsScreen extends Screen {
     /** Style {@code label} as a blue, underlined, click-to-open-URL inline link. */
     private static Component link(MutableComponent label, String url) {
         return label.withStyle(s -> s
-                .withColor(COLOUR_LINK)
+                .withColor(CardCanvas.COLOUR_LINK)
                 .withUnderlined(true)
                 .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url)));
     }
@@ -292,34 +758,19 @@ public final class CreditsScreen extends Screen {
         }, url, true));
     }
 
-    /** The clickable {@link Style} under the given mouse position within the scrolled viewport, or null. */
-    private Style styleAt(double mouseX, double mouseY) {
-        if (mouseY < viewportTop || mouseY >= viewportBottom) {
-            return null;
-        }
-        int lh = this.font.lineHeight;
-        double canvasY = mouseY - viewportTop + scrollY;
-        for (Line line : lines) {
-            if (canvasY < line.canvasY() || canvasY >= line.canvasY() + lh) {
-                continue;
-            }
-            int lineWidth = this.font.width(line.text());
-            int startX = line.centered() ? this.width / 2 - lineWidth / 2 : line.x();
-            if (mouseX < startX || mouseX >= startX + lineWidth) {
-                continue;
-            }
-            return this.font.getSplitter().componentStyleAtWidth(line.text(), (int) (mouseX - startX));
-        }
-        return null;
-    }
-
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
-            Style style = styleAt(mouseX, mouseY);
+            Style style = canvas.styleAt(mouseX, mouseY, this.width);
             if (style != null && style.getClickEvent() != null
                     && style.getClickEvent().getAction() == ClickEvent.Action.OPEN_URL) {
                 openLink(style.getClickEvent().getValue());
+                return true;
+            }
+            if (style != null && style.getClickEvent() != null
+                    && style.getClickEvent().getAction() == ClickEvent.Action.RUN_COMMAND
+                    && style.getClickEvent().getValue().startsWith(CONTROL_PREFIX)) {
+                onControl(style.getClickEvent().getValue().substring(CONTROL_PREFIX.length()));
                 return true;
             }
         }
@@ -328,45 +779,47 @@ public final class CreditsScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (maxScroll > 0) {
-            this.scrollY = Mth.clamp(this.scrollY - (int) (scrollY * SCROLL_STEP), 0, maxScroll);
-            return true;
-        }
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return canvas.scroll(scrollY) || super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Blurred menu panorama (vanilla), then a translucent panel behind the
-        // scrolling viewport so text stays readable over the spinning background.
+        // Blurred menu panorama (vanilla), then the canvas's own translucent panel so text stays
+        // readable over the spinning background.
         super.renderBackground(g, mouseX, mouseY, partialTick);
-        g.fill(colX - PANEL_PAD, viewportTop - PANEL_PAD,
-                colX + colW + PANEL_PAD, viewportBottom + PANEL_PAD, COLOUR_PANEL);
+        canvas.renderPanel(g);
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Draws the background (with our panel) and the Done widget.
+        // Draws the background (with our panel) and the button row.
         super.render(g, mouseX, mouseY, partialTick);
+        canvas.render(g, this.width);
+        renderEditButtons(g, mouseX, mouseY, partialTick);
+    }
 
-        int lh = this.font.lineHeight;
-        g.enableScissor(colX - PANEL_PAD, viewportTop, colX + colW + PANEL_PAD, viewportBottom);
-        for (Img img : imgs) {
-            int drawY = viewportTop + img.canvasY() - scrollY;
-            if (drawY + img.h() < viewportTop || drawY > viewportBottom) {
-                continue; // cull off-viewport photos
-            }
-            g.blit(img.tex(), img.x(), drawY, img.w(), img.h(), 0.0F, 0.0F, TEX, TEX, TEX, TEX);
+    /**
+     * The Edit buttons, placed against their lines at the current scroll and clipped to the
+     * viewport like the canvas's own content. A button scrolled out of view is also hidden so it
+     * cannot be clicked through the button row or the title.
+     */
+    private void renderEditButtons(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        if (editSlots.isEmpty()) {
+            return;
         }
-        for (Line line : lines) {
-            int drawY = viewportTop + line.canvasY() - scrollY;
-            if (drawY + lh < viewportTop || drawY > viewportBottom) {
-                continue; // cull off-viewport lines
+        int top = canvas.viewportTop();
+        int bottom = canvas.viewportBottom();
+        g.enableScissor(canvas.colX() - CardCanvas.PANEL_PAD, top,
+                canvas.colX() + canvas.colW() + CardCanvas.PANEL_PAD, bottom);
+        for (EditSlot slot : editSlots) {
+            // Centred on the 9px text line: the button is 14 tall, so it starts 2-3px above it.
+            int y = canvas.screenY(slot.canvasY()) - (EDIT_H - canvas.lineHeight()) / 2;
+            slot.button().setY(y);
+            boolean visible = y + EDIT_H > top && y < bottom;
+            slot.button().visible = visible;
+            if (visible) {
+                slot.button().render(g, mouseX, mouseY, partialTick);
             }
-            int x = line.centered()
-                    ? this.width / 2 - this.font.width(line.text()) / 2
-                    : line.x();
-            g.drawString(this.font, line.text(), x, drawY, line.colour(), false);
         }
         g.disableScissor();
     }

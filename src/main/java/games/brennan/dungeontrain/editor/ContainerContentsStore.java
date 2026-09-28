@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Per-plot sidecar of {@code localPos → ContainerContentsPool}, parallel to
@@ -84,13 +85,24 @@ public final class ContainerContentsStore {
 
     public static final int CURRENT_SCHEMA_VERSION = 3;
 
-    static final String SUBDIR = "containers";
-    private static final String EXT = ".contents.json";
+    public static final String SUBDIR = "containers";
+    static final String EXT = ".contents.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/containers/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/containers";
 
     /** Session cache keyed by plot key. */
     private static final Map<String, ContainerContentsStore> CACHE = new HashMap<>();
+
+    /**
+     * Plot keys whose document lives somewhere other than the config dir, keyed to that file.
+     *
+     * <p>One caller: the Train Builder, whose plot key is the constant {@code builder:carriage} for
+     * every builder world, and whose document therefore has to live inside the world save (see
+     * {@code BuilderStorePaths}) rather than in one shared config file. Registered rather than
+     * passed so that every existing entry point — {@link #loadFor}, {@link #save},
+     * {@link #invalidate} — keeps working untouched.</p>
+     */
+    private static final Map<String, Path> PATH_OVERRIDES = new HashMap<>();
 
     private final String plotKey;
     private final Map<BlockPos, ContainerContentsPool> pools;
@@ -113,7 +125,21 @@ public final class ContainerContentsStore {
      * nothing.</p>
      */
     public static String trackPlotKey(TrackKind kind, String name) {
-        return "track:" + kind.id() + ":" + name;
+        return BlockVariantPlot.trackKey(kind, name);
+    }
+
+    /**
+     * Point {@code plotKey}'s document at {@code file} instead of the config dir, or pass
+     * {@code null} to put it back. Idempotent: re-registering the same file leaves the cached
+     * store alone, so a caller that resolves this on every menu open costs one map lookup.
+     *
+     * <p>An overridden key is also excluded from the dev-mode source write-through in
+     * {@link #save} — an unnamed draft has no bundled resource to keep in lockstep with.</p>
+     */
+    public static synchronized void setPathOverride(String plotKey, @Nullable Path file) {
+        if (plotKey == null) return;
+        Path previous = file == null ? PATH_OVERRIDES.remove(plotKey) : PATH_OVERRIDES.put(plotKey, file);
+        if (!Objects.equals(previous, file)) CACHE.remove(plotKey);
     }
 
     public static synchronized ContainerContentsStore loadFor(String plotKey) {
@@ -243,6 +269,14 @@ public final class ContainerContentsStore {
         return true;
     }
 
+    /**
+     * Every distinct loot-prefab id a container here links to, sorted. What a template needs from
+     * the prefab library to roll its chests as authored — see {@link TemplateLootPrefabs}.
+     */
+    public synchronized java.util.SortedSet<String> linkedPrefabIds() {
+        return new java.util.TreeSet<>(links.values());
+    }
+
     /** All positions in this store currently linked to {@code prefabId}. */
     public synchronized java.util.List<BlockPos> positionsLinkedTo(String prefabId) {
         if (prefabId == null) return java.util.Collections.emptyList();
@@ -333,8 +367,9 @@ public final class ContainerContentsStore {
 
         // Auto-propagate to source tree when in dev mode so menu edits don't
         // drift away from the bundled resource. Failures are logged but
-        // non-fatal — user config is the source of truth.
-        if (EditorDevMode.isEnabled() && sourceTreeAvailable()) {
+        // non-fatal — user config is the source of truth. An overridden key is
+        // an unnamed draft with no bundled resource behind it, so it is skipped.
+        if (EditorDevMode.isEnabled() && !PATH_OVERRIDES.containsKey(plotKey) && sourceTreeAvailable()) {
             try {
                 saveToSource();
             } catch (IOException e) {
@@ -396,6 +431,36 @@ public final class ContainerContentsStore {
         Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
         LOGGER.info("[DungeonTrain] Promoted container contents sidecar for {} from {} to {}", plotKey, src, dst);
         return true;
+    }
+
+    /**
+     * Remove the per-install config-dir sidecar for {@code plotKey} and drop its cached document.
+     * The inverse of {@link #save()} — used when the plot's template is deleted outright, so the
+     * next template saved under the same key starts with no inherited links or pools.
+     *
+     * @return {@code true} if a file was removed.
+     */
+    public static synchronized boolean deleteConfig(String plotKey) throws IOException {
+        Path file = configPathFor(plotKey);
+        boolean existed = Files.deleteIfExists(file);
+        CACHE.remove(plotKey);
+        if (existed) LOGGER.info("[DungeonTrain] Deleted container contents sidecar for {} ({})", plotKey, file);
+        return existed;
+    }
+
+    /**
+     * Remove the source-tree copy of {@code plotKey}'s sidecar — the inverse of {@link #promoteFor}
+     * / {@link #saveToSource()}, for a dev-mode delete of the plot's template.
+     *
+     * @return {@code true} if a file was removed; {@code false} when there was nothing to remove or
+     *         no writable source tree.
+     */
+    public static synchronized boolean deleteFromSource(String plotKey) throws IOException {
+        if (!sourceTreeAvailable()) return false;
+        Path file = sourcePathFor(plotKey);
+        boolean existed = SourceTreeFiles.deleteWithClasspathTwin(file);
+        if (existed) LOGGER.info("[DungeonTrain] Deleted bundled container contents sidecar for {} ({})", plotKey, file);
+        return existed;
     }
 
     public static boolean sourceTreeAvailable() {
@@ -489,6 +554,15 @@ public final class ContainerContentsStore {
                 if (ce.slotOverride() != ContainerContentsEntry.SLOT_AUTO) {
                     sb.append(", \"slot\": ").append(ce.slotOverride());
                 }
+                if (ce.potionId() != null) {
+                    sb.append(", \"potion\": \"").append(ce.potionId()).append("\"");
+                }
+                if (!ce.scaleWithDistance()) {
+                    sb.append(", \"scale\": false");
+                }
+                if (ce.potionForm() != PotionForm.ANY) {
+                    sb.append(", \"form\": \"").append(ce.potionForm().id()).append("\"");
+                }
                 sb.append(" }");
                 firstEntry = false;
             }
@@ -513,6 +587,21 @@ public final class ContainerContentsStore {
     }
 
     private static ContainerContentsStore loadFromDisk(String plotKey) {
+        Path override = PATH_OVERRIDES.get(plotKey);
+        if (override != null) {
+            // No bundled-resource fallback: an overridden key is a draft that belongs to one world,
+            // and there is no shipped document it could sensibly fall back to.
+            if (!Files.isRegularFile(override)) {
+                return new ContainerContentsStore(plotKey, new LinkedHashMap<>(), new LinkedHashMap<>());
+            }
+            try (Reader r = Files.newBufferedReader(override, StandardCharsets.UTF_8)) {
+                return parseFromReader(r, plotKey, override.toString());
+            } catch (IOException e) {
+                LOGGER.error("[DungeonTrain] Failed to read container contents store {}: {}",
+                    override, e.toString());
+                return new ContainerContentsStore(plotKey, new LinkedHashMap<>(), new LinkedHashMap<>());
+            }
+        }
         Path file = UserContentPaths.findFile(SUBDIR, safeFilename(plotKey) + EXT);
         if (file != null) {
             try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
@@ -601,8 +690,17 @@ public final class ContainerContentsStore {
                         int slotOverride = eo.has("slot")
                             ? eo.get("slot").getAsInt()
                             : ContainerContentsEntry.SLOT_AUTO;
+                        ResourceLocation potionId = eo.has("potion") && eo.get("potion").isJsonPrimitive()
+                            ? ResourceLocation.tryParse(eo.get("potion").getAsString())
+                            : null;
+                        boolean scale = eo.has("scale") && eo.get("scale").isJsonPrimitive()
+                            ? eo.get("scale").getAsBoolean()
+                            : ContainerContentsEntry.DEFAULT_SCALE_WITH_DISTANCE;
+                        PotionForm form = eo.has("form") && eo.get("form").isJsonPrimitive()
+                            ? PotionForm.parse(eo.get("form").getAsString())
+                            : ContainerContentsEntry.DEFAULT_POTION_FORM;
                         entries.add(new ContainerContentsEntry(id, count, weight,
-                            randDur, durChance, randEnch, enchChance, slotOverride));
+                            randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form));
                     }
                     if (!entries.isEmpty()) {
                         out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax));
@@ -637,11 +735,22 @@ public final class ContainerContentsStore {
         }
     }
 
+    /**
+     * The filename this store keeps {@code plotKey} under, extension included — what
+     * {@link TemplateSidecars} carries between installs. Stated here rather than rebuilt there so
+     * the sanitising rule below stays this class's business.
+     */
+    public static String basenameFor(String plotKey) {
+        return safeFilename(plotKey) + EXT;
+    }
+
     private static String safeFilename(String plotKey) {
         return plotKey.replace(':', '_').replace('/', '_').toLowerCase(Locale.ROOT);
     }
 
     private static Path configPathFor(String plotKey) {
+        Path override = PATH_OVERRIDES.get(plotKey);
+        if (override != null) return override;
         return UserContentPaths.dir(SUBDIR).resolve(safeFilename(plotKey) + EXT);
     }
 

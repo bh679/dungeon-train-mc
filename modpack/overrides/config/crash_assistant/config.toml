@@ -1,0 +1,26 @@
+# Crash Assistant — Dungeon Train modpack overrides.
+#
+# Only the options the pack deliberately changes live here. Crash Assistant back-fills every
+# option it does not find (CrashAssistantConfig.setupDefaultValues), so this file stays valid
+# as the mod adds options, and every unlisted option keeps the mod author's default.
+
+[general]
+# The "request help" button. Left at the default "CHANGE_ME" this sends our crashing players to
+# the NeoForge Discord instead of ours. This invite lands them directly in #bugs-feedback.
+help_link = "https://discord.gg/cuDBedvF7f"
+
+[text]
+support_name = "Dungeon Train Discord"
+# No emoji on purpose: the crash GUI is a plain Java/Swing window, where emoji font fallback is
+# unreliable and would render as tofu. The invite above still lands the player in the channel.
+support_place = "#bugs-feedback"
+modpack_name = "Dungeon Train"
+
+[generated_message]
+text_under_crashed = "Please paste this whole message into #bugs-feedback on the Dungeon Train Discord — it already contains every log we need."
+
+[modpack_modlist]
+# Must not be empty: Crash Assistant appends whoever launches the pack first to an empty list,
+# which would mark every player a modpack creator and permanently break the added/removed/updated
+# mod diff for them.
+modpack_creators = ["brennan_hatton"]

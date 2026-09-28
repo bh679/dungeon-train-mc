@@ -72,13 +72,33 @@ jobs:
       - name: Dependency version pins (Sable chain + sibling floors)
         # Two checks. (1) Sable: fails if sable_mod_version (DT's exact mods.toml lock) or
         # the modpack's sable.version drift from gradle.properties sable_version.
-        # (2) Siblings: fails if a modpack-pinned AIN/AIS/PMOB/ECP/TE build is OLDER than the
+        # (2) Siblings: fails if a modpack-pinned AIN/AIS/PMOB/ECP/TE/KT (+ hybrid DB/SFF) build is OLDER than the
         # <mod>_min_version floor DT declares — i.e. the pack would ship a sibling the mod
         # refuses to load against. No network.
         run: python3 scripts/modpack/check-pins.py
 
+      - name: Modpack mod_ids present (feeds the generated whitelist)
+        # Every modpack entry is auto-approved for fair play by generateApprovedMods, which reads
+        # its mod_ids. Fails if an entry lacks them (unless "whitelist": false) or holds a store
+        # slug instead of a modId. No network.
+        run: python3 scripts/modpack/check-mod-ids.py
+
+      - name: Cache pinned modpack jars
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/dungeontrain-modpack-jars
+          key: modpack-jars-${{ hashFiles('modpack/modpack.config.json') }}
+          restore-keys: modpack-jars-
+
+      - name: Modpack mod_ids match the pinned jars
+        # Downloads each pinned jar (Modrinth, or CurseForge for curseforge_only) and requires
+        # mod_ids == its [[mods]] + jar-in-jar modIds, so a version bump that renames or adds a
+        # module can't silently free-play the players running it.
+        run: python3 scripts/modpack/check-mod-ids.py --verify
+
       - name: Modpack manifest + relation tests
         run: |
+          python3 scripts/modpack/test_check_mod_ids.py
           python3 scripts/modpack/test_build_manifest.py
           python3 scripts/modpack/test_check_relations.py
           python3 scripts/modpack/test_check_overrides.py
@@ -87,6 +107,31 @@ jobs:
           python3 scripts/modpack/test_upload_retry.py
           python3 scripts/modpack/test_reconcile.py
           python3 scripts/modpack/test_wait_for_approval.py
+          python3 scripts/modpack/test_catch_up.py
+
+  # Stdlib-only Python guard for the client/server network handshake. DungeonTrainNet's
+  # PROTOCOL_VERSION string is the only thing that keeps an older client off a newer server:
+  # NeoForge negotiates payload *types*, not their layouts, so a packet that gains a field still
+  # handshakes fine and then kicks the client mid-session when the server reads past the end of
+  # its buffer. PR #1449 shipped exactly that (EditorPlotActionPacket gained `boolean centre`,
+  # version stayed "72"). This diffs the PR against its base over net/ and fails when a packet's
+  # encode/decode idioms changed without the PROTOCOL_VERSION line changing too. Pull requests
+  # only — a push to main has no base to diff against. No network beyond the checkout.
+  net-checks:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needs the merge-base with the target branch
+
+      - name: Packet layout change bumps PROTOCOL_VERSION
+        run: python3 scripts/net/check-protocol-version.py --base origin/${{ github.base_ref }}
+
+      - name: Protocol-version check tests (codec fixtures + #1449 regression)
+        run: python3 scripts/net/test_check_protocol_version.py
 
   # Stdlib-only Python guard for the translation provenance sidecars (who translated / who
   # human-reviewed each string). Two flavours, both under localization/ and both repo-side
@@ -110,11 +155,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The check nothing was doing. Both existing guards are self-referential — validate-locale
+      # compared each locale to the es_es template (which carried the identical gap) and
+      # check-provenance compares each sidecar to its OWN lang file — so a GUI string added to
+      # en_us.json alone left nineteen languages showing English with every check green. That
+      # shipped twice: 109 keys in v0.619.0 and 144 keys again by 2026-08-30, the second time
+      # also blocking the relay import, because players had translated the drifted keys from the
+      # in-game editor and there was no line to write them to.
+      - name: Every locale carries every English key
+        run: python3 scripts/localization/check-lang-parity.py
+
+      # The full structural suite: key sets, file sets, and shape against the es_es template,
+      # plus the value checks (placeholders, empty strings, trigger-book title length, note
+      # offsets). It ran --values-only until the AIN overlay debt it was tripping over was paid
+      # off — vi_vn and fil_ph missing `item_types`, three locales carrying a stray segment
+      # `label`, and zh_cn's synonym pool written against a different layout. Those are fixed,
+      # so this asks the whole question again. If it ever goes red, fix the locale rather than
+      # narrowing the gate: a check that is permanently failing is a check nobody reads.
+      - name: Locale trees are structurally intact
+        run: |
+          locales=$(ls src/main/resources/assets/dungeontrain/lang \
+            | sed 's/\.json$//' | grep -v '^en_us$' | tr '\n' ' ')
+          python3 scripts/localization/validate-locale.py $locales
+
       - name: Per-line translation provenance aligned with lang files (all namespaces)
         run: python3 scripts/localization/check-provenance.py
 
       - name: Per-book narrative provenance aligned with book files
         run: python3 scripts/localization/check-narrative-provenance.py
+
+      # Book prose is Component.literal and names its figures {deaths}, so neither the printf
+      # guard on the import side nor the one in the in-game editor can see them. Without this a
+      # translation that drops one ships silently — see check-book-placeholders.py.
+      - name: Translated books keep every {placeholder} their English original has
+        run: python3 scripts/localization/check-book-placeholders.py
 
       - name: Provenance script tests
         run: |
@@ -123,4 +197,13 @@ jobs:
           python3 scripts/localization/test_check_narrative_provenance.py
           python3 scripts/localization/test_stamp_narrative_provenance.py
           python3 scripts/localization/test_provenance_io.py
+          python3 scripts/localization/test_build_review_package.py
+          python3 scripts/localization/test_apply_translator_renames.py
           python3 scripts/localization/test_import_approved_translations.py
+          python3 scripts/localization/test_import_english_edits.py
+          python3 scripts/advancements/test_import_requirement_edits.py
+          python3 scripts/localization/test_lang_format.py
+          python3 scripts/localization/test_book_format.py
+          python3 scripts/localization/test_check_book_placeholders.py
+          python3 scripts/localization/test_plural_forms.py
+          python3 scripts/localization/test_merge_locale_keys.py

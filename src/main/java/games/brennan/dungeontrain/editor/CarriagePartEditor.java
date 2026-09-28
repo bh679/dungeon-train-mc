@@ -9,11 +9,13 @@ import games.brennan.dungeontrain.train.CarriagePartPlacer;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateStamp;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -22,6 +24,7 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,11 +71,10 @@ public final class CarriagePartEditor {
 
     /**
      * First Z row — sourced from {@link EditorLayout#PARTS_FIRST_Z}.
-     * Sits inside the CARRIAGES view's Z range, right after the carriage
-     * row, with the contents and tracks views shifted to disjoint Z
-     * regions past {@link EditorLayout#CARRIAGES_VIEW_MAX_Z} so no other
-     * editor's {@code plotContaining} can ever claim a position inside a
-     * parts plot.
+     * Right after the carriage row, inside the CARRIAGES view. The other
+     * categories lay out from the same origin and predict plots across
+     * these rows; they never claim a position here because
+     * {@code plotContaining} answers only for the resident category.
      */
     private static final int FIRST_PLOT_Z = EditorLayout.PARTS_FIRST_Z;
 
@@ -176,6 +178,8 @@ public final class CarriagePartEditor {
 
     /** Resolve the plot the player is standing in, or {@code null} if outside every part plot (1-block outline margin included). */
     public static PlotLocation plotContaining(BlockPos pos, CarriageDims dims) {
+        // Answers only while CARRIAGES is the resident category — every category shares the origin.
+        if (!EditorStampedCategoryState.isActive(EditorCategory.CARRIAGES)) return null;
         for (CarriagePartKind kind : CarriagePartKind.values()) {
             for (String name : CarriagePartRegistry.registeredNames(kind)) {
                 BlockPos o = plotOrigin(kind, name, dims);
@@ -225,11 +229,19 @@ public final class CarriagePartEditor {
         enter(player, kind, name, true);
     }
 
+    /**
+     * @param onTop roof landing in front of the menu, else the centre — a part has no doorway —
+     *              stepping to the nearest free column if that cell is built up.
+     */
     public static void enter(ServerPlayer player, CarriagePartKind kind, String name, boolean onTop) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        // Read before the un-hide below can shift the layout. Already inside this part's plot is a
+        // walk to its menu, not a reload — restamping would throw away every unsaved edit.
+        boolean alreadyHere = EditorPlotScope.standingIn(player, new Template.Part(kind, name));
 
         CarriageEditor.rememberReturn(player);
         PART_SESSIONS.put(player.getUUID(), new PartSession(kind, name));
@@ -253,19 +265,14 @@ public final class CarriagePartEditor {
             // Un-hiding re-inserts this part into the middle of the row, shifting its siblings —
             // restamp the whole grid so every plot lands on its final slot.
             stampAllPlots(overworld, dims);
-        } else {
+        } else if (!alreadyHere) {
             CarriagePartPlacer.eraseAt(overworld, origin, kind, dims);
             stampCurrent(overworld, origin, kind, name, dims);
             setOutline(overworld, origin, kind, dims);
         }
 
         Vec3i size = kind.dims(dims);
-        double tx = origin.getX() + size.getX() / 2.0;
-        double ty = onTop
-            ? origin.getY() + size.getY() + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + size.getZ() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        EditorPlotArrival.land(player, overworld, origin, size, onTop, EditorPlotArrival.Inside.CENTRE, null);
 
         LOGGER.info("[DungeonTrain] Part editor enter: {} -> {}:{} plot at {} size={}x{}x{} ({})",
             player.getName().getString(), kind.id(), name, origin,
@@ -334,8 +341,32 @@ public final class CarriagePartEditor {
                 yield stored.get();
             }
         };
-        String sourceName = sourceNameHolder[0];
+        return placeNew(player, overworld, dims, kind, seed, sourceNameHolder[0], name, source.name());
+    }
 
+    /**
+     * A new part {@code name} of {@code kind} copied from {@code sourceName}'s <b>saved</b> template
+     * and sidecars — the part half of the Train Editor's Save-as, which saves the source first so
+     * the saved template is the player's edits. Teleports the player into the new plot.
+     */
+    public static BlockPos createCopyOf(ServerPlayer player, CarriagePartKind kind, String sourceName,
+                                        String name) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        if (CarriagePartRegistry.isKnown(kind, name)) {
+            throw new IOException("Part '" + kind.id() + ":" + name + "' is already registered.");
+        }
+        StructureTemplate seed = CarriagePartTemplateStore.get(overworld, kind, sourceName, dims)
+            .orElseThrow(() -> new IOException("Part '" + kind.id() + ":" + sourceName + "' has no saved template."));
+        return placeNew(player, overworld, dims, kind, seed, sourceName, name, "copy");
+    }
+
+    /** The shared tail of {@link #createFrom} and {@link #createCopyOf}: register, stamp, save, enter. */
+    private static BlockPos placeNew(ServerPlayer player, ServerLevel overworld, CarriageDims dims,
+                                     CarriagePartKind kind, StructureTemplate seed, String sourceName,
+                                     String name, String how) throws IOException {
         // Allocate the next free slot before registering so the index lands at
         // the end of the list (allocation depends on the current layout size).
         BlockPos targetOrigin = nextFreePlotOrigin(kind, dims);
@@ -346,8 +377,7 @@ public final class CarriagePartEditor {
         CarriagePartPlacer.eraseAt(overworld, targetOrigin, kind, dims);
         if (seed != null) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            seed.placeInWorld(overworld, targetOrigin, targetOrigin, settings, overworld.getRandom(), 3);
-            TemplateDecor.replace(overworld, targetOrigin, seed, settings, null);
+            TemplateStamp.placeWithDecor(overworld, targetOrigin, seed, settings);
         } else {
             stampStarter(overworld, targetOrigin, kind, dims);
         }
@@ -362,7 +392,7 @@ public final class CarriagePartEditor {
         // CarriageContentsEditor.duplicate. Without this, the geometry copies
         // but each cell loses its randomized-state list.
         if (sourceName != null) {
-            copyVariantSidecar(kind, sourceName, name, dims);
+            copyVariantSidecar(kind, sourceName, name);
         }
 
         CarriageEditor.rememberReturn(player);
@@ -375,7 +405,7 @@ public final class CarriagePartEditor {
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
         LOGGER.info("[DungeonTrain] Part editor createFrom: {} -> {}:{} (source={}) plot at {}",
-            player.getName().getString(), kind.id(), name, source, targetOrigin);
+            player.getName().getString(), kind.id(), name, how, targetOrigin);
         return targetOrigin;
     }
 
@@ -393,37 +423,18 @@ public final class CarriagePartEditor {
     }
 
     /**
-     * Copy the variant-blocks sidecar from {@code sourceName} onto
-     * {@code targetName} so a "new part from current/standard" duplicate
-     * keeps the per-cell "pick from these alternatives" authoring data.
-     * No-op when the source sidecar is empty. Package-private for tests.
+     * Carry every sidecar of {@code (kind, sourceName)} onto {@code targetName} so a "new part from
+     * current/standard" duplicate keeps the per-cell "pick from these alternatives" authoring data
+     * (entries, lock-ids and mirror flags — the file goes across verbatim) and its container links.
+     * No-op when the source has nothing on disk. Package-private for tests.
      *
-     * <p>Mirrors the same logic baked inline into
-     * {@link CarriageEditor#duplicate} and
-     * {@link CarriageContentsEditor#duplicate}. The {@link CarriageVariantBlocks.Entry}
-     * record only exposes {@code (localPos, states)}, so lock-id groupings —
-     * cells sharing a non-zero lock-id render the same random index together —
-     * are copied separately via {@link CarriagePartVariantBlocks#allLockIds()}
-     * after the states pass, so the duplicate keeps its variant grouping too.
+     * <p>One path with {@link CarriageEditor#duplicate} and {@link CarriageContentsEditor#duplicate}:
+     * {@link TemplateCopy} walks {@link TemplateSidecars#filesFor}, so a sidecar added there is
+     * carried here without a change.</p>
      */
-    static void copyVariantSidecar(CarriagePartKind kind, String sourceName, String targetName, CarriageDims dims) throws IOException {
-        Vec3i partSize = kind.dims(dims);
-        CarriagePartVariantBlocks sourceSidecar =
-            CarriagePartVariantBlocks.loadFor(kind, sourceName, partSize);
-        if (sourceSidecar.isEmpty()) return;
-        CarriagePartVariantBlocks copy = CarriagePartVariantBlocks.empty();
-        for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
-            copy.put(e.localPos(), e.states());
-        }
-        // Carry over the lock-id grouping (states pass above only copies the
-        // candidate lists; lockIds live in a parallel map). setLockId requires
-        // the cell to exist — guaranteed since every entry was just put().
-        for (java.util.Map.Entry<BlockPos, Integer> lk : sourceSidecar.allLockIds().entrySet()) {
-            copy.setLockId(lk.getKey(), lk.getValue());
-        }
-        copy.save(kind, targetName);
-        LOGGER.info("[DungeonTrain] Part editor copyVariantSidecar: {} entries copied from {}:{} to {}:{}",
-            sourceSidecar.size(), kind.id(), sourceName, kind.id(), targetName);
+    static void copyVariantSidecar(CarriagePartKind kind, String sourceName, String targetName) throws IOException {
+        TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.PART,
+            kind.id(), sourceName, targetName);
     }
 
     /**
@@ -451,6 +462,8 @@ public final class CarriagePartEditor {
         StructureTemplate template = captureTemplate(overworld, origin, kind, dims);
         CarriagePartTemplateStore.save(kind, name, template);
         CarriagePartRegistry.register(kind, name);
+        // Saved: the sidecar on disk is this part's baseline again (see EditorSidecarBaseline).
+        EditorSidecarBaseline.forgetFile(CarriagePartVariantBlocks.configPathFor(kind, name));
 
         // Contents store: persist any in-session loot-prefab link changes
         // accumulated since enter (PrefabUseHandler defers its writes until
@@ -524,10 +537,14 @@ public final class CarriagePartEditor {
         StructureTemplate template = captureTemplate(overworld, oldOrigin, kind, dims);
 
         CarriagePartTemplateStore.save(kind, newName, template);
+        // Variants sidecar travels with the template — without this the old name's sidecar was
+        // orphaned and the new name loaded empty (then dev-promoted empty).
+        CarriagePartVariantBlocks.rename(kind, oldName, newName);
         CarriagePartRegistry.register(kind, newName);
 
         clearPlot(overworld, kind, oldName, dims);
         CarriagePartTemplateStore.delete(kind, oldName);
+        CarriagePartVariantBlocks.invalidate(kind, oldName);
         CarriagePartRegistry.unregister(kind, oldName);
 
         BlockPos newOrigin = plotOrigin(kind, newName, dims);
@@ -591,6 +608,7 @@ public final class CarriagePartEditor {
         // re-stamp reads the last-saved disk state; placement writes only
         // touch the in-memory cache until /save.
         ContainerContentsStore.invalidate("part:" + kind.id() + ":" + name);
+        EditorSidecarBaseline.forgetFile(CarriagePartVariantBlocks.configPathFor(kind, name));
         CarriagePartPlacer.eraseAt(level, origin, kind, dims);
         stampCurrent(level, origin, kind, name, dims);
         setOutline(level, origin, kind, dims);
@@ -608,12 +626,30 @@ public final class CarriagePartEditor {
      * <b>compacted to the front of the row with the hidden parts' frames removed entirely</b>.</p>
      */
     public static void stampAllPlots(ServerLevel level, CarriageDims dims) {
+        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
+        EditorStampQueue.flush();
+        for (EditorStampQueue.Job job : stampAllPlotJobs(level, dims)) {
+            job.work().run();
+        }
+    }
+
+    /**
+     * {@link #stampAllPlots} as one job per row clear and one per part, in the order it runs them,
+     * for the category entry to spread across ticks. A kind's row clear precedes its stamps, which
+     * the queue's in-order execution preserves.
+     */
+    public static List<EditorStampQueue.Job> stampAllPlotJobs(ServerLevel level, CarriageDims dims) {
+        List<EditorStampQueue.Job> jobs = new ArrayList<>();
         for (CarriagePartKind kind : CarriagePartKind.values()) {
-            clearRowExtent(level, kind, CarriagePartRegistry.registeredNames(kind).size(), dims);
+            int slots = CarriagePartRegistry.registeredNames(kind).size();
+            jobs.add(new EditorStampQueue.Job("clear parts row " + kind,
+                () -> clearRowExtent(level, kind, slots, dims)));
             for (String name : layoutNames(kind)) {
-                stampPlot(level, kind, name, dims);
+                jobs.add(new EditorStampQueue.Job("stamp part " + kind + "/" + name,
+                    () -> stampPlot(level, kind, name, dims)));
             }
         }
+        return jobs;
     }
 
     /** Erase footprint + cage for the first {@code slots} slots on {@code kind}'s row (the widest it can be). */
@@ -670,8 +706,7 @@ public final class CarriagePartEditor {
         Optional<StructureTemplate> stored = CarriagePartTemplateStore.get(level, kind, name, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
-            TemplateDecor.replace(level, origin, stored.get(), settings, null);
+            TemplateStamp.placeWithDecor(level, origin, stored.get(), settings);
         }
         if (plotIsEmpty(level, origin, kind, dims)) {
             stampStarter(level, origin, kind, dims);

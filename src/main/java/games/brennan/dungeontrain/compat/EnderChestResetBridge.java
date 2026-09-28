@@ -5,6 +5,8 @@ import games.brennan.enderchestpersistence.EnderChestStore;
 import org.slf4j.Logger;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -26,6 +28,22 @@ public final class EnderChestResetBridge {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private EnderChestResetBridge() {}
+
+    /**
+     * The folder ECP keeps every player's stash in — {@code config/enderchestpersistence/}, which
+     * is inside the folder launchers wipe on a pack update. {@code DungeonTrainBackup} registers
+     * it as an extra tree to archive. Empty on any ECP-side failure, so a moved seam degrades to
+     * "stash not backed up" rather than a failed registration.
+     */
+    public static Optional<Path> stashDir() {
+        try {
+            Path parent = EnderChestStore.file(new UUID(0L, 0L)).getParent();
+            return Optional.ofNullable(parent);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] EnderChestResetBridge: could not resolve ECP stash folder", t);
+            return Optional.empty();
+        }
+    }
 
     /** True when this player has a stash file on disk. False on any ECP-side failure. */
     public static boolean hasStash(UUID uuid) {

@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeonbackup.api.Located;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
 import org.slf4j.Logger;
 
@@ -82,7 +83,7 @@ public final class RelayOutbox {
     private static final Set<String> BATCHABLE_PATHS = Set.of(
             "/telemetry/book-read", "/telemetry/run-summary", "/telemetry/death",
             "/telemetry/world-info", "/telemetry/death-equipment", "/telemetry/death-detail",
-            "/telemetry/death-inventory", "/telemetry/builder-time");
+            "/telemetry/death-inventory", "/telemetry/builder-time", "/telemetry/portal-stats");
     private static final String BATCH_PATH = "/telemetry/batch";
     /** Batch-POST statuses that mean "this relay can't take the batch" → deliver the items individually. */
     private static final Set<Integer> BATCH_FALLBACK_STATUSES = Set.of(404, 405, 413, 501);
@@ -559,7 +560,7 @@ public final class RelayOutbox {
 
     private static Path defaultFile() {
         try {
-            return new PlayerDataPaths.Located(
+            return new Located(
                 PlayerDataPaths.dir(PlayerDataPaths.OUTBOX).resolve(NEW_FILE_NAME),
                 PlayerDataPaths.configRoot().resolve(FILE_NAME)).read();
         } catch (Throwable t) {

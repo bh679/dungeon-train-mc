@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
@@ -14,6 +15,7 @@ import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.template.GateContext;
+import games.brennan.dungeontrain.template.StageResolver;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateType;
@@ -161,7 +163,34 @@ public final class CarriagePlacer {
         // over a carriage interior whose light engine has not caught up, and it runs at ordinary
         // coordinates near the origin where the mixin's shipyard test cannot see it. Without this a
         // saved wheat template came back empty the next time its author opened it in the editor.
+        // No StagePlacementScope here on purpose: editor plots are captured back into templates on
+        // save, so stage placeholders must stay placeholders in every editor stamp.
         return CarriageStampGuard.call(() -> placeAtPreviewGuarded(level, origin, variant, dims));
+    }
+
+    /**
+     * The editor screen's stage preview: the same "keep shell, swap parts" composition the plot
+     * preview makes for the focused Stage, but for an explicit {@code stageId} and rolled from an
+     * explicit {@code seed} — so the Stages tab can show any stage without selecting it, and
+     * re-roll the part and shell block variants on demand. Stamped silently (no relight): the
+     * scratch footprint is captured and erased within the tick, so no light ever needs to be right.
+     *
+     * <p>Unlike the plot preview ({@link #placeAt(ServerLevel, BlockPos, CarriageVariant, CarriageDims)}),
+     * this stamp runs inside a {@link StagePlacementScope} for {@code stageId}, so stage placeholder
+     * blocks resolve to that stage's real palette — the whole point of the picture. That is safe
+     * here and nowhere else in the editor: the scratch footprint is captured and erased within the
+     * tick and never saved back into a template.</p>
+     */
+    public static Set<BlockPos> placeStagePreview(ServerLevel level, BlockPos origin, CarriageVariant variant,
+                                                  CarriageDims dims, long seed, String stageId) {
+        return CarriageStampGuard.call(() -> StagePlacementScope.with(stageId, () -> {
+            String base = stampBase(level, origin, variant, dims, seed, 0, false, false,
+                GateContext.WORLDX_FROM_PIDX, /*relight*/ false);
+            String overlay = stampPartsOverlay(level, origin, variant, dims, seed, 0, false, false,
+                GateContext.WORLDX_FROM_PIDX, stageId, /*relight*/ false);
+            applyVariantBlocks(level, origin, variant, dims, seed, 0);
+            return finishPlace(level, origin, variant, dims, base, overlay);
+        }));
     }
 
     private static Set<BlockPos> placeAtPreviewGuarded(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
@@ -265,9 +294,22 @@ public final class CarriagePlacer {
         // cascades over it, which is what was popping saved crops out of farm carriages. See
         // CarriageStampGuard. Nesting-safe: TrainAssembler holds the same guard across the wider
         // place/assemble/contents sequence.
-        return CarriageStampGuard.call(() -> placeAtGuarded(
+        // The stage this carriage lands in is what its stage placeholder blocks resolve to — held
+        // in scope for the whole stamp (shell, parts, portal corridor, sidecars, contents).
+        String stageId = stageIdFor(level, carriageIndex, dims, groupAnchorWorldX);
+        return CarriageStampGuard.call(() -> StagePlacementScope.with(stageId, () -> placeAtGuarded(
             level, origin, variant, dims, config, carriageIndex,
-            applyContents, flatbedAtBack, flatbedAtFront, groupAnchorWorldX));
+            applyContents, flatbedAtBack, flatbedAtFront, groupAnchorWorldX)));
+    }
+
+    /**
+     * The stage carriage {@code carriageIndex} resolves to — {@link StageResolver} over the same
+     * gate context the parts pick uses — or {@code null} when no stage claims that level/phase
+     * (placeholders then resolve through the default palette).
+     */
+    static String stageIdFor(ServerLevel level, int carriageIndex, CarriageDims dims, int groupAnchorWorldX) {
+        return StageResolver.stageIdFor(
+            partGateContext(level, carriageIndex, dims, groupAnchorWorldX));
     }
 
     private static Set<BlockPos> placeAtGuarded(
@@ -290,7 +332,12 @@ public final class CarriagePlacer {
         // Recorded for every carriage, not only the portal ones: an index the rolling window brings
         // back round as an ordinary carriage has to stop answering yes, or the swap plane outlives
         // the corridor it was built for.
-        PortalRegistry.get(level).noteStamped(carriageIndex, portalCorridor || portalMiddle);
+        // With the stage in scope — the one this carriage's stage placeholders resolve through —
+        // so every copy of a portal corridor (twin, room tile, extra exit) can resolve through the
+        // same stage later, when the world-X this stage was picked from is long gone. See
+        // PortalRegistry#stampedStages.
+        PortalRegistry.get(level).noteStamped(carriageIndex, portalCorridor || portalMiddle,
+            StagePlacementScope.current());
 
         // Portal carriages replace the whole carriage with a hallway-portal corridor
         // (games.brennan.dungeontrain.portal). Returning here deliberately skips the parts overlay,
@@ -312,6 +359,9 @@ public final class CarriagePlacer {
             // placed underground later roll the same contents sub-variant without either knowing
             // about the other. Entry and exit share the key, and so share a corridor.
             int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, groupSize);
+            // The shell about to be written is whole, so whatever broke the last one is gone with
+            // it — see repairSeveredPair.
+            repairSeveredPair(level, pairKey);
             // And the pair's corridor shape, drawn from the same key for the same reason: the
             // carriage stamped here and the twin stamped later must agree on the box without either
             // consulting the other. PortalCarriageBuilder.planStructure draws it identically.
@@ -342,9 +392,14 @@ public final class CarriagePlacer {
         // skips the same passes the corridors do. Furnishing a room nobody can enter with loot, and
         // trapping mobs in it, is the waste that pinning a portal to one group exists to remove.
         if (portalMiddle) {
+            int pairKey =
+                PortalCarriageRole.entryIndexOf(carriageIndex, DungeonTrainConfig.getGroupSize());
+            // Before stampMiddle, which reads the severed state to decide whether to leave the
+            // doorway column open: repairing first is what re-seals the plate on the same pass that
+            // restores the corridors, so a healed pair stops being a walk-through.
+            repairSeveredPair(level, pairKey);
             PortalCarriageBuilder.stampMiddle(level, origin, dims,
-                PortalCarriageSelection.corridorKindFor(level,
-                    PortalCarriageRole.entryIndexOf(carriageIndex, DungeonTrainConfig.getGroupSize())),
+                PortalCarriageSelection.corridorKindFor(level, pairKey),
                 /*relight*/ false, carriageIndex);
             return finishPlace(level, origin, PortalCarriageBuilder.middleVariant(), dims, "portal_middle", null);
         }
@@ -387,6 +442,58 @@ public final class CarriagePlacer {
         }
 
         return finishPlace(level, origin, variant, dims, base, overlay);
+    }
+
+    /**
+     * Stand one whole carriage up as ordinary world blocks for Test the Carriage — shell, parts,
+     * variant blocks, then {@code contents} — rolled at {@code (seed, carriageIndex)} the way the
+     * train rolls a carriage.
+     *
+     * <p><b>Relit, unlike the spawn path.</b> {@link #placeAtGuarded} writes section-local because
+     * Sable lifts those blocks into a sub-level the same tick and relights them there. Nothing lifts
+     * a test copy, so written that way its lanterns would stand dark and its item frames and
+     * paintings would never hang: {@code relight=true} is what makes the stamp spawn template decor
+     * where it lands, as an editor plot does.</p>
+     *
+     * <p>Portal corridors and the cart between them stand up too — the shells a dimensional carriage
+     * is built from, tested as carriages in their own right.</p>
+     *
+     * <p><b>No records.</b> The portal lottery, {@link PortalRegistry#noteStamped} and
+     * {@link PlacedCarriageFacts} all describe the real train at a carriage index; a test copy is at
+     * no place on the track, and writing it into them would tell the train something false about the
+     * carriage that really is at that index.</p>
+     *
+     * @param contents the interior to furnish it with, or {@code null} for none (a flatbed)
+     */
+    public static void placeForTest(ServerLevel level, BlockPos origin, CarriageVariant variant,
+                                    CarriageContents contents, CarriageDims dims, long seed,
+                                    long contentsSeed, int carriageIndex) {
+        int anchor = GateContext.WORLDX_FROM_PIDX;
+        CarriageStampGuard.run(() -> StagePlacementScope.run(null, () -> {
+            // A portal corridor is built the way the train builds one — its own geometry, doors and
+            // rolled variants, keyed like a pair — with the requested contents laid in after, rather
+            // than the pair's own roll, so the author sees the contents they asked for.
+            for (PortalCorridorKind kind : PortalCorridorKind.values()) {
+                if (!variant.equals(PortalCarriageBuilder.portalVariant(kind))) continue;
+                PortalCarriageBuilder.stampCorridorFrom(level, origin, dims, kind, /*relight*/ true,
+                    /*withContents*/ false, carriageIndex, PortalCarriageRole.ENTRY);
+                if (contents != null) {
+                    CarriageContentsPlacer.placeAt(level, origin, contents, dims, contentsSeed, carriageIndex);
+                }
+                return;
+            }
+            String base = stampBase(level, origin, variant, dims, seed, carriageIndex,
+                /*flatbedAtBack*/ false, /*flatbedAtFront*/ false, anchor, /*relight*/ true);
+            String overlay = stampPartsOverlay(level, origin, variant, dims, seed, carriageIndex,
+                false, false, anchor, /*stageFilter*/ null, /*relight*/ true);
+            if ("stored".equals(base) || overlay != null) {
+                applyVariantBlocks(level, origin, variant, dims, seed, carriageIndex);
+            }
+            spawnShellAndPartsVariantMobs(level, origin, variant, dims, seed, carriageIndex, anchor);
+            if (contents != null) {
+                CarriageContentsPlacer.placeAt(level, origin, contents, dims, contentsSeed, carriageIndex);
+            }
+        }));
     }
 
     /**
@@ -438,8 +545,10 @@ public final class CarriagePlacer {
         // match with its twin that the crossing depends on, and loot in the cart between the two
         // corridors would sit in a room with no way into it.
         if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) return null;
-        return applyContents(level, origin, variant, dims, config, carriageIndex,
-            /*placeBlocks*/ true, /*spawnEntities*/ false, groupAnchorWorldX);
+        // Contents stamp after Sable assembly, outside placeAt's scope — re-enter it for the same stage.
+        String stageId = stageIdFor(level, carriageIndex, dims, groupAnchorWorldX);
+        return StagePlacementScope.with(stageId, () -> applyContents(level, origin, variant, dims, config,
+            carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false, groupAnchorWorldX));
     }
 
     /**
@@ -458,28 +567,36 @@ public final class CarriagePlacer {
         // Shell + parts mob-variant entity-pass — runs for every variant
         // including FLATBED. The block pass already AIRed mob-entry cells
         // via the existing empty-placeholder branch (mob entries' state is
-        // forced to the COMMAND_BLOCK sentinel by the canonical
+        // forced to the empty-placeholder sentinel by the canonical
         // VariantState constructor). Subject to the same 48-block player-
         // distance gate that wraps this entity pass.
-        // Decoration first, and deliberately BEFORE the portal early-return below. That return is a
-        // rule about MOBS, and decor inverts it: a corridor's twin stands in the world and so hangs
-        // its template's pictures at stamp time, which is precisely why the corridor riding the train
-        // has to hang the same ones here. A picture that appeared on one side of the crossing and not
-        // the other would break the illusion the twin exists to keep.
-        spawnShellAndPartsDecor(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
-
-        // No part of a portal takes either pass — not the shell/parts mob spawn above, and not the
-        // contents entities below. A mob standing in one corridor and not its twin is exactly the
-        // difference a player would see at the crossing, and a mob in the cart between them would
-        // spend its life in a sealed room.
-        if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) return;
-
-        spawnShellAndPartsVariantMobs(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
-        if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
+        // Decoration runs on EVERY exit of this pass, including the portal early-return below. That
+        // return is a rule about MOBS, and decor inverts it: a corridor's twin stands in the world and
+        // so hangs its template's pictures at stamp time, which is precisely why the corridor riding
+        // the train has to hang the same ones here. A picture that appeared on one side of the
+        // crossing and not the other would break the illusion the twin exists to keep.
+        //
+        // But it runs LAST, after the contents pass — not first, as it once did. The contents pass
+        // opens with {@code CarriageContentsPlacer.discardEntitiesAt}, a sweep of every non-player
+        // entity in the interior, meant for a previous carriage's leftovers at this shipyard slot.
+        // Sable lifts a plot entity out to the carriage's world pose on the entity's first TICK, not
+        // when it is added, so decor spawned a moment before that sweep was still standing at plot
+        // coordinates and went with the leftovers: a template's boat, minecart, armor stand or mob was
+        // logged as spawned and never seen. Spawning after the sweep is what lets it reach the deck.
+        // No part of a portal takes the mob or contents pass — a mob standing in one corridor and not
+        // its twin is exactly the difference a player would see at the crossing, and a mob in the cart
+        // between them would spend its life in a sealed room — so for those the decor is all there is.
+        if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) {
+            spawnShellAndPartsDecor(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
             return;
         }
-        applyContents(level, origin, variant, dims, config, carriageIndex,
-            /*placeBlocks*/ false, /*spawnEntities*/ true, groupAnchorWorldX);
+
+        spawnShellAndPartsVariantMobs(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
+        if (!(variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED)) {
+            applyContents(level, origin, variant, dims, config, carriageIndex,
+                /*placeBlocks*/ false, /*spawnEntities*/ true, groupAnchorWorldX);
+        }
+        spawnShellAndPartsDecor(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
     }
 
     /**
@@ -512,8 +629,18 @@ public final class CarriagePlacer {
             // neither the contents pass nor the mob pass.
             if (PortalCarriageSelection.isPortalMiddle(level, carriageIndex)) return;
 
-            CarriageTemplateStore.get(level, variant, variantDims(variant, dims))
-                .ifPresent(t -> TemplateDecor.spawn(level, origin, t, contentsMark(level, carriageIndex)));
+            Optional<StructureTemplate> shell =
+                CarriageTemplateStore.get(level, variant, variantDims(variant, dims));
+            if (shell.isPresent()) {
+                int spawned = TemplateDecor.spawn(level, origin, shell.get(), contentsMark(level, carriageIndex));
+                // The contents pass reports what it spawned; the shell pass is the only other
+                // entity-placing stamp on a carriage and used to say nothing, so a boat missing
+                // from a deck could not be told apart from one never carried.
+                if (spawned > 0) {
+                    LOGGER.info("[DungeonTrain] Shell decor: spawned {} entities for variant={} pIdx={} at origin={}",
+                        spawned, variant.id(), carriageIndex, origin);
+                }
+            }
             spawnPartsDecor(level, origin, variant, dims, seed, carriageIndex, groupAnchorWorldX);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] template decor: shell/parts pass failed at origin={} pIdx={}: {}",
@@ -557,6 +684,51 @@ public final class CarriagePlacer {
         for (CarriagePartKind kind : CarriagePartKind.values()) {
             java.util.List<String> picks = a.pickPerPlacement(kind, seed, carriageIndex, gateCtx);
             CarriagePartPlacer.spawnPartDecorAt(level, origin, kind, picks, dims, mark);
+        }
+    }
+
+    /**
+     * Put a whole room's or whole group's decoration back, one carriage at a time.
+     *
+     * <p>The whole path's answer to {@link #spawnShellAndPartsDecor}, and it runs in the same place for
+     * the same reason: a whole slot is stamped in the world only to be lifted into its Sable sub-level
+     * the same tick, so its entities are spawned deferred, at shipyard coordinates, once the group has
+     * settled ({@code TrainCarriageAppender.firePendingWholeDecorSpawns}).</p>
+     *
+     * <p>Per carriage rather than one call over the run, because the mark is per carriage: each entity
+     * has to be tagged to the carriage it actually stands in, or {@code TrainStaticContentsCarrier}
+     * re-anchors a group's far end from the wrong carriage. The slicing is
+     * {@link StructurePlaceSettings#setBoundingBox}, which {@link TemplateDecor#spawn} already clips
+     * against — the same mechanism the portal room's resize path uses to keep a picture out of the plot
+     * next door.</p>
+     *
+     * @param shipyardOrigin the run's lowest corner in shipyard coords
+     * @param firstPIdx      the pIdx of the carriage at {@code shipyardOrigin}
+     * @param carriages      how many carriages the template spans — 1 for a room
+     */
+    public static void spawnWholeDecorAt(ServerLevel level, BlockPos shipyardOrigin, StructureTemplate template,
+                                         int firstPIdx, int carriages, CarriageDims dims) {
+        try {
+            int runs = Math.max(1, carriages);
+            int spawned = 0;
+            for (int i = 0; i < runs; i++) {
+                BlockPos slotMin = shipyardOrigin.offset(i * dims.length(), 0, 0);
+                BoundingBox slot = BoundingBox.fromCorners(slotMin,
+                    slotMin.offset(dims.length() - 1, dims.height() - 1, dims.width() - 1));
+                StructurePlaceSettings settings = new StructurePlaceSettings().setBoundingBox(slot);
+                // The template's own origin stays shipyardOrigin for every slice — the bounding box is
+                // what selects this carriage's entities, not a shifted origin, or a group's second
+                // carriage would spawn its neighbour's decor on top of its own.
+                spawned += TemplateDecor.spawn(level, shipyardOrigin, template, settings,
+                    contentsMark(level, firstPIdx + i));
+            }
+            if (spawned > 0) {
+                LOGGER.info("[DungeonTrain] Whole decor: spawned {} entities across {} carriage(s) pIdx={} at origin={}",
+                    spawned, runs, firstPIdx, shipyardOrigin);
+            }
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] template decor: whole pass failed at origin={} pIdx={}: {}",
+                shipyardOrigin, firstPIdx, t.toString());
         }
     }
 
@@ -681,7 +853,10 @@ public final class CarriagePlacer {
             // F3+4 panel reads this back rather than re-rolling, which it cannot do correctly once
             // the train has moved — see PlacedCarriageFacts.
             if (carriageIndex != CarriageContentsPlacer.EDITOR_SENTINEL_PIDX) {
-                PlacedCarriageFacts.record(carriageIndex, variant, contents);
+                // Same helper the stamp itself rolls with — pure in (id, seed, pIdx), so the panel
+                // reports the orientation the player is standing in, not a second opinion.
+                PlacedCarriageFacts.record(carriageIndex, variant, contents,
+                    CarriageContentsPlacer.carriageFlip(contents, config.seed(), carriageIndex));
             }
             // Clear any entities left over from a previous carriage at this
             // shipyard position — the block-only clearBoundingBox in
@@ -762,19 +937,21 @@ public final class CarriagePlacer {
         if (sidecar.isEmpty()) return;
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
             VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
-            if (picked == null) continue;
-            BlockPos world = origin.offset(e.localPos());
-            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
-                SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
-            } else {
-                BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
-                    picked.state(), picked.rotation(), picked.half(),
-                    e.localPos(), seed, carriageIndex,
-                    sidecar.lockIdAt(e.localPos()));
-                games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
-                    level, world, rotated, picked.blockEntityNbt(),
-                    "carriage:" + variant.id(), e.localPos(), seed, carriageIndex,
-                    picked.linkedLootPrefabId());
+            int lockId = sidecar.lockIdAt(e.localPos());
+            // One write per space: a door / bed / tall plant cell owns two (MultiBlockVariants).
+            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(e.states(), sidecar.spanAt(e.localPos()), picked, e.localPos(),
+                    seed, carriageIndex, v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
+                        StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                        e.localPos(), seed, carriageIndex, lockId))) {
+                BlockPos world = origin.offset(w.localPos());
+                if (w.isAir()) {
+                    SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
+                } else {
+                    games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
+                        level, world, w.state(), w.entry().blockEntityNbt(),
+                        "carriage:" + variant.id(), w.localPos(), seed, carriageIndex,
+                        w.entry().linkedLootPrefabId());
+                }
             }
         }
     }
@@ -791,6 +968,31 @@ public final class CarriagePlacer {
      * {@link #placeHalfFlatbedPad}, OUTSIDE the integer carriage-slot
      * grid.</p>
      */
+    /**
+     * Forget a portal pair's severing as its group is re-stamped.
+     *
+     * <p><b>Why a re-stamp is a repair.</b> {@link games.brennan.dungeontrain.portal.PortalSever}
+     * closes a pair's way in when a hole is broken in the twin-side half of a corridor's shell,
+     * because from inside the corridor that hole shows open sky on the train side and a deepslate
+     * plug in the twin, and the illusion cannot survive being contradicted. The record has to be
+     * stored rather than re-derived, since the hole itself does not last — which is exactly what
+     * this is about: the template stamped here <b>restores the shell</b>, so a moment from now
+     * there will be no contradiction left to refuse for.</p>
+     *
+     * <p>Left permanent, as it used to be, a single creeper — or one stray swing at a floor block —
+     * killed that place on the track for the life of the world, and the pair that came back round
+     * intact still led nowhere. Live telemetry had severing as four out of five of every reported
+     * dimensional-carriage breakage, which is what settled it.</p>
+     *
+     * <p>Called from the spawn path only. The editor's own {@code placeAt} has no carriage index and
+     * no train pair to repair; see the two-placeAt note on this class.</p>
+     */
+    private static void repairSeveredPair(ServerLevel level, int pairKey) {
+        if (!PortalRegistry.get(level).repairPair(pairKey)) return;
+        LOGGER.info("[DungeonTrain] Portal pair {} repaired: its corridors are being re-stamped from "
+            + "their template, so the shell that was broken open is whole again.", pairKey);
+    }
+
     private static String stampBase(ServerLevel level, BlockPos origin, CarriageVariant variant,
                                     CarriageDims dims, long seed, int carriageIndex,
                                     boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX,
@@ -814,7 +1016,8 @@ public final class CarriagePlacer {
             // Without this pre-clear, the base filter alone leaves whatever
             // was previously in those cells untouched.
             filter.ifPresent(p -> p.clearClaimedCellsSilently(level));
-            stampTemplate(level, origin, stored.get(), filter.orElse(null), relight, /*decorBox*/ null);
+            stampTemplate(level, origin, stored.get(), filter.orElse(null), relight, /*decorBox*/ null,
+                TemplateDecor.Rule.CARRIAGE);
             return "stored";
         }
         if (variant instanceof CarriageVariant.Builtin b) {
@@ -911,8 +1114,18 @@ public final class CarriagePlacer {
             }
         }
         getOrBuildHalfFlatbedTemplate(level, dims);
-        LOGGER.info("[DungeonTrain] Template caches warmed: {} body, {} part, +half-flatbed in {}ms",
-            bodyHits, partHits, (System.nanoTime() - t0) / 1_000_000);
+        // The Whole pool too, so the first whole slot or group never reads disk on the server thread.
+        int wholeHits = 0;
+        for (String id : WholeCarriageRegistry.ids()) {
+            games.brennan.dungeontrain.editor.WholeCarriageTemplateStore.get(level, new WholeCarriage(id), dims);
+            wholeHits++;
+        }
+        for (String id : CarriageGroupRegistry.ids()) {
+            games.brennan.dungeontrain.editor.CarriageGroupTemplateStore.carriagesIn(level, new CarriageGroup(id), dims);
+            wholeHits++;
+        }
+        LOGGER.info("[DungeonTrain] Template caches warmed: {} body, {} part, {} whole, +half-flatbed in {}ms",
+            bodyHits, partHits, wholeHits, (System.nanoTime() - t0) / 1_000_000);
     }
 
     /**
@@ -1469,17 +1682,22 @@ public final class CarriagePlacer {
      */
     public static void stampTemplateAt(ServerLevel level, BlockPos origin, StructureTemplate template,
                                        boolean relight) {
-        stampTemplate(level, origin, template, null, relight, /*decorBox*/ null);
+        stampTemplate(level, origin, template, null, relight, /*decorBox*/ null, TemplateDecor.Rule.CARRIAGE);
     }
 
     /**
      * {@link #stampTemplateAt} with a {@link StructureProcessor} in front of the write, so a caller
      * can drop cells it must not touch. Used by the portal room to stamp copies around the twin
      * corridors rather than through them.
+     *
+     * @param decorRule which entities the template's decoration pass puts back —
+     *                  {@link TemplateDecor.Rule#ROOM} for a dimensional carriage, whose boats are
+     *                  kept because the room never moves
      */
     public static void stampTemplateAt(ServerLevel level, BlockPos origin, StructureTemplate template,
-                                       StructureProcessor processor, boolean relight) {
-        stampTemplate(level, origin, template, processor, relight, /*decorBox*/ null);
+                                       StructureProcessor processor, boolean relight,
+                                       TemplateDecor.Rule decorRule) {
+        stampTemplate(level, origin, template, processor, relight, /*decorBox*/ null, decorRule);
     }
 
     /**
@@ -1492,13 +1710,13 @@ public final class CarriagePlacer {
      */
     public static void stampTemplateAt(ServerLevel level, BlockPos origin, StructureTemplate template,
                                        StructureProcessor processor, boolean relight,
-                                       BoundingBox decorBox) {
-        stampTemplate(level, origin, template, processor, relight, decorBox);
+                                       BoundingBox decorBox, TemplateDecor.Rule decorRule) {
+        stampTemplate(level, origin, template, processor, relight, decorBox, decorRule);
     }
 
     private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,
                                       StructureProcessor processor, boolean relight,
-                                      BoundingBox decorBox) {
+                                      BoundingBox decorBox, TemplateDecor.Rule decorRule) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
         if (processor != null) settings.addProcessor(processor);
         if (relight) {
@@ -1516,7 +1734,7 @@ public final class CarriagePlacer {
         if (relight) {
             StructurePlaceSettings decorSettings = new StructurePlaceSettings();
             if (decorBox != null) decorSettings.setBoundingBox(decorBox);
-            TemplateDecor.replace(level, origin, template, decorSettings, /*mark*/ null);
+            TemplateDecor.replace(level, origin, template, decorSettings, /*mark*/ null, decorRule);
         }
     }
 
@@ -1540,19 +1758,26 @@ public final class CarriagePlacer {
      */
     static void stampTemplateSectionLocal(ServerLevel level, BlockPos stampPos,
                                           StructureTemplate template, StructurePlaceSettings settings) {
+        // Stage placeholders first — the block must be its real self before anything reads it.
+        settings.addProcessor(new StagePlaceholderProcessor());
+        // Then any stray variant placeholder goes to air — play-side only (scope-gated).
+        settings.addProcessor(new VariantPlaceholderAirProcessor());
         // Before the capture processor, which returns null for every cell and so ends the chain.
         settings.addProcessor(new BakedItemStatsProcessor(level));
         settings.addProcessor(new SectionLocalStampProcessor(level));
         // Flags are moot — the capture processor drops every cell, so placeInWorld
         // places nothing itself; it only drives the palette/geometry/processor chain.
-        template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+        template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
     }
 
     /**
      * Relighting counterpart of {@link #stampTemplateSectionLocal} — the pre-#645 write path.
-     * Uses vanilla {@code placeInWorld} with {@link Block#UPDATE_ALL} (flag 3) so every cell goes
-     * through {@code LevelChunk.setBlockState}: the light engine {@code checkBlock}, the neighbour
-     * shape-update cascade, client sync, and block-entity creation all run as before the perf change.
+     * Uses vanilla {@code placeInWorld} so every cell goes through {@code LevelChunk.setBlockState}:
+     * the light engine {@code checkBlock}, client sync, shape updates and block-entity creation all
+     * run as before the perf change.
+     *
+     * <p>Flags are {@link CarriageStampGuard#STAMP_FLAGS} — never {@code UPDATE_ALL}; the Fast
+     * Paintings rationale lives on that constant.</p>
      *
      * <p>Use this wherever the stamped blocks are <b>not</b> subsequently relit by a Sable
      * {@code assemble}: the in-game editor plots (permanent overworld blocks) and the post-assemble
@@ -1565,8 +1790,10 @@ public final class CarriagePlacer {
                                    StructureTemplate template, StructurePlaceSettings settings) {
         // The portal room's own path. Vanilla loads each block entity from the processed tag here, so
         // this is where a template that was saved holding impossible gear gets it rolled again.
+        settings.addProcessor(new StagePlaceholderProcessor());
+        settings.addProcessor(new VariantPlaceholderAirProcessor());
         settings.addProcessor(new BakedItemStatsProcessor(level));
-        template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), Block.UPDATE_ALL);
+        template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
     }
 
     public static Set<BlockPos> collectFootprint(ServerLevel level, BlockPos origin, CarriageDims dims) {

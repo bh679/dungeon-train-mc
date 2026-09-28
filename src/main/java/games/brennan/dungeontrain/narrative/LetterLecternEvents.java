@@ -209,10 +209,14 @@ public final class LetterLecternEvents {
         return PENDING_LECTERN.remove(uuid);
     }
 
-    /** Drop any stale pending lectern when a player disconnects. */
+    /**
+     * Drop any stale pending lectern when a player disconnects — and the pending editor-book author
+     * ({@link EditorBookAuthorPending}), which rides the same "one sign packet, one consume" pattern.
+     */
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         PENDING_LECTERN.remove(event.getEntity().getUUID());
+        EditorBookAuthorPending.clear(event.getEntity().getUUID());
     }
 
     /** Raw page strings of a book &amp; quill, in order. Empty when the stack carries no writable content. */

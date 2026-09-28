@@ -232,6 +232,50 @@ public final class EditorEditHistory {
         trim(stacks.undo);
     }
 
+    /**
+     * What undo would step back, or {@code ""} when there is nothing to undo.
+     *
+     * <p>The step's own label and nothing else. The plot it happened in is deliberately left out:
+     * the menu shows this on a button the author is already pointing at, where the useful half is
+     * what the action was. {@code runUndoRedo} still names the plot afterwards, when they may have
+     * moved on and the answer to "what just changed" is somewhere else.</p>
+     */
+    public static synchronized String peekUndoLabel(UUID player) {
+        return describe(HISTORY.get(player), /*redoing*/ false);
+    }
+
+    /** What redo would step forward, in the same shape as {@link #peekUndoLabel}. */
+    public static synchronized String peekRedoLabel(UUID player) {
+        return describe(HISTORY.get(player), /*redoing*/ true);
+    }
+
+    private static String describe(Stacks stacks, boolean redoing) {
+        if (stacks == null) return "";
+        Deque<Step> stack = redoing ? stacks.redo : stacks.undo;
+        return stack.isEmpty() ? "" : stack.peekLast().label();
+    }
+
+    /**
+     * Drop every step that wrote blocks, keeping the ones that only changed authored config.
+     *
+     * <p>For a category switch, which tears the plots down. A step that placed blocks would now
+     * write into an empty plot floor and has to go. A weight, a gate, a stage link or a rename
+     * never touched the world in the first place — it is a file on disk, and the template it
+     * belongs to does not have to be stamped anywhere for undoing it to mean something. Wiping
+     * those too made every menu change un-undoable the moment the author looked at another
+     * category.</p>
+     *
+     * <p>A step that did both goes: its blocks are gone, and applying half of it would leave the
+     * config describing a build that is no longer there.</p>
+     */
+    public static synchronized void clearWorldBackedSteps() {
+        for (Stacks stacks : HISTORY.values()) {
+            stacks.undo.removeIf(step -> !step.cells().isEmpty());
+            stacks.redo.removeIf(step -> !step.cells().isEmpty());
+        }
+        HISTORY.values().removeIf(stacks -> stacks.undo.isEmpty() && stacks.redo.isEmpty());
+    }
+
     public static synchronized int undoDepth(UUID player) {
         Stacks stacks = HISTORY.get(player);
         return stacks == null ? 0 : stacks.undo.size();

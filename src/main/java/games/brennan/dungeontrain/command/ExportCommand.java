@@ -50,7 +50,7 @@ public final class ExportCommand {
             return 1;
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Export failed: {}", e.toString());
-            source.sendFailure(Component.literal("Export failed: " + e.getMessage()));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.export_failed", e.getMessage()));
             return 0;
         }
     }
@@ -65,10 +65,10 @@ public final class ExportCommand {
                 .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, absolute))
                 .withHoverEvent(new HoverEvent(
                     HoverEvent.Action.SHOW_TEXT,
-                    Component.literal("Open " + absolute))));
-        return Component.literal("Exported " + result.fileCount() + " file(s) to ")
+                    Component.translatable("chat.dungeontrain.save.open", absolute))));
+        return Component.translatable("chat.dungeontrain.save.exported_file_s", result.fileCount())
             .append(link)
-            .append(Component.literal(" (" + formatBytes(result.totalBytes()) + ")"));
+            .append(Component.translatable("chat.dungeontrain.save.msg", formatBytes(result.totalBytes())));
     }
 
     private static String formatBytes(long bytes) {

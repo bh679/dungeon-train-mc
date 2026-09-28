@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.client.builder.BuilderWorldCheck;
+import games.brennan.dungeontrain.client.JoinIntroFade;
 import games.brennan.dungeontrain.client.LoadingScreenTheme;
 import games.brennan.dungeontrain.client.LoadingSequenceProgress;
 import games.brennan.dungeontrain.client.LoadingStories;
@@ -56,7 +57,6 @@ public abstract class LevelLoadingScreenThemeMixin {
     private static final double PHASE_A_RATE = 0.4;
     /** Eases-in rate (per second) for the carriage-placement phase when it has no count. */
     private static final double PHASE_B_RATE = 0.5;
-    private static final int TIP_MAX_WIDTH = 260;
     private static final int INFO_BOTTOM_MARGIN = 20;
 
     @Unique private long dungeontrain$phaseBStartNanos = -1L;
@@ -70,27 +70,20 @@ public abstract class LevelLoadingScreenThemeMixin {
         if (BuilderWorldCheck.isBuilderWorld()) {
             return; // no ci.cancel() — vanilla renders
         }
+        // Real progress is about to be on screen, so the hand-off from the menu is over however
+        // little of it actually got to run — a fast machine must not be left with a half-lit panel.
+        JoinIntroFade.complete();
+
         LevelLoadingScreen self = (LevelLoadingScreen) (Object) this;
         Font font = Minecraft.getInstance().font;
 
-        LoadingScreenTheme.fillBackground(g, self.width, self.height);
-
-        int cx = self.width / 2;
-        int cy = self.height / 2;
         double progress = LoadingSequenceProgress.reportWorldLoad(dungeontrain$computeLocalProgress());
-        long animNanos = LoadingSequenceProgress.animNanos();
-
-        int railW = Math.min(LoadingScreenTheme.MAX_RAIL_W, self.width - 80);
-        int railLeft = cx - railW / 2;
-        int railY = cy + 8;
-
-        LoadingScreenTheme.drawTitle(g, font, Component.translatable("gui.dungeontrain.loading.title"), cx, cy - 30);
-        LoadingScreenTheme.drawFillingTrain(g, font, railLeft, railW, railY, progress, animNanos);
-        LoadingScreenTheme.drawPercent(g, font, progress, cx, cy + 34);
-        LoadingScreenTheme.drawTip(g, font, LoadingStories.currentLine(), cx, cy + 52, TIP_MAX_WIDTH);
+        LoadingScreenTheme.drawPanel(g, font, self.width, self.height,
+                progress, LoadingSequenceProgress.animNanos(), 1.0f);
 
         if (BootstrapProgress.isActive() && dungeontrain$isSpaceHeld()) {
-            LoadingScreenTheme.drawTip(g, font, dungeontrain$bootstrapStatus(), cx, self.height - INFO_BOTTOM_MARGIN, TIP_MAX_WIDTH);
+            LoadingScreenTheme.drawTip(g, font, dungeontrain$bootstrapStatus(),
+                    self.width / 2, self.height - INFO_BOTTOM_MARGIN, LoadingScreenTheme.TIP_MAX_WIDTH);
         }
 
         ci.cancel();
@@ -113,7 +106,9 @@ public abstract class LevelLoadingScreenThemeMixin {
     /** This screen's own 0..1 progress estimate — folded into the shared timeline by the caller. */
     private double dungeontrain$computeLocalProgress() {
         long now = System.nanoTime();
-        double elapsedSec = LoadingSequenceProgress.animNanos() / 1.0e9;
+        // The bar's own clock, not the animation clock: it starts when this screen first paints,
+        // so the percentage begins at 0% on screen instead of already part-way up.
+        double elapsedSec = LoadingSequenceProgress.worldLoadElapsedNanos() / 1.0e9;
         double phaseA = PHASE_A_CAP * (1.0 - Math.exp(-PHASE_A_RATE * elapsedSec));
 
         double target;

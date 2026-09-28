@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "dungeontrain:block/stage_wood_horizontal",
+      "x": 90,
+      "y": 90
+    },
+    "axis=y": {
+      "model": "dungeontrain:block/stage_wood"
+    },
+    "axis=z": {
+      "model": "dungeontrain:block/stage_wood_horizontal",
+      "x": 90
+    }
+  }
+}

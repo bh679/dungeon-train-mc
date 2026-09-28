@@ -148,7 +148,7 @@ public final class StagePickerScreen implements MenuScreen {
 
     @Override
     public String title() {
-        return groupMemberMode ? "Select Stages" : "Select Stage";
+        return MenuLang.t(groupMemberMode ? "stages.select_many" : "stages.select_one");
     }
 
     @Override
@@ -161,15 +161,15 @@ public final class StagePickerScreen implements MenuScreen {
         List<CommandMenuEntry> out = new ArrayList<>();
         boolean linked = !currentStageId.isEmpty();
 
-        out.add(pickEntry("Custom (set by hand)", "custom", !linked));
+        out.add(pickEntry(MenuLang.t("stages.custom_by_hand"), "custom", !linked));
         for (ClientStages.Info s : ClientStages.all()) {
-            String label = s.name() + "  [" + ClientStages.gateSummary(s) + "]";
+            String label = MenuLang.t("stages.row", s.name(), ClientStages.gateSummary(s));
             out.add(pickEntry(label, s.id(), s.id().equals(currentStageId)));
         }
         if (ClientStages.isEmpty()) {
-            out.add(new CommandMenuEntry.Label("No stages yet — add one in the Stages window."));
+            out.add(new CommandMenuEntry.Label(MenuLang.t("stages.none_yet")));
         }
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
 
@@ -182,7 +182,7 @@ public final class StagePickerScreen implements MenuScreen {
         List<CommandMenuEntry> out = new ArrayList<>();
 
         out.add(new CommandMenuEntry.ClientAction(
-            checkbox(groupSelected.isEmpty()) + "Custom (no Stage — clear all)",
+            checkbox(groupSelected.isEmpty()) + MenuLang.t("stages.custom_clear_all"),
             () -> {
                 groupSelected.clear();
                 CommandRunner.run(groupStageCommand("custom"));
@@ -191,16 +191,16 @@ public final class StagePickerScreen implements MenuScreen {
         for (ClientStages.Info s : ClientStages.all()) {
             String stageId = s.id();
             boolean on = groupSelected.contains(stageId);
-            String label = checkbox(on) + s.name() + "  [" + ClientStages.gateSummary(s) + "]";
+            String label = checkbox(on) + MenuLang.t("stages.row", s.name(), ClientStages.gateSummary(s));
             out.add(new CommandMenuEntry.ClientAction(label, () -> {
                 if (!groupSelected.remove(stageId)) groupSelected.add(stageId);
                 CommandRunner.run(groupStageCommand(stageId));
             }));
         }
         if (ClientStages.isEmpty()) {
-            out.add(new CommandMenuEntry.Label("No stages yet — add one in the Stages window."));
+            out.add(new CommandMenuEntry.Label(MenuLang.t("stages.none_yet")));
         }
-        out.add(new CommandMenuEntry.Back("< Done"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.done")));
         return out;
     }
 

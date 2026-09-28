@@ -18,9 +18,9 @@ REPO_ROOT = os.path.dirname(os.path.dirname(HERE))
 
 BOOKS = ["random_books/deathnote", "random_books/quiet_rules", "starting_books/intro"]
 PROV = {
-    "random_books/deathnote": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
-    "random_books/quiet_rules": {"author": "老本願", "reviewer": "老本願"},
-    "starting_books/intro": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+    "random_books/deathnote": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""},
+    "random_books/quiet_rules": {"author": "老本願", "reviewer": "老本願", "source_hash": ""},
+    "starting_books/intro": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""},
 }
 AUTHORS = {"Opus 4.8 (Claude)": "ai", "老本願": "human", "X": "human"}
 
@@ -85,7 +85,7 @@ def test_missing_book_entry_fails():
 
 
 def test_orphan_entry_fails():
-    extra = dict(PROV, **{"random_books/ghost": {"author": "X", "reviewer": ""}})
+    extra = dict(PROV, **{"random_books/ghost": {"author": "X", "reviewer": "", "source_hash": ""}})
     nd, pd, af = workspace({"zh_cn": BOOKS}, {"zh_cn": extra})
     proc = run(nd, pd, af)
     assert proc.returncode == 1
@@ -108,7 +108,7 @@ def test_orphan_sidecar_fails():
 
 
 def test_unregistered_author_fails():
-    bad = dict(PROV, **{"random_books/deathnote": {"author": "Ghost", "reviewer": ""}})
+    bad = dict(PROV, **{"random_books/deathnote": {"author": "Ghost", "reviewer": "", "source_hash": ""}})
     nd, pd, af = workspace({"zh_cn": BOOKS}, {"zh_cn": bad})
     proc = run(nd, pd, af)
     assert proc.returncode == 1
@@ -117,7 +117,7 @@ def test_unregistered_author_fails():
 
 def test_ai_reviewer_fails():
     bad = dict(PROV, **{"random_books/deathnote":
-                        {"author": "Opus 4.8 (Claude)", "reviewer": "Opus 4.8 (Claude)"}})
+                        {"author": "Opus 4.8 (Claude)", "reviewer": "Opus 4.8 (Claude)", "source_hash": ""}})
     nd, pd, af = workspace({"zh_cn": BOOKS}, {"zh_cn": bad})
     proc = run(nd, pd, af)
     assert proc.returncode == 1

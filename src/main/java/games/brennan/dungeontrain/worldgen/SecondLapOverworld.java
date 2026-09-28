@@ -1,0 +1,58 @@
+package games.brennan.dungeontrain.worldgen;
+
+/**
+ * Which overworld stretches take their look from a third-party worldgen mod. With an ordered layout
+ * ({@code worldgenCycleOrder}) each gap's own style says so — the shipped order puts William Wythers'
+ * Overhauled Overworld between Lap 1's Nether and End and over Lap 2's Lost City run
+ * ({@code legacy:wwoo:lost_city}), and Biomes O' Plenty at the start of Lap 2. The
+ * classic (blank-order) cycle keeps the old rule: on every <b>odd</b> lap (cycle index 1, 3, 5, …) the gap
+ * <b>before</b> the Nether is WWOO and the gap <b>after</b> it is BoP. Every other stretch stays vanilla.
+ *
+ * <p>Pure (no Minecraft types) so the lap/gap rules are unit-testable. The two mods are confined in
+ * different places because they work differently: BoP adds its own biomes, so it is confined at
+ * biome choice ({@code density.OverworldStretchBiomes}); WWOO rewrites vanilla biomes in place, so it
+ * is confined at feature placement ({@code VanillaBiomeFeatures}).</p>
+ */
+public final class SecondLapOverworld {
+
+    /** The look a stretch takes. */
+    public enum Stretch { VANILLA, WWOO, BOP }
+
+    private SecondLapOverworld() {}
+
+    /** True for the laps that carry the modded stretches: 1, 3, 5, … (never lap 0 or before the anchor). */
+    public static boolean isModdedLap(long lap) {
+        return lap > 0L && (lap & 1L) == 1L;
+    }
+
+    /** The stretch at this world-X; {@link Stretch#VANILLA} when the cycle is missing. */
+    public static Stretch at(WorldGenCycle cycle, int worldX) {
+        if (cycle == null) return Stretch.VANILLA;
+        if (cycle.hasLayout()) {
+            // Ordered layout: the gap's (or a vanilla-terrain legacy run's) own style label says which mod owns it.
+            CycleLayout.Style style = cycle.stretchStyleAt(worldX);
+            if (style == CycleLayout.Style.WWOO) return Stretch.WWOO;
+            if (style == CycleLayout.Style.BOP) return Stretch.BOP;
+            return Stretch.VANILLA;
+        }
+        WorldGenCycle.OverworldGap gap = cycle.overworldGapAt(worldX);
+        if (gap == WorldGenCycle.OverworldGap.NONE) return Stretch.VANILLA;
+        if (!isModdedLap(cycle.cycleIndex(worldX))) return Stretch.VANILLA;
+        return gap == WorldGenCycle.OverworldGap.LEAD ? Stretch.WWOO : Stretch.BOP;
+    }
+
+    /**
+     * The look this world-X <b>wears</b>: its own stretch ({@link #at}), or — in a band transition that
+     * borders a modded stretch — that stretch's look carried on through the transition
+     * ({@link WorldGenCycle#bleedingOverworldStyleAt}). Drives decoration, biome choice and colours;
+     * {@link #at} stays the stretch itself (teleports, debug listings).
+     */
+    public static Stretch lookAt(WorldGenCycle cycle, int worldX) {
+        Stretch own = at(cycle, worldX);
+        if (own != Stretch.VANILLA || cycle == null) return own;
+        CycleLayout.Style bleed = cycle.bleedingOverworldStyleAt(worldX);
+        if (bleed == CycleLayout.Style.WWOO) return Stretch.WWOO;
+        if (bleed == CycleLayout.Style.BOP) return Stretch.BOP;
+        return Stretch.VANILLA;
+    }
+}

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
@@ -18,9 +19,13 @@ import games.brennan.dungeontrain.editor.EntityVariantApplicator;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock;
+import games.brennan.dungeontrain.template.FlipOptions;
+import games.brennan.dungeontrain.compat.PaintingTransformProcessor;
+import games.brennan.dungeontrain.train.ContentsFlip.Flip;
 import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -228,7 +233,7 @@ public final class CarriageContentsPlacer {
         // Editor preview / template flows have no real seed — pass 0 so the
         // entity-variant lookup behaves deterministically for previews too
         // (sidecar.resolve handles any seed value the same way).
-        placeAtInternal(level, carriageOrigin, contents, dims, /*seed*/ 0L, EDITOR_SENTINEL_PIDX, /*placeBlocks*/ true, /*spawnEntities*/ true);
+        CarriageStampGuard.run(() -> placeAtInternal(level, carriageOrigin, contents, dims, /*seed*/ 0L, EDITOR_SENTINEL_PIDX, /*placeBlocks*/ true, /*spawnEntities*/ true));
     }
 
     /**
@@ -247,13 +252,49 @@ public final class CarriageContentsPlacer {
      */
     public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                CarriageDims dims, long seed, int carriageIndex) {
-        placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true);
-        applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            contents, seed, carriageIndex, PortalCorridorMask.NONE);
-        applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            contents, seed, carriageIndex, PortalCorridorMask.NONE);
-        applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            seed, carriageIndex, PortalCorridorMask.NONE);
+        CarriageStampGuard.run(() -> {
+            Flip flip = carriageFlip(contents, seed, carriageIndex);
+            placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true);
+            applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+            applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+            applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+                seed, carriageIndex, PortalCorridorMask.NONE, flip);
+        });
+    }
+
+    /**
+     * The flip this carriage's contents stamp came out with — a fresh roll of whichever axes the
+     * template's {@link FlipOptions} enable (Z — left ↔ right — unless an author says otherwise).
+     *
+     * <p>{@link ContentsFlip#roll} is pure, so every pass of one placement calls this and gets the
+     * same answer without threading state between the blocks pass and the entity pass that follows
+     * it ticks later.</p>
+     *
+     * <p>The editor never flips: an author looking at a plot must see what they authored, and the
+     * sentinel pIdx is exactly the "this is not a train carriage" signal the rest of this class
+     * already uses.</p>
+     *
+     * <p>Package-visible because {@code CarriagePlacer} records the same answer into
+     * {@link PlacedCarriageFacts} for the F3+4 panel. It calls THIS method rather than rolling its
+     * own so the panel can never disagree with the stamp.</p>
+     */
+    static Flip carriageFlip(CarriageContents contents, long seed, int carriageIndex) {
+        if (carriageIndex == EDITOR_SENTINEL_PIDX) return Flip.NONE;
+        return ContentsFlip.roll(contents.id(),
+            CarriageContentsWeights.current().flipFor(contents.id()), seed, carriageIndex);
+    }
+
+    /**
+     * The flip for a portal-room furnishing. A room tiles the same template many times inside one
+     * space, so flipping there is a louder change than a per-carriage roll — it is opted into per
+     * template via {@link FlipOptions#rooms()}, and off by default.
+     */
+    private static Flip roomFlip(CarriageContents contents, long seed, int carriageIndex) {
+        FlipOptions opts = CarriageContentsWeights.current().flipFor(contents.id());
+        if (!opts.rooms()) return Flip.NONE;
+        return ContentsFlip.roll(contents.id(), opts, seed, carriageIndex);
     }
 
     /**
@@ -265,8 +306,8 @@ public final class CarriageContentsPlacer {
      */
     public static final int EDITOR_SENTINEL_PIDX = -1;
 
-    /** How many carriages ahead {@link #applyHeadSkins} warms the death-skin pool for. */
-    private static final int PREFETCH_CARRIAGES_AHEAD = 2;
+    /** How many carriage groups ahead {@link #applyHeadSkins} warms the death-skin pool for. */
+    private static final int PREFETCH_GROUPS_AHEAD = 1;
 
     /**
      * Train-spawn helper — stamp the contents BLOCKS at {@code carriageOrigin}
@@ -287,13 +328,16 @@ public final class CarriageContentsPlacer {
      */
     public static void placeBlocksOnly(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                         CarriageDims dims, long seed, int carriageIndex) {
-        placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false);
-        applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            contents, seed, carriageIndex, PortalCorridorMask.NONE);
-        applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            contents, seed, carriageIndex, PortalCorridorMask.NONE);
-        applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            seed, carriageIndex, PortalCorridorMask.NONE);
+        CarriageStampGuard.run(() -> {
+            Flip flip = carriageFlip(contents, seed, carriageIndex);
+            placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false);
+            applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+            applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+            applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+                seed, carriageIndex, PortalCorridorMask.NONE, flip);
+        });
     }
 
     /**
@@ -326,10 +370,13 @@ public final class CarriageContentsPlacer {
         Optional<StructureTemplate> stored = CarriageContentsStore.getFitting(level, contents, box);
         if (stored.isEmpty()) return;
 
-        stampTemplateBlocks(level, anchor, stored.get(), safeMask);
-        clearBakedNarrativeLecternBooks(level, anchor, box);
-        applyVariantBlocks(level, anchor, box, contents, seed, carriageIndex, safeMask);
-        applyContentPools(level, anchor, box, contents, seed, carriageIndex, safeMask);
+        Flip flip = roomFlip(contents, seed, carriageIndex);
+        CarriageStampGuard.run(() -> {
+            stampTemplateBlocks(level, anchor, stored.get(), safeMask, flip);
+            clearBakedNarrativeLecternBooks(level, anchor, box);
+            applyVariantBlocks(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
+            applyContentPools(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
+        });
         LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored box={}x{}x{} target=portal_room",
             contents.id(), anchor, box.getX(), box.getY(), box.getZ());
     }
@@ -372,11 +419,13 @@ public final class CarriageContentsPlacer {
         }
         BlockPos origin = interiorOrigin(carriageOrigin);
 
+        Flip flip = carriageFlip(contents, seed, carriagePIdx);
+
         Optional<StructureTemplate> stored = CarriageContentsStore.get(level, contents, size);
         if (stored.isPresent()) {
             StructureTemplate template = stored.get();
             if (placeBlocks) {
-                stampTemplateBlocks(level, origin, template);
+                stampTemplateBlocks(level, origin, template, PortalCorridorMask.NONE, flip);
                 // Narrative lecterns must spawn EMPTY so they resolve their book
                 // lazily on first right-click (via BookFactory.buildOrRandomForLectern)
                 // instead of showing a book baked into the template. Some carriage
@@ -386,13 +435,13 @@ public final class CarriageContentsPlacer {
                 clearBakedNarrativeLecternBooks(level, origin, size);
             }
             if (spawnEntities) {
-                spawnEntitiesFromTemplate(level, origin, template, carriagePIdx, contents, size, seed);
+                spawnEntitiesFromTemplate(level, origin, template, carriagePIdx, contents, size, seed, flip);
                 // Cell-link entity spawn — mirrors the block-side
                 // applyContentPools pass. Lets a player who placed a prefab
                 // armor stand in the editor without saving the template still
                 // get the stand at runtime: the link in ContainerContentsStore
                 // drives the entity spawn directly.
-                spawnLinkedEntities(level, origin, contents, carriagePIdx, seed, size);
+                spawnLinkedEntities(level, origin, contents, carriagePIdx, seed, size, flip);
                 // Mob-variant entity spawn — re-rolls the variant sidecar
                 // and spawns mobs at cells whose pick has entityId != null.
                 // Block pass already AIRed those cells via the existing
@@ -402,7 +451,7 @@ public final class CarriageContentsPlacer {
                 // (line 156). Passing the already-interior origin would
                 // double-offset every spawn by +1,+1,+1, landing entities a
                 // block off their authored cell (into the shell for edge cells).
-                spawnVariantMobsForContents(level, carriageOrigin, contents, dims, seed, carriagePIdx);
+                spawnVariantMobsForContents(level, carriageOrigin, contents, dims, seed, carriagePIdx, flip);
             }
             if (placeBlocks) {
                 LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored pIdx={} mode={}{}",
@@ -469,6 +518,9 @@ public final class CarriageContentsPlacer {
      *   <li>The {@link games.brennan.dungeontrain.event.VillagerTrainSpawnEvents#REROLLED_TAG}
      *       marker — removed from {@code Tags} so the reroll handler actually fires
      *       (a captured template freezes this tag in, which would suppress the reroll).</li>
+     *   <li>The Pigman Villagers roll ({@code PigmanVillager} / {@code PigmanRolled}) — cleared
+     *       via {@link games.brennan.dungeontrain.compat.PigmanVillagersBridge#freshRoll} so each
+     *       spawn rolls its own pigman chance instead of copying the captured villager's.</li>
      * </ul>
      *
      * <p>{@code VillagerData} (profession + type) is deliberately kept: it is the
@@ -484,6 +536,7 @@ public final class CarriageContentsPlacer {
         entityNbt.remove("CustomName");
         entityNbt.remove("Offers");
         entityNbt.remove("Xp");
+        games.brennan.dungeontrain.compat.PigmanVillagersBridge.freshRoll(entityNbt);
         if (entityNbt.contains("Tags", Tag.TAG_LIST)) {
             ListTag tags = entityNbt.getList("Tags", Tag.TAG_STRING);
             tags.removeIf(t -> games.brennan.dungeontrain.event.VillagerTrainSpawnEvents.REROLLED_TAG
@@ -512,7 +565,7 @@ public final class CarriageContentsPlacer {
     private static void applyVariantBlocks(ServerLevel level, BlockPos origin, Vec3i size,
                                             CarriageContents contents,
                                             long seed, int carriageIndex,
-                                            PortalCorridorMask mask) {
+                                            PortalCorridorMask mask, Flip flip) {
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
         CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
         if (sidecar.isEmpty()) return;
@@ -529,7 +582,10 @@ public final class CarriageContentsPlacer {
             VariantState picked = filterByDifficulty
                 ? sidecar.resolve(entry.localPos(), seed, carriageIndex, diffTier)
                 : sidecar.resolve(entry.localPos(), seed, carriageIndex);
-            BlockPos world = origin.offset(entry.localPos());
+            // The cell keeps its AUTHORED local position everywhere a roll is seeded from it — only
+            // where it lands moves with the flip, so a flipped carriage draws the same blocks as an
+            // unflipped one, mirrored.
+            BlockPos world = origin.offset(ContentsFlip.mapLocal(entry.localPos(), size, flip));
             if (mask.covers(world)) continue;
             if (picked == null) {
                 // Difficulty-filtered to nothing: the cell's only candidates were mob
@@ -542,24 +598,33 @@ public final class CarriageContentsPlacer {
                 }
                 continue;
             }
-            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
-                SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
-            } else {
-                net.minecraft.world.level.block.state.BlockState rotated =
-                    games.brennan.dungeontrain.editor.RotationApplier.apply(
-                        picked.state(), picked.rotation(), picked.half(),
-                        entry.localPos(), seed, carriageIndex,
-                        sidecar.lockIdAt(entry.localPos()));
+            int lockId = sidecar.lockIdAt(entry.localPos());
+            // A two-space cell (door / bed / tall plant) expands to both spaces in the authored
+            // local frame; each lands through the same flip as the cell itself.
+            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
+                    entry.localPos(), seed, carriageIndex,
+                    v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
+                        StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                        entry.localPos(), seed, carriageIndex, lockId))) {
+                BlockPos wWorld = origin.offset(ContentsFlip.mapLocal(w.localPos(), size, flip));
+                if (!wWorld.equals(world) && mask.covers(wWorld)) continue;
+                if (w.isAir()) {
+                    SilentBlockOps.setBlockSilent(level, wWorld, Blocks.AIR.defaultBlockState());
+                    continue;
+                }
+                // Reflect AFTER the authored rotation roll, so the cell reads as the mirror image of
+                // what an unflipped stamp would have put there.
+                net.minecraft.world.level.block.state.BlockState rotated = ContentsFlip.reflect(w.state(), flip);
                 // First-band starter loot: swap rich loot/loot_irongold chests for the starter
                 // prefab while in the peaceful opening band. Skip the player scan for non-chest
                 // cells (null id) and never downgrade editor previews (sentinel pIdx).
-                String lootId = picked.linkedLootPrefabId();
+                String lootId = w.entry().linkedLootPrefabId();
                 if (lootId != null && carriageIndex != EDITOR_SENTINEL_PIDX) {
                     lootId = DifficultyProgression.effectiveLootPrefabId(level, lootId);
                 }
                 games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
-                    level, world, rotated, picked.blockEntityNbt(),
-                    "contents:" + contents.id(), entry.localPos(), seed, carriageIndex,
+                    level, wWorld, rotated, w.entry().blockEntityNbt(),
+                    "contents:" + contents.id(), w.localPos(), seed, carriageIndex,
                     lootId);
             }
         }
@@ -585,7 +650,7 @@ public final class CarriageContentsPlacer {
     private static void applyContentPools(ServerLevel level, BlockPos origin, Vec3i size,
                                           CarriageContents contents,
                                           long seed, int carriageIndex,
-                                          PortalCorridorMask mask) {
+                                          PortalCorridorMask mask, Flip flip) {
         String plotKey = "contents:" + contents.id();
         games.brennan.dungeontrain.editor.ContainerContentsStore store =
             games.brennan.dungeontrain.editor.ContainerContentsStore.loadFor(plotKey);
@@ -604,7 +669,7 @@ public final class CarriageContentsPlacer {
             // else returns the local pool, else empty. Empty → skip.
             games.brennan.dungeontrain.editor.ContainerContentsPool pool = store.poolAt(localPos);
             if (pool.isEmpty()) continue;
-            BlockPos world = origin.offset(localPos);
+            BlockPos world = origin.offset(ContentsFlip.mapLocal(localPos, size, flip));
             if (mask.covers(world)) continue;
             rollAndApplyPool(level, world, localPos, pool, seed, carriageIndex);
         }
@@ -618,7 +683,9 @@ public final class CarriageContentsPlacer {
                 for (int z = 0; z < size.getZ(); z++) {
                     BlockPos localPos = new BlockPos(x, y, z);
                     if (variantPositions.contains(localPos) || storePositions.contains(localPos)) continue;
-                    BlockPos worldPos = origin.offset(localPos);
+                    // Walk AUTHORED cells and map each to where it landed: same coverage of the box,
+                    // but localPos stays the seed the loot roll expects.
+                    BlockPos worldPos = origin.offset(ContentsFlip.mapLocal(localPos, size, flip));
                     if (mask.covers(worldPos)) continue;
                     net.minecraft.world.level.block.state.BlockState state = level.getBlockState(worldPos);
                     if (!state.hasBlockEntity()) continue;
@@ -674,7 +741,7 @@ public final class CarriageContentsPlacer {
 
     /**
      * Dress every generated {@code player_head} in this carriage with the skin of a player who died
-     * at this same carriage index (see {@link DeathHeadSkins}).
+     * in this same carriage group (see {@link DeathHeadSkins}).
      *
      * <p>Heads reach a carriage as ordinary weighted decoration in the contents variant tables —
      * {@code campire}, {@code trimming}, {@code cake} and friends all offer one — and until this pass
@@ -695,25 +762,32 @@ public final class CarriageContentsPlacer {
      * build's block-entity NBT.</p>
      */
     private static void applyHeadSkins(ServerLevel level, BlockPos origin, Vec3i size,
-                                       long seed, int carriageIndex, PortalCorridorMask mask) {
-        // Warm the pools for the carriages just ahead of this one. The fetch is off-thread and a miss
+                                       long seed, int carriageIndex, PortalCorridorMask mask, Flip flip) {
+        // Pools are keyed per carriage GROUP (the granularity deaths are recorded at — see
+        // DeathHeadSkins.poolIndexFor), so the group size is part of every lookup here.
+        int groupSize = games.brennan.dungeontrain.world.DungeonTrainWorldData.get(level)
+            .getGenerationConfig().groupSize();
+        // Warm the pools for the groups just ahead of this one. The fetch is off-thread and a miss
         // costs nothing but a fallback skin, so the point is only that a run walking up the train
-        // finds each index already resolved by the time it is generated.
-        for (int ahead = 1; ahead <= PREFETCH_CARRIAGES_AHEAD; ahead++) {
-            DeathHeadSkins.prefetch(carriageIndex + ahead);
+        // finds each group already resolved by the time it is generated.
+        for (int ahead = 1; ahead <= PREFETCH_GROUPS_AHEAD; ahead++) {
+            DeathHeadSkins.prefetch(carriageIndex + ahead * groupSize, groupSize);
         }
         for (int x = 0; x < size.getX(); x++) {
             for (int y = 0; y < size.getY(); y++) {
                 for (int z = 0; z < size.getZ(); z++) {
                     BlockPos localPos = new BlockPos(x, y, z);
                     BlockPos worldPos = origin.offset(localPos);
+                    // mapLocal is its own inverse, so this is the authored cell that landed here —
+                    // the face a head wears follows the head, not the world position.
+                    BlockPos authored = ContentsFlip.mapLocal(localPos, size, flip);
                     if (mask.covers(worldPos)) continue;
                     net.minecraft.world.level.block.state.BlockState state = level.getBlockState(worldPos);
                     if (!state.is(Blocks.PLAYER_HEAD) && !state.is(Blocks.PLAYER_WALL_HEAD)) continue;
                     if (!(level.getBlockEntity(worldPos)
                             instanceof net.minecraft.world.level.block.entity.SkullBlockEntity skull)) continue;
                     if (skull.getOwnerProfile() != null) continue; // authored face wins
-                    DeathHeadSkins.pick(carriageIndex, seed, localPos).ifPresent(profile -> {
+                    DeathHeadSkins.pick(carriageIndex, groupSize, seed, authored).ifPresent(profile -> {
                         skull.setOwner(profile);
                         skull.setChanged();
                     });
@@ -749,10 +823,6 @@ public final class CarriageContentsPlacer {
      * we always parse the entity list ourselves. {@code setIgnoreEntities(true)}
      * tells {@code placeInWorld} to skip its own entity pass.</p>
      */
-    private static void stampTemplateBlocks(ServerLevel level, BlockPos origin, StructureTemplate template) {
-        stampTemplateBlocks(level, origin, template, PortalCorridorMask.NONE);
-    }
-
     /**
      * {@link #stampTemplateBlocks} that leaves every cell {@code mask} covers alone — the portal-room
      * path, where the box a furnishing lands in may overlap a twin corridor or an open tile's
@@ -760,16 +830,34 @@ public final class CarriageContentsPlacer {
      * {@code CarriagePlacer.stampTemplateAt} masks a room's own stamp.
      */
     private static void stampTemplateBlocks(ServerLevel level, BlockPos origin, StructureTemplate template,
-                                            PortalCorridorMask mask) {
+                                            PortalCorridorMask mask, Flip flip) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
         if (mask != null && !mask.isEmpty()) settings.addProcessor(mask.asProcessor());
+        // The stamp's random flip. X/Z ride vanilla's own mirror/rotation (so palette selection and
+        // block-entity handling are untouched) with the origin shifted by size-1 on each flipped
+        // axis, because vanilla mirrors about the origin rather than about the box — see
+        // ContentsFlip.originFor. Y has no vanilla equivalent and is a flipped copy of the template.
+        // The mask is unaffected either way: it tests world positions, which are already post-flip.
+        StructureTemplate stamped = template;
+        BlockPos stampOrigin = origin;
+        if (flip != null && !flip.isNone()) {
+            ContentsFlip.applyHorizontal(settings, flip);
+            stampOrigin = ContentsFlip.originFor(origin, template.getSize(), flip);
+            if (flip.y()) {
+                stamped = ContentsFlip.verticallyFlipped(template,
+                    level.registryAccess().lookupOrThrow(Registries.BLOCK));
+            }
+            // Fast Paintings' block paintings don't mirror/rotate themselves: re-hang each one on
+            // the wall it now stands beside (facing, run direction, master cell) or it pops.
+            settings.addProcessor(PaintingTransformProcessor.of(flip.y()));
+        }
         // Relighting stamp (flag 3): unlike the shell/pads, the contents pass is NOT placed in the source
         // world before a Sable assemble — it runs post-assemble at shipyard coords (train) or on a permanent
         // editor plot. A raw section-local write there bypasses LevelChunk.setBlockState and therefore Sable's
         // plot light-engine redirect, leaving plain interior geometry + non-block-entity light sources
         // (torch/glowstone/…) dark. Stamp through the light engine so interiors light up. Block-entity cells
         // (chests/barrels/…) still create + load their BE via placeInWorld so loot round-trips.
-        CarriagePlacer.stampTemplateRelit(level, origin, template, settings);
+        CarriagePlacer.stampTemplateRelit(level, stampOrigin, stamped, settings);
     }
 
     /**
@@ -795,7 +883,7 @@ public final class CarriageContentsPlacer {
      */
     private static void spawnEntitiesFromTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,
                                                    int carriagePIdx, CarriageContents contents, Vec3i interiorSize,
-                                                   long seed) {
+                                                   long seed, Flip flip) {
         CompoundTag saved = template.save(new CompoundTag());
         if (!saved.contains("entities", Tag.TAG_LIST)) {
             return;
@@ -831,11 +919,16 @@ public final class CarriageContentsPlacer {
             double localX = posList.getDouble(0);
             double localY = posList.getDouble(1);
             double localZ = posList.getDouble(2);
-            // Variant roll owns this cell's entity slot — skip the baked entity.
+            // Variant roll owns this cell's entity slot — skip the baked entity. Keyed on the
+            // AUTHORED cell, which is what the sidecar is written against; the flip only decides
+            // where the entity ends up.
             if (entityOwned.contains(BlockPos.containing(localX, localY, localZ))) continue;
-            double worldX = origin.getX() + localX;
-            double worldY = origin.getY() + localY;
-            double worldZ = origin.getZ() + localZ;
+            // This pass reads the UNFLIPPED template (the vertically flipped copy exists only for
+            // the block stamp), so all three axes are mapped here — in continuous space, so an
+            // entity standing mid-cell stays mid-cell.
+            double worldX = origin.getX() + ContentsFlip.mapLocalCoord(localX, interiorSize.getX(), flip.x());
+            double worldY = origin.getY() + ContentsFlip.mapLocalCoord(localY, interiorSize.getY(), flip.y());
+            double worldZ = origin.getZ() + ContentsFlip.mapLocalCoord(localZ, interiorSize.getZ(), flip.z());
 
             CompoundTag entityNbt = entry.getCompound("nbt").copy();
             // minecraft:villager — strip baked dynamic state (CustomName / Offers /
@@ -860,11 +953,18 @@ public final class CarriageContentsPlacer {
             if (entityNbt.contains("TileX", Tag.TAG_INT) && entry.contains("blockPos", Tag.TAG_INT_ARRAY)) {
                 int[] localBlock = entry.getIntArray("blockPos");
                 if (localBlock.length == 3) {
-                    entityNbt.putInt("TileX", origin.getX() + localBlock[0]);
-                    entityNbt.putInt("TileY", origin.getY() + localBlock[1]);
-                    entityNbt.putInt("TileZ", origin.getZ() + localBlock[2]);
+                    BlockPos anchor = ContentsFlip.mapLocal(
+                        new BlockPos(localBlock[0], localBlock[1], localBlock[2]), interiorSize, flip);
+                    entityNbt.putInt("TileX", origin.getX() + anchor.getX());
+                    entityNbt.putInt("TileY", origin.getY() + anchor.getY());
+                    entityNbt.putInt("TileZ", origin.getZ() + anchor.getZ());
                 }
             }
+            // A hanging entity's wall is on the other side of a mirrored room, so its facing has to
+            // move with it or the frame ends up hung on air. Rotation (yaw) is mirrored for
+            // everything else on the same axes.
+            mirrorEntityFacing(entityNbt, flip);
+            mirrorEntityRotation(entityNbt, flip);
             // Persistent vanilla tag — survives save/load and chunk reload.
             // The CompoundTag "Tags" list is the NBT-side form of
             // {@code Entity.getTags()} and is read back by Entity.load.
@@ -891,7 +991,11 @@ public final class CarriageContentsPlacer {
                 variantSidecar, contentsLinkStore, level);
 
             try {
-                Optional<Entity> created = EntityType.create(entityNbt, level);
+                // Editor-frozen mobs (Settings → Mobs | Blocks) come alive on a real train.
+                Optional<Entity> created = EntityType.create(
+                    games.brennan.dungeontrain.editor.FrozenMobs.prepareForSpawn(
+                        entityNbt, level, BlockPos.containing(worldX, worldY, worldZ)),
+                    level);
                 if (created.isEmpty()) {
                     LOGGER.warn("[DungeonTrain] Contents: failed to create entity from nbt (id={})",
                         entityNbt.getString("id"));
@@ -900,7 +1004,8 @@ public final class CarriageContentsPlacer {
                 Entity entity = created.get();
                 // Gentle onboarding: suppress a (rare) baked hostile in the no-hostiles stage, or
                 // replace it with a small slime/magma cube in the slimes stage; else spawn authored.
-                if (tryHandleOnboardingHostile(level, entity, new Vec3(worldX, worldY, worldZ), carriagePIdx)) continue;
+                if (tryHandleOnboardingHostile(level, entity, new Vec3(worldX, worldY, worldZ), carriagePIdx,
+                        CarriageTestSession.isTestStamp(carriagePIdx)) != OnboardingOutcome.AS_AUTHORED) continue;
                 entity.moveTo(worldX, worldY, worldZ, entity.getYRot(), entity.getXRot());
                 // Diagnostic spawn-coords + tick on the persistent-data
                 // subtree (the standard cross-mod-safe location for custom
@@ -973,6 +1078,41 @@ public final class CarriageContentsPlacer {
     }
 
     /**
+     * Mirror a wall-attached entity's stored facing across the flipped axes.
+     *
+     * <p>The two encodings in the entity NBT are distinguished by their key, not by entity id:
+     * item frames write {@code "Facing"} as a 3D data value (they can hang on floors and ceilings),
+     * paintings and other block-attached entities write {@code "facing"} as a 2D (horizontal) one.
+     * Anything with neither key is left alone.</p>
+     */
+    private static void mirrorEntityFacing(CompoundTag entityNbt, Flip flip) {
+        if (flip == null || flip.isNone()) return;
+        if (entityNbt.contains("Facing", Tag.TAG_BYTE)) {
+            Direction dir = Direction.from3DDataValue(entityNbt.getByte("Facing"));
+            Direction moved = games.brennan.dungeontrain.editor.EditorMirror.mirrorDirection(
+                dir, flip.x(), flip.y(), flip.z());
+            entityNbt.putByte("Facing", (byte) moved.get3DDataValue());
+        }
+        if (entityNbt.contains("facing", Tag.TAG_BYTE)) {
+            Direction dir = Direction.from2DDataValue(entityNbt.getByte("facing"));
+            Direction moved = games.brennan.dungeontrain.editor.EditorMirror.mirrorDirection(
+                dir, flip.x(), /*flipY*/ false, flip.z());
+            // A horizontal-only field: a vertical flip can't move it, and get2DDataValue would throw
+            // on an up/down direction, so Y is deliberately not passed above.
+            entityNbt.putByte("facing", (byte) moved.get2DDataValue());
+        }
+    }
+
+    /** Mirror an entity's stored yaw ({@code Rotation[0]}) across the flipped horizontal axes. */
+    private static void mirrorEntityRotation(CompoundTag entityNbt, Flip flip) {
+        if (flip == null || (!flip.x() && !flip.z())) return;
+        if (!entityNbt.contains("Rotation", Tag.TAG_LIST)) return;
+        ListTag rot = entityNbt.getList("Rotation", Tag.TAG_FLOAT);
+        if (rot.size() != 2) return;
+        rot.set(0, net.minecraft.nbt.FloatTag.valueOf(ContentsFlip.reflectYaw(rot.getFloat(0), flip)));
+    }
+
+    /**
      * Interior-local cells whose variant entry includes at least one entity
      * (mob / armor-stand) candidate. At such a cell the variant roll owns the
      * entity slot, so the always-on entity passes ({@link #spawnEntitiesFromTemplate}
@@ -1013,7 +1153,7 @@ public final class CarriageContentsPlacer {
      */
     private static void spawnLinkedEntities(ServerLevel level, BlockPos interiorOrigin,
                                              CarriageContents contents,
-                                             int carriagePIdx, long seed, Vec3i size) {
+                                             int carriagePIdx, long seed, Vec3i size, Flip flip) {
         ContainerContentsStore store = ContainerContentsStore.loadFor("contents:" + contents.id());
         java.util.Set<BlockPos> allPositions = store.allPositions();
         if (allPositions.isEmpty()) return;
@@ -1046,7 +1186,7 @@ public final class CarriageContentsPlacer {
             ContainerContentsPool pool = data.pool();
             if (pool == null || pool.isEmpty()) continue;
 
-            BlockPos worldPos = interiorOrigin.offset(localPos);
+            BlockPos worldPos = interiorOrigin.offset(ContentsFlip.mapLocal(localPos, size, flip));
             // Dedup: skip if a captured stand from the template was already
             // placed at this cell. spawnEntitiesFromTemplate runs first, so
             // captured entities are in the level by the time we get here.
@@ -1118,29 +1258,36 @@ public final class CarriageContentsPlacer {
      * the current {@link DifficultyProgression.OnboardingStage}:
      * <ul>
      *   <li>{@link DifficultyProgression.OnboardingStage#NO_HOSTILES NO_HOSTILES} — suppresses the
-     *       mob entirely (returns {@code true} without spawning anything; the original is discarded
-     *       unadded, exactly like the slime path below);</li>
+     *       mob entirely ({@link OnboardingOutcome#SUPPRESSED} — nothing is spawned; the original is
+     *       discarded unadded, exactly like the slime path below);</li>
      *   <li>{@link DifficultyProgression.OnboardingStage#EASY_MOBS EASY_MOBS} — spawns a small Slime
      *       (or a small Magma Cube when {@code original}'s type is in {@link #FIRST_BAND_MAGMA_MOBS})
      *       at {@code pos}, tagged + persisted exactly like a carriage-contents mob, and returns
-     *       {@code true} so the caller skips the original; the slime / magma / no-substitute decision
+     *       {@link OnboardingOutcome#SUBSTITUTED} so the caller skips the original; the slime / magma / no-substitute decision
      *       is delegated to {@link DifficultyProgression#firstBandSubstitute};</li>
-     *   <li>{@link DifficultyProgression.OnboardingStage#NORMAL NORMAL} — returns {@code false} so the
-     *       caller spawns the original as authored.</li>
+     *   <li>{@link DifficultyProgression.OnboardingStage#NORMAL NORMAL} — returns
+     *       {@link OnboardingOutcome#AS_AUTHORED} so the caller spawns the original as authored.</li>
      * </ul>
-     * Also returns {@code false} (spawn as authored) for editor previews (sentinel pIdx) and
+     * Also returns {@link OnboardingOutcome#AS_AUTHORED} for editor previews (sentinel pIdx), for a
+     * stamp that asked to be spawned as authored ({@code asAuthored} — a Test-the-Carriage room,
+     * where the author is checking their build and the ramp would hide its hostiles), for
      * non-hostile mobs, and — in the {@code EASY_MOBS} stage only — for
      * {@link #FIRST_BAND_NO_SUBSTITUTE_MOBS} (never substituted, e.g. zombified piglin) or
      * {@link #FIRST_BAND_NETHER_ONLY_MOBS} outside the Nether. In the {@code NO_HOSTILES} stage every
      * hostile is suppressed regardless of those tags.
+     *
+     * <p>The outcome distinguishes a suppressed hostile from a substituted one on purpose: a caller
+     * counting what it placed must not count a mob that was never added. It used to return a single
+     * "handled" boolean, and {@code PortalRoomMobs} logged a spawn for every hostile the no-hostiles
+     * stage quietly dropped.</p>
      */
-    private static boolean tryHandleOnboardingHostile(ServerLevel level, Entity original,
-                                                      Vec3 pos, int carriagePIdx) {
-        if (carriagePIdx == EDITOR_SENTINEL_PIDX) return false;
-        if (!(original instanceof Enemy)) return false;
+    private static OnboardingOutcome tryHandleOnboardingHostile(ServerLevel level, Entity original,
+                                                                Vec3 pos, int carriagePIdx,
+                                                                boolean asAuthored) {
         DifficultyProgression.OnboardingStage stage = DifficultyProgression.onboardingStageFor(level);
-        if (stage == DifficultyProgression.OnboardingStage.NORMAL) return false;     // spawn as authored
-        if (stage == DifficultyProgression.OnboardingStage.NO_HOSTILES) return true; // suppress — add nothing
+        OnboardingOutcome outcome = onboardingOutcome(stage, original instanceof Enemy,
+            carriagePIdx == EDITOR_SENTINEL_PIDX, asAuthored);
+        if (outcome != OnboardingOutcome.SUBSTITUTED) return outcome;
 
         // EASY_MOBS stage: replace the authored hostile with a small slime / magma cube.
         var holder = original.getType().builtInRegistryHolder();
@@ -1149,11 +1296,11 @@ public final class CarriageContentsPlacer {
             holder.is(FIRST_BAND_NETHER_ONLY_MOBS),
             holder.is(FIRST_BAND_MAGMA_MOBS),
             level.dimension().equals(Level.NETHER));
-        if (kind == DifficultyProgression.FirstBandSubstitute.NONE) return false; // spawn as authored
+        if (kind == DifficultyProgression.FirstBandSubstitute.NONE) return OnboardingOutcome.AS_AUTHORED;
         Slime sub = kind == DifficultyProgression.FirstBandSubstitute.MAGMA_CUBE
             ? EntityType.MAGMA_CUBE.create(level)
             : EntityType.SLIME.create(level);
-        if (sub == null) return true; // creation failed — still suppress the original hostile
+        if (sub == null) return OnboardingOutcome.SUPPRESSED; // creation failed — still suppress the original hostile
         // "small or next size up" — size 1 or 2.
         sub.setSize(1 + level.getRandom().nextInt(2), true);
         sub.setUUID(UUID.randomUUID());
@@ -1169,8 +1316,35 @@ public final class CarriageContentsPlacer {
         if (!level.addFreshEntity(sub)) {
             LOGGER.warn("[DungeonTrain] First-band substitute: addFreshEntity rejected {} at {} pIdx={}",
                 sub.getType().getDescriptionId(), pos, carriagePIdx);
+            return OnboardingOutcome.SUPPRESSED;
         }
-        return true;
+        return OnboardingOutcome.SUBSTITUTED;
+    }
+
+    /**
+     * What the gentle-onboarding gate does with one authored mob. {@link #SUBSTITUTED} and
+     * {@link #SUPPRESSED} both mean "do not spawn the original"; only {@link #SUBSTITUTED} put
+     * something in its place.
+     */
+    enum OnboardingOutcome { AS_AUTHORED, SUPPRESSED, SUBSTITUTED }
+
+    /**
+     * The pure half of {@link #tryHandleOnboardingHostile}: which way the gate goes, from the stage
+     * and what is known about the mob, before any entity is created. Package-visible so the table
+     * is unit-tested without a level.
+     *
+     * @param hostile        whether the mob is an {@link Enemy}
+     * @param editorSentinel whether the stamp is an editor preview ({@link #EDITOR_SENTINEL_PIDX})
+     * @param asAuthored     whether the stamp asked for the room exactly as built (a test carriage)
+     */
+    static OnboardingOutcome onboardingOutcome(DifficultyProgression.OnboardingStage stage, boolean hostile,
+                                               boolean editorSentinel, boolean asAuthored) {
+        if (!hostile || editorSentinel || asAuthored) return OnboardingOutcome.AS_AUTHORED;
+        return switch (stage) {
+            case NO_HOSTILES -> OnboardingOutcome.SUPPRESSED;
+            case EASY_MOBS -> OnboardingOutcome.SUBSTITUTED;
+            case NORMAL -> OnboardingOutcome.AS_AUTHORED;
+        };
     }
 
     /**
@@ -1181,7 +1355,7 @@ public final class CarriageContentsPlacer {
      *
      * <p>The block pass already cleared those cells to AIR through the
      * existing empty-placeholder sentinel branch (the canonical
-     * {@link VariantState} constructor force-stamps the COMMAND_BLOCK
+     * {@link VariantState} constructor force-stamps the empty-placeholder
      * sentinel onto mob entries), so this pass only spawns entities — it
      * never touches blocks.</p>
      *
@@ -1190,7 +1364,7 @@ public final class CarriageContentsPlacer {
      */
     private static void spawnVariantMobsForContents(ServerLevel level, BlockPos carriageOrigin,
                                                      CarriageContents contents, CarriageDims dims,
-                                                     long seed, int carriagePIdx) {
+                                                     long seed, int carriagePIdx, Flip flip) {
         // Editor preview / template-load path uses EDITOR_SENTINEL_PIDX —
         // skip variant mob spawning so authoring doesn't drop random live
         // mobs into the editor plot every time the template is restamped.
@@ -1210,7 +1384,7 @@ public final class CarriageContentsPlacer {
         for (var entry : sidecar.entries()) {
             VariantState picked = sidecar.resolve(entry.localPos(), seed, carriagePIdx, diffTier);
             if (picked == null || !picked.isMob()) continue;
-            BlockPos world = origin.offset(entry.localPos());
+            BlockPos world = origin.offset(ContentsFlip.mapLocal(entry.localPos(), size, flip));
             if (spawnVariantMob(level, world, picked, carriagePIdx, seed)) spawned++;
         }
         if (spawned > 0) {
@@ -1251,6 +1425,24 @@ public final class CarriageContentsPlacer {
      */
     public static boolean spawnVariantMob(ServerLevel level, BlockPos worldPos,
                                            VariantState picked, int carriagePIdx, long seed) {
+        // A Test-the-Carriage copy is the one carriage stamp that spawns its hostiles as authored —
+        // the onboarding ramp would otherwise empty the build the author is there to check.
+        return spawnVariantMob(level, worldPos, picked, carriagePIdx, seed,
+            CarriageTestSession.isTestStamp(carriagePIdx));
+    }
+
+    /**
+     * {@link #spawnVariantMob(ServerLevel, BlockPos, VariantState, int, long)} with the
+     * gentle-onboarding hostile gate switched off when {@code asAuthored} is set. For a stamp that
+     * exists to show the author their own room — Test the Carriage — where the ramp that keeps the
+     * opening carriages of a run gentle would instead hide every hostile they placed.
+     *
+     * @return {@code true} only when a mob was actually added — a hostile the onboarding stage
+     *         withheld returns {@code false}, so callers counting placements stay honest.
+     */
+    public static boolean spawnVariantMob(ServerLevel level, BlockPos worldPos,
+                                           VariantState picked, int carriagePIdx, long seed,
+                                           boolean asAuthored) {
         if (picked == null || !picked.isMob()) return false;
         Optional<EntityType<?>> typeOpt = EntityType.byString(picked.entityId().toString());
         if (typeOpt.isEmpty()) {
@@ -1263,7 +1455,7 @@ public final class CarriageContentsPlacer {
         try {
             CompoundTag mobNbt = picked.blockEntityNbt();
             if (mobNbt != null) {
-                CompoundTag spawnNbt = mobNbt.copy();
+                CompoundTag spawnNbt = games.brennan.dungeontrain.editor.FrozenMobs.thaw(mobNbt.copy());
                 spawnNbt.putString("id", picked.entityId().toString());
                 Optional<Entity> created = EntityType.create(spawnNbt, level);
                 if (created.isEmpty()) {
@@ -1288,7 +1480,15 @@ public final class CarriageContentsPlacer {
         // Gentle onboarding: in the no-hostiles stage suppress an authored hostile entirely; in the
         // slimes stage replace it with a small slime (magma cube for nether/raider mobs); no-op
         // otherwise. The substitute is spawned + tagged inside the helper, so we early-return here.
-        if (tryHandleOnboardingHostile(level, entity, Vec3.atBottomCenterOf(worldPos), carriagePIdx)) return true;
+        switch (tryHandleOnboardingHostile(level, entity, Vec3.atBottomCenterOf(worldPos), carriagePIdx, asAuthored)) {
+            case SUBSTITUTED -> { return true; }
+            case SUPPRESSED -> {
+                LOGGER.debug("[DungeonTrain] Mob-variant: '{}' withheld by onboarding stage {} at {} pIdx={}",
+                    picked.entityId(), DifficultyProgression.onboardingStageFor(level), worldPos, carriagePIdx);
+                return false;
+            }
+            case AS_AUTHORED -> { }
+        }
         // Fresh UUID so the same template at multiple carriages doesn't
         // collide on the UUID index (MC silently drops duplicate UUIDs).
         entity.setUUID(UUID.randomUUID());

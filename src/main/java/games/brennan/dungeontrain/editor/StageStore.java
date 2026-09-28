@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.template.Stage;
+import games.brennan.dungeontrain.template.StagePalette;
 import games.brennan.dungeontrain.template.TemplateGate;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -220,6 +221,27 @@ public final class StageStore {
         putAndWrite(stage);
     }
 
+    /**
+     * Attach baked palettes to the named stages (unknown ids ignored) and persist in <b>one</b>
+     * write — the {@link StagePaletteBaker} bootstrap bakes every stage at once and must not pay
+     * one config write + index invalidation per stage.
+     */
+    public static synchronized void savePalettes(Map<String, StagePalette> palettes) throws IOException {
+        if (palettes == null || palettes.isEmpty()) return;
+        TreeMap<String, Stage> next = new TreeMap<>(current);
+        boolean changed = false;
+        for (Map.Entry<String, StagePalette> e : palettes.entrySet()) {
+            String key = normalise(e.getKey());
+            Stage prev = key == null ? null : next.get(key);
+            if (prev == null || e.getValue() == null) continue;
+            next.put(key, prev.withPalette(e.getValue()));
+            changed = true;
+        }
+        if (!changed) return;
+        current = Collections.unmodifiableMap(next);
+        write(current);
+    }
+
     /** Replace the gate of Stage {@code id} (creating it if absent) and persist. Returns the Stage. */
     public static synchronized Stage setGate(String id, TemplateGate gate) throws IOException {
         String key = normalise(id);
@@ -237,6 +259,18 @@ public final class StageStore {
         Stage prev = current.get(key);
         if (prev == null) return null;
         Stage next = prev.withName(newName);
+        putAndWrite(next);
+        return next;
+    }
+
+    /** Credit (or, with null, un-credit) Stage {@code id} and persist; null when it does not exist. */
+    public static synchronized Stage setBuilder(String id, games.brennan.dungeontrain.template.BuilderCredit builder)
+            throws IOException {
+        String key = normalise(id);
+        if (key == null) return null;
+        Stage prev = current.get(key);
+        if (prev == null) return null;
+        Stage next = prev.withBuilder(builder);
         putAndWrite(next);
         return next;
     }

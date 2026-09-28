@@ -43,7 +43,11 @@ public final class VoidSkyRenderer {
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
         double t = ClientVoidBand.endSkyIntensityAt(camera.getPosition().x);
         if (t <= 0.0) return;
-        draw(frustumMatrix, (float) Math.min(1.0, t));
+        float alpha = (float) Math.min(1.0, t);
+        draw(frustumMatrix, alpha);
+        if (ShaderDiagnostics.recording()) {
+            ShaderDiagnostics.recordBandSky(ShaderDiagnostics.BandSky.VOID, alpha);
+        }
     }
 
     /**

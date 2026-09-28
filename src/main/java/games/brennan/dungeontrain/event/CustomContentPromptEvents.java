@@ -81,6 +81,14 @@ public final class CustomContentPromptEvents {
             return;
         }
 
+        if (!EditorContentIntegrity.isSessionFreePlay()) {
+            // The dev waiver is on for this world (DEV_IGNORE on a dev build): content loads, the
+            // run counts, and there is nothing to ask or to badge.
+            LOGGER.info("[DungeonTrain] Custom content is on and dev-ignored for this world; {} joined Live.",
+                player.getName().getString());
+            return;
+        }
+
         // The run IS Free Play from this tick — the content is loading whether or not anyone has
         // answered yet — so the status effect goes on immediately either way. That is the honest,
         // non-silent part, and it costs no chat line.
@@ -119,10 +127,11 @@ public final class CustomContentPromptEvents {
      * Server-side handler for {@code CustomContentChoicePacket}. Idempotent per world: once the
      * choice is set, a second answer only reports what is already in force.
      */
-    public static void onChoice(ServerPlayer player, boolean keepContent) {
-        LOGGER.info("[DungeonTrain] {} answered the custom content prompt: keepContent={}",
-            player.getName().getString(), keepContent);
+    public static void onChoice(ServerPlayer player, CustomContentChoice answer) {
+        LOGGER.info("[DungeonTrain] {} answered the custom content prompt: {}",
+            player.getName().getString(), answer);
         if (!EditorContentIntegrity.hasCustomContent()) return; // content vanished mid-prompt
+        if (!answer.isAnswered()) return; // UNSET can't come from the prompt; ignore a bad payload
 
         CustomContentChoice existing = EditorContentIntegrity.choice();
         if (existing.isAnswered()) {
@@ -134,18 +143,29 @@ public final class CustomContentPromptEvents {
             return;
         }
 
-        CustomContentChoice choice = keepContent ? CustomContentChoice.ALLOW : CustomContentChoice.DISABLE;
+        CustomContentChoice choice = answer;
+        if (answer.exemptsFreePlay() && !DungeonTrain.isDevBuild()) {
+            // The dev answer only exists on dev builds; a release server records the nearest real
+            // answer rather than a waiver it will never honour.
+            LOGGER.info("[DungeonTrain] {} sent the dev answer to a release build — recording ALLOW.",
+                player.getName().getString());
+            choice = CustomContentChoice.ALLOW;
+        }
         EditorContentIntegrity.setWorldChoice(player.getServer(), choice);
         onChoiceApplied(player.getServer());
 
         // Now — and only now — chat explains itself: keeping the content means Free Play, so say
         // what that costs. Turning it off changes the world for everybody, so everybody hears.
-        if (keepContent) {
-            sendFreePlayNotice(player);
-        } else {
+        // The dev waiver gets one quiet line: content on, run counts.
+        if (choice.exemptsFreePlay()) {
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.custom_content.dev_ignored")
+                .withStyle(ChatFormatting.GRAY));
+        } else if (choice.suppressesContent()) {
             broadcast(player, Component.translatable("chat.dungeontrain.custom_content.now_disabled",
                     player.getName().getString())
                 .withStyle(ChatFormatting.GRAY));
+        } else {
+            sendFreePlayNotice(player);
         }
     }
 

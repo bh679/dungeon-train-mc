@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
+import games.brennan.dungeontrain.worldgen.MixBand;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -20,12 +21,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.QuartPos;
-import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.FluidTags;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -68,13 +66,15 @@ import java.util.Set;
  * <ul>
  *   <li>the netherrack <b>crossfade</b> — dithering the (real, noise-built) mountain surface to
  *       netherrack as the real-Nether core approaches ({@link NetherTransition#netherRamp});</li>
- *   <li>the real-Nether <b>core</b> — replacing the column with terrain sampled from the Nether
- *       dimension's density router, mirroring how {@link DisintegrationFeature} samples the real
- *       End; and the ocean-entry <b>shore</b> ({@link #fillShoreColumn}).</li>
+ *   <li>the ocean-entry <b>shore</b> ({@link #fillShoreColumn}).</li>
  * </ul>
+ * The real-Nether <b>core</b> terrain itself — the column replaced with terrain sampled from the Nether
+ * dimension's density router — is stamped earlier, at the end of {@code CARVERS}, by
+ * {@link NetherCoreStamp}: the core decoration below spills into neighbouring chunks, and those must
+ * already hold their Nether terrain when it lands or it is left floating once they are stamped.
  * Pure mountain-stage columns ({@code netherRamp == 0}) are left untouched — the noise built them.
  *
- * <p>On chunks that are <b>entirely core</b>, after the netherrack/lava is stamped, the actual vanilla
+ * <p>On chunks that are <b>entirely core</b> (already stamped with netherrack/lava), the actual vanilla
  * {@code nether_wastes} configured features (fire, glowstone, springs, ores, mushrooms) are run over the
  * chunk ({@link #decorateCoreChunkWithNetherFeatures}, with the per-feature placement adapted to the
  * core by {@link #remapForCore}) so the core decorates exactly like the real Nether. Those columns are
@@ -110,8 +110,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     private static final int SURFACE_SKIN_DEPTH = 4;
     /** Salt for the crossfade rock→netherrack dither (matches the old mountainMaterial dither). */
     private static final long CROSSFADE_DITHER_SALT = 0x9E3779B97F4A7C15L;
-    /** Salt for the per-biome surface-skin material mix (soul_sand/soul_soil, basalt/blackstone). */
-    private static final long NETHER_SURFACE_SKIN_SALT = 0x68E31DA4FB4A7E1FL;
     /** Extra Z clearance on each side of the tunnel wall span. */
     private static final int CORRIDOR_MARGIN = 1;
     /** netherRamp at/above this is the real-Nether core (REPLACE); below it is the netherrack crossfade.
@@ -171,9 +169,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
             long startX = NetherBand.startX(overworld);
             int chunkMinX = cp.getMinBlockX();
-            if (chunkMinX + 15 < startX) return false; // before the first band (or disabled)
+            if (startX == NetherBand.OFF) return false; // disabled (bands run both ways from the anchor)
 
-            WorldGenCycle cycle = WorldGenCycle.fromConfig();
+            WorldGenCycle cycle = MixBand.cycleAt(overworld, cp.x, cp.z);   // mix zone: the chunk's picked band
             int seaLevel = overworld.getSeaLevel();
 
             // Resolve the End-band gate ONCE per chunk. DisintegrationBand.middleRampAt(overworld, wx)
@@ -255,36 +253,36 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     if (endBandActive && cycle.endMiddleRamp(wx) > 0.0) continue;
 
                     double n = cycle.netherRamp(wx);
+                    // Core columns were already stamped at the end of CARVERS (NetherCoreStamp) — before any
+                    // chunk around them could be decorated — so nothing is left to do for them here.
                     boolean core = n >= CORE_THRESHOLD && coreGeom != null;
-                    boolean inBeachSpan = !core && cycle.isNetherBeachStage(wx);
+                    if (core) continue;
+                    boolean inBeachSpan = cycle.isNetherBeachStage(wx);
                     // The beach stage exists ONLY where the band emerges from an ocean biome; otherwise it is
                     // SKIPPED — those columns stay natural overworld and the noise mountains pick up after the span.
                     if (inBeachSpan && !oceanEntrance) continue;
                     // Pure mountain-stage columns (n == 0, not the beach) are built entirely by the terrain-noise
                     // density wrapper — nothing to post-process here (so grass/trees/structures survive), EXCEPT
                     // the ocean shore-skin below.
-                    boolean crossfade = !core && !inBeachSpan && n > 0.0;
+                    boolean crossfade = !inBeachSpan && n > 0.0;
                     // Over an ocean entrance the feathered mountain rises out of sea level across the entry/exit
                     // fade, leaving a stony shoreline; recolour that low surface to beach sand. Only the fade
                     // zone (feather < 1) can be near sea level — the high interior + all land bands are skipped.
-                    boolean shoreSkin = !core && !inBeachSpan && !crossfade
+                    boolean shoreSkin = !inBeachSpan && !crossfade
                             && oceanEntrance && cycle.netherMountainFeather(wx) < 1.0;
-                    if (!core && !inBeachSpan && !crossfade && !shoreSkin) continue;
+                    if (!inBeachSpan && !crossfade && !shoreSkin) continue;
                     double beachProgress = inBeachSpan ? cycle.netherBeachProgress(wx) : 0.0;
-                    int sampleX = NetherCoreGeometry.sampleX(wx);
 
                     boolean colChanged;
-                    if (core) {
-                        ResourceKey<Biome> coreBiome = coreBiomeKeyAt(bandCtx, worldX, worldZ);
-                        long coreT0 = GenProfiler.t0();       // real-Nether router sampling — the confirmed DT hotspot
-                        colChanged = fillNetherColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
-                                sampleX, coreGeom, seed, coreBiome);
-                        GenProfiler.add(GenProfiler.Bucket.CORE_REPLACE, coreT0);
-                    } else if (inBeachSpan) {
+                    if (inBeachSpan) {
                         colChanged = fillShoreColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 minY, worldTop, seaLevel, seed, beachProgress);
                     } else if (crossfade) {
                         colChanged = recolorCrossfadeColumn(chunk, dx, dz, worldX, worldZ, minY, worldTop, n, seed);
+                        if (coreGeom != null && NetherRockCover.isCoreWall(cycle::isNetherCore, wx)) {
+                            colChanged |= coverCoreFacingFace(chunk, dx, dz, worldX, worldZ, seed, cycle, coreGeom,
+                                    endBandActive);
+                        }
                     } else {
                         colChanged = recolorShoreSkinColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 minY, worldTop, seaLevel, seed);
@@ -320,13 +318,15 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                         nether == null, fullCore, bedY, seed);
             }
 
-            // Prime heightmaps before decoration so the vanilla nether features see the real surface.
-            // Only needed to feed decoration; on non-core chunks (no decoration) the terminal
-            // primeHeightmaps below already produces the final heightmaps, so skip this pass there.
-            if (changed && fullCore) Heightmap.primeHeightmaps(chunk, WG_HEIGHTMAPS);
+            // Prime heightmaps before decoration so the vanilla nether features see the real surface (the
+            // core itself was stamped back at CARVERS, so this runs whenever the chunk is decorated).
+            // On non-core chunks (no decoration) the terminal primeHeightmaps below produces the final
+            // heightmaps, so skip this pass there.
+            if (fullCore) Heightmap.primeHeightmaps(chunk, WG_HEIGHTMAPS);
 
             if (fullCore) {
                 decorateCoreChunkWithNetherFeatures(level, ctx.chunkGenerator(), server, cp, bedY, bandCtx);
+                changed = true;   // decoration writes through the level; the heightmaps must be re-primed
             }
 
             // Clearance guarantee (runs LAST, for every in-band corridor column — including the
@@ -429,6 +429,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * {@link #remapForCore}. Same invoke-a-vanilla-feature technique as {@link DisintegrationFeature}'s
      * {@code Feature.CHORUS_PLANT.place}. Each feature is isolated in a try/catch so one bad placement
      * can never abort worldgen.
+     *
+     * <p>A vanilla ({@code minecraft:}) core biome places only vanilla and Dungeon Train features — see
+     * {@link NetherCoreFeatureFilter}. Other mods add their own ores to the vanilla Nether biomes, and the
+     * vanilla-style band must look like the vanilla Nether. BetterNether core biomes keep their full list.</p>
      */
     private void decorateCoreChunkWithNetherFeatures(WorldGenLevel level, ChunkGenerator generator,
                                                      MinecraftServer server, ChunkPos cp, int bedY,
@@ -436,7 +440,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         List<Holder<Biome>> biomes = coreChunkBiomes(server, cp, bandCtx);
         if (biomes.isEmpty()) return; // no biome resolvable (data pack stripped?) — never fail worldgen
 
-        // The sampled core terrain occupies this world-Y band (same mapping fillNetherColumn uses);
+        // The sampled core terrain occupies this world-Y band (same mapping NetherCoreStamp uses);
         // retarget the Nether features' (y0..128-calibrated) height ranges onto it so they hit the rock.
         int coreBottom = bedY + (NETHER_SAMPLE_Y_MIN - NETHER_CENTER_Y);
         int coreTop = bedY + (NETHER_SAMPLE_Y_MAX - NETHER_CENTER_Y);
@@ -450,12 +454,19 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         }
         int featureIndex = 0;
         int placed = 0;
+        int skipped = 0;
         for (int step = 0; step < maxSteps; step++) {
             Set<PlacedFeature> placedThisStep = new HashSet<>(); // a feature shared by biomes runs once/step
             for (Holder<Biome> biome : biomes) {
                 List<HolderSet<PlacedFeature>> steps = biome.value().getGenerationSettings().features();
                 if (step >= steps.size()) continue;
+                String biomeNamespace = namespaceOf(biome);
                 for (Holder<PlacedFeature> holder : steps.get(step)) {
+                    // Skipped before it takes a seed index, so the vanilla band seeds like a mod-free world.
+                    if (!NetherCoreFeatureFilter.allowed(biomeNamespace, namespaceOf(holder))) {
+                        skipped++;
+                        continue;
+                    }
                     PlacedFeature pf = holder.value();
                     if (!placedThisStep.add(pf)) continue;
                     random.setFeatureSeed(decoSeed, featureIndex++, step);
@@ -469,8 +480,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 }
             }
         }
-        LOGGER.debug("[DungeonTrain] Decorated Nether core chunk {} with {} biome(s) ({}/{} features placed, band y{}..{})",
-                cp, biomes.size(), placed, featureIndex, coreBottom, coreTop);
+        LOGGER.debug("[DungeonTrain] Decorated Nether core chunk {} with {} biome(s) ({}/{} features placed, "
+                        + "{} non-vanilla skipped, band y{}..{})",
+                cp, biomes.size(), placed, featureIndex, skipped, coreBottom, coreTop);
         if (GenDeterminismLog.ENABLED) {
             StringBuilder biomeKeys = new StringBuilder();
             for (Holder<Biome> b : biomes) {
@@ -494,7 +506,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             int x0 = cp.getMinBlockX(), z0 = cp.getMinBlockZ(), x1 = cp.getMaxBlockX(), z1 = cp.getMaxBlockZ();
             int[][] pts = {{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}, {(x0 + x1) >> 1, (z0 + z1) >> 1}};
             for (int[] p : pts) {
-                Holder<Biome> b = ncb.biomeAt(p[0], p[1]);
+                Holder<Biome> b = ncb.biomeAt(p[0], p[1], bandCtx.cycle().netherLookAt(p[0]));
                 if (b != null) out.add(b);
             }
         }
@@ -515,10 +527,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         return new ArrayList<>(out);
     }
 
-    /** The real-Nether biome KEY for a core column (drives the per-biome surface skin); nether_wastes fallback. */
-    private static ResourceKey<Biome> coreBiomeKeyAt(NetherBandContext bandCtx, int worldX, int worldZ) {
-        if (bandCtx == null || bandCtx.netherCoreBiomes() == null) return Biomes.NETHER_WASTES;
-        return bandCtx.netherCoreBiomes().biomeAt(worldX, worldZ).unwrapKey().orElse(Biomes.NETHER_WASTES);
+    /** Registry namespace of a holder's key, or {@code null} for an unkeyed (direct) holder. */
+    private static String namespaceOf(Holder<?> holder) {
+        return holder.unwrapKey().map(k -> k.location().getNamespace()).orElse(null);
     }
 
     /**
@@ -561,7 +572,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * netherrack as the real-Nether core approaches — turning the green mountain increasingly red over
      * the {@code coreFade} span. It reads the actual chunk heightmap top (which already reflects the
      * raised terrain at {@code top_layer_modification}) and recolours the top {@link #SURFACE_SKIN_DEPTH}
-     * solid blocks where the coherent dither falls under {@code n}; everything below stays natural stone.
+     * solid blocks where the coherent dither falls under {@code n}; everything below stays natural stone
+     * (the one-block face the core looks at is covered separately by {@link #coverCoreFacingFace}).
      * No {@code MountainNoise}/palette recompute is needed.
      *
      * <p>It also <b>drains worldgen water</b> from the column (aquifer pools, springs, surface lakes):
@@ -570,7 +582,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * water in the netherrack crossfade is replaced with air. This runs during chunk generation (no
      * fluid-cascade hazard) and only for crossfade columns — overworld gaps, the green approach mountains,
      * the ocean beach/shore and the End band all keep their water. The Nether core needs no drain: its
-     * whole band is already overwritten with netherrack/lava/air by {@link #fillNetherColumn}.</p>
+     * whole band is already overwritten with netherrack/lava/air by {@link NetherCoreStamp}.</p>
      */
     private boolean recolorCrossfadeColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                            int minY, int worldTop, double n, long seed) {
@@ -711,76 +723,47 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         return changed;
     }
 
+    /** Horizontal neighbour offsets {dx, dz} — the four sides a crossfade cell can face the core from. */
+    private static final int[][] SIDES = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+
     /**
-     * Stage 5: REPLACE the column with real Nether terrain sampled (trilinearly, like the
-     * End feature) from the Nether dimension's density router — netherrack where the
-     * density is solid, lava below the Nether sea, air for caverns. The corridor lane gets the
-     * same natural terrain as everywhere else (no forced causeway/envelope): the later
-     * {@code track_bed} feature then tunnels through the solid netherrack and rides pillars
-     * across the open lava lakes / caverns, exactly as it does over the End band's islands/void.
+     * The one-block face of the mountain that looks into the real-Nether core. The core carves its caverns
+     * right up to the crossfade, leaving a cliff of overworld rock; repaint just the rock cells that sit
+     * beside an open (air/lava) core cell, so from inside the Nether the wall reads netherrack while the
+     * mountain behind it — and its tunnel — stay stone. Whether a neighbouring core cell is open comes from
+     * the same {@link NetherCoreGeometry} density {@link NetherCoreStamp} stamps with, so it is exact even
+     * across a chunk border (no neighbour-chunk reads).
      */
-    private boolean fillNetherColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
-                                     int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
-                                     int sampleX, NetherCoreGeometry coreGeom,
-                                     long seed, ResourceKey<Biome> coreBiome) {
-        int yLo = coreGeom.minCoreY();
-        int yHi = coreGeom.maxCoreY();
-        if (yLo > yHi) return false;
-
-        // One column view over the four shared XZ cell corners across the sampled Y rows (world-anchored,
-        // like the End) — opened once here rather than per block, so the corner memo is hit four times per
-        // column instead of four times per block on the hottest path in Nether generation.
-        NetherCoreGeometry.Column density = coreGeom.column(sampleX, worldZ);
-
+    private boolean coverCoreFacingFace(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ, long seed,
+                                        WorldGenCycle cycle, NetherCoreGeometry coreGeom, boolean endBandActive) {
+        List<NetherCoreGeometry.Column> coreSides = new ArrayList<>(SIDES.length);
+        for (int[] side : SIDES) {
+            int nx = worldX + side[0];
+            int nz = worldZ + side[1];
+            int nwx = NetherMountainTerrain.wavyX(seed, nx, nz);
+            if (!cycle.isNetherCore(nwx)) continue;
+            if (endBandActive && cycle.endMiddleRamp(nwx) > 0.0) continue;
+            coreSides.add(coreGeom.column(NetherCoreGeometry.sampleX(nwx), nz));
+        }
+        if (coreSides.isEmpty()) return false;
         ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
-        for (int y = yLo; y <= yHi; y++) {
-            if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
-            // Fill the corridor lane with the same natural Nether terrain as every other column — no forced
-            // solid envelope. track_bed runs after this and tunnels through the solid netherrack while
-            // pillaring across the open lava lakes / caverns: its ground probe treats lava as passable and
-            // rests pillars on the netherrack floor, and the tunnel only qualifies where rock sits above the bed.
-            double d = density.densityAt(y);
-            if (Double.isNaN(d)) continue;   // outside the sampled cell rows — leave the block untouched
-            BlockState target;
-            if (d > 0.0) {
-                target = NETHERRACK;
-            } else if (coreGeom.isLavaLevel(y)) {
-                target = Blocks.LAVA.defaultBlockState();
-            } else {
-                target = AIR;
-            }
-            if (w.isSame(dx, y, dz, target)) continue;
-            w.set(dx, y, dz, target);
+        for (int y = coreGeom.minCoreY(); y <= coreGeom.maxCoreY(); y++) {
+            if (!NetherRockCover.isOverworldRock(w.state(dx, y, dz))) continue;
+            if (!facesOpenCore(coreSides, y)) continue;
+            w.set(dx, y, dz, NETHERRACK);
             changed = true;
         }
-
-        // Per-biome surface skin: recolour exposed netherrack floors to the biome's surface material
-        // (nylium / soul_sand-soil / basalt-blackstone). nether_wastes keeps plain netherrack. The whole
-        // corridor lane is skipped so the train tunnel stays clean netherrack (and outside the lane there
-        // are no track blocks). Every upward-facing netherrack surface in the column is skinned (like real
-        // Nether nylium); cells under lava/with no air above are left as netherrack.
-        if (NetherSurfacePalette.hasSurface(coreBiome) && !inCorridorLane(worldZ, tg)) {
-            boolean airAbove = true;                 // the sampled band is open above yHi
-            int depth = SURFACE_SKIN_DEPTH;          // >= depth ⇒ not currently skinning a floor
-            for (int y = yHi; y >= yLo; y--) {
-                boolean air = w.isAir(dx, y, dz);
-                boolean nr = !air && w.isSame(dx, y, dz, NETHERRACK);
-                if (nr && airAbove) {
-                    depth = 0;                       // top of an exposed floor
-                } else if (!nr) {
-                    depth = SURFACE_SKIN_DEPTH;      // air/lava/other ends the skin run
-                }
-                if (nr && depth < SURFACE_SKIN_DEPTH) {
-                    double noise = Disintegration.coherentNoise(seed ^ NETHER_SURFACE_SKIN_SALT, worldX, y, worldZ);
-                    BlockState surf = NetherSurfacePalette.surfaceBlock(coreBiome, depth, noise);
-                    if (!w.isSame(dx, y, dz, surf)) { w.set(dx, y, dz, surf); changed = true; }
-                    depth++;
-                }
-                airAbove = air;
-            }
-        }
         return changed;
+    }
+
+    /** True when any of the neighbouring core columns is open (air or lava) at {@code y}. */
+    private static boolean facesOpenCore(List<NetherCoreGeometry.Column> coreSides, int y) {
+        for (NetherCoreGeometry.Column c : coreSides) {
+            double d = c.densityAt(y);
+            if (!Double.isNaN(d) && d <= 0.0) return true;
+        }
+        return false;
     }
 
     /** True for the stone-brick bed and the two rail blocks — never overwritten so the train keeps its track. */
@@ -825,71 +808,5 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 || state.is(BlockTags.SAPLINGS)
                 || state.is(BlockTags.SMALL_FLOWERS)
                 || state.is(BlockTags.TALL_FLOWERS);
-    }
-
-    /**
-     * Section-cached raw writer for one chunk column — fetches the owning
-     * {@link net.minecraft.world.level.chunk.LevelChunkSection} only when crossing a
-     * section boundary, dropping orphaned block entities before overwriting (the
-     * Sable-safe path; see {@link DisintegrationFeature}).
-     */
-    private static final class ColumnWriter {
-        private final ChunkAccess chunk;
-        private int curIdx = -1;
-        private net.minecraft.world.level.chunk.LevelChunkSection section;
-        private int baseY;
-
-        ColumnWriter(ChunkAccess chunk) {
-            this.chunk = chunk;
-        }
-
-        private boolean ensure(int y) {
-            int idx = chunk.getSectionIndex(y);
-            if (idx < 0 || idx >= chunk.getSectionsCount()) return false;
-            if (idx != curIdx) {
-                curIdx = idx;
-                section = chunk.getSection(idx);
-                baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(idx));
-            }
-            return true;
-        }
-
-        /** Solid ground (not air, not a fluid) — the surface cells the crossfade may recolour to netherrack. */
-        boolean isSolidGround(int dx, int y, int dz) {
-            if (!ensure(y)) return false;
-            BlockState cur = section.getBlockState(dx, y - baseY, dz);
-            return !cur.isAir() && cur.getFluidState().isEmpty();
-        }
-
-        boolean isSame(int dx, int y, int dz, BlockState state) {
-            if (!ensure(y)) return false;
-            return section.getBlockState(dx, y - baseY, dz) == state;
-        }
-
-        boolean isAir(int dx, int y, int dz) {
-            if (!ensure(y)) return false;
-            return section.getBlockState(dx, y - baseY, dz).isAir();
-        }
-
-        /** The block currently in this cell, or air when the Y is outside the chunk's sections. */
-        BlockState state(int dx, int y, int dz) {
-            if (!ensure(y)) return AIR;
-            return section.getBlockState(dx, y - baseY, dz);
-        }
-
-        /** Water (source, flowing, or waterlogged) — the cells the crossfade drains to air. */
-        boolean isWater(int dx, int y, int dz) {
-            if (!ensure(y)) return false;
-            return section.getBlockState(dx, y - baseY, dz).getFluidState().is(FluidTags.WATER);
-        }
-
-        void set(int dx, int y, int dz, BlockState state) {
-            if (!ensure(y)) return;
-            int ly = y - baseY;
-            if (section.getBlockState(dx, ly, dz).hasBlockEntity()) {
-                chunk.removeBlockEntity(new BlockPos(chunk.getPos().getMinBlockX() + dx, y, chunk.getPos().getMinBlockZ() + dz));
-            }
-            section.setBlockState(dx, ly, dz, state, false);
-        }
     }
 }

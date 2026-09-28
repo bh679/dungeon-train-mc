@@ -76,8 +76,8 @@ public enum LeaderboardCategory {
     // chests and books do, so they carry Scope.TOTAL. Alone they say nothing about it (see
     // labelsSpan), but the scope is what makes a one-life half of any of them expressible at all.
     DEATHNOTES_WRITTEN("deathnotes_written", "deathnotes_written", "Most Death Notes", Scope.TOTAL, Format.COUNT),
-    DEATHNOTES_FOUGHT("deathnotes_fought", "deathnotes_fought", "Most Curses Survived", Scope.TOTAL, Format.COUNT),
-    DEATHNOTES_PEOPLE("deathnotes_people", "deathnotes_people", "Most People Cursed", Scope.TOTAL, Format.COUNT),
+    DEATHNOTES_FOUGHT("deathnotes_fought", "deathnotes_fought", "Most Death Notes Survived", Scope.TOTAL, Format.COUNT),
+    DEATHNOTES_PEOPLE("deathnotes_people", "deathnotes_people", "Most People Named", Scope.TOTAL, Format.COUNT),
     LOVENOTES_WRITTEN("lovenotes_written", "lovenotes_written", "Most Love Notes Written", Scope.TOTAL, Format.COUNT),
     LOVENOTES_RECEIVED("lovenotes_received", "lovenotes_received", "Most Love Notes Received", Scope.TOTAL, Format.COUNT),
     LOVENOTES_PEOPLE("lovenotes_people", "lovenotes_people", "Most Lovers", Scope.TOTAL, Format.COUNT),
@@ -92,7 +92,15 @@ public enum LeaderboardCategory {
     // vocabulary here is a LIFE, and neither building nor shipping a build happens inside one —
     // time in the Train Builder is not measured from a spawn and does not reset at a death.
     BUILDER_TIME("builder_time", "builder_time", "Longest Building", Scope.NONE, Format.DURATION),
-    BUILDS_APPROVED("builds_approved", "builds_approved", "Most Builds Approved", Scope.NONE, Format.COUNT);
+    BUILDS_APPROVED("builds_approved", "builds_approved", "Most Builds Approved", Scope.NONE, Format.COUNT),
+    // Templates that ship with the mod, credited to their original builder (the editor's Built-by
+    // field, mirrored to the relay). Scope.NONE like the two above: a template is built once, not
+    // within a life.
+    TEMPLATES_BUILT("templates_built", "templates_built", "Most Templates Built", Scope.NONE, Format.COUNT),
+    // Books the community liked: an author's shared books whose up-votes beat down-votes better
+    // than ten to one. The Credits page's Writers card reads this one; books_written above counts
+    // everything ever submitted.
+    BOOKS_PRAISED("books_praised", "books_praised", "Most Praised Writers", Scope.NONE, Format.COUNT);
 
     /**
      * Which span of play a board measures — the flag that turns a pair of boards into one subject

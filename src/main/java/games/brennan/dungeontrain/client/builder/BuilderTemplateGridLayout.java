@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.client.builder;
 /**
  * Pure geometry for the Open screen's scrolling template grid.
  *
- * <p>The sibling of {@link BuilderGridLayout}, and split out for the same reason: this arithmetic
+ * <p>The sibling of {@link BuilderPickerLayout}, and split out for the same reason: this arithmetic
  * has to survive GUI scale 1 (a very wide, short viewport) through scale 4 (a small one) without
  * cells overlapping the controls above them, the Back button below them, or each other — and that
  * is cheap to test here and tedious to eyeball in-game at four scales.</p>
@@ -150,6 +150,19 @@ record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
         return Math.max(MORE_MIN_SIZE, cellHeight / 6);
     }
 
+    /**
+     * The edge of the state badge My Builds draws in a cell's top-right corner.
+     *
+     * <p>Deliberately {@link #moreSize} — the two corner chips are the same furniture at opposite
+     * ends of the same picture, and one of them growing differently as the grid reflows would read as
+     * a mistake. Only the size lives here: unlike the drill-in button the badge takes no clicks, so
+     * there is no hit-test to keep in step with the drawing and the renderer places it from the cell
+     * rect it was already given.</p>
+     */
+    int badgeSize() {
+        return moreSize();
+    }
+
     int moreX(int index) {
         return xFor(index) + cellWidth - moreSize() - MORE_INSET;
     }
@@ -171,6 +184,41 @@ record BuilderTemplateGridLayout(int columns, int cellWidth, int cellHeight,
         int bx = moreX(index);
         int by = moreY(index, scrollY);
         int size = moreSize();
+        return mouseX >= bx && mouseX < bx + size && mouseY >= by && mouseY < by + size;
+    }
+
+    // ---- the favourite star ----
+    //
+    // The third corner. The state badge has the top-right and the drill-in button the bottom-right, so
+    // the star takes the top-LEFT — the one corner where it cannot land on either, whatever the grid
+    // reflows to. Its geometry lives here for the same reason theirs does: the renderer and the click
+    // handler must not each derive it, or the star draws in one place and responds in another.
+
+    int starSize() {
+        return moreSize();
+    }
+
+    int starX(int index) {
+        return xFor(index) + MORE_INSET;
+    }
+
+    int starY(int index, int scrollY) {
+        return yFor(index, scrollY) + MORE_INSET;
+    }
+
+    /**
+     * Whether the point is on {@code index}'s star.
+     *
+     * <p>Viewport-checked like {@link #isOverMore}, so a scrolled-away star can't be clicked through
+     * the chrome above or below the grid.</p>
+     */
+    boolean isOverStar(int index, double mouseX, double mouseY, int scrollY) {
+        if (mouseY < topY || mouseY >= bottomY) {
+            return false;
+        }
+        int bx = starX(index);
+        int by = starY(index, scrollY);
+        int size = starSize();
         return mouseX >= bx && mouseX < bx + size && mouseY >= by && mouseY < by + size;
     }
 

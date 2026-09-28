@@ -11,10 +11,12 @@ import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.LeatherOverDiamondAdvancement;
+import games.brennan.dungeontrain.advancement.LifeDisqualification;
 import games.brennan.dungeontrain.advancement.NothingButBooksAdvancement;
 import games.brennan.dungeontrain.advancement.PacifistAdvancement;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.advancement.requirement.AdvancementRequirements;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
@@ -45,6 +47,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.EnderChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.network.chat.Component;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.CommandEvent;
@@ -53,6 +56,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
@@ -78,6 +82,10 @@ import java.util.UUID;
  *       "no container opened" streak by stamping
  *       {@link ModDataAttachments#CARTS_AT_LAST_CONTAINER_OPEN}; (ender chest) →
  *       set {@link ModDataAttachments#OPENED_ENDER_CHEST_THIS_LIFE}.</li>
+ *   <li>{@link BlockEvent.BreakEvent} → stamp
+ *       {@link ModDataAttachments#CARTS_AT_LAST_BLOCK_BREAK} for any block, and for a
+ *       broken chest/barrel break the "no container opened" streak exactly as an
+ *       open does — mining a container spills the same loot.</li>
  *   <li>{@link LivingDeathEvent} → grant {@code contained_loop} for a life of
  *       1000+ carriages that never opened an ender chest.</li>
  *   <li>{@link PlayerEvent.PlayerRespawnEvent} → reset
@@ -116,12 +124,30 @@ public final class AchievementEvents {
      */
     private static final int CHEST_CLICK_DEBOUNCE_TICKS = 10;
 
+    // The milestone thresholds below are the jar's historical values, kept as FALLBACKS: the
+    // number in force is the advancement JSON's `threshold` (relay override applied), read through
+    // AdvancementRequirements so a rebalance needs no build. The ids are the advancements that
+    // carry them.
     /** Carriages travelled since the last chest/barrel open for "Not My Chest". */
     private static final int NO_CONTAINER_CARTS_TIER_1 = 100;
     /** Carriages travelled since the last chest/barrel open for "Still Not My Chest". */
     private static final int NO_CONTAINER_CARTS_TIER_2 = 1000;
+    /** Carriages travelled since the last block broken for "Look, Don't Touch". */
+    private static final int NO_BREAK_CARTS_TIER_1 = 100;
+    /** Carriages travelled since the last block broken for "Museum Rules". */
+    private static final int NO_BREAK_CARTS_TIER_2 = 1000;
     /** Carriages that must be exceeded in one life for "Contained Loop". */
     private static final int CONTAINED_LOOP_CARTS = 1000;
+
+    private static final ResourceLocation NO_CONTAINER_100_ID = dtAdvancement("no_container_100");
+    private static final ResourceLocation NO_CONTAINER_1000_ID = dtAdvancement("no_container_1000");
+    private static final ResourceLocation NO_BREAK_100_ID = dtAdvancement("no_break_100");
+    private static final ResourceLocation NO_BREAK_1000_ID = dtAdvancement("no_break_1000");
+    private static final ResourceLocation CONTAINED_LOOP_ID = dtAdvancement("contained_loop");
+
+    private static ResourceLocation dtAdvancement(String name) {
+        return ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/" + name);
+    }
 
     /** Per-player last-right-clicked chest pos + tick, for debouncing only. */
     private static final Map<UUID, BlockPos> LAST_CHEST_POS = new HashMap<>();
@@ -142,6 +168,21 @@ public final class AchievementEvents {
 
     // ---------------- Chest opens ----------------
 
+    /**
+     * The loot containers the "no chest or barrel" streak is about.
+     *
+     * <p>{@link ChestBlock} covers both regular and trapped chests (in vanilla 1.21.1
+     * {@code TrappedChestBlock extends ChestBlock}). {@link EnderChestBlock} does NOT extend it and
+     * is deliberately out — an ender chest is the player's own, and only disqualifies "Contained
+     * Loop". Decorated pots are out too: vases have always been fair game for this streak.</p>
+     *
+     * <p>Shared by the open path ({@link #onRightClickBlock}) and the break path
+     * ({@link #onBlockBreak}) so the two can never drift apart on what counts as loot.</p>
+     */
+    static boolean isLootContainer(Block block) {
+        return block instanceof ChestBlock || block instanceof BarrelBlock;
+    }
+
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (event.getLevel().isClientSide) return;
@@ -155,12 +196,14 @@ public final class AchievementEvents {
         // which EnderChestBlock does not match.
         if (block instanceof EnderChestBlock) {
             if (player.isShiftKeyDown() && event.getItemStack().getItem() instanceof BlockItem) return;
+            boolean firstOpenThisLife = !player.getData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get());
             player.setData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get(), Boolean.TRUE);
+            if (firstOpenThisLife) {
+                LifeDisqualification.notify(player, List.of(LifeDisqualification.CONTAINED_LOOP));
+            }
             return;
         }
-        // ChestBlock covers both regular chests and trapped chests
-        // (TrappedChestBlock extends ChestBlock in vanilla 1.21.1).
-        if (!(block instanceof ChestBlock || block instanceof BarrelBlock)) return;
+        if (!isLootContainer(block)) return;
         // Skip the "sneaking-with-block-to-place" case so adjacent placements
         // don't get counted as chest opens.
         if (player.isShiftKeyDown() && event.getItemStack().getItem() instanceof BlockItem) return;
@@ -183,8 +226,7 @@ public final class AchievementEvents {
         // Break the "no chest or barrel" streak: the next milestone is measured
         // from this carriage reading onward. Decorated pots never reach here —
         // vases are allowed (their breaks feed containersOpened from RunStatsEvents).
-        player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(),
-            effectiveTravelled(run));
+        resetContainerStreak(player, run);
         boolean added = run.addChestPos(pos);
         if (!added) {
             // Streak broken — duplicate open. Reset and start fresh from this chest.
@@ -192,8 +234,66 @@ public final class AchievementEvents {
             run.addChestPos(pos);
             LOGGER.debug("[DungeonTrain] Chest streak reset by duplicate open at {} (player {})",
                 pos, player.getName().getString());
+            LifeDisqualification.notifyStreakReset(player, LifeDisqualification.CHEST_STREAK);
         }
         ModAdvancementTriggers.UNIQUE_CHESTS_OPENED.get().trigger(player, run.chestStreak());
+    }
+
+    // ---------------- Block breaks ----------------
+
+    /**
+     * Any block a player breaks ends the "no block broken" streak: the next milestone is
+     * measured from this carriage reading onward. Deliberately unfiltered — decorated pots
+     * count here, unlike the chest/barrel streak below where vases are fair game.
+     *
+     * <p>Breaking a chest or barrel additionally counts as <em>opening</em> it. Mining a container
+     * spills the same loot on the floor, so leaving the break path out let a player empty every
+     * carriage on the train and still take "Not My Chest" and the top of the {@code
+     * carriages_no_chest} board. The break path therefore runs the same
+     * {@link PlayerRunState#openedLootContainer()} + {@code CARTS_AT_LAST_CONTAINER_OPEN} pair the
+     * right-click path does, which is what keeps the advancement and the leaderboard agreeing.</p>
+     *
+     * <p>Fires on the same {@link BlockEvent.BreakEvent} that {@code RunStatsEvents.onPotBreak}
+     * uses, so a pot mined with a tool lands here too. A pot shattered from range by a
+     * projectile never raises this event and so cannot break the streak — the same blind spot
+     * the existing pot accounting has, and now the container streak's too: a chest destroyed with
+     * no player attributed (an explosion, say) breaks neither streak.</p>
+     */
+    @SubscribeEvent
+    public static void onBlockBreak(BlockEvent.BreakEvent event) {
+        if (event.isCanceled()) return;
+        if (event.getLevel().isClientSide()) return;
+        if (!(event.getPlayer() instanceof ServerPlayer player)) return;
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        // A streak worth telling a tracking player about is one that had actually got somewhere —
+        // breaking a second block in the same carriage resets nothing they hadn't already lost.
+        int travelled = effectiveTravelled(run);
+        boolean hadBreakStreak = travelled > player.getData(ModDataAttachments.CARTS_AT_LAST_BLOCK_BREAK.get());
+        player.setData(ModDataAttachments.CARTS_AT_LAST_BLOCK_BREAK.get(), travelled);
+        if (hadBreakStreak) {
+            LifeDisqualification.notifyStreakReset(player, LifeDisqualification.BREAK_STREAK);
+        }
+
+        // Broke a chest or barrel — that is an open. Ends the chest-free streak (advancement AND
+        // leaderboard) and feeds the containers-opened tally. The unique-chest streak stays
+        // right-click-only: smashing a chest is not "opening a distinct chest".
+        if (!isLootContainer(event.getState().getBlock())) return;
+        run.openedLootContainer();
+        resetContainerStreak(player, run);
+    }
+
+    /**
+     * Restart the chest-free streak at the current carriage reading, telling a tracking player
+     * about it only when there was a streak to lose (the first open in a carriage after any
+     * travel — not the second chest in the same carriage).
+     */
+    private static void resetContainerStreak(ServerPlayer player, PlayerRunState run) {
+        int travelled = effectiveTravelled(run);
+        boolean hadStreak = travelled > player.getData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get());
+        player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(), travelled);
+        if (hadStreak) {
+            LifeDisqualification.notifyStreakReset(player, LifeDisqualification.CONTAINER_STREAK);
+        }
     }
 
     // ---------------- Carriages-in-run ----------------
@@ -250,11 +350,23 @@ public final class AchievementEvents {
         // both terms, so it cancels in the subtraction.
         int sinceContainer = effectiveTravelled
             - player.getData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get());
-        if (sinceContainer >= NO_CONTAINER_CARTS_TIER_1) {
+        if (sinceContainer >= AdvancementRequirements.intValue(NO_CONTAINER_100_ID, NO_CONTAINER_CARTS_TIER_1)) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_container_100_carts");
         }
-        if (sinceContainer >= NO_CONTAINER_CARTS_TIER_2) {
+        if (sinceContainer >= AdvancementRequirements.intValue(NO_CONTAINER_1000_ID, NO_CONTAINER_CARTS_TIER_2)) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_container_1000_carts");
+        }
+        // "Look, Don't Touch" / "Museum Rules" — carriages travelled since the last
+        // block broken this life. Same shape as the container streak above (the admin
+        // difficulty offset is in both terms and cancels), but every block counts,
+        // decorated pots included.
+        int sinceBreak = effectiveTravelled
+            - player.getData(ModDataAttachments.CARTS_AT_LAST_BLOCK_BREAK.get());
+        if (sinceBreak >= AdvancementRequirements.intValue(NO_BREAK_100_ID, NO_BREAK_CARTS_TIER_1)) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_break_100_carts");
+        }
+        if (sinceBreak >= AdvancementRequirements.intValue(NO_BREAK_1000_ID, NO_BREAK_CARTS_TIER_2)) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_break_1000_carts");
         }
     }
 
@@ -282,7 +394,7 @@ public final class AchievementEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.getData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get())) return;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-        if (effectiveTravelled(run) <= CONTAINED_LOOP_CARTS) return;
+        if (effectiveTravelled(run) <= AdvancementRequirements.intValue(CONTAINED_LOOP_ID, CONTAINED_LOOP_CARTS)) return;
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "contained_loop");
     }
 
@@ -397,6 +509,24 @@ public final class AchievementEvents {
      */
     public static void notifyBooksBurnedUnread(ServerPlayer player, long totalBurned) {
         ModAdvancementTriggers.BOOKS_BURNED_UNREAD.get().trigger(player, totalBurned);
+    }
+
+    /**
+     * Called from {@link games.brennan.dungeontrain.event.StartingBookEvents#onEntityJoinLevel}
+     * when a leaderboard board burns. A board only becomes burnable once it has been held, so
+     * this fires for a board the player actually carried away — one-shot, no threshold.
+     */
+    public static void notifyLeaderboardBookBurned(ServerPlayer player) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "burned_leaderboard_book");
+    }
+
+    /**
+     * Called from {@link games.brennan.dungeontrain.event.StartingBookEvents#onEntityJoinLevel}
+     * when a run-stat note — a page of the holder's own statistics — burns. Held-gated the same
+     * way as the board above, and likewise one-shot.
+     */
+    public static void notifyStatBookBurned(ServerPlayer player) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "burned_stat_book");
     }
 
     // ---------------- Player encounters ----------------
@@ -573,11 +703,14 @@ public final class AchievementEvents {
      * (Nether/End presets were dropped from the {@code #minecraft:normal}
      * world-preset tag; see PR #639), so their books can never be delivered
      * to a fresh player. Mirrors the same dimension-routed vs. lifecycle
-     * split {@link #allStartingBooksSeen} already applies.</p>
+     * split {@link #allStartingBooksSeen} already applies. JOINED_WORLD is
+     * excluded too — it only rolls at first login on a world someone else was
+     * already welcomed in, never on respawn, so a solo player can't collect it.
+     * The exact set lives in {@link StartingBookContext#countsTowardWelcomeBack()}.</p>
      */
     private static boolean allStartingBookTitlesSeen(games.brennan.dungeontrain.narrative.NarrativeProgressData data) {
         java.util.List<String> all = games.brennan.dungeontrain.narrative.StartingBookRegistry.basenames(
-            ctx -> ctx.achievementSetId().isEmpty());
+            StartingBookContext::countsTowardWelcomeBack);
         if (all.isEmpty()) return false;
         java.util.Map<String, games.brennan.dungeontrain.narrative.NarrativeProgress> snapshot =
             data.startingBookSeenSnapshot();
@@ -777,6 +910,9 @@ public final class AchievementEvents {
         // defensive reason PlayerRunState is.
         player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(), 0);
         player.setData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get(), Boolean.FALSE);
+        player.setData(ModDataAttachments.STARTING_BOOK_BURNED_THIS_LIFE.get(), Boolean.FALSE);
+        // A fresh life rules nothing out yet — clear the client's greyed-out mirror.
+        LifeDisqualification.sync(player);
         // Per-life travelled-carriage-index is now 0; push the HUD packet
         // immediately so the overlay reflects the reset without waiting for
         // the next 10-tick BoardingProgressEvents scan.
@@ -859,6 +995,15 @@ public final class AchievementEvents {
         // (post-replay) progress and grants normally (replaying is false here).
         replaySidecarAdvancements(player);
         CompletionistAdvancement.checkAndGrant(player);
+        // Vanilla sent this player's command tree before any of the above ran. If they hold the
+        // banked capstone — replayed just now, or granted just now — /advancement revoke @s
+        // everything is theirs to run, so send the tree again with it in.
+        if (StartAgainAdvancement.holdsBankedCapstone(player)) {
+            StartAgainAdvancement.refreshCommandTree(player);
+        }
+        // After the replay above so an advancement restored from the sidecar is not reported as
+        // disqualified — re-derived from persisted per-life state, so a mid-life relog agrees.
+        LifeDisqualification.sync(player);
     }
 
     /**
@@ -1037,6 +1182,10 @@ public final class AchievementEvents {
      * about to wipe. {@link StartAgainAdvancement#checkArmed} does the grant on the
      * next player tick, once the capstone is confirmed gone.</p>
      *
+     * <p>When it arms, vanilla's revoke is cancelled and {@link StartAgainAdvancement#wipe} runs in
+     * its place: only the advancements that make up the capstone are cleared, everything that never
+     * counted towards it (The Secrete Menu, the editor tree, other mods') stays earned.</p>
+     *
      * <p>Ignores console / command-block / function sources — there is no player to
      * award. Runs at {@link EventPriority#LOWEST} so a cancelling handler gets there
      * first and this never arms off a command that won't run: notably
@@ -1046,12 +1195,42 @@ public final class AchievementEvents {
      * {@link games.brennan.dungeontrain.cheat.CommandAllowlist}), so in practice the
      * revoke reaches execution untainted.</p>
      */
+    /**
+     * The fence around {@link games.brennan.dungeontrain.advancement.SelfRevokeCommandAccess}: a
+     * player <em>without</em> permission 2 may run {@code /advancement …} in exactly one form,
+     * {@code /advancement revoke @s everything}. The requirement rewrite already hides
+     * {@code grant} and the narrowing {@code revoke} forms from them, but {@code <targets>} is a
+     * free argument, so {@code revoke SomeoneElse everything} would still parse. Cancel anything
+     * that isn't the exact form.
+     *
+     * <p>{@link EventPriority#HIGHEST} on purpose: a cancelled event is not delivered to
+     * {@link CheatDetectionEvents#onCommand}, so a non-op poking at other forms gets "unknown
+     * command" and no Free Play prompt — the command never existed for them, and it still
+     * doesn't. Operators are untouched (vanilla path, cheat detector, the lot).</p>
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onNonOpAdvancementCommand(CommandEvent event) {
+        var source = event.getParseResults().getContext().getSource();
+        ServerPlayer player = source.getPlayer();
+        if (player == null || source.hasPermission(2)) return;
+        var nodes = event.getParseResults().getContext().getNodes();
+        if (nodes.isEmpty() || !"advancement".equals(nodes.get(0).getNode().getName())) return;
+        if (StartAgainAdvancement.isSelfRevokeEverything(event.getParseResults().getReader().getString())) return;
+        event.setCanceled(true);
+        source.sendFailure(Component.translatable("command.unknown.command"));
+    }
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onCommand(CommandEvent event) {
         ServerPlayer player = event.getParseResults().getContext().getSource().getPlayer();
         if (player == null) return;
         if (!StartAgainAdvancement.isSelfRevokeEverything(event.getParseResults().getReader().getString())) return;
-        StartAgainAdvancement.armIfEligible(player);
+        if (!StartAgainAdvancement.armIfEligible(player)) return;   // not earning it: vanilla revoke as usual
+        // Earning it: clear only what the capstone is made of, not everything (see StartAgainAdvancement#wipe).
+        event.setCanceled(true);
+        int cleared = StartAgainAdvancement.wipe(player);
+        event.getParseResults().getContext().getSource().sendSuccess(() -> Component.translatable(
+                "commands.advancement.revoke.many.to.one.success", cleared, player.getDisplayName()), true);
     }
 
     @SubscribeEvent

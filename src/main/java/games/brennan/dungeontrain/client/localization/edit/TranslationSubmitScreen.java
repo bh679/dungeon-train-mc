@@ -210,6 +210,15 @@ public final class TranslationSubmitScreen extends Screen {
             if (value == null) {
                 continue;
             }
+            // Belt and braces for an override stored before the edit screen started checking, or
+            // one pulled down from the relay. Sending it would only have it deferred at import.
+            // Each kind gets its own rule: printf tokens for a lang string, {braces} for a book.
+            TranslationFormatCheck.Problem broken = book
+                ? TranslationFormatCheck.checkBook(unit.source(), value)
+                : TranslationFormatCheck.check(unit.source(), value);
+            if (broken != null) {
+                continue;
+            }
             units.add(new TranslationSubmitClient.Unit(book ? "book" : "lang",
                 unit.namespace(), unit.id(), unit.source(), unit.shipped(), value));
             sending = book ? sending.withBook(unit.id(), value) : sending.withLang(unit.id(), value);
@@ -243,6 +252,11 @@ public final class TranslationSubmitScreen extends Screen {
         // The row the player just created should appear without reopening the screen.
         onHistory(List.of());
         TranslationSubmissionsClient.fetch(this::onHistory);
+    }
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        InWorldBackdrop.render(this, g, () -> super.renderBackground(g, mouseX, mouseY, partialTick));
     }
 
     @Override

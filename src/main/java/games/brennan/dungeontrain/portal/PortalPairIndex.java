@@ -1,10 +1,14 @@
 package games.brennan.dungeontrain.portal;
 
+import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
+import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
 
@@ -88,11 +92,7 @@ public final class PortalPairIndex {
 
         /** The shipyard position of a local cell, via the ship's transform rather than an assumed axis. */
         public BlockPos plotPosOf(int[] local) {
-            Vector3d ship3 = ship.worldToShip(new Vector3d(
-                carriageWorld.x + local[0] + 0.5,
-                carriageWorld.y + local[1] + 0.5,
-                carriageWorld.z + local[2] + 0.5));
-            return BlockPos.containing(ship3.x, ship3.y, ship3.z);
+            return PortalPairIndex.plotPosOf(ship, carriageWorld, local);
         }
 
         public BlockPos twinPosOf(int[] local) {
@@ -100,21 +100,75 @@ public final class PortalPairIndex {
         }
     }
 
+    /**
+     * The shipyard position of a corridor-local cell, for a corridor whose origin in world space is
+     * {@code carriageWorld} and whose blocks live in {@code ship}'s plot.
+     *
+     * <p>The static form of {@link Entry#plotPosOf}, for a caller that has no published entry to
+     * hand — a corridor whose swap was refused before a pairing ever existed still has a plate to
+     * open ({@code PortalSever.openCentreWall}). Not bounds-checked, deliberately: the centre-wall
+     * cells it is asked about sit outside the corridor's own box (see
+     * {@link PortalCentreWall#doorwayCellsFromCorridor}).</p>
+     */
+    public static BlockPos plotPosOf(ManagedShip ship, Vec3 carriageWorld, int[] local) {
+        Vector3d ship3 = ship.worldToShip(new Vector3d(
+            carriageWorld.x + local[0] + 0.5,
+            carriageWorld.y + local[1] + 0.5,
+            carriageWorld.z + local[2] + 0.5));
+        return BlockPos.containing(ship3.x, ship3.y, ship3.z);
+    }
+
     /** Carriage index → its live pairing. Written on the server thread, read from the Sable hook. */
     private static final Map<Integer, Entry> ENTRIES = new ConcurrentHashMap<>();
+
+    /**
+     * The sweep generation each entry was last published in. An entry holds the carriage's
+     * {@link LevelPlot} — every chunk of the carriage — so one that stops being republished must
+     * leave, or every portal carriage the train ever passed stays on the heap.
+     */
+    private static final Map<Integer, Long> PUBLISHED_IN = new ConcurrentHashMap<>();
+    private static long generation;
 
     private PortalPairIndex() {}
 
     public static void publish(int carriageIndex, Entry entry) {
         ENTRIES.put(carriageIndex, entry);
+        PUBLISHED_IN.put(carriageIndex, generation);
+    }
+
+    /**
+     * Close the current publishing generation: drop every entry that was not republished since the
+     * previous sweep, then open the next one. The tick walk republishes each live corridor every
+     * tick, so an entry missing from a whole generation belongs to a carriage that is no longer
+     * being walked — culled, or rolled away from. Returns how many were dropped.
+     */
+    public static int sweep() {
+        long current = generation;
+        int dropped = 0;
+        for (Map.Entry<Integer, Long> stamp : PUBLISHED_IN.entrySet()) {
+            if (stamp.getValue() != current) {
+                ENTRIES.remove(stamp.getKey());
+                PUBLISHED_IN.remove(stamp.getKey());
+                dropped++;
+            }
+        }
+        generation++;
+        return dropped;
     }
 
     public static void forget(int carriageIndex) {
         ENTRIES.remove(carriageIndex);
+        PUBLISHED_IN.remove(carriageIndex);
     }
 
     public static void clear() {
         ENTRIES.clear();
+        PUBLISHED_IN.clear();
+    }
+
+    /** How many pairings are published — diagnostics and tests. */
+    public static int size() {
+        return ENTRIES.size();
     }
 
     public static boolean isEmpty() {
@@ -141,5 +195,31 @@ public final class PortalPairIndex {
             if (entry.localOfTwin(pos) != null) return entry;
         }
         return null;
+    }
+
+    /**
+     * Is this position a cell of a live corridor — either copy?
+     *
+     * <p>The two lookups above each know one coordinate space; this asks both from a single
+     * {@link BlockPos}, which is what an event handler has. A carriage's blocks are at shipyard
+     * coordinates <i>within this same level</i>, so the position alone cannot say which space it is
+     * in: the plot is resolved from the position's chunk the way {@code SableBlockChangeGuardMixin}
+     * does, and a null plot means an ordinary world chunk, which is the twin's case.</p>
+     *
+     * <p>Callers sit on block-placement paths, so the empty check comes first: a world with no live
+     * portal pays one field read.</p>
+     */
+    public static boolean isCorridorCell(ServerLevel level, BlockPos pos) {
+        if (ENTRIES.isEmpty()) return false;
+        if (findByTwinPos(pos) != null) return true;
+
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return false;
+        ChunkPos cpos = new ChunkPos(pos);
+        if (container.getChunkHolder(cpos) == null) return false;
+        LevelPlot plot = container.getPlot(cpos);
+        if (plot == null) return false;
+
+        return findByPlotPos(plot, pos.getX(), pos.getY(), pos.getZ()) != null;
     }
 }
