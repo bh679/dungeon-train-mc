@@ -6749,6 +6749,47 @@ public final class TrainCarriageAppender {
             "", copy);
     }
 
+    /** Throttle for {@link #logTwinSpaceDiagnosis} — one line per player per second. */
+    private static final Map<UUID, Long> TWIN_DIAG_LAST = new ConcurrentHashMap<>();
+
+    /**
+     * TEMPORARY. Says which branch the twin-space read-out takes at the player's actual position,
+     * so a wrong Copy line can be diagnosed from a log instead of guessed at. Remove once the
+     * corridor/room split is confirmed correct in game.
+     */
+    private static void logTwinSpaceDiagnosis(ServerLevel level, ServerPlayer player, CarriageDims dims) {
+        long now = level.getGameTime();
+        Long last = TWIN_DIAG_LAST.get(player.getUUID());
+        if (last != null && now - last < 20L) return;
+        TWIN_DIAG_LAST.put(player.getUUID(), now);
+
+        double x = player.getX();
+        double y = player.getY();
+        double z = player.getZ();
+        PortalPairIndex.Entry twin = PortalPairIndex.findByTwinPos(player.blockPosition());
+        PortalCarriageEvents.RoomFacts room = PortalCarriageEvents.roomFactsAt(dims, x, y, z);
+
+        int geoTotal = 0;
+        int geoXZ = 0;
+        String geoHit = "none";
+        for (PortalGeometry geo : PortalRegistry.get(level).all()) {
+            geoTotal++;
+            if (!geo.withinCorridorXZ(x, z)) continue;
+            geoXZ++;
+            geoHit = "originX=" + geo.originX() + " floorY=" + geo.floorY()
+                + " deltaY=" + geo.deltaY() + " copyAt=" + geo.copyAt(y)
+                + " insideCorridor=" + geo.insideCorridor(x, y, z);
+        }
+        LOGGER.info("[DT-twin-diag] pos=({}, {}, {}) twinCorridor={} room={} tile={} geos={} xzHits={} {} -> copy='{}'",
+            String.format(Locale.ROOT, "%.1f", x), String.format(Locale.ROOT, "%.1f", y),
+            String.format(Locale.ROOT, "%.1f", z),
+            twin == null ? "null" : ("pIdx=" + twin.carriageIndex()),
+            room == null ? "null" : room.roomName(),
+            room == null ? "-" : (room.tile().x() + "," + room.tile().z()),
+            geoTotal, geoXZ, geoHit,
+            copyLabel(level, player, room));
+    }
+
     /**
      * The panel's read-out for a player standing in one of a pair's twin corridors — the underground
      * copies the crossing is built from.
@@ -6790,6 +6831,7 @@ public final class TrainCarriageAppender {
             if (dims == null) {
                 dims = DungeonTrainWorldData.get(level.getServer().overworld()).dims();
             }
+            logTwinSpaceDiagnosis(level, player, dims);
             TrainDebugCarriagePacket packet = dimensionalCarriagePacket(level, player, dims);
             String key = "r:" + packet.cartType() + ":" + packet.contentsId()
                 + ":" + packet.subVariantId() + ":" + packet.copy();
