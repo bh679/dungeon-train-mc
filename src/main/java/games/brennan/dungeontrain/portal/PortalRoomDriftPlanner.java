@@ -4,7 +4,6 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.event.SharedCarriageGate;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.PoolLease;
-import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.SharedCarriageRolls;
 import games.brennan.dungeontrain.train.SharedRoomPool;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -43,13 +42,13 @@ public final class PortalRoomDriftPlanner {
      * <p>Null whenever the room does not drift (mode, author's veto), leasing is off, the pair has
      * no stage the pool could match, the test rig is stamping, the roll came up fresh, or nothing
      * of this room is buffered. Records the room as the pool's demand either way, so a later pair
-     * rolling the same room can be served.</p>
+     * rolling the same room can be served. {@code stageId} is the pair's recorded stage — the one
+     * the stamp and the registry use — so a copy is asked for, filed and resolved under one stage.</p>
      */
     public static PortalRoomBlob leaseFor(ServerLevel level, int pairKey, String roomName,
-                                          PortalRoomSettings settings, Vec3i size, CarriageDims dims) {
+                                          PortalRoomSettings settings, Vec3i size, String stageId) {
         if (!driftsHere(level, pairKey, settings)) return null;
         if (!SharedCarriageGate.canLease()) return null;
-        String stageId = PortalCarriageBuilder.stageIdFor(level, pairKey, dims);
         if (stageId == null || stageId.isEmpty()) {
             log(pairKey, roomName, "NO_STAGE", null);
             return null;

@@ -893,12 +893,30 @@ public final class PortalCarriageBuilder {
             settings.effectiveExits(),
             PortalExitSites.seedFor(level.getSeed(), pairKey, roomName),
             PortalRoomTiling.MAX_RADIUS);
-        // Last, once the room and its box are settled: whether another world's copy of exactly this
-        // room stands in for the template. Decided here with everything else about the pair and
-        // carried on the record, so a relocation re-lays the same copy rather than rolling again.
-        PortalRoomBlob blob = PortalRoomDriftPlanner.leaseFor(level, pairKey, roomName, settings, size, dims);
+        // Whether another world's copy of this room stands in for the template is NOT decided here:
+        // a plan can be abandoned before it is stamped (a lane that does not fit, a twin still
+        // mirroring), and a lease drawn for a plan that never lands is a copy locked away from every
+        // other world for an hour. See withDriftedCopy, called by the caller at stamp time.
         return new PortalStructure(entryOrigin, roomName, size, settings,
-            PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile, kind, PortalStructure.NO_SALT, blob);
+            PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile, kind);
+    }
+
+    /**
+     * {@code structure} with another world's copy of its room standing in for the template, when
+     * the pair drifts and the pool has one — or {@code structure} unchanged.
+     *
+     * <p>Called once, immediately before the first stamp of a plan, with the pair's recorded
+     * {@code stageId} (the same one the stamp resolves placeholders for and the registry files the
+     * room under). Never on a relocation: the record already carries the room as it stands. A copy
+     * is drawn only for a stamp that is about to happen, so a plan abandoned on the way to the
+     * stamp never leaks a lease.</p>
+     */
+    public static PortalStructure withDriftedCopy(ServerLevel level, PortalStructure structure,
+                                                  int pairKey, String stageId) {
+        if (structure.stampsFromBlob()) return structure;
+        PortalRoomBlob blob = PortalRoomDriftPlanner.leaseFor(level, pairKey, structure.roomName(),
+            structure.settings(), structure.roomSize(), stageId);
+        return blob == null ? structure : structure.withBlob(blob);
     }
 
     /**

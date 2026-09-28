@@ -2452,6 +2452,13 @@ public final class PortalCarriageEvents {
         // where its carriage stands now, first.
         PortalCarriageBuilder.recordStageIfUnknown(level, pairKey, dims, Mth.floor(originX));
         String stageId = PortalCarriageBuilder.stageIdFor(level, pairKey, dims);
+        // A first stamp may lay another world's copy of the room instead of the template. Drawn
+        // here, on the way into the stamp, rather than at plan time: every early return above is a
+        // plan that never landed, and a lease taken for one of those is a copy locked away from
+        // every other world until it expires. A relocation keeps what it carries.
+        if (existing == null) {
+            planned = PortalCarriageBuilder.withDriftedCopy(level, planned, pairKey, stageId);
+        }
         final PortalStructure toStamp = planned;
         games.brennan.dungeontrain.train.StagePlacementScope.run(stageId,
             () -> PortalCarriageBuilder.stampPairStructure(level, toStamp, dims, pairKey));

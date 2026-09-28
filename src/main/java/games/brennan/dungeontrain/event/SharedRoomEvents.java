@@ -249,6 +249,10 @@ public final class SharedRoomEvents {
      * <p>Read while the old blocks are still standing, on the server thread, exactly as a carriage's
      * final capture is. A leased room is always carried: its blocks are the relay's copy plus this
      * world's edits, and neither is on disk here.</p>
+     *
+     * <p>What a carried room loses is its authored <b>mobs</b>: they are reaped with the old site
+     * ({@code PortalRoomMobs.reapPair}), and a blob stamp puts back hung decor only. A template
+     * re-stamp would roll a fresh set; a room somebody built in keeps their blocks instead.</p>
      */
     public static PortalRoomBlob captureForRelocation(int pairKey) {
         SharedRoomRegistry.Instance inst = SharedRoomRegistry.byPair(pairKey);

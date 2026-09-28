@@ -93,7 +93,11 @@ class SharedRoomRegistryTest {
         inst.enqueue(new BlockPos(1, 1, 1));
         assertFalse(inst.hasPending(), "a culled room queues nothing");
         assertEquals("pair=7 room=beam", inst.describe());
-        assertTrue(inst.isAuthoredBy(java.util.UUID.fromString("00000000-0000-0000-0000-000000000abc"))
-                == "abc".equals("00000000000000000000000000000abc"), "dashless uuid comparison");
+        assertFalse(inst.isAuthoredBy(java.util.UUID.fromString("00000000-0000-0000-0000-000000000abc")),
+                "a three-character author key never matches a real uuid");
+        SharedRoomRegistry.Instance byAlice = SharedRoomRegistry.register(null, 8, "beam", new BlockPos(0, 0, 0),
+                SIZE, true, true, "00000000000000000000000000000abc", 1, "t", 0, "stone", Credits.EMPTY, Deaths.EMPTY);
+        assertTrue(byAlice.isAuthoredBy(java.util.UUID.fromString("00000000-0000-0000-0000-000000000abc")),
+                "dashless comparison against the relay's author key");
     }
 }

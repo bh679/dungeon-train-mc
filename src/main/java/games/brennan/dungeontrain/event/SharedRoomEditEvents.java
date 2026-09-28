@@ -7,6 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.util.BlockSnapshot;
@@ -28,7 +29,9 @@ public final class SharedRoomEditEvents {
 
     private SharedRoomEditEvents() {}
 
-    @SubscribeEvent
+    // LOWEST on all three: a handler at normal priority that cancels the edit (builder protection,
+    // a portal seal) has run by then, so a cancelled change is never queued as an upload.
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
         if (event.isCanceled()) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
@@ -37,7 +40,7 @@ public final class SharedRoomEditEvents {
                 event.getPlacedBlock());
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onMultiBlockPlace(BlockEvent.EntityMultiPlaceEvent event) {
         if (event.isCanceled()) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
@@ -47,7 +50,7 @@ public final class SharedRoomEditEvents {
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         if (event.isCanceled()) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
