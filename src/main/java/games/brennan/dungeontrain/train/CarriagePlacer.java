@@ -469,7 +469,10 @@ public final class CarriagePlacer {
                                     CarriageContents contents, CarriageDims dims, long seed,
                                     long contentsSeed, int carriageIndex) {
         int anchor = GateContext.WORLDX_FROM_PIDX;
-        CarriageStampGuard.run(() -> StagePlacementScope.run(null, () -> {
+        // Placeholders resolve for the stage the editor is previewing, so the test copy matches the
+        // preview (null only when no stages exist ⇒ the default palette).
+        String stage = games.brennan.dungeontrain.editor.EditorStageSelection.effective();
+        CarriageStampGuard.run(() -> StagePlacementScope.run(stage, () -> {
             // A portal corridor is built the way the train builds one — its own geometry, doors and
             // rolled variants, keyed like a pair — with the requested contents laid in after, rather
             // than the pair's own roll, so the author sees the contents they asked for.

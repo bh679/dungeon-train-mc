@@ -18,6 +18,20 @@ final class StageWoodFamilyTest {
         assertEquals("minecraft:stripped_dark_oak_log", StageWoodFamily.DARK_OAK.block(WoodKind.STRIPPED_LOG));
         assertEquals("minecraft:cherry_fence_gate", StageWoodFamily.CHERRY.block(WoodKind.FENCE_GATE));
         assertEquals("minecraft:birch_trapdoor", StageWoodFamily.BIRCH.block(WoodKind.TRAPDOOR));
+        assertEquals("minecraft:cherry_leaves", StageWoodFamily.CHERRY.block(WoodKind.LEAVES));
+        assertEquals("minecraft:mangrove_leaves", StageWoodFamily.MANGROVE.block(WoodKind.LEAVES));
+    }
+
+    @Test
+    @DisplayName("leaves: nether woods use their wart block; bamboo (and mosaic) borrow jungle leaves")
+    void leaves() {
+        assertEquals("minecraft:nether_wart_block", StageWoodFamily.CRIMSON.block(WoodKind.LEAVES));
+        assertEquals("minecraft:warped_wart_block", StageWoodFamily.WARPED.block(WoodKind.LEAVES));
+        assertEquals("minecraft:jungle_leaves", StageWoodFamily.BAMBOO.block(WoodKind.LEAVES));
+        assertEquals("minecraft:jungle_leaves", StageWoodFamily.BAMBOO_MOSAIC.block(WoodKind.LEAVES));
+        assertEquals(Optional.of(StageWoodFamily.CHERRY), StageWoodFamily.owning("minecraft:cherry_leaves"));
+        assertEquals(Optional.of(StageWoodFamily.JUNGLE), StageWoodFamily.owning("minecraft:jungle_leaves"));
+        assertEquals(Optional.of(StageWoodFamily.CRIMSON), StageWoodFamily.owning("minecraft:nether_wart_block"));
     }
 
     @Test
