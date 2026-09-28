@@ -82,6 +82,15 @@ public final class PhysicsFreezeController {
     private static volatile int lastResident;
     private static volatile int lastActive;
     private static volatile int lastFrozen;
+    // Why the active ones are active, and how far the parked bodies sit behind their poses — the
+    // two things the [mspt] line needs before a "physics is slow while I'm off the train" report
+    // can be attributed (player logs of 28 Sep 2026: physMs 45–205 ms at near=0).
+    private static volatile int lastActiveTracked;
+    private static volatile int lastActiveEntity;
+    private static volatile int lastActiveSettling;
+    private static volatile double lastMaxBodyLagBlocks;
+    /** Re-parks since the last {@link #drainReparks} — one {@code [mspt]} window. */
+    private static final java.util.concurrent.atomic.LongAdder REPARKS = new java.util.concurrent.atomic.LongAdder();
 
     private PhysicsFreezeController() {}
 
@@ -120,6 +129,8 @@ public final class PhysicsFreezeController {
         if (system == null) return;
 
         int resident = 0, active = 0, frozen = 0;
+        int activeTracked = 0, activeEntity = 0, activeSettling = 0, reparks = 0;
+        double maxBodyLag = 0.0;
         for (List<Trains.Carriage> train : trainsById.values()) {
             Set<Integer> settlingAnchors = settlingAnchors(train);
             for (Trains.Carriage c : train) {
@@ -139,10 +150,15 @@ public final class PhysicsFreezeController {
                 // Short-circuits: the set lookup is cheap, and the (bounded) entity scan runs only
                 // for untracked candidates.
                 boolean settling = settlingAnchors.contains(c.provider().getPIdx());
-                boolean activeNow = settling
-                    || !sl.getTrackingPlayers().isEmpty()
-                    || hasLiveEntityAboard(level, ship);
-                if (activeNow) active++;
+                boolean tracked = !settling && !sl.getTrackingPlayers().isEmpty();
+                boolean entityAboard = !settling && !tracked && hasLiveEntityAboard(level, ship);
+                boolean activeNow = settling || tracked || entityAboard;
+                if (activeNow) {
+                    active++;
+                    if (settling) activeSettling++;
+                    else if (tracked) activeTracked++;
+                    else activeEntity++;
+                }
 
                 // An unsettled carriage also holds its inactive counter at zero, so it doesn't
                 // freeze the instant the tracker marks it placed — it gets a fresh grace window.
@@ -165,13 +181,25 @@ public final class PhysicsFreezeController {
                     }
                     case NONE -> { }
                 }
-                if (PhysicsFreeze.isFrozen(sl)) frozen++;
+                if (PhysicsFreeze.isFrozen(sl)) {
+                    frozen++;
+                    // Keep the parked body near its pose — the native step's cost grows with the
+                    // gap (see PhysicsFreeze.REPARK_LAG_BLOCKS). Lag is read after the re-park so
+                    // maxBodyLag reports what the physics scene will actually see this tick.
+                    if (PhysicsFreeze.reparkIfLagging(sl)) reparks++;
+                    maxBodyLag = Math.max(maxBodyLag, PhysicsFreeze.bodyLagBlocks(sl));
+                }
             }
         }
 
         lastResident = resident;
         lastActive = active;
         lastFrozen = frozen;
+        lastActiveTracked = activeTracked;
+        lastActiveEntity = activeEntity;
+        lastActiveSettling = activeSettling;
+        lastMaxBodyLagBlocks = maxBodyLag;
+        REPARKS.add(reparks);
 
         if (frozen > 0 && level.getGameTime() % LOG_PERIOD_TICKS == 0) {
             LOGGER.debug("[freeze] dim={} resident={} active={} frozen={}",
@@ -254,4 +282,14 @@ public final class PhysicsFreezeController {
     public static int lastResident() { return lastResident; }
     public static int lastActive() { return lastActive; }
     public static int lastFrozen() { return lastFrozen; }
+    /** Active because a client tracks it (and it is not settling). */
+    public static int lastActiveTracked() { return lastActiveTracked; }
+    /** Active only because a live entity stands on it (untracked, not settling). */
+    public static int lastActiveEntity() { return lastActiveEntity; }
+    /** Active because its train has an unsettled group (see {@link #anchorsToKeepTicking}). */
+    public static int lastActiveSettling() { return lastActiveSettling; }
+    /** Largest distance a parked body currently sits behind its pose, in blocks (after re-parking). */
+    public static double lastMaxBodyLagBlocks() { return lastMaxBodyLagBlocks; }
+    /** Parked bodies re-parked onto their poses since the last call — drained once per {@code [mspt]} window. */
+    public static long drainReparks() { return REPARKS.sumThenReset(); }
 }
