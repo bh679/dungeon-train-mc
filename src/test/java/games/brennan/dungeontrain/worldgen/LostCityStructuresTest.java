@@ -110,7 +110,7 @@ final class LostCityStructuresTest {
         long cs = coreStart();
         double early = share(cs - 740L, cs - 500L);
         double late = share(cs - 250L, cs - 10L);
-        double core = share(cs + 1000L, cs + 3000L);
+        double core = share(cs + 2500L, cs + 3800L);                       // past the density fade
         assertTrue(early > 0.0, "the first buildings appear inside the crossfade");
         assertTrue(early < late && late < core, early + " < " + late + " < " + core);
         assertEquals(1.0, core, 1e-9);
@@ -133,6 +133,12 @@ final class LostCityStructuresTest {
     void followsTheChunkRoll() {
         long cs = coreStart();
         for (int cx = x(cs - 750L, 0) >> 4; cx < x(cs, 0) >> 4; cx++) {
+            for (int cz = -16; cz < 16; cz++) {
+                boolean lostCity = LegacyBands.kindOfChunk(SEED, C, cx, cz) == LegacyBandKind.LOST_CITY;
+                if (!lostCity) assertFalse(LostCityStructures.allowedAt(SEED, C, cx, cz));     // never off a Lost City chunk
+            }
+        }
+        for (int cx = x(cs + 2500L, 0) >> 4; cx < x(cs + 3000L, 0) >> 4; cx++) {              // full density: exactly the roll
             for (int cz = -16; cz < 16; cz++) {
                 boolean lostCity = LegacyBands.kindOfChunk(SEED, C, cx, cz) == LegacyBandKind.LOST_CITY;
                 assertEquals(lostCity, LostCityStructures.allowedAt(SEED, C, cx, cz));
@@ -205,13 +211,38 @@ final class LostCityStructuresTest {
     private static final ResourceLocation ORIGINAL = ResourceLocation.parse("big_lost_city:tallskyscraper");
 
     @Test
-    @DisplayName("a copy starts in any chunk the era owns, however far from the track; never outside the era")
-    void copiesEverywhereInEra() {
-        int cx = x(coreStart() + 2000L, 0) >> 4;
-        assertTrue(LostCityStructures.allowedAt(SEED, C, cx, 0));
-        assertTrue(LostCityStructures.allowedAt(SEED, C, cx, 2000 >> 4));
-        assertTrue(LostCityStructures.allowedAt(SEED, C, cx, -2000 >> 4));
-        assertFalse(LostCityStructures.allowedAt(SEED, C, x(coreStart() - 2500L, 0) >> 4, 0));
+    @DisplayName("the city fades in from the Nether's exit mountains: half way at 1500 in, full from 3000 on")
+    void fadeIn() {
+        int slotStart = x(LAYOUT.start(slot()), 0);
+        long lead = LAYOUT.legacyLeadIn(slot());
+        assertEquals(0.0, LostCityStructures.density(C, x(LAYOUT.start(slot()) - lead, 0) >> 4), 0.02);
+        assertEquals(lead / 3000.0, LostCityStructures.density(C, slotStart >> 4), 0.02);
+        assertEquals((lead + 1500) / 3000.0, LostCityStructures.density(C, (slotStart + 1500) >> 4), 0.02);
+        assertEquals(1.0, LostCityStructures.density(C, (slotStart + 3000) >> 4), 1e-9);
+        assertEquals(1.0, LostCityStructures.density(C, (slotStart + 3800) >> 4), 1e-9);
+        assertEquals(0.0, LostCityStructures.density(C, x(coreStart() - 2500L, 0) >> 4), 1e-9);   // the Nether proper
+        // the roll follows the density over a block of chunks, and is deterministic
+        int cx = (slotStart + 1200) >> 4;                                                     // density ~0.48
+        int kept = 0;
+        for (int cz = -100; cz < 100; cz++) if (LostCityStructures.allowedAt(SEED, C, cx, cz)) kept++;
+        assertTrue(kept > 65 && kept < 130, "about half kept at half density: " + kept);
+        int full = 0;
+        for (int cz = -100; cz < 100; cz++) if (LostCityStructures.allowedAt(SEED, C, (slotStart + 3500) >> 4, cz)) full++;
+        assertEquals(200, full);
+        assertEquals(LostCityStructures.allowedAt(SEED, C, cx, 7), LostCityStructures.allowedAt(SEED, C, cx, 7));
+    }
+
+    @Test
+    @DisplayName("Lap 1's WWOO stretch keeps a few percent of its starts; the vanilla stretches none")
+    void wwooForetaste() {
+        int wwooSlot = 2;
+        int cx = x(LAYOUT.start(wwooSlot) + LAYOUT.length(wwooSlot) / 2, 0) >> 4;
+        assertEquals(LostCityStructures.WWOO_STRETCH_DENSITY, LostCityStructures.density(C, cx), 1e-9);
+        int kept = 0;
+        for (int cz = -500; cz < 500; cz++) if (LostCityStructures.allowedAt(SEED, C, cx, cz)) kept++;
+        assertTrue(kept > 20 && kept < 65, "about 4% kept: " + kept);
+        assertEquals(0.0, LostCityStructures.density(C, x(1000L, 0) >> 4), 1e-9);              // lap-0 vanilla lead
+        assertFalse(LostCityStructures.allowedAt(SEED, C, x(1000L, 0) >> 4, 0));
     }
 
     @Test

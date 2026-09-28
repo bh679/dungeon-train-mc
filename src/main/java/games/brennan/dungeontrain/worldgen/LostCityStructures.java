@@ -28,6 +28,10 @@ import net.minecraft.world.level.Level;
  * structure, every overworld biome — oceans and rivers included, where {@link LostCitySeating} sets them on
  * the seabed) that may start in any chunk the era owns, so the ride passes buildings whatever the ground is.</p>
  *
+ * <p>The city fades in: a start is kept with a probability that climbs from nothing at the run's start to
+ * full {@link #FADE_BLOCKS} in ({@link #density}), and Lap 1's WWOO stretch keeps a few percent of its
+ * starts as a foretaste.</p>
+ *
  * <p>How a city sits in the ground — its template's natural pad and lower air yielding to the stretch's own
  * terrain — is {@link LostCityGroundProcessor}'s.</p>
  */
@@ -66,17 +70,79 @@ public final class LostCityStructures {
     }
 
     /**
-     * The era rule alone, for any Lost City structure: the chunk rolled Lost City (core, or its share
-     * of a crossfade) and the chunk plus {@link #EXIT_MARGIN_BLOCKS} ends before the core does.
+     * The era rule with the density roll, for any Lost City structure. In the Lost City run the chunk must
+     * have rolled Lost City (core, or its share of a crossfade) and end, with {@link #EXIT_MARGIN_BLOCKS},
+     * before the core does; it is then kept with probability {@link #density}, so the city fades in. In Lap
+     * 1's WWOO stretch a chunk is kept with {@link #WWOO_STRETCH_DENSITY} — a few ruins as a foretaste.
      */
     public static boolean allowedAt(long seed, WorldGenCycle cycle, int chunkX, int chunkZ) {
-        if (cycle == null || cycle.legacyLen(LegacyBandKind.LOST_CITY) <= 0L) return false;
-        if (LegacyBands.kindOfChunk(seed, cycle, chunkX, chunkZ) != LegacyBandKind.LOST_CITY) return false;
+        double density = density(cycle, chunkX);
+        if (density <= 0.0D) return false;
+        boolean wwoo = cycle.overworldStyleAt(chunkX << 4) == CycleLayout.Style.WWOO;
+        if (!wwoo && LegacyBands.kindOfChunk(seed, cycle, chunkX, chunkZ) != LegacyBandKind.LOST_CITY) return false;
+        return hash01(seed, chunkX, chunkZ) < density;
+    }
+
+    /** How far into the Lost City run (lead-in included) the city reaches full density, in base blocks. */
+    public static final int FADE_BLOCKS = 3000;
+
+    /** Share of the placement grid's starts kept in the WWOO overworld stretch: roughly 3–10 buildings near the track. */
+    public static final double WWOO_STRETCH_DENSITY = 0.04;
+
+    /**
+     * The share of placement-grid starts kept for a chunk column at {@code chunkX}: 0 outside the Lost City
+     * run and the WWOO stretch; in the run, rising linearly from 0 at the start of the lead-in (the Nether's
+     * exit mountains) to 1 at {@link #FADE_BLOCKS} in and staying there; in the WWOO stretch,
+     * {@link #WWOO_STRETCH_DENSITY}.
+     */
+    public static double density(WorldGenCycle cycle, int chunkX) {
+        if (cycle == null) return 0.0D;
+        int worldX = chunkX << 4;
+        if (cycle.overworldStyleAt(worldX) == CycleLayout.Style.WWOO) return WWOO_STRETCH_DENSITY;
+        if (!inEra(cycle, chunkX)) return 0.0D;
+        long into = blocksIntoRun(cycle, worldX);
+        if (into < 0L) return 1.0D;
+        return into >= FADE_BLOCKS ? 1.0D : (double) into / FADE_BLOCKS;
+    }
+
+    /**
+     * Base blocks from the start of the Lost City run's lead-in — the last {@code legacyLeadIn} blocks of the
+     * Nether slot before it — to {@code worldX}; {@code -1} without a layout or outside both slots.
+     */
+    static long blocksIntoRun(WorldGenCycle cycle, int worldX) {
+        CycleLayout layout = cycle.layout();
+        if (layout == null) return -1L;
+        int legacy = layout.legacySlotOf(LegacyBandKind.LOST_CITY);
+        int slot = cycle.slotIndexAt(worldX);
+        if (legacy < 0 || slot < 0) return -1L;
+        long lead = layout.legacyLeadIn(legacy);
+        long local = cycle.slotLocal(worldX);
+        if (slot == legacy) return lead + local;
+        if (slot == legacy - 1) return lead - (layout.length(slot) - local);   // the lead-in, in the Nether's tail
+        return -1L;
+    }
+
+    /** The era rule alone: the chunk rolled Lost City and ends before the core's exit margin. */
+    static boolean inEra(WorldGenCycle cycle, int chunkX) {
+        if (cycle.legacyLen(LegacyBandKind.LOST_CITY) <= 0L) return false;
         double reach = cycle.legacyCoreProgress(LegacyBandKind.LOST_CITY, (chunkX << 4) + 15 + EXIT_MARGIN_BLOCKS);
         if (Double.isNaN(reach)) {
             // the lead-in on the Nether's exit mountains, before the Lost City's own slot
             return cycle.isInLegacyLeadIn(LegacyBandKind.LOST_CITY, chunkX << 4);
         }
         return reach < 1.0D;
+    }
+
+    // splitmix64-style finaliser, uniform in [0,1) per (seed, chunkX, chunkZ); same idiom as LegacyBands.
+    private static final int OWN_SALT = 61;
+
+    static double hash01(long seed, int a, int b) {
+        long h = seed * 0x9E3779B97F4A7C15L + OWN_SALT * 0xD1B54A32D192ED03L;
+        h ^= (long) a * 0xC2B2AE3D27D4EB4FL;
+        h = (h ^ (h >>> 29)) * 0xBF58476D1CE4E5B9L;
+        h ^= (long) b * 0x165667B19E3779F9L;
+        h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
+        h ^= (h >>> 31);
+        return (h >>> 11) * 0x1.0p-53;
     }
 }
