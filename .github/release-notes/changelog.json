@@ -19860,7 +19860,7 @@
         "feature",
         "compatibility"
       ],
-      "title": "Fair play now covers settings changed mid-run",
+      "title": "The whitelist now covers settings changed mid-run",
       "summary": "Changing a Dungeon Train balance setting while you're playing, whether in the settings screen or an in-game config editor, now puts that run into Free Play for good, just like using a tuning command. Changing it back before you quit no longer hides it.",
       "highlights": [
         "How the train's mobs fight and scavenge now counts as a balance setting",
@@ -19869,9 +19869,9 @@
       ],
       "pr": 1604,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "live-update-chat-notice",
@@ -19889,9 +19889,9 @@
       ],
       "pr": 1605,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "whitelist-min-dt-version",
@@ -19901,16 +19901,16 @@
         "feature",
         "compatibility"
       ],
-      "title": "Some fair-play mods need a recent Dungeon Train",
-      "summary": "A few mods on the fair-play list are only approved on newer versions of Dungeon Train, because they rely on support those versions added. Run one on an older version and the run is Free Play until you update.",
+      "title": "Some whitelisted mods need a recent Dungeon Train",
+      "summary": "A few mods on the whitelist are only approved on newer versions of Dungeon Train, because they rely on support those versions added. Run one on an older version and the run is Free Play until you update.",
       "highlights": [
-        "Update Dungeon Train to keep a mod like Catalogue approved for fair play"
+        "Update Dungeon Train to keep a mod like Catalogue on the whitelist"
       ],
       "pr": 1606,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "sprint-fly-3x-default",
@@ -19924,9 +19924,9 @@
       "highlights": [],
       "pr": 1608,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "farmers-delight-soup-stacking",
@@ -19941,9 +19941,9 @@
       "highlights": [],
       "pr": 1610,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "upside-down-village-no-residents",
@@ -19959,13 +19959,13 @@
       "highlights": [],
       "pr": 1612,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "bookshelf-honey-trade-value",
-      "version": "0.990.0",
+      "version": "0.991.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -19976,13 +19976,13 @@
       "summary": "Villagers now give 1 emerald for a bookshelf or a honey block. Bookshelves used to fetch far more.",
       "highlights": [],
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "end-band-void-squares",
-      "version": "0.990.0",
+      "version": "0.992.0",
       "type": "fix",
       "tags": [
         "fix",
@@ -19996,13 +19996,13 @@
       ],
       "pr": 1615,
       "date": "2026-09-27",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
     },
     {
       "id": "freeplay-shared-explanation",
-      "version": "0.990.0",
+      "version": "0.993.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -20017,6 +20017,45 @@
       ],
       "pr": 1617,
       "date": "2026-09-27",
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
+    },
+    {
+      "id": "dimensional-carriage-stale-room-overlap",
+      "version": "0.994.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriages stay clean on later visits",
+      "summary": "Deep into a run, a dimensional carriage could appear with bedrock where its void should be, and walking in could bounce you straight back onto the train with \"This room lost its train\". Each carriage now gets its own space again.",
+      "highlights": [
+        "Void rooms stay void \u2014 no stray bedrock from rooms you passed long ago",
+        "No more being put back on the train the moment you step into a room"
+      ],
+      "pr": 1616,
+      "date": "2026-09-27",
+      "released": true,
+      "released_in": "v0.994.0",
+      "released_at": "2026-09-27T17:11:27Z"
+    },
+    {
+      "id": "tower-blocks-hang-until-disturbed",
+      "version": "0.995.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Some things hold together until you touch them",
+      "summary": "Loose sand and gravel out in the stranger stretches of the journey no longer crumble away the moment you arrive. They hang where they were built, just like sand over a cave, until you disturb them.",
+      "highlights": [
+        "Loose blocks stay put until you mine or build next to them."
+      ],
+      "pr": 1619,
+      "date": "2026-09-28",
       "released": false,
       "released_in": null,
       "released_at": null

@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.worldgen.GravityTickSuppression;
 import games.brennan.dungeontrain.worldgen.StacksBand;
 import games.brennan.dungeontrain.worldgen.StampRandom;
 import games.brennan.dungeontrain.worldgen.VanillaTemplateCatalogue;
@@ -161,13 +162,17 @@ public class StacksFeature extends Feature<NoneFeatureConfiguration> {
         int layers = layerCount(floorY, level.getMaxBuildHeight(), size.getY());
         if (layers <= 0) return false;
 
-        for (int layer = 0; layer < layers; layer++) {
-            BlockPos origin = new BlockPos(x0, floorY + layer * size.getY(), z0);
-            // Position-pure random: only consumed for container LootTableSeeds (see StampRandom).
-            template.placeInWorld(level, origin, origin, settings,
-                StampRandom.at(level.getSeed(), origin),
-                CarriageStampGuard.STAMP_FLAGS);
-        }
+        // Gravity blocks hang over the void until disturbed, like vanilla cave-ceiling sand: drop the
+        // fall ticks the template's shape pass would persist into the chunk (see GravityTickSuppression).
+        GravityTickSuppression.run(() -> {
+            for (int layer = 0; layer < layers; layer++) {
+                BlockPos origin = new BlockPos(x0, floorY + layer * size.getY(), z0);
+                // Position-pure random: only consumed for container LootTableSeeds (see StampRandom).
+                template.placeInWorld(level, origin, origin, settings,
+                    StampRandom.at(level.getSeed(), origin),
+                    CarriageStampGuard.STAMP_FLAGS);
+            }
+        });
         return true;
     }
 }

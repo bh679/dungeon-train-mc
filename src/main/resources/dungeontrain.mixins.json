@@ -55,6 +55,7 @@
     "FlowingFluidChuncksMixin",
     "FlowingFluidSpheresMixin",
     "FlowingFluidStacksMixin",
+    "WorldGenTickAccessGravityMixin",
     "FlowingFluidLegacyMixin",
     "FlowingFluidLegacySeamMixin",
     "FlowingFluidDisintegrationMixin",
