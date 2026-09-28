@@ -231,7 +231,7 @@ public final class PlayerJoinEvents {
         DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(),
                 bandData.startsWithTrain(), bandData.getTrainY(), WorldFloor.bedrockY(bandLevel)));
         // How far the reversed bands behind spawn have slid back (worldgen.ReverseSlide).
-        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.ReverseSlideSyncPacket(bandData.getReverseSlide()));
+        DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.worldgen.ReverseSlide.packetFor(bandData, false));
         // Reopening a saved Train Builder world: re-stamp it from what the world records it is
         // holding, so a world always comes back up as a scene its mode can explain rather than as
         // whatever the last session's blocks happened to be. No-op in every ordinary world, and in

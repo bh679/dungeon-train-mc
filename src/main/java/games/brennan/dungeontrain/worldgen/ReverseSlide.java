@@ -21,6 +21,9 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Keeps the reversed bands behind spawn exactly as far away as players have <em>earned</em> by riding.
@@ -36,7 +39,7 @@ import java.util.List;
  * <p>The slide only reaches terrain generated after it grows — chunks already on disk keep what they
  * were generated as. It steps in {@link #STEP}-block quanta so it changes rarely: each change clears the
  * per-chunk band caches and syncs every client (whose sky, fog and upside-down render read the same
- * cycle).</p>
+ * cycle). The same packet feeds the dev-HUD distance read-out beside Diff-Car.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class ReverseSlide {
@@ -87,6 +90,7 @@ public final class ReverseSlide {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         WorldGenCycle.setReverseSlide(0L);
+        LAST_SENT.clear();
     }
 
     @SubscribeEvent
@@ -102,8 +106,45 @@ public final class ReverseSlide {
 
         State now = next(cycle.startX(), data.getReverseFrontierX(), data.getReverseSlide(), samples);
         long before = data.getReverseSlide();
+        long frontierBefore = Math.min(data.getReverseFrontierX(), cycle.startX());
         data.setReverseSlideState(now.frontierX(), now.slide());
         if (now.slide() != before) applyChange(level, before, now);
+        syncHud(level, data, frontierBefore, now);
+    }
+
+    /** Last packet sent to each player, so the HUD read-out only costs traffic when it changes. */
+    private static final Map<UUID, ReverseSlideSyncPacket> LAST_SENT = new ConcurrentHashMap<>();
+
+    /**
+     * Push each player's read-out: the world's earned distance, and whether this player is earning it —
+     * on the train, at the frontier, and the frontier moved back this scan.
+     */
+    private static void syncHud(ServerLevel level, DungeonTrainWorldData data, long frontierBefore, State now) {
+        boolean moved = now.frontierX() < frontierBefore;
+        List<Trains.Carriage> carriages = carriages(level);
+        for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
+            boolean earning = moved && p.level() == level
+                    && (long) Math.floor(p.getX()) <= now.frontierX()
+                    && CarriageDeck.isOnTrainFootprint(carriages, p);
+            ReverseSlideSyncPacket packet = packetFor(data, earning);
+            if (packet.equals(LAST_SENT.put(p.getUUID(), packet))) continue;
+            DungeonTrainNet.sendTo(p, packet);
+        }
+    }
+
+    /** The sync packet for a player: the world slide, the earned distance, and whether they are earning it. */
+    public static ReverseSlideSyncPacket packetFor(DungeonTrainWorldData data, boolean earning) {
+        long frontier = data.getReverseFrontierX();
+        long startX = WorldGenCycle.fromConfig().startX();
+        long earned = frontier == Long.MAX_VALUE ? 0L : Math.max(0L, startX - frontier);
+        return new ReverseSlideSyncPacket(data.getReverseSlide(), earned, earning);
+    }
+
+    /** Every carriage of every train in the level, for the on-train footprint test. */
+    private static List<Trains.Carriage> carriages(ServerLevel level) {
+        List<Trains.Carriage> carriages = new ArrayList<>();
+        for (List<Trains.Carriage> train : Trains.byTrainId(level).values()) carriages.addAll(train);
+        return carriages;
     }
 
     /**
@@ -112,8 +153,7 @@ public final class ReverseSlide {
      * is not out on the line.
      */
     private static List<Sample> samples(ServerLevel level) {
-        List<Trains.Carriage> carriages = new ArrayList<>();
-        for (List<Trains.Carriage> train : Trains.byTrainId(level).values()) carriages.addAll(train);
+        List<Trains.Carriage> carriages = carriages(level);
         List<Sample> out = new ArrayList<>();
         for (ServerPlayer p : level.players()) {
             if (p.isSpectator() || p.isCreative()) continue;
@@ -130,8 +170,6 @@ public final class ReverseSlide {
         SpheresBand.invalidateCache();
         MixBand.invalidateCache();
         LegacyBands.invalidateCache();
-        ReverseSlideSyncPacket packet = new ReverseSlideSyncPacket(now.slide());
-        for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) DungeonTrainNet.sendTo(p, packet);
         LOGGER.info("[DungeonTrain] reverse bands slid back {} -> {} blocks (on-train frontier X={})",
                 before, now.slide(), now.frontierX());
     }

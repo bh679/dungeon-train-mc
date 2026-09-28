@@ -44,6 +44,8 @@ public final class VersionHudOverlay {
     private static volatile int difficultyTier = 0;
     private static volatile ActivityStatePacket activityState = null;
     private static volatile TravelCreditPacket travelCredit = null;
+    private static volatile long trainBackEarned = 0L;
+    private static volatile boolean trainBackEarning = false;
 
     private VersionHudOverlay() {}
 
@@ -104,6 +106,16 @@ public final class VersionHudOverlay {
      */
     public static void setTravelCredit(TravelCreditPacket state) {
         travelCredit = state;
+    }
+
+    /**
+     * Called from {@code ReverseSlideSyncPacket.handle}. Drives the "Back:" read-out beside Diff-Car —
+     * world blocks behind spawn covered on the train (the only distance that brings the bands behind
+     * spawn closer), and whether this player is earning more right now.
+     */
+    public static void setTrainBack(long earned, boolean earning) {
+        trainBackEarned = earned;
+        trainBackEarning = earning;
     }
 
     /** {@code M:SS}, or {@code H:MM:SS} once it runs past an hour. */
@@ -207,9 +219,14 @@ public final class VersionHudOverlay {
             // counter ("diff-car") and the tier it resolves to ("diff-level").
             if (boardingProgressPresent) {
                 String carText = "  Diff-Car: " + formatSigned(travelledCarriageIndex);
-                HudText.drawScaled(graphics, mc.font, carText,
-                    4, 4 + (HudText.scaledLineHeight(mc.font) + 1) * line,
-                    0xFFFFD080, true);
+                int carY = 4 + (HudText.scaledLineHeight(mc.font) + 1) * line;
+                HudText.drawScaled(graphics, mc.font, carText, 4, carY, 0xFFFFD080, true);
+                // World distance behind spawn covered on the train: green while this player is pushing
+                // it back, faded to half once it has a value but isn't moving.
+                String backText = "   Back: " + trainBackEarned;
+                int backColor = trainBackEarning ? 0xFF80FF80 : (trainBackEarned > 0L ? 0x8080FF80 : 0xFF80FF80);
+                HudText.drawScaled(graphics, mc.font, backText,
+                    4 + HudText.scaledWidth(mc.font, carText), carY, backColor, true);
                 line++;
                 String levelText = "  Diff-Level: " + difficultyTier;
                 HudText.drawScaled(graphics, mc.font, levelText,
