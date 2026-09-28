@@ -1,6 +1,6 @@
 {
   "schemaVersion": 10,
-  "mirror": { "x": false, "y": false, "z": false, "v": true },
+  "mirror": { "x": true, "y": true, "z": true, "v": true },
   "variants": {
     "1,1,0": { "lockId": 1, "states": [{"state": "minecraft:stripped_spruce_wood[axis=x]", "rotation": {"mode": "lock", "dirs": ["west"]}}, {"state": "minecraft:oak_wood[axis=x]", "rotation": {"mode": "lock", "dirs": ["west"]}}] },
     "1,0,0": { "lockId": 1, "states": [{"state": "minecraft:stripped_spruce_wood[axis=x]", "rotation": {"mode": "lock", "dirs": ["east"]}}, {"state": "minecraft:oak_wood[axis=x]", "rotation": {"mode": "lock", "dirs": ["east"]}}, "minecraft:barrel[facing=east,open=false]"] },

@@ -23,7 +23,21 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
+import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
+import games.brennan.dungeontrain.editor.WholeCarriageEditor;
+import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
+import games.brennan.dungeontrain.train.CarriageGroup;
+import games.brennan.dungeontrain.train.CarriageGroupPlacer;
+import games.brennan.dungeontrain.train.CarriageGroupRegistry;
+import games.brennan.dungeontrain.train.CarriageStampGuard;
+import games.brennan.dungeontrain.train.StagePlacementScope;
+import games.brennan.dungeontrain.train.WholeCarriage;
+import games.brennan.dungeontrain.train.WholeCarriagePlacer;
+import games.brennan.dungeontrain.train.WholeCarriageRegistry;
+import games.brennan.dungeontrain.train.WholeKind;
+import games.brennan.dungeontrain.train.WholeOverlay;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -90,6 +104,16 @@ public final class CarriageTestCommand {
                         CarriageContentsRegistry.allContents().stream().map(CarriageContents::id), b))
                     .executes(ctx -> runTest(ctx.getSource(), CarriageTestSession.Kind.CONTENTS,
                         StringArgumentType.getString(ctx, "name"), false))))
+            .then(Commands.literal(CarriageTestSession.Kind.WHOLE.literal())
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .suggests((ctx, b) -> SharedSuggestionProvider.suggest(WholeCarriageRegistry.ids(), b))
+                    .executes(ctx -> runTest(ctx.getSource(), CarriageTestSession.Kind.WHOLE,
+                        StringArgumentType.getString(ctx, "name"), false))))
+            .then(Commands.literal(CarriageTestSession.Kind.WHOLE_GROUP.literal())
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .suggests((ctx, b) -> SharedSuggestionProvider.suggest(CarriageGroupRegistry.ids(), b))
+                    .executes(ctx -> runTest(ctx.getSource(), CarriageTestSession.Kind.WHOLE_GROUP,
+                        StringArgumentType.getString(ctx, "name"), false))))
             .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())))
             .then(Commands.literal("reseed").executes(ctx -> runReseedNow(ctx.getSource(), false))
                 .then(Commands.literal("focus").executes(ctx -> runReseedNow(ctx.getSource(), true))));
@@ -130,16 +154,11 @@ public final class CarriageTestCommand {
             if (kind == CarriageTestSession.Kind.CARRIAGE) contentsSeed = current.contentsSeed();
             else shellSeed = current.shellSeed();
         }
+        if (kind.isWhole()) return runWholeTest(source, player, overworld, kind, id, shellSeed, contentsSeed);
         Plan plan = planFor(source, kind, id, shellSeed, contentsSeed);
         if (plan == null) return 0;
 
-        // Already inside a test — of either kind: stamping a second would leave the first standing and
-        // lose the way home. Send them back first, then in again, so the button is idempotent.
-        if (CarriageTestSession.has(player.getUUID())) runBack(source);
-        if (PortalTestSession.has(player.getUUID())) PortalTestCommand.runBack(source);
-        // And a dimensional-carriage press still waiting on its chunk sample is superseded by this
-        // one — the author should not be pulled into that room a moment later.
-        games.brennan.dungeontrain.portal.PortalTestPending.cancel(player.getUUID());
+        leaveCurrentTests(source, player);
 
         BlockPos origin = new BlockPos(player.blockPosition().getX(),
             PortalTwinLanes.floorY(overworld.getMinBuildHeight()), TEST_Z_OFFSET);
@@ -157,12 +176,7 @@ public final class CarriageTestCommand {
         CarriagePlacer.placeForTest(overworld, origin, plan.shell(), plan.contents(), dims, shellSeed,
             contentsSeed, CarriageTestSession.TEST_INDEX);
 
-        BlockPos arrival = findArrival(overworld, player, origin, shellDims);
-        if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);
-        player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
-            FACE_EAST, 0.0f);
-        DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, id,
-            worldData.isPortalTestReseed()));
+        arrive(overworld, player, origin, sizeOf(shellDims), previous, id);
 
         String contentsId = plan.contents() == null ? "none" : plan.contents().id();
         LOGGER.info("[DungeonTrain] carriage test: stamped {} '{}' (shell={}, contents={}) at {} for {}, seeds={}/{}",
@@ -171,6 +185,108 @@ public final class CarriageTestCommand {
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.carriage_test.standing_in",
             id, plan.shell().id(), contentsId).withStyle(ChatFormatting.AQUA), false);
         return 1;
+    }
+
+    /**
+     * Already inside a test — of any kind: stamping a second would leave the first standing and lose
+     * the way home. Send them back first, then in again, so the button is idempotent. A
+     * dimensional-carriage press still waiting on its chunk sample is superseded too — the author
+     * should not be pulled into that room a moment later.
+     */
+    private static void leaveCurrentTests(CommandSourceStack source, ServerPlayer player) {
+        if (CarriageTestSession.has(player.getUUID())) runBack(source);
+        if (PortalTestSession.has(player.getUUID())) PortalTestCommand.runBack(source);
+        games.brennan.dungeontrain.portal.PortalTestPending.cancel(player.getUUID());
+    }
+
+    /** Creative, into the copy facing down it, and tell the client a test is running. */
+    private static void arrive(ServerLevel overworld, ServerPlayer player, BlockPos origin, Vec3i size,
+                               GameType previous, String id) {
+        BlockPos arrival = findArrival(overworld, player, origin, size);
+        if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);
+        player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
+            FACE_EAST, 0.0f);
+        DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, id,
+            DungeonTrainWorldData.get(overworld).isPortalTestReseed()));
+    }
+
+    /** A carriage footprint as a size: x = length, y = height, z = width. */
+    private static Vec3i sizeOf(CarriageDims dims) {
+        return new Vec3i(dims.length(), dims.height(), dims.width());
+    }
+
+    /**
+     * Test the Carriage for a whole room or group: the saved template stood up in the basement and
+     * rolled the way the train rolls one — its block variants and container loot through
+     * {@link WholeOverlay} at {@link CarriageTestSession#TEST_INDEX}. A whole template has no shell
+     * or contents pass, so the shell seed is the only one that matters; a focus reseed is a full one.
+     *
+     * <p>Stamped with the editor's {@code placeAt} rather than the train's {@code placeForTrain}: the
+     * test copy is never lifted onto Sable, so it needs relighting and its saved decor and entities
+     * put back now, both of which the train defers to the lift.</p>
+     */
+    private static int runWholeTest(CommandSourceStack source, ServerPlayer player, ServerLevel overworld,
+                                    CarriageTestSession.Kind kind, String id, long shellSeed, long contentsSeed) {
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        boolean room = kind == CarriageTestSession.Kind.WHOLE;
+        Vec3i size;
+        WholeKind wholeKind = room ? WholeKind.ROOM : WholeKind.GROUP;
+        java.util.function.Predicate<BlockPos> place;
+        if (room) {
+            Optional<WholeCarriage> wc = WholeCarriageRegistry.find(id);
+            if (wc.isEmpty()) return failCode(source, "chat.dungeontrain.editor.unknown_whole", id);
+            if (WholeCarriageTemplateStore.get(overworld, wc.get(), dims).isEmpty()) {
+                return failCode(source, "chat.dungeontrain.carriage_test.no_whole_template", id);
+            }
+            size = sizeOf(dims);
+            place = at -> WholeCarriagePlacer.placeAt(overworld, at, wc.get(), dims);
+        } else {
+            Optional<CarriageGroup> group = CarriageGroupRegistry.find(id);
+            if (group.isEmpty()) return failCode(source, "chat.dungeontrain.editor.unknown_whole_group", id);
+            int carriages = WholeCarriageEditor.groupSize();
+            if (CarriageGroupTemplateStore.carriagesIn(overworld, group.get(), dims) != carriages) {
+                return failCode(source, "chat.dungeontrain.carriage_test.no_whole_template", id);
+            }
+            size = CarriageGroupPlacer.sizeOf(dims, carriages);
+            place = at -> CarriageGroupPlacer.placeAt(overworld, at, group.get(), dims, carriages);
+        }
+
+        leaveCurrentTests(source, player);
+
+        BlockPos origin = new BlockPos(player.blockPosition().getX(),
+            PortalTwinLanes.floorY(overworld.getMinBuildHeight()), TEST_Z_OFFSET);
+        BoundingBox box = new BoundingBox(origin.getX(), origin.getY(), origin.getZ(),
+            origin.getX() + size.getX() - 1, origin.getY() + size.getY() - 1, origin.getZ() + size.getZ() - 1);
+        GameType previous = player.gameMode.getGameModeForPlayer();
+        CarriageTestSession.put(player.getUUID(), new CarriageTestSession.Session(
+            player.level().dimension(), player.position(), player.getYRot(), player.getXRot(),
+            previous, kind, id, box, shellSeed, contentsSeed));
+
+        boolean[] placed = {false};
+        CarriageStampGuard.run(() -> StagePlacementScope.run(null, () -> {
+            placed[0] = place.test(origin);
+            if (placed[0]) {
+                WholeOverlay.apply(overworld, origin, wholeKind, id, size, shellSeed,
+                    CarriageTestSession.TEST_INDEX);
+            }
+        }));
+        if (!placed[0]) {
+            CarriageTestSession.take(player.getUUID());
+            PortalClear.clearBox(overworld, box, PortalCorridorMask.NONE);
+            return failCode(source, "chat.dungeontrain.carriage_test.no_whole_template", id);
+        }
+
+        arrive(overworld, player, origin, size, previous, id);
+        LOGGER.info("[DungeonTrain] carriage test: stamped {} '{}' at {} for {}, seed={}",
+            kind.literal(), id, origin, player.getName().getString(), shellSeed);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.carriage_test.standing_in",
+            id, id, "none").withStyle(ChatFormatting.AQUA), false);
+        return 1;
+    }
+
+    private static int failCode(CommandSourceStack source, String key, String id) {
+        fail(source, key, id);
+        return 0;
     }
 
     /** Resolve the shell and the contents to stamp, or tell the author why there is none. */
@@ -237,8 +353,8 @@ public final class CarriageTestCommand {
     }
 
     /** Just inside the back wall, on the floor, halfway across. */
-    private static BlockPos defaultArrival(BlockPos origin, CarriageDims dims) {
-        return origin.offset(1, 1, dims.width() / 2);
+    private static BlockPos defaultArrival(BlockPos origin, Vec3i size) {
+        return origin.offset(1, 1, size.getZ() / 2);
     }
 
     /**
@@ -247,12 +363,12 @@ public final class CarriageTestCommand {
      * Falls back to the plain default when the whole floor is full; creative can dig out.
      */
     private static BlockPos findArrival(ServerLevel level, ServerPlayer player, BlockPos origin,
-                                        CarriageDims dims) {
-        int mid = dims.width() / 2;
-        for (int x = 1; x < dims.length() - 1; x++) {
+                                        Vec3i size) {
+        int mid = size.getZ() / 2;
+        for (int x = 1; x < size.getX() - 1; x++) {
             for (int off = 0; off <= mid; off++) {
                 for (int z : new int[] {mid - off, mid + off}) {
-                    if (z < 1 || z > dims.width() - 2) continue;
+                    if (z < 1 || z > size.getZ() - 2) continue;
                     BlockPos at = origin.offset(x, 1, z);
                     Vec3 feet = new Vec3(at.getX() + 0.5, at.getY(), at.getZ() + 0.5);
                     AABB body = player.getBoundingBox().move(feet.subtract(player.position()));
@@ -260,7 +376,7 @@ public final class CarriageTestCommand {
                 }
             }
         }
-        return defaultArrival(origin, dims);
+        return defaultArrival(origin, size);
     }
 
     /**

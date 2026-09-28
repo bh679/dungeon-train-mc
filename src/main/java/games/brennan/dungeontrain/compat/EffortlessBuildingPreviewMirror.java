@@ -26,8 +26,9 @@ import java.util.Map;
  * flags toggled — EB's renderer applies those flags with the same vanilla {@code Mirror} constants
  * DT's {@link EditorMirror#reflect} uses. The first entry at a position wins, as in EB.</p>
  *
- * <p>The plot comes from {@link EditorMirrorPlotClient} — the one the player is standing in — so
- * building into a plot from outside it previews unmirrored although the server still mirrors.
+ * <p>The plot comes from {@link EditorMirrorPlotClient} — the one the player stands in, or failing
+ * that the one they aim at (see {@link games.brennan.dungeontrain.editor.EditorMirrorPlotSync}); only
+ * cells inside it are mirrored.
  * Sidecar marker cells are not excluded here; the server skips them, so a ghost may show on one.</p>
  *
  * <p>EB is not a compile dependency, so its {@code BlockEntry} is reached by reflection, resolved
