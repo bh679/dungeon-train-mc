@@ -13,12 +13,13 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * Makes spawn compasses spin inside the End and Nether bands, like they do in the real End and Nether.
+ * Makes spawn compasses spin inside the End and Nether bands and from the Far Lands onward, like they
+ * do in the real End and Nether.
  *
  * <p>In those dimensions a plain compass has no spawn to point at ({@code CompassItem.getSpawnPosition}
  * is {@code null} when the dimension is not {@code natural}), so vanilla's
  * {@code getCompassRotation} falls back to its random spin. The bands are overworld, so this clears
- * the target while the holder is in one ({@link OtherworldBand#at}). Lodestone and recovery compasses
+ * the target while the holder is in one of those stretches ({@link OtherworldBand#at}). Lodestone and recovery compasses
  * keep their targets, exactly as in the real dimensions.</p>
  *
  * <p>Client-only model property; sibling of {@link ClockBandSpinMixin}.</p>
