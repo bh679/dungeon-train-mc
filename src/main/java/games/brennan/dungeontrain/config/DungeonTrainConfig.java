@@ -614,7 +614,10 @@ public final class DungeonTrainConfig {
                         "true. Set it false to opt a world out entirely: it then neither leases community builds nor",
                         "uploads its own. NOTE: leasing additionally requires sharedCarriageLeasingEnabled below. Only",
                         "carriages captured off a running train are served; Train Builder builds are a separate system",
-                        "the relay withholds from every lease, so submitting one puts it in the queue rather than in a run.")
+                        "the relay withholds from every lease, so submitting one puts it in the queue rather than in a run.",
+                        "Bedrock Lock dimensional carriages drift on the same switch: one a player edits is uploaded, and a",
+                        "pair planning that same room may be handed another world's copy instead. Authors can keep a room",
+                        "out of it with its Drift setting (/dt editor portals <room> drift off).")
                 .define("sharedCarriagesEnabled", DEFAULT_SHARED_CARRIAGES_ENABLED);
         ModConfigSpec.BooleanValue sharedCarriageLeasingEnabled = b
                 .comment("Whether this world may LEASE community carriages from the relay and place them on its trains.",
@@ -622,7 +625,7 @@ public final class DungeonTrainConfig {
                         "Default true — a shared slot may place a carriage another world built, screened and approved by",
                         "the relay. Set it false to ride only this world's own carriages while still contributing yours.",
                         "With sharedCarriagesEnabled false it does nothing, since the master switch opts the world out of",
-                        "the feature entirely.")
+                        "the feature entirely. Also gates leasing drifted dimensional carriages (Bedrock Lock rooms).")
                 .define("sharedCarriageLeasingEnabled", DEFAULT_SHARED_CARRIAGE_LEASING_ENABLED);
         ModConfigSpec.DoubleValue sharedCarriagePoolChance = b
                 .comment("When a shared-carriage slot spawns, the probability it LEASES an existing build by ANY author from",

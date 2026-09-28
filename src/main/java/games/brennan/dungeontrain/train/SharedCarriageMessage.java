@@ -69,11 +69,34 @@ public final class SharedCarriageMessage {
     }
 
     private static Component line(String group, int count, RandomSource rng) {
-        int n = rng.nextInt(count) + 1;
         int nounIdx = rng.nextInt(NOUNS) + 1;
-        Component noun = Component.translatable("chat.dungeontrain.shared_carriage.noun." + nounIdx);
+        return line(group, count, rng, Component.translatable("chat.dungeontrain.shared_carriage.noun." + nounIdx));
+    }
+
+    private static Component line(String group, int count, RandomSource rng, Component noun) {
+        int n = rng.nextInt(count) + 1;
         return Component.translatable("chat.dungeontrain.shared_carriage." + group + "." + n, noun)
                 .withStyle(ChatFormatting.GRAY);
+    }
+
+    /** The noun a drifting dimensional carriage is called by — fixed, since "cart" would mislead. */
+    private static Component roomNoun() {
+        return Component.translatable("chat.dungeontrain.shared_carriage.noun.room");
+    }
+
+    /** {@link #newCarriage} for a dimensional carriage's room. */
+    public static Component newRoom(RandomSource rng) {
+        return line("new", NEW_LINES, rng, roomNoun());
+    }
+
+    /** {@link #seenCarriage} for a dimensional carriage's room. */
+    public static Component seenRoom(RandomSource rng) {
+        return line("seen", SEEN_LINES, rng, roomNoun());
+    }
+
+    /** {@link #ownCarriage} for a dimensional carriage's room. */
+    public static Component ownRoom(RandomSource rng) {
+        return line("own", OWN_LINES, rng, roomNoun());
     }
 
     /** Ways to name the original builder, keyed {@code ….credit.creator.1..CREDIT_CREATOR_LINES}. */

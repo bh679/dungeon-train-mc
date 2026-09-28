@@ -213,8 +213,8 @@ public final class TrainAssembler {
     private static RelayPlacement placeRelayLease(ServerLevel level, BlockPos carriageOrigin,
                                                   SharedCarriageClient.PoolLease lease, CarriageDims dims) {
         try {
-            net.minecraft.nbt.CompoundTag snap = foldLeaseDeltas(CarriageBlockSnapshot.decode(lease.blocks()), lease);
-            if (snap.getInt("l") != dims.length() || snap.getInt("h") != dims.height() || snap.getInt("w") != dims.width()) {
+            net.minecraft.nbt.CompoundTag snap = LeaseSnapshots.fold(lease);
+            if (!LeaseSnapshots.matchesDims(snap, dims.length(), dims.height(), dims.width())) {
                 LOGGER.warn("[DungeonTrain] leased carriage id={} dims mismatch — falling back to fresh.", lease.id());
                 return null;
             }
@@ -229,32 +229,6 @@ public final class TrainAssembler {
             LOGGER.warn("[DungeonTrain] Failed to place leased carriage id={}: {}", lease.id(), e.toString());
             return null;
         }
-    }
-
-    /** Fold a lease's opaque delta log (seq &gt; baseSeq, ascending seq) onto its decoded base snapshot. */
-    private static net.minecraft.nbt.CompoundTag foldLeaseDeltas(net.minecraft.nbt.CompoundTag base,
-                                                                 SharedCarriageClient.PoolLease lease) {
-        List<SharedCarriageClient.DeltaRec> pending =
-                SharedCarriageClient.pendingDeltas(lease.deltas(), lease.baseSeq());
-        if (pending.isEmpty()) return base;
-        net.minecraft.nbt.CompoundTag folded = base;
-        for (SharedCarriageClient.DeltaRec d : pending) {
-            try {
-                folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(d.cells()));
-            } catch (Exception e) {
-                LOGGER.warn("[DungeonTrain] leased carriage id={} delta seq={} decode failed: {}", lease.id(), d.seq(), e.toString());
-            }
-        }
-        return folded;
-    }
-
-    /** The delta-sequence floor to seed a leased carriage's Instance with (max of baseSeq + any delta seq). */
-    private static int leaseSeqSeed(SharedCarriageClient.PoolLease lease) {
-        int seed = lease.baseSeq();
-        if (lease.deltas() != null) {
-            for (SharedCarriageClient.DeltaRec d : lease.deltas()) if (d.seq() > seed) seed = d.seq();
-        }
-        return seed;
     }
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
@@ -647,7 +621,7 @@ public final class TrainAssembler {
                     level, ship.subLevelId(), trainId, carriagePIdx,
                     carriageShipyardOrigin, dims, variant.id(), true, pick.authoredHere(), lease.owner(),
                     lease.id(), lease.token(),
-                    leaseSeqSeed(lease), // seq floor = max(baseSeq, delta seqs) so our edits clear the relay watermark
+                    LeaseSnapshots.seqSeed(lease), // seq floor = max(baseSeq, delta seqs) so our edits clear the relay watermark
                     stageBySlot[slot], lease.credits(), lease.deaths());
                 inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
                 continue;

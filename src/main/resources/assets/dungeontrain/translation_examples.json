@@ -5680,6 +5680,15 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.plot.drift": {
+    "1": {
+      "label": "the Drift setting, already translated",
+      "examples": [
+        "On",
+        "Off"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.plot.room_walls": {
     "1": {
       "label": "the Room Walls setting, already translated",
@@ -9972,6 +9981,16 @@
     }
   },
   "chat.dungeontrain.editor.unknown_fog_option_try": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_drift_option_try": {
     "1": {
       "label": "what the player typed",
       "examples": [

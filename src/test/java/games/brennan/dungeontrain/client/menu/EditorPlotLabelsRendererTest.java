@@ -63,15 +63,15 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("A portal room in-plot shows name, weight, L/W/H, Walls, Lock, Contents, Books, Sky, Fog, Enter and actions")
+    @DisplayName("A portal room in-plot shows name, weight, L/W/H, Walls, Lock, Contents, Books, Sky, Fog, Drift, Enter and actions")
     void portalInPlot_rowOrder() {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.LOCK, RowKind.DOOR_OFFSET,
                 RowKind.ROOM_CONTENTS,
-                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG, RowKind.ENTER, RowKind.ACTION},
+                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG, RowKind.ROOM_DRIFT, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(portalInPlot()));
-        assertEquals(14, EditorPlotLabelsRenderer.rowCount(portalInPlot()));
+        assertEquals(15, EditorPlotLabelsRenderer.rowCount(portalInPlot()));
     }
 
     @Test
@@ -157,11 +157,12 @@ class EditorPlotLabelsRendererTest {
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7,
                 "endless_repetition/single:minecraft:sandstone")));
 
-        // Bedrock Lock repeats nothing, so it has neither — but it seals, so it has a Lock row.
+        // Bedrock Lock repeats nothing, so it has neither — but it seals, so it has a Lock row, and
+        // it is the one mode a single blob describes, so it alone has a Drift row.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.LOCK, RowKind.DOOR_OFFSET,
-                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG, RowKind.ENTER,
+                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG, RowKind.ROOM_DRIFT, RowKind.ENTER,
                 RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock")));
     }
@@ -482,7 +483,7 @@ class EditorPlotLabelsRendererTest {
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.LOCK, RowKind.DOOR_OFFSET,
                 RowKind.ROOM_CONTENTS,
-                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG, RowKind.ENTER,
+                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG, RowKind.ROOM_DRIFT, RowKind.ENTER,
                 RowKind.ACTION, RowKind.CONTENTS},
             EditorPlotLabelsRenderer.rows(on));
 

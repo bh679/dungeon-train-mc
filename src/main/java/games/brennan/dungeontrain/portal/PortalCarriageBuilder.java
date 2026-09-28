@@ -893,8 +893,12 @@ public final class PortalCarriageBuilder {
             settings.effectiveExits(),
             PortalExitSites.seedFor(level.getSeed(), pairKey, roomName),
             PortalRoomTiling.MAX_RADIUS);
+        // Last, once the room and its box are settled: whether another world's copy of exactly this
+        // room stands in for the template. Decided here with everything else about the pair and
+        // carried on the record, so a relocation re-lays the same copy rather than rolling again.
+        PortalRoomBlob blob = PortalRoomDriftPlanner.leaseFor(level, pairKey, roomName, settings, size, dims);
         return new PortalStructure(entryOrigin, roomName, size, settings,
-            PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile, kind);
+            PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile, kind, PortalStructure.NO_SALT, blob);
     }
 
     /**
@@ -953,16 +957,22 @@ public final class PortalCarriageBuilder {
         BlockPos roomOrigin = structure.roomOrigin(dims, layout);
         Vec3i roomSize = structure.roomSize();
 
-        stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
-            PortalCorridorMask.NONE, PortalCorridorMask.NONE,
-            structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey),
-            structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey), pairKey,
-            PortalRoomTiling.Tile.BASE,
-            PortalRoomMobs.liveCount(level, footprintOf(level, structure, dims), pairKey),
-            structure.settings().contents(), structure.settings().books(),
-            // The base room lands in solid rock with no copy beside it yet, so every liquid in its
-            // skin is an aquifer; the copies the tiler adds later are what spare their neighbours.
-            PLUG_EVERY_FLUID);
+        if (structure.stampsFromBlob()) {
+            // A drifted copy, or this world's own room carried across a relocation: laid as
+            // captured, with none of the passes that would re-roll what somebody built.
+            stampRoomFromBlob(level, roomOrigin, roomSize, structure.blob(), pairKey);
+        } else {
+            stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
+                PortalCorridorMask.NONE, PortalCorridorMask.NONE,
+                structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey),
+                structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey), pairKey,
+                PortalRoomTiling.Tile.BASE,
+                PortalRoomMobs.liveCount(level, footprintOf(level, structure, dims), pairKey),
+                structure.settings().contents(), structure.settings().books(),
+                // The base room lands in solid rock with no copy beside it yet, so every liquid in its
+                // skin is an aquifer; the copies the tiler adds later are what spare their neighbours.
+                PLUG_EVERY_FLUID);
+        }
 
         // Before the corridors, so each mode acts on the room as it actually turned out rather than
         // as it was asked for. It does not follow that the corridors repair whatever a mode wrote at
@@ -2133,6 +2143,46 @@ public final class PortalCarriageBuilder {
         stampRoomBuiltIn(level, roomOrigin, size, relight, writeMask);
         CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(),
             clipTo(roomOrigin, size, writeMask), relight, boxOf(roomOrigin, size), TemplateDecor.Rule.ROOM);
+    }
+
+    /**
+     * Stamp a room from a captured snapshot — a drifted copy from the relay, or this world's own
+     * room carried across a relocation — verbatim.
+     *
+     * <p>The raw stamp and nothing after it. {@code applyRoomContents}, {@code applyRoomVariants}
+     * and the librarian's registration all re-roll or refill what the author placed, and what stands
+     * in a drifted room is what its last visitor left: their chests, their signs, their walls. The
+     * blob's hung decoration comes back through the template's own decor pass
+     * ({@code TemplateDecor.Rule.ROOM}, as any room stamp); its mobs do not — a mob is not part of a
+     * build, and no stamp path puts one back. {@link PortalRoomMobs#markDecor} then claims the
+     * pictures so a retiring copy's reap scopes them, exactly as a template stamp does.</p>
+     *
+     * <p>Clears, sweeps intruders and plugs the skin's liquids first, as every room stamp does: a
+     * snapshot only writes its own cells, and the box lands in rock.</p>
+     */
+    public static void stampRoomFromBlob(ServerLevel level, BlockPos roomOrigin, Vec3i size,
+                                         PortalRoomBlob blob, int pairKey) {
+        CarriageStampGuard.run(() -> {
+            clearRoomBox(level, roomOrigin, size, PortalCorridorMask.NONE, /*relight*/ true);
+            clearIntruders(level, roomOrigin, size);
+            plugFluidsAround(level, roomOrigin, size, PLUG_EVERY_FLUID);
+            StructureTemplate template = games.brennan.dungeontrain.train.CarriageSnapshotTemplate.toTemplate(
+                blob.snapshot(), level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BLOCK));
+            if (!template.getSize().equals(size)) {
+                // Should not happen — the planner refuses a mismatched lease — but a clipped stamp is
+                // a room with a wall missing, and the built-in shell underneath is what keeps a player
+                // sealed in whatever the blob turned out to be.
+                warnSizeMismatch("<drifted>", size, template.getSize());
+                stampRoomBuiltIn(level, roomOrigin, size, /*relight*/ true, PortalCorridorMask.NONE);
+                CarriagePlacer.stampTemplateAt(level, roomOrigin, template,
+                    clipTo(roomOrigin, size, PortalCorridorMask.NONE), /*relight*/ true,
+                    boxOf(roomOrigin, size), TemplateDecor.Rule.ROOM);
+            } else {
+                CarriagePlacer.stampTemplateAt(level, roomOrigin, template, null, /*relight*/ true,
+                    TemplateDecor.Rule.ROOM);
+            }
+            PortalRoomMobs.markDecor(level, roomOrigin, size, pairKey, PortalRoomTiling.Tile.BASE, 0);
+        });
     }
 
     /**
