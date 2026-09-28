@@ -19,6 +19,13 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
  * board the train" bug — the client's {@code CinematicPreloadGate} then times out and would
  * dump the player into the void).</p>
  *
+ * <p>The same {@code handleBlockChange} can also stall <em>outside</em> any DT forced generation —
+ * a fluid tick in {@code LevelChunk.postProcessGeneration} on a plot edge whose neighbour chunk is
+ * unloaded reads that neighbour through the {@code ServerLevel} and sync-generates it (35 s in a
+ * player log of 28 Sep 2026). That path is closed by {@code RapierPipelineNoSyncLoadMixin}
+ * (the accelerator reads) and {@code RapierPipelineBlockChangeNoLoadMixin} (the direct
+ * {@code ServerLevel.getBlockState} of each neighbour), not by this guard.</p>
+ *
  * <p>{@code SableBlockChangeGuardMixin} reads {@link #isActive()} at the head of
  * {@code handleBlockChange} and cancels the physics/mass update while the guard is set, so the
  * re-entrant {@code getChunk} never happens during our forced generation. The flag is a

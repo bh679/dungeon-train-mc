@@ -9,6 +9,7 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -88,6 +89,24 @@ public final class ServerStallWatchdog {
      * enough stall that happened to pass through the tick loop would read as idle.</p>
      */
     private static final int IDLE_SCAN_DEPTH = 12;
+
+    /**
+     * The chunk source, and the two method names on it that tell the off-thread story.
+     *
+     * <p>{@code ServerChunkCache.getChunk(x, z, status, load)} called from any thread but the
+     * server's marshals the load onto the server thread as {@code lambda$getChunk$0} and blocks the
+     * caller on the future. The server thread then generates that chunk synchronously inside
+     * {@code waitUntilNextTick}'s task drain — which is where a player log of 28 Sep 2026 found it
+     * for 22 s, with the requester nowhere in the dump because only the server thread was dumped.
+     * When the server stack carries the marshal frame, the requesters are the other threads
+     * sitting in {@code ServerChunkCache.getChunk}; they are dumped alongside so the next such
+     * stall names who asked.</p>
+     */
+    private static final String CHUNK_CACHE_CLASS = "net.minecraft.server.level.ServerChunkCache";
+    private static final String CHUNK_CACHE_GET = "getChunk";
+    private static final String OFF_THREAD_MARSHAL = "lambda$getChunk$0";
+    /** Frames kept per requester thread — enough to reach the mod that asked, not the whole stack. */
+    private static final int REQUESTER_FRAMES = 25;
 
     private static final AtomicReference<Thread> RUNNING = new AtomicReference<>();
 
@@ -192,5 +211,62 @@ public final class ServerStallWatchdog {
             sb.append("\n    at ").append(frame);
         }
         LOGGER.warn(sb.toString());
+
+        if (isOffThreadChunkLoad(stack)) dumpChunkRequesters(serverThread);
+    }
+
+    /**
+     * True when the server thread is servicing a chunk load that another thread asked for — the
+     * {@code lambda$getChunk$0} marshal frame is on its stack. Matched as a substring because
+     * mixins wrap and rename frames. Package-private, Minecraft-free — unit-tested.
+     */
+    static boolean isOffThreadChunkLoad(StackTraceElement[] stack) {
+        if (stack == null) return false;
+        for (StackTraceElement frame : stack) {
+            if (CHUNK_CACHE_CLASS.equals(frame.getClassName())
+                && frame.getMethodName().contains(OFF_THREAD_MARSHAL)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * True when this (non-server) thread is inside {@code ServerChunkCache.getChunk} — i.e. it is
+     * the requester blocked on the future the server thread is servicing. Unit-tested.
+     */
+    static boolean isChunkRequester(StackTraceElement[] stack) {
+        if (stack == null) return false;
+        for (StackTraceElement frame : stack) {
+            if (CHUNK_CACHE_CLASS.equals(frame.getClassName())
+                && frame.getMethodName().contains(CHUNK_CACHE_GET)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Dump every other thread blocked in {@code ServerChunkCache.getChunk}: the requesters whose
+     * chunk loads the server thread is currently running. Only reached inside a stall that is
+     * already being reported, on its cooldown, so the all-threads snapshot is paid rarely.
+     */
+    private static void dumpChunkRequesters(Thread serverThread) {
+        StringBuilder sb = new StringBuilder(2048);
+        int requesters = 0;
+        for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+            Thread thread = entry.getKey();
+            StackTraceElement[] stack = entry.getValue();
+            if (thread == serverThread || !isChunkRequester(stack)) continue;
+            requesters++;
+            sb.append("\n  \"").append(thread.getName()).append("\" state=").append(thread.getState());
+            int depth = Math.min(stack.length, REQUESTER_FRAMES);
+            for (int i = 0; i < depth; i++) {
+                sb.append("\n    at ").append(stack[i]);
+            }
+            if (stack.length > depth) sb.append("\n    ... ").append(stack.length - depth).append(" more");
+        }
+        if (requesters == 0) {
+            LOGGER.warn("[DT-StallWatchdog] main thread is servicing an off-thread chunk load, but no other thread is inside ServerChunkCache.getChunk right now (requester already released?)");
+            return;
+        }
+        LOGGER.warn("[DT-StallWatchdog] main thread is servicing off-thread chunk loads requested by {} thread(s):{}",
+            requesters, sb);
     }
 }

@@ -49,4 +49,24 @@ public final class PlayerMobLifeBridge {
             }
         }
     }
+
+    /**
+     * Record kindness for leaving something of worth in a drifting carriage's storage — a gift to
+     * whoever rides it next. Credited as PlayerMob's {@code GIFT} signal, whose magnitude is the
+     * kindness itself, so it moves the echo's Friendliness exactly as a gift to a PlayerMob does.
+     * {@code DriftGenerosity} has already sized and capped it.
+     */
+    public static void creditGenerosity(ServerPlayer player, float kindness) {
+        if (kindness <= 0.0F) return;
+        if (!ModList.get().isLoaded("playermob")) return;
+        try {
+            PlayerLifeStore.record(player, PlayerLifeRecord.Signal.GIFT, kindness);
+        } catch (Throwable t) {
+            if (!warned) {
+                warned = true;
+                LOGGER.warn("[DungeonTrain] Could not credit generosity to PlayerMob — "
+                        + "echoes will not read it this session.", t);
+            }
+        }
+    }
 }

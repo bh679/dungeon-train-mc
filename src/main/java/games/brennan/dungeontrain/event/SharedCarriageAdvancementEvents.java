@@ -76,7 +76,7 @@ public final class SharedCarriageAdvancementEvents {
      * necessarily the level the player themselves is standing in.
      */
     private record OpenContainer(ResourceKey<Level> levelKey, BlockPos pos, UUID subLevelId,
-                                 int itemCount, long contentsSig) {}
+                                 int itemCount, long contentsSig, double value) {}
 
     /** What the close hook does with a storage edit — see {@link #closeAction}. */
     enum CloseAction { SEND_NOW, PARK, NONE }
@@ -135,7 +135,7 @@ public final class SharedCarriageAdvancementEvents {
         StorageContents.Snapshot before = StorageContents.read(level, pos);
         if (before == null) return;
         OPEN_CONTAINER.put(player.getUUID(), new OpenContainer(level.dimension(), pos.immutable(),
-                inst.subLevelId, before.itemCount(), before.sig()));
+                inst.subLevelId, before.itemCount(), before.sig(), before.value()));
     }
 
     /**
@@ -159,6 +159,8 @@ public final class SharedCarriageAdvancementEvents {
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.resolve(
                 opened.subLevelId(), opened.pos().getX(), opened.pos().getY(), opened.pos().getZ());
         if (inst == null || inst.isCulled()) return;
+        // Ahead of the action check: a swap for something better changes no count but still gives.
+        DriftGenerosity.onClose(player, inst, opened.levelKey(), opened.pos(), opened.value(), after.value());
         CloseAction action = closeAction(opened.itemCount(), after.itemCount(), opened.contentsSig(), after.sig());
         if (action == CloseAction.NONE) return;
         List<BlockPos> cells = StorageContents.cells(level, opened.pos());
@@ -207,6 +209,7 @@ public final class SharedCarriageAdvancementEvents {
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         OPEN_CONTAINER.remove(event.getEntity().getUUID());
         LAST_CUE_MS.remove(event.getEntity().getUUID());
+        DriftGenerosity.forget(event.getEntity().getUUID());
     }
 
     // ---------------- Helpers ----------------
