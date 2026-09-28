@@ -376,6 +376,10 @@ public final class CarriagePlacer {
             // PortalCarriageRole.corridorIndexOf.
             PortalCarriageBuilder.stampCarriage(
                 level, corridorOrigin, dims, kind, /*relight*/ false, pairKey, role);
+            // The pair's furnishing draw, for the debug panel. forPair is memoised per pair, so this
+            // returns exactly what the corridor was just stamped with rather than rolling again.
+            PlacedCarriageFacts.recordPortalContents(carriageIndex,
+                games.brennan.dungeontrain.portal.PortalCorridorContents.forPair(level, kind, pairKey));
             // Report the portal variant, not the one the roll happened to land on: what stands here
             // is a portal corridor, and a log line reading "variant=fancywood sources=portal" sends
             // anyone reading it after the fact looking for a bug that isn't there.
@@ -532,6 +536,11 @@ public final class CarriagePlacer {
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex, int groupAnchorWorldX
     ) {
         if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
+            // Skips the contents roll, so record the shell here or the debug panel has nothing to
+            // report for a carriage that plainly exists.
+            if (carriageIndex != CarriageContentsPlacer.EDITOR_SENTINEL_PIDX) {
+                PlacedCarriageFacts.recordShellOnly(carriageIndex, variant);
+            }
             return null;
         }
         // No part of a portal gets contents, for the same reason FLATBED gets none: there is no
