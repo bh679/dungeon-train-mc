@@ -2354,17 +2354,20 @@ public final class TrainCarriageAppender {
                 Integer lastSent = LAST_SENT_PIDX.get(uuid);
                 if (lastSent == null || lastSent != pIdx) {
                     DungeonTrainNet.sendTo(player, new CarriageIndexPacket(true, pIdx));
-                    // The F3+4 panel reads the same index (it always resolved in the
-                    // occupied group's frame; the HUD now does too), so one change
-                    // record serves both.
-                    // Room occupants are handled by tickDebugPanelRooms, which runs for every
-                    // player rather than only those a train reached.
-                    if (DebugAccessEvents.isPermitted(player) && !inDimensionalCarriage(level, player)) {
-                        int slot = pIdx - nearest.carriage().provider().getPIdx();
-                        DungeonTrainNet.sendTo(player,
-                            debugCarriageAt(level, player, pIdx, slot, groupSize));
-                    }
                     LAST_SENT_PIDX.put(uuid, pIdx);
+                }
+
+                // The panel gets its own change test rather than riding the index above. Crossing
+                // into a portal carriage's copy and back swaps which side you stand on WITHOUT
+                // changing your carriage index, so a pIdx-keyed check calls that "no change" and
+                // leaves Copy stuck on whichever side you happened to enter by.
+                // Players in the copy are served by tickDebugPanelRooms instead.
+                if (DebugAccessEvents.isPermitted(player) && !inDimensionalCarriage(level, player)) {
+                    int slot = pIdx - nearest.carriage().provider().getPIdx();
+                    TrainDebugCarriagePacket packet =
+                        debugCarriageAt(level, player, pIdx, slot, groupSize);
+                    sendDebugIfChanged(player,
+                        "c:" + pIdx + ":" + packet.cartType() + ":" + packet.copy(), packet);
                 }
             }
             // (A remote player gets no HUD index: an estimate shown to somebody standing in a
@@ -6730,6 +6733,21 @@ public final class TrainCarriageAppender {
     }
 
     /**
+     * Send a panel update only when it would say something new.
+     *
+     * <p>{@code key} must cover everything the packet shows. Keying on less is how the read-out
+     * freezes: a carriage index alone cannot see the train/copy swap, and a room's tile alone
+     * cannot see which room.</p>
+     */
+    private static void sendDebugIfChanged(ServerPlayer player, String key,
+                                           TrainDebugCarriagePacket packet) {
+        UUID uuid = player.getUUID();
+        if (key.equals(LAST_SENT_DEBUG_KEY.get(uuid))) return;
+        DungeonTrainNet.sendTo(player, packet);
+        LAST_SENT_DEBUG_KEY.put(uuid, key);
+    }
+
+    /**
      * The panel's read-out for a player standing in one of a pair's twin corridors — the underground
      * copies the crossing is built from.
      *
@@ -6771,12 +6789,8 @@ public final class TrainCarriageAppender {
                 dims = DungeonTrainWorldData.get(level.getServer().overworld()).dims();
             }
             TrainDebugCarriagePacket packet = dimensionalCarriagePacket(level, player, dims);
-            String key = "r:" + packet.cartType() + ":" + packet.contentsId()
-                + ":" + packet.subVariantId() + ":" + packet.copy();
-            UUID uuid = player.getUUID();
-            if (key.equals(LAST_SENT_DEBUG_KEY.get(uuid))) continue;
-            DungeonTrainNet.sendTo(player, packet);
-            LAST_SENT_DEBUG_KEY.put(uuid, key);
+            sendDebugIfChanged(player, "r:" + packet.cartType() + ":" + packet.contentsId()
+                + ":" + packet.subVariantId() + ":" + packet.copy(), packet);
         }
     }
 
