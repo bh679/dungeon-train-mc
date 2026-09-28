@@ -20196,6 +20196,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "hidden-advancements-next-step-challenges",
+      "version": "0.999.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Hidden achievements show the way",
+      "summary": "Once you've found it, a hidden set of advancements now shows its next step the same way the main journey does - and every one of them is a challenge.",
+      "highlights": [],
+      "pr": 1628,
+      "date": "2026-09-28",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
