@@ -180,6 +180,7 @@ final class BandAdvancementsTest {
             JsonObject json = advancement("secrete_menu/" + id);
             assertEquals(parent, json.get("parent").getAsString(), id);
             assertTrue(json.getAsJsonObject("display").get("hidden").getAsBoolean(), id);
+            assertEquals("challenge", json.getAsJsonObject("display").get("frame").getAsString(), id);
             assertEquals(id, actionId(json), id);
             parent = "dungeontrain:secrete_menu/" + id;
         }
@@ -195,6 +196,7 @@ final class BandAdvancementsTest {
         assertEquals("dungeontrain:dungeon_train/" + BandAdvancements.ANCHOR, twin.get("parent").getAsString());
         for (JsonObject json : List.of(root, twin)) {
             assertTrue(json.getAsJsonObject("display").get("hidden").getAsBoolean());
+            assertEquals("challenge", json.getAsJsonObject("display").get("frame").getAsString());
             assertEquals(BandAdvancements.SECRETE_MENU, actionId(json));
             assertEquals("advancements.dungeontrain.dungeon_train.secrete_menu.title",
                     json.getAsJsonObject("display").getAsJsonObject("title").get("translate").getAsString());

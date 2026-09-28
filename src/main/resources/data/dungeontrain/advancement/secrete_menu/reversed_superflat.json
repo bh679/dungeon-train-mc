@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:grass_block" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_superflat.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_superflat.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

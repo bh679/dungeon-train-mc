@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:sunflower" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_bop.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_bop.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

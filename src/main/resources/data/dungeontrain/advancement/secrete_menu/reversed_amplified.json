@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:stone" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_amplified.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_amplified.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

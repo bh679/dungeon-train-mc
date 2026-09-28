@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:phantom_membrane" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_floating.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_floating.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

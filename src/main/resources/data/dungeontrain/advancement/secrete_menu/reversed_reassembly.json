@@ -4,7 +4,7 @@
     "icon": { "id": "minecraft:heavy_core" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reversed_reassembly.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.reversed_reassembly.description" },
-    "frame": "goal",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true
