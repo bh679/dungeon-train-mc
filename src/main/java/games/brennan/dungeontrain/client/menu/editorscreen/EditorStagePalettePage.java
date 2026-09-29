@@ -54,7 +54,10 @@ public final class EditorStagePalettePage {
 
     private EditorStagePalettePage() {}
 
-    /** The Palette page: Solid 1–10, then the shapes, then the wood set, cells wrapped {@code cols} across. */
+    /**
+     * The Palette page: Solid 1–10, then the shapes, then the wood set, cells wrapped {@code cols}
+     * across, then the Colours heading with one labelled row per material.
+     */
     public static List<Row> paletteRows(EditorRosterPacket.Palette palette, int cols) {
         List<String> solid = new ArrayList<>();
         List<String> shapes = new ArrayList<>();
@@ -77,6 +80,11 @@ public final class EditorStagePalettePage {
         out.add(Row.family(familyText(EditorScreenLang.STAGES_PALETTE_WOOD, palette.wood(), palette.woodLocked()),
             StagePaletteEditPacket.Op.SET_WOOD));
         out.addAll(wrap(wood, cols));
+        out.add(Row.heading(EditorScreenLang.text(EditorScreenLang.STAGES_PALETTE_COLOURS)));
+        for (StagePaletteMenu.Row r : StagePaletteMenu.LAYOUT) {
+            if (r.group() != StagePaletteMenu.RowGroup.COLOUR) continue;
+            out.add(Row.labelled(r.label().trim(), new ArrayList<>(r.cells().values())));
+        }
         return out;
     }
 

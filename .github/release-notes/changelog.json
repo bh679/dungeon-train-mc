@@ -20978,8 +20978,25 @@
       "released_at": null
     },
     {
-      "id": "open-template-files",
+      "id": "stage-colour-blocks",
       "version": "0.1041.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Stage blocks come in colour",
+      "summary": "Builders can now place terracotta, concrete, stained glass and glazed terracotta that take on each stage's own colours.",
+      "highlights": [],
+      "pr": 1680,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "open-template-files",
+      "version": "0.1042.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -20990,7 +21007,7 @@
       "summary": "The editor can now take you straight to where a template's files are saved.",
       "highlights": [],
       "pr": 1679,
-      "date": "2026-09-29",
+      "date": "2026-09-30",
       "released": false,
       "released_in": null,
       "released_at": null
