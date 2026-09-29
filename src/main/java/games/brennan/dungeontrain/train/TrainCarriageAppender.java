@@ -6,9 +6,15 @@ import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.debug.BackwardGenTrace;
 import games.brennan.dungeontrain.debug.DebugAccessEvents;
+import games.brennan.dungeontrain.event.PortalCarriageEvents;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.TrainDebugCarriagePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.portal.PortalCarriageSelection;
+import games.brennan.dungeontrain.portal.PortalPairIndex;
+import games.brennan.dungeontrain.portal.PortalRegistry;
+import games.brennan.dungeontrain.portal.PortalStampRecord;
+import games.brennan.dungeontrain.portal.PortalTwinSpace;
 import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
@@ -18,6 +24,7 @@ import games.brennan.dungeontrain.ship.sable.SableHoldingIndex;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.util.ThrottledLog;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
@@ -27,6 +34,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
@@ -44,6 +52,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -72,6 +81,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class TrainCarriageAppender {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    /**
+     * The walk-away release keeps un-serialized groups held and re-checks them every tick while no
+     * player is near, so a "kept N held" line with nothing released repeated each tick. One per window.
+     */
+    private static final ThrottledLog KEPT_HELD_LOG = new ThrottledLog(30_000);
     private static final double NEAR_RADIUS = 128.0;
     private static final double NEAR_RADIUS_SQ = NEAR_RADIUS * NEAR_RADIUS;
 
@@ -80,6 +94,15 @@ public final class TrainCarriageAppender {
      * {@link CarriageIndexPacket}. Server-thread only.
      */
     private static final Map<UUID, Integer> LAST_SENT_PIDX = new HashMap<>();
+
+    /**
+     * What the panel was last told about each player standing in a pocket room, as an opaque key.
+     *
+     * <p>A key rather than a carriage index because in a room the panel's subject is the room and
+     * its tile, which changes as the player walks between copies while no carriage index moves at
+     * all. Keying on the whole answer is what makes those transitions re-send.</p>
+     */
+    private static final Map<UUID, String> LAST_SENT_DEBUG_KEY = new ConcurrentHashMap<>();
 
     /**
      * The carriage index last pushed to {@code playerId}'s HUD — the same value the
@@ -2146,6 +2169,9 @@ public final class TrainCarriageAppender {
         // post-spawn displacement (vanilla ejection vs Sable lazy-bind race).
         tickEntityDriftTracking(level);
 
+        // Debug panel: pocket-room occupants, who the train loop below never reaches.
+        tickDebugPanelRooms(level, players);
+
         // Backward-seam-gap diagnostic (opt-in, off by default). Periodic
         // per-seam world-X gap-vs-pIdx snapshot used to diagnose the growing
         // backward-gap regression. Self-gated on the sample cadence; no-op
@@ -2334,13 +2360,20 @@ public final class TrainCarriageAppender {
                 Integer lastSent = LAST_SENT_PIDX.get(uuid);
                 if (lastSent == null || lastSent != pIdx) {
                     DungeonTrainNet.sendTo(player, new CarriageIndexPacket(true, pIdx));
-                    // The F3+4 panel reads the same index (it always resolved in the
-                    // occupied group's frame; the HUD now does too), so one change
-                    // record serves both.
-                    if (DebugAccessEvents.isPermitted(player)) {
-                        DungeonTrainNet.sendTo(player, debugCarriageAt(pIdx));
-                    }
                     LAST_SENT_PIDX.put(uuid, pIdx);
+                }
+
+                // The panel gets its own change test rather than riding the index above. Crossing
+                // into a portal carriage's copy and back swaps which side you stand on WITHOUT
+                // changing your carriage index, so a pIdx-keyed check calls that "no change" and
+                // leaves Copy stuck on whichever side you happened to enter by.
+                // Players in the copy are served by tickDebugPanelRooms instead.
+                if (DebugAccessEvents.isPermitted(player) && !inDimensionalCarriage(level, player)) {
+                    int slot = pIdx - nearest.carriage().provider().getPIdx();
+                    TrainDebugCarriagePacket packet =
+                        debugCarriageAt(level, player, pIdx, slot, groupSize);
+                    sendDebugIfChanged(player,
+                        "c:" + pIdx + ":" + packet.cartType() + ":" + packet.copy(), packet);
                 }
             }
             // (A remote player gets no HUD index: an estimate shown to somebody standing in a
@@ -2667,8 +2700,11 @@ public final class TrainCarriageAppender {
         // Diagnostic: every time we're about to spawn, log the train state
         // we based the decision on. Helps catch "appender thinks tail is X
         // but a sub-level at X-groupSize actually exists" — which causes
-        // duplicate spawns on top of existing groups.
-        if (LOGGER.isDebugEnabled()) {
+        // duplicate spawns on top of existing groups. Gated on the spawn-stall
+        // trace (armed in dev by DevTraceDefaults, in a release by
+        // `/dungeontrain debug traingen on`), not isDebugEnabled(): that is always
+        // true under FML's root=all, and this walks every group on every spawn.
+        if (STALL_DETECTION_ENABLED) {
             StringBuilder pidxs = new StringBuilder();
             for (Trains.Carriage c : train) {
                 if (pidxs.length() > 0) pidxs.append(",");
@@ -3648,9 +3684,11 @@ public final class TrainCarriageAppender {
             it.remove();
         }
         if (current.isEmpty()) FORCELOADED_BY_TRAIN.remove(trainId);
-        if (released > 0 || keptUnserialized > 0) {
-            LOGGER.debug("[DungeonTrain] Force-load window trainId={} released {} trailing sub-level(s), kept {} un-serialized held (player left vicinity)",
-                trainId, released, keptUnserialized);
+        long keptOnlyRepeats = (released == 0 && keptUnserialized > 0) ? KEPT_HELD_LOG.record().orElse(0L) : 0L;
+        if (released > 0 || keptOnlyRepeats > 0) {
+            LOGGER.debug("[DungeonTrain] Force-load window trainId={} released {} trailing sub-level(s), kept {} un-serialized held (player left vicinity){}",
+                trainId, released, keptUnserialized,
+                keptOnlyRepeats > 0 ? " — " + keptOnlyRepeats + " such tick(s) in last " + KEPT_HELD_LOG.intervalSeconds() + "s" : "");
         }
     }
 
@@ -6378,8 +6416,8 @@ public final class TrainCarriageAppender {
      * in the holding chunk"), so every asked sub-level goes into {@code tried} and the next
      * attempt moves along the train rather than asking the same one again.
      */
-    private static void wakeOneGroup(ServerLevel level, UUID trainId, Map<Integer, ManagedShip> groups,
-                                     int est, Set<UUID> tried) {
+    private static boolean wakeOneGroup(ServerLevel level, UUID trainId, Map<Integer, ManagedShip> groups,
+                                        int est, Set<UUID> tried) {
         Shipyard shipyard = Shipyards.of(level);
         List<Map.Entry<Integer, ManagedShip>> byDistance = new ArrayList<>(groups.entrySet());
         byDistance.sort(Comparator.comparingInt(e -> Math.abs(e.getKey() - est)));
@@ -6395,11 +6433,42 @@ public final class TrainCarriageAppender {
                 ManagedShip live = adoptReloadedGroup(level, shipyard, trainId, e.getKey(), uuid);
                 LOGGER.info("[DungeonTrain][remote] Nothing of trainId={} is loaded and a player is on the line near carriage {} — reloaded group anchor={} (subLevelId={}, adopted={})",
                     trainId, est, e.getKey(), uuid, live != null);
-                return;
+                return true;
             }
         }
         LOGGER.info("[DungeonTrain][remote] trainId={} has no reloadable group in holding for a player near carriage {}",
             trainId, est);
+        return false;
+    }
+
+    /**
+     * Ask one held group of {@code trainId} back from Sable holding, nearest to carriage
+     * {@code est}, and adopt it so the rolling window owns it from the next tick.
+     *
+     * <p>For callers outside the per-tick walk that meet the same state — nothing of the train is
+     * loaded but the registry still names its groups. The End exit portal is one: the player has
+     * been in another dimension for as long as a dragon fight takes, so the whole train has been
+     * culled, and spawning a fresh seed there would put a second train under the first when Sable
+     * brings it back. Same budget rule as {@link #wakeRemoteTrains}: {@code tried} carries the
+     * sub-levels already asked for so a snatch-miss is not repeated.</p>
+     *
+     * @return true if a group was reloaded (adoption may still surface a tick later)
+     */
+    public static boolean wakeHeldGroup(ServerLevel level, UUID trainId, int est, Set<UUID> tried) {
+        Map<Integer, ManagedShip> groups = Trains.knownGroups(trainId);
+        if (groups.isEmpty()) return false;
+        return wakeOneGroup(level, trainId, groups, est, tried);
+    }
+
+    /**
+     * The anchor of the last group seen placed and moving for {@code trainId}, or null if the train
+     * has had no visible group this session. The best guess at where along the train the players
+     * were when they last saw it.
+     */
+    @Nullable
+    public static Integer lastFixedAnchor(UUID trainId) {
+        LineFix fix = LINE_FIX.get(trainId);
+        return fix == null ? null : fix.anchor();
     }
 
     // ---- Backward frontier: fill the needed range outward from the player ----
@@ -6594,13 +6663,177 @@ public final class TrainCarriageAppender {
      * session never placed reports empty ids — the panel shows a dash, which is the honest answer
      * rather than a confident wrong one.</p>
      */
-    private static TrainDebugCarriagePacket debugCarriageAt(int pIdx) {
+    private static TrainDebugCarriagePacket debugCarriageAt(ServerLevel level, ServerPlayer player,
+                                                            int pIdx, int slot, int groupSize) {
+        CartType cartType = cartTypeAt(level, pIdx, slot, groupSize);
+        String copy = copyLabel(level, player);
+        // Only consult the facts when this is somewhere that rolls contents at all. A pad's pIdx is
+        // its neighbour's, so an unconditional lookup reports the carriage next door's furnishings.
+        PlacedCarriageFacts.Facts facts = cartType.rollsContents()
+            ? PlacedCarriageFacts.get(pIdx)
+            : null;
+        if (facts == null) {
+            return new TrainDebugCarriagePacket(true, pIdx, cartType.label(), "", "", "", copy);
+        }
+        return new TrainDebugCarriagePacket(true, pIdx, cartType.label(),
+            facts.contentsId(), facts.subVariantId(), facts.flip(), copy);
+    }
+
+    /** Cart-type labels for the places that never roll a variant. Player-facing wording. */
+    private static final String CART_TYPE_ROOM = "dimensional carriage";
+    private static final String CART_TYPE_PAD = "flatbed pad";
+    private static final String CART_TYPE_CORRIDOR_ENTRY = "corridor (entry)";
+    private static final String CART_TYPE_CORRIDOR_EXIT = "corridor (exit)";
+    private static final String CART_TYPE_CORRIDOR_MIDDLE = "corridor group (middle cart)";
+
+    /** A resolved cart-type label, plus whether that kind of place rolls contents at all. */
+    private record CartType(String label, boolean rollsContents) {}
+
+    /**
+     * What the F3+4 panel calls the place at {@code pIdx}.
+     *
+     * <p>Ordinary carriages report the variant they rolled. The kinds that never reach a roll — the
+     * half-pads wrapping each group, portal corridors, and the pocket room — report what they are
+     * instead, which is the point: those are where the panel used to fall silent.</p>
+     *
+     * <p>{@code slot} is the player's position within their group's enclosed run, so a value outside
+     * {@code [0, groupSize)} means they are standing on one of the pads that wrap it.</p>
+     */
+    private static CartType cartTypeAt(ServerLevel level, int pIdx, int slot, int groupSize) {
+        if (groupSize > 1 && (slot < 0 || slot >= groupSize)) {
+            return new CartType(CART_TYPE_PAD, false);
+        }
+        // The registry is the authoritative post-placement answer — re-deriving whether an index is
+        // a portal would drift the same way a recomputed contents roll does.
+        if (PortalRegistry.get(level).isStampedPortalPart(pIdx)) {
+            if (!PortalStampRecord.isCorridorSlot(pIdx, groupSize)) {
+                return new CartType(CART_TYPE_CORRIDOR_MIDDLE, true);
+            }
+            return new CartType(
+                PortalCarriageSelection.slotOf(pIdx, groupSize) == PortalCarriageSelection.SLOT_ENTRY
+                    ? CART_TYPE_CORRIDOR_ENTRY
+                    : CART_TYPE_CORRIDOR_EXIT,
+                true);
+        }
         PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(pIdx);
         if (facts == null) {
-            return new TrainDebugCarriagePacket(true, pIdx, "", "", "");
+            return new CartType("", false);
         }
-        return new TrainDebugCarriagePacket(
-            true, pIdx, facts.variantId(), facts.contentsId(), facts.subVariantId(), facts.flip());
+        // A FLATBED is a bare shell — it returns before the contents roll, so it has none. Saying so
+        // also stops a stale record, left at this index by whatever stood here before the rolling
+        // window came round, from being read as this flatbed's furnishings.
+        boolean flatbed = CarriagePlacer.CarriageType.FLATBED.id().equals(facts.variantId());
+        return new CartType(facts.variantId(), !flatbed);
+    }
+
+    /** Whether the player is in a portal pair's pocket room rather than on the train. */
+    private static boolean inDimensionalCarriage(ServerLevel level, ServerPlayer player) {
+        return PortalTwinSpace.isInside(level, Mth.floor(player.getX()), player.getY());
+    }
+
+    /**
+     * Whether the player is standing in the copy rather than on the train.
+     *
+     * <p>A portal carriage exists twice: the one riding the train, and the dimensional copy the
+     * crossing puts you in. Twin space — the basement the copy is stamped into, and the pocket room
+     * it opens onto — is exactly "the copy", so the same test that routes the read-out answers this
+     * too.</p>
+     */
+    private static String copyLabel(ServerLevel level, ServerPlayer player) {
+        return inDimensionalCarriage(level, player) ? "yes" : "no";
+    }
+
+    /**
+     * The panel's read-out for a player inside a pocket room.
+     *
+     * <p>A room has no {@code CarriageContents}: {@link games.brennan.dungeontrain.portal.PortalStructure}
+     * rolls its block variants and container contents from a per-tile seed index instead. So the
+     * panel reports the room's own identity — its name, and the index this tile rolled from, which
+     * is the one value that separates one copy from another.</p>
+     */
+    private static TrainDebugCarriagePacket dimensionalCarriagePacket(ServerLevel level,
+                                                                      ServerPlayer player,
+                                                                      CarriageDims dims) {
+        // Twin space holds BOTH the pocket room and the pair's twin corridors — the corridors are
+        // stamped in the same basement. So ask whether this is a corridor before assuming a room,
+        // or every step down a twin corridor reports itself as a dimensional carriage.
+        PortalPairIndex.Entry twin = PortalPairIndex.findByTwinPos(player.blockPosition());
+        if (twin != null) {
+            return twinCorridorPacket(level, player, twin);
+        }
+
+        String copy = copyLabel(level, player);
+        PortalCarriageEvents.RoomFacts room = PortalCarriageEvents.roomFactsAt(
+            dims, player.getX(), player.getY(), player.getZ());
+        if (room == null) {
+            return new TrainDebugCarriagePacket(true, 0, CART_TYPE_ROOM, "", "", "", copy);
+        }
+        return new TrainDebugCarriagePacket(true, 0, CART_TYPE_ROOM,
+            room.roomName(),
+            room.copiesKind().name().toLowerCase(Locale.ROOT) + " #" + room.variantIndex(),
+            "", copy);
+    }
+
+    /**
+     * Send a panel update only when it would say something new.
+     *
+     * <p>{@code key} must cover everything the packet shows. Keying on less is how the read-out
+     * freezes: a carriage index alone cannot see the train/copy swap, and a room's tile alone
+     * cannot see which room.</p>
+     */
+    private static void sendDebugIfChanged(ServerPlayer player, String key,
+                                           TrainDebugCarriagePacket packet) {
+        UUID uuid = player.getUUID();
+        if (key.equals(LAST_SENT_DEBUG_KEY.get(uuid))) return;
+        DungeonTrainNet.sendTo(player, packet);
+        LAST_SENT_DEBUG_KEY.put(uuid, key);
+    }
+
+    /**
+     * The panel's read-out for a player standing in one of a pair's twin corridors — the underground
+     * copies the crossing is built from.
+     *
+     * <p>It reports the same corridor the train side does, because it is the same corridor: the twin
+     * is stamped from the pair's own draw, which its carriage index already recorded.</p>
+     */
+    private static TrainDebugCarriagePacket twinCorridorPacket(ServerLevel level, ServerPlayer player,
+                                                               PortalPairIndex.Entry twin) {
+        int pIdx = twin.carriageIndex();
+        int groupSize = DungeonTrainConfig.getGroupSize();
+        String label = PortalStampRecord.isCorridorSlot(pIdx, groupSize)
+            ? (PortalCarriageSelection.slotOf(pIdx, groupSize) == PortalCarriageSelection.SLOT_ENTRY
+                ? CART_TYPE_CORRIDOR_ENTRY
+                : CART_TYPE_CORRIDOR_EXIT)
+            : CART_TYPE_CORRIDOR_MIDDLE;
+        String copy = copyLabel(level, player);
+        PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(pIdx);
+        if (facts == null) {
+            return new TrainDebugCarriagePacket(true, pIdx, label, "", "", ContentsFlip.LABEL_NONE, copy);
+        }
+        return new TrainDebugCarriagePacket(true, pIdx, label,
+            facts.contentsId(), facts.subVariantId(), facts.flip(), copy);
+    }
+
+    /**
+     * Keep the debug panel current for players inside a pocket room.
+     *
+     * <p>Runs over every player rather than the ones a train reached: a room sits in twin space,
+     * well outside the train's near-radius, so its occupants are exactly the players the train loop
+     * does not see. Walking between tiles changes what the panel should say while no carriage index
+     * moves, so the change test is the room answer itself rather than an index.</p>
+     */
+    private static void tickDebugPanelRooms(ServerLevel level, List<ServerPlayer> players) {
+        CarriageDims dims = null;
+        for (ServerPlayer player : players) {
+            if (!inDimensionalCarriage(level, player)) continue;
+            if (!DebugAccessEvents.isPermitted(player)) continue;
+            if (dims == null) {
+                dims = DungeonTrainWorldData.get(level.getServer().overworld()).dims();
+            }
+            TrainDebugCarriagePacket packet = dimensionalCarriagePacket(level, player, dims);
+            sendDebugIfChanged(player, "r:" + packet.cartType() + ":" + packet.contentsId()
+                + ":" + packet.subVariantId() + ":" + packet.copy(), packet);
+        }
     }
 
     /**

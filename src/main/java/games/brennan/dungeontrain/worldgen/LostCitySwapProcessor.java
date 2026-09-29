@@ -33,8 +33,8 @@ import java.util.Map;
  * blocks listed, so floors and the pad are never rotted.</p>
  *
  * <p>The roll is a hash of the placement origin and the block's world position, so a chunk regenerates
- * identically. The template's pad layer ({@code y = 0}) is never touched: {@link LostCityGroundProcessor}
- * reads it as natural ground and builds footing under it.</p>
+ * identically. The template's pad layer ({@code y = 0}) is never touched: Lost City Terrain Fit's ground
+ * processor reads it as natural ground and builds footing under it.</p>
  *
  * <p>Registered as {@code dungeontrain:lost_city_swap} and used from
  * {@code data/dungeontrain/worldgen/processor_list/lost_city/}.</p>

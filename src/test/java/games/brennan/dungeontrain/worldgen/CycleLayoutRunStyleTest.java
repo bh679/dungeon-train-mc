@@ -14,8 +14,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The {@code first>later} style switch: a slot wears one look on the first run of the order and
  * another on every run after — how the shipped order gives Lap 1's Nether its Biomes O' Plenty look
- * from the second cycle on. Lap 1's End is vanilla then BoP (two joined pieces) every cycle, and Lap 2
- * stays BoP → BetterNether → Lost City → BetterEnd.
+ * from the second cycle on — and the first-run {@code a=N+b} split, which turns that Nether BoP
+ * partway through its core on the first cycle. Lap 1's End is vanilla then BoP (two joined pieces)
+ * every cycle, and Lap 2 stays BoP → BetterNether → Lost City → BetterEnd.
  */
 final class CycleLayoutRunStyleTest {
 
@@ -49,9 +50,61 @@ final class CycleLayoutRunStyleTest {
     }
 
     @Test
-    @DisplayName("Lap 1's Nether is vanilla on the first cycle and BoP after; its End is vanilla then BoP every cycle")
+    @DisplayName("a=N+b splits the first run's core: look a for N blocks, then b; later runs take '>' or else b")
+    void parseSplit() {
+        List<String> warnings = new ArrayList<>();
+        CycleLayout l = CycleLayout.parse("ow:100, nether:vanilla=1000~400+bop>bop:2750, nether:vanilla=1000+bop:2750",
+                CycleLayoutTest.FADES, CycleLayoutTest.eraDefaults(), t -> true, warnings::add);
+        assertTrue(warnings.isEmpty(), warnings.toString());
+        CycleLayout.Slot s = l.slot(1);
+        assertEquals(Style.VANILLA, s.style());
+        assertTrue(s.hasSplit());
+        assertEquals(1000, s.splitAt());
+        assertEquals(400, s.splitBlend());                               // ~400: mixed over the next 400
+        assertEquals(Style.BOP, s.splitStyle());
+        assertEquals(Style.BOP, s.laterStyle());
+        assertEquals(2750, s.core());
+        CycleLayout.Slot noLater = l.slot(2);                            // no '>': later runs wear the split look
+        assertTrue(noLater.hasSplit());
+        assertEquals(0, noLater.splitBlend());                           // no '~': a hard switch
+        assertEquals(Style.VANILLA, noLater.style());
+        assertEquals(Style.BOP, noLater.laterStyle());
+        assertEquals(2750, noLater.core());
+        assertFalse(l.slot(0).hasSplit());
+    }
+
+    @Test
+    @DisplayName("a split outside a Nether slot is warned and dropped; a malformed split is warned")
+    void parseSplitRejects() {
+        List<String> warnings = new ArrayList<>();
+        CycleLayout l = CycleLayout.parse("ow:100, end:vanilla=100+bop:500", CycleLayoutTest.FADES,
+                CycleLayoutTest.eraDefaults(), t -> true, warnings::add);
+        assertEquals(1, warnings.size(), warnings.toString());
+        CycleLayout.Slot end = l.slot(1);
+        assertFalse(end.hasSplit());
+        assertEquals(-1, end.splitAt());
+        assertEquals(Style.VANILLA, end.style());
+        assertEquals(Style.VANILLA, end.laterStyle());                   // the dropped split doesn't leak into later runs
+        assertEquals(500, end.core());
+
+        warnings.clear();
+        CycleLayout bad = CycleLayout.parse("ow:100, nether:vanilla=x+bop:2750", CycleLayoutTest.FADES,
+                CycleLayoutTest.eraDefaults(), t -> true, warnings::add);
+        assertEquals(1, warnings.size(), warnings.toString());
+        assertFalse(bad.slot(1).hasSplit());
+        assertEquals(2750, bad.slot(1).core());                          // the slot is kept, the split ignored
+    }
+
+    @Test
+    @DisplayName("Lap 1's Nether turns BoP partway through on the first cycle and is BoP after; its End is vanilla then BoP every cycle")
     void lap1TurnsBop() {
-        assertEquals(Style.VANILLA, C.netherStyleAt(mid(1, 0)));
+        assertEquals(Style.VANILLA, C.netherStyleAt(mid(1, 0)));                // the slot's first-run style
+        // the column-free look switches halfway through the vanilla → BoP mix
+        long split = LAYOUT.netherCoreStart(1) + LAYOUT.slot(1).splitAt() + LAYOUT.slot(1).splitBlend() / 2;
+        assertEquals(Style.VANILLA, C.netherLookAt(x(split - 1, 0)));
+        assertFalse(C.isBopNetherAt(x(split - 1, 0)));
+        assertEquals(Style.BOP, C.netherLookAt(x(split, 0)));
+        assertTrue(C.isBopNetherAt(x(split + 1, 0)));
         for (int k = 0; k <= 3; k++) {
             assertEquals(Style.VANILLA, C.endStyleAt(mid(3, k)), "run " + k);
             assertEquals(Style.BOP, C.endStyleAt(mid(4, k)), "run " + k);
@@ -64,7 +117,6 @@ final class CycleLayoutRunStyleTest {
             assertTrue(C.isBopNetherAt(mid(1, k)));
             assertEquals(SecondLapOverworld.Stretch.VANILLA, SecondLapOverworld.at(C, mid(0, k)), "Lap 1 overworld stays vanilla");
         }
-        assertFalse(C.isBopNetherAt(mid(1, 0)));
         // passes: 2 Nether occurrences per run → pass 0 vanilla, 1 Better, 2 BoP, 3 Better
         assertEquals(Style.VANILLA, C.netherStyleOfPass(0));
         assertEquals(Style.BETTER, C.netherStyleOfPass(1));

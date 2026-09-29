@@ -347,6 +347,7 @@ public final class NetherMobSpawner {
                 // `continue`, not `return`: the scan runs upward, so a blocked low pocket is no
                 // reason to give up on the legal ones above it.
                 if (blockedSpawnSite(dims, bedrockY, air)) continue;
+                if (level.getBiome(air).is(Biomes.DEEP_DARK)) continue;   // the deep dark spawns nothing
                 if (hasRoomFor(level, EntityType.GHAST, air)) {
                     spawn(level, EntityType.GHAST, air, rng);
                     return;
@@ -362,6 +363,8 @@ public final class NetherMobSpawner {
             if (blockedSpawnSite(dims, bedrockY, feet)) continue;
             if (!level.getBlockState(feet.below()).blocksMotion()) continue;
             if (!level.getBlockState(feet).isAir() || !level.getBlockState(feet.above()).isAir()) continue;
+            // The band's deep-dark caverns (fall side) spawn nothing naturally — wardens come from shriekers.
+            if (level.getBiome(feet).is(Biomes.DEEP_DARK)) continue;
             EntityType<?> betterNether = betterNetherGroundMob(biome, rng);
             EntityType<?> type = betterNether != null ? betterNether : roster[rng.nextInt(roster.length)];
             spawn(level, type, feet, rng);

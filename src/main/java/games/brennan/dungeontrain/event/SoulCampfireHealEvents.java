@@ -9,6 +9,8 @@ import games.brennan.dungeontrain.registry.effect.WarmthOfTheFireEffect;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
+import games.brennan.dungeontrain.util.DtLogging;
+import games.brennan.dungeontrain.util.ThrottledLog;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -47,7 +49,10 @@ import java.util.Map;
 public final class SoulCampfireHealEvents {
 
     /** Under the jitter namespace so DungeonTrain.commonSetup's DEBUG level applies. */
-    private static final Logger LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter.soulcampfire");
+    // A child of the jitter namespace, so it inherits DtLogging's cap: DEBUG in dev, INFO for players.
+    private static final Logger LOGGER = LoggerFactory.getLogger(DtLogging.JITTER + ".soulcampfire");
+    /** A miss logs per nearby ship per scan; one summary per window keeps a dev log readable. */
+    private static final ThrottledLog MISS_LOG = new ThrottledLog(10_000);
 
     /** Tick interval between scans for nearby lit soul campfires. */
     private static final int SCAN_PERIOD_TICKS = 40;
@@ -151,11 +156,14 @@ public final class SoulCampfireHealEvents {
                 }
             }
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug(
-                    "[SoulCampfire] miss on ship {} shipLocal=({},{},{}) litCampfiresInPlot={}",
-                    ship.id(),
-                    shipCentre.getX(), shipCentre.getY(), shipCentre.getZ(),
-                    campfiresSeen);
+                long misses = MISS_LOG.record().orElse(0L);
+                if (misses > 0) {
+                    LOGGER.debug(
+                        "[SoulCampfire] miss on ship {} shipLocal=({},{},{}) litCampfiresInPlot={} ({} misses in last {}s)",
+                        ship.id(),
+                        shipCentre.getX(), shipCentre.getY(), shipCentre.getZ(),
+                        campfiresSeen, misses, MISS_LOG.intervalSeconds());
+                }
             }
         }
         return false;

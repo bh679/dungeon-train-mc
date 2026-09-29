@@ -123,4 +123,45 @@ class TrainBlockBreakGateTest {
         assertFalse(TrainTickEvents.shouldBreak(true, true, TRAIN_Y, floor, 0, 0));
         assertFalse(TrainTickEvents.shouldBreak(true, true, TRAIN_Y, floor, 0, -5));
     }
+
+    @Test
+    @DisplayName("train-built blocks break terrain; player-added blocks break off instead")
+    void contactActionIsReversedForPlayerBlocks() {
+        int floor = TrainTickEvents.breakFloorY(geometry());
+
+        assertEquals(TrainTickEvents.ContactAction.BREAK_TERRAIN,
+            TrainTickEvents.contactAction(true, true, false, TRAIN_Y, floor, 0, 256), "train block hits terrain");
+        assertEquals(TrainTickEvents.ContactAction.BREAK_OFF,
+            TrainTickEvents.contactAction(true, true, true, TRAIN_Y, floor, 0, 256), "player block hits terrain");
+        assertEquals(TrainTickEvents.ContactAction.NONE,
+            TrainTickEvents.contactAction(true, false, false, TRAIN_Y, floor, 0, 256), "nothing touching");
+    }
+
+    @Test
+    @DisplayName("player blocks break off even with terrain breaking off and below the rail floor")
+    void breakOffIgnoresTerrainToggleAndFloor() {
+        int floor = TrainTickEvents.breakFloorY(geometry());
+
+        // The toggle and the floor protect the WORLD; a player block breaking off never touches it.
+        assertEquals(TrainTickEvents.ContactAction.BREAK_OFF,
+            TrainTickEvents.contactAction(false, true, true, TRAIN_Y, floor, 0, 256), "terrain toggle off");
+        assertEquals(TrainTickEvents.ContactAction.BREAK_OFF,
+            TrainTickEvents.contactAction(true, true, true, TRAIN_Y - 1, floor, 0, 256), "rail row");
+        // ...while a train block under the same conditions still leaves the world alone.
+        assertEquals(TrainTickEvents.ContactAction.NONE,
+            TrainTickEvents.contactAction(false, true, false, TRAIN_Y, floor, 0, 256), "train block, toggle off");
+        assertEquals(TrainTickEvents.ContactAction.NONE,
+            TrainTickEvents.contactAction(true, true, false, TRAIN_Y - 1, floor, 0, 256), "train block, rail row");
+    }
+
+    @Test
+    @DisplayName("break-off shares the per-tick budget")
+    void breakOffRespectsBudget() {
+        int floor = TrainTickEvents.breakFloorY(geometry());
+
+        assertEquals(TrainTickEvents.ContactAction.NONE,
+            TrainTickEvents.contactAction(true, true, true, TRAIN_Y, floor, 256, 256));
+        assertEquals(TrainTickEvents.ContactAction.NONE,
+            TrainTickEvents.contactAction(true, true, true, TRAIN_Y, floor, 0, -1));
+    }
 }

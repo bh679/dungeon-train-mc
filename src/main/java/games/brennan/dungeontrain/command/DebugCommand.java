@@ -8,6 +8,7 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
+import games.brennan.dungeontrain.worldgen.LodGeneration;
 import games.brennan.dungeontrain.debug.BackwardGenTrace;
 import games.brennan.dungeontrain.debug.CarriageDebug;
 import games.brennan.dungeontrain.debug.DebugFlags;
@@ -19,6 +20,7 @@ import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.ship.sable.ColliderBatch;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
 import games.brennan.dungeontrain.ship.sable.PhysicsSubstepTuner;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
@@ -83,6 +85,15 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setPhysicsFreeze(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setPhysicsFreeze(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> physicsFreezeStatus(ctx.getSource()))))
+            // /dungeontrain debug colliderbatch <on|off|status> — toggles ColliderBatch, the
+            // whole-section Sable collider re-upload that replaces per-block updates over a carriage
+            // stamp. `off` restores Sable's per-block path from the next spawnGroup. Drives the Gate 2
+            // matched-toggle A/B: same ride, compare [mspt] avgTickMs= / blockChanges= /
+            // colliderRebuilds= / batchedBlockChanges= in the seconds after each append.
+            .then(Commands.literal("colliderbatch")
+                .then(Commands.literal("on").executes(ctx -> setColliderBatch(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setColliderBatch(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> colliderBatchStatus(ctx.getSource()))))
             // /dungeontrain debug substep-tuner <on|off|status> — toggles the adaptive Sable
             // substepsPerTick tuner (2→1 on a real train, see PhysicsSubstepTuner). `off` restores
             // Sable's baseline next reconcile. Drives the Gate 2 matched-toggle A/B: same ride,
@@ -121,6 +132,22 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setBandEarlyOuts(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setBandEarlyOuts(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> bandEarlyOutsStatus(ctx.getSource()))))
+            // /dungeontrain debug biome-memo <on|off|status> — toggles the per-column memo in the
+            // biome-source hook (ColumnBiomePlan). OFF = the pre-change per-quart path, byte-identical
+            // output — drives the Gate 2 A/B: same seed, compare [gen.timing] biome= with it on vs off.
+            .then(Commands.literal("biome-memo")
+                .then(Commands.literal("on").executes(ctx -> setBiomeMemo(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setBiomeMemo(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> biomeMemoStatus(ctx.getSource()))))
+            // /dungeontrain debug lod-lite <auto|force|off|status> — Distant Horizons LOD-lite Nether-core
+            // decoration (see LodGeneration). `auto` (default) = lite only on DH-World Gen threads; `force`
+            // = lite on every worldgen thread so a headless server measures the saving with no DH
+            // installed; `off` = full decoration everywhere (baseline). Compare [gen.timing] deco=.
+            .then(Commands.literal("lod-lite")
+                .then(Commands.literal("auto").executes(ctx -> setLodLite(ctx.getSource(), LodGeneration.Mode.AUTO)))
+                .then(Commands.literal("force").executes(ctx -> setLodLite(ctx.getSource(), LodGeneration.Mode.FORCE_ON)))
+                .then(Commands.literal("off").executes(ctx -> setLodLite(ctx.getSource(), LodGeneration.Mode.FORCE_OFF)))
+                .then(Commands.literal("status").executes(ctx -> lodLiteStatus(ctx.getSource()))))
             // /dungeontrain debug nether-passes — core X range + core biomes of the first Nether bands
             // (even passes vanilla, odd passes BetterNether). Also logged at INFO for RCON runs.
             .then(Commands.literal("nether-passes").executes(ctx -> NetherPassesDebug.report(ctx.getSource())))
@@ -370,6 +397,20 @@ public final class DebugCommand {
         return 1;
     }
 
+    private static int setColliderBatch(CommandSourceStack source, boolean on) {
+        ColliderBatch.ENABLED = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Collider-batch " + (on ? "ON" : "OFF — per-block Sable collider updates from the next stamp")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int colliderBatchStatus(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Collider-batch " + (ColliderBatch.ENABLED ? "ON" : "OFF")), false);
+        return 1;
+    }
+
     private static int setSubstepTuner(CommandSourceStack source, boolean on) {
         PhysicsSubstepTuner.ENABLED = on;
         source.sendSuccess(() -> Component.literal(
@@ -440,10 +481,54 @@ public final class DebugCommand {
         return 1;
     }
 
+    private static int setLodLite(CommandSourceStack source, LodGeneration.Mode mode) {
+        LodGeneration.MODE = mode;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] LOD-lite Nether-core decoration: " + describeLodLite(mode)
+        ).withStyle(mode == LodGeneration.Mode.FORCE_OFF ? ChatFormatting.GOLD : ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private static int lodLiteStatus(CommandSourceStack source) {
+        LodGeneration.Mode mode = LodGeneration.MODE;
+        boolean configOn = games.brennan.dungeontrain.config.DungeonTrainCommonConfig.isDistantLodLiteDecoration();
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] LOD-lite Nether-core decoration: " + describeLodLite(mode)
+                + " (config distantLodLiteDecoration=" + configOn + ")"
+        ).withStyle(configOn && mode != LodGeneration.Mode.FORCE_OFF ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
+        return 1;
+    }
+
+    private static String describeLodLite(LodGeneration.Mode mode) {
+        return switch (mode) {
+            case AUTO -> "AUTO (lite only on DH-World Gen threads)";
+            case FORCE_ON -> "FORCE (lite on every worldgen thread — A/B mode)";
+            case FORCE_OFF -> "OFF (full decoration everywhere — baseline)";
+        };
+    }
+
     private static int bandEarlyOutsStatus(CommandSourceStack source) {
         boolean on = games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED;
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Worldgen band early-outs " + (on ? "ON" : "OFF")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
+        return 1;
+    }
+
+    private static int setBiomeMemo(CommandSourceStack source, boolean on) {
+        games.brennan.dungeontrain.worldgen.density.ColumnBiomePlan.ENABLED = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Biome-source column memo " + (on
+                ? "ON (per-column decisions memoised)"
+                : "OFF (pre-change per-quart path — A/B mode)")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), true);
+        return 1;
+    }
+
+    private static int biomeMemoStatus(CommandSourceStack source) {
+        boolean on = games.brennan.dungeontrain.worldgen.density.ColumnBiomePlan.ENABLED;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Biome-source column memo " + (on ? "ON" : "OFF")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
         return 1;
     }

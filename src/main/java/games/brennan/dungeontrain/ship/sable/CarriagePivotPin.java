@@ -200,9 +200,11 @@ public final class CarriagePivotPin {
             handle.teleport(pose.position(), pose.orientation());
         }
 
-        JITTER_LOGGER.debug(
-            "[pinCorrected] subLevel={} frozen={} action={} drift=({}, {}, {})",
-            subLevel.getUniqueId(), frozen, action,
-            String.format("%.6f", drift.x), String.format("%.6f", drift.y), String.format("%.6f", drift.z));
+        if (JITTER_LOGGER.isDebugEnabled()) {
+            JITTER_LOGGER.debug(
+                "[pinCorrected] subLevel={} frozen={} action={} drift=({}, {}, {})",
+                subLevel.getUniqueId(), frozen, action,
+                String.format("%.6f", drift.x), String.format("%.6f", drift.y), String.format("%.6f", drift.z));
+        }
     }
 }

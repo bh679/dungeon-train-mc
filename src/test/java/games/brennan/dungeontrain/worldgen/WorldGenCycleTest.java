@@ -3,7 +3,9 @@ package games.brennan.dungeontrain.worldgen;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Pure-math tests for the combined {@link WorldGenCycle} — the single repeating sequence
@@ -70,43 +72,45 @@ final class WorldGenCycleTest {
     }
 
     @Test
-    @DisplayName("exit crossfade: adds its length to the period, sits right after the band, OW-reveal 0→1 / mirror-disperse 1→0, and stretches the trailing sky fade across it")
+    @DisplayName("exit crossfade: adds its length to the period, drops the band's trailing fade, sits right after the core, OW-reveal 0→1 / mirror-disperse 1→0, and carries the sky fade-out")
     void upsideDownExitFade() {
         // C (no band): no exit crossfade either.
         assertEquals(0L, C.udExitFadeLen());
         org.junit.jupiter.api.Assertions.assertFalse(C.isInUpsideDownExitFade(3240));
 
-        // Same base as upsideDownBand() (band udLen 300, exit gap 150) plus an 800-block exit crossfade
-        // inserted between the band and the trailing exit gap (16-arg form; udExitFade = 800).
+        // Same base as upsideDownBand() (udFade 50, udHold 200, exit gap 150) plus an 800-block exit crossfade
+        // (16-arg form; udExitFade = 800). With a Reassembly following, the band loses its 50-block trailing
+        // fade — the core runs straight into the crossfade — so udLen = 50 + 200 = 250, not 300.
         WorldGenCycle e = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 50, 200, 150, 800, 0);
-        assertEquals(300L, e.upsideDownLen());
+        assertEquals(250L, e.upsideDownLen());
         assertEquals(800L, e.udExitFadeLen());
-        // period = 1940 + udLen 300 + exitFade 800 + exit gap 150 = 3190.
-        assertEquals(3190L, e.period());
+        // period = 1940 + udLen 250 + exitFade 800 + exit gap 150 = 3140.
+        assertEquals(3140L, e.period());
 
-        // Band [2940,3240); exit crossfade immediately after it [3240,4040); exit gap [4040,4190).
-        org.junit.jupiter.api.Assertions.assertFalse(e.isInUpsideDownExitFade(3239)); // still the band
-        org.junit.jupiter.api.Assertions.assertTrue(e.isInUpsideDownExitFade(3240));  // starts at band end
-        org.junit.jupiter.api.Assertions.assertTrue(e.isInUpsideDownExitFade(4039));
-        org.junit.jupiter.api.Assertions.assertFalse(e.isInUpsideDownExitFade(4040)); // exit gap begins
-        org.junit.jupiter.api.Assertions.assertFalse(e.isInUpsideDownBand(3240));      // disjoint from the band
+        // Band [2940,3190); exit crossfade immediately after the core [3190,3990); exit gap [3990,4140).
+        org.junit.jupiter.api.Assertions.assertTrue(e.isInUpsideDownBand(3189));       // last core block
+        org.junit.jupiter.api.Assertions.assertFalse(e.isInUpsideDownExitFade(3189)); // still the band
+        org.junit.jupiter.api.Assertions.assertTrue(e.isInUpsideDownExitFade(3190));  // starts at core end
+        org.junit.jupiter.api.Assertions.assertTrue(e.isInUpsideDownExitFade(3989));
+        org.junit.jupiter.api.Assertions.assertFalse(e.isInUpsideDownExitFade(3990)); // exit gap begins
+        org.junit.jupiter.api.Assertions.assertFalse(e.isInUpsideDownBand(3190));      // disjoint from the band
 
         // Overworld-reveal ramps 0→1 across the zone; mirror-disperse is its complement 1→0.
-        assertEquals(0.0, e.upsideDownExitOwRevealRamp(3240), EPS);
-        assertEquals(0.5, e.upsideDownExitOwRevealRamp(3640), EPS);            // 400/800
-        assertEquals(799.0 / 800.0, e.upsideDownExitOwRevealRamp(4039), EPS);
-        assertEquals(1.0, e.upsideDownExitMirrorDisperseRamp(3240), EPS);      // full mirror, continuous with the band
-        assertEquals(0.5, e.upsideDownExitMirrorDisperseRamp(3640), EPS);
-        assertEquals(1.0 / 800.0, e.upsideDownExitMirrorDisperseRamp(4039), EPS);
-        assertEquals(0.0, e.upsideDownExitOwRevealRamp(3239), EPS);            // 0 outside the zone
-        assertEquals(0.0, e.upsideDownExitMirrorDisperseRamp(4040), EPS);
+        assertEquals(0.0, e.upsideDownExitOwRevealRamp(3190), EPS);
+        assertEquals(0.5, e.upsideDownExitOwRevealRamp(3590), EPS);            // 400/800
+        assertEquals(799.0 / 800.0, e.upsideDownExitOwRevealRamp(3989), EPS);
+        assertEquals(1.0, e.upsideDownExitMirrorDisperseRamp(3190), EPS);      // full mirror, continuous with the band
+        assertEquals(0.5, e.upsideDownExitMirrorDisperseRamp(3590), EPS);
+        assertEquals(1.0 / 800.0, e.upsideDownExitMirrorDisperseRamp(3989), EPS);
+        assertEquals(0.0, e.upsideDownExitOwRevealRamp(3189), EPS);            // 0 outside the zone
+        assertEquals(0.0, e.upsideDownExitMirrorDisperseRamp(3990), EPS);
 
-        // Atmosphere: with an exit crossfade present the band's trailing edge HOLDS at 1 (no in-band
-        // fade-out); the sky instead fades 1→0 across the whole exit crossfade.
-        assertEquals(1.0, e.upsideDownRamp(3215), EPS);   // was 0.5 without the exit fade — now held at 1
-        assertEquals(1.0, e.upsideDownRamp(3240), EPS);   // exit start — continuous with the held band
-        assertEquals(0.5, e.upsideDownRamp(3640), EPS);   // half-way down the exit sky fade
-        assertEquals(0.0, e.upsideDownRamp(4040), EPS);   // exit gap — sky back to normal
+        // Atmosphere: the core holds at 1 to its last block (no in-band fade-out); the sky instead fades
+        // 1→0 across the whole exit crossfade.
+        assertEquals(1.0, e.upsideDownRamp(3189), EPS);   // last core block — full strength
+        assertEquals(1.0, e.upsideDownRamp(3190), EPS);   // exit start — continuous with the held band
+        assertEquals(0.5, e.upsideDownRamp(3590), EPS);   // half-way down the exit sky fade
+        assertEquals(0.0, e.upsideDownRamp(3990), EPS);   // exit gap — sky back to normal
     }
 
     @Test
@@ -772,5 +776,63 @@ final class WorldGenCycleTest {
         assertEquals(2L * 300 + 680, endOnly.period());
         assertEquals(0.0, endOnly.netherHeightRamp(500), EPS);
         assertEquals(1.0, endOnly.netherMountainMultiplier(500), EPS);
+    }
+
+    @Test
+    @DisplayName("netherPastCore: false before/inside the core, true from the first column after it to the band end")
+    void netherPastCore() {
+        // Geometry: anchor 1000, owGap 300 → nether band [1300, 1960). Walk it and require exactly one
+        // false→true flip, located right after the last core column, and false outside the band.
+        WorldGenCycle cycle = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);
+        assertFalse(cycle.netherPastCore(1299));
+        assertFalse(cycle.netherPastCore(1960));
+        int lastCore = -1, firstPast = -1, flips = 0;
+        boolean prev = false;
+        for (int x = 1300; x < 1960; x++) {
+            if (cycle.isNetherCore(x)) lastCore = x;
+            boolean past = cycle.netherPastCore(x);
+            if (past && firstPast < 0) firstPast = x;
+            if (past != prev) flips++;
+            prev = past;
+            if (cycle.isNetherCore(x)) assertFalse(past, "core column flagged past-core at x=" + x);
+        }
+        assertEquals(1, flips, "past-core should flip exactly once inside the band");
+        assertEquals(lastCore + 1, firstPast, "past-core must start right after the last core column");
+    }
+
+    @Test
+    @DisplayName("netherCoreGap: 0 in the core, counts away from it on both sides, MAX outside the segment")
+    void netherCoreGap() {
+        WorldGenCycle cycle = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);
+        assertEquals(Integer.MAX_VALUE, cycle.netherCoreGap(1299));
+        assertEquals(Integer.MAX_VALUE, cycle.netherCoreGap(1960));
+        int firstCore = -1, lastCore = -1;
+        for (int x = 1300; x < 1960; x++) {
+            long d = cycle.netherCoreDepth(x);
+            if (d == 0L) firstCore = x;
+            if (d >= 0L) lastCore = x;
+        }
+        assertTrue(firstCore > 0 && lastCore > firstCore, "no core found");
+        assertEquals(0, cycle.netherCoreGap(firstCore));
+        assertEquals(0, cycle.netherCoreGap(lastCore));
+        assertEquals(1, cycle.netherCoreGap(firstCore - 1));
+        assertEquals(1, cycle.netherCoreGap(lastCore + 1));
+        assertEquals(10, cycle.netherCoreGap(firstCore - 10));
+        assertEquals(10, cycle.netherCoreGap(lastCore + 10));
+        for (int x = 1300; x < 1960; x++) {
+            int g = cycle.netherCoreGap(x);
+            assertTrue(g >= 0 && g < 1000, "gap out of range at x=" + x);
+            if (cycle.netherCoreDepth(x) >= 0L) assertEquals(0, g, "core column with gap at x=" + x);
+        }
+    }
+
+    @Test
+    @DisplayName("netherApproachLength is the band-start → core-start distance")
+    void netherApproachLength() {
+        WorldGenCycle cycle = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);
+        int firstCore = -1;
+        for (int x = 1300; x < 1960; x++) if (cycle.netherCoreDepth(x) == 0L) { firstCore = x; break; }
+        assertTrue(firstCore > 0);
+        assertEquals(firstCore - 1300, cycle.netherApproachLength());
     }
 }

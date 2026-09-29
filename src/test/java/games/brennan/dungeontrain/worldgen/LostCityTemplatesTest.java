@@ -122,11 +122,25 @@ class LostCityTemplatesTest {
             int[] size = t.size();
             long padCells = t.blocks().stream().filter(b -> b.pos().getY() == 0).count();
             assertEquals((long) size[0] * size[2], padCells, t.name() + " pad incomplete");
-            assertTrue(t.blocks().stream().anyMatch(b -> b.pos().getY() == 0 && LostCityGroundProcessor.isBase(b.state())),
+            assertTrue(t.blocks().stream().anyMatch(b -> b.pos().getY() == 0 && isBase(b.state())),
                     t.name() + " has no natural ground on its pad");
-            assertTrue(t.blocks().stream().anyMatch(b -> b.pos().getY() == 0 && !LostCityGroundProcessor.isBase(b.state())
+            assertTrue(t.blocks().stream().anyMatch(b -> b.pos().getY() == 0 && !isBase(b.state())
                     && !b.state().isAir()), t.name() + " has no paving on its pad");
         }
+    }
+
+    /**
+     * Pad-layer blocks Lost City Terrain Fit's ground processor reads as natural ground the world may take
+     * (its {@code LostCityGroundProcessor.BASE}, which is package-private there).
+     */
+    private static final java.util.Set<net.minecraft.world.level.block.Block> BASE = java.util.Set.of(
+            Blocks.GRASS_BLOCK, Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.ROOTED_DIRT, Blocks.PODZOL,
+            Blocks.MYCELIUM, Blocks.MUD, Blocks.MOSS_BLOCK, Blocks.STONE, Blocks.ANDESITE, Blocks.GRANITE,
+            Blocks.DIORITE, Blocks.TUFF, Blocks.DEEPSLATE, Blocks.DRIPSTONE_BLOCK, Blocks.GRAVEL, Blocks.SAND,
+            Blocks.RED_SAND, Blocks.CLAY, Blocks.DIRT_PATH, Blocks.FARMLAND, Blocks.SNOW_BLOCK, Blocks.WATER);
+
+    private static boolean isBase(BlockState state) {
+        return BASE.contains(state.getBlock());
     }
 
     @Test

@@ -134,6 +134,12 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
+            // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
+            // traingen trace (DevTraceDefaults) left off.
+            if (project.hasProperty('jitterDebug')) {
+                systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
+            }
             // Local-relay testing seam: point the dev client at a locally-run dp-relay instead of the
             // branch-routed dev/live cap, e.g.
             //   ./gradlew runClient -PrelayBaseUrl=http://127.0.0.1:3005/<CAP>
@@ -182,6 +188,12 @@ neoForge {
             }
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
+            }
+            // Collider-batch A/B seam: ./gradlew runServer -PcolliderBatch=false boots with
+            // ColliderBatch off, so the bootstrap spawn (which runs before any command can reach the
+            // server) can be measured on Sable's per-block path. See ship/sable/ColliderBatch.
+            if (project.hasProperty('colliderBatch')) {
+                systemProperty 'dungeontrain.colliderBatch', project.property('colliderBatch').toString()
             }
             // Versions-page seam: ./gradlew runClient -PmockInstalledVersion=0.800.0 makes the page
             // (and its boot prompt) treat that as the installed version, so the behind state can be
@@ -257,6 +269,12 @@ neoForge {
                 gameDirectory = file(project.property('serverDir').toString())
             }
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
+            // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
+            // traingen trace (DevTraceDefaults) left off.
+            if (project.hasProperty('jitterDebug')) {
+                systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
+            }
             // Same local-relay seam as the client above. The SERVER is what fetches the community
             // book + narrative pools (SharedBookRefreshEvents ticks server-side), so verifying that
             // half against a local dp-relay needs it here too — and a dedicated server needs no GUI,
@@ -293,6 +311,11 @@ neoForge {
             if (project.hasProperty('perfTest')) {
                 systemProperty 'dungeontrain.perfTest', 'true'
             }
+            // Collider-batch A/B seam (see the client run above): boots ColliderBatch off so the
+            // bootstrap spawn can be measured on Sable's per-block path.
+            if (project.hasProperty('colliderBatch')) {
+                systemProperty 'dungeontrain.colliderBatch', project.property('colliderBatch').toString()
+            }
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
             }
@@ -301,6 +324,12 @@ neoForge {
         gameTestServer {
             type = 'gameTestServer'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
+            // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
+            // traingen trace (DevTraceDefaults) left off.
+            if (project.hasProperty('jitterDebug')) {
+                systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
+            }
         }
 
         data {
@@ -519,7 +548,7 @@ dependencies {
     // DH is an optional companion (opt-in in the modpack, `optional` in neoforge.mods.toml) and
     // is not in the dev client; it ships the API classes inside its own jar, so at runtime they
     // are either DH's or absent. The only DT class that names them
-    // (client/DistantHorizonsUpsideDown) is reached behind a ModList check, so nothing tries to
+    // (client/DistantHorizonsSuppression) is reached behind a ModList check, so nothing tries to
     // link them when DH isn't installed. The API artifact version is DH's OWN api version, not the
     // mod version: DH ${distant_horizons_version} reports API ${distant_horizons_api_version}.
     compileOnly "maven.modrinth:distanthorizonsapi:${distant_horizons_api_version}"
@@ -561,6 +590,14 @@ dependencies {
     // Big Lost City — REQUIRED third-party dep (see gradle.properties). Structures only; on the dev
     // classpath so runClient/runServer generate the Lost City era's cities.
     implementation "maven.modrinth:big-lost-city:${biglostcity_version}"
+
+    // Lost City Terrain Fit — sibling mod (same author) that seats Big Lost City's buildings in the
+    // world's terrain (footprint-floor seating, no-carve + fill-only beard, ground/water through the
+    // ruins). Extracted from DT; DT keeps the era placement on top (LostCityStructures). Fetched via the
+    // shared bh679 Ivy repo (flat asset lostcityterrainfit-neoforge-<v>.jar). TEMPORARILY jarJar-bundled
+    // (like EdibleBackpacks) until its Modrinth/CurseForge listings are approved — see gradle.properties.
+    implementation "bh679:lostcityterrainfit:${lostcityterrainfit_version}"
+    jarJar(group: 'bh679', name: 'lostcityterrainfit', version: lostcityterrainfit_version)
 
     // Unit tests — JUnit 5 Jupiter (pure-logic only).
     testImplementation platform('org.junit:junit-bom:5.10.2')
@@ -813,6 +850,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         enderchestpersistence_version    : enderchestpersistence_version,
         tradeeverything_version          : tradeeverything_version,
         ediblebackpacks_version          : ediblebackpacks_version,
+        lostcityterrainfit_version       : lostcityterrainfit_version,
         keeptrim_version                 : keeptrim_version,
         keeptrim_min_version             : keeptrim_min_version,
         pigmanvillagers_min_version      : pigmanvillagers_min_version,

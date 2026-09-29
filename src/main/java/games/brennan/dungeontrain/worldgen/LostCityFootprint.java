@@ -32,7 +32,7 @@ import java.util.List;
  * template's own blocks, at the piece's position, exactly as placement will — and the box's far side along
  * the world direction of the template's axis moves by the plan's growth.</p>
  *
- * <p>Runs from {@code StructureBasementMixin} after {@link LostCitySeating#seat}, since the plan is keyed on
+ * <p>Runs from {@code StructureBasementMixin} after Lost City Terrain Fit's seating, since the plan is keyed on
  * the piece's final position.</p>
  */
 public final class LostCityFootprint {

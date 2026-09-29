@@ -6,6 +6,8 @@ import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
 import games.brennan.dungeontrain.worldgen.density.BandBiomeDecision;
+import games.brennan.dungeontrain.worldgen.density.ColumnBiomePlan;
+import games.brennan.dungeontrain.worldgen.density.LiveColumnProviders;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes;
 import games.brennan.dungeontrain.worldgen.density.OverworldBiomeSourceMark;
@@ -40,6 +42,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Plenty in its second-lap stretch and the band transitions bordering it, vanilla elsewhere
  * ({@link SecondLapOverworld#lookAt}).</p>
  *
+ * <p>The column-level half of the decision (legacy override, band verdict, sampled core biome, stretch
+ * look) is memoised per column by {@link ColumnBiomePlan}, so only the y-dependent quart work — the
+ * highland altitude zone and the climate pick — runs per quart. With the memo off
+ * ({@code /dungeontrain debug biome-memo off}) the hook runs the original per-quart path, which the
+ * memo path reproduces byte for byte.</p>
+ *
  * <p>A cancellable HEAD inject, not a return-value modifier: TerraBlender (Biomes O' Plenty's library)
  * answers this method from its own HEAD inject and cancels, so a RETURN hook never sees its answer. The
  * lower priority applies this mixin first, so its callback runs ahead of TerraBlender's. TerraBlender
@@ -73,18 +81,28 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                                          CallbackInfoReturnable<Holder<Biome>> cir) {
         long genT0 = GenProfiler.t0();
         try {
-            // Legacy bands first: an old generator's column shows its own biome map at every height.
+            NetherBandContext ctx = NetherBandContext.current();
+            // Overworld-only: the Nether also uses a MultiNoiseBiomeSource. The mark (not identity)
+            // also covers TerraBlender's per-chunk clones of the overworld source, and outlives the
+            // context — so a marked source is still answered when the context is gone.
+            boolean overworld = dungeontrain$overworld || (ctx != null && (Object) this == ctx.overworldBiomeSource());
+            MultiNoiseBiomeSource source = (MultiNoiseBiomeSource) (Object) this;
+            OverworldStretchBiomes stretchBiomes = OverworldStretchBiomes.current();
+            if (ColumnBiomePlan.ENABLED && overworld && ctx != null && stretchBiomes != null) {
+                // Memoised path: the column's decision once, the quart's own work every call. Only past
+                // the overworld gate — the core samplers re-enter this hook on other sources.
+                Holder<Biome> forced = dungeontrain$memoisedBiome(ctx, stretchBiomes, source, x, y, z, sampler);
+                if (forced != null) cir.setReturnValue(forced);
+                return;
+            }
+            // Per-quart path (also the A/B baseline). Legacy bands first: an old generator's column
+            // shows its own biome map at every height.
             Holder<Biome> legacy = LegacyBiomes.override(this, x << 2, z << 2);
             if (legacy != null) {
                 cir.setReturnValue(legacy);
                 return;
             }
-            NetherBandContext ctx = NetherBandContext.current();
-            // Overworld-only: the Nether also uses a MultiNoiseBiomeSource. The mark (not identity)
-            // also covers TerraBlender's per-chunk clones of the overworld source, and outlives the
-            // context — so a marked source is still answered when the context is gone.
-            if (!(dungeontrain$overworld || (ctx != null && (Object) this == ctx.overworldBiomeSource()))) return;
-            MultiNoiseBiomeSource source = (MultiNoiseBiomeSource) (Object) this;
+            if (!overworld) return;
             Holder<Biome> forced = ctx == null ? null : dungeontrain$bandBiome(ctx, x, y, z);
             if (forced == null && ctx != null) forced = dungeontrain$stretchBiome(ctx, source, x, y, z, sampler);
             if (forced == null) forced = dungeontrain$vanillaFallback(source, x, y, z, sampler, ctx == null
@@ -109,6 +127,44 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
     }
 
     /**
+     * The quart's biome from its memoised column ({@link ColumnBiomePlan}): the legacy override, else —
+     * at or above sea level — the column's band verdict (sampled core biome, or the altitude-zoned
+     * highland pick), else the stretch pick. Same order and same calls as the per-quart path.
+     */
+    private static Holder<Biome> dungeontrain$memoisedBiome(NetherBandContext ctx, OverworldStretchBiomes stretchBiomes,
+                                                           MultiNoiseBiomeSource source, int x, int y, int z,
+                                                           Climate.Sampler sampler) {
+        int blockX = x << 2;
+        int blockZ = z << 2;
+        ColumnBiomePlan.Column<Holder<Biome>> column = ColumnBiomePlan.column(blockX, blockZ,
+                ctx, stretchBiomes, WorldGenCycle.fromConfig(), LegacyBiomes.token(), WorldGenCycle.reverseSlide(),
+                LiveColumnProviders.forContext(ctx));
+        if (column.legacy() != null) return column.legacy();
+        int blockY = y << 2;
+        if (blockY >= ctx.seaLevel()) {
+            switch (column.aboveSea()) {
+                case NETHER_CORE, END_CORE -> {
+                    if (column.core() != null) return column.core();
+                }
+                case HIGHLAND -> {
+                    // The mountain interior under the cave-band top is a cave biome (lush / dripstone on the
+                    // way in, mostly deep dark after the core). Un-waved X for the pre/post split — core
+                    // columns are never HIGHLAND, so the ±9 wave can't matter.
+                    if (BandBiomeDecision.isCave(column.caveTop(), blockY)) {
+                        return ctx.highlandBiomes().caveBiomeFor(ctx, blockX, blockZ, ctx.cycle().netherPastCore(blockX));
+                    }
+                    // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.
+                    return column.look() == SecondLapOverworld.Stretch.BOP
+                            ? ctx.highlandBiomes().bopBiomeFor(blockX, blockY, blockZ)
+                            : ctx.highlandBiomes().biomeFor(blockX, blockY, blockZ);
+                }
+                default -> { }
+            }
+        }
+        return dungeontrain$pick(stretchBiomes, column.look(), source, x, y, z, sampler);
+    }
+
+    /**
      * A vanilla pick needing no published context — never TerraBlender's, which could be BoP. Debug-level:
      * a failed publish sends every overworld query here for the session. (The stronghold-ring search no
      * longer does: it waits for the publish — see {@code StrongholdRingGate}.)
@@ -126,7 +182,18 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         OverworldStretchBiomes stretchBiomes = OverworldStretchBiomes.current();
         if (stretchBiomes == null) return null;
         WorldGenCycle cycle = ctx.cycle();   // base cycle even in the mix zone: see dungeontrain$bandBiome
-        return stretchBiomes.pick(SecondLapOverworld.lookAt(cycle, x << 2), source, x, y, z, sampler);
+        return dungeontrain$pick(stretchBiomes, SecondLapOverworld.lookAt(cycle, x << 2), source, x, y, z, sampler);
+    }
+
+    /** The climate pick for the quart — the work vanilla itself would do; timed as the {@code pick=} sub-bucket. */
+    private static Holder<Biome> dungeontrain$pick(OverworldStretchBiomes stretchBiomes, SecondLapOverworld.Stretch look,
+                                                 MultiNoiseBiomeSource source, int x, int y, int z, Climate.Sampler sampler) {
+        long pickT0 = GenProfiler.t0();
+        try {
+            return stretchBiomes.pick(look, source, x, y, z, sampler);
+        } finally {
+            GenProfiler.add(GenProfiler.Bucket.BIOME_PICK, pickT0);
+        }
     }
 
     /** The forced Nether-core / End-core / highland biome, or {@code null} for an ordinary column. */
@@ -149,7 +216,7 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
             case NETHER_CORE:
                 // Per-biome fog/ambient/music + the Nether decoration features' own biome filter
                 // pass so they place in NetherTransitionFeature. The order's :better passes are BetterNether.
-                return ctx.netherCoreBiomes().biomeAt(blockX, blockZ, cycle.netherLookAt(blockX));
+                return ctx.netherCoreBiomes().biomeAt(blockX, blockZ, cycle.netherLookAt(blockX, blockZ, ctx.netherCoreBiomes().seed()));
             case END_CORE:
                 // Sample the real End's biome source (all five End biomes, swept across successive
                 // End-band passes — see EndCoreBiomes) so world label, surface skin and decoration agree.
@@ -157,6 +224,13 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                 long endPass = cycle.endSourcePassAt(blockX, blockZ, ctx.generationSeed());
                 return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, cycle.endStyleOfPass(endPass));
             case HIGHLAND:
+                // The mountain interior under the cave-band top is a cave biome (lush / dripstone on the way
+                // in, mostly deep dark after the core). Un-waved X for the pre/post split — core columns are
+                // never HIGHLAND, so the ±9 wave can't matter.
+                if (BandBiomeDecision.isCave(BandBiomeDecision.caveWindowTop(cycle, ctx.generationSeed(), ctx.seaLevel(),
+                        ctx.worldCeiling(), ctx.netherTop(), ctx.baseRelief(), blockX, blockZ), blockY)) {
+                    return ctx.highlandBiomes().caveBiomeFor(ctx, blockX, blockZ, cycle.netherPastCore(blockX));
+                }
                 // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.
                 return SecondLapOverworld.lookAt(cycle, blockX) == SecondLapOverworld.Stretch.BOP
                         ? ctx.highlandBiomes().bopBiomeFor(blockX, blockY, blockZ)
