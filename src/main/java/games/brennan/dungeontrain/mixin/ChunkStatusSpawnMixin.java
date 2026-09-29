@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.MirrorPlanCache;
 import games.brennan.dungeontrain.worldgen.UpsideDownMirror;
+import games.brennan.dungeontrain.worldgen.feature.NetherFoliageStrip;
 import net.minecraft.server.level.GenerationChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.StaticCache2D;
@@ -48,11 +49,15 @@ public abstract class ChunkStatusSpawnMixin {
             WorldGenContext worldGenContext, ChunkStep step,
             StaticCache2D<GenerationChunkHolder> cache, ChunkAccess chunk,
             CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir) {
+        ServerLevel level = worldGenContext.level();
+        if (!level.dimension().equals(Level.OVERWORLD)) return; // bands are overworld-only; excludes Sable sub-levels
+        precomputeMirror(level, chunk);
+        precomputeNetherFoliageStrip(level, chunk);
+    }
+
+    private static void precomputeMirror(ServerLevel level, ChunkAccess chunk) {
         try {
             if (!DungeonTrainCommonConfig.isUpsideDownMirrorPrecompute()) return;
-            ServerLevel level = worldGenContext.level();
-            if (!level.dimension().equals(Level.OVERWORLD)) return; // band is overworld-only; excludes Sable sub-levels
-
             long genT0 = GenProfiler.t0();
             UpsideDownMirror.MirrorPlan plan = UpsideDownMirror.compute(level, chunk);
             GenProfiler.add(GenProfiler.Bucket.MIRROR_PRECOMPUTE, genT0);
@@ -62,6 +67,26 @@ public abstract class ChunkStatusSpawnMixin {
         } catch (Throwable t) {
             // Never break worldgen — the load-time handler's inline fallback still produces correct terrain.
             LOGGER.error("[DungeonTrain] upside-down mirror precompute failed at {}; using load-time fallback",
+                    chunk.getPos(), t);
+        }
+    }
+
+    /**
+     * Same split for the Nether-band foliage strip: the read-only scan ({@link NetherFoliageStrip#compute})
+     * runs here on the worker, the few writes at Load ({@code NetherTransitionEvents}). Byte-identical result;
+     * a failure or a disabled toggle just means the Load handler scans inline.
+     */
+    private static void precomputeNetherFoliageStrip(ServerLevel level, ChunkAccess chunk) {
+        try {
+            if (!DungeonTrainCommonConfig.isNetherFoliageStripPrecompute()) return;
+            long genT0 = GenProfiler.t0();
+            NetherFoliageStrip.Plan plan = NetherFoliageStrip.compute(level, chunk);
+            GenProfiler.add(GenProfiler.Bucket.NETHER_STRIP_PRECOMPUTE, genT0);
+            if (plan != null) {
+                NetherFoliageStrip.CACHE.put(chunk.getPos().toLong(), plan);
+            }
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] Nether foliage strip precompute failed at {}; using load-time fallback",
                     chunk.getPos(), t);
         }
     }
