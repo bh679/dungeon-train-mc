@@ -3630,8 +3630,10 @@
   "gui.dungeontrain.options.book_author_chat.tip": "In một dòng chat nêu tên tác giả mỗi khi một cuốn sách của Dungeon Train bốc cháy — \"Cuốn sách của X bốc cháy\". Những cuốn bạn đọc, bạn vứt đi hay đánh rơi lúc chết đều bắt lửa, và đây là chỗ duy nhất người viết chúng được ghi công. Mặc định tắt.",
   "gui.dungeontrain.options.update_notice_chat": "Thông báo phiên bản mới",
   "gui.dungeontrain.options.update_notice_chat.tip": "Hiện tin nhắn trong khung chat khi Dungeon Train ra phiên bản mới trong lúc bạn đang chơi, kèm liên kết tới nội dung mới. Chỉ thông báo các bản phát hành chính thức, không thông báo các bản nhỏ tự động. Bật theo mặc định.",
-  "gui.dungeontrain.options.low_memory_notice_chat": "Thông báo bộ nhớ trong chat",
-  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Mỗi phiên một lần, hiện một dòng trong chat nếu Minecraft được cấp dưới 5 GB bộ nhớ trên máy tính có 8 GB trở lên, kèm liên kết hướng dẫn cấp 6 GB trở lên trong launcher. Mặc định bật.",
+  "gui.dungeontrain.options.low_memory_notice_chat": "Cảnh báo thiếu bộ nhớ",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Mỗi phiên một lần, hiện một cửa sổ bật lên ở màn hình tiêu đề và một dòng trong chat nếu Minecraft được cấp dưới 5 GB bộ nhớ trên máy tính có 8 GB trở lên, kèm liên kết hướng dẫn cấp 6 GB trở lên trong launcher. Mặc định bật.",
+  "gui.dungeontrain.low_memory_notice.toast.title": "Thiếu bộ nhớ: %s GB",
+  "gui.dungeontrain.low_memory_notice.toast.body": "Hãy cấp 6 GB trở lên trong launcher để chơi mượt hơn.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Thế giới này đang bật \"Giữ hành trang\".",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train được cân bằng quanh việc cái chết phải lấy đi của bạn thứ gì đó, nên từ đây thế giới này giữ thống kê của riêng nó. Tắt lại luật chơi cũng không đổi được điều đó — số đồ bạn mang qua một lần chết thì đã là của bạn rồi."
 }

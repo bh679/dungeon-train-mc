@@ -6,6 +6,9 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.util.MachineSpecs;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.ClickEvent;
@@ -17,12 +20,14 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.slf4j.Logger;
 
 import java.util.Locale;
 
 /**
- * Tells a player, once per game session, that Minecraft has been given too little memory.
+ * Tells a player, once per game session, that Minecraft has been given too little memory — as a
+ * toast on the title screen at boot, then as a chat line on the first world join.
  *
  * <p>Lag reports from players on the launcher-default {@code -Xmx4g} showed the heap all but full
  * (3.4–3.7 GB in use of ~3.8 GB) — the garbage collector running constantly, costing tick time and
@@ -31,8 +36,10 @@ import java.util.Locale;
  *
  * <p>Only nags when the advice is actionable: a machine with less than ~8 GB of RAM has nothing
  * spare to give, and an unreadable reading ({@code 0} from {@link MachineSpecs}) is treated as
- * unknown, never as "low". One chat line, with a link explaining how and a "don't show again" link
- * that turns {@link ClientDisplayConfig#LOW_MEMORY_NOTICE_CHAT} off through a client command.</p>
+ * unknown, never as "low". The toast catches the player before they start (there is no chat at the
+ * title screen); the chat line carries what a toast can't — a link explaining how, and a "don't show
+ * again" link that turns {@link ClientDisplayConfig#LOW_MEMORY_NOTICE_CHAT} off through a client
+ * command. That one toggle silences both.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LowMemoryNotice {
@@ -55,6 +62,8 @@ public final class LowMemoryNotice {
 
     static final String COMMAND = "dt-memory-notice";
 
+    /** Once per game session: set on the first title screen that got as far as deciding. */
+    private static boolean toastShownThisSession;
     /** Once per game session: set on the first world join that got as far as deciding. */
     private static boolean shownThisSession;
 
@@ -75,6 +84,19 @@ public final class LowMemoryNotice {
         return rounded == Math.rint(rounded)
             ? String.format(Locale.ROOT, "%.0f", rounded)
             : String.format(Locale.ROOT, "%.1f", rounded);
+    }
+
+    @SubscribeEvent
+    public static void onScreenInit(ScreenEvent.Init.Post event) {
+        if (!(event.getScreen() instanceof TitleScreen)) return;
+        if (toastShownThisSession || !ClientDisplayConfig.isLowMemoryNoticeChatEnabled()) return;
+        toastShownThisSession = true;
+        long heap = MachineSpecs.maxHeapBytes();
+        if (!shouldWarn(heap, MachineSpecs.physicalMemoryBytes())) return;
+        Minecraft mc = Minecraft.getInstance();
+        mc.getToasts().addToast(SystemToast.multiline(mc, SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+            Component.translatable("gui.dungeontrain.low_memory_notice.toast.title", formatGb(heap)),
+            Component.translatable("gui.dungeontrain.low_memory_notice.toast.body")));
     }
 
     @SubscribeEvent

@@ -3673,8 +3673,10 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Zet elke keer dat een Dungeon Train-boek verbrandt een chatregel met de naam van de auteur neer — \"Het boek van X verbrandt\". De boeken die je leest, weggooit of bij je dood laat vallen vatten allemaal vlam, en dit is de enige plek waar hun schrijver wordt genoemd. Standaard uit.",
   "gui.dungeontrain.options.update_notice_chat": "Chat bij nieuwe versie",
   "gui.dungeontrain.options.update_notice_chat.tip": "Toont een chatbericht wanneer er een nieuwe versie van Dungeon Train uitkomt terwijl je speelt, met een link naar wat er nieuw is. Alleen echte releases worden aangekondigd, niet de kleine automatische. Standaard aan.",
-  "gui.dungeontrain.options.low_memory_notice_chat": "Geheugenmelding in chat",
-  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Toont één keer per sessie een chatbericht als Minecraft minder dan 5 GB geheugen heeft op een computer met 8 GB of meer, met een link die uitlegt hoe je in je launcher 6 GB of meer toewijst. Standaard aan.",
+  "gui.dungeontrain.options.low_memory_notice_chat": "Waarschuwing weinig geheugen",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Toont één keer per sessie een pop-up op het titelscherm en een chatbericht als Minecraft minder dan 5 GB geheugen heeft op een computer met 8 GB of meer, met een link die uitlegt hoe je in je launcher 6 GB of meer toewijst. Standaard aan.",
+  "gui.dungeontrain.low_memory_notice.toast.title": "Weinig geheugen: %s GB",
+  "gui.dungeontrain.low_memory_notice.toast.body": "Wijs in je launcher 6 GB of meer toe voor soepeler spelen.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "In deze wereld staat \"Inventaris behouden\" aan.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train is erop afgestemd dat doodgaan je iets kost, dus vanaf hier houdt deze wereld haar statistieken voor zichzelf. De spelregel weer uitzetten verandert daar niets aan — de spullen die je door een dood heen meedroeg zijn al van jou."
 }

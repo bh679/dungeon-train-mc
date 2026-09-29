@@ -272,7 +272,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue BOOK_AUTHOR_BURN_CHAT;
     /** Chat line when a new Dungeon Train release lands mid-session — see {@code LiveUpdateNotice}. */
     public static final ModConfigSpec.BooleanValue UPDATE_NOTICE_CHAT;
-    /** Once-a-session chat line when the game has too little memory — see {@code LowMemoryNotice}. */
+    /** Once-a-session toast + chat line when the game has too little memory — see {@code LowMemoryNotice}. */
     public static final ModConfigSpec.BooleanValue LOW_MEMORY_NOTICE_CHAT;
 
     /**
@@ -746,9 +746,9 @@ public final class ClientDisplayConfig {
                          "every 10 minutes while you are in a world; nothing about you is sent. On by default.")
                 .define("updateNoticeChat", true);
         ModConfigSpec.BooleanValue lowMemoryNoticeChat = b
-                .comment("Print one chat line per game session when Minecraft has been given less than 5 GB of",
-                         "memory on a computer with 8 GB or more, suggesting you allocate 6 GB or more in your",
-                         "launcher. Nothing is sent anywhere. On by default.")
+                .comment("Once per game session, show a popup on the title screen and one chat line when Minecraft",
+                         "has been given less than 5 GB of memory on a computer with 8 GB or more, suggesting you",
+                         "allocate 6 GB or more in your launcher. Nothing is sent anywhere. On by default.")
                 .define("lowMemoryNoticeChat", true);
         b.pop();
 

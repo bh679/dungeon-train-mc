@@ -3630,8 +3630,10 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Menulis satu baris sembang yang menamakan penulisnya setiap kali sebuah buku Dungeon Train terbakar — \"Buku karya X terbakar\". Buku yang anda baca, anda buang, atau anda jatuhkan ketika mati semuanya terbakar, dan hanya di sinilah penulisnya dikreditkan. Dimatikan secara lalai.",
   "gui.dungeontrain.options.update_notice_chat": "Chat Versi Baharu",
   "gui.dungeontrain.options.update_notice_chat.tip": "Paparkan mesej dalam chat apabila versi baharu Dungeon Train dikeluarkan semasa anda bermain, dengan pautan ke apa yang baharu. Hanya keluaran sebenar diumumkan, bukan keluaran kecil automatik. Hidup secara lalai.",
-  "gui.dungeontrain.options.low_memory_notice_chat": "Notis Memori dalam Sembang",
-  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Sekali setiap sesi, paparkan mesej dalam sembang jika Minecraft diberi kurang daripada 5 GB memori pada komputer dengan 8 GB atau lebih, bersama pautan cara memperuntukkan 6 GB atau lebih dalam pelancar anda. Hidup secara lalai.",
+  "gui.dungeontrain.options.low_memory_notice_chat": "Amaran Memori Rendah",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Sekali setiap sesi, paparkan pop timbul pada skrin tajuk dan satu mesej dalam sembang jika Minecraft diberi kurang daripada 5 GB memori pada komputer dengan 8 GB atau lebih, bersama pautan cara memperuntukkan 6 GB atau lebih dalam pelancar anda. Hidup secara lalai.",
+  "gui.dungeontrain.low_memory_notice.toast.title": "Memori rendah: %s GB",
+  "gui.dungeontrain.low_memory_notice.toast.body": "Peruntukkan 6 GB atau lebih dalam pelancar anda untuk permainan yang lebih lancar.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Dalam dunia ini \"Simpan Inventori\" sedang dihidupkan.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train diimbangi atas dasar bahawa kematian merugikan anda sesuatu, jadi mulai sekarang dunia ini menyimpan statistiknya sendiri. Mematikan semula peraturan permainan itu tidak akan mengubahnya — kelengkapan yang anda bawa merentasi satu kematian sudah pun menjadi milik anda."
 }

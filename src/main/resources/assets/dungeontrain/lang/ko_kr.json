@@ -3630,8 +3630,10 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Dungeon Train의 책이 탈 때마다 지은이의 이름을 담은 채팅 한 줄을 남깁니다 — \"X 님의 책이 타오릅니다\". 읽은 책도, 버린 책도, 죽으며 떨어뜨린 책도 모두 불타지만, 쓴 사람의 이름이 남는 곳은 여기뿐입니다. 기본값은 꺼짐.",
   "gui.dungeontrain.options.update_notice_chat": "새 버전 채팅 알림",
   "gui.dungeontrain.options.update_notice_chat.tip": "플레이 중에 Dungeon Train 새 버전이 출시되면 새로운 내용 링크와 함께 채팅으로 알려 줍니다. 정식 릴리스만 알리며, 작은 자동 릴리스는 알리지 않습니다. 기본값은 켜짐입니다.",
-  "gui.dungeontrain.options.low_memory_notice_chat": "메모리 부족 채팅 알림",
-  "gui.dungeontrain.options.low_memory_notice_chat.tip": "8 GB 이상인 컴퓨터에서 Minecraft에 할당된 메모리가 5 GB 미만이면, 세션마다 한 번 채팅으로 알리고 런처에서 6 GB 이상을 할당하는 방법 링크를 보여줍니다. 기본값은 켜짐입니다.",
+  "gui.dungeontrain.options.low_memory_notice_chat": "메모리 부족 경고",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "8 GB 이상인 컴퓨터에서 Minecraft에 할당된 메모리가 5 GB 미만이면, 세션마다 한 번 타이틀 화면 팝업과 채팅으로 알리고 런처에서 6 GB 이상을 할당하는 방법 링크를 보여줍니다. 기본값은 켜짐입니다.",
+  "gui.dungeontrain.low_memory_notice.toast.title": "메모리 부족: %s GB",
+  "gui.dungeontrain.low_memory_notice.toast.body": "더 부드럽게 플레이하려면 런처에서 6 GB 이상을 할당하세요.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "이 세계에서는 '인벤토리 유지'가 켜져 있습니다.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train은 죽음이 무언가를 앗아간다는 전제로 맞춰져 있습니다. 그래서 이 세계는 지금부터의 통계를 자기 안에만 남깁니다. 게임 규칙을 다시 끈다고 달라지지 않습니다 — 죽음을 지나 들고 온 장비는 이미 당신의 것입니다."
 }

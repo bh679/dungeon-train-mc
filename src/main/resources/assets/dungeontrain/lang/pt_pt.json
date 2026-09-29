@@ -3673,8 +3673,10 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Escreve no chat uma linha com o nome do autor sempre que um livro do Dungeon Train arde — «O livro de X arde». Os livros que lês, deitas fora ou deixas cair ao morrer ardem todos, e este é o único sítio onde quem os escreveu é creditado. Desligado por predefinição.",
   "gui.dungeontrain.options.update_notice_chat": "Chat de nova versão",
   "gui.dungeontrain.options.update_notice_chat.tip": "Mostra uma mensagem no chat quando é lançada uma nova versão do Dungeon Train enquanto jogas, com uma ligação para as novidades. Só as versões a sério são anunciadas, não as pequenas automáticas. Ativado por predefinição.",
-  "gui.dungeontrain.options.low_memory_notice_chat": "Aviso de memória no chat",
-  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Uma vez por sessão, mostra uma mensagem no chat se o Minecraft tiver menos de 5 GB de memória num computador com 8 GB ou mais, com uma ligação a explicar como atribuir 6 GB ou mais no teu launcher. Ativado por predefinição.",
+  "gui.dungeontrain.options.low_memory_notice_chat": "Aviso de pouca memória",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Uma vez por sessão, mostra um pop-up no ecrã de título e uma mensagem no chat se o Minecraft tiver menos de 5 GB de memória num computador com 8 GB ou mais, com uma ligação a explicar como atribuir 6 GB ou mais no teu launcher. Ativado por predefinição.",
+  "gui.dungeontrain.low_memory_notice.toast.title": "Pouca memória: %s GB",
+  "gui.dungeontrain.low_memory_notice.toast.body": "Atribui 6 GB ou mais no teu launcher para o jogo correr com mais fluidez.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Neste mundo, «Manter inventário» está ligado.",
   "chat.dungeontrain.free_play.keep_inventory_on": "O Dungeon Train está equilibrado em torno de morrer custar-te alguma coisa, por isso deste ponto em diante este mundo guarda as suas próprias estatísticas. Voltar a desligar a regra de jogo não muda isso — o equipamento que levaste contigo através de uma morte já é teu."
 }

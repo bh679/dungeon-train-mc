@@ -115,7 +115,9 @@
       "gui.dungeontrain.builder.profile.name.rename_existing",
       "gui.dungeontrain.builder.room_size.tooltip",
       "gui.dungeontrain.builder.open.tiles_per_row.tooltip",
-      "gui.dungeontrain.custom_content.card.custom.tag"
+      "gui.dungeontrain.custom_content.card.custom.tag",
+      "gui.dungeontrain.options.low_memory_notice_chat",
+      "gui.dungeontrain.options.low_memory_notice_chat.tip"
     ],
     "adventureitemnames": [],
     "playermob": [],
