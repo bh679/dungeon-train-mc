@@ -44,7 +44,7 @@ public final class EditorIcons {
             case "redo" -> REDO;
             case "reset" -> RESET;
             case "clear" -> CLEAR;
-            case "package" -> PACKAGE;
+            case "package", "open_files" -> PACKAGE;
             // Re-parenting is a group operation, so it wears the group sprite.
             case "move" -> GROUP;
             case "submit" -> SUBMIT;

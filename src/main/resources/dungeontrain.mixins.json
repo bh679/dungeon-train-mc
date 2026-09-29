@@ -52,6 +52,7 @@
     "SpreadingSnowyDirtBlockUpsideDownMixin",
     "SnowLayerBlockUpsideDownMixin",
     "CropBlockCarriageSurviveMixin",
+    "FastPaintingStampSurviveMixin",
     "ObserverBlockStampMixin",
     "FlowingFluidUpsideDownMixin",
     "FallingBlockUpsideDownMixin",
