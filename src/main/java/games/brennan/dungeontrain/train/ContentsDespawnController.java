@@ -41,7 +41,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class ContentsDespawnController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
+    private static final Logger LOGGER = LoggerFactory.getLogger(games.brennan.dungeontrain.util.DtLogging.JITTER);
+    /** The 2 s {@code [despawn] dim=} window summary (read by scripts/perf/analyze.py), kept in players' logs. */
+    private static final Logger PERF_LOGGER = LoggerFactory.getLogger(games.brennan.dungeontrain.util.DtLogging.PERF);
 
     /**
      * Master switch, mirroring {@code PhysicsFreezeController.ENABLED}. Turning it off restores every
@@ -303,7 +305,7 @@ public final class ContentsDespawnController {
         restoredWindow += restored;
 
         if (lastSnapshotted > 0 && level.getGameTime() % LOG_PERIOD_TICKS == 0) {
-            LOGGER.debug("[despawn] dim={} groups={} away={} snapshotted={} entitiesHeld={} swept={} restored={}",
+            PERF_LOGGER.debug("[despawn] dim={} groups={} away={} snapshotted={} entitiesHeld={} swept={} restored={}",
                 level.dimension().location(), lastGroups, lastAway, lastSnapshotted, lastEntitiesHeld,
                 sweptWindow, restoredWindow);
             sweptWindow = 0;

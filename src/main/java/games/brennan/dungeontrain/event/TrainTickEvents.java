@@ -104,6 +104,9 @@ public final class TrainTickEvents {
     /** Period (ticks) for the steady-state {@code [mspt]} sample line. 40t = 2s. */
     private static final int MSPT_LOG_PERIOD_TICKS = 40;
 
+    /** Below this total drain time (it prints as 0.00 ms) an applied==0 {@code [ud-drain.win]} window is skipped. */
+    private static final long UD_DRAIN_WIN_IDLE_NANOS = 5_000L;
+
     /**
      * Distance ahead of the lead carriage along velocity that
      * {@link #killEntitiesAhead} sweeps each tick. 8 blocks at 2 m/s ≈ 0.1
@@ -596,10 +599,15 @@ public final class TrainTickEvents {
                 applied, pending.size(), ready.size(), String.format("%.2f", elapsed / 1_000_000.0));
         }
         if (level.getGameTime() % MSPT_LOG_PERIOD_TICKS == 0) {
-            PERF_LOGGER.debug("[ud-drain.win] mode={} totalMs={} applied={} backlog={} ready={}",
-                mirrorDrainLegacy ? "legacy" : "ready",
-                String.format("%.2f", winDrainNanos / 1_000_000.0),
-                winApplied, pending.size(), ready.size());
+            // A window whose drain cost rounds to 0.00 ms with nothing applied says nothing (and
+            // repeats per dimension every 2 s); any window with measurable cost still logs, which
+            // keeps the applied==0 frontier-waste case the A/B reads.
+            if (winApplied > 0 || winDrainNanos >= UD_DRAIN_WIN_IDLE_NANOS) {
+                PERF_LOGGER.debug("[ud-drain.win] mode={} totalMs={} applied={} backlog={} ready={}",
+                    mirrorDrainLegacy ? "legacy" : "ready",
+                    String.format("%.2f", winDrainNanos / 1_000_000.0),
+                    winApplied, pending.size(), ready.size());
+            }
             winDrainNanos = 0L;
             winApplied = 0;
         }
