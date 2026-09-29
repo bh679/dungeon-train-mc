@@ -20634,9 +20634,9 @@
       ],
       "pr": 1656,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1022.0",
+      "released_at": "2026-09-29T05:42:33Z"
     },
     {
       "id": "preserve-community-book-layout",
@@ -20655,9 +20655,9 @@
       ],
       "pr": 1657,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1022.0",
+      "released_at": "2026-09-29T05:42:33Z"
     }
   ]
 }
