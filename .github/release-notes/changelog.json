@@ -21029,6 +21029,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "test-the-carriage-track-pieces",
+      "version": "0.1044.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Test the Carriage for track pieces",
+      "summary": "Track, pillar, stairs and tunnel templates can now be tested from the editor, with a carriage standing right where the piece is.",
+      "highlights": [],
+      "pr": 1685,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
