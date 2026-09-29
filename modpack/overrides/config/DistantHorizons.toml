@@ -1,0 +1,29 @@
+# Distant Horizons — Dungeon Train modpack defaults (low-CPU mode).
+#
+# DH is shipped OFF in this pack; this file only matters once a player enables it. It is a
+# partial config: DH fills every key not listed here with its own default, and re-saves the full
+# file on exit. Why these values exist: player lag reports showed DH's LOD generator threads
+# starving the server + Sable physics threads on small CPUs (4 cores: 91 ms ticks with nothing
+# nearby). DH's relative "CPU load" preset is GUI-only (never written to this file), so the
+# absolute values behind its MINIMAL_IMPACT preset are set directly. Players with big CPUs can
+# raise them in DH's settings — but note a pack update rewrites this file (see modpack/README.md).
+_version = 3
+
+[common]
+	[common.multiThreading]
+		# 1 thread at 50% duty == DH's MINIMAL_IMPACT preset on any CPU up to 10 threads
+		# (DH's default, BALANCED, is ceil(cores/2) threads at 100%).
+		numberOfThreads = 1
+		threadRunTimeRatio = "0.5"
+		# Below-normal Java priority so the OS favours the server / physics / render threads
+		# when everything is contended (effective on Windows; harmless where ignored).
+		threadPriority = 3
+
+[client]
+	[client.advanced]
+		[client.advanced.graphics]
+			[client.advanced.graphics.quality]
+				# 128 chunks (2 km) instead of DH's default 256: a quarter of the LOD area to
+				# generate and hold. The Dungeon Train world is a strip along the track, so the
+				# far off-axis LODs are never looked at.
+				lodChunkRenderDistanceRadius = 128

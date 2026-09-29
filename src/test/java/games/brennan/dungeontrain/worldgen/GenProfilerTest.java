@@ -67,12 +67,13 @@ final class GenProfilerTest {
     }
 
     @Test
-    @DisplayName("Sample math: dtTotalMs includes DISINTEGRATION but excludes CORE_REPLACE + EROSION")
+    @DisplayName("Sample math: dtTotalMs includes DISINTEGRATION but excludes CORE_REPLACE + NETHER_DECO + EROSION")
     void sampleMathTotalBuckets() {
         long[] nanos = new long[GenProfiler.Bucket.values().length];
         nanos[GenProfiler.Bucket.DF.ordinal()] = 1_000_000;             // 1.0 ms
         nanos[GenProfiler.Bucket.NETHER_FEATURE.ordinal()] = 2_000_000; // 2.0 ms (includes core)
         nanos[GenProfiler.Bucket.CORE_REPLACE.ordinal()] = 5_000_000;   // 5.0 ms — sub-portion of nether, NOT re-added
+        nanos[GenProfiler.Bucket.NETHER_DECO.ordinal()] = 4_000_000;    // 4.0 ms — sub-portion of nether, NOT re-added
         nanos[GenProfiler.Bucket.BIOME_FORCE.ordinal()] = 500_000;      // 0.5 ms
         nanos[GenProfiler.Bucket.DISINTEGRATION.ordinal()] = 3_000_000; // 3.0 ms — worker-thread, counted in total
         nanos[GenProfiler.Bucket.EROSION.ordinal()] = 7_000_000;        // 7.0 ms — main-thread, NOT in worker total
@@ -82,6 +83,7 @@ final class GenProfilerTest {
         assertEquals(1.0 + 2.0 + 0.5 + 3.0, s.dtTotalMs(), 1e-9);
         assertEquals((1.0 + 2.0 + 0.5 + 3.0) / 4.0, s.dtTotalPerChunkMs(), 1e-9);
         assertEquals(5.0 / 4.0, s.perChunkMs(GenProfiler.Bucket.CORE_REPLACE), 1e-9);
+        assertEquals(4.0 / 4.0, s.perChunkMs(GenProfiler.Bucket.NETHER_DECO), 1e-9);
         assertEquals(3.0 / 4.0, s.perChunkMs(GenProfiler.Bucket.DISINTEGRATION), 1e-9);
         assertEquals(7.0 / 4.0, s.perChunkMs(GenProfiler.Bucket.EROSION), 1e-9);
         assertEquals(0.0, s.perChunkMs(GenProfiler.Bucket.MIRROR_PRECOMPUTE), 1e-9);
