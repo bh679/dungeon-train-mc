@@ -8,11 +8,17 @@ of NBT and the unattached-block-entity crash can never reach them.
 import random
 from typing import Callable
 
-from .blocks import (AIR, BOOKSHELF, CAULDRON, COBWEB, CRAFTING_TABLE, DEAD_BUSH, FLOWER_POT, GRAY_CARPET, HAY, LANTERN,
-                     LIGHT_GRAY_CARPET, LOOM, NOTE_BLOCK, OAK_SLAB, OAK_STAIRS, RED_CARPET, SMITHING_TABLE, SMOOTH_STONE_SLAB,
-                     SPRUCE_SLAB, SPRUCE_STAIRS, STEEL_BARS, STEEL_CHAIN, WHITE_CARPET, BlockState)
+from .blocks import (AIR, BOOKSHELF, CAULDRON, CHISELED_BOOKSHELF, COBBLESTONE, COBWEB, CRACKED_STONE_BRICKS, CRAFTING_TABLE,
+                     DEAD_BUSH, FERN, FLOWER_POT, GRAY_CARPET, HANGING_ROOTS, HAY, LANTERN, LIGHT_GRAY_CARPET, LOOM, MOSS_CARPET,
+                     MOSSY_COBBLESTONE, NOTE_BLOCK, OAK_SLAB, OAK_STAIRS, RED_CARPET, SHORT_GRASS, SMITHING_TABLE, SMOOTH_STONE_SLAB,
+                     SPRUCE_PLANKS_STAGE, SPRUCE_SLAB, SPRUCE_STAIRS, STEEL_BARS, STEEL_CHAIN, TUFF, WHITE_CARPET, BlockState, block,
+                     loot_chest, spawner)
 from .canvas import Canvas, Pos
-from .shapes import disc
+from .shapes import box as fill_box, disc, walls as wall_box
+
+RUBBLE_IN = (COBBLESTONE, MOSSY_COBBLESTONE, CRACKED_STONE_BRICKS, TUFF)
+SOLID_NOT = ("slab", "stairs", "pane", "bars", "carpet", "vine", "chain", "ladder", "lantern", "fence", "trapdoor", "door",
+             "bush", "grass", "fern", "leaves", "azalea", "roots", "pot", "web", "glass")
 
 Box = tuple[int, int, int, int]   # x0, z0, x1, z1
 Prop = Callable[[Canvas, random.Random, Pos], None]
@@ -134,8 +140,9 @@ def floor_cells(canvas: Canvas, box: Box, y: int) -> list[Pos]:
     return out
 
 
-def kit(canvas: Canvas, seed: int, kind: str, box: Box, ys, density: float = 0.06) -> None:
-    """Scatter a kit's props over the free floor cells of each floor height in `ys`, clustered."""
+def kit(canvas: Canvas, seed: int, kind: str, box: Box, ys, density: float = 0.06, ruin: dict | None = None) -> None:
+    """Scatter a kit's props over the free floor cells of each floor height in `ys`, clustered, then let the
+    rooms go to ruin (`ruin_interior`, with any overrides in `ruin`)."""
     rng = random.Random(seed ^ (sum(map(ord, kind)) & 0xFFFF))
     props = KITS[kind]
     weights = [w for w, _ in props]
@@ -147,6 +154,130 @@ def kit(canvas: Canvas, seed: int, kind: str, box: Box, ys, density: float = 0.0
                 pos = (cx + rng.randint(-1, 1), cy, cz + rng.randint(-1, 1))
                 if _free(canvas, pos) and canvas.get((pos[0], cy - 1, pos[2])) not in (None, AIR):
                     rng.choices(props, weights)[0][1](canvas, rng, pos)
+    ruin_interior(canvas, seed, box, ys, **(ruin or {}))
+
+
+def _solid(state: BlockState | None) -> bool:
+    return state is not None and state != AIR and not any(p in state.name for p in SOLID_NOT)
+
+
+def _wall_beside(canvas: Canvas, pos: Pos) -> str | None:
+    """The side on which a solid wall touches this cell, as the vine property that hangs on it."""
+    x, y, z = pos
+    for dx, dz, face in ((1, 0, "east"), (-1, 0, "west"), (0, 1, "south"), (0, -1, "north")):
+        if _solid(canvas.get((x + dx, y, z + dz))):
+            return face
+    return None
+
+
+def ruin_interior(canvas: Canvas, seed: int, box: Box, ys, cobweb: float = 0.10, moss: float = 0.12, rubble: float = 0.03,
+                  vines: float = 0.06, roots: float = 0.05, weeds: float = 0.04) -> None:
+    """Every room broken in: moss and weeds on the floor, rubble against the walls, cobwebs in the ceiling
+    corners, vines down the inside of the walls, roots through the ceiling."""
+    rng = random.Random(seed ^ 0x2E1D)
+    x0, z0, x1, z1 = box
+    for y in ys:
+        for z in range(z0, z1 + 1):
+            for x in range(x0, x1 + 1):
+                _ruin_column(canvas, rng, (x, y, z), cobweb, moss, rubble, vines, roots, weeds)
+
+
+def _ruin_column(canvas: Canvas, rng: random.Random, pos: Pos, cobweb: float, moss: float, rubble: float, vines: float,
+                 roots: float, weeds: float) -> None:
+    x, y, z = pos
+    if canvas.get(pos) != AIR:
+        return
+    if _solid(canvas.get((x, y - 1, z))):
+        r = rng.random()
+        wall = _wall_beside(canvas, pos)
+        if r < moss:
+            canvas.put(pos, MOSS_CARPET)
+        elif r < moss + weeds:
+            canvas.put(pos, rng.choice((SHORT_GRASS, FERN, DEAD_BUSH)))
+        elif r < moss + weeds + rubble * (3 if wall else 1):
+            canvas.put(pos, rng.choice(RUBBLE_IN))
+    top = y
+    while canvas.get((x, top + 1, z)) == AIR and top - y < 8:
+        top += 1
+    if not _solid(canvas.get((x, top + 1, z))) or top == y:
+        return
+    wall = _wall_beside(canvas, (x, top, z))
+    r = rng.random()
+    if wall and r < cobweb:
+        canvas.put((x, top, z), COBWEB)
+    elif r < cobweb + roots:
+        canvas.put((x, top, z), HANGING_ROOTS)
+    elif wall and r < cobweb + roots + vines:
+        for yy in range(top, max(y, top - rng.randint(1, 4)) - 1, -1):
+            if canvas.get((x, yy, z)) == AIR:
+                canvas.put((x, yy, z), block("vine", **{wall: "true"}))
+
+
+def spawners_and_loot(canvas: Canvas, seed: int, box: Box, ys, mobs=("zombie",), spawners: int = 1, chests: int = 2,
+                      tiers=(1, 2)) -> None:
+    """Spawners in the corners with cobwebs round them, loot chests against the walls, as the originals do."""
+    rng = random.Random(seed ^ 0x100E)
+    cells = [c for y in ys for c in floor_cells(canvas, box, y)]
+    by_wall = [c for c in cells if _wall_beside(canvas, c)]
+    pool = by_wall if len(by_wall) >= spawners + chests else cells
+    if not pool:
+        return
+    rng.shuffle(pool)
+    for pos in pool[:spawners]:
+        canvas.put(pos, spawner(rng.choice(mobs)))
+        for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            web = (pos[0] + dx, pos[1] + rng.randint(0, 1), pos[2] + dz)
+            if _free(canvas, web) and rng.random() < 0.6:
+                canvas.put(web, COBWEB)
+    for pos in pool[spawners:spawners + chests]:
+        if _free(canvas, pos):
+            canvas.put(pos, loot_chest(rng.choice(tiers), rng.choice(FACINGS)))
+
+
+def office_room(canvas: Canvas, seed: int, box: Box, y: int, wall: BlockState, door_side: str = "east") -> None:
+    """A walled room three high with a doorway in the middle of `door_side`, a desk, a chair and shelves."""
+    x0, z0, x1, z1 = box
+    canvas.put_all(wall_box(x0, y, z0, x1, y + 2, z1, wall))
+    door = {"east": (x1, (z0 + z1) // 2), "west": (x0, (z0 + z1) // 2), "south": ((x0 + x1) // 2, z1), "north": ((x0 + x1) // 2, z0)}[door_side]
+    for dy in (0, 1):
+        canvas.put((door[0], y + dy, door[1]), AIR)
+    canvas.put_all(fill_box(x0 + 1, y, z0 + 1, x1 - 1, y + 2, z1 - 1, AIR))
+    rng = random.Random(seed ^ 0x0FF)
+    _desk(canvas, rng, (x0 + 2, y, z0 + 2))
+    for z in range(z0 + 1, z1):
+        if z != door[1] and rng.random() < 0.6 and _free(canvas, (x0 + 1, y, z)):
+            canvas.put((x0 + 1, y, z), BOOKSHELF)
+
+
+def shelf_rows(canvas: Canvas, seed: int, xs, z0: int, z1: int, y: int) -> None:
+    """Shop shelving in rows along z: bookshelf bases with chiselled shelves and upturned stairs above."""
+    rng = random.Random(seed ^ 0x5E1F)
+    for x in xs:
+        for z in range(z0, z1 + 1):
+            base = (x, y, z)
+            if not _free(canvas, base):
+                continue
+            canvas.put(base, BOOKSHELF if rng.random() < 0.5 else CHISELED_BOOKSHELF.with_props(facing=rng.choice(("east", "west"))))
+            top = (x, y + 1, z)
+            if _free(canvas, top):
+                r = rng.random()
+                if r < 0.4:
+                    canvas.put(top, OAK_STAIRS.with_props(facing=rng.choice(("east", "west")), half="top"))
+                elif r < 0.7:
+                    canvas.put(top, CHISELED_BOOKSHELF.with_props(facing=rng.choice(("east", "west"))))
+                elif r < 0.85:
+                    canvas.put(top, COBWEB)
+
+
+def stage(canvas: Canvas, box: Box, y: int, facing: str = "south") -> None:
+    """A raised platform with steps along its front (the side that faces `facing`'s opposite) and a lectern slab."""
+    x0, z0, x1, z1 = box
+    canvas.put_all(fill_box(x0, y, z0, x1, y, z1, SPRUCE_PLANKS_STAGE))
+    front_z = z0 - 1 if facing == "south" else z1 + 1
+    for x in range(x0 + 1, x1):
+        canvas.put((x, y, front_z), SPRUCE_STAIRS.with_props(facing=facing))
+    canvas.put(((x0 + x1) // 2, y + 1, (z0 + z1) // 2), OAK_SLAB.with_props(type="top"))
+    canvas.put(((x0 + x1) // 2, y + 1, (z0 + z1) // 2 + 1), RED_CARPET)
 
 
 def rows(canvas: Canvas, box: Box, y: int, facing: str, every: int, state: BlockState = OAK_STAIRS) -> None:

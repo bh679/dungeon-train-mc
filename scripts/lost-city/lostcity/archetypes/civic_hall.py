@@ -30,9 +30,21 @@ def draw(canvas: Canvas) -> None:
     _steps(canvas)
     _tower(canvas)
     envelope_air(canvas, HX0, 2, HZ0, HX1, HALL_TOP, HZ1)
-    furnish.rows(canvas, (HX0 + 2, HZ0 + 3, HX1 - 2, HZ1 - 4), 2, "north", 3)
-    furnish.kit(canvas, SPEC.seed, "hall", (HX0 + 1, HZ0 + 1, HX1 - 1, HZ1 - 1), [2], 0.05)
+    _offices(canvas)
+    furnish.stage(canvas, (HX0 + 8, HZ1 - 6, HX1 - 8, HZ1 - 2), 2, "south")
+    furnish.rows(canvas, (HX0 + 8, HZ0 + 3, HX1 - 8, HZ1 - 9), 2, "south", 3)
+    hall = (HX0 + 7, HZ0 + 1, HX1 - 7, HZ1 - 1)
+    furnish.spawners_and_loot(canvas, SPEC.seed, hall, [2], mobs=("zombie", "skeleton"), spawners=2, chests=2, tiers=(2, 3))
+    furnish.kit(canvas, SPEC.seed, "hall", hall, [2], 0.05, ruin={"cobweb": 0.14, "moss": 0.16})
     finish(canvas, SPEC)
+
+
+def _offices(canvas: Canvas) -> None:
+    """Small offices down both long sides of the hall, two a side, opening onto the aisles."""
+    for x0, x1, door in ((HX0 + 1, HX0 + 6, "east"), (HX1 - 6, HX1 - 1, "west")):
+        for i, (z0, z1) in enumerate(((HZ0 + 1, HZ0 + 8), (HZ0 + 9, HZ0 + 16))):
+            furnish.office_room(canvas, SPEC.seed + i, (x0, z0, x1, z1), 2, STONE_BRICKS, door)
+            furnish.kit(canvas, SPEC.seed + i, "office", (x0 + 1, z0 + 1, x1 - 1, z1 - 1), [2], 0.08)
 
 
 def _windows(canvas: Canvas) -> None:

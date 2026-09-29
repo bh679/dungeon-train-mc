@@ -30,7 +30,10 @@ def draw(canvas: Canvas) -> None:
         _island(canvas, x)
     _kiosk(canvas)
     envelope_air(canvas, KIOSK[0], 1, KIOSK[1], KIOSK[2], KIOSK_ROOF, KIOSK[3])
-    furnish.kit(canvas, SPEC.seed, "kiosk", (KIOSK[0] + 1, KIOSK[1] + 1, KIOSK[2] - 1, KIOSK[3] - 1), [1], 0.1)
+    inside = (KIOSK[0] + 1, KIOSK[1] + 1, KIOSK[2] - 1, KIOSK[3] - 1)
+    furnish.shelf_rows(canvas, SPEC.seed, (KIOSK[0] + 2, KIOSK[0] + 4), KIOSK[1] + 2, KIOSK[3] - 2, 1)
+    furnish.spawners_and_loot(canvas, SPEC.seed, inside, [1], mobs=("spider",), spawners=1, chests=1, tiers=(1,))
+    furnish.kit(canvas, SPEC.seed, "kiosk", inside, [1], 0.06, ruin={"cobweb": 0.25, "vines": 0.08})
     finish(canvas, SPEC, moss_chance=0.08)
 
 

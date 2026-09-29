@@ -1,7 +1,7 @@
 """Radio mast: a steel lattice on a small equipment hut, dishes part-way up, a red light on top.
 The lattice repeats every 4 layers so a stretch can lengthen or shorten it."""
 
-from ..blocks import CONCRETE_DARK, GLASS_DARK, RED_LIGHT, STEEL, STEEL_BARS, STEEL_DARK, STEEL_WALL, block
+from ..blocks import COBWEB, CONCRETE_DARK, GLASS_DARK, RED_LIGHT, STEEL, STEEL_BARS, STEEL_DARK, STEEL_WALL, block, loot_chest
 from .. import furnish
 from ..canvas import Canvas, envelope_air
 from ..shapes import box, column, disc, lattice, walls
@@ -32,6 +32,10 @@ def draw(canvas: Canvas) -> None:
     envelope_air(canvas, HUT[0] + 1, 1, HUT[1] + 1, HUT[2] - 1, 4, HUT[3] - 1)
     furnish.kit(canvas, SPEC.seed, "hut", (HUT[0] + 1, HUT[1] + 1, HUT[2] - 1, HUT[3] - 1), [1], 0.12)
     finish(canvas, SPEC, vine_chance=0.04)
+    # after the damage pass, so the climb's reward is never sheared off with a corner
+    canvas.put_all(box(MAST[0] + 1, TOP - 5, MAST[1] + 1, MAST[2] - 1, TOP - 5, MAST[3] - 1, STEEL_DARK))   # service platform
+    canvas.put((9, TOP - 4, 9), loot_chest(4, "north"))
+    canvas.put((8, TOP - 4, 8), COBWEB)
 
 
 def _cross_bracing(canvas: Canvas) -> None:

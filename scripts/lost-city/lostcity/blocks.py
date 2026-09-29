@@ -11,11 +11,12 @@ from typing import NamedTuple
 class BlockState(NamedTuple):
     name: str
     props: tuple[tuple[str, str], ...] = ()
+    nbt: tuple = ()   # block-entity tag as nested (key, value) pairs; only spawners and loot chests carry one
 
     def with_props(self, **props: str) -> "BlockState":
         merged = dict(self.props)
         merged.update({k: str(v) for k, v in props.items()})
-        return BlockState(self.name, tuple(sorted(merged.items())))
+        return BlockState(self.name, tuple(sorted(merged.items())), self.nbt)
 
 
 def block(name: str, **props: str) -> BlockState:
@@ -121,6 +122,27 @@ TUFF = block("tuff")
 MUD_BRICKS = block("mud_bricks")
 MOSSY_STONE_BRICKS = block("mossy_stone_bricks")
 NOTE_BLOCK = block("note_block")
+SPAWNER = block("spawner")
+CHEST = block("chest")
+CHISELED_BOOKSHELF = block("chiseled_bookshelf")
+SPRUCE_PLANKS_STAGE = block("spruce_planks")
+
+# Loot in tiers, as the originals do it, from vanilla tables: a mineshaft's odds and ends at the bottom,
+# an outpost's haul only where you had to climb for it.
+LOOT_TIERS = {1: "minecraft:chests/abandoned_mineshaft", 2: "minecraft:chests/simple_dungeon",
+              3: "minecraft:chests/stronghold_corridor", 4: "minecraft:chests/pillager_outpost"}
+
+
+def spawner(mob: str) -> BlockState:
+    """A mob spawner block entity, set up as the originals' are."""
+    return BlockState(SPAWNER.name, (), (
+        ("id", "minecraft:mob_spawner"), ("SpawnData", (("entity", (("id", "minecraft:" + mob),)),)),
+        ("MaxNearbyEntities", 6), ("RequiredPlayerRange", 16), ("SpawnCount", 4), ("SpawnRange", 4),
+        ("MinSpawnDelay", 200), ("MaxSpawnDelay", 800), ("Delay", 20)))
+
+
+def loot_chest(tier: int, facing: str = "north") -> BlockState:
+    return BlockState(CHEST.name, (("facing", facing),), (("id", "minecraft:chest"), ("LootTable", LOOT_TIERS[tier])))
 RED_PAINT = block("red_concrete")
 RED_LIGHT = block("redstone_lamp")
 SIGN_BOARD = block("white_concrete")

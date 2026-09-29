@@ -45,6 +45,7 @@
     "StructureTerrainAdaptationMixin",
     "BeardifierMixin",
     "StructureTemplateUpsideDownEntitiesMixin",
+    "StructureTemplateClearMixin",
     "ChunkStatusSpawnMixin",
     "RandomStateMixin",
     "TagLoaderWwooFilterMixin",

@@ -30,7 +30,9 @@ def draw(canvas: Canvas) -> None:
     for x in range(X0 + 12, X1, 12):
         canvas.put_all(box(x, 1, Z0 + 1, x, ROOF - 1, Z1 - 1, BRICK))
     envelope_air(canvas, X0, 1, Z0, X1, ROOF, Z1)
-    furnish.kit(canvas, SPEC.seed, "shop", (X0 + 1, Z0 + 1, X1 - 1, Z1 - 1), [1], 0.09)
+    inside = (X0 + 1, Z0 + 1, X1 - 1, Z1 - 1)
+    furnish.kit(canvas, SPEC.seed, "shop", inside, [1], 0.09)
+    furnish.spawners_and_loot(canvas, SPEC.seed, inside, [1], mobs=("spider", "zombie"), spawners=1, chests=2, tiers=(1, 2))
     finish(canvas, SPEC)
 
 

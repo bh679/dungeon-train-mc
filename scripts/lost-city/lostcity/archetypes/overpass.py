@@ -2,7 +2,8 @@
 of snapped pier stubs still stands; between them the deck section that they carried lies tilted on
 the ground, nose down, its guard rails bent along the edges, rubble in the gaps. 98 blocks long."""
 
-from ..blocks import ASPHALT, COBBLESTONE, CONCRETE, CONCRETE_DARK, CRACKED_STONE_BRICKS, ROAD_LINE, ROAD_LINE_YELLOW, STEEL_WALL
+from ..blocks import (ASPHALT, COBBLESTONE, CONCRETE, CONCRETE_DARK, CRACKED_STONE_BRICKS, ROAD_LINE, ROAD_LINE_YELLOW, STEEL_WALL,
+                      loot_chest)
 from ..canvas import Canvas
 from ..shapes import box, column
 from ..spec import Archetype, ArchetypeSpec
@@ -26,6 +27,7 @@ def draw(canvas: Canvas) -> None:
         _fallen_deck(canvas, z + 2)
         _gap_rubble(canvas, z + 2 + DECK_LEN)
     finish(canvas, SPEC, envelope=None, moss_chance=0.25, weeds_chance=0.45)
+    canvas.put((X0 - 1, 1, Z0 + 2 + SEGMENT * 3), loot_chest(1, "east"))     # a wrecked car's boot, beside the road
 
 
 def _pier_stubs(canvas: Canvas, z: int) -> None:

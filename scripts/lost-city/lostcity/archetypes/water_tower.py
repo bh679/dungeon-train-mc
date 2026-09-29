@@ -1,6 +1,6 @@
 """Water tower: a round tank on four braced steel legs with a conical cap and a ladder."""
 
-from ..blocks import CONCRETE_WHITE, COPPER, LADDER, STEEL, STEEL_BARS, STEEL_DARK, WATER
+from ..blocks import CONCRETE_WHITE, COPPER, LADDER, STEEL, STEEL_BARS, STEEL_DARK, WATER, loot_chest
 from ..canvas import Canvas
 from ..shapes import column, disc, ring
 from ..spec import Archetype, ArchetypeSpec
@@ -29,6 +29,7 @@ def draw(canvas: Canvas) -> None:
     for y in range(1, LEG_TOP):
         canvas.put((LEGS[0][0] + 1, y, LEGS[0][1]), LADDER.with_props(facing="east"))
     finish(canvas, SPEC, envelope=None, moss_chance=0.02)
+    canvas.put((LEGS[1][0] - 1, 1, LEGS[1][1] + 1), loot_chest(1, "west"))   # dumped at the foot of a leg
 
 
 def _bracing(canvas: Canvas) -> None:

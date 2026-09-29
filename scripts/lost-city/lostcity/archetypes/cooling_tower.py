@@ -2,7 +2,7 @@
 
 import math
 
-from ..blocks import CONCRETE, CONCRETE_DARK, STONE_BRICKS, WATER
+from ..blocks import COBWEB, CONCRETE, CONCRETE_DARK, STONE_BRICKS, WATER, loot_chest
 from ..canvas import Canvas
 from ..shapes import disc, hyperboloid_radius, ring
 from ..spec import Archetype, ArchetypeSpec
@@ -28,6 +28,11 @@ def draw(canvas: Canvas) -> None:
             shell = {pos: CONCRETE_DARK for pos in shell if _is_leg(pos)}
         canvas.put_all(shell)
     finish(canvas, SPEC, envelope=None, moss_chance=0.02, vine_chance=0.01)
+    canvas.put((C + 16, 1, C), STONE_BRICKS)                    # on the basin rim, inside the shell — after the damage pass
+    canvas.put((C + 16, 2, C), loot_chest(2, "west"))
+    canvas.put((C, 1, C - 16), STONE_BRICKS)
+    canvas.put((C, 2, C - 16), loot_chest(3, "south"))
+    canvas.put((C + 16, 3, C), COBWEB)
 
 
 def _is_leg(pos) -> bool:

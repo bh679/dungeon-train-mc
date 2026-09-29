@@ -27,7 +27,9 @@ def draw(canvas: Canvas) -> None:
     canvas.put_all(roof_plate(X0, Z0, X1, Z1, ROOF, CONCRETE))
     _roof(canvas)
     envelope_air(canvas, X0, 1, Z0, X1, ROOF, Z1)
-    furnish.kit(canvas, SPEC.seed, "office", (X0 + 1, Z0 + 1, X1 - 1, Z1 - 1), [2 + f * PERIOD for f in range(FLOORS)])
+    inside, floors_y = (X0 + 1, Z0 + 1, X1 - 1, Z1 - 1), [2 + f * PERIOD for f in range(FLOORS)]
+    furnish.kit(canvas, SPEC.seed, "office", inside, floors_y, ruin={"rubble": 0.05, "moss": 0.22, "cobweb": 0.14, "vines": 0.10, "weeds": 0.10})
+    furnish.spawners_and_loot(canvas, SPEC.seed, inside, floors_y, mobs=("zombie", "zombie", "skeleton"), spawners=3, chests=4, tiers=(1, 2, 3))
     finish(canvas, SPEC)
 
 

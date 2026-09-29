@@ -21,8 +21,10 @@ from lostcity.nbt_out import DATA_VERSION, to_bytes  # noqa: E402
 from lostcity.spec import ArchetypeSpec  # noqa: E402
 from lostcity.variants import designs  # noqa: E402
 
+# What LostCityStretchProcessor.isMass ignores: anything without a full collision cube.
 NOT_FULL = ("slab", "stairs", "pane", "bars", "wall", "carpet", "vine", "chain", "ladder", "lantern", "button",
-            "trapdoor", "rail", "door", "rod", "bell")
+            "trapdoor", "rail", "door", "rod", "bell", "roots", "web", "pot", "bush", "grass", "fern", "azalea", "leaves",
+            "cauldron", "chest", "hopper", "candle")
 
 
 class BlocksTest(unittest.TestCase):
@@ -82,6 +84,14 @@ class ArchetypesTest(unittest.TestCase):
             for axis, period in (("y", spec.floor_period), ("x", spec.bay_period_x), ("z", spec.bay_period_z)):
                 if period:
                     self.assertTrue(_has_repeat(cells, axis, period), f"{spec.name} {axis} period {period}")
+
+    def test_block_entity_nbt_only_on_spawners_and_loot(self):
+        for archetype in ALL:
+            cells = archetype.render()
+            for pos, state in cells.items():
+                if state.nbt:
+                    self.assertIn(state.name, ("minecraft:spawner", "minecraft:chest"), f"{archetype.spec.name} {pos}")
+            self.assertTrue(any(s.name == "minecraft:chest" for s in cells.values()), f"{archetype.spec.name} has no loot")
 
     def test_check_rejects_margin_breach(self):
         spec = ArchetypeSpec("t", (7, 3, 7), None, None, None, margin=2, seed=1)

@@ -33,8 +33,12 @@ def draw(canvas: Canvas) -> None:
     _sign(canvas)
     envelope_air(canvas, P0, 1, P0, P1, PODIUM_ROOF, P1)
     envelope_air(canvas, T0, PODIUM_ROOF, T0, T1, TOWER_ROOF, T1)
-    furnish.kit(canvas, SPEC.seed, "hotel", (P0 + 1, P0 + 1, P1 - 1, P1 - 1), [2, 2 + PERIOD])
-    furnish.kit(canvas, SPEC.seed, "hotel", (T0 + 1, T0 + 1, T1 - 1, T1 - 1), [PODIUM_ROOF + 1 + f * PERIOD for f in range(TOWER_FLOORS)], 0.09)
+    podium_box, tower_box = (P0 + 1, P0 + 1, P1 - 1, P1 - 1), (T0 + 1, T0 + 1, T1 - 1, T1 - 1)
+    tower_y = [PODIUM_ROOF + 1 + f * PERIOD for f in range(TOWER_FLOORS)]
+    furnish.kit(canvas, SPEC.seed, "hotel", podium_box, [2, 2 + PERIOD])
+    furnish.kit(canvas, SPEC.seed, "hotel", tower_box, tower_y, 0.09)
+    furnish.spawners_and_loot(canvas, SPEC.seed, podium_box, [2, 2 + PERIOD], mobs=("zombie",), spawners=1, chests=2, tiers=(1, 2))
+    furnish.spawners_and_loot(canvas, SPEC.seed + 1, tower_box, tower_y, mobs=("zombie", "skeleton"), spawners=2, chests=3, tiers=(2, 3))
     finish(canvas, SPEC)
 
 

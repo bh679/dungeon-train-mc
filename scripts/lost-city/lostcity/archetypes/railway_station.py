@@ -2,7 +2,7 @@
 columns every 6 blocks, a brick ticket hall, and the stub of a footbridge over the line."""
 
 from ..blocks import (BRICK, COBBLED_DEEPSLATE, COBBLESTONE, CONCRETE_DARK, COPPER, COPPER_SLAB, GLASS_CLEAR, RAIL, SMOOTH_STONE,
-                      STEEL_BARS, STEEL_DARK, STONE_BRICKS)
+                      SPRUCE_STAIRS, STEEL_BARS, STEEL_DARK, STONE_BRICKS)
 from .. import furnish
 from ..canvas import Canvas, envelope_air
 from ..shapes import box, column, walls
@@ -29,7 +29,11 @@ def draw(canvas: Canvas) -> None:
     _footbridge(canvas)
     envelope_air(canvas, HALL[0], 1, HALL[1], HALL[2], HALL_ROOF, HALL[3])
     furnish.benches(canvas, SPEC.seed, [(21, 3, z) for z in range(PLAT[1] + 2, PLAT[3] - 2, 5)], "west", 0.7)
-    furnish.kit(canvas, SPEC.seed, "station", (HALL[0] + 1, HALL[1] + 1, HALL[2] - 1, HALL[3] - 1), [1], 0.08)
+    inside = (HALL[0] + 1, HALL[1] + 1, HALL[2] - 1, HALL[3] - 1)
+    furnish.office_room(canvas, SPEC.seed, (HALL[0] + 1, HALL[1] + 1, HALL[0] + 6, HALL[1] + 6), 1, BRICK, "east")
+    furnish.rows(canvas, (HALL[0] + 2, HALL[1] + 8, HALL[2] - 2, HALL[3] - 2), 1, "north", 2, SPRUCE_STAIRS)
+    furnish.spawners_and_loot(canvas, SPEC.seed, inside, [1], mobs=("zombie",), spawners=1, chests=1, tiers=(2,))
+    furnish.kit(canvas, SPEC.seed, "station", inside, [1], 0.08, ruin={"cobweb": 0.16, "moss": 0.16, "rubble": 0.05})
     finish(canvas, SPEC)
 
 

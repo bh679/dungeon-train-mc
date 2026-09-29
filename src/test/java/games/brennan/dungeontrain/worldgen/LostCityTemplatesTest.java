@@ -200,11 +200,27 @@ class LostCityTemplatesTest {
     }
 
     @Test
-    @DisplayName("templates carry no block-entity NBT and no structure blocks")
-    void noBlockEntities() throws IOException {
+    @DisplayName("block-entity NBT only on spawners and loot chests, loot from vanilla chest tables, no structure blocks")
+    void blockEntitiesOnlyForSpawnersAndLoot() throws IOException {
         for (Template t : templates().values()) {
             ListTag list = t.root().getList("blocks", Tag.TAG_COMPOUND);
-            for (int i = 0; i < list.size(); i++) assertFalse(list.getCompound(i).contains("nbt"), t.name());
+            int spawners = 0, chests = 0;
+            for (int i = 0; i < list.size(); i++) {
+                CompoundTag b = list.getCompound(i);
+                if (!b.contains("nbt")) continue;
+                BlockState state = t.blocks().get(i).state();
+                CompoundTag nbt = b.getCompound("nbt");
+                if (state.is(Blocks.SPAWNER)) {
+                    spawners++;
+                    assertFalse(nbt.getCompound("SpawnData").getCompound("entity").getString("id").isEmpty(), t.name() + " spawner has no mob");
+                } else if (state.is(Blocks.CHEST)) {
+                    chests++;
+                    assertTrue(nbt.getString("LootTable").startsWith("minecraft:chests/"), t.name() + " chest loot " + nbt.getString("LootTable"));
+                } else {
+                    throw new AssertionError(t.name() + ": NBT on " + state.getBlock() + " at " + b.getList("pos", Tag.TAG_INT));
+                }
+            }
+            assertTrue(chests > 0, t.name() + " has no loot");
             assertFalse(t.blocks().stream().anyMatch(b -> b.state().is(Blocks.STRUCTURE_BLOCK)), t.name());
         }
     }

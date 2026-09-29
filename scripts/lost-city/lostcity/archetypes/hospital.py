@@ -32,8 +32,11 @@ def draw(canvas: Canvas) -> None:
     _entrance(canvas)
     for (x0, z0, x1, z1) in PARTS:
         envelope_air(canvas, x0, 1, z0, x1, ROOF, z1)
-    for (x0, z0, x1, z1) in PARTS:
-        furnish.kit(canvas, SPEC.seed, "hospital", (x0 + 1, z0 + 1, x1 - 1, z1 - 1), [2 + f * PERIOD for f in range(FLOORS)], 0.07)
+    floors_y = [2 + f * PERIOD for f in range(FLOORS)]
+    for i, (x0, z0, x1, z1) in enumerate(PARTS):
+        inside = (x0 + 1, z0 + 1, x1 - 1, z1 - 1)
+        furnish.kit(canvas, SPEC.seed, "hospital", inside, floors_y, 0.07)
+        furnish.spawners_and_loot(canvas, SPEC.seed + i, inside, floors_y, mobs=("zombie",), spawners=1, chests=1 + i % 2, tiers=(1, 2))
     finish(canvas, SPEC)
 
 

@@ -27,7 +27,9 @@ def draw(canvas: Canvas) -> None:
     _stair_towers(canvas)
     _tanks(canvas)
     envelope_air(canvas, X0, 1, Z0, X1, ROOF, Z1)
-    furnish.kit(canvas, SPEC.seed, "apartment", (X0 + 1, Z0 + 1, X1 - 1, Z1 - 1), [2 + f * PERIOD for f in range(FLOORS)], 0.08)
+    inside, floors_y = (X0 + 1, Z0 + 1, X1 - 1, Z1 - 1), [2 + f * PERIOD for f in range(FLOORS)]
+    furnish.kit(canvas, SPEC.seed, "apartment", inside, floors_y, 0.08)
+    furnish.spawners_and_loot(canvas, SPEC.seed, inside, floors_y, mobs=("zombie",), spawners=2, chests=3, tiers=(1, 2))
     finish(canvas, SPEC)
 
 

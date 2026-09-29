@@ -30,7 +30,9 @@ def draw(canvas: Canvas) -> None:
     for cx in CENTRES:
         furnish.hay_fill(canvas, SPEC.seed + cx, cx, CZ, R - 1.0, 1, 4)
     envelope_air(canvas, HEAD[0] + 1, 1, HEAD[1] + 1, HEAD[2] - 1, HEAD_TOP - 1, HEAD[3] - 1)
-    furnish.kit(canvas, SPEC.seed, "hut", (HEAD[0] + 1, HEAD[1] + 1, HEAD[2] - 1, HEAD[3] - 1), [1], 0.08)
+    inside = (HEAD[0] + 1, HEAD[1] + 1, HEAD[2] - 1, HEAD[3] - 1)
+    furnish.kit(canvas, SPEC.seed, "hut", inside, [1], 0.08)
+    furnish.spawners_and_loot(canvas, SPEC.seed, inside, [1], mobs=("zombie",), spawners=1, chests=1, tiers=(1, 2))
     finish(canvas, SPEC)
 
 
