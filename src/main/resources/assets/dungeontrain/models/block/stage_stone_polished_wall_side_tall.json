@@ -1,6 +1,8 @@
 {
-  "parent": "minecraft:block/template_wall_side_tall",
+  "parent": "dungeontrain:block/stage_wall_side_tall_template",
   "textures": {
-    "wall": "dungeontrain:block/stage_stone_polished"
+    "bottom": "dungeontrain:block/stage_stone_polished_wall_bottom",
+    "side": "dungeontrain:block/stage_stone_polished_wall_side",
+    "top": "dungeontrain:block/stage_stone_polished_wall_top"
   }
 }

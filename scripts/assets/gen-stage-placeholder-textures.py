@@ -4,9 +4,10 @@
 Deliberately flat, obviously-not-vanilla tiles so a placeholder that ever reaches a live train is
 visible at a glance: a grey family for the solid / stairs / slab / button / plate slots with the
 slot number stamped on (and a kind letter for the stone set), and a brown family for the wood set (planks, log side + end, door halves,
-trapdoor), plus a green leaves tile, and a clay / pale family for the terracotta / concrete
-colour slots (T / C plus P, S, B for primary, secondary, background), a teal glazed-terracotta
-tile (GT), and half-transparent glass tiles (G plus P / S) with a pane edge strip. Re-run after changing the palette or the catalogue in StagePlaceholderBlocks:
+trapdoor), plus a green leaves tile. Full-cube placeholders get separate side / top / bottom tiles: a
+up-arrow on the sides, a T on top and a B underneath, so the editor shows which way is up. A clay / pale family covers the terracotta /
+concrete colour slots (T / C plus P, S, B), a teal tile the glazed terracotta (GT), and half-transparent
+tiles the glass (G plus P / S) with a pane edge strip. Re-run after changing the palette or the catalogue in StagePlaceholderBlocks:
 
     python3 scripts/assets/gen-stage-placeholder-textures.py
 
@@ -99,17 +100,96 @@ def base_tile(fill, dark, light) -> Image.Image:
     return img
 
 
-def stamp(img: Image.Image, text: str, colour=INK) -> None:
+def stamp(img: Image.Image, text: str, colour=INK, y0: int = (SIZE - 5) // 2) -> None:
     d = ImageDraw.Draw(img)
     width = len(text) * 4 - 1
     x0 = (SIZE - width) // 2
-    y0 = (SIZE - 5) // 2
     for i, ch in enumerate(text):
         glyph = DIGITS[ch]
         for gy, row in enumerate(glyph):
             for gx, cell in enumerate(row):
                 if cell == "#":
                     d.point((x0 + i * 4 + gx, y0 + gy), colour + (255,))
+
+
+def arrow(img: Image.Image, fill, colour, y: int = 1) -> None:
+    """Up-pointing triangle, top-centred at row ``y`` (rows y..y+2): which way is up. The noise
+    under it is cleared first so the mark reads cleanly."""
+    d = ImageDraw.Draw(img)
+    d.rectangle([4, y, 11, y + 2], fill=fill + (255,))
+    d.line([(7, y), (8, y)], fill=colour + (255,))
+    d.line([(6, y + 1), (9, y + 1)], fill=colour + (255,))
+    d.line([(5, y + 2), (10, y + 2)], fill=colour + (255,))
+
+
+def glyph(img: Image.Image, letter: str, x0: int, y0: int, fill, colour) -> None:
+    """A 3x5 glyph at (x0, y0) on a cleared 1px margin (kept inside the tile's 1px border)."""
+    d = ImageDraw.Draw(img)
+    d.rectangle([max(x0 - 1, 1), max(y0 - 1, 1), min(x0 + 3, SIZE - 2), min(y0 + 5, SIZE - 2)],
+                fill=fill + (255,))
+    for gy, row in enumerate(DIGITS[letter]):
+        for gx, cell in enumerate(row):
+            if cell == "#":
+                d.point((x0 + gx, y0 + gy), colour + (255,))
+
+
+def corner(img: Image.Image, letter: str, fill, colour) -> None:
+    """A 3x5 glyph in the top-right corner, just inside the 1px border."""
+    glyph(img, letter, SIZE - 4, 2, fill, colour)
+
+
+# Tile family → (maker, base fill, mark colour). Marks are stamped like the slot labels: ink,
+# except on dark bark where the label itself is light.
+FAMILIES = {
+    "grey": (lambda label: grey(label), GREY, INK),
+    "brown": (lambda label: brown(label), BROWN, INK),
+    "green": (lambda label: green(label), GREEN, INK),
+    "bark": (lambda label: bark(label), BARK, BROWN_LIGHT),
+    "log_end": (lambda label: log_top(), BROWN_LIGHT, INK),
+}
+
+
+def top_bottom_faces(name: str, family: str, label: str) -> None:
+    """``<name>_top`` (label + T in the top-right corner) and ``<name>_bottom`` (label + B)."""
+    make, fill, ink = FAMILIES[family]
+    for suffix, letter in (("top", "T"), ("bottom", "B")):
+        face = make(label)
+        corner(face, letter, fill, ink)
+        write(face, BLOCK_DIR / f"{name}_{suffix}.png")
+
+
+def cube_faces(name: str, family: str, label: str) -> None:
+    """Side / top / bottom tiles for a full-cube placeholder (model parent cube_bottom_top):
+    sides carry an up-arrow, the top a T and the bottom a B, all keeping the slot label."""
+    make, fill, ink = FAMILIES[family]
+    side = make(label)
+    arrow(side, fill, ink)
+    write(side, BLOCK_DIR / f"{name}_side.png")
+    top_bottom_faces(name, family, label)
+
+
+def half_side(name: str, family: str) -> None:
+    """``<name>_half_side`` for slabs and stairs: a slab / step side shows only one 8px half of the
+    tile, so each half carries its own arrow (no label — it stays on the top and bottom)."""
+    make, fill, ink = FAMILIES[family]
+    side = make("")
+    arrow(side, fill, ink, y=1)
+    arrow(side, fill, ink, y=9)
+    write(side, BLOCK_DIR / f"{name}_half_side.png")
+
+
+def wall_faces(name: str, family: str, label: str) -> None:
+    """``<name>_wall_side/_top/_bottom``. A low wall's sides start at row 2, so the arrow sits a
+    little lower (label below it); the wall top is only 6-8px wide, so T / B are centred."""
+    make, fill, ink = FAMILIES[family]
+    side = make("")
+    arrow(side, fill, ink, y=3)
+    stamp(side, label, y0=8)
+    write(side, BLOCK_DIR / f"{name}_wall_side.png")
+    for suffix, letter in (("top", "T"), ("bottom", "B")):
+        face = make("")
+        glyph(face, letter, 6, 5, fill, ink)
+        write(face, BLOCK_DIR / f"{name}_wall_{suffix}.png")
 
 
 def grey(label: str) -> Image.Image:
@@ -222,14 +302,39 @@ def main() -> None:
     write(log_top(), BLOCK_DIR / "stage_log_top.png")
     write(door(True), BLOCK_DIR / "stage_door_top.png")
     write(door(False), BLOCK_DIR / "stage_door_bottom.png")
-    write(brown("T"), BLOCK_DIR / "stage_trapdoor.png")
     write(green("LV"), BLOCK_DIR / "stage_leaves.png")
 
     # Stone set: one tile per kind, shared by its stairs / slab / wall.
     for kind, letter in (("cobbled", "C"), ("stone", "S"), ("bricks", "B"), ("polished", "P"),
                          ("cracked", "K"), ("mossy", "M"), ("feature", "F")):
         name = "stage_stone" if kind == "stone" else f"stage_stone_{kind}"
-        write(grey(letter), BLOCK_DIR / f"{name}.png")
+        write(grey(letter), BLOCK_DIR / f"{name}.png")  # stairs / slab / wall
+        cube_faces(name, "grey", letter)
+        half_side(name, "grey")
+        wall_faces(name, "grey", letter)
+
+    # Full cubes get oriented faces (the plain tiles above stay for any shape still using them).
+    for i in range(1, 11):
+        cube_faces(f"stage_block_{i}", "grey", str(i))
+    cube_faces("stage_planks", "brown", "P")
+    cube_faces("stage_leaves", "green", "LV")
+
+    # Slabs + stairs: per-half arrows on the sides, labelled T / B tiles on top and bottom.
+    for i in (1, 2):
+        for shape, letter in (("slab", "L"), ("stairs", "S")):
+            half_side(f"stage_{shape}_{i}", "grey")
+            top_bottom_faces(f"stage_{shape}_{i}", "grey", f"{letter}{i}")
+    half_side("stage_planks", "brown")
+
+    # Logs / wood: arrow along the bark, T / B on the ends.
+    cube_faces("stage_wood", "bark", "L")
+    cube_faces("stage_stripped_wood", "brown", "SL")
+    top_bottom_faces("stage_log_end", "log_end", "")
+
+    # Trapdoor (labelled TD so the T mark reads as "top") and the pressure-plate face.
+    write(brown("TD"), BLOCK_DIR / "stage_trapdoor.png")
+    top_bottom_faces("stage_trapdoor", "brown", "TD")
+    top_bottom_faces("stage_fitting", "grey", "0")
 
     # Colour slots: one tile per material x role.
     for role, letter in (("primary", "P"), ("secondary", "S"), ("background", "B")):
