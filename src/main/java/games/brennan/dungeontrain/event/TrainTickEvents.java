@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.event;
 
+import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
+import games.brennan.dungeontrain.perf.ServerLoadSampler;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
@@ -11,11 +13,14 @@ import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
 import games.brennan.dungeontrain.ship.sable.PhysicsStepTimer;
 import games.brennan.dungeontrain.ship.sable.PhysicsSubstepTuner;
+import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageFootprint;
 import games.brennan.dungeontrain.train.ContentsDespawnController;
+import games.brennan.dungeontrain.train.PlayerBlockBreakOff;
+import games.brennan.dungeontrain.train.PlayerPlacedTrainBlocks;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainStaticContentsCarrier;
 import games.brennan.dungeontrain.train.Trains;
@@ -241,7 +246,7 @@ public final class TrainTickEvents {
         // End-band sampling runs off the gen workers, so a window can have End work and no chunks fulled.
         if (s.chunks() <= 0 && endSampleMs <= 0 && endApplyMs <= 0) return;
         PERF_LOGGER.debug(
-            "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} biome={} mirror={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={} sphSample={} sphApply={} endSample={} endApply={} | perChunk df={} nether={} core={} biome={} mirror={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={}",
+            "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} biome={} mirror={} netherStrip={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={} sphSample={} sphApply={} endSample={} endApply={} | perChunk df={} nether={} core={} biome={} mirror={} netherStrip={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={}",
             level.dimension().location(), s.chunks(),
             String.format("%.2f", s.dtTotalMs()), String.format("%.3f", s.dtTotalPerChunkMs()),
             String.format("%.2f", s.ms(GenProfiler.Bucket.DF)),
@@ -249,6 +254,7 @@ public final class TrainTickEvents {
             String.format("%.2f", s.ms(GenProfiler.Bucket.CORE_REPLACE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.BIOME_FORCE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.MIRROR_PRECOMPUTE)),
+            String.format("%.2f", s.ms(GenProfiler.Bucket.NETHER_STRIP_PRECOMPUTE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.TRACK_FEATURE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.DISINTEGRATION)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.EROSION)),
@@ -265,6 +271,7 @@ public final class TrainTickEvents {
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.CORE_REPLACE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.BIOME_FORCE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.MIRROR_PRECOMPUTE)),
+            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.NETHER_STRIP_PRECOMPUTE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.TRACK_FEATURE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.DISINTEGRATION)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.EROSION)),
@@ -345,7 +352,10 @@ public final class TrainTickEvents {
         // measured directly: physMs= is the mean per-tick wall time of the native
         // Rapier step over the window (RapierPipelineTimingMixin), substeps= the
         // live Sable setting the tuner controls, blockChanges= the carriage-block
-        // edits (mining/placing) that hit the voxel collider in the window. Lets
+        // edits (mining/placing) that hit the voxel collider in the window.
+        // batchedBlockChanges= the per-block updates a carriage stamp deferred and
+        // colliderRebuilds= the whole-section uploads that replaced them (ColliderBatch),
+            // blockChangeMs= the wall time of Sable's per-block handling over the window. Lets
         // MSPT-vs-resident-carriage scaling and the substep A/B be read straight
         // from the log, no /spark or /tick query. getAverageTickTimeNanos() is
         // server-wide (dominated by the train dimension's physics). See
@@ -363,13 +373,18 @@ public final class TrainTickEvents {
 
             // Drained unconditionally too, so the window never spans more than one period.
             PhysicsStepTimer.Window physics = PhysicsStepTimer.drain();
+            // The non-physics suspects for a slow window (GC, synchronous chunk loads, entity load,
+            // the worst single tick) — appended after the physics fields so older parsers keep
+            // reading. See ServerLoadSampler and scripts/perf/README.md.
+            ServerLoadSampler.Window load = ServerLoadSampler.drain(level, trainsById, MSPT_LOG_PERIOD_TICKS);
             double avgTickMs = level.getServer().getAverageTickTimeNanos() / 1_000_000.0;
             // activeTracked/activeEntity/activeSettling, maxBodyLag and reanchors: why each
             // resident carriage is still being stepped, how far the parked ones sit behind
             // their poses, and how many carriages re-anchored in the window — the fields
             // needed to attribute a slow physMs while the player is away from the train
             // (player logs of 28 Sep 2026: 45–205 ms at near=0). See PhysicsFreezeController.
-            PERF_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={}",
+            PERF_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={} colliderRebuilds={} batchedBlockChanges={} blockChangeMs={}"
+                    + " gcMs={} gcN={} heapUsedMb={} heapMaxMb={} chunkWaitMs={} chunkWaits={} chunksLoaded={} pendingChunkTasks={} entities={} onCarriages={} tickMaxMs={}",
                 level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
                 countNearCarriages(level, trainsById), trainsById.size(),
                 String.format("%.2f", physics.avgStepMs(MSPT_LOG_PERIOD_TICKS)),
@@ -377,7 +392,13 @@ public final class TrainTickEvents {
                 PhysicsFreezeController.lastActiveTracked(), PhysicsFreezeController.lastActiveEntity(),
                 PhysicsFreezeController.lastActiveSettling(), PhysicsFreezeController.lastFrozen(),
                 String.format("%.1f", PhysicsFreezeController.lastMaxBodyLagBlocks()),
-                PhysicsFreezeController.drainReparks(), physics.reanchors());
+                PhysicsFreezeController.drainReparks(), physics.reanchors(),
+                physics.colliderRebuilds(), physics.batchedBlockChanges(),
+                String.format("%.2f", physics.blockChangeMs()),
+                load.gcMillis(), load.gcCount(), load.heapUsedMb(), load.heapMaxMb(),
+                String.format("%.2f", load.chunkWaitMs()), load.chunkWaits(),
+                load.chunksLoaded(), load.pendingChunkTasks(), load.entities(), load.onCarriages(),
+                String.format("%.2f", load.tickMaxMs()));
         }
 
         // Kill-ahead runs once per train, against the lead carriage's
@@ -408,6 +429,11 @@ public final class TrainTickEvents {
         int blocksBroken = 0;
         for (List<Trains.Carriage> train : trainsById.values()) {
             blocksBroken += sweepFootprint(level, train, MAX_BLOCK_BREAKS_PER_TICK - blocksBroken);
+        }
+        // Player-added blocks also break off against other physics objects (non-train sub-levels),
+        // which the terrain sweep cannot see. Same budget; ~free unless a player has built on the train.
+        for (List<Trains.Carriage> train : trainsById.values()) {
+            blocksBroken += PlayerBlockBreakOff.checkPhysicsContacts(level, train, MAX_BLOCK_BREAKS_PER_TICK - blocksBroken);
         }
         long tAfterFluid = System.nanoTime();
         recordSweepPerf(tAfterFluid - tAfterKill, blocksBroken);
@@ -742,6 +768,12 @@ public final class TrainTickEvents {
         for (Trains.Carriage carriage : train) {
             ManagedShip ship = carriage.ship();
             if (!ship.isResident()) continue;
+            // Carriages a player has built on take the slower lookup that can tell their blocks from
+            // the train's (see PlayerPlacedTrainBlocks); every other carriage pays nothing extra.
+            ServerSubLevel playerBuilt = ship instanceof SableManagedShip sableShip
+                && sableShip.subLevel() != null
+                && PlayerPlacedTrainBlocks.hasAny(sableShip.subLevel().getUniqueId())
+                ? sableShip.subLevel() : null;
 
             AABBdc box = ship.worldAABB();
             int minX = Mth.floor(box.minX());
@@ -782,14 +814,32 @@ public final class TrainTickEvents {
                         // budget or a below-floor cell costs nothing beyond the air test. Only then
                         // the world-side shape query, and only then the sub-level lookup — which in
                         // a cleared corridor therefore runs ~never.
-                        boolean collide = false;
-                        if (canBreakAt(breakBlocks, y, hardFloorY, broke, breakBudget)
-                            && !state.getCollisionShape(level, cursor).isEmpty()) {
+                        //
+                        // A carriage with player-added blocks can act even when terrain breaking is off
+                        // or the cell is below the rail floor: its player blocks break OFF on contact
+                        // (contactAction), which never touches the world block.
+                        ContactAction action = ContactAction.NONE;
+                        boolean mayAct = canBreakAt(breakBlocks, y, hardFloorY, broke, breakBudget)
+                            || (playerBuilt != null && broke < breakBudget);
+                        if (mayAct && !state.getCollisionShape(level, cursor).isEmpty()) {
                             perfLookups++;
-                            collide = !CarriageDeck.blockAt(ship, cursor).isAir();
+                            if (playerBuilt == null) {
+                                boolean collide = !CarriageDeck.blockAt(ship, cursor).isAir();
+                                action = contactAction(breakBlocks, collide, false, y, hardFloorY, broke, breakBudget);
+                            } else {
+                                BlockPos local = CarriageDeck.shipLocal(ship, cursor);
+                                boolean collide = !CarriageDeck.blockInPlot(playerBuilt.getPlot(), local).isAir();
+                                boolean playerPlaced = collide && PlayerPlacedTrainBlocks.isPlayerPlaced(playerBuilt, local);
+                                action = contactAction(breakBlocks, collide, playerPlaced, y, hardFloorY, broke, breakBudget);
+                                if (action == ContactAction.BREAK_OFF) {
+                                    // The world block stands; the player's block is what gives.
+                                    if (PlayerBlockBreakOff.breakOff(level, playerBuilt, local, cursor.immutable())) broke++;
+                                    continue;
+                                }
+                            }
                         }
 
-                        if (shouldBreak(breakBlocks, collide, y, hardFloorY, broke, breakBudget)) {
+                        if (action == ContactAction.BREAK_TERRAIN) {
                             // Breaking leaves air (or the legacy fluid of a submerged block), so this
                             // cell needs no fluid displacement afterwards.
                             if (breakBlock(level, cursor)) {
@@ -945,6 +995,31 @@ public final class TrainTickEvents {
 
     static boolean shouldBreak(boolean enabled, boolean collide, int y, int hardFloorY, int broke, int budget) {
         return canBreakAt(enabled, y, hardFloorY, broke, budget) && collide;
+    }
+
+    /** What {@link #sweepFootprint} does about a solid world block overlapping a carriage cell. */
+    enum ContactAction {
+        /** Nothing touches, or the gate is shut. */
+        NONE,
+        /** A train-built block hit the world block: the world block breaks ({@link #shouldBreak}). */
+        BREAK_TERRAIN,
+        /** A player-added block hit the world block: the player's block breaks off the train. */
+        BREAK_OFF
+    }
+
+    /**
+     * The collision rule, both ways round. A train-built carriage block breaks terrain exactly as
+     * {@link #shouldBreak} always has. A player-added one ({@code playerPlaced}) does the opposite:
+     * it is the thing that breaks, whatever the per-world terrain toggle says and even below the rail
+     * floor — the floor protects the track, which a player block breaking off never touches. Both
+     * share the per-tick budget. Pure function — unit-tested.
+     */
+    static ContactAction contactAction(boolean terrainEnabled, boolean collide, boolean playerPlaced,
+                                       int y, int hardFloorY, int broke, int budget) {
+        if (!collide || broke >= budget) return ContactAction.NONE;
+        if (playerPlaced) return ContactAction.BREAK_OFF;
+        return shouldBreak(terrainEnabled, true, y, hardFloorY, broke, budget)
+            ? ContactAction.BREAK_TERRAIN : ContactAction.NONE;
     }
 
     /**
