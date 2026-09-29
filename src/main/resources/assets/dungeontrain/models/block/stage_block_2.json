@@ -1,6 +1,9 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube_bottom_top",
   "textures": {
-    "all": "dungeontrain:block/stage_block_2"
+    "bottom": "dungeontrain:block/stage_block_2_bottom",
+    "particle": "dungeontrain:block/stage_block_2_side",
+    "side": "dungeontrain:block/stage_block_2_side",
+    "top": "dungeontrain:block/stage_block_2_top"
   }
 }
