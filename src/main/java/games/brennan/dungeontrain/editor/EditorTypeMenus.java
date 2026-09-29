@@ -325,7 +325,8 @@ public final class EditorTypeMenus {
                 subVariantsFor(kind, name, cat, modelId), stageId == null ? "" : stageId)
                 .withDisplayName(TrackVariantWeights.nameFor(kind, name))
                 .withBuilder(builderUuid(TemplateBuilderLookup.track(kind, name)),
-                    builderName(TemplateBuilderLookup.track(kind, name))));
+                    builderName(TemplateBuilderLookup.track(kind, name)))
+                .withGroups(TrackVariantWeights.groupsFor(kind, name)));
         }
         return rows;
     }

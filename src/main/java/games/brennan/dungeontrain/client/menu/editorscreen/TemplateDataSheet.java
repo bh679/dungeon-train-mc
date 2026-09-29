@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
+import games.brennan.dungeontrain.client.menu.TunnelGroupPickerScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.editor.TemplateCells;
@@ -175,6 +176,8 @@ public final class TemplateDataSheet {
         out.add(lootLine(summary, pending));
         out.add(weightLine(tile, key, pending));
         out.addAll(stageLines(v, key, pending));
+        Line groups = groupsLine(v, key);
+        if (groups != null) out.add(groups);
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SOURCE), sourceLabel(provenance)));
         return out;
     }
@@ -439,6 +442,23 @@ public final class TemplateDataSheet {
         // bounds take the stage's line and the bands a row of their own, every letter a button.
         List<Cell> first = prepend(stage, levels);
         return List.of(new Line(label, first), bandsLine(v.phaseMask(), phases));
+    }
+
+    /** Tunnel kinds whose templates can join tunnel groups — their editor model ids. */
+    private static final java.util.Set<String> GROUPABLE_MODEL_IDS = java.util.Set.of("tunnel_section", "tunnel_portal");
+
+    /**
+     * {@code Groups  stone, brick}: which tunnel groups this section / entrance belongs to — a tunnel
+     * builds entrance to exit from one group — opening the multi-select picker. Null for anything
+     * that is not a tunnel template.
+     */
+    static Line groupsLine(EditorTypeMenusPacket.Variant v, VariantKey key) {
+        if (key == null || !GROUPABLE_MODEL_IDS.contains(key.modelId())) return null;
+        String shown = v.groupIds().isEmpty() ? "none" : String.join(", ", v.groupIds());
+        Cell cell = new Cell(shown, new Action.Open(
+            new TunnelGroupPickerScreen(key.modelId(), v.name(), v.groupIds())), !v.groupIds().isEmpty())
+            .withTooltip("A tunnel builds every section and entrance from one group. Click to choose.");
+        return new Line("Groups", List.of(cell));
     }
 
     /** {@code Bands  O N V E U C}: every band its own letter button (or plain when read-only). */
