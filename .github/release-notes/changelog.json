@@ -20804,6 +20804,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "lost-city-terrain-fit-sibling",
+      "version": "0.1031.0",
+      "type": "refactor",
+      "tags": [
+        "internal"
+      ],
+      "title": "Lost City Terrain Fit is now its own mod",
+      "summary": "The terrain-fitting for ruined-city buildings has moved into its own mod, Lost City Terrain Fit, which comes bundled with Dungeon Train. Nothing extra to install.",
+      "highlights": [],
+      "pr": 1667,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -121,6 +121,16 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Lost City Terrain Fit is jarJar'd INSIDE this jar (like Edible Backpacks) until its listings are
+# approved, so the shipped version is always exactly lostcityterrainfit_version — no floor indirection.
+# DT's Lost City era relies on it to seat the cities in the terrain.
+[[dependencies.${mod_id}]]
+    modId="lostcityterrainfit"
+    type="required"
+    versionRange="[${lostcityterrainfit_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Sibling mods (same author). These are NOT bundled — each is a separate required
 # download, so its own Modrinth/CurseForge page gets credited for the install.
 #
