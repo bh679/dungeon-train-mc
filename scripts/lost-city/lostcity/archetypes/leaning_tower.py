@@ -39,7 +39,9 @@ def draw(canvas: Canvas) -> None:
                                       tiers=(1 + f // 3,))
     _crushed_foot(canvas)
     _lifted_foot(canvas)
-    finish(canvas, SPEC)
+    # a tower this cracked is a trellis: vines pour off every face and hang long under the overhang
+    finish(canvas, SPEC, vine_chance=0.5, vine_drop=(5, 16), moss_chance=0.3, moss_block_chance=0.16, roots_chance=0.2,
+           leaf_clumps=44, gardens=12)
 
 
 def _upright() -> Cells:

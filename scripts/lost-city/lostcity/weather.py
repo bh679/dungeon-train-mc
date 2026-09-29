@@ -21,7 +21,7 @@ GRASS_BLOCK = block("grass_block")
 def weather(canvas: Canvas, seed: int, cracked: dict[BlockState, BlockState], crack_chance: float = 0.12,
             moss_chance: float = 0.18, vine_chance: float = 0.16, min_y: int = 1, margin: int = 0,
             moss_block_chance: float = 0.10, leaf_clumps: int | None = None, weeds_chance: float = 0.35,
-            roots_chance: float = 0.06, gardens: int | None = None) -> None:
+            roots_chance: float = 0.06, gardens: int | None = None, vine_drop: tuple[int, int] = (2, 7)) -> None:
     rng = random.Random(seed)
     cells = list(canvas.freeze().items())
     size = len(cells)
@@ -32,7 +32,7 @@ def weather(canvas: Canvas, seed: int, cracked: dict[BlockState, BlockState], cr
     _roof_gardens(canvas, rng, cells, gardens if gardens is not None else max(2, min(10, size // 5000)), margin)
     cells = list(canvas.freeze().items())
     _moss(canvas, rng, cells, moss_chance)
-    _vines(canvas, rng, cells, vine_chance, margin)
+    _vines(canvas, rng, cells, vine_chance, margin, vine_drop)
     _roots(canvas, rng, cells, roots_chance, margin)
     _weeds(canvas, rng, weeds_chance, margin)
     _leaves(canvas, rng, cells, leaf_clumps if leaf_clumps is not None else max(6, min(24, size // 2500)), margin)
@@ -127,7 +127,7 @@ def _moss(canvas: Canvas, rng: random.Random, cells, chance: float) -> None:
             canvas.put((pos[0], pos[1] + 1, pos[2]), MOSS_CARPET)
 
 
-def _vines(canvas: Canvas, rng: random.Random, cells, chance: float, margin: int) -> None:
+def _vines(canvas: Canvas, rng: random.Random, cells, chance: float, margin: int, drop_range=(2, 7)) -> None:
     sx, _, sz = canvas.size
     for pos, state in cells:
         if pos[1] < 3 or state == AIR or not _is_full(state) or rng.random() >= chance:
@@ -136,7 +136,7 @@ def _vines(canvas: Canvas, rng: random.Random, cells, chance: float, margin: int
         outside = (pos[0] + dx, pos[1], pos[2] + dz)
         if not canvas.inside(outside) or canvas.has(outside) or _in_margin(outside, sx, sz, margin):
             continue
-        for drop in range(rng.randint(2, 7)):
+        for drop in range(rng.randint(*drop_range)):
             at = (outside[0], outside[1] - drop, outside[2])
             if at[1] < 1 or canvas.has(at):
                 break
