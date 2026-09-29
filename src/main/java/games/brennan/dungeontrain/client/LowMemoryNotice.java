@@ -92,7 +92,9 @@ public final class LowMemoryNotice {
         if (toastShownThisSession || !ClientDisplayConfig.isLowMemoryNoticeChatEnabled()) return;
         toastShownThisSession = true;
         long heap = MachineSpecs.maxHeapBytes();
-        if (!shouldWarn(heap, MachineSpecs.physicalMemoryBytes())) return;
+        long physical = MachineSpecs.physicalMemoryBytes();
+        if (!shouldWarn(heap, physical)) return;
+        LOGGER.info("Low-memory toast: max heap {} bytes on {} bytes physical", heap, physical);
         Minecraft mc = Minecraft.getInstance();
         mc.getToasts().addToast(SystemToast.multiline(mc, SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
             Component.translatable("gui.dungeontrain.low_memory_notice.toast.title", formatGb(heap)),
