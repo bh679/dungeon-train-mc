@@ -3059,6 +3059,7 @@
   "chat.dungeontrain.portal.you_aren_t_test": "Nie jesteś w testowym wagonie wymiarowym.",
   "chat.dungeontrain.portal.back_plot_test_has": "Z powrotem na działce — test '%s' został usunięty.",
   "chat.dungeontrain.carriage_test.standing_in": "Jesteś w testowej kopii '%s' (poszycie %s, zawartość %s) — bez pociągu. Wstecz w menu wraca na działkę.",
+  "chat.dungeontrain.test_mode.nothing_saves": "Tryb testowy — nic, co tu zbudujesz, nie zostanie zapisane.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Żaden wagon nie ma teraz włączonego '%s' — włącz to na liście Zawartość wybranego wagonu, aby przetestować.",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' nie ma zapisanego szablonu w rozmiarze wagonu tego świata — zapisz go, a potem przetestuj ponownie.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",

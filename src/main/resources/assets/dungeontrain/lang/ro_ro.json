@@ -3594,6 +3594,7 @@
   "chat.dungeontrain.portal.you_aren_t_test": "Nu ești într-un vagon dimensional de test.",
   "chat.dungeontrain.portal.back_plot_test_has": "Înapoi la parcelă — testul '%s' a fost curățat.",
   "chat.dungeontrain.carriage_test.standing_in": "Ești într-o copie de test a lui '%s' (carcasă %s, conținut %s) — fără tren atașat. Înapoi din meniu te readuce la parcelă.",
+  "chat.dungeontrain.test_mode.nothing_saves": "Mod de test — nimic din ce construiești aici nu va fi salvat.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Niciun vagon nu are '%s' activat acum — activează-l în lista Conținut a unui vagon ca să-l testezi.",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' nu are un șablon salvat la dimensiunea vagoanelor din această lume — salvează-l, apoi testează din nou.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",

@@ -20906,6 +20906,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "test-mode-edit-notice",
+      "version": "0.1037.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Test mode reminder",
+      "summary": "Building inside a carriage you're testing now reminds you that none of it will be kept.",
+      "highlights": [],
+      "pr": 1675,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
