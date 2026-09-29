@@ -112,4 +112,23 @@ class DungeonTrainBackupTest {
         assertEquals("builds", reg().dataHeldBy(tmp.resolve("new")).orElseThrow());
         assertTrue(reg().dataHeldBy(tmp.resolve("other")).isEmpty());
     }
+
+    @Test
+    void aRestoreMergesProgressAWorldJoinAlreadyRecreated() throws IOException {
+        // The reported failure: ender chests came back, advancements didn't. A world join after
+        // the loss had already written a fresh sidecar, and the restore skipped the real one.
+        write(dataRoot().resolve("achievements/uuid.json"), "{\"granted\":[\"a:x\",\"a:y\"]}");
+        write(dataRoot().resolve("stats/uuid.json"), "{\"trainTicks\":5000}");
+        Path archive = games.brennan.dungeonbackup.core.BackupArchiver.create(
+            tmp.resolve("archives"), "dungeontrain", reg().sources(), "test", "1").archive().orElseThrow();
+        write(dataRoot().resolve("achievements/uuid.json"), "{\"granted\":[\"a:z\"]}");
+        write(dataRoot().resolve("stats/uuid.json"), "{\"trainTicks\":20}");
+
+        DataRecovery.restore(reg(), new DataRecovery.Candidate(DataRecovery.Kind.BACKUP, archive, "backup"));
+
+        assertEquals(com.google.gson.JsonParser.parseString("{\"granted\":[\"a:z\",\"a:x\",\"a:y\"]}"),
+            com.google.gson.JsonParser.parseString(Files.readString(dataRoot().resolve("achievements/uuid.json"))));
+        assertEquals(com.google.gson.JsonParser.parseString("{\"trainTicks\":5000}"),
+            com.google.gson.JsonParser.parseString(Files.readString(dataRoot().resolve("stats/uuid.json"))));
+    }
 }

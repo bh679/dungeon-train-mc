@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -98,6 +99,18 @@ public final class GlobalBookBurnStats {
     /** Drop the cached entry for {@code uuid} after persistence. Used on logout. */
     public static void evict(UUID uuid) {
         CACHE.remove(uuid);
+    }
+
+    /**
+     * After a backup restore merged {@code stats/} on disk: take the larger of the cached and the
+     * on-disk counter, so the next flush can't write a pre-restore cache over the merged file.
+     * Mirrors {@code GlobalPlayerStats.absorbDisk}.
+     */
+    public static void absorbDisk() {
+        for (UUID uuid : List.copyOf(CACHE.keySet())) {
+            CACHE.computeIfPresent(uuid, (k, cached) ->
+                new Data(Math.max(cached.booksBurnedUnread(), loadFromDisk(k).booksBurnedUnread())));
+        }
     }
 
     /**

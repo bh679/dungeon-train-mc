@@ -79,7 +79,10 @@ public final class DungeonTrainBackup {
             // Recovered templates are on disk but not in any cache — without the barrier they
             // wouldn't appear in the editor until the next restart. The importer pass runs too:
             // a backup can carry dtpacks/<name>.zip, which only becomes a package once extracted.
-            .onRestored(() -> TemplateStores.reloadAll(true))
+            .onRestored(() -> {
+                TemplateStores.reloadAll(true);
+                RestoredProfileSync.apply();
+            })
             // Dev builds keep tripping the card: a working copy routinely has an empty data root.
             // -Ddungeontrain.backups.prompt=true (./gradlew runClient -PbackupPrompt) lets a dev
             // build show it anyway — the only way to see the card outside a release build.
@@ -95,6 +98,12 @@ public final class DungeonTrainBackup {
         // for. Pulled in as an extra tree until ECP registers itself. Optional: an ECP that moved
         // its seam degrades to "not backed up", never to a failed registration.
         EnderChestResetBridge.stashDir().ifPresent(dir -> builder.alsoBackUp("enderchestpersistence", dir));
+
+        // Cross-world progress files regenerate on every world join, so by the time a player who
+        // lost data reaches the restore button a fresh, near-empty copy already exists and a plain
+        // restore would skip the backup. Merge those instead — see RestoreMergers. The in-memory
+        // caches and online players catch up in RestoredProfileSync, from onRestored above.
+        RestoreMergers.BY_GLOB.forEach((glob, merger) -> builder.mergeOnRestore(ROOT_LABEL, glob, merger));
         return builder;
     }
 

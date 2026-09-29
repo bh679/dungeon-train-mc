@@ -263,12 +263,21 @@ public final class GlobalNarrativeProgress {
      * @return {@code true} when a file was actually removed.
      */
     public static synchronized boolean deleteAll() throws IOException {
-        readLetters = null;
-        variantsSeen = null;
+        invalidate();
         boolean removed = false;
         for (Path path : located().all()) {
             removed |= Files.deleteIfExists(path);
         }
         return removed;
+    }
+
+    /**
+     * Drop the in-memory cache so the next access re-reads {@code global.json}. Called after a
+     * backup restore merged that file: writes are write-through, so nothing unsaved is lost, but a
+     * cache loaded before the restore would re-save the pre-restore progress on the next mutation.
+     */
+    public static synchronized void invalidate() {
+        readLetters = null;
+        variantsSeen = null;
     }
 }

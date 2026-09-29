@@ -9,6 +9,7 @@ import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import games.brennan.dungeonbackup.api.Located;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
+import games.brennan.dungeontrain.data.RestoreMergers;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -424,6 +426,28 @@ public final class GlobalPlayerStats {
     }
 
     /**
+     * After a backup restore merged {@code stats/} on disk: fold what is now on disk into every
+     * cached record, taking the larger value of each counter. Without this the next logout or
+     * server-stop flush would write the cache — loaded before the restore — straight back over the
+     * merged file. The cache already holds everything accrued since the last flush, and the disk
+     * everything restored, so the field-wise max is exactly the union. See {@code RestoreMergers}.
+     */
+    public static void absorbDisk() {
+        for (UUID uuid : List.copyOf(CACHE.keySet())) {
+            CACHE.computeIfPresent(uuid, (k, cached) -> larger(cached, loadFromDisk(k)));
+        }
+    }
+
+    /** Field-wise max of two records, via the same structural merge a restore uses. */
+    static Data larger(Data a, Data b) {
+        var ea = Data.CODEC.encodeStart(JsonOps.INSTANCE, a).result();
+        var eb = Data.CODEC.encodeStart(JsonOps.INSTANCE, b).result();
+        if (ea.isEmpty() || eb.isEmpty()) return a;
+        return Data.CODEC.parse(JsonOps.INSTANCE, RestoreMergers.merge(ea.get(), eb.get()))
+            .result().orElse(a);
+    }
+
+    /**
      * Wipe the player's lifetime stats: drop the cached record <em>before</em> unlinking the file, so
      * a later {@link #flushAll} in the same JVM cannot write the old totals back over the deletion.
      * Used by the Video Tools profile reset.
@@ -454,7 +478,7 @@ public final class GlobalPlayerStats {
      * place. Package-private so the migration is unit-testable — it is the one piece of this class
      * that can lose a player's history if it is wrong.</p>
      */
-    static JsonElement migrateLegacy(JsonElement element) {
+    public static JsonElement migrateLegacy(JsonElement element) {
         if (!(element instanceof JsonObject obj)) return element;
         if (!obj.has("echoes") && obj.has("totalEchos")) {
             JsonObject echoes = new JsonObject();
