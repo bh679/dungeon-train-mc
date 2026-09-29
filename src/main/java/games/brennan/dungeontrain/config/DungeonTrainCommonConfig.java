@@ -243,6 +243,16 @@ public final class DungeonTrainCommonConfig {
     public static final boolean DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE = true;
 
     /**
+     * Distant Horizons LOD-lite decoration. DH's LOD generator threads ({@code DH-World Gen Thread[N]})
+     * run the full Nether-core feature pass for never-saved LOD chunks that are only seen from beyond
+     * the vanilla render distance. true = on those threads place only the silhouette-scale steps
+     * (fungi, basalt pillars/columns, deltas), skipping ores/glowstone/fire/mushrooms/springs that are
+     * below LOD resolution; identical seeding keeps the kept features where the real chunk's will be.
+     * false = full decoration everywhere (the original behaviour). Default true.
+     */
+    public static final boolean DEFAULT_DISTANT_LOD_LITE_DECORATION = true;
+
+    /**
      * Chuncks band — a fourth looping phase, appended after the upside-down band's trailing overworld
      * gap. Along +X it is mostly void, sprinkled with occasional real overworld chunks: some vertically
      * complete, some a top-down slice (natural surface kept, flat cut-off bottom — a floating island of
@@ -561,6 +571,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.DoubleValue UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_MAX_CEILING_HEIGHT;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_MIRROR_PRECOMPUTE;
+    public static final ModConfigSpec.BooleanValue DISTANT_LOD_LITE_DECORATION;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_TRACK_FLATTEN;
     public static final ModConfigSpec.BooleanValue CHUNCKS_ENABLED;
     public static final ModConfigSpec.IntValue CHUNCKS_HOLD_BLOCKS;
@@ -634,6 +645,7 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON = pair.getLeft().upsideDownExitNoiseSkipEpsilon;
         UPSIDE_DOWN_MAX_CEILING_HEIGHT = pair.getLeft().upsideDownMaxCeilingHeight;
         UPSIDE_DOWN_MIRROR_PRECOMPUTE = pair.getLeft().upsideDownMirrorPrecompute;
+        DISTANT_LOD_LITE_DECORATION = pair.getLeft().distantLodLiteDecoration;
         UPSIDE_DOWN_TRACK_FLATTEN = pair.getLeft().upsideDownTrackFlatten;
         CHUNCKS_ENABLED = pair.getLeft().chuncksEnabled;
         CHUNCKS_HOLD_BLOCKS = pair.getLeft().chuncksHoldBlocks;
@@ -929,6 +941,15 @@ public final class DungeonTrainCommonConfig {
                         "byte-identical terrain. Set false to compute and apply everything at load (original behaviour).",
                         "Default true.")
                 .define("upsideDownMirrorPrecompute", DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE);
+        ModConfigSpec.BooleanValue distantLodLiteDecoration = b
+                .comment("Distant Horizons LOD-lite decoration. DH's LOD generator threads (DH-World Gen Thread[N])",
+                        "run the Nether-core vanilla feature pass for LOD chunks that are never saved and only seen",
+                        "from beyond the vanilla render distance. true = on those threads place only the silhouette",
+                        "features (huge fungi, basalt pillars/columns, deltas, vegetation) and skip the sub-block",
+                        "detail (ores, glowstone, fire, mushrooms, springs) that is below LOD resolution; the kept",
+                        "features are seeded identically so they stand where the real chunk's will. Real chunks are",
+                        "never affected. false = full decoration on every thread (original behaviour). Default true.")
+                .define("distantLodLiteDecoration", DEFAULT_DISTANT_LOD_LITE_DECORATION);
         ModConfigSpec.BooleanValue upsideDownTrackFlatten = b
                 .comment("Keep mountains off the track in the upside-down band: near the track the overworld terrain",
                         "(and its biomes) is weighted toward lowland before it is mirrored, fading smoothly back to the",
@@ -1120,7 +1141,7 @@ public final class DungeonTrainCommonConfig {
                 upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks, upsideDownExitGapBlocks,
                 upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
                 upsideDownBedrockRoof, upsideDownCloudY, upsideDownExitNoiseSkipEpsilon,
-                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute, upsideDownTrackFlatten,
+                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute, distantLodLiteDecoration, upsideDownTrackFlatten,
                 chuncksEnabled, chuncksHoldBlocks, chuncksFadeBlocks, chuncksLeadGapBlocks,
                 chuncksKeepDensity, chuncksSliceRatio,
                 spheresEnabled, spheresHoldBlocks, spheresFadeBlocks, spheresLeadGapBlocks,
@@ -1573,6 +1594,11 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? UPSIDE_DOWN_MIRROR_PRECOMPUTE.get() : DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE;
     }
 
+    /** Whether Nether-core decoration goes LOD-lite on Distant Horizons generator threads; falls back pre-load. */
+    public static boolean isDistantLodLiteDecoration() {
+        return isLoaded() ? DISTANT_LOD_LITE_DECORATION.get() : DEFAULT_DISTANT_LOD_LITE_DECORATION;
+    }
+
     /** Whether the chuncks band is active; falls back to the hardcoded default pre-load. */
     public static boolean isChuncksEnabled() {
         return isLoaded() ? CHUNCKS_ENABLED.get() : DEFAULT_CHUNCKS_ENABLED;
@@ -1751,6 +1777,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.DoubleValue upsideDownExitNoiseSkipEpsilon,
                           ModConfigSpec.IntValue upsideDownMaxCeilingHeight,
                           ModConfigSpec.BooleanValue upsideDownMirrorPrecompute,
+                          ModConfigSpec.BooleanValue distantLodLiteDecoration,
                           ModConfigSpec.BooleanValue upsideDownTrackFlatten,
                           ModConfigSpec.BooleanValue chuncksEnabled,
                           ModConfigSpec.IntValue chuncksHoldBlocks,

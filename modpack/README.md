@@ -131,10 +131,41 @@ flag straight into the manifest:
   Distant Horizons, Effortless Building, Punchy!, WorldEdit, Just Enough Items (JEI). Shipped in the pack so a player can flip them on with one click, but inert until they
   do. (DT itself + Sable are hardcoded `required:true` in the builder.)
 
+## Distant Horizons ships in low-CPU mode
+
+`overrides/config/DistantHorizons.toml` is a **partial** DH config (DH fills the rest with its
+defaults) that exists because player lag reports showed DH's `DH-World Gen Thread[N]` workers
+starving the server and Sable physics threads on small CPUs — a 4-core laptop sat at 91 ms ticks
+with nothing nearby while DH generated LODs at 24 chunks/s. DH is off by default in the pack, so the
+file is inert until a player enables it. What it sets, and why:
+
+| Key | Value | Why |
+|---|---|---|
+| `common.multiThreading.numberOfThreads` | `1` | DH's default (BALANCED) is `ceil(cores/2)` threads. DH's relative "CPU load" preset is GUI-only — never written to the file — so the absolute values behind **MINIMAL_IMPACT** are set directly. 1 thread @ 50% equals MINIMAL_IMPACT on any CPU up to 10 threads. |
+| `common.multiThreading.threadRunTimeRatio` | `"0.5"` | Same preset; a string because DH stores it that way. |
+| `common.multiThreading.threadPriority` | `3` | Below-normal Java priority so the OS favours the server / physics / render threads under contention (effective on Windows; ignored where the JVM doesn't map priorities, harmless). |
+| `client.advanced.graphics.quality.lodChunkRenderDistanceRadius` | `128` | Default 256. The generation radius follows it, so this quarters the LOD area to generate and hold; the world is a strip along the track, so far off-axis LODs are never looked at. |
+
+Deliberately **not** set: `rendererMode` (the renderer switch — see the DH profiling notes in the
+repo memory), `distantGeneratorMode` (dropping to SURFACE would strip trees from every LOD).
+
+**Trade-offs to know before touching it:**
+- One thread at half duty is conservative on purpose. On a 16-thread desktop LOD fill runs at
+  roughly a quarter of DH's default speed; players can raise the thread count in DH's settings.
+- **A pack update rewrites this file.** Launchers replace `config/` on update (see the next section),
+  and DH re-saves its *whole* config on exit, so a player's other DH edits (render distance,
+  quality) are reset to these values on every pack update too. Before this file existed DH users
+  kept their settings across updates. If that becomes a complaint, the alternative is a client-side
+  one-shot in the mod (DH API `IDhApiConfigValue#setValue` behind a marker file, like
+  `TrashSlotKeybindDefault`) that respects later player edits.
+- The mod half of the same fix lives in `worldgen/LodGeneration`: on a `DH-World Gen` thread the
+  Nether-core decoration places only the silhouette-scale features (config
+  `distantLodLiteDecoration`, common config). Neither half depends on the other.
+
 ## ⚠️ A pack update replaces `config/` — keep player data out of it
 
 Every publish of this pack ships `overrides/config/khi.toml` and
-`overrides/config/smoothswapping.json`, so **every** Dungeon Train pack update writes into the
+`overrides/config/smoothswapping.json` (and now `overrides/config/DistantHorizons.toml`), so **every** Dungeon Train pack update writes into the
 player's `config/` folder. Launchers do not merge that folder — they replace it. ATLauncher wipes
 `config/` between pack versions ([ATLauncher#704](https://github.com/ATLauncher/ATLauncher/issues/704))
 and the Modrinth app has repeatedly deleted instance files on update
@@ -461,7 +492,7 @@ After a whitelist change ships, refresh the relay's copy (dp-relay
 | File | Purpose |
 |---|---|
 | `modpack.config.json` | Editable config (drives **both** packs): pack name/author, DT project IDs, the pinned Sable project/file/version + `modrinth_project`/`modrinth_version`, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard, a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in — and a `modrinth_project`/`modrinth_version` pin; the five sibling mods additionally carry `dependency_type: required` plus `version` + `gradle_property` for the floor guard), and `curseforge_relations` (sable only). |
-| `overrides/` | Config files copied verbatim into the player's instance on install (shared by both packs). Currently ships `config/smoothswapping.json` (tuned Smooth Swapping) and `config/khi.toml` (the Kinetic Hosting affiliate URL + banner text, so every install gets the partner link pre-filled), `config/crash_assistant/config.toml` (Crash Assistant's help link + the #bugs-feedback wording), plus the localization compat packs — see below. The tree is **allowlisted** — `check-overrides.py` fails CI on any file not named in its `ALLOWED` list, so a config the mod holds to its defaults can never be shipped here by accident. |
+| `overrides/` | Config files copied verbatim into the player's instance on install (shared by both packs). Currently ships `config/smoothswapping.json` (tuned Smooth Swapping) and `config/khi.toml` (the Kinetic Hosting affiliate URL + banner text, so every install gets the partner link pre-filled), `config/crash_assistant/config.toml` (Crash Assistant's help link + the #bugs-feedback wording), `config/DistantHorizons.toml` (DH low-CPU defaults — see "Distant Horizons ships in low-CPU mode"), plus the localization compat packs — see below. The tree is **allowlisted** — `check-overrides.py` fails CI on any file not named in its `ALLOWED` list, so a config the mod holds to its defaults can never be shipped here by accident. |
 | `overrides/resourcepacks/DungeonTrain-zh_cn-compat.zip` | zh_cn translations for the bundled **companion** mods (Jade, Distant Horizons, Controlling, ModernFix, CreativeCore, Sable). The shipped zips also still carry legacy `tectonic` keys from when the pack bundled Tectonic — inert now that it is gone (a lang overlay for an absent mod does nothing), and left in place so the zips stay byte-identical. Dungeon Train's own namespaces (+ AIN/PlayerMob/DiscordPresence) ship their zh_cn `lang/` inside the mod jar, so they're not in here. **Auto-enabled by a client-side one-shot** in the mod (`CompanionResourcePackAutoEnabler`) — it selects this pack the first time it's found and writes a marker so it never fights a player who later disables it. This replaces a shipped `options.txt` (which a launcher would copy wholesale and reset the player's other options); the hook only ever touches the resource-pack selection. |
 | `../scripts/modpack/build-manifest.py` | CurseForge: renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
 | `../scripts/modpack/build-mrpack.py` | Modrinth: renders `modrinth.index.json` from this config + `gradle.properties` + the release's DT Modrinth version (resolving each pin's URL/hashes from the Modrinth API). `--check-config` validates pins with no network (CI). |
