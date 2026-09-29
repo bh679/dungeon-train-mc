@@ -33,6 +33,10 @@ public final class ModStructureTypes {
     public static final DeferredHolder<StructureType<?>, StructureType<BandEndCityStructure>> END_CITY =
         STRUCTURE_TYPES.register("end_city", () -> () -> BandEndCityStructure.CODEC);
 
+    /** {@link BandAncientCityStructure} — vanilla's ancient city in the band's fall-side deep-dark caverns. */
+    public static final DeferredHolder<StructureType<?>, StructureType<BandAncientCityStructure>> ANCIENT_CITY =
+        STRUCTURE_TYPES.register("ancient_city", () -> () -> BandAncientCityStructure.CODEC);
+
     /** Registry key of the band's End city — the id the band's own code gates on. */
     public static final ResourceKey<Structure> END_CITY_KEY = ResourceKey.create(
         Registries.STRUCTURE, ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "end_city"));
@@ -46,7 +50,7 @@ public final class ModStructureTypes {
         Registries.STRUCTURE_SET, ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "end_city"));
 
     /**
-     * True for any structure this mod registers — currently just the band's End city.
+     * True for any structure this mod registers — the band's End city and ancient city.
      *
      * <p>Both {@code ChunkGeneratorStructureStateMixin} (which keeps their structure sets from being
      * filtered out of the overworld generator) and {@code ChunkGeneratorDecorationMixin} (which lets their
@@ -56,7 +60,7 @@ public final class ModStructureTypes {
      */
     public static boolean isBandStructure(StructureType<?> type) {
         try {
-            return type == END_CITY.get();
+            return type == END_CITY.get() || type == ANCIENT_CITY.get();
         } catch (Throwable t) {
             return false;
         }

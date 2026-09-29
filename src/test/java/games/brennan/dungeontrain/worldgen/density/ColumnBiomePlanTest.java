@@ -39,6 +39,10 @@ final class ColumnBiomePlanTest {
             return Result.ORIGINAL;
         }
 
+        @Override public int caveWindowTop(int blockX, int blockZ) {
+            return blockX >= 1000 && blockX < 1400 ? 150 : BandBiomeDecision.NO_CAVE;
+        }
+
         @Override public String netherCore(int blockX, int blockZ) {
             netherCalls++;
             return "nether@" + blockX + "," + blockZ + "/" + epoch;

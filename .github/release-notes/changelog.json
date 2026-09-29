@@ -20771,6 +20771,24 @@
       "released_at": null
     },
     {
+      "id": "nether-transition-caverns",
+      "version": "0.1029.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "mobs"
+      ],
+      "title": "More caves",
+      "summary": "More caves. The mountains the line climbs through are no longer solid rock \u2014 big open caves now run through them, and the track carries you straight through.",
+      "highlights": [],
+      "pr": 1665,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "lost-city-terrain-fit-sibling",
       "version": "0.1029.0",
       "type": "refactor",
