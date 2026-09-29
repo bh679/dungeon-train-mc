@@ -20581,8 +20581,29 @@
       "released_at": null
     },
     {
-      "id": "mspt-lag-report-counters",
+      "id": "fluid-interaction-no-sync-load",
       "version": "0.1019.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "world"
+      ],
+      "title": "No more freezes when water or lava flows into terrain that is still generating",
+      "summary": "When water or lava reached the edge of terrain that had not finished generating, the server used to stop everything and build that terrain on the spot \u2014 a multi-second freeze, sometimes chained several times over. The check for what the two fluids should do when they meet now waits until the terrain is ready, then runs as normal, so obsidian and cobblestone still form and the train keeps moving.",
+      "highlights": [
+        "Multi-second freezes at the edge of freshly generated terrain are gone",
+        "Lava and water still turn to obsidian, cobblestone and basalt as before, just a moment later at chunk edges"
+      ],
+      "pr": 1651,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "mspt-lag-report-counters",
+      "version": "0.1020.0",
       "type": "chore",
       "tags": [
         "internal"

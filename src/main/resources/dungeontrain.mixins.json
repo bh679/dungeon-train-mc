@@ -79,6 +79,7 @@
     "SubLevelEntityCollisionNoLoadMixin",
     "RapierPipelineNoSyncLoadMixin",
     "RapierPipelineBlockChangeNoLoadMixin",
+    "FluidInteractionNoLoadMixin",
     "SableBlockChangeGuardMixin",
     "SubLevelPhysicsBlockChangeBatchMixin",
     "PhysicsChunkTicketManagerAccessor",
