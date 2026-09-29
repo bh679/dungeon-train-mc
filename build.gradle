@@ -189,6 +189,13 @@ neoForge {
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
             }
+            // Item-icon dump for the relay's item-values page: ./gradlew runClient -PtradeValueIcons
+            // renders every item to run/trade-values-icons/<ns>/<path>.png at the title screen and
+            // quits (client/TradeValueIconDump).
+            if (project.hasProperty('tradeValueIcons')) {
+                systemProperty 'dungeontrain.tradeValueIcons', 'true'
+                systemProperty 'dungeontrain.tradeValueIcons.quit', 'true'
+            }
             // Collider-batch A/B seam: ./gradlew runServer -PcolliderBatch=false boots with
             // ColliderBatch off, so the bootstrap spawn (which runs before any command can reach the
             // server) can be measured on Sable's per-block path. See ship/sable/ColliderBatch.

@@ -126,7 +126,9 @@ registers it as TE's first value provider, ahead of `TradeEverythingBridge`'s ha
 constants). It is never part of `build` — CI and the cascade build offline — so run it by hand,
 review the diff, commit. To refresh the page's item list, run
 `/dungeontrain debug trade-values dump` in a dev client and copy `run/trade-values-catalog.json`
-to the relay's `public/dungeontrain/items/catalog.json`.
+to the relay's `public/dungeontrain/items/catalog.json`. For the icons, `./gradlew runClient
+-PtradeValueIcons` renders every item at the title screen to `run/trade-values-icons/` and quits
+(`client/TradeValueIconDump`); copy that folder to `public/dungeontrain/items/icons/`.
 
 ### In-Game Manual Testing
 
