@@ -106,6 +106,34 @@ final class LostCityGroundProcessorTest {
     }
 
     @Test
+    @DisplayName("in an overlap, air and cover leave the earlier building's blocks; elsewhere they carve as before")
+    void overlap() {
+        BlockState wall = Blocks.GRAY_CONCRETE.defaultBlockState();
+        BlockState road = Blocks.COBBLESTONE.defaultBlockState();
+        BlockState floor = Blocks.BIRCH_PLANKS.defaultBlockState();
+        // the earlier building's room: a road, air, then a wall and an upper floor over the gap, a plant on top
+        IntFunction<BlockState> earlier = column(road, AIR, wall, floor, AIR, Blocks.SHORT_GRASS.defaultBlockState());
+        assertTrue(LostCityGroundProcessor.yields(AIR, 2, earlier, true));                                  // a wall
+        assertTrue(LostCityGroundProcessor.yields(AIR, 3, earlier, true));                                  // a floor
+        assertTrue(LostCityGroundProcessor.yields(Blocks.MOSS_CARPET.defaultBlockState(), 2, earlier, true));
+        assertFalse(LostCityGroundProcessor.yields(AIR, 1, earlier, true));                                 // both agree on air
+        assertFalse(LostCityGroundProcessor.yields(AIR, 5, earlier, true));                                 // a plant is not a block
+        assertFalse(LostCityGroundProcessor.yields(AIR, 2, earlier, false));                                // no overlap: the wall over the gap is carved
+        assertFalse(LostCityGroundProcessor.yields(AIR, 3, earlier, false));
+        assertFalse(LostCityGroundProcessor.yields(wall, 2, earlier, true));                                // this building's walls still place
+        // the pad row and water ignore the flag
+        BlockState moss = Blocks.MOSS_BLOCK.defaultBlockState();
+        assertEquals(LostCityGroundProcessor.yields(moss, 0, column(road), false), LostCityGroundProcessor.yields(moss, 0, column(road), true));
+        assertFalse(LostCityGroundProcessor.yields(moss, 0, column(AIR), true));
+        assertFalse(LostCityGroundProcessor.yields(road, 0, column(wall), true));                           // a road pad over a wall stays a road
+        assertTrue(LostCityGroundProcessor.yields(AIR, 1, column(road, Blocks.WATER.defaultBlockState()), true));
+        assertTrue(LostCityGroundProcessor.isSolidBlock(wall));
+        assertFalse(LostCityGroundProcessor.isSolidBlock(AIR));
+        assertFalse(LostCityGroundProcessor.isSolidBlock(Blocks.WATER.defaultBlockState()));
+        assertFalse(LostCityGroundProcessor.isSolidBlock(Blocks.SHORT_GRASS.defaultBlockState()));
+    }
+
+    @Test
     @DisplayName("footing runs from a hanging pad down to the ground, capped, and never under grounded pads")
     void footing() {
         BlockState moss = Blocks.MOSS_BLOCK.defaultBlockState();

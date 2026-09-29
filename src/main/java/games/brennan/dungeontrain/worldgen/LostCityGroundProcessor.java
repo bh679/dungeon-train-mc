@@ -46,6 +46,10 @@ import java.util.function.IntFunction;
  *   water level runs through the rooms), and to ground while the world column from the pad up to it is
  *   contiguous natural ground, so a hill on the uphill side leans into the outer rooms as a smooth ramp.
  *   The contiguity walk keeps no shelf over a gap.</li>
+ *   <li><b>Overlap</b> — where another Lost City building's piece box reaches the same position
+ *   ({@link LostCityOverlap}), the air above the pad also yields to any solid block already there, so two
+ *   buildings that start over each other meld into the union of their walls and floors rather than the
+ *   later one carving its rooms through the first.</li>
  *   <li><b>Structure</b> — everything else (roads, pavements, walls, floors, props, and natural blocks above
  *   the pad such as planters) is placed as the template says.</li>
  * </ul>
@@ -120,20 +124,33 @@ public final class LostCityGroundProcessor extends StructureProcessor {
         return state.getFluidState().isSourceOfType(Fluids.WATER);
     }
 
+    /** Whether the world holds a block here that a building's air could erase: not air, not a fluid, not replaceable. */
+    static boolean isSolidBlock(BlockState state) {
+        return !state.isAir() && state.getFluidState().isEmpty() && !state.canBeReplaced();
+    }
+
+    /** {@link #yields(BlockState, int, IntFunction, boolean)} outside any overlap. */
+    static boolean yields(BlockState template, int localY, IntFunction<BlockState> world) {
+        return yields(template, localY, world, false);
+    }
+
     /**
      * Whether the template block at local height {@code localY} yields to the world, given the world column
      * from the pad level ({@code world.apply(0)}) up to that height ({@code world.apply(localY)}).
      *
      * <p>Pad base yields when the world already has ground there. Air and plant cover yield to the world's
-     * water, and to ground while every world block from the pad up to them is ground — no shelf is kept
-     * over a gap.</p>
+     * water; where the position is {@code overlapped} by another Lost City building, to any solid block
+     * that building left; and otherwise to ground while every world block from the pad up to them is
+     * ground — no shelf is kept over a gap.</p>
      */
-    static boolean yields(BlockState template, int localY, IntFunction<BlockState> world) {
+    static boolean yields(BlockState template, int localY, IntFunction<BlockState> world, boolean overlapped) {
         if (localY == 0) {
             return isBase(template) && isNaturalGround(world.apply(0));
         }
         if (!template.isAir() && !isCover(template)) return false;
-        if (isWater(world.apply(localY))) return true;   // the water level runs through the building
+        BlockState here = world.apply(localY);
+        if (isWater(here)) return true;   // the water level runs through the building
+        if (overlapped && isSolidBlock(here)) return true;   // the earlier building's walls and floors stay
         for (int y = 0; y <= localY; y++) {
             if (!isNaturalGround(world.apply(y))) return false;
         }
@@ -156,7 +173,9 @@ public final class LostCityGroundProcessor extends StructureProcessor {
         int padY = at.getY() - localY;
         if (box != null && padY < box.minY()) return target;
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        boolean yields = yields(state, localY, y -> world.getBlockState(cursor.set(at.getX(), padY + y, at.getZ())));
+        // the structure lookup only when there is a block here that this air would erase
+        boolean overlapped = localY > 0 && isSolidBlock(world.getBlockState(at)) && LostCityOverlap.overlapped(world, at);
+        boolean yields = yields(state, localY, y -> world.getBlockState(cursor.set(at.getX(), padY + y, at.getZ())), overlapped);
         return yields ? null : target;
     }
 
