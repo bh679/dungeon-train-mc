@@ -42,11 +42,11 @@ final class CycleLayoutTest {
         CycleLayout l = shipped();
         assertEquals(17, l.count());
         // Lap 1: 2750 + 3814 (a 2750-core Nether) + 3250 (WWOO) + joined End (740+1200 | 2000+740)
-        //        + (600+2500+600+3000+600) = 21,794
+        //        + (600+2500+3000+600) = 21,194 — no trailing fade: the core runs straight into the Reassembly
         // Lap 2: 4500 (BoP) + 5564 + Lost City (480+3000+480) + 6480 + (750+6550) + 500 (the sunk approach) = 28,304
         // Lap 3: legacy (480·12 + 4000 + 2500 + 4320 + 3500 + 4000 + 2000·4 + 1000 + 200 = 33,280)
         //        + 650 + (1500+2000) + 4000 (the mix zone) + 6500 = 47,930
-        assertEquals(98_028L, l.period());
+        assertEquals(97_428L, l.period());
         assertEquals(2, l.typeCount(Type.NETHER));
         assertEquals(3, l.typeCount(Type.END));
         assertEquals(2, l.typeCount(Type.LEGACY_RUN));
@@ -61,8 +61,9 @@ final class CycleLayoutTest {
         assertEquals(9_814L, l.start(3));                       // End (vanilla piece)
         assertEquals(9_814L + 1940L, l.start(4));               // End (BoP piece) — no fade between them
         assertEquals(11_754L + 2740L, l.start(5));              // Upside-down
-        assertEquals(7_300L, l.length(5));
-        assertEquals(21_794L, l.start(6));                      // OW·BoP opens lap 2
+        assertEquals(6_700L, l.length(5));                      // 600 entry fade + 2500 core + 3000 Reassembly + 600 exit
+        assertEquals(0L, l.udTrailingFade(l.slot(5)));          // no trailing fade before a Reassembly
+        assertEquals(21_194L, l.start(6));                     // OW·BoP opens lap 2
         assertEquals(Style.BOP, l.slot(6).style());
         assertEquals(Style.BETTER, l.slot(7).style());
         assertEquals(Type.LEGACY_RUN, l.slot(8).type());        // Lost City, its own run
@@ -85,7 +86,7 @@ final class CycleLayoutTest {
         assertEquals(Style.BETTER, l.slot(7).styleOnRun(1));              // Lap 2 is the same every run
         assertEquals(Type.SPHERES, l.slot(10).type());
         assertEquals(Type.LEGACY_RUN, l.slot(12).type());
-        assertEquals(21_794L + 28_304L, l.start(12));
+        assertEquals(21_194L + 28_304L, l.start(12));
         assertEquals(Style.SUNK, l.slot(11).style());            // the short approach into Amplified
         assertEquals(Type.MIX, l.slot(15).type());
         assertEquals(4000L, l.length(15));                      // hard-edged: no fades

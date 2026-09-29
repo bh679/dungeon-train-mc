@@ -375,9 +375,15 @@ public record WorldGenCycle(long startX, int owGap,
         return first < 0 ? Disintegration.bandLength(eFade, eVoid, 0) : layout.endGroupLength(first);
     }
 
-    /** Combined length of the upside-down band ({@code 2·udFade + udHold}); 0 when the band is disabled. */
+    /**
+     * Combined length of the upside-down band ({@code udFade + udHold + trailing fade}); 0 when the band is
+     * disabled. The trailing fade is dropped when a Reassembly follows — see {@link CycleLayout#udTrailingFade}.
+     */
     public long upsideDownLen() {
-        return 2L * Math.max(0, udFade) + Math.max(0, layout == null ? udHold : layout.firstCoreOf(CycleLayout.Type.UPSIDE_DOWN));
+        if (layout == null) return Math.max(0, udFade) + Math.max(0, udHold) + (udExitFade > 0 ? 0L : Math.max(0, udFade));
+        int first = layout.indexOfOccurrence(CycleLayout.Type.UPSIDE_DOWN, 0);
+        long trailing = first < 0 ? Math.max(0, udFade) : layout.udTrailingFade(layout.slot(first));
+        return Math.max(0, udFade) + Math.max(0, layout.firstCoreOf(CycleLayout.Type.UPSIDE_DOWN)) + trailing;
     }
 
     /**
@@ -1474,9 +1480,17 @@ public record WorldGenCycle(long startX, int owGap,
         return (l < 0L || l >= udBandLenAt(worldX)) ? -1L : l;
     }
 
-    /** {@code 2·udFade + core} of the upside-down occurrence at {@code worldX}. */
+    /** {@code udFade + core + trailing fade} of the upside-down occurrence at {@code worldX}. */
     private long udBandLenAt(int worldX) {
-        return 2L * Math.max(0, udFade) + Math.max(0, spanCore(CycleLayout.Type.UPSIDE_DOWN, worldX));
+        return Math.max(0, udFade) + Math.max(0, spanCore(CycleLayout.Type.UPSIDE_DOWN, worldX)) + udTrailingFadeAt(worldX);
+    }
+
+    /**
+     * Trailing atmosphere fade of the upside-down occurrence at {@code worldX}: none when a Reassembly
+     * follows (the core runs straight into it), {@code udFade} otherwise.
+     */
+    private long udTrailingFadeAt(int worldX) {
+        return udExitFadeLenAt(worldX) > 0L ? 0L : Math.max(0, udFade);
     }
 
     /** Reassembly (exit-crossfade) length of the upside-down occurrence at {@code worldX}. */
@@ -1499,10 +1513,9 @@ public record WorldGenCycle(long startX, int owGap,
             if (fade == 0) return 1.0;
             long band = udBandLenAt(worldX);
             if (lu < fade) return (double) lu / fade;          // leading fade-in
-            long holdEnd = band - fade;
-            if (lu < holdEnd) return 1.0;                      // core hold
-            if (udExitFadeLenAt(worldX) > 0L) return 1.0;      // exit crossfade present → hold at 1, it carries the fade-out
-            return Math.max(0.0, (double) (band - lu) / fade); // trailing fade-out (byte-identical when no exit fade)
+            long trailing = udTrailingFadeAt(worldX);
+            if (lu < band - trailing) return 1.0;              // core hold (to the band's end when a Reassembly follows)
+            return Math.max(0.0, (double) (band - lu) / trailing); // trailing fade-out (only without a Reassembly)
         }
         long ex = udExitFadeOffset(worldX);                    // exit crossfade: sky/light fades 1→0 across the whole zone
         if (ex >= 0L) {

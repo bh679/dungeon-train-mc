@@ -385,13 +385,22 @@ public final class CycleLayout {
             case OVERWORLD -> Math.max(0, s.core());
             case NETHER -> NetherTransition.bandLength(fades.riseLen(), fades.megaHold(), fades.coreFade(), s.core());
             case END -> endPieceLength(i);
-            case UPSIDE_DOWN -> 2L * Math.max(0, fades.udFade()) + s.core() + udReassembly(s) + Math.max(0, fades.udExit());
+            case UPSIDE_DOWN -> Math.max(0, fades.udFade()) + s.core() + udTrailingFade(s) + udReassembly(s)
+                    + Math.max(0, fades.udExit());
             case CHUNCKS -> Math.max(0, fades.chuncksFade()) + s.core();
             case SPHERES -> Math.max(0, fades.spheresFade()) + s.core();
             case STACKS -> Math.max(0, fades.stacksFade()) + s.core();
             case LEGACY_RUN -> legacyRunLength(i);
             case MIX -> Math.max(0, s.core());
         };
+    }
+
+    /**
+     * The upside-down slot's trailing atmosphere fade: none when a Reassembly follows (the core runs
+     * straight into it — the Reassembly carries the fade-out), {@code udFade} when it doesn't.
+     */
+    public long udTrailingFade(Slot s) {
+        return udReassembly(s) > 0L ? 0L : Math.max(0, fades.udFade());
     }
 
     /** The upside-down slot's Reassembly (exit crossfade) length — its own, or the cycle default. */

@@ -49,7 +49,7 @@ final class WorldGenCycleLayoutTest {
     @DisplayName("period is the run-1 length and the layout is reported")
     void period() {
         assertTrue(C.hasLayout());
-        assertEquals(98_028L, C.period());
+        assertEquals(97_428L, C.period());
         assertEquals(232, C.riseLen());
     }
 
@@ -328,21 +328,51 @@ final class WorldGenCycleLayoutTest {
     }
 
     @Test
-    @DisplayName("upside-down: fades, a 2500 core, a 3000 Reassembly and the exit gap")
+    @DisplayName("upside-down: an entry fade, a 2500 core, a 3000 Reassembly and the exit gap — no trailing fade")
     void upsideDown() {
         long u = LAYOUT.start(5);
         assertEquals(0.0, C.upsideDownRamp(x(u - 1)));
         assertEquals(0.5, C.upsideDownRamp(x(u + 300)), 1e-9);
         assertEquals(1.0, C.upsideDownRamp(x(u + 600 + 1250)));
-        assertTrue(C.isInUpsideDownBand(x(u + 600 + 2500 + 599)));
-        assertFalse(C.isInUpsideDownBand(x(u + 600 + 2500 + 600)));
-        assertTrue(C.isInUpsideDownExitFade(x(u + 3700)));
-        assertTrue(C.isInUpsideDownExitFade(x(u + 3700 + 2999)));
-        assertFalse(C.isInUpsideDownExitFade(x(u + 3700 + 3000)));
-        assertEquals(0.5, C.upsideDownExitOwRevealRamp(x(u + 3700 + 1500)), 1e-9);
-        assertEquals(0.5, C.upsideDownExitMirrorDisperseRamp(x(u + 3700 + 1500)), 1e-9);
-        assertEquals(0.0, C.upsideDownRamp(x(u + 3700 + 3000 + 10)));   // the 600 exit gap
-        assertEquals(LAYOUT.start(6), u + 600 + 2500 + 600 + 3000 + 600);
+        assertEquals(600L + 2500L, C.upsideDownLen());                  // entry fade + core only
+        assertTrue(C.isInUpsideDownBand(x(u + 600 + 2499)));
+        assertFalse(C.isInUpsideDownBand(x(u + 600 + 2500)));
+        assertTrue(C.isInUpsideDownExitFade(x(u + 3100)));
+        assertTrue(C.isInUpsideDownExitFade(x(u + 3100 + 2999)));
+        assertFalse(C.isInUpsideDownExitFade(x(u + 3100 + 3000)));
+        assertEquals(0.5, C.upsideDownExitOwRevealRamp(x(u + 3100 + 1500)), 1e-9);
+        assertEquals(0.5, C.upsideDownExitMirrorDisperseRamp(x(u + 3100 + 1500)), 1e-9);
+        assertEquals(0.0, C.upsideDownRamp(x(u + 3100 + 3000 + 10)));   // the 600 exit gap
+        assertEquals(LAYOUT.start(6), u + 600 + 2500 + 3000 + 600);
+    }
+
+    @Test
+    @DisplayName("upside-down: the core holds full strength to its last block and the Reassembly starts on the next")
+    void upsideDownCoreRunsIntoReassembly() {
+        long lastCore = LAYOUT.start(5) + 600 + 2500 - 1;
+        assertEquals(1.0, C.upsideDownRamp(x(lastCore)));
+        assertTrue(C.isInUpsideDownBand(x(lastCore)));
+        assertFalse(C.isInUpsideDownExitFade(x(lastCore)));
+        assertTrue(C.isInUpsideDownExitFade(x(lastCore + 1)));        // no 600-block held stretch in between
+        assertFalse(C.isInUpsideDownBand(x(lastCore + 1)));
+    }
+
+    @Test
+    @DisplayName("upside-down with no Reassembly keeps its trailing fade: band = 2·fade + core, ramp 1 → 0 over the last fade")
+    void upsideDownWithoutReassemblyKeepsTrailingFade() {
+        WorldGenCycle c = custom("ow:1000, upside_down:2500:0, ow:1000");
+        long u = 1000;
+        assertEquals(600L + 2500L + 600L, c.upsideDownLen());
+        long end = u + 600 + 2500 + 600;                               // band end, then the 600 exit gap
+        assertTrue(c.isInUpsideDownBand(x(end - 1)));
+        assertFalse(c.isInUpsideDownBand(x(end)));
+        assertFalse(c.isInUpsideDownExitFade(x(end)));
+        assertEquals(1.0, c.upsideDownRamp(x(u + 600 + 2499)));        // last core block
+        assertEquals(0.5, c.upsideDownRamp(x(end - 300)), 1e-9);
+        assertEquals(1.0 / 600, c.upsideDownRamp(x(end - 1)), 1e-9);
+        for (long l = u + 600 + 2500; l < end - 1; l++) {
+            assertTrue(c.upsideDownRamp(x(l)) > c.upsideDownRamp(x(l + 1)), "ramp falls at u=" + l);
+        }
     }
 
     @Test
