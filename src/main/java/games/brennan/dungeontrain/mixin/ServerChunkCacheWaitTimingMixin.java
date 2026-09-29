@@ -17,7 +17,7 @@ import java.util.function.BooleanSupplier;
  * <p>Pure observation: wraps {@code ServerChunkCache$MainThreadExecutor.managedBlock} and always
  * calls the original. That executor is the chunk cache's private field, and its only
  * {@code managedBlock} callers are {@code getChunk} and {@code getChunkFuture} (bytecode-verified
- * against NeoForge 21.1.228) — a cache hit never reaches it, so only real misses are timed. Worldgen
+ * against NeoForge 21.1.228). Only waits whose future is still pending on entry are timed. Worldgen
  * run inside the block can re-enter {@code getChunk} ({@code WorldgenForceGuard}); the depth counter
  * times only the outermost wait so nothing is counted twice. Only the server thread runs this
  * executor's blocks, so a plain static suffices.</p>
@@ -34,6 +34,14 @@ public abstract class ServerChunkCacheWaitTimingMixin {
 
     @WrapMethod(method = "managedBlock", require = 0)
     private void dungeonTrain$timeChunkWait(BooleanSupplier done, Operation<Void> original) {
+        // getChunk reaches here on every miss of its 4-entry lookup cache, including chunks that
+        // are already loaded — the future is done and managedBlock returns at once. A headless run
+        // showed ~4000 of those per window at ~0.3 ms total, which would drown the real waits in
+        // chunkWaits=. Only a future still pending on entry is a load the thread actually waits on.
+        if (done.getAsBoolean()) {
+            original.call(done);
+            return;
+        }
         boolean outermost = dungeonTrain$waitDepth++ == 0;
         long start = outermost ? System.nanoTime() : 0L;
         try {

@@ -87,7 +87,7 @@ previous line.
 | `maxBodyLag` / `reparks` / `reanchors` | parked-body lag (blocks), re-parks and re-anchors in the window |
 | `gcMs` / `gcN` | GC **pause** time (ms) and collections in the window — stop-the-world beans only (G1 Young/Old; ZGC/Shenandoah "Pauses"), not concurrent cycles. First line after start reads 0 |
 | `heapUsedMb` / `heapMaxMb` | heap in use at the sample, and `-Xmx` |
-| `chunkWaitMs` / `chunkWaits` | server-thread time blocked on synchronous chunk loads (`ServerChunkCache$MainThreadExecutor.managedBlock`, outermost wait only) and how many |
+| `chunkWaitMs` / `chunkWaits` | server-thread time blocked on synchronous chunk loads (`ServerChunkCache$MainThreadExecutor.managedBlock` entered with the chunk still pending; outermost wait only) and how many. The first line after server start also carries the spawn-area loads |
 | `chunksLoaded` / `pendingChunkTasks` | loaded chunks in this level, and queued main-thread chunk tasks |
 | `entities` / `onCarriages` | loaded entities in the level, and how many sit in carriage (Sable plot) space — i.e. carriage contents. World-space riders are `activeEntity` |
 | `tickMaxMs` | longest single server tick in the last 40 (all dimensions) |
