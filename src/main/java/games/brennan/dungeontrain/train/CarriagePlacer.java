@@ -974,7 +974,7 @@ public final class CarriagePlacer {
                             level, world, w.state(), w.entry().blockEntityNbt(),
                             "carriage:" + variant.id(), w.localPos(), seed, carriageIndex,
                             w.entry().linkedLootPrefabId());
-                        ConnectPass.note(level, world, w.entry().connect());
+                        ConnectPass.note(level, world, w.entry().connect(), w.state());
                     }
                 }
             }

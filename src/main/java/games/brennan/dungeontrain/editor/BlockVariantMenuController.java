@@ -793,6 +793,18 @@ public final class BlockVariantMenuController {
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
+            case SET_CONNECT_ARMS -> {
+                // Lock's arms are the entry's own stored state properties — rewrite them.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (!VariantConnect.canConnect(entry.state())) return;
+                int arms = packet.delta() & VariantConnect.ALL;
+                mutated.set(idx, entry.withState(VariantConnect.force(entry.state(), arms), entry.blockEntityNbt()));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
             case BUMP_DIFF_MIN -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();

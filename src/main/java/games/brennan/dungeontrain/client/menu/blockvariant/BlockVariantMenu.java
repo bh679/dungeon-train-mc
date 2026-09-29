@@ -75,8 +75,12 @@ public final class BlockVariantMenu {
         /** The four fence / wall / pane connect-mode segments, in {@code VariantConnect.Mode} order. */
         ENTRY_CONNECT_DEFAULT,
         ENTRY_CONNECT_AUTO,
-        ENTRY_CONNECT_ON,
-        ENTRY_CONNECT_OFF,
+        ENTRY_CONNECT_LOCK,
+        /** The four locked-arm toggles of a Lock row, in N / E / S / W order. */
+        ENTRY_ARM_NORTH,
+        ENTRY_ARM_EAST,
+        ENTRY_ARM_SOUTH,
+        ENTRY_ARM_WEST,
         ENTRY_DIFF_MIN,
         ENTRY_DIFF_MAX,
         ROT_DIR_OPTION,
@@ -173,8 +177,11 @@ public final class BlockVariantMenu {
 
     /** The connect-mode segment kinds, indexed by {@code VariantConnect.Mode} ordinal. */
     public static final CellKind[] CONNECT_SEGMENTS = {
-        CellKind.ENTRY_CONNECT_DEFAULT, CellKind.ENTRY_CONNECT_AUTO,
-        CellKind.ENTRY_CONNECT_ON, CellKind.ENTRY_CONNECT_OFF};
+        CellKind.ENTRY_CONNECT_DEFAULT, CellKind.ENTRY_CONNECT_AUTO, CellKind.ENTRY_CONNECT_LOCK};
+
+    /** The locked-arm toggle kinds, index-aligned with {@code VariantConnect.ARM_BITS} (N, E, S, W). */
+    public static final CellKind[] ARM_SEGMENTS = {
+        CellKind.ENTRY_ARM_NORTH, CellKind.ENTRY_ARM_EAST, CellKind.ENTRY_ARM_SOUTH, CellKind.ENTRY_ARM_WEST};
 
     /** Which tiles of a repeating room this cell applies in. */
     public static VariantCopyScope copyScope() { return copyScope; }

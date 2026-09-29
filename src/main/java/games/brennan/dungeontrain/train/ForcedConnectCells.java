@@ -10,22 +10,22 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * Which fence / wall / pane cells of a Dungeon Train carriage were placed with a forced
- * {@link VariantConnect.Mode#ON} or {@link VariantConnect.Mode#OFF} connect mode — so their arms
- * hold for the carriage's life. {@code ForcedConnectShapeMixin} consults it whenever vanilla
+ * Which fence / wall / pane cells of a Dungeon Train carriage were placed with the
+ * {@link VariantConnect.Mode#LOCK} connect mode, and which arms they lock — so those arms hold for
+ * the carriage's life. {@code ForcedConnectShapeMixin} consults it whenever vanilla
  * re-derives one of those blocks' shape: during the Sable lift's notify pass, and on every later
  * neighbour change.
  *
  * <h2>Keying</h2>
  * The same scheme as {@link PlayerPlacedTrainBlocks}: per carriage sub-level UUID, positions
  * relative to the plot's minimum chunk corner, so a mark stays with its block if Sable hands a
- * sub-level reloaded from holding a different plot location. The value is the mode's ordinal.
+ * sub-level reloaded from holding a different plot location. The value is the locked arm mask
+ * ({@link VariantConnect#NORTH} …).
  *
  * <h2>Lifetime</h2>
  * In memory only — Dungeon Train deletes every train sub-level at server stop. Entries go with
@@ -42,24 +42,22 @@ public final class ForcedConnectCells {
     // ---- level-facing API ----------------------------------------------------------------------
 
     /**
-     * Record that the block at shipyard position {@code pos} was placed with a forced connect
-     * {@code mode}. Anything other than On / Off, or a position outside a carriage plot, is ignored.
+     * Record that the block at shipyard position {@code pos} locks exactly the arms in {@code arms}.
+     * A position outside a carriage plot is ignored.
      */
-    public static void remember(ServerLevel level, BlockPos pos, VariantConnect.Mode mode) {
-        if (mode != VariantConnect.Mode.ON && mode != VariantConnect.Mode.OFF) return;
+    public static void remember(ServerLevel level, BlockPos pos, int arms) {
         if (!TrackGenerator.isShipyardChunk(pos.getX() >> 4, pos.getZ() >> 4)) return;
         ServerSubLevel subLevel = CarriagePlotResolver.subLevelAt(level, new ChunkPos(pos));
         if (subLevel == null) return;
-        put(subLevel.getUniqueId(), relKey(subLevel.getPlot(), pos), mode);
+        put(subLevel.getUniqueId(), relKey(subLevel.getPlot(), pos), arms);
     }
 
-    /** The forced mode of the block at {@code pos}, or {@code null} when it isn't forced. */
-    @Nullable
-    public static VariantConnect.Mode lookup(ServerLevel level, BlockPos pos) {
-        if (MODES.isEmpty()) return null;
-        if (!TrackGenerator.isShipyardChunk(pos.getX() >> 4, pos.getZ() >> 4)) return null;
+    /** The locked arm mask of the block at {@code pos}, or {@code -1} when it isn't locked. */
+    public static int lookup(ServerLevel level, BlockPos pos) {
+        if (MODES.isEmpty()) return -1;
+        if (!TrackGenerator.isShipyardChunk(pos.getX() >> 4, pos.getZ() >> 4)) return -1;
         ServerSubLevel subLevel = CarriagePlotResolver.subLevelAt(level, new ChunkPos(pos));
-        if (subLevel == null) return null;
+        if (subLevel == null) return -1;
         return get(subLevel.getUniqueId(), relKey(subLevel.getPlot(), pos));
     }
 
@@ -86,15 +84,16 @@ public final class ForcedConnectCells {
 
     // ---- UUID-keyed core (unit-tested) ---------------------------------------------------------
 
-    static void put(UUID subLevelId, long relKey, VariantConnect.Mode mode) {
-        MODES.computeIfAbsent(subLevelId, id -> new Long2ByteOpenHashMap()).put(relKey, (byte) mode.ordinal());
+    static void put(UUID subLevelId, long relKey, int arms) {
+        MODES.computeIfAbsent(subLevelId, id -> new Long2ByteOpenHashMap())
+            .put(relKey, (byte) (arms & VariantConnect.ALL));
     }
 
-    @Nullable
-    static VariantConnect.Mode get(UUID subLevelId, long relKey) {
+    /** The locked arm mask, or {@code -1} when the cell isn't locked. */
+    static int get(UUID subLevelId, long relKey) {
         Long2ByteOpenHashMap map = MODES.get(subLevelId);
-        if (map == null || !map.containsKey(relKey)) return null;
-        return VariantConnect.Mode.fromOrdinal(map.get(relKey));
+        if (map == null || !map.containsKey(relKey)) return -1;
+        return map.get(relKey);
     }
 
     static void remove(UUID subLevelId, long relKey) {

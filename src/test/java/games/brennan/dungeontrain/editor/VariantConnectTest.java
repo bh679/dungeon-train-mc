@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The per-row fence / wall / pane connect mode ({@link VariantConnect.Mode}): which blocks carry
- * it, what On / Off force, that every copy path keeps it, and that all four modes round-trip
+ * it, the Lock arm mask, that every copy path keeps it, and that all three modes round-trip
  * through the sidecar JSON, the clipboard NBT and the Z-menu sync packet.
  */
 final class VariantConnectTest {
@@ -67,34 +67,36 @@ final class VariantConnectTest {
     }
 
     @Test
-    @DisplayName("On puts every arm out, Off pulls every arm in — fences, panes and walls")
-    void forceArms() {
-        BlockState fenceOn = VariantConnect.force(fenceNorth(), true);
-        BlockState fenceOff = VariantConnect.force(fenceNorth(), false);
-        BlockState paneOn = VariantConnect.force(Blocks.GLASS_PANE.defaultBlockState(), true);
-        for (var arm : List.of(BlockStateProperties.NORTH, BlockStateProperties.EAST,
-                BlockStateProperties.SOUTH, BlockStateProperties.WEST)) {
-            assertTrue(fenceOn.getValue(arm), "fence On " + arm.getName());
-            assertFalse(fenceOff.getValue(arm), "fence Off " + arm.getName());
-            assertTrue(paneOn.getValue(arm), "pane On " + arm.getName());
+    @DisplayName("force / armMask round-trip every one of the 16 arm masks on a fence, a pane and a wall")
+    void everyMaskRoundTrips() {
+        List<BlockState> blocks = List.of(fenceNorth(), Blocks.GLASS_PANE.defaultBlockState(),
+            Blocks.COBBLESTONE_WALL.defaultBlockState().setValue(WallBlock.EAST_WALL, WallSide.TALL));
+        for (BlockState base : blocks) {
+            for (int mask = 0; mask <= VariantConnect.ALL; mask++) {
+                BlockState forced = VariantConnect.force(base, mask);
+                assertEquals(mask, VariantConnect.armMask(forced), base.getBlock() + " mask " + mask);
+            }
         }
+        assertEquals(VariantConnect.NORTH, VariantConnect.armMask(fenceNorth()));
+        assertEquals(0, VariantConnect.armMask(Blocks.STONE.defaultBlockState()));
+    }
 
+    @Test
+    @DisplayName("walls: a new arm is LOW, an existing TALL arm keeps its height, the post stays up")
+    void wallArms() {
         BlockState wall = Blocks.COBBLESTONE_WALL.defaultBlockState().setValue(WallBlock.EAST_WALL, WallSide.TALL);
-        BlockState wallOn = VariantConnect.force(wall, true);
-        BlockState wallOff = VariantConnect.force(wall, false);
-        for (var arm : List.of(WallBlock.NORTH_WALL, WallBlock.EAST_WALL, WallBlock.SOUTH_WALL, WallBlock.WEST_WALL)) {
-            assertEquals(WallSide.LOW, wallOn.getValue(arm), "wall On " + arm.getName());
-            assertEquals(WallSide.NONE, wallOff.getValue(arm), "wall Off " + arm.getName());
-        }
-        assertTrue(wallOn.getValue(WallBlock.UP));
-        assertTrue(wallOff.getValue(WallBlock.UP), "a lone wall keeps its post");
+        BlockState ne = VariantConnect.force(wall, VariantConnect.NORTH | VariantConnect.EAST);
+        assertEquals(WallSide.LOW, ne.getValue(WallBlock.NORTH_WALL));
+        assertEquals(WallSide.TALL, ne.getValue(WallBlock.EAST_WALL));
+        assertEquals(WallSide.NONE, ne.getValue(WallBlock.SOUTH_WALL));
+        assertEquals(WallSide.NONE, ne.getValue(WallBlock.WEST_WALL));
+        assertTrue(VariantConnect.force(wall, 0).getValue(WallBlock.UP), "a lone wall keeps its post");
 
         BlockState stone = Blocks.STONE.defaultBlockState();
-        assertSame(stone, VariantConnect.force(stone, true));
-        // Default, On and Off never read the level, so a null one is fine here.
+        assertSame(stone, VariantConnect.force(stone, VariantConnect.ALL));
+        // Default and Lock never read the level, so a null one is fine here.
         assertEquals(fenceNorth(), VariantConnect.resolve(fenceNorth(), Mode.DEFAULT, null, CELL));
-        assertEquals(fenceOn, VariantConnect.resolve(fenceNorth(), Mode.ON, null, CELL));
-        assertEquals(fenceOff, VariantConnect.resolve(fenceNorth(), Mode.OFF, null, CELL));
+        assertEquals(fenceNorth(), VariantConnect.resolve(fenceNorth(), Mode.LOCK, null, CELL));
     }
 
     @Test
@@ -104,29 +106,34 @@ final class VariantConnectTest {
         assertEquals(Mode.DEFAULT, plain.connect());
         assertTrue(plain.isPlainBareString());
 
-        VariantState on = plain.withConnect(Mode.ON);
-        assertEquals(Mode.ON, on.connect());
-        assertFalse(on.isPlainBareString());
-        assertEquals(Mode.ON, on.withWeight(4).connect());
-        assertEquals(Mode.ON, on.withRotation(VariantRotation.NONE).connect());
-        assertEquals(Mode.ON, on.withHalf(VariantHalf.NONE).connect());
-        assertEquals(Mode.ON, on.withActive(VariantActive.NONE).connect());
-        assertEquals(Mode.ON, on.withGroupRef(0).connect());
-        assertEquals(Mode.ON, on.withLinkedLootPrefabId(null).connect());
-        assertEquals(Mode.ON, on.withDifficulty(VariantDifficulty.NONE).connect());
-        assertEquals(Mode.ON, on.withState(Blocks.COBBLESTONE_WALL.defaultBlockState(), null).connect());
-        assertEquals(Mode.DEFAULT, on.withConnect(null).connect(), "null normalises to Default");
+        VariantState lock = plain.withConnect(Mode.LOCK);
+        assertEquals(Mode.LOCK, lock.connect());
+        assertFalse(lock.isPlainBareString());
+        assertEquals(Mode.LOCK, lock.withWeight(4).connect());
+        assertEquals(Mode.LOCK, lock.withRotation(VariantRotation.NONE).connect());
+        assertEquals(Mode.LOCK, lock.withHalf(VariantHalf.NONE).connect());
+        assertEquals(Mode.LOCK, lock.withActive(VariantActive.NONE).connect());
+        assertEquals(Mode.LOCK, lock.withGroupRef(0).connect());
+        assertEquals(Mode.LOCK, lock.withLinkedLootPrefabId(null).connect());
+        assertEquals(Mode.LOCK, lock.withDifficulty(VariantDifficulty.NONE).connect());
+        // The arms toggle rewrites the state and must keep the mode.
+        VariantState rearmed = lock.withState(VariantConnect.force(lock.state(), VariantConnect.EAST), null);
+        assertEquals(Mode.LOCK, rearmed.connect());
+        assertEquals(VariantConnect.EAST, VariantConnect.armMask(rearmed.state()));
+        assertEquals(Mode.DEFAULT, lock.withConnect(null).connect(), "null normalises to Default");
     }
 
     @Test
-    @DisplayName("JSON: non-default modes emit \"connect\" and round-trip; Default stays a bare string")
+    @DisplayName("JSON: Auto / Lock emit \"connect\" and round-trip with their arms; Default stays a bare string")
     void jsonRoundTrip() {
-        for (Mode mode : List.of(Mode.AUTO, Mode.ON, Mode.OFF)) {
-            String json = write(VariantState.of(fenceNorth()).withConnect(mode));
+        int arms = VariantConnect.NORTH | VariantConnect.WEST;
+        for (Mode mode : List.of(Mode.AUTO, Mode.LOCK)) {
+            VariantState s = VariantState.of(VariantConnect.force(fenceNorth(), arms)).withConnect(mode);
+            String json = write(s);
             assertTrue(json.contains("\"connect\": \"" + mode.id() + "\""), json);
             VariantState back = parse(json);
             assertEquals(mode, back.connect());
-            assertTrue(back.state().getValue(BlockStateProperties.NORTH), "stored arms survive: " + json);
+            assertEquals(arms, VariantConnect.armMask(back.state()), "locked arms survive: " + json);
         }
 
         String plain = write(VariantState.of(fenceNorth()));
@@ -148,6 +155,7 @@ final class VariantConnectTest {
         assertEquals(Mode.values().length, back.size());
         for (int i = 0; i < back.size(); i++) {
             assertEquals(Mode.values()[i], back.get(i).connect());
+            assertEquals(VariantConnect.NORTH, VariantConnect.armMask(back.get(i).state()));
         }
     }
 

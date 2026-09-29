@@ -46,7 +46,7 @@ public final class WholeOverlay {
                     }
                     ContainerContentsPlacement.place(level, world, w.state(), w.entry().blockEntityNbt(),
                         plotKey, w.localPos(), seed, carriageIndex, w.entry().linkedLootPrefabId());
-                    ConnectPass.note(level, world, w.entry().connect());
+                    ConnectPass.note(level, world, w.entry().connect(), w.state());
                 }
             }
         }

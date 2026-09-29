@@ -16,16 +16,16 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Keeps the arms of a carriage fence / pane / iron bars / wall that was placed with a forced
- * {@link VariantConnect.Mode#ON} or {@link VariantConnect.Mode#OFF} connect mode (the Z menu's
- * connect pill) — for the carriage's whole life.
+ * Keeps the arms of a carriage fence / pane / iron bars / wall that was placed with the
+ * {@link VariantConnect.Mode#LOCK} connect mode (the Z menu's connect pill and its N / E / S / W
+ * toggles) — for the carriage's whole life.
  *
  * <p><b>Why.</b> Vanilla re-derives these blocks' arms in {@code updateShape} whenever a neighbour
  * changes, and the Sable lift's notify pass ({@code SubLevelAssemblyHelper.moveBlocks} →
- * {@code markAndNotifyBlock(..., 3, 512)}) does exactly that to every lifted cell — so an Off fence
- * beside another fence would re-join, and an On arm facing something it can't join would retract.
- * {@link ForcedConnectCells} records which cells are forced; this hook re-applies the forced arms
- * to whatever vanilla computed.</p>
+ * {@code markAndNotifyBlock(..., 3, 512)}) does exactly that to every lifted cell — so a fence
+ * locked with no arms beside another fence would re-join, and a locked arm facing something it
+ * can't join would retract. {@link ForcedConnectCells} records which cells are locked and to which
+ * arms; this hook re-applies them to whatever vanilla computed.</p>
  *
  * <p><b>Why at RETURN.</b> Each target's {@code updateShape} first schedules the water tick of a
  * waterlogged block; keeping vanilla's body and only overriding the arms of its result keeps that,
@@ -51,10 +51,10 @@ public abstract class ForcedConnectShapeMixin {
                                              LevelAccessor level, BlockPos pos, BlockPos neighborPos,
                                              CallbackInfoReturnable<BlockState> cir) {
         if (!ForcedConnectCells.hasAny() || !(level instanceof ServerLevel serverLevel)) return;
-        VariantConnect.Mode mode = ForcedConnectCells.lookup(serverLevel, pos);
-        if (mode == null) return;
+        int arms = ForcedConnectCells.lookup(serverLevel, pos);
+        if (arms < 0) return;
         BlockState computed = cir.getReturnValue();
         if (computed == null || computed.getBlock() != state.getBlock()) return;
-        cir.setReturnValue(VariantConnect.force(computed, mode == VariantConnect.Mode.ON));
+        cir.setReturnValue(VariantConnect.force(computed, arms));
     }
 }

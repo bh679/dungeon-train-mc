@@ -199,10 +199,14 @@ public final class BlockVariantMenuRaycast {
         double activeModeCellL = toggleable ? activeModeCellR - BlockVariantMenuRenderer.ACTIVE_MODE_CELL_WIDTH : activeModeCellR;
         double connectCellR = activeModeCellL;
         double connectCellL = connectable ? connectCellR - BlockVariantMenuRenderer.CONNECT_CELL_WIDTH : connectCellR;
+        boolean showArms = connectable
+            && VariantConnect.Mode.fromOrdinal(entry.connectMode() & 0xFF) == VariantConnect.Mode.LOCK;
+        double armsCellR = connectCellL;
+        double armsCellL = showArms ? armsCellR - BlockVariantMenuRenderer.ARMS_CELL_WIDTH : armsCellR;
         // Difficulty cells (mob rows only) — mirror the renderer geometry: they
         // occupy the space the rotation/half cells leave free on a mob row.
         boolean showDiff = entry.isMob();
-        double diffMaxCellR = connectCellL;
+        double diffMaxCellR = armsCellL;
         double diffMaxCellL = showDiff ? diffMaxCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMaxCellR;
         double diffMinCellR = diffMaxCellL;
         double diffMinCellL = showDiff ? diffMinCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMinCellR;
@@ -226,13 +230,14 @@ public final class BlockVariantMenuRaycast {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_ACTIVE_MODE, idx);
         }
         if (connectable && hitX >= connectCellL && hitX <= connectCellR) {
-            // Same segment maths as BlockVariantMenuRenderer#drawConnectCell.
-            int segs = BlockVariantMenu.CONNECT_SEGMENTS.length;
-            double inset = BlockVariantMenuRenderer.CONNECT_PILL_INSET;
-            double segW = (connectCellR - connectCellL - 2 * inset) / segs;
-            int seg = (int) Math.floor((hitX - connectCellL - inset) / segW);
-            seg = Math.max(0, Math.min(segs - 1, seg));
+            int seg = BlockVariantMenuRenderer.segmentAt(hitX, connectCellL, connectCellR,
+                BlockVariantMenu.CONNECT_SEGMENTS.length);
             return new BlockVariantMenu.Hit(BlockVariantMenu.CONNECT_SEGMENTS[seg], idx);
+        }
+        if (showArms && hitX >= armsCellL && hitX <= armsCellR) {
+            int seg = BlockVariantMenuRenderer.segmentAt(hitX, armsCellL, armsCellR,
+                BlockVariantMenu.ARM_SEGMENTS.length);
+            return new BlockVariantMenu.Hit(BlockVariantMenu.ARM_SEGMENTS[seg], idx);
         }
         if (showDiff && hitX >= diffMinCellL && hitX <= diffMinCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_DIFF_MIN, idx);

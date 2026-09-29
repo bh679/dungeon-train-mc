@@ -628,7 +628,7 @@ public final class CarriageContentsPlacer {
                         level, wWorld, rotated, w.entry().blockEntityNbt(),
                         "contents:" + contents.id(), w.localPos(), seed, carriageIndex,
                         lootId);
-                    ConnectPass.note(level, wWorld, w.entry().connect());
+                    ConnectPass.note(level, wWorld, w.entry().connect(), rotated);
                 }
             }
         }

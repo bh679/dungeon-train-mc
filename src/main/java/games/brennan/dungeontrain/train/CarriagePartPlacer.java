@@ -229,7 +229,7 @@ public final class CarriagePartPlacer {
                         level, world, toPlace, w.entry().blockEntityNbt(),
                         "part:" + kind.id() + ":" + name, w.localPos(), seed, carriageIndex,
                         w.entry().linkedLootPrefabId());
-                    ConnectPass.note(level, world, w.entry().connect());
+                    ConnectPass.note(level, world, w.entry().connect(), toPlace);
                 }
             }
         }

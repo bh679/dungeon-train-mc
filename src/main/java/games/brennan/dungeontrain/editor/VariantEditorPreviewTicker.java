@@ -130,8 +130,8 @@ public final class VariantEditorPreviewTicker {
             BlockState toShow = computePreviewState(picked, previewTick);
             // Fence / wall / pane connect mode: show the arms spawn will give it (ConnectPass),
             // resolved up front so the equality check below stays quiet once set. Auto is written
-            // with the cascade so adjacent fences join back, as they do at spawn; On / Off take the
-            // no-cascade path below, which leaves the neighbours alone.
+            // with the cascade so adjacent fences join back, as they do at spawn; Lock's arms are the
+            // stored state's own, which the no-cascade path below holds exactly.
             boolean connects = plot.supportsConnectMode() && VariantConnect.canConnect(toShow);
             if (connects) {
                 toShow = VariantConnect.resolve(toShow, picked.connect(), level, worldPos);

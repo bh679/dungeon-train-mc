@@ -279,7 +279,18 @@ public final class BlockVariantMenuInputHandler {
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_ACTIVE_MODE, variantId, local, hit.index(), "", nextOrd));
             }
-            case ENTRY_CONNECT_DEFAULT, ENTRY_CONNECT_AUTO, ENTRY_CONNECT_ON, ENTRY_CONNECT_OFF -> {
+            case ENTRY_ARM_NORTH, ENTRY_ARM_EAST, ENTRY_ARM_SOUTH, ENTRY_ARM_WEST -> {
+                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                BlockState parsed = BlockVariantMenu.parseState(BlockVariantMenu.entries().get(hit.index()).stateString());
+                if (parsed == null) return;
+                // Flip the clicked arm — ARM_SEGMENTS is index-aligned with VariantConnect.ARM_BITS.
+                int seg = java.util.Arrays.asList(BlockVariantMenu.ARM_SEGMENTS).indexOf(hit.kind());
+                int arms = games.brennan.dungeontrain.editor.VariantConnect.armMask(parsed)
+                    ^ games.brennan.dungeontrain.editor.VariantConnect.ARM_BITS[seg];
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_CONNECT_ARMS, variantId, local, hit.index(), "", arms));
+            }
+            case ENTRY_CONNECT_DEFAULT, ENTRY_CONNECT_AUTO, ENTRY_CONNECT_LOCK -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
                 // The segment clicked is the mode chosen — CONNECT_SEGMENTS is in Mode order.
                 int ordinal = java.util.Arrays.asList(BlockVariantMenu.CONNECT_SEGMENTS).indexOf(hit.kind());
