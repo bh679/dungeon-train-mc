@@ -332,7 +332,9 @@ public final class TrainTickEvents {
         // measured directly: physMs= is the mean per-tick wall time of the native
         // Rapier step over the window (RapierPipelineTimingMixin), substeps= the
         // live Sable setting the tuner controls, blockChanges= the carriage-block
-        // edits (mining/placing) that hit the voxel collider in the window. Lets
+        // edits (mining/placing) that hit the voxel collider in the window.
+        // batchedBlockChanges= the per-block updates a carriage stamp deferred and
+        // colliderRebuilds= the whole-section uploads that replaced them (ColliderBatch). Lets
         // MSPT-vs-resident-carriage scaling and the substep A/B be read straight
         // from the log, no /spark or /tick query. getAverageTickTimeNanos() is
         // server-wide (dominated by the train dimension's physics). See
@@ -356,7 +358,7 @@ public final class TrainTickEvents {
             // their poses, and how many carriages re-anchored in the window — the fields
             // needed to attribute a slow physMs while the player is away from the train
             // (player logs of 28 Sep 2026: 45–205 ms at near=0). See PhysicsFreezeController.
-            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={}",
+            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={} colliderRebuilds={} batchedBlockChanges={}",
                 level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
                 countNearCarriages(level, trainsById), trainsById.size(),
                 String.format("%.2f", physics.avgStepMs(MSPT_LOG_PERIOD_TICKS)),
@@ -364,7 +366,8 @@ public final class TrainTickEvents {
                 PhysicsFreezeController.lastActiveTracked(), PhysicsFreezeController.lastActiveEntity(),
                 PhysicsFreezeController.lastActiveSettling(), PhysicsFreezeController.lastFrozen(),
                 String.format("%.1f", PhysicsFreezeController.lastMaxBodyLagBlocks()),
-                PhysicsFreezeController.drainReparks(), physics.reanchors());
+                PhysicsFreezeController.drainReparks(), physics.reanchors(),
+                physics.colliderRebuilds(), physics.batchedBlockChanges());
         }
 
         // Kill-ahead runs once per train, against the lead carriage's
