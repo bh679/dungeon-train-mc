@@ -28,6 +28,16 @@ on:
         required: false
         type: string
         default: ""
+      leaderboard_reset:
+        description: "Balancing release: retire the current one-life leaderboard era on the relay and open a new era starting at this version. Retired boards stay readable and keep circulating as books. One-way — set only when the release re-tunes what a good run is."
+        required: false
+        type: boolean
+        default: false
+      leaderboard_era_label:
+        description: "Player-facing name for the new leaderboard era (only with leaderboard_reset). Default: v<tag>."
+        required: false
+        type: string
+        default: ""
       test_release:
         description: "Test build: publish to the ALPHA channel and leave the changelog ledger untouched. Use to verify platform behaviour (e.g. that required dependencies auto-install) before a real release. Note neither platform has a private channel — alpha is publicly visible, just off CurseForge's default Release filter."
         required: false
@@ -544,6 +554,26 @@ jobs:
           fi
           ./gradlew bundledFingerprints --no-daemon
           python3 scripts/relay/push-bundled-fingerprints.py
+
+      # A balancing release retires the current one-life leaderboard era on the relay and opens the
+      # next at this version (relay: leaderboard-eras.js). Operator-dispatched only: the cascade never
+      # sets the input, and a test release is not a real one. Idempotent on the relay, so a re-run is
+      # safe; never blocks a release — a refused or unreachable relay is a warning to act on by hand
+      # (scripts/relay/retire-leaderboard-era.py, or node scripts/retire-leaderboard-era.js on the box).
+      - name: Retire the leaderboard era on the relay
+        if: ${{ always() && env.RELEASE_TAG != '' && inputs.leaderboard_reset && inputs.test_release == false && inputs.auto == false }}
+        continue-on-error: true
+        env:
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+          ERA_LABEL: ${{ inputs.leaderboard_era_label }}
+        run: |
+          if [ -z "$DUNGEONTRAIN_RELAY_ADMIN_BASE" ]; then
+            echo "::warning::RELAY_ADMIN_BASE is not set — leaderboard era NOT retired."
+            exit 0
+          fi
+          python3 scripts/relay/retire-leaderboard-era.py \
+            --min-version "$RELEASE_TAG" --label "${ERA_LABEL:-$RELEASE_TAG}" \
+            || echo "::warning::leaderboard era not retired — see the log; retire it by hand."
 
       # An upload returning 200 is not a publish, and mc-publish runs with `fail-mode: warn` so a
       # CurseForge 500 leaves this job GREEN with the jar live on Modrinth and missing on

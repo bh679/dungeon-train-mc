@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.narrative;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -146,6 +147,93 @@ class LeaderboardBookFactoryTest {
                 assertEquals(first, LeaderboardBookFactory.roll(seed, null).orElseThrow().getHoverName().getString());
             }
         }
+        LeaderboardPool.clear();
+    }
+
+    // ---- retired eras -----------------------------------------------------------
+
+    private static final String ERAS = "{\"eras\":["
+        + "{\"id\":\"v0.0\",\"kind\":\"version\",\"label\":\"The First Era\",\"current\":false},"
+        + "{\"id\":\"v0.1013\",\"kind\":\"version\",\"label\":\"After the balancing\",\"current\":true},"
+        + "{\"id\":\"y2025\",\"kind\":\"year\",\"label\":\"2025\",\"current\":false}]}";
+
+    @Test
+    @DisplayName("one roll in RETIRED_ONE_IN lands on a retired board when any are on hand, never when none are")
+    void retiredShare() {
+        List<LeaderboardCategory> current = List.of(LeaderboardCategory.LIVES, LeaderboardCategory.BOOKS_READ);
+        List<LeaderboardPool.BoardKey> retired = List.of(
+            new LeaderboardPool.BoardKey(LeaderboardCategory.DISTANCE_RUN, "v0.0"),
+            new LeaderboardPool.BoardKey(LeaderboardCategory.PLAYTIME_RUN, "y2025"));
+        int retiredPicks = 0;
+        int n = 4000;
+        for (long i = 0; i < n; i++) {
+            LeaderboardPool.BoardKey k = LeaderboardBookFactory.pick(i * 0x9E3779B97F4A7C15L + 17L, current, retired).orElseThrow();
+            if (!k.isCurrent()) {
+                retiredPicks++;
+                assertTrue(retired.contains(k));
+            } else {
+                assertTrue(current.contains(k.category()));
+            }
+        }
+        double share = retiredPicks / (double) n;
+        assertTrue(share > 0.18 && share < 0.32, "retired share " + share);
+        for (long i = 0; i < 200; i++) {
+            assertTrue(LeaderboardBookFactory.pick(i, current, List.of()).orElseThrow().isCurrent());
+            assertTrue(!LeaderboardBookFactory.pick(i, List.of(), retired).orElseThrow().isCurrent(),
+                "only retired boards on hand: always one of those");
+        }
+        assertTrue(LeaderboardBookFactory.pick(5L, List.of(), List.of()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("a retired era's book names the era on page one and after the reader's line; the current one does not")
+    void retiredBookSaysSo() {
+        LeaderboardPool.clear();
+        LeaderboardPool.applyEras(ERAS);
+        List<Component> current = LeaderboardBookFactory.pages(CAT, LeaderboardPool.CURRENT, entries(3), Optional.empty());
+        List<Component> version = LeaderboardBookFactory.pages(CAT, "v0.0", entries(3), Optional.empty());
+        List<Component> year = LeaderboardBookFactory.pages(CAT, "y2025", entries(3), Optional.empty());
+        List<Component> unknown = LeaderboardBookFactory.pages(CAT, "v0.5", entries(3), Optional.empty());
+
+        // No language is loaded here, so the wording is checked by component structure, not text.
+        assertEquals(LeaderboardBookFactory.heading(CAT), LeaderboardBookFactory.heading(CAT, LeaderboardPool.CURRENT));
+        TranslatableContents v = (TranslatableContents) LeaderboardBookFactory.heading(CAT, "v0.0").getContents();
+        assertEquals(LeaderboardBookFactory.ERA_KEY, v.getKey());
+        assertEquals(LeaderboardBookFactory.heading(CAT), v.getArgs()[0], "the plain heading is still there");
+        TranslatableContents vName = (TranslatableContents) ((Component) v.getArgs()[1]).getContents();
+        assertEquals(LeaderboardBookFactory.ERA_VERSION_KEY, vName.getKey());
+        assertEquals("The First Era", ((Component) vName.getArgs()[0]).getString());
+        TranslatableContents y = (TranslatableContents) LeaderboardBookFactory.heading(CAT, "y2025").getContents();
+        assertEquals(LeaderboardBookFactory.ERA_YEAR_KEY, ((TranslatableContents) ((Component) y.getArgs()[1]).getContents()).getKey());
+        TranslatableContents u = (TranslatableContents) LeaderboardBookFactory.heading(CAT, "v0.5").getContents();
+        assertEquals("v0.5", ((Component) u.getArgs()[1]).getString(), "an era the relay never described is named by id");
+        assertTrue(lines(year.get(0)).length > 1 && lines(unknown.get(0)).length > 1);
+        assertEquals(current.size(), version.size(), "the era wording adds no page");
+
+        String currentClose = current.get(current.size() - 1).getString();
+        String versionClose = version.get(version.size() - 1).getString();
+        assertTrue(versionClose.startsWith(currentClose), "the reader's own line comes first, unchanged");
+        assertTrue(versionClose.length() > currentClose.length(), "then the closed-list line");
+        assertEquals("The Tallyman", LeaderboardBookFactory.author(LeaderboardPool.CURRENT));
+        assertEquals("The Tallyman, The First Era", LeaderboardBookFactory.author("v0.0"));
+        assertEquals("The Tallyman, 2025", LeaderboardBookFactory.author("y2025"));
+        assertEquals("The Tallyman, v0.5", LeaderboardBookFactory.author("v0.5"));
+        LeaderboardPool.clear();
+    }
+
+    @Test
+    @DisplayName("a retired-era book builds from that era's board and stays a Tallyman book")
+    void buildsRetiredBook() {
+        LeaderboardPool.clear();
+        LeaderboardPool.applyEras(ERAS);
+        LeaderboardPool.applyBoard(new LeaderboardPool.BoardKey(LeaderboardCategory.DISTANCE_RUN, "v0.0"),
+            "{\"rows\":[{\"name\":\"Grace\",\"score\":9000}]}");
+        assertTrue(LeaderboardBookFactory.build(LeaderboardCategory.DISTANCE_RUN, null).isEmpty(), "no current board");
+        var stack = LeaderboardBookFactory.build(LeaderboardCategory.DISTANCE_RUN, "v0.0", null).orElseThrow();
+        assertEquals(LeaderboardCategory.DISTANCE_RUN.title(), stack.getHoverName().getString());
+        assertTrue(LeaderboardBookTag.is(stack));
+        // and with only retired boards on hand, a roll finds one
+        assertTrue(LeaderboardBookFactory.roll(42L, null).isPresent());
         LeaderboardPool.clear();
     }
 }

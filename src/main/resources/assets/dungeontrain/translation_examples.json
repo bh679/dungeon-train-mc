@@ -2943,6 +2943,56 @@
       ]
     }
   },
+  "dungeontrain.leaderboard.era": {
+    "1": {
+      "label": "the board's heading, already wrapped by its span clause where it has one",
+      "examples": [
+        {
+          "key": "dungeontrain.leaderboard.distance.header",
+          "args": []
+        },
+        {
+          "key": "dungeontrain.leaderboard.carriages_no_chest.header",
+          "args": []
+        }
+      ]
+    },
+    "2": {
+      "label": "the era this retired list belongs to, as a short phrase",
+      "examples": [
+        {
+          "key": "dungeontrain.leaderboard.era.year",
+          "args": [
+            "2025"
+          ]
+        },
+        {
+          "key": "dungeontrain.leaderboard.era.version",
+          "args": [
+            "After the balancing"
+          ]
+        }
+      ]
+    }
+  },
+  "dungeontrain.leaderboard.era.version": {
+    "1": {
+      "label": "the name the relay gave a past game version's stretch of play — not translated",
+      "examples": [
+        "The First Era",
+        "After the balancing"
+      ]
+    }
+  },
+  "dungeontrain.leaderboard.era.year": {
+    "1": {
+      "label": "a calendar year, as a plain number",
+      "examples": [
+        "2025",
+        "2026"
+      ]
+    }
+  },
   "dungeontrain.leaderboard.you": {
     "1": {
       "label": "the reader's rank on this board, as a plain number",

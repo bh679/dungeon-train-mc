@@ -55,6 +55,16 @@ public final class LeaderboardBookFactory {
     /** Credited author. Nobody wrote this; something counted it. */
     private static final String AUTHOR = "The Tallyman";
 
+    /**
+     * One loot book in this many is about a RETIRED board (a past game version's or a past year's
+     * one-life board) when any are on hand. The current boards stay the common find: a retired list
+     * is a curiosity, and a chest that mostly turned up last year's numbers would read as stale.
+     */
+    static final int RETIRED_ONE_IN = 4;
+
+    /** The author line's cap — the era label rides on the cover next to the name. */
+    private static final int MAX_AUTHOR_CHARS = 48;
+
     private LeaderboardBookFactory() {}
 
     /**
@@ -64,9 +74,26 @@ public final class LeaderboardBookFactory {
      */
     public static Optional<ItemStack> roll(long seed, UUID reader) {
         List<LeaderboardCategory> available = LeaderboardPool.populated();
-        if (available.isEmpty()) return Optional.empty();
-        LeaderboardCategory category = available.get((int) Math.floorMod(mix(seed), available.size()));
-        return build(category, reader);
+        List<LeaderboardPool.BoardKey> retired = LeaderboardPool.retiredBooksWanted()
+            ? LeaderboardPool.populatedRetired() : List.of();
+        Optional<LeaderboardPool.BoardKey> pick = pick(mix(seed), available, retired);
+        return pick.flatMap(k -> build(k.category(), k.era(), reader));
+    }
+
+    /**
+     * Which board a mixed seed lands on: a retired one every {@link #RETIRED_ONE_IN} rolls when any
+     * are on hand (always, when only retired boards are), otherwise a current one. Pure, so the
+     * share is testable. Two different bit ranges decide "retired?" and "which", so the two choices
+     * are independent across neighbouring seeds.
+     */
+    static Optional<LeaderboardPool.BoardKey> pick(long mixed, List<LeaderboardCategory> current,
+                                                   List<LeaderboardPool.BoardKey> retired) {
+        boolean wantRetired = !retired.isEmpty()
+            && (current.isEmpty() || Math.floorMod(mixed >>> 40, RETIRED_ONE_IN) == 0);
+        if (wantRetired) return Optional.of(retired.get((int) Math.floorMod(mixed, retired.size())));
+        if (current.isEmpty()) return Optional.empty();
+        return Optional.of(new LeaderboardPool.BoardKey(
+            current.get((int) Math.floorMod(mixed, current.size())), LeaderboardPool.CURRENT));
     }
 
     /**
@@ -78,13 +105,31 @@ public final class LeaderboardBookFactory {
      * cannot drift apart into one kind of board that burns and one that does not.</p>
      */
     public static Optional<ItemStack> build(LeaderboardCategory category, UUID reader) {
-        List<LeaderboardPool.Entry> entries = LeaderboardPool.board(category).entries();
+        return build(category, LeaderboardPool.CURRENT, reader);
+    }
+
+    /**
+     * The book for one board in one era ({@link LeaderboardPool#CURRENT} for the live board), or
+     * empty when that board has no rows yet. A retired era's book keeps the same cover title — the
+     * 32-character title has no room for an era — and says which era it is on page one's heading
+     * and in the author line.
+     */
+    public static Optional<ItemStack> build(LeaderboardCategory category, String era, UUID reader) {
+        List<LeaderboardPool.Entry> entries = LeaderboardPool.board(category, era).entries();
         if (entries.isEmpty()) return Optional.empty();
-        List<Component> pages = pages(category, entries,
-            reader == null ? Optional.empty() : LeaderboardPool.standing(reader, category));
-        ItemStack stack = BookFactory.buildPlainBookComponents(category.title(), AUTHOR, pages);
+        List<Component> pages = pages(category, era, entries,
+            reader == null ? Optional.empty() : LeaderboardPool.standing(reader, category, era));
+        ItemStack stack = BookFactory.buildPlainBookComponents(category.title(), author(era), pages);
         LeaderboardBookTag.stamp(stack);
         return Optional.of(stack);
+    }
+
+    /** "The Tallyman" for a current board; "The Tallyman, 2025" / "…, After the balancing" for a retired one. */
+    static String author(String era) {
+        if (era == null || era.isEmpty()) return AUTHOR;
+        String label = LeaderboardPool.era(era).map(LeaderboardPool.Era::label).orElse(era);
+        String out = AUTHOR + ", " + label;
+        return out.length() > MAX_AUTHOR_CHARS ? out.substring(0, MAX_AUTHOR_CHARS) : out;
     }
 
     /**
@@ -94,6 +139,13 @@ public final class LeaderboardBookFactory {
     static List<Component> pages(LeaderboardCategory category,
                                  List<LeaderboardPool.Entry> entries,
                                  Optional<LeaderboardPool.Standing> mine) {
+        return pages(category, LeaderboardPool.CURRENT, entries, mine);
+    }
+
+    static List<Component> pages(LeaderboardCategory category, String era,
+                                 List<LeaderboardPool.Entry> entries,
+                                 Optional<LeaderboardPool.Standing> mine) {
+        boolean retired = era != null && !era.isEmpty();
         // Two lines per rank, in order, so a page is just a slice of this list taken in pairs.
         List<String> rows = new ArrayList<>();
         int shown = Math.min(entries.size(), MAX_ROWS);
@@ -109,15 +161,15 @@ public final class LeaderboardBookFactory {
             int room = (page == 0 ? FIRST_PAGE_ROWS : ROWS_PER_PAGE) * LINES_PER_ENTRY;
             int end = Math.min(rows.size(), at + room);
             Component body = Component.literal(String.join("\n", rows.subList(at, end)));
-            pages.add(page == 0 ? heading(category).append("\n\n").append(body) : body);
+            pages.add(page == 0 ? heading(category, era).append("\n\n").append(body) : body);
             at = end;
         }
-        if (pages.isEmpty()) pages.add(heading(category));
+        if (pages.isEmpty()) pages.add(heading(category, era));
 
         // The reader's own standing closes the book. It goes on its own page rather than squeezed
         // under the last rows: a reader ranked 4,000th should not have to hunt for it at the bottom
         // of a column of strangers, and a full board leaves no room down there anyway.
-        pages.add(mine
+        MutableComponent closing = mine
             .map(s -> s.isExact()
                 ? Component.translatable(LeaderboardCategory.YOU_KEY,
                         Component.literal(Integer.toString(s.rank())),
@@ -127,8 +179,38 @@ public final class LeaderboardBookFactory {
                 : Component.translatable(LeaderboardCategory.YOU_BEYOND_KEY,
                         Component.literal(category.render(s.score())),
                         Component.literal(Integer.toString(s.beyond()))))
-            .orElseGet(() -> Component.translatable(LeaderboardCategory.YOU_UNRANKED_KEY)));
+            .orElseGet(() -> Component.translatable(LeaderboardCategory.YOU_UNRANKED_KEY));
+        // A retired list says so where the reader's own line is: it is the one page a reader is sure
+        // to reach, and "you are #4" on a board nobody can climb any more needs the caveat beside it.
+        pages.add(retired
+            ? closing.append("\n\n").append(Component.translatable(ERA_CLOSED_KEY))
+            : closing);
         return pages;
+    }
+
+    /** Translation keys for the era wording. The heading wrapper takes the heading and the era's name. */
+    static final String ERA_KEY = "dungeontrain.leaderboard.era";
+    static final String ERA_VERSION_KEY = "dungeontrain.leaderboard.era.version";
+    static final String ERA_YEAR_KEY = "dungeontrain.leaderboard.era.year";
+    static final String ERA_CLOSED_KEY = "dungeontrain.leaderboard.era.closed";
+
+    /** The heading for one era's board: the plain heading, wrapped with the era's name when retired. */
+    static MutableComponent heading(LeaderboardCategory category, String era) {
+        MutableComponent plain = heading(category);
+        if (era == null || era.isEmpty()) return plain;
+        return Component.translatable(ERA_KEY, plain, eraName(era));
+    }
+
+    /**
+     * How an era is named in the book: "The year 2025" for a year, "The <label> era" for a game
+     * version. An era the relay has not described (the list is stale, or never landed) is named by
+     * its id, which is still true if terse.
+     */
+    static MutableComponent eraName(String era) {
+        Optional<LeaderboardPool.Era> known = LeaderboardPool.era(era);
+        if (known.isEmpty()) return Component.literal(era);
+        LeaderboardPool.Era e = known.get();
+        return Component.translatable(e.isYear() ? ERA_YEAR_KEY : ERA_VERSION_KEY, Component.literal(e.label()));
     }
 
     /**
