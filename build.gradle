@@ -134,6 +134,12 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
+            // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
+            // traingen trace (DevTraceDefaults) left off.
+            if (project.hasProperty('jitterDebug')) {
+                systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
+            }
             // Local-relay testing seam: point the dev client at a locally-run dp-relay instead of the
             // branch-routed dev/live cap, e.g.
             //   ./gradlew runClient -PrelayBaseUrl=http://127.0.0.1:3005/<CAP>
@@ -263,6 +269,12 @@ neoForge {
                 gameDirectory = file(project.property('serverDir').toString())
             }
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
+            // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
+            // traingen trace (DevTraceDefaults) left off.
+            if (project.hasProperty('jitterDebug')) {
+                systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
+            }
             // Same local-relay seam as the client above. The SERVER is what fetches the community
             // book + narrative pools (SharedBookRefreshEvents ticks server-side), so verifying that
             // half against a local dp-relay needs it here too — and a dedicated server needs no GUI,
@@ -312,6 +324,12 @@ neoForge {
         gameTestServer {
             type = 'gameTestServer'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
+            // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
+            // traingen trace (DevTraceDefaults) left off.
+            if (project.hasProperty('jitterDebug')) {
+                systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
+            }
         }
 
         data {

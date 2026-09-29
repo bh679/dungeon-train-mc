@@ -24,6 +24,8 @@ import games.brennan.dungeontrain.train.PlayerPlacedTrainBlocks;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainStaticContentsCarrier;
 import games.brennan.dungeontrain.train.Trains;
+import games.brennan.dungeontrain.util.DtLogging;
+import games.brennan.dungeontrain.util.ThrottledLog;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -77,7 +79,15 @@ import java.util.UUID;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TrainTickEvents {
 
-    private static final Logger JITTER_LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
+    private static final Logger JITTER_LOGGER = LoggerFactory.getLogger(DtLogging.JITTER);
+    /**
+     * Windowed summaries lag reports are read from ({@code [mspt]}, {@code [gen.timing]},
+     * {@code [sweep.perf]}, {@code [ud-drain.win]}, throttled {@code [stuck.timing]}): one line per
+     * window, left at DEBUG in players' debug.log while the jitter namespace is capped at INFO.
+     */
+    private static final Logger PERF_LOGGER = LoggerFactory.getLogger(DtLogging.PERF);
+    /** {@code [stuck.timing]} fires on every slow tick — every tick, on a lagging machine. One per window. */
+    private static final ThrottledLog STUCK_TIMING_LOG = new ThrottledLog(2_000);
     private static final Logger LOGGER = LoggerFactory.getLogger(TrainTickEvents.class);
     /** Per-tick budget threshold above which a sub-task breakdown logs at DEBUG. */
     private static final long STUCK_TIMING_THRESHOLD_MS = 5;
@@ -98,6 +108,9 @@ public final class TrainTickEvents {
 
     /** Period (ticks) for the steady-state {@code [mspt]} sample line. 40t = 2s. */
     private static final int MSPT_LOG_PERIOD_TICKS = 40;
+
+    /** Below this total drain time (it prints as 0.00 ms) an applied==0 {@code [ud-drain.win]} window is skipped. */
+    private static final long UD_DRAIN_WIN_IDLE_NANOS = 5_000L;
 
     /**
      * Distance ahead of the lead carriage along velocity that
@@ -232,7 +245,7 @@ public final class TrainTickEvents {
         double endApplyMs = s.ms(GenProfiler.Bucket.END_BAND_APPLY);
         // End-band sampling runs off the gen workers, so a window can have End work and no chunks fulled.
         if (s.chunks() <= 0 && endSampleMs <= 0 && endApplyMs <= 0) return;
-        JITTER_LOGGER.debug(
+        PERF_LOGGER.debug(
             "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} biome={} mirror={} netherStrip={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={} sphSample={} sphApply={} endSample={} endApply={} | perChunk df={} nether={} core={} biome={} mirror={} netherStrip={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={}",
             level.dimension().location(), s.chunks(),
             String.format("%.2f", s.dtTotalMs()), String.format("%.3f", s.dtTotalPerChunkMs()),
@@ -370,7 +383,7 @@ public final class TrainTickEvents {
             // their poses, and how many carriages re-anchored in the window — the fields
             // needed to attribute a slow physMs while the player is away from the train
             // (player logs of 28 Sep 2026: 45–205 ms at near=0). See PhysicsFreezeController.
-            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={} colliderRebuilds={} batchedBlockChanges={} blockChangeMs={}"
+            PERF_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={} colliderRebuilds={} batchedBlockChanges={} blockChangeMs={}"
                     + " gcMs={} gcN={} heapUsedMb={} heapMaxMb={} chunkWaitMs={} chunkWaits={} chunksLoaded={} pendingChunkTasks={} entities={} onCarriages={} tickMaxMs={}",
                 level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
                 countNearCarriages(level, trainsById), trainsById.size(),
@@ -459,12 +472,16 @@ public final class TrainTickEvents {
         long tAfterTunnels = System.nanoTime();
 
         long totalMs = (tAfterTunnels - t0) / 1_000_000;
-        if (totalMs >= STUCK_TIMING_THRESHOLD_MS) {
+        // Throttled: on a lagging machine every tick crosses the threshold, and a line per tick was
+        // itself part of the cost. slowTicks= counts the slow ticks the window's one line stands for.
+        java.util.OptionalLong slowTicks = totalMs >= STUCK_TIMING_THRESHOLD_MS
+            ? STUCK_TIMING_LOG.record() : java.util.OptionalLong.empty();
+        if (slowTicks.isPresent()) {
             int totalCarriages = 0;
             for (List<Trains.Carriage> train : trainsById.values()) totalCarriages += train.size();
             int nearCarriages = countNearCarriages(level, trainsById);
-            JITTER_LOGGER.debug(
-                "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms sweep={}ms tracks={}ms mirror={}ms tunnels={}ms trains={} carriages={} near={} broke={}",
+            PERF_LOGGER.debug(
+                "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms sweep={}ms tracks={}ms mirror={}ms tunnels={}ms trains={} carriages={} near={} broke={} slowTicks={}",
                 level.getGameTime(), totalMs,
                 (tAfterAppender - t0) / 1_000_000,
                 (tAfterOverlay - tAfterAppender) / 1_000_000,
@@ -474,7 +491,7 @@ public final class TrainTickEvents {
                 (tAfterTracks - tAfterFluid) / 1_000_000,
                 (tAfterMirror - tAfterTracks) / 1_000_000,
                 (tAfterTunnels - tAfterMirror) / 1_000_000,
-                trainsById.size(), totalCarriages, nearCarriages, blocksBroken);
+                trainsById.size(), totalCarriages, nearCarriages, blocksBroken, slowTicks.getAsLong());
         }
         tickCounter++;
     }
@@ -603,15 +620,20 @@ public final class TrainTickEvents {
         long elapsed = System.nanoTime() - t0;
         winDrainNanos += elapsed;
         winApplied += applied;
-        if (applied > 0 && level.getGameTime() % 20 == 0) {
+        if (applied > 0 && level.getGameTime() % 20 == 0 && JITTER_LOGGER.isDebugEnabled()) {
             JITTER_LOGGER.debug("[ud-drain] mirrored={} backlog={} ready={} ms={}",
                 applied, pending.size(), ready.size(), String.format("%.2f", elapsed / 1_000_000.0));
         }
         if (level.getGameTime() % MSPT_LOG_PERIOD_TICKS == 0) {
-            JITTER_LOGGER.debug("[ud-drain.win] mode={} totalMs={} applied={} backlog={} ready={}",
-                mirrorDrainLegacy ? "legacy" : "ready",
-                String.format("%.2f", winDrainNanos / 1_000_000.0),
-                winApplied, pending.size(), ready.size());
+            // A window whose drain cost rounds to 0.00 ms with nothing applied says nothing (and
+            // repeats per dimension every 2 s); any window with measurable cost still logs, which
+            // keeps the applied==0 frontier-waste case the A/B reads.
+            if (winApplied > 0 || winDrainNanos >= UD_DRAIN_WIN_IDLE_NANOS) {
+                PERF_LOGGER.debug("[ud-drain.win] mode={} totalMs={} applied={} backlog={} ready={}",
+                    mirrorDrainLegacy ? "legacy" : "ready",
+                    String.format("%.2f", winDrainNanos / 1_000_000.0),
+                    winApplied, pending.size(), ready.size());
+            }
             winDrainNanos = 0L;
             winApplied = 0;
         }
@@ -888,7 +910,7 @@ public final class TrainTickEvents {
      */
     private static void logSweepPerf(ServerLevel level) {
         if (perfTicks == 0) return;
-        JITTER_LOGGER.debug("[sweep.perf] dim={} breaking={} ticks={} avgMs={} maxMs={} cells/tick={} nonAir/tick={} lookups/tick={} breaks={}",
+        PERF_LOGGER.debug("[sweep.perf] dim={} breaking={} ticks={} avgMs={} maxMs={} cells/tick={} nonAir/tick={} lookups/tick={} breaks={}",
             level.dimension().location(),
             DungeonTrainWorldData.get(level).getEffectiveBreakBlocksOnContact() ? "ON" : "OFF",
             perfTicks,

@@ -20682,6 +20682,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "cheap-production-logging",
+      "version": "0.1024.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Less dev logging",
+      "summary": "Less dev logs.",
+      "highlights": [],
+      "pr": 1658,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
