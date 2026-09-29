@@ -145,6 +145,18 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
     private static final BlockState NETHERRACK = Blocks.NETHERRACK.defaultBlockState();
     private static final BlockState OBSIDIAN = Blocks.OBSIDIAN.defaultBlockState();
+    private static final BlockState DEEPSLATE = Blocks.DEEPSLATE.defaultBlockState();
+    /** Stone and the stone ores → their deepslate forms, for the core-ward half of the approach. */
+    private static final java.util.Map<net.minecraft.world.level.block.Block, BlockState> DEEPSLATE_FORMS = java.util.Map.of(
+            Blocks.STONE, DEEPSLATE,
+            Blocks.COAL_ORE, Blocks.DEEPSLATE_COAL_ORE.defaultBlockState(),
+            Blocks.IRON_ORE, Blocks.DEEPSLATE_IRON_ORE.defaultBlockState(),
+            Blocks.COPPER_ORE, Blocks.DEEPSLATE_COPPER_ORE.defaultBlockState(),
+            Blocks.GOLD_ORE, Blocks.DEEPSLATE_GOLD_ORE.defaultBlockState(),
+            Blocks.REDSTONE_ORE, Blocks.DEEPSLATE_REDSTONE_ORE.defaultBlockState(),
+            Blocks.LAPIS_ORE, Blocks.DEEPSLATE_LAPIS_ORE.defaultBlockState(),
+            Blocks.DIAMOND_ORE, Blocks.DEEPSLATE_DIAMOND_ORE.defaultBlockState(),
+            Blocks.EMERALD_ORE, Blocks.DEEPSLATE_EMERALD_ORE.defaultBlockState());
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
     private static final BlockState WATER = Blocks.WATER.defaultBlockState();
 
@@ -266,6 +278,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     // The beach stage exists ONLY where the band emerges from an ocean biome; otherwise it is
                     // SKIPPED — those columns stay natural overworld and the noise mountains pick up after the span.
                     if (inBeachSpan && !oceanEntrance) continue;
+                    // Core-ward half of the approach: the mountain body turns to deepslate behind a wavy front.
+                    // Before the crossfade skin + seams so those land on top of it.
+                    if (!inBeachSpan) {
+                        changed |= deepslateColumn(chunk, dx, dz, worldX, worldZ, minY, worldTop, seed,
+                                cycle.netherCoreGap(wx), DeepslateFront.half(cycle.netherApproachLength()));
+                    }
                     // Pure mountain-stage columns (n == 0, not the beach) are built entirely by the terrain-noise
                     // density wrapper — nothing to post-process here (so grass/trees/structures survive), EXCEPT
                     // the ocean shore-skin below.
@@ -626,6 +644,27 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         for (int y = waterTop; y >= minY; y--) {
             if (!w.isWater(dx, y, dz)) continue;
             w.set(dx, y, dz, AIR);
+            changed = true;
+        }
+        return changed;
+    }
+
+    /**
+     * Turn the column's stone (and stone ores) to deepslate where {@link DeepslateFront} says so — the half
+     * of the approach nearer the core, behind a wobbling front. Reads the ocean-floor heightmap top so the
+     * scan stops at the surface; skips the column outright on the far side of the front.
+     */
+    private boolean deepslateColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
+                                    int minY, int worldTop, long seed, int gap, int half) {
+        if (!DeepslateFront.mayApply(gap, half)) return false;
+        int top = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
+        ColumnWriter w = new ColumnWriter(chunk);
+        boolean changed = false;
+        for (int y = top; y >= minY; y--) {
+            BlockState form = DEEPSLATE_FORMS.get(w.state(dx, y, dz).getBlock());
+            if (form == null) continue;
+            if (!DeepslateFront.isDeepslate(seed, gap, half, worldX, y, worldZ)) continue;
+            w.set(dx, y, dz, form);
             changed = true;
         }
         return changed;

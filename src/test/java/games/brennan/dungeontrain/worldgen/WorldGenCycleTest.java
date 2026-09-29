@@ -823,4 +823,14 @@ final class WorldGenCycleTest {
             if (cycle.netherCoreDepth(x) >= 0L) assertEquals(0, g, "core column with gap at x=" + x);
         }
     }
+
+    @Test
+    @DisplayName("netherApproachLength is the band-start → core-start distance")
+    void netherApproachLength() {
+        WorldGenCycle cycle = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);
+        int firstCore = -1;
+        for (int x = 1300; x < 1960; x++) if (cycle.netherCoreDepth(x) == 0L) { firstCore = x; break; }
+        assertTrue(firstCore > 0);
+        assertEquals(firstCore - 1300, cycle.netherApproachLength());
+    }
 }

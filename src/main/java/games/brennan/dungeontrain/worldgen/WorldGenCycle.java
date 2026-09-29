@@ -1072,6 +1072,15 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * Length of the Nether band's approach — band start to the core's first column
+     * ({@code riseLen + megaHold + coreFade}); the fall side mirrors it. The stone→deepslate front sits at
+     * half of this ({@code feature/DeepslateFront}).
+     */
+    public int netherApproachLength() {
+        return riseLen() + Math.max(0, megaHold) + Math.max(0, coreFade);
+    }
+
+    /**
      * Blocks from {@code worldX} to the nearest real-Nether <b>core</b> column: {@code 0} inside the core,
      * the distance to the core's first column before it, the distance past its last column after it, and
      * {@link Integer#MAX_VALUE} outside the Nether segment. Same layout offsets as {@link #netherCoreDepth}.
