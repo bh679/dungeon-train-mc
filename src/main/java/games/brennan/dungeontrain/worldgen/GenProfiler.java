@@ -43,8 +43,8 @@ import java.util.concurrent.atomic.LongAdder;
  */
 public final class GenProfiler {
 
-    /** DT-owned gen cost buckets. {@link #CORE_REPLACE} is a sub-portion of {@link #NETHER_FEATURE}
-     *  (reported informationally, not double-counted in the DT total). */
+    /** DT-owned gen cost buckets. {@link #CORE_REPLACE} and {@link #NETHER_DECO} are sub-portions of
+     *  {@link #NETHER_FEATURE} (reported informationally, not double-counted in the DT total). */
     public enum Bucket {
         /** {@code NetherBandTerrainDensityFunction} raise loop — DT's per-sample density tax. */
         DF,
@@ -52,6 +52,10 @@ public final class GenProfiler {
         NETHER_FEATURE,
         /** {@code NetherTransitionFeature.fillNetherColumn} — real-Nether router sampling (sub-portion of NETHER_FEATURE). */
         CORE_REPLACE,
+        /** {@code NetherTransitionFeature.decorateCoreChunkWithNetherFeatures} — the vanilla Nether feature pass
+         *  over a full-core chunk (sub-portion of NETHER_FEATURE; the slice Distant Horizons' LOD generator
+         *  threads pay for, trimmed by {@link LodGeneration}). */
+        NETHER_DECO,
         /** {@code MultiNoiseBiomeSourceMixin} highland/nether/end biome forcing (per quart). */
         BIOME_FORCE,
         /** {@code ChunkStatusSpawnMixin} upside-down mirror precompute. */
@@ -145,8 +149,9 @@ public final class GenProfiler {
             return chunks > 0 ? ms(b) / chunks : 0.0;
         }
 
-        /** DT's total added worker-thread gen cost this window — excludes {@link Bucket#CORE_REPLACE}
-         *  (already inside NETHER_FEATURE) and {@link Bucket#EROSION} (main-thread, not a worker slice). */
+        /** DT's total added worker-thread gen cost this window — excludes {@link Bucket#CORE_REPLACE} and
+         *  {@link Bucket#NETHER_DECO} (already inside NETHER_FEATURE) and {@link Bucket#EROSION} (main-thread,
+         *  not a worker slice). */
         public double dtTotalMs() {
             return ms(Bucket.DF) + ms(Bucket.NETHER_FEATURE) + ms(Bucket.BIOME_FORCE)
                     + ms(Bucket.MIRROR_PRECOMPUTE) + ms(Bucket.NETHER_STRIP_PRECOMPUTE)

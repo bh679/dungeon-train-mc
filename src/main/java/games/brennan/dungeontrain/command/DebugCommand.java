@@ -8,6 +8,7 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
+import games.brennan.dungeontrain.worldgen.LodGeneration;
 import games.brennan.dungeontrain.debug.BackwardGenTrace;
 import games.brennan.dungeontrain.debug.CarriageDebug;
 import games.brennan.dungeontrain.debug.DebugFlags;
@@ -131,6 +132,15 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setBandEarlyOuts(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setBandEarlyOuts(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> bandEarlyOutsStatus(ctx.getSource()))))
+            // /dungeontrain debug lod-lite <auto|force|off|status> — Distant Horizons LOD-lite Nether-core
+            // decoration (see LodGeneration). `auto` (default) = lite only on DH-World Gen threads; `force`
+            // = lite on every worldgen thread so a headless server measures the saving with no DH
+            // installed; `off` = full decoration everywhere (baseline). Compare [gen.timing] deco=.
+            .then(Commands.literal("lod-lite")
+                .then(Commands.literal("auto").executes(ctx -> setLodLite(ctx.getSource(), LodGeneration.Mode.AUTO)))
+                .then(Commands.literal("force").executes(ctx -> setLodLite(ctx.getSource(), LodGeneration.Mode.FORCE_ON)))
+                .then(Commands.literal("off").executes(ctx -> setLodLite(ctx.getSource(), LodGeneration.Mode.FORCE_OFF)))
+                .then(Commands.literal("status").executes(ctx -> lodLiteStatus(ctx.getSource()))))
             // /dungeontrain debug nether-passes — core X range + core biomes of the first Nether bands
             // (even passes vanilla, odd passes BetterNether). Also logged at INFO for RCON runs.
             .then(Commands.literal("nether-passes").executes(ctx -> NetherPassesDebug.report(ctx.getSource())))
@@ -462,6 +472,32 @@ public final class DebugCommand {
                 : "OFF (pre-change baseline paths — A/B mode)")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), true);
         return 1;
+    }
+
+    private static int setLodLite(CommandSourceStack source, LodGeneration.Mode mode) {
+        LodGeneration.MODE = mode;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] LOD-lite Nether-core decoration: " + describeLodLite(mode)
+        ).withStyle(mode == LodGeneration.Mode.FORCE_OFF ? ChatFormatting.GOLD : ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private static int lodLiteStatus(CommandSourceStack source) {
+        LodGeneration.Mode mode = LodGeneration.MODE;
+        boolean configOn = games.brennan.dungeontrain.config.DungeonTrainCommonConfig.isDistantLodLiteDecoration();
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] LOD-lite Nether-core decoration: " + describeLodLite(mode)
+                + " (config distantLodLiteDecoration=" + configOn + ")"
+        ).withStyle(configOn && mode != LodGeneration.Mode.FORCE_OFF ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
+        return 1;
+    }
+
+    private static String describeLodLite(LodGeneration.Mode mode) {
+        return switch (mode) {
+            case AUTO -> "AUTO (lite only on DH-World Gen threads)";
+            case FORCE_ON -> "FORCE (lite on every worldgen thread — A/B mode)";
+            case FORCE_OFF -> "OFF (full decoration everywhere — baseline)";
+        };
     }
 
     private static int bandEarlyOutsStatus(CommandSourceStack source) {

@@ -20734,6 +20734,24 @@
       "released_in": null,
       "released_at": null,
       "pr": 1660
+    },
+    {
+      "id": "distant-horizons-lod-load",
+      "version": "0.1027.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility",
+        "world"
+      ],
+      "title": "Smoother ticks with Distant Horizons",
+      "summary": "Distant Horizons now generates its distant terrain more gently, so the train and the world keep ticking smoothly on smaller CPUs while it works in the background.",
+      "highlights": [],
+      "pr": 1662,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
