@@ -20726,12 +20726,9 @@
         "fix",
         "train"
       ],
-      "title": "Coming back from the End no longer leaves two trains on the line",
-      "summary": "Beating the dragon and stepping through the exit portal used to drop you at the world spawn beside a brand-new train, while the one you left was still asleep further up the line and came back overlapping it. The return now wakes the train you already have and puts you back aboard it.",
-      "highlights": [
-        "After the End, you land on your own train again, not a duplicate.",
-        "The same fix covers a respawn that rolls a dimension whose train has gone quiet."
-      ],
+      "title": "Returning from the End puts you back on your train",
+      "summary": "Coming back through the End's exit portal now lands you on the train you left.",
+      "highlights": [],
       "date": "2026-09-29",
       "released": false,
       "released_in": null,
