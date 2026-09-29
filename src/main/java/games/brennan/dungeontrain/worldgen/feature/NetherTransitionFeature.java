@@ -23,7 +23,6 @@ import net.minecraft.core.HolderSet;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.BiomeTags;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -797,16 +796,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     /**
-     * Surface foliage that the mountain may bury — leaves, logs, vines, saplings,
-     * flowers. Deliberately excludes fluids and other replaceables (catching fluids
-     * would cascade neighbour updates), mirroring {@code CorridorCleanupEvents.isFoliage}.
+     * Surface foliage that the mountain may bury — leaves, logs, vines, saplings, flowers. Delegates to the
+     * per-block cached predicate in {@link StrippableFoliage#isStrippable}; kept here for existing callers.
      */
     public static boolean isStrippableFoliage(BlockState state) {
-        return state.is(BlockTags.LEAVES)
-                || state.is(BlockTags.LOGS)
-                || state.is(Blocks.VINE)
-                || state.is(BlockTags.SAPLINGS)
-                || state.is(BlockTags.SMALL_FLOWERS)
-                || state.is(BlockTags.TALL_FLOWERS);
+        return StrippableFoliage.isStrippable(state);
     }
 }
