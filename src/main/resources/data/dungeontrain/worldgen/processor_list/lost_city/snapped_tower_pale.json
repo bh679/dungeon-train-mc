@@ -1,0 +1,81 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:andesite",
+          "to": "minecraft:light_gray_terracotta"
+        },
+        {
+          "from": "minecraft:tuff",
+          "to": "minecraft:polished_diorite"
+        },
+        {
+          "from": "minecraft:polished_andesite",
+          "to": "minecraft:smooth_stone"
+        },
+        {
+          "from": "minecraft:polished_tuff",
+          "to": "minecraft:calcite"
+        },
+        {
+          "from": "minecraft:tuff_bricks",
+          "to": "minecraft:light_gray_concrete_powder"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:cut_sandstone"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:light_gray_terracotta"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:polished_diorite"
+        },
+        {
+          "from": "minecraft:light_gray_terracotta",
+          "to": "minecraft:calcite"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:polished_diorite"
+        },
+        {
+          "from": "minecraft:polished_diorite",
+          "to": "minecraft:smooth_stone"
+        },
+        {
+          "from": "minecraft:cut_sandstone",
+          "to": "minecraft:calcite"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:polished_diorite"
+        },
+        {
+          "from": "minecraft:light_gray_stained_glass",
+          "to": "minecraft:light_gray_stained_glass"
+        },
+        {
+          "from": "minecraft:gray_stained_glass",
+          "to": "minecraft:white_stained_glass"
+        },
+        {
+          "from": "minecraft:cyan_stained_glass",
+          "to": "minecraft:light_gray_stained_glass"
+        }
+      ]
+    }
+  ]
+}

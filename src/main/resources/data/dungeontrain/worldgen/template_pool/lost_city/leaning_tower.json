@@ -1,0 +1,60 @@
+{
+  "name": "dungeontrain:lost_city/leaning_tower",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/leaning_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/leaning_tower_shipped"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/leaning_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/leaning_tower_dark"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/leaning_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/leaning_tower_pale"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/leaning_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/leaning_tower_bronze"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/leaning_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/leaning_tower_bitten"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/leaning_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/leaning_tower_dry"
+      }
+    }
+  ]
+}

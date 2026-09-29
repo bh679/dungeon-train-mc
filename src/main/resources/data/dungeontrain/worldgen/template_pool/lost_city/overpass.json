@@ -1,0 +1,42 @@
+{
+  "name": "dungeontrain:lost_city/overpass",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/overpass",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/overpass_shipped"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/overpass",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/overpass_grey"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/overpass",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/overpass_bitten"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/overpass",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/overpass_dry"
+      }
+    }
+  ]
+}

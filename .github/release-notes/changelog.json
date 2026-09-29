@@ -20820,6 +20820,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "original-lost-city-buildings",
+      "version": "0.1032.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "mobs",
+        "loot"
+      ],
+      "title": "New ruins along the line",
+      "summary": "More ruined buildings can be found along the way, each a little different every time you pass one.",
+      "highlights": [],
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

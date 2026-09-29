@@ -1,0 +1,94 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 2,
+      "max_floors": 2,
+      "period_min": 4,
+      "period_max": 4,
+      "min_similarity": 0.45,
+      "axis": "x"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 2,
+      "max_floors": 2,
+      "period_min": 4,
+      "period_max": 4,
+      "min_similarity": 0.45,
+      "axis": "z"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -4,
+      "max_floors": -2,
+      "period_min": 5,
+      "period_max": 5,
+      "min_similarity": 0.45,
+      "axis": "y"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:andesite",
+          "to": "minecraft:gray_terracotta"
+        },
+        {
+          "from": "minecraft:tuff",
+          "to": "minecraft:cyan_terracotta"
+        },
+        {
+          "from": "minecraft:polished_andesite",
+          "to": "minecraft:green_terracotta"
+        },
+        {
+          "from": "minecraft:polished_tuff",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:tuff_bricks",
+          "to": "minecraft:dark_prismarine"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:gray_terracotta"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:cyan_terracotta"
+        },
+        {
+          "from": "minecraft:light_gray_stained_glass",
+          "to": "minecraft:green_stained_glass"
+        },
+        {
+          "from": "minecraft:gray_stained_glass",
+          "to": "minecraft:gray_stained_glass"
+        },
+        {
+          "from": "minecraft:cyan_stained_glass",
+          "to": "minecraft:cyan_stained_glass"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_facade",
+      "pilaster_every": 6,
+      "min_layer": 2,
+      "ledge": "minecraft:smooth_stone_slab"
+    }
+  ]
+}

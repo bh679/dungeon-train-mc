@@ -1,0 +1,42 @@
+{
+  "name": "dungeontrain:lost_city/water_tower",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/water_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/water_tower_shipped"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/water_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/water_tower_rusted"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/water_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/water_tower_drained"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/water_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/water_tower_dark"
+      }
+    }
+  ]
+}

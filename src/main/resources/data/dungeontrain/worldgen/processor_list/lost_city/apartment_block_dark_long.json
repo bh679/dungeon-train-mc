@@ -1,0 +1,78 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 4,
+      "max_floors": 4,
+      "period_min": 4,
+      "period_max": 4,
+      "min_similarity": 0.45,
+      "axis": "z"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:bricks",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:deepslate_tiles"
+        },
+        {
+          "from": "minecraft:terracotta",
+          "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:brown_terracotta",
+          "to": "minecraft:deepslate_bricks"
+        },
+        {
+          "from": "minecraft:packed_mud",
+          "to": "minecraft:polished_basalt"
+        },
+        {
+          "from": "minecraft:mossy_stone_bricks",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:cracked_stone_bricks",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:light_gray_terracotta",
+          "to": "minecraft:gray_terracotta"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:cut_sandstone",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:gray_terracotta"
+        },
+        {
+          "from": "minecraft:polished_diorite",
+          "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:white_terracotta",
+          "to": "minecraft:tuff"
+        }
+      ]
+    }
+  ]
+}

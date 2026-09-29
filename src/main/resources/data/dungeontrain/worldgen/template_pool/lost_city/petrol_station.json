@@ -1,0 +1,51 @@
+{
+  "name": "dungeontrain:lost_city/petrol_station",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/petrol_station",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/petrol_station_shipped"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/petrol_station",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/petrol_station_rusted"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/petrol_station",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/petrol_station_faded"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/petrol_station",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/petrol_station_bitten"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/petrol_station",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/petrol_station_dry"
+      }
+    }
+  ]
+}
