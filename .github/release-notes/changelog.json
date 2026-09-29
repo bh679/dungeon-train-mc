@@ -21063,6 +21063,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stage-fence-connect-modes",
+      "version": "0.1046.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Fences that join up your way",
+      "summary": "Stage fences and walls now join up, and builders can pick exactly how any fence or wall connects.",
+      "highlights": [],
+      "pr": 1684,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

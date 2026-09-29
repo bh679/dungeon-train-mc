@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "dungeontrain:stage_stone_cobbled_wall",
+    "dungeontrain:stage_stone_wall",
+    "dungeontrain:stage_stone_bricks_wall",
+    "dungeontrain:stage_stone_polished_wall",
+    "dungeontrain:stage_stone_cracked_wall",
+    "dungeontrain:stage_stone_mossy_wall",
+    "dungeontrain:stage_stone_feature_wall"
+  ]
+}

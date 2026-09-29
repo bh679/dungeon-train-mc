@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.compat.PaintingTransformProcessor;
+import games.brennan.dungeontrain.editor.ConnectPass;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartVariantBlocks;
@@ -206,33 +207,36 @@ public final class CarriagePartPlacer {
         if (sidecar.isEmpty()) return;
 
         BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
-        for (var entry : sidecar.entries()) {
-            VariantState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
-            int lockId = sidecar.lockIdAt(entry.localPos());
-            // Apply per-entry rotation BEFORE mirror so the placement
-            // mirror still flips the result correctly (mirror operates
-            // on the final FACING/AXIS, regardless of how it was set).
-            // A two-space cell (door / bed / tall plant) expands to both
-            // spaces in local frame; each goes through the same mirror.
-            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
-                    entry.localPos(), seed, carriageIndex,
-                    v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
-                        StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
-                        entry.localPos(), seed, carriageIndex, lockId))) {
-                BlockPos world = transformLocal(stampOrigin, w.localPos(), p.mirror(), partSize);
-                if (w.isAir()) {
-                    SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
-                    continue;
+        try (ConnectPass.Scope ignored = ConnectPass.open()) {
+            for (var entry : sidecar.entries()) {
+                VariantState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
+                int lockId = sidecar.lockIdAt(entry.localPos());
+                // Apply per-entry rotation BEFORE mirror so the placement
+                // mirror still flips the result correctly (mirror operates
+                // on the final FACING/AXIS, regardless of how it was set).
+                // A two-space cell (door / bed / tall plant) expands to both
+                // spaces in local frame; each goes through the same mirror.
+                for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
+                        entry.localPos(), seed, carriageIndex,
+                        v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
+                            StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                            entry.localPos(), seed, carriageIndex, lockId))) {
+                    BlockPos world = transformLocal(stampOrigin, w.localPos(), p.mirror(), partSize);
+                    if (w.isAir()) {
+                        SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
+                        continue;
+                    }
+                    // Mirror flips state properties (FACING/AXIS); BE NBT
+                    // passes through unchanged — vanilla StructureTemplate
+                    // does the same. Asymmetric BE content (sign text,
+                    // banner patterns) reads forward on both sides.
+                    BlockState toPlace = w.state().mirror(p.mirror());
+                    games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
+                        level, world, toPlace, w.entry().blockEntityNbt(),
+                        "part:" + kind.id() + ":" + name, w.localPos(), seed, carriageIndex,
+                        w.entry().linkedLootPrefabId());
+                    ConnectPass.note(level, world, w.entry().connect(), toPlace);
                 }
-                // Mirror flips state properties (FACING/AXIS); BE NBT
-                // passes through unchanged — vanilla StructureTemplate
-                // does the same. Asymmetric BE content (sign text,
-                // banner patterns) reads forward on both sides.
-                BlockState toPlace = w.state().mirror(p.mirror());
-                games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
-                    level, world, toPlace, w.entry().blockEntityNbt(),
-                    "part:" + kind.id() + ":" + name, w.localPos(), seed, carriageIndex,
-                    w.entry().linkedLootPrefabId());
             }
         }
     }
