@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.ship.InertiaSnapshot;
 import games.brennan.dungeontrain.ship.KinematicDriver;
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.util.ThrottledLog;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Deque;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -61,6 +63,12 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
     // Per carriage. Was 10 (up to 2 WARN/s per carriage in player logs); the deltas that trip it
     // during the cooldown are counted into the next line's suppressed= field instead of lost.
     private static final int JITTER_TRIPWIRE_COOLDOWN_TICKS = 200;
+    // Per train, on top of the per-carriage cooldown. A lagging server's tick catch-up makes every
+    // carriage take the same doubled step at once, which was one WARN per carriage; now the first
+    // carriage of the burst logs the full line and the rest fold into the next line's trainTrips=.
+    private static final long JITTER_TRIPWIRE_TRAIN_WINDOW_MS = 2_000L;
+    // One small entry per train seen this session (trains are few); never pruned.
+    private static final Map<UUID, ThrottledLog> TRIPWIRE_BY_TRAIN = new ConcurrentHashMap<>();
     // Sub-mm threshold for "the pivot moved" events so we don't log every
     // floating-point round-off. Real COM recalc would produce far larger
     // deltas; on Sable per-carriage we expect this to never fire.
@@ -1119,12 +1127,20 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
             if (deltaLen > expectedMax && tripwireCooldown > 0) {
                 tripwireSuppressed++;
             } else if (deltaLen > expectedMax) {
-                JITTER_LOGGER.warn(
-                    "[tripwire] pIdx={} physicsTick={} deltaLen={} expectedMax={} canonicalPos={} pivotNow={} pivotLocked={} effPos={} prevEffPos={} src={} suppressed={}",
-                    pIdx, physicsTickCounter, deltaLen, expectedMax, fmt(canonicalPos), fmt(pivot),
-                    fmt(lockedPositionInModel), fmt(effPos), fmt(prevEffectivePos), src, tripwireSuppressed);
+                // A carriage folded into its train's burst still starts its own cooldown, and its trip
+                // is counted once — in trainTrips=, not also in its suppressed=.
+                long trainTrips = TRIPWIRE_BY_TRAIN
+                    .computeIfAbsent(trainId, id -> new ThrottledLog(JITTER_TRIPWIRE_TRAIN_WINDOW_MS))
+                    .record().orElse(0L);
+                if (trainTrips > 0) {
+                    JITTER_LOGGER.warn(
+                        "[tripwire] pIdx={} physicsTick={} deltaLen={} expectedMax={} canonicalPos={} pivotNow={} pivotLocked={} effPos={} prevEffPos={} src={} suppressed={} trainTrips={}",
+                        pIdx, physicsTickCounter, deltaLen, expectedMax, fmt(canonicalPos), fmt(pivot),
+                        fmt(lockedPositionInModel), fmt(effPos), fmt(prevEffectivePos), src, tripwireSuppressed,
+                        trainTrips);
+                    tripwireSuppressed = 0;
+                }
                 tripwireCooldown = JITTER_TRIPWIRE_COOLDOWN_TICKS;
-                tripwireSuppressed = 0;
             }
         }
         if (tripwireCooldown > 0) tripwireCooldown--;
