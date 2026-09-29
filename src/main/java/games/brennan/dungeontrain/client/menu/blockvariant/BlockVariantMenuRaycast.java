@@ -185,7 +185,7 @@ public final class BlockVariantMenuRaycast {
         boolean rotatable = parsed != null && concrete && RotationApplier.canRotate(parsed);
         boolean halfable = parsed != null && concrete && RotationApplier.canFlip(parsed);
         boolean toggleable = parsed != null && concrete && RedstoneToggle.canToggle(parsed);
-        boolean connectable = parsed != null && concrete && BlockVariantMenu.autoConnectSupported()
+        boolean connectable = parsed != null && concrete && BlockVariantMenu.connectSupported()
             && VariantConnect.canConnect(parsed);
         VariantRotation.Mode rowMode = BlockVariantMenuRenderer.decodeMode(entry.rotMode());
         boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
@@ -197,12 +197,12 @@ public final class BlockVariantMenuRaycast {
         double halfModeCellL = halfable ? halfModeCellR - BlockVariantMenuRenderer.HALF_MODE_CELL_WIDTH : halfModeCellR;
         double activeModeCellR = halfModeCellL;
         double activeModeCellL = toggleable ? activeModeCellR - BlockVariantMenuRenderer.ACTIVE_MODE_CELL_WIDTH : activeModeCellR;
-        double autoConnectCellR = activeModeCellL;
-        double autoConnectCellL = connectable ? autoConnectCellR - BlockVariantMenuRenderer.AUTO_CONNECT_CELL_WIDTH : autoConnectCellR;
+        double connectCellR = activeModeCellL;
+        double connectCellL = connectable ? connectCellR - BlockVariantMenuRenderer.CONNECT_CELL_WIDTH : connectCellR;
         // Difficulty cells (mob rows only) — mirror the renderer geometry: they
         // occupy the space the rotation/half cells leave free on a mob row.
         boolean showDiff = entry.isMob();
-        double diffMaxCellR = autoConnectCellL;
+        double diffMaxCellR = connectCellL;
         double diffMaxCellL = showDiff ? diffMaxCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMaxCellR;
         double diffMinCellR = diffMaxCellL;
         double diffMinCellL = showDiff ? diffMinCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMinCellR;
@@ -225,8 +225,14 @@ public final class BlockVariantMenuRaycast {
         if (toggleable && hitX >= activeModeCellL && hitX <= activeModeCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_ACTIVE_MODE, idx);
         }
-        if (connectable && hitX >= autoConnectCellL && hitX <= autoConnectCellR) {
-            return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_AUTO_CONNECT, idx);
+        if (connectable && hitX >= connectCellL && hitX <= connectCellR) {
+            // Same segment maths as BlockVariantMenuRenderer#drawConnectCell.
+            int segs = BlockVariantMenu.CONNECT_SEGMENTS.length;
+            double inset = BlockVariantMenuRenderer.CONNECT_PILL_INSET;
+            double segW = (connectCellR - connectCellL - 2 * inset) / segs;
+            int seg = (int) Math.floor((hitX - connectCellL - inset) / segW);
+            seg = Math.max(0, Math.min(segs - 1, seg));
+            return new BlockVariantMenu.Hit(BlockVariantMenu.CONNECT_SEGMENTS[seg], idx);
         }
         if (showDiff && hitX >= diffMinCellL && hitX <= diffMinCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_DIFF_MIN, idx);

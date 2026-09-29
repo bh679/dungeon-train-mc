@@ -120,8 +120,10 @@ public final class BlockVariantMenuRenderer {
      * overran into the neighbouring pill (Gate 2 screenshot, v0.928.1).
      */
     static final double ACTIVE_MODE_CELL_WIDTH = 0.78;
-    /** On/Off pill width — the fence / wall / pane auto-connect control (two three-glyph-max labels). */
-    static final double AUTO_CONNECT_CELL_WIDTH = 0.52;
+    /** Def/Auto/On/Off pill width — the fence / wall / pane connect-mode control (four-glyph-max labels). */
+    static final double CONNECT_CELL_WIDTH = 1.20;
+    /** Inset of the connect pill's segments inside its cell — shared with the raycaster's segment maths. */
+    static final double CONNECT_PILL_INSET = 0.01;
     static final double TEXT_SCALE = 0.012;
     static final double POPUP_BUTTON_SIZE = 0.20;
     static final double ICON_SIZE = 0.22;
@@ -361,7 +363,7 @@ public final class BlockVariantMenuRenderer {
             boolean rotatable = parsed != null && concrete && RotationApplier.canRotate(parsed);
             boolean halfable = parsed != null && concrete && RotationApplier.canFlip(parsed);
             boolean toggleable = parsed != null && concrete && RedstoneToggle.canToggle(parsed);
-            boolean connectable = parsed != null && concrete && BlockVariantMenu.autoConnectSupported()
+            boolean connectable = parsed != null && concrete && BlockVariantMenu.connectSupported()
                 && VariantConnect.canConnect(parsed);
             VariantRotation.Mode rowMode = decodeMode(entry.rotMode());
             boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
@@ -375,14 +377,14 @@ public final class BlockVariantMenuRenderer {
             double halfModeCellL = halfable ? halfModeCellR - HALF_MODE_CELL_WIDTH : halfModeCellR;
             double activeModeCellR = halfModeCellL;
             double activeModeCellL = toggleable ? activeModeCellR - ACTIVE_MODE_CELL_WIDTH : activeModeCellR;
-            double autoConnectCellR = activeModeCellL;
-            double autoConnectCellL = connectable ? autoConnectCellR - AUTO_CONNECT_CELL_WIDTH : autoConnectCellR;
+            double connectCellR = activeModeCellL;
+            double connectCellL = connectable ? connectCellR - CONNECT_CELL_WIDTH : connectCellR;
             // Difficulty min/max cells (mob rows only) sit between the name and
             // weight, reusing the space the rotation/half cells leave free on a
             // mob row. They collapse to zero width on block rows, so nameCellR
             // is unchanged there.
             boolean showDiff = entry.isMob();
-            double diffMaxCellR = autoConnectCellL;
+            double diffMaxCellR = connectCellL;
             double diffMaxCellL = showDiff ? diffMaxCellR - DIFF_CELL_WIDTH : diffMaxCellR;
             double diffMinCellR = diffMaxCellL;
             double diffMinCellL = showDiff ? diffMinCellR - DIFF_CELL_WIDTH : diffMinCellR;
@@ -473,10 +475,10 @@ public final class BlockVariantMenuRenderer {
                     activeModeCellL, activeModeCellR, rowBottom, rowTop, rowCY, hovered);
             }
 
-            // Auto-connect pill (fences / walls / panes)
+            // Connect-mode pill (fences / walls / panes)
             if (connectable) {
-                drawAutoConnectCell(ps, buffer, font, i, entry,
-                    autoConnectCellL, autoConnectCellR, rowBottom, rowTop, rowCY, hovered);
+                drawConnectCell(ps, buffer, font, i, entry,
+                    connectCellL, connectCellR, rowBottom, rowTop, rowCY, hovered);
             }
 
             // Difficulty band cells (mob rows only)
@@ -766,35 +768,44 @@ public final class BlockVariantMenuRenderer {
     }
 
     /**
-     * Draw the two-segment auto-connect pill {@code [On][Off]} for fences, walls and panes (see
-     * {@link VariantConnect}). On (green) re-derives the arms from the real neighbours once placed;
-     * Off (slate, the default) places the captured arms. A click anywhere on the pill toggles.
+     * Draw the four-segment connect-mode pill {@code [Def][Auto][On][Off]} for fences, walls and
+     * panes (see {@link VariantConnect.Mode}). Each segment is its own click target and selects
+     * that mode directly. Slate for Default, blue for Auto, green for On, red for Off.
      */
-    private static void drawAutoConnectCell(PoseStack ps, MultiBufferSource buffer, Font font,
-                                            int rowIndex, BlockVariantSyncPacket.Entry entry,
-                                            double cellL, double cellR,
-                                            double rowBottom, double rowTop, double rowCY,
-                                            BlockVariantMenu.Hit hovered) {
-        boolean hover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_AUTO_CONNECT && hovered.index() == rowIndex;
+    private static void drawConnectCell(PoseStack ps, MultiBufferSource buffer, Font font,
+                                        int rowIndex, BlockVariantSyncPacket.Entry entry,
+                                        double cellL, double cellR,
+                                        double rowBottom, double rowTop, double rowCY,
+                                        BlockVariantMenu.Hit hovered) {
+        VariantConnect.Mode mode = VariantConnect.Mode.fromOrdinal(entry.connectMode() & 0xFF);
+        VariantConnect.Mode[] modes = VariantConnect.Mode.values();
         double pillBot = rowBottom + 0.02;
         double pillTop = rowTop - 0.02;
-        double segW = (cellR - cellL - 0.02) / 2.0;
-        for (int seg = 0; seg < 2; seg++) {
-            double sL = cellL + 0.01 + seg * segW;
+        double segW = (cellR - cellL - 2 * CONNECT_PILL_INSET) / modes.length;
+        for (int seg = 0; seg < modes.length; seg++) {
+            double sL = cellL + CONNECT_PILL_INSET + seg * segW;
             double sR = sL + segW - 0.005;
-            boolean selected = (seg == 0) == entry.autoConnect();
+            boolean selected = seg == mode.ordinal();
+            boolean hover = hovered.index() == rowIndex
+                && hovered.kind() == BlockVariantMenu.CONNECT_SEGMENTS[seg];
             int tint;
             if (selected) {
-                tint = seg == 0
-                    ? (hover ? 0xC066DD77 : 0x80339944)  // ON green (joined)
-                    : (hover ? 0xC099AAAA : 0x80557777); // OFF slate
+                tint = switch (modes[seg]) {
+                    case AUTO -> hover ? 0xC066AAFF : 0x8033679B; // blue (shared "rolled" hue)
+                    case ON -> hover ? 0xC066DD77 : 0x80339944;   // green (joined)
+                    case OFF -> hover ? 0xC0FF6655 : 0x80CC3322;  // red (cut off)
+                    default -> hover ? 0xC099AAAA : 0x80557777;   // slate (as captured)
+                };
             } else {
                 tint = hover ? 0x60AAAAAA : 0x30777777;
             }
             drawQuad(ps, buffer, sL, pillBot, sR, pillTop, tint);
-            String label = seg == 0
-                ? MenuLang.t("block_variant.auto_connect_on")
-                : MenuLang.t("block_variant.auto_connect_off");
+            String label = switch (modes[seg]) {
+                case AUTO -> MenuLang.t("block_variant.connect_auto");
+                case ON -> MenuLang.t("block_variant.connect_on");
+                case OFF -> MenuLang.t("block_variant.connect_off");
+                default -> MenuLang.t("block_variant.connect_default");
+            };
             drawCenteredText(ps, buffer, font, label, (sL + sR) / 2.0, rowCY,
                 selected ? 0xFFFFFFFF : 0xFF888888);
         }

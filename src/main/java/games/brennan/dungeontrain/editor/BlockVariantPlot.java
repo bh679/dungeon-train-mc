@@ -145,12 +145,12 @@ public interface BlockVariantPlot {
 
     /**
      * True when this plot's spawn path honours the per-row fence / wall
-     * {@link VariantState#autoConnect()} flag ({@link AutoConnectPass}) — carriage,
+     * {@link VariantState#connect()} mode ({@link ConnectPass}) — carriage,
      * whole-carriage, contents and part plots. False elsewhere (tracks, portal
      * rooms, chunk frames), where the menu hides the toggle rather than let the
-     * editor preview promise a join the spawned world would not make.
+     * editor preview promise arms the spawned world would not give.
      */
-    default boolean supportsAutoConnect() {
+    default boolean supportsConnectMode() {
         return false;
     }
 
@@ -495,7 +495,7 @@ public interface BlockVariantPlot {
 
     /** Wraps a {@link CarriageVariantBlocks} sidecar. */
     final class CarriagePlot implements BlockVariantPlot {
-        @Override public boolean supportsAutoConnect() { return true; }
+        @Override public boolean supportsConnectMode() { return true; }
         private final CarriageVariant variant;
         private final BlockPos origin;
         private final Vec3i footprint;
@@ -564,7 +564,7 @@ public interface BlockVariantPlot {
     /** Wraps a {@link CarriageContentsVariantBlocks} sidecar. */
     /** A whole room or group plot — one {@link WholeVariantBlocks} sidecar over the whole build. */
     final class WholePlot implements BlockVariantPlot {
-        @Override public boolean supportsAutoConnect() { return true; }
+        @Override public boolean supportsConnectMode() { return true; }
         private final games.brennan.dungeontrain.train.WholeKind kind;
         private final String id;
         private final BlockPos origin;
@@ -624,7 +624,7 @@ public interface BlockVariantPlot {
     }
 
     final class ContentsPlot implements BlockVariantPlot {
-        @Override public boolean supportsAutoConnect() { return true; }
+        @Override public boolean supportsConnectMode() { return true; }
         private final CarriageContents contents;
         private final BlockPos origin;
         private final Vec3i footprint;
@@ -683,7 +683,7 @@ public interface BlockVariantPlot {
 
     /** Wraps a {@link CarriagePartVariantBlocks} sidecar. */
     final class PartPlot implements BlockVariantPlot {
-        @Override public boolean supportsAutoConnect() { return true; }
+        @Override public boolean supportsConnectMode() { return true; }
         private final CarriagePartKind kind;
         private final String name;
         private final BlockPos origin;

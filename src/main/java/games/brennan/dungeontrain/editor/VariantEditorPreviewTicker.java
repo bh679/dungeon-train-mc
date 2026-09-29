@@ -128,14 +128,15 @@ public final class VariantEditorPreviewTicker {
             }
 
             BlockState toShow = computePreviewState(picked, previewTick);
-            // Auto-connect fence / wall / pane: show the arms spawn will give it (AutoConnectPass),
-            // derived from the neighbours up front so the equality check below stays quiet once
-            // joined. Written with the cascade so adjacent fences join back, as they do at spawn.
-            boolean joins = picked.autoConnect() && plot.supportsAutoConnect()
-                && VariantConnect.canConnect(toShow);
-            if (joins) {
-                toShow = net.minecraft.world.level.block.Block.updateFromNeighbourShapes(toShow, level, worldPos);
+            // Fence / wall / pane connect mode: show the arms spawn will give it (ConnectPass),
+            // resolved up front so the equality check below stays quiet once set. Auto is written
+            // with the cascade so adjacent fences join back, as they do at spawn; On / Off take the
+            // no-cascade path below, which leaves the neighbours alone.
+            boolean connects = plot.supportsConnectMode() && VariantConnect.canConnect(toShow);
+            if (connects) {
+                toShow = VariantConnect.resolve(toShow, picked.connect(), level, worldPos);
             }
+            boolean joins = connects && picked.connect() == VariantConnect.Mode.AUTO;
             BlockState existing = level.getBlockState(worldPos);
             if (!existing.equals(toShow)) {
                 if (joins) {

@@ -75,17 +75,17 @@ import org.jetbrains.annotations.Nullable;
  *       {@code open=true} state with no field migrates to {@code ACTIVE} on
  *       read.</li>
  *   <li>v10+ (additive, no schema bump) — adds an optional per-entry
- *       {@code autoConnect} flag for fences / walls / panes (see
- *       {@link VariantConnect}): when set, the placed block re-derives its
- *       connection arms from its real neighbours instead of keeping the
- *       captured ones. Omitted from JSON when {@code false}.</li>
+ *       {@code connect} mode for fences / walls / panes (see
+ *       {@link VariantConnect.Mode}): Auto re-derives the arms from the real
+ *       neighbours, On / Off force them all out / in. Omitted from JSON when
+ *       Default (the captured state, as before).</li>
  * </ul></p>
  */
 public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
                            VariantRotation rotation, @Nullable String linkedLootPrefabId,
                            @Nullable ResourceLocation entityId, VariantHalf half,
                            VariantDifficulty difficulty, int groupRef, VariantActive active,
-                           boolean autoConnect) {
+                           VariantConnect.Mode connect) {
 
     public VariantState {
         if (entityId != null) {
@@ -116,6 +116,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
         if (difficulty == null) difficulty = VariantDifficulty.NONE;
         if (groupRef < 0) groupRef = 0;
         if (active == null) active = VariantActive.NONE;
+        if (connect == null) connect = VariantConnect.Mode.DEFAULT;
         // Keep the stored state's redstone toggle in step with the flag so the
         // serialised state string and the mode can never disagree: ACTIVE
         // stores open/lit/powered=true, RANDOM and INACTIVE store false (the
@@ -124,16 +125,15 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
     }
 
     /**
-     * Ten-arg overload defaulting {@code autoConnect} to {@code false}: the
-     * stored connection arms of a fence / wall / pane are placed as captured.
-     * See {@link VariantConnect}.
+     * Ten-arg overload defaulting {@code connect} to {@link VariantConnect.Mode#DEFAULT}:
+     * the stored connection arms of a fence / wall / pane are placed as captured.
      */
     public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
                         VariantRotation rotation, @Nullable String linkedLootPrefabId,
                         @Nullable ResourceLocation entityId, VariantHalf half,
                         VariantDifficulty difficulty, int groupRef, VariantActive active) {
         this(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty,
-            groupRef, active, false);
+            groupRef, active, VariantConnect.Mode.DEFAULT);
     }
 
     /**
@@ -251,7 +251,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
     public boolean isPlainBareString() {
         return blockEntityNbt == null && weight == 1 && rotation.isDefault()
             && linkedLootPrefabId == null && entityId == null && half.isDefault()
-            && difficulty.isDefault() && groupRef == 0 && active.isDefault() && !autoConnect;
+            && difficulty.isDefault() && groupRef == 0 && active.isDefault() && connect.isDefault();
     }
 
     /**
@@ -260,32 +260,32 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
      * is preserved. Not meaningful for mob entries (their state is the sentinel).
      */
     public VariantState withState(BlockState newState, @Nullable CompoundTag newBlockEntityNbt) {
-        return new VariantState(newState, newBlockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, autoConnect);
+        return new VariantState(newState, newBlockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect);
     }
 
     /** Return a copy with {@code weight} replaced (clamped ≥ 1 by the canonical constructor). */
     public VariantState withWeight(int newWeight) {
-        return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, autoConnect);
+        return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect);
     }
 
     /** Return a copy with {@code rotation} replaced. */
     public VariantState withRotation(VariantRotation newRotation) {
-        return new VariantState(state, blockEntityNbt, weight, newRotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, autoConnect);
+        return new VariantState(state, blockEntityNbt, weight, newRotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect);
     }
 
     /** Return a copy with {@code linkedLootPrefabId} replaced ({@code null} clears the link). */
     public VariantState withLinkedLootPrefabId(@Nullable String newLinkedLootPrefabId) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, newLinkedLootPrefabId, entityId, half, difficulty, groupRef, active, autoConnect);
+        return new VariantState(state, blockEntityNbt, weight, rotation, newLinkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect);
     }
 
     /** Return a copy with {@code half} replaced. */
     public VariantState withHalf(VariantHalf newHalf) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, newHalf, difficulty, groupRef, active, autoConnect);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, newHalf, difficulty, groupRef, active, connect);
     }
 
     /** Return a copy with {@code difficulty} replaced (only meaningful for mob entries). */
     public VariantState withDifficulty(VariantDifficulty newDifficulty) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, newDifficulty, groupRef, active, autoConnect);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, newDifficulty, groupRef, active, connect);
     }
 
     /**
@@ -294,7 +294,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
      * why the placeholder is kept alongside the ref rather than discarded.
      */
     public VariantState withGroupRef(int newGroupRef) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, newGroupRef, active, autoConnect);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, newGroupRef, active, connect);
     }
 
     /**
@@ -302,15 +302,15 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
      * re-syncs the stored state's toggle property to the new mode.
      */
     public VariantState withActive(VariantActive newActive) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, newActive, autoConnect);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, newActive, connect);
     }
 
     /**
-     * Return a copy with {@code autoConnect} replaced — whether a fence / wall /
-     * pane re-derives its arms from its real neighbours once placed.
+     * Return a copy with the fence / wall / pane {@link VariantConnect.Mode} replaced
+     * ({@code null} = Default).
      */
-    public VariantState withAutoConnect(boolean newAutoConnect) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, newAutoConnect);
+    public VariantState withConnect(VariantConnect.Mode newConnect) {
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, newConnect);
     }
 
     /**

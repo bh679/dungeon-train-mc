@@ -360,13 +360,13 @@ public final class BlockVariantMenuController {
                 s.difficulty().min(), s.difficulty().max(),
                 s.groupRef(), refLive,
                 (byte) s.active().mode().ordinal(),
-                s.autoConnect()));
+                (byte) s.connect().ordinal()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
             (byte) plot.copyScopeAt(localPos).ordinal(),
             (byte) plot.spanAt(localPos).toByte(),
-            plot.supportsAutoConnect());
+            plot.supportsConnectMode());
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -783,12 +783,13 @@ public final class BlockVariantMenuController {
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
-            case SET_AUTO_CONNECT -> {
+            case SET_CONNECT_MODE -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= mutated.size()) return;
                 if (!VariantConnect.canConnect(mutated.get(idx).state())) return;
-                mutated.set(idx, mutated.get(idx).withAutoConnect(packet.delta() != 0));
+                if (packet.delta() < 0 || packet.delta() >= VariantConnect.Mode.values().length) return;
+                mutated.set(idx, mutated.get(idx).withConnect(VariantConnect.Mode.fromOrdinal(packet.delta())));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }

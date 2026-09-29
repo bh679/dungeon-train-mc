@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.train;
 
-import games.brennan.dungeontrain.editor.AutoConnectPass;
+import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -579,7 +579,7 @@ public final class CarriageContentsPlacer {
         boolean filterByDifficulty = carriageIndex != EDITOR_SENTINEL_PIDX;
         int diffTier = filterByDifficulty
             ? DifficultyProgression.positionTier(carriageIndex) : 0;
-        try (AutoConnectPass.Scope ignored = AutoConnectPass.open()) {
+        try (ConnectPass.Scope ignored = ConnectPass.open()) {
             for (var entry : sidecar.entries()) {
                 VariantState picked = filterByDifficulty
                     ? sidecar.resolve(entry.localPos(), seed, carriageIndex, diffTier)
@@ -628,7 +628,7 @@ public final class CarriageContentsPlacer {
                         level, wWorld, rotated, w.entry().blockEntityNbt(),
                         "contents:" + contents.id(), w.localPos(), seed, carriageIndex,
                         lootId);
-                    if (w.entry().autoConnect()) AutoConnectPass.note(level, wWorld);
+                    ConnectPass.note(level, wWorld, w.entry().connect());
                 }
             }
         }

@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.train;
 
-import games.brennan.dungeontrain.editor.AutoConnectPass;
+import games.brennan.dungeontrain.editor.ConnectPass;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
@@ -31,7 +31,7 @@ public final class WholeOverlay {
         WholeVariantBlocks sidecar = WholeVariantBlocks.loadFor(kind, id, footprint);
         if (sidecar.isEmpty()) return;
         String plotKey = BlockVariantPlot.wholeKey(kind, id);
-        try (AutoConnectPass.Scope ignored = AutoConnectPass.open()) {
+        try (ConnectPass.Scope ignored = ConnectPass.open()) {
             for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
                 VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
                 int lockId = sidecar.lockIdAt(e.localPos());
@@ -46,7 +46,7 @@ public final class WholeOverlay {
                     }
                     ContainerContentsPlacement.place(level, world, w.state(), w.entry().blockEntityNbt(),
                         plotKey, w.localPos(), seed, carriageIndex, w.entry().linkedLootPrefabId());
-                    if (w.entry().autoConnect()) AutoConnectPass.note(level, world);
+                    ConnectPass.note(level, world, w.entry().connect());
                 }
             }
         }

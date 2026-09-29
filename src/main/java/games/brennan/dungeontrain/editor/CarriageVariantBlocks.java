@@ -663,13 +663,11 @@ public final class CarriageVariantBlocks {
             // v3 entries had a per-entry "locked" field; v4 moved locking
             // to the cell level. Old "locked" values are silently dropped
             // on read — the file rewrites cleanly without it.
-            // Additive fence / wall / pane auto-connect flag. Absent → false
+            // Additive fence / wall / pane connect mode. Absent → Default
             // (place the captured arms), so older files spawn unchanged.
-            boolean autoConnect = obj.has("autoConnect") && obj.get("autoConnect").isJsonPrimitive()
-                && obj.get("autoConnect").getAsJsonPrimitive().isBoolean()
-                && obj.get("autoConnect").getAsBoolean();
+            VariantConnect.Mode connect = parseConnect(obj.get("connect"), contextId, contextPos);
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
-                VariantDifficulty.NONE, groupRef, active, autoConnect);
+                VariantDifficulty.NONE, groupRef, active, connect);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -1394,8 +1392,8 @@ public final class CarriageVariantBlocks {
         if (!s.active().isDefault()) {
             sb.append(", \"active\": \"").append(activeModeName(s.active().mode())).append("\"");
         }
-        if (s.autoConnect()) {
-            sb.append(", \"autoConnect\": true");
+        if (!s.connect().isDefault()) {
+            sb.append(", \"connect\": \"").append(s.connect().id()).append("\"");
         }
         sb.append("}");
     }
@@ -1463,6 +1461,22 @@ public final class CarriageVariantBlocks {
      * ({@link #migrateActiveFromState}); a malformed value logs and falls back
      * to the default.
      */
+    /**
+     * Parse an optional {@code "connect"} string ({@code "auto"} / {@code "on"} /
+     * {@code "off"}). Absent → Default; unrecognised → Default with a warning.
+     */
+    private static VariantConnect.Mode parseConnect(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantConnect.Mode.DEFAULT;
+        String token = el.isJsonPrimitive() && el.getAsJsonPrimitive().isString() ? el.getAsString() : null;
+        VariantConnect.Mode mode = VariantConnect.Mode.parse(token);
+        if (mode == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown connect '{}', using default.",
+                contextId, contextPos, el);
+            return VariantConnect.Mode.DEFAULT;
+        }
+        return mode;
+    }
+
     private static VariantActive parseActive(JsonElement el, String contextId, BlockPos contextPos) {
         if (el == null || !el.isJsonPrimitive()) return null;
         String raw = el.getAsString().trim();

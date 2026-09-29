@@ -279,12 +279,12 @@ public final class BlockVariantMenuInputHandler {
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_ACTIVE_MODE, variantId, local, hit.index(), "", nextOrd));
             }
-            case ENTRY_AUTO_CONNECT -> {
+            case ENTRY_CONNECT_DEFAULT, ENTRY_CONNECT_AUTO, ENTRY_CONNECT_ON, ENTRY_CONNECT_OFF -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
-                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
+                // The segment clicked is the mode chosen — CONNECT_SEGMENTS is in Mode order.
+                int ordinal = java.util.Arrays.asList(BlockVariantMenu.CONNECT_SEGMENTS).indexOf(hit.kind());
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
-                    BlockVariantEditPacket.Op.SET_AUTO_CONNECT, variantId, local, hit.index(), "",
-                    e.autoConnect() ? 0 : 1));
+                    BlockVariantEditPacket.Op.SET_CONNECT_MODE, variantId, local, hit.index(), "", ordinal));
             }
             case ENTRY_ROT_DIRS -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
