@@ -14,12 +14,14 @@ import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
 import games.brennan.dungeontrain.client.menu.ParentRemoveConfirmScreen;
 import games.brennan.dungeontrain.client.menu.GroupParentPickerScreen;
 import games.brennan.dungeontrain.client.menu.MenuScreen;
+import games.brennan.dungeontrain.client.menu.PackageMenuActions;
 import games.brennan.dungeontrain.client.menu.NewSourcePickerScreen;
 import games.brennan.dungeontrain.client.PortalTestSessionState;
 import games.brennan.dungeontrain.client.menu.PortalTestSaveCheckScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
 import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.editor.TemplateFileLocator;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -29,10 +31,13 @@ import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -103,6 +108,15 @@ public final class EditorScreenActions {
         }
     }
 
+    /**
+     * Whether the template files are on this machine — only when this client runs the server. Swapped
+     * by tests, which have no {@link Minecraft}.
+     */
+    static BooleanSupplier filesAreLocal = () -> {
+        Minecraft mc = Minecraft.getInstance();
+        return mc != null && mc.hasSingleplayerServer();
+    };
+
     private EditorScreenActions() {}
 
     // ------------------------------------------------------------------
@@ -115,7 +129,7 @@ public final class EditorScreenActions {
     }
 
     /**
-     * Save · Rename · Remove | Undo · Redo | Reset · Clear | Submit, in that order.
+     * Save · Rename · Move · Remove | Undo · Redo | Open files | Reset · Clear | Submit, in that order.
      *
      * <p>{@code relayId} is the selected template's row on the relay, which the pane it is drawn in
      * already holds for the version strip. Zero means this template has never been uploaded, which is
@@ -147,6 +161,8 @@ public final class EditorScreenActions {
             EditorHistoryState.undoLabel(), EditorScreenLang.UNDO_NOTHING));
         out.add(historyIcon("redo", EditorScreenLang.ICON_REDO, "dungeontrain editor redo",
             EditorHistoryState.redoLabel(), EditorScreenLang.REDO_NOTHING));
+
+        out.add(openFilesIcon(ctx));
 
         out.add(new Icon("reset", EditorScreenLang.ICON_RESET,
             here && cat != PlotCategory.PARTS ? new CommandMenuEntry.Stay(MenuLang.t("editor.reset"), "dungeontrain reset")
@@ -190,6 +206,36 @@ public final class EditorScreenActions {
                 note -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), true, note)));
         return new Icon(published ? "withdraw" : "submit", label,
             new CommandMenuEntry.ClientAction(label, action), null);
+    }
+
+    /**
+     * <b>Open template files</b>: the OS file browser on the folder holding the selected template's
+     * {@code .nbt} and sidecars — the copy the game loads, or, for one never saved, the active
+     * package's folder where a save would put it. Any selection, not only the plot stood in.
+     *
+     * <p>Off on a remote server, whose files are not on this machine. The detail line names the file
+     * relative to the package root; the full folder is resolved on the click, not every frame, since
+     * finding which package supplies the file reads the disk.</p>
+     */
+    static Icon openFilesIcon(Ctx ctx) {
+        if (!filesAreLocal.getAsBoolean()) {
+            return new Icon("open_files", EditorScreenLang.ICON_OPEN_FILES, null,
+                EditorScreenLang.DISABLED_NOT_LOCAL);
+        }
+        Optional<TemplateFileLocator.Location> where = ctx.hasSelection()
+            ? TemplateFileLocator.of(ctx.selection().category(), ctx.selection().modelId(),
+                ctx.selection().modelName())
+            : Optional.empty();
+        if (where.isEmpty()) {
+            return new Icon("open_files", EditorScreenLang.ICON_OPEN_FILES, null,
+                EditorScreenLang.DISABLED_NOT_HERE);
+        }
+        TemplateFileLocator.Location loc = where.get();
+        String label = EditorScreenLang.text(EditorScreenLang.ICON_OPEN_FILES);
+        Runnable open = () -> PackageMenuActions.openFolder(TemplateFileLocator.folderFor(loc),
+            "template folder for " + loc.basename());
+        return new Icon("open_files", EditorScreenLang.ICON_OPEN_FILES,
+            new CommandMenuEntry.ClientAction(label, open), null, loc.subdir() + "/" + loc.basename());
     }
 
     /**
