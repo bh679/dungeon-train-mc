@@ -25,18 +25,18 @@ final class DistantHorizonsUpdatePromptSuppressionTest {
     private static final boolean NOTHING_PENDING = false;
 
     @Test
-    @DisplayName("a screen is already up (title, connect, anything) → keep it, never replace it")
-    void screenShowing_keepsCurrent() {
-        assertEquals(KEEP_CURRENT_SCREEN, decide(SCREEN_SHOWING, NOTHING_PENDING));
-        // Even with a captured task waiting, a visible screen wins — running the task would tear
-        // down whatever the player is looking at.
-        assertEquals(KEEP_CURRENT_SCREEN, decide(SCREEN_SHOWING, INITIAL_SCREENS_PENDING));
+    @DisplayName("vanilla's task was captured → run it, even over the 'Loading Minecraft' placeholder screen")
+    void pendingInitialScreens_runsThem() {
+        // At game-load-finish the Minecraft constructor's GenericMessageScreen is always up, so a
+        // visible screen must not stop the captured task — that is the quick-play join.
+        assertEquals(RUN_INITIAL_SCREENS, decide(SCREEN_SHOWING, INITIAL_SCREENS_PENDING));
+        assertEquals(RUN_INITIAL_SCREENS, decide(NO_SCREEN, INITIAL_SCREENS_PENDING));
     }
 
     @Test
-    @DisplayName("no screen and vanilla's task was captured → run it (restores quick-play join)")
-    void noScreen_runsCapturedInitialScreens() {
-        assertEquals(RUN_INITIAL_SCREENS, decide(NO_SCREEN, INITIAL_SCREENS_PENDING));
+    @DisplayName("nothing captured and a screen is up (title, connect, anything) → keep it, never replace it")
+    void screenShowing_nothingPending_keepsCurrent() {
+        assertEquals(KEEP_CURRENT_SCREEN, decide(SCREEN_SHOWING, NOTHING_PENDING));
     }
 
     @Test

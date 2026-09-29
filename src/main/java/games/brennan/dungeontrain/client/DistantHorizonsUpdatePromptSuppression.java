@@ -25,11 +25,12 @@ import org.slf4j.Logger;
  * The swap happens in {@link ScreenEvent.Opening}. DH opens its prompt by redirecting the
  * {@code Runnable.run()} in {@code Minecraft#onGameLoadFinished}, so vanilla's own initial-screen
  * task — the title screen, or a {@code --quickPlay*} join, behind NeoForge's loading-warnings
- * screen — never runs and nothing is on screen yet. {@code MinecraftInitialScreensMixin} stashes
- * that task in {@link InitialScreensCapture} first, so suppressing the prompt means running
+ * screen — never runs; the only screen up is the "Loading Minecraft" placeholder the
+ * {@code Minecraft} constructor set under the loading overlay. {@code MinecraftInitialScreensMixin}
+ * stashes that task in {@link InitialScreensCapture} first, so suppressing the prompt means running
  * exactly what vanilla would have run. Opening a title screen instead used to cancel quick-play
- * joins (the perf harness's {@code -PquickJoin}). If some screen is already showing when the
- * prompt tries to open, it is simply kept. Nothing of DH's is written or changed — its updater
+ * joins (the perf harness's {@code -PquickJoin}). Should the prompt open at any other time, the
+ * screen already showing is simply kept. Nothing of DH's is written or changed — its updater
  * config and state are untouched, and the prompt returns the moment the player is on a DH build
  * the pack does not pin.</p>
  */
@@ -46,10 +47,13 @@ public final class DistantHorizonsUpdatePromptSuppression {
 
     /** What takes the suppressed prompt's place. */
     public enum Decision {
-        /** A screen is already up (title, connect, anything) — cancel the prompt and keep it. */
-        KEEP_CURRENT_SCREEN,
-        /** Nothing is up but vanilla's initial-screen task was captured — cancel the prompt and run it. */
+        /**
+         * Vanilla's initial-screen task was captured, so this is game-load-finish — cancel the prompt
+         * and run the task. The screen under it is only vanilla's "Loading Minecraft" placeholder.
+         */
         RUN_INITIAL_SCREENS,
+        /** Later in the session, a screen is already up (title, connect, anything) — cancel the prompt and keep it. */
+        KEEP_CURRENT_SCREEN,
         /** Nothing is up and nothing was captured — open a fresh title screen so the player is not stranded. */
         OPEN_TITLE_SCREEN
     }
@@ -58,11 +62,12 @@ public final class DistantHorizonsUpdatePromptSuppression {
      * Pure decision, kept free of Minecraft types so it is unit-testable.
      *
      * @param hasCurrentScreen         whether any screen is showing when the prompt tries to open
-     * @param hasPendingInitialScreens whether {@link InitialScreensCapture} holds vanilla's task
+     * @param hasPendingInitialScreens whether {@link InitialScreensCapture} holds vanilla's task — true
+     *                                 only while {@code onGameLoadFinished} is on the stack
      */
     public static Decision decide(boolean hasCurrentScreen, boolean hasPendingInitialScreens) {
-        if (hasCurrentScreen) return Decision.KEEP_CURRENT_SCREEN;
-        return hasPendingInitialScreens ? Decision.RUN_INITIAL_SCREENS : Decision.OPEN_TITLE_SCREEN;
+        if (hasPendingInitialScreens) return Decision.RUN_INITIAL_SCREENS;
+        return hasCurrentScreen ? Decision.KEEP_CURRENT_SCREEN : Decision.OPEN_TITLE_SCREEN;
     }
 
     @SubscribeEvent
@@ -83,8 +88,9 @@ public final class DistantHorizonsUpdatePromptSuppression {
 
         Decision decision = decide(event.getCurrentScreen() != null, InitialScreensCapture.hasPending());
         if (!logged) {
-            LOGGER.info("[DungeonTrain] Distant Horizons update prompt suppressed: loaded {} matches the modpack pin ({})",
-                    loaded, decision);
+            Screen current = event.getCurrentScreen();
+            LOGGER.info("[DungeonTrain] Distant Horizons update prompt suppressed: loaded {} matches the modpack pin ({}; current screen {})",
+                    loaded, decision, current == null ? "none" : current.getClass().getName());
             logged = true;
         }
         switch (decision) {
