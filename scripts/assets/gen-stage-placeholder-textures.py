@@ -5,7 +5,7 @@ Deliberately flat, obviously-not-vanilla tiles so a placeholder that ever reache
 visible at a glance: a grey family for the solid / stairs / slab / button / plate slots with the
 slot number stamped on (and a kind letter for the stone set), and a brown family for the wood set (planks, log side + end, door halves,
 trapdoor), plus a green leaves tile. Full-cube placeholders get separate side / top / bottom tiles: a
-subtle up-arrow on the sides, a T on top and a B underneath, so the editor shows which way is up. Re-run after changing the palette or the catalogue in StagePlaceholderBlocks:
+up-arrow on the sides, a T on top and a B underneath, so the editor shows which way is up. Re-run after changing the palette or the catalogue in StagePlaceholderBlocks:
 
     python3 scripts/assets/gen-stage-placeholder-textures.py
 
@@ -98,12 +98,13 @@ def stamp(img: Image.Image, text: str, colour=INK) -> None:
 
 
 def arrow(img: Image.Image, fill, colour) -> None:
-    """Small up-pointing chevron at the top-centre of a side face: which way is up. The noise
-    under it is cleared first so the mark reads cleanly while staying in a subtle tone."""
+    """Up-pointing triangle at the top-centre of a side face: which way is up. The noise under it
+    is cleared first so the mark reads cleanly."""
     d = ImageDraw.Draw(img)
-    d.rectangle([5, 1, 10, 3], fill=fill + (255,))
+    d.rectangle([4, 1, 11, 3], fill=fill + (255,))
     d.line([(7, 1), (8, 1)], fill=colour + (255,))
     d.line([(6, 2), (9, 2)], fill=colour + (255,))
+    d.line([(5, 3), (10, 3)], fill=colour + (255,))
 
 
 def corner(img: Image.Image, letter: str, fill, colour) -> None:
@@ -116,24 +117,24 @@ def corner(img: Image.Image, letter: str, fill, colour) -> None:
                 d.point((SIZE - 4 + gx, 2 + gy), colour + (255,))
 
 
-# Tile family → (maker, base fill, mark tone). Marks use the light tone: subtle, never ink.
+# Tile family → (maker, base fill). Marks are stamped in INK, like the slot labels.
 FAMILIES = {
-    "grey": (lambda label: grey(label), GREY, GREY_LIGHT),
-    "brown": (lambda label: brown(label), BROWN, BROWN_LIGHT),
-    "green": (lambda label: green(label), GREEN, GREEN_LIGHT),
+    "grey": (lambda label: grey(label), GREY),
+    "brown": (lambda label: brown(label), BROWN),
+    "green": (lambda label: green(label), GREEN),
 }
 
 
 def cube_faces(name: str, family: str, label: str) -> None:
     """Side / top / bottom tiles for a full-cube placeholder (model parent cube_bottom_top):
-    sides carry a subtle up-arrow, the top a T and the bottom a B, all keeping the slot label."""
-    make, fill, tone = FAMILIES[family]
+    sides carry an up-arrow, the top a T and the bottom a B, all keeping the slot label."""
+    make, fill = FAMILIES[family]
     side = make(label)
-    arrow(side, fill, tone)
+    arrow(side, fill, INK)
     write(side, BLOCK_DIR / f"{name}_side.png")
     for suffix, letter in (("top", "T"), ("bottom", "B")):
         face = make(label)
-        corner(face, letter, fill, tone)
+        corner(face, letter, fill, INK)
         write(face, BLOCK_DIR / f"{name}_{suffix}.png")
 
 
