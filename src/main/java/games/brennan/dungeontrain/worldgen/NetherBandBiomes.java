@@ -64,6 +64,24 @@ public final class NetherBandBiomes {
         return pickWithinRegion(seed ^ CAVE_SALT, worldX, worldZ, size, CAVE_REGION_SHIFT);
     }
 
+    /** Deep-dark areas after the core are drawn over 512-block regions (bigger than the lush/dripstone mix). */
+    public static final int DEEP_DARK_REGION_SHIFT = 9;
+    /** Of every {@link #DEEP_DARK_WEIGHT_OF} coarse regions after the core, this many are deep dark. */
+    public static final int DEEP_DARK_WEIGHT = 3;
+    public static final int DEEP_DARK_WEIGHT_OF = 4;
+    private static final long DEEP_DARK_SALT = 0x1B873593CC9E2D51L;
+
+    /**
+     * Index into {@link #CAVE_POST} for a fall-side column: three quarters of the 512-block regions are
+     * deep dark (the palette's last entry); the rest fall through to the 128-block lush / dripstone mix, so
+     * those two blend while the deep dark stays large and mostly itself.
+     */
+    public static int pickCavePost(long seed, int worldX, int worldZ) {
+        int coarse = pickWithinRegion(seed ^ DEEP_DARK_SALT, worldX, worldZ, DEEP_DARK_WEIGHT_OF, DEEP_DARK_REGION_SHIFT);
+        if (coarse < DEEP_DARK_WEIGHT) return CAVE_POST.size() - 1;
+        return pickCave(seed, worldX, worldZ, CAVE_POST.size() - 1);
+    }
+
     private static ResourceKey<Biome> bop(String path) {
         return ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("biomesoplenty", path));
     }

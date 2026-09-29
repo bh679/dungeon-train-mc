@@ -45,7 +45,8 @@ public final class NetherBandBiomeSet {
                 for (Holder<Biome> h : palette) if (h.is(Biomes.DEEP_DARK)) return h;
             }
         }
-        return palette[NetherBandBiomes.pickCave(seed, worldX, worldZ, palette.length)];
+        return palette[pastCore ? NetherBandBiomes.pickCavePost(seed, worldX, worldZ)
+                : NetherBandBiomes.pickCave(seed, worldX, worldZ, palette.length)];
     }
 
     /** Per-pass ancient-city region, memoised per published context (the site walk costs a few noise samples). */
