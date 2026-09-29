@@ -20852,9 +20852,9 @@
       "highlights": [],
       "pr": 1671,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1037.0",
+      "released_at": "2026-09-29T15:47:24Z"
     },
     {
       "id": "reseed-keep-place-near-template",
@@ -20869,9 +20869,9 @@
       "highlights": [],
       "pr": 1674,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1037.0",
+      "released_at": "2026-09-29T15:47:24Z"
     },
     {
       "id": "carriage-test-flatbed-rolls",
@@ -20886,9 +20886,9 @@
       "highlights": [],
       "pr": 1673,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1037.0",
+      "released_at": "2026-09-29T15:47:24Z"
     },
     {
       "id": "lost-city-overlap-meld",
@@ -20903,9 +20903,9 @@
       "highlights": [],
       "pr": 1672,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1037.0",
+      "released_at": "2026-09-29T15:47:24Z"
     },
     {
       "id": "test-mode-edit-notice",
@@ -20920,9 +20920,9 @@
       "highlights": [],
       "pr": 1675,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1037.0",
+      "released_at": "2026-09-29T15:47:24Z"
     }
   ]
 }
