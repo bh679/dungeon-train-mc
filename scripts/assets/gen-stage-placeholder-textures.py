@@ -4,7 +4,8 @@
 Deliberately flat, obviously-not-vanilla tiles so a placeholder that ever reaches a live train is
 visible at a glance: a grey family for the solid / stairs / slab / button / plate slots with the
 slot number stamped on (and a kind letter for the stone set), and a brown family for the wood set (planks, log side + end, door halves,
-trapdoor), plus a green leaves tile. Re-run after changing the palette or the catalogue in StagePlaceholderBlocks:
+trapdoor), plus a green leaves tile. Full-cube placeholders get separate side / top / bottom tiles: a
+subtle up-arrow on the sides, a T on top and a B underneath, so the editor shows which way is up. Re-run after changing the palette or the catalogue in StagePlaceholderBlocks:
 
     python3 scripts/assets/gen-stage-placeholder-textures.py
 
@@ -94,6 +95,46 @@ def stamp(img: Image.Image, text: str, colour=INK) -> None:
             for gx, cell in enumerate(row):
                 if cell == "#":
                     d.point((x0 + i * 4 + gx, y0 + gy), colour + (255,))
+
+
+def arrow(img: Image.Image, fill, colour) -> None:
+    """Small up-pointing chevron at the top-centre of a side face: which way is up. The noise
+    under it is cleared first so the mark reads cleanly while staying in a subtle tone."""
+    d = ImageDraw.Draw(img)
+    d.rectangle([5, 1, 10, 3], fill=fill + (255,))
+    d.line([(7, 1), (8, 1)], fill=colour + (255,))
+    d.line([(6, 2), (9, 2)], fill=colour + (255,))
+
+
+def corner(img: Image.Image, letter: str, fill, colour) -> None:
+    """A 3x5 glyph in the top-right corner, just inside the 1px border, on cleared noise."""
+    d = ImageDraw.Draw(img)
+    d.rectangle([SIZE - 5, 1, SIZE - 2, 7], fill=fill + (255,))
+    for gy, row in enumerate(DIGITS[letter]):
+        for gx, cell in enumerate(row):
+            if cell == "#":
+                d.point((SIZE - 4 + gx, 2 + gy), colour + (255,))
+
+
+# Tile family → (maker, base fill, mark tone). Marks use the light tone: subtle, never ink.
+FAMILIES = {
+    "grey": (lambda label: grey(label), GREY, GREY_LIGHT),
+    "brown": (lambda label: brown(label), BROWN, BROWN_LIGHT),
+    "green": (lambda label: green(label), GREEN, GREEN_LIGHT),
+}
+
+
+def cube_faces(name: str, family: str, label: str) -> None:
+    """Side / top / bottom tiles for a full-cube placeholder (model parent cube_bottom_top):
+    sides carry a subtle up-arrow, the top a T and the bottom a B, all keeping the slot label."""
+    make, fill, tone = FAMILIES[family]
+    side = make(label)
+    arrow(side, fill, tone)
+    write(side, BLOCK_DIR / f"{name}_side.png")
+    for suffix, letter in (("top", "T"), ("bottom", "B")):
+        face = make(label)
+        corner(face, letter, fill, tone)
+        write(face, BLOCK_DIR / f"{name}_{suffix}.png")
 
 
 def grey(label: str) -> Image.Image:
@@ -188,7 +229,14 @@ def main() -> None:
     for kind, letter in (("cobbled", "C"), ("stone", "S"), ("bricks", "B"), ("polished", "P"),
                          ("cracked", "K"), ("mossy", "M"), ("feature", "F")):
         name = "stage_stone" if kind == "stone" else f"stage_stone_{kind}"
-        write(grey(letter), BLOCK_DIR / f"{name}.png")
+        write(grey(letter), BLOCK_DIR / f"{name}.png")  # stairs / slab / wall
+        cube_faces(name, "grey", letter)
+
+    # Full cubes get oriented faces (the plain tiles above stay for any shape still using them).
+    for i in range(1, 11):
+        cube_faces(f"stage_block_{i}", "grey", str(i))
+    cube_faces("stage_planks", "brown", "P")
+    cube_faces("stage_leaves", "green", "LV")
 
     # Flat item icon for the door (vanilla doors use item/generated with their own sprite).
     # Item icon: the whole door squeezed into one tile (top half over bottom half).
