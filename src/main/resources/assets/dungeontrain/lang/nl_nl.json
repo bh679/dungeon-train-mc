@@ -3044,6 +3044,8 @@
   "chat.dungeontrain.test_mode.nothing_saves": "Testmodus — niets wat je hier bouwt wordt opgeslagen.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Geen enkele wagon heeft '%s' nu aanstaan — zet het aan in de Inhoud-lijst van een wagon om het te testen.",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' heeft geen opgeslagen sjabloon op de wagongrootte van deze wereld — sla het op en test dan opnieuw.",
+  "chat.dungeontrain.track_test.standing_in": "Je staat op een teststuk spoor met '%s' erin, in de band %s — geen trein eraan. Terug in het menu brengt je terug naar het perceel.",
+  "chat.dungeontrain.track_test.unknown_piece": "'%s' is geen onderdeel van het spoor dat je kunt testen.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Deze wereld gebruikt het automatische treinsysteem niet (startsWithTrain staat uit).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain mislukt: %s: %s",

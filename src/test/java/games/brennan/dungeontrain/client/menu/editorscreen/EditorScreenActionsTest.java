@@ -339,10 +339,28 @@ final class EditorScreenActionsTest {
             ((CommandMenuEntry.DrillIn) contentsTest).target());
         assertEquals("dungeontrain editor test contents library", contentsCheck.testCommand());
 
-        // A part or a track tile is only ever a piece of something — nothing to stand up.
+        // A part is only ever a piece of a carriage — nothing to stand up.
         VariantKey part = VariantKey.of(PlotCategory.PARTS, "floor", "oak");
         assertNull(EditorScreenActions.testEntry(ctx(part, gated("PARTS", "floor", "oak", 1, List.of()), part, PlotCategory.CARRIAGES)));
         assertNull(EditorScreenActions.testEntry(ctx(null, null, null, null)));
+    }
+
+    @Test
+    @DisplayName("Every piece of the line the Tracks list shows can be tested, by its model id and name")
+    void testCarriage_tracks() {
+        for (String modelId : List.of("track", "pillar_bottom", "pillar_middle", "pillar_top",
+                "adjunct_stairs", "adjunct_stairs_entrance", "tunnel_section", "tunnel_portal")) {
+            VariantKey piece = VariantKey.of(PlotCategory.TRACKS, modelId, "mossy");
+            CommandMenuEntry entry = EditorScreenActions.testEntry(
+                ctx(piece, gated("TRACKS", modelId, "mossy", 1, List.of()), null, PlotCategory.TRACKS));
+            assertNotNull(entry, modelId);
+            PortalTestSaveCheckScreen check = assertInstanceOf(PortalTestSaveCheckScreen.class,
+                ((CommandMenuEntry.DrillIn) entry).target());
+            assertEquals("dungeontrain editor test tracks " + modelId + " mossy", check.testCommand());
+        }
+        // A model id that is not a piece of the line has nothing to stand up.
+        assertNull(EditorScreenActions.testCheckFor(PlotCategory.TRACKS, "portal_room", "mossy"));
+        assertNull(EditorScreenActions.testCheckFor(PlotCategory.TRACKS, null, "mossy"));
     }
 
     // ---- settings rows ----

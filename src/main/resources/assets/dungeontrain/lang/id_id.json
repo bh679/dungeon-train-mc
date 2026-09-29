@@ -3001,6 +3001,8 @@
   "chat.dungeontrain.test_mode.nothing_saves": "Mode uji — apa pun yang kamu bangun di sini tidak akan disimpan.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Belum ada gerbong yang mengaktifkan '%s' — nyalakan di daftar Isi sebuah gerbong untuk mengujinya.",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' tidak punya templat tersimpan pada ukuran gerbong dunia ini — simpan dulu, lalu uji lagi.",
+  "chat.dungeontrain.track_test.standing_in": "Kamu berada di potongan rel uji yang berisi '%s', di pita %s — tanpa kereta terpasang. Kembali di menu akan mengembalikanmu ke petak.",
+  "chat.dungeontrain.track_test.unknown_piece": "'%s' bukan bagian rel yang bisa diuji.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Dunia ini tidak memakai sistem kereta otomatis (startsWithTrain mati).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain gagal: %s: %s",

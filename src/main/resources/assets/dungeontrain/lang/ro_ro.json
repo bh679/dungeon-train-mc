@@ -3622,6 +3622,8 @@
   "chat.dungeontrain.test_mode.nothing_saves": "Mod de test — nimic din ce construiești aici nu va fi salvat.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Niciun vagon nu are '%s' activat acum — activează-l în lista Conținut a unui vagon ca să-l testezi.",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' nu are un șablon salvat la dimensiunea vagoanelor din această lume — salvează-l, apoi testează din nou.",
+  "chat.dungeontrain.track_test.standing_in": "Ești pe o porțiune de linie de test cu '%s', în banda %s — fără tren atașat. Înapoi din meniu te readuce la parcelă.",
+  "chat.dungeontrain.track_test.unknown_piece": "'%s' nu este o piesă a liniei care poate fi testată.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Această lume nu folosește sistemul de tren automat (startsWithTrain este oprit).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain a eșuat: %s: %s",

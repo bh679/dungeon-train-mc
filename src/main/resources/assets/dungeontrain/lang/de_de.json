@@ -3044,6 +3044,8 @@
   "chat.dungeontrain.test_mode.nothing_saves": "Testmodus — nichts, was du hier baust, wird gespeichert.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Kein Waggon hat '%s' gerade aktiviert — schalte es in der Inhaltsliste eines Waggons ein, um es zu testen.",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' hat keine gespeicherte Vorlage in der Waggongröße dieser Welt — speichere sie und teste dann erneut.",
+  "chat.dungeontrain.track_test.standing_in": "Du bist auf einem Teststück Strecke mit '%s' darin, im Band %s — kein Zug angehängt. Zurück im Menü bringt dich zum Baufeld zurück.",
+  "chat.dungeontrain.track_test.unknown_piece": "'%s' ist kein Streckenteil, das sich testen lässt.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Diese Welt nutzt das Auto-Zug-System nicht (startsWithTrain ist aus).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain fehlgeschlagen: %s: %s",

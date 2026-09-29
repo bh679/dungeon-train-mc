@@ -3015,6 +3015,8 @@
   "chat.dungeontrain.test_mode.nothing_saves": "測試模式——你在這裡建造的任何東西都不會被儲存。",
   "chat.dungeontrain.carriage_test.no_shell_allows": "目前沒有車廂啟用 '%s'——在某節車廂的房間清單中啟用它即可測試。",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' 沒有按此世界車廂尺寸儲存的模板——請先儲存，再重新測試。",
+  "chat.dungeontrain.track_test.standing_in": "你正在一段含有 '%s' 的測試線路上，位於 %s 區段——沒有接上列車。在選單中按「返回」即可回到地塊。",
+  "chat.dungeontrain.track_test.unknown_piece": "'%s' 不是可以測試的線路部件。",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks（%s 個%s）：",
   "chat.dungeontrain.package.world_doesn_t_use": "這個世界沒有使用自動列車系統（startsWithTrain 已關閉）。",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain 失敗：%s：%s",

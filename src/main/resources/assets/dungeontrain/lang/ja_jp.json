@@ -3001,6 +3001,8 @@
   "chat.dungeontrain.test_mode.nothing_saves": "テストモード — ここで建てたものは保存されません。",
   "chat.dungeontrain.carriage_test.no_shell_allows": "'%s' を有効にしている車両が今はありません — テストするには、いずれかの車両の中身リストで有効にしてください。",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' には、このワールドの車両サイズで保存されたテンプレートがありません — 保存してから、もう一度テストしてください。",
+  "chat.dungeontrain.track_test.standing_in": "'%s' を含むテスト用の線路区間にいます（%s 帯）— 列車は接続されていません。メニューの「戻る」でプロットに戻ります。",
+  "chat.dungeontrain.track_test.unknown_piece": "'%s' はテストできる線路のパーツではありません。",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks（%s %s）:",
   "chat.dungeontrain.package.world_doesn_t_use": "このワールドは自動列車システムを使っていません（startsWithTrain がオフです）。",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain に失敗: %s: %s",
