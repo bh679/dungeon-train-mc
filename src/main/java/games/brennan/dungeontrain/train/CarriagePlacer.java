@@ -103,6 +103,11 @@ public final class CarriagePlacer {
     /** Cached immutable handle to the flatbed built-in — used as the Random-Grouped separator. */
     private static final CarriageVariant FLATBED_VARIANT = CarriageVariant.of(CarriageType.FLATBED);
 
+    /** The flatbed built-in — what Test the Carriage stands the author on before the copies. */
+    public static CarriageVariant flatbedVariant() {
+        return FLATBED_VARIANT;
+    }
+
     /**
      * In-memory cache of half-sized flatbed templates derived once per
      * {@link CarriageDims} from the full {@link CarriageType#FLATBED}'s
@@ -468,6 +473,19 @@ public final class CarriagePlacer {
     public static void placeForTest(ServerLevel level, BlockPos origin, CarriageVariant variant,
                                     CarriageContents contents, CarriageDims dims, long seed,
                                     long contentsSeed, int carriageIndex) {
+        placeForTest(level, origin, variant, contents, dims, seed, contentsSeed, carriageIndex,
+            /*flatbedAtBack*/ false, /*flatbedAtFront*/ false);
+    }
+
+    /**
+     * {@link #placeForTest(ServerLevel, BlockPos, CarriageVariant, CarriageContents, CarriageDims,
+     * long, long, int)} with the flatbed-neighbour flags the door part picker reads — so a copy
+     * stood behind the test's flatbed picks its {@code end} doors the way the train would.
+     */
+    public static void placeForTest(ServerLevel level, BlockPos origin, CarriageVariant variant,
+                                    CarriageContents contents, CarriageDims dims, long seed,
+                                    long contentsSeed, int carriageIndex,
+                                    boolean flatbedAtBack, boolean flatbedAtFront) {
         int anchor = GateContext.WORLDX_FROM_PIDX;
         // Placeholders resolve for the stage the editor is previewing, so the test copy matches the
         // preview (null only when no stages exist ⇒ the default palette).
@@ -486,9 +504,9 @@ public final class CarriagePlacer {
                 return;
             }
             String base = stampBase(level, origin, variant, dims, seed, carriageIndex,
-                /*flatbedAtBack*/ false, /*flatbedAtFront*/ false, anchor, /*relight*/ true);
+                flatbedAtBack, flatbedAtFront, anchor, /*relight*/ true);
             String overlay = stampPartsOverlay(level, origin, variant, dims, seed, carriageIndex,
-                false, false, anchor, /*stageFilter*/ null, /*relight*/ true);
+                flatbedAtBack, flatbedAtFront, anchor, /*stageFilter*/ null, /*relight*/ true);
             if ("stored".equals(base) || overlay != null) {
                 applyVariantBlocks(level, origin, variant, dims, seed, carriageIndex);
             }

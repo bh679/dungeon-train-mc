@@ -53,7 +53,15 @@ import java.util.Optional;
 
 /**
  * {@code /dungeontrain editor test carriages|contents <id>} — Test the Carriage for a carriage or a
- * contents template: stand inside one whole copy of it, rolled the way the train rolls a carriage.
+ * contents template: stand on a flatbed facing two copies of it, rolled the way the train rolls a
+ * carriage — the second on a different seed, so two rolls can be compared side by side. A whole
+ * group already spans several carriages, so it is stood up once, between two flatbeds. Laid out
+ * along {@code +X}:
+ *
+ * <pre>
+ *   carriage / contents / whole room:  [flatbed | roll A | roll B]
+ *   whole group:                       [flatbed | group  | flatbed]
+ * </pre>
  *
  * <p>The same shape as {@link PortalTestCommand}, for the same reasons: <b>no train.</b> The copy is
  * ordinary world blocks in the sealed basement under the world, so nothing about it can fail the way
@@ -157,15 +165,24 @@ public final class CarriageTestCommand {
         if (kind.isWhole()) return runWholeTest(source, player, overworld, kind, id, shellSeed, contentsSeed);
         Plan plan = planFor(source, kind, id, shellSeed, contentsSeed);
         if (plan == null) return 0;
+        // The second copy: the same template on the next roll. Derived from the first, so a reseed
+        // re-rolls both and a focus reseed keeps the untested half of both.
+        long shellSeedB = nextRoll(shellSeed);
+        long contentsSeedB = nextRoll(contentsSeed);
+        Plan planB = planFor(source, kind, id, shellSeedB, contentsSeedB);
+        if (planB == null) return 0;
 
         leaveCurrentTests(source, player);
 
         BlockPos origin = new BlockPos(player.blockPosition().getX(),
             PortalTwinLanes.floorY(overworld.getMinBuildHeight()), TEST_Z_OFFSET);
-        CarriageDims shellDims = CarriagePlacer.variantDims(plan.shell(), dims);
-        BoundingBox box = new BoundingBox(origin.getX(), origin.getY(), origin.getZ(),
-            origin.getX() + shellDims.length() - 1, origin.getY() + shellDims.height() - 1,
-            origin.getZ() + shellDims.width() - 1);
+        CarriageDims dimsA = CarriagePlacer.variantDims(plan.shell(), dims);
+        CarriageDims dimsB = CarriagePlacer.variantDims(planB.shell(), dims);
+        BlockPos originA = origin.offset(dims.length(), 0, 0);
+        BlockPos originB = originA.offset(dimsA.length(), 0, 0);
+        BoundingBox box = spanBox(origin, dims.length() + dimsA.length() + dimsB.length(),
+            Math.max(dims.height(), Math.max(dimsA.height(), dimsB.height())),
+            Math.max(dims.width(), Math.max(dimsA.width(), dimsB.width())));
         GameType previous = player.gameMode.getGameModeForPlayer();
         // Registered BEFORE the stamp: the mob cells ask CarriageTestSession.isTestStamp while they
         // are placed, and a test is the one carriage stamp that spawns its hostiles as authored.
@@ -173,15 +190,21 @@ public final class CarriageTestCommand {
             player.level().dimension(), player.position(), player.getYRot(), player.getXRot(),
             previous, kind, id, box, shellSeed, contentsSeed));
 
-        CarriagePlacer.placeForTest(overworld, origin, plan.shell(), plan.contents(), dims, shellSeed,
-            contentsSeed, CarriageTestSession.TEST_INDEX);
+        stampFlatbed(overworld, origin, dims, shellSeed);
+        CarriagePlacer.placeForTest(overworld, originA, plan.shell(), plan.contents(), dims, shellSeed,
+            contentsSeed, CarriageTestSession.TEST_INDEX, /*flatbedAtBack*/ true, /*flatbedAtFront*/ false);
+        CarriagePlacer.placeForTest(overworld, originB, planB.shell(), planB.contents(), dims, shellSeedB,
+            contentsSeedB, CarriageTestSession.TEST_INDEX, /*flatbedAtBack*/ false, /*flatbedAtFront*/ false);
 
-        arrive(overworld, player, origin, sizeOf(shellDims), previous, id);
+        arrive(overworld, player, origin, sizeOf(dims), previous, id);
 
         String contentsId = plan.contents() == null ? "none" : plan.contents().id();
-        LOGGER.info("[DungeonTrain] carriage test: stamped {} '{}' (shell={}, contents={}) at {} for {}, seeds={}/{}",
-            kind.literal(), id, plan.shell().id(), contentsId, origin, player.getName().getString(),
-            shellSeed, contentsSeed);
+        String contentsIdB = planB.contents() == null ? "none" : planB.contents().id();
+        LOGGER.info("[DungeonTrain] carriage test: stamped {} '{}' behind a flatbed at {} for {} — "
+                + "A (shell={}, contents={}, seeds={}/{}), B (shell={}, contents={}, seeds={}/{})",
+            kind.literal(), id, origin, player.getName().getString(),
+            plan.shell().id(), contentsId, shellSeed, contentsSeed,
+            planB.shell().id(), contentsIdB, shellSeedB, contentsSeedB);
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.carriage_test.standing_in",
             id, plan.shell().id(), contentsId).withStyle(ChatFormatting.AQUA), false);
         return 1;
@@ -253,10 +276,15 @@ public final class CarriageTestCommand {
 
         leaveCurrentTests(source, player);
 
+        // A room, like a carriage: [flatbed | roll A | roll B]. A group already spans several
+        // carriages, so it stands once between flatbeds: [flatbed | group | flatbed].
         BlockPos origin = new BlockPos(player.blockPosition().getX(),
             PortalTwinLanes.floorY(overworld.getMinBuildHeight()), TEST_Z_OFFSET);
-        BoundingBox box = new BoundingBox(origin.getX(), origin.getY(), origin.getZ(),
-            origin.getX() + size.getX() - 1, origin.getY() + size.getY() - 1, origin.getZ() + size.getZ() - 1);
+        BlockPos wholeOrigin = origin.offset(dims.length(), 0, 0);
+        BlockPos after = wholeOrigin.offset(size.getX(), 0, 0);
+        long seedB = nextRoll(shellSeed);
+        BoundingBox box = spanBox(origin, dims.length() + size.getX() + (room ? size.getX() : dims.length()),
+            Math.max(dims.height(), size.getY()), Math.max(dims.width(), size.getZ()));
         GameType previous = player.gameMode.getGameModeForPlayer();
         CarriageTestSession.put(player.getUUID(), new CarriageTestSession.Session(
             player.level().dimension(), player.position(), player.getYRot(), player.getXRot(),
@@ -266,24 +294,49 @@ public final class CarriageTestCommand {
         // Placeholders resolve for the stage the editor is previewing, as in CarriagePlacer#placeForTest.
         String stage = games.brennan.dungeontrain.editor.EditorStageSelection.effective();
         CarriageStampGuard.run(() -> StagePlacementScope.run(stage, () -> {
-            placed[0] = place.test(origin);
-            if (placed[0]) {
-                WholeOverlay.apply(overworld, origin, wholeKind, id, size, shellSeed,
-                    CarriageTestSession.TEST_INDEX);
-            }
+            placed[0] = stampWhole(overworld, place, wholeOrigin, wholeKind, id, size, shellSeed)
+                && (!room || stampWhole(overworld, place, after, wholeKind, id, size, seedB));
         }));
         if (!placed[0]) {
             CarriageTestSession.take(player.getUUID());
             PortalClear.clearBox(overworld, box, PortalCorridorMask.NONE);
             return failCode(source, "chat.dungeontrain.carriage_test.no_whole_template", id);
         }
+        stampFlatbed(overworld, origin, dims, shellSeed);
+        if (!room) stampFlatbed(overworld, after, dims, shellSeed);
 
-        arrive(overworld, player, origin, size, previous, id);
-        LOGGER.info("[DungeonTrain] carriage test: stamped {} '{}' at {} for {}, seed={}",
-            kind.literal(), id, origin, player.getName().getString(), shellSeed);
+        arrive(overworld, player, origin, sizeOf(dims), previous, id);
+        LOGGER.info("[DungeonTrain] carriage test: stamped {} '{}' behind a flatbed at {} for {}, seed={}{}",
+            kind.literal(), id, origin, player.getName().getString(), shellSeed,
+            room ? ", second roll seed=" + seedB : "");
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.carriage_test.standing_in",
             id, id, "none").withStyle(ChatFormatting.AQUA), false);
         return 1;
+    }
+
+    /** One copy of a whole room or group at {@code at}, rolled on {@code seed}; false if it would not place. */
+    private static boolean stampWhole(ServerLevel level, java.util.function.Predicate<BlockPos> place,
+                                      BlockPos at, WholeKind kind, String id, Vec3i size, long seed) {
+        if (!place.test(at)) return false;
+        WholeOverlay.apply(level, at, kind, id, size, seed, CarriageTestSession.TEST_INDEX);
+        return true;
+    }
+
+    /** A flatbed at {@code at} — where the author arrives, and what follows a whole group. */
+    private static void stampFlatbed(ServerLevel level, BlockPos at, CarriageDims dims, long seed) {
+        CarriagePlacer.placeForTest(level, at, CarriagePlacer.flatbedVariant(), null, dims, seed, seed,
+            CarriageTestSession.TEST_INDEX);
+    }
+
+    /** Everything a test stamps: {@code length × height × width} from {@code origin}, along +X. */
+    private static BoundingBox spanBox(BlockPos origin, int length, int height, int width) {
+        return new BoundingBox(origin.getX(), origin.getY(), origin.getZ(),
+            origin.getX() + length - 1, origin.getY() + height - 1, origin.getZ() + width - 1);
+    }
+
+    /** The second copy's seed: a different roll, but fixed by the first so reseeds stay coherent. */
+    private static long nextRoll(long seed) {
+        return (seed ^ 0x632BE59BD9B4E019L) * 0x9E3779B97F4A7C15L;
     }
 
     private static int failCode(CommandSourceStack source, String key, String id) {
@@ -383,7 +436,7 @@ public final class CarriageTestCommand {
 
     /**
      * {@code editor test reseed} — re-roll the copy the author is standing in and leave them where
-     * they stood, if the new roll left that spot open. The same rule
+     * they stood, if that was within a chunk of the copy and the new roll left it open. The same rule
      * {@code PortalTestCommand.runReseedNow} follows.
      */
     static int runReseedNow(CommandSourceStack source, boolean focus) {
@@ -405,7 +458,9 @@ public final class CarriageTestCommand {
         if (result == 0 || !wasHere) return result;
 
         CarriageTestSession.Session fresh = CarriageTestSession.get(player.getUUID());
-        if (fresh == null || !fresh.box().isInside(BlockPos.containing(stood))) return result;
+        if (fresh == null || !PortalTestCommand.keepsPlaceOnReseed(fresh.box(), BlockPos.containing(stood))) {
+            return result;
+        }
         if (!overworld.noCollision(player, player.getBoundingBox().move(stood.subtract(player.position())))) {
             return result;
         }
