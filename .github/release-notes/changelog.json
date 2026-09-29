@@ -20658,6 +20658,30 @@
       "released": true,
       "released_in": "v0.1022.0",
       "released_at": "2026-09-29T05:42:33Z"
+    },
+    {
+      "id": "low-memory-warning",
+      "version": "0.1023.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "performance",
+        "compatibility",
+        "ui"
+      ],
+      "title": "A heads-up when Minecraft is short on memory",
+      "summary": "If your launcher gives Minecraft too little memory, the game can stutter and freeze as it runs out. Dungeon Train now tells you when that's the case and shows you how to fix it in your launcher.",
+      "highlights": [
+        "A notice on the title screen when Minecraft has under 5 GB of memory and your computer has more to give",
+        "\"How to do it\" opens a step-by-step guide for your launcher: CurseForge, Modrinth App, the Minecraft Launcher, Prism, MultiMC or ATLauncher",
+        "The modpack now recommends 6 GB of memory",
+        "Turn it off with \"Don't show again\", or in Options > Dungeon Train > Low Memory Warning"
+      ],
+      "pr": 1655,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
