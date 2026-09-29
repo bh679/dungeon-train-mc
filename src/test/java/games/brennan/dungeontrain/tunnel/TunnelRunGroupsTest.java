@@ -17,23 +17,23 @@ final class TunnelRunGroupsTest {
 
     /** In-memory {@link TunnelRunGroups.EdgeBook} with the same first-answer-wins rule as the SavedData. */
     private static final class Book implements TunnelRunGroups.EdgeBook {
-        final Map<Integer, String[]> edges = new HashMap<>();
+        final Map<Integer, TunnelRunGroups.Edge[]> edges = new HashMap<>();
 
         @Override
-        public String westOf(int chunkX) {
-            String[] e = edges.get(chunkX);
+        public TunnelRunGroups.Edge westOf(int chunkX) {
+            TunnelRunGroups.Edge[] e = edges.get(chunkX);
             return e == null ? null : e[0];
         }
 
         @Override
-        public String eastOf(int chunkX) {
-            String[] e = edges.get(chunkX);
+        public TunnelRunGroups.Edge eastOf(int chunkX) {
+            TunnelRunGroups.Edge[] e = edges.get(chunkX);
             return e == null ? null : e[1];
         }
 
         @Override
-        public void record(int chunkX, String west, String east) {
-            String[] e = edges.computeIfAbsent(chunkX, k -> new String[2]);
+        public void record(int chunkX, TunnelRunGroups.Edge west, TunnelRunGroups.Edge east) {
+            TunnelRunGroups.Edge[] e = edges.computeIfAbsent(chunkX, k -> new TunnelRunGroups.Edge[2]);
             if (e[0] == null) e[0] = west;
             if (e[1] == null) e[1] = east;
         }
@@ -116,17 +116,58 @@ final class TunnelRunGroupsTest {
     }
 
     @Test
-    @DisplayName("separate tunnels in one chunk roll separately, keyed by their own entrances")
+    @DisplayName("tunnels a stamp-length apart in one chunk roll separately, keyed by their own starts")
     void separateTunnels() {
+        Book book = new Book();
+        KeyRoller roller = new KeyRoller();
+        boolean[] q = cols(0, 2);
+        q[13] = q[14] = true;
+        TemplateGroup[] g = resolve(book, 0, q, false, false, roller);
+        assertEquals(List.of(0L, 13L), roller.keys);
+        assertEquals(TemplateGroup.of("g0"), g[1]);
+        assertEquals(TemplateGroup.of("gd"), g[13]);
+        assertNull(g[6]);
+    }
+
+    @DisplayName("runs a few columns apart are one tunnel — a section stamp spans the gap")
+    @Test
+    void bridgesShortGapInChunk() {
         Book book = new Book();
         KeyRoller roller = new KeyRoller();
         boolean[] q = cols(1, 4);
         q[10] = q[11] = q[12] = true;
         TemplateGroup[] g = resolve(book, 0, q, false, false, roller);
-        assertEquals(List.of(1L, 10L), roller.keys);
-        assertEquals(TemplateGroup.of("g1"), g[1]);
-        assertEquals(TemplateGroup.of("ga"), g[10]);
-        assertNull(g[6]);
+        assertEquals(List.of(1L), roller.keys);
+        assertEquals(g[1], g[12]);
+    }
+
+    @Test
+    @DisplayName("a soft spot straddling a chunk edge does not split the tunnel")
+    void bridgesShortGapAcrossChunks() {
+        Book book = new Book();
+        KeyRoller roller = new KeyRoller();
+        // Chunk 0's run stops 3 columns short of its east edge; chunk 1's resumes at column 2.
+        TemplateGroup west = resolve(book, 0, cols(4, 12), false, false, roller)[4];
+        TemplateGroup east = resolve(book, 1, cols(2, 15), false, true, roller)[2];
+        assertEquals(west, east);
+        assertEquals(List.of(4L), roller.keys);
+        // …and the other way round.
+        Book book2 = new Book();
+        KeyRoller roller2 = new KeyRoller();
+        TemplateGroup east2 = resolve(book2, 1, cols(2, 15), false, true, roller2)[2];
+        TemplateGroup west2 = resolve(book2, 0, cols(4, 12), false, false, roller2)[4];
+        assertEquals(east2, west2);
+        assertEquals(1, roller2.keys.size());
+    }
+
+    @Test
+    @DisplayName("a gap of a stamp length or more across a chunk edge is a new tunnel")
+    void wideGapAcrossChunksSplits() {
+        Book book = new Book();
+        KeyRoller roller = new KeyRoller();
+        resolve(book, 0, cols(0, 9), false, false, roller);   // 6 short of the edge
+        resolve(book, 1, cols(4, 15), false, true, roller);   // 4 in: 10 apart
+        assertEquals(List.of(0L, 20L), roller.keys);
     }
 
     @Test

@@ -17,8 +17,8 @@ import java.util.Map;
  *
  * <p>Keyed by chunk X alone: tunnels run along the X-axis track line and a column's qualification
  * never depends on chunk Z, so every chunk-Z row of the corridor must agree on one answer. Each
- * key holds the group token of the run touching that chunk's west edge and of the one touching its
- * east edge (see {@link TunnelRunGroups} for the token spelling).</p>
+ * key holds the group token of the tunnel nearest that chunk's west edge and of the one nearest its
+ * east edge, each with how many columns it stops short of the edge (see {@link TunnelRunGroups}).</p>
  *
  * <p>Saved at {@code <dim>/data/dungeontrain_tunnel_groups.dat} so a restart mid-tunnel does not
  * put a seam in it. Worldgen writes from parallel worker threads, so every access is
@@ -32,8 +32,10 @@ public final class TunnelGroupData extends SavedData implements TunnelRunGroups.
     private static final String TAG_X = "x";
     private static final String TAG_WEST = "w";
     private static final String TAG_EAST = "e";
+    private static final String TAG_WEST_GAP = "wg";
+    private static final String TAG_EAST_GAP = "eg";
 
-    private record Edges(String west, String east) {}
+    private record Edges(TunnelRunGroups.Edge west, TunnelRunGroups.Edge east) {}
 
     private final Map<Integer, Edges> byChunkX = new HashMap<>();
 
@@ -47,23 +49,23 @@ public final class TunnelGroupData extends SavedData implements TunnelRunGroups.
     }
 
     @Override
-    public synchronized String westOf(int chunkX) {
+    public synchronized TunnelRunGroups.Edge westOf(int chunkX) {
         Edges e = byChunkX.get(chunkX);
         return e == null ? null : e.west();
     }
 
     @Override
-    public synchronized String eastOf(int chunkX) {
+    public synchronized TunnelRunGroups.Edge eastOf(int chunkX) {
         Edges e = byChunkX.get(chunkX);
         return e == null ? null : e.east();
     }
 
     /** First answer wins: an edge already recorded is never overwritten. */
     @Override
-    public synchronized void record(int chunkX, String west, String east) {
+    public synchronized void record(int chunkX, TunnelRunGroups.Edge west, TunnelRunGroups.Edge east) {
         Edges prev = byChunkX.get(chunkX);
-        String w = prev != null && prev.west() != null ? prev.west() : west;
-        String e = prev != null && prev.east() != null ? prev.east() : east;
+        TunnelRunGroups.Edge w = prev != null && prev.west() != null ? prev.west() : west;
+        TunnelRunGroups.Edge e = prev != null && prev.east() != null ? prev.east() : east;
         if (w == null && e == null) return;
         Edges next = new Edges(w, e);
         if (next.equals(prev)) return;
@@ -76,8 +78,10 @@ public final class TunnelGroupData extends SavedData implements TunnelRunGroups.
         ListTag list = tag.getList(TAG_EDGES, Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
             CompoundTag e = list.getCompound(i);
-            String w = e.contains(TAG_WEST) ? e.getString(TAG_WEST) : null;
-            String east = e.contains(TAG_EAST) ? e.getString(TAG_EAST) : null;
+            TunnelRunGroups.Edge w = e.contains(TAG_WEST)
+                ? new TunnelRunGroups.Edge(e.getString(TAG_WEST), e.getInt(TAG_WEST_GAP)) : null;
+            TunnelRunGroups.Edge east = e.contains(TAG_EAST)
+                ? new TunnelRunGroups.Edge(e.getString(TAG_EAST), e.getInt(TAG_EAST_GAP)) : null;
             data.byChunkX.put(e.getInt(TAG_X), new Edges(w, east));
         }
         return data;
@@ -89,8 +93,16 @@ public final class TunnelGroupData extends SavedData implements TunnelRunGroups.
         for (Map.Entry<Integer, Edges> en : byChunkX.entrySet()) {
             CompoundTag e = new CompoundTag();
             e.putInt(TAG_X, en.getKey());
-            if (en.getValue().west() != null) e.putString(TAG_WEST, en.getValue().west());
-            if (en.getValue().east() != null) e.putString(TAG_EAST, en.getValue().east());
+            TunnelRunGroups.Edge w = en.getValue().west();
+            TunnelRunGroups.Edge east = en.getValue().east();
+            if (w != null) {
+                e.putString(TAG_WEST, w.token());
+                e.putInt(TAG_WEST_GAP, w.gap());
+            }
+            if (east != null) {
+                e.putString(TAG_EAST, east.token());
+                e.putInt(TAG_EAST_GAP, east.gap());
+            }
             list.add(e);
         }
         tag.put(TAG_EDGES, list);
