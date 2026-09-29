@@ -65,6 +65,10 @@ public final class DungeonTrainConfig {
     public static final int MAX_DIFFICULTY_TRAVELLED_OFFSET = 1_000_000;
     public static final int DEFAULT_DIFFICULTY_TRAVELLED_OFFSET = 0;
     public static final boolean DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS = false;
+    /** One freshly spawned rabbit in 250 is the Killer Bunny — see {@code KillerBunnyEvents}. */
+    public static final double DEFAULT_KILLER_BUNNY_CHANCE = 1.0 / 250.0;
+    public static final double MIN_KILLER_BUNNY_CHANCE = 0.0;
+    public static final double MAX_KILLER_BUNNY_CHANCE = 1.0;
     public static final int MIN_PROGRESSION_LEVEL_DELAY = 0;
     public static final int MAX_PROGRESSION_LEVEL_DELAY = 100;
     public static final int DEFAULT_PROGRESSION_LEVEL_DELAY = 1;
@@ -348,6 +352,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue BUILDER_PROFILE_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_POOL_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_ROOM_CHANCE;
+    public static final ModConfigSpec.DoubleValue KILLER_BUNNY_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_OWN_CHANCE;
     public static final ModConfigSpec.IntValue SHARED_CARRIAGE_MAX_ENTITIES;
     public static final ModConfigSpec.BooleanValue DISCOVER_NARRATIVES_ENABLED;
@@ -411,6 +416,7 @@ public final class DungeonTrainConfig {
         BUILDER_PROFILE_ENABLED = pair.getLeft().builderProfileEnabled;
         SHARED_CARRIAGE_POOL_CHANCE = pair.getLeft().sharedCarriagePoolChance;
         SHARED_ROOM_CHANCE = pair.getLeft().sharedRoomChance;
+        KILLER_BUNNY_CHANCE = pair.getLeft().killerBunnyChance;
         SHARED_CARRIAGE_OWN_CHANCE = pair.getLeft().sharedCarriageOwnChance;
         SHARED_CARRIAGE_MAX_ENTITIES = pair.getLeft().sharedCarriageMaxEntities;
         DISCOVER_NARRATIVES_ENABLED = pair.getLeft().discoverNarrativesEnabled;
@@ -468,6 +474,12 @@ public final class DungeonTrainConfig {
         ModConfigSpec.BooleanValue difficultyAffectsBabyMobs = b
                 .comment("When true, baby mobs (zombies, piglins, etc.) also receive difficulty gear and effects. Default false to avoid silly visuals (baby zombies in netherite).")
                 .define("difficultyAffectsBabyMobs", DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS);
+        ModConfigSpec.DoubleValue killerBunnyChance = b
+                .comment("The probability a freshly spawned rabbit — on the train or anywhere in the world — is the Killer Bunny:",
+                        "the vanilla hostile rabbit variant that hunts players and wolves. Rolled once per rabbit when it first",
+                        "spawns; never on Peaceful or during the opening no-hostiles stretch. Default 1/250 (0.004). 0 disables it.")
+                .defineInRange("killerBunnyChance", DEFAULT_KILLER_BUNNY_CHANCE,
+                        MIN_KILLER_BUNNY_CHANCE, MAX_KILLER_BUNNY_CHANCE);
         ModConfigSpec.IntValue progressionLevelDelay = b
                 .comment("Delay difficulty progression by this many levels (tiers). The effective Diff-Level driving mob gear, potion effects, villager trade caps, and the boarding HUD becomes max(0, rawTier - this), where rawTier = floor(abs(travelled) / carriagesPerTier). Default 1 = the whole difficulty curve arrives one level later. 0 = no delay (original curve).")
                 .defineInRange("progressionLevelDelay", DEFAULT_PROGRESSION_LEVEL_DELAY, MIN_PROGRESSION_LEVEL_DELAY, MAX_PROGRESSION_LEVEL_DELAY);
@@ -774,7 +786,8 @@ public final class DungeonTrainConfig {
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled, spawnSearchSyncGen, sharedCarriagesEnabled, sharedCarriageLeasingEnabled,
                 sharedCarriagePoolChance,
-                sharedCarriageOwnChance, sharedCarriageMaxEntities, builderProfileEnabled, sharedRoomChance);
+                sharedCarriageOwnChance, sharedCarriageMaxEntities, builderProfileEnabled, sharedRoomChance,
+                killerBunnyChance);
     }
 
     /**
@@ -809,6 +822,12 @@ public final class DungeonTrainConfig {
     public static double getSharedRoomChance() {
         double v = isLoaded() ? SHARED_ROOM_CHANCE.get() : DEFAULT_SHARED_ROOM_CHANCE;
         return Math.max(MIN_SHARED_ROOM_CHANCE, Math.min(MAX_SHARED_ROOM_CHANCE, v));
+    }
+
+    /** Probability a freshly spawned rabbit is the Killer Bunny — see {@code KillerBunnyEvents}. */
+    public static double getKillerBunnyChance() {
+        double v = isLoaded() ? KILLER_BUNNY_CHANCE.get() : DEFAULT_KILLER_BUNNY_CHANCE;
+        return Math.max(MIN_KILLER_BUNNY_CHANCE, Math.min(MAX_KILLER_BUNNY_CHANCE, v));
     }
 
     /** Probability a shared-carriage slot leases a build by any author from the relay pool. */
@@ -1300,6 +1319,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.DoubleValue sharedCarriageOwnChance,
             ModConfigSpec.IntValue sharedCarriageMaxEntities,
             ModConfigSpec.BooleanValue builderProfileEnabled,
-            ModConfigSpec.DoubleValue sharedRoomChance
+            ModConfigSpec.DoubleValue sharedRoomChance,
+            ModConfigSpec.DoubleValue killerBunnyChance
     ) {}
 }

@@ -20840,8 +20840,25 @@
       "released_at": "2026-09-29T13:56:01Z"
     },
     {
+      "id": "killer-bunny",
+      "version": "0.1033.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Something in the grass",
+      "summary": "Not every rabbit is as harmless as it looks.",
+      "highlights": [],
+      "pr": 1671,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "lost-city-overlap-meld",
-      "version": "0.1032.0",
+      "version": "0.1034.0",
       "type": "fix",
       "tags": [
         "fix",
@@ -20850,6 +20867,7 @@
       "title": "Lost City buildings that share ground now meld",
       "summary": "Where two Lost City buildings stand on the same spot, both now keep their walls and floors.",
       "highlights": [],
+      "pr": 1672,
       "date": "2026-09-29",
       "released": false,
       "released_in": null,
