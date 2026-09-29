@@ -10,7 +10,9 @@ import java.util.concurrent.atomic.LongAdder;
  *
  * <p>Fed by {@code RapierPipelineTimingMixin}: {@code physicsTick} (one native step per substep)
  * adds its wall time to {@link #stepNanos}; {@code handleBlockChange} (the per-block voxel-collider
- * update a mined or placed block on a carriage triggers) bumps {@link #blockChanges}. Drained once
+ * update a mined or placed block on a carriage triggers) bumps {@link #blockChanges}; {@code ColliderBatch}
+ * reports the per-block updates it deferred over a carriage stamp ({@link #batchedBlockChanges}) and
+ * the whole-section uploads it replaced them with ({@link #colliderRebuilds}). Drained once
  * per {@code [mspt]} window by {@code TrainTickEvents}, so the reported step time is the mean per
  * tick over that window. Both counters are process-wide — Sable holds one pipeline per level, but
  * only the train dimension steps anything, so the window is the train's.</p>
@@ -23,6 +25,9 @@ public final class PhysicsStepTimer {
     private static final LongAdder stepNanos = new LongAdder();
     private static final LongAdder blockChanges = new LongAdder();
     private static final LongAdder reanchors = new LongAdder();
+    private static final LongAdder colliderRebuilds = new LongAdder();
+    private static final LongAdder batchedBlockChanges = new LongAdder();
+    private static final LongAdder blockChangeNanos = new LongAdder();
 
     private PhysicsStepTimer() {}
 
@@ -41,21 +46,51 @@ public final class PhysicsStepTimer {
         if (nanos > 0) stepNanos.add(nanos);
     }
 
-    /** Called by the timing mixin on every {@code handleBlockChange}. */
+    /**
+     * Called by the timing mixin on every {@code handleBlockChange} that reached the pipeline — the
+     * un-batched per-block updates (mining, placing, redstone, explosions). Block changes a
+     * {@link ColliderBatch} scope deferred are counted by {@link #addBatchedBlockChanges} instead.
+     */
     public static void countBlockChange() {
         blockChanges.increment();
     }
 
+    /**
+     * Called by {@code SubLevelPhysicsBlockChangeBatchMixin} with the wall time of one whole
+     * {@code SubLevelPhysicsSystem.handleBlockChange} — Sable's ticket, mass and collider work for
+     * one block, batched or not.
+     */
+    public static void addBlockChangeNanos(long nanos) {
+        if (nanos > 0) blockChangeNanos.add(nanos);
+    }
+
+    /** Called by {@link ColliderBatch} once per chunk section it re-uploaded whole. */
+    public static void countColliderRebuild() {
+        colliderRebuilds.increment();
+    }
+
+    /** Called by {@link ColliderBatch} at scope exit with how many per-block updates it skipped. */
+    public static void addBatchedBlockChanges(long n) {
+        if (n > 0) batchedBlockChanges.add(n);
+    }
+
     /** One drained {@code [mspt]} window. */
-    public record Window(long stepNanos, long blockChanges, long reanchors) {
+    public record Window(long stepNanos, long blockChanges, long reanchors,
+                         long colliderRebuilds, long batchedBlockChanges, long blockChangeNanos) {
+        /** Total wall time of Sable's per-block handling over the window, in ms. */
+        public double blockChangeMs() {
+            return blockChangeNanos / 1_000_000.0;
+        }
+
         /** Mean native-step wall time per tick over a window of {@code ticks} ticks, in ms. */
         public double avgStepMs(int ticks) {
             return ticks <= 0 ? 0.0 : stepNanos / 1_000_000.0 / ticks;
         }
     }
 
-    /** Read and reset all three counters — call from exactly one place per window. */
+    /** Read and reset every counter — call from exactly one place per window. */
     public static Window drain() {
-        return new Window(stepNanos.sumThenReset(), blockChanges.sumThenReset(), reanchors.sumThenReset());
+        return new Window(stepNanos.sumThenReset(), blockChanges.sumThenReset(), reanchors.sumThenReset(),
+            colliderRebuilds.sumThenReset(), batchedBlockChanges.sumThenReset(), blockChangeNanos.sumThenReset());
     }
 }

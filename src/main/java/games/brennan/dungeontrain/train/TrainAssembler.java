@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.ship.sable.ColliderBatch;
 import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -383,8 +384,13 @@ public final class TrainAssembler {
         // protects is the pre-lift work in the SOURCE world, at ordinary coordinates the mixin's
         // shipyard test can't see; once blocks are at shipyard coords the position test takes over.
         // See CarriageStampGuard.
-        return CarriageStampGuard.call(() ->
-            spawnGroupGuarded(level, origin, velocity, anchorPIdx, groupSize, dims, trainId));
+        // ColliderBatch: the same span is one Sable collider batch — the stamp, the lift into the
+        // plot, the airing of the source cells and the contents pass each hit Sable's per-block voxel
+        // update, ~3–4× the group's block count; the batch defers them and re-uploads each touched
+        // chunk section once on exit. Nothing ticks inside this call, and the template's entities are
+        // spawned ticks later by the settle tracker, so nothing can stand on the pending collider.
+        return CarriageStampGuard.call(() -> ColliderBatch.call(() ->
+            spawnGroupGuarded(level, origin, velocity, anchorPIdx, groupSize, dims, trainId)));
     }
 
     private static ManagedShip spawnGroupGuarded(ServerLevel level, BlockPos origin, Vector3dc velocity, int anchorPIdx, int groupSize, CarriageDims dims, UUID trainId) {
