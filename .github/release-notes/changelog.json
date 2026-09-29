@@ -20483,6 +20483,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sable-ordered-first-snapshot",
+      "version": "0.1014.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "No more \"non-existent sub-level\" errors while riding",
+      "summary": "Riding the train no longer fills your log with \"Received a sub-level movement packet for a non-existent sub-level\" errors. New carriages now reach your game in the right order, so their first movement update never arrives before the carriage itself.",
+      "highlights": [],
+      "pr": 1648,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
