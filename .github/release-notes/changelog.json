@@ -20579,6 +20579,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "mspt-lag-report-counters",
+      "version": "0.1019.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "More useful lag reports",
+      "summary": "Behind the scenes: lag reports now record what else was slowing the game down besides the train, such as memory clean-up pauses, waiting on terrain to load, and how many creatures are riding along. Nothing changes in play.",
+      "highlights": [
+        "Lag reports can now tell apart memory pauses, terrain loading and busy carriages"
+      ],
+      "pr": 1654,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
