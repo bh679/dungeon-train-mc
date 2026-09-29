@@ -980,6 +980,10 @@ neoForge.ideSyncTask tasks.named('generateModRoster')
 // The baked Free Play whitelist: modpack + siblings + dependencies generated, the rest curated.
 apply from: 'gradle/approved-mods.gradle'
 
+// `./gradlew pullTradeValues` — refresh the bundled community-approved Trade Everything item
+// values from the relay's item-values page. By hand only; never part of build.
+apply from: 'gradle/trade-values.gradle'
+
 // Fingerprint every shipped template the way the relay hashes an upload, so the relay can tell an
 // unmodified copy of a stock template from a build (see tools/BundledFingerprints and the relay's
 // bundled_fingerprints table). release.yml runs this after the build and pushes the JSON with

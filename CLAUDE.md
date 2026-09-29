@@ -113,7 +113,20 @@ Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 ./gradlew runServer       # Launch dev dedicated server
 ./gradlew test            # Run JUnit tests (if present)
 ./gradlew --stop          # Stop the gradle daemon if dev client hangs
+./gradlew pullTradeValues # Refresh data/dungeontrain/trade_values.json from the relay (see below)
 ```
+
+### Community item trade values
+
+What each item trades for (Trade Everything, sixteenths of an emerald) is tuned by the community
+at https://brennan.games/dungeontrain/items/ — members suggest, Brennan approves. Nothing pushes
+from there: `./gradlew pullTradeValues` copies the relay's `GET /items/export` into
+`src/main/resources/data/dungeontrain/trade_values.json` (committed; `compat/TradeValueTable`
+registers it as TE's first value provider, ahead of `TradeEverythingBridge`'s hand-tuned
+constants). It is never part of `build` — CI and the cascade build offline — so run it by hand,
+review the diff, commit. To refresh the page's item list, run
+`/dungeontrain debug trade-values dump` in a dev client and copy `run/trade-values-catalog.json`
+to the relay's `public/dungeontrain/items/catalog.json`.
 
 ### In-Game Manual Testing
 
