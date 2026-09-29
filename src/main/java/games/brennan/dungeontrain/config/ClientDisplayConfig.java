@@ -272,6 +272,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue BOOK_AUTHOR_BURN_CHAT;
     /** Chat line when a new Dungeon Train release lands mid-session — see {@code LiveUpdateNotice}. */
     public static final ModConfigSpec.BooleanValue UPDATE_NOTICE_CHAT;
+    /** Once-a-session chat line when the game has too little memory — see {@code LowMemoryNotice}. */
+    public static final ModConfigSpec.BooleanValue LOW_MEMORY_NOTICE_CHAT;
 
     /**
      * Where each of the editor's three author-facing menus draws — see {@link EditorMenuSpace}.
@@ -391,6 +393,7 @@ public final class ClientDisplayConfig {
         DPI_BYPASS_WARNING_OPTED_OUT = pair.getLeft().dpiBypassWarningOptedOut;
         BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
         UPDATE_NOTICE_CHAT = pair.getLeft().updateNoticeChat;
+        LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
         COMMAND_MENU_SPACE = pair.getLeft().commandMenuSpace;
         TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
         CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
@@ -742,6 +745,11 @@ public final class ClientDisplayConfig {
                          "announced, never the small automatic patch releases. Checks update.json on GitHub",
                          "every 10 minutes while you are in a world; nothing about you is sent. On by default.")
                 .define("updateNoticeChat", true);
+        ModConfigSpec.BooleanValue lowMemoryNoticeChat = b
+                .comment("Print one chat line per game session when Minecraft has been given less than 5 GB of",
+                         "memory on a computer with 8 GB or more, suggesting you allocate 6 GB or more in your",
+                         "launcher. Nothing is sent anywhere. On by default.")
+                .define("lowMemoryNoticeChat", true);
         b.pop();
 
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
@@ -761,6 +769,7 @@ public final class ClientDisplayConfig {
                 politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, updateNoticeChat,
+                lowMemoryNoticeChat,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme,
@@ -1163,6 +1172,16 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         UPDATE_NOTICE_CHAT.set(value);
         UPDATE_NOTICE_CHAT.save();
+    }
+
+    public static boolean isLowMemoryNoticeChatEnabled() {
+        return isLoaded() && LOW_MEMORY_NOTICE_CHAT.get();
+    }
+
+    public static void setLowMemoryNoticeChat(boolean value) {
+        if (!isLoaded()) return;
+        LOW_MEMORY_NOTICE_CHAT.set(value);
+        LOW_MEMORY_NOTICE_CHAT.save();
     }
 
     /** Minimum client FPS required to take a ride photo; {@code 0} disables the FPS gate. */
@@ -1785,6 +1804,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue dpiBypassWarningOptedOut,
             ModConfigSpec.BooleanValue bookAuthorBurnChat,
             ModConfigSpec.BooleanValue updateNoticeChat,
+            ModConfigSpec.BooleanValue lowMemoryNoticeChat,
             ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,

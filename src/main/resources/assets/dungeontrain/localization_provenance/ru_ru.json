@@ -2724,13 +2724,19 @@
       "chat.dungeontrain.update_notice",
       "chat.dungeontrain.update_notice.ago",
       "chat.dungeontrain.update_notice.link",
+      "chat.dungeontrain.low_memory_notice",
+      "chat.dungeontrain.low_memory_notice.link",
+      "chat.dungeontrain.low_memory_notice.dismiss",
+      "chat.dungeontrain.low_memory_notice.dismissed",
       "item.dungeontrain.stats_book",
       "item.dungeontrain.random_potion",
       "item.dungeontrain.random_good_potion",
       "item.dungeontrain.random_bad_potion",
       "gui.dungeontrain.options.book_author_chat",
       "gui.dungeontrain.options.update_notice_chat",
-      "gui.dungeontrain.options.update_notice_chat.tip"
+      "gui.dungeontrain.options.update_notice_chat.tip",
+      "gui.dungeontrain.options.low_memory_notice_chat",
+      "gui.dungeontrain.options.low_memory_notice_chat.tip"
     ],
     "adventureitemnames": [
       "key.categories.adventureitemnames",

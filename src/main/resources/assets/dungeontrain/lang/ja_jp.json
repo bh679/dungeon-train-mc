@@ -3618,6 +3618,10 @@
   "chat.dungeontrain.update_notice": "[Dungeon Train] バージョン %s が公開されました！",
   "chat.dungeontrain.update_notice.ago": "（%s前に公開）",
   "chat.dungeontrain.update_notice.link": "[更新内容]",
+  "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft に割り当てられたメモリは %s GB だけです。ランチャーで 6 GB 以上を割り当てると、より快適に遊べます。",
+  "chat.dungeontrain.low_memory_notice.link": "[方法]",
+  "chat.dungeontrain.low_memory_notice.dismiss": "[今後表示しない]",
+  "chat.dungeontrain.low_memory_notice.dismissed": "メモリ不足の通知をオフにしました。Dungeon Train のオプションで再びオンにできます。",
   "item.dungeontrain.stats_book": "統計の本",
   "item.dungeontrain.random_potion": "ランダムなポーション",
   "item.dungeontrain.random_good_potion": "ランダムな良いポーション",
@@ -3626,6 +3630,8 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Dungeon Train の本が燃えるたびに、著者の名前を記したチャット行を表示します — 「X の本が燃える」。読んだ本も、捨てた本も、死んで落とした本もみな燃えますが、書き手の名が残るのはここだけです。既定ではオフ。",
   "gui.dungeontrain.options.update_notice_chat": "新バージョンのチャット通知",
   "gui.dungeontrain.options.update_notice_chat.tip": "プレイ中に Dungeon Train の新バージョンが公開されると、更新内容へのリンク付きでチャットに通知します。通知されるのは正式リリースのみで、小さな自動リリースは含みません。初期設定はオンです。",
+  "gui.dungeontrain.options.low_memory_notice_chat": "メモリ不足をチャットで通知",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "8 GB 以上のメモリを搭載したパソコンで Minecraft への割り当てが 5 GB 未満の場合、セッションごとに一度チャットで通知し、ランチャーで 6 GB 以上を割り当てる方法へのリンクを表示します。初期設定はオンです。",
   "chat.dungeontrain.free_play.cause.keep_inventory": "このワールドでは「インベントリを保持」が有効です。",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train は、死ぬことに代償があることを前提に調整されています。そのため、このワールドはここから先の統計を自分の中だけに留めます。ゲームルールを戻しても変わりません — 死をくぐり抜けて持ち越した装備は、もうあなたのものです。"
 }

@@ -75,6 +75,8 @@ public enum ClientOptionsTab {
         BOOK_AUTHOR_CHAT,
         /** "Dungeon Train X is out" chat line when a release lands mid-session. */
         UPDATE_NOTICE_CHAT,
+        /** Once-a-session "give Minecraft more memory" chat line — see {@code LowMemoryNotice}. */
+        LOW_MEMORY_NOTICE_CHAT,
         CINEMATIC_HOTKEY,
         /** Whether Edible Backpacks draws its open/close button on the inventory screen. */
         BACKPACK_BUTTON,
@@ -160,6 +162,7 @@ public enum ClientOptionsTab {
                 }
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.UPDATE_NOTICE_CHAT);
+                rows.add(Row.LOW_MEMORY_NOTICE_CHAT);
                 rows.add(Row.CINEMATIC_HOTKEY);
                 rows.add(Row.BACKPACK_BUTTON);
                 // The two rows that open a page rather than change a setting, led by the

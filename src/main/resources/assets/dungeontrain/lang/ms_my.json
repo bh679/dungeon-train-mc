@@ -3618,6 +3618,10 @@
   "chat.dungeontrain.update_notice": "[Dungeon Train] Versi %s sudah keluar!",
   "chat.dungeontrain.update_notice.ago": " - dikeluarkan %s yang lalu",
   "chat.dungeontrain.update_notice.link": "[Apa yang baharu]",
+  "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft hanya ada memori %s GB. Peruntukkan 6 GB atau lebih dalam pelancar anda untuk permainan yang lebih lancar.",
+  "chat.dungeontrain.low_memory_notice.link": "[Caranya]",
+  "chat.dungeontrain.low_memory_notice.dismiss": "[Jangan tunjuk lagi]",
+  "chat.dungeontrain.low_memory_notice.dismissed": "Notis memori rendah dimatikan. Anda boleh menghidupkannya semula dalam pilihan Dungeon Train.",
   "item.dungeontrain.stats_book": "Buku Statistik",
   "item.dungeontrain.random_potion": "Ramuan Rawak",
   "item.dungeontrain.random_good_potion": "Ramuan Baik Rawak",
@@ -3626,6 +3630,8 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Menulis satu baris sembang yang menamakan penulisnya setiap kali sebuah buku Dungeon Train terbakar — \"Buku karya X terbakar\". Buku yang anda baca, anda buang, atau anda jatuhkan ketika mati semuanya terbakar, dan hanya di sinilah penulisnya dikreditkan. Dimatikan secara lalai.",
   "gui.dungeontrain.options.update_notice_chat": "Chat Versi Baharu",
   "gui.dungeontrain.options.update_notice_chat.tip": "Paparkan mesej dalam chat apabila versi baharu Dungeon Train dikeluarkan semasa anda bermain, dengan pautan ke apa yang baharu. Hanya keluaran sebenar diumumkan, bukan keluaran kecil automatik. Hidup secara lalai.",
+  "gui.dungeontrain.options.low_memory_notice_chat": "Notis Memori dalam Sembang",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Sekali setiap sesi, paparkan mesej dalam sembang jika Minecraft diberi kurang daripada 5 GB memori pada komputer dengan 8 GB atau lebih, bersama pautan cara memperuntukkan 6 GB atau lebih dalam pelancar anda. Hidup secara lalai.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Dalam dunia ini \"Simpan Inventori\" sedang dihidupkan.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train diimbangi atas dasar bahawa kematian merugikan anda sesuatu, jadi mulai sekarang dunia ini menyimpan statistiknya sendiri. Mematikan semula peraturan permainan itu tidak akan mengubahnya — kelengkapan yang anda bawa merentasi satu kematian sudah pun menjadi milik anda."
 }

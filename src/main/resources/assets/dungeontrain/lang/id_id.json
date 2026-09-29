@@ -3618,6 +3618,10 @@
   "chat.dungeontrain.update_notice": "[Dungeon Train] Versi %s sudah rilis!",
   "chat.dungeontrain.update_notice.ago": " - rilis %s yang lalu",
   "chat.dungeontrain.update_notice.link": "[Yang baru]",
+  "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft hanya punya memori %s GB. Alokasikan 6 GB atau lebih di launcher-mu agar permainan lebih lancar.",
+  "chat.dungeontrain.low_memory_notice.link": "[Caranya]",
+  "chat.dungeontrain.low_memory_notice.dismiss": "[Jangan tampilkan lagi]",
+  "chat.dungeontrain.low_memory_notice.dismissed": "Pemberitahuan memori rendah dimatikan. Kamu bisa menyalakannya lagi di opsi Dungeon Train.",
   "item.dungeontrain.stats_book": "Buku Statistik",
   "item.dungeontrain.random_potion": "Ramuan Acak",
   "item.dungeontrain.random_good_potion": "Ramuan Baik Acak",
@@ -3626,6 +3630,8 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Menuliskan satu baris obrolan yang menyebut penulisnya setiap kali sebuah buku Dungeon Train terbakar — \"Buku karya X terbakar\". Buku yang kamu baca, kamu buang, atau kamu jatuhkan saat mati semuanya menyala, dan hanya di sinilah penulisnya disebut. Mati secara bawaan.",
   "gui.dungeontrain.options.update_notice_chat": "Chat Versi Baru",
   "gui.dungeontrain.options.update_notice_chat.tip": "Menampilkan pesan di chat saat versi baru Dungeon Train dirilis ketika kamu sedang bermain, dengan tautan ke pembaruannya. Hanya rilis utama yang diumumkan, bukan rilis kecil otomatis. Aktif secara bawaan.",
+  "gui.dungeontrain.options.low_memory_notice_chat": "Info Memori di Chat",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Sekali per sesi, tampilkan pesan di chat jika Minecraft diberi memori kurang dari 5 GB pada komputer dengan 8 GB atau lebih, beserta tautan cara mengalokasikan 6 GB atau lebih di launcher-mu. Aktif secara bawaan.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Di dunia ini \"Simpan Inventaris\" sedang menyala.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train diseimbangkan dengan anggapan bahwa mati itu memakan sesuatu darimu, jadi mulai sekarang dunia ini menyimpan statistiknya sendiri. Mematikan kembali aturan permainannya tidak akan mengubah itu — perlengkapan yang kamu bawa melewati sebuah kematian sudah jadi milikmu."
 }

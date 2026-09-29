@@ -3661,6 +3661,10 @@
   "chat.dungeontrain.update_notice": "[Dungeon Train] È uscita la versione %s!",
   "chat.dungeontrain.update_notice.ago": " - uscita %s fa",
   "chat.dungeontrain.update_notice.link": "[Novità]",
+  "chat.dungeontrain.low_memory_notice": "[Dungeon Train] Minecraft ha solo %s GB di memoria. Assegna 6 GB o più nel launcher per un gioco più fluido.",
+  "chat.dungeontrain.low_memory_notice.link": "[Come fare]",
+  "chat.dungeontrain.low_memory_notice.dismiss": "[Non mostrare più]",
+  "chat.dungeontrain.low_memory_notice.dismissed": "Avviso di memoria insufficiente disattivato. Puoi riattivarlo nelle opzioni di Dungeon Train.",
   "item.dungeontrain.stats_book": "Libro delle statistiche",
   "item.dungeontrain.random_potion": "Pozione casuale",
   "item.dungeontrain.random_good_potion": "Pozione buona casuale",
@@ -3669,6 +3673,8 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Stampa in chat una riga con il nome dell'autore ogni volta che un libro di Dungeon Train brucia — «Il libro di X brucia». I libri che leggi, che getti via o che lasci cadere morendo prendono tutti fuoco, e questo è l'unico posto in cui viene accreditato chi li ha scritti. Disattivato in modo predefinito.",
   "gui.dungeontrain.options.update_notice_chat": "Chat nuova versione",
   "gui.dungeontrain.options.update_notice_chat.tip": "Mostra un messaggio in chat quando esce una nuova versione di Dungeon Train mentre giochi, con un link alle novità. Vengono annunciate solo le versioni vere, non quelle piccole automatiche. Attivo per impostazione predefinita.",
+  "gui.dungeontrain.options.low_memory_notice_chat": "Avviso memoria in chat",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Una volta per sessione, mostra un messaggio in chat se Minecraft ha meno di 5 GB di memoria su un computer con 8 GB o più, con un link che spiega come assegnare 6 GB o più nel launcher. Attivo di default.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "In questo mondo «Mantieni inventario» è attivo.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train è bilanciato sul fatto che morire ti costi qualcosa, quindi da qui in poi questo mondo si tiene le proprie statistiche. Rimettere la regola di gioco su off non cambierà le cose — l'equipaggiamento che ti sei portato attraverso una morte è già tuo."
 }

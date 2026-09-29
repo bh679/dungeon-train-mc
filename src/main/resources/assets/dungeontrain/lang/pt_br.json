@@ -3661,6 +3661,10 @@
   "chat.dungeontrain.update_notice": "[Dungeon Train] A versão %s saiu!",
   "chat.dungeontrain.update_notice.ago": " - saiu há %s",
   "chat.dungeontrain.update_notice.link": "[Novidades]",
+  "chat.dungeontrain.low_memory_notice": "[Dungeon Train] O Minecraft só tem %s GB de memória. Aloque 6 GB ou mais no seu launcher para o jogo rodar mais liso.",
+  "chat.dungeontrain.low_memory_notice.link": "[Como]",
+  "chat.dungeontrain.low_memory_notice.dismiss": "[Não mostrar de novo]",
+  "chat.dungeontrain.low_memory_notice.dismissed": "Aviso de pouca memória desativado. Você pode reativá-lo nas opções do Dungeon Train.",
   "item.dungeontrain.stats_book": "Livro de estatísticas",
   "item.dungeontrain.random_potion": "Poção Aleatória",
   "item.dungeontrain.random_good_potion": "Poção Boa Aleatória",
@@ -3669,6 +3673,8 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Escreve no chat uma linha com o nome do autor toda vez que um livro do Dungeon Train queima — \"O livro de X queima\". Os livros que você lê, joga fora ou derruba ao morrer pegam fogo todos, e este é o único lugar em que quem os escreveu recebe crédito. Desligado por padrão.",
   "gui.dungeontrain.options.update_notice_chat": "Chat de nova versão",
   "gui.dungeontrain.options.update_notice_chat.tip": "Mostra uma mensagem no chat quando uma nova versão do Dungeon Train é lançada enquanto você joga, com um link para as novidades. Só lançamentos de verdade são anunciados, não os pequenos automáticos. Ativado por padrão.",
+  "gui.dungeontrain.options.low_memory_notice_chat": "Aviso de memória no chat",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Uma vez por sessão, mostra uma mensagem no chat se o Minecraft tiver menos de 5 GB de memória num computador com 8 GB ou mais, com um link explicando como alocar 6 GB ou mais no seu launcher. Ativado por padrão.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Neste mundo, \"Manter inventário\" está ligado.",
   "chat.dungeontrain.free_play.keep_inventory_on": "O Dungeon Train é balanceado em torno de morrer custar algo a você, então daqui em diante este mundo guarda as próprias estatísticas. Desligar a regra de jogo de novo não muda isso — o equipamento que você carregou através de uma morte já é seu."
 }
