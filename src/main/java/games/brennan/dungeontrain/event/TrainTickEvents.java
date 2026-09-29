@@ -4,6 +4,7 @@ import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
+import games.brennan.dungeontrain.perf.ServerLoadSampler;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
@@ -359,13 +360,18 @@ public final class TrainTickEvents {
 
             // Drained unconditionally too, so the window never spans more than one period.
             PhysicsStepTimer.Window physics = PhysicsStepTimer.drain();
+            // The non-physics suspects for a slow window (GC, synchronous chunk loads, entity load,
+            // the worst single tick) — appended after the physics fields so older parsers keep
+            // reading. See ServerLoadSampler and scripts/perf/README.md.
+            ServerLoadSampler.Window load = ServerLoadSampler.drain(level, trainsById, MSPT_LOG_PERIOD_TICKS);
             double avgTickMs = level.getServer().getAverageTickTimeNanos() / 1_000_000.0;
             // activeTracked/activeEntity/activeSettling, maxBodyLag and reanchors: why each
             // resident carriage is still being stepped, how far the parked ones sit behind
             // their poses, and how many carriages re-anchored in the window — the fields
             // needed to attribute a slow physMs while the player is away from the train
             // (player logs of 28 Sep 2026: 45–205 ms at near=0). See PhysicsFreezeController.
-            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={} colliderRebuilds={} batchedBlockChanges={} blockChangeMs={}",
+            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={} colliderRebuilds={} batchedBlockChanges={} blockChangeMs={}"
+                    + " gcMs={} gcN={} heapUsedMb={} heapMaxMb={} chunkWaitMs={} chunkWaits={} chunksLoaded={} pendingChunkTasks={} entities={} onCarriages={} tickMaxMs={}",
                 level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
                 countNearCarriages(level, trainsById), trainsById.size(),
                 String.format("%.2f", physics.avgStepMs(MSPT_LOG_PERIOD_TICKS)),
@@ -375,7 +381,11 @@ public final class TrainTickEvents {
                 String.format("%.1f", PhysicsFreezeController.lastMaxBodyLagBlocks()),
                 PhysicsFreezeController.drainReparks(), physics.reanchors(),
                 physics.colliderRebuilds(), physics.batchedBlockChanges(),
-                String.format("%.2f", physics.blockChangeMs()));
+                String.format("%.2f", physics.blockChangeMs()),
+                load.gcMillis(), load.gcCount(), load.heapUsedMb(), load.heapMaxMb(),
+                String.format("%.2f", load.chunkWaitMs()), load.chunkWaits(),
+                load.chunksLoaded(), load.pendingChunkTasks(), load.entities(), load.onCarriages(),
+                String.format("%.2f", load.tickMaxMs()));
         }
 
         // Kill-ahead runs once per train, against the lead carriage's

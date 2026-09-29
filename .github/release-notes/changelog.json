@@ -20480,9 +20480,9 @@
       ],
       "pr": 1644,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "player-blocks-break-off",
@@ -20501,9 +20501,9 @@
       ],
       "pr": 1647,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "nether-strip-offthread",
@@ -20522,9 +20522,9 @@
       ],
       "pr": 1646,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "sable-ordered-first-snapshot",
@@ -20539,9 +20539,9 @@
       "highlights": [],
       "pr": 1648,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "fewer-ruins-again",
@@ -20556,9 +20556,9 @@
       "highlights": [],
       "pr": 1649,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "batch-collider-updates-carriage-stamping",
@@ -20576,9 +20576,9 @@
       ],
       "pr": 1649,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "fluid-interaction-no-sync-load",
@@ -20597,13 +20597,71 @@
       ],
       "pr": 1651,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
+    },
+    {
+      "id": "mspt-lag-report-counters",
+      "version": "0.1020.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "More useful lag reports",
+      "summary": "Behind the scenes: lag reports now record what else was slowing the game down besides the train, such as memory clean-up pauses, waiting on terrain to load, and how many creatures are riding along. Nothing changes in play.",
+      "highlights": [
+        "Lag reports can now tell apart memory pauses, terrain loading and busy carriages"
+      ],
+      "pr": 1654,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
+    },
+    {
+      "id": "dh-update-prompt-keeps-quick-play",
+      "version": "0.1021.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Quick play no longer stops at the title screen when a Distant Horizons update is pending",
+      "summary": "Launching straight into a server or world (Minecraft's quick play) used to stall on the title screen whenever Distant Horizons had an update to offer, because the mod hid that prompt by opening a fresh title screen. The join now goes ahead as intended.",
+      "highlights": [
+        "The Distant Horizons update prompt is still kept out of the way for the modpack's pinned build; nothing changes for other Distant Horizons versions."
+      ],
+      "pr": 1656,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1022.0",
+      "released_at": "2026-09-29T05:42:33Z"
+    },
+    {
+      "id": "preserve-community-book-layout",
+      "version": "0.1022.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "books"
+      ],
+      "title": "Community books keep their author's layout",
+      "summary": "Community books now appear exactly as their author laid them out \u2014 indentation, blank lines and word art are preserved, and pages stay where they were written instead of spilling onto extra pages.",
+      "highlights": [
+        "Word art and centred text in found books are no longer flattened",
+        "Blank spacer lines survive, so signatures and page breaks stay where the author put them"
+      ],
+      "pr": 1657,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1022.0",
+      "released_at": "2026-09-29T05:42:33Z"
     },
     {
       "id": "low-memory-warning",
-      "version": "0.1020.0",
+      "version": "0.1023.0",
       "type": "feat",
       "tags": [
         "feature",

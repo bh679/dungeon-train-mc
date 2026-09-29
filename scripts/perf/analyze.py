@@ -13,12 +13,38 @@ import statistics as st
 import sys
 from pathlib import Path
 
-OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).parent / "out"
+OUT = Path(__file__).parent / "out"
 
-MSPT = re.compile(r"\[mspt\].*avgTickMs=([\d.]+) carriages=(\d+) near=(\d+)")
+MSPT_TAG = "[mspt]"
+FIELD = re.compile(r"(\w+)=(\S+)")
 DESP = re.compile(r"\[despawn\] dim=.*snapshotted=(\d+) entitiesHeld=(\d+)")
 SWEEP = re.compile(r"\[despawn\] (swept|restored) pIdx=(-?\d+) entities=(\d+)")
 TELE = re.compile(r"Teleported \w+ to ([\d.]+)")
+
+#: Fields appended in 0.1019 (see README "[mspt] fields"); absent from older logs.
+LOAD_FIELDS = ("gcMs", "gcN", "heapUsedMb", "chunkWaitMs", "chunkWaits", "chunksLoaded",
+               "pendingChunkTasks", "entities", "onCarriages", "tickMaxMs")
+
+
+def parse_mspt(line):
+    """Every key=value field of an [mspt] line as a dict, or None for any other line.
+
+    Numbers become int or float; anything else (dim=minecraft:overworld) stays a string. Keyed by
+    name rather than position, so a log from before a field existed simply lacks that key.
+    """
+    i = line.find(MSPT_TAG)
+    if i < 0:
+        return None
+    out = {}
+    for key, raw in FIELD.findall(line[i + len(MSPT_TAG):]):
+        try:
+            out[key] = int(raw)
+        except ValueError:
+            try:
+                out[key] = float(raw)
+            except ValueError:
+                out[key] = raw
+    return out
 
 MIN_SAMPLES = 40      # a 120s window logs ~60; far fewer means the train left and [mspt] stopped
 MAX_DRIFT = 40.0      # blocks; a player riding the train drifts ~240 over the window
@@ -34,13 +60,17 @@ def load(arm):
     window = text.splitlines()[mark - 1:]
 
     mspt, carr, near, held = [], [], [], []
+    load = {k: [] for k in LOAD_FIELDS}
     sweeps = restores = 0
     for ln in window:
-        m = MSPT.search(ln)
-        if m:
-            mspt.append(float(m.group(1)))
-            carr.append(int(m.group(2)))
-            near.append(int(m.group(3)))
+        m = parse_mspt(ln)
+        if m and "avgTickMs" in m:
+            mspt.append(float(m["avgTickMs"]))
+            carr.append(int(m["carriages"]))
+            near.append(int(m["near"]))
+            for k in LOAD_FIELDS:
+                if k in m:
+                    load[k].append(m[k])
         d = DESP.search(ln)
         if d:
             held.append(int(d.group(2)))
@@ -53,7 +83,7 @@ def load(arm):
 
     probes = [float(x) for x in TELE.findall(text)]
     drift = probes[-1] - probes[-2] if len(probes) >= 2 else float("nan")
-    return dict(arm=arm, n=len(mspt), mspt=mspt, carr=carr, near=near, held=held,
+    return dict(arm=arm, n=len(mspt), mspt=mspt, carr=carr, near=near, held=held, load=load,
                 sweeps=sweeps, restores=restores, drift=drift)
 
 
@@ -64,6 +94,24 @@ def pct(v, p):
     k = (len(v) - 1) * p / 100.0
     lo, hi = int(k), min(int(k) + 1, len(v) - 1)
     return v[lo] + (v[hi] - v[lo]) * (k - lo)
+
+
+def show_load(load):
+    """The non-physics suspects for a slow window, when the log is new enough to carry them."""
+    if load.get("tickMaxMs"):
+        t = load["tickMaxMs"]
+        print(f"  tickMaxMs      max {max(t):7.2f}   p95 {pct(t, 95):7.2f}")
+    if load.get("gcMs"):
+        g = load["gcMs"]
+        print(f"  gcMs/window    mean {st.mean(g):6.1f}   max {max(g)}   collections {sum(load['gcN'])}")
+    if load.get("heapUsedMb"):
+        print(f"  heapUsedMb     max {max(load['heapUsedMb'])}")
+    if load.get("chunkWaitMs"):
+        c = load["chunkWaitMs"]
+        print(f"  chunkWaitMs    mean {st.mean(c):6.2f}   max {max(c):7.2f}   waits {sum(load['chunkWaits'])}")
+    if load.get("entities"):
+        print(f"  entities       mean {st.mean(load['entities']):.0f}   onCarriages mean "
+              f"{st.mean(load['onCarriages']):.0f}")
 
 
 def verdict(r):
@@ -93,36 +141,46 @@ def show(r):
     print(f"  near           mean {st.mean(r['near']):.1f}")
     if r["held"]:
         print(f"  entitiesHeld   mean {st.mean(r['held']):.1f}  max {max(r['held'])}")
+    show_load(r.get("load", {}))
     print(f"  sweeps {r['sweeps']}  restores {r['restores']}")
     ok, why = verdict(r)
     print(f"  drift {r['drift']:.1f} blocks -> {why}")
     print()
 
 
-a, b = load("A_off"), load("B_on")
-if a is None or b is None:
-    print("missing logs — expected A_off/B_on .server.log and .mark in", OUT)
-    raise SystemExit(1)
+def main(argv):
+    global OUT
+    if len(argv) > 1:
+        OUT = Path(argv[1])
+    a, b = load("A_off"), load("B_on")
+    if a is None or b is None:
+        print("missing logs — expected A_off/B_on .server.log and .mark in", OUT)
+        return 1
 
-show(a)
-show(b)
+    show(a)
+    show(b)
 
-ok_a, _ = verdict(a)
-ok_b, _ = verdict(b)
-if not (ok_a and ok_b):
-    print("ONE OR BOTH ARMS INVALID — do not read the delta below as a result.")
+    ok_a, _ = verdict(a)
+    ok_b, _ = verdict(b)
+    if not (ok_a and ok_b):
+        print("ONE OR BOTH ARMS INVALID — do not read the delta below as a result.")
 
-ma, mb = st.mean(a["mspt"]), st.mean(b["mspt"])
-ca, cb = st.mean(a["carr"]), st.mean(b["carr"])
-print(f"delta mean avgTickMs  {mb - ma:+.2f} ms  ({(mb - ma) / ma * 100:+.1f}%)")
-print(f"delta p95             {pct(b['mspt'], 95) - pct(a['mspt'], 95):+.2f} ms")
-print(f"carriage control      A={ca:.1f} B={cb:.1f}  ({abs(cb - ca) / ca * 100:.1f}% apart)")
-if abs(cb - ca) / ca > 0.05:
-    print("  !! >5% apart — the arms are not load-matched; the delta is not attributable")
-print(f"per-carriage ms       A={ma / ca:.3f}  B={mb / cb:.3f}  ({(mb / cb - ma / ca) / (ma / ca) * 100:+.1f}%)")
+    ma, mb = st.mean(a["mspt"]), st.mean(b["mspt"])
+    ca, cb = st.mean(a["carr"]), st.mean(b["carr"])
+    print(f"delta mean avgTickMs  {mb - ma:+.2f} ms  ({(mb - ma) / ma * 100:+.1f}%)")
+    print(f"delta p95             {pct(b['mspt'], 95) - pct(a['mspt'], 95):+.2f} ms")
+    print(f"carriage control      A={ca:.1f} B={cb:.1f}  ({abs(cb - ca) / ca * 100:.1f}% apart)")
+    if abs(cb - ca) / ca > 0.05:
+        print("  !! >5% apart — the arms are not load-matched; the delta is not attributable")
+    print(f"per-carriage ms       A={ma / ca:.3f}  B={mb / cb:.3f}  ({(mb / cb - ma / ca) / (ma / ca) * 100:+.1f}%)")
 
-# Sanity floor: if the ON arm never held anything, there was nothing for the feature to do and a
-# near-zero delta says nothing about whether it helps.
-if b["held"] and max(b["held"]) < 5:
-    print(f"\nNOTE: arm B held at most {max(b['held'])} entities. The feature was barely loaded —")
-    print("a small delta here is not evidence either way. Populate harder before concluding.")
+    # Sanity floor: if the ON arm never held anything, there was nothing for the feature to do and a
+    # near-zero delta says nothing about whether it helps.
+    if b["held"] and max(b["held"]) < 5:
+        print(f"\nNOTE: arm B held at most {max(b['held'])} entities. The feature was barely loaded —")
+        print("a small delta here is not evidence either way. Populate harder before concluding.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
