@@ -4,7 +4,9 @@
 Deliberately flat, obviously-not-vanilla tiles so a placeholder that ever reaches a live train is
 visible at a glance: a grey family for the solid / stairs / slab / button / plate slots with the
 slot number stamped on (and a kind letter for the stone set), and a brown family for the wood set (planks, log side + end, door halves,
-trapdoor), plus a green leaves tile. Re-run after changing the palette or the catalogue in StagePlaceholderBlocks:
+trapdoor), plus a green leaves tile, and a clay / pale family for the terracotta / concrete
+colour slots (T / C plus P, S, B for primary, secondary, background), a teal glazed-terracotta
+tile (GT), and half-transparent glass tiles (G plus P / S) with a pane edge strip. Re-run after changing the palette or the catalogue in StagePlaceholderBlocks:
 
     python3 scripts/assets/gen-stage-placeholder-textures.py
 
@@ -50,6 +52,7 @@ DIGITS = {
     "M": ["#.#", "###", "#.#", "#.#", "#.#"],
     "F": ["###", "#..", "##.", "#..", "#.."],
     "V": ["#.#", "#.#", "#.#", "#.#", ".#."],
+    "G": ["###", "#..", "#.#", "#.#", "###"],
 }
 
 GREY = (128, 132, 140)
@@ -63,6 +66,19 @@ BROWN_LIGHT = (184, 142, 96)
 GREEN = (84, 132, 62)
 GREEN_DARK = (58, 96, 42)
 GREEN_LIGHT = (116, 164, 88)
+
+CLAY = (160, 92, 64)
+CLAY_DARK = (124, 68, 46)
+CLAY_LIGHT = (190, 120, 88)
+PALE = (196, 198, 204)
+PALE_DARK = (160, 162, 170)
+PALE_LIGHT = (222, 224, 228)
+
+TEAL = (60, 140, 150)
+TEAL_DARK = (40, 104, 112)
+TEAL_LIGHT = (96, 176, 184)
+GLASS = (170, 210, 230)
+GLASS_ALPHA = 110
 
 BARK = (92, 64, 40)
 BARK_DARK = (70, 48, 30)
@@ -110,6 +126,31 @@ def brown(label: str) -> Image.Image:
 
 def green(label: str) -> Image.Image:
     img = base_tile(GREEN, GREEN_DARK, GREEN_LIGHT)
+    stamp(img, label)
+    return img
+
+
+def clay(label: str) -> Image.Image:
+    img = base_tile(CLAY, CLAY_DARK, CLAY_LIGHT)
+    stamp(img, label)
+    return img
+
+
+def pale(label: str) -> Image.Image:
+    img = base_tile(PALE, PALE_DARK, PALE_LIGHT)
+    stamp(img, label)
+    return img
+
+
+def teal(label: str) -> Image.Image:
+    img = base_tile(TEAL, TEAL_DARK, TEAL_LIGHT)
+    stamp(img, label)
+    return img
+
+
+def glass(label: str) -> Image.Image:
+    img = Image.new("RGBA", (SIZE, SIZE), GLASS + (GLASS_ALPHA,))
+    ImageDraw.Draw(img).rectangle([0, 0, SIZE - 1, SIZE - 1], outline=GLASS + (255,))
     stamp(img, label)
     return img
 
@@ -189,6 +230,17 @@ def main() -> None:
                          ("cracked", "K"), ("mossy", "M"), ("feature", "F")):
         name = "stage_stone" if kind == "stone" else f"stage_stone_{kind}"
         write(grey(letter), BLOCK_DIR / f"{name}.png")
+
+    # Colour slots: one tile per material x role.
+    for role, letter in (("primary", "P"), ("secondary", "S"), ("background", "B")):
+        write(clay("T" + letter), BLOCK_DIR / f"stage_terracotta_{role}.png")
+        write(pale("C" + letter), BLOCK_DIR / f"stage_concrete_{role}.png")
+
+    write(teal("GT"), BLOCK_DIR / "stage_glazed_terracotta.png")
+    for role, letter in (("primary", "P"), ("secondary", "S")):
+        write(glass("G" + letter), BLOCK_DIR / f"stage_glass_{role}.png")
+        edge = Image.new("RGBA", (SIZE, SIZE), GLASS + (255,))
+        write(edge, BLOCK_DIR / f"stage_glass_pane_{role}_top.png")
 
     # Flat item icon for the door (vanilla doors use item/generated with their own sprite).
     # Item icon: the whole door squeezed into one tile (top half over bottom half).

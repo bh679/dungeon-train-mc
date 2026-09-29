@@ -87,6 +87,7 @@ public final class EditorScreenLang {
     public static final String STAGES_PALETTE_SHAPES = PREFIX + "stages.palette.shapes";
     public static final String STAGES_PALETTE_WOOD = PREFIX + "stages.palette.wood";
     public static final String STAGES_PALETTE_STONE = PREFIX + "stages.palette.stone";
+    public static final String STAGES_PALETTE_COLOURS = PREFIX + "stages.palette.colours";
     public static final String STAGES_PALETTE_TITLE = PREFIX + "stages.palette.title";
     public static final String STAGES_PALETTE_OVERRIDE = PREFIX + "stages.palette.override";
     public static final String STAGES_PALETTE_DERIVED = PREFIX + "stages.palette.derived";
