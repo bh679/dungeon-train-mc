@@ -40,8 +40,35 @@ def supported(canvas: Canvas, pos) -> bool:
     return below is not None and below != AIR and not any(p in below.name for p in UNSTABLE_BELOW) and not falls(below)
 
 
+FLOOR_ONLY = ("carpet", "flower_pot", "potted_", "torch", "candle", "pressure_plate", "rail", "snow")
+THROUGH = ("vine", "grass", "fern", "bush", "web", "roots", "leaves", "azalea", "carpet")
+
+
 def settle(canvas: Canvas) -> None:
-    """Replace every falling block above the pad that has no solid cell beneath it."""
+    """Replace every falling block above the pad that has no solid cell beneath it, and bring every
+    carpet, pot, torch and the like down onto the first block under it (or drop it altogether when
+    there is nothing to sit on within reach) — the damage and drop passes take floors from under them."""
     for pos, state in list(canvas.freeze().items()):
         if pos[1] >= 1 and falls(state) and not supported(canvas, pos):
             canvas.put(pos, stable_for(state))
+    for pos, state in list(canvas.freeze().items()):
+        if pos[1] >= 1 and any(p in state.name for p in FLOOR_ONLY) and not supported(canvas, pos):
+            _lower(canvas, pos, state)
+
+
+def _lower(canvas: Canvas, pos, state: BlockState) -> None:
+    x, y, z = pos
+    landing = y
+    while landing > 1 and _through(canvas.get((x, landing - 1, z))):
+        landing -= 1
+    indoors = canvas.get((x + 1, y, z)) == AIR or canvas.get((x - 1, y, z)) == AIR
+    if indoors:
+        canvas.put(pos, AIR)
+    else:
+        canvas.clear(pos)
+    if landing != y and supported(canvas, (x, landing, z)):
+        canvas.put((x, landing, z), state)
+
+
+def _through(state: BlockState | None) -> bool:
+    return state is None or state == AIR or any(p in state.name for p in THROUGH)
