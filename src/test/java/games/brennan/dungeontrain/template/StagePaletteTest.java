@@ -90,4 +90,42 @@ final class StagePaletteTest {
         assertTrue(!cleared.woodLocked());
         assertEquals("birch", cleared.wood());
     }
+
+    @Test
+    @DisplayName("colour slots default when absent, round-trip through JSON and survive a re-bake")
+    void colourSlots() {
+        StagePalette plain = new StagePalette(List.of("minecraft:stone"), null, null, null, null, "oak", "stone");
+        assertEquals(List.of("minecraft:terracotta", "minecraft:terracotta", "minecraft:terracotta"), plain.terracotta());
+        assertEquals(List.of("minecraft:white_concrete", "minecraft:light_gray_concrete", "minecraft:gray_concrete"),
+            plain.concrete());
+
+        StagePalette coloured = plain.withColours(
+            List.of("minecraft:pink_terracotta", "minecraft:magenta_terracotta", "minecraft:purple_terracotta"),
+            List.of("minecraft:pink_concrete", "minecraft:black_concrete"));
+        assertEquals("minecraft:magenta_terracotta", coloured.terracotta(1));
+        assertEquals("minecraft:gray_concrete", coloured.concrete(2), "a short list pads from the defaults");
+
+        StagePalette back = StagePalette.fromJson(JsonParser.parseString(coloured.toJson().toString()));
+        assertEquals(coloured, back);
+
+        StagePalette derived = new StagePalette(List.of("minecraft:tuff"), null, null, null, null, "oak", "tuff");
+        StagePalette rebaked = coloured.carryUserStateOnto(derived);
+        assertEquals(coloured.terracotta(), rebaked.terracotta());
+        assertEquals(coloured.concrete(), rebaked.concrete());
+        // Overrides and family edits keep the colours too.
+        assertEquals(coloured.concrete(), rebaked.withOverride("stage_block_1", "minecraft:dirt")
+            .withWood(StageWoodFamily.BIRCH).concrete());
+    }
+
+    @Test
+    @DisplayName("glass and glazed terracotta follow the concrete accent colours")
+    void accentBlocks() {
+        StagePalette p = new StagePalette(List.of("minecraft:stone"), null, null, null, null, "oak", "stone")
+            .withColours(null, List.of("minecraft:red_concrete", "minecraft:light_blue_concrete", "minecraft:black_concrete"));
+        assertEquals("minecraft:red_stained_glass", p.glass(0));
+        assertEquals("minecraft:light_blue_stained_glass", p.glass(1));
+        assertEquals("minecraft:red_stained_glass_pane", p.glassPane(0));
+        assertEquals("minecraft:light_blue_stained_glass_pane", p.glassPane(1));
+        assertEquals("minecraft:red_glazed_terracotta", p.glazedTerracotta());
+    }
 }

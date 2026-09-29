@@ -20976,6 +20976,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stage-colour-blocks",
+      "version": "0.1041.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Stage blocks come in colour",
+      "summary": "Builders can now place terracotta, concrete, stained glass and glazed terracotta that take on each stage's own colours.",
+      "highlights": [],
+      "pr": 1680,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
