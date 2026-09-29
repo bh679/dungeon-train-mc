@@ -20752,6 +20752,26 @@
       "released": true,
       "released_in": "v0.1027.0",
       "released_at": "2026-09-29T11:38:22Z"
+    },
+    {
+      "id": "biome-column-memo",
+      "version": "0.1028.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Faster terrain generation",
+      "summary": "Each new column of terrain used to work out which biome it belongs to over and over, once for every height level. It now decides once per column and reuses the answer, so new terrain around the train costs the server far less to generate \u2014 most of all in some later stretches, where a single chunk could take dozens of milliseconds just on that. The world itself is untouched: the same seed still gives the same biomes, blocks and decoration.",
+      "highlights": [
+        "New terrain generates with much less server work, so rides stay smoother while chunks stream in",
+        "Same world as before \u2014 biomes, terrain and decoration are unchanged"
+      ],
+      "pr": 1663,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
