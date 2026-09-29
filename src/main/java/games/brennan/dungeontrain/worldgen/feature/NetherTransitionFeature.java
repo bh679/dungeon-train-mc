@@ -111,6 +111,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     private static final int TUNNEL_CLEAR_HEIGHT = 14;
     /** Depth of the surface skin recoloured to netherrack across the crossfade. */
     private static final int SURFACE_SKIN_DEPTH = 4;
+    /** Blocks of obsidian laid under the netherrack skin where it meets the overworld rock beneath. */
+    private static final int OBSIDIAN_UNDERLAY_DEPTH = 1;
     /** Salt for the crossfade rock→netherrack dither (matches the old mountainMaterial dither). */
     private static final long CROSSFADE_DITHER_SALT = 0x9E3779B97F4A7C15L;
     /** Extra Z clearance on each side of the tunnel wall span. */
@@ -143,6 +145,19 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             Heightmap.Types.WORLD_SURFACE_WG);
 
     private static final BlockState NETHERRACK = Blocks.NETHERRACK.defaultBlockState();
+    private static final BlockState OBSIDIAN = Blocks.OBSIDIAN.defaultBlockState();
+    private static final BlockState DEEPSLATE = Blocks.DEEPSLATE.defaultBlockState();
+    /** Stone and the stone ores → their deepslate forms, for the core-ward half of the approach. */
+    private static final java.util.Map<net.minecraft.world.level.block.Block, BlockState> DEEPSLATE_FORMS = java.util.Map.of(
+            Blocks.STONE, DEEPSLATE,
+            Blocks.COAL_ORE, Blocks.DEEPSLATE_COAL_ORE.defaultBlockState(),
+            Blocks.IRON_ORE, Blocks.DEEPSLATE_IRON_ORE.defaultBlockState(),
+            Blocks.COPPER_ORE, Blocks.DEEPSLATE_COPPER_ORE.defaultBlockState(),
+            Blocks.GOLD_ORE, Blocks.DEEPSLATE_GOLD_ORE.defaultBlockState(),
+            Blocks.REDSTONE_ORE, Blocks.DEEPSLATE_REDSTONE_ORE.defaultBlockState(),
+            Blocks.LAPIS_ORE, Blocks.DEEPSLATE_LAPIS_ORE.defaultBlockState(),
+            Blocks.DIAMOND_ORE, Blocks.DEEPSLATE_DIAMOND_ORE.defaultBlockState(),
+            Blocks.EMERALD_ORE, Blocks.DEEPSLATE_EMERALD_ORE.defaultBlockState());
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
     private static final BlockState WATER = Blocks.WATER.defaultBlockState();
 
@@ -264,6 +279,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     // The beach stage exists ONLY where the band emerges from an ocean biome; otherwise it is
                     // SKIPPED — those columns stay natural overworld and the noise mountains pick up after the span.
                     if (inBeachSpan && !oceanEntrance) continue;
+                    // Core-ward half of the approach: the mountain body turns to deepslate behind a wavy front.
+                    // Before the crossfade skin + seams so those land on top of it.
+                    if (!inBeachSpan) {
+                        changed |= deepslateColumn(chunk, dx, dz, worldX, worldZ, minY, worldTop, seed,
+                                cycle.netherCoreGap(wx), DeepslateFront.half(cycle.netherApproachLength()));
+                    }
                     // Pure mountain-stage columns (n == 0, not the beach) are built entirely by the terrain-noise
                     // density wrapper — nothing to post-process here (so grass/trees/structures survive), EXCEPT
                     // the ocean shore-skin below.
@@ -597,7 +618,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * raised terrain at {@code top_layer_modification}) and recolours the top {@link #SURFACE_SKIN_DEPTH}
      * solid blocks where the coherent dither falls under {@code n}; everything below stays natural stone
      * (the one-block face the core looks at is covered separately by {@link #coverCoreFacingFace}).
-     * No {@code MountainNoise}/palette recompute is needed.
+     * No {@code MountainNoise}/palette recompute is needed. Under every netherrack cell that sits on
+     * overworld rock, that rock becomes {@link #OBSIDIAN_UNDERLAY_DEPTH} block(s) of obsidian — a seam
+     * between the red skin and the grey stone that follows the dither exactly.
      *
      * <p>It also <b>drains worldgen water</b> from the column (aquifer pools, springs, surface lakes):
      * the recoloured skin is only the top few blocks, so the mountain body underneath is still overworld
@@ -620,12 +643,45 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             w.set(dx, y, dz, NETHERRACK);
             changed = true;
         }
+        // Obsidian underlay: the rock directly beneath each netherrack skin cell. Scans one block past the
+        // skin floor so the lowest skin row gets its underlay too; stops at anything that isn't overworld
+        // rock (air, fluid, bedrock, track, structures, Nether blocks — and the netherrack itself).
+        for (int y = top; y >= floor; y--) {
+            if (!w.isSame(dx, y, dz, NETHERRACK)) continue;
+            for (int d = 1; d <= OBSIDIAN_UNDERLAY_DEPTH; d++) {
+                int uy = y - d;
+                if (uy < minY || !NetherRockCover.isOverworldRock(w.state(dx, uy, dz))) break;
+                w.set(dx, uy, dz, OBSIDIAN);
+                changed = true;
+            }
+        }
         // Drain any worldgen water in the column. Scan from the motion-blocking surface (the top of any
         // water) down to the build floor; only water cells are cleared, so solid terrain is untouched.
         int waterTop = Math.min(worldTop, chunk.getHeight(Heightmap.Types.MOTION_BLOCKING, dx, dz));
         for (int y = waterTop; y >= minY; y--) {
             if (!w.isWater(dx, y, dz)) continue;
             w.set(dx, y, dz, AIR);
+            changed = true;
+        }
+        return changed;
+    }
+
+    /**
+     * Turn the column's stone (and stone ores) to deepslate where {@link DeepslateFront} says so — the half
+     * of the approach nearer the core, behind a wobbling front. Reads the ocean-floor heightmap top so the
+     * scan stops at the surface; skips the column outright on the far side of the front.
+     */
+    private boolean deepslateColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
+                                    int minY, int worldTop, long seed, int gap, int half) {
+        if (!DeepslateFront.mayApply(gap, half)) return false;
+        int top = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
+        ColumnWriter w = new ColumnWriter(chunk);
+        boolean changed = false;
+        for (int y = top; y >= minY; y--) {
+            BlockState form = DEEPSLATE_FORMS.get(w.state(dx, y, dz).getBlock());
+            if (form == null) continue;
+            if (!DeepslateFront.isDeepslate(seed, gap, half, worldX, y, worldZ)) continue;
+            w.set(dx, y, dz, form);
             changed = true;
         }
         return changed;
@@ -751,40 +807,60 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
     /**
      * The one-block face of the mountain that looks into the real-Nether core. The core carves its caverns
-     * right up to the crossfade, leaving a cliff of overworld rock; repaint just the rock cells that sit
-     * beside an open (air/lava) core cell, so from inside the Nether the wall reads netherrack while the
-     * mountain behind it — and its tunnel — stay stone. Whether a neighbouring core cell is open comes from
+     * right up to the crossfade, leaving a cliff of overworld rock; repaint the rock cells that sit beside
+     * a core cell (open or solid), so from inside the Nether the wall reads netherrack while the mountain
+     * behind it — and its tunnel — stay stone. Whether a neighbouring core cell is open comes from
      * the same {@link NetherCoreGeometry} density {@link NetherCoreStamp} stamps with, so it is exact even
      * across a chunk border (no neighbour-chunk reads).
+     *
+     * <p>One block behind that face — a rock cell whose neighbour toward the core is a non-core band column
+     * and whose next neighbour is an open core cell — becomes <b>obsidian</b>, so the wall into the Nether
+     * reads stone → exactly one obsidian → netherrack. The face wins where a cell qualifies for both.</p>
      */
     private boolean coverCoreFacingFace(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ, long seed,
                                         WorldGenCycle cycle, NetherCoreGeometry coreGeom, boolean endBandActive) {
         List<NetherCoreGeometry.Column> coreSides = new ArrayList<>(SIDES.length);
+        List<NetherCoreGeometry.Column> behindSides = new ArrayList<>(SIDES.length);
         for (int[] side : SIDES) {
             int nx = worldX + side[0];
             int nz = worldZ + side[1];
             int nwx = NetherMountainTerrain.wavyX(seed, nx, nz);
-            if (!cycle.isNetherCore(nwx)) continue;
             if (endBandActive && cycle.endMiddleRamp(nwx) > 0.0) continue;
-            coreSides.add(coreGeom.column(NetherCoreGeometry.sampleX(nwx), nz));
+            if (cycle.isNetherCore(nwx)) {
+                coreSides.add(coreGeom.column(NetherCoreGeometry.sampleX(nwx), nz));
+                continue;
+            }
+            // Two steps out: the neighbour is the (netherrack) face, its neighbour the open core.
+            int nx2 = worldX + 2 * side[0];
+            int nz2 = worldZ + 2 * side[1];
+            int nwx2 = NetherMountainTerrain.wavyX(seed, nx2, nz2);
+            if (!cycle.isNetherCore(nwx2)) continue;
+            if (endBandActive && cycle.endMiddleRamp(nwx2) > 0.0) continue;
+            behindSides.add(coreGeom.column(NetherCoreGeometry.sampleX(nwx2), nz2));
         }
-        if (coreSides.isEmpty()) return false;
+        if (coreSides.isEmpty() && behindSides.isEmpty()) return false;
         ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
         for (int y = coreGeom.minCoreY(); y <= coreGeom.maxCoreY(); y++) {
             if (!NetherRockCover.isOverworldRock(w.state(dx, y, dz))) continue;
-            if (!facesOpenCore(coreSides, y)) continue;
-            w.set(dx, y, dz, NETHERRACK);
-            changed = true;
+            if (facesCore(coreSides, y)) {
+                w.set(dx, y, dz, NETHERRACK);
+                changed = true;
+            } else if (facesCore(behindSides, y)) {
+                w.set(dx, y, dz, OBSIDIAN);
+                changed = true;
+            }
         }
         return changed;
     }
 
-    /** True when any of the neighbouring core columns is open (air or lava) at {@code y}. */
-    private static boolean facesOpenCore(List<NetherCoreGeometry.Column> coreSides, int y) {
+    /**
+     * True when any of the neighbouring core columns has core terrain at {@code y} — open (air/lava) or
+     * solid netherrack alike — so the layered wall is laid along the whole seam, not only its open faces.
+     */
+    private static boolean facesCore(List<NetherCoreGeometry.Column> coreSides, int y) {
         for (NetherCoreGeometry.Column c : coreSides) {
-            double d = c.densityAt(y);
-            if (!Double.isNaN(d) && d <= 0.0) return true;
+            if (!Double.isNaN(c.densityAt(y))) return true;
         }
         return false;
     }

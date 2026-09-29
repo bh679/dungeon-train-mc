@@ -49,6 +49,13 @@ public record LiveColumnProviders(NetherBandContext ctx) implements ColumnBiomeP
                 blockX, ctx.seaLevel(), blockZ);
     }
 
+    /** The column's cave-band top ({@link BandBiomeDecision#caveWindowTop}). */
+    @Override
+    public int caveWindowTop(int blockX, int blockZ) {
+        return BandBiomeDecision.caveWindowTop(ctx.cycle(), ctx.generationSeed(), ctx.seaLevel(), ctx.worldCeiling(),
+                ctx.netherTop(), ctx.baseRelief(), blockX, blockZ);
+    }
+
     /** Per-biome fog/ambient/music + the Nether decoration features' own biome filter pass. */
     @Override
     public Holder<Biome> netherCore(int blockX, int blockZ) {

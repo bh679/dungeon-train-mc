@@ -1,86 +1,55 @@
 package games.brennan.dungeontrain.worldgen;
 
+import net.minecraft.world.level.biome.Biomes;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Unit tests for the pure altitude-zone + region-pick math behind the highland biome override
- * ({@link NetherBandBiomes}). The biome {@code Holder}s themselves need a registry, but the zone
- * boundaries and deterministic in-zone selection are pure and testable.
- */
+/** The cave palettes: the fall side is mostly deep dark in large regions; the rise side never is. */
 final class NetherBandBiomesTest {
 
     @Test
-    @DisplayName("altitude zones: base < 100 ≤ mid < 145 ≤ high < 175 ≤ peak")
-    void zones() {
-        assertEquals(0, NetherBandBiomes.zoneIndex(63), "sea level → base");
-        assertEquals(0, NetherBandBiomes.zoneIndex(99));
-        assertEquals(1, NetherBandBiomes.zoneIndex(100), "MID_Y → mid");
-        assertEquals(1, NetherBandBiomes.zoneIndex(144));
-        assertEquals(2, NetherBandBiomes.zoneIndex(145), "HIGH_Y → high");
-        assertEquals(2, NetherBandBiomes.zoneIndex(174));
-        assertEquals(3, NetherBandBiomes.zoneIndex(175), "PEAK_Y → peak (bare caps)");
-        assertEquals(3, NetherBandBiomes.zoneIndex(319));
-    }
-
-    @Test
-    @DisplayName("every zone has at least one biome and zone indices cover 0..3")
-    void zonesPopulated() {
-        assertEquals(4, NetherBandBiomes.ZONES.size());
-        for (int z = 0; z < 4; z++) {
-            assertTrue(!NetherBandBiomes.ZONES.get(z).isEmpty(), "zone " + z + " must have a biome");
-        }
-    }
-
-    @Test
-    @DisplayName("in-zone pick is always within range and stable across a 64-block region")
-    void pickRangeAndCoherence() {
-        long seed = 0xC0FFEEL;
-        for (int size = 1; size <= 5; size++) {
-            for (int x = -200; x <= 200; x += 7) {
-                for (int z = -200; z <= 200; z += 13) {
-                    int p = NetherBandBiomes.pickWithinZone(seed, x, z, size);
-                    assertTrue(p >= 0 && p < size, "pick out of range: " + p + " size=" + size);
+    @DisplayName("post-core: deep dark covers ~75 % in ≥512-block runs; lush/dripstone fill the rest")
+    void postCoreMostlyDeepDark() {
+        int deepDark = NetherBandBiomes.CAVE_POST.indexOf(Biomes.DEEP_DARK);
+        assertTrue(deepDark >= 0);
+        int total = 0, dark = 0, lush = 0, drip = 0;
+        for (long seed : new long[] {1L, 0xBEEFL, 0x1234_5678L}) {
+            for (int z = 0; z < 512; z += 64) {
+                int runStart = 0; int prev = -1;
+                for (int x = 0; x < 65536; x += 16) {
+                    int pick = NetherBandBiomes.pickCavePost(seed, x, z);
+                    total++;
+                    if (pick == deepDark) dark++;
+                    else if (NetherBandBiomes.CAVE_POST.get(pick) == Biomes.LUSH_CAVES) lush++;
+                    else drip++;
+                    // a deep-dark run, once started, is never shorter than one coarse region
+                    boolean isDark = pick == deepDark;
+                    if (prev == 1 && !isDark) assertTrue(x - runStart >= (1 << NetherBandBiomes.DEEP_DARK_REGION_SHIFT),
+                            "short deep-dark run at x=" + x + " seed=" + seed);
+                    if (!isDark || prev != 1) runStart = x;
+                    prev = isDark ? 1 : 0;
                 }
             }
         }
-        // Coherence: same 64-block region (same x>>6, z>>6) → same pick.
-        assertEquals(NetherBandBiomes.pickWithinZone(seed, 0, 0, 4),
-                NetherBandBiomes.pickWithinZone(seed, 63, 63, 4), "same region should pick the same biome");
+        double share = dark / (double) total;
+        assertTrue(share > 0.65 && share < 0.85, "deep-dark share " + share);
+        assertTrue(lush > 0 && drip > 0, "lush and dripstone must still appear");
     }
 
     @Test
-    @DisplayName("size ≤ 1 always picks index 0 (single-biome zones like snowy_slopes)")
-    void singletonZone() {
-        assertEquals(0, NetherBandBiomes.pickWithinZone(123L, 5000, 0, 1));
-        assertEquals(0, NetherBandBiomes.pickWithinZone(123L, 9999, -42, 1));
-    }
-
-    @Test
-    @DisplayName("different seeds vary the region pick (so worlds differ)")
-    void seedVaries() {
-        boolean differs = false;
-        for (int region = 0; region < 32 && !differs; region++) {
-            int a = NetherBandBiomes.pickWithinZone(1L, region << 6, 0, 4);
-            int b = NetherBandBiomes.pickWithinZone(2L, region << 6, 0, 4);
-            if (a != b) differs = true;
+    @DisplayName("pre-core: never deep dark, both lush and dripstone occur")
+    void preCoreNeverDeepDark() {
+        boolean lush = false, drip = false;
+        for (int x = 0; x < 8192; x += 32) {
+            int pick = NetherBandBiomes.pickCave(7L, x, 40, NetherBandBiomes.CAVE_PRE.size());
+            var b = NetherBandBiomes.CAVE_PRE.get(pick);
+            assertTrue(b != Biomes.DEEP_DARK);
+            lush |= b == Biomes.LUSH_CAVES; drip |= b == Biomes.DRIPSTONE_CAVES;
         }
-        assertTrue(differs, "distinct seeds should produce distinct biome layouts");
-    }
-
-    @Test
-    @DisplayName("the BoP palette shares the vanilla altitude zones, all BoP keys, peaks left to vanilla")
-    void bopZonesMatch() {
-        assertEquals(NetherBandBiomes.ZONES.size(), NetherBandBiomes.BOP_ZONES.size());
-        for (int z = 0; z < 3; z++) {
-            org.junit.jupiter.api.Assertions.assertFalse(NetherBandBiomes.BOP_ZONES.get(z).isEmpty(), "zone " + z);
-            for (var key : NetherBandBiomes.BOP_ZONES.get(z)) {
-                assertEquals("biomesoplenty", key.location().getNamespace());
-            }
-        }
-        org.junit.jupiter.api.Assertions.assertTrue(NetherBandBiomes.BOP_ZONES.get(3).isEmpty());
+        assertTrue(lush && drip);
+        assertEquals(2, NetherBandBiomes.CAVE_PRE.size());
     }
 }
