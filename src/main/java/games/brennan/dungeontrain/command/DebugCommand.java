@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.ship.sable.ColliderBatch;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
 import games.brennan.dungeontrain.ship.sable.PhysicsSubstepTuner;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
@@ -83,6 +84,15 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setPhysicsFreeze(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setPhysicsFreeze(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> physicsFreezeStatus(ctx.getSource()))))
+            // /dungeontrain debug colliderbatch <on|off|status> — toggles ColliderBatch, the
+            // whole-section Sable collider re-upload that replaces per-block updates over a carriage
+            // stamp. `off` restores Sable's per-block path from the next spawnGroup. Drives the Gate 2
+            // matched-toggle A/B: same ride, compare [mspt] avgTickMs= / blockChanges= /
+            // colliderRebuilds= / batchedBlockChanges= in the seconds after each append.
+            .then(Commands.literal("colliderbatch")
+                .then(Commands.literal("on").executes(ctx -> setColliderBatch(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setColliderBatch(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> colliderBatchStatus(ctx.getSource()))))
             // /dungeontrain debug substep-tuner <on|off|status> — toggles the adaptive Sable
             // substepsPerTick tuner (2→1 on a real train, see PhysicsSubstepTuner). `off` restores
             // Sable's baseline next reconcile. Drives the Gate 2 matched-toggle A/B: same ride,
@@ -367,6 +377,20 @@ public final class DebugCommand {
             PhysicsFreezeController.ENABLED ? "ON" : "OFF",
             PhysicsFreezeController.lastResident(), PhysicsFreezeController.lastActive(),
             PhysicsFreezeController.lastFrozen())), false);
+        return 1;
+    }
+
+    private static int setColliderBatch(CommandSourceStack source, boolean on) {
+        ColliderBatch.ENABLED = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Collider-batch " + (on ? "ON" : "OFF — per-block Sable collider updates from the next stamp")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int colliderBatchStatus(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Collider-batch " + (ColliderBatch.ENABLED ? "ON" : "OFF")), false);
         return 1;
     }
 

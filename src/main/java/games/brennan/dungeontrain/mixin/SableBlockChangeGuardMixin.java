@@ -1,18 +1,17 @@
 package games.brennan.dungeontrain.mixin;
 
 import dev.ryanhcode.sable.SableCommonEvents;
-import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
-import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.portal.PortalEditMirror;
 import games.brennan.dungeontrain.ship.sable.CarriagePivotPin;
+import games.brennan.dungeontrain.ship.sable.CarriagePlotResolver;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
+import games.brennan.dungeontrain.train.PlayerPlacedTrainBlocks;
 import games.brennan.dungeontrain.train.SharedCarriageChangeFilter;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.UUID;
 
 /**
- * Three hooks on Sable's per-block-change entry point {@code SableCommonEvents.handleBlockChange} —
+ * Hooks on Sable's per-block-change entry point {@code SableCommonEvents.handleBlockChange} —
  * the single point Sable's {@code plot.LevelChunkMixin} (on {@code LevelChunk.setBlockState}) calls
  * for every block change in a sub-level.
  *
@@ -46,6 +45,9 @@ import java.util.UUID;
  *       {@link SharedCarriageChangeFilter}'s call — it excludes breaking a loot container (so ordinary
  *       looting never dirties a carriage) and transient property flips (a plate powering, a door
  *       swinging), which otherwise upload a delta every ~1.5&nbsp;s while a player walks around.</li>
+ *   <li><b>Player-block unmark (TAIL)</b> — a change of block type ends a player-added block's
+ *       claim on its cell ({@link PlayerPlacedTrainBlocks}); whatever fills the cell next is judged
+ *       afresh, and a player's own placement re-marks it when its place event fires.</li>
  * </ol>
  *
  * <p>{@code remap = false}: {@code SableCommonEvents} and {@code handleBlockChange} are Sable's own
@@ -73,12 +75,9 @@ public abstract class SableBlockChangeGuardMixin {
         if (WorldgenForceGuard.isActive()) return;
         // Resolve the sub-level this chunk belongs to. A null chunk-holder means an ordinary world
         // chunk (not a carriage) — the overwhelming majority of block changes short-circuit here.
-        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
-        if (container == null) return;
-        ChunkPos cpos = chunk.getPos();
-        if (container.getChunkHolder(cpos) == null) return;
-        LevelPlot plot = container.getPlot(cpos);
-        if (plot == null || !(plot.getSubLevel() instanceof ServerSubLevel serverSub)) return;
+        ServerSubLevel serverSub = CarriagePlotResolver.subLevelAt(level, chunk.getPos());
+        if (serverSub == null) return;
+        LevelPlot plot = serverSub.getPlot();
 
         // Undo the centre-of-mass shift the call we just tailed applied to this sub-level's pivot.
         //
@@ -89,6 +88,10 @@ public abstract class SableBlockChangeGuardMixin {
         // SharedCarriageChangeFilter deliberately excludes breaking a loot container — both of which
         // move the centre of mass just as much as any other block removal.
         CarriagePivotPin.repinAfterMassChange(serverSub);
+
+        // A player-added block that is broken or replaced — by anything — stops being the player's.
+        // Runs before the place event of a player's own placement, which then re-marks the cell.
+        PlayerPlacedTrainBlocks.onBlockChanged(serverSub, x, y, z, oldState.getBlock() != newState.getBlock());
 
         // Hallway portal: a corridor and its twin must stay block-for-block identical or the crossing
         // becomes visible, so any edit inside a portal carriage is copied to its twin. Placed on
