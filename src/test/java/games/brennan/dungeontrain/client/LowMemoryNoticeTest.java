@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.client.version.LauncherDetector.Launcher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -52,6 +53,19 @@ class LowMemoryNoticeTest {
         assertTrue(LowMemoryNotice.shouldWarn(4 * GIB, 15 * GIB / 2));
         assertTrue(LowMemoryNotice.shouldWarn(4 * GIB, (long) (7.8 * GIB)));
         assertFalse(LowMemoryNotice.shouldWarn(4 * GIB, 15 * GIB / 2 - 1));
+    }
+
+    @Test
+    @DisplayName("Each launcher links to its own wiki page; an unknown one gets the hub")
+    void howToUrl_perLauncher() {
+        String base = "https://github.com/bh679/dungeon-train-mc/wiki/Memory";
+        assertEquals(base + "-CurseForge", LowMemoryNotice.howToUrl(Launcher.CURSEFORGE));
+        assertEquals(base + "-Modrinth-App", LowMemoryNotice.howToUrl(Launcher.MODRINTH));
+        assertEquals(base + "-Minecraft-Launcher", LowMemoryNotice.howToUrl(Launcher.MINECRAFT_LAUNCHER));
+        assertEquals(base + "-Prism-Launcher", LowMemoryNotice.howToUrl(Launcher.PRISM));
+        assertEquals(base + "-MultiMC", LowMemoryNotice.howToUrl(Launcher.MULTIMC));
+        assertEquals(base + "-ATLauncher", LowMemoryNotice.howToUrl(Launcher.ATLAUNCHER));
+        assertEquals(base, LowMemoryNotice.howToUrl(Launcher.UNKNOWN));
     }
 
     @Test

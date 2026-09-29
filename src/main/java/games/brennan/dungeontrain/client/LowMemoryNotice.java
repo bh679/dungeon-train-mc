@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.version.LauncherDetector;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.util.MachineSpecs;
 import net.minecraft.ChatFormatting;
@@ -64,8 +65,8 @@ public final class LowMemoryNotice {
      */
     static final long MIN_PHYSICAL_BYTES = 15L * GIB / 2;
 
-    static final String HOW_TO_URL =
-        "https://github.com/bh679/dungeon-train-mc/wiki/Installation#allocating-memory";
+    /** Wiki hub page: why 6 GB, and a link to every launcher's own page. */
+    static final String WIKI_MEMORY = "https://github.com/bh679/dungeon-train-mc/wiki/Memory";
 
     static final String COMMAND = "dt-memory-notice";
 
@@ -90,6 +91,28 @@ public final class LowMemoryNotice {
     static boolean shouldWarn(long maxHeapBytes, long physicalBytes) {
         if (maxHeapBytes <= 0 || physicalBytes <= 0) return false;
         return maxHeapBytes < WARN_BELOW_HEAP_BYTES && physicalBytes >= MIN_PHYSICAL_BYTES;
+    }
+
+    /**
+     * The wiki page that walks a player of {@code launcher} through raising the memory — one page per
+     * launcher, because each hides the setting somewhere different. Unknown launchers get the hub page,
+     * which lists them all.
+     */
+    static String howToUrl(LauncherDetector.Launcher launcher) {
+        return switch (launcher) {
+            case CURSEFORGE -> WIKI_MEMORY + "-CurseForge";
+            case MODRINTH -> WIKI_MEMORY + "-Modrinth-App";
+            case MINECRAFT_LAUNCHER -> WIKI_MEMORY + "-Minecraft-Launcher";
+            case PRISM -> WIKI_MEMORY + "-Prism-Launcher";
+            case MULTIMC -> WIKI_MEMORY + "-MultiMC";
+            case ATLAUNCHER -> WIKI_MEMORY + "-ATLauncher";
+            case UNKNOWN -> WIKI_MEMORY;
+        };
+    }
+
+    /** {@link #howToUrl(LauncherDetector.Launcher)} for the launcher this game was started from. */
+    static String howToUrl() {
+        return howToUrl(LauncherDetector.launcher());
     }
 
     /** Heap size as the player would say it — {@code "4"} for 4 GiB, {@code "3.5"} otherwise. */
@@ -142,10 +165,11 @@ public final class LowMemoryNotice {
     }
 
     private static Component message(long heapBytes) {
+        String url = howToUrl();
         MutableComponent how = Component.translatable("chat.dungeontrain.low_memory_notice.link")
             .withStyle(s -> s.withColor(ChatFormatting.AQUA).withUnderlined(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, HOW_TO_URL))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(HOW_TO_URL))));
+                .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(url))));
         MutableComponent dismiss = Component.translatable("chat.dungeontrain.low_memory_notice.dismiss")
             .withStyle(s -> s.withColor(ChatFormatting.GRAY).withUnderlined(true)
                 .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + COMMAND + " off")));

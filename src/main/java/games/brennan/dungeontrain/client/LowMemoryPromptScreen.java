@@ -117,12 +117,13 @@ public final class LowMemoryPromptScreen extends Screen {
                 .build());
     }
 
-    /** Vanilla's "open this link?" confirmation, returning to this card either way. */
+    /** The player's own launcher's wiki page, behind vanilla's "open this link?" confirmation. */
     private void openHowTo() {
+        String url = LowMemoryNotice.howToUrl();
         this.minecraft.setScreen(new ConfirmLinkScreen(yes -> {
-            if (yes) Util.getPlatform().openUri(URI.create(LowMemoryNotice.HOW_TO_URL));
+            if (yes) Util.getPlatform().openUri(URI.create(url));
             this.minecraft.setScreen(this);
-        }, LowMemoryNotice.HOW_TO_URL, true));
+        }, url, true));
     }
 
     /** Close, optionally turning the low-memory warning off for good. */
