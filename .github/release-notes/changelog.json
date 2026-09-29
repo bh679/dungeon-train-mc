@@ -21081,6 +21081,23 @@
       "released": true,
       "released_in": "v0.1046.0",
       "released_at": "2026-09-29T19:23:06Z"
+    },
+    {
+      "id": "backward-dimensional-carriage-spacing",
+      "version": "0.1047.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriages on the way back",
+      "summary": "Riding the train backwards, dimensional carriages now turn up no more often than they do going forwards.",
+      "highlights": [],
+      "pr": 1686,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
