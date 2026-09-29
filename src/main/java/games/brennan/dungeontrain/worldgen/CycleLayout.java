@@ -32,7 +32,9 @@ import java.util.function.Consumer;
  * {@code slot[:style][:length]} tokens — {@code ow}, {@code nether}, {@code end}, {@code upside_down}
  * ({@code :core:reassembly}), {@code chuncks}, {@code spheres}, {@code stacks}, {@code mix}, and {@code legacy}
  * ({@code :kind=core} per era, run in the order written, or bare for every enabled era at its configured
- * length in declaration order). A band whose
+ * length in declaration order). A style may be {@code first>later} (one look on the first run, another
+ * after), and a Nether's first look may be a split {@code a=N+b} — look {@code a} for the first {@code N}
+ * core blocks of the first run, then {@code b} ({@code nether:vanilla=1000+bop>bop}); {@code a=N~M+b} mixes the two looks over {@code M} blocks between. A band whose
  * config flag is off is dropped from the layout wherever the order names it.</p>
  */
 public final class CycleLayout {
@@ -55,12 +57,32 @@ public final class CycleLayout {
      * upside-down slot's Reassembly (exit-fade) length, or {@code -1} for the cycle's default.
      * {@code style} is the look on the first run; {@code laterStyle} the look on every run after it
      * (the same unless the order wrote {@code first>later}, e.g. {@code nether:vanilla>bop}).
+     * {@code splitAt} / {@code splitBlend} / {@code splitStyle}: on the first run only, the core wears
+     * {@code style} for its first {@code splitAt} blocks, mixes the two looks over the next {@code splitBlend}
+     * blocks, then wears {@code splitStyle} ({@code nether:vanilla=1000~400+bop>bop}); {@code -1} / {@code 0} /
+     * {@code null} for no split.
      */
-    public record Slot(Type type, Style style, int core, int extra, Style laterStyle) {
+    public record Slot(Type type, Style style, int core, int extra, Style laterStyle,
+                       int splitAt, int splitBlend, Style splitStyle) {
+
+        /** A slot without a first-run split. */
+        public Slot(Type type, Style style, int core, int extra, Style laterStyle) {
+            this(type, style, core, extra, laterStyle, -1, 0, null);
+        }
+
+        /** A slot with a hard-edged first-run split (no mix). */
+        public Slot(Type type, Style style, int core, int extra, Style laterStyle, int splitAt, Style splitStyle) {
+            this(type, style, core, extra, laterStyle, splitAt, 0, splitStyle);
+        }
 
         /** A slot with the same look on every run. */
         public Slot(Type type, Style style, int core, int extra) {
             this(type, style, core, extra, style);
+        }
+
+        /** True when the first run switches look partway through the core. */
+        public boolean hasSplit() {
+            return splitAt >= 0 && splitStyle != null;
         }
 
         /** The look on doubling run {@code run}: {@link #style} on run 0, {@link #laterStyle} after. */
@@ -80,8 +102,8 @@ public final class CycleLayout {
     /**
      * The default order: the layout {@code build()} uses when the key is blank.
      * <ul>
-     *   <li>Lap 1: overworld → Nether (vanilla on the first cycle, vanilla + Biomes O' Plenty after:
-     *       {@code vanilla>bop}) → WWOO overworld → one End band whose first 1200 blocks are vanilla and last 2000
+     *   <li>Lap 1: overworld → Nether (on the first cycle 1000 core blocks of vanilla, then Biomes O' Plenty;
+     *       all Biomes O' Plenty after: {@code vanilla=1000~400+bop>bop} — 1000 vanilla, 400 mixed, 1350 BoP) → WWOO overworld → one End band whose first 1200 blocks are vanilla and last 2000
      *       Biomes O' Plenty (two joined End slots) → upside-down + Reassembly.</li>
      *   <li>Lap 2: BoP overworld → BetterNether → Lost City (its own legacy run, wearing WWOO decoration; its
      *       buildings start on the Nether's exit mountains — {@link #legacyLeadIn}) → BetterEnd.</li>
@@ -89,9 +111,9 @@ public final class CycleLayout {
      * </ul>
      */
     public static final String DEFAULT_ORDER =
-            "ow:2750, nether:vanilla>bop:3000, ow:wwoo:4500, end:vanilla:1200, end:bop:2000, upside_down:2500:5000, "
-            + "ow:bop:8000, nether:better:8000, legacy:wwoo:lost_city=4000, end:better:8000, spheres:6550, ow:sunk:500, "
-            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            "ow:2750, nether:vanilla=1000~400+bop>bop:2750, ow:wwoo:3250, end:vanilla:1200, end:bop:2000, upside_down:2500:3000, "
+            + "ow:bop:4500, nether:better:4500, legacy:wwoo:lost_city=3000, end:better:5000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=4000:beta=2500:far_lands=4320:caves_of_chaos=3500:skylands=4000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:650, chuncks:2000, mix:4000, stacks:5000";
 
     private final Slot[] slots;
@@ -158,19 +180,28 @@ public final class CycleLayout {
             int core = -1;
             int extra = -1;
             Style later = null;
+            int splitAt = -1;
+            int splitBlend = 0;
+            Style splitStyle = null;
             for (int i = 1; i < parts.length; i++) {
                 String arg = parts[i].trim().toLowerCase(Locale.ROOT);
                 int gt = arg.indexOf('>');
-                if (gt >= 0) {
-                    // first>later: one look on the first run, another on every run after it
-                    Style first = styleOf(arg.substring(0, gt).trim());
-                    Style after = styleOf(arg.substring(gt + 1).trim());
-                    if (first == null || after == null) {
+                if (gt >= 0 || arg.indexOf('+') >= 0) {
+                    // first>later: one look on the first run, another on every run after it;
+                    // the first may be a split a=N+b (look a for N core blocks, then b)
+                    String firstArg = gt >= 0 ? arg.substring(0, gt).trim() : arg;
+                    Split split = parseSplit(firstArg);
+                    Style first = split != null ? split.first() : styleOf(firstArg);
+                    Style after = gt >= 0 ? styleOf(arg.substring(gt + 1).trim()) : null;
+                    if (first == null || (gt >= 0 && after == null) || (gt < 0 && split == null)) {
                         warn.accept("bad style switch '" + arg + "' on '" + token + "'");
                         continue;
                     }
                     style = first;
                     later = after;
+                    splitAt = split != null ? split.at() : -1;
+                    splitBlend = split != null ? split.blend() : 0;
+                    splitStyle = split != null ? split.then() : null;
                     continue;
                 }
                 Style s = styleOf(arg);
@@ -192,11 +223,43 @@ public final class CycleLayout {
                 continue;
             }
             if (core == 0 && type != Type.OVERWORLD) continue;    // a zero-length band is just dropped
-            slots.add(new Slot(type, style, core, extra, later == null ? style : later));
+            if (splitAt >= 0 && type != Type.NETHER) {
+                warn.accept("style split on '" + token + "' only applies to Nether slots; ignored");
+                splitAt = -1;
+                splitBlend = 0;
+                splitStyle = null;
+            }
+            Style afterRun0 = later != null ? later : splitStyle != null ? splitStyle : style;
+            slots.add(new Slot(type, style, core, extra, afterRun0, splitAt, splitBlend, splitStyle));
             eras.add(NO_ERAS);
         }
         if (slots.isEmpty()) return null;
         return new CycleLayout(slots.toArray(new Slot[0]), eras.toArray(new LegacySpan[0][]), fades);
+    }
+
+    /**
+     * A parsed {@code a=N~M+b} first-run split: look {@code first} for {@code at} core blocks, the two
+     * looks mixed over the next {@code blend} ({@code 0} when {@code ~M} is omitted), then {@code then}.
+     */
+    private record Split(Style first, int at, int blend, Style then) {}
+
+    /** Parse {@code a=N+b} or {@code a=N~M+b}; {@code null} when {@code arg} is not a well-formed split. */
+    private static Split parseSplit(String arg) {
+        int eq = arg.indexOf('=');
+        int plus = arg.indexOf('+');
+        if (eq <= 0 || plus <= eq) return null;
+        Style first = styleOf(arg.substring(0, eq).trim());
+        Style then = styleOf(arg.substring(plus + 1).trim());
+        if (first == null || then == null) return null;
+        String lengths = arg.substring(eq + 1, plus).trim();
+        int tilde = lengths.indexOf('~');
+        try {
+            int at = Integer.parseInt((tilde < 0 ? lengths : lengths.substring(0, tilde)).trim());
+            int blend = tilde < 0 ? 0 : Integer.parseInt(lengths.substring(tilde + 1).trim());
+            return at < 0 || blend < 0 ? null : new Split(first, at, blend, then);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private static final LegacySpan[] NO_ERAS = new LegacySpan[0];
@@ -322,13 +385,22 @@ public final class CycleLayout {
             case OVERWORLD -> Math.max(0, s.core());
             case NETHER -> NetherTransition.bandLength(fades.riseLen(), fades.megaHold(), fades.coreFade(), s.core());
             case END -> endPieceLength(i);
-            case UPSIDE_DOWN -> 2L * Math.max(0, fades.udFade()) + s.core() + udReassembly(s) + Math.max(0, fades.udExit());
+            case UPSIDE_DOWN -> Math.max(0, fades.udFade()) + s.core() + udTrailingFade(s) + udReassembly(s)
+                    + Math.max(0, fades.udExit());
             case CHUNCKS -> Math.max(0, fades.chuncksFade()) + s.core();
             case SPHERES -> Math.max(0, fades.spheresFade()) + s.core();
             case STACKS -> Math.max(0, fades.stacksFade()) + s.core();
             case LEGACY_RUN -> legacyRunLength(i);
             case MIX -> Math.max(0, s.core());
         };
+    }
+
+    /**
+     * The upside-down slot's trailing atmosphere fade: none when a Reassembly follows (the core runs
+     * straight into it — the Reassembly carries the fade-out), {@code udFade} when it doesn't.
+     */
+    public long udTrailingFade(Slot s) {
+        return udReassembly(s) > 0L ? 0L : Math.max(0, fades.udFade());
     }
 
     /** The upside-down slot's Reassembly (exit crossfade) length — its own, or the cycle default. */
@@ -365,6 +437,14 @@ public final class CycleLayout {
         LegacySpan[] run = eras[slot];
         if (run.length == 0 || !run[0].kind().usesVanillaTerrain()) return 0L;
         return Math.min(lens[slot - 1], (long) Math.max(0, fades.megaHold()) + Math.max(0, fades.riseLen()));
+    }
+
+    /**
+     * Base offset, within the cycle, where Nether slot {@code i}'s real-Nether core begins: past its beach,
+     * mountain stages, plateau and rock → netherrack crossfade ({@link NetherTransition#bandLength}'s layout).
+     */
+    public long netherCoreStart(int i) {
+        return starts[i] + Math.max(0, fades.riseLen()) + Math.max(0, fades.megaHold()) + Math.max(0, fades.coreFade());
     }
 
     /** {@code Σ fadeBefore(e) + Σcore}: each era's own entry fade / crossfade, the cores, then the exit fade. */

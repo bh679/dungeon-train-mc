@@ -13,8 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * erosion weighting. No NeoForge bootstrap.
  *
  * <p>Fixture (same as {@code WorldGenCycleTest}'s exit-crossfade case): entry lead [2900,2940), band
- * [2940,3240), exit crossfade [3240,4040) → the mirrored stretch is [2900,4040); the next repeat's lead
- * starts at 6090.</p>
+ * [2940,3190) (entry fade + core — no trailing fade before the crossfade), exit crossfade [3190,3990) →
+ * the mirrored stretch is [2900,3990); the next repeat's lead starts at 6040.</p>
  */
 final class UpsideDownTrackFlattenTest {
 
@@ -22,7 +22,7 @@ final class UpsideDownTrackFlattenTest {
     private static final WorldGenCycle E =
             new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 50, 200, 150, 800, 0);
     private static final int STRETCH_START = 2900;
-    private static final int STRETCH_END = 4040;   // exclusive
+    private static final int STRETCH_END = 3990;   // exclusive
 
     @Test
     @DisplayName("stretch membership covers lead, band and exit crossfade — nothing either side")

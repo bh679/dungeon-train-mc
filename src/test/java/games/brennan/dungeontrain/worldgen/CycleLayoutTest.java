@@ -41,12 +41,12 @@ final class CycleLayoutTest {
     void shippedGeometry() {
         CycleLayout l = shipped();
         assertEquals(17, l.count());
-        // Lap 1: 2750 + (232+300+3000+300+232) + 4500 (WWOO) + joined End (740+1200 | 2000+740)
-        //        + (600+2500+600+5000+600) = 25,294
-        // Lap 2: 8000 (BoP) + 9064 + Lost City (480+4000+480) + 9480 + (750+6550) + 500 (the sunk approach) = 39,304
-        // Lap 3: legacy (480·12 + 5000 + 3500 + 4320 + 4000 + 5000 + 2000·4 + 1000 + 200 = 36,780)
-        //        + 650 + (1500+2000) + 4000 (the mix zone) + 6500 = 51,430
-        assertEquals(116_028L, l.period());
+        // Lap 1: 2750 + 3814 (a 2750-core Nether) + 3250 (WWOO) + joined End (740+1200 | 2000+740)
+        //        + (600+2500+3000+600) = 21,194 — no trailing fade: the core runs straight into the Reassembly
+        // Lap 2: 4500 (BoP) + 5564 + Lost City (480+3000+480) + 6480 + (750+6550) + 500 (the sunk approach) = 28,304
+        // Lap 3: legacy (480·12 + 4000 + 2500 + 4320 + 3500 + 4000 + 2000·4 + 1000 + 200 = 33,280)
+        //        + 650 + (1500+2000) + 4000 (the mix zone) + 6500 = 47,930
+        assertEquals(97_428L, l.period());
         assertEquals(2, l.typeCount(Type.NETHER));
         assertEquals(3, l.typeCount(Type.END));
         assertEquals(2, l.typeCount(Type.LEGACY_RUN));
@@ -54,20 +54,29 @@ final class CycleLayoutTest {
         // Lap-1 starts
         assertEquals(0L, l.start(0));
         assertEquals(2750L, l.start(1));                        // Nether
-        assertEquals(2750L + 4064L, l.start(2));                // WWOO after the Nether
+        assertEquals(3814L, l.length(1));
+        assertEquals(2750L + 3814L, l.start(2));                // WWOO after the Nether
         assertEquals(Style.WWOO, l.slot(2).style());
-        assertEquals(4500L, l.length(2));
-        assertEquals(11_314L, l.start(3));                      // End (vanilla piece)
-        assertEquals(11_314L + 1940L, l.start(4));              // End (BoP piece) — no fade between them
-        assertEquals(13_254L + 2740L, l.start(5));              // Upside-down
-        assertEquals(25_294L, l.start(6));                      // OW·BoP opens lap 2
+        assertEquals(3250L, l.length(2));
+        assertEquals(9_814L, l.start(3));                       // End (vanilla piece)
+        assertEquals(9_814L + 1940L, l.start(4));               // End (BoP piece) — no fade between them
+        assertEquals(11_754L + 2740L, l.start(5));              // Upside-down
+        assertEquals(6_700L, l.length(5));                      // 600 entry fade + 2500 core + 3000 Reassembly + 600 exit
+        assertEquals(0L, l.udTrailingFade(l.slot(5)));          // no trailing fade before a Reassembly
+        assertEquals(21_194L, l.start(6));                     // OW·BoP opens lap 2
         assertEquals(Style.BOP, l.slot(6).style());
         assertEquals(Style.BETTER, l.slot(7).style());
         assertEquals(Type.LEGACY_RUN, l.slot(8).type());        // Lost City, its own run
         assertEquals(Style.BETTER, l.slot(9).style());
-        // Lap 1's Nether: vanilla on the first run, Biomes O' Plenty on every run after.
+        // Lap 1's Nether: vanilla for its first 1000 core blocks on the first run, then Biomes O' Plenty;
+        // Biomes O' Plenty on every run after.
         assertEquals(Style.VANILLA, l.slot(1).styleOnRun(0));
+        assertTrue(l.slot(1).hasSplit());
+        assertEquals(1000, l.slot(1).splitAt());
+        assertEquals(Style.BOP, l.slot(1).splitStyle());
         assertEquals(Style.BOP, l.slot(1).styleOnRun(1));
+        assertEquals(2750L + 232L + 300L, l.netherCoreStart(1));    // past the beach + mountain rise and the core fade
+        assertFalse(l.slot(7).hasSplit());
         // Lap 1's End: vanilla then BoP on every run.
         assertEquals(Style.VANILLA, l.slot(3).styleOnRun(0));
         assertEquals(Style.VANILLA, l.slot(3).styleOnRun(2));
@@ -77,7 +86,7 @@ final class CycleLayoutTest {
         assertEquals(Style.BETTER, l.slot(7).styleOnRun(1));              // Lap 2 is the same every run
         assertEquals(Type.SPHERES, l.slot(10).type());
         assertEquals(Type.LEGACY_RUN, l.slot(12).type());
-        assertEquals(25_294L + 39_304L, l.start(12));
+        assertEquals(21_194L + 28_304L, l.start(12));
         assertEquals(Style.SUNK, l.slot(11).style());            // the short approach into Amplified
         assertEquals(Type.MIX, l.slot(15).type());
         assertEquals(4000L, l.length(15));                      // hard-edged: no fades
@@ -103,8 +112,8 @@ final class CycleLayoutTest {
         // A lone End is untouched.
         assertEquals(9, l.endGroupFirst(9));
         assertEquals(1, l.endGroupSize(9));
-        assertEquals(8000, l.endGroupCore(9));
-        assertEquals(Disintegration.bandLength(120, 500, 8000), l.length(9));
+        assertEquals(5000, l.endGroupCore(9));
+        assertEquals(Disintegration.bandLength(120, 500, 5000), l.length(9));
         // Three in a row: only the ends carry fades.
         CycleLayout three = CycleLayout.parse("end:100, end:200, end:300", FADES, eraDefaults(), t -> true, m -> {});
         assertEquals(740L + 100L, three.length(0));
@@ -120,8 +129,8 @@ final class CycleLayoutTest {
         LegacySpan[] lost = l.eras(8);
         assertEquals(1, lost.length);
         assertEquals(LegacyBandKind.LOST_CITY, lost[0].kind());
-        assertEquals(4000, lost[0].hold());
-        assertEquals(480L + 4000L + 480L, l.length(8));
+        assertEquals(3000, lost[0].hold());
+        assertEquals(480L + 3000L + 480L, l.length(8));
         assertEquals(8, l.legacySlotOf(LegacyBandKind.LOST_CITY));
         assertEquals(0, l.eraIndex(LegacyBandKind.LOST_CITY));
 
@@ -132,16 +141,16 @@ final class CycleLayoutTest {
                         LegacyBandKind.CAVES_OF_CHAOS, LegacyBandKind.SKYLANDS, LegacyBandKind.FLOATING, LegacyBandKind.ALPHA,
                         LegacyBandKind.INFDEV, LegacyBandKind.CLASSIC, LegacyBandKind.SUPERFLAT, LegacyBandKind.VOID},
                 java.util.Arrays.stream(eras).map(LegacySpan::kind).toArray(LegacyBandKind[]::new));
-        assertEquals(5000, eras[0].hold());
-        assertEquals(3500, eras[1].hold());
+        assertEquals(4000, eras[0].hold());
+        assertEquals(2500, eras[1].hold());
         assertEquals(4320, eras[2].hold());
-        assertEquals(4000, eras[3].hold());
+        assertEquals(3500, eras[3].hold());
         assertEquals(1000, eras[9].hold());
         assertEquals(200, eras[10].hold());
         assertEquals(480L, l.eraCoreStart(12, 0));
-        assertEquals(480L + 5000L + 480L, l.eraCoreStart(12, 1));
-        assertEquals(480L + 5000L + 480L + 3500L + 480L, l.eraCoreStart(12, 2));
-        long total = 480L * 12 + 5000 + 3500 + 4320 + 4000 + 5000 + 2000 * 4 + 1000 + 200;
+        assertEquals(480L + 4000L + 480L, l.eraCoreStart(12, 1));
+        assertEquals(480L + 4000L + 480L + 2500L + 480L, l.eraCoreStart(12, 2));
+        long total = 480L * 12 + 4000 + 2500 + 4320 + 3500 + 4000 + 2000 * 4 + 1000 + 200;
         assertEquals(total, l.length(12));
         assertEquals(12, l.legacySlotOf(LegacyBandKind.BETA));
         assertEquals(1, l.eraIndex(LegacyBandKind.BETA));
@@ -153,7 +162,7 @@ final class CycleLayoutTest {
     @DisplayName("a legacy run can wear a look; a vanilla-terrain run after a Nether leads in over its exit mountains")
     void legacyStyleAndLeadIn() {
         CycleLayout l = shipped();
-        assertEquals(Style.WWOO, l.slot(8).style());                 // legacy:wwoo:lost_city=4000
+        assertEquals(Style.WWOO, l.slot(8).style());                 // legacy:wwoo:lost_city=3000
         assertEquals(1, l.eras(8).length);
         assertEquals(Style.VANILLA, l.slot(12).style());
         assertEquals(232L, l.legacyLeadIn(8));                       // megaHold 0 + rise 232
@@ -267,8 +276,8 @@ final class CycleLayoutTest {
         CycleLayout l = shipped();
         assertTrue(l.anyOfTypeIn(Type.NETHER, 2740L, 2760L));
         assertFalse(l.anyOfTypeIn(Type.NETHER, 0L, 2749L));
-        assertFalse(l.anyOfTypeIn(Type.END, 0L, 11_313L));
-        assertTrue(l.anyOfTypeIn(Type.END, 11_313L, 11_314L));
+        assertFalse(l.anyOfTypeIn(Type.END, 0L, 9_813L));
+        assertTrue(l.anyOfTypeIn(Type.END, 9_813L, 9_814L));
         // Spheres (slot 10) follows BetterEnd directly: approach starts at its own slot.
         assertEquals(l.start(10), l.approachStart(10));
         // Chuncks (slot 14) sits after an OW gap that follows the legacy run: approach starts at the run's end.

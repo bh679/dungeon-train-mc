@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.command;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.worldgen.CycleLayout;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.BetterNetherCoreBiomes;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
@@ -62,17 +63,24 @@ final class NetherPassesDebug {
         Set<String> seen = new LinkedHashSet<>();
         for (long x = coreMin; x <= coreMax; x += BIOME_SAMPLE_STEP) {
             int ix = (int) x;
-            biomes.biomeAt(ix, 0, cycle.netherLookAt(ix)).unwrapKey()
+            biomes.biomeAt(ix, 0, cycle.netherLookAt(ix, 0, biomes.seed())).unwrapKey()
                     .ifPresent(k -> seen.add(k.location().toString()));
         }
-        String kind = switch (cycle.netherStyleOfPass(pass)) {
+        // a first-run split pass (nether:vanilla=1000~400+bop) wears one look at each end of its core
+        String kindIn = kindOf(cycle.netherLookAt((int) coreMin), biomes);
+        String kindOut = kindOf(cycle.netherLookAt((int) coreMax), biomes);
+        String kind = kindIn.equals(kindOut) ? kindIn : kindIn + "→" + kindOut;
+        return "  pass " + pass + " (" + kind + "): core x=" + coreMin + ".." + coreMax
+                + " centre=" + ((coreMin + coreMax) / 2) + " biomes=" + seen
+                + " | " + describeEndCore(cycle, bandEnd, bandStart - Math.max(0, cycle.owGap()) + cycle.period());
+    }
+
+    private static String kindOf(CycleLayout.Style style, NetherCoreBiomes biomes) {
+        return switch (style) {
             case BETTER -> biomes.hasBetterNether() ? "BetterNether" : "vanilla";
             case BOP -> biomes.hasBopNether() ? "BoP" : "vanilla";
             default -> "vanilla";
         };
-        return "  pass " + pass + " (" + kind + "): core x=" + coreMin + ".." + coreMax
-                + " centre=" + ((coreMin + coreMax) / 2) + " biomes=" + seen
-                + " | " + describeEndCore(cycle, bandEnd, bandStart - Math.max(0, cycle.owGap()) + cycle.period());
     }
 
     /** The End core's X range between the Nether band's end and the end of this cycle repeat. */

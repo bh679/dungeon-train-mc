@@ -158,7 +158,7 @@ public final class NetherCoreStamp {
     /** The real-Nether biome KEY for a core column (drives the per-biome surface skin); nether_wastes fallback. */
     static ResourceKey<Biome> coreBiomeKeyAt(NetherBandContext bandCtx, int worldX, int worldZ) {
         if (bandCtx == null || bandCtx.netherCoreBiomes() == null) return Biomes.NETHER_WASTES;
-        return bandCtx.netherCoreBiomes().biomeAt(worldX, worldZ, bandCtx.cycle().netherLookAt(worldX))
+        return bandCtx.netherCoreBiomes().biomeAt(worldX, worldZ, bandCtx.cycle().netherLookAt(worldX, worldZ, bandCtx.netherCoreBiomes().seed()))
                 .unwrapKey().orElse(Biomes.NETHER_WASTES);
     }
 
