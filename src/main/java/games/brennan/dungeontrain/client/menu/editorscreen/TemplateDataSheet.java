@@ -174,10 +174,8 @@ public final class TemplateDataSheet {
         out.add(blocksLine(summary, pending));
         out.add(lightsLine(summary, pending));
         out.add(lootLine(summary, pending));
-        out.add(weightLine(tile, key, pending));
+        out.add(withGroupsCell(weightLine(tile, key, pending), v, key));
         out.addAll(stageLines(v, key, pending));
-        Line groups = groupsLine(v, key);
-        if (groups != null) out.add(groups);
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SOURCE), sourceLabel(provenance)));
         return out;
     }
@@ -445,17 +443,25 @@ public final class TemplateDataSheet {
     }
 
     /**
-     * {@code Groups  stone, brick}: which tunnel groups this section / entrance belongs to — a tunnel
-     * builds entrance to exit from one group — opening the multi-select picker. Null for anything
-     * that is not a tunnel template.
+     * {@code weight} with a {@code · stone +1} groups cell appended for a tunnel section / entrance —
+     * which tunnel groups it belongs to (a tunnel builds entrance to exit from one group), opening
+     * the multi-select picker. Rides on the Weight line rather than a line of its own because the
+     * sheet drops whatever does not fit the pane's height, and the lines below Weight are the first
+     * to go. Any other template's weight line is returned unchanged.
      */
-    static Line groupsLine(EditorTypeMenusPacket.Variant v, VariantKey key) {
-        if (key == null || key.isSubVariant() || !TunnelGroupPickerScreen.groupable(key.modelId())) return null;
-        String shown = v.groupIds().isEmpty() ? "none" : String.join(", ", v.groupIds());
-        Cell cell = new Cell(shown, new Action.Open(
-            new TunnelGroupPickerScreen(key.modelId(), v.name(), v.groupIds())), !v.groupIds().isEmpty())
-            .withTooltip("A tunnel builds every section and entrance from one group. Click to choose.");
-        return new Line("Groups", List.of(cell));
+    static Line withGroupsCell(Line weight, EditorTypeMenusPacket.Variant v, VariantKey key) {
+        if (key == null || key.isSubVariant() || !TunnelGroupPickerScreen.groupable(key.modelId())) return weight;
+        // Short on purpose — the sheet drops a cell that runs past the pane's edge, and the full list
+        // is in the tooltip.
+        Cell groups = new Cell(TunnelGroupPickerScreen.summary(v.groupIds()), new Action.Open(
+            new TunnelGroupPickerScreen(key.modelId(), v.name(), v.groupIds())), true)
+            .withTooltip(v.groupIds().isEmpty()
+                ? "A tunnel builds every section and entrance from one group. Click to choose."
+                : "Groups: " + String.join(", ", v.groupIds()) + ". Click to change.");
+        List<Cell> cells = new ArrayList<>(weight.cells());
+        cells.add(Cell.plain("·"));
+        cells.add(groups);
+        return new Line(weight.label(), cells);
     }
 
     /** {@code Bands  O N V E U C}: every band its own letter button (or plain when read-only). */

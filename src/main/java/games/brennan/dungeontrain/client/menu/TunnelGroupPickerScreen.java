@@ -65,10 +65,15 @@ public final class TunnelGroupPickerScreen implements MenuScreen {
         return "tunnel_section".equals(modelId) || "tunnel_portal".equals(modelId);
     }
 
+    /** Longest group id a {@link #summary} shows before cutting it. */
+    private static final int SUMMARY_MAX = 10;
+
     /** Short label for a row's groups: the first id, {@code +N} for the rest, or a dim hint. */
     public static String summary(java.util.List<String> groupIds) {
         if (groupIds == null || groupIds.isEmpty()) return "no group";
-        return groupIds.get(0) + (groupIds.size() > 1 ? " +" + (groupIds.size() - 1) : "");
+        String first = groupIds.get(0);
+        if (first.length() > SUMMARY_MAX) first = first.substring(0, SUMMARY_MAX - 1) + "…";
+        return first + (groupIds.size() > 1 ? " +" + (groupIds.size() - 1) : "");
     }
 
     /** {@code … toggle <kind> <name> <id>} — joins (registering if new) or leaves {@code id}. */
