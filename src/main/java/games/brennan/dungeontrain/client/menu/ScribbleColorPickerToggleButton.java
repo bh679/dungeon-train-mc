@@ -81,8 +81,8 @@ public final class ScribbleColorPickerToggleButton extends AbstractButton {
         int x1 = x0 + SIZE;
         int y1 = y0 + SIZE;
 
-        // Light border on top + left, dark on bottom + right — matches PrefabSideTabButton's
-        // extruded look, and reads against the book page's parchment background.
+        // Light border on top + left, dark on bottom + right — an extruded look
+        // that reads against the book page's parchment background.
         g.fill(x0, y0, x1, y1, BORDER_DARK);
         g.fill(x0, y0, x1, y0 + 1, BORDER_LIGHT);
         g.fill(x0, y0, x0 + 1, y1, BORDER_LIGHT);
