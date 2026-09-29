@@ -20483,6 +20483,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-strip-offthread",
+      "version": "0.1014.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Smoother streaming into a later phase's terrain",
+      "summary": "Entering one of the later phases could freeze the game for several seconds at a time: the pass that clears stray overworld trees and flowers from the freshly generated terrain ran on the main server thread for every new chunk, and the train generates about a chunk a second. That pass now runs on the world-generation workers, skips terrain that has nothing to clear, and only the handful of block removals stays on the main thread. The generated world is unchanged.",
+      "highlights": [
+        "No more multi-second freezes while new terrain streams in around the transition into a later phase",
+        "Same terrain and vegetation as before \u2014 only where the work runs changed",
+        "New server setting netherFoliageStripPrecompute (default on) to restore the old in-line pass"
+      ],
+      "pr": 1646,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
