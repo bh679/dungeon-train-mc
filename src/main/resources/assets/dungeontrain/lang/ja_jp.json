@@ -2973,6 +2973,7 @@
   "chat.dungeontrain.portal.you_aren_t_test": "テスト用の次元車両内にいません。",
   "chat.dungeontrain.portal.back_plot_test_has": "プロットに戻りました — テスト '%s' は片付けられました。",
   "chat.dungeontrain.carriage_test.standing_in": "'%s' のテスト用コピーの中にいます（外殻 %s、中身 %s）— 列車は接続されていません。メニューの「戻る」でプロットに戻ります。",
+  "chat.dungeontrain.test_mode.nothing_saves": "テストモード — ここで建てたものは保存されません。",
   "chat.dungeontrain.carriage_test.no_shell_allows": "'%s' を有効にしている車両が今はありません — テストするには、いずれかの車両の中身リストで有効にしてください。",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' には、このワールドの車両サイズで保存されたテンプレートがありません — 保存してから、もう一度テストしてください。",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks（%s %s）:",

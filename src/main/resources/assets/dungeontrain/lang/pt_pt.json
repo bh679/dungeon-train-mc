@@ -3016,6 +3016,7 @@
   "chat.dungeontrain.portal.you_aren_t_test": "Não estás numa carruagem dimensional de teste.",
   "chat.dungeontrain.portal.back_plot_test_has": "De volta ao lote — o teste '%s' foi removido.",
   "chat.dungeontrain.carriage_test.standing_in": "Estás dentro de uma cópia de teste de '%s' (casco %s, conteúdo %s) — sem comboio ligado. Voltar no menu devolve-te ao lote.",
+  "chat.dungeontrain.test_mode.nothing_saves": "Modo de teste — nada do que construíres aqui será guardado.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Nenhuma carruagem tem '%s' ativado neste momento — ativa-o na lista de Conteúdo de uma carruagem para o testar.",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' não tem um modelo guardado no tamanho de carruagem deste mundo — guarda-o e testa de novo.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
