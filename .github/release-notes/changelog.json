@@ -20497,7 +20497,7 @@
       "highlights": [
         "No more multi-second freezes while new terrain streams in around the transition into a later phase",
         "Same terrain and vegetation as before \u2014 only where the work runs changed",
-        "New server setting netherFoliageStripPrecompute (default on) to restore the old in-line pass"
+        "A server config setting can restore the old in-line pass if ever needed"
       ],
       "pr": 1646,
       "date": "2026-09-29",
