@@ -51,7 +51,7 @@ final class CavernNoiseTest {
             for (int z = 0; z < 128; z += 2) {
                 for (int y = lo + CavernNoise.TAPER; y <= hi - CavernNoise.TAPER; y += 2) {
                     total++;
-                    if (CavernNoise.apply(seed, x, y, z, seaLevel, top, 5.0) < 0.0) carved++;
+                    if (CavernNoise.apply(seed, x, y, z, seaLevel, top, Integer.MAX_VALUE, 5.0) < 0.0) carved++;
                 }
             }
         }
@@ -66,15 +66,52 @@ final class CavernNoiseTest {
         int seaLevel = 63;
         for (int x = 0; x < 256; x += 3) {
             for (int z = 0; z < 64; z += 5) {
-                assertEquals(5.0, CavernNoise.apply(seed, x, CavernNoise.windowBottom(seaLevel), z, seaLevel, 240.0, 5.0), 0.0);
-                assertEquals(5.0, CavernNoise.apply(seed, x, seaLevel, z, seaLevel, 240.0, 5.0), 0.0);
-                assertEquals(5.0, CavernNoise.apply(seed, x, CavernNoise.windowTop(240.0), z, seaLevel, 240.0, 5.0), 0.0);
-                assertEquals(5.0, CavernNoise.apply(seed, x, 251, z, seaLevel, 319.0, 5.0), 0.0);
-                assertEquals(5.0, CavernNoise.apply(seed, x, 80, z, seaLevel, 90.0, 5.0), 0.0);   // top − 24 < floor
+                assertEquals(5.0, CavernNoise.apply(seed, x, CavernNoise.windowBottom(seaLevel), z, seaLevel, 240.0, Integer.MAX_VALUE, 5.0), 0.0);
+                assertEquals(5.0, CavernNoise.apply(seed, x, seaLevel, z, seaLevel, 240.0, Integer.MAX_VALUE, 5.0), 0.0);
+                assertEquals(5.0, CavernNoise.apply(seed, x, CavernNoise.windowTop(240.0), z, seaLevel, 240.0, Integer.MAX_VALUE, 5.0), 0.0);
+                assertEquals(5.0, CavernNoise.apply(seed, x, 251, z, seaLevel, 319.0, Integer.MAX_VALUE, 5.0), 0.0);
+                assertEquals(5.0, CavernNoise.apply(seed, x, 80, z, seaLevel, 90.0, Integer.MAX_VALUE, 5.0), 0.0);   // top − 24 < floor
             }
         }
         assertEquals(250, CavernNoise.windowTop(319.0));
         assertEquals(176, CavernNoise.windowTop(200.5));
+    }
+
+    @Test
+    @DisplayName("core margin: nothing carved within the jittered solid margin, caverns resume past the taper")
+    void coreMargin() {
+        long seed = 11L;
+        int seaLevel = 63;
+        double top = 240.0;
+        int lo = CavernNoise.windowBottom(seaLevel), hi = CavernNoise.windowTop(top);
+        int minSolid = CavernNoise.SOLID_BEFORE_CORE - CavernNoise.CORE_JITTER;
+        int open = CavernNoise.SOLID_BEFORE_CORE + CavernNoise.CORE_JITTER + CavernNoise.CORE_TAPER;
+        int carvedFar = 0, total = 0;
+        for (int x = 0; x < 256; x += 2) {
+            for (int z = 0; z < 128; z += 4) {
+                for (int y = lo + CavernNoise.TAPER; y <= hi - CavernNoise.TAPER; y += 4) {
+                    for (int gap = 0; gap <= minSolid; gap++) {
+                        assertEquals(5.0, CavernNoise.apply(seed, x, y, z, seaLevel, top, gap, 5.0), 0.0,
+                                "carved inside the solid margin at gap=" + gap);
+                    }
+                    double j = CavernNoise.coreJitter(seed, y, z);
+                    assertTrue(Math.abs(j) <= CavernNoise.CORE_JITTER, "jitter out of range: " + j);
+                    // Past the full taper the core has no effect at all.
+                    assertEquals(CavernNoise.apply(seed, x, y, z, seaLevel, top, Integer.MAX_VALUE, 5.0),
+                            CavernNoise.apply(seed, x, y, z, seaLevel, top, open, 5.0), 0.0, "taper reaches past " + open);
+                    // Closing is monotone: a smaller gap never carves where a larger one keeps rock.
+                    double prev = 5.0;
+                    for (int gap = minSolid; gap <= open; gap++) {
+                        double v = CavernNoise.apply(seed, x, y, z, seaLevel, top, gap, 5.0);
+                        assertTrue(v <= prev + 1e-12, "non-monotone closing at gap=" + gap);
+                        prev = v;
+                    }
+                    total++;
+                    if (CavernNoise.apply(seed, x, y, z, seaLevel, top, open, 5.0) < 0.0) carvedFar++;
+                }
+            }
+        }
+        assertTrue(carvedFar > total / 5, "caverns should be open past the taper");
     }
 
     @Test
@@ -89,8 +126,9 @@ final class CavernNoiseTest {
             for (int y = lo; y <= hi; y += 5) {
                 for (int z = -8; z < 8; z++) {
                     CavernNoise.corners(seed, CavernNoise.cellX(x), CavernNoise.cellY(y), CavernNoise.cellX(z), c);
-                    double viaCorners = CavernNoise.carve(CavernNoise.interpolate(c, x, y, z), y, lo, hi, 3.0);
-                    assertEquals(CavernNoise.apply(seed, x, y, z, seaLevel, top, 3.0), viaCorners, 0.0,
+                    int gap = 6 + Math.floorMod(x * 7 + z, 30);            // spans the margin, taper and open
+                    double viaCorners = CavernNoise.carve(seed, CavernNoise.interpolate(c, x, y, z), y, z, lo, hi, gap, 3.0);
+                    assertEquals(CavernNoise.apply(seed, x, y, z, seaLevel, top, gap, 3.0), viaCorners, 0.0,
                             "mismatch at " + x + "," + y + "," + z);
                 }
             }

@@ -100,6 +100,7 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
         final boolean[] present = new boolean[COL_SIZE];
         final boolean[] skip = new boolean[COL_SIZE];
         final boolean[] core = new boolean[COL_SIZE];   // real-Nether core column: never carved (the stamp owns it)
+        final int[] coreGap = new int[COL_SIZE];         // blocks to the nearest core column (the cavern margin)
         final double[] target = new double[COL_SIZE];
     }
 
@@ -166,6 +167,7 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
             memo.key[idx] = ckey;
             memo.skip[idx] = skip;
             memo.core[idx] = !skip && c.isNetherCore(wx);
+            memo.coreGap[idx] = skip ? Integer.MAX_VALUE : c.netherCoreGap(wx);
             memo.target[idx] = t;
             memo.present[idx] = true;
         }
@@ -207,7 +209,7 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
                                 double raised) {
         int idx = columnIndex(worldX, worldZ);
         if (memo.skip[idx] || memo.core[idx]) return raised;
-        return CavernNoise.apply(seed, worldX, worldY, worldZ, seaLevel, memo.target[idx], raised);
+        return CavernNoise.apply(seed, worldX, worldY, worldZ, seaLevel, memo.target[idx], memo.coreGap[idx], raised);
     }
 
     /**
@@ -322,12 +324,14 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
                 int lo = CavernNoise.windowBottom(seaLevel);
                 int hi = CavernNoise.windowTop(memo.target[idx]);
                 if (by < lo || by > hi) continue;
+                int gap = memo.coreGap[idx];
+                if (gap <= CavernNoise.SOLID_BEFORE_CORE - CavernNoise.CORE_JITTER) continue;
                 int cx = CavernNoise.cellX(bx), cy = CavernNoise.cellY(by), cz = CavernNoise.cellX(bz);
                 if (cx != cornerCx || cy != cornerCy || cz != cornerCz) {
                     CavernNoise.corners(seed, cx, cy, cz, corners);
                     cornerCx = cx; cornerCy = cy; cornerCz = cz;
                 }
-                values[i] = CavernNoise.carve(CavernNoise.interpolate(corners, bx, by, bz), by, lo, hi, raised);
+                values[i] = CavernNoise.carve(seed, CavernNoise.interpolate(corners, bx, by, bz), by, bz, lo, hi, gap, raised);
             }
         }
         GenProfiler.add(GenProfiler.Bucket.DF, t0);

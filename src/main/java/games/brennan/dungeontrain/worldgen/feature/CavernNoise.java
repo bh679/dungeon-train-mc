@@ -46,6 +46,13 @@ public final class CavernNoise {
     public static final int DECORATION_CEILING = 250;
     /** Blocks over which the threshold eases to "never" at the window's floor and roof. */
     public static final int TAPER = 8;
+    /** Solid rock kept between the caverns and the real-Nether core (blocks along the band). */
+    public static final int SOLID_BEFORE_CORE = 10;
+    /** ± jitter on {@link #SOLID_BEFORE_CORE} so the front toward the core is not one flat plane. */
+    public static final int CORE_JITTER = 3;
+    /** Blocks past the solid margin over which the caverns pinch shut (along their own noise). */
+    public static final int CORE_TAPER = 8;
+    private static final long CORE_JITTER_SALT = 0x2545F4914F6CDD1DL;
 
     private CavernNoise() {}
 
@@ -63,21 +70,38 @@ public final class CavernNoise {
      * Carve {@code raised} (the column's raised density at {@code (x,y,z)}) where the field says cavern,
      * else return it unchanged. Per-sample form — evaluates the 8 cell corners itself.
      */
-    public static double apply(long seed, int x, int y, int z, int seaLevel, double targetTop, double raised) {
+    public static double apply(long seed, int x, int y, int z, int seaLevel, double targetTop, int coreGap,
+                               double raised) {
         int lo = windowBottom(seaLevel);
         int hi = windowTop(targetTop);
         if (y < lo || y > hi) return raised;
+        if (coreGap <= SOLID_BEFORE_CORE - CORE_JITTER) return raised;             // provably inside the margin
         double[] c = new double[8];
         corners(seed, x >> CELL_W_SHIFT, y >> CELL_H_SHIFT, z >> CELL_W_SHIFT, c);
-        return carve(interpolate(c, x, y, z), y, lo, hi, raised);
+        return carve(seed, interpolate(c, x, y, z), y, z, lo, hi, coreGap, raised);
     }
 
-    /** Apply the window envelope + threshold to a field value {@code n} and carve {@code raised} with it. */
-    public static double carve(double n, int y, int lo, int hi, double raised) {
+    /**
+     * Apply the window envelope + threshold to a field value {@code n} and carve {@code raised} with it.
+     * {@code coreGap} is the column's distance to the real-Nether core ({@code WorldGenCycle#netherCoreGap}):
+     * within {@link #SOLID_BEFORE_CORE} (jittered ±{@link #CORE_JITTER} per (y, z)) nothing is carved, and
+     * over the next {@link #CORE_TAPER} blocks the threshold eases back so the caverns pinch shut along
+     * their own noise — the natural-looking wall seen from inside.
+     */
+    public static double carve(long seed, double n, int y, int z, int lo, int hi, int coreGap, double raised) {
         double env = Math.min(1.0, Math.min(y - lo, hi - y) / (double) TAPER);   // 0 at the edges → 1 inside
+        if (coreGap < Integer.MAX_VALUE - SOLID_BEFORE_CORE - CORE_JITTER - CORE_TAPER) {
+            double solid = SOLID_BEFORE_CORE + coreJitter(seed, y, z);
+            env = Math.min(env, Math.max(0.0, (coreGap - solid) / (double) CORE_TAPER));
+        }
         double threshold = THRESHOLD + (1.0 - env);                                // > 1 at the edges: never
         double carve = CARVE_SLOPE * (threshold - n);
         return carve < 0.0 ? Math.min(raised, carve) : raised;
+    }
+
+    /** Jitter in {@code [-CORE_JITTER, +CORE_JITTER]} on the solid margin, coherent along (y, z). */
+    public static double coreJitter(long seed, int y, int z) {
+        return (field01(seed ^ CORE_JITTER_SALT, 0.0, y, z) - 0.5) * 2.0 * CORE_JITTER;
     }
 
     /** Cell coordinate (floor division by the cell size) of a block coordinate. */

@@ -756,26 +756,44 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * mountain behind it — and its tunnel — stay stone. Whether a neighbouring core cell is open comes from
      * the same {@link NetherCoreGeometry} density {@link NetherCoreStamp} stamps with, so it is exact even
      * across a chunk border (no neighbour-chunk reads).
+     *
+     * <p>One block behind that face — a rock cell whose neighbour toward the core is a non-core band column
+     * and whose next neighbour is an open core cell — becomes <b>obsidian</b>, so the wall into the Nether
+     * reads stone → exactly one obsidian → netherrack. The face wins where a cell qualifies for both.</p>
      */
     private boolean coverCoreFacingFace(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ, long seed,
                                         WorldGenCycle cycle, NetherCoreGeometry coreGeom, boolean endBandActive) {
         List<NetherCoreGeometry.Column> coreSides = new ArrayList<>(SIDES.length);
+        List<NetherCoreGeometry.Column> behindSides = new ArrayList<>(SIDES.length);
         for (int[] side : SIDES) {
             int nx = worldX + side[0];
             int nz = worldZ + side[1];
             int nwx = NetherMountainTerrain.wavyX(seed, nx, nz);
-            if (!cycle.isNetherCore(nwx)) continue;
             if (endBandActive && cycle.endMiddleRamp(nwx) > 0.0) continue;
-            coreSides.add(coreGeom.column(NetherCoreGeometry.sampleX(nwx), nz));
+            if (cycle.isNetherCore(nwx)) {
+                coreSides.add(coreGeom.column(NetherCoreGeometry.sampleX(nwx), nz));
+                continue;
+            }
+            // Two steps out: the neighbour is the (netherrack) face, its neighbour the open core.
+            int nx2 = worldX + 2 * side[0];
+            int nz2 = worldZ + 2 * side[1];
+            int nwx2 = NetherMountainTerrain.wavyX(seed, nx2, nz2);
+            if (!cycle.isNetherCore(nwx2)) continue;
+            if (endBandActive && cycle.endMiddleRamp(nwx2) > 0.0) continue;
+            behindSides.add(coreGeom.column(NetherCoreGeometry.sampleX(nwx2), nz2));
         }
-        if (coreSides.isEmpty()) return false;
+        if (coreSides.isEmpty() && behindSides.isEmpty()) return false;
         ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
         for (int y = coreGeom.minCoreY(); y <= coreGeom.maxCoreY(); y++) {
             if (!NetherRockCover.isOverworldRock(w.state(dx, y, dz))) continue;
-            if (!facesOpenCore(coreSides, y)) continue;
-            w.set(dx, y, dz, NETHERRACK);
-            changed = true;
+            if (facesOpenCore(coreSides, y)) {
+                w.set(dx, y, dz, NETHERRACK);
+                changed = true;
+            } else if (facesOpenCore(behindSides, y)) {
+                w.set(dx, y, dz, OBSIDIAN);
+                changed = true;
+            }
         }
         return changed;
     }

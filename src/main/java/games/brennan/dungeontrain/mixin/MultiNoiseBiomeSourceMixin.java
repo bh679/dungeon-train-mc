@@ -160,7 +160,7 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
             case CAVE:
                 // The mountain interior: lush / dripstone caves on the way in, deep dark joins after the core.
                 // Un-waved X for the pre/post split — core columns are never CAVE, so the ±9 wave can't matter.
-                return ctx.highlandBiomes().caveBiomeFor(blockX, blockZ, cycle.netherPastCore(blockX));
+                return ctx.highlandBiomes().caveBiomeFor(ctx, blockX, blockZ, cycle.netherPastCore(blockX));
             case HIGHLAND:
                 // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.
                 return SecondLapOverworld.lookAt(cycle, blockX) == SecondLapOverworld.Stretch.BOP

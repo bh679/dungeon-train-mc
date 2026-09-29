@@ -49,7 +49,7 @@ final class NetherBandTerrainDensityFunctionTest {
         double raised = Math.max(base, RAISE_SLOPE * (t - y));
         // The finalDensity form also carves CavernNoise caverns out of non-core raised columns.
         if (cycle.isNetherCore(wx)) return raised;
-        return CavernNoise.apply(seed, x, y, z, seaLevel, t, raised);
+        return CavernNoise.apply(seed, x, y, z, seaLevel, t, cycle.netherCoreGap(wx), raised);
     }
 
     /** The un-carved raise alone — what the initialDensityWithoutJaggedness (carve=false) form must give. */

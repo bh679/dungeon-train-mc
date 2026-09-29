@@ -1072,6 +1072,22 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * Blocks from {@code worldX} to the nearest real-Nether <b>core</b> column: {@code 0} inside the core,
+     * the distance to the core's first column before it, the distance past its last column after it, and
+     * {@link Integer#MAX_VALUE} outside the Nether segment. Same layout offsets as {@link #netherCoreDepth}.
+     * Drives the solid-rock margin the band's caverns keep before the Nether.
+     */
+    public int netherCoreGap(int worldX) {
+        long ln = netherOffset(worldX);
+        if (ln < 0L) return Integer.MAX_VALUE;
+        long coreStart = (long) riseLen() + Math.max(0, megaHold) + Math.max(0, coreFade);
+        long coreEnd = coreStart + Math.max(0, spanCore(CycleLayout.Type.NETHER, worldX));
+        if (ln < coreStart) return (int) Math.min(Integer.MAX_VALUE, coreStart - ln);
+        if (ln >= coreEnd) return (int) Math.min(Integer.MAX_VALUE, ln - coreEnd + 1);
+        return 0;
+    }
+
+    /**
      * True on the <b>exit</b> side of the Nether band — past the last real-Nether core column (the
      * crossfade-out and the falling mountain). {@code false} in the core, on the way in, and outside the
      * segment. Same layout offsets as {@link #netherCoreDepth}. Drives the cave-biome palette split

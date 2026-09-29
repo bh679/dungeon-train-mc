@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.worldgen.density;
 
 import games.brennan.dungeontrain.worldgen.NetherBandBiomes;
+import games.brennan.dungeontrain.worldgen.structure.AncientCitySite;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.resources.ResourceKey;
@@ -31,10 +33,34 @@ public final class NetherBandBiomeSet {
         this.seed = seed;
     }
 
-    /** Cave biome for a mountain-interior column ({@code BandBiomeDecision.Result.CAVE}), region-varied. */
-    public Holder<Biome> caveBiomeFor(int worldX, int worldZ, boolean pastCore) {
+    /**
+     * Cave biome for a mountain-interior column ({@code BandBiomeDecision.Result.CAVE}), region-varied. On
+     * the fall side, the pass's ancient-city region ({@link AncientCitySite}) is always deep dark.
+     */
+    public Holder<Biome> caveBiomeFor(NetherBandContext ctx, int worldX, int worldZ, boolean pastCore) {
         Holder<Biome>[] palette = pastCore ? cavePost : cavePre;
+        if (pastCore && (worldZ >> NetherBandBiomes.CAVE_REGION_SHIFT) == AncientCitySite.REGION_Z) {
+            long cell = ancientCityCell(ctx, ctx.cycle().netherPassIndex(worldX));
+            if (cell != AncientCitySite.NONE && cell == (worldX >> NetherBandBiomes.CAVE_REGION_SHIFT)) {
+                for (Holder<Biome> h : palette) if (h.is(Biomes.DEEP_DARK)) return h;
+            }
+        }
         return palette[NetherBandBiomes.pickCave(seed, worldX, worldZ, palette.length)];
+    }
+
+    /** Per-pass ancient-city region, memoised per published context (the site walk costs a few noise samples). */
+    private final java.util.concurrent.ConcurrentHashMap<Long, Long> cityCells = new java.util.concurrent.ConcurrentHashMap<>();
+    private volatile NetherBandContext cityCtx;
+
+    /** Region-X of pass {@code pass}'s ancient city under {@code ctx}, or {@link AncientCitySite#NONE}. */
+    public long ancientCityCell(NetherBandContext ctx, long pass) {
+        if (ctx == null || ctx.cycle() == null || ctx.netherCore() == null) return AncientCitySite.NONE;
+        if (cityCtx != ctx) {                      // a republished context → drop the memo
+            cityCells.clear();
+            cityCtx = ctx;
+        }
+        return cityCells.computeIfAbsent(pass, p -> AncientCitySite.cellX(ctx.cycle(), ctx.generationSeed(), p,
+                ctx.seaLevel(), ctx.worldCeiling(), ctx.netherTop(), ctx.baseRelief(), ctx.netherCore().bedY()));
     }
 
     /** Highland biome for a band column at this world position — altitude-zoned + region-varied. */
