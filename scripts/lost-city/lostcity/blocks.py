@@ -115,6 +115,11 @@ ANDESITE = block("andesite")
 POLISHED_ANDESITE = block("polished_andesite")
 POLISHED_ANDESITE_SLAB = block("polished_andesite_slab")
 DEEPSLATE_TILES = block("deepslate_tiles")
+IRON_DOOR = block("iron_door")
+LIGHTNING_ROD = block("lightning_rod")
+BLUE_CONCRETE = block("blue_concrete")
+YELLOW_CONCRETE = block("yellow_concrete")
+GRAY_GLASS_PANE = block("gray_stained_glass_pane")
 
 # Every block name used above; test_blocks.py asserts each palette entry is in here so a typo cannot
 # silently load as air in-game (NbtUtils.readBlockState falls back to air with only a log line).

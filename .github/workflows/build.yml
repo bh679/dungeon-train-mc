@@ -109,6 +109,15 @@ jobs:
           python3 scripts/modpack/test_wait_for_approval.py
           python3 scripts/modpack/test_catch_up.py
 
+      - name: Lost City templates + data match their recipes
+        # DT's own Lost City buildings are generated (scripts/lost-city). Fails if a committed .nbt or
+        # pool/processor/structure JSON drifts from the recipe that produced it, or if any DT pool
+        # element would place a Big Lost City template (all-rights-reserved). Stdlib only, no network.
+        run: |
+          python3 scripts/lost-city/test_lostcity.py
+          python3 scripts/lost-city/build-templates.py --check
+          python3 scripts/lost-city/generate-variants.py --check
+
   # Stdlib-only Python guard for the client/server network handshake. DungeonTrainNet's
   # PROTOCOL_VERSION string is the only thing that keeps an older client off a newer server:
   # NeoForge negotiates payload *types*, not their layouts, so a packet that gains a field still

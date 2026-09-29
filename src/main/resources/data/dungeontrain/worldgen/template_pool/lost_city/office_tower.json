@@ -1,0 +1,96 @@
+{
+  "name": "dungeontrain:lost_city/office_tower",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/office_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/office_tower_shipped"
+      }
+    },
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/office_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/office_tower_tinted_tall"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/office_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/office_tower_bronze_setback"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/office_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/office_tower_white_podium"
+      }
+    },
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/office_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/office_tower_black_block"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/office_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/office_tower_lofty"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/office_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/office_tower_stump"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/office_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/office_tower_bitten"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/office_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/office_tower_topped"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/office_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/office_tower_dry"
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:bricks",
+          "to": "minecraft:deepslate_bricks"
+        },
+        {
+          "from": "minecraft:waxed_oxidized_copper",
+          "to": "minecraft:waxed_weathered_copper"
+        }
+      ]
+    }
+  ]
+}

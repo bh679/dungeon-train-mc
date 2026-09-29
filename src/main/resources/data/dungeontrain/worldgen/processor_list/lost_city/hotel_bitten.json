@@ -1,0 +1,28 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_bite",
+      "bites_min": 1,
+      "bites_max": 2,
+      "radius_min": 0.3,
+      "radius_max": 0.5,
+      "rubble": [
+        "minecraft:light_gray_concrete_powder",
+        "minecraft:gray_concrete",
+        "minecraft:cobblestone",
+        "minecraft:gravel",
+        "minecraft:andesite"
+      ],
+      "pile_scale": 0.8,
+      "pile_max": 10
+    }
+  ]
+}

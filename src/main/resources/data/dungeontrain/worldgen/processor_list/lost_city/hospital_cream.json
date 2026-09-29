@@ -1,0 +1,31 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:white_concrete",
+          "to": "minecraft:smooth_sandstone"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:cut_sandstone"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_facade",
+      "pilaster_every": 6,
+      "min_layer": 2,
+      "ledge": "minecraft:smooth_stone_slab"
+    }
+  ]
+}

@@ -225,6 +225,58 @@
     {
       "structure": "dungeontrain:lost_city/ferriswheel",
       "weight": 3
+    },
+    {
+      "structure": "dungeontrain:lost_city/office_tower",
+      "weight": 6
+    },
+    {
+      "structure": "dungeontrain:lost_city/apartment_block",
+      "weight": 6
+    },
+    {
+      "structure": "dungeontrain:lost_city/hotel",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/hospital",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/civic_hall",
+      "weight": 4
+    },
+    {
+      "structure": "dungeontrain:lost_city/shopping_strip",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/railway_station",
+      "weight": 5
+    },
+    {
+      "structure": "dungeontrain:lost_city/petrol_station",
+      "weight": 4
+    },
+    {
+      "structure": "dungeontrain:lost_city/radio_mast",
+      "weight": 3
+    },
+    {
+      "structure": "dungeontrain:lost_city/water_tower",
+      "weight": 3
+    },
+    {
+      "structure": "dungeontrain:lost_city/overpass",
+      "weight": 4
+    },
+    {
+      "structure": "dungeontrain:lost_city/cooling_tower",
+      "weight": 3
+    },
+    {
+      "structure": "dungeontrain:lost_city/silos",
+      "weight": 4
     }
   ],
   "placement": {

@@ -1,0 +1,35 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:white_concrete",
+          "to": "minecraft:smooth_sandstone"
+        },
+        {
+          "from": "minecraft:orange_terracotta",
+          "to": "minecraft:red_terracotta"
+        },
+        {
+          "from": "minecraft:light_blue_stained_glass",
+          "to": "minecraft:brown_stained_glass"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_facade",
+      "pilaster_every": 4,
+      "min_layer": 2,
+      "pilaster": "minecraft:chiseled_sandstone"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "name": "dungeontrain:lost_city/hotel",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hotel",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hotel_shipped"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hotel",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hotel_taller"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hotel",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hotel_teal_short"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hotel",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hotel_sandstone"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hotel",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hotel_bitten"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hotel",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hotel_topped"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hotel",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hotel_dry"
+      }
+    }
+  ]
+}

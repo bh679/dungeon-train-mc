@@ -1,0 +1,34 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -4,
+      "max_floors": -2,
+      "period_min": 4,
+      "period_max": 4,
+      "min_similarity": 0.45,
+      "axis": "y"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:orange_terracotta",
+          "to": "minecraft:cyan_terracotta"
+        },
+        {
+          "from": "minecraft:white_concrete",
+          "to": "minecraft:light_gray_concrete"
+        }
+      ]
+    }
+  ]
+}

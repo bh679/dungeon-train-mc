@@ -272,7 +272,59 @@ final class LostCityStructuresTest {
                     .get("modid").getAsString(), name);
             assertEquals(weights.get("big_lost_city:" + name), weights.get("dungeontrain:lost_city/" + name), name);
         }
-        assertEquals(42 + big.length, weights.size());
+        assertEquals(42 + big.length + originals().size(), weights.size());
+    }
+
+    /** DT's own buildings, from the generator's manifest: {@code data/dungeontrain/structure/lost_city/manifest.json}. */
+    private static java.util.Set<String> originals() throws Exception {
+        return json("/data/dungeontrain/structure/lost_city/manifest.json").keySet();
+    }
+
+    @Test
+    @DisplayName("every DT-original building has a DT pool of DT processor lists placing a DT template, and sits in the set")
+    void originalPoolsAreSound() throws Exception {
+        com.google.gson.JsonObject set = json("/data/dungeontrain/worldgen/structure_set/lost_city.json");
+        java.util.Set<String> inSet = new java.util.HashSet<>();
+        for (com.google.gson.JsonElement e : set.getAsJsonArray("structures")) {
+            inSet.add(e.getAsJsonObject().get("structure").getAsString());
+        }
+        java.util.Set<String> names = originals();
+        assertFalse(names.isEmpty());
+        for (String name : names) {
+            String id = "dungeontrain:lost_city/" + name;
+            assertTrue(inSet.contains(id), id + " missing from the structure set");
+            com.google.gson.JsonObject structure = json("/data/dungeontrain/worldgen/structure/lost_city/" + name + ".json");
+            assertEquals(id, structure.get("start_pool").getAsString(), name);
+            assertEquals(1, structure.get("size").getAsInt(), name);
+            assertEquals("WORLD_SURFACE_WG", structure.get("project_start_to_heightmap").getAsString(), name);
+            assertFalse(structure.has("neoforge:conditions"), name + " must not depend on Big Lost City");
+            com.google.gson.JsonObject pool = json("/data/dungeontrain/worldgen/template_pool/lost_city/" + name + ".json");
+            assertEquals(id, pool.get("name").getAsString(), name);
+            com.google.gson.JsonArray elements = pool.getAsJsonArray("elements");
+            assertTrue(elements.size() >= 3, name + " has too few designs");
+            for (com.google.gson.JsonElement e : elements) {
+                com.google.gson.JsonObject element = e.getAsJsonObject().getAsJsonObject("element");
+                assertEquals(id, element.get("location").getAsString(), name + " element must place DT's own template");
+                String processors = element.get("processors").getAsString();
+                assertTrue(processors.startsWith("dungeontrain:lost_city/" + name + "_"), processors);
+                assertTrue(json("/data/dungeontrain/worldgen/processor_list/lost_city/" + processors.substring(processors.lastIndexOf('/') + 1)
+                        + ".json").has("processors"), processors);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("no DT pool ever places a Big Lost City template — DT processors never touch the all-rights-reserved models")
+    void noDtPoolNamesBigLostCity() throws Exception {
+        java.nio.file.Path pools = games.brennan.dungeontrain.RepoPaths.resources()
+                .resolve("data/dungeontrain/worldgen/template_pool/lost_city");
+        try (var files = java.nio.file.Files.list(pools)) {
+            java.util.List<java.nio.file.Path> all = files.toList();
+            assertFalse(all.isEmpty());
+            for (java.nio.file.Path p : all) {
+                assertFalse(java.nio.file.Files.readString(p).contains("big_lost_city"), p.toString());
+            }
+        }
     }
 
     private static com.google.gson.JsonObject json(String path) throws Exception {

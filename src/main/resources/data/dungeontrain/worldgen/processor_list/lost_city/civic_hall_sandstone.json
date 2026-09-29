@@ -1,0 +1,37 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:stone_bricks",
+          "to": "minecraft:sandstone"
+        },
+        {
+          "from": "minecraft:cracked_stone_bricks",
+          "to": "minecraft:cut_sandstone"
+        },
+        {
+          "from": "minecraft:smooth_quartz",
+          "to": "minecraft:smooth_sandstone"
+        },
+        {
+          "from": "minecraft:quartz_pillar",
+          "to": "minecraft:chiseled_sandstone"
+        },
+        {
+          "from": "minecraft:smooth_quartz_slab",
+          "to": "minecraft:smooth_sandstone_slab"
+        }
+      ]
+    }
+  ]
+}
