@@ -20787,6 +20787,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "shorter-stretches-gradual-blend",
+      "version": "0.1030.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Shorter stretches along the line",
+      "summary": "Several stretches of the line are now shorter, and the journey moves between some of them more smoothly.",
+      "highlights": [],
+      "pr": 1668,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

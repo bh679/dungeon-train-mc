@@ -375,9 +375,15 @@ public record WorldGenCycle(long startX, int owGap,
         return first < 0 ? Disintegration.bandLength(eFade, eVoid, 0) : layout.endGroupLength(first);
     }
 
-    /** Combined length of the upside-down band ({@code 2·udFade + udHold}); 0 when the band is disabled. */
+    /**
+     * Combined length of the upside-down band ({@code udFade + udHold + trailing fade}); 0 when the band is
+     * disabled. The trailing fade is dropped when a Reassembly follows — see {@link CycleLayout#udTrailingFade}.
+     */
     public long upsideDownLen() {
-        return 2L * Math.max(0, udFade) + Math.max(0, layout == null ? udHold : layout.firstCoreOf(CycleLayout.Type.UPSIDE_DOWN));
+        if (layout == null) return Math.max(0, udFade) + Math.max(0, udHold) + (udExitFade > 0 ? 0L : Math.max(0, udFade));
+        int first = layout.indexOfOccurrence(CycleLayout.Type.UPSIDE_DOWN, 0);
+        long trailing = first < 0 ? Math.max(0, udFade) : layout.udTrailingFade(layout.slot(first));
+        return Math.max(0, udFade) + Math.max(0, layout.firstCoreOf(CycleLayout.Type.UPSIDE_DOWN)) + trailing;
     }
 
     /**
@@ -824,9 +830,62 @@ public record WorldGenCycle(long startX, int owGap,
         return s == null ? CycleLayout.Style.VANILLA : s;
     }
 
-    /** {@link #netherStyleOfPass} of the Nether pass at {@code worldX} (the last one started between bands). */
+    /**
+     * {@link #netherStyleOfPass} of the Nether pass at {@code worldX} (the last one started between bands).
+     * Inside a first-run split slot ({@code nether:vanilla=1000~400+bop}) the look switches halfway through
+     * the mix — the column-free answer for labels and {@code /dtp}.
+     */
     public CycleLayout.Style netherLookAt(int worldX) {
+        long d = netherSplitOffset(worldX);
+        if (d != NO_SPLIT) return splitLook(worldX, 2L * d >= splitBlendAt(worldX));
         return netherStyleOfPass(netherPassIndex(worldX));
+    }
+
+    /**
+     * The look column {@code (worldX, worldZ)} of a Nether core wears — {@link #netherLookAt}, except in a
+     * first-run split's mix ({@code ~M} blocks after the first look ends), where the later look's share rises
+     * {@code 0 → 1} and a seed-stable column noise picks each column's side, so the two looks interleave in
+     * clumps instead of meeting at a straight wall across Z. Every Nether biome consumer asks this, so a
+     * column's label, surface and structures agree.
+     */
+    public CycleLayout.Style netherLookAt(int worldX, int worldZ, long seed) {
+        long d = netherSplitOffset(worldX);
+        if (d == NO_SPLIT) return netherStyleOfPass(netherPassIndex(worldX));
+        int blend = splitBlendAt(worldX);
+        if (d < 0L || d >= blend) return splitLook(worldX, d >= 0L);
+        double later = (d + 0.5) / blend;
+        double n = Disintegration.coherentNoise(seed ^ NETHER_SPLIT_SALT, worldX, 0, worldZ, END_SEAM_NOISE_SCALE);
+        return splitLook(worldX, n < later);
+    }
+
+    /** The mix length of the split slot at {@code worldX} (only called inside one). */
+    private int splitBlendAt(int worldX) {
+        return Math.max(0, layout.slot(slotAt(worldX)).splitBlend());
+    }
+
+    /** Salt so the Nether split dither is independent of the End seam's. */
+    private static final long NETHER_SPLIT_SALT = 0x4E53_504CL;
+
+    /** {@link #netherSplitOffset}'s "not in a split slot" answer. */
+    private static final long NO_SPLIT = Long.MIN_VALUE;
+
+    /**
+     * Base-block offset of {@code worldX} from where its Nether slot's first-run look ends — the start of the
+     * mix (negative before it) — or {@link #NO_SPLIT} when the column is not in a split slot on the first run.
+     */
+    private long netherSplitOffset(int worldX) {
+        if (layout == null) return NO_SPLIT;
+        int i = slotAt(worldX);
+        if (i < 0) return NO_SPLIT;
+        CycleLayout.Slot s = layout.slot(i);
+        if (s.type() != CycleLayout.Type.NETHER || !s.hasSplit() || runAt(worldX) != 0) return NO_SPLIT;
+        return baseAt(worldX) - (layout.netherCoreStart(i) + s.splitAt());
+    }
+
+    /** The split slot's look at {@code worldX}: its first style before the split, its split style after. */
+    private CycleLayout.Style splitLook(int worldX, boolean afterSplit) {
+        CycleLayout.Slot s = layout.slot(slotAt(worldX));
+        return afterSplit ? s.splitStyle() : s.style();
     }
 
     /** {@link #endStyleOfPass} of the End pass at {@code worldX} (the last one started between bands). */
@@ -1462,9 +1521,17 @@ public record WorldGenCycle(long startX, int owGap,
         return (l < 0L || l >= udBandLenAt(worldX)) ? -1L : l;
     }
 
-    /** {@code 2·udFade + core} of the upside-down occurrence at {@code worldX}. */
+    /** {@code udFade + core + trailing fade} of the upside-down occurrence at {@code worldX}. */
     private long udBandLenAt(int worldX) {
-        return 2L * Math.max(0, udFade) + Math.max(0, spanCore(CycleLayout.Type.UPSIDE_DOWN, worldX));
+        return Math.max(0, udFade) + Math.max(0, spanCore(CycleLayout.Type.UPSIDE_DOWN, worldX)) + udTrailingFadeAt(worldX);
+    }
+
+    /**
+     * Trailing atmosphere fade of the upside-down occurrence at {@code worldX}: none when a Reassembly
+     * follows (the core runs straight into it), {@code udFade} otherwise.
+     */
+    private long udTrailingFadeAt(int worldX) {
+        return udExitFadeLenAt(worldX) > 0L ? 0L : Math.max(0, udFade);
     }
 
     /** Reassembly (exit-crossfade) length of the upside-down occurrence at {@code worldX}. */
@@ -1487,10 +1554,9 @@ public record WorldGenCycle(long startX, int owGap,
             if (fade == 0) return 1.0;
             long band = udBandLenAt(worldX);
             if (lu < fade) return (double) lu / fade;          // leading fade-in
-            long holdEnd = band - fade;
-            if (lu < holdEnd) return 1.0;                      // core hold
-            if (udExitFadeLenAt(worldX) > 0L) return 1.0;      // exit crossfade present → hold at 1, it carries the fade-out
-            return Math.max(0.0, (double) (band - lu) / fade); // trailing fade-out (byte-identical when no exit fade)
+            long trailing = udTrailingFadeAt(worldX);
+            if (lu < band - trailing) return 1.0;              // core hold (to the band's end when a Reassembly follows)
+            return Math.max(0.0, (double) (band - lu) / trailing); // trailing fade-out (only without a Reassembly)
         }
         long ex = udExitFadeOffset(worldX);                    // exit crossfade: sky/light fades 1→0 across the whole zone
         if (ex >= 0L) {
