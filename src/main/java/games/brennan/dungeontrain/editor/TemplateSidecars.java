@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageWeights;
+import games.brennan.dungeontrain.train.WholeKind;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -217,8 +218,48 @@ public final class TemplateSidecars {
      * failing the upload over it would cost the build. Same posture as the oversize case.</p>
      */
     public static Collected collectReport(BuilderPhotoPaths.Kind kind, String subKind, String id) {
+        Map<String, String> files = read(filesFor(kind, subKind, id), id);
+        JsonElement weights = weightsEntry(kind, subKind, id);
+        BuildCredits.Credit credit = BuildCredits.get(kind, subKind, id);
+        // Whose work this is, when it is not this install's. Carried so attribution survives a
+        // second hop: without it, a build downloaded and re-uploaded by somebody else arrives at a
+        // third player credited to the middle one.
+        return fit(id, files, weights, credit == null ? null : BuildCredits.encode(credit));
+    }
+
+    /**
+     * The document for whole room {@code id}, uploaded as a CARRIAGE build under {@code subKind}.
+     *
+     * <p>A whole room is not a {@link BuilderPhotoPaths.Kind}, so {@link #filesFor} cannot answer for
+     * it: asked about CARRIAGE it would name the carriage <em>shell</em> of the same id, and upload that
+     * template's variant pools and chest links onto this room. The two roles a whole room keeps are
+     * read from its own stores instead, under the role names a carriage document uses — the whole frame
+     * and the carriage frame are the same box, so the document needs no translation, and
+     * {@code WholeRoomSidecars.apply} (shift 0) or {@link #apply} can each install it as it stands.</p>
+     */
+    public static Collected collectWholeRoomReport(String subKind, String id) {
+        if (id == null || id.isEmpty()) return new Collected("", List.of());
+        Map<String, String> files = read(wholeRoomFiles(id), id);
+        BuildCredits.Credit credit = BuildCredits.get(BuilderPhotoPaths.Kind.CARRIAGE, subKind, id);
+        return fit(id, files, null, credit == null ? null : BuildCredits.encode(credit));
+    }
+
+    /** The whole room's variants and containers files, under a carriage document's role names. */
+    static List<Sidecar> wholeRoomFiles(String id) {
+        return List.of(
+                new Sidecar("variants", WholeKind.ROOM.userSubdir(), id + WholeVariantBlocks.EXT),
+                containers(wholeRoomPlotKey(id)));
+    }
+
+    /** The {@link ContainerContentsStore} plot key whole room {@code id}'s chest links are filed under. */
+    public static String wholeRoomPlotKey(String id) {
+        return BlockVariantPlot.wholeKey(WholeKind.ROOM, id);
+    }
+
+    /** Each of {@code sidecars} that exists on disk, by role. Unreadable ones are logged and skipped. */
+    private static Map<String, String> read(List<Sidecar> sidecars, String id) {
         Map<String, String> files = new LinkedHashMap<>();
-        for (Sidecar sidecar : filesFor(kind, subKind, id)) {
+        for (Sidecar sidecar : sidecars) {
             Path path = UserContentPaths.findFile(sidecar.subdir(), sidecar.basename());
             if (path == null) continue;
             try {
@@ -228,12 +269,7 @@ public final class TemplateSidecars {
                         path, id, e.toString());
             }
         }
-        JsonElement weights = weightsEntry(kind, subKind, id);
-        BuildCredits.Credit credit = BuildCredits.get(kind, subKind, id);
-        // Whose work this is, when it is not this install's. Carried so attribution survives a
-        // second hop: without it, a build downloaded and re-uploaded by somebody else arrives at a
-        // third player credited to the middle one.
-        return fit(id, files, weights, credit == null ? null : BuildCredits.encode(credit));
+        return files;
     }
 
     /**

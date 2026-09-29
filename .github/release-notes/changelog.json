@@ -20958,6 +20958,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-whole-room-upload",
+      "version": "0.1040.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "community"
+      ],
+      "title": "Saved whole rooms reach My Builds",
+      "summary": "Whole rooms you save in the editor now show up in My Builds.",
+      "highlights": [],
+      "pr": 1678,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
