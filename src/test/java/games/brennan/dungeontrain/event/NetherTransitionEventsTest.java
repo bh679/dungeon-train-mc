@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import net.minecraft.SharedConstants;
 import net.minecraft.server.Bootstrap;
+import games.brennan.dungeontrain.worldgen.feature.StrippableFoliage;
 import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -10,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
- * {@link NetherTransitionEvents#isNetherFlora} — the core keeps its own Nether flora but still strips
+ * {@link StrippableFoliage#isNetherFlora} (the Nether-band strip's core rule) — the core keeps its own Nether flora but still strips
  * overworld trees spilled into it.
  *
  * <p><b>Tag-backed branches are NOT tested here.</b> {@code BlockState.is(BlockTags.X)} needs tags bound
@@ -29,9 +30,9 @@ class NetherTransitionEventsTest {
     @Test
     @DisplayName("overworld logs and leaves are still stripped from the core")
     void overworldWoodIsNotNetherFlora() {
-        assertFalse(NetherTransitionEvents.isNetherFlora(Blocks.OAK_LOG.defaultBlockState()));
-        assertFalse(NetherTransitionEvents.isNetherFlora(Blocks.SPRUCE_LEAVES.defaultBlockState()));
-        assertFalse(NetherTransitionEvents.isNetherFlora(Blocks.VINE.defaultBlockState()));
-        assertFalse(NetherTransitionEvents.isNetherFlora(Blocks.POPPY.defaultBlockState()));
+        assertFalse(StrippableFoliage.isNetherFlora(Blocks.OAK_LOG.defaultBlockState()));
+        assertFalse(StrippableFoliage.isNetherFlora(Blocks.SPRUCE_LEAVES.defaultBlockState()));
+        assertFalse(StrippableFoliage.isNetherFlora(Blocks.VINE.defaultBlockState()));
+        assertFalse(StrippableFoliage.isNetherFlora(Blocks.POPPY.defaultBlockState()));
     }
 }
