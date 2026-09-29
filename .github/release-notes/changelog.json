@@ -20544,15 +20544,15 @@
       "released_at": null
     },
     {
-      "id": "even-fewer-early-ruins",
+      "id": "fewer-ruins-again",
       "version": "0.1017.0",
       "type": "feat",
       "tags": [
         "feature",
         "world"
       ],
-      "title": "Even fewer ruins early on",
-      "summary": "The ruins along an early stretch of the line are rarer still \u2014 about 60% as many as there originally were.",
+      "title": "Fewer ruins",
+      "summary": "Ruins turn up a little less often along the line.",
       "highlights": [],
       "pr": 1649,
       "date": "2026-09-29",
