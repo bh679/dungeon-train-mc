@@ -20544,8 +20544,25 @@
       "released_at": null
     },
     {
-      "id": "batch-collider-updates-carriage-stamping",
+      "id": "fewer-ruins-again",
       "version": "0.1017.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Fewer ruins",
+      "summary": "Ruins turn up a little less often along the line.",
+      "highlights": [],
+      "pr": 1649,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "batch-collider-updates-carriage-stamping",
+      "version": "0.1018.0",
       "type": "perf",
       "tags": [
         "performance",
@@ -20557,6 +20574,7 @@
         "Far fewer physics collision updates when a group of carriages is added",
         "New performance counters in the lag log so the remaining cost is visible"
       ],
+      "pr": 1649,
       "date": "2026-09-29",
       "released": false,
       "released_in": null,
