@@ -20658,6 +20658,26 @@
       "released": true,
       "released_in": "v0.1022.0",
       "released_at": "2026-09-29T05:42:33Z"
+    },
+    {
+      "id": "cheap-production-logging",
+      "version": "0.1023.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Less stutter from log writing",
+      "summary": "Dungeon Train was writing thousands of diagnostic lines to your log files every minute, and on a busy train that could make the game hitch while it waited on the disk. Those developer-only lines are now switched off in normal play, and the ones that repeat are collapsed into short summaries \u2014 the lag readings we use to diagnose your bug reports are kept.",
+      "highlights": [
+        "Much less log writing during rides, so fewer hitches on slower disks",
+        "Repeated warnings are summarised with a count instead of written once per carriage",
+        "Lag bug reports still carry the performance readings we need"
+      ],
+      "pr": 1658,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
