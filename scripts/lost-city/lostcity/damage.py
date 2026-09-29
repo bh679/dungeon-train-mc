@@ -64,24 +64,38 @@ def _in_a_wall(canvas: Canvas, pos: Pos) -> bool:
             or (_fabric(canvas.get((x, y, z - 1))) and _fabric(canvas.get((x, y, z + 1)))))
 
 
-def rubble_field(canvas: Canvas, seed: int, box: tuple[int, int, int, int], density: float, height: int,
+def rubble_field(canvas: Canvas, seed: int, box: tuple[int, int, int, int], peak: int, spill: int, margin: int,
                  rubble: tuple[BlockState, ...] = RUBBLE) -> None:
-    """A field of rubble over the box (x0, z0, x1, z1): heaps up to `height` on the pad and on top of
-    whatever already lies there, thickest where two noise fields agree. Runs before the drop pass."""
+    """A smooth mound of rubble: `peak` deep over the box (x0, z0, x1, z1), tapering off over `spill`
+    blocks beyond it down to nothing, and never past the template margin. The height field is the
+    falloff plus a little low-frequency noise, so the piles roll rather than bristle. It is laid on the
+    pad and over whatever already lies there, and the drop pass afterwards settles anything left proud."""
     rng = random.Random(seed ^ 0xF1E1D)
     x0, z0, x1, z1 = box
-    for z in range(z0, z1 + 1):
-        for x in range(x0, x1 + 1):
-            if rng.random() >= density:
+    sx, _, sz = canvas.size
+    bumps = {(bx, bz): rng.random() for bx in range(0, sx + 4, 4) for bz in range(0, sz + 4, 4)}
+    for z in range(margin, sz - margin):
+        for x in range(margin, sx - margin):
+            d = max(x0 - x, x - x1, z0 - z, z - z1, 0)
+            if d > spill:
                 continue
+            height = peak * (1 - d / (spill + 1)) + 0.9 * _bilinear(bumps, x, z) - 0.3
             base = 1
-            while canvas.get((x, base, z)) not in (None, AIR) and base < height + 8:
+            while canvas.get((x, base, z)) not in (None, AIR) and base < peak + 8:
                 base += 1
-            for h in range(rng.randint(1, height)):
+            for h in range(int(round(height))):
                 pos = (x, base + h, z)
                 if not canvas.inside(pos) or canvas.get(pos) not in (None, AIR):
                     break
                 canvas.put(pos, rng.choice(rubble))
+
+
+def _bilinear(bumps: dict, x: int, z: int) -> float:
+    bx, bz = (x // 4) * 4, (z // 4) * 4
+    fx, fz = (x - bx) / 4, (z - bz) / 4
+    top = bumps[(bx, bz)] * (1 - fx) + bumps[(bx + 4, bz)] * fx
+    bottom = bumps[(bx, bz + 4)] * (1 - fx) + bumps[(bx + 4, bz + 4)] * fx
+    return top * (1 - fz) + bottom * fz
 
 
 def holes(canvas: Canvas, seed: int, count: tuple[int, int] = (3, 6), radius: tuple[float, float] = (1.5, 3.2),

@@ -8,7 +8,7 @@ from ..blocks import (AIR, CONCRETE, CONCRETE_DARK, CONCRETE_WHITE, CRACKED_STON
                       loot_chest)
 from .. import furnish
 from ..canvas import Canvas, Cells, Pos, envelope_air
-from ..damage import RUBBLE, rubble_field
+from ..damage import LOOSE, ROOF_MASS, RUBBLE, rubble_field
 from ..floors import Facade, roof_plate, tower
 from ..shapes import box, walls
 from ..spec import Archetype, ArchetypeSpec
@@ -49,9 +49,10 @@ def draw(canvas: Canvas) -> None:
     _rebar(canvas)
     _smashed_end(canvas)
     end = START + FLOORS * PERIOD - BREAK + 4
-    rubble_field(canvas, SPEC.seed, (X1 - 2, Z0, START + SMASH_FROM - 1, Z1), 0.7, 3)        # under the break and the hanging half
-    rubble_field(canvas, SPEC.seed + 1, (START + SMASH_FROM - 3, Z0, min(end + 2, SPEC.size[0] - 1 - SPEC.margin), Z1), 0.9, 4)   # where it came down
-    rubble_field(canvas, SPEC.seed + 2, (X0, Z0, X1 + 1, Z1), 0.35, 2)                     # round the stub's foot
+    m = SPEC.margin
+    rubble_field(canvas, SPEC.seed, (X1 - 2, Z0 + 2, START + SMASH_FROM - 1, Z1 - 2), 2, 5, m)   # under the break and the hanging half
+    rubble_field(canvas, SPEC.seed + 1, (START + SMASH_FROM - 2, Z0 + 2, end, Z1 - 2), 3, 6, m)  # where it came down
+    rubble_field(canvas, SPEC.seed + 2, (X0 + 1, Z0 + 1, X1 + 1, Z1 - 1), 1, 4, m)               # round the stub's foot
     for f in range(STUB_FLOORS):
         y = 2 + f * PERIOD
         dx = lean(y)
@@ -62,7 +63,24 @@ def draw(canvas: Canvas) -> None:
             furnish.spawners_and_loot(canvas, SPEC.seed + f, inside, [y], mobs=("zombie", "skeleton"), spawners=1, chests=1, tiers=(1, 2))
     finish(canvas, SPEC, vine_chance=0.4, vine_drop=(4, 12), moss_chance=0.28, roots_chance=0.15, leaf_clumps=36, gardens=8)
     _dangling_chunks(canvas)
+    _prune_unrooted_bars(canvas)
     _loot_in_the_wreck(canvas)
+
+
+def _prune_unrooted_bars(canvas: Canvas) -> None:
+    """Rebar the damage pass cut loose from its concrete goes; a bar must touch the building or another bar."""
+    around = ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))
+    pruned = True
+    while pruned:
+        pruned = False
+        for (x, y, z), state in list(canvas.freeze().items()):
+            if state.name != "minecraft:iron_bars" or y < BREAK - 3:
+                continue
+            rooted = any(_is_fabric(canvas.get((x + a, y + b, z + c))) or
+                         (canvas.get((x + a, y + b, z + c)) or AIR).name == "minecraft:iron_bars" for a, b, c in around)
+            if not rooted:
+                canvas.clear((x, y, z))
+                pruned = True
 
 
 CHUNK = (block("tuff"), block("andesite"), CRACKED_STONE_BRICKS, block("polished_tuff"), block("cobbled_deepslate"))
@@ -73,8 +91,7 @@ def _dangling_chunks(canvas: Canvas) -> None:
     stub's torn lip, a bar one to three long with a clump of two to five blocks swinging at its end. Placed
     after the finish so the gravity pass never mistakes them for loose rubble."""
     rng = random.Random(SPEC.seed ^ 0xDA96)
-    anchors = [pos for pos, state in canvas.freeze().items()
-               if state not in (None, AIR) and state.name not in ("minecraft:iron_bars",) and _hangs_free(canvas, pos)]
+    anchors = [pos for pos, state in canvas.freeze().items() if _is_fabric(state) and _hangs_free(canvas, pos)]
     rng.shuffle(anchors)
     for (x, y, z) in anchors[:14]:
         length = rng.randint(1, 3)
@@ -82,12 +99,21 @@ def _dangling_chunks(canvas: Canvas) -> None:
             continue
         for i in range(1, length + 1):
             canvas.put((x, y - i, z), STEEL_BARS)
-        cx, cy = x + rng.choice((-1, 0, 0, 1)), y - length - 1
-        for _ in range(rng.randint(2, 5)):
-            pos = (cx + rng.randint(-1, 1), cy - rng.randint(0, 1), z + rng.randint(-1, 1))
-            if canvas.inside(pos) and canvas.get(pos) in (None, AIR) and SPEC.margin <= pos[2] < SPEC.size[2] - SPEC.margin:
+        seed_pos = (x, y - length - 1, z)
+        canvas.put(seed_pos, rng.choice(CHUNK))
+        clump = [seed_pos]
+        for _ in range(rng.randint(1, 4)):                      # each new block grows off one already there
+            bx, by, bz = rng.choice(clump)
+            dx, dy, dz = rng.choice(((1, 0, 0), (-1, 0, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)))
+            pos = (bx + dx, by + dy, bz + dz)
+            if canvas.inside(pos) and canvas.get(pos) in (None, AIR) and SPEC.margin <= pos[2] < SPEC.size[2] - SPEC.margin and pos[1] >= 2:
                 canvas.put(pos, rng.choice(CHUNK))
-        canvas.put((cx, cy, z), rng.choice(CHUNK))
+                clump.append(pos)
+
+
+def _is_fabric(state) -> bool:
+    """Concrete, brick, glass — the building itself; never vines, leaves, roots, bars or the rubble."""
+    return state not in (None, AIR) and state.name not in LOOSE and not any(p in state.name for p in ROOF_MASS)
 
 
 def _hangs_free(canvas: Canvas, pos: Pos) -> bool:
@@ -129,7 +155,7 @@ def _rebar(canvas: Canvas) -> None:
                 continue
             top = tear(x, z)
             for y in range(top + 1, top + 2 + (x * z) % 3):
-                canvas.put((x + lean(y), y, z), STEEL_BARS)
+                canvas.put((x + lean(top), y, z), STEEL_BARS)        # one offset for the whole bar, so it stays rooted
             canvas.put((x + lean(top), top, z), CRACKED_STONE_BRICKS)
 
 
