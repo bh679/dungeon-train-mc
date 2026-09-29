@@ -3631,9 +3631,13 @@
   "gui.dungeontrain.options.update_notice_chat": "Chat Versi Baru",
   "gui.dungeontrain.options.update_notice_chat.tip": "Menampilkan pesan di chat saat versi baru Dungeon Train dirilis ketika kamu sedang bermain, dengan tautan ke pembaruannya. Hanya rilis utama yang diumumkan, bukan rilis kecil otomatis. Aktif secara bawaan.",
   "gui.dungeontrain.options.low_memory_notice_chat": "Peringatan Memori Rendah",
-  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Sekali per sesi, tampilkan pop-up di layar judul dan satu pesan di chat jika Minecraft diberi memori kurang dari 5 GB pada komputer dengan 8 GB atau lebih, beserta tautan cara mengalokasikan 6 GB atau lebih di launcher-mu. Aktif secara bawaan.",
-  "gui.dungeontrain.low_memory_notice.toast.title": "Memori rendah: %s GB",
-  "gui.dungeontrain.low_memory_notice.toast.body": "Alokasikan 6 GB atau lebih di launcher-mu agar permainan lebih lancar.",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Sekali per sesi, tampilkan pemberitahuan di layar judul dan satu pesan di chat jika Minecraft diberi memori kurang dari 5 GB pada komputer dengan 8 GB atau lebih, beserta tautan cara mengalokasikan 6 GB atau lebih di launcher-mu. Aktif secara bawaan.",
+  "gui.dungeontrain.low_memory.title": "Memori Minecraft Kurang",
+  "gui.dungeontrain.low_memory.body": "Minecraft hanya punya memori %s GB. Dungeon Train berjalan paling baik dengan 6 GB atau lebih; jika kurang, permainan bisa tersendat dan membeku. Buka pengaturan launcher-mu, naikkan memori (RAM) profil ini menjadi 6 GB atau lebih, lalu mulai ulang permainan.",
+  "gui.dungeontrain.low_memory.footnote": "Ditampilkan karena komputer ini punya memori lebih. Diperiksa hanya di PC ini. Tidak ada yang dikirim.",
+  "gui.dungeontrain.low_memory.how": "Caranya",
+  "gui.dungeontrain.low_memory.ok": "Mengerti",
+  "gui.dungeontrain.low_memory.dont_show": "Jangan tampilkan lagi",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Di dunia ini \"Simpan Inventaris\" sedang menyala.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train diseimbangkan dengan anggapan bahwa mati itu memakan sesuatu darimu, jadi mulai sekarang dunia ini menyimpan statistiknya sendiri. Mematikan kembali aturan permainannya tidak akan mengubah itu — perlengkapan yang kamu bawa melewati sebuah kematian sudah jadi milikmu."
 }

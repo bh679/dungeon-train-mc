@@ -3674,9 +3674,13 @@
   "gui.dungeontrain.options.update_notice_chat": "Chat bei neuer Version",
   "gui.dungeontrain.options.update_notice_chat.tip": "Zeigt eine Chatnachricht, wenn eine neue Version von Dungeon Train erscheint, während du spielst – mit einem Link zu den Neuerungen. Nur echte Releases werden angekündigt, nicht die kleinen automatischen. Standardmäßig an.",
   "gui.dungeontrain.options.low_memory_notice_chat": "Warnung: wenig Speicher",
-  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Zeigt einmal pro Sitzung ein Pop-up im Titelbildschirm und eine Chatnachricht, wenn Minecraft auf einem Computer mit 8 GB oder mehr weniger als 5 GB Arbeitsspeicher hat – mit einem Link, wie du im Launcher 6 GB oder mehr zuweist. Standardmäßig an.",
-  "gui.dungeontrain.low_memory_notice.toast.title": "Wenig Arbeitsspeicher: %s GB",
-  "gui.dungeontrain.low_memory_notice.toast.body": "Weise im Launcher 6 GB oder mehr zu, damit das Spiel flüssiger läuft.",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Zeigt einmal pro Sitzung einen Hinweis im Titelbildschirm und eine Chatnachricht, wenn Minecraft auf einem Computer mit 8 GB oder mehr weniger als 5 GB Arbeitsspeicher hat – mit einem Link, wie du im Launcher 6 GB oder mehr zuweist. Standardmäßig an.",
+  "gui.dungeontrain.low_memory.title": "Minecraft hat zu wenig Arbeitsspeicher",
+  "gui.dungeontrain.low_memory.body": "Minecraft hat nur %s GB Arbeitsspeicher. Dungeon Train läuft am besten mit 6 GB oder mehr; mit weniger kann das Spiel ruckeln und hängen. Öffne die Einstellungen deines Launchers, erhöhe den Arbeitsspeicher (RAM) für dieses Profil auf 6 GB oder mehr und starte das Spiel neu.",
+  "gui.dungeontrain.low_memory.footnote": "Angezeigt, weil dieser Computer freien Arbeitsspeicher hat. Nur auf diesem PC geprüft. Es wurde nichts gesendet.",
+  "gui.dungeontrain.low_memory.how": "So geht's",
+  "gui.dungeontrain.low_memory.ok": "Verstanden",
+  "gui.dungeontrain.low_memory.dont_show": "Nicht mehr anzeigen",
   "chat.dungeontrain.free_play.cause.keep_inventory": "In dieser Welt ist „Inventar behalten“ aktiviert.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train ist darauf abgestimmt, dass Sterben dich etwas kostet, deshalb behält diese Welt ihre Statistiken von hier an für sich. Die Spielregel wieder auszuschalten ändert daran nichts — die Ausrüstung, die du durch einen Tod getragen hast, gehört bereits dir."
 }

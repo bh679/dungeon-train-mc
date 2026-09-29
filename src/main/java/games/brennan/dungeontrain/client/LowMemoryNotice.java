@@ -7,7 +7,6 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.util.MachineSpecs;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -20,14 +19,15 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
-import net.neoforged.neoforge.client.event.ScreenEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 
 import java.util.Locale;
 
 /**
  * Tells a player, once per game session, that Minecraft has been given too little memory — as a
- * toast on the title screen at boot, then as a chat line on the first world join.
+ * full-screen card ({@link LowMemoryPromptScreen}) over the title screen at boot, then as a chat
+ * line on the first world join.
  *
  * <p>Lag reports from players on the launcher-default {@code -Xmx4g} showed the heap all but full
  * (3.4–3.7 GB in use of ~3.8 GB) — the garbage collector running constantly, costing tick time and
@@ -36,10 +36,17 @@ import java.util.Locale;
  *
  * <p>Only nags when the advice is actionable: a machine with less than ~8 GB of RAM has nothing
  * spare to give, and an unreadable reading ({@code 0} from {@link MachineSpecs}) is treated as
- * unknown, never as "low". The toast catches the player before they start (there is no chat at the
- * title screen); the chat line carries what a toast can't — a link explaining how, and a "don't show
- * again" link that turns {@link ClientDisplayConfig#LOW_MEMORY_NOTICE_CHAT} off through a client
- * command. That one toggle silences both.</p>
+ * unknown, never as "low". The card catches the player before they start, which is when the advice
+ * is cheapest to act on; the chat line reminds anyone who clicked past it. Both carry a way to turn
+ * {@link ClientDisplayConfig#LOW_MEMORY_NOTICE_CHAT} off, and that one toggle silences both.</p>
+ *
+ * <h3>Why the card is tick-driven</h3>
+ * <p>The first {@link TitleScreen} is created while the resource-loading splash is still up — a
+ * toast added at that screen's init ran its whole five seconds out behind the splash. So, like
+ * {@link DpiBypassPromptHandler}, the card waits for a title screen with no overlay on top, a short
+ * delay, and the player still being on that same title screen before it opens. If another
+ * title-screen card is up first, {@code mc.screen} isn't a {@link TitleScreen} and this one waits
+ * its turn.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LowMemoryNotice {
@@ -62,8 +69,15 @@ public final class LowMemoryNotice {
 
     static final String COMMAND = "dt-memory-notice";
 
-    /** Once per game session: set on the first title screen that got as far as deciding. */
-    private static boolean toastShownThisSession;
+    /** Ticks to wait after arming before opening — matches the sibling title-screen prompts. */
+    private static final int OPEN_DELAY_TICKS = 24;
+
+    /** Ticks remaining until the card opens; {@code -1} means "not armed". */
+    private static int openDelayRemaining = -1;
+    /** Title screen captured when the delay was armed — parent for the card, and the navigate-away check. */
+    private static TitleScreen pendingParent;
+    /** Once per game session: set when the boot card has been decided on (opened or not needed). */
+    private static boolean promptDecidedThisSession;
     /** Once per game session: set on the first world join that got as far as deciding. */
     private static boolean shownThisSession;
 
@@ -87,18 +101,33 @@ public final class LowMemoryNotice {
     }
 
     @SubscribeEvent
-    public static void onScreenInit(ScreenEvent.Init.Post event) {
-        if (!(event.getScreen() instanceof TitleScreen)) return;
-        if (toastShownThisSession || !ClientDisplayConfig.isLowMemoryNoticeChatEnabled()) return;
-        toastShownThisSession = true;
+    public static void onClientTick(ClientTickEvent.Post event) {
+        if (promptDecidedThisSession) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.screen instanceof TitleScreen titleScreen) || mc.getOverlay() != null) {
+            openDelayRemaining = -1;
+            pendingParent = null;
+            return;
+        }
+        if (openDelayRemaining < 0) {
+            openDelayRemaining = OPEN_DELAY_TICKS;
+            pendingParent = titleScreen;
+            return;
+        }
+        if (--openDelayRemaining > 0) return;
+
+        TitleScreen parent = pendingParent;
+        openDelayRemaining = -1;
+        pendingParent = null;
+        if (parent == null || mc.screen != parent) return;
+
+        promptDecidedThisSession = true;
+        if (!ClientDisplayConfig.isLowMemoryNoticeChatEnabled()) return;
         long heap = MachineSpecs.maxHeapBytes();
         long physical = MachineSpecs.physicalMemoryBytes();
         if (!shouldWarn(heap, physical)) return;
-        LOGGER.info("Low-memory toast: max heap {} bytes on {} bytes physical", heap, physical);
-        Minecraft mc = Minecraft.getInstance();
-        mc.getToasts().addToast(SystemToast.multiline(mc, SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-            Component.translatable("gui.dungeontrain.low_memory_notice.toast.title", formatGb(heap)),
-            Component.translatable("gui.dungeontrain.low_memory_notice.toast.body")));
+        LOGGER.info("Low-memory prompt: max heap {} bytes on {} bytes physical", heap, physical);
+        mc.setScreen(new LowMemoryPromptScreen(parent, formatGb(heap)));
     }
 
     @SubscribeEvent

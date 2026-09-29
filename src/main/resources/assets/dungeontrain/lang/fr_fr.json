@@ -3674,9 +3674,13 @@
   "gui.dungeontrain.options.update_notice_chat": "Chat nouvelle version",
   "gui.dungeontrain.options.update_notice_chat.tip": "Affiche un message dans le chat quand une nouvelle version de Dungeon Train sort pendant que vous jouez, avec un lien vers les nouveautés. Seules les vraies versions sont annoncées, pas les petites mises à jour automatiques. Activé par défaut.",
   "gui.dungeontrain.options.low_memory_notice_chat": "Alerte mémoire faible",
-  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Une fois par session, affiche une notification sur l'écran titre et un message dans le chat si Minecraft dispose de moins de 5 Go de mémoire sur un ordinateur de 8 Go ou plus, avec un lien expliquant comment allouer 6 Go ou plus dans ton launcher. Activé par défaut.",
-  "gui.dungeontrain.low_memory_notice.toast.title": "Mémoire faible : %s Go",
-  "gui.dungeontrain.low_memory_notice.toast.body": "Alloue 6 Go ou plus dans ton launcher pour un jeu plus fluide.",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Une fois par session, affiche un avertissement sur l'écran titre et un message dans le chat si Minecraft dispose de moins de 5 Go de mémoire sur un ordinateur de 8 Go ou plus, avec un lien expliquant comment allouer 6 Go ou plus dans ton launcher. Activé par défaut.",
+  "gui.dungeontrain.low_memory.title": "Minecraft manque de mémoire",
+  "gui.dungeontrain.low_memory.body": "Minecraft ne dispose que de %s Go de mémoire. Dungeon Train fonctionne mieux avec 6 Go ou plus ; avec moins, le jeu peut saccader et se figer. Ouvre les paramètres de ton launcher, augmente la mémoire (RAM) de ce profil à 6 Go ou plus, puis relance le jeu.",
+  "gui.dungeontrain.low_memory.footnote": "Affiché parce que cet ordinateur a de la mémoire en réserve. Vérifié uniquement sur ce PC. Rien n'a été envoyé.",
+  "gui.dungeontrain.low_memory.how": "Comment faire",
+  "gui.dungeontrain.low_memory.ok": "Compris",
+  "gui.dungeontrain.low_memory.dont_show": "Ne plus afficher",
   "chat.dungeontrain.free_play.cause.keep_inventory": "« Conserver l'inventaire » est activé dans ce monde.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train est équilibré autour de l'idée que mourir te coûte quelque chose, alors à partir d'ici ce monde garde ses statistiques pour lui. Redésactiver la règle de jeu n'y changera rien — l'équipement que tu as emporté à travers une mort est déjà à toi."
 }

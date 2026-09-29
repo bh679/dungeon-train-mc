@@ -403,7 +403,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     (btn, on) -> ClientDisplayConfig.setUpdateNoticeChat(on)),
                     "gui.dungeontrain.options.update_notice_chat.tip");
 
-            // "Minecraft only has N GB of memory" — title-screen toast + chat line, once a session each.
+            // "Minecraft only has N GB of memory" — title-screen card + chat line, once a session each.
             case LOW_MEMORY_NOTICE_CHAT -> withTip(
                     CycleButton.onOffBuilder(ClientDisplayConfig.isLowMemoryNoticeChatEnabled())
                             .create(0, 0, width, ROW_H,

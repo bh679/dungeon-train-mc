@@ -2737,8 +2737,12 @@
       "gui.dungeontrain.options.update_notice_chat.tip",
       "gui.dungeontrain.options.low_memory_notice_chat",
       "gui.dungeontrain.options.low_memory_notice_chat.tip",
-      "gui.dungeontrain.low_memory_notice.toast.title",
-      "gui.dungeontrain.low_memory_notice.toast.body"
+      "gui.dungeontrain.low_memory.title",
+      "gui.dungeontrain.low_memory.body",
+      "gui.dungeontrain.low_memory.footnote",
+      "gui.dungeontrain.low_memory.how",
+      "gui.dungeontrain.low_memory.ok",
+      "gui.dungeontrain.low_memory.dont_show"
     ],
     "adventureitemnames": [
       "key.categories.adventureitemnames",

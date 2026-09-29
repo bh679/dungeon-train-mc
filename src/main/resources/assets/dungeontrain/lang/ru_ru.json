@@ -3717,9 +3717,13 @@
   "gui.dungeontrain.options.update_notice_chat": "Чат о новой версии",
   "gui.dungeontrain.options.update_notice_chat.tip": "Показывает сообщение в чате, когда во время игры выходит новая версия Dungeon Train, со ссылкой на список изменений. Объявляются только настоящие релизы, а не мелкие автоматические. Включено по умолчанию.",
   "gui.dungeontrain.options.low_memory_notice_chat": "Предупреждение о нехватке памяти",
-  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Раз за сеанс показывает всплывающее уведомление на титульном экране и сообщение в чате, если Minecraft выделено меньше 5 ГБ памяти на компьютере с 8 ГБ или больше, со ссылкой о том, как выделить в лаунчере 6 ГБ или больше. Включено по умолчанию.",
-  "gui.dungeontrain.low_memory_notice.toast.title": "Мало памяти: %s ГБ",
-  "gui.dungeontrain.low_memory_notice.toast.body": "Выделите в лаунчере 6 ГБ или больше, чтобы игра шла плавнее.",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Раз за сеанс показывает уведомление на титульном экране и сообщение в чате, если Minecraft выделено меньше 5 ГБ памяти на компьютере с 8 ГБ или больше, со ссылкой о том, как выделить в лаунчере 6 ГБ или больше. Включено по умолчанию.",
+  "gui.dungeontrain.low_memory.title": "Minecraft не хватает памяти",
+  "gui.dungeontrain.low_memory.body": "У Minecraft всего %s ГБ памяти. Dungeon Train лучше всего работает с 6 ГБ или больше; при меньшем объёме игра может подтормаживать и зависать. Откройте настройки лаунчера, увеличьте память (RAM) для этого профиля до 6 ГБ или больше и перезапустите игру.",
+  "gui.dungeontrain.low_memory.footnote": "Показано, потому что на этом компьютере есть свободная память. Проверено только на этом ПК. Ничего никуда не отправлено.",
+  "gui.dungeontrain.low_memory.how": "Как это сделать",
+  "gui.dungeontrain.low_memory.ok": "Понятно",
+  "gui.dungeontrain.low_memory.dont_show": "Больше не показывать",
   "chat.dungeontrain.free_play.cause.keep_inventory": "В мире включено сохранение инвентаря.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train сбалансирован вокруг того, что смерть чего-то стоит, поэтому теперь этот мир хранит свою статистику отдельно. Выключение ничего не изменит — снаряжение, которое вы пронесли через смерть, уже ваше."
 }

@@ -732,7 +732,7 @@
       ]
     }
   },
-  "gui.dungeontrain.low_memory_notice.toast.title": {
+  "gui.dungeontrain.low_memory.body": {
     "1": {
       "label": "how much memory Minecraft has been given, in GB (a plain number)",
       "examples": [

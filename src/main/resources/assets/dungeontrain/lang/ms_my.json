@@ -3631,9 +3631,13 @@
   "gui.dungeontrain.options.update_notice_chat": "Chat Versi Baharu",
   "gui.dungeontrain.options.update_notice_chat.tip": "Paparkan mesej dalam chat apabila versi baharu Dungeon Train dikeluarkan semasa anda bermain, dengan pautan ke apa yang baharu. Hanya keluaran sebenar diumumkan, bukan keluaran kecil automatik. Hidup secara lalai.",
   "gui.dungeontrain.options.low_memory_notice_chat": "Amaran Memori Rendah",
-  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Sekali setiap sesi, paparkan pop timbul pada skrin tajuk dan satu mesej dalam sembang jika Minecraft diberi kurang daripada 5 GB memori pada komputer dengan 8 GB atau lebih, bersama pautan cara memperuntukkan 6 GB atau lebih dalam pelancar anda. Hidup secara lalai.",
-  "gui.dungeontrain.low_memory_notice.toast.title": "Memori rendah: %s GB",
-  "gui.dungeontrain.low_memory_notice.toast.body": "Peruntukkan 6 GB atau lebih dalam pelancar anda untuk permainan yang lebih lancar.",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Sekali setiap sesi, paparkan notis pada skrin tajuk dan satu mesej dalam sembang jika Minecraft diberi kurang daripada 5 GB memori pada komputer dengan 8 GB atau lebih, bersama pautan cara memperuntukkan 6 GB atau lebih dalam pelancar anda. Hidup secara lalai.",
+  "gui.dungeontrain.low_memory.title": "Memori Minecraft Rendah",
+  "gui.dungeontrain.low_memory.body": "Minecraft hanya ada memori %s GB. Dungeon Train berjalan paling baik dengan 6 GB atau lebih; jika kurang, permainan boleh tersekat-sekat dan membeku. Buka tetapan pelancar anda, naikkan memori (RAM) profil ini kepada 6 GB atau lebih, kemudian mulakan semula permainan.",
+  "gui.dungeontrain.low_memory.footnote": "Dipaparkan kerana komputer ini ada memori lebihan. Diperiksa pada PC ini sahaja. Tiada apa-apa yang dihantar.",
+  "gui.dungeontrain.low_memory.how": "Caranya",
+  "gui.dungeontrain.low_memory.ok": "Faham",
+  "gui.dungeontrain.low_memory.dont_show": "Jangan tunjuk lagi",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Dalam dunia ini \"Simpan Inventori\" sedang dihidupkan.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train diimbangi atas dasar bahawa kematian merugikan anda sesuatu, jadi mulai sekarang dunia ini menyimpan statistiknya sendiri. Mematikan semula peraturan permainan itu tidak akan mengubahnya — kelengkapan yang anda bawa merentasi satu kematian sudah pun menjadi milik anda."
 }

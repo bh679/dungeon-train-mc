@@ -3717,9 +3717,13 @@
   "gui.dungeontrain.options.update_notice_chat": "Czat o nowej wersji",
   "gui.dungeontrain.options.update_notice_chat.tip": "Wyświetla wiadomość na czacie, gdy podczas gry wyjdzie nowa wersja Dungeon Train, z linkiem do nowości. Ogłaszane są tylko prawdziwe wydania, a nie małe automatyczne. Domyślnie włączone.",
   "gui.dungeontrain.options.low_memory_notice_chat": "Ostrzeżenie o małej pamięci",
-  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Raz na sesję wyświetla wyskakujące powiadomienie na ekranie tytułowym i wiadomość na czacie, jeśli Minecraft ma mniej niż 5 GB pamięci na komputerze z 8 GB lub więcej, z linkiem pokazującym, jak przydzielić 6 GB lub więcej w launcherze. Domyślnie włączone.",
-  "gui.dungeontrain.low_memory_notice.toast.title": "Mało pamięci: %s GB",
-  "gui.dungeontrain.low_memory_notice.toast.body": "Przydziel w launcherze 6 GB lub więcej, aby gra działała płynniej.",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "Raz na sesję wyświetla powiadomienie na ekranie tytułowym i wiadomość na czacie, jeśli Minecraft ma mniej niż 5 GB pamięci na komputerze z 8 GB lub więcej, z linkiem pokazującym, jak przydzielić 6 GB lub więcej w launcherze. Domyślnie włączone.",
+  "gui.dungeontrain.low_memory.title": "Minecraft ma za mało pamięci",
+  "gui.dungeontrain.low_memory.body": "Minecraft ma tylko %s GB pamięci. Dungeon Train działa najlepiej z 6 GB lub więcej; przy mniejszej ilości gra może się przycinać i zawieszać. Otwórz ustawienia launchera, zwiększ pamięć (RAM) dla tego profilu do 6 GB lub więcej, a potem uruchom grę ponownie.",
+  "gui.dungeontrain.low_memory.footnote": "Wyświetlane, bo ten komputer ma wolną pamięć. Sprawdzono tylko na tym komputerze. Nic nie zostało wysłane.",
+  "gui.dungeontrain.low_memory.how": "Jak to zrobić",
+  "gui.dungeontrain.low_memory.ok": "Rozumiem",
+  "gui.dungeontrain.low_memory.dont_show": "Nie pokazuj więcej",
   "chat.dungeontrain.free_play.cause.keep_inventory": "W tym świecie włączone jest „Zachowaj ekwipunek”.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train jest wyważony wokół tego, że śmierć coś cię kosztuje, więc od tej chwili ten świat zatrzymuje swoje statystyki dla siebie. Ponowne wyłączenie reguły gry tego nie zmieni — sprzęt, który przeniosłeś przez śmierć, już jest twój."
 }

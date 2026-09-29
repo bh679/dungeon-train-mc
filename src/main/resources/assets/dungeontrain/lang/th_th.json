@@ -3631,9 +3631,13 @@
   "gui.dungeontrain.options.update_notice_chat": "แจ้งเวอร์ชันใหม่ในแชท",
   "gui.dungeontrain.options.update_notice_chat.tip": "แสดงข้อความในแชทเมื่อ Dungeon Train ออกเวอร์ชันใหม่ระหว่างที่คุณกำลังเล่น พร้อมลิงก์ไปยังสิ่งที่มีใหม่ แจ้งเฉพาะรุ่นจริงเท่านั้น ไม่รวมรุ่นย่อยอัตโนมัติ เปิดไว้เป็นค่าเริ่มต้น",
   "gui.dungeontrain.options.low_memory_notice_chat": "เตือนหน่วยความจำต่ำ",
-  "gui.dungeontrain.options.low_memory_notice_chat.tip": "แสดงป๊อปอัปที่หน้าจอหลักและข้อความในแชทหนึ่งครั้งต่อเซสชัน หาก Minecraft ได้รับหน่วยความจำน้อยกว่า 5 GB บนคอมพิวเตอร์ที่มี 8 GB ขึ้นไป พร้อมลิงก์วิธีจัดสรร 6 GB ขึ้นไปในตัวเปิดเกม เปิดอยู่โดยค่าเริ่มต้น",
-  "gui.dungeontrain.low_memory_notice.toast.title": "หน่วยความจำต่ำ: %s GB",
-  "gui.dungeontrain.low_memory_notice.toast.body": "จัดสรร 6 GB ขึ้นไปในตัวเปิดเกมของคุณเพื่อให้เล่นได้ลื่นขึ้น",
+  "gui.dungeontrain.options.low_memory_notice_chat.tip": "แสดงประกาศที่หน้าจอหลักและข้อความในแชทหนึ่งครั้งต่อเซสชัน หาก Minecraft ได้รับหน่วยความจำน้อยกว่า 5 GB บนคอมพิวเตอร์ที่มี 8 GB ขึ้นไป พร้อมลิงก์วิธีจัดสรร 6 GB ขึ้นไปในตัวเปิดเกม เปิดอยู่โดยค่าเริ่มต้น",
+  "gui.dungeontrain.low_memory.title": "Minecraft มีหน่วยความจำไม่พอ",
+  "gui.dungeontrain.low_memory.body": "Minecraft มีหน่วยความจำเพียง %s GB Dungeon Train ทำงานได้ดีที่สุดเมื่อมี 6 GB ขึ้นไป หากน้อยกว่านั้น เกมอาจกระตุกและค้างได้ เปิดการตั้งค่าของตัวเปิดเกม เพิ่มหน่วยความจำ (RAM) ของโปรไฟล์นี้เป็น 6 GB ขึ้นไป แล้วเริ่มเกมใหม่",
+  "gui.dungeontrain.low_memory.footnote": "แสดงเพราะคอมพิวเตอร์เครื่องนี้มีหน่วยความจำเหลือ ตรวจสอบบนเครื่องนี้เท่านั้น ไม่มีการส่งข้อมูลไปที่ใด",
+  "gui.dungeontrain.low_memory.how": "วิธีทำ",
+  "gui.dungeontrain.low_memory.ok": "เข้าใจแล้ว",
+  "gui.dungeontrain.low_memory.dont_show": "ไม่ต้องแสดงอีก",
   "chat.dungeontrain.free_play.cause.keep_inventory": "โลกนี้เปิด \"เก็บของในกระเป๋าไว้\" อยู่",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train ปรับสมดุลไว้บนพื้นฐานที่ว่าการตายต้องแลกด้วยอะไรบางอย่าง โลกนี้จึงเก็บสถิติของตัวเองไว้นับจากนี้ไป การปิดกฎของเกมกลับไม่ได้เปลี่ยนเรื่องนั้น — ของที่คุณถือข้ามความตายมาแล้วนั้นเป็นของคุณไปแล้ว"
 }

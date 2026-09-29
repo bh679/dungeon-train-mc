@@ -3675,8 +3675,12 @@
   "gui.dungeontrain.options.update_notice_chat.tip": "Muestra un mensaje en el chat cuando sale una nueva versión de Dungeon Train mientras juegas, con un enlace a las novedades. Solo se anuncian las versiones reales, no las pequeñas automáticas. Activado por defecto.",
   "gui.dungeontrain.options.low_memory_notice_chat": "Aviso de poca memoria",
   "gui.dungeontrain.options.low_memory_notice_chat.tip": "Una vez por sesión, muestra un aviso en la pantalla de título y un mensaje en el chat si Minecraft tiene menos de 5 GB de memoria en un ordenador con 8 GB o más, con un enlace que explica cómo asignar 6 GB o más en tu launcher. Activado por defecto.",
-  "gui.dungeontrain.low_memory_notice.toast.title": "Poca memoria: %s GB",
-  "gui.dungeontrain.low_memory_notice.toast.body": "Asigna 6 GB o más en tu launcher para que el juego vaya más fluido.",
+  "gui.dungeontrain.low_memory.title": "Minecraft tiene poca memoria",
+  "gui.dungeontrain.low_memory.body": "Minecraft solo tiene %s GB de memoria. Dungeon Train funciona mejor con 6 GB o más; con menos, el juego puede dar tirones y congelarse. Abre los ajustes de tu launcher, sube la memoria (RAM) de este perfil a 6 GB o más y reinicia el juego.",
+  "gui.dungeontrain.low_memory.footnote": "Se muestra porque este ordenador tiene memoria de sobra. Comprobado solo en este PC. No se ha enviado nada.",
+  "gui.dungeontrain.low_memory.how": "Cómo hacerlo",
+  "gui.dungeontrain.low_memory.ok": "Entendido",
+  "gui.dungeontrain.low_memory.dont_show": "No volver a mostrar",
   "chat.dungeontrain.free_play.cause.keep_inventory": "En este mundo está activado «Conservar inventario».",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train está equilibrado para que morir te cueste algo, así que a partir de ahora este mundo se queda con sus propias estadísticas. Volver a desactivar la regla de juego no cambiará eso: el equipo que llevaste contigo a través de una muerte ya es tuyo."
 }
