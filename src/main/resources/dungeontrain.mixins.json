@@ -78,6 +78,7 @@
     "SubLevelEntityCollisionNoLoadMixin",
     "RapierPipelineNoSyncLoadMixin",
     "RapierPipelineBlockChangeNoLoadMixin",
+    "FluidInteractionNoLoadMixin",
     "SableBlockChangeGuardMixin",
     "MergedMassTrackerPivotFreezeMixin",
     "SubLevelHoldingChunkFileMixin",
