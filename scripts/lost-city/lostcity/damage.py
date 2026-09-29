@@ -79,7 +79,9 @@ def rubble_field(canvas: Canvas, seed: int, box: tuple[int, int, int, int], peak
             d = max(x0 - x, x - x1, z0 - z, z - z1, 0)
             if d > spill:
                 continue
-            height = peak * (1 - d / (spill + 1)) + 0.9 * _bilinear(bumps, x, z) - 0.3
+            edge = min(x - margin, sx - 1 - margin - x, z - margin, sz - 1 - margin - z)
+            fade = min(1.0, (edge + 1) / 6)                   # and always down to nothing at the margin
+            height = (peak * (1 - d / (spill + 1)) + 0.9 * _bilinear(bumps, x, z) - 0.3) * fade
             base = 1
             while canvas.get((x, base, z)) not in (None, AIR) and base < peak + 8:
                 base += 1

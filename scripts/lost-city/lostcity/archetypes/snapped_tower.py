@@ -51,10 +51,10 @@ def draw(canvas: Canvas) -> None:
     end = START + FLOORS * PERIOD - BREAK + 4
     m = SPEC.margin
     rubble_field(canvas, SPEC.seed, (X1 - 2, Z0 + 2, START + SMASH_FROM - 1, Z1 - 2), 2, 8, m)   # under the break and the hanging half
-    rubble_field(canvas, SPEC.seed + 1, (START + SMASH_FROM - 2, Z0 + 2, end + 4, Z1 - 2), 5, 10, m)  # where it came down: a deep bank past the end
+    rubble_field(canvas, SPEC.seed + 1, (START + SMASH_FROM - 2, Z0 + 2, end + 1, Z1 - 2), 4, 9, m)   # where it came down, fading out past the end
     rubble_field(canvas, SPEC.seed + 2, (X0 + 1, Z0 + 1, X1 + 1, Z1 - 1), 1, 6, m)               # round the stub's foot
     for (px, pz, _) in TUMBLED:
-        rubble_field(canvas, SPEC.seed + px, (px, pz, px + 4, pz + 4), 3, 4, m)                 # a mound each piece is stuck in
+        rubble_field(canvas, SPEC.seed + px, (px, pz, px + 3, pz + 3), 2, 3, m)                 # a low mound each piece is stuck in
     for f in range(STUB_FLOORS):
         y = 2 + f * PERIOD
         dx = lean(y)
@@ -71,20 +71,39 @@ def draw(canvas: Canvas) -> None:
 
 
 END = START + FLOORS * PERIOD - BREAK + 4
-TUMBLED = ((END + 2, Z0 + 1, "lean"), (END + 7, Z0 + 11, "lean"), (END + 4, Z0 + 6, "flat"), (END + 9, Z0 + 3, "flat"))
-PIER, SPANDREL = block("tuff"), block("polished_tuff")
+TUMBLED = ((END - 3, Z0 - 4, "lean"), (END + 1, Z0 + 2, "corner"), (END + 4, Z0 - 3, "flat"), (END + 2, Z0 + 9, "lean"),
+           (END + 6, Z0 + 5, "corner"), (END + 4, Z0 + 13, "flat"), (END - 1, Z1 - 1, "lean"))   # all clear of the margin
+PIER, SPANDREL, PLATE = block("tuff"), block("polished_tuff"), block("andesite")
 
 
 def _tumbled_sections(canvas: Canvas) -> None:
-    """Slices of facade that slid on past the wreck and dug in: a bay's worth of wall five wide, either
-    leaning at forty-five degrees into its mound or lying flat with a bit of wall still standing on it.
-    Placed after the finish, in the mix's own blocks, so the gravity pass leaves them be."""
+    """Pieces of the building that slid on past the wreck and dug in, standing proud of the rubble: bays of
+    facade leaning at forty-five degrees, corners of two walls with a plate between, and floor plates
+    lying flat with a stub of wall on one edge. Placed after the finish, in the mix's own blocks, so the
+    gravity pass leaves them be."""
     rng = random.Random(SPEC.seed ^ 0x7B1D)
+    makers = {"lean": _leaning_slice, "flat": _flat_slice, "corner": _corner_piece}
     for (px, pz, how) in TUMBLED:
-        cells = _leaning_slice(px, pz, rng) if how == "lean" else _flat_slice(px, pz, rng)
-        for pos, state in cells.items():
-            if canvas.inside(pos) and SPEC.margin <= pos[0] < SPEC.size[0] - SPEC.margin:
+        for pos, state in makers[how](px, pz, rng).items():
+            if canvas.inside(pos) and SPEC.margin <= pos[0] < SPEC.size[0] - SPEC.margin and SPEC.margin <= pos[2] < SPEC.size[2] - SPEC.margin:
                 canvas.put(pos, state)
+
+
+def _corner_piece(px: int, pz: int, rng: random.Random) -> dict:
+    """Two walls meeting at a pier, four courses high, a floor plate through them one course up, tipped
+    so the whole thing sits a block lower along one edge."""
+    out = {}
+    for layer in range(5):
+        for k in range(5):
+            wall = _wall_cell(k, layer, rng)
+            if wall is not None:
+                out[(px + k, 2 + layer, pz)] = wall               # wall along x
+                out[(px, 2 + layer, pz + k)] = wall               # wall along z
+    for i in range(1, 5):
+        for k in range(1, 5):
+            out[(px + i, 3, pz + k)] = PLATE
+    out[(px, 2, pz)] = PIER
+    return out
 
 
 def _wall_cell(k: int, layer: int, rng: random.Random):
@@ -97,10 +116,10 @@ def _wall_cell(k: int, layer: int, rng: random.Random):
 
 
 def _leaning_slice(px: int, pz: int, rng: random.Random) -> dict:
-    """Five wide along z, five tall, sheared one block east per layer: dug in at forty-five degrees."""
+    """Seven wide along z, six tall, sheared one block east per layer: dug in at forty-five degrees."""
     out = {}
-    for layer in range(5):
-        for k in range(5):
+    for layer in range(6):
+        for k in range(7):
             state = _wall_cell(k, layer, rng)
             if state is not None:
                 out[(px + layer, 2 + layer, pz + k)] = state
@@ -109,9 +128,9 @@ def _leaning_slice(px: int, pz: int, rng: random.Random) -> dict:
 
 def _flat_slice(px: int, pz: int, rng: random.Random) -> dict:
     """A floor plate lying on the mound with a stub of wall two courses high along one edge."""
-    out = {(px + i, 2, pz + k): SPANDREL if (i + k) % 3 else PIER for i in range(5) for k in range(5)}
-    for layer in range(2):
-        for k in range(5):
+    out = {(px + i, 2, pz + k): PLATE if (i + k) % 3 else PIER for i in range(6) for k in range(6)}
+    for layer in range(3):
+        for k in range(6):
             state = _wall_cell(k, layer, rng)
             if state is not None:
                 out[(px, 3 + layer, pz + k)] = state
