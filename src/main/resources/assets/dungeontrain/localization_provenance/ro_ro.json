@@ -90,6 +90,8 @@
       "advancements.dungeontrain.dungeon_train.no_break_100.description",
       "advancements.dungeontrain.dungeon_train.no_break_1000.description",
       "advancements.dungeontrain.dungeon_train.contained_loop.description",
+      "gui.dungeontrain.options.low_memory_notice_chat",
+      "gui.dungeontrain.options.low_memory_notice_chat.tip",
       "gui.dungeontrain.editor_settings.command_menu.tip",
       "gui.dungeontrain.editor_settings.template_blocks_menu.tip",
       "gui.dungeontrain.editor_settings.container_contents_menu.tip",

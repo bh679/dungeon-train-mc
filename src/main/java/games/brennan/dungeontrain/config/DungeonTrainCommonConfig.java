@@ -241,6 +241,8 @@ public final class DungeonTrainCommonConfig {
      * compute and apply everything at load (the original behaviour). Default true.
      */
     public static final boolean DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE = true;
+    /** Scan the Nether-band foliage strip on the worldgen worker (SPAWN) and only write at chunk load. */
+    public static final boolean DEFAULT_NETHER_FOLIAGE_STRIP_PRECOMPUTE = true;
 
     /**
      * Distant Horizons LOD-lite decoration. DH's LOD generator threads ({@code DH-World Gen Thread[N]})
@@ -572,6 +574,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_MAX_CEILING_HEIGHT;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_MIRROR_PRECOMPUTE;
     public static final ModConfigSpec.BooleanValue DISTANT_LOD_LITE_DECORATION;
+    public static final ModConfigSpec.BooleanValue NETHER_FOLIAGE_STRIP_PRECOMPUTE;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_TRACK_FLATTEN;
     public static final ModConfigSpec.BooleanValue CHUNCKS_ENABLED;
     public static final ModConfigSpec.IntValue CHUNCKS_HOLD_BLOCKS;
@@ -646,6 +649,7 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_MAX_CEILING_HEIGHT = pair.getLeft().upsideDownMaxCeilingHeight;
         UPSIDE_DOWN_MIRROR_PRECOMPUTE = pair.getLeft().upsideDownMirrorPrecompute;
         DISTANT_LOD_LITE_DECORATION = pair.getLeft().distantLodLiteDecoration;
+        NETHER_FOLIAGE_STRIP_PRECOMPUTE = pair.getLeft().netherFoliageStripPrecompute;
         UPSIDE_DOWN_TRACK_FLATTEN = pair.getLeft().upsideDownTrackFlatten;
         CHUNCKS_ENABLED = pair.getLeft().chuncksEnabled;
         CHUNCKS_HOLD_BLOCKS = pair.getLeft().chuncksHoldBlocks;
@@ -950,6 +954,13 @@ public final class DungeonTrainCommonConfig {
                         "features are seeded identically so they stand where the real chunk's will. Real chunks are",
                         "never affected. false = full decoration on every thread (original behaviour). Default true.")
                 .define("distantLodLiteDecoration", DEFAULT_DISTANT_LOD_LITE_DECORATION);
+        ModConfigSpec.BooleanValue netherFoliageStripPrecompute = b
+                .comment("Scan the Nether transition band's foliage strip (which overworld leaves/logs/flowers to clear",
+                        "off the netherrack crossfade + Nether core) on the worldgen worker thread (SPAWN step) and only",
+                        "apply the block writes at chunk load, instead of scanning every block of every band chunk on",
+                        "the main thread at load. Byte-identical terrain. Set false to scan at load (original behaviour).",
+                        "Default true.")
+                .define("netherFoliageStripPrecompute", DEFAULT_NETHER_FOLIAGE_STRIP_PRECOMPUTE);
         ModConfigSpec.BooleanValue upsideDownTrackFlatten = b
                 .comment("Keep mountains off the track in the upside-down band: near the track the overworld terrain",
                         "(and its biomes) is weighted toward lowland before it is mirrored, fading smoothly back to the",
@@ -1141,7 +1152,8 @@ public final class DungeonTrainCommonConfig {
                 upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks, upsideDownExitGapBlocks,
                 upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
                 upsideDownBedrockRoof, upsideDownCloudY, upsideDownExitNoiseSkipEpsilon,
-                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute, distantLodLiteDecoration, upsideDownTrackFlatten,
+                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute, distantLodLiteDecoration,
+                netherFoliageStripPrecompute, upsideDownTrackFlatten,
                 chuncksEnabled, chuncksHoldBlocks, chuncksFadeBlocks, chuncksLeadGapBlocks,
                 chuncksKeepDensity, chuncksSliceRatio,
                 spheresEnabled, spheresHoldBlocks, spheresFadeBlocks, spheresLeadGapBlocks,
@@ -1599,6 +1611,11 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? DISTANT_LOD_LITE_DECORATION.get() : DEFAULT_DISTANT_LOD_LITE_DECORATION;
     }
 
+    /** Whether the Nether-band foliage strip is scanned off-thread at SPAWN; falls back to the default pre-load. */
+    public static boolean isNetherFoliageStripPrecompute() {
+        return isLoaded() ? NETHER_FOLIAGE_STRIP_PRECOMPUTE.get() : DEFAULT_NETHER_FOLIAGE_STRIP_PRECOMPUTE;
+    }
+
     /** Whether the chuncks band is active; falls back to the hardcoded default pre-load. */
     public static boolean isChuncksEnabled() {
         return isLoaded() ? CHUNCKS_ENABLED.get() : DEFAULT_CHUNCKS_ENABLED;
@@ -1778,6 +1795,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue upsideDownMaxCeilingHeight,
                           ModConfigSpec.BooleanValue upsideDownMirrorPrecompute,
                           ModConfigSpec.BooleanValue distantLodLiteDecoration,
+                          ModConfigSpec.BooleanValue netherFoliageStripPrecompute,
                           ModConfigSpec.BooleanValue upsideDownTrackFlatten,
                           ModConfigSpec.BooleanValue chuncksEnabled,
                           ModConfigSpec.IntValue chuncksHoldBlocks,

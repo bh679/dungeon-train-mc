@@ -13,6 +13,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import org.joml.Vector3d;
 import org.joml.primitives.AABBdc;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -141,9 +142,18 @@ public final class CarriageDeck {
         if (!(ship instanceof SableManagedShip sableShip) || sableShip.subLevel() == null) {
             return Blocks.AIR.defaultBlockState();
         }
+        return blockInPlot(sableShip.subLevel().getPlot(), shipLocal(ship, worldPos));
+    }
+
+    /**
+     * The ship-local (plot) cell of {@code ship} whose volume holds the centre of world cell
+     * {@code worldPos}. The position half of {@link #blockAt}, for callers that also need to know
+     * <em>which</em> carriage block they found — e.g. whether a player placed it.
+     */
+    public static BlockPos shipLocal(ManagedShip ship, BlockPos worldPos) {
         Vector3d local = new Vector3d(worldPos.getX() + 0.5, worldPos.getY() + 0.5, worldPos.getZ() + 0.5);
         ship.worldToShip(local);
-        return blockInPlot(sableShip.subLevel().getPlot(), BlockPos.containing(local.x, local.y, local.z));
+        return BlockPos.containing(local.x, local.y, local.z);
     }
 
     /**
@@ -156,13 +166,19 @@ public final class CarriageDeck {
      * whether {@code getChunk} bounds-checks plot-local or global coords; guessing wrong there
      * returns null, which reads as air and silently disables every caller.</p>
      */
-    private static BlockState blockInPlot(LevelPlot plot, BlockPos shipLocal) {
+    public static BlockState blockInPlot(LevelPlot plot, BlockPos shipLocal) {
+        LevelChunk chunk = chunkInPlot(plot, shipLocal);
+        return chunk == null ? Blocks.AIR.defaultBlockState() : chunk.getBlockState(shipLocal);
+    }
+
+    /** The loaded plot chunk holding ship-local {@code shipLocal}, or {@code null}; see {@link #blockInPlot}. */
+    @Nullable
+    public static LevelChunk chunkInPlot(LevelPlot plot, BlockPos shipLocal) {
         long chunkKey = ChunkPos.asLong(shipLocal.getX() >> 4, shipLocal.getZ() >> 4);
         for (PlotChunkHolder holder : plot.getLoadedChunks()) {
             LevelChunk chunk = holder.getChunk();
-            if (chunk == null || chunk.getPos().toLong() != chunkKey) continue;
-            return chunk.getBlockState(shipLocal);
+            if (chunk != null && chunk.getPos().toLong() == chunkKey) return chunk;
         }
-        return Blocks.AIR.defaultBlockState();
+        return null;
     }
 }

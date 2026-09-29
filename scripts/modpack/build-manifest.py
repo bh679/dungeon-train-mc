@@ -63,6 +63,11 @@ def load_config(path: Path) -> dict:
     sable_missing = [k for k in sable_required if k not in config["sable"]]
     if sable_missing:
         raise ValueError(f"{path} sable block is missing keys: {', '.join(sable_missing)}")
+    # recommended_ram_mb is optional: the memory the CurseForge app pre-fills for the pack's
+    # profile (manifest minecraft.recommendedRam, in MB). Absent => the app's own default.
+    ram = config.get("recommended_ram_mb")
+    if ram is not None and (isinstance(ram, bool) or not isinstance(ram, int) or ram <= 0):
+        raise ValueError(f"{path} 'recommended_ram_mb' must be a positive integer (MB), got {ram!r}")
     # optional_mods is optional; when present each entry must carry project_id + file_id.
     # Each becomes a CurseForge manifest file whose "required" flag is taken from the entry's
     # own "required" field (default False): True => bundled & ENABLED by default; False =>
@@ -129,11 +134,14 @@ def build_manifest(
                 "required": bool(opt.get("required", False)),
             }
         )
+    minecraft = {
+        "version": mc_version,
+        "modLoaders": [{"id": f"neoforge-{neo_version}", "primary": True}],
+    }
+    if config.get("recommended_ram_mb"):
+        minecraft = {**minecraft, "recommendedRam": int(config["recommended_ram_mb"])}
     return {
-        "minecraft": {
-            "version": mc_version,
-            "modLoaders": [{"id": f"neoforge-{neo_version}", "primary": True}],
-        },
+        "minecraft": minecraft,
         "manifestType": "minecraftModpack",
         "manifestVersion": 1,
         "name": config["name"],

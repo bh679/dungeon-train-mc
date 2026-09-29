@@ -732,6 +732,24 @@
       ]
     }
   },
+  "gui.dungeontrain.low_memory.body": {
+    "1": {
+      "label": "how much memory Minecraft has been given, in GB (a plain number)",
+      "examples": [
+        "4",
+        "3.5"
+      ]
+    }
+  },
+  "chat.dungeontrain.low_memory_notice": {
+    "1": {
+      "label": "how much memory Minecraft has been given, in GB (a plain number)",
+      "examples": [
+        "4",
+        "3.5"
+      ]
+    }
+  },
   "chat.dungeontrain.book_suspended.blocked": {
     "1": {
       "label": "how long the pause still has to run",

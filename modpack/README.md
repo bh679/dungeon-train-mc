@@ -162,6 +162,22 @@ repo memory), `distantGeneratorMode` (dropping to SURFACE would strip trees from
   Nether-core decoration places only the silhouette-scale features (config
   `distantLodLiteDecoration`, common config). Neither half depends on the other.
 
+## Recommended memory (6 GB)
+
+Lag reports from players on the launcher-default 4 GB showed the heap nearly full (3.4–3.7 GB in
+use) and the garbage collector eating tick time; players on 6 GB+ didn't show it. So the packs
+recommend **6 GB**:
+
+- **CurseForge** — `recommended_ram_mb` in `modpack.config.json` becomes the manifest's
+  `minecraft.recommendedRam` (MB), which the CurseForge app pre-fills for the pack's profile.
+- **Modrinth** — the `.mrpack` format has no memory field, so the same advice rides in `summary`
+  (written to `modrinth.index.json`), which launchers show on import.
+- **In game** — `client/LowMemoryNotice` prints one dismissable chat line per session when the heap
+  is under 5 GB on a machine with 8 GB+ (toggle: `lowMemoryNoticeChat` in the client config).
+
+`test_build_manifest.py` pins both values. The project-page descriptions on CurseForge and Modrinth
+are not versioned in this repo — keep their memory advice in step by hand.
+
 ## ⚠️ A pack update replaces `config/` — keep player data out of it
 
 Every publish of this pack ships `overrides/config/khi.toml` and
