@@ -21066,7 +21066,7 @@
     },
     {
       "id": "stage-fence-connect-modes",
-      "version": "0.1045.0",
+      "version": "0.1046.0",
       "type": "feat",
       "tags": [
         "feature",
