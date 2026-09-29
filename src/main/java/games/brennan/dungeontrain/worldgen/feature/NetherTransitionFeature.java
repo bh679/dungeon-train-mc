@@ -110,6 +110,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     private static final int TUNNEL_CLEAR_HEIGHT = 14;
     /** Depth of the surface skin recoloured to netherrack across the crossfade. */
     private static final int SURFACE_SKIN_DEPTH = 4;
+    /** Blocks of obsidian laid under the netherrack skin where it meets the overworld rock beneath. */
+    private static final int OBSIDIAN_UNDERLAY_DEPTH = 1;
     /** Salt for the crossfade rock→netherrack dither (matches the old mountainMaterial dither). */
     private static final long CROSSFADE_DITHER_SALT = 0x9E3779B97F4A7C15L;
     /** Extra Z clearance on each side of the tunnel wall span. */
@@ -142,6 +144,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             Heightmap.Types.WORLD_SURFACE_WG);
 
     private static final BlockState NETHERRACK = Blocks.NETHERRACK.defaultBlockState();
+    private static final BlockState OBSIDIAN = Blocks.OBSIDIAN.defaultBlockState();
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
     private static final BlockState WATER = Blocks.WATER.defaultBlockState();
 
@@ -580,7 +583,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * raised terrain at {@code top_layer_modification}) and recolours the top {@link #SURFACE_SKIN_DEPTH}
      * solid blocks where the coherent dither falls under {@code n}; everything below stays natural stone
      * (the one-block face the core looks at is covered separately by {@link #coverCoreFacingFace}).
-     * No {@code MountainNoise}/palette recompute is needed.
+     * No {@code MountainNoise}/palette recompute is needed. Under every netherrack cell that sits on
+     * overworld rock, that rock becomes {@link #OBSIDIAN_UNDERLAY_DEPTH} block(s) of obsidian — a seam
+     * between the red skin and the grey stone that follows the dither exactly.
      *
      * <p>It also <b>drains worldgen water</b> from the column (aquifer pools, springs, surface lakes):
      * the recoloured skin is only the top few blocks, so the mountain body underneath is still overworld
@@ -602,6 +607,18 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             if (!w.isSolidGround(dx, y, dz)) continue; // only recolour existing solid ground (never air/fluid)
             w.set(dx, y, dz, NETHERRACK);
             changed = true;
+        }
+        // Obsidian underlay: the rock directly beneath each netherrack skin cell. Scans one block past the
+        // skin floor so the lowest skin row gets its underlay too; stops at anything that isn't overworld
+        // rock (air, fluid, bedrock, track, structures, Nether blocks — and the netherrack itself).
+        for (int y = top; y >= floor; y--) {
+            if (!w.isSame(dx, y, dz, NETHERRACK)) continue;
+            for (int d = 1; d <= OBSIDIAN_UNDERLAY_DEPTH; d++) {
+                int uy = y - d;
+                if (uy < minY || !NetherRockCover.isOverworldRock(w.state(dx, uy, dz))) break;
+                w.set(dx, uy, dz, OBSIDIAN);
+                changed = true;
+            }
         }
         // Drain any worldgen water in the column. Scan from the motion-blocking surface (the top of any
         // water) down to the build floor; only water cells are cleared, so solid terrain is untouched.
