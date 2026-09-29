@@ -72,6 +72,7 @@ public final class BlockVariantMenu {
         ENTRY_ROT_DIRS,
         ENTRY_HALF_MODE,
         ENTRY_ACTIVE_MODE,
+        ENTRY_AUTO_CONNECT,
         ENTRY_DIFF_MIN,
         ENTRY_DIFF_MAX,
         ROT_DIR_OPTION,
@@ -102,6 +103,8 @@ public final class BlockVariantMenu {
     private static int lockId = 0;
     private static VariantCopyRoll copyRoll = VariantCopyRoll.DEFAULT;
     private static boolean copySettingsSupported;
+    /** Whether this plot's spawn path honours the fence / wall auto-connect flag — gates the row pill. */
+    private static boolean autoConnectSupported;
     private static VariantCopyScope copyScope = VariantCopyScope.BOTH;
     private static games.brennan.dungeontrain.editor.VariantSpan spanMode =
         games.brennan.dungeontrain.editor.VariantSpan.NONE;
@@ -162,6 +165,7 @@ public final class BlockVariantMenu {
 
     /** True when this plot's template repeats at all — only then are the two copy cells drawn. */
     public static boolean copySettingsSupported() { return copySettingsSupported; }
+    public static boolean autoConnectSupported() { return autoConnectSupported; }
 
     /** Which tiles of a repeating room this cell applies in. */
     public static VariantCopyScope copyScope() { return copyScope; }
@@ -271,6 +275,7 @@ public final class BlockVariantMenu {
             lockId = 0;
             copyRoll = VariantCopyRoll.DEFAULT;
             copySettingsSupported = false;
+            autoConnectSupported = false;
             copyScope = VariantCopyScope.BOTH;
             screen = Screen.ROOT;
             removeMode = false;
@@ -293,6 +298,7 @@ public final class BlockVariantMenu {
         lockId = packet.lockId();
         copyRoll = VariantCopyRoll.fromOrdinal(packet.copyRoll());
         copySettingsSupported = packet.copySettingsSupported();
+        autoConnectSupported = packet.autoConnectSupported();
         copyScope = VariantCopyScope.fromOrdinal(packet.copyScope());
         spanMode = games.brennan.dungeontrain.editor.VariantSpan.fromByte(packet.spanMode());
         anchorPos = packet.anchorPos();

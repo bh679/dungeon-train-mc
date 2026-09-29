@@ -130,6 +130,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_GROUP_REF = "gref";
     /** Per-entry redstone-toggle mode ordinal ({@code VariantActive}). Absent when default INACTIVE. */
     private static final String NBT_ACTIVE_MODE = "am";
+    /** Per-entry fence / wall auto-connect flag ({@code VariantConnect}). Absent when false. */
+    private static final String NBT_AUTO_CONNECT = "ac";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -435,6 +437,9 @@ public final class VariantClipboardItem extends Item {
             if (!s.active().isDefault()) {
                 entry.putByte(NBT_ACTIVE_MODE, (byte) s.active().mode().ordinal());
             }
+            if (s.autoConnect()) {
+                entry.putBoolean(NBT_AUTO_CONNECT, true);
+            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
@@ -591,8 +596,9 @@ public final class VariantClipboardItem extends Item {
                 if (!raw.isEmpty()) lootPrefab = raw;
             }
             int groupRef = entry.contains(NBT_GROUP_REF, Tag.TAG_INT) ? entry.getInt(NBT_GROUP_REF) : 0;
+            boolean autoConnect = entry.getBoolean(NBT_AUTO_CONNECT);
             out.add(new VariantState(state, beNbt, weight, rotation, lootPrefab, null, half,
-                difficulty, groupRef, active));
+                difficulty, groupRef, active, autoConnect));
         }
         return out;
     }

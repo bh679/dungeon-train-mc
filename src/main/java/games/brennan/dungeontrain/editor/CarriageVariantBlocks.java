@@ -663,8 +663,13 @@ public final class CarriageVariantBlocks {
             // v3 entries had a per-entry "locked" field; v4 moved locking
             // to the cell level. Old "locked" values are silently dropped
             // on read — the file rewrites cleanly without it.
+            // Additive fence / wall / pane auto-connect flag. Absent → false
+            // (place the captured arms), so older files spawn unchanged.
+            boolean autoConnect = obj.has("autoConnect") && obj.get("autoConnect").isJsonPrimitive()
+                && obj.get("autoConnect").getAsJsonPrimitive().isBoolean()
+                && obj.get("autoConnect").getAsBoolean();
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
-                VariantDifficulty.NONE, groupRef, active);
+                VariantDifficulty.NONE, groupRef, active, autoConnect);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -1388,6 +1393,9 @@ public final class CarriageVariantBlocks {
         }
         if (!s.active().isDefault()) {
             sb.append(", \"active\": \"").append(activeModeName(s.active().mode())).append("\"");
+        }
+        if (s.autoConnect()) {
+            sb.append(", \"autoConnect\": true");
         }
         sb.append("}");
     }

@@ -2440,6 +2440,8 @@
   "gui.dungeontrain.editor_menu.block_variant.active_on": "On",
   "gui.dungeontrain.editor_menu.block_variant.active_random": "R",
   "gui.dungeontrain.editor_menu.block_variant.active_off": "Off",
+  "gui.dungeontrain.editor_menu.block_variant.auto_connect_on": "On",
+  "gui.dungeontrain.editor_menu.block_variant.auto_connect_off": "Off",
   "gui.dungeontrain.editor_menu.block_variant.mob_suffix": "(몹)",
   "gui.dungeontrain.editor_menu.container.title": "컨테이너 내용물",
   "gui.dungeontrain.editor_menu.container.title_at": "컨테이너 내용물 @ %s",

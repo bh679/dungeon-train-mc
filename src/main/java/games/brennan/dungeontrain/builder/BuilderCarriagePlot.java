@@ -253,6 +253,12 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
             DungeonTrainWorldData.get(level).builderSubType());
     }
 
+    /** A carriage build spawns through the carriage placers, which honour auto-connect; a room build doesn't. */
+    @Override
+    public boolean supportsAutoConnect() {
+        return !supportsCopySettings();
+    }
+
     @Override
     public games.brennan.dungeontrain.editor.VariantCopyRoll copyRollAt(BlockPos localPos) {
         return doc().copyRollAt(localPos);

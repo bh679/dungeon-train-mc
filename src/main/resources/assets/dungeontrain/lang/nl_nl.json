@@ -2482,6 +2482,8 @@
   "gui.dungeontrain.editor_menu.block_variant.active_on": "On",
   "gui.dungeontrain.editor_menu.block_variant.active_random": "R",
   "gui.dungeontrain.editor_menu.block_variant.active_off": "Off",
+  "gui.dungeontrain.editor_menu.block_variant.auto_connect_on": "On",
+  "gui.dungeontrain.editor_menu.block_variant.auto_connect_off": "Off",
   "gui.dungeontrain.editor_menu.block_variant.mob_suffix": "(mob)",
   "gui.dungeontrain.editor_menu.container.title": "Containerinhoud",
   "gui.dungeontrain.editor_menu.container.title_at": "Containerinhoud @ %s",

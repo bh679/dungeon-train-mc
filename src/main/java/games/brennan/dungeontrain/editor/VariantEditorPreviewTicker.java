@@ -128,9 +128,19 @@ public final class VariantEditorPreviewTicker {
             }
 
             BlockState toShow = computePreviewState(picked, previewTick);
+            // Auto-connect fence / wall / pane: show the arms spawn will give it (AutoConnectPass),
+            // derived from the neighbours up front so the equality check below stays quiet once
+            // joined. Written with the cascade so adjacent fences join back, as they do at spawn.
+            boolean joins = picked.autoConnect() && plot.supportsAutoConnect()
+                && VariantConnect.canConnect(toShow);
+            if (joins) {
+                toShow = net.minecraft.world.level.block.Block.updateFromNeighbourShapes(toShow, level, worldPos);
+            }
             BlockState existing = level.getBlockState(worldPos);
             if (!existing.equals(toShow)) {
-                if (VariantLiquids.isLiquid(toShow)) {
+                if (joins) {
+                    SilentBlockOps.setBlockSilent(level, worldPos, toShow);
+                } else if (VariantLiquids.isLiquid(toShow)) {
                     // Liquids go in section-local, which is the whole reason a previewed source
                     // sits still: a section write never reaches LevelChunk.setBlockState, so
                     // LiquidBlock.onPlace never runs and no fluid tick is ever scheduled. That

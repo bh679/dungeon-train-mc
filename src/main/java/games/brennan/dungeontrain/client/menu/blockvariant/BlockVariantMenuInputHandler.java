@@ -279,6 +279,13 @@ public final class BlockVariantMenuInputHandler {
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_ACTIVE_MODE, variantId, local, hit.index(), "", nextOrd));
             }
+            case ENTRY_AUTO_CONNECT -> {
+                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_AUTO_CONNECT, variantId, local, hit.index(), "",
+                    e.autoConnect() ? 0 : 1));
+            }
             case ENTRY_ROT_DIRS -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
                 BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());

@@ -43,8 +43,21 @@ public record BlockVariantSyncPacket(
     byte copyRoll,
     boolean copySettingsSupported,
     byte copyScope,
-    byte spanMode
+    byte spanMode,
+    boolean autoConnectSupported
 ) implements CustomPacketPayload {
+
+    /**
+     * Pre-auto-connect shape: the plot does not apply the fence / wall auto-connect flag at spawn,
+     * so the menu hides the toggle (see {@code BlockVariantPlot#supportsAutoConnect}).
+     */
+    public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
+                                  int lockId, Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp,
+                                  byte copyRoll, boolean copySettingsSupported, byte copyScope,
+                                  byte spanMode) {
+        this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp,
+            copyRoll, copySettingsSupported, copyScope, spanMode, false);
+    }
 
     /** Pre-span shape: {@code spanMode} defaults to {@code VariantSpan.NONE} (auto). */
     public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
@@ -109,7 +122,19 @@ public record BlockVariantSyncPacket(
     public record Entry(String stateString, @Nullable String beNbt, int weight,
                         byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
                         @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
-                        int groupRef, boolean groupRefLive, byte activeMode) {
+                        int groupRef, boolean groupRefLive, byte activeMode, boolean autoConnect) {
+
+        /**
+         * Backward-compat constructor for call sites that don't carry the fence / wall
+         * auto-connect flag (defaults to off — see {@code editor.VariantConnect}).
+         */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                     @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
+                     int groupRef, boolean groupRefLive, byte activeMode) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId,
+                halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode, false);
+        }
 
         /** Wire default for {@link #activeMode}: {@code VariantActive.Mode.INACTIVE}. */
         public static final byte ACTIVE_MODE_DEFAULT = (byte) 2;
@@ -204,6 +229,8 @@ public record BlockVariantSyncPacket(
         buf.writeByte(copyScope);
         // The cell-wide multi-space span (door / bed / tall-plant cells), as an ordinal.
         buf.writeByte(spanMode);
+        // Whether this plot's spawn path honours the per-row auto-connect flag.
+        buf.writeBoolean(autoConnectSupported);
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
         writeVec3(buf, anchorUp);
@@ -228,6 +255,7 @@ public record BlockVariantSyncPacket(
             buf.writeVarInt(e.groupRef());
             buf.writeBoolean(e.groupRefLive());
             buf.writeByte(e.activeMode());
+            buf.writeBoolean(e.autoConnect());
         }
     }
 
@@ -245,6 +273,7 @@ public record BlockVariantSyncPacket(
         boolean copySettingsSupported = buf.readBoolean();
         byte copyScope = buf.readByte();
         byte spanMode = buf.readByte();
+        boolean autoConnectSupported = buf.readBoolean();
         Vec3 anchor = readVec3(buf);
         Vec3 right = readVec3(buf);
         Vec3 up = readVec3(buf);
@@ -267,11 +296,13 @@ public record BlockVariantSyncPacket(
             int groupRef = buf.readVarInt();
             boolean groupRefLive = buf.readBoolean();
             byte activeMode = buf.readByte();
+            boolean autoConnect = buf.readBoolean();
             entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
-                linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode));
+                linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive,
+                activeMode, autoConnect));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
-            copyRoll, copySettingsSupported, copyScope, spanMode);
+            copyRoll, copySettingsSupported, copyScope, spanMode, autoConnectSupported);
     }
 
     @Override
