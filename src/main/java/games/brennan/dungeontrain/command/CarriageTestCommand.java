@@ -242,6 +242,13 @@ public final class CarriageTestCommand {
     private static int runTrackCommand(CommandSourceStack source, String modelId, String name) {
         Optional<TrackTestPiece> piece = TrackTestPiece.ofModelId(modelId);
         if (piece.isEmpty()) return failCode(source, "chat.dungeontrain.track_test.unknown_piece", modelId);
+        // A name the kind doesn't have would stamp the built-in fallback and look like a test of it.
+        List<String> names = TrackVariantRegistry.namesFor(piece.get().kind());
+        if (!names.contains(name)) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_variant_valid",
+                name, String.join(", ", names)).withStyle(ChatFormatting.RED));
+            return 0;
+        }
         return runTest(source, CarriageTestSession.Kind.TRACKS, piece.get().templateId(name), false);
     }
 
@@ -610,8 +617,11 @@ public final class CarriageTestCommand {
         int cleared = PortalClear.clearBox(overworld, session.box(), PortalCorridorMask.NONE);
         LOGGER.info("[DungeonTrain] carriage test back: returned {} and cleared {} block(s), {} entit(ies) of {} '{}'",
             player.getName().getString(), cleared, discarded, session.kind().literal(), session.templateId());
+        // A piece of the line is filed as model:name; the author knows it by its name.
+        String shown = TrackTestPiece.parseTemplateId(session.templateId())
+            .map(TrackTestPiece.Named::name).orElse(session.templateId());
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.back_plot_test_has",
-            session.templateId()).withStyle(ChatFormatting.GRAY), false);
+            shown).withStyle(ChatFormatting.GRAY), false);
         return 1;
     }
 
