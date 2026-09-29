@@ -8,9 +8,10 @@ of NBT and the unattached-block-entity crash can never reach them.
 import random
 from typing import Callable
 
-from .blocks import (AIR, BOOKSHELF, CAULDRON, CHISELED_BOOKSHELF, COBBLESTONE, COBWEB, CRACKED_STONE_BRICKS, CRAFTING_TABLE,
-                     DEAD_BUSH, FERN, FLOWER_POT, GRAY_CARPET, HANGING_ROOTS, HAY, LANTERN, LIGHT_GRAY_CARPET, LOOM, MOSS_CARPET,
-                     MOSSY_COBBLESTONE, NOTE_BLOCK, OAK_SLAB, OAK_STAIRS, RED_CARPET, SHORT_GRASS, SMITHING_TABLE, SMOOTH_STONE_SLAB,
+from .blocks import (AIR, BARREL, BOOKSHELF, CAULDRON, CHISELED_BOOKSHELF, COBBLESTONE, COBWEB, CRACKED_STONE_BRICKS,
+                     CRAFTING_TABLE, DEAD_BUSH, FERN, FLOWER_POT, GRAY_CARPET, HANGING_ROOTS, HAY, LANTERN, LECTERN,
+                     LIGHT_GRAY_CARPET, LOOM, MOSS_CARPET, MOSSY_COBBLESTONE, NOTE_BLOCK, OAK_SLAB, OAK_STAIRS, POTTED_DEAD_BUSH,
+                     POTTED_FERN, RED_CARPET, RED_WALL_BANNER, SHORT_GRASS, SMITHING_TABLE, SMOOTH_STONE_SLAB, SPRUCE_FENCE,
                      SPRUCE_PLANKS_STAGE, SPRUCE_SLAB, SPRUCE_STAIRS, STEEL_BARS, STEEL_CHAIN, TUFF, WHITE_CARPET, BlockState, block,
                      loot_chest, spawner)
 from .canvas import Canvas, Pos
@@ -18,7 +19,7 @@ from .shapes import box as fill_box, disc, walls as wall_box
 
 RUBBLE_IN = (COBBLESTONE, MOSSY_COBBLESTONE, CRACKED_STONE_BRICKS, TUFF)
 SOLID_NOT = ("slab", "stairs", "pane", "bars", "carpet", "vine", "chain", "ladder", "lantern", "fence", "trapdoor", "door",
-             "bush", "grass", "fern", "leaves", "azalea", "roots", "pot", "web", "glass")
+             "bush", "grass", "fern", "leaves", "azalea", "roots", "pot", "web", "glass", "lectern", "banner")
 
 Box = tuple[int, int, int, int]   # x0, z0, x1, z1
 Prop = Callable[[Canvas, random.Random, Pos], None]
@@ -270,14 +271,35 @@ def shelf_rows(canvas: Canvas, seed: int, xs, z0: int, z1: int, y: int) -> None:
 
 
 def stage(canvas: Canvas, box: Box, y: int, facing: str = "south") -> None:
-    """A raised platform with steps along its front (the side that faces `facing`'s opposite) and a lectern slab."""
+    """A raised platform with steps along its front (the side that faces `facing`'s opposite), a lectern at its
+    centre, a red runner up to it, floor lamps at the front corners and potted plants at the back ones, with
+    banners on the wall behind and a barrel and plant on the floor at either side."""
     x0, z0, x1, z1 = box
+    front, back = (z0 - 1, z1 + 1) if facing == "south" else (z1 + 1, z0 - 1)
     canvas.put_all(fill_box(x0, y, z0, x1, y, z1, SPRUCE_PLANKS_STAGE))
-    front_z = z0 - 1 if facing == "south" else z1 + 1
     for x in range(x0 + 1, x1):
-        canvas.put((x, y, front_z), SPRUCE_STAIRS.with_props(facing=facing))
-    canvas.put(((x0 + x1) // 2, y + 1, (z0 + z1) // 2), OAK_SLAB.with_props(type="top"))
-    canvas.put(((x0 + x1) // 2, y + 1, (z0 + z1) // 2 + 1), RED_CARPET)
+        canvas.put((x, y, front), SPRUCE_STAIRS.with_props(facing=facing))
+    mid = (x0 + x1) // 2
+    for z in range(z0, z1 + 1):
+        canvas.put((mid, y + 1, z), RED_CARPET)
+    canvas.put((mid, y + 1, (z0 + z1) // 2), LECTERN.with_props(facing=facing))
+    _stage_flanks(canvas, box, y, front, back)
+
+
+def _stage_flanks(canvas: Canvas, box: Box, y: int, front: int, back: int) -> None:
+    x0, z0, x1, z1 = box
+    front_z, back_z = (z0, z1) if front < back else (z1, z0)
+    for x in (x0, x1):
+        canvas.put((x, y + 1, front_z), SPRUCE_FENCE)
+        canvas.put((x, y + 2, front_z), LANTERN)
+        canvas.put((x, y + 1, back_z), POTTED_FERN if x == x0 else POTTED_DEAD_BUSH)
+    banner_facing = "north" if front < back else "south"
+    for x in range(x0 + 2, x1 - 1, 4):
+        if canvas.get((x, y + 3, back + 1)) not in (None, AIR):
+            canvas.put((x, y + 3, back), RED_WALL_BANNER.with_props(facing=banner_facing))
+    for x, plant in ((x0 - 1, POTTED_DEAD_BUSH), (x1 + 1, POTTED_FERN)):
+        canvas.put((x, y, back_z), BARREL.with_props(facing="up"))
+        canvas.put((x, y, back_z - 2 if front < back else back_z + 2), plant)
 
 
 def rows(canvas: Canvas, box: Box, y: int, facing: str, every: int, state: BlockState = OAK_STAIRS) -> None:

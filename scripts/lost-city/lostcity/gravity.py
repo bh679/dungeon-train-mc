@@ -22,7 +22,7 @@ STABLE = {
 }
 UNSTABLE_BELOW = ("slab", "stairs", "pane", "bars", "wall", "carpet", "vine", "chain", "ladder", "lantern", "fence",
                   "trapdoor", "rail", "bush", "grass", "fern", "leaves", "azalea", "roots", "door", "rod", "flower_pot",
-                  "torch", "button", "candle", "cobweb")
+                  "torch", "button", "candle", "cobweb", "potted", "lectern", "banner")
 
 
 def falls(state: BlockState) -> bool:

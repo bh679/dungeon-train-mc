@@ -126,6 +126,11 @@ SPAWNER = block("spawner")
 CHEST = block("chest")
 CHISELED_BOOKSHELF = block("chiseled_bookshelf")
 SPRUCE_PLANKS_STAGE = block("spruce_planks")
+LECTERN = block("lectern")
+SPRUCE_FENCE = block("spruce_fence")
+POTTED_FERN = block("potted_fern")
+POTTED_DEAD_BUSH = block("potted_dead_bush")
+RED_WALL_BANNER = block("red_wall_banner")
 
 # Loot in tiers, as the originals do it, from vanilla tables: a mineshaft's odds and ends at the bottom,
 # an outpost's haul only where you had to climb for it.

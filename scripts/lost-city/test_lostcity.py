@@ -24,7 +24,7 @@ from lostcity.variants import designs  # noqa: E402
 # What LostCityStretchProcessor.isMass ignores: anything without a full collision cube.
 NOT_FULL = ("slab", "stairs", "pane", "bars", "wall", "carpet", "vine", "chain", "ladder", "lantern", "button",
             "trapdoor", "rail", "door", "rod", "bell", "roots", "web", "pot", "bush", "grass", "fern", "azalea", "leaves",
-            "cauldron", "chest", "hopper", "candle")
+            "cauldron", "chest", "hopper", "candle", "lectern", "banner")
 
 
 class BlocksTest(unittest.TestCase):
