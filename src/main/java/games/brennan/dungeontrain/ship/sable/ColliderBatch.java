@@ -71,8 +71,13 @@ public final class ColliderBatch {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
 
-    /** Runtime toggle; volatile so the command thread's write is seen by the server thread. */
-    public static volatile boolean ENABLED = true;
+    /**
+     * Runtime toggle; volatile so the command thread's write is seen by the server thread. Boots off
+     * under {@code -Ddungeontrain.colliderBatch=false} ({@code ./gradlew runServer -PcolliderBatch=false})
+     * so the bootstrap spawn, which runs before any command can reach the server, can be A/B'd.
+     */
+    public static volatile boolean ENABLED =
+        !"false".equalsIgnoreCase(System.getProperty("dungeontrain.colliderBatch", "true"));
 
     private static final ThreadLocal<Batch> CURRENT = new ThreadLocal<>();
 

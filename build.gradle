@@ -183,6 +183,12 @@ neoForge {
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
             }
+            // Collider-batch A/B seam: ./gradlew runServer -PcolliderBatch=false boots with
+            // ColliderBatch off, so the bootstrap spawn (which runs before any command can reach the
+            // server) can be measured on Sable's per-block path. See ship/sable/ColliderBatch.
+            if (project.hasProperty('colliderBatch')) {
+                systemProperty 'dungeontrain.colliderBatch', project.property('colliderBatch').toString()
+            }
             // Versions-page seam: ./gradlew runClient -PmockInstalledVersion=0.800.0 makes the page
             // (and its boot prompt) treat that as the installed version, so the behind state can be
             // seen against real Modrinth/CurseForge listings on a dev build that is ahead of
@@ -292,6 +298,11 @@ neoForge {
             // scripts/perf/ writes both.
             if (project.hasProperty('perfTest')) {
                 systemProperty 'dungeontrain.perfTest', 'true'
+            }
+            // Collider-batch A/B seam (see the client run above): boots ColliderBatch off so the
+            // bootstrap spawn can be measured on Sable's per-block path.
+            if (project.hasProperty('colliderBatch')) {
+                systemProperty 'dungeontrain.colliderBatch', project.property('colliderBatch').toString()
             }
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()

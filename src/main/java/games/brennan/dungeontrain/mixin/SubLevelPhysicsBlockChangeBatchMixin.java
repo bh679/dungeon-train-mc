@@ -5,11 +5,15 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.ryanhcode.sable.api.physics.PhysicsPipeline;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import games.brennan.dungeontrain.ship.sable.ColliderBatch;
+import games.brennan.dungeontrain.ship.sable.PhysicsStepTimer;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Defers the voxel-collider half of Sable's per-block-change handling while a
@@ -23,6 +27,11 @@ import org.spongepowered.asm.mixin.injection.At;
  * {@code onStatsChanged} push — runs untouched, so mass, centre of mass and the pivot pin behave
  * exactly as before. Outside a scope both wraps call straight through.</p>
  *
+ * <p>Plus a pure-observation HEAD/RETURN pair timing the whole method for {@code [mspt]
+ * blockChangeMs=} — the wall time of Sable's per-block handling (ticket, mass tracker, collider,
+ * wake-up) per window, batched or not, so a log says how much of a tick the block changes cost
+ * rather than only how many there were.</p>
+ *
  * <p>{@code remap = false}: Sable's own class and names; the vanilla types in the target descriptors
  * are the runtime (Mojang-mapped) names Sable's bytecode itself references. Bytecode-verified against
  * {@code sable-2.0.5+mc1.21.1}: {@code handleBlockChange} contains exactly one call to each target.
@@ -30,6 +39,20 @@ import org.spongepowered.asm.mixin.injection.At;
  */
 @Mixin(value = SubLevelPhysicsSystem.class, remap = false)
 public abstract class SubLevelPhysicsBlockChangeBatchMixin {
+
+    /** Start of the in-flight {@code handleBlockChange}; only read on the thread that wrote it. */
+    @Unique
+    private long dungeontrain$blockChangeStartNanos;
+
+    @Inject(method = "handleBlockChange", at = @At("HEAD"))
+    private void dungeontrain$blockChangeBegin(final CallbackInfo ci) {
+        dungeontrain$blockChangeStartNanos = System.nanoTime();
+    }
+
+    @Inject(method = "handleBlockChange", at = @At("RETURN"))
+    private void dungeontrain$blockChangeEnd(final CallbackInfo ci) {
+        PhysicsStepTimer.addBlockChangeNanos(System.nanoTime() - dungeontrain$blockChangeStartNanos);
+    }
 
     @WrapOperation(
             method = "handleBlockChange",

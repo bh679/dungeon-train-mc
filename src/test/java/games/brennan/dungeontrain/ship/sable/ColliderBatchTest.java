@@ -154,7 +154,9 @@ final class ColliderBatchTest {
         PhysicsStepTimer.addBatchedBlockChanges(1500);
         PhysicsStepTimer.addBatchedBlockChanges(0);
         PhysicsStepTimer.countBlockChange();
+        PhysicsStepTimer.addBlockChangeNanos(2_500_000);
         PhysicsStepTimer.Window w = PhysicsStepTimer.drain();
+        assertEquals(2.5, w.blockChangeMs(), 1e-9);
         assertEquals(2, w.colliderRebuilds());
         assertEquals(1500, w.batchedBlockChanges());
         assertEquals(1, w.blockChanges());

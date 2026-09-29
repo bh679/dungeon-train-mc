@@ -27,6 +27,7 @@ public final class PhysicsStepTimer {
     private static final LongAdder reanchors = new LongAdder();
     private static final LongAdder colliderRebuilds = new LongAdder();
     private static final LongAdder batchedBlockChanges = new LongAdder();
+    private static final LongAdder blockChangeNanos = new LongAdder();
 
     private PhysicsStepTimer() {}
 
@@ -54,6 +55,15 @@ public final class PhysicsStepTimer {
         blockChanges.increment();
     }
 
+    /**
+     * Called by {@code SubLevelPhysicsBlockChangeBatchMixin} with the wall time of one whole
+     * {@code SubLevelPhysicsSystem.handleBlockChange} — Sable's ticket, mass and collider work for
+     * one block, batched or not.
+     */
+    public static void addBlockChangeNanos(long nanos) {
+        if (nanos > 0) blockChangeNanos.add(nanos);
+    }
+
     /** Called by {@link ColliderBatch} once per chunk section it re-uploaded whole. */
     public static void countColliderRebuild() {
         colliderRebuilds.increment();
@@ -66,7 +76,12 @@ public final class PhysicsStepTimer {
 
     /** One drained {@code [mspt]} window. */
     public record Window(long stepNanos, long blockChanges, long reanchors,
-                         long colliderRebuilds, long batchedBlockChanges) {
+                         long colliderRebuilds, long batchedBlockChanges, long blockChangeNanos) {
+        /** Total wall time of Sable's per-block handling over the window, in ms. */
+        public double blockChangeMs() {
+            return blockChangeNanos / 1_000_000.0;
+        }
+
         /** Mean native-step wall time per tick over a window of {@code ticks} ticks, in ms. */
         public double avgStepMs(int ticks) {
             return ticks <= 0 ? 0.0 : stepNanos / 1_000_000.0 / ticks;
@@ -76,6 +91,6 @@ public final class PhysicsStepTimer {
     /** Read and reset every counter — call from exactly one place per window. */
     public static Window drain() {
         return new Window(stepNanos.sumThenReset(), blockChanges.sumThenReset(), reanchors.sumThenReset(),
-            colliderRebuilds.sumThenReset(), batchedBlockChanges.sumThenReset());
+            colliderRebuilds.sumThenReset(), batchedBlockChanges.sumThenReset(), blockChangeNanos.sumThenReset());
     }
 }
