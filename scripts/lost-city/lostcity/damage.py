@@ -16,6 +16,43 @@ ROOF_MASS = ("slab", "bars", "wall", "pane", "carpet", "vine", "stairs", "fence"
              "fern", "roots", "azalea", "web", "pot", "table", "cauldron", "loom", "shelf", "hay", "note")
 
 
+LOOSE = frozenset(state.name for state in RUBBLE) | {"minecraft:mossy_cobblestone", "minecraft:cobbled_deepslate"}
+NEIGHBOURS = ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, 0, 1), (0, 0, -1))
+
+
+def drop_loose(canvas: Canvas) -> None:
+    """Gravity for the rubble: any loose block with nothing beneath it falls until it lands on something
+    (or the pad); a piece that lands on another loose block stacks. Runs bottom-up so heaps settle.
+    The vacated cell stays explicit air inside a room and is cleared outdoors, so the world shows through."""
+    loose = sorted((pos for pos, state in canvas.freeze().items() if state.name in LOOSE and pos[1] >= 1), key=lambda p: p[1])
+    for (x, y, z) in loose:
+        state = canvas.get((x, y, z))
+        if _in_a_wall(canvas, (x, y, z)):
+            continue
+        landing = y
+        while landing > 1 and canvas.get((x, landing - 1, z)) in (None, AIR):
+            landing -= 1
+        if landing == y:
+            continue
+        indoors = any(canvas.get((x + dx, y + dy, z + dz)) == AIR for dx, dy, dz in NEIGHBOURS)
+        if indoors:
+            canvas.put((x, y, z), AIR)
+        else:
+            canvas.clear((x, y, z))
+        canvas.put((x, landing, z), state)
+
+
+def _in_a_wall(canvas: Canvas, pos: Pos) -> bool:
+    """A loose-looking block that is really part of the fabric: it touches a non-loose solid block beside
+    or above it (the stone mixes share names with the rubble, so a wall course over a hole must stay)."""
+    x, y, z = pos
+    for dx, dy, dz in NEIGHBOURS:
+        beside = canvas.get((x + dx, y + dy, z + dz))
+        if beside is not None and beside != AIR and beside.name not in LOOSE and not any(p in beside.name for p in ROOF_MASS):
+            return True
+    return False
+
+
 def holes(canvas: Canvas, seed: int, count: tuple[int, int] = (3, 6), radius: tuple[float, float] = (1.5, 3.2),
           min_y: int = 2, rubble: tuple[BlockState, ...] = RUBBLE, margin: int = 0) -> None:
     """Punch `count` ragged holes through exterior walls, heaping rubble on whatever is below."""

@@ -2,7 +2,7 @@
 
 from ..spec import Archetype
 from . import (apartment_block, civic_hall, cooling_tower, fallen_block, hospital, hotel, leaning_tower, office_tower,
-               overpass, petrol_station, radio_mast, railway_station, shopping_strip, silos, water_tower)
+               overpass, petrol_station, radio_mast, railway_station, shopping_strip, silos, snapped_tower, water_tower)
 
 ALL: tuple[Archetype, ...] = (
     office_tower.ARCHETYPE,
@@ -20,6 +20,7 @@ ALL: tuple[Archetype, ...] = (
     silos.ARCHETYPE,
     leaning_tower.ARCHETYPE,
     fallen_block.ARCHETYPE,
+    snapped_tower.ARCHETYPE,
 )
 
 BY_NAME = {a.spec.name: a for a in ALL}

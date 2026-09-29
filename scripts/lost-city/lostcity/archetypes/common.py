@@ -2,7 +2,7 @@
 
 from ..blocks import AIR, CONCRETE, CRACKED_STONE_BRICKS, GLASS, GLASS_CLEAR, STONE_BRICKS, TUFF, BlockState
 from ..canvas import Canvas, envelope_air
-from ..damage import ROOF_MASS, collapsed_corner, holes, skirt
+from ..damage import ROOF_MASS, collapsed_corner, drop_loose, holes, skirt
 from ..gravity import settle
 from ..materials import texturize
 from ..pad import apron_around, pad
@@ -41,6 +41,7 @@ def finish(canvas: Canvas, spec: ArchetypeSpec, envelope: tuple[int, int, int, i
         _damage(canvas, spec)
         skirt(canvas, spec.seed, spec.margin)
     weather(canvas, spec.seed, cracked if cracked is not None else CRACKED_DEFAULT, margin=spec.margin, **weather_kwargs)
+    drop_loose(canvas)
     settle(canvas)
 
 

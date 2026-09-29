@@ -223,6 +223,22 @@
     "tags": [],
     "weight": 4
   },
+  "snapped_tower": {
+    "bay_period_x": null,
+    "bay_period_z": null,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": null,
+    "margin": 4,
+    "name": "snapped_tower",
+    "seed": 23193,
+    "size": [
+      53,
+      42,
+      23
+    ],
+    "tags": [],
+    "weight": 4
+  },
   "water_tower": {
     "bay_period_x": null,
     "bay_period_z": null,
