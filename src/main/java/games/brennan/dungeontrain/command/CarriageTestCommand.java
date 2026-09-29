@@ -51,10 +51,12 @@ import org.slf4j.Logger;
 
 import java.util.Optional;
 import games.brennan.dungeontrain.track.TrackGenerator;
+import games.brennan.dungeontrain.track.TrackTestBand;
 import games.brennan.dungeontrain.track.TrackTestLayout;
 import games.brennan.dungeontrain.track.TrackTestPiece;
 import games.brennan.dungeontrain.track.TrackTestScene;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageGenerationConfig;
 import java.util.Arrays;
 import java.util.List;
@@ -267,11 +269,14 @@ public final class CarriageTestCommand {
         TrackTestPiece piece = named.get().piece();
         String name = named.get().name();
 
+        // A band the piece could really appear in, drawn with the line around it: a reseed can land
+        // in another, a focused one keeps it with the line.
+        TrackTestBand band = TrackTestBand.pick(TrackVariantWeights.gateFor(piece.kind(), name), sceneSeed);
         CarriageDims dims = worldData.dims();
         CarriageGenerationConfig config = worldData.getGenerationConfig();
         CarriageVariant shell = CarriagePlacer.enclosedVariantForIndex(CarriageTestSession.TEST_INDEX,
-            new CarriageGenerationConfig(config.mode(), config.groupSize(), sceneSeed));
-        CarriageContents contents = contentsFor(shell, sceneSeed);
+            new CarriageGenerationConfig(config.mode(), config.groupSize(), sceneSeed), band.context());
+        CarriageContents contents = contentsFor(shell, sceneSeed, band.context());
         CarriageDims shellDims = CarriagePlacer.variantDims(shell, dims);
         int spacing = TrackGenerator.computeSpacing(TrackTestLayout.COLUMN_HEIGHT);
         TrackTestLayout layout = new TrackTestLayout(shellDims.length(), CarriagePlacer.halfPadLen(dims),
@@ -295,20 +300,23 @@ public final class CarriageTestCommand {
 
         CarriageStampGuard.run(() -> {
             TrackTestScene.stampStretch(overworld, corner, dims, layout,
-                new TrackTestScene.Roll(piece, name, testSeed, sceneSeed));
+                new TrackTestScene.Roll(piece, name, testSeed, sceneSeed, band));
             TrackTestScene.stampStretch(overworld, corner.offset(layout.stretchLength(), 0, 0), dims, layout,
-                new TrackTestScene.Roll(piece, name, nextRoll(testSeed), nextRoll(sceneSeed)));
+                new TrackTestScene.Roll(piece, name, nextRoll(testSeed), nextRoll(sceneSeed), band));
         });
-        BlockPos backPad = corner.offset(layout.backPadX(), TrackTestLayout.trainY(), 0);
-        stampCarriageOnTrack(overworld, corner, layout, dims, shell, contents, sceneSeed);
+        // The train stands on the section under test, so arriving on its back pad starts the author there.
+        BlockPos backPad = corner.offset(layout.backPadX(piece), TrackTestLayout.trainY(), 0);
+        stampCarriageOnTrack(overworld, corner, layout, piece, dims, shell, contents, sceneSeed);
 
         arrive(overworld, player, backPad, new Vec3i(layout.halfPad(), dims.height(), dims.width()), previous, name);
 
         String contentsId = contents == null ? "none" : contents.id();
         LOGGER.info("[DungeonTrain] track test: stamped {} '{}' at {} for {} — carriage {} (contents={}), "
-                + "seeds={}/{}", piece.modelId(), name, corner, player.getName().getString(),
-            shell.id(), contentsId, testSeed, sceneSeed);
-        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.track_test.standing_in", name)
+                + "band={} (level {}), seeds={}/{}", piece.modelId(), name, corner, player.getName().getString(),
+            shell.id(), contentsId, band.phase(), band.level(), testSeed, sceneSeed);
+        Component bandName = Component.translatable(
+            "gui.dungeontrain.editor_menu.phase." + band.phase().name().toLowerCase(java.util.Locale.ROOT));
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.track_test.standing_in", name, bandName)
             .withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
@@ -319,17 +327,17 @@ public final class CarriageTestCommand {
      * clearance a real carriage gets.
      */
     private static void stampCarriageOnTrack(ServerLevel level, BlockPos corner, TrackTestLayout layout,
-                                             CarriageDims dims, CarriageVariant shell, CarriageContents contents,
-                                             long seed) {
+                                             TrackTestPiece piece, CarriageDims dims, CarriageVariant shell,
+                                             CarriageContents contents, long seed) {
         int y = TrackTestLayout.trainY();
-        BlockPos backPad = corner.offset(layout.backPadX(), y, 0);
-        BlockPos frontPad = corner.offset(layout.frontPadX(), y, 0);
+        BlockPos backPad = corner.offset(layout.backPadX(piece), y, 0);
+        BlockPos frontPad = corner.offset(layout.frontPadX(piece), y, 0);
         String stage = games.brennan.dungeontrain.editor.EditorStageSelection.effective();
         CarriageStampGuard.run(() -> StagePlacementScope.run(stage, () -> {
             CarriagePlacer.placeHalfFlatbedPad(level, backPad, CarriagePlacer.HalfPadSide.BACK, dims);
             CarriagePlacer.placeHalfFlatbedPad(level, frontPad, CarriagePlacer.HalfPadSide.FRONT, dims);
         }));
-        CarriagePlacer.placeForTest(level, corner.offset(layout.carriageX(), y, 0), shell, contents, dims, seed,
+        CarriagePlacer.placeForTest(level, corner.offset(layout.carriageX(piece), y, 0), shell, contents, dims, seed,
             seed, CarriageTestSession.TEST_INDEX, /*flatbedAtBack*/ true, /*flatbedAtFront*/ true);
     }
 
@@ -503,6 +511,12 @@ public final class CarriageTestCommand {
      * group; the cart between the corridors and a flatbed hold none.
      */
     private static CarriageContents contentsFor(CarriageVariant shell, long seed) {
+        return contentsFor(shell, seed, null);
+    }
+
+    /** {@link #contentsFor(CarriageVariant, long)} picked within a band — {@code null} for ungated. */
+    private static CarriageContents contentsFor(CarriageVariant shell, long seed,
+                                                games.brennan.dungeontrain.template.GateContext gateCtx) {
         if (ContentsShellPicker.isFlatbed(shell)) return null;
         for (games.brennan.dungeontrain.portal.PortalCorridorKind k
                 : games.brennan.dungeontrain.portal.PortalCorridorKind.values()) {
@@ -512,7 +526,7 @@ public final class CarriageTestCommand {
                 seed ^ CarriageTestSession.TEST_INDEX, null);
         }
         if (ContentsShellPicker.isPortalPart(shell)) return null;
-        return CarriageContentsRegistry.pick(seed, CarriageTestSession.TEST_INDEX, shell, null);
+        return CarriageContentsRegistry.pick(seed, CarriageTestSession.TEST_INDEX, shell, gateCtx);
     }
 
     private static Plan fail(CommandSourceStack source, String key, String id) {

@@ -3019,7 +3019,7 @@
   "chat.dungeontrain.test_mode.nothing_saves": "Modo de prueba: nada de lo que construyas aquí se guardará.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Ningún vagón tiene '%s' activado ahora mismo: actívalo en la lista de Contenido de un vagón para probarlo.",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' no tiene una plantilla guardada con el tamaño de vagón de este mundo: guárdala y vuelve a probar.",
-  "chat.dungeontrain.track_test.standing_in": "Estás en un tramo de vía de prueba con '%s', sin tren enganchado. Atrás en el menú te devuelve a la parcela.",
+  "chat.dungeontrain.track_test.standing_in": "Estás en un tramo de vía de prueba con '%s', en la banda %s, sin tren enganchado. Atrás en el menú te devuelve a la parcela.",
   "chat.dungeontrain.track_test.unknown_piece": "'%s' no es una pieza de la vía que se pueda probar.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Este mundo no usa el sistema de tren automático (startsWithTrain está desactivado).",

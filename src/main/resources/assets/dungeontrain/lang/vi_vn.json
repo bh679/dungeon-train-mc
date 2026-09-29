@@ -2976,7 +2976,7 @@
   "chat.dungeontrain.test_mode.nothing_saves": "Chế độ thử — mọi thứ bạn xây ở đây sẽ không được lưu.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Hiện chưa toa nào bật '%s' — hãy bật nó trong danh sách Phòng của một toa để thử.",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' chưa có mẫu đã lưu ở kích thước toa của thế giới này — hãy lưu, rồi thử lại.",
-  "chat.dungeontrain.track_test.standing_in": "Bạn đang ở trên một đoạn đường ray thử có '%s' — không gắn tàu. Nhấn Quay lại trong menu để về lô.",
+  "chat.dungeontrain.track_test.standing_in": "Bạn đang ở trên một đoạn đường ray thử có '%s', trong dải %s — không gắn tàu. Nhấn Quay lại trong menu để về lô.",
   "chat.dungeontrain.track_test.unknown_piece": "'%s' không phải là một phần của đường ray có thể thử.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Thế giới này không dùng hệ thống tàu tự động (startsWithTrain đang tắt).",

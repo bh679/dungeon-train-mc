@@ -2976,7 +2976,7 @@
   "chat.dungeontrain.test_mode.nothing_saves": "Mod ujian — apa sahaja yang anda bina di sini tidak akan disimpan.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Tiada gerabak yang mendayakan '%s' sekarang — hidupkannya dalam senarai Kandungan sebuah gerabak untuk mengujinya.",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' tiada templat tersimpan pada saiz gerabak dunia ini — simpan dahulu, kemudian uji semula.",
-  "chat.dungeontrain.track_test.standing_in": "Anda berada di atas bahagian landasan ujian yang mengandungi '%s' — tiada kereta api dipasang. Kembali dalam menu membawa anda ke plot.",
+  "chat.dungeontrain.track_test.standing_in": "Anda berada di atas bahagian landasan ujian yang mengandungi '%s', dalam jalur %s — tiada kereta api dipasang. Kembali dalam menu membawa anda ke plot.",
   "chat.dungeontrain.track_test.unknown_piece": "'%s' bukan bahagian landasan yang boleh diuji.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Dunia ini tidak menggunakan sistem kereta api automatik (startsWithTrain dimatikan).",

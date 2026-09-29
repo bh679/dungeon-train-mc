@@ -28,8 +28,8 @@ import java.util.Optional;
  * staircases and tunnel pieces all go down through the same {@link TrackGenerator} and
  * {@link TunnelPlacer} code the world uses; only the <i>choice</i> differs. The world picks every
  * name by world X; here the piece under test is named outright wherever it appears, and everything
- * else is picked the world's way on the scene's seed, ungated — a test is at no place on the track
- * for a band gate to read, as {@code CarriageTestCommand} says of carriages.</p>
+ * else is picked the world's way on the scene's seed, gated to a {@link TrackTestBand} the piece
+ * could appear in — a test is at no place on the track for the band to be read from.</p>
  */
 public final class TrackTestScene {
 
@@ -45,15 +45,16 @@ public final class TrackTestScene {
 
     /**
      * What one stretch rolls on: the piece under test and its name, the seed its block variants roll
-     * on, and the seed everything else is picked and rolled on. Kept apart so a focused reseed can
-     * re-roll the piece and leave the line around it standing.
+     * on, the seed everything else is picked and rolled on, and the band those picks are made in.
+     * The seeds are kept apart so a focused reseed can re-roll the piece and leave the line around it
+     * standing.
      */
-    public record Roll(TrackTestPiece piece, String name, long testSeed, long sceneSeed) {
+    public record Roll(TrackTestPiece piece, String name, long testSeed, long sceneSeed, TrackTestBand band) {
 
-        /** The name at {@code index}: the one under test, or the world's pick on the scene's seed. */
+        /** The name at {@code index}: the one under test, or the world's pick in the band on the scene's seed. */
         String nameFor(TrackKind kind, long index) {
             if (kind == piece.kind()) return name;
-            return TrackVariantRegistry.pickName(kind, sceneSeed, index, null);
+            return TrackVariantRegistry.pickName(kind, sceneSeed, index, band.context());
         }
 
         /** The seed a kind's block variants roll on. */

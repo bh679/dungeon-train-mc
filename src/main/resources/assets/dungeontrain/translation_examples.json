@@ -11257,6 +11257,13 @@
         "default",
         "mossy_arch"
       ]
+    },
+    "2": {
+      "label": "the dimension band's name",
+      "examples": [
+        "Nether",
+        "Overworld"
+      ]
     }
   },
   "chat.dungeontrain.track_test.unknown_piece": {

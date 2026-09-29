@@ -38,16 +38,61 @@ final class TrackTestLayoutTest {
     }
 
     @Test
-    @DisplayName("The carriage stands between its pads on open line, before any column's arch or the tunnel")
-    void carriageOnOpenLine() {
+    @DisplayName("For a track tile the train stands on open line, with track behind it and clear of the tunnel")
+    void tileTrainOnOpenLine() {
         for (TrackTestLayout l : LAYOUTS) {
-            assertTrue(l.backPadX() > 0, "track behind the back pad");
-            assertEquals(l.backPadX() + l.halfPad(), l.carriageX());
-            assertEquals(l.carriageX() + l.carriageLength(), l.frontPadX());
-            assertTrue(l.frontPadX() + l.halfPad() <= l.tunnelX(), "carriage clear of the tunnel");
+            TrackTestPiece tile = TrackTestPiece.TILE;
+            assertTrue(l.backPadX(tile) > 0, "track behind the back pad");
+            assertTrue(l.backPadX(tile) + l.trainLength() <= l.tunnelX(), "train clear of the tunnel");
             assertEquals(0, l.openLength() % TrackTestLayout.TILE_LENGTH, "open line on the tile grid");
             assertEquals(TrackTestLayout.bedY() + 2, TrackTestLayout.trainY(), "carriage on the rails");
         }
+    }
+
+    @Test
+    @DisplayName("Every piece's train is pads-carriage-pads, inside the stretch")
+    void trainInsideStretch() {
+        for (TrackTestLayout l : LAYOUTS) {
+            for (TrackTestPiece p : TrackTestPiece.values()) {
+                assertEquals(l.backPadX(p) + l.halfPad(), l.carriageX(p));
+                assertEquals(l.carriageX(p) + l.carriageLength(), l.frontPadX(p));
+                assertTrue(l.backPadX(p) >= 0, p.name());
+                assertTrue(l.frontPadX(p) + l.halfPad() <= l.stretchLength(), p.name());
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("The train stands on the section under test, so the author starts there")
+    void trainOnTheTestedSection() {
+        TrackTestLayout l = layout(9, 7, 7);
+        int trainEnd = l.trainLength();
+        for (TrackTestPiece p : List.of(TrackTestPiece.PILLAR_BOTTOM, TrackTestPiece.PILLAR_MIDDLE,
+                TrackTestPiece.PILLAR_TOP, TrackTestPiece.STAIRS)) {
+            // Over the middle column, the one the staircase stands beside.
+            assertTrue(l.backPadX(p) <= l.stairsColumn() && l.stairsColumn() < l.backPadX(p) + trainEnd, p.name());
+        }
+        // A portal: straddling the tunnel's mouth.
+        int portal = l.backPadX(TrackTestPiece.TUNNEL_PORTAL);
+        assertTrue(portal < l.tunnelX() && l.tunnelX() < portal + trainEnd);
+        // A section and a staircase entrance: wholly inside the tunnel.
+        for (TrackTestPiece p : List.of(TrackTestPiece.TUNNEL_SECTION, TrackTestPiece.STAIRS_ENTRANCE)) {
+            assertTrue(l.backPadX(p) >= l.tunnelX() + TrackTestLayout.TUNNEL_PIECE, p.name());
+            assertTrue(l.backPadX(p) + trainEnd <= l.tunnelX() + TrackTestLayout.tunnelLength()
+                - TrackTestLayout.TUNNEL_PIECE, p.name());
+        }
+        // The staircase entrance's train is under its shaft.
+        int shaft = l.downStairsCentre();
+        int entrance = l.backPadX(TrackTestPiece.STAIRS_ENTRANCE);
+        assertTrue(entrance <= shaft && shaft < entrance + trainEnd);
+    }
+
+    @Test
+    @DisplayName("A default carriage fits under the tunnel ceiling")
+    void carriageFitsInTheTunnel() {
+        TrackGeometry g = new TrackGeometry(TrackTestLayout.bedY(), TrackTestLayout.bedY() + 1, 0, 6);
+        int ceiling = TunnelGeometry.from(g).ceilingY();
+        assertTrue(TrackTestLayout.trainY() + 7 - 1 < ceiling);
     }
 
     @Test
@@ -88,15 +133,16 @@ final class TrackTestLayoutTest {
     }
 
     @Test
-    @DisplayName("The down-stairs shaft rises through the first section, clear of both portals")
-    void downStairsInASection() {
+    @DisplayName("The down-stairs shaft rises through the sections, clear of both portals")
+    void downStairsInTheSections() {
         for (TrackTestLayout l : LAYOUTS) {
-            int section = l.tunnelPieces().get(1).x();
+            int sectionsStart = l.tunnelPieces().get(1).x();
+            int sectionsEnd = sectionsStart + TrackTestLayout.TUNNEL_SECTIONS * TrackTestLayout.TUNNEL_PIECE;
             int shaftMin = TrackGenerator.downStairsOriginX(l.downStairsCentre());
             int shaftMax = shaftMin + TrackGenerator.shaftFootprintX() - 1;
             // The entrance is one wider each side than the shaft.
-            assertTrue(shaftMin - 1 >= section);
-            assertTrue(shaftMax + 1 < section + TrackTestLayout.TUNNEL_PIECE);
+            assertTrue(shaftMin - 1 >= sectionsStart);
+            assertTrue(shaftMax + 1 < sectionsEnd);
         }
     }
 

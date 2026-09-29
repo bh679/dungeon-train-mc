@@ -87,16 +87,45 @@ public record TrackTestLayout(int carriageLength, int halfPad, int carriageHeigh
         return bedY() + TUNNEL_HEIGHT;
     }
 
-    /** Back pad, then the carriage, then the front pad. */
-    public int backPadX() { return LEAD; }
+    /** The train on the line: back pad, carriage, front pad — the way a one-carriage sub-level stands. */
+    public int trainLength() {
+        return 2 * halfPad + carriageLength;
+    }
 
-    public int carriageX() { return LEAD + halfPad; }
+    /**
+     * The X the test is about — where the piece under test shows best, and so where the train stands
+     * and the author arrives:
+     * <ul>
+     *   <li>a track tile is laid everywhere, so the open line, where the train always stood;</li>
+     *   <li>a pillar section or the staircase: over the middle column, the one the stairs stand beside;</li>
+     *   <li>a tunnel portal: its mouth, the train half in and half out;</li>
+     *   <li>a tunnel section: inside, over the joint where one section meets the next;</li>
+     *   <li>a staircase entrance: inside, under the shaft the entrance caps.</li>
+     * </ul>
+     */
+    public int focusX(TrackTestPiece piece) {
+        return switch (piece) {
+            case TILE -> LEAD + trainLength() / 2;
+            case PILLAR_BOTTOM, PILLAR_MIDDLE, PILLAR_TOP, STAIRS -> stairsColumn();
+            case TUNNEL_PORTAL -> tunnelX();
+            case TUNNEL_SECTION -> sectionsMidX();
+            case STAIRS_ENTRANCE -> downStairsCentre();
+        };
+    }
 
-    public int frontPadX() { return carriageX() + carriageLength; }
+    /** Where the train's back pad starts: centred on the focus, kept inside the stretch. */
+    public int backPadX(TrackTestPiece piece) {
+        int centred = focusX(piece) - trainLength() / 2;
+        return Math.max(0, Math.min(centred, stretchLength() - trainLength()));
+    }
 
-    /** Open line before the tunnel: room for the carriage and every column, on the tile grid. */
+    public int carriageX(TrackTestPiece piece) { return backPadX(piece) + halfPad; }
+
+    public int frontPadX(TrackTestPiece piece) { return carriageX(piece) + carriageLength; }
+
+    /** Open line before the tunnel: room for the train behind the lead and every column, on the tile grid. */
     public int openLength() {
-        int needed = Math.max(COLUMNS * spacing, frontPadX() + halfPad + TILE_LENGTH);
+        int needed = Math.max(COLUMNS * spacing, LEAD + trainLength() + TILE_LENGTH);
         return roundUp(needed, TILE_LENGTH);
     }
 
@@ -157,9 +186,17 @@ public record TrackTestLayout(int carriageLength, int halfPad, int carriageHeigh
         return out;
     }
 
-    /** Centre of the down-stairs shaft: the middle of the first section, clear of both portals. */
+    /**
+     * Centre of the down-stairs shaft: the middle of the sections, clear of both portals — where a
+     * train stood under it fits inside the tunnel.
+     */
     public int downStairsCentre() {
-        return tunnelX() + TUNNEL_PIECE + TUNNEL_PIECE / 2;
+        return sectionsMidX();
+    }
+
+    /** The joint between the sections: the tunnel's middle, a whole section clear of either portal. */
+    private int sectionsMidX() {
+        return tunnelX() + TUNNEL_PIECE + TUNNEL_SECTIONS * TUNNEL_PIECE / 2;
     }
 
     /** Highest row anything reaches: the down-stairs entrance, or a carriage taller than it. */
