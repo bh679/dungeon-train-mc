@@ -85,4 +85,16 @@ final class ServerLoadSamplerTest {
         assertEquals(0, ServerLoadSampler.maxTickNanos(ring, 0, 40));
         assertEquals(0, ServerLoadSampler.maxTickNanos(new long[0], 10, 40));
     }
+
+    @Test
+    @DisplayName("onCarriages box test: inside, on the edge, outside, and across several boxes")
+    void insideAny() {
+        double[] boxes = {0, 0, 0, 10, 5, 10,   100, 0, 100, 110, 5, 110};
+        assertTrue(ServerLoadSampler.insideAny(5, 1, 5, boxes));
+        assertTrue(ServerLoadSampler.insideAny(10, 5, 10, boxes));
+        assertTrue(ServerLoadSampler.insideAny(105, 2, 105, boxes));
+        assertFalse(ServerLoadSampler.insideAny(50, 1, 50, boxes));
+        assertFalse(ServerLoadSampler.insideAny(5, 6, 5, boxes));
+        assertFalse(ServerLoadSampler.insideAny(5, 1, 5, new double[0]));
+    }
 }

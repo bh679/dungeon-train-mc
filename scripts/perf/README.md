@@ -89,7 +89,7 @@ previous line.
 | `heapUsedMb` / `heapMaxMb` | heap in use at the sample, and `-Xmx` |
 | `chunkWaitMs` / `chunkWaits` | server-thread time blocked on synchronous chunk loads (`ServerChunkCache$MainThreadExecutor.managedBlock` entered with the chunk still pending; outermost wait only) and how many. The first line after server start also carries the spawn-area loads |
 | `chunksLoaded` / `pendingChunkTasks` | loaded chunks in this level, and queued main-thread chunk tasks |
-| `entities` / `onCarriages` | loaded entities in the level, and how many sit in carriage (Sable plot) space — i.e. carriage contents. World-space riders are `activeEntity` |
+| `entities` / `onCarriages` | loaded entities in the level, and how many non-player entities are inside a resident carriage's world box (inflated 1 block, 2 above — the box the contents despawn sweep uses): carriage contents mobs plus anything standing on the train |
 | `tickMaxMs` | longest single server tick in the last 40 (all dimensions) |
 
 `gcMs`, `chunkWait*` and `physMs` are process-wide counters drained by whichever `[mspt]` line

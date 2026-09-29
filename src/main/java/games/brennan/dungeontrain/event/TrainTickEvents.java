@@ -354,7 +354,7 @@ public final class TrainTickEvents {
             // The non-physics suspects for a slow window (GC, synchronous chunk loads, entity load,
             // the worst single tick) — appended after the physics fields so older parsers keep
             // reading. See ServerLoadSampler and scripts/perf/README.md.
-            ServerLoadSampler.Window load = ServerLoadSampler.drain(level, MSPT_LOG_PERIOD_TICKS);
+            ServerLoadSampler.Window load = ServerLoadSampler.drain(level, trainsById, MSPT_LOG_PERIOD_TICKS);
             double avgTickMs = level.getServer().getAverageTickTimeNanos() / 1_000_000.0;
             // activeTracked/activeEntity/activeSettling, maxBodyLag and reanchors: why each
             // resident carriage is still being stepped, how far the parked ones sit behind

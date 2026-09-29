@@ -1,14 +1,19 @@
 package games.brennan.dungeontrain.perf;
 
-import games.brennan.dungeontrain.track.TrackGenerator;
+import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.train.Trains;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import org.joml.primitives.AABBdc;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
@@ -20,7 +25,8 @@ import java.util.concurrent.atomic.LongAdder;
  *
  * <p>Cheap by construction: the GC beans are read once per window, the chunk wait is two
  * {@code nanoTime} calls per synchronous chunk miss (fed by {@code ServerChunkCacheWaitTimingMixin}),
- * the entity count is one walk of the level's entities every 40 ticks with an O(1) coordinate test,
+ * the entity count is one walk of the level's entities every 40 ticks, tested against the resident
+ * carriages' boxes (a dozen or so per train),
  * and the tick max reads 40 slots of the server's own tick-time ring.</p>
  *
  * <p>GC and chunk-wait counters are process-wide and drained by whichever {@code [mspt]} line fires
@@ -55,18 +61,18 @@ public final class ServerLoadSampler {
     }
 
     /** Read and reset the windowed counters, and snapshot the gauges — once per {@code [mspt]} line. */
-    public static Window drain(ServerLevel level, int windowTicks) {
+    public static Window drain(ServerLevel level, Map<UUID, List<Trains.Carriage>> trainsById, int windowTicks) {
         long[] gc = drainGc();
         Runtime rt = Runtime.getRuntime();
         long used = (rt.totalMemory() - rt.freeMemory()) >> 20;
         long max = rt.maxMemory() >> 20;
 
         ServerChunkCache chunks = level.getChunkSource();
+        double[] boxes = carriageBoxes(trainsById);
         int entities = 0, onCarriages = 0;
         for (Entity e : level.getAllEntities()) {
             entities++;
-            // Carriage contents live in Sable's plot space, far past any natural coordinate.
-            if (TrackGenerator.isShipyardChunk(e.getBlockX() >> 4, e.getBlockZ() >> 4)) onCarriages++;
+            if (!(e instanceof Player) && insideAny(e.getX(), e.getY(), e.getZ(), boxes)) onCarriages++;
         }
         long tickMax = maxTickNanos(level.getServer().getTickTimesNanos(),
             level.getServer().getTickCount(), windowTicks);
@@ -75,6 +81,39 @@ public final class ServerLoadSampler {
             chunkWaitNanos.sumThenReset(), chunkWaits.sumThenReset(),
             chunks.getLoadedChunksCount(), chunks.getPendingTasksCount(),
             entities, onCarriages, tickMax);
+    }
+
+    /**
+     * Resident carriages' world boxes, flattened to {@code minX,minY,minZ,maxX,maxY,maxZ} runs and
+     * inflated like {@code ContentsEntitySnapshot#sweepableMobsAboard} (1 block around, 2 above) —
+     * live contents mobs ride in world space once Sable has re-anchored them, not at the shipyard
+     * coordinates they were placed at, so the carriage's world box is where they are counted.
+     */
+    private static double[] carriageBoxes(Map<UUID, List<Trains.Carriage>> trainsById) {
+        int n = 0;
+        for (List<Trains.Carriage> t : trainsById.values()) n += t.size();
+        double[] out = new double[n * 6];
+        int i = 0;
+        for (List<Trains.Carriage> train : trainsById.values()) {
+            for (Trains.Carriage c : train) {
+                ManagedShip ship = c.ship();
+                if (!ship.isResident()) continue;
+                AABBdc b = ship.worldAABB();
+                out[i++] = b.minX() - 1; out[i++] = b.minY() - 1; out[i++] = b.minZ() - 1;
+                out[i++] = b.maxX() + 1; out[i++] = b.maxY() + 2; out[i++] = b.maxZ() + 1;
+            }
+        }
+        return i == out.length ? out : java.util.Arrays.copyOf(out, i);
+    }
+
+    /** Whether a point lies in any of the flattened boxes from {@link #carriageBoxes}. */
+    static boolean insideAny(double x, double y, double z, double[] boxes) {
+        for (int i = 0; i + 5 < boxes.length; i += 6) {
+            if (x >= boxes[i] && x <= boxes[i + 3]
+                && y >= boxes[i + 1] && y <= boxes[i + 4]
+                && z >= boxes[i + 2] && z <= boxes[i + 5]) return true;
+        }
+        return false;
     }
 
     /** GC pause millis and collections since the last call; the first call reports zero. */
