@@ -78,6 +78,21 @@ final class TemplateSidecarsTest {
     }
 
     @Test
+    @DisplayName("a whole room uploads its own variants and chest links, not the same-named shell's")
+    void wholeRoomFiles() {
+        Map<String, TemplateSidecars.Sidecar> byRole = byRole(TemplateSidecars.wholeRoomFiles("lounge"));
+
+        assertEquals(List.of("containers", "variants"), sorted(byRole.keySet()),
+                "a whole room is stamped verbatim — no parts or contents-allow to carry");
+        assertEquals(games.brennan.dungeontrain.train.WholeKind.ROOM.userSubdir(), byRole.get("variants").subdir());
+        assertEquals("lounge.variants.json", byRole.get("variants").basename());
+        assertEquals(ContainerContentsStore.basenameFor("whole:lounge"), byRole.get("containers").basename());
+        assertEquals("whole:lounge", TemplateSidecars.wholeRoomPlotKey("lounge"));
+        assertFalse(byRole.get("containers").basename().equals(ContainerContentsStore.basenameFor(
+                TemplateSidecars.plotKeyFor(BuilderPhotoPaths.Kind.CARRIAGE, "", "lounge"))));
+    }
+
+    @Test
     @DisplayName("a carriage carries its variants, part assignments, allow-list and container links")
     void carriageFiles() {
         Map<String, TemplateSidecars.Sidecar> byRole = byRole(
