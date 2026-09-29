@@ -54,12 +54,13 @@ import java.util.Optional;
 /**
  * {@code /dungeontrain editor test carriages|contents <id>} — Test the Carriage for a carriage or a
  * contents template: stand on a flatbed facing two copies of it, rolled the way the train rolls a
- * carriage — the second on a different seed, so two rolls can be compared side by side. A whole room
- * or group is stood up once, between two flatbeds. Laid out along {@code +X}:
+ * carriage — the second on a different seed, so two rolls can be compared side by side. A whole
+ * group already spans several carriages, so it is stood up once, between two flatbeds. Laid out
+ * along {@code +X}:
  *
  * <pre>
- *   carriage / contents:  [flatbed | roll A | roll B]
- *   whole room / group:   [flatbed | whole  | flatbed]
+ *   carriage / contents / whole room:  [flatbed | roll A | roll B]
+ *   whole group:                       [flatbed | group  | flatbed]
  * </pre>
  *
  * <p>The same shape as {@link PortalTestCommand}, for the same reasons: <b>no train.</b> The copy is
@@ -275,12 +276,14 @@ public final class CarriageTestCommand {
 
         leaveCurrentTests(source, player);
 
-        // [flatbed | whole | flatbed] — a whole template stands between flatbeds, as on the train.
+        // A room, like a carriage: [flatbed | roll A | roll B]. A group already spans several
+        // carriages, so it stands once between flatbeds: [flatbed | group | flatbed].
         BlockPos origin = new BlockPos(player.blockPosition().getX(),
             PortalTwinLanes.floorY(overworld.getMinBuildHeight()), TEST_Z_OFFSET);
         BlockPos wholeOrigin = origin.offset(dims.length(), 0, 0);
-        BlockPos frontFlatbed = wholeOrigin.offset(size.getX(), 0, 0);
-        BoundingBox box = spanBox(origin, 2 * dims.length() + size.getX(),
+        BlockPos after = wholeOrigin.offset(size.getX(), 0, 0);
+        long seedB = nextRoll(shellSeed);
+        BoundingBox box = spanBox(origin, dims.length() + size.getX() + (room ? size.getX() : dims.length()),
             Math.max(dims.height(), size.getY()), Math.max(dims.width(), size.getZ()));
         GameType previous = player.gameMode.getGameModeForPlayer();
         CarriageTestSession.put(player.getUUID(), new CarriageTestSession.Session(
@@ -291,11 +294,8 @@ public final class CarriageTestCommand {
         // Placeholders resolve for the stage the editor is previewing, as in CarriagePlacer#placeForTest.
         String stage = games.brennan.dungeontrain.editor.EditorStageSelection.effective();
         CarriageStampGuard.run(() -> StagePlacementScope.run(stage, () -> {
-            placed[0] = place.test(wholeOrigin);
-            if (placed[0]) {
-                WholeOverlay.apply(overworld, wholeOrigin, wholeKind, id, size, shellSeed,
-                    CarriageTestSession.TEST_INDEX);
-            }
+            placed[0] = stampWhole(overworld, place, wholeOrigin, wholeKind, id, size, shellSeed)
+                && (!room || stampWhole(overworld, place, after, wholeKind, id, size, seedB));
         }));
         if (!placed[0]) {
             CarriageTestSession.take(player.getUUID());
@@ -303,17 +303,26 @@ public final class CarriageTestCommand {
             return failCode(source, "chat.dungeontrain.carriage_test.no_whole_template", id);
         }
         stampFlatbed(overworld, origin, dims, shellSeed);
-        stampFlatbed(overworld, frontFlatbed, dims, shellSeed);
+        if (!room) stampFlatbed(overworld, after, dims, shellSeed);
 
         arrive(overworld, player, origin, sizeOf(dims), previous, id);
-        LOGGER.info("[DungeonTrain] carriage test: stamped {} '{}' at {} for {}, seed={}",
-            kind.literal(), id, origin, player.getName().getString(), shellSeed);
+        LOGGER.info("[DungeonTrain] carriage test: stamped {} '{}' behind a flatbed at {} for {}, seed={}{}",
+            kind.literal(), id, origin, player.getName().getString(), shellSeed,
+            room ? ", second roll seed=" + seedB : "");
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.carriage_test.standing_in",
             id, id, "none").withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
 
-    /** A flatbed at {@code at} — where the author arrives, and what flanks a whole template. */
+    /** One copy of a whole room or group at {@code at}, rolled on {@code seed}; false if it would not place. */
+    private static boolean stampWhole(ServerLevel level, java.util.function.Predicate<BlockPos> place,
+                                      BlockPos at, WholeKind kind, String id, Vec3i size, long seed) {
+        if (!place.test(at)) return false;
+        WholeOverlay.apply(level, at, kind, id, size, seed, CarriageTestSession.TEST_INDEX);
+        return true;
+    }
+
+    /** A flatbed at {@code at} — where the author arrives, and what follows a whole group. */
     private static void stampFlatbed(ServerLevel level, BlockPos at, CarriageDims dims, long seed) {
         CarriagePlacer.placeForTest(level, at, CarriagePlacer.flatbedVariant(), null, dims, seed, seed,
             CarriageTestSession.TEST_INDEX);
