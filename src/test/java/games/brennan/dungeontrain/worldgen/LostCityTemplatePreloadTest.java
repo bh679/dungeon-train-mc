@@ -65,7 +65,7 @@ final class LostCityTemplatePreloadTest {
     @Test
     @DisplayName("without a Lost City era nothing ever triggers")
     void noCities() {
-        CycleLayout without = layout(CycleLayout.DEFAULT_ORDER.replace("legacy:wwoo:lost_city=4000, ", ""));
+        CycleLayout without = layout(CycleLayout.DEFAULT_ORDER.replace("legacy:wwoo:lost_city=3000, ", ""));
         WorldGenCycle c = cycle(without);
         for (long u = 0; u < without.period(); u += 500) {
             assertFalse(nearLostCity(c, (int) (START + u), LOOKAHEAD_BLOCKS), "u=" + u);

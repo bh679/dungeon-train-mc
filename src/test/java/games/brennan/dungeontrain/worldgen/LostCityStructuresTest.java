@@ -80,7 +80,7 @@ final class LostCityStructuresTest {
     }
 
     @Test
-    @DisplayName("Lost City runs 4000 blocks alone between BetterNether and BetterEnd, entered over its own 750-block fade")
+    @DisplayName("Lost City runs 3000 blocks alone between BetterNether and BetterEnd, entered over its own 750-block fade")
     void shippedPlacement() {
         int slot = slot();
         assertEquals(CycleLayout.Type.NETHER, LAYOUT.slot(slot - 1).type());
@@ -89,7 +89,7 @@ final class LostCityStructuresTest {
         assertEquals(CycleLayout.Style.BETTER, LAYOUT.slot(slot + 1).style());
         assertEquals(1, LAYOUT.eras(slot).length);
         assertEquals(0, LAYOUT.eraIndex(LegacyBandKind.LOST_CITY));
-        assertEquals(4000L, C.legacyLen(LegacyBandKind.LOST_CITY));
+        assertEquals(3000L, C.legacyLen(LegacyBandKind.LOST_CITY));
         assertEquals(750L, LAYOUT.fadeBefore(slot, 0));
         assertEquals(480L, LAYOUT.fadeBefore(slot, 1));                // the run's exit fade
         assertEquals(legacyStart() + 750L, coreStart());
@@ -110,7 +110,7 @@ final class LostCityStructuresTest {
         long cs = coreStart();
         double early = share(cs - 740L, cs - 500L);
         double late = share(cs - 250L, cs - 10L);
-        double core = share(cs + 2500L, cs + 3800L);                       // past the density fade
+        double core = share(cs + 2000L, cs + 2850L);                       // past the density fade, short of the exit margin
         assertTrue(early > 0.0, "the first buildings appear inside the crossfade");
         assertTrue(early < late && late < core, early + " < " + late + " < " + core);
         assertEquals(1.0, core, 1e-9);
@@ -138,7 +138,7 @@ final class LostCityStructuresTest {
                 if (!lostCity) assertFalse(LostCityStructures.allowedAt(SEED, C, cx, cz));     // never off a Lost City chunk
             }
         }
-        for (int cx = x(cs + 2500L, 0) >> 4; cx < x(cs + 3000L, 0) >> 4; cx++) {              // full density: exactly the roll
+        for (int cx = x(cs + 2000L, 0) >> 4; cx < x(cs + 2850L, 0) >> 4; cx++) {              // full density: exactly the roll
             for (int cz = -16; cz < 16; cz++) {
                 boolean lostCity = LegacyBands.kindOfChunk(SEED, C, cx, cz) == LegacyBandKind.LOST_CITY;
                 assertEquals(lostCity, LostCityStructures.allowedAt(SEED, C, cx, cz));
@@ -149,7 +149,7 @@ final class LostCityStructuresTest {
     @Test
     @DisplayName("the exit keeps its margin: nothing within 128 blocks of the core's end, nothing in the End")
     void exitMargin() {
-        long ce = coreStart() + 4000L;
+        long ce = coreStart() + C.legacyLen(LegacyBandKind.LOST_CITY);
         int lastOk = Math.floorDiv(x(ce, 0) - 1 - LostCityStructures.EXIT_MARGIN_BLOCKS - 15, 16);
         assertTrue(LostCityStructures.allowedAt(SEED, C, lastOk, 0));
         assertFalse(LostCityStructures.allowedAt(SEED, C, lastOk + 1, 0));
@@ -168,7 +168,7 @@ final class LostCityStructuresTest {
     @Test
     @DisplayName("a disabled Lost City era allows no city anywhere")
     void disabled() {
-        CycleLayout without = layout(CycleLayout.DEFAULT_ORDER.replace("legacy:wwoo:lost_city=4000, ", ""));
+        CycleLayout without = layout(CycleLayout.DEFAULT_ORDER.replace("legacy:wwoo:lost_city=3000, ", ""));
         assertEquals(-1, without.legacySlotOf(LegacyBandKind.LOST_CITY));
         WorldGenCycle c = cycle(without);
         for (long u = 0; u < without.period(); u += 500) {
@@ -286,7 +286,11 @@ final class LostCityStructuresTest {
         assertTrue(atFoot >= 0.5 && atFoot < 0.52, "the floor at the foot: " + atFoot);
         assertEquals(0.75, LostCityStructures.density(C, x(leadInStart + foot + 1450, 0) >> 4), 0.01);
         assertEquals(1.0, LostCityStructures.density(C, x(leadInStart + foot + 2916, 0) >> 4), 1e-9);
-        assertEquals(1.0, LostCityStructures.density(C, x(coreStart() + 3800L, 0) >> 4), 1e-9);
+        // full density reaches the core with ~870 blocks to spare before the exit margin (core 3000, margin 128)
+        long fullAt = LAYOUT.start(slot()) - lead + foot + LostCityStructures.FADE_BLOCKS;
+        assertTrue(fullAt < coreStart() + C.legacyLen(LegacyBandKind.LOST_CITY) - LostCityStructures.EXIT_MARGIN_BLOCKS - 500L,
+                "full density well inside the core: " + fullAt);
+        assertEquals(1.0, LostCityStructures.density(C, x(coreStart() + 2800L, 0) >> 4), 1e-9);
         assertEquals(0.0, LostCityStructures.density(C, x(coreStart() - 2500L, 0) >> 4), 1e-9);       // the Nether proper
         // the roll follows the density over a block of chunks, and is deterministic
         int cx = x(leadInStart + foot + 1450, 0) >> 4;                                                  // density ~0.75
@@ -294,7 +298,7 @@ final class LostCityStructuresTest {
         for (int cz = -100; cz < 100; cz++) if (LostCityStructures.allowedAt(SEED, C, cx, cz)) kept++;
         assertTrue(kept > 120 && kept < 180, "about 75% kept: " + kept);
         int full = 0;
-        for (int cz = -100; cz < 100; cz++) if (LostCityStructures.allowedAt(SEED, C, x(coreStart() + 3500L, 0) >> 4, cz)) full++;
+        for (int cz = -100; cz < 100; cz++) if (LostCityStructures.allowedAt(SEED, C, x(coreStart() + 2500L, 0) >> 4, cz)) full++;
         assertEquals(200, full);
         assertEquals(LostCityStructures.allowedAt(SEED, C, cx, 7), LostCityStructures.allowedAt(SEED, C, cx, 7));
     }

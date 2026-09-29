@@ -514,7 +514,17 @@ public final class DungeonTrainCommonConfig {
             + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:650, chuncks:2000, mix:4000, stacks:5000";
 
-    public static final int CURRENT_CONFIG_VERSION = 14;
+    /**
+     * The {@code worldgenCycleOrder} v14 shipped; v15 shortened most of Lap 1, Lap 2 and the legacy eras,
+     * and split Lap 1's first Nether into 1000 vanilla then Biomes O' Plenty ({@code nether:vanilla=1000+bop>bop}).
+     */
+    public static final String V14_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:vanilla>bop:3000, ow:wwoo:4500, end:vanilla:1200, end:bop:2000, upside_down:2500:5000, "
+            + "ow:bop:8000, nether:better:8000, legacy:wwoo:lost_city=4000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:650, chuncks:2000, mix:4000, stacks:5000";
+
+    public static final int CURRENT_CONFIG_VERSION = 15;
     public static final boolean DEFAULT_MIX_ENABLED = true;
     public static final String DEFAULT_MIX_EXCLUDE = "";
 
@@ -1358,6 +1368,15 @@ public final class DungeonTrainCommonConfig {
         if (from < 14 && V13_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
             WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
             LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shorter Reassembly.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v14 -> v15: shorter bands and a split first Nether (vanilla, then BoP). Same rule: only an order
+        // still exactly as v14 shipped moves.
+        if (from < 15 && V14_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shorter bands, split Nether.",
                     from, CURRENT_CONFIG_VERSION);
             WorldGenCycle.invalidateCache();
         }

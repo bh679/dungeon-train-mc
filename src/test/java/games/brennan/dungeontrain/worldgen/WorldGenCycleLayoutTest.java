@@ -49,30 +49,78 @@ final class WorldGenCycleLayoutTest {
     @DisplayName("period is the run-1 length and the layout is reported")
     void period() {
         assertTrue(C.hasLayout());
-        assertEquals(116_028L, C.period());
+        assertEquals(98_028L, C.period());
         assertEquals(232, C.riseLen());
     }
 
     @Test
-    @DisplayName("both Nether occurrences ramp from their own slot; the second is 8000 long and BetterNether")
+    @DisplayName("both Nether occurrences ramp from their own slot; the second is 4500 long and BetterNether")
     void nether() {
         long n1 = LAYOUT.start(1);
         assertEquals(0.0, C.netherRamp(x(n1 - 1)));
         assertTrue(C.netherHeightRamp(x(n1 + 100)) > 0.0);
         assertTrue(C.isNetherCore(x(n1 + 232 + 300 + 10)));
-        assertTrue(C.isNetherCore(x(n1 + 232 + 300 + 2999)));
-        assertFalse(C.isNetherCore(x(n1 + 232 + 300 + 3000 + 10)));
-        assertEquals(0.0, C.netherRamp(x(n1 + 4064)));
+        assertTrue(C.isNetherCore(x(n1 + 232 + 300 + 2749)));
+        assertFalse(C.isNetherCore(x(n1 + 232 + 300 + 2750 + 10)));
+        assertEquals(0.0, C.netherRamp(x(n1 + LAYOUT.length(1))));
         assertEquals(Style.VANILLA, C.netherStyleAt(x(n1 + 1000)));
         assertNull(C.netherStyleAt(x(n1 - 10)));
 
         long n2 = LAYOUT.start(7);
-        assertTrue(C.isNetherCore(x(n2 + 232 + 300 + 7999)));
-        assertFalse(C.isNetherCore(x(n2 + 232 + 300 + 8000 + 10)));
+        assertTrue(C.isNetherCore(x(n2 + 232 + 300 + 4499)));
+        assertFalse(C.isNetherCore(x(n2 + 232 + 300 + 4500 + 10)));
         assertEquals(Style.BETTER, C.netherStyleAt(x(n2 + 1000)));
-        assertEquals(7999L, C.netherCoreDepth(x(n2 + 232 + 300 + 7999)));
+        assertEquals(4499L, C.netherCoreDepth(x(n2 + 232 + 300 + 4499)));
         assertEquals(x(n2), (int) C.netherBandEntranceX(x(n2 + 3000)));
         assertEquals(x(n1), (int) C.netherBandEntranceX(x(n1 + 3000)));
+    }
+
+    @Test
+    @DisplayName("Lap 1's Nether splits on the first run only: vanilla for 1000 core blocks, then BoP; BoP throughout on run 1")
+    void netherSplit() {
+        long core = LAYOUT.netherCoreStart(1);
+        assertEquals(LAYOUT.start(1) + 232 + 300, core);
+        long split = core + LAYOUT.slot(1).splitAt();
+        assertEquals(Style.VANILLA, C.netherLookAt(x(core)));
+        assertEquals(Style.VANILLA, C.netherLookAt(x(split - 1)));
+        assertEquals(Style.BOP, C.netherLookAt(x(split + 1)));
+        assertEquals(Style.BOP, C.netherLookAt(x(core + LAYOUT.slot(1).core() - 1)));
+        // run 1: no split, the later look everywhere in the slot
+        for (long u = LAYOUT.start(1); u < LAYOUT.start(1) + LAYOUT.length(1); u += 50) {
+            assertEquals(Style.BOP, C.netherLookAt(x(u, 1)), "u=" + u);
+        }
+        assertEquals(Style.BOP, C.netherLookAt(x(split - 1, 1)));
+        // the BetterNether slot has no split
+        assertEquals(Style.BETTER, C.netherLookAt(x(LAYOUT.netherCoreStart(7) + 1000)));
+    }
+
+    @Test
+    @DisplayName("the first-run Nether split dithers across ±150 base blocks, and is the hard switch outside it")
+    void netherSplitDither() {
+        long seed = 1450L;
+        long split = LAYOUT.netherCoreStart(1) + LAYOUT.slot(1).splitAt();
+        int half = WorldGenCycle.NETHER_SPLIT_HALF_BLEND;
+        assertEquals(150, half);
+        for (long u : new long[] {split - half - 1, split - half - 200, split + half, split + half + 200}) {
+            for (int z = -256; z < 256; z += 3) {
+                assertEquals(C.netherLookAt(x(u)), C.netherLookAt(x(u), z, seed), "u=" + u + " z=" + z);
+            }
+        }
+        // inside the blend both looks occur across z
+        for (long u : new long[] {split - half / 2, split, split + half / 2}) {
+            boolean vanilla = false;
+            boolean bop = false;
+            for (int z = -2048; z < 2048; z += 7) {
+                Style s = C.netherLookAt(x(u), z, seed);
+                vanilla |= s == Style.VANILLA;
+                bop |= s == Style.BOP;
+            }
+            assertTrue(vanilla && bop, "both looks near the split at u=" + u);
+        }
+        // seed-stable; off the split slot / on later runs it is just netherLookAt(x)
+        assertEquals(C.netherLookAt(x(split), 7, seed), C.netherLookAt(x(split), 7, seed));
+        assertEquals(Style.BOP, C.netherLookAt(x(split, 1), 0, seed));
+        assertEquals(Style.BETTER, C.netherLookAt(x(LAYOUT.netherCoreStart(7) + 1000), 0, seed));
     }
 
     @Test
@@ -134,7 +182,7 @@ final class WorldGenCycleLayoutTest {
         long e2 = LAYOUT.start(9);
         long e2len = LAYOUT.length(9);
         assertEquals(Style.BETTER, C.endStyleAt(x(e2 + 1000)));
-        assertTrue(C.isEndCore(x(e2 + 740 + 7999)));
+        assertTrue(C.isEndCore(x(e2 + 740 + 4999)));
         assertFalse(C.isInUpsideDownEntryLead(x(e2 + e2len - 1)));     // spheres follow, not the upside-down
         assertTrue(C.isInSpheresFade(x(e2 + e2len)));
         assertTrue(C.isInSpheresApproachOrBand(x(e2 + e2len)));
@@ -243,12 +291,12 @@ final class WorldGenCycleLayoutTest {
         assertNull(entry.from());
         assertEquals(LegacyBandKind.LOST_CITY, entry.to());
         assertTrue(C.isInLegacyBand(LegacyBandKind.LOST_CITY, x(lc + 480)));
-        assertFalse(C.isInLegacyBand(LegacyBandKind.LOST_CITY, x(lc + 480 + 4000)));
-        WorldGenCycle.LegacyHit exit = C.legacyAt(x(lc + 480 + 4000 + 240));
+        assertFalse(C.isInLegacyBand(LegacyBandKind.LOST_CITY, x(lc + 480 + 3000)));
+        WorldGenCycle.LegacyHit exit = C.legacyAt(x(lc + 480 + 3000 + 240));
         assertEquals(LegacyBandKind.LOST_CITY, exit.from());
         assertNull(exit.to());
         assertNull(C.legacyAt(x(LAYOUT.start(9))));
-        assertEquals(4000L, C.legacyLen(LegacyBandKind.LOST_CITY));
+        assertEquals(3000L, C.legacyLen(LegacyBandKind.LOST_CITY));
         assertEquals(x(lc + 480), (int) C.legacyCoreStartX(LegacyBandKind.LOST_CITY, x(lc + 100)));
         // The other eras don't answer inside Lost City's run, and Lost City doesn't answer in theirs.
         assertEquals(WorldGenCycle.NOT_IN_LEGACY_SLOT, C.legacyCoreStartX(LegacyBandKind.AMPLIFIED, x(lc + 1000)));
@@ -261,7 +309,7 @@ final class WorldGenCycleLayoutTest {
     }
 
     @Test
-    @DisplayName("upside-down: fades, a 2500 core, a 5000 Reassembly and the exit gap")
+    @DisplayName("upside-down: fades, a 2500 core, a 3000 Reassembly and the exit gap")
     void upsideDown() {
         long u = LAYOUT.start(5);
         assertEquals(0.0, C.upsideDownRamp(x(u - 1)));
@@ -270,12 +318,12 @@ final class WorldGenCycleLayoutTest {
         assertTrue(C.isInUpsideDownBand(x(u + 600 + 2500 + 599)));
         assertFalse(C.isInUpsideDownBand(x(u + 600 + 2500 + 600)));
         assertTrue(C.isInUpsideDownExitFade(x(u + 3700)));
-        assertTrue(C.isInUpsideDownExitFade(x(u + 3700 + 4999)));
-        assertFalse(C.isInUpsideDownExitFade(x(u + 3700 + 5000)));
-        assertEquals(0.5, C.upsideDownExitOwRevealRamp(x(u + 3700 + 2500)), 1e-9);
-        assertEquals(0.5, C.upsideDownExitMirrorDisperseRamp(x(u + 3700 + 2500)), 1e-9);
-        assertEquals(0.0, C.upsideDownRamp(x(u + 3700 + 5000 + 10)));   // the 600 exit gap
-        assertEquals(LAYOUT.start(6), u + 600 + 2500 + 600 + 5000 + 600);
+        assertTrue(C.isInUpsideDownExitFade(x(u + 3700 + 2999)));
+        assertFalse(C.isInUpsideDownExitFade(x(u + 3700 + 3000)));
+        assertEquals(0.5, C.upsideDownExitOwRevealRamp(x(u + 3700 + 1500)), 1e-9);
+        assertEquals(0.5, C.upsideDownExitMirrorDisperseRamp(x(u + 3700 + 1500)), 1e-9);
+        assertEquals(0.0, C.upsideDownRamp(x(u + 3700 + 3000 + 10)));   // the 600 exit gap
+        assertEquals(LAYOUT.start(6), u + 600 + 2500 + 600 + 3000 + 600);
     }
 
     @Test
@@ -339,27 +387,27 @@ final class WorldGenCycleLayoutTest {
         assertEquals(LegacyBandKind.AMPLIFIED, core.from());
         assertEquals(LegacyBandKind.AMPLIFIED, core.to());
         assertEquals(1.0, core.t());
-        WorldGenCycle.LegacyHit cross = C.legacyAt(x(l + 480 + 5000 + 240));
+        WorldGenCycle.LegacyHit cross = C.legacyAt(x(l + 480 + 4000 + 240));
         assertEquals(LegacyBandKind.AMPLIFIED, cross.from());
         assertEquals(LegacyBandKind.BETA, cross.to());                              // Lost City has its own run now
         assertEquals(0.5, cross.t(), 0.01);
         assertTrue(C.isInLegacyBand(LegacyBandKind.AMPLIFIED, x(l + 480)));
-        assertFalse(C.isInLegacyBand(LegacyBandKind.AMPLIFIED, x(l + 480 + 5000)));
-        long beta = l + 480 + 5000 + 480;                                            // Beta core start, straight after Amplified
+        assertFalse(C.isInLegacyBand(LegacyBandKind.AMPLIFIED, x(l + 480 + 4000)));
+        long beta = l + 480 + 4000 + 480;                                            // Beta core start, straight after Amplified
         assertFalse(C.isInLegacyBand(LegacyBandKind.LOST_CITY, x(beta)));
         assertTrue(C.isInLegacyBand(LegacyBandKind.BETA, x(beta)));
         assertFalse(C.isInLegacyBand(LegacyBandKind.LARGE_BIOMES, x(l + 480)));   // built, not shipped
         assertEquals(4320L, C.legacyLen(LegacyBandKind.FAR_LANDS));
         assertEquals(x(beta), (int) C.legacyCoreStartX(LegacyBandKind.BETA, x(beta - 380)));
         assertEquals(WorldGenCycle.NOT_IN_LEGACY_SLOT, C.legacyCoreStartX(LegacyBandKind.BETA, x(l + 100)));
-        assertEquals(0.5, C.legacyCoreProgress(LegacyBandKind.AMPLIFIED, x(l + 480 + 2500)), 1e-9);
-        long chaos = beta + 3500 + 480 + 4320 + 480;                                 // Caves of Chaos core start, after the Far Lands
+        assertEquals(0.5, C.legacyCoreProgress(LegacyBandKind.AMPLIFIED, x(l + 480 + 2000)), 1e-9);
+        long chaos = beta + 2500 + 480 + 4320 + 480;                                 // Caves of Chaos core start, after the Far Lands
         WorldGenCycle.LegacyHit cross2 = C.legacyAt(x(chaos - 240));
         assertEquals(LegacyBandKind.FAR_LANDS, cross2.from());
         assertEquals(LegacyBandKind.CAVES_OF_CHAOS, cross2.to());
         assertTrue(C.isInLegacyBand(LegacyBandKind.CAVES_OF_CHAOS, x(chaos)));
-        assertEquals(4000L, C.legacyLen(LegacyBandKind.CAVES_OF_CHAOS));
-        assertFalse(C.isInLegacyBand(LegacyBandKind.CAVES_OF_CHAOS, x(chaos + 4000)));
+        assertEquals(3500L, C.legacyLen(LegacyBandKind.CAVES_OF_CHAOS));
+        assertFalse(C.isInLegacyBand(LegacyBandKind.CAVES_OF_CHAOS, x(chaos + 3500)));
         assertTrue(C.legacyProgress(LegacyBandKind.ALPHA,
                 x(l + LAYOUT.eraCoreStart(12, LAYOUT.eraIndex(LegacyBandKind.ALPHA)))) > 0.0);
         int flat = LAYOUT.eraIndex(LegacyBandKind.SUPERFLAT);
@@ -406,8 +454,8 @@ final class WorldGenCycleLayoutTest {
         }
         assertFalse(C.netherInfluence(x(1000), 100));
         assertTrue(C.netherInfluence(x(2740), 20));
-        assertFalse(C.endSegmentInfluence(x(11_250)));
-        assertTrue(C.endSegmentInfluence(x(11_314)));
+        assertFalse(C.endSegmentInfluence(x(9_750)));
+        assertTrue(C.endSegmentInfluence(x(9_814)));
         assertTrue(C.netherInfluence(x(P - 1), 2));           // straddles the run boundary: conservative true
     }
 

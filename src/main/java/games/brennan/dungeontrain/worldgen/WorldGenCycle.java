@@ -824,9 +824,57 @@ public record WorldGenCycle(long startX, int owGap,
         return s == null ? CycleLayout.Style.VANILLA : s;
     }
 
-    /** {@link #netherStyleOfPass} of the Nether pass at {@code worldX} (the last one started between bands). */
+    /**
+     * {@link #netherStyleOfPass} of the Nether pass at {@code worldX} (the last one started between bands).
+     * Inside a first-run split slot ({@code nether:vanilla=1000+bop}) the look switches at the split point.
+     */
     public CycleLayout.Style netherLookAt(int worldX) {
+        long d = netherSplitOffset(worldX);
+        if (d != NO_SPLIT) return splitLook(worldX, d >= 0L);
         return netherStyleOfPass(netherPassIndex(worldX));
+    }
+
+    /**
+     * The look column {@code (worldX, worldZ)} of a Nether core wears — {@link #netherLookAt}, except across
+     * a first-run split, where the two looks crossfade over {@code ±NETHER_SPLIT_HALF_BLEND} base blocks and
+     * a seed-stable column noise picks each column's side, so the switch isn't a straight wall across Z.
+     * Every Nether biome consumer asks this, so a column's label, surface and structures agree.
+     */
+    public CycleLayout.Style netherLookAt(int worldX, int worldZ, long seed) {
+        long d = netherSplitOffset(worldX);
+        if (d == NO_SPLIT) return netherStyleOfPass(netherPassIndex(worldX));
+        if (d < -NETHER_SPLIT_HALF_BLEND || d >= NETHER_SPLIT_HALF_BLEND) return splitLook(worldX, d >= 0L);
+        double later = (d + NETHER_SPLIT_HALF_BLEND + 0.5) / (2.0 * NETHER_SPLIT_HALF_BLEND);
+        double n = Disintegration.coherentNoise(seed ^ NETHER_SPLIT_SALT, worldX, 0, worldZ, END_SEAM_NOISE_SCALE);
+        return splitLook(worldX, n < later);
+    }
+
+    /** Half-width, in base blocks, of the crossfade across a first-run Nether split. */
+    static final int NETHER_SPLIT_HALF_BLEND = 150;
+
+    /** Salt so the Nether split dither is independent of the End seam's. */
+    private static final long NETHER_SPLIT_SALT = 0x4E53_504CL;
+
+    /** {@link #netherSplitOffset}'s "not in a split slot" answer. */
+    private static final long NO_SPLIT = Long.MIN_VALUE;
+
+    /**
+     * Base-block offset of {@code worldX} from its Nether slot's first-run split point (negative before it),
+     * or {@link #NO_SPLIT} when the column is not in a split slot on the first run.
+     */
+    private long netherSplitOffset(int worldX) {
+        if (layout == null) return NO_SPLIT;
+        int i = slotAt(worldX);
+        if (i < 0) return NO_SPLIT;
+        CycleLayout.Slot s = layout.slot(i);
+        if (s.type() != CycleLayout.Type.NETHER || !s.hasSplit() || runAt(worldX) != 0) return NO_SPLIT;
+        return baseAt(worldX) - (layout.netherCoreStart(i) + s.splitAt());
+    }
+
+    /** The split slot's look at {@code worldX}: its first style before the split, its split style after. */
+    private CycleLayout.Style splitLook(int worldX, boolean afterSplit) {
+        CycleLayout.Slot s = layout.slot(slotAt(worldX));
+        return afterSplit ? s.splitStyle() : s.style();
     }
 
     /** {@link #endStyleOfPass} of the End pass at {@code worldX} (the last one started between bands). */
