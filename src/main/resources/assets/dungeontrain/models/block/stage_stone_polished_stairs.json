@@ -1,8 +1,8 @@
 {
   "parent": "minecraft:block/stairs",
   "textures": {
-    "bottom": "dungeontrain:block/stage_stone_polished",
-    "side": "dungeontrain:block/stage_stone_polished",
-    "top": "dungeontrain:block/stage_stone_polished"
+    "bottom": "dungeontrain:block/stage_stone_polished_bottom",
+    "side": "dungeontrain:block/stage_stone_polished_half_side",
+    "top": "dungeontrain:block/stage_stone_polished_top"
   }
 }
