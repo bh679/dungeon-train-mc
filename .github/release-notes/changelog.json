@@ -20872,6 +20872,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "carriage-test-flatbed-rolls",
+      "version": "0.1035.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Test the Carriage starts on a flatbed",
+      "summary": "Testing a carriage now starts you on a flatbed, looking at two rolls of it.",
+      "highlights": [],
+      "pr": 1673,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
