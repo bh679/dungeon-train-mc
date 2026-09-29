@@ -87,8 +87,15 @@ public final class TunnelPlacer {
      * {@code tileIndex = origin.getX()} for runtime determinism.
      */
     public static void placeSectionNamed(ServerLevel level, BlockPos origin, String name) {
-        long worldSeed = level.getSeed();
-        int tileIndex = origin.getX();
+        placeSectionNamed(level, origin, name, level.getSeed(), origin.getX());
+    }
+
+    /**
+     * {@link #placeSectionNamed(ServerLevel, BlockPos, String)} with its block variants rolled on
+     * {@code (worldSeed, tileIndex)} — Test the Carriage for tracks, whose re-roll has to reach them.
+     */
+    public static void placeSectionNamed(ServerLevel level, BlockPos origin, String name,
+                                         long worldSeed, int tileIndex) {
         Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(level, TunnelVariant.SECTION, name);
         CarriageStampGuard.run(() -> {
             if (stored.isPresent()) {
@@ -107,8 +114,12 @@ public final class TunnelPlacer {
      * rationale.
      */
     public static void placePortalNamed(ServerLevel level, BlockPos origin, boolean mirrorX, String name) {
-        long worldSeed = level.getSeed();
-        int tileIndex = origin.getX();
+        placePortalNamed(level, origin, mirrorX, name, level.getSeed(), origin.getX());
+    }
+
+    /** {@link #placePortalNamed(ServerLevel, BlockPos, boolean, String)} with its variants rolled on {@code (worldSeed, tileIndex)}. */
+    public static void placePortalNamed(ServerLevel level, BlockPos origin, boolean mirrorX, String name,
+                                        long worldSeed, int tileIndex) {
         Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(level, TunnelVariant.PORTAL, name);
         CarriageStampGuard.run(() -> {
             if (stored.isPresent()) {

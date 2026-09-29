@@ -2976,6 +2976,8 @@
   "chat.dungeontrain.test_mode.nothing_saves": "Test mode — walang mase-save sa anumang itatayo mo rito.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Walang bagon na naka-enable ang '%s' ngayon — i-on ito sa listahan ng Nilalaman ng isang bagon para ma-test.",
   "chat.dungeontrain.carriage_test.no_whole_template": "Walang naka-save na template ang '%s' sa laki ng bagon ng mundong ito — i-save ito, saka subukan ulit.",
+  "chat.dungeontrain.track_test.standing_in": "Nasa isang test na bahagi ng riles ka na may '%s' — walang nakakabit na tren. Ibabalik ka sa plot ng Bumalik sa menu.",
+  "chat.dungeontrain.track_test.unknown_piece": "Ang '%s' ay hindi bahagi ng riles na puwedeng i-test.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Hindi gumagamit ang mundong ito ng auto-train system (naka-off ang startsWithTrain).",
   "chat.dungeontrain.package.spawntrain_failed": "nabigo ang spawnTrain: %s: %s",

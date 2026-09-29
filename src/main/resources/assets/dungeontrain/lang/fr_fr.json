@@ -3019,6 +3019,8 @@
   "chat.dungeontrain.test_mode.nothing_saves": "Mode test — rien de ce que tu construis ici ne sera sauvegardé.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Aucun wagon n'a '%s' activé pour l'instant — activez-le dans la liste Contenu d'un wagon pour le tester.",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' n'a aucun modèle enregistré à la taille de wagon de ce monde — enregistre-le, puis teste à nouveau.",
+  "chat.dungeontrain.track_test.standing_in": "Vous êtes sur un tronçon de voie de test contenant '%s' — aucun train attaché. Retour dans le menu vous ramène à la parcelle.",
+  "chat.dungeontrain.track_test.unknown_piece": "'%s' n'est pas un élément de la voie que l'on peut tester.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s) :",
   "chat.dungeontrain.package.world_doesn_t_use": "Ce monde n'utilise pas le système de train automatique (startsWithTrain est désactivé).",
   "chat.dungeontrain.package.spawntrain_failed": "échec de spawnTrain : %s : %s",

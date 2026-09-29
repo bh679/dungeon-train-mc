@@ -420,7 +420,7 @@ public final class EditorScreenActions {
                 EXIT_TEST_COMMAND);
         }
         if (!ctx.hasSelection()) return null;
-        MenuScreen check = testCheckFor(ctx.category(), ctx.selection().modelName());
+        MenuScreen check = testCheckFor(ctx.category(), ctx.selection().modelId(), ctx.selection().modelName());
         return check == null ? null
             : new CommandMenuEntry.DrillIn(EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE), check);
     }
@@ -428,16 +428,21 @@ public final class EditorScreenActions {
     /**
      * The save-then-test screen for a template, or {@code null} for a category that has nothing to
      * stand up: a dimensional carriage, a carriage, a contents template and a whole room or group can
-     * be walked into; a part or a track tile is only ever a piece of one of those.
+     * be walked into; a piece of the line — track tile, pillar section, staircase, tunnel piece — is
+     * stood up in a stretch of track with a carriage on it; a part is only ever a piece of a carriage.
+     *
+     * @param modelId the selection's model id — only a piece of the line needs it, since one name
+     *                can belong to several of its kinds
      */
-    public static MenuScreen testCheckFor(PlotCategory category, String modelName) {
+    public static MenuScreen testCheckFor(PlotCategory category, String modelId, String modelName) {
         if (category == null || modelName == null || modelName.isEmpty()) return null;
         return switch (category) {
             case PORTALS -> new PortalTestSaveCheckScreen(modelName);
-            case CHUNK_FRAMES -> modelName == null || modelName.isEmpty() ? null
-                : PortalTestSaveCheckScreen.forFrame(modelName);
+            case CHUNK_FRAMES -> PortalTestSaveCheckScreen.forFrame(modelName);
             case CARRIAGES, CONTENTS, WHOLE, WHOLE_GROUP ->
                 PortalTestSaveCheckScreen.forTemplate(category.id(), modelName);
+            case TRACKS -> games.brennan.dungeontrain.track.TrackTestPiece.ofModelId(modelId).isPresent()
+                ? PortalTestSaveCheckScreen.forTrack(modelId, modelName) : null;
             default -> null;
         };
     }

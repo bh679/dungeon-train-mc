@@ -11250,6 +11250,24 @@
       ]
     }
   },
+  "chat.dungeontrain.track_test.standing_in": {
+    "1": {
+      "label": "the name of the track, pillar, stairs or tunnel piece being tested",
+      "examples": [
+        "default",
+        "mossy_arch"
+      ]
+    }
+  },
+  "chat.dungeontrain.track_test.unknown_piece": {
+    "1": {
+      "label": "the kind of piece that was asked for",
+      "examples": [
+        "portal_room",
+        "tile"
+      ]
+    }
+  },
   "chat.dungeontrain.package.dtpacks_package": {
     "1": {
       "label": "a number",

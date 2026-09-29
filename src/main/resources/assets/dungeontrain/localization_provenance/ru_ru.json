@@ -2293,6 +2293,8 @@
       "chat.dungeontrain.test_mode.nothing_saves",
       "chat.dungeontrain.carriage_test.no_shell_allows",
       "chat.dungeontrain.carriage_test.no_whole_template",
+      "chat.dungeontrain.track_test.standing_in",
+      "chat.dungeontrain.track_test.unknown_piece",
       "chat.dungeontrain.package.dtpacks_package",
       "chat.dungeontrain.package.world_doesn_t_use",
       "chat.dungeontrain.package.spawntrain_failed",
