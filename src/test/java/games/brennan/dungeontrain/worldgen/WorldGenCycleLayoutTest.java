@@ -76,14 +76,20 @@ final class WorldGenCycleLayoutTest {
     }
 
     @Test
-    @DisplayName("Lap 1's Nether splits on the first run only: vanilla for 1000 core blocks, then BoP; BoP throughout on run 1")
+    @DisplayName("Lap 1's Nether splits on the first run only: vanilla for 1000 core blocks, a 400 mix, then BoP; BoP throughout on run 1")
     void netherSplit() {
         long core = LAYOUT.netherCoreStart(1);
         assertEquals(LAYOUT.start(1) + 232 + 300, core);
-        long split = core + LAYOUT.slot(1).splitAt();
+        assertEquals(1000, LAYOUT.slot(1).splitAt());
+        assertEquals(400, LAYOUT.slot(1).splitBlend());
+        long mixStart = core + 1000;
+        long split = mixStart + 200;
         assertEquals(Style.VANILLA, C.netherLookAt(x(core)));
+        assertEquals(Style.VANILLA, C.netherLookAt(x(mixStart - 1)));
+        // the column-free look switches halfway through the mix
         assertEquals(Style.VANILLA, C.netherLookAt(x(split - 1)));
-        assertEquals(Style.BOP, C.netherLookAt(x(split + 1)));
+        assertEquals(Style.BOP, C.netherLookAt(x(split)));
+        assertEquals(Style.BOP, C.netherLookAt(x(mixStart + 400)));
         assertEquals(Style.BOP, C.netherLookAt(x(core + LAYOUT.slot(1).core() - 1)));
         // run 1: no split, the later look everywhere in the slot
         for (long u = LAYOUT.start(1); u < LAYOUT.start(1) + LAYOUT.length(1); u += 50) {
@@ -95,19 +101,20 @@ final class WorldGenCycleLayoutTest {
     }
 
     @Test
-    @DisplayName("the first-run Nether split dithers across ±150 base blocks, and is the hard switch outside it")
+    @DisplayName("the first-run Nether split mixes over the 400 blocks after the vanilla, and is pure either side")
     void netherSplitDither() {
         long seed = 1450L;
-        long split = LAYOUT.netherCoreStart(1) + LAYOUT.slot(1).splitAt();
-        int half = WorldGenCycle.NETHER_SPLIT_HALF_BLEND;
-        assertEquals(150, half);
-        for (long u : new long[] {split - half - 1, split - half - 200, split + half, split + half + 200}) {
+        long mixStart = LAYOUT.netherCoreStart(1) + LAYOUT.slot(1).splitAt();
+        long mixEnd = mixStart + LAYOUT.slot(1).splitBlend();
+        long split = mixStart + 200;
+        // pure vanilla before the mix, pure BoP after it, whatever the column
+        for (long u : new long[] {mixStart - 1, mixStart - 300, mixEnd, mixEnd + 300}) {
             for (int z = -256; z < 256; z += 3) {
                 assertEquals(C.netherLookAt(x(u)), C.netherLookAt(x(u), z, seed), "u=" + u + " z=" + z);
             }
         }
-        // inside the blend both looks occur across z
-        for (long u : new long[] {split - half / 2, split, split + half / 2}) {
+        // inside the mix both looks occur across z
+        for (long u : new long[] {mixStart + 100, split, mixStart + 300}) {
             boolean vanilla = false;
             boolean bop = false;
             for (int z = -2048; z < 2048; z += 7) {
@@ -115,12 +122,24 @@ final class WorldGenCycleLayoutTest {
                 vanilla |= s == Style.VANILLA;
                 bop |= s == Style.BOP;
             }
-            assertTrue(vanilla && bop, "both looks near the split at u=" + u);
+            assertTrue(vanilla && bop, "both looks in the mix at u=" + u);
         }
+        // BoP's share rises through the mix
+        assertTrue(bopShare(mixStart + 50, seed) < bopShare(mixStart + 350, seed));
         // seed-stable; off the split slot / on later runs it is just netherLookAt(x)
         assertEquals(C.netherLookAt(x(split), 7, seed), C.netherLookAt(x(split), 7, seed));
         assertEquals(Style.BOP, C.netherLookAt(x(split, 1), 0, seed));
         assertEquals(Style.BETTER, C.netherLookAt(x(LAYOUT.netherCoreStart(7) + 1000), 0, seed));
+    }
+
+    /** Fraction of columns across z that wear BoP at base offset {@code u} on run 0. */
+    private static double bopShare(long u, long seed) {
+        int bop = 0;
+        int n = 0;
+        for (int z = -2048; z < 2048; z += 7, n++) {
+            if (C.netherLookAt(x(u), z, seed) == Style.BOP) bop++;
+        }
+        return (double) bop / n;
     }
 
     @Test

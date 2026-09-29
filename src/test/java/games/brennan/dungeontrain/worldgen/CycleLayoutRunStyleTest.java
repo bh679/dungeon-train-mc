@@ -53,18 +53,20 @@ final class CycleLayoutRunStyleTest {
     @DisplayName("a=N+b splits the first run's core: look a for N blocks, then b; later runs take '>' or else b")
     void parseSplit() {
         List<String> warnings = new ArrayList<>();
-        CycleLayout l = CycleLayout.parse("ow:100, nether:vanilla=1000+bop>bop:2750, nether:vanilla=1000+bop:2750",
+        CycleLayout l = CycleLayout.parse("ow:100, nether:vanilla=1000~400+bop>bop:2750, nether:vanilla=1000+bop:2750",
                 CycleLayoutTest.FADES, CycleLayoutTest.eraDefaults(), t -> true, warnings::add);
         assertTrue(warnings.isEmpty(), warnings.toString());
         CycleLayout.Slot s = l.slot(1);
         assertEquals(Style.VANILLA, s.style());
         assertTrue(s.hasSplit());
         assertEquals(1000, s.splitAt());
+        assertEquals(400, s.splitBlend());                               // ~400: mixed over the next 400
         assertEquals(Style.BOP, s.splitStyle());
         assertEquals(Style.BOP, s.laterStyle());
         assertEquals(2750, s.core());
         CycleLayout.Slot noLater = l.slot(2);                            // no '>': later runs wear the split look
         assertTrue(noLater.hasSplit());
+        assertEquals(0, noLater.splitBlend());                           // no '~': a hard switch
         assertEquals(Style.VANILLA, noLater.style());
         assertEquals(Style.BOP, noLater.laterStyle());
         assertEquals(2750, noLater.core());
@@ -97,7 +99,8 @@ final class CycleLayoutRunStyleTest {
     @DisplayName("Lap 1's Nether turns BoP partway through on the first cycle and is BoP after; its End is vanilla then BoP every cycle")
     void lap1TurnsBop() {
         assertEquals(Style.VANILLA, C.netherStyleAt(mid(1, 0)));                // the slot's first-run style
-        long split = LAYOUT.netherCoreStart(1) + LAYOUT.slot(1).splitAt();
+        // the column-free look switches halfway through the vanilla → BoP mix
+        long split = LAYOUT.netherCoreStart(1) + LAYOUT.slot(1).splitAt() + LAYOUT.slot(1).splitBlend() / 2;
         assertEquals(Style.VANILLA, C.netherLookAt(x(split - 1, 0)));
         assertFalse(C.isBopNetherAt(x(split - 1, 0)));
         assertEquals(Style.BOP, C.netherLookAt(x(split, 0)));

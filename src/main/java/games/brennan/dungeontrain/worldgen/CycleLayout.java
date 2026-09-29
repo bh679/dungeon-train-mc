@@ -34,7 +34,7 @@ import java.util.function.Consumer;
  * ({@code :kind=core} per era, run in the order written, or bare for every enabled era at its configured
  * length in declaration order). A style may be {@code first>later} (one look on the first run, another
  * after), and a Nether's first look may be a split {@code a=N+b} — look {@code a} for the first {@code N}
- * core blocks of the first run, then {@code b} ({@code nether:vanilla=1000+bop>bop}). A band whose
+ * core blocks of the first run, then {@code b} ({@code nether:vanilla=1000+bop>bop}); {@code a=N~M+b} mixes the two looks over {@code M} blocks between. A band whose
  * config flag is off is dropped from the layout wherever the order names it.</p>
  */
 public final class CycleLayout {
@@ -57,15 +57,22 @@ public final class CycleLayout {
      * upside-down slot's Reassembly (exit-fade) length, or {@code -1} for the cycle's default.
      * {@code style} is the look on the first run; {@code laterStyle} the look on every run after it
      * (the same unless the order wrote {@code first>later}, e.g. {@code nether:vanilla>bop}).
-     * {@code splitAt} / {@code splitStyle}: on the first run only, the core switches from {@code style}
-     * to {@code splitStyle} {@code splitAt} blocks in ({@code nether:vanilla=1000+bop>bop}); {@code -1} /
+     * {@code splitAt} / {@code splitBlend} / {@code splitStyle}: on the first run only, the core wears
+     * {@code style} for its first {@code splitAt} blocks, mixes the two looks over the next {@code splitBlend}
+     * blocks, then wears {@code splitStyle} ({@code nether:vanilla=1000~400+bop>bop}); {@code -1} / {@code 0} /
      * {@code null} for no split.
      */
-    public record Slot(Type type, Style style, int core, int extra, Style laterStyle, int splitAt, Style splitStyle) {
+    public record Slot(Type type, Style style, int core, int extra, Style laterStyle,
+                       int splitAt, int splitBlend, Style splitStyle) {
 
         /** A slot without a first-run split. */
         public Slot(Type type, Style style, int core, int extra, Style laterStyle) {
-            this(type, style, core, extra, laterStyle, -1, null);
+            this(type, style, core, extra, laterStyle, -1, 0, null);
+        }
+
+        /** A slot with a hard-edged first-run split (no mix). */
+        public Slot(Type type, Style style, int core, int extra, Style laterStyle, int splitAt, Style splitStyle) {
+            this(type, style, core, extra, laterStyle, splitAt, 0, splitStyle);
         }
 
         /** A slot with the same look on every run. */
@@ -96,7 +103,7 @@ public final class CycleLayout {
      * The default order: the layout {@code build()} uses when the key is blank.
      * <ul>
      *   <li>Lap 1: overworld → Nether (on the first cycle 1000 core blocks of vanilla, then Biomes O' Plenty;
-     *       all Biomes O' Plenty after: {@code vanilla=1000+bop>bop}) → WWOO overworld → one End band whose first 1200 blocks are vanilla and last 2000
+     *       all Biomes O' Plenty after: {@code vanilla=1000~400+bop>bop} — 1000 vanilla, 400 mixed, 1350 BoP) → WWOO overworld → one End band whose first 1200 blocks are vanilla and last 2000
      *       Biomes O' Plenty (two joined End slots) → upside-down + Reassembly.</li>
      *   <li>Lap 2: BoP overworld → BetterNether → Lost City (its own legacy run, wearing WWOO decoration; its
      *       buildings start on the Nether's exit mountains — {@link #legacyLeadIn}) → BetterEnd.</li>
@@ -104,7 +111,7 @@ public final class CycleLayout {
      * </ul>
      */
     public static final String DEFAULT_ORDER =
-            "ow:2750, nether:vanilla=1000+bop>bop:2750, ow:wwoo:3250, end:vanilla:1200, end:bop:2000, upside_down:2500:3000, "
+            "ow:2750, nether:vanilla=1000~400+bop>bop:2750, ow:wwoo:3250, end:vanilla:1200, end:bop:2000, upside_down:2500:3000, "
             + "ow:bop:4500, nether:better:4500, legacy:wwoo:lost_city=3000, end:better:5000, spheres:6550, ow:sunk:500, "
             + "legacy:amplified=4000:beta=2500:far_lands=4320:caves_of_chaos=3500:skylands=4000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:650, chuncks:2000, mix:4000, stacks:5000";
@@ -174,6 +181,7 @@ public final class CycleLayout {
             int extra = -1;
             Style later = null;
             int splitAt = -1;
+            int splitBlend = 0;
             Style splitStyle = null;
             for (int i = 1; i < parts.length; i++) {
                 String arg = parts[i].trim().toLowerCase(Locale.ROOT);
@@ -192,6 +200,7 @@ public final class CycleLayout {
                     style = first;
                     later = after;
                     splitAt = split != null ? split.at() : -1;
+                    splitBlend = split != null ? split.blend() : 0;
                     splitStyle = split != null ? split.then() : null;
                     continue;
                 }
@@ -217,20 +226,24 @@ public final class CycleLayout {
             if (splitAt >= 0 && type != Type.NETHER) {
                 warn.accept("style split on '" + token + "' only applies to Nether slots; ignored");
                 splitAt = -1;
+                splitBlend = 0;
                 splitStyle = null;
             }
             Style afterRun0 = later != null ? later : splitStyle != null ? splitStyle : style;
-            slots.add(new Slot(type, style, core, extra, afterRun0, splitAt, splitStyle));
+            slots.add(new Slot(type, style, core, extra, afterRun0, splitAt, splitBlend, splitStyle));
             eras.add(NO_ERAS);
         }
         if (slots.isEmpty()) return null;
         return new CycleLayout(slots.toArray(new Slot[0]), eras.toArray(new LegacySpan[0][]), fades);
     }
 
-    /** A parsed {@code a=N+b} first-run split: look {@code first} for {@code at} core blocks, then {@code then}. */
-    private record Split(Style first, int at, Style then) {}
+    /**
+     * A parsed {@code a=N~M+b} first-run split: look {@code first} for {@code at} core blocks, the two
+     * looks mixed over the next {@code blend} ({@code 0} when {@code ~M} is omitted), then {@code then}.
+     */
+    private record Split(Style first, int at, int blend, Style then) {}
 
-    /** Parse {@code a=N+b}; {@code null} when {@code arg} is not a well-formed split. */
+    /** Parse {@code a=N+b} or {@code a=N~M+b}; {@code null} when {@code arg} is not a well-formed split. */
     private static Split parseSplit(String arg) {
         int eq = arg.indexOf('=');
         int plus = arg.indexOf('+');
@@ -238,9 +251,12 @@ public final class CycleLayout {
         Style first = styleOf(arg.substring(0, eq).trim());
         Style then = styleOf(arg.substring(plus + 1).trim());
         if (first == null || then == null) return null;
+        String lengths = arg.substring(eq + 1, plus).trim();
+        int tilde = lengths.indexOf('~');
         try {
-            int at = Integer.parseInt(arg.substring(eq + 1, plus).trim());
-            return at < 0 ? null : new Split(first, at, then);
+            int at = Integer.parseInt((tilde < 0 ? lengths : lengths.substring(0, tilde)).trim());
+            int blend = tilde < 0 ? 0 : Integer.parseInt(lengths.substring(tilde + 1).trim());
+            return at < 0 || blend < 0 ? null : new Split(first, at, blend, then);
         } catch (NumberFormatException e) {
             return null;
         }

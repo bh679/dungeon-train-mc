@@ -826,31 +826,36 @@ public record WorldGenCycle(long startX, int owGap,
 
     /**
      * {@link #netherStyleOfPass} of the Nether pass at {@code worldX} (the last one started between bands).
-     * Inside a first-run split slot ({@code nether:vanilla=1000+bop}) the look switches at the split point.
+     * Inside a first-run split slot ({@code nether:vanilla=1000~400+bop}) the look switches halfway through
+     * the mix — the column-free answer for labels and {@code /dtp}.
      */
     public CycleLayout.Style netherLookAt(int worldX) {
         long d = netherSplitOffset(worldX);
-        if (d != NO_SPLIT) return splitLook(worldX, d >= 0L);
+        if (d != NO_SPLIT) return splitLook(worldX, 2L * d >= splitBlendAt(worldX));
         return netherStyleOfPass(netherPassIndex(worldX));
     }
 
     /**
-     * The look column {@code (worldX, worldZ)} of a Nether core wears — {@link #netherLookAt}, except across
-     * a first-run split, where the two looks crossfade over {@code ±NETHER_SPLIT_HALF_BLEND} base blocks and
-     * a seed-stable column noise picks each column's side, so the switch isn't a straight wall across Z.
-     * Every Nether biome consumer asks this, so a column's label, surface and structures agree.
+     * The look column {@code (worldX, worldZ)} of a Nether core wears — {@link #netherLookAt}, except in a
+     * first-run split's mix ({@code ~M} blocks after the first look ends), where the later look's share rises
+     * {@code 0 → 1} and a seed-stable column noise picks each column's side, so the two looks interleave in
+     * clumps instead of meeting at a straight wall across Z. Every Nether biome consumer asks this, so a
+     * column's label, surface and structures agree.
      */
     public CycleLayout.Style netherLookAt(int worldX, int worldZ, long seed) {
         long d = netherSplitOffset(worldX);
         if (d == NO_SPLIT) return netherStyleOfPass(netherPassIndex(worldX));
-        if (d < -NETHER_SPLIT_HALF_BLEND || d >= NETHER_SPLIT_HALF_BLEND) return splitLook(worldX, d >= 0L);
-        double later = (d + NETHER_SPLIT_HALF_BLEND + 0.5) / (2.0 * NETHER_SPLIT_HALF_BLEND);
+        int blend = splitBlendAt(worldX);
+        if (d < 0L || d >= blend) return splitLook(worldX, d >= 0L);
+        double later = (d + 0.5) / blend;
         double n = Disintegration.coherentNoise(seed ^ NETHER_SPLIT_SALT, worldX, 0, worldZ, END_SEAM_NOISE_SCALE);
         return splitLook(worldX, n < later);
     }
 
-    /** Half-width, in base blocks, of the crossfade across a first-run Nether split. */
-    static final int NETHER_SPLIT_HALF_BLEND = 150;
+    /** The mix length of the split slot at {@code worldX} (only called inside one). */
+    private int splitBlendAt(int worldX) {
+        return Math.max(0, layout.slot(slotAt(worldX)).splitBlend());
+    }
 
     /** Salt so the Nether split dither is independent of the End seam's. */
     private static final long NETHER_SPLIT_SALT = 0x4E53_504CL;
@@ -859,8 +864,8 @@ public record WorldGenCycle(long startX, int owGap,
     private static final long NO_SPLIT = Long.MIN_VALUE;
 
     /**
-     * Base-block offset of {@code worldX} from its Nether slot's first-run split point (negative before it),
-     * or {@link #NO_SPLIT} when the column is not in a split slot on the first run.
+     * Base-block offset of {@code worldX} from where its Nether slot's first-run look ends — the start of the
+     * mix (negative before it) — or {@link #NO_SPLIT} when the column is not in a split slot on the first run.
      */
     private long netherSplitOffset(int worldX) {
         if (layout == null) return NO_SPLIT;

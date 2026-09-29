@@ -113,7 +113,7 @@ class BandHoldDefaultsTest {
                 "CURRENT_CONFIG_VERSION must be at least 14, or the v13 -> v14 order step never runs");
         assertEquals(DungeonTrainCommonConfig.DEFAULT_WORLDGEN_CYCLE_ORDER,
                 DungeonTrainCommonConfig.V14_WORLDGEN_CYCLE_ORDER
-                        .replace("nether:vanilla>bop:3000, ow:wwoo:4500,", "nether:vanilla=1000+bop>bop:2750, ow:wwoo:3250,")
+                        .replace("nether:vanilla>bop:3000, ow:wwoo:4500,", "nether:vanilla=1000~400+bop>bop:2750, ow:wwoo:3250,")
                         .replace("upside_down:2500:5000", "upside_down:2500:3000")
                         .replace("ow:bop:8000, nether:better:8000, legacy:wwoo:lost_city=4000, end:better:8000,",
                                 "ow:bop:4500, nether:better:4500, legacy:wwoo:lost_city=3000, end:better:5000,")

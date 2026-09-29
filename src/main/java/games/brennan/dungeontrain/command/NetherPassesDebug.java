@@ -66,7 +66,7 @@ final class NetherPassesDebug {
             biomes.biomeAt(ix, 0, cycle.netherLookAt(ix, 0, biomes.seed())).unwrapKey()
                     .ifPresent(k -> seen.add(k.location().toString()));
         }
-        // a first-run split pass (nether:vanilla=1000+bop) wears one look at each end of its core
+        // a first-run split pass (nether:vanilla=1000~400+bop) wears one look at each end of its core
         String kindIn = kindOf(cycle.netherLookAt((int) coreMin), biomes);
         String kindOut = kindOf(cycle.netherLookAt((int) coreMax), biomes);
         String kind = kindIn.equals(kindOut) ? kindIn : kindIn + "→" + kindOut;

@@ -516,7 +516,7 @@ public final class DungeonTrainCommonConfig {
 
     /**
      * The {@code worldgenCycleOrder} v14 shipped; v15 shortened most of Lap 1, Lap 2 and the legacy eras,
-     * and split Lap 1's first Nether into 1000 vanilla then Biomes O' Plenty ({@code nether:vanilla=1000+bop>bop}).
+     * and split Lap 1's first Nether into 1000 vanilla, a 400-block mix, then Biomes O' Plenty ({@code nether:vanilla=1000~400+bop>bop}).
      */
     public static final String V14_WORLDGEN_CYCLE_ORDER =
             "ow:2750, nether:vanilla>bop:3000, ow:wwoo:4500, end:vanilla:1200, end:bop:2000, upside_down:2500:5000, "
