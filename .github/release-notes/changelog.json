@@ -20483,6 +20483,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "player-blocks-break-off",
+      "version": "0.1014.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Your additions to the train break off when they hit things",
+      "summary": "Blocks you build onto the train are no longer as tough as the train itself. When something you've added hits a hillside, a tunnel wall or another moving contraption, it breaks off and drops as items, and whatever it hit stays standing. The train's own carriages still plough through terrain exactly as before.",
+      "highlights": [
+        "Blocks you place on the train break off, and drop as items, when they hit terrain or another physics object",
+        "Chests you've added spill their contents when they break off",
+        "The train's own blocks are unchanged: they never break and still carve through terrain"
+      ],
+      "pr": 1647,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
