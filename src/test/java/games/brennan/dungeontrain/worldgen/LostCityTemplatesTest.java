@@ -1,0 +1,241 @@
+package games.brennan.dungeontrain.worldgen;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import games.brennan.dungeontrain.RepoPaths;
+import net.minecraft.SharedConstants;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtAccounter;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.Bootstrap;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * Pins DT's own Lost City templates ({@code data/dungeontrain/structure/lost_city/*.nbt}, written by
+ * {@code scripts/lost-city/build-templates.py}) to what the processors and the ground handling rely on: a
+ * current DataVersion, resolvable blocks, a complete pad, a clear margin, a footprint the chunk-reference
+ * radius can hold, and — the one that matters most — floor and bay repeats that
+ * {@link LostCityStretchProcessor#plan} actually finds at the periods the manifest declares.
+ */
+class LostCityTemplatesTest {
+
+    private static final int DATA_VERSION = 3955;
+    private static final int MAX_FOOTPRINT = 128;
+    private static final int MAX_STRETCH_BAYS = 4;
+
+    private static final Path DIR = RepoPaths.resources().resolve("data/dungeontrain/structure/lost_city");
+
+    @BeforeAll
+    static void bootstrap() {
+        SharedConstants.tryDetectVersion();
+        Bootstrap.bootStrap();
+    }
+
+    private record Template(String name, JsonObject spec, CompoundTag root, List<StructureTemplate.StructureBlockInfo> blocks) {
+        int[] size() {
+            ListTag list = root.getList("size", Tag.TAG_INT);
+            return new int[]{list.getInt(0), list.getInt(1), list.getInt(2)};
+        }
+    }
+
+    private static Map<String, Template> templates() throws IOException {
+        JsonObject manifest = JsonParser.parseString(Files.readString(DIR.resolve("manifest.json"))).getAsJsonObject();
+        Map<String, Template> out = new TreeMap<>();
+        for (String name : manifest.keySet()) {
+            Path file = DIR.resolve(name + ".nbt");
+            assertTrue(Files.exists(file), "manifest names " + name + " but there is no template");
+            CompoundTag root = NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap());
+            out.put(name, new Template(name, manifest.getAsJsonObject(name), root, blocks(root)));
+        }
+        try (Stream<Path> files = Files.list(DIR)) {
+            files.filter(p -> p.toString().endsWith(".nbt")).forEach(p -> assertTrue(
+                    manifest.has(p.getFileName().toString().replace(".nbt", "")), p + " is not in the manifest"));
+        }
+        return out;
+    }
+
+    private static List<StructureTemplate.StructureBlockInfo> blocks(CompoundTag root) {
+        ListTag palette = root.getList("palette", Tag.TAG_COMPOUND);
+        List<BlockState> states = new ArrayList<>();
+        for (int i = 0; i < palette.size(); i++) {
+            CompoundTag entry = palette.getCompound(i);
+            String id = entry.getString("Name");
+            assertTrue(BuiltInRegistries.BLOCK.containsKey(ResourceLocation.parse(id)), "unknown block " + id);
+            states.add(NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), entry));
+        }
+        ListTag list = root.getList("blocks", Tag.TAG_COMPOUND);
+        List<StructureTemplate.StructureBlockInfo> out = new ArrayList<>(list.size());
+        for (int i = 0; i < list.size(); i++) {
+            CompoundTag b = list.getCompound(i);
+            ListTag pos = b.getList("pos", Tag.TAG_INT);
+            out.add(new StructureTemplate.StructureBlockInfo(new BlockPos(pos.getInt(0), pos.getInt(1), pos.getInt(2)),
+                    states.get(b.getInt("state")), null));
+        }
+        return out;
+    }
+
+    @Test
+    @DisplayName("every template is current, sized as declared, and made of real blocks")
+    void headers() throws IOException {
+        for (Template t : templates().values()) {
+            assertEquals(DATA_VERSION, t.root().getInt("DataVersion"), t.name());
+            int[] size = t.size();
+            for (int i = 0; i < 3; i++) assertEquals(t.spec().getAsJsonArray("size").get(i).getAsInt(), size[i], t.name());
+            for (StructureTemplate.StructureBlockInfo b : t.blocks()) {
+                BlockPos p = b.pos();
+                assertTrue(p.getX() >= 0 && p.getX() < size[0] && p.getY() >= 0 && p.getY() < size[1]
+                        && p.getZ() >= 0 && p.getZ() < size[2], t.name() + " block outside size " + p);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("the pad covers the whole footprint: natural ground the world may take, paving it may not")
+    void pad() throws IOException {
+        for (Template t : templates().values()) {
+            int[] size = t.size();
+            long padCells = t.blocks().stream().filter(b -> b.pos().getY() == 0).count();
+            assertEquals((long) size[0] * size[2], padCells, t.name() + " pad incomplete");
+            assertTrue(t.blocks().stream().anyMatch(b -> b.pos().getY() == 0 && isBase(b.state())),
+                    t.name() + " has no natural ground on its pad");
+            assertTrue(t.blocks().stream().anyMatch(b -> b.pos().getY() == 0 && !isBase(b.state())
+                    && !b.state().isAir()), t.name() + " has no paving on its pad");
+        }
+    }
+
+    /**
+     * Pad-layer blocks Lost City Terrain Fit's ground processor reads as natural ground the world may take
+     * (its {@code LostCityGroundProcessor.BASE}, which is package-private there).
+     */
+    private static final java.util.Set<net.minecraft.world.level.block.Block> BASE = java.util.Set.of(
+            Blocks.GRASS_BLOCK, Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.ROOTED_DIRT, Blocks.PODZOL,
+            Blocks.MYCELIUM, Blocks.MUD, Blocks.MOSS_BLOCK, Blocks.STONE, Blocks.ANDESITE, Blocks.GRANITE,
+            Blocks.DIORITE, Blocks.TUFF, Blocks.DEEPSLATE, Blocks.DRIPSTONE_BLOCK, Blocks.GRAVEL, Blocks.SAND,
+            Blocks.RED_SAND, Blocks.CLAY, Blocks.DIRT_PATH, Blocks.FARMLAND, Blocks.SNOW_BLOCK, Blocks.WATER);
+
+    private static boolean isBase(BlockState state) {
+        return BASE.contains(state.getBlock());
+    }
+
+    @Test
+    @DisplayName("nothing stands in the declared margin, and the footprint plus its widest stretch fits the chunk-reference radius")
+    void marginAndFootprint() throws IOException {
+        for (Template t : templates().values()) {
+            int[] size = t.size();
+            int margin = t.spec().get("margin").getAsInt();
+            for (StructureTemplate.StructureBlockInfo b : t.blocks()) {
+                BlockPos p = b.pos();
+                if (p.getY() == 0 || b.state().isAir()) continue;
+                assertFalse(p.getX() < margin || p.getZ() < margin || p.getX() >= size[0] - margin || p.getZ() >= size[2] - margin,
+                        t.name() + " block inside the margin at " + p);
+            }
+            assertTrue(size[0] + MAX_STRETCH_BAYS * period(t, "bay_period_x") <= MAX_FOOTPRINT, t.name() + " too wide in x");
+            assertTrue(size[2] + MAX_STRETCH_BAYS * period(t, "bay_period_z") <= MAX_FOOTPRINT, t.name() + " too wide in z");
+        }
+    }
+
+    @Test
+    @DisplayName("lost_city_stretch finds every floor and bay repeat the manifest declares, at that period")
+    void stretchFindsDeclaredPeriods() throws IOException {
+        for (Template t : templates().values()) {
+            check(t, "floor_period", Direction.Axis.Y);
+            check(t, "bay_period_x", Direction.Axis.X);
+            check(t, "bay_period_z", Direction.Axis.Z);
+        }
+    }
+
+    private static void check(Template t, String key, Direction.Axis axis) {
+        int period = period(t, key);
+        if (period == 0) return;
+        LostCityStretchProcessor stretch = new LostCityStretchProcessor(1, 1, period, period, 0.45F, axis);
+        LostCityStretchProcessor.Plan plan = stretch.plan(BlockPos.ZERO, t.blocks());
+        assertNotNull(plan, t.name() + ": no " + axis + " band at period " + period);
+        assertEquals(period, plan.band().period(), t.name() + " " + axis);
+        assertTrue(plan.band().count() >= 2, t.name() + " " + axis + " repeats only " + plan.band().count() + " times");
+    }
+
+    private static int period(Template t, String key) {
+        return t.spec().get(key).isJsonNull() ? 0 : t.spec().get(key).getAsInt();
+    }
+
+    @Test
+    @DisplayName("nothing falls when a template is stamped: every gravity block stands on a solid cell")
+    void nothingFalls() throws IOException {
+        for (Template t : templates().values()) {
+            Map<BlockPos, BlockState> at = new java.util.HashMap<>();
+            for (StructureTemplate.StructureBlockInfo b : t.blocks()) at.put(b.pos(), b.state());
+            for (StructureTemplate.StructureBlockInfo b : t.blocks()) {
+                if (b.pos().getY() == 0 || !(b.state().getBlock() instanceof net.minecraft.world.level.block.Fallable)) continue;
+                BlockState below = at.get(b.pos().below());
+                assertTrue(below != null && !below.isAir() && below.isCollisionShapeFullBlock(
+                        net.minecraft.world.level.EmptyBlockGetter.INSTANCE, BlockPos.ZERO),
+                        t.name() + ": " + b.state().getBlock() + " at " + b.pos() + " would fall");
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("nothing worth mining is left in a ruin")
+    void noValuables() throws IOException {
+        java.util.Set<net.minecraft.world.level.block.Block> banned = java.util.Set.of(Blocks.IRON_BLOCK, Blocks.GOLD_BLOCK,
+                Blocks.DIAMOND_BLOCK, Blocks.NETHERITE_BLOCK, Blocks.EMERALD_BLOCK, Blocks.LAPIS_BLOCK, Blocks.REDSTONE_BLOCK,
+                Blocks.RAW_IRON_BLOCK, Blocks.RAW_GOLD_BLOCK, Blocks.RAW_COPPER_BLOCK, Blocks.BEACON, Blocks.COPPER_BLOCK);
+        for (Template t : templates().values()) {
+            for (StructureTemplate.StructureBlockInfo b : t.blocks()) {
+                assertFalse(banned.contains(b.state().getBlock()), t.name() + " uses " + b.state().getBlock());
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("block-entity NBT only on spawners and loot chests, loot from vanilla chest tables, no structure blocks")
+    void blockEntitiesOnlyForSpawnersAndLoot() throws IOException {
+        for (Template t : templates().values()) {
+            ListTag list = t.root().getList("blocks", Tag.TAG_COMPOUND);
+            int spawners = 0, chests = 0;
+            for (int i = 0; i < list.size(); i++) {
+                CompoundTag b = list.getCompound(i);
+                if (!b.contains("nbt")) continue;
+                BlockState state = t.blocks().get(i).state();
+                CompoundTag nbt = b.getCompound("nbt");
+                if (state.is(Blocks.SPAWNER)) {
+                    spawners++;
+                    assertFalse(nbt.getCompound("SpawnData").getCompound("entity").getString("id").isEmpty(), t.name() + " spawner has no mob");
+                } else if (state.is(Blocks.CHEST)) {
+                    chests++;
+                    assertTrue(nbt.getString("LootTable").startsWith("minecraft:chests/"), t.name() + " chest loot " + nbt.getString("LootTable"));
+                } else {
+                    throw new AssertionError(t.name() + ": NBT on " + state.getBlock() + " at " + b.getList("pos", Tag.TAG_INT));
+                }
+            }
+            assertTrue(chests > 0, t.name() + " has no loot");
+            assertFalse(t.blocks().stream().anyMatch(b -> b.state().is(Blocks.STRUCTURE_BLOCK)), t.name());
+        }
+    }
+}

@@ -1,0 +1,258 @@
+{
+  "apartment_block": {
+    "bay_period_x": 4,
+    "bay_period_z": 4,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": 4,
+    "margin": 4,
+    "name": "apartment_block",
+    "seed": 694935,
+    "size": [
+      23,
+      42,
+      53
+    ],
+    "tags": [],
+    "weight": 6
+  },
+  "civic_hall": {
+    "bay_period_x": 5,
+    "bay_period_z": null,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": null,
+    "margin": 3,
+    "name": "civic_hall",
+    "seed": 793372,
+    "size": [
+      47,
+      38,
+      33
+    ],
+    "tags": [],
+    "weight": 4
+  },
+  "cooling_tower": {
+    "bay_period_x": null,
+    "bay_period_z": null,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": null,
+    "margin": 2,
+    "name": "cooling_tower",
+    "seed": 49153,
+    "size": [
+      41,
+      52,
+      41
+    ],
+    "tags": [],
+    "weight": 3
+  },
+  "fallen_block": {
+    "bay_period_x": null,
+    "bay_period_z": 4,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": null,
+    "margin": 3,
+    "name": "fallen_block",
+    "seed": 64017,
+    "size": [
+      49,
+      22,
+      33
+    ],
+    "tags": [],
+    "weight": 4
+  },
+  "hospital": {
+    "bay_period_x": 4,
+    "bay_period_z": 4,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": 5,
+    "margin": 4,
+    "name": "hospital",
+    "seed": 16465,
+    "size": [
+      49,
+      28,
+      45
+    ],
+    "tags": [],
+    "weight": 5
+  },
+  "hotel": {
+    "bay_period_x": 4,
+    "bay_period_z": 4,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": 4,
+    "margin": 1,
+    "name": "hotel",
+    "seed": 264161,
+    "size": [
+      37,
+      59,
+      37
+    ],
+    "tags": [],
+    "weight": 5
+  },
+  "leaning_tower": {
+    "bay_period_x": null,
+    "bay_period_z": null,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": null,
+    "margin": 4,
+    "name": "leaning_tower",
+    "seed": 7849,
+    "size": [
+      37,
+      51,
+      23
+    ],
+    "tags": [],
+    "weight": 4
+  },
+  "office_tower": {
+    "bay_period_x": 4,
+    "bay_period_z": 4,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": 5,
+    "margin": 4,
+    "name": "office_tower",
+    "seed": 1044942,
+    "size": [
+      29,
+      78,
+      29
+    ],
+    "tags": [],
+    "weight": 6
+  },
+  "overpass": {
+    "bay_period_x": null,
+    "bay_period_z": null,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": null,
+    "margin": 3,
+    "name": "overpass",
+    "seed": 780885,
+    "size": [
+      23,
+      9,
+      106
+    ],
+    "tags": [],
+    "weight": 4
+  },
+  "petrol_station": {
+    "bay_period_x": null,
+    "bay_period_z": null,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": null,
+    "margin": 3,
+    "name": "petrol_station",
+    "seed": 2469,
+    "size": [
+      37,
+      9,
+      25
+    ],
+    "tags": [],
+    "weight": 4
+  },
+  "radio_mast": {
+    "bay_period_x": null,
+    "bay_period_z": null,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": 4,
+    "margin": 4,
+    "name": "radio_mast",
+    "seed": 175376,
+    "size": [
+      19,
+      93,
+      19
+    ],
+    "tags": [],
+    "weight": 3
+  },
+  "railway_station": {
+    "bay_period_x": null,
+    "bay_period_z": 6,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": null,
+    "margin": 3,
+    "name": "railway_station",
+    "seed": 31249,
+    "size": [
+      45,
+      13,
+      57
+    ],
+    "tags": [],
+    "weight": 5
+  },
+  "shopping_strip": {
+    "bay_period_x": 4,
+    "bay_period_z": null,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": null,
+    "margin": 3,
+    "name": "shopping_strip",
+    "seed": 21513,
+    "size": [
+      57,
+      9,
+      27
+    ],
+    "tags": [],
+    "weight": 5
+  },
+  "silos": {
+    "bay_period_x": 8,
+    "bay_period_z": null,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": null,
+    "margin": 3,
+    "name": "silos",
+    "seed": 332037,
+    "size": [
+      45,
+      44,
+      29
+    ],
+    "tags": [],
+    "weight": 4
+  },
+  "snapped_tower": {
+    "bay_period_x": null,
+    "bay_period_z": null,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": null,
+    "margin": 4,
+    "name": "snapped_tower",
+    "seed": 23193,
+    "size": [
+      65,
+      42,
+      35
+    ],
+    "tags": [],
+    "weight": 4
+  },
+  "water_tower": {
+    "bay_period_x": null,
+    "bay_period_z": null,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": null,
+    "margin": 2,
+    "name": "water_tower",
+    "seed": 501730,
+    "size": [
+      21,
+      38,
+      21
+    ],
+    "tags": [],
+    "weight": 3
+  }
+}

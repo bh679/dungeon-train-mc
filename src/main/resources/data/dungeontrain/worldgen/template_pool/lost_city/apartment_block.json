@@ -1,0 +1,87 @@
+{
+  "name": "dungeontrain:lost_city/apartment_block",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/apartment_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/apartment_block_shipped"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/apartment_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/apartment_block_longer"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/apartment_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/apartment_block_taller"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/apartment_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/apartment_block_shorter_pale"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/apartment_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/apartment_block_dark_long"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/apartment_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/apartment_block_warm"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/apartment_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/apartment_block_bitten"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/apartment_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/apartment_block_topped"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/apartment_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/apartment_block_dry"
+      }
+    }
+  ]
+}

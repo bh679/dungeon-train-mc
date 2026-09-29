@@ -1,0 +1,77 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:cobbled_deepslate",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:blackstone",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:deepslate_bricks",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:cracked_deepslate_bricks",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:basalt",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:polished_basalt",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:black_concrete",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:cobbled_deepslate",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:deepslate_bricks",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:polished_basalt",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:tuff",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:deepslate_tiles",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:polished_deepslate",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:cracked_deepslate_bricks",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:gray_concrete",
+          "to": "minecraft:andesite"
+        }
+      ]
+    }
+  ]
+}
