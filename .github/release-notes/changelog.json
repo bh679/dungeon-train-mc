@@ -20480,9 +20480,9 @@
       ],
       "pr": 1644,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "player-blocks-break-off",
@@ -20501,9 +20501,9 @@
       ],
       "pr": 1647,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "nether-strip-offthread",
@@ -20522,9 +20522,9 @@
       ],
       "pr": 1646,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "sable-ordered-first-snapshot",
@@ -20539,9 +20539,9 @@
       "highlights": [],
       "pr": 1648,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "fewer-ruins-again",
@@ -20556,9 +20556,9 @@
       "highlights": [],
       "pr": 1649,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "batch-collider-updates-carriage-stamping",
@@ -20576,9 +20576,9 @@
       ],
       "pr": 1649,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "fluid-interaction-no-sync-load",
@@ -20597,9 +20597,9 @@
       ],
       "pr": 1651,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "mspt-lag-report-counters",
@@ -20615,9 +20615,9 @@
       ],
       "pr": 1654,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     }
   ]
 }
