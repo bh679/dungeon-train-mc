@@ -20820,6 +20820,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "original-lost-city-buildings",
+      "version": "0.1032.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "mobs",
+        "loot"
+      ],
+      "title": "Sixteen new ruined buildings in the lost city",
+      "summary": "The lost city has sixteen new buildings of its own alongside the ones it already had: an office tower, an apartment block, a hotel, a hospital, a civic hall with a stage, a shopping strip, a railway station, a petrol station, a radio mast, a water tower, a fallen overpass, a cooling tower, grain silos, a tower leaning on failed foundations, an apartment slab lying broken on its side, and a tower snapped in half with its top hanging down into a field of rubble. Every one is textured in muted weathered stone, overgrown, cracked and broken, with rubble at its feet, and rolls a different look each time it appears: taller or shorter, wider, recoloured, bitten or decapitated. Inside you will find offices, wards, pews, shelves and seating gone to ruin, cobwebs, mob spawners and tiered loot chests.",
+      "highlights": [
+        "Sixteen original ruined buildings, from towers and a hospital to a snapped tower and a toppled block",
+        "Each rolls a different height, width, colour and state of collapse every time it appears",
+        "Ruined interiors with spawners and loot chests; rubble, vines and moss everywhere"
+      ],
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
