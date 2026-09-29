@@ -24,6 +24,7 @@ import games.brennan.dungeontrain.ship.sable.SableHoldingIndex;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.util.ThrottledLog;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
@@ -80,6 +81,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class TrainCarriageAppender {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    /**
+     * The walk-away release keeps un-serialized groups held and re-checks them every tick while no
+     * player is near, so a "kept N held" line with nothing released repeated each tick. One per window.
+     */
+    private static final ThrottledLog KEPT_HELD_LOG = new ThrottledLog(30_000);
     private static final double NEAR_RADIUS = 128.0;
     private static final double NEAR_RADIUS_SQ = NEAR_RADIUS * NEAR_RADIUS;
 
@@ -2694,8 +2700,11 @@ public final class TrainCarriageAppender {
         // Diagnostic: every time we're about to spawn, log the train state
         // we based the decision on. Helps catch "appender thinks tail is X
         // but a sub-level at X-groupSize actually exists" — which causes
-        // duplicate spawns on top of existing groups.
-        if (LOGGER.isDebugEnabled()) {
+        // duplicate spawns on top of existing groups. Gated on the spawn-stall
+        // trace (armed in dev by DevTraceDefaults, in a release by
+        // `/dungeontrain debug traingen on`), not isDebugEnabled(): that is always
+        // true under FML's root=all, and this walks every group on every spawn.
+        if (STALL_DETECTION_ENABLED) {
             StringBuilder pidxs = new StringBuilder();
             for (Trains.Carriage c : train) {
                 if (pidxs.length() > 0) pidxs.append(",");
@@ -3675,9 +3684,11 @@ public final class TrainCarriageAppender {
             it.remove();
         }
         if (current.isEmpty()) FORCELOADED_BY_TRAIN.remove(trainId);
-        if (released > 0 || keptUnserialized > 0) {
-            LOGGER.debug("[DungeonTrain] Force-load window trainId={} released {} trailing sub-level(s), kept {} un-serialized held (player left vicinity)",
-                trainId, released, keptUnserialized);
+        long keptOnlyRepeats = (released == 0 && keptUnserialized > 0) ? KEPT_HELD_LOG.record().orElse(0L) : 0L;
+        if (released > 0 || keptOnlyRepeats > 0) {
+            LOGGER.debug("[DungeonTrain] Force-load window trainId={} released {} trailing sub-level(s), kept {} un-serialized held (player left vicinity){}",
+                trainId, released, keptUnserialized,
+                keptOnlyRepeats > 0 ? " — " + keptOnlyRepeats + " such tick(s) in last " + KEPT_HELD_LOG.intervalSeconds() + "s" : "");
         }
     }
 

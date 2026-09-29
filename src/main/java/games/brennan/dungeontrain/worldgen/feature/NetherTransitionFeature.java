@@ -5,6 +5,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
+import games.brennan.dungeontrain.util.ThrottledLog;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
@@ -88,6 +89,8 @@ import java.util.Set;
 public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    /** One "decorated" line per core chunk was thousands per session; one summary per window (worker-thread safe). */
+    private static final ThrottledLog DECORATED_LOG = new ThrottledLog(10_000);
 
     /** First-5 reporter for the decoration-context tripwire (should never fire post-#818). */
     private static final games.brennan.dungeontrain.util.LogFirstN CONTEXT_TRIPWIRE =
@@ -479,9 +482,13 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 }
             }
         }
-        LOGGER.debug("[DungeonTrain] Decorated Nether core chunk {} with {} biome(s) ({}/{} features placed, "
-                        + "{} non-vanilla skipped, band y{}..{})",
-                cp, biomes.size(), placed, featureIndex, skipped, coreBottom, coreTop);
+        long decorated = DECORATED_LOG.record().orElse(0L);
+        if (decorated > 0) {
+            LOGGER.debug("[DungeonTrain] Decorated {} Nether core chunk(s) in last {}s; latest {} with {} biome(s) "
+                            + "({}/{} features placed, {} non-vanilla skipped, band y{}..{})",
+                    decorated, DECORATED_LOG.intervalSeconds(),
+                    cp, biomes.size(), placed, featureIndex, skipped, coreBottom, coreTop);
+        }
         if (GenDeterminismLog.ENABLED) {
             StringBuilder biomeKeys = new StringBuilder();
             for (Holder<Biome> b : biomes) {

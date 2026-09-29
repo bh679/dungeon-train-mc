@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.debug;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.command.DebugCommand;
+import games.brennan.dungeontrain.util.DtLogging;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -17,6 +18,11 @@ import org.slf4j.Logger;
  * ride lands {@code [bwdgen]} samples in {@code debug.log} without anybody typing the command. A
  * ride that has to be repeated because a probe was off is a wasted test. Production builds keep
  * the probes off; the command still toggles them either way.</p>
+ *
+ * <p>A dev run started with {@code -PjitterDebug=false} ({@code -Ddungeontrain.jitterDebug=false}) is
+ * asking to log like a player, so the probes stay off there too — their {@code [trains]} roster
+ * alone was ~64% of a dev client's {@code debug.log}, which made such a run useless for judging
+ * what a player's log looks like.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DevTraceDefaults {
@@ -28,6 +34,10 @@ public final class DevTraceDefaults {
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
         if (FMLEnvironment.production) return;
+        if (!DtLogging.jitterDebugEnabled()) {
+            LOGGER.info("[DungeonTrain] Dev build with player logging (jitterDebug=false): train-generation trace left off; '/dungeontrain debug traingen on' arms it");
+            return;
+        }
         DebugCommand.setTrainGenTraceProbes(event.getServer(), true);
         LOGGER.info("[DungeonTrain] Dev build: train-generation trace armed by default ([bwdgen] + stall detector + [seamgap]); '/dungeontrain debug traingen off' disables it");
     }
