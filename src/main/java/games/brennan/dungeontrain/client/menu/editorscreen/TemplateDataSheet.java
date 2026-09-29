@@ -444,16 +444,13 @@ public final class TemplateDataSheet {
         return List.of(new Line(label, first), bandsLine(v.phaseMask(), phases));
     }
 
-    /** Tunnel kinds whose templates can join tunnel groups — their editor model ids. */
-    private static final java.util.Set<String> GROUPABLE_MODEL_IDS = java.util.Set.of("tunnel_section", "tunnel_portal");
-
     /**
      * {@code Groups  stone, brick}: which tunnel groups this section / entrance belongs to — a tunnel
      * builds entrance to exit from one group — opening the multi-select picker. Null for anything
      * that is not a tunnel template.
      */
     static Line groupsLine(EditorTypeMenusPacket.Variant v, VariantKey key) {
-        if (key == null || !GROUPABLE_MODEL_IDS.contains(key.modelId())) return null;
+        if (key == null || key.isSubVariant() || !TunnelGroupPickerScreen.groupable(key.modelId())) return null;
         String shown = v.groupIds().isEmpty() ? "none" : String.join(", ", v.groupIds());
         Cell cell = new Cell(shown, new Action.Open(
             new TunnelGroupPickerScreen(key.modelId(), v.name(), v.groupIds())), !v.groupIds().isEmpty())

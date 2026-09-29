@@ -36,6 +36,16 @@ public final class TunnelGroupPickerScreen implements MenuScreen {
         this.syncedFrom = EditorRosterClient.index();
     }
 
+    /**
+     * A picker that reads the template's current groups from the editor roster — for callers (the
+     * world-space X menu) that only know which template they stand in.
+     */
+    public static TunnelGroupPickerScreen fromRoster(String kindId, String name) {
+        TunnelGroupPickerScreen screen = new TunnelGroupPickerScreen(kindId, name, null);
+        screen.syncedFrom = null; // sync on first draw
+        return screen;
+    }
+
     /** Take this template's memberships from a roster that arrived since the last look. */
     private void syncFromRoster() {
         EditorRosterIndex index = EditorRosterClient.index();
@@ -48,6 +58,17 @@ public final class TunnelGroupPickerScreen implements MenuScreen {
                 return;
             }
         }
+    }
+
+    /** True for a tunnel section / entrance model id — the templates that take groups. */
+    public static boolean groupable(String modelId) {
+        return "tunnel_section".equals(modelId) || "tunnel_portal".equals(modelId);
+    }
+
+    /** Short label for a row's groups: the first id, {@code +N} for the rest, or a dim hint. */
+    public static String summary(java.util.List<String> groupIds) {
+        if (groupIds == null || groupIds.isEmpty()) return "no group";
+        return groupIds.get(0) + (groupIds.size() > 1 ? " +" + (groupIds.size() - 1) : "");
     }
 
     /** {@code … toggle <kind> <name> <id>} — joins (registering if new) or leaves {@code id}. */
