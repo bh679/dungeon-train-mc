@@ -125,9 +125,11 @@ final class LostCityGroundProcessorTest {
     }
 
     @Test
-    @DisplayName("attached to Big Lost City templates only")
+    @DisplayName("attached to Big Lost City and DT Lost City templates only")
     void appliesTo() {
         assertTrue(LostCityGroundProcessor.appliesTo(ResourceLocation.fromNamespaceAndPath("big_lost_city", "house1lt")));
+        assertTrue(LostCityGroundProcessor.appliesTo(ResourceLocation.fromNamespaceAndPath("dungeontrain", "lost_city/office_tower")));
+        assertFalse(LostCityGroundProcessor.appliesTo(ResourceLocation.fromNamespaceAndPath("dungeontrain", "templates/portal")));
         assertFalse(LostCityGroundProcessor.appliesTo(ResourceLocation.fromNamespaceAndPath("minecraft", "village/plains/houses/plains_small_house_1")));
         assertFalse(LostCityGroundProcessor.appliesTo(null));
     }

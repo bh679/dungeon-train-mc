@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.worldgen.LegacyUnderground;
+import games.brennan.dungeontrain.worldgen.LostCityFootprint;
 import games.brennan.dungeontrain.worldgen.LostCitySeating;
 import games.brennan.dungeontrain.worldgen.LostCityStructures;
 import games.brennan.dungeontrain.worldgen.UpsideDownSpawnerStructures;
@@ -70,6 +71,8 @@ public abstract class StructureBasementMixin {
             }
             // Seat the city on its footprint's floor (the seabed in water), not on one heightmap sample.
             LostCitySeating.seat(start, chunkGenerator, heightAccessor, randomState);
+            // A stretched building's box must match what its processors will place (LostCityFootprint).
+            LostCityFootprint.resize(start, structureTemplateManager);
         }
         if (level != null) {
             // Legacy bands and the sunk zone never get the underground set (LegacyUnderground).

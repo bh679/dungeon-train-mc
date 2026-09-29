@@ -59,7 +59,8 @@ import java.util.function.IntFunction;
  * natural pad blocks, stone under roads and plazas, down to the ground or {@link #FOOTING_MAX_DEPTH}.</p>
  *
  * <p>Attached at runtime by {@code SinglePoolElementMixin} to every pool element that places a
- * {@code big_lost_city} template — the mod's own pools and DT's trackside copies alike. Runtime-only, never
+ * Lost City template: Big Lost City's own and DT's original buildings ({@code dungeontrain:lost_city/<name>},
+ * see {@link LostCityStructures#isLostCityStructure}). Runtime-only, never
  * serialised, so {@link #getType()} is a unit codec. Reads the world only inside the placement box:
  * {@code processBlockInfos} runs processors before the chunk-box filter, and a read outside the region
  * would throw.</p>
@@ -73,9 +74,6 @@ public final class LostCityGroundProcessor extends StructureProcessor {
     /** Deepest footing placed under a pad hanging over lower ground. */
     static final int FOOTING_MAX_DEPTH = 24;
 
-    /** Namespace of the templates this processor is attached to. */
-    private static final String TEMPLATE_NAMESPACE = "big_lost_city";
-
     /** Pad-layer blocks that read as natural ground rather than as part of the building. */
     static final Set<Block> BASE = Set.of(
             Blocks.GRASS_BLOCK, Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.ROOTED_DIRT, Blocks.PODZOL,
@@ -85,9 +83,12 @@ public final class LostCityGroundProcessor extends StructureProcessor {
 
     private LostCityGroundProcessor() {}
 
-    /** Whether {@code template} is one of the Big Lost City mod's, so its pool element gets this processor. */
+    /**
+     * Whether {@code template} is a Lost City building's — one of the Big Lost City mod's, or one of DT's own
+     * ({@code dungeontrain:lost_city/<name>}) — so its pool element gets this processor.
+     */
     public static boolean appliesTo(ResourceLocation template) {
-        return template != null && TEMPLATE_NAMESPACE.equals(template.getNamespace());
+        return LostCityStructures.isLostCityStructure(template);
     }
 
     /** A pad block the world may replace. */

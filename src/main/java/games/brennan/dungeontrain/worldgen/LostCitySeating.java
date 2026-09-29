@@ -56,7 +56,7 @@ public final class LostCitySeating {
         if (!(structure instanceof JigsawStructure jigsaw)) return false;
         Holder<StructureTemplatePool> pool = ((JigsawStructureAccessor) (Object) jigsaw).dungeontrain$startPool();
         ResourceKey<StructureTemplatePool> key = pool.unwrapKey().orElse(null);
-        return key != null && LostCityGroundProcessor.appliesTo(key.location());
+        return key != null && LostCityStructures.isLostCityPool(key.location());
     }
 
     /**
