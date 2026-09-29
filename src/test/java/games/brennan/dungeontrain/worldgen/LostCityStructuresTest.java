@@ -284,7 +284,7 @@ final class LostCityStructuresTest {
     }
 
     @Test
-    @DisplayName("nothing on the range; half the grid from the foot of its fall, full 2900 blocks on")
+    @DisplayName("nothing on the range; 15% of the grid from the foot of its fall, full 2900 blocks on")
     void fadeIn() {
         long lead = LAYOUT.legacyLeadIn(slot());
         long foot = LostCityStructures.fallFoot(C);
@@ -294,16 +294,16 @@ final class LostCityStructuresTest {
         assertEquals(0.0, LostCityStructures.density(C, x(leadInStart, 0) >> 4), 1e-9);              // the plateau
         assertEquals(0.0, LostCityStructures.density(C, x(leadInStart + foot - 32, 0) >> 4), 1e-9);  // still on the fall
         double atFoot = LostCityStructures.density(C, x(leadInStart + foot + 16, 0) >> 4);
-        assertTrue(atFoot >= 0.5 && atFoot < 0.52, "the floor at the foot: " + atFoot);
-        assertEquals(0.75, LostCityStructures.density(C, x(leadInStart + foot + 1450, 0) >> 4), 0.01);
+        assertTrue(atFoot >= 0.15 && atFoot < 0.17, "the floor at the foot: " + atFoot);
+        assertEquals(0.575, LostCityStructures.density(C, x(leadInStart + foot + 1450, 0) >> 4), 0.01);
         assertEquals(1.0, LostCityStructures.density(C, x(leadInStart + foot + 2916, 0) >> 4), 1e-9);
         assertEquals(1.0, LostCityStructures.density(C, x(coreStart() + 3800L, 0) >> 4), 1e-9);
         assertEquals(0.0, LostCityStructures.density(C, x(coreStart() - 2500L, 0) >> 4), 1e-9);       // the Nether proper
         // the roll follows the density over a block of chunks, and is deterministic
-        int cx = x(leadInStart + foot + 1450, 0) >> 4;                                                  // density ~0.75
+        int cx = x(leadInStart + foot + 1450, 0) >> 4;                                                  // density ~0.575
         int kept = 0;
         for (int cz = -100; cz < 100; cz++) if (LostCityStructures.allowedAt(SEED, C, cx, cz)) kept++;
-        assertTrue(kept > 120 && kept < 180, "about 75% kept: " + kept);
+        assertTrue(kept > 90 && kept < 140, "about 57% kept: " + kept);
         int full = 0;
         for (int cz = -100; cz < 100; cz++) if (LostCityStructures.allowedAt(SEED, C, x(coreStart() + 3500L, 0) >> 4, cz)) full++;
         assertEquals(200, full);

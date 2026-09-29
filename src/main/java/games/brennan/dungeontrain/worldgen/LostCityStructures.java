@@ -150,8 +150,11 @@ public final class LostCityStructures {
     /** How far past the foot of the Nether's fall the city reaches full density, in base blocks. */
     public static final int FADE_BLOCKS = 2900;
 
-    /** The density at the foot of the fall, so the first buildings stand right below the range. */
-    public static final double FADE_FLOOR = 0.5;
+    /**
+     * The density at the foot of the fall: a sprinkling of buildings right below the range that thickens into the
+     * city, rather than half a city appearing at once (0.5 until 0.1022.x).
+     */
+    public static final double FADE_FLOOR = 0.15;
 
     /** Share of the placement grid's starts kept in the WWOO overworld stretch: roughly 2–6 Lost City structures near the track. */
     public static final double WWOO_STRETCH_DENSITY = 0.024;
