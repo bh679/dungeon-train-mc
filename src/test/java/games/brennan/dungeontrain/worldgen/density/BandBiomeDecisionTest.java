@@ -37,9 +37,6 @@ final class BandBiomeDecisionTest {
         if (hasNetherCore && cycle.isNetherCore(wx)) return Result.NETHER_CORE;
         if (hasEndCore && cycle.isEndCore(blockX)) return Result.END_CORE;
         if (!NetherMountainTerrain.raises(cycle, wx)) return Result.ORIGINAL;
-        // Cave band: the mountain interior under the CavernNoise window top (same rule the density carve uses).
-        double top = NetherMountainTerrain.targetTop(cycle, seed, wx, blockZ, seaLevel, CEILING, NETHER_TOP, BASE_RELIEF);
-        if (blockY <= CavernNoise.windowTop(top)) return Result.CAVE;
         return Result.HIGHLAND;
     }
 
@@ -47,8 +44,7 @@ final class BandBiomeDecisionTest {
 
     private static Result decide(WorldGenCycle cycle, long seed, int seaLevel, boolean hasNetherCore,
                                  boolean hasEndCore, int blockX, int blockY, int blockZ) {
-        return BandBiomeDecision.decide(cycle, seed, seaLevel, CEILING, NETHER_TOP, BASE_RELIEF,
-                hasNetherCore, hasEndCore, blockX, blockY, blockZ);
+        return BandBiomeDecision.decide(cycle, seed, seaLevel, hasNetherCore, hasEndCore, blockX, blockY, blockZ);
     }
 
     @Test
@@ -106,17 +102,16 @@ final class BandBiomeDecisionTest {
         long seed = 0x1234_5678L;
         boolean sawNether = false, sawEnd = false, sawHighland = false, sawOriginal = false, sawCave = false;
         for (int x = 960; x <= 2980; x += 2) {
-            for (int y : new int[] {80, 150}) {
-                switch (decide(CYCLE, seed, 63, true, true, x, y, 0)) {
-                    case NETHER_CORE -> sawNether = true;
-                    case END_CORE -> sawEnd = true;
-                    case HIGHLAND -> sawHighland = true;
-                    case ORIGINAL -> sawOriginal = true;
-                    case CAVE -> sawCave = true;
-                }
+            switch (decide(CYCLE, seed, 63, true, true, x, 150, 0)) {
+                case NETHER_CORE -> sawNether = true;
+                case END_CORE -> sawEnd = true;
+                case HIGHLAND -> sawHighland = true;
+                case ORIGINAL -> sawOriginal = true;
             }
+            int top = BandBiomeDecision.caveWindowTop(CYCLE, seed, 63, CEILING, NETHER_TOP, BASE_RELIEF, x, 0);
+            if (BandBiomeDecision.isCave(top, 80)) sawCave = true;
         }
-        assertTrue(sawCave, "no CAVE verdict on the sweep");
+        assertTrue(sawCave, "no cave band on the sweep");
         assertTrue(sawNether, "no NETHER_CORE verdict on the sweep");
         assertTrue(sawEnd, "no END_CORE verdict on the sweep");
         assertTrue(sawHighland, "no HIGHLAND verdict on the sweep");
@@ -140,19 +135,22 @@ final class BandBiomeDecisionTest {
     }
 
     @Test
-    @DisplayName("CAVE never below sea level, never in the core, never above the decoration ceiling")
+    @DisplayName("cave band: only raising non-core columns have one, its top never exceeds the decoration ceiling")
     void caveBounds() {
         long seed = 0x1234_5678L;
+        boolean any = false;
         for (int x = 1300; x < 1960; x += 4) {
             for (int z = -16; z <= 16; z += 8) {
-                assertTrue(decide(CYCLE, seed, 63, true, true, x, 62, z) == Result.ORIGINAL, "below sea at x=" + x);
-                Result r = decide(CYCLE, seed, 63, true, true, x, CavernNoise.DECORATION_CEILING + 1, z);
-                assertTrue(r != Result.CAVE, "CAVE above the decoration ceiling at x=" + x);
-                if (CYCLE.isNetherCore(NetherMountainTerrain.wavyX(seed, x, z))) {
-                    assertEquals(Result.NETHER_CORE, decide(CYCLE, seed, 63, true, true, x, 80, z), "core at x=" + x);
-                }
+                int top = BandBiomeDecision.caveWindowTop(CYCLE, seed, 63, CEILING, NETHER_TOP, BASE_RELIEF, x, z);
+                int wx = NetherMountainTerrain.wavyX(seed, x, z);
+                boolean highland = decide(CYCLE, seed, 63, true, true, x, 80, z) == Result.HIGHLAND;
+                if (!highland) assertEquals(BandBiomeDecision.NO_CAVE, top, "cave band on a non-highland column at x=" + x);
+                else { assertTrue(top <= CavernNoise.DECORATION_CEILING, "above the ceiling at x=" + x); any = true; }
+                assertTrue(!BandBiomeDecision.isCave(top, CavernNoise.DECORATION_CEILING + 1));
+                if (CYCLE.isNetherCore(wx)) assertEquals(BandBiomeDecision.NO_CAVE, top, "core column at x=" + x);
             }
         }
+        assertTrue(any, "no highland column with a cave band");
     }
 
     @Test

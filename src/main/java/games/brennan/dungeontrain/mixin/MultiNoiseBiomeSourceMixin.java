@@ -147,6 +147,12 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                     if (column.core() != null) return column.core();
                 }
                 case HIGHLAND -> {
+                    // The mountain interior under the cave-band top is a cave biome (lush / dripstone on the
+                    // way in, mostly deep dark after the core). Un-waved X for the pre/post split — core
+                    // columns are never HIGHLAND, so the ±9 wave can't matter.
+                    if (BandBiomeDecision.isCave(column.caveTop(), blockY)) {
+                        return ctx.highlandBiomes().caveBiomeFor(ctx, blockX, blockZ, ctx.cycle().netherPastCore(blockX));
+                    }
                     // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.
                     return column.look() == SecondLapOverworld.Stretch.BOP
                             ? ctx.highlandBiomes().bopBiomeFor(blockX, blockY, blockZ)
@@ -204,8 +210,7 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         // The whole per-quart decision — sea-level gate, off-band early-out, waved Nether-core /
         // un-waved End-core / highland ordering — lives in the pure, unit-tested
         // BandBiomeDecision.decide; this shell only maps the result onto the live providers.
-        switch (BandBiomeDecision.decide(cycle, ctx.generationSeed(), ctx.seaLevel(), ctx.worldCeiling(),
-                ctx.netherTop(), ctx.baseRelief(),
+        switch (BandBiomeDecision.decide(cycle, ctx.generationSeed(), ctx.seaLevel(),
                 ctx.netherCoreBiomes() != null, ctx.endCoreBiomes() != null,
                 blockX, blockY, blockZ)) {
             case NETHER_CORE:
@@ -218,11 +223,14 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                 // across a joined End band's seam, the look that owns the column (islands and biome agree)
                 long endPass = cycle.endSourcePassAt(blockX, blockZ, ctx.generationSeed());
                 return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, cycle.endStyleOfPass(endPass));
-            case CAVE:
-                // The mountain interior: lush / dripstone caves on the way in, deep dark joins after the core.
-                // Un-waved X for the pre/post split — core columns are never CAVE, so the ±9 wave can't matter.
-                return ctx.highlandBiomes().caveBiomeFor(ctx, blockX, blockZ, cycle.netherPastCore(blockX));
             case HIGHLAND:
+                // The mountain interior under the cave-band top is a cave biome (lush / dripstone on the way
+                // in, mostly deep dark after the core). Un-waved X for the pre/post split — core columns are
+                // never HIGHLAND, so the ±9 wave can't matter.
+                if (BandBiomeDecision.isCave(BandBiomeDecision.caveWindowTop(cycle, ctx.generationSeed(), ctx.seaLevel(),
+                        ctx.worldCeiling(), ctx.netherTop(), ctx.baseRelief(), blockX, blockZ), blockY)) {
+                    return ctx.highlandBiomes().caveBiomeFor(ctx, blockX, blockZ, cycle.netherPastCore(blockX));
+                }
                 // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.
                 return SecondLapOverworld.lookAt(cycle, blockX) == SecondLapOverworld.Stretch.BOP
                         ? ctx.highlandBiomes().bopBiomeFor(blockX, blockY, blockZ)

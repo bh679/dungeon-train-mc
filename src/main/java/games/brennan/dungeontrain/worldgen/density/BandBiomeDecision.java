@@ -16,9 +16,8 @@ import games.brennan.dungeontrain.worldgen.feature.CavernNoise;
  *   <li>below sea level → {@link Result#ORIGINAL} (natural cave biomes);</li>
  *   <li>Nether-band core at the edge-waved X → {@link Result#NETHER_CORE};</li>
  *   <li>End-band core at the un-waved X → {@link Result#END_CORE};</li>
- *   <li>a raising mountain column at the waved X, inside the {@link CavernNoise} window under its
- *       mountain top → {@link Result#CAVE} (the big open caverns — lush / dripstone / deep dark);</li>
- *   <li>a raising mountain column at the waved X → {@link Result#HIGHLAND};</li>
+ *   <li>a raising mountain column at the waved X → {@link Result#HIGHLAND} — whose quarts under the
+ *       {@link CavernNoise} window top ({@link #caveWindowTop}) are the cave biomes;</li>
  *   <li>otherwise → {@link Result#ORIGINAL}.</li>
  * </ol>
  *
@@ -31,7 +30,7 @@ import games.brennan.dungeontrain.worldgen.feature.CavernNoise;
 public final class BandBiomeDecision {
 
     /** Which forced biome (if any) the column gets; the mixin maps this onto the live providers. */
-    public enum Result { ORIGINAL, NETHER_CORE, END_CORE, HIGHLAND, CAVE }
+    public enum Result { ORIGINAL, NETHER_CORE, END_CORE, HIGHLAND }
 
     private BandBiomeDecision() {}
 
@@ -41,8 +40,7 @@ public final class BandBiomeDecision {
      * provider disables that branch (never a fall-through to a null lookup). Pure: depends only on
      * the cycle layout + seed, so a dense grid test can pin it against a reimplemented reference.
      */
-    public static Result decide(WorldGenCycle cycle, long seed, int seaLevel, int worldCeiling,
-                                int netherTop, int baseRelief,
+    public static Result decide(WorldGenCycle cycle, long seed, int seaLevel,
                                 boolean hasNetherCore, boolean hasEndCore,
                                 int blockX, int blockY, int blockZ) {
         if (cycle == null) return Result.ORIGINAL;
@@ -64,10 +62,34 @@ public final class BandBiomeDecision {
         // NetherMountainTerrain feature).
         if (hasEndCore && cycle.isEndCore(blockX)) return Result.END_CORE;
         if (!NetherMountainTerrain.raises(cycle, wx)) return Result.ORIGINAL; // not a band mountain column
-        // The mountain interior under the same window the density carve uses is the cave biome band —
-        // whatever is open in there (carved caverns, carver tunnels, the track tunnel) is a cave.
-        double top = NetherMountainTerrain.targetTop(cycle, seed, wx, blockZ, seaLevel, worldCeiling, netherTop, baseRelief);
-        if (blockY <= CavernNoise.windowTop(top)) return Result.CAVE;
         return Result.HIGHLAND;
+    }
+
+    /** No cave band in this column ({@link #caveWindowTop}). */
+    public static final int NO_CAVE = Integer.MIN_VALUE;
+
+    /**
+     * Highest block-Y of the column's <b>cave band</b> — the mountain interior under the same window the
+     * density carve uses ({@link CavernNoise#windowTop} of the column's mountain top), where a
+     * {@link Result#HIGHLAND} quart is a cave biome instead: whatever is open in there (carved caverns,
+     * carver tunnels, the track tunnel) is a cave. {@link #NO_CAVE} for a column that does not raise.
+     * Y-independent, so the column memo can keep it beside the verdict.
+     */
+    public static int caveWindowTop(WorldGenCycle cycle, long seed, int seaLevel, int worldCeiling,
+                                    int netherTop, int baseRelief, int blockX, int blockZ) {
+        if (cycle == null) return NO_CAVE;
+        if (games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED
+                && !cycle.netherInfluence(blockX, NetherMountainTerrain.maxEdgeShift())) {
+            return NO_CAVE;
+        }
+        int wx = NetherMountainTerrain.wavyX(seed, blockX, blockZ);
+        if (cycle.isNetherCore(wx) || !NetherMountainTerrain.raises(cycle, wx)) return NO_CAVE;
+        double top = NetherMountainTerrain.targetTop(cycle, seed, wx, blockZ, seaLevel, worldCeiling, netherTop, baseRelief);
+        return CavernNoise.windowTop(top);
+    }
+
+    /** Whether a {@link Result#HIGHLAND} quart at block-Y {@code blockY} lies in the column's cave band. */
+    public static boolean isCave(int caveWindowTop, int blockY) {
+        return caveWindowTop != NO_CAVE && blockY <= caveWindowTop;
     }
 }
