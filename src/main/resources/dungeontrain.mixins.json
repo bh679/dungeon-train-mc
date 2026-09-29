@@ -73,6 +73,7 @@
     "SubLevelHeatMapSplitMixin",
     "RapierPipelineFreezeMixin",
     "RapierPipelineTimingMixin",
+    "ServerChunkCacheWaitTimingMixin",
     "RapierPipelineRotationLockMixin",
     "LevelAcceleratorNoSyncLoadMixin",
     "SubLevelEntityCollisionNoLoadMixin",

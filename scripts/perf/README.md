@@ -68,13 +68,43 @@ Every one of these produced a confident-looking but **invalid** result before it
    nothing about the feature — only that the scenario never exercised it. The analyzer prints a
    warning below 5.
 
+## `[mspt]` fields
+
+One DEBUG line per level with a train, every 40 ticks, from `TrainTickEvents` (logger
+`games.brennan.dungeontrain.jitter`). New fields are only ever **appended**, so a parser keyed by
+name (`analyze.parse_mspt`) reads every vintage of player log. "Window" = the 40 ticks since the
+previous line.
+
+| field | meaning |
+|---|---|
+| `dim` | dimension |
+| `avgTickMs` | server's mean tick time (vanilla's 100-tick average, all dimensions) |
+| `carriages` / `near` / `trains` | resident carriages, carriages near a player, trains |
+| `physMs` | mean native Rapier step per tick over the window (`PhysicsStepTimer`) |
+| `substeps` | live Sable substep setting (`PhysicsSubstepTuner`) |
+| `blockChanges` | carriage-block edits that hit the voxel collider in the window |
+| `activeTracked` / `activeEntity` / `activeSettling` / `frozen` | why resident carriages are stepped, and how many are parked (`PhysicsFreezeController`, 0.1003.1+) |
+| `maxBodyLag` / `reparks` / `reanchors` | parked-body lag (blocks), re-parks and re-anchors in the window |
+| `gcMs` / `gcN` | GC **pause** time (ms) and collections in the window — stop-the-world beans only (G1 Young/Old; ZGC/Shenandoah "Pauses"), not concurrent cycles. First line after start reads 0 |
+| `heapUsedMb` / `heapMaxMb` | heap in use at the sample, and `-Xmx` |
+| `chunkWaitMs` / `chunkWaits` | server-thread time blocked on synchronous chunk loads (`ServerChunkCache$MainThreadExecutor.managedBlock`, outermost wait only) and how many |
+| `chunksLoaded` / `pendingChunkTasks` | loaded chunks in this level, and queued main-thread chunk tasks |
+| `entities` / `onCarriages` | loaded entities in the level, and how many sit in carriage (Sable plot) space — i.e. carriage contents. World-space riders are `activeEntity` |
+| `tickMaxMs` | longest single server tick in the last 40 (all dimensions) |
+
+`gcMs`, `chunkWait*` and `physMs` are process-wide counters drained by whichever `[mspt]` line
+fires first; with trains in two dimensions they split between the lines. Reading a slow window:
+`avgTickMs − physMs` is the unattributed part; compare it with `gcMs/40`, `chunkWaitMs/40` and
+`entities`. A `tickMaxMs` far above `avgTickMs` means one spike, not steady load.
+
 ## Files
 
 | | |
 |---|---|
 | `run-ab.sh` | both arms concurrently, rendezvous-synced so the windows share a wall clock |
 | `run-arm.sh` | one arm end to end |
-| `analyze.py` | `[mspt]` aggregation, controls, validity gates |
+| `analyze.py` | `[mspt]` parsing (`parse_mspt`) and aggregation, controls, validity gates |
+| `test_analyze.py` | parser tests over each vintage of the line (`python3 -m pytest scripts/perf/test_analyze.py`) |
 | `stdin.gradle` | wires `runServer`'s stdin so the console can be driven from a pipe |
 
 `run/world.old.*` snapshots accumulate (hundreds of MB); prune them yourself when they add up.
