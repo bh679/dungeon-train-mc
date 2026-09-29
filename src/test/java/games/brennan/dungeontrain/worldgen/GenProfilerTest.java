@@ -56,6 +56,17 @@ final class GenProfilerTest {
     }
 
     @Test
+    @DisplayName("Sample math: BIOME_PICK is a sub-portion of BIOME_FORCE, excluded from dtTotalMs")
+    void biomePickIsInformational() {
+        long[] nanos = new long[GenProfiler.Bucket.values().length];
+        nanos[GenProfiler.Bucket.BIOME_FORCE.ordinal()] = 4_000_000L;
+        nanos[GenProfiler.Bucket.BIOME_PICK.ordinal()] = 3_000_000L;
+        GenProfiler.Sample s = new GenProfiler.Sample(2, nanos);
+        assertEquals(4.0, s.dtTotalMs(), 1e-9);
+        assertEquals(1.5, s.perChunkMs(GenProfiler.Bucket.BIOME_PICK), 1e-9);
+    }
+
+    @Test
     @DisplayName("Sample math: dtTotalMs includes DISINTEGRATION but excludes CORE_REPLACE + NETHER_DECO + EROSION")
     void sampleMathTotalBuckets() {
         long[] nanos = new long[GenProfiler.Bucket.values().length];

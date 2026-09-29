@@ -58,6 +58,10 @@ public final class GenProfiler {
         NETHER_DECO,
         /** {@code MultiNoiseBiomeSourceMixin} highland/nether/end biome forcing (per quart). */
         BIOME_FORCE,
+        /** {@code OverworldStretchBiomes.pick} — the climate sample + table lookup vanilla itself would do for
+         *  the quart (sub-portion of {@link #BIOME_FORCE}; what is left of {@code biome=} once DT's own
+         *  column-level work is memoised). */
+        BIOME_PICK,
         /** {@code ChunkStatusSpawnMixin} upside-down mirror precompute. */
         MIRROR_PRECOMPUTE,
         /** {@code ChunkStatusSpawnMixin} Nether-band foliage strip scan ({@code NetherFoliageStrip.compute}). */
@@ -150,7 +154,8 @@ public final class GenProfiler {
         }
 
         /** DT's total added worker-thread gen cost this window — excludes {@link Bucket#CORE_REPLACE} and
-         *  {@link Bucket#NETHER_DECO} (already inside NETHER_FEATURE) and {@link Bucket#EROSION} (main-thread,
+         *  {@link Bucket#NETHER_DECO} (already inside NETHER_FEATURE), {@link Bucket#BIOME_PICK} (already inside
+         *  BIOME_FORCE) and {@link Bucket#EROSION} (main-thread,
          *  not a worker slice). */
         public double dtTotalMs() {
             return ms(Bucket.DF) + ms(Bucket.NETHER_FEATURE) + ms(Bucket.BIOME_FORCE)

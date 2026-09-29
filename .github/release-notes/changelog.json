@@ -20752,6 +20752,23 @@
       "released": true,
       "released_in": "v0.1027.0",
       "released_at": "2026-09-29T11:38:22Z"
+    },
+    {
+      "id": "biome-column-memo",
+      "version": "0.1028.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Faster terrain generation",
+      "summary": "New terrain around the train now takes less server work to generate. The world itself is unchanged.",
+      "highlights": [],
+      "pr": 1663,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
