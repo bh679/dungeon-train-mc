@@ -162,6 +162,72 @@ class BookFactoryBuildTest {
         assertEquals("", pageTexts(content).get(0));
     }
 
+    /**
+     * A 13-line drawing, the shape of the one reported broken: centred with leading spaces, spacer
+     * lines, a {@code \.} inside the art (which the story paginator took for a sentence end) and
+     * well over the story paginator's 256-char page budget.
+     */
+    private static final String WORD_ART = String.join("\n",
+        "      A Gift",
+        "",
+        "",
+        "",
+        "         /\\",
+        "        /  \\",
+        "       /    \\.",
+        "      /______\\",
+        "        |  |",
+        "        |  |    for whoever",
+        "        |__|    finds this.",
+        "",
+        "   It is not much. It was",
+        "   all I had on the train.",
+        "",
+        "   ~~~~~~~~~~~~~~~~~~~~~~",
+        "  ~  keep the train going  ~",
+        "   ~~~~~~~~~~~~~~~~~~~~~~",
+        "",
+        "                   - P");
+
+    @Test
+    @DisplayName("A word-art page is served byte-for-byte, as one page")
+    void wordArtPageIsByteIdentical() {
+        assertTrue(WORD_ART.length() > 256, "fixture must exceed the story paginator's page budget");
+        WrittenBookContent content = contentOf(BookFactory.buildPlainBook("Art", "P", List.of(WORD_ART)));
+        assertEquals(List.of(WORD_ART), pageTexts(content));
+    }
+
+    @Test
+    @DisplayName("Every written page is served once, in order, with its whitespace intact")
+    void pageCountAndOrderPreserved() {
+        List<String> pages = List.of(
+            "     centred title",
+            "\n\n\n",
+            "",
+            WORD_ART);
+        WrittenBookContent content = contentOf(BookFactory.buildPlainBook("Four", "P", pages));
+        assertEquals(pages, pageTexts(content), "a blank spacer page mid-book keeps its place");
+    }
+
+    @Test
+    @DisplayName("Trailing blank pages are dropped, as vanilla's editor does")
+    void trailingBlankPagesDropped() {
+        WrittenBookContent content = contentOf(
+            BookFactory.buildPlainBook("Tail", "P", List.of("", "body", "", "")));
+        assertEquals(List.of("", "body"), pageTexts(content));
+    }
+
+    @Test
+    @DisplayName("An over-long page clamps to the vanilla page cap without orphaning a surrogate")
+    void overlongPageClampsWithoutSurrogateSplit() {
+        String page = "x".repeat(BookFactory.MAX_PAGE_CHARS - 1) + EMOJI + "overflow";
+        WrittenBookContent content = contentOf(BookFactory.buildPlainBook("Long", "P", List.of(page)));
+        List<String> texts = pageTexts(content);
+        assertEquals(1, texts.size(), "an over-long page is clamped, not split");
+        assertTrue(texts.get(0).length() <= BookFactory.MAX_PAGE_CHARS);
+        assertFalse(hasLoneSurrogate(texts.get(0)));
+    }
+
     @Test
     @DisplayName("Astral characters survive intact through the whole build")
     void astralTextSurvives() {

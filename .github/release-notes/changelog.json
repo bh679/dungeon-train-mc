@@ -20637,6 +20637,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "preserve-community-book-layout",
+      "version": "0.1022.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "books"
+      ],
+      "title": "Community books keep their author's layout",
+      "summary": "Community books now appear exactly as their author laid them out \u2014 indentation, blank lines and word art are preserved, and pages stay where they were written instead of spilling onto extra pages.",
+      "highlights": [
+        "Word art and centred text in found books are no longer flattened",
+        "Blank spacer lines survive, so signatures and page breaks stay where the author put them"
+      ],
+      "pr": 1657,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
