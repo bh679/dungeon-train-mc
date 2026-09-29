@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/template_glazed_terracotta",
+  "textures": {
+    "pattern": "dungeontrain:block/stage_glazed_terracotta"
+  }
+}
