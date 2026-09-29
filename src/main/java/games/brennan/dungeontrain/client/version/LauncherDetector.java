@@ -38,6 +38,17 @@ public final class LauncherDetector {
 
     public enum Source { MODRINTH, CURSEFORGE, GITHUB }
 
+    /**
+     * The launcher itself, finer-grained than {@link Source}: where {@code Source} only needs to
+     * know which download page to send an update to (and lumps Prism, MultiMC and ATLauncher into
+     * {@link Source#GITHUB}), help text about a launcher's <em>settings</em> needs to name the
+     * actual launcher. {@link #UNKNOWN} covers portable installs and anything unrecognised — callers
+     * should fall back to something launcher-neutral rather than guess.
+     */
+    public enum Launcher { CURSEFORGE, MODRINTH, MINECRAFT_LAUNCHER, PRISM, MULTIMC, ATLAUNCHER, UNKNOWN }
+
+    private static volatile Launcher cachedLauncher;
+
     private static final String MODRINTH_URL   = "https://modrinth.com/mod/dungeon-train";
     private static final String CURSEFORGE_URL = "https://www.curseforge.com/minecraft/mc-mods/dungeon-train";
     private static final String GITHUB_URL     = "https://github.com/bh679/dungeon-train-mc/releases";
@@ -58,6 +69,52 @@ public final class LauncherDetector {
             LOGGER.info("LauncherDetector: detected launcher = {}", s);
         }
         return s;
+    }
+
+    /** The launcher this game was started from; see {@link Launcher}. Cached after the first call. */
+    public static Launcher launcher() {
+        Launcher l = cachedLauncher;
+        if (l == null) {
+            l = detectLauncher();
+            cachedLauncher = l;
+            LOGGER.info("LauncherDetector: detected launcher app = {}", l);
+        }
+        return l;
+    }
+
+    private static Launcher detectLauncher() {
+        try {
+            Path gameDir = FMLPaths.GAMEDIR.get().toAbsolutePath();
+            return classify(gameDir.toString(),
+                Files.exists(gameDir.resolve("minecraftinstance.json")),
+                Files.exists(gameDir.resolve("modrinth.index.json")));
+        } catch (Throwable t) {
+            LOGGER.debug("LauncherDetector: launcher-app probe failed: {}", t.toString());
+            return Launcher.UNKNOWN;
+        }
+    }
+
+    /**
+     * Pure classification behind {@link #launcher()}: the same brand-in-path and signature-file
+     * rules as {@link #detect()}, but naming each launcher rather than its download page. The
+     * official Minecraft Launcher has no brand in its path, so it is recognised last, by its default
+     * game folder — {@code .minecraft} (Windows, Linux) or {@code Application Support/minecraft}
+     * (macOS). Anything else is {@link Launcher#UNKNOWN}.
+     */
+    static Launcher classify(String gameDirPath, boolean hasCurseForgeSignature, boolean hasModrinthSignature) {
+        String p = gameDirPath.replace('\\', '/').toLowerCase(Locale.ROOT);
+        while (p.endsWith("/")) p = p.substring(0, p.length() - 1);
+        if (p.contains("curseforge")) return Launcher.CURSEFORGE;
+        if (p.contains("modrinth") || p.contains("theseus")) return Launcher.MODRINTH;
+        if (p.contains("prismlauncher")) return Launcher.PRISM;
+        if (p.contains("multimc")) return Launcher.MULTIMC;
+        if (p.contains("atlauncher")) return Launcher.ATLAUNCHER;
+        if (hasCurseForgeSignature) return Launcher.CURSEFORGE;
+        if (hasModrinthSignature) return Launcher.MODRINTH;
+        if (p.endsWith("/.minecraft") || p.endsWith("/application support/minecraft")) {
+            return Launcher.MINECRAFT_LAUNCHER;
+        }
+        return Launcher.UNKNOWN;
     }
 
     private static String urlFor(Source s) {

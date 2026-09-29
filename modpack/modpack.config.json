@@ -1,6 +1,8 @@
 {
   "name": "Dungeon Train",
   "author": "Brennan Hatton",
+  "recommended_ram_mb": 6144,
+  "summary": "The Dungeon Train modpack. Allocate 6 GB+ RAM in your launcher for smooth play.",
   "dt_project_id": 1527512,
   "dt_modrinth_project": "dungeon-train",
   "sable": {

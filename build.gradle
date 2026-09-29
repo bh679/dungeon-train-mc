@@ -134,6 +134,12 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
+            // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
+            // traingen trace (DevTraceDefaults) left off.
+            if (project.hasProperty('jitterDebug')) {
+                systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
+            }
             // Local-relay testing seam: point the dev client at a locally-run dp-relay instead of the
             // branch-routed dev/live cap, e.g.
             //   ./gradlew runClient -PrelayBaseUrl=http://127.0.0.1:3005/<CAP>
@@ -263,6 +269,12 @@ neoForge {
                 gameDirectory = file(project.property('serverDir').toString())
             }
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
+            // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
+            // traingen trace (DevTraceDefaults) left off.
+            if (project.hasProperty('jitterDebug')) {
+                systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
+            }
             // Same local-relay seam as the client above. The SERVER is what fetches the community
             // book + narrative pools (SharedBookRefreshEvents ticks server-side), so verifying that
             // half against a local dp-relay needs it here too — and a dedicated server needs no GUI,
@@ -312,6 +324,12 @@ neoForge {
         gameTestServer {
             type = 'gameTestServer'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
+            // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
+            // traingen trace (DevTraceDefaults) left off.
+            if (project.hasProperty('jitterDebug')) {
+                systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
+            }
         }
 
         data {
@@ -530,7 +548,7 @@ dependencies {
     // DH is an optional companion (opt-in in the modpack, `optional` in neoforge.mods.toml) and
     // is not in the dev client; it ships the API classes inside its own jar, so at runtime they
     // are either DH's or absent. The only DT class that names them
-    // (client/DistantHorizonsUpsideDown) is reached behind a ModList check, so nothing tries to
+    // (client/DistantHorizonsSuppression) is reached behind a ModList check, so nothing tries to
     // link them when DH isn't installed. The API artifact version is DH's OWN api version, not the
     // mod version: DH ${distant_horizons_version} reports API ${distant_horizons_api_version}.
     compileOnly "maven.modrinth:distanthorizonsapi:${distant_horizons_api_version}"

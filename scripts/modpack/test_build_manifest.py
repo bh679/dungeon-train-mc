@@ -125,6 +125,36 @@ def test_malformed_optional_mod_rejected():
     assert "file_id" in proc.stderr
 
 
+def test_recommended_ram_absent_by_default():
+    proc = run(["--dt-file-id", "8123456", "--version", "0.293.0"])
+    assert proc.returncode == 0, proc.stderr
+    assert "recommendedRam" not in json.loads(proc.stdout)["minecraft"]
+
+
+def test_recommended_ram_emitted_in_minecraft_block():
+    proc = run(["--dt-file-id", "8123456", "--version", "0.293.0"],
+               config={**CONFIG, "recommended_ram_mb": 6144})
+    assert proc.returncode == 0, proc.stderr
+    assert json.loads(proc.stdout)["minecraft"]["recommendedRam"] == 6144
+
+
+def test_bad_recommended_ram_rejected():
+    for bad in (0, -1, "6144", 6.5, True):
+        proc = run(["--dt-file-id", "8123456", "--version", "0.293.0"],
+                   config={**CONFIG, "recommended_ram_mb": bad})
+        assert proc.returncode != 0, bad
+        assert "recommended_ram_mb" in proc.stderr, proc.stderr
+
+
+def test_real_config_recommends_6gb_on_both_platforms():
+    """Guard: CurseForge pre-fills 6 GB, and the Modrinth summary (no RAM field) says the same."""
+    repo_root = os.path.dirname(os.path.dirname(HERE))
+    with open(os.path.join(repo_root, "modpack", "modpack.config.json"), encoding="utf-8") as f:
+        config = json.load(f)
+    assert config["recommended_ram_mb"] == 6144
+    assert "6 GB" in config["summary"], config.get("summary")
+
+
 def _render_real_config():
     """Render the *real* shipped modpack.config.json and return its manifest files[]."""
     repo_root = os.path.dirname(os.path.dirname(HERE))
