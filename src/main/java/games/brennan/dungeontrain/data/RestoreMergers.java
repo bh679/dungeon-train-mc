@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-import games.brennan.dungeonbackup.api.RestoreMerger;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 
 import java.nio.charset.StandardCharsets;
@@ -39,8 +38,17 @@ public final class RestoreMergers {
 
     private RestoreMergers() {}
 
+    /**
+     * Same shape as Dungeon Backup's {@code RestoreMerger} (0.3.0+), declared here so DT does not
+     * depend on that version — {@link RestoreMergeBridge} adapts it. Empty = leave the live file.
+     */
+    @FunctionalInterface
+    public interface Merger {
+        Optional<byte[]> merge(byte[] live, byte[] backedUp);
+    }
+
     /** Globs (under DT's archive root label) whose existing files are merged, not skipped. */
-    public static final Map<String, RestoreMerger> BY_GLOB = Map.of(
+    public static final Map<String, Merger> BY_GLOB = Map.of(
         PlayerDataPaths.ACHIEVEMENTS + "/*.json", growOnly(UnaryOperator.identity()),
         // Stats files predating the nested echoes/distance objects are migrated first, so a legacy
         // backup's top-level totals land in the same fields the live file keeps them in.
@@ -48,7 +56,7 @@ public final class RestoreMergers {
         PlayerDataPaths.NARRATIVE + "/*.json", growOnly(UnaryOperator.identity()));
 
     /** A merger that parses both sides, normalises each with {@code normalise}, and merges them. */
-    static RestoreMerger growOnly(UnaryOperator<JsonElement> normalise) {
+    static Merger growOnly(UnaryOperator<JsonElement> normalise) {
         return (live, backedUp) -> {
             Optional<JsonObject> a = parse(live).map(normalise).flatMap(RestoreMergers::asObject);
             Optional<JsonObject> b = parse(backedUp).map(normalise).flatMap(RestoreMergers::asObject);

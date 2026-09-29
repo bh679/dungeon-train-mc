@@ -117,6 +117,9 @@ class DungeonTrainBackupTest {
     void aRestoreMergesProgressAWorldJoinAlreadyRecreated() throws IOException {
         // The reported failure: ender chests came back, advancements didn't. A world join after
         // the loss had already written a fresh sidecar, and the restore skipped the real one.
+        // Needs Dungeon Backup 0.3.0 on the classpath: ./gradlew test -Pdungeonbackup_version=0.3.0
+        org.junit.jupiter.api.Assumptions.assumeTrue(RestoreMergeBridge.available(),
+            "installed Dungeon Backup predates mergeOnRestore");
         write(dataRoot().resolve("achievements/uuid.json"), "{\"granted\":[\"a:x\",\"a:y\"]}");
         write(dataRoot().resolve("stats/uuid.json"), "{\"trainTicks\":5000}");
         Path archive = games.brennan.dungeonbackup.core.BackupArchiver.create(

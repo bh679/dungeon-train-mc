@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.data;
 
 import com.google.gson.JsonParser;
-import games.brennan.dungeonbackup.api.RestoreMerger;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -18,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class RestoreMergersTest {
 
     private static String merge(String glob, String live, String backedUp) throws IOException {
-        RestoreMerger merger = RestoreMergers.BY_GLOB.get(glob);
+        RestoreMergers.Merger merger = RestoreMergers.BY_GLOB.get(glob);
         Optional<byte[]> out = merger.merge(
             live.getBytes(StandardCharsets.UTF_8), backedUp.getBytes(StandardCharsets.UTF_8));
         return out.map(b -> new String(b, StandardCharsets.UTF_8)).orElse("<untouched>");

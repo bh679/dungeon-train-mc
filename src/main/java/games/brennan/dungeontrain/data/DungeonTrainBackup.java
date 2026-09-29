@@ -103,7 +103,8 @@ public final class DungeonTrainBackup {
         // lost data reaches the restore button a fresh, near-empty copy already exists and a plain
         // restore would skip the backup. Merge those instead — see RestoreMergers. The in-memory
         // caches and online players catch up in RestoredProfileSync, from onRestored above.
-        RestoreMergers.BY_GLOB.forEach((glob, merger) -> builder.mergeOnRestore(ROOT_LABEL, glob, merger));
+        // Through the bridge: mergeOnRestore needs Dungeon Backup 0.3.0, which DT doesn't require yet.
+        RestoreMergeBridge.registerAll(builder, ROOT_LABEL, RestoreMergers.BY_GLOB);
         return builder;
     }
 
