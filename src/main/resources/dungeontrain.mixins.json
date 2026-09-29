@@ -152,6 +152,7 @@
     "client.LevelGetShadeMixin",
     "client.ModelBlockRendererUpsideDownMixin",
     "client.MinecraftFramerateThrottleMixin",
+    "client.MinecraftInitialScreensMixin",
     "client.SoundEngineMusicFadeMixin",
     "client.LanguageSelectEntryLogoMixin",
     "client.FrustumPortalSealMixin",
