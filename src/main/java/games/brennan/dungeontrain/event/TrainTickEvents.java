@@ -232,7 +232,7 @@ public final class TrainTickEvents {
         // End-band sampling runs off the gen workers, so a window can have End work and no chunks fulled.
         if (s.chunks() <= 0 && endSampleMs <= 0 && endApplyMs <= 0) return;
         JITTER_LOGGER.debug(
-            "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} biome={} mirror={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={} sphSample={} sphApply={} endSample={} endApply={} | perChunk df={} nether={} core={} biome={} mirror={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={}",
+            "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} biome={} mirror={} netherStrip={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={} sphSample={} sphApply={} endSample={} endApply={} | perChunk df={} nether={} core={} biome={} mirror={} netherStrip={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={}",
             level.dimension().location(), s.chunks(),
             String.format("%.2f", s.dtTotalMs()), String.format("%.3f", s.dtTotalPerChunkMs()),
             String.format("%.2f", s.ms(GenProfiler.Bucket.DF)),
@@ -240,6 +240,7 @@ public final class TrainTickEvents {
             String.format("%.2f", s.ms(GenProfiler.Bucket.CORE_REPLACE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.BIOME_FORCE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.MIRROR_PRECOMPUTE)),
+            String.format("%.2f", s.ms(GenProfiler.Bucket.NETHER_STRIP_PRECOMPUTE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.TRACK_FEATURE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.DISINTEGRATION)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.EROSION)),
@@ -256,6 +257,7 @@ public final class TrainTickEvents {
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.CORE_REPLACE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.BIOME_FORCE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.MIRROR_PRECOMPUTE)),
+            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.NETHER_STRIP_PRECOMPUTE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.TRACK_FEATURE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.DISINTEGRATION)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.EROSION)),
