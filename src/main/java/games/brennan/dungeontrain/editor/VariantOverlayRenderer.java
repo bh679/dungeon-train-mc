@@ -174,6 +174,12 @@ public final class VariantOverlayRenderer {
     private static final Map<UUID, String> LAST_DOOR_GHOSTS_KEY = new HashMap<>();
 
     /**
+     * Per-player dedup key for the tunnel train-envelope boxes — {@link EditorTunnelEnvelopes#key}.
+     * Same {@code null}-means-empty convention as {@link #LAST_DOOR_GHOSTS_KEY}.
+     */
+    private static final Map<UUID, String> LAST_TUNNEL_ENVELOPE_KEY = new HashMap<>();
+
+    /**
      * Per-player dedup key for the variant-cell mob ghosts — the plot key plus every ghosted cell and
      * its entity, so the packet goes out only when the preview frame actually changed. See
      * {@link #pushMobGhostsSnapshot}.
@@ -205,6 +211,7 @@ public final class VariantOverlayRenderer {
         LAST_PART_VIS_KEY.clear();
         LAST_STRAYS_KEY.clear();
         LAST_DOOR_GHOSTS_KEY.clear();
+        LAST_TUNNEL_ENVELOPE_KEY.clear();
         LAST_MOB_GHOSTS_KEY.clear();
         EditorPlotSky.clearAll();
         EditorMirrorPlotSync.clearAll();
@@ -252,6 +259,7 @@ public final class VariantOverlayRenderer {
         clearPartVisibilityIfStale(player);
         clearStraysIfStale(player);
         clearDoorGhostsIfStale(player);
+        clearTunnelEnvelopeIfStale(player);
         clearMobGhostsIfStale(player);
         EditorMirrorPlotSync.forget(player);
     }
@@ -325,6 +333,7 @@ public final class VariantOverlayRenderer {
             pushPartVisibilitySnapshot(player);
             pushStraysSnapshot(player);
             pushDoorGhostsSnapshot(player, dims);
+            pushTunnelEnvelopeSnapshot(player, dims);
             pushMobGhostsSnapshot(player, level, dims);
             // Light a portal room's plot with the room's own Sky — the lighting it will ship with,
             // rather than the dark box it was authored in until now.
@@ -1228,6 +1237,38 @@ public final class VariantOverlayRenderer {
         LAST_DOOR_GHOSTS_KEY.put(uuid, key);
         DungeonTrainNet.sendTo(player,
             new games.brennan.dungeontrain.net.EditorDoorGhostsPacket(doors));
+    }
+
+    /**
+     * Push the train envelope of every tunnel plot while the Tracks category is stamped, so the
+     * client can wash red any template block standing where the train will run. Geometry-only and
+     * keyed on the boxes, like {@link #pushDoorGhostsSnapshot}: a steady editor sends nothing.
+     */
+    private static void pushTunnelEnvelopeSnapshot(ServerPlayer player, CarriageDims dims) {
+        if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) {
+            clearTunnelEnvelopeIfStale(player);
+            return;
+        }
+        List<net.minecraft.world.level.levelgen.structure.BoundingBox> boxes =
+            EditorTunnelEnvelopes.snapshot(dims);
+        if (boxes.isEmpty()) {
+            clearTunnelEnvelopeIfStale(player);
+            return;
+        }
+        String key = EditorTunnelEnvelopes.key(boxes);
+        UUID uuid = player.getUUID();
+        if (key.equals(LAST_TUNNEL_ENVELOPE_KEY.get(uuid))) return;
+        LAST_TUNNEL_ENVELOPE_KEY.put(uuid, key);
+        DungeonTrainNet.sendTo(player,
+            new games.brennan.dungeontrain.net.EditorTunnelEnvelopePacket(boxes));
+    }
+
+    /** Send the empty tunnel-envelope packet if the player previously had a non-empty snapshot. */
+    private static void clearTunnelEnvelopeIfStale(ServerPlayer player) {
+        if (LAST_TUNNEL_ENVELOPE_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.EditorTunnelEnvelopePacket.empty());
+        }
     }
 
     /** Send the empty door-ghost packet if the player previously had a non-empty snapshot. */
