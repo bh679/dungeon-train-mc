@@ -45,7 +45,7 @@ public final class TrainTransformProvider implements KinematicDriver {
     // COM drift; mutation-driven drift (explosions, mining, portal mirroring)
     // is still real and is corrected by CarriagePivotPin, so these probes —
     // and its [pinCorrected] line — remain the live regression signal.
-    private static final Logger JITTER_LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
+    private static final Logger JITTER_LOGGER = LoggerFactory.getLogger(games.brennan.dungeontrain.util.DtLogging.JITTER);
 
     // SableKinematicTicker fires nextTransform every server tick (20 Hz),
     // so each call represents 1/20 s of game time. canonicalPos must advance
@@ -58,7 +58,9 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
     private static final int JITTER_DEBUG_PERIOD = 20;
     private static final double JITTER_COMDELTA_LOG_STEP = 0.1;
     private static final double JITTER_TRIPWIRE_MULTIPLIER = 2.0;
-    private static final int JITTER_TRIPWIRE_COOLDOWN_TICKS = 10;
+    // Per carriage. Was 10 (up to 2 WARN/s per carriage in player logs); the deltas that trip it
+    // during the cooldown are counted into the next line's suppressed= field instead of lost.
+    private static final int JITTER_TRIPWIRE_COOLDOWN_TICKS = 200;
     // Sub-mm threshold for "the pivot moved" events so we don't log every
     // floating-point round-off. Real COM recalc would produce far larger
     // deltas; on Sable per-carriage we expect this to never fire.
@@ -274,6 +276,7 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
     private long lastNextTransformGameTick = -1L;
     private double lastLoggedComDeltaX = Double.NaN;
     private int tripwireCooldown;
+    private int tripwireSuppressed;
     private double lastPivotX = Double.NaN;
     private double lastPivotY = Double.NaN;
     private double lastPivotZ = Double.NaN;
@@ -1048,14 +1051,17 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
         // for TRUE anomalies: a large delta with NO tick gap is still a real
         // regression and still fires.
         if (shouldReanchor(lastNextTransformGameTick, currentGameTick)) {
-            // Rare (only after a cull→reload), so this is unconditional and INFO: it is the proof
-            // that a reloaded carriage rejoined its siblings by extrapolation and not from wherever
-            // Sable put the body back. deltaBlocks is how far the body moved in that one frame.
-            JITTER_LOGGER.info(
-                "[reanchor] pIdx={} trainId={} gapTicks={} from={} to={} deltaBlocks={}",
-                pIdx, trainId, currentGameTick - lastNextTransformGameTick,
-                fmt(spawnWorldPos), fmt(canonicalPos),
-                String.format("%.3f", input.currentPosition().distance(canonicalPos)));
+            // Proof that a reloaded carriage rejoined its siblings by extrapolation and not from
+            // wherever Sable put the body back; deltaBlocks is how far the body moved in that one
+            // frame. DEBUG (dev only): a reload re-anchors every carriage at once, which was one
+            // INFO line per carriage in player logs. Players' logs keep the count as [mspt] reanchors=.
+            if (JITTER_LOGGER.isDebugEnabled()) {
+                JITTER_LOGGER.debug(
+                    "[reanchor] pIdx={} trainId={} gapTicks={} from={} to={} deltaBlocks={}",
+                    pIdx, trainId, currentGameTick - lastNextTransformGameTick,
+                    fmt(spawnWorldPos), fmt(canonicalPos),
+                    String.format("%.3f", input.currentPosition().distance(canonicalPos)));
+            }
             games.brennan.dungeontrain.ship.sable.PhysicsStepTimer.countReanchor();
             spawnWorldPos.set(canonicalPos);
             spawnGameTick = currentGameTick;
@@ -1100,7 +1106,7 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
 
         String src = Math.abs(rawComDeltaX) < PIVOT_MOVE_EPSILON ? "ours" : "VS";
 
-        if (prevEffectivePos != null && tripwireCooldown == 0) {
+        if (prevEffectivePos != null) {
             double dx = effPos.x() - prevEffectivePos.x;
             double dy = effPos.y() - prevEffectivePos.y;
             double dz = effPos.z() - prevEffectivePos.z;
@@ -1110,12 +1116,15 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
                     + targetVelocity.y * targetVelocity.y
                     + targetVelocity.z * targetVelocity.z
             ) * PHYSICS_DT * JITTER_TRIPWIRE_MULTIPLIER;
-            if (deltaLen > expectedMax) {
+            if (deltaLen > expectedMax && tripwireCooldown > 0) {
+                tripwireSuppressed++;
+            } else if (deltaLen > expectedMax) {
                 JITTER_LOGGER.warn(
-                    "[tripwire] pIdx={} physicsTick={} deltaLen={} expectedMax={} canonicalPos={} pivotNow={} pivotLocked={} effPos={} prevEffPos={} src={}",
+                    "[tripwire] pIdx={} physicsTick={} deltaLen={} expectedMax={} canonicalPos={} pivotNow={} pivotLocked={} effPos={} prevEffPos={} src={} suppressed={}",
                     pIdx, physicsTickCounter, deltaLen, expectedMax, fmt(canonicalPos), fmt(pivot),
-                    fmt(lockedPositionInModel), fmt(effPos), fmt(prevEffectivePos), src);
+                    fmt(lockedPositionInModel), fmt(effPos), fmt(prevEffectivePos), src, tripwireSuppressed);
                 tripwireCooldown = JITTER_TRIPWIRE_COOLDOWN_TICKS;
+                tripwireSuppressed = 0;
             }
         }
         if (tripwireCooldown > 0) tripwireCooldown--;
@@ -1132,7 +1141,7 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
             if (Math.abs(pdx) > PIVOT_MOVE_EPSILON
                 || Math.abs(pdy) > PIVOT_MOVE_EPSILON
                 || Math.abs(pdz) > PIVOT_MOVE_EPSILON) {
-                JITTER_LOGGER.trace(
+                if (JITTER_LOGGER.isTraceEnabled()) JITTER_LOGGER.trace(
                     "[pivotMoved] pIdx={} physicsTick={} pivotNow={} delta=({}, {}, {}) src={} lastMutationTick={} msSinceMutation={} mutationDriven={}",
                     pIdx, physicsTickCounter, fmt(pivot),
                     String.format("%.6f", pdx),
@@ -1147,7 +1156,8 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
 
         boolean comDeltaChanged = Double.isNaN(lastLoggedComDeltaX)
             || Math.abs(rawComDeltaX - lastLoggedComDeltaX) > JITTER_COMDELTA_LOG_STEP;
-        if (physicsTickCounter % JITTER_DEBUG_PERIOD == 0 || comDeltaChanged) {
+        if ((physicsTickCounter % JITTER_DEBUG_PERIOD == 0 || comDeltaChanged)
+                && JITTER_LOGGER.isTraceEnabled()) {
             JITTER_LOGGER.trace(
                 "[physics] pIdx={} physicsTick={} src={} canonicalPos={} pivotNow={} pivotLocked={} rawComDeltaX={} effPos={} voxelA_world={} lastMutationTick={} msSinceMutation={}",
                 pIdx, physicsTickCounter, src,

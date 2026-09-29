@@ -259,8 +259,10 @@ public final class ContentsDespawnController {
                         swept++;
                         snapshotted++;
                         entitiesHeld += captured;
-                        LOGGER.debug("[despawn] swept pIdx={} entities={} distSq={}",
-                            provider.getPIdx(), captured, String.format("%.0f", distSq));
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("[despawn] swept pIdx={} entities={} distSq={}",
+                                provider.getPIdx(), captured, String.format("%.0f", distSq));
+                        }
                     }
                     case RESTORE -> {
                         if (restored >= MAX_RESTORES_PER_TICK) break;
