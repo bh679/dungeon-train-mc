@@ -51,8 +51,10 @@ def draw(canvas: Canvas) -> None:
     end = START + FLOORS * PERIOD - BREAK + 4
     m = SPEC.margin
     rubble_field(canvas, SPEC.seed, (X1 - 2, Z0 + 2, START + SMASH_FROM - 1, Z1 - 2), 2, 8, m)   # under the break and the hanging half
-    rubble_field(canvas, SPEC.seed + 1, (START + SMASH_FROM - 2, Z0 + 2, end, Z1 - 2), 3, 11, m)  # where it came down, running on past the end
+    rubble_field(canvas, SPEC.seed + 1, (START + SMASH_FROM - 2, Z0 + 2, end + 4, Z1 - 2), 5, 10, m)  # where it came down: a deep bank past the end
     rubble_field(canvas, SPEC.seed + 2, (X0 + 1, Z0 + 1, X1 + 1, Z1 - 1), 1, 6, m)               # round the stub's foot
+    for (px, pz, _) in TUMBLED:
+        rubble_field(canvas, SPEC.seed + px, (px, pz, px + 4, pz + 4), 3, 4, m)                 # a mound each piece is stuck in
     for f in range(STUB_FLOORS):
         y = 2 + f * PERIOD
         dx = lean(y)
@@ -64,7 +66,56 @@ def draw(canvas: Canvas) -> None:
     finish(canvas, SPEC, vine_chance=0.4, vine_drop=(4, 12), moss_chance=0.28, roots_chance=0.15, leaf_clumps=36, gardens=8)
     _dangling_chunks(canvas)
     _prune_unrooted_bars(canvas)
+    _tumbled_sections(canvas)
     _loot_in_the_wreck(canvas)
+
+
+END = START + FLOORS * PERIOD - BREAK + 4
+TUMBLED = ((END + 2, Z0 + 1, "lean"), (END + 7, Z0 + 11, "lean"), (END + 4, Z0 + 6, "flat"), (END + 9, Z0 + 3, "flat"))
+PIER, SPANDREL = block("tuff"), block("polished_tuff")
+
+
+def _tumbled_sections(canvas: Canvas) -> None:
+    """Slices of facade that slid on past the wreck and dug in: a bay's worth of wall five wide, either
+    leaning at forty-five degrees into its mound or lying flat with a bit of wall still standing on it.
+    Placed after the finish, in the mix's own blocks, so the gravity pass leaves them be."""
+    rng = random.Random(SPEC.seed ^ 0x7B1D)
+    for (px, pz, how) in TUMBLED:
+        cells = _leaning_slice(px, pz, rng) if how == "lean" else _flat_slice(px, pz, rng)
+        for pos, state in cells.items():
+            if canvas.inside(pos) and SPEC.margin <= pos[0] < SPEC.size[0] - SPEC.margin:
+                canvas.put(pos, state)
+
+
+def _wall_cell(k: int, layer: int, rng: random.Random):
+    """One cell of a bay: piers at the ends, a spandrel course at the bottom, glass (half of it gone) above."""
+    if k % 4 == 0:
+        return PIER
+    if layer == 0:
+        return SPANDREL
+    return GLASS if rng.random() < 0.5 else None
+
+
+def _leaning_slice(px: int, pz: int, rng: random.Random) -> dict:
+    """Five wide along z, five tall, sheared one block east per layer: dug in at forty-five degrees."""
+    out = {}
+    for layer in range(5):
+        for k in range(5):
+            state = _wall_cell(k, layer, rng)
+            if state is not None:
+                out[(px + layer, 2 + layer, pz + k)] = state
+    return out
+
+
+def _flat_slice(px: int, pz: int, rng: random.Random) -> dict:
+    """A floor plate lying on the mound with a stub of wall two courses high along one edge."""
+    out = {(px + i, 2, pz + k): SPANDREL if (i + k) % 3 else PIER for i in range(5) for k in range(5)}
+    for layer in range(2):
+        for k in range(5):
+            state = _wall_cell(k, layer, rng)
+            if state is not None:
+                out[(px, 3 + layer, pz + k)] = state
+    return out
 
 
 def _prune_unrooted_bars(canvas: Canvas) -> None:
