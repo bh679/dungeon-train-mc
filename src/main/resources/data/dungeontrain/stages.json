@@ -216,6 +216,9 @@
         "minecraft:light_gray_concrete",
         "minecraft:gray_concrete"
       ],
+      "overrides": {
+        "stage_glazed_terracotta": "minecraft:white_glazed_terracotta"
+      },
       "woodLocked": true
     }
   },
@@ -765,8 +768,8 @@
       "wood": "warped",
       "stone": "blackstone",
       "terracotta": [
-        "minecraft:black_terracotta",
         "minecraft:red_terracotta",
+        "minecraft:terracotta",
         "minecraft:black_terracotta"
       ],
       "concrete": [
@@ -954,9 +957,9 @@
       "wood": "spruce",
       "stone": "stone",
       "terracotta": [
-        "minecraft:black_terracotta",
+        "minecraft:brown_terracotta",
         "minecraft:terracotta",
-        "minecraft:brown_terracotta"
+        "minecraft:black_terracotta"
       ],
       "concrete": [
         "minecraft:brown_concrete",
@@ -1125,7 +1128,7 @@
       "stone": "stone",
       "terracotta": [
         "minecraft:orange_terracotta",
-        "minecraft:yellow_terracotta",
+        "minecraft:red_terracotta",
         "minecraft:terracotta"
       ],
       "concrete": [
@@ -1133,6 +1136,9 @@
         "minecraft:gray_concrete",
         "minecraft:light_gray_concrete"
       ],
+      "overrides": {
+        "stage_glazed_terracotta": "minecraft:orange_glazed_terracotta"
+      },
       "woodLocked": true
     }
   }
