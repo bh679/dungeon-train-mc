@@ -3,7 +3,9 @@ package games.brennan.dungeontrain.worldgen;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Pure-math tests for the combined {@link WorldGenCycle} — the single repeating sequence
@@ -774,5 +776,63 @@ final class WorldGenCycleTest {
         assertEquals(2L * 300 + 680, endOnly.period());
         assertEquals(0.0, endOnly.netherHeightRamp(500), EPS);
         assertEquals(1.0, endOnly.netherMountainMultiplier(500), EPS);
+    }
+
+    @Test
+    @DisplayName("netherPastCore: false before/inside the core, true from the first column after it to the band end")
+    void netherPastCore() {
+        // Geometry: anchor 1000, owGap 300 → nether band [1300, 1960). Walk it and require exactly one
+        // false→true flip, located right after the last core column, and false outside the band.
+        WorldGenCycle cycle = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);
+        assertFalse(cycle.netherPastCore(1299));
+        assertFalse(cycle.netherPastCore(1960));
+        int lastCore = -1, firstPast = -1, flips = 0;
+        boolean prev = false;
+        for (int x = 1300; x < 1960; x++) {
+            if (cycle.isNetherCore(x)) lastCore = x;
+            boolean past = cycle.netherPastCore(x);
+            if (past && firstPast < 0) firstPast = x;
+            if (past != prev) flips++;
+            prev = past;
+            if (cycle.isNetherCore(x)) assertFalse(past, "core column flagged past-core at x=" + x);
+        }
+        assertEquals(1, flips, "past-core should flip exactly once inside the band");
+        assertEquals(lastCore + 1, firstPast, "past-core must start right after the last core column");
+    }
+
+    @Test
+    @DisplayName("netherCoreGap: 0 in the core, counts away from it on both sides, MAX outside the segment")
+    void netherCoreGap() {
+        WorldGenCycle cycle = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);
+        assertEquals(Integer.MAX_VALUE, cycle.netherCoreGap(1299));
+        assertEquals(Integer.MAX_VALUE, cycle.netherCoreGap(1960));
+        int firstCore = -1, lastCore = -1;
+        for (int x = 1300; x < 1960; x++) {
+            long d = cycle.netherCoreDepth(x);
+            if (d == 0L) firstCore = x;
+            if (d >= 0L) lastCore = x;
+        }
+        assertTrue(firstCore > 0 && lastCore > firstCore, "no core found");
+        assertEquals(0, cycle.netherCoreGap(firstCore));
+        assertEquals(0, cycle.netherCoreGap(lastCore));
+        assertEquals(1, cycle.netherCoreGap(firstCore - 1));
+        assertEquals(1, cycle.netherCoreGap(lastCore + 1));
+        assertEquals(10, cycle.netherCoreGap(firstCore - 10));
+        assertEquals(10, cycle.netherCoreGap(lastCore + 10));
+        for (int x = 1300; x < 1960; x++) {
+            int g = cycle.netherCoreGap(x);
+            assertTrue(g >= 0 && g < 1000, "gap out of range at x=" + x);
+            if (cycle.netherCoreDepth(x) >= 0L) assertEquals(0, g, "core column with gap at x=" + x);
+        }
+    }
+
+    @Test
+    @DisplayName("netherApproachLength is the band-start → core-start distance")
+    void netherApproachLength() {
+        WorldGenCycle cycle = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);
+        int firstCore = -1;
+        for (int x = 1300; x < 1960; x++) if (cycle.netherCoreDepth(x) == 0L) { firstCore = x; break; }
+        assertTrue(firstCore > 0);
+        assertEquals(firstCore - 1300, cycle.netherApproachLength());
     }
 }

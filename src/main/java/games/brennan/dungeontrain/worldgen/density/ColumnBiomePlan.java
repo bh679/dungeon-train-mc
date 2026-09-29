@@ -47,7 +47,7 @@ public final class ColumnBiomePlan {
      */
     public record Column<T>(int blockX, int blockZ,
                             Object ctx, Object stretchTables, Object cycle, Object legacyToken, long reverseSlide,
-                            T legacy, BandBiomeDecision.Result aboveSea, T core,
+                            T legacy, BandBiomeDecision.Result aboveSea, int caveTop, T core,
                             SecondLapOverworld.Stretch look) {
 
         boolean matches(int blockX, int blockZ, Object ctx, Object stretchTables, Object cycle,
@@ -69,6 +69,9 @@ public final class ColumnBiomePlan {
 
         /** {@link BandBiomeDecision#decide} for any quart at or above sea level in this column. */
         BandBiomeDecision.Result decideAboveSea(int blockX, int blockZ);
+
+        /** {@link BandBiomeDecision#caveWindowTop} for a HIGHLAND column (the cave band's top), else NO_CAVE. */
+        int caveWindowTop(int blockX, int blockZ);
 
         /** The sampled real-Nether core biome for the column. */
         T netherCore(int blockX, int blockZ);
@@ -119,7 +122,7 @@ public final class ColumnBiomePlan {
         T legacy = providers.legacy(blockX, blockZ);
         if (legacy != null) {
             return new Column<>(blockX, blockZ, ctx, stretchTables, cycle, legacyToken, reverseSlide,
-                    legacy, BandBiomeDecision.Result.ORIGINAL, null, null);
+                    legacy, BandBiomeDecision.Result.ORIGINAL, BandBiomeDecision.NO_CAVE, null, null);
         }
         BandBiomeDecision.Result aboveSea = providers.decideAboveSea(blockX, blockZ);
         T core = switch (aboveSea) {
@@ -127,9 +130,11 @@ public final class ColumnBiomePlan {
             case END_CORE -> providers.endCore(blockX, blockZ);
             default -> null;
         };
+        int caveTop = aboveSea == BandBiomeDecision.Result.HIGHLAND
+                ? providers.caveWindowTop(blockX, blockZ) : BandBiomeDecision.NO_CAVE;
         SecondLapOverworld.Stretch look = providers.look(blockX);
         return new Column<>(blockX, blockZ, ctx, stretchTables, cycle, legacyToken, reverseSlide,
-                null, aboveSea, core, look);
+                null, aboveSea, caveTop, core, look);
     }
 
     /** Drop this thread's slots (tests). */

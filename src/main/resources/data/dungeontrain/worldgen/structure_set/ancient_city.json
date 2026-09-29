@@ -1,0 +1,14 @@
+{
+  "structures": [
+    {
+      "structure": "dungeontrain:ancient_city",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 1,
+    "separation": 0,
+    "salt": 20083233
+  }
+}

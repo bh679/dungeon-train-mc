@@ -1,0 +1,7 @@
+{
+  "type": "dungeontrain:ancient_city",
+  "biomes": "#minecraft:has_structure/ancient_city",
+  "spawn_overrides": {},
+  "step": "underground_decoration",
+  "terrain_adaptation": "beard_box"
+}

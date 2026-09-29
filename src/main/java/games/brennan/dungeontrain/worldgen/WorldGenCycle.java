@@ -1131,6 +1131,47 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * Length of the Nether band's approach — band start to the core's first column
+     * ({@code riseLen + megaHold + coreFade}); the fall side mirrors it. The stone→deepslate front sits at
+     * half of this ({@code feature/DeepslateFront}).
+     */
+    public int netherApproachLength() {
+        return riseLen() + Math.max(0, megaHold) + Math.max(0, coreFade);
+    }
+
+    /**
+     * Blocks from {@code worldX} to the nearest real-Nether <b>core</b> column: {@code 0} inside the core,
+     * the distance to the core's first column before it, the distance past its last column after it, and
+     * {@link Integer#MAX_VALUE} outside the Nether segment. Same layout offsets as {@link #netherCoreDepth}.
+     * Drives the solid-rock margin the band's caverns keep before the Nether.
+     */
+    public int netherCoreGap(int worldX) {
+        long ln = netherOffset(worldX);
+        if (ln < 0L) return Integer.MAX_VALUE;
+        long coreStart = (long) riseLen() + Math.max(0, megaHold) + Math.max(0, coreFade);
+        long coreEnd = coreStart + Math.max(0, spanCore(CycleLayout.Type.NETHER, worldX));
+        if (ln < coreStart) return (int) Math.min(Integer.MAX_VALUE, coreStart - ln);
+        if (ln >= coreEnd) return (int) Math.min(Integer.MAX_VALUE, ln - coreEnd + 1);
+        return 0;
+    }
+
+    /**
+     * True on the <b>exit</b> side of the Nether band — past the last real-Nether core column (the
+     * crossfade-out and the falling mountain). {@code false} in the core, on the way in, and outside the
+     * segment. Same layout offsets as {@link #netherCoreDepth}. Drives the cave-biome palette split
+     * (deep dark only joins after the core).
+     */
+    public boolean netherPastCore(int worldX) {
+        long ln = netherOffset(worldX);
+        if (ln < 0L) return false;
+        long coreEnd = (long) riseLen() + Math.max(0, megaHold) + Math.max(0, coreFade)
+                + Math.max(0, spanCore(CycleLayout.Type.NETHER, worldX));
+        // The fade-out's first column can still read ≥ NETHER_CORE_THRESHOLD; keep "core" and "past core"
+        // disjoint by deferring to isNetherCore there.
+        return ln >= coreEnd && !isNetherCore(worldX);
+    }
+
+    /**
      * Heightmap multiplier at a world-X: 1 outside the nether segment, {@code 1} across
      * stage 1, ramping {@code 1→stage2Mult} across stage 2, {@code stage2Mult→stage3Mult}
      * across stage 3, then held at {@code stage3Mult} across the mega plateau + core, and

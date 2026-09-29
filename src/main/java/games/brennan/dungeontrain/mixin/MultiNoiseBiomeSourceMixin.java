@@ -147,6 +147,12 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                     if (column.core() != null) return column.core();
                 }
                 case HIGHLAND -> {
+                    // The mountain interior under the cave-band top is a cave biome (lush / dripstone on the
+                    // way in, mostly deep dark after the core). Un-waved X for the pre/post split — core
+                    // columns are never HIGHLAND, so the ±9 wave can't matter.
+                    if (BandBiomeDecision.isCave(column.caveTop(), blockY)) {
+                        return ctx.highlandBiomes().caveBiomeFor(ctx, blockX, blockZ, ctx.cycle().netherPastCore(blockX));
+                    }
                     // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.
                     return column.look() == SecondLapOverworld.Stretch.BOP
                             ? ctx.highlandBiomes().bopBiomeFor(blockX, blockY, blockZ)
@@ -218,6 +224,13 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                 long endPass = cycle.endSourcePassAt(blockX, blockZ, ctx.generationSeed());
                 return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, cycle.endStyleOfPass(endPass));
             case HIGHLAND:
+                // The mountain interior under the cave-band top is a cave biome (lush / dripstone on the way
+                // in, mostly deep dark after the core). Un-waved X for the pre/post split — core columns are
+                // never HIGHLAND, so the ±9 wave can't matter.
+                if (BandBiomeDecision.isCave(BandBiomeDecision.caveWindowTop(cycle, ctx.generationSeed(), ctx.seaLevel(),
+                        ctx.worldCeiling(), ctx.netherTop(), ctx.baseRelief(), blockX, blockZ), blockY)) {
+                    return ctx.highlandBiomes().caveBiomeFor(ctx, blockX, blockZ, cycle.netherPastCore(blockX));
+                }
                 // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.
                 return SecondLapOverworld.lookAt(cycle, blockX) == SecondLapOverworld.Stretch.BOP
                         ? ctx.highlandBiomes().bopBiomeFor(blockX, blockY, blockZ)
