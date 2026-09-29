@@ -20958,6 +20958,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "open-template-files",
+      "version": "0.1040.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Open template files",
+      "summary": "The editor can now take you straight to where a template's files are saved.",
+      "highlights": [],
+      "pr": 1679,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
