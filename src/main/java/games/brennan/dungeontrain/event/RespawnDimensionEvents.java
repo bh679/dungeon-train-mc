@@ -4,6 +4,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.SpawnDeckHoldPacket;
+import games.brennan.dungeontrain.train.TrainCarriageAppender;
+import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.server.MinecraftServer;
@@ -13,7 +15,12 @@ import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Rolls a random starting dimension when the player clicks the vanilla
@@ -23,15 +30,20 @@ import org.slf4j.Logger;
  * since vanilla respawn keeps the player in the existing world instance.
  *
  * <p>If the rolled dimension differs from where vanilla just placed the
- * player, this handler:</p>
+ * player, this handler puts them on that dimension's train
+ * ({@link #placeOrWake}), which is one of three things:</p>
  * <ol>
- *   <li>Calls {@link TrainBootstrapEvents#ensureTrainSpawned} to lay down a
- *       seed train at the standard origin in the rolled dimension if one
- *       doesn't already exist. The per-tick appender extends it at gameplay
- *       speed afterward — no eager-fill on this path.</li>
- *   <li>Calls {@link PlayerJoinEvents#computeBootstrapPlacement} to pick a
- *       spawn position with line of sight to the train.</li>
- *   <li>Cross-dim teleports the player via {@code player.teleportTo}.</li>
+ *   <li>A settled deck is loaded — teleport straight onto it.</li>
+ *   <li>The dimension has a train but none of it is loaded
+ *       ({@link TrainBootstrapEvents#trainKnownIn}) — ask one held group back
+ *       from Sable holding ({@link TrainCarriageAppender#wakeHeldGroup}), park
+ *       the player invulnerable at the ground pose, and let
+ *       {@link DtpPlacementService} land them on the deck once it settles.
+ *       <b>Never spawn here</b>: a second seed under a sleeping train is the
+ *       overlapping-trains bug.</li>
+ *   <li>The dimension has never had a train — lay down a seed via
+ *       {@link TrainBootstrapEvents#ensureTrainSpawned} and place beside it.
+ *       The per-tick appender extends it at gameplay speed afterward.</li>
  * </ol>
  *
  * <p>Also handles the <b>End exit portal</b>: after killing the dragon and
@@ -120,8 +132,7 @@ public final class RespawnDimensionEvents {
             return;
         }
 
-        TrainBootstrapEvents.ensureTrainSpawned(target, data);
-        placeOnTrain(player, target, data, "Respawn");
+        placeOrWake(player, target, data, "Respawn");
     }
 
     /**
@@ -140,8 +151,97 @@ public final class RespawnDimensionEvents {
         }
         LOGGER.info("[DungeonTrain] End conquered — returning {} to the train in {}",
                 player.getName().getString(), startingDim);
-        TrainBootstrapEvents.ensureTrainSpawned(target, data);
-        placeOnTrain(player, target, data, "End conquered");
+        placeOrWake(player, target, data, "End conquered");
+    }
+
+    /** What {@link #placeOrWake} does, decided from two facts so the rule is testable on its own. */
+    enum Outcome { LAND, WAKE_AND_DEFER, SPAWN }
+
+    /**
+     * A loaded deck wins; a known-but-asleep train is woken, never re-spawned; only a dimension
+     * with no train at all gets a seed.
+     */
+    static Outcome decide(boolean deckLoaded, boolean trainKnown) {
+        if (deckLoaded) return Outcome.LAND;
+        return trainKnown ? Outcome.WAKE_AND_DEFER : Outcome.SPAWN;
+    }
+
+    /**
+     * Which registered anchor to ask back first: the one nearest {@code preferred} (the last group
+     * the players saw moving), else the highest — the front of the train, where a returning
+     * player expects to be. Null for an empty registry.
+     */
+    @Nullable
+    static Integer pickAnchorToWake(Set<Integer> anchors, @Nullable Integer preferred) {
+        Integer best = null;
+        for (int a : anchors) {
+            if (best == null) { best = a; continue; }
+            if (preferred == null) {
+                if (a > best) best = a;
+            } else if (Math.abs(a - preferred) < Math.abs(best - preferred)) {
+                best = a;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * Put the player on {@code target}'s train: land, wake-and-defer, or spawn-and-place per
+     * {@link #decide}. {@code why} only labels the log lines.
+     */
+    private static void placeOrWake(
+            ServerPlayer player, ServerLevel target, DungeonTrainWorldData data, String why) {
+        PlayerJoinEvents.FlatbedTarget flat = PlayerJoinEvents.findFlatbedTarget(target, data);
+        switch (decide(flat != null, TrainBootstrapEvents.trainKnownIn(target))) {
+            case LAND -> landOn(player, target, data, why, flat);
+            case WAKE_AND_DEFER -> wakeAndDefer(player, target, data, why);
+            case SPAWN -> {
+                TrainBootstrapEvents.ensureTrainSpawned(target, data);
+                placeOnTrain(player, target, data, why);
+            }
+        }
+    }
+
+    /**
+     * The whole train is asleep in Sable holding. Ask one group back, park the player at the
+     * ground pose unhurt, and hand the landing to {@link DtpPlacementService}, which retries each
+     * tick until the reloaded deck settles (and releases the player in place if it never does).
+     * A player who was already invulnerable is left as they were.
+     */
+    private static void wakeAndDefer(
+            ServerPlayer player, ServerLevel target, DungeonTrainWorldData data, String why) {
+        int woken = 0;
+        for (UUID trainId : TrainBootstrapEvents.heldTrainIdsIn(target)) {
+            Integer anchor = pickAnchorToWake(
+                Trains.knownGroups(trainId).keySet(), TrainCarriageAppender.lastFixedAnchor(trainId));
+            if (anchor == null) continue;
+            if (TrainCarriageAppender.wakeHeldGroup(target, trainId, anchor, new HashSet<>())) woken++;
+        }
+        PlayerJoinEvents.SpawnPlacement sp = PlayerJoinEvents.computeBootstrapPlacement(
+                target, data.dims(), data.getTrainY());
+        LOGGER.info("[DungeonTrain] {}: train in {} is in Sable holding — woke {} group(s), holding {} at ({}, {}, {}) until a deck settles",
+                why, target.dimension().location(), woken, player.getName().getString(),
+                String.format("%.1f", sp.x()), sp.y(), String.format("%.1f", sp.z()));
+        if (player.isPassenger()) player.stopRiding();
+        player.teleportTo(target, sp.x(), sp.y(), sp.z(), sp.yaw(), sp.pitch());
+        player.resetFallDistance();
+        // DtpPlacementService clears this on landing or timeout, exactly as it does for /dtp.
+        player.setInvulnerable(true);
+        DtpPlacementService.enqueue(player, target, sp.x());
+    }
+
+    /** Teleport onto a settled deck, with the client-side deck hold that stops the free-fall race. */
+    private static void landOn(
+            ServerPlayer player, ServerLevel target, DungeonTrainWorldData data, String why,
+            PlayerJoinEvents.FlatbedTarget flat) {
+        LOGGER.info("[DungeonTrain] {} placing {} on train in {} at ({}, {}, {})",
+                why, player.getName().getString(), target.dimension().location(),
+                String.format("%.1f", flat.x()), String.format("%.1f", flat.y()), String.format("%.1f", flat.z()));
+        player.teleportTo(target, flat.x(), flat.y(), flat.z(), -90.0f, 0.0f);
+        // Client-side deck hold — same free-fall-during-spawn-stall race as
+        // login (the target dim may have just spawned a fresh train).
+        DungeonTrainNet.sendTo(player, new SpawnDeckHoldPacket(
+            data.getTrainY() + 1.0, SpawnDeckHoldPacket.DEFAULT_HOLD_TICKS));
     }
 
     /**
@@ -153,14 +253,7 @@ public final class RespawnDimensionEvents {
             ServerPlayer player, ServerLevel target, DungeonTrainWorldData data, String why) {
         PlayerJoinEvents.FlatbedTarget flat = PlayerJoinEvents.findFlatbedTarget(target, data);
         if (flat != null) {
-            LOGGER.info("[DungeonTrain] {} placing {} on train in {} at ({}, {}, {})",
-                    why, player.getName().getString(), target.dimension().location(),
-                    String.format("%.1f", flat.x()), String.format("%.1f", flat.y()), String.format("%.1f", flat.z()));
-            player.teleportTo(target, flat.x(), flat.y(), flat.z(), -90.0f, 0.0f);
-            // Client-side deck hold — same free-fall-during-spawn-stall race as
-            // login (the target dim may have just spawned a fresh train).
-            DungeonTrainNet.sendTo(player, new SpawnDeckHoldPacket(
-                data.getTrainY() + 1.0, SpawnDeckHoldPacket.DEFAULT_HOLD_TICKS));
+            landOn(player, target, data, why, flat);
             return;
         }
 
