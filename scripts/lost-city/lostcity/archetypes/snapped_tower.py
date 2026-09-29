@@ -14,15 +14,15 @@ from ..shapes import box, walls
 from ..spec import Archetype, ArchetypeSpec
 from .common import finish, footprint_pad
 
-SPEC = ArchetypeSpec(name="snapped_tower", size=(53, 42, 23), floor_period=None, bay_period_x=None, bay_period_z=None,
+SPEC = ArchetypeSpec(name="snapped_tower", size=(53, 42, 35), floor_period=None, bay_period_x=None, bay_period_z=None,
                      margin=4, seed=0x5A99, weight=4)
 
-X0, Z0, X1, Z1 = 4, 4, 18, 18          # 15 wide
+X0, Z0, X1, Z1 = 4, 10, 18, 24         # 15 wide, centred so the rubble can spill six blocks either side
 PERIOD, FLOORS, BAY = 5, 10, 4
 STUB_FLOORS = 5
 BREAK = 1 + STUB_FLOORS * PERIOD        # 26: the plate it tore along
 DRIFT = 6                               # layers per block of lean
-CORE = (9, 9, 13, 13)
+CORE = (9, 15, 13, 19)
 START = X1 + (BREAK - 1) // DRIFT - 2   # the fallen piece hooks three blocks over the stub's east lip
 NEAR_LIFT = BREAK - 4                   # how high the hanging end sits
 SMASH_FROM = 14                         # from here along the piece it is pancaked
@@ -50,9 +50,9 @@ def draw(canvas: Canvas) -> None:
     _smashed_end(canvas)
     end = START + FLOORS * PERIOD - BREAK + 4
     m = SPEC.margin
-    rubble_field(canvas, SPEC.seed, (X1 - 2, Z0 + 2, START + SMASH_FROM - 1, Z1 - 2), 2, 5, m)   # under the break and the hanging half
-    rubble_field(canvas, SPEC.seed + 1, (START + SMASH_FROM - 2, Z0 + 2, end, Z1 - 2), 3, 6, m)  # where it came down
-    rubble_field(canvas, SPEC.seed + 2, (X0 + 1, Z0 + 1, X1 + 1, Z1 - 1), 1, 4, m)               # round the stub's foot
+    rubble_field(canvas, SPEC.seed, (X1 - 2, Z0 + 2, START + SMASH_FROM - 1, Z1 - 2), 2, 8, m)   # under the break and the hanging half
+    rubble_field(canvas, SPEC.seed + 1, (START + SMASH_FROM - 2, Z0 + 2, end, Z1 - 2), 3, 9, m)  # where it came down
+    rubble_field(canvas, SPEC.seed + 2, (X0 + 1, Z0 + 1, X1 + 1, Z1 - 1), 1, 6, m)               # round the stub's foot
     for f in range(STUB_FLOORS):
         y = 2 + f * PERIOD
         dx = lean(y)
@@ -150,7 +150,7 @@ def _rebar(canvas: Canvas) -> None:
     for z in range(Z0, Z1 + 1):
         for x in range(X0, X1 + 1):
             on_wall = x in (X0, X1) or z in (Z0, Z1)
-            on_pier = x % BAY == 0 or z % BAY == 0
+            on_pier = (x - X0) % BAY == 0 or (z - Z0) % BAY == 0
             if not (on_wall and on_pier) or (x + z) % 2:
                 continue
             top = tear(x, z)
