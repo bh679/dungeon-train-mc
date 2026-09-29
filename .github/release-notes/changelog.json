@@ -21031,8 +21031,25 @@
       "released_at": null
     },
     {
-      "id": "stage-fence-connect-modes",
+      "id": "tunnel-envelope-red-wash",
       "version": "0.1044.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Tunnel templates show the train's path",
+      "summary": "Tunnel templates in the editor now show where the train will pass, and anything built in its way glows red.",
+      "highlights": [],
+      "pr": 1683,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stage-fence-connect-modes",
+      "version": "0.1045.0",
       "type": "feat",
       "tags": [
         "feature",
