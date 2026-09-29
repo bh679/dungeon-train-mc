@@ -42,6 +42,16 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "acacia",
       "stone": "stone",
+      "terracotta": [
+        "minecraft:orange_terracotta",
+        "minecraft:terracotta",
+        "minecraft:cyan_terracotta"
+      ],
+      "concrete": [
+        "minecraft:orange_concrete",
+        "minecraft:brown_concrete",
+        "minecraft:white_concrete"
+      ],
       "woodLocked": true
     }
   },
@@ -86,6 +96,16 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "bamboo",
       "stone": "stone",
+      "terracotta": [
+        "minecraft:green_terracotta",
+        "minecraft:lime_terracotta",
+        "minecraft:yellow_terracotta"
+      ],
+      "concrete": [
+        "minecraft:green_concrete",
+        "minecraft:lime_concrete",
+        "minecraft:yellow_concrete"
+      ],
       "woodLocked": true
     }
   },
@@ -130,6 +150,16 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "bamboo_mosaic",
       "stone": "stone",
+      "terracotta": [
+        "minecraft:green_terracotta",
+        "minecraft:lime_terracotta",
+        "minecraft:yellow_terracotta"
+      ],
+      "concrete": [
+        "minecraft:green_concrete",
+        "minecraft:lime_concrete",
+        "minecraft:yellow_concrete"
+      ],
       "woodLocked": true
     }
   },
@@ -176,6 +206,19 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "birch",
       "stone": "stone",
+      "terracotta": [
+        "minecraft:white_terracotta",
+        "minecraft:yellow_terracotta",
+        "minecraft:terracotta"
+      ],
+      "concrete": [
+        "minecraft:white_concrete",
+        "minecraft:light_gray_concrete",
+        "minecraft:gray_concrete"
+      ],
+      "overrides": {
+        "stage_glazed_terracotta": "minecraft:white_glazed_terracotta"
+      },
       "woodLocked": true
     }
   },
@@ -222,6 +265,16 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "cherry",
       "stone": "stone",
+      "terracotta": [
+        "minecraft:pink_terracotta",
+        "minecraft:magenta_terracotta",
+        "minecraft:purple_terracotta"
+      ],
+      "concrete": [
+        "minecraft:pink_concrete",
+        "minecraft:black_concrete",
+        "minecraft:white_concrete"
+      ],
       "woodLocked": true
     }
   },
@@ -273,6 +326,16 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "oak",
       "stone": "tuff",
+      "terracotta": [
+        "minecraft:orange_terracotta",
+        "minecraft:terracotta",
+        "minecraft:cyan_terracotta"
+      ],
+      "concrete": [
+        "minecraft:orange_concrete",
+        "minecraft:cyan_concrete",
+        "minecraft:gray_concrete"
+      ],
       "woodLocked": true
     }
   },
@@ -319,6 +382,16 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "crimson",
       "stone": "stone",
+      "terracotta": [
+        "minecraft:magenta_terracotta",
+        "minecraft:red_terracotta",
+        "minecraft:purple_terracotta"
+      ],
+      "concrete": [
+        "minecraft:red_concrete",
+        "minecraft:magenta_concrete",
+        "minecraft:light_gray_concrete"
+      ],
       "woodLocked": true
     }
   },
@@ -365,6 +438,16 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "dark_oak",
       "stone": "stone",
+      "terracotta": [
+        "minecraft:black_terracotta",
+        "minecraft:brown_terracotta",
+        "minecraft:gray_terracotta"
+      ],
+      "concrete": [
+        "minecraft:black_concrete",
+        "minecraft:brown_concrete",
+        "minecraft:gray_concrete"
+      ],
       "woodLocked": true
     }
   },
@@ -415,7 +498,17 @@
       "button": "minecraft:polished_blackstone_button",
       "pressurePlate": "minecraft:polished_blackstone_pressure_plate",
       "wood": "dark_oak",
-      "stone": "deepslate"
+      "stone": "deepslate",
+      "terracotta": [
+        "minecraft:cyan_terracotta",
+        "minecraft:blue_terracotta",
+        "minecraft:gray_terracotta"
+      ],
+      "concrete": [
+        "minecraft:cyan_concrete",
+        "minecraft:gray_concrete",
+        "minecraft:black_concrete"
+      ]
     }
   },
   "desert": {
@@ -465,7 +558,17 @@
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "birch",
-      "stone": "sandstone"
+      "stone": "sandstone",
+      "terracotta": [
+        "minecraft:orange_terracotta",
+        "minecraft:blue_terracotta",
+        "minecraft:purple_terracotta"
+      ],
+      "concrete": [
+        "minecraft:black_concrete",
+        "minecraft:orange_concrete",
+        "minecraft:cyan_concrete"
+      ]
     }
   },
   "jungle": {
@@ -511,6 +614,16 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "jungle",
       "stone": "stone",
+      "terracotta": [
+        "minecraft:brown_terracotta",
+        "minecraft:terracotta",
+        "minecraft:cyan_terracotta"
+      ],
+      "concrete": [
+        "minecraft:green_concrete",
+        "minecraft:brown_concrete",
+        "minecraft:gray_concrete"
+      ],
       "woodLocked": true
     }
   },
@@ -557,6 +670,16 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "mangrove",
       "stone": "stone",
+      "terracotta": [
+        "minecraft:red_terracotta",
+        "minecraft:pink_terracotta",
+        "minecraft:brown_terracotta"
+      ],
+      "concrete": [
+        "minecraft:red_concrete",
+        "minecraft:brown_concrete",
+        "minecraft:white_concrete"
+      ],
       "woodLocked": true
     }
   },
@@ -600,7 +723,17 @@
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "oak",
-      "stone": "mud"
+      "stone": "mud",
+      "terracotta": [
+        "minecraft:terracotta",
+        "minecraft:brown_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:gray_concrete",
+        "minecraft:green_concrete",
+        "minecraft:black_concrete"
+      ]
     }
   },
   "nether": {
@@ -633,7 +766,17 @@
       "button": "minecraft:polished_blackstone_button",
       "pressurePlate": "minecraft:polished_blackstone_pressure_plate",
       "wood": "warped",
-      "stone": "blackstone"
+      "stone": "blackstone",
+      "terracotta": [
+        "minecraft:red_terracotta",
+        "minecraft:terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:red_concrete",
+        "minecraft:light_blue_concrete",
+        "minecraft:black_concrete"
+      ]
     }
   },
   "obsidian": {
@@ -683,6 +826,16 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "birch",
       "stone": "quartz",
+      "terracotta": [
+        "minecraft:white_terracotta",
+        "minecraft:blue_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:black_concrete",
+        "minecraft:cyan_concrete",
+        "minecraft:white_concrete"
+      ],
       "overrides": {
         "stage_stone_bricks_wall": "minecraft:polished_blackstone_wall",
         "stage_stone_cobbled_wall": "minecraft:polished_blackstone_wall",
@@ -740,6 +893,16 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "birch",
       "stone": "quartz",
+      "terracotta": [
+        "minecraft:white_terracotta",
+        "minecraft:blue_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:white_concrete",
+        "minecraft:purple_concrete",
+        "minecraft:black_concrete"
+      ],
       "overrides": {
         "stage_stone_bricks_wall": "minecraft:diorite_wall",
         "stage_stone_cobbled_wall": "minecraft:diorite_wall",
@@ -793,6 +956,16 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "spruce",
       "stone": "stone",
+      "terracotta": [
+        "minecraft:brown_terracotta",
+        "minecraft:terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:brown_concrete",
+        "minecraft:black_concrete",
+        "minecraft:gray_concrete"
+      ],
       "woodLocked": true
     }
   },
@@ -841,7 +1014,17 @@
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "oak",
-      "stone": "stone"
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:brown_terracotta",
+        "minecraft:lime_terracotta",
+        "minecraft:cyan_terracotta"
+      ],
+      "concrete": [
+        "minecraft:brown_concrete",
+        "minecraft:gray_concrete",
+        "minecraft:light_gray_concrete"
+      ]
     }
   },
   "warped": {
@@ -887,6 +1070,16 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "warped",
       "stone": "stone",
+      "terracotta": [
+        "minecraft:purple_terracotta",
+        "minecraft:blue_terracotta",
+        "minecraft:cyan_terracotta"
+      ],
+      "concrete": [
+        "minecraft:cyan_concrete",
+        "minecraft:light_blue_concrete",
+        "minecraft:light_gray_concrete"
+      ],
       "woodLocked": true
     }
   },
@@ -933,6 +1126,19 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "oak",
       "stone": "stone",
+      "terracotta": [
+        "minecraft:orange_terracotta",
+        "minecraft:red_terracotta",
+        "minecraft:terracotta"
+      ],
+      "concrete": [
+        "minecraft:cyan_concrete",
+        "minecraft:gray_concrete",
+        "minecraft:light_gray_concrete"
+      ],
+      "overrides": {
+        "stage_glazed_terracotta": "minecraft:orange_glazed_terracotta"
+      },
       "woodLocked": true
     }
   }

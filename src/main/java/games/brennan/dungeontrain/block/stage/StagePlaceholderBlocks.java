@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.template.StagePalette;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -18,10 +19,13 @@ import net.minecraft.world.level.block.ButtonBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
+import net.minecraft.world.level.block.GlazedTerracottaBlock;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.PressurePlateBlock;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.StainedGlassBlock;
+import net.minecraft.world.level.block.StainedGlassPaneBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.WallBlock;
@@ -49,12 +53,15 @@ import java.util.function.Supplier;
  * template that are swapped for a real block of whichever {@link Stage} the carriage lands in at
  * generation time, so one build serves every stage.
  *
- * <p>Fifty-eight blocks: ten solid slots ({@code stage_block_1..10}, the stage's most-used full
+ * <p>Sixty-nine blocks: ten solid slots ({@code stage_block_1..10}, the stage's most-used full
  * cubes, looping when a stage has fewer), two stairs and two slab slots derived from the first two
  * solids, a button and a pressure plate, the fourteen-block wood set ({@code stage_log} …
  * {@code stage_leaves}) resolved through the stage's {@link StageWoodFamily}, and the
  * twenty-eight-block stone set ({@code stage_stone_<kind>[_stairs|_slab|_wall]} for the seven
- * {@link StoneKind}s) resolved through its {@link StageStoneFamily}. Each placeholder
+ * {@link StoneKind}s) resolved through its {@link StageStoneFamily}, and six colour slots
+ * ({@code stage_terracotta_<role>} / {@code stage_concrete_<role>} for the {@link #COLOUR_ROLES})
+ * read straight from the stage's author-chosen colours, plus two stained glass, two stained glass
+ * pane and one glazed terracotta slot in the stage's {@link StageAccentColour}s. Each placeholder
  * extends the matching vanilla base class so builders orient it normally and the block-state
  * properties carry over on swap via {@link StageBlockReplacer#transfer}.</p>
  *
@@ -79,6 +86,12 @@ public final class StagePlaceholderBlocks {
             this(name, target, pal -> false);
         }
     }
+
+    /** Colour-slot roles, in palette slot order (0 primary, 1 secondary, 2 background). */
+    public static final List<String> COLOUR_ROLES = List.of("primary", "secondary", "background");
+
+    /** Glass-slot roles: the accent colour, then the second accent. */
+    public static final List<String> GLASS_ROLES = List.of("primary", "secondary");
 
     private static final List<Placeholder> PLACEHOLDERS = buildPlaceholders();
 
@@ -268,6 +281,23 @@ public final class StagePlaceholderBlocks {
             out.add(new Placeholder(base + "_slab", pal -> stoneShape(pal, kind, Shape.SLAB)));
             out.add(new Placeholder(base + "_wall", pal -> stoneShape(pal, kind, Shape.WALL)));
         }
+        for (int i = 0; i < COLOUR_ROLES.size(); i++) {
+            final int slot = i;
+            out.add(new Placeholder("stage_terracotta_" + COLOUR_ROLES.get(i), pal -> pal.terracotta(slot)));
+        }
+        for (int i = 0; i < COLOUR_ROLES.size(); i++) {
+            final int slot = i;
+            out.add(new Placeholder("stage_concrete_" + COLOUR_ROLES.get(i), pal -> pal.concrete(slot)));
+        }
+        out.add(new Placeholder("stage_glazed_terracotta", StagePalette::glazedTerracotta));
+        for (int i = 0; i < GLASS_ROLES.size(); i++) {
+            final int slot = i;
+            out.add(new Placeholder("stage_glass_" + GLASS_ROLES.get(i), pal -> pal.glass(slot)));
+        }
+        for (int i = 0; i < GLASS_ROLES.size(); i++) {
+            final int slot = i;
+            out.add(new Placeholder("stage_glass_pane_" + GLASS_ROLES.get(i), pal -> pal.glassPane(slot)));
+        }
         return List.copyOf(out);
     }
 
@@ -297,6 +327,21 @@ public final class StagePlaceholderBlocks {
             if (name.endsWith("_slab")) return () -> new SlabBlock(stone());
             if (name.endsWith("_wall")) return () -> new WallBlock(copyOf(Blocks.COBBLESTONE_WALL));
             return () -> new Block(stone());
+        }
+        if (name.startsWith("stage_terracotta_")) {
+            return () -> new Block(copyOf(Blocks.TERRACOTTA));
+        }
+        if (name.startsWith("stage_concrete_")) {
+            return () -> new Block(copyOf(Blocks.WHITE_CONCRETE));
+        }
+        if (name.startsWith("stage_glass_pane_")) {
+            return () -> new StainedGlassPaneBlock(DyeColor.WHITE, copyOf(Blocks.WHITE_STAINED_GLASS_PANE));
+        }
+        if (name.startsWith("stage_glass_")) {
+            return () -> new StainedGlassBlock(DyeColor.WHITE, copyOf(Blocks.WHITE_STAINED_GLASS));
+        }
+        if (name.equals("stage_glazed_terracotta")) {
+            return () -> new GlazedTerracottaBlock(copyOf(Blocks.WHITE_GLAZED_TERRACOTTA));
         }
         if (name.startsWith("stage_stairs_")) {
             return () -> new StairBlock(Blocks.STONE.defaultBlockState(), stone());
