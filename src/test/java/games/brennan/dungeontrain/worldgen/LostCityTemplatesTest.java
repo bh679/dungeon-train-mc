@@ -171,6 +171,35 @@ class LostCityTemplatesTest {
     }
 
     @Test
+    @DisplayName("nothing falls when a template is stamped: every gravity block stands on a solid cell")
+    void nothingFalls() throws IOException {
+        for (Template t : templates().values()) {
+            Map<BlockPos, BlockState> at = new java.util.HashMap<>();
+            for (StructureTemplate.StructureBlockInfo b : t.blocks()) at.put(b.pos(), b.state());
+            for (StructureTemplate.StructureBlockInfo b : t.blocks()) {
+                if (b.pos().getY() == 0 || !(b.state().getBlock() instanceof net.minecraft.world.level.block.Fallable)) continue;
+                BlockState below = at.get(b.pos().below());
+                assertTrue(below != null && !below.isAir() && below.isCollisionShapeFullBlock(
+                        net.minecraft.world.level.EmptyBlockGetter.INSTANCE, BlockPos.ZERO),
+                        t.name() + ": " + b.state().getBlock() + " at " + b.pos() + " would fall");
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("nothing worth mining is left in a ruin")
+    void noValuables() throws IOException {
+        java.util.Set<net.minecraft.world.level.block.Block> banned = java.util.Set.of(Blocks.IRON_BLOCK, Blocks.GOLD_BLOCK,
+                Blocks.DIAMOND_BLOCK, Blocks.NETHERITE_BLOCK, Blocks.EMERALD_BLOCK, Blocks.LAPIS_BLOCK, Blocks.REDSTONE_BLOCK,
+                Blocks.RAW_IRON_BLOCK, Blocks.RAW_GOLD_BLOCK, Blocks.RAW_COPPER_BLOCK, Blocks.BEACON, Blocks.COPPER_BLOCK);
+        for (Template t : templates().values()) {
+            for (StructureTemplate.StructureBlockInfo b : t.blocks()) {
+                assertFalse(banned.contains(b.state().getBlock()), t.name() + " uses " + b.state().getBlock());
+            }
+        }
+    }
+
+    @Test
     @DisplayName("templates carry no block-entity NBT and no structure blocks")
     void noBlockEntities() throws IOException {
         for (Template t : templates().values()) {

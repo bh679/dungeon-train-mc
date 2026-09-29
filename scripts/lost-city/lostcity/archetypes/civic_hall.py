@@ -3,7 +3,8 @@ with an open belfry to one side. The hall's bays repeat every 5 along x."""
 
 from ..blocks import (BELL, CONCRETE_DARK, COPPER, GLASS_CLEAR, QUARTZ, QUARTZ_PILLAR, QUARTZ_SLAB, STONE_BRICK_STAIRS,
                       STONE_BRICKS, TARGET)
-from ..canvas import Canvas
+from .. import furnish
+from ..canvas import Canvas, envelope_air
 from ..shapes import box, column, walls
 from ..spec import Archetype, ArchetypeSpec
 from .common import finish, footprint_pad
@@ -28,7 +29,10 @@ def draw(canvas: Canvas) -> None:
     _portico(canvas)
     _steps(canvas)
     _tower(canvas)
-    finish(canvas, SPEC, envelope=(HX0, 2, HZ0, HX1, HALL_TOP, HZ1))
+    envelope_air(canvas, HX0, 2, HZ0, HX1, HALL_TOP, HZ1)
+    furnish.rows(canvas, (HX0 + 2, HZ0 + 3, HX1 - 2, HZ1 - 4), 2, "north", 3)
+    furnish.kit(canvas, SPEC.seed, "hall", (HX0 + 1, HZ0 + 1, HX1 - 1, HZ1 - 1), [2], 0.05)
+    finish(canvas, SPEC)
 
 
 def _windows(canvas: Canvas) -> None:

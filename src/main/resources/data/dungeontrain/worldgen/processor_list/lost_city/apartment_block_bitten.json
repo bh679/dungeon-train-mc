@@ -17,10 +17,10 @@
       "rubble": [
         "minecraft:bricks",
         "minecraft:cobblestone",
-        "minecraft:gravel",
         "minecraft:cracked_stone_bricks",
         "minecraft:mud_bricks",
-        "minecraft:andesite"
+        "minecraft:andesite",
+        "minecraft:mossy_cobblestone"
       ],
       "pile_scale": 0.8,
       "pile_max": 10

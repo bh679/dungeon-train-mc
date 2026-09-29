@@ -15,12 +15,12 @@
       "radius_min": 0.2,
       "radius_max": 0.3,
       "rubble": [
-        "minecraft:light_gray_concrete_powder",
-        "minecraft:gray_concrete",
         "minecraft:cobblestone",
-        "minecraft:gravel",
+        "minecraft:cobbled_deepslate",
+        "minecraft:tuff",
         "minecraft:andesite",
-        "minecraft:tuff"
+        "minecraft:cracked_stone_bricks",
+        "minecraft:mossy_cobblestone"
       ],
       "pile_scale": 0.8,
       "pile_max": 10

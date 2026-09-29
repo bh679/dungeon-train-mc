@@ -66,6 +66,10 @@
         {
           "from": "minecraft:polished_diorite",
           "to": "minecraft:chiseled_sandstone"
+        },
+        {
+          "from": "minecraft:chiseled_stone_bricks",
+          "to": "minecraft:chiseled_sandstone"
         }
       ]
     }

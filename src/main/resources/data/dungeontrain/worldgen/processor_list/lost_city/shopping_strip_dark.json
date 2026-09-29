@@ -40,15 +40,23 @@
           "to": "minecraft:black_concrete"
         },
         {
-          "from": "minecraft:light_gray_concrete",
+          "from": "minecraft:light_gray_terracotta",
           "to": "minecraft:gray_concrete"
         },
         {
-          "from": "minecraft:light_gray_terracotta",
+          "from": "minecraft:smooth_stone",
           "to": "minecraft:light_gray_concrete"
         },
         {
-          "from": "minecraft:light_gray_concrete_powder",
+          "from": "minecraft:polished_diorite",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:cut_sandstone",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
           "to": "minecraft:gray_concrete"
         }
       ]

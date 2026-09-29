@@ -39,28 +39,36 @@
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
-          "from": "minecraft:light_gray_concrete",
+          "from": "minecraft:andesite",
           "to": "minecraft:gray_terracotta"
         },
         {
-          "from": "minecraft:gray_concrete",
+          "from": "minecraft:tuff",
           "to": "minecraft:cyan_terracotta"
         },
         {
-          "from": "minecraft:light_gray_concrete_powder",
+          "from": "minecraft:polished_andesite",
           "to": "minecraft:green_terracotta"
         },
         {
-          "from": "minecraft:andesite",
+          "from": "minecraft:polished_tuff",
           "to": "minecraft:tuff"
         },
         {
-          "from": "minecraft:polished_andesite",
+          "from": "minecraft:tuff_bricks",
           "to": "minecraft:dark_prismarine"
         },
         {
-          "from": "minecraft:tuff",
+          "from": "minecraft:smooth_stone",
           "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:gray_terracotta"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:cyan_terracotta"
         },
         {
           "from": "minecraft:light_gray_stained_glass",

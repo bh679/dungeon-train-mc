@@ -1,9 +1,10 @@
 """Petrol station: a flat canopy with a red fascia on four slender columns, two pump islands under it,
 a small kiosk beside it, and asphalt all round."""
 
-from ..blocks import (ASPHALT, CONCRETE, CONCRETE_DARK, CONCRETE_WHITE, GLASS_CLEAR, POLISHED_BLACKSTONE,
-                      POLISHED_BLACKSTONE_BUTTON, RED_PAINT, SMOOTH_STONE_SLAB, STEEL_DARK)
-from ..canvas import Canvas
+from .. import furnish
+from ..blocks import (CONCRETE, CONCRETE_DARK, CONCRETE_WHITE, GLASS_CLEAR, POLISHED_BLACKSTONE, POLISHED_BLACKSTONE_BUTTON,
+                      RED_PAINT, SMOOTH_STONE_SLAB, STEEL_DARK, TARMAC)
+from ..canvas import Canvas, envelope_air
 from ..shapes import box, column, walls
 from ..spec import Archetype, ArchetypeSpec
 from .common import finish, footprint_pad
@@ -19,7 +20,7 @@ KIOSK_ROOF = 6
 
 
 def draw(canvas: Canvas) -> None:
-    footprint_pad(canvas, SPEC, C0, CZ0, KIOSK[2], KIOSK[3], apron=3, paving=(ASPHALT,))
+    footprint_pad(canvas, SPEC, C0, CZ0, KIOSK[2], KIOSK[3], apron=3, paving=TARMAC)
     for (x, z) in COLUMNS:
         canvas.put_all(column(x, z, 1, CANOPY_Y - 1, STEEL_DARK))
     canvas.put_all(box(C0, CANOPY_Y, CZ0, C1, CANOPY_Y, CZ1, CONCRETE_WHITE))
@@ -28,7 +29,9 @@ def draw(canvas: Canvas) -> None:
     for x in (8, 20):
         _island(canvas, x)
     _kiosk(canvas)
-    finish(canvas, SPEC, envelope=(KIOSK[0], 1, KIOSK[1], KIOSK[2], KIOSK_ROOF, KIOSK[3]), moss_chance=0.02)
+    envelope_air(canvas, KIOSK[0], 1, KIOSK[1], KIOSK[2], KIOSK_ROOF, KIOSK[3])
+    furnish.kit(canvas, SPEC.seed, "kiosk", (KIOSK[0] + 1, KIOSK[1] + 1, KIOSK[2] - 1, KIOSK[3] - 1), [1], 0.1)
+    finish(canvas, SPEC, moss_chance=0.08)
 
 
 def _island(canvas: Canvas, x: int) -> None:

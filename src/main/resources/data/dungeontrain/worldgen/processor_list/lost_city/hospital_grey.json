@@ -12,40 +12,56 @@
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
+          "from": "minecraft:light_gray_terracotta",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:polished_diorite",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:cut_sandstone",
+          "to": "minecraft:tuff"
+        },
+        {
           "from": "minecraft:light_gray_concrete",
           "to": "minecraft:light_gray_concrete"
         },
         {
-          "from": "minecraft:light_gray_terracotta",
-          "to": "minecraft:gray_concrete"
-        },
-        {
-          "from": "minecraft:light_gray_concrete_powder",
-          "to": "minecraft:andesite"
-        },
-        {
-          "from": "minecraft:light_gray_concrete",
+          "from": "minecraft:andesite",
           "to": "minecraft:black_concrete"
         },
         {
-          "from": "minecraft:gray_concrete",
+          "from": "minecraft:tuff",
           "to": "minecraft:deepslate_tiles"
         },
         {
-          "from": "minecraft:light_gray_concrete_powder",
+          "from": "minecraft:polished_andesite",
           "to": "minecraft:polished_deepslate"
         },
         {
-          "from": "minecraft:andesite",
+          "from": "minecraft:polished_tuff",
           "to": "minecraft:deepslate_bricks"
         },
         {
-          "from": "minecraft:polished_andesite",
+          "from": "minecraft:tuff_bricks",
           "to": "minecraft:polished_basalt"
         },
         {
-          "from": "minecraft:tuff",
+          "from": "minecraft:smooth_stone",
           "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:deepslate_tiles"
         }
       ]
     }

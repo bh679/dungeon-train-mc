@@ -61,12 +61,16 @@
           "to": "minecraft:polished_diorite"
         },
         {
-          "from": "minecraft:light_gray_concrete_powder",
+          "from": "minecraft:mud_bricks",
           "to": "minecraft:light_gray_concrete"
         },
         {
-          "from": "minecraft:white_terracotta",
+          "from": "minecraft:polished_diorite",
           "to": "minecraft:smooth_stone"
+        },
+        {
+          "from": "minecraft:white_terracotta",
+          "to": "minecraft:polished_diorite"
         }
       ]
     }

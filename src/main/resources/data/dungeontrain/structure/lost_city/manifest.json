@@ -97,7 +97,7 @@
   },
   "overpass": {
     "bay_period_x": null,
-    "bay_period_z": 12,
+    "bay_period_z": null,
     "biomes": "#dungeontrain:lost_city_trackside",
     "floor_period": null,
     "margin": 3,
@@ -105,8 +105,8 @@
     "seed": 780885,
     "size": [
       23,
-      15,
-      70
+      9,
+      106
     ],
     "tags": [],
     "weight": 4

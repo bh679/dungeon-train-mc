@@ -2,7 +2,8 @@
 room and a mast on the roof. 21 wide, 13 floors of 5 layers."""
 
 from ..blocks import CONCRETE, CONCRETE_DARK, CONCRETE_WHITE, GLASS, GLASS_CLEAR, GLASS_CLEAR_PANE, STEEL, STEEL_BARS, STEEL_DARK
-from ..canvas import Canvas
+from .. import furnish
+from ..canvas import Canvas, envelope_air
 from ..floors import Facade, roof_plate, tower
 from ..shapes import box, column, walls
 from ..spec import Archetype, ArchetypeSpec
@@ -25,7 +26,9 @@ def draw(canvas: Canvas) -> None:
     canvas.put_all(walls(CORE[0], 1, CORE[1], CORE[2], ROOF - 1, CORE[3], CONCRETE_DARK))
     canvas.put_all(roof_plate(X0, Z0, X1, Z1, ROOF, CONCRETE))
     _roof(canvas)
-    finish(canvas, SPEC, envelope=(X0, 1, Z0, X1, ROOF, Z1))
+    envelope_air(canvas, X0, 1, Z0, X1, ROOF, Z1)
+    furnish.kit(canvas, SPEC.seed, "office", (X0 + 1, Z0 + 1, X1 - 1, Z1 - 1), [2 + f * PERIOD for f in range(FLOORS)])
+    finish(canvas, SPEC)
 
 
 def _lobby(canvas: Canvas) -> None:

@@ -1,63 +1,65 @@
 """Material mixes: every canonical block an archetype draws with becomes a seeded blend of related blocks.
 
 This is how the Lost City's originals read as weathered rather than flat: a wall is never one
-block but three to five — the base, a darker sibling, a cracked or mossy variant, a stone that
+block but three to six — the base, a darker sibling, a cracked or mossy variant, a stone that
 reads as patching. Archetypes draw with the canonical block (`blocks.CONCRETE`, `blocks.BRICK`, …)
-and `texturize()` resolves each cell through its family's mix, keyed on position and seed so the
-result is byte-identical per run. Muted throughout: the only whites left are road lines.
+and `texturize()` resolves each cell through its family's mix, in patches and streaks from value
+noise so the result is byte-identical per run. Muted and textured throughout: concrete is a trace,
+nothing here falls, and nothing is worth mining.
 """
 
-import random
-
-from .blocks import (AIR, ANDESITE, ASPHALT, BRICK, COBBLESTONE, CONCRETE, CONCRETE_DARK, CONCRETE_POWDER, CONCRETE_WHITE,
-                     COPPER, COPPER_CUT, COPPER_EXPOSED, CRACKED_STONE_BRICKS, DEEPSLATE_TILES, GLASS, GLASS_CLEAR, GLASS_DARK,
-                     GRAVEL, POLISHED_ANDESITE, QUARTZ, QUARTZ_PILLAR, RED_PAINT, SIGN_BOARD, SMOOTH_STONE, STEEL, STEEL_DARK,
-                     STONE_BRICKS, TERRACOTTA, TERRACOTTA_ORANGE, TERRACOTTA_WHITE, BlockState, block)
+from .blocks import (AIR, ANDESITE, ASPHALT, BRICK, COBBLESTONE, CONCRETE, CONCRETE_DARK, CONCRETE_WHITE, COPPER, COPPER_CUT,
+                     COPPER_EXPOSED, CRACKED_STONE_BRICKS, DEEPSLATE_TILES, GLASS, GLASS_CLEAR, GLASS_DARK, POLISHED_ANDESITE,
+                     QUARTZ, QUARTZ_PILLAR, RED_PAINT, SIGN_BOARD, SMOOTH_STONE, STEEL, STEEL_DARK, STONE_BRICKS, TERRACOTTA,
+                     TERRACOTTA_ORANGE, TERRACOTTA_WHITE, BlockState, block)
 from .canvas import Canvas
 
 
 class Mix:
-    """Weighted blocks; `pick` samples one."""
+    """Weighted blocks; the first member is the family's base."""
 
     def __init__(self, *members: tuple[BlockState, int]):
         self.members = tuple(members)
         self.blocks = tuple(m for m, _ in members)
-        self._weights = tuple(w for _, w in members)
-
-    def pick(self, rng: random.Random) -> BlockState:
-        return rng.choices(self.blocks, self._weights)[0]
 
 
 MIXES: dict[BlockState, Mix] = {
-    CONCRETE: Mix((CONCRETE, 45), (CONCRETE_DARK, 15), (CONCRETE_POWDER, 10), (ANDESITE, 10), (POLISHED_ANDESITE, 10),
-                  (block("tuff"), 10)),
-    CONCRETE_DARK: Mix((CONCRETE_DARK, 55), (block("tuff"), 15), (block("polished_basalt"), 10), (DEEPSLATE_TILES, 10),
-                       (block("gray_concrete_powder"), 10)),
-    # "white" is demoted to pale greys — the muted palette has no white walls
-    CONCRETE_WHITE: Mix((CONCRETE, 35), (block("light_gray_terracotta"), 25), (block("polished_diorite"), 15), (SMOOTH_STONE, 15),
-                        (CONCRETE_POWDER, 10)),
-    GLASS: Mix((block("light_gray_stained_glass"), 40), (block("gray_stained_glass"), 25), (block("cyan_stained_glass"), 7),
-               (AIR, 28)),
-    GLASS_CLEAR: Mix((GLASS_CLEAR, 50), (block("light_gray_stained_glass"), 15), (AIR, 35)),
-    GLASS_DARK: Mix((GLASS_DARK, 55), (block("black_stained_glass"), 20), (AIR, 25)),
-    BRICK: Mix((BRICK, 52), (block("mud_bricks"), 12), (TERRACOTTA, 10), (block("brown_terracotta"), 8), (block("packed_mud"), 6),
-               (block("mossy_stone_bricks"), 6), (CRACKED_STONE_BRICKS, 6)),
-    TERRACOTTA_WHITE: Mix((block("light_gray_terracotta"), 45), (SMOOTH_STONE, 20), (block("cut_sandstone"), 10),
-                          (CONCRETE_POWDER, 15), (block("white_terracotta"), 10)),
+    # rendered walls: stones and tuff, a trace of concrete
+    CONCRETE: Mix((ANDESITE, 24), (block("tuff"), 20), (POLISHED_ANDESITE, 14), (block("polished_tuff"), 10),
+                  (block("tuff_bricks"), 10), (SMOOTH_STONE, 8), (block("mud_bricks"), 6), (CONCRETE, 8)),
+    CONCRETE_DARK: Mix((block("cobbled_deepslate"), 26), (block("deepslate_bricks"), 20), (block("polished_basalt"), 14),
+                       (block("tuff"), 12), (DEEPSLATE_TILES, 10), (block("polished_deepslate"), 9),
+                       (block("cracked_deepslate_bricks"), 5), (CONCRETE_DARK, 4)),
+    # "white" is demoted to pale stones — the muted palette has no white walls
+    CONCRETE_WHITE: Mix((block("polished_diorite"), 24), (block("diorite"), 14), (SMOOTH_STONE, 15), (block("light_gray_terracotta"), 15),
+                        (block("calcite"), 12), (block("cut_sandstone"), 10), (block("end_stone_bricks"), 5), (CONCRETE, 5)),
+    GLASS: Mix((block("light_gray_stained_glass"), 38), (block("gray_stained_glass"), 22), (block("cyan_stained_glass"), 6), (AIR, 34)),
+    GLASS_CLEAR: Mix((GLASS_CLEAR, 45), (block("light_gray_stained_glass"), 15), (AIR, 40)),
+    GLASS_DARK: Mix((GLASS_DARK, 50), (block("black_stained_glass"), 20), (AIR, 30)),
+    BRICK: Mix((BRICK, 45), (block("mud_bricks"), 14), (TERRACOTTA, 10), (block("brown_terracotta"), 8), (block("packed_mud"), 8),
+               (block("mossy_stone_bricks"), 7), (CRACKED_STONE_BRICKS, 8)),
+    TERRACOTTA_WHITE: Mix((block("light_gray_terracotta"), 40), (SMOOTH_STONE, 18), (block("cut_sandstone"), 12), (block("mud_bricks"), 10),
+                          (block("polished_diorite"), 12), (block("white_terracotta"), 8)),
     TERRACOTTA_ORANGE: Mix((TERRACOTTA, 40), (block("brown_terracotta"), 25), (block("orange_terracotta"), 15),
-                           (block("red_terracotta"), 20)),
+                           (block("red_terracotta"), 12), (block("packed_mud"), 8)),
     STONE_BRICKS: Mix((STONE_BRICKS, 42), (CRACKED_STONE_BRICKS, 20), (block("mossy_stone_bricks"), 15), (ANDESITE, 10),
                       (COBBLESTONE, 8), (block("chiseled_stone_bricks"), 5)),
     QUARTZ: Mix((block("smooth_sandstone"), 40), (block("cut_sandstone"), 20), (block("polished_diorite"), 20), (block("calcite"), 10),
                 (SMOOTH_STONE, 10)),
-    QUARTZ_PILLAR: Mix((block("chiseled_sandstone"), 40), (QUARTZ_PILLAR, 35), (block("polished_diorite"), 25)),
-    STEEL: Mix((STEEL, 50), (COPPER_EXPOSED, 20), (block("waxed_weathered_copper"), 15), (STEEL_DARK, 15)),
-    STEEL_DARK: Mix((STEEL_DARK, 55), (DEEPSLATE_TILES, 15), (block("waxed_oxidized_copper"), 10), (block("deepslate"), 20)),
+    QUARTZ_PILLAR: Mix((block("chiseled_sandstone"), 40), (QUARTZ_PILLAR, 30), (block("polished_diorite"), 20),
+                       (block("chiseled_stone_bricks"), 10)),
+    STEEL: Mix((STEEL, 40), (DEEPSLATE_TILES, 20), (block("waxed_exposed_cut_copper"), 15), (STEEL_DARK, 15),
+               (block("cobbled_deepslate"), 10)),
+    STEEL_DARK: Mix((STEEL_DARK, 45), (DEEPSLATE_TILES, 20), (STEEL, 15), (block("deepslate_bricks"), 10),
+                    (block("waxed_oxidized_copper"), 10)),
     COPPER: Mix((COPPER, 50), (block("waxed_weathered_copper"), 25), (COPPER_EXPOSED, 10), (COPPER_CUT, 15)),
-    ASPHALT: Mix((ASPHALT, 60), (CONCRETE_DARK, 15), (block("polished_basalt"), 10), (GRAVEL, 10), (COBBLESTONE, 5)),
-    SMOOTH_STONE: Mix((SMOOTH_STONE, 55), (POLISHED_ANDESITE, 20), (block("stone"), 10), (CRACKED_STONE_BRICKS, 15)),
-    RED_PAINT: Mix((block("red_terracotta"), 55), (RED_PAINT, 20), (block("brown_terracotta"), 25)),
-    SIGN_BOARD: Mix((CONCRETE, 55), (block("light_gray_terracotta"), 30), (CONCRETE_POWDER, 15)),
+    # tarmac above the pad (decks, ramps): the same textured dark stone the pad-level TARMAC tuple uses
+    ASPHALT: Mix((block("cobbled_deepslate"), 35), (block("blackstone"), 20), (block("deepslate_bricks"), 12),
+                 (block("cracked_deepslate_bricks"), 10), (block("basalt"), 10), (block("polished_basalt"), 8), (ASPHALT, 5)),
+    SMOOTH_STONE: Mix((SMOOTH_STONE, 50), (POLISHED_ANDESITE, 20), (block("stone"), 12), (CRACKED_STONE_BRICKS, 10), (ANDESITE, 8)),
+    RED_PAINT: Mix((block("red_terracotta"), 55), (block("brown_terracotta"), 25), (block("nether_bricks"), 10), (RED_PAINT, 10)),
+    SIGN_BOARD: Mix((block("light_gray_terracotta"), 40), (SMOOTH_STONE, 25), (block("polished_diorite"), 15), (block("cut_sandstone"), 10),
+                    (CONCRETE, 10)),
 }
 
 MIX_BLOCKS = frozenset(b.name for mix in MIXES.values() for b in mix.blocks)
@@ -91,6 +93,17 @@ def _wear_boost(y: int, top: int) -> float:
     return 0.55 * max(0.0, 1 - t / 0.25) + 0.35 * max(0.0, (t - 0.8) / 0.2)
 
 
+def _pick_variant(mix: Mix, n: float) -> BlockState:
+    variants = mix.members[1:]
+    vtotal = sum(w for _, w in variants)
+    acc = 0.0
+    for block_, w in variants:
+        acc += w / vtotal
+        if n <= acc:
+            return block_
+    return variants[-1][0]
+
+
 def texturize(canvas: Canvas, seed: int, mixes: dict[BlockState, Mix] = MIXES) -> None:
     """Resolve every canonical block above the pad through its family's mix — in patches, not per block.
 
@@ -111,18 +124,7 @@ def texturize(canvas: Canvas, seed: int, mixes: dict[BlockState, Mix] = MIXES) -
         total = sum(w for _, w in mix.members)
         variant_share = (1 - base_w / total) * (1 + _wear_boost(y, top))
         n_wear = noise(seed, x / 2.5, y / 7.0, z / 2.5) * 0.7 + _lattice(seed ^ 0xA5, x, y, z) * 0.3
-        if n_wear > variant_share:
-            picked = base
-        else:
-            variants = mix.members[1:]
-            n_pick = noise(seed ^ 0x5EED, x / 4.0, y / 4.0, z / 4.0)
-            acc, picked = 0.0, variants[-1][0]
-            vtotal = sum(w for _, w in variants)
-            for block_, w in variants:
-                acc += w / vtotal
-                if n_pick <= acc:
-                    picked = block_
-                    break
+        picked = base if n_wear > variant_share else _pick_variant(mix, noise(seed ^ 0x5EED, x / 4.0, y / 4.0, z / 4.0))
         canvas.put(pos, picked.with_props(**dict(state.props)) if state.props and picked != AIR else picked)
 
 

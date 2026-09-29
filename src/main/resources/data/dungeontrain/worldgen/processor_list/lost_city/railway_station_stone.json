@@ -40,11 +40,11 @@
           "to": "minecraft:mossy_stone_bricks"
         },
         {
-          "from": "minecraft:gray_concrete",
+          "from": "minecraft:cobbled_deepslate",
           "to": "minecraft:polished_andesite"
         },
         {
-          "from": "minecraft:tuff",
+          "from": "minecraft:deepslate_bricks",
           "to": "minecraft:andesite"
         },
         {
@@ -52,12 +52,24 @@
           "to": "minecraft:polished_andesite"
         },
         {
-          "from": "minecraft:deepslate_tiles",
+          "from": "minecraft:tuff",
           "to": "minecraft:andesite"
         },
         {
-          "from": "minecraft:gray_concrete_powder",
+          "from": "minecraft:deepslate_tiles",
           "to": "minecraft:polished_andesite"
+        },
+        {
+          "from": "minecraft:polished_deepslate",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:cracked_deepslate_bricks",
+          "to": "minecraft:polished_andesite"
+        },
+        {
+          "from": "minecraft:gray_concrete",
+          "to": "minecraft:andesite"
         }
       ]
     }

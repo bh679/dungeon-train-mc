@@ -1,9 +1,9 @@
-"""Steps every archetype shares: the pad under its footprint and the finishing weathering pass."""
+"""Steps every archetype shares: the pad under its footprint and the finishing passes."""
 
-from ..blocks import (AIR, CONCRETE, CONCRETE_POWDER, CRACKED_STONE_BRICKS, GLASS, GLASS_CLEAR, STONE_BRICKS,
-                      BlockState)
+from ..blocks import AIR, CONCRETE, CRACKED_STONE_BRICKS, GLASS, GLASS_CLEAR, STONE_BRICKS, TUFF, BlockState
 from ..canvas import Canvas, envelope_air
-from ..damage import collapsed_corner, holes
+from ..damage import ROOF_MASS, collapsed_corner, holes, skirt
+from ..gravity import settle
 from ..materials import texturize
 from ..pad import apron_around, pad
 from ..spec import ArchetypeSpec
@@ -11,7 +11,7 @@ from ..weather import weather
 
 CRACKED_DEFAULT: dict[BlockState, BlockState] = {
     STONE_BRICKS: CRACKED_STONE_BRICKS,
-    CONCRETE: CONCRETE_POWDER,
+    CONCRETE: TUFF,
     GLASS: AIR,
     GLASS_CLEAR: AIR,
 }
@@ -30,15 +30,18 @@ def footprint_pad(canvas: Canvas, spec: ArchetypeSpec, x0: int, z0: int, x1: int
 def finish(canvas: Canvas, spec: ArchetypeSpec, envelope: tuple[int, int, int, int, int, int] | None = None,
            cracked: dict[BlockState, BlockState] | None = None, **weather_kwargs) -> None:
     """Explicit air inside the building envelope (x0, y0, z0, x1, y1, z1); then — once per canvas — the
-    material mix, the baked damage (wall holes, a sheared corner on anything with a repeat), and the
-    overgrowth pass. Archetypes that call this per part get the once-only steps on the first call."""
+    material mix, the baked damage (wall holes, a sheared corner on anything with a repeat) and the
+    rubble skirt; then the overgrowth pass, and last the gravity settle so nothing placed can fall.
+    Archetypes that call this per part get the once-only steps on the first call."""
     if envelope is not None:
         envelope_air(canvas, *envelope)
     if not getattr(canvas, "_finished", False):
         canvas._finished = True
         texturize(canvas, spec.seed)
         _damage(canvas, spec)
+        skirt(canvas, spec.seed, spec.margin)
     weather(canvas, spec.seed, cracked if cracked is not None else CRACKED_DEFAULT, margin=spec.margin, **weather_kwargs)
+    settle(canvas)
 
 
 def _damage(canvas: Canvas, spec: ArchetypeSpec) -> None:
@@ -54,7 +57,7 @@ def _main_roof(canvas: Canvas):
     """The highest layer still carrying a quarter of the heaviest layer's mass, and its footprint."""
     layers: dict[int, list] = {}
     for (x, y, z), state in canvas.freeze().items():
-        if y >= 1 and state != AIR and not any(p in state.name for p in ("slab", "bars", "wall", "pane", "carpet", "vine")):
+        if y >= 1 and state != AIR and not any(p in state.name for p in ROOF_MASS):
             layers.setdefault(y, []).append((x, z))
     if not layers:
         return None, None

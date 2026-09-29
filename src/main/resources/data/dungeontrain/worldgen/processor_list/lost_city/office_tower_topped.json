@@ -14,12 +14,12 @@
       "max_fraction": 0.7,
       "jagged": 3,
       "rubble": [
-        "minecraft:light_gray_concrete_powder",
-        "minecraft:gray_concrete",
         "minecraft:cobblestone",
-        "minecraft:gravel",
-        "minecraft:andesite",
+        "minecraft:cobbled_deepslate",
         "minecraft:tuff",
+        "minecraft:andesite",
+        "minecraft:cracked_stone_bricks",
+        "minecraft:mossy_cobblestone",
         "minecraft:air"
       ]
     }

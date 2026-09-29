@@ -40,11 +40,11 @@
           "to": "minecraft:light_gray_terracotta"
         },
         {
-          "from": "minecraft:gray_concrete",
+          "from": "minecraft:cobbled_deepslate",
           "to": "minecraft:light_gray_concrete"
         },
         {
-          "from": "minecraft:tuff",
+          "from": "minecraft:deepslate_bricks",
           "to": "minecraft:gray_concrete"
         },
         {
@@ -52,12 +52,24 @@
           "to": "minecraft:light_gray_concrete"
         },
         {
-          "from": "minecraft:deepslate_tiles",
+          "from": "minecraft:tuff",
           "to": "minecraft:gray_concrete"
         },
         {
-          "from": "minecraft:gray_concrete_powder",
+          "from": "minecraft:deepslate_tiles",
           "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:polished_deepslate",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:cracked_deepslate_bricks",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:gray_concrete",
+          "to": "minecraft:gray_concrete"
         }
       ]
     }

@@ -1,9 +1,10 @@
 """Railway station: a track through the template, a long side platform under a copper canopy on iron
 columns every 6 blocks, a brick ticket hall, and the stub of a footbridge over the line."""
 
-from ..blocks import (BRICK, COBBLESTONE, CONCRETE_DARK, COPPER, COPPER_SLAB, GLASS_CLEAR, GRAVEL, RAIL, SMOOTH_STONE,
+from ..blocks import (BRICK, COBBLED_DEEPSLATE, COBBLESTONE, CONCRETE_DARK, COPPER, COPPER_SLAB, GLASS_CLEAR, RAIL, SMOOTH_STONE,
                       STEEL_BARS, STEEL_DARK, STONE_BRICKS)
-from ..canvas import Canvas
+from .. import furnish
+from ..canvas import Canvas, envelope_air
 from ..shapes import box, column, walls
 from ..spec import Archetype, ArchetypeSpec
 from .common import finish, footprint_pad
@@ -26,12 +27,15 @@ def draw(canvas: Canvas) -> None:
     _canopy(canvas)
     _hall(canvas)
     _footbridge(canvas)
-    finish(canvas, SPEC, envelope=(HALL[0], 1, HALL[1], HALL[2], HALL_ROOF, HALL[3]))
+    envelope_air(canvas, HALL[0], 1, HALL[1], HALL[2], HALL_ROOF, HALL[3])
+    furnish.benches(canvas, SPEC.seed, [(21, 3, z) for z in range(PLAT[1] + 2, PLAT[3] - 2, 5)], "west", 0.7)
+    furnish.kit(canvas, SPEC.seed, "station", (HALL[0] + 1, HALL[1] + 1, HALL[2] - 1, HALL[3] - 1), [1], 0.08)
+    finish(canvas, SPEC)
 
 
 def _track(canvas: Canvas) -> None:
     z0, z1 = SPEC.margin, SPEC.size[2] - 1 - SPEC.margin
-    canvas.put_all(box(TRACK_X[0], 1, z0, TRACK_X[1], 1, z1, GRAVEL))
+    canvas.put_all(box(TRACK_X[0], 1, z0, TRACK_X[1], 1, z1, COBBLED_DEEPSLATE))   # ballast that cannot fall
     for z in range(z0, z1 + 1):
         canvas.put((10, 2, z), RAIL.with_props(shape="north_south"))
 

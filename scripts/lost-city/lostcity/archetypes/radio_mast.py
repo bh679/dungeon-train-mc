@@ -2,7 +2,8 @@
 The lattice repeats every 4 layers so a stretch can lengthen or shorten it."""
 
 from ..blocks import CONCRETE_DARK, GLASS_DARK, RED_LIGHT, STEEL, STEEL_BARS, STEEL_DARK, STEEL_WALL, block
-from ..canvas import Canvas
+from .. import furnish
+from ..canvas import Canvas, envelope_air
 from ..shapes import box, column, disc, lattice, walls
 from ..spec import Archetype, ArchetypeSpec
 from .common import finish, footprint_pad
@@ -28,7 +29,9 @@ def draw(canvas: Canvas) -> None:
     canvas.put_all(column(9, 9, TOP, TOP + 4, STEEL_WALL))
     canvas.put((9, TOP + 5, 9), RED_LIGHT)
     canvas.put((9, TOP + 6, 9), block("lightning_rod"))
-    finish(canvas, SPEC, envelope=(HUT[0] + 1, 1, HUT[1] + 1, HUT[2] - 1, 4, HUT[3] - 1), vine_chance=0.0)
+    envelope_air(canvas, HUT[0] + 1, 1, HUT[1] + 1, HUT[2] - 1, 4, HUT[3] - 1)
+    furnish.kit(canvas, SPEC.seed, "hut", (HUT[0] + 1, HUT[1] + 1, HUT[2] - 1, HUT[3] - 1), [1], 0.12)
+    finish(canvas, SPEC, vine_chance=0.04)
 
 
 def _cross_bracing(canvas: Canvas) -> None:

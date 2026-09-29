@@ -3,7 +3,8 @@ on the roof. Podium 29 wide, tower 13 wide; both on 4-layer floors."""
 
 from ..blocks import (CONCRETE_WHITE, GLASS, GLASS_CLEAR, RED_PAINT, SIGN_BOARD, SMOOTH_STONE_SLAB, STEEL_DARK,
                       STEEL_WALL, TERRACOTTA_ORANGE)
-from ..canvas import Canvas
+from .. import furnish
+from ..canvas import Canvas, envelope_air
 from ..floors import Facade, roof_plate, tower
 from ..shapes import box, column
 from ..spec import Archetype, ArchetypeSpec
@@ -30,9 +31,11 @@ def draw(canvas: Canvas) -> None:
     canvas.put_all(roof_plate(T0, T0, T1, T1, TOWER_ROOF, CONCRETE_WHITE))
     _porte_cochere(canvas)
     _sign(canvas)
-    finish(canvas, SPEC, envelope=(P0, 1, P0, P1, PODIUM_ROOF, P1))
-    finish(canvas, SPEC, envelope=(T0, PODIUM_ROOF, T0, T1, TOWER_ROOF, T1), crack_chance=0.0, moss_chance=0.0,
-           vine_chance=0.0)
+    envelope_air(canvas, P0, 1, P0, P1, PODIUM_ROOF, P1)
+    envelope_air(canvas, T0, PODIUM_ROOF, T0, T1, TOWER_ROOF, T1)
+    furnish.kit(canvas, SPEC.seed, "hotel", (P0 + 1, P0 + 1, P1 - 1, P1 - 1), [2, 2 + PERIOD])
+    furnish.kit(canvas, SPEC.seed, "hotel", (T0 + 1, T0 + 1, T1 - 1, T1 - 1), [PODIUM_ROOF + 1 + f * PERIOD for f in range(TOWER_FLOORS)], 0.09)
+    finish(canvas, SPEC)
 
 
 def _porte_cochere(canvas: Canvas) -> None:

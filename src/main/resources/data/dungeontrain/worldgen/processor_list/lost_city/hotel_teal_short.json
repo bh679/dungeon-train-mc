@@ -37,16 +37,28 @@
           "to": "minecraft:tuff"
         },
         {
-          "from": "minecraft:light_gray_concrete",
-          "to": "minecraft:light_gray_terracotta"
+          "from": "minecraft:packed_mud",
+          "to": "minecraft:dark_prismarine"
         },
         {
           "from": "minecraft:light_gray_terracotta",
+          "to": "minecraft:light_gray_terracotta"
+        },
+        {
+          "from": "minecraft:smooth_stone",
           "to": "minecraft:polished_diorite"
         },
         {
-          "from": "minecraft:light_gray_concrete_powder",
+          "from": "minecraft:polished_diorite",
           "to": "minecraft:smooth_stone"
+        },
+        {
+          "from": "minecraft:cut_sandstone",
+          "to": "minecraft:calcite"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:light_gray_concrete_powder"
         }
       ]
     }

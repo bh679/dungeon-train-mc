@@ -7,10 +7,13 @@ every copy of the building carries, so even the "shipped" design reads as a ruin
 import math
 import random
 
-from .blocks import AIR, COBBLESTONE, CRACKED_STONE_BRICKS, GRAVEL, BlockState, block
+from .blocks import AIR, COBBLESTONE, CRACKED_STONE_BRICKS, BlockState, block
 from .canvas import Canvas, Pos
 
-RUBBLE = (COBBLESTONE, block("mossy_cobblestone"), GRAVEL, CRACKED_STONE_BRICKS, block("andesite"), block("tuff"))
+RUBBLE = (COBBLESTONE, COBBLESTONE, block("mossy_cobblestone"), CRACKED_STONE_BRICKS, block("andesite"), block("tuff"),
+          block("cobbled_deepslate"), block("mossy_stone_bricks"), block("cobblestone_slab"), block("stone_brick_stairs"))
+ROOF_MASS = ("slab", "bars", "wall", "pane", "carpet", "vine", "stairs", "fence", "chain", "lantern", "leaves", "grass", "bush",
+             "fern", "roots", "azalea", "web", "pot", "table", "cauldron", "loom", "shelf", "hay", "note")
 
 
 def holes(canvas: Canvas, seed: int, count: tuple[int, int] = (3, 6), radius: tuple[float, float] = (1.5, 3.2),
@@ -64,7 +67,7 @@ def _heap(canvas: Canvas, removed: list[Pos], rng: random.Random, rubble: tuple[
     for x, y, z in removed:
         columns.setdefault((x, z), []).append(y)
     for (x, z), ys in columns.items():
-        if rng.random() > 0.6:
+        if rng.random() > 0.85:
             continue
         floor_y = _floor_below(canvas, x, min(ys), z)
         if floor_y is None:
@@ -87,6 +90,51 @@ def _floor_below(canvas: Canvas, x: int, y: int, z: int) -> int | None:
         if state is not None and state != AIR:
             return yy
     return None
+
+
+def _is_wall(canvas: Canvas, x: int, z: int) -> bool:
+    """A structural column at (x, z): solid, non-decor cells at y = 1, 2 and 3."""
+    for y in (1, 2, 3):
+        state = canvas.get((x, y, z))
+        if state is None or state == AIR or any(p in state.name for p in ROOF_MASS):
+            return False
+    return True
+
+
+def skirt(canvas: Canvas, seed: int, margin: int, band: int = 4, density: float = 0.45,
+          rubble: tuple[BlockState, ...] = RUBBLE) -> None:
+    """Rubble heaped round the foot of every wall — thickest against it, thinning over `band` blocks — and
+    scattered along the inside of the walls too. Every piece sits on a solid cell, never in the margin."""
+    rng = random.Random(seed ^ 0x5C1B)
+    sx, _, sz = canvas.size
+    walls = {(x, z) for z in range(sz) for x in range(sx) if _is_wall(canvas, x, z)}
+    if not walls:
+        return
+    frontier, dist = list(walls), {w: 0 for w in walls}
+    while frontier:
+        nxt = []
+        for x, z in frontier:
+            d = dist[(x, z)]
+            if d >= band:
+                continue
+            for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                n = (x + dx, z + dz)
+                if n not in dist and margin <= n[0] < sx - margin and margin <= n[1] < sz - margin:
+                    dist[n] = d + 1
+                    nxt.append(n)
+        frontier = nxt
+    for (x, z), d in dist.items():
+        if d == 0:
+            continue
+        pos = (x, 1, z)
+        below = canvas.get((x, 0, z))
+        if below is None or below == AIR or rng.random() > density * (1 - (d - 1) / band):
+            continue
+        if canvas.has(pos) and canvas.get(pos) != AIR:
+            continue
+        canvas.put(pos, rng.choice(rubble))
+        if d <= 2 and rng.random() < 0.3 and canvas.get((x, 2, z)) in (None, AIR):
+            canvas.put((x, 2, z), rng.choice(rubble[:6]))
 
 
 def collapsed_corner(canvas: Canvas, seed: int, box: tuple[int, int, int, int], top: int, depth: int, min_y: int = 2,

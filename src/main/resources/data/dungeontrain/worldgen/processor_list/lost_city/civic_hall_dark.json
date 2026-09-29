@@ -68,11 +68,15 @@
           "to": "minecraft:deepslate_tiles"
         },
         {
-          "from": "minecraft:gray_concrete",
+          "from": "minecraft:chiseled_stone_bricks",
+          "to": "minecraft:deepslate_tiles"
+        },
+        {
+          "from": "minecraft:cobbled_deepslate",
           "to": "minecraft:black_concrete"
         },
         {
-          "from": "minecraft:tuff",
+          "from": "minecraft:deepslate_bricks",
           "to": "minecraft:black_concrete"
         },
         {
@@ -80,11 +84,23 @@
           "to": "minecraft:black_concrete"
         },
         {
+          "from": "minecraft:tuff",
+          "to": "minecraft:black_concrete"
+        },
+        {
           "from": "minecraft:deepslate_tiles",
           "to": "minecraft:black_concrete"
         },
         {
-          "from": "minecraft:gray_concrete_powder",
+          "from": "minecraft:polished_deepslate",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:cracked_deepslate_bricks",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:gray_concrete",
           "to": "minecraft:black_concrete"
         }
       ]

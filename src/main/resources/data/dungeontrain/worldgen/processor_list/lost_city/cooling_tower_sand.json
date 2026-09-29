@@ -12,27 +12,35 @@
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
-          "from": "minecraft:light_gray_concrete",
+          "from": "minecraft:andesite",
           "to": "minecraft:smooth_sandstone"
         },
         {
-          "from": "minecraft:gray_concrete",
+          "from": "minecraft:tuff",
           "to": "minecraft:cut_sandstone"
         },
         {
-          "from": "minecraft:light_gray_concrete_powder",
+          "from": "minecraft:polished_andesite",
           "to": "minecraft:sandstone"
         },
         {
-          "from": "minecraft:andesite",
+          "from": "minecraft:polished_tuff",
           "to": "minecraft:chiseled_sandstone"
         },
         {
-          "from": "minecraft:polished_andesite",
+          "from": "minecraft:tuff_bricks",
           "to": "minecraft:smooth_red_sandstone"
         },
         {
-          "from": "minecraft:tuff",
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:cut_sandstone"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:smooth_sandstone"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
           "to": "minecraft:cut_sandstone"
         }
       ]

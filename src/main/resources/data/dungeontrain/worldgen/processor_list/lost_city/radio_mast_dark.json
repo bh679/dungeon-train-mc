@@ -12,20 +12,24 @@
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
-          "from": "minecraft:iron_block",
+          "from": "minecraft:polished_basalt",
           "to": "minecraft:black_concrete"
         },
         {
-          "from": "minecraft:waxed_exposed_copper",
+          "from": "minecraft:deepslate_tiles",
           "to": "minecraft:deepslate_tiles"
         },
         {
-          "from": "minecraft:waxed_weathered_copper",
+          "from": "minecraft:waxed_exposed_cut_copper",
           "to": "minecraft:polished_deepslate"
         },
         {
           "from": "minecraft:polished_deepslate",
           "to": "minecraft:deepslate_bricks"
+        },
+        {
+          "from": "minecraft:cobbled_deepslate",
+          "to": "minecraft:polished_basalt"
         },
         {
           "from": "minecraft:polished_deepslate",
@@ -36,12 +40,16 @@
           "to": "minecraft:polished_basalt"
         },
         {
-          "from": "minecraft:waxed_oxidized_copper",
+          "from": "minecraft:polished_basalt",
           "to": "minecraft:black_concrete"
         },
         {
-          "from": "minecraft:deepslate",
+          "from": "minecraft:deepslate_bricks",
           "to": "minecraft:polished_basalt"
+        },
+        {
+          "from": "minecraft:waxed_oxidized_copper",
+          "to": "minecraft:black_concrete"
         }
       ]
     }

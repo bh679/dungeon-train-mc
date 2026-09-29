@@ -22,40 +22,56 @@
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
-          "from": "minecraft:light_gray_concrete",
-          "to": "minecraft:brown_terracotta"
-        },
-        {
-          "from": "minecraft:gray_concrete",
-          "to": "minecraft:terracotta"
-        },
-        {
-          "from": "minecraft:light_gray_concrete_powder",
-          "to": "minecraft:brown_concrete"
-        },
-        {
           "from": "minecraft:andesite",
-          "to": "minecraft:waxed_exposed_copper"
-        },
-        {
-          "from": "minecraft:polished_andesite",
-          "to": "minecraft:mud_bricks"
+          "to": "minecraft:brown_terracotta"
         },
         {
           "from": "minecraft:tuff",
-          "to": "minecraft:waxed_weathered_copper"
+          "to": "minecraft:terracotta"
         },
         {
-          "from": "minecraft:light_gray_concrete",
+          "from": "minecraft:polished_andesite",
+          "to": "minecraft:brown_concrete"
+        },
+        {
+          "from": "minecraft:polished_tuff",
           "to": "minecraft:waxed_exposed_copper"
         },
         {
-          "from": "minecraft:light_gray_terracotta",
+          "from": "minecraft:tuff_bricks",
+          "to": "minecraft:mud_bricks"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:waxed_weathered_copper"
+        },
+        {
+          "from": "minecraft:mud_bricks",
           "to": "minecraft:brown_terracotta"
         },
         {
-          "from": "minecraft:light_gray_concrete_powder",
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:terracotta"
+        },
+        {
+          "from": "minecraft:light_gray_terracotta",
+          "to": "minecraft:waxed_exposed_copper"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:brown_terracotta"
+        },
+        {
+          "from": "minecraft:polished_diorite",
           "to": "minecraft:mud_bricks"
+        },
+        {
+          "from": "minecraft:cut_sandstone",
+          "to": "minecraft:waxed_exposed_copper"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:brown_terracotta"
         },
         {
           "from": "minecraft:light_gray_stained_glass",
@@ -70,11 +86,11 @@
           "to": "minecraft:orange_stained_glass"
         },
         {
-          "from": "minecraft:gray_concrete",
+          "from": "minecraft:cobbled_deepslate",
           "to": "minecraft:waxed_oxidized_copper"
         },
         {
-          "from": "minecraft:tuff",
+          "from": "minecraft:deepslate_bricks",
           "to": "minecraft:brown_concrete"
         },
         {
@@ -82,12 +98,24 @@
           "to": "minecraft:waxed_oxidized_copper"
         },
         {
-          "from": "minecraft:deepslate_tiles",
+          "from": "minecraft:tuff",
           "to": "minecraft:brown_concrete"
         },
         {
-          "from": "minecraft:gray_concrete_powder",
+          "from": "minecraft:deepslate_tiles",
           "to": "minecraft:waxed_oxidized_copper"
+        },
+        {
+          "from": "minecraft:polished_deepslate",
+          "to": "minecraft:brown_concrete"
+        },
+        {
+          "from": "minecraft:cracked_deepslate_bricks",
+          "to": "minecraft:waxed_oxidized_copper"
+        },
+        {
+          "from": "minecraft:gray_concrete",
+          "to": "minecraft:brown_concrete"
         }
       ]
     },

@@ -3,8 +3,9 @@ asphalt car park out front with marked bays. Shopfronts repeat every 4 along x."
 
 import random
 
-from ..blocks import ASPHALT, BRICK, CONCRETE_DARK, COPPER_SLAB, GLASS_CLEAR, RED_PAINT, ROAD_LINE, SIGN_BOARD, block
-from ..canvas import Canvas
+from .. import furnish
+from ..blocks import BRICK, CONCRETE_DARK, COPPER_SLAB, GLASS_CLEAR, RED_PAINT, ROAD_LINE, SIGN_BOARD, TARMAC, block
+from ..canvas import Canvas, envelope_air
 from ..shapes import box, walls
 from ..spec import Archetype, ArchetypeSpec
 from .common import finish, footprint_pad
@@ -28,12 +29,18 @@ def draw(canvas: Canvas) -> None:
     canvas.put_all(walls(X0, ROOF + 1, Z0, X1, ROOF + 1, Z1, BRICK))
     for x in range(X0 + 12, X1, 12):
         canvas.put_all(box(x, 1, Z0 + 1, x, ROOF - 1, Z1 - 1, BRICK))
-    finish(canvas, SPEC, envelope=(X0, 1, Z0, X1, ROOF, Z1))
+    envelope_air(canvas, X0, 1, Z0, X1, ROOF, Z1)
+    furnish.kit(canvas, SPEC.seed, "shop", (X0 + 1, Z0 + 1, X1 - 1, Z1 - 1), [1], 0.09)
+    finish(canvas, SPEC)
 
 
 def _carpark(canvas: Canvas) -> None:
+    """Tarmac bays out front: textured dark stone at pad level, calcite bay lines."""
+    rng = random.Random(SPEC.seed ^ 0xCA2)
     x0, z0, x1, z1 = CARPARK
-    canvas.put_all(box(x0, 0, z0, x1, 0, z1, ASPHALT))
+    for z in range(z0, z1 + 1):
+        for x in range(x0, x1 + 1):
+            canvas.put((x, 0, z), rng.choice(TARMAC))
     for x in range(X0, X1 + 1, BAY):
         canvas.put_all(box(x, 0, z0 + 2, x, 0, z0 + 5, ROAD_LINE))
 

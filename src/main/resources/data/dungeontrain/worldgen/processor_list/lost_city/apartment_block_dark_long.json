@@ -61,12 +61,16 @@
           "to": "minecraft:tuff"
         },
         {
-          "from": "minecraft:light_gray_concrete_powder",
+          "from": "minecraft:mud_bricks",
           "to": "minecraft:gray_terracotta"
         },
         {
-          "from": "minecraft:white_terracotta",
+          "from": "minecraft:polished_diorite",
           "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:white_terracotta",
+          "to": "minecraft:tuff"
         }
       ]
     }

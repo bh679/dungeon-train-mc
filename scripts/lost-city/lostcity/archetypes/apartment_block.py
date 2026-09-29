@@ -2,7 +2,8 @@
 and water tanks on the roof. 13 × 45, 9 floors of 4 layers."""
 
 from ..blocks import BRICK, CONCRETE_WHITE, GLASS_CLEAR, SMOOTH_STONE_SLAB, STEEL_BARS, STEEL_DARK, TERRACOTTA_WHITE, block
-from ..canvas import Canvas
+from .. import furnish
+from ..canvas import Canvas, envelope_air
 from ..floors import Facade, roof_plate, tower
 from ..shapes import box, walls
 from ..spec import Archetype, ArchetypeSpec
@@ -25,7 +26,9 @@ def draw(canvas: Canvas) -> None:
     canvas.put_all(roof_plate(X0, Z0, X1, Z1, ROOF, TERRACOTTA_WHITE))
     _stair_towers(canvas)
     _tanks(canvas)
-    finish(canvas, SPEC, envelope=(X0, 1, Z0, X1, ROOF, Z1))
+    envelope_air(canvas, X0, 1, Z0, X1, ROOF, Z1)
+    furnish.kit(canvas, SPEC.seed, "apartment", (X0 + 1, Z0 + 1, X1 - 1, Z1 - 1), [2 + f * PERIOD for f in range(FLOORS)], 0.08)
+    finish(canvas, SPEC)
 
 
 def _balconies(canvas: Canvas) -> None:

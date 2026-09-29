@@ -12,11 +12,23 @@
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
-          "from": "minecraft:black_concrete",
+          "from": "minecraft:cobbled_deepslate",
           "to": "minecraft:gray_concrete"
         },
         {
-          "from": "minecraft:gray_concrete",
+          "from": "minecraft:blackstone",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:deepslate_bricks",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:cracked_deepslate_bricks",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:basalt",
           "to": "minecraft:light_gray_concrete"
         },
         {
@@ -24,15 +36,19 @@
           "to": "minecraft:andesite"
         },
         {
-          "from": "minecraft:gravel",
+          "from": "minecraft:black_concrete",
           "to": "minecraft:gray_concrete"
         },
         {
-          "from": "minecraft:cobblestone",
+          "from": "minecraft:cobbled_deepslate",
           "to": "minecraft:light_gray_concrete"
         },
         {
-          "from": "minecraft:gray_concrete",
+          "from": "minecraft:deepslate_bricks",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:polished_basalt",
           "to": "minecraft:light_gray_concrete"
         },
         {
@@ -40,16 +56,20 @@
           "to": "minecraft:andesite"
         },
         {
-          "from": "minecraft:polished_basalt",
+          "from": "minecraft:deepslate_tiles",
           "to": "minecraft:light_gray_concrete"
         },
         {
-          "from": "minecraft:deepslate_tiles",
+          "from": "minecraft:polished_deepslate",
           "to": "minecraft:andesite"
         },
         {
-          "from": "minecraft:gray_concrete_powder",
+          "from": "minecraft:cracked_deepslate_bricks",
           "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:gray_concrete",
+          "to": "minecraft:andesite"
         }
       ]
     }

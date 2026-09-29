@@ -52,12 +52,16 @@
           "to": "minecraft:cut_sandstone"
         },
         {
-          "from": "minecraft:light_gray_concrete_powder",
+          "from": "minecraft:mud_bricks",
           "to": "minecraft:orange_terracotta"
         },
         {
-          "from": "minecraft:white_terracotta",
+          "from": "minecraft:polished_diorite",
           "to": "minecraft:terracotta"
+        },
+        {
+          "from": "minecraft:white_terracotta",
+          "to": "minecraft:cut_sandstone"
         }
       ]
     },

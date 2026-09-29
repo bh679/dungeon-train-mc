@@ -2,7 +2,8 @@
 the link roof and a red cross over the entrance."""
 
 from ..blocks import CONCRETE, CONCRETE_WHITE, GLASS_CLEAR, RED_PAINT, ROAD_LINE, STEEL_BARS
-from ..canvas import Canvas
+from .. import furnish
+from ..canvas import Canvas, envelope_air
 from ..floors import Facade, roof_plate, tower
 from ..shapes import box, ring, walls
 from ..spec import Archetype, ArchetypeSpec
@@ -30,8 +31,10 @@ def draw(canvas: Canvas) -> None:
     _helipad(canvas)
     _entrance(canvas)
     for (x0, z0, x1, z1) in PARTS:
-        finish(canvas, SPEC, envelope=(x0, 1, z0, x1, ROOF, z1), crack_chance=0.0, moss_chance=0.0, vine_chance=0.0)
-    finish(canvas, SPEC, envelope=None)
+        envelope_air(canvas, x0, 1, z0, x1, ROOF, z1)
+    for (x0, z0, x1, z1) in PARTS:
+        furnish.kit(canvas, SPEC.seed, "hospital", (x0 + 1, z0 + 1, x1 - 1, z1 - 1), [2 + f * PERIOD for f in range(FLOORS)], 0.07)
+    finish(canvas, SPEC)
 
 
 def _helipad(canvas: Canvas) -> None:

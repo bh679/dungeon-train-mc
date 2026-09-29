@@ -12,31 +12,31 @@
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
-          "from": "minecraft:light_gray_concrete",
+          "from": "minecraft:light_gray_terracotta",
           "to": "minecraft:waxed_oxidized_copper"
         },
         {
-          "from": "minecraft:light_gray_terracotta",
+          "from": "minecraft:smooth_stone",
           "to": "minecraft:waxed_weathered_copper"
         },
         {
-          "from": "minecraft:light_gray_concrete_powder",
+          "from": "minecraft:polished_diorite",
           "to": "minecraft:waxed_exposed_copper"
         },
         {
+          "from": "minecraft:cut_sandstone",
+          "to": "minecraft:waxed_oxidized_cut_copper"
+        },
+        {
           "from": "minecraft:light_gray_concrete",
-          "to": "minecraft:waxed_oxidized_copper"
-        },
-        {
-          "from": "minecraft:gray_concrete",
-          "to": "minecraft:waxed_weathered_copper"
-        },
-        {
-          "from": "minecraft:light_gray_concrete_powder",
-          "to": "minecraft:waxed_oxidized_copper"
+          "to": "minecraft:waxed_weathered_cut_copper"
         },
         {
           "from": "minecraft:andesite",
+          "to": "minecraft:waxed_oxidized_copper"
+        },
+        {
+          "from": "minecraft:tuff",
           "to": "minecraft:waxed_weathered_copper"
         },
         {
@@ -44,7 +44,23 @@
           "to": "minecraft:waxed_oxidized_copper"
         },
         {
-          "from": "minecraft:tuff",
+          "from": "minecraft:polished_tuff",
+          "to": "minecraft:waxed_weathered_copper"
+        },
+        {
+          "from": "minecraft:tuff_bricks",
+          "to": "minecraft:waxed_oxidized_copper"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:waxed_weathered_copper"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:waxed_oxidized_copper"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
           "to": "minecraft:waxed_weathered_copper"
         }
       ]

@@ -41,7 +41,21 @@ PAD_NATURAL = frozenset(
 # has a floor to land on.
 PAVEMENT = (block("cobblestone"), block("cobblestone"), block("stone_bricks"), block("cracked_stone_bricks"),
             block("polished_andesite"), block("mossy_cobblestone"), block("mossy_stone_bricks"))
-GROUND = (block("grass_block"), block("grass_block"), block("grass_block"), block("dirt"), block("coarse_dirt"), block("gravel"))
+GROUND = (block("grass_block"), block("grass_block"), block("grass_block"), block("dirt"), block("coarse_dirt"),
+          block("podzol"), block("rooted_dirt"))
+# Road surface: textured dark stone, never concrete, never a falling block. Used at pad level (y = 0), where
+# the material mixes do not run, so it is a tuple of real blocks rather than a canonical to resolve.
+TARMAC = (block("cobbled_deepslate"), block("cobbled_deepslate"), block("blackstone"), block("deepslate_bricks"),
+          block("cracked_deepslate_bricks"), block("basalt"), block("polished_basalt"))
+
+# Blocks that fall when nothing is under them; the settle pass swaps them for a stable stand-in.
+GRAVITY = frozenset("minecraft:" + n for n in ("gravel", "sand", "red_sand", "suspicious_sand", "suspicious_gravel",
+                                                "anvil", "chipped_anvil", "damaged_anvil", "scaffolding"))
+GRAVITY_SUFFIX = "_concrete_powder"
+# Never in a ruin: too valuable to leave lying about.
+VALUABLE = frozenset("minecraft:" + n for n in ("iron_block", "gold_block", "diamond_block", "netherite_block",
+                                                 "emerald_block", "lapis_block", "redstone_block", "raw_iron_block",
+                                                 "raw_gold_block", "raw_copper_block", "beacon", "copper_block"))
 
 # Material families. Each archetype picks a few; the variant recipes recolour them at placement.
 CONCRETE = block("light_gray_concrete")
@@ -58,7 +72,7 @@ BRICK_SLAB = block("brick_slab")
 TERRACOTTA = block("terracotta")
 TERRACOTTA_WHITE = block("white_terracotta")
 TERRACOTTA_ORANGE = block("orange_terracotta")
-STEEL = block("iron_block")
+STEEL = block("polished_basalt")          # "steel": dark, lined, cheap — never iron blocks
 STEEL_BARS = block("iron_bars")
 STEEL_CHAIN = block("chain")
 STEEL_WALL = block("andesite_wall")
@@ -80,11 +94,33 @@ COPPER_EXPOSED = block("waxed_exposed_copper")
 COPPER_SLAB = block("waxed_oxidized_cut_copper_slab")
 COPPER_STAIRS = block("waxed_oxidized_cut_copper_stairs")
 ASPHALT = block("black_concrete")
-ROAD_LINE = block("white_concrete_powder")   # its own block, so the muted "white" mix never eats road markings
+ROAD_LINE = block("calcite")                 # pale, textured, and it does not fall
 MOSS_BLOCK = block("moss_block")
 MOSSY_COBBLESTONE = block("mossy_cobblestone")
 FERN = block("fern")
-ROAD_LINE_YELLOW = block("yellow_concrete")
+ROAD_LINE_YELLOW = block("yellow_terracotta")
+TALL_GRASS = block("tall_grass")
+FLOWERING_AZALEA = block("flowering_azalea")
+HANGING_ROOTS = block("hanging_roots")
+OAK_SLAB = block("oak_slab")
+OAK_STAIRS = block("oak_stairs")
+OAK_FENCE = block("oak_fence")
+BOOKSHELF = block("bookshelf")
+CRAFTING_TABLE = block("crafting_table")
+FLOWER_POT = block("flower_pot")
+LOOM = block("loom")
+SMITHING_TABLE = block("smithing_table")
+HAY = block("hay_block")
+RED_CARPET = block("red_carpet")
+GRAY_CARPET = block("gray_carpet")
+WHITE_CARPET = block("white_carpet")
+LIGHT_GRAY_CARPET = block("light_gray_carpet")
+COBBLED_DEEPSLATE = block("cobbled_deepslate")
+COBBLESTONE_SLAB = block("cobblestone_slab")
+TUFF = block("tuff")
+MUD_BRICKS = block("mud_bricks")
+MOSSY_STONE_BRICKS = block("mossy_stone_bricks")
+NOTE_BLOCK = block("note_block")
 RED_PAINT = block("red_concrete")
 RED_LIGHT = block("redstone_lamp")
 SIGN_BOARD = block("white_concrete")

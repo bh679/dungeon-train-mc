@@ -93,12 +93,14 @@ def ceilings(name: str, layers: int) -> Proc:
 
 # The baked overgrowth stripped for a dry, sun-bleached look.
 DRY = swap([("moss_carpet", "air"), ("vine", "air"), ("moss_block", "coarse_dirt"), ("oak_leaves", "air", 0.7),
-            ("azalea", "dead_bush"), ("short_grass", "dead_bush", 0.5), ("short_grass", "air", 0.5), ("fern", "dead_bush"),
+            ("azalea", "dead_bush"), ("flowering_azalea", "dead_bush"), ("short_grass", "dead_bush", 0.5), ("short_grass", "air", 0.5),
+            ("tall_grass", "dead_bush"), ("fern", "dead_bush"), ("hanging_roots", "air"), ("grass_block", "coarse_dirt"),
             ("mossy_cobblestone", "cobblestone", 0.7), ("mossy_stone_bricks", "cracked_stone_bricks", 0.7)])
 
-CONCRETE_RUBBLE = ["light_gray_concrete_powder", "gray_concrete", "cobblestone", "gravel", "andesite", "tuff"]
-BRICK_RUBBLE = ["bricks", "cobblestone", "gravel", "cracked_stone_bricks", "mud_bricks", "andesite"]
-STONE_RUBBLE = ["cracked_stone_bricks", "cobblestone", "mossy_cobblestone", "stone", "gravel", "andesite"]
+# Rubble the processors heap at placement: no falling blocks, no concrete.
+CONCRETE_RUBBLE = ["cobblestone", "cobbled_deepslate", "tuff", "andesite", "cracked_stone_bricks", "mossy_cobblestone"]
+BRICK_RUBBLE = ["bricks", "cobblestone", "cracked_stone_bricks", "mud_bricks", "andesite", "mossy_cobblestone"]
+STONE_RUBBLE = ["cracked_stone_bricks", "cobblestone", "mossy_cobblestone", "stone", "tuff", "andesite"]
 
 # Target palettes: every list is muted; the family members of the source mix map onto them in turn.
 BRONZE = ["brown_terracotta", "terracotta", "brown_concrete", "waxed_exposed_copper", "mud_bricks", "waxed_weathered_copper"]
@@ -197,7 +199,7 @@ def designs() -> dict[str, list[Design]]:
                        Design("shorter", (floors("radio_mast", (-6, -3)),)), Design("rusted", (MAST_RUSTED,)), Design("dark", (MAST_DARK,), 1)],
         "water_tower": [Design("shipped", weight=3), Design("rusted", (TANK_RUSTED,)), Design("drained", (TANK_DRAINED,)),
                         Design("dark", (TANK_DARK,), 1)],
-        "overpass": [Design("shipped", weight=3), Design("longer", (bays("overpass", 1, "z"),)), Design("grey", (ROAD_GREY,), 1),
+        "overpass": [Design("shipped", weight=3), Design("grey", (ROAD_GREY,), 1),
                      Design("bitten", (bite(CONCRETE_RUBBLE, radius=(0.2, 0.3), pile_max=4),)), Design("dry", (DRY,), 1)],
         "cooling_tower": [Design("shipped", weight=3), Design("dark", (COOL_DARK,)), Design("sand", (COOL_SAND,), 1),
                           Design("bitten", (bite(CONCRETE_RUBBLE, radius=(0.12, 0.2), pile_max=5),)), Design("dry", (DRY,), 1)],

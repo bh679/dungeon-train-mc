@@ -19,7 +19,7 @@
         "minecraft:cobblestone",
         "minecraft:mossy_cobblestone",
         "minecraft:stone",
-        "minecraft:gravel",
+        "minecraft:tuff",
         "minecraft:andesite"
       ],
       "pile_scale": 0.8,

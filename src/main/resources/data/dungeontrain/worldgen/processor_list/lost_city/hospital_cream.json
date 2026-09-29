@@ -12,40 +12,56 @@
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
-          "from": "minecraft:light_gray_concrete",
-          "to": "minecraft:smooth_sandstone"
-        },
-        {
           "from": "minecraft:light_gray_terracotta",
-          "to": "minecraft:cut_sandstone"
-        },
-        {
-          "from": "minecraft:light_gray_concrete_powder",
-          "to": "minecraft:sandstone"
-        },
-        {
-          "from": "minecraft:light_gray_concrete",
-          "to": "minecraft:cut_sandstone"
-        },
-        {
-          "from": "minecraft:gray_concrete",
           "to": "minecraft:smooth_sandstone"
         },
         {
-          "from": "minecraft:light_gray_concrete_powder",
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:cut_sandstone"
+        },
+        {
+          "from": "minecraft:polished_diorite",
           "to": "minecraft:sandstone"
+        },
+        {
+          "from": "minecraft:cut_sandstone",
+          "to": "minecraft:chiseled_sandstone"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:smooth_red_sandstone"
         },
         {
           "from": "minecraft:andesite",
           "to": "minecraft:cut_sandstone"
         },
         {
-          "from": "minecraft:polished_andesite",
+          "from": "minecraft:tuff",
           "to": "minecraft:smooth_sandstone"
         },
         {
-          "from": "minecraft:tuff",
+          "from": "minecraft:polished_andesite",
           "to": "minecraft:sandstone"
+        },
+        {
+          "from": "minecraft:polished_tuff",
+          "to": "minecraft:cut_sandstone"
+        },
+        {
+          "from": "minecraft:tuff_bricks",
+          "to": "minecraft:smooth_sandstone"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:sandstone"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:cut_sandstone"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:smooth_sandstone"
         }
       ]
     },

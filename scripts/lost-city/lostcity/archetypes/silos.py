@@ -2,7 +2,8 @@
 headhouse at one end. The silos repeat every 8 blocks along x, so a bay stretch adds or drops one."""
 
 from ..blocks import CONCRETE, CONCRETE_DARK, CONCRETE_WHITE, GLASS_DARK, STEEL_DARK, block
-from ..canvas import Canvas
+from .. import furnish
+from ..canvas import Canvas, envelope_air
 from ..shapes import box, disc, ring, walls
 from ..spec import Archetype, ArchetypeSpec
 from .common import finish, footprint_pad
@@ -26,7 +27,11 @@ def draw(canvas: Canvas) -> None:
         canvas.put_all(disc(cx, CZ, SILO_TOP + 2, R - 2.5, CONCRETE_DARK))
     _gallery(canvas)
     _headhouse(canvas)
-    finish(canvas, SPEC, envelope=(HEAD[0] + 1, 1, HEAD[1] + 1, HEAD[2] - 1, HEAD_TOP - 1, HEAD[3] - 1))
+    for cx in CENTRES:
+        furnish.hay_fill(canvas, SPEC.seed + cx, cx, CZ, R - 1.0, 1, 4)
+    envelope_air(canvas, HEAD[0] + 1, 1, HEAD[1] + 1, HEAD[2] - 1, HEAD_TOP - 1, HEAD[3] - 1)
+    furnish.kit(canvas, SPEC.seed, "hut", (HEAD[0] + 1, HEAD[1] + 1, HEAD[2] - 1, HEAD[3] - 1), [1], 0.08)
+    finish(canvas, SPEC)
 
 
 def _gallery(canvas: Canvas) -> None:

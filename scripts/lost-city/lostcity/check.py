@@ -4,7 +4,7 @@ These mirror what LostCityTemplatesTest asserts on the committed files, so a bro
 here, at generation time, with a message naming the archetype.
 """
 
-from .blocks import AIR, KNOWN, PAD_NATURAL
+from .blocks import AIR, KNOWN, PAD_NATURAL, VALUABLE
 from .canvas import Cells
 from .spec import ArchetypeSpec
 
@@ -20,9 +20,26 @@ def validate(cells: Cells, spec: ArchetypeSpec) -> list[str]:
     errors += _unknown_blocks(cells)
     errors += _pad(cells, sx, sz)
     errors += _margin(cells, spec)
-    if not any(pos[1] == sy - 1 for pos in cells):
-        errors.append("top layer is empty: size.y should be tight to the roof")
+    top = max(pos[1] for pos in cells)
+    if top < sy - 4:
+        errors.append(f"top {sy - 1 - top} layers are empty: size.y should be tight to the roof")
+    errors += _gravity(cells)
+    errors += _valuables(cells)
     return [f"{spec.name}: {e}" for e in errors]
+
+
+def _gravity(cells: Cells) -> list[str]:
+    from .canvas import Canvas
+    from .gravity import falls, supported
+    view = Canvas((10_000, 10_000, 10_000))
+    view._cells = dict(cells)
+    bad = [pos for pos, s in cells.items() if pos[1] >= 1 and falls(s) and not supported(view, pos)]
+    return [f"{len(bad)} falling blocks without support, e.g. {bad[0]}"] if bad else []
+
+
+def _valuables(cells: Cells) -> list[str]:
+    names = {s.name for s in cells.values() if s.name in VALUABLE}
+    return [f"valuable blocks used: {', '.join(sorted(names))}"] if names else []
 
 
 def _unknown_blocks(cells: Cells) -> list[str]:
