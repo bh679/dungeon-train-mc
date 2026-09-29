@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.GenDeterminismLog;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.worldgen.LodGeneration;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
@@ -327,7 +328,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             if (fullCore) Heightmap.primeHeightmaps(chunk, WG_HEIGHTMAPS);
 
             if (fullCore) {
+                long decoT0 = GenProfiler.t0();       // the pass DH's LOD generator threads pay for (sub-portion of NETHER_FEATURE)
                 decorateCoreChunkWithNetherFeatures(level, ctx.chunkGenerator(), server, cp, bedY, bandCtx);
+                GenProfiler.add(GenProfiler.Bucket.NETHER_DECO, decoT0);
                 changed = true;   // decoration writes through the level; the heightmaps must be re-primed
             }
 
@@ -435,6 +438,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * <p>A vanilla ({@code minecraft:}) core biome places only vanilla and Dungeon Train features — see
      * {@link NetherCoreFeatureFilter}. Other mods add their own ores to the vanilla Nether biomes, and the
      * vanilla-style band must look like the vanilla Nether. BetterNether core biomes keep their full list.</p>
+     *
+     * <p><b>LOD-lite:</b> on a Distant Horizons generator thread ({@link LodGeneration#liteDecoration()})
+     * only the silhouette steps ({@link LodGeneration#LOD_VISIBLE_STEPS}) are placed. A skipped feature
+     * still consumes its {@code featureIndex}, so every kept feature is seeded exactly as in the full
+     * pass — the LOD's fungi and pillars stand where the real chunk's will; only the sub-block detail
+     * (ores, glowstone, fire, mushrooms, springs) is absent from the never-saved LOD chunk.</p>
      */
     private void decorateCoreChunkWithNetherFeatures(WorldGenLevel level, ChunkGenerator generator,
                                                      MinecraftServer server, ChunkPos cp, int bedY,
@@ -454,10 +463,13 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         for (Holder<Biome> b : biomes) {
             maxSteps = Math.max(maxSteps, b.value().getGenerationSettings().features().size());
         }
+        boolean lite = LodGeneration.liteDecoration();
         int featureIndex = 0;
         int placed = 0;
         int skipped = 0;
+        int lodSkipped = 0;
         for (int step = 0; step < maxSteps; step++) {
+            boolean lodVisibleStep = !lite || LodGeneration.isLodVisibleStep(step);
             Set<PlacedFeature> placedThisStep = new HashSet<>(); // a feature shared by biomes runs once/step
             for (Holder<Biome> biome : biomes) {
                 List<HolderSet<PlacedFeature>> steps = biome.value().getGenerationSettings().features();
@@ -471,7 +483,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     }
                     PlacedFeature pf = holder.value();
                     if (!placedThisStep.add(pf)) continue;
-                    random.setFeatureSeed(decoSeed, featureIndex++, step);
+                    int seedIndex = featureIndex++;          // consumed even when LOD-lite skips: seeds stay identical
+                    if (!lodVisibleStep) {
+                        lodSkipped++;
+                        continue;
+                    }
+                    random.setFeatureSeed(decoSeed, seedIndex, step);
                     try {
                         if (remapForCore(pf, coreBottom, coreTop).place(level, generator, random, origin)) {
                             placed++;
@@ -485,9 +502,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         long decorated = DECORATED_LOG.record().orElse(0L);
         if (decorated > 0) {
             LOGGER.debug("[DungeonTrain] Decorated {} Nether core chunk(s) in last {}s; latest {} with {} biome(s) "
-                            + "({}/{} features placed, {} non-vanilla skipped, band y{}..{})",
+                            + "({}/{} features placed, {} non-vanilla skipped, lodLite={} ({} below LOD scale skipped), band y{}..{})",
                     decorated, DECORATED_LOG.intervalSeconds(),
-                    cp, biomes.size(), placed, featureIndex, skipped, coreBottom, coreTop);
+                    cp, biomes.size(), placed, featureIndex, skipped, lite, lodSkipped, coreBottom, coreTop);
         }
         if (GenDeterminismLog.ENABLED) {
             StringBuilder biomeKeys = new StringBuilder();

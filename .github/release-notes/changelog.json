@@ -20698,6 +20698,77 @@
       "released": true,
       "released_in": "v0.1024.0",
       "released_at": "2026-09-29T09:23:57Z"
+    },
+    {
+      "id": "sweep-nonblocking-chunks",
+      "version": "0.1025.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "No more freezes when the train runs into new land",
+      "summary": "The game could freeze for a fraction of a second when the train ran into land that was still being generated, while it waited for that ground to finish. It now carries on and deals with that stretch a moment later, once it's ready.",
+      "highlights": [
+        "Fewer hitches when riding fast into unexplored terrain",
+        "The train still breaks blocks in its path and pushes water aside as before"
+      ],
+      "pr": 1659,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1025.0",
+      "released_at": "2026-09-29T09:49:19Z"
+    },
+    {
+      "id": "end-return-wakes-held-train",
+      "version": "0.1026.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Returning from the End puts you back on your train",
+      "summary": "Coming back through the End's exit portal now lands you on the train you left.",
+      "highlights": [],
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1027.0",
+      "released_at": "2026-09-29T11:38:22Z",
+      "pr": 1660
+    },
+    {
+      "id": "distant-horizons-lod-load",
+      "version": "0.1027.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility",
+        "world"
+      ],
+      "title": "Smoother ticks with Distant Horizons",
+      "summary": "Distant Horizons now generates its distant terrain more gently, so the train and the world keep ticking smoothly on smaller CPUs while it works in the background.",
+      "highlights": [],
+      "pr": 1662,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1027.0",
+      "released_at": "2026-09-29T11:38:22Z"
+    },
+    {
+      "id": "biome-column-memo",
+      "version": "0.1028.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Faster terrain generation",
+      "summary": "New terrain around the train now takes less server work to generate. The world itself is unchanged.",
+      "highlights": [],
+      "pr": 1663,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

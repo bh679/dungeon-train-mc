@@ -99,6 +99,28 @@ def test_options_txt_at_root_fails():
     assert proc.returncode != 0
 
 
+def test_distant_horizons_override_passes():
+    """DH's low-CPU defaults are a deliberate, allowlisted companion config."""
+    proc = run(*BASELINE, "config/DistantHorizons.toml")
+    assert proc.returncode == 0, proc.stderr
+
+
+def test_distant_horizons_override_pins_low_cpu_values():
+    """The shipped file must parse as TOML and hold exactly the values the README documents —
+    a typo here would make DH silently fall back to its default (BALANCED) thread count."""
+    import tomllib
+
+    with open(os.path.join(REAL_OVERRIDES, "config", "DistantHorizons.toml"), "rb") as f:
+        cfg = tomllib.load(f)
+    threading = cfg["common"]["multiThreading"]
+    assert threading["numberOfThreads"] == 1
+    assert threading["threadRunTimeRatio"] == "0.5"   # DH stores the ratio as a string
+    assert threading["threadPriority"] == 3
+    assert cfg["client"]["advanced"]["graphics"]["quality"]["lodChunkRenderDistanceRadius"] == 128
+    assert "rendererMode" not in str(cfg)             # never ship the renderer switch
+    assert "worldGenerator" not in cfg.get("common", {})
+
+
 def test_empty_tree_passes():
     proc = run()
     assert proc.returncode == 0, proc.stderr
