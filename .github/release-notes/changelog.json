@@ -20857,8 +20857,25 @@
       "released_at": null
     },
     {
-      "id": "carriage-test-flatbed-rolls",
+      "id": "reseed-keep-place-near-template",
       "version": "0.1034.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Reseed leaves you where you are",
+      "summary": "Reseeding a test carriage now leaves you where you were standing, as long as you're close by.",
+      "highlights": [],
+      "pr": 1674,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "carriage-test-flatbed-rolls",
+      "version": "0.1035.0",
       "type": "feat",
       "tags": [
         "feature",

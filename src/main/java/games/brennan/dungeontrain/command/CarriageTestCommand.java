@@ -436,7 +436,7 @@ public final class CarriageTestCommand {
 
     /**
      * {@code editor test reseed} — re-roll the copy the author is standing in and leave them where
-     * they stood, if the new roll left that spot open. The same rule
+     * they stood, if that was within a chunk of the copy and the new roll left it open. The same rule
      * {@code PortalTestCommand.runReseedNow} follows.
      */
     static int runReseedNow(CommandSourceStack source, boolean focus) {
@@ -458,7 +458,9 @@ public final class CarriageTestCommand {
         if (result == 0 || !wasHere) return result;
 
         CarriageTestSession.Session fresh = CarriageTestSession.get(player.getUUID());
-        if (fresh == null || !fresh.box().isInside(BlockPos.containing(stood))) return result;
+        if (fresh == null || !PortalTestCommand.keepsPlaceOnReseed(fresh.box(), BlockPos.containing(stood))) {
+            return result;
+        }
         if (!overworld.noCollision(player, player.getBoundingBox().move(stood.subtract(player.position())))) {
             return result;
         }
