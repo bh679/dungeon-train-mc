@@ -14,7 +14,7 @@ from ..shapes import box, walls
 from ..spec import Archetype, ArchetypeSpec
 from .common import finish, footprint_pad
 
-SPEC = ArchetypeSpec(name="snapped_tower", size=(53, 42, 35), floor_period=None, bay_period_x=None, bay_period_z=None,
+SPEC = ArchetypeSpec(name="snapped_tower", size=(65, 42, 35), floor_period=None, bay_period_x=None, bay_period_z=None,
                      margin=4, seed=0x5A99, weight=4)
 
 X0, Z0, X1, Z1 = 4, 10, 18, 24         # 15 wide, centred so the rubble can spill six blocks either side
@@ -51,7 +51,7 @@ def draw(canvas: Canvas) -> None:
     end = START + FLOORS * PERIOD - BREAK + 4
     m = SPEC.margin
     rubble_field(canvas, SPEC.seed, (X1 - 2, Z0 + 2, START + SMASH_FROM - 1, Z1 - 2), 2, 8, m)   # under the break and the hanging half
-    rubble_field(canvas, SPEC.seed + 1, (START + SMASH_FROM - 2, Z0 + 2, end, Z1 - 2), 3, 9, m)  # where it came down
+    rubble_field(canvas, SPEC.seed + 1, (START + SMASH_FROM - 2, Z0 + 2, end, Z1 - 2), 3, 11, m)  # where it came down, running on past the end
     rubble_field(canvas, SPEC.seed + 2, (X0 + 1, Z0 + 1, X1 + 1, Z1 - 1), 1, 6, m)               # round the stub's foot
     for f in range(STUB_FLOORS):
         y = 2 + f * PERIOD
