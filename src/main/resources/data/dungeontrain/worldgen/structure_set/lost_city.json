@@ -277,6 +277,14 @@
     {
       "structure": "dungeontrain:lost_city/silos",
       "weight": 4
+    },
+    {
+      "structure": "dungeontrain:lost_city/leaning_tower",
+      "weight": 4
+    },
+    {
+      "structure": "dungeontrain:lost_city/fallen_block",
+      "weight": 4
     }
   ],
   "placement": {

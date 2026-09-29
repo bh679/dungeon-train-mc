@@ -206,4 +206,10 @@ def designs() -> dict[str, list[Design]]:
         "silos": [Design("shipped"), Design("five", (bays("silos", 1),)), Design("three", (bays("silos", -1),)),
                   Design("rusted", (SILO_RUSTED,)), Design("dark", (SILO_DARK,), 1), Design("bitten", (bite(CONCRETE_RUBBLE, radius=(0.2, 0.3)),)),
                   Design("dry", (DRY,), 1)],
+        "leaning_tower": [Design("shipped", weight=3), Design("dark", (OFFICE_DARK,)), Design("pale", (OFFICE_PALE,)),
+                          Design("bronze", (OFFICE_BRONZE,), 1), Design("bitten", (bite(CONCRETE_RUBBLE, radius=(0.2, 0.3)),)),
+                          Design("dry", (DRY,), 1)],
+        "fallen_block": [Design("shipped", weight=3), Design("longer", (bays("fallen_block", 2, "z"),)), Design("dark", (APT_DARK,)),
+                         Design("pale", (APT_PALE,)), Design("warm", (APT_WARM,), 1),
+                         Design("bitten", (bite(BRICK_RUBBLE, radius=(0.15, 0.25), pile_max=4),)), Design("dry", (DRY,), 1)],
     }

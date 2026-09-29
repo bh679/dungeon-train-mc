@@ -1,0 +1,69 @@
+{
+  "name": "dungeontrain:lost_city/fallen_block",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/fallen_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/fallen_block_shipped"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/fallen_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/fallen_block_longer"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/fallen_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/fallen_block_dark"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/fallen_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/fallen_block_pale"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/fallen_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/fallen_block_warm"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/fallen_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/fallen_block_bitten"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/fallen_block",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/fallen_block_dry"
+      }
+    }
+  ]
+}

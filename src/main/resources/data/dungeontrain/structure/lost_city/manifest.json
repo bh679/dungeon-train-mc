@@ -47,6 +47,22 @@
     "tags": [],
     "weight": 3
   },
+  "fallen_block": {
+    "bay_period_x": null,
+    "bay_period_z": 4,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": null,
+    "margin": 3,
+    "name": "fallen_block",
+    "seed": 64017,
+    "size": [
+      49,
+      17,
+      33
+    ],
+    "tags": [],
+    "weight": 4
+  },
   "hospital": {
     "bay_period_x": 4,
     "bay_period_z": 4,
@@ -78,6 +94,22 @@
     ],
     "tags": [],
     "weight": 5
+  },
+  "leaning_tower": {
+    "bay_period_x": null,
+    "bay_period_z": null,
+    "biomes": "#dungeontrain:lost_city_trackside",
+    "floor_period": null,
+    "margin": 4,
+    "name": "leaning_tower",
+    "seed": 7849,
+    "size": [
+      37,
+      51,
+      23
+    ],
+    "tags": [],
+    "weight": 4
   },
   "office_tower": {
     "bay_period_x": 4,
