@@ -20769,6 +20769,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "lost-city-terrain-fit-sibling",
+      "version": "0.1029.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "world",
+        "balance"
+      ],
+      "title": "Ruined cities settle into the land",
+      "summary": "The ruined-city buildings along the line now sit in the terrain around them instead of on flat, stamped pads, and they appear gradually rather than all at once.",
+      "highlights": [
+        "Buildings settle onto the ground or the seabed. Hills climb into their outer rooms, and seas flood the ones that stand in water.",
+        "Where the ruins begin, only a scattering of buildings appears at first, thickening steadily further along the line.",
+        "The terrain fit now ships as its own mod, Lost City Terrain Fit, bundled inside Dungeon Train. Nothing extra to install."
+      ],
+      "pr": 1667,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
