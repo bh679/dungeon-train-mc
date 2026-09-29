@@ -20937,9 +20937,9 @@
       "highlights": [],
       "pr": 1676,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
     },
     {
       "id": "stage-blocks-left-creative-tab",
@@ -20955,9 +20955,9 @@
       "highlights": [],
       "pr": 1677,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
     },
     {
       "id": "editor-whole-room-upload",
@@ -20973,9 +20973,9 @@
       "highlights": [],
       "pr": 1678,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
     },
     {
       "id": "stage-colour-blocks",
@@ -20990,9 +20990,9 @@
       "highlights": [],
       "pr": 1680,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
     },
     {
       "id": "open-template-files",
@@ -21008,9 +21008,9 @@
       "highlights": [],
       "pr": 1679,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
     },
     {
       "id": "paintings-stay-hung-on-carriages",
@@ -21026,9 +21026,9 @@
       "highlights": [],
       "pr": 1682,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
     },
     {
       "id": "tunnel-envelope-red-wash",
@@ -21043,9 +21043,9 @@
       "highlights": [],
       "pr": 1683,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
     },
     {
       "id": "test-the-carriage-track-pieces",
@@ -21060,9 +21060,9 @@
       "highlights": [],
       "pr": 1685,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
     },
     {
       "id": "stage-fence-connect-modes",
@@ -21078,9 +21078,9 @@
       "highlights": [],
       "pr": 1684,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
     }
   ]
 }
