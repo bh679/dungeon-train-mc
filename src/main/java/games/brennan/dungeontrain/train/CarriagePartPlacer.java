@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.compat.PaintingTransformProcessor;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartVariantBlocks;
@@ -132,6 +133,11 @@ public final class CarriagePartPlacer {
             // the parts overlay is placed on a carriage lifted into a Sable sub-level the same tick,
             // which relights it, so world-side relight is discarded work. Editor previews and in-carriage
             // part swaps (relight=true) are permanent blocks with no Sable lift, so they relight (flag 3).
+            // Fast Paintings' block paintings don't mirror themselves: on a mirrored side each one
+            // would face into the wall (and on a relit stamp, pop). Re-hang it on the wall it now
+            // stands beside. Both paths — SectionLocalStampProcessor holds painting cells back to
+            // finalizeProcessing so this processor sees them there too.
+            if (p.mirror() != Mirror.NONE) settings.addProcessor(PaintingTransformProcessor.horizontal());
             if (relight) {
                 CarriagePlacer.stampTemplateRelit(level, stampOrigin, template, settings);
                 // The part's hung decoration, under the placement's own mirror so a picture on a

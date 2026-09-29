@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.template;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import games.brennan.dungeontrain.block.stage.StageAccentColour;
 import games.brennan.dungeontrain.block.stage.StageStoneFamily;
 import games.brennan.dungeontrain.block.stage.StageWoodFamily;
 
@@ -14,8 +15,8 @@ import java.util.TreeMap;
 
 /**
  * The baked per-stage answer for every stage placeholder block — what {@code stage_block_N},
- * {@code stage_stairs_N}, {@code stage_slab_N}, {@code stage_button}, {@code stage_pressure_plate}
- * and the {@code stage_*} wood set become when a carriage lands in this stage.
+ * {@code stage_stairs_N}, {@code stage_slab_N}, {@code stage_button}, {@code stage_pressure_plate},
+ * the {@code stage_*} wood and stone sets and the terracotta/concrete colour slots become when a carriage lands in this stage.
  *
  * <p>Persisted as the {@code "palette"} object of a stage in {@code stages.json}, written by
  * {@code editor.StagePaletteBaker} and hand-editable. Every field is a plain block id so a builder
@@ -34,14 +35,20 @@ import java.util.TreeMap;
  *                      survive re-bakes (the Stage Palette panel writes them).
  * @param woodLocked    the user chose {@code wood}; a re-bake keeps it instead of re-detecting.
  * @param stoneLocked   the user chose {@code stone}; likewise.
+ * @param terracotta    the 3 terracotta colour slots (primary, secondary, background) — author-chosen,
+ *                      never derived, so a re-bake keeps them.
+ * @param concrete      the 3 concrete colour slots, likewise.
  */
 public record StagePalette(List<String> solid, List<String> stairs, List<String> slabs,
                            String button, String pressurePlate, String wood, String stone,
-                           Map<String, String> overrides, boolean woodLocked, boolean stoneLocked) {
+                           Map<String, String> overrides, boolean woodLocked, boolean stoneLocked,
+                           List<String> terracotta, List<String> concrete) {
 
     public static final int SOLID_SLOTS = 10;
     public static final int STAIRS_SLOTS = 2;
     public static final int SLAB_SLOTS = 2;
+    /** Colour slots per material: primary, secondary, background. */
+    public static final int COLOUR_SLOTS = 3;
 
     public static final String K_SOLID = "solid";
     public static final String K_STAIRS = "stairs";
@@ -53,12 +60,18 @@ public record StagePalette(List<String> solid, List<String> stairs, List<String>
     public static final String K_OVERRIDES = "overrides";
     public static final String K_WOOD_LOCKED = "woodLocked";
     public static final String K_STONE_LOCKED = "stoneLocked";
+    public static final String K_TERRACOTTA = "terracotta";
+    public static final String K_CONCRETE = "concrete";
 
     private static final String DEFAULT_SOLID = "minecraft:stone";
     private static final String DEFAULT_STAIRS = "minecraft:stone_stairs";
     private static final String DEFAULT_SLAB = "minecraft:stone_slab";
     private static final String DEFAULT_BUTTON = "minecraft:stone_button";
     private static final String DEFAULT_PLATE = "minecraft:stone_pressure_plate";
+    private static final List<String> DEFAULT_TERRACOTTA =
+        List.of("minecraft:terracotta", "minecraft:terracotta", "minecraft:terracotta");
+    private static final List<String> DEFAULT_CONCRETE =
+        List.of("minecraft:white_concrete", "minecraft:light_gray_concrete", "minecraft:gray_concrete");
 
     /** What a placeholder becomes when no stage (or a stage without a palette) is in scope. */
     public static final StagePalette DEFAULT = new StagePalette(
@@ -74,6 +87,16 @@ public record StagePalette(List<String> solid, List<String> stairs, List<String>
         wood = StageWoodFamily.byId(wood).orElse(StageWoodFamily.FALLBACK).id();
         stone = StageStoneFamily.byId(stone).orElse(StageStoneFamily.FALLBACK).id();
         overrides = cleanOverrides(overrides);
+        terracotta = colours(terracotta, DEFAULT_TERRACOTTA);
+        concrete = colours(concrete, DEFAULT_CONCRETE);
+    }
+
+    /** Pre-colour shape — terracotta/concrete fall back to the defaults. */
+    public StagePalette(List<String> solid, List<String> stairs, List<String> slabs,
+                        String button, String pressurePlate, String wood, String stone,
+                        Map<String, String> overrides, boolean woodLocked, boolean stoneLocked) {
+        this(solid, stairs, slabs, button, pressurePlate, wood, stone, overrides, woodLocked, stoneLocked,
+            null, null);
     }
 
     /** Derived-only shape: no overrides, families unlocked. */
@@ -97,29 +120,37 @@ public record StagePalette(List<String> solid, List<String> stairs, List<String>
     public StagePalette withOverride(String name, String blockId) {
         Map<String, String> next = new LinkedHashMap<>(overrides);
         if (blockId == null || blockId.isBlank()) next.remove(name); else next.put(name, blockId.trim());
-        return new StagePalette(solid, stairs, slabs, button, pressurePlate, wood, stone, next, woodLocked, stoneLocked);
+        return new StagePalette(solid, stairs, slabs, button, pressurePlate, wood, stone, next, woodLocked, stoneLocked,
+            terracotta, concrete);
     }
 
     /** Copy with the wood family set by the user ({@code null} ⇒ unlock, keep the current value). */
     public StagePalette withWood(StageWoodFamily family) {
         return new StagePalette(solid, stairs, slabs, button, pressurePlate,
-            family == null ? wood : family.id(), stone, overrides, family != null, stoneLocked);
+            family == null ? wood : family.id(), stone, overrides, family != null, stoneLocked, terracotta, concrete);
     }
 
     /** Copy with the stone family set by the user ({@code null} ⇒ unlock, keep the current value). */
     public StagePalette withStone(StageStoneFamily family) {
         return new StagePalette(solid, stairs, slabs, button, pressurePlate, wood,
-            family == null ? stone : family.id(), overrides, woodLocked, family != null);
+            family == null ? stone : family.id(), overrides, woodLocked, family != null, terracotta, concrete);
+    }
+
+    /** Copy with the terracotta and concrete colour slots replaced (null ⇒ the defaults). */
+    public StagePalette withColours(List<String> terracotta, List<String> concrete) {
+        return new StagePalette(solid, stairs, slabs, button, pressurePlate, wood, stone, overrides,
+            woodLocked, stoneLocked, terracotta, concrete);
     }
 
     /**
-     * {@code derived} (a fresh bake) carrying this palette's user state: overrides, and the locked
-     * families. What every re-bake goes through so a user's choices are never re-derived away.
+     * {@code derived} (a fresh bake) carrying this palette's user state: overrides, the locked
+     * families and the colour slots. What every re-bake goes through so a user's choices are never
+     * re-derived away.
      */
     public StagePalette carryUserStateOnto(StagePalette derived) {
         return new StagePalette(derived.solid, derived.stairs, derived.slabs, derived.button,
             derived.pressurePlate, woodLocked ? wood : derived.wood, stoneLocked ? stone : derived.stone,
-            overrides, woodLocked, stoneLocked);
+            overrides, woodLocked, stoneLocked, terracotta, concrete);
     }
 
     /** Solid slot {@code index} (0-based); lists shorter than the slot count loop. */
@@ -135,6 +166,31 @@ public record StagePalette(List<String> solid, List<String> stairs, List<String>
     /** Slab slot {@code index} (0-based), looped. */
     public String slab(int index) {
         return looped(slabs, index);
+    }
+
+    /** Terracotta colour slot {@code index} (0 primary, 1 secondary, 2 background), looped. */
+    public String terracotta(int index) {
+        return looped(terracotta, index);
+    }
+
+    /** Concrete colour slot {@code index} (0 primary, 1 secondary, 2 background), looped. */
+    public String concrete(int index) {
+        return looped(concrete, index);
+    }
+
+    /** Stained glass in accent colour {@code index} (0 accent, 1 second accent) — see {@link StageAccentColour}. */
+    public String glass(int index) {
+        return "minecraft:" + StageAccentColour.accent(concrete, index) + "_stained_glass";
+    }
+
+    /** Stained glass pane in accent colour {@code index}. */
+    public String glassPane(int index) {
+        return "minecraft:" + StageAccentColour.accent(concrete, index) + "_stained_glass_pane";
+    }
+
+    /** Glazed terracotta in the accent colour. */
+    public String glazedTerracotta() {
+        return "minecraft:" + StageAccentColour.accent(concrete, 0) + "_glazed_terracotta";
     }
 
     /** The wood family, never null (the constructor already fell back). */
@@ -163,6 +219,8 @@ public record StagePalette(List<String> solid, List<String> stairs, List<String>
             }
             o.add(K_OVERRIDES, ov);
         }
+        o.add(K_TERRACOTTA, toArray(terracotta));
+        o.add(K_CONCRETE, toArray(concrete));
         if (woodLocked) o.addProperty(K_WOOD_LOCKED, true);
         if (stoneLocked) o.addProperty(K_STONE_LOCKED, true);
         return o;
@@ -180,7 +238,8 @@ public record StagePalette(List<String> solid, List<String> stairs, List<String>
             strings(o.get(K_SOLID)), strings(o.get(K_STAIRS)), strings(o.get(K_SLABS)),
             string(o.get(K_BUTTON)), string(o.get(K_PRESSURE_PLATE)), string(o.get(K_WOOD)),
             string(o.get(K_STONE)), overrides(o.get(K_OVERRIDES)),
-            bool(o.get(K_WOOD_LOCKED)), bool(o.get(K_STONE_LOCKED)));
+            bool(o.get(K_WOOD_LOCKED)), bool(o.get(K_STONE_LOCKED)),
+            strings(o.get(K_TERRACOTTA)), strings(o.get(K_CONCRETE)));
     }
 
     private static Map<String, String> cleanOverrides(Map<String, String> in) {
@@ -224,6 +283,21 @@ public record StagePalette(List<String> solid, List<String> stairs, List<String>
             }
         }
         if (out.isEmpty()) out.add(fallback);
+        return List.copyOf(out);
+    }
+
+    /**
+     * Exactly {@link #COLOUR_SLOTS} ids: blanks dropped, a short list padded from {@code fallback}
+     * slot by slot, an empty one replaced by it outright.
+     */
+    private static List<String> colours(List<String> in, List<String> fallback) {
+        List<String> out = new ArrayList<>();
+        if (in != null) {
+            for (String s : in) {
+                if (s != null && !s.isBlank() && out.size() < COLOUR_SLOTS) out.add(s.trim());
+            }
+        }
+        for (int i = out.size(); i < COLOUR_SLOTS; i++) out.add(fallback.get(i));
         return List.copyOf(out);
     }
 

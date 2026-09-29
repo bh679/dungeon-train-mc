@@ -66,12 +66,50 @@ final class EditorScreenActionsTest {
     // ---- icon row ----
 
     @Test
+    @DisplayName("open files names the selection's file and is live for any selection when the files are local")
+    void openFilesLocal() {
+        java.util.function.BooleanSupplier was = EditorScreenActions.filesAreLocal;
+        EditorScreenActions.filesAreLocal = () -> true;
+        try {
+            VariantKey k = VariantKey.of(PlotCategory.WHOLE, "hall", "hall");
+            VariantKey elsewhere = VariantKey.of(PlotCategory.CARRIAGES, "windowed", "windowed");
+            EditorScreenActions.Icon icon = EditorScreenActions.openFilesIcon(
+                ctx(k, gated("WHOLE", "hall", "hall", 20, List.of()), elsewhere, PlotCategory.CARRIAGES));
+            assertInstanceOf(CommandMenuEntry.ClientAction.class, icon.entry());
+            assertEquals("wholecarriages/hall.nbt", icon.detail());
+
+            VariantKey arch = VariantKey.of(PlotCategory.ARCHITECTURE, "walls", "walls");
+            assertFalse(EditorScreenActions.openFilesIcon(
+                ctx(arch, gated("ARCHITECTURE", "walls", "walls", 20, List.of()), arch, PlotCategory.ARCHITECTURE))
+                .enabled());
+        } finally {
+            EditorScreenActions.filesAreLocal = was;
+        }
+    }
+
+    @Test
+    @DisplayName("open files is off on a remote server, whose files are not on this machine")
+    void openFilesRemote() {
+        java.util.function.BooleanSupplier was = EditorScreenActions.filesAreLocal;
+        EditorScreenActions.filesAreLocal = () -> false;
+        try {
+            VariantKey k = VariantKey.of(PlotCategory.WHOLE, "hall", "hall");
+            EditorScreenActions.Icon icon = EditorScreenActions.openFilesIcon(
+                ctx(k, gated("WHOLE", "hall", "hall", 20, List.of()), k, PlotCategory.WHOLE));
+            assertFalse(icon.enabled());
+            assertEquals(EditorScreenLang.DISABLED_NOT_LOCAL, icon.disabledKey());
+        } finally {
+            EditorScreenActions.filesAreLocal = was;
+        }
+    }
+
+    @Test
     @DisplayName("standing in the selected carriage: every icon is live and position-resolved commands are plain")
     void iconsWhenStanding() {
         VariantKey k = VariantKey.of(PlotCategory.CARRIAGES, "windowed", "windowed");
         EditorScreenActions.Ctx c = ctx(k, gated("CARRIAGES", "windowed", "windowed", 20, List.of()), k, PlotCategory.CARRIAGES);
         Map<String, EditorScreenActions.Icon> icons = iconsById(c, new ArrayList<>());
-        assertEquals(List.of("save", "rename", "move", "remove", "undo", "redo", "reset", "clear", "submit"),
+        assertEquals(List.of("save", "rename", "move", "remove", "undo", "redo", "open_files", "reset", "clear", "submit"),
             new ArrayList<>(icons.keySet()));
         assertEquals("dungeontrain save", command(icons.get("save").entry()));
         assertInstanceOf(CommandMenuEntry.TypeArg.class, icons.get("rename").entry());
