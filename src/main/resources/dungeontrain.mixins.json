@@ -84,6 +84,7 @@
     "SubLevelHoldingChunkMapLoadMixin",
     "SubLevelHoldingChunkMapSaveTimingMixin",
     "SubLevelStorageFileNoDsyncMixin",
+    "SubLevelTrackingOrderedSnapshotMixin",
     "NetherFortressStructureMixin",
     "NetherFossilStructureMixin",
     "JigsawStructureMixin",

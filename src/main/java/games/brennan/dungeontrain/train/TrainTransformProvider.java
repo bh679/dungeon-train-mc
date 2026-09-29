@@ -86,6 +86,14 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
      * bootstrap eager-fill and the client's first packet-processing pass, short
      * enough to read as a natural standstill start. Tunable. See
      * {@link #beginLoadGrace} and {@link #MOTION_HOLD_UNTIL}.</p>
+     *
+     * <p>The same race hits every mid-ride full sync — an appended group
+     * (whose first MOVE is guaranteed: {@code lastNetworkedPose} starts at the
+     * origin), a group entering tracking range, a reload from holding. A hold
+     * can't cover those without breaking lockstep, so it is closed at the
+     * network layer instead by
+     * {@code mixin.SubLevelTrackingOrderedSnapshotMixin}; this grace stays as
+     * belt and braces for the join burst.</p>
      */
     private static final long WORLD_LOAD_MOTION_GRACE_TICKS = 20L;
 
