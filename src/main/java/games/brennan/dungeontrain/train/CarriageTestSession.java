@@ -28,7 +28,14 @@ public final class CarriageTestSession {
         /** A whole room — one template filling the whole carriage, no shell or contents pass. */
         WHOLE("whole"),
         /** A whole group — one template spanning a run of carriages. */
-        WHOLE_GROUP("whole_group");
+        WHOLE_GROUP("whole_group"),
+        /**
+         * A piece of the line — a track tile, pillar section, staircase or tunnel piece — stood up in
+         * a stretch of track with a carriage on it. {@code templateId} is
+         * {@code track.TrackTestPiece#templateId}; {@code shellSeed} is the piece's roll and
+         * {@code contentsSeed} the line's around it.
+         */
+        TRACKS("tracks");
 
         /** A whole room or group: stood up as one template, rather than a shell plus contents. */
         public boolean isWhole() { return this == WHOLE || this == WHOLE_GROUP; }

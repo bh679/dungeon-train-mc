@@ -3574,6 +3574,8 @@
   "chat.dungeontrain.test_mode.nothing_saves": "Test mode — nothing you build here will be saved.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "No carriage currently has '%s' enabled — turn it on in a carriage's Contents list to test it.",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' has no saved template at this world's carriage size — save it, then test again.",
+  "chat.dungeontrain.track_test.standing_in": "You're on a test stretch of line with '%s' in it, in the %s band — no train attached. Back in the menu returns you to the plot.",
+  "chat.dungeontrain.track_test.unknown_piece": "'%s' isn't a piece of the line that can be tested.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "This world doesn't use the auto-train system (startsWithTrain is off).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain failed: %s: %s",

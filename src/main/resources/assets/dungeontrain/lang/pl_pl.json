@@ -3080,6 +3080,8 @@
   "chat.dungeontrain.test_mode.nothing_saves": "Tryb testowy — nic, co tu zbudujesz, nie zostanie zapisane.",
   "chat.dungeontrain.carriage_test.no_shell_allows": "Żaden wagon nie ma teraz włączonego '%s' — włącz to na liście Zawartość wybranego wagonu, aby przetestować.",
   "chat.dungeontrain.carriage_test.no_whole_template": "'%s' nie ma zapisanego szablonu w rozmiarze wagonu tego świata — zapisz go, a potem przetestuj ponownie.",
+  "chat.dungeontrain.track_test.standing_in": "Jesteś na testowym odcinku toru z '%s', w paśmie %s — bez pociągu. Wstecz w menu wraca na działkę.",
+  "chat.dungeontrain.track_test.unknown_piece": "'%s' nie jest elementem toru, który można przetestować.",
   "chat.dungeontrain.package.dtpacks_package": "dtpacks (%s %s):",
   "chat.dungeontrain.package.world_doesn_t_use": "Ten świat nie używa systemu automatycznego pociągu (startsWithTrain jest wyłączone).",
   "chat.dungeontrain.package.spawntrain_failed": "spawnTrain nie powiódł się: %s: %s",
