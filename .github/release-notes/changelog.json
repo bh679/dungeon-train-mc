@@ -20542,6 +20542,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "batch-collider-updates-carriage-stamping",
+      "version": "0.1017.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "train"
+      ],
+      "title": "Smoother ticks when new carriages join the train",
+      "summary": "Each time the train grew by a group of carriages, the physics engine was told about every single block as it was placed \u2014 thousands of tiny collision updates in one tick, which showed up as a stutter right after each new group appeared. The train now builds a whole group first and hands the physics engine each finished chunk section once, so joining carriages cost a fraction of what they did. Mining or placing blocks on a carriage still updates collision immediately.",
+      "highlights": [
+        "Far fewer physics collision updates when a group of carriages is added",
+        "New performance counters in the lag log so the remaining cost is visible"
+      ],
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
