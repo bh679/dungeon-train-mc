@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.track.TrackGenerator;
+import games.brennan.dungeontrain.train.ForcedConnectCells;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -26,6 +28,13 @@ import java.util.List;
  *
  * <p>Scopes nest: an overlay called from inside another's scope defers to the outer flush.
  * A {@link #note} with no scope open resolves straight away.</p>
+ *
+ * <p><b>On / Off hold for the carriage's life.</b> Vanilla re-derives a fence's arms whenever a
+ * neighbour changes — including the Sable lift's own notify pass. So every On / Off cell in a
+ * carriage plot is {@linkplain ForcedConnectCells#remember remembered}, and
+ * {@code ForcedConnectShapeMixin} keeps its arms. Cells forced before the lift (at source-world
+ * coordinates) are held in a {@linkplain #beginLiftCapture lift capture} that
+ * {@code TrainAssembler} commits once it knows the shipyard origin, re-forcing each one there.</p>
  */
 public final class ConnectPass {
 
@@ -37,6 +46,9 @@ public final class ConnectPass {
     }
 
     private static final ThreadLocal<Frame> FRAME = ThreadLocal.withInitial(Frame::new);
+
+    /** On / Off cells forced at source-world coordinates while a train group is being placed. */
+    private static final ThreadLocal<List<Pending>> LIFT = new ThreadLocal<>();
 
     private ConnectPass() {}
 
@@ -78,15 +90,62 @@ public final class ConnectPass {
         }
     }
 
-    /** Resolve the block at {@code pos} under {@code mode}, writing only when its arms change. */
+    /**
+     * Resolve the block at {@code pos} under {@code mode}, writing only when its arms change, and
+     * register an On / Off cell so its arms hold (see class doc).
+     */
     public static void apply(ServerLevel level, BlockPos pos, VariantConnect.Mode mode) {
         BlockState current = level.getBlockState(pos);
+        if (!VariantConnect.canConnect(current)) return;
         BlockState resolved = VariantConnect.resolve(current, mode, level, pos);
-        if (resolved == current) return;
-        if (mode == VariantConnect.Mode.AUTO) {
-            SilentBlockOps.setBlockSilent(level, pos, resolved);
-        } else {
-            SilentBlockOps.setBlockSilentNoCascade(level, pos, resolved, null);
+        if (resolved != current) {
+            if (mode == VariantConnect.Mode.AUTO) {
+                SilentBlockOps.setBlockSilent(level, pos, resolved);
+            } else {
+                SilentBlockOps.setBlockSilentNoCascade(level, pos, resolved, null);
+            }
         }
+        if (mode == VariantConnect.Mode.ON || mode == VariantConnect.Mode.OFF) hold(level, pos, mode);
+    }
+
+    private static void hold(ServerLevel level, BlockPos pos, VariantConnect.Mode mode) {
+        if (TrackGenerator.isShipyardChunk(pos.getX() >> 4, pos.getZ() >> 4)) {
+            ForcedConnectCells.remember(level, pos, mode);
+            return;
+        }
+        List<Pending> lift = LIFT.get();
+        if (lift != null) lift.add(new Pending(level, pos.immutable(), mode));
+    }
+
+    // ---- lift capture (TrainAssembler) -----------------------------------------------------------
+
+    /** Start collecting On / Off cells forced at source-world coordinates for the group being placed. */
+    public static void beginLiftCapture() {
+        LIFT.set(new ArrayList<>());
+    }
+
+    /**
+     * The group has been lifted: move every captured cell by {@code shipyardOrigin - origin},
+     * remember it there and re-force its arms (the lift's notify pass re-derived them). Ends the
+     * capture.
+     */
+    public static void commitLiftCapture(ServerLevel level, BlockPos origin, BlockPos shipyardOrigin) {
+        List<Pending> lift = LIFT.get();
+        LIFT.remove();
+        if (lift == null || lift.isEmpty()) return;
+        BlockPos shift = shipyardOrigin.subtract(origin);
+        for (Pending p : lift) {
+            BlockPos lifted = p.pos().offset(shift);
+            BlockState current = level.getBlockState(lifted);
+            if (!VariantConnect.canConnect(current)) continue;
+            ForcedConnectCells.remember(level, lifted, p.mode());
+            BlockState forced = VariantConnect.resolve(current, p.mode(), level, lifted);
+            if (forced != current) SilentBlockOps.setBlockSilentNoCascade(level, lifted, forced, null);
+        }
+    }
+
+    /** Drop an uncommitted capture — the group failed to lift. Safe to call after a commit. */
+    public static void endLiftCapture() {
+        LIFT.remove();
     }
 }

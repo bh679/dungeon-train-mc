@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
@@ -389,8 +390,16 @@ public final class TrainAssembler {
         // update, ~3–4× the group's block count; the batch defers them and re-uploads each touched
         // chunk section once on exit. Nothing ticks inside this call, and the template's entities are
         // spawned ticks later by the settle tracker, so nothing can stand on the pending collider.
-        return CarriageStampGuard.call(() -> ColliderBatch.call(() ->
-            spawnGroupGuarded(level, origin, velocity, anchorPIdx, groupSize, dims, trainId)));
+        // ConnectPass lift capture: On / Off fence cells forced during the pre-lift placement are
+        // re-homed to shipyard coordinates once the group is lifted (committed inside), so their
+        // arms hold for the carriage's life. The finally drops a capture a failed lift left open.
+        ConnectPass.beginLiftCapture();
+        try {
+            return CarriageStampGuard.call(() -> ColliderBatch.call(() ->
+                spawnGroupGuarded(level, origin, velocity, anchorPIdx, groupSize, dims, trainId)));
+        } finally {
+            ConnectPass.endLiftCapture();
+        }
     }
 
     private static ManagedShip spawnGroupGuarded(ServerLevel level, BlockPos origin, Vector3dc velocity, int anchorPIdx, int groupSize, CarriageDims dims, UUID trainId) {
@@ -588,6 +597,7 @@ public final class TrainAssembler {
             (int) Math.round(shipyardOriginVec.x),
             (int) Math.round(shipyardOriginVec.y),
             (int) Math.round(shipyardOriginVec.z));
+        ConnectPass.commitLiftCapture(level, origin, shipyardOrigin);
 
         // Contents pass at shipyard coords for each enclosed carriage.
         // We split the contents into two phases to dodge the entity-displacement
