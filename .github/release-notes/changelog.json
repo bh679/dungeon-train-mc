@@ -20698,6 +20698,25 @@
       "released": true,
       "released_in": "v0.1024.0",
       "released_at": "2026-09-29T09:23:57Z"
+    },
+    {
+      "id": "sweep-nonblocking-chunks",
+      "version": "0.1025.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "No more freezes when the train runs into new land",
+      "summary": "The game could freeze for a fraction of a second when the train ran into land that was still being generated, while it waited for that ground to finish. It now carries on and deals with that stretch a moment later, once it's ready.",
+      "highlights": [
+        "Fewer hitches when riding fast into unexplored terrain",
+        "The train still breaks blocks in its path and pushes water aside as before"
+      ],
+      "pr": 1659,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
