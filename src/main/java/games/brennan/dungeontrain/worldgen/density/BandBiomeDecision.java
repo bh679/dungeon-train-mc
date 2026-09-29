@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.worldgen.density;
 
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.feature.CavernNoise;
 
 /**
  * The pure per-quart <b>band biome decision</b> behind {@code MultiNoiseBiomeSourceMixin} — which of
@@ -15,6 +16,8 @@ import games.brennan.dungeontrain.worldgen.WorldGenCycle;
  *   <li>below sea level → {@link Result#ORIGINAL} (natural cave biomes);</li>
  *   <li>Nether-band core at the edge-waved X → {@link Result#NETHER_CORE};</li>
  *   <li>End-band core at the un-waved X → {@link Result#END_CORE};</li>
+ *   <li>a raising mountain column at the waved X, inside the {@link CavernNoise} window under its
+ *       mountain top → {@link Result#CAVE} (the big open caverns — lush / dripstone / deep dark);</li>
  *   <li>a raising mountain column at the waved X → {@link Result#HIGHLAND};</li>
  *   <li>otherwise → {@link Result#ORIGINAL}.</li>
  * </ol>
@@ -28,7 +31,7 @@ import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 public final class BandBiomeDecision {
 
     /** Which forced biome (if any) the column gets; the mixin maps this onto the live providers. */
-    public enum Result { ORIGINAL, NETHER_CORE, END_CORE, HIGHLAND }
+    public enum Result { ORIGINAL, NETHER_CORE, END_CORE, HIGHLAND, CAVE }
 
     private BandBiomeDecision() {}
 
@@ -38,7 +41,8 @@ public final class BandBiomeDecision {
      * provider disables that branch (never a fall-through to a null lookup). Pure: depends only on
      * the cycle layout + seed, so a dense grid test can pin it against a reimplemented reference.
      */
-    public static Result decide(WorldGenCycle cycle, long seed, int seaLevel,
+    public static Result decide(WorldGenCycle cycle, long seed, int seaLevel, int worldCeiling,
+                                int netherTop, int baseRelief,
                                 boolean hasNetherCore, boolean hasEndCore,
                                 int blockX, int blockY, int blockZ) {
         if (cycle == null) return Result.ORIGINAL;
@@ -60,6 +64,10 @@ public final class BandBiomeDecision {
         // NetherMountainTerrain feature).
         if (hasEndCore && cycle.isEndCore(blockX)) return Result.END_CORE;
         if (!NetherMountainTerrain.raises(cycle, wx)) return Result.ORIGINAL; // not a band mountain column
+        // The mountain interior under the same window the density carve uses is the cave biome band —
+        // whatever is open in there (carved caverns, carver tunnels, the track tunnel) is a cave.
+        double top = NetherMountainTerrain.targetTop(cycle, seed, wx, blockZ, seaLevel, worldCeiling, netherTop, baseRelief);
+        if (blockY <= CavernNoise.windowTop(top)) return Result.CAVE;
         return Result.HIGHLAND;
     }
 }

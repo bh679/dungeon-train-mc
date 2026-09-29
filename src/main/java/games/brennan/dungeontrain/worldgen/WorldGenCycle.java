@@ -1072,6 +1072,22 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * True on the <b>exit</b> side of the Nether band — past the last real-Nether core column (the
+     * crossfade-out and the falling mountain). {@code false} in the core, on the way in, and outside the
+     * segment. Same layout offsets as {@link #netherCoreDepth}. Drives the cave-biome palette split
+     * (deep dark only joins after the core).
+     */
+    public boolean netherPastCore(int worldX) {
+        long ln = netherOffset(worldX);
+        if (ln < 0L) return false;
+        long coreEnd = (long) riseLen() + Math.max(0, megaHold) + Math.max(0, coreFade)
+                + Math.max(0, spanCore(CycleLayout.Type.NETHER, worldX));
+        // The fade-out's first column can still read ≥ NETHER_CORE_THRESHOLD; keep "core" and "past core"
+        // disjoint by deferring to isNetherCore there.
+        return ln >= coreEnd && !isNetherCore(worldX);
+    }
+
+    /**
      * Heightmap multiplier at a world-X: 1 outside the nether segment, {@code 1} across
      * stage 1, ramping {@code 1→stage2Mult} across stage 2, {@code stage2Mult→stage3Mult}
      * across stage 3, then held at {@code stage3Mult} across the mega plateau + core, and

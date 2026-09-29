@@ -143,7 +143,8 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         // The whole per-quart decision — sea-level gate, off-band early-out, waved Nether-core /
         // un-waved End-core / highland ordering — lives in the pure, unit-tested
         // BandBiomeDecision.decide; this shell only maps the result onto the live providers.
-        switch (BandBiomeDecision.decide(cycle, ctx.generationSeed(), ctx.seaLevel(),
+        switch (BandBiomeDecision.decide(cycle, ctx.generationSeed(), ctx.seaLevel(), ctx.worldCeiling(),
+                ctx.netherTop(), ctx.baseRelief(),
                 ctx.netherCoreBiomes() != null, ctx.endCoreBiomes() != null,
                 blockX, blockY, blockZ)) {
             case NETHER_CORE:
@@ -156,6 +157,10 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                 // across a joined End band's seam, the look that owns the column (islands and biome agree)
                 long endPass = cycle.endSourcePassAt(blockX, blockZ, ctx.generationSeed());
                 return ctx.endCoreBiomes().biomeAt(blockX, blockZ, endPass, cycle.endStyleOfPass(endPass));
+            case CAVE:
+                // The mountain interior: lush / dripstone caves on the way in, deep dark joins after the core.
+                // Un-waved X for the pre/post split — core columns are never CAVE, so the ±9 wave can't matter.
+                return ctx.highlandBiomes().caveBiomeFor(blockX, blockZ, cycle.netherPastCore(blockX));
             case HIGHLAND:
                 // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.
                 return SecondLapOverworld.lookAt(cycle, blockX) == SecondLapOverworld.Stretch.BOP

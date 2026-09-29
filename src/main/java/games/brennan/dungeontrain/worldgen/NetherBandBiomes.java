@@ -50,6 +50,20 @@ public final class NetherBandBiomes {
             List.of(bop("snowy_coniferous_forest"), bop("snowy_fir_clearing"), bop("snowy_maple_woods")),
             List.of());
 
+    /** Cave biomes for the mountain interior on the way <em>into</em> the Nether core. */
+    public static final List<ResourceKey<Biome>> CAVE_PRE = List.of(Biomes.LUSH_CAVES, Biomes.DRIPSTONE_CAVES);
+    /** Cave biomes for the mountain interior on the way <em>out</em> of the core — deep dark joins. */
+    public static final List<ResourceKey<Biome>> CAVE_POST =
+            List.of(Biomes.LUSH_CAVES, Biomes.DRIPSTONE_CAVES, Biomes.DEEP_DARK);
+    /** Cave-biome regions are 128-block cells (a cave biome holds over a whole cavern, not a corner of it). */
+    public static final int CAVE_REGION_SHIFT = 7;
+    private static final long CAVE_SALT = 0x7F4A7C159E3779B9L;
+
+    /** Deterministic cave-biome choice for a column — {@link #pickWithinZone}'s hash over 128-block regions. */
+    public static int pickCave(long seed, int worldX, int worldZ, int size) {
+        return pickWithinRegion(seed ^ CAVE_SALT, worldX, worldZ, size, CAVE_REGION_SHIFT);
+    }
+
     private static ResourceKey<Biome> bop(String path) {
         return ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("biomesoplenty", path));
     }
@@ -68,9 +82,14 @@ public final class NetherBandBiomes {
      * {@code [0, size)} (returns 0 for {@code size ≤ 1}).
      */
     public static int pickWithinZone(long seed, int worldX, int worldZ, int size) {
+        return pickWithinRegion(seed, worldX, worldZ, size, 6);
+    }
+
+    /** {@link #pickWithinZone} over {@code 2^regionShift}-block regions. */
+    public static int pickWithinRegion(long seed, int worldX, int worldZ, int size, int regionShift) {
         if (size <= 1) return 0;
-        int rx = worldX >> 6;
-        int rz = worldZ >> 6;
+        int rx = worldX >> regionShift;
+        int rz = worldZ >> regionShift;
         long h = seed * 0x9E3779B97F4A7C15L;
         h ^= (long) rx * 0xC2B2AE3D27D4EB4FL;
         h = (h ^ (h >>> 29)) * 0xBF58476D1CE4E5B9L;

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.worldgen;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -772,5 +773,27 @@ final class WorldGenCycleTest {
         assertEquals(2L * 300 + 680, endOnly.period());
         assertEquals(0.0, endOnly.netherHeightRamp(500), EPS);
         assertEquals(1.0, endOnly.netherMountainMultiplier(500), EPS);
+    }
+
+    @Test
+    @DisplayName("netherPastCore: false before/inside the core, true from the first column after it to the band end")
+    void netherPastCore() {
+        // Geometry: anchor 1000, owGap 300 → nether band [1300, 1960). Walk it and require exactly one
+        // false→true flip, located right after the last core column, and false outside the band.
+        WorldGenCycle cycle = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0, 0, 0, 0);
+        assertFalse(cycle.netherPastCore(1299));
+        assertFalse(cycle.netherPastCore(1960));
+        int lastCore = -1, firstPast = -1, flips = 0;
+        boolean prev = false;
+        for (int x = 1300; x < 1960; x++) {
+            if (cycle.isNetherCore(x)) lastCore = x;
+            boolean past = cycle.netherPastCore(x);
+            if (past && firstPast < 0) firstPast = x;
+            if (past != prev) flips++;
+            prev = past;
+            if (cycle.isNetherCore(x)) assertFalse(past, "core column flagged past-core at x=" + x);
+        }
+        assertEquals(1, flips, "past-core should flip exactly once inside the band");
+        assertEquals(lastCore + 1, firstPast, "past-core must start right after the last core column");
     }
 }

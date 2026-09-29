@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.feature.CavernNoise;
 import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.world.level.levelgen.DensityFunction;
 
@@ -18,6 +19,13 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * so the column reads solid below {@code T} and air above. {@code max} (never lowers the child)
  * keeps natural caves/ores below the original surface and lets naturally-higher ground show
  * through, so the mountain is layered onto real terrain rather than replacing it.</p>
+ *
+ * <p>On the {@code finalDensity} wrapper only ({@code carveCaverns}), the raised interior is then carved
+ * into big open caverns by {@link CavernNoise} — {@code min(raised, carve)} inside the cavern window of a
+ * raising, non-core column — so the ride passes through lush / dripstone / deep-dark caves instead of a
+ * solid mountain (the biome-source mixin labels the same window {@code CAVE}). The
+ * {@code initialDensityWithoutJaggedness} wrapper never carves: the preliminary surface must stay at
+ * {@code T} so surface rules and the aquifer's above-the-top path are unchanged.</p>
  *
  * <p>The mixin installs it over <b>both</b> router densities that drive the surface:</p>
  * <ul>
@@ -54,9 +62,17 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
     private static final int BATCH_X_SLACK = 64;
 
     private final DensityFunction wrapped;
+    /** Carve {@link CavernNoise} caverns out of the raised interior (the {@code finalDensity} wrapper only). */
+    private final boolean carveCaverns;
 
+    /** The carving ({@code finalDensity}) form. */
     public NetherBandTerrainDensityFunction(DensityFunction wrapped) {
+        this(wrapped, true);
+    }
+
+    public NetherBandTerrainDensityFunction(DensityFunction wrapped, boolean carveCaverns) {
         this.wrapped = wrapped;
+        this.carveCaverns = carveCaverns;
     }
 
     /**
@@ -83,6 +99,7 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
         final long[] key = new long[COL_SIZE];
         final boolean[] present = new boolean[COL_SIZE];
         final boolean[] skip = new boolean[COL_SIZE];
+        final boolean[] core = new boolean[COL_SIZE];   // real-Nether core column: never carved (the stamp owns it)
         final double[] target = new double[COL_SIZE];
     }
 
@@ -113,8 +130,8 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
      */
     private static double raise(ColumnMemo memo, WorldGenCycle cycle, long seed, int seaLevel, int ceiling,
                                 int netherTop, int baseRelief, int worldX, int worldZ, int worldY, double base) {
-        long ckey = (((long) worldX) << 32) ^ (worldZ & 0xFFFFFFFFL);
-        int idx = (worldX * 31 + worldZ) & COL_MASK;
+        long ckey = columnKey(worldX, worldZ);
+        int idx = columnIndex(worldX, worldZ);
         boolean skip;
         double t;
         if (memo.present[idx] && memo.key[idx] == ckey) {
@@ -131,6 +148,7 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
             t = 0.0;
             memo.key[idx] = ckey;
             memo.skip[idx] = true;
+            memo.core[idx] = false;
             memo.target[idx] = 0.0;
             memo.present[idx] = true;
         } else {
@@ -147,12 +165,49 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
                     seaLevel, ceiling, netherTop, baseRelief);
             memo.key[idx] = ckey;
             memo.skip[idx] = skip;
+            memo.core[idx] = !skip && c.isNetherCore(wx);
             memo.target[idx] = t;
             memo.present[idx] = true;
         }
 
         if (skip) return base;
         return Math.max(base, RAISE_SLOPE * (t - worldY));
+    }
+
+    private static long columnKey(int worldX, int worldZ) {
+        return (((long) worldX) << 32) ^ (worldZ & 0xFFFFFFFFL);
+    }
+
+    private static int columnIndex(int worldX, int worldZ) {
+        return (worldX * 31 + worldZ) & COL_MASK;
+    }
+
+    /**
+     * Whether the band raises column {@code (worldX, worldZ)} — i.e. it is a mountain column (core included)
+     * under the live context. Shares the column memo with the raise, so a caller that runs after the terrain
+     * fill (the aquifer's floodedness wrapper) pays only a memo probe. {@code false} with no / a disabled
+     * context.
+     */
+    static boolean columnRaises(int worldX, int worldZ) {
+        NetherBandContext ctx = NetherBandContext.current();
+        if (ctx == null || !ctx.enabled()) return false;
+        ColumnMemo memo = memoFor(ctx);
+        raise(memo, ctx.cycle(), ctx.generationSeed(), ctx.seaLevel(), ctx.worldCeiling(),
+                ctx.netherTop(), ctx.baseRelief(), worldX, worldZ, 0, 0.0);   // resolves + memoises the column
+        return !memo.skip[columnIndex(worldX, worldZ)];
+    }
+
+    /**
+     * Carve the memoised column's raised density at {@code worldY} where {@link CavernNoise} says cavern:
+     * a raising, non-core column inside the cavern window. Must run right after {@link #raise} for the same
+     * column so the memo slot is that column's. Per-sample form ({@link CavernNoise#apply}); the batched
+     * {@link #fillArray} caches cell corners instead and is byte-identical to it.
+     */
+    private static double carve(ColumnMemo memo, long seed, int seaLevel, int worldX, int worldZ, int worldY,
+                                double raised) {
+        int idx = columnIndex(worldX, worldZ);
+        if (memo.skip[idx] || memo.core[idx]) return raised;
+        return CavernNoise.apply(seed, worldX, worldY, worldZ, seaLevel, memo.target[idx], raised);
     }
 
     /**
@@ -164,8 +219,9 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
         NetherBandContext ctx = NetherBandContext.current();
         if (ctx == null || !ctx.enabled()) return base;
         ColumnMemo memo = memoFor(ctx);
-        return raise(memo, ctx.cycle(), ctx.generationSeed(), ctx.seaLevel(), ctx.worldCeiling(),
+        double raised = raise(memo, ctx.cycle(), ctx.generationSeed(), ctx.seaLevel(), ctx.worldCeiling(),
                 ctx.netherTop(), ctx.baseRelief(), worldX, worldZ, worldY, base);
+        return carveCaverns ? carve(memo, ctx.generationSeed(), ctx.seaLevel(), worldX, worldZ, worldY, raised) : raised;
     }
 
     @Override
@@ -226,6 +282,20 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
                     return;                                   // whole batch provably off-band
                 }
             }
+            // Cavern carve for this batch: skipped outright when no sample can be in the cavern window
+            // (a batch is one cell — Y-outer — so its first/last samples bound its Y range). Inside, the
+            // CavernNoise field is evaluated only at the 8 corners of each noise cell and interpolated per
+            // sample; the corner set is recomputed only when the sample's cell changes (rare: Y-outer/X-mid/
+            // Z-inner order walks a whole cell before moving). Byte-identical to CavernNoise.apply.
+            boolean carve = carveCaverns && values.length > 0;
+            if (carve) {
+                int yFirst = contextProvider.forIndex(0).blockY();
+                int yLast = contextProvider.forIndex(values.length - 1).blockY();
+                int yLo = Math.min(yFirst, yLast), yHi = Math.max(yFirst, yLast);
+                carve = yHi >= CavernNoise.windowBottom(seaLevel) && yLo <= CavernNoise.windowTop(ceiling);
+            }
+            double[] corners = new double[8];
+            int cornerCx = Integer.MIN_VALUE, cornerCy = Integer.MIN_VALUE, cornerCz = Integer.MIN_VALUE;
             final int xMask = 63;
             int[] memoX = new int[xMask + 1];
             byte[] memoSkip = new byte[xMask + 1];            // 0 = empty, 1 = skip, 2 = evaluate
@@ -242,8 +312,22 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
                     }
                     if (state == 1) continue;
                 }
-                values[i] = raise(memo, cycle, seed, seaLevel, ceiling, netherTop, baseRelief,
-                        bx, fc.blockZ(), fc.blockY(), values[i]);
+                int bz = fc.blockZ(), by = fc.blockY();
+                double raised = raise(memo, cycle, seed, seaLevel, ceiling, netherTop, baseRelief,
+                        bx, bz, by, values[i]);
+                values[i] = raised;
+                if (!carve) continue;
+                int idx = columnIndex(bx, bz);                  // raise() just resolved this column's slot
+                if (memo.skip[idx] || memo.core[idx]) continue;
+                int lo = CavernNoise.windowBottom(seaLevel);
+                int hi = CavernNoise.windowTop(memo.target[idx]);
+                if (by < lo || by > hi) continue;
+                int cx = CavernNoise.cellX(bx), cy = CavernNoise.cellY(by), cz = CavernNoise.cellX(bz);
+                if (cx != cornerCx || cy != cornerCy || cz != cornerCz) {
+                    CavernNoise.corners(seed, cx, cy, cz, corners);
+                    cornerCx = cx; cornerCy = cy; cornerCz = cz;
+                }
+                values[i] = CavernNoise.carve(CavernNoise.interpolate(corners, bx, by, bz), by, lo, hi, raised);
             }
         }
         GenProfiler.add(GenProfiler.Bucket.DF, t0);
@@ -251,13 +335,19 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
 
     @Override
     public DensityFunction mapAll(Visitor visitor) {
-        return visitor.apply(new NetherBandTerrainDensityFunction(wrapped.mapAll(visitor)));
+        return visitor.apply(new NetherBandTerrainDensityFunction(wrapped.mapAll(visitor), carveCaverns));
     }
 
     @Override
     public double minValue() {
-        // max(...) never lowers the wrapped value, so the child's minimum is a valid lower bound.
-        return wrapped.minValue();
+        // max(...) never lowers the wrapped value; the cavern carve can, bounded by −CARVE_SLOPE (field ≤ 1).
+        double childMin = wrapped.minValue();
+        return carveCaverns ? Math.min(childMin, -CavernNoise.CARVE_SLOPE) : childMin;
+    }
+
+    /** {@link #minValue} with the child's minimum given explicitly — for tests built on a {@code null} child. */
+    double minValueForTest(double childMin) {
+        return carveCaverns ? Math.min(childMin, -CavernNoise.CARVE_SLOPE) : childMin;
     }
 
     @Override

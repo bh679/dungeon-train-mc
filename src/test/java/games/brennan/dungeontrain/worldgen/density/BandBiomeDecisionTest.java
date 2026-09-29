@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.worldgen.density;
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.BandBiomeDecision.Result;
+import games.brennan.dungeontrain.worldgen.feature.CavernNoise;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +37,18 @@ final class BandBiomeDecisionTest {
         if (hasNetherCore && cycle.isNetherCore(wx)) return Result.NETHER_CORE;
         if (hasEndCore && cycle.isEndCore(blockX)) return Result.END_CORE;
         if (!NetherMountainTerrain.raises(cycle, wx)) return Result.ORIGINAL;
+        // Cave band: the mountain interior under the CavernNoise window top (same rule the density carve uses).
+        double top = NetherMountainTerrain.targetTop(cycle, seed, wx, blockZ, seaLevel, CEILING, NETHER_TOP, BASE_RELIEF);
+        if (blockY <= CavernNoise.windowTop(top)) return Result.CAVE;
         return Result.HIGHLAND;
+    }
+
+    private static final int CEILING = 320, NETHER_TOP = 40, BASE_RELIEF = 100;
+
+    private static Result decide(WorldGenCycle cycle, long seed, int seaLevel, boolean hasNetherCore,
+                                 boolean hasEndCore, int blockX, int blockY, int blockZ) {
+        return BandBiomeDecision.decide(cycle, seed, seaLevel, CEILING, NETHER_TOP, BASE_RELIEF,
+                hasNetherCore, hasEndCore, blockX, blockY, blockZ);
     }
 
     @Test
@@ -49,12 +61,12 @@ final class BandBiomeDecisionTest {
             // y below/at/above sea level.
             for (int x = 960; x <= 2980; x += 4) {
                 for (int z = -16; z <= 16; z += 8) {
-                    for (int y : new int[] {40, 63, 120, 250}) {
+                    for (int y : new int[] {40, 63, 80, 120, 250}) {
                         for (boolean hasNether : flags) {
                             for (boolean hasEnd : flags) {
                                 assertEquals(
                                         reference(CYCLE, seed, seaLevel, hasNether, hasEnd, x, y, z),
-                                        BandBiomeDecision.decide(CYCLE, seed, seaLevel, hasNether, hasEnd, x, y, z),
+                                        decide(CYCLE, seed, seaLevel, hasNether, hasEnd, x, y, z),
                                         "mismatch at x=" + x + " z=" + z + " y=" + y
                                                 + " hasNether=" + hasNether + " hasEnd=" + hasEnd + " seed=" + seed);
                             }
@@ -79,7 +91,7 @@ final class BandBiomeDecisionTest {
                         for (int y : new int[] {63, 150}) {
                             assertEquals(
                                     reference(CYCLE, seed, seaLevel, true, true, x, y, z),
-                                    BandBiomeDecision.decide(CYCLE, seed, seaLevel, true, true, x, y, z),
+                                    decide(CYCLE, seed, seaLevel, true, true, x, y, z),
                                     "edge mismatch at x=" + x + " z=" + z + " y=" + y + " seed=" + seed);
                         }
                     }
@@ -92,15 +104,19 @@ final class BandBiomeDecisionTest {
     @DisplayName("sanity: every verdict actually occurs on the grid (the test isn't vacuously ORIGINAL)")
     void allVerdictsReachable() {
         long seed = 0x1234_5678L;
-        boolean sawNether = false, sawEnd = false, sawHighland = false, sawOriginal = false;
+        boolean sawNether = false, sawEnd = false, sawHighland = false, sawOriginal = false, sawCave = false;
         for (int x = 960; x <= 2980; x += 2) {
-            switch (BandBiomeDecision.decide(CYCLE, seed, 63, true, true, x, 150, 0)) {
-                case NETHER_CORE -> sawNether = true;
-                case END_CORE -> sawEnd = true;
-                case HIGHLAND -> sawHighland = true;
-                case ORIGINAL -> sawOriginal = true;
+            for (int y : new int[] {80, 150}) {
+                switch (decide(CYCLE, seed, 63, true, true, x, y, 0)) {
+                    case NETHER_CORE -> sawNether = true;
+                    case END_CORE -> sawEnd = true;
+                    case HIGHLAND -> sawHighland = true;
+                    case ORIGINAL -> sawOriginal = true;
+                    case CAVE -> sawCave = true;
+                }
             }
         }
+        assertTrue(sawCave, "no CAVE verdict on the sweep");
         assertTrue(sawNether, "no NETHER_CORE verdict on the sweep");
         assertTrue(sawEnd, "no END_CORE verdict on the sweep");
         assertTrue(sawHighland, "no HIGHLAND verdict on the sweep");
@@ -115,7 +131,7 @@ final class BandBiomeDecisionTest {
         try {
             for (int x = 960; x <= 2980; x += 8) {
                 assertEquals(reference(CYCLE, seed, 63, true, true, x, 150, 4),
-                        BandBiomeDecision.decide(CYCLE, seed, 63, true, true, x, 150, 4),
+                        decide(CYCLE, seed, 63, true, true, x, 150, 4),
                         "OFF-path mismatch at x=" + x);
             }
         } finally {
@@ -124,8 +140,24 @@ final class BandBiomeDecisionTest {
     }
 
     @Test
+    @DisplayName("CAVE never below sea level, never in the core, never above the decoration ceiling")
+    void caveBounds() {
+        long seed = 0x1234_5678L;
+        for (int x = 1300; x < 1960; x += 4) {
+            for (int z = -16; z <= 16; z += 8) {
+                assertTrue(decide(CYCLE, seed, 63, true, true, x, 62, z) == Result.ORIGINAL, "below sea at x=" + x);
+                Result r = decide(CYCLE, seed, 63, true, true, x, CavernNoise.DECORATION_CEILING + 1, z);
+                assertTrue(r != Result.CAVE, "CAVE above the decoration ceiling at x=" + x);
+                if (CYCLE.isNetherCore(NetherMountainTerrain.wavyX(seed, x, z))) {
+                    assertEquals(Result.NETHER_CORE, decide(CYCLE, seed, 63, true, true, x, 80, z), "core at x=" + x);
+                }
+            }
+        }
+    }
+
+    @Test
     @DisplayName("null cycle → ORIGINAL (mixin's catch-all previously swallowed the NPE to original)")
     void nullCycleIsOriginal() {
-        assertEquals(Result.ORIGINAL, BandBiomeDecision.decide(null, 1L, 63, true, true, 1500, 150, 0));
+        assertEquals(Result.ORIGINAL, decide(null, 1L, 63, true, true, 1500, 150, 0));
     }
 }
