@@ -10,13 +10,12 @@
     },
     {
       "processor_type": "dungeontrain:lost_city_stretch",
-      "min_floors": 0,
-      "max_floors": 0,
+      "min_floors": 2,
+      "max_floors": 4,
       "period_min": 5,
       "period_max": 5,
       "min_similarity": 0.45,
-      "axis": "y",
-      "floor_layers": 2
+      "axis": "y"
     },
     {
       "processor_type": "dungeontrain:lost_city_swap",
@@ -73,9 +72,9 @@
     },
     {
       "processor_type": "dungeontrain:lost_city_facade",
-      "pilaster_every": 4,
+      "pilaster_every": 6,
       "min_layer": 2,
-      "pilaster": "minecraft:polished_deepslate"
+      "ledge": "minecraft:deepslate_tile_slab"
     }
   ]
 }

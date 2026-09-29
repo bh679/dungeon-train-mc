@@ -13,39 +13,27 @@
       "swaps": [
         {
           "from": "minecraft:light_gray_concrete",
-          "to": "minecraft:light_gray_concrete"
-        },
-        {
-          "from": "minecraft:light_gray_terracotta",
-          "to": "minecraft:gray_concrete"
-        },
-        {
-          "from": "minecraft:light_gray_concrete_powder",
-          "to": "minecraft:andesite"
-        },
-        {
-          "from": "minecraft:light_gray_concrete",
-          "to": "minecraft:black_concrete"
+          "to": "minecraft:smooth_sandstone"
         },
         {
           "from": "minecraft:gray_concrete",
-          "to": "minecraft:deepslate_tiles"
+          "to": "minecraft:cut_sandstone"
         },
         {
           "from": "minecraft:light_gray_concrete_powder",
-          "to": "minecraft:polished_deepslate"
+          "to": "minecraft:sandstone"
         },
         {
           "from": "minecraft:andesite",
-          "to": "minecraft:deepslate_bricks"
+          "to": "minecraft:chiseled_sandstone"
         },
         {
           "from": "minecraft:polished_andesite",
-          "to": "minecraft:polished_basalt"
+          "to": "minecraft:smooth_red_sandstone"
         },
         {
           "from": "minecraft:tuff",
-          "to": "minecraft:gray_concrete"
+          "to": "minecraft:cut_sandstone"
         }
       ]
     }

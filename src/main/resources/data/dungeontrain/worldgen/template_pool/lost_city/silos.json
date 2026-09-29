@@ -44,7 +44,7 @@
         "element_type": "minecraft:single_pool_element",
         "location": "dungeontrain:lost_city/silos",
         "projection": "rigid",
-        "processors": "dungeontrain:lost_city/silos_grey"
+        "processors": "dungeontrain:lost_city/silos_dark"
       }
     },
     {

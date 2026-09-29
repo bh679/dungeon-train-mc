@@ -17,7 +17,7 @@
         "element_type": "minecraft:single_pool_element",
         "location": "dungeontrain:lost_city/office_tower",
         "projection": "rigid",
-        "processors": "dungeontrain:lost_city/office_tower_tinted_tall"
+        "processors": "dungeontrain:lost_city/office_tower_dark_tall"
       }
     },
     {
@@ -35,7 +35,7 @@
         "element_type": "minecraft:single_pool_element",
         "location": "dungeontrain:lost_city/office_tower",
         "projection": "rigid",
-        "processors": "dungeontrain:lost_city/office_tower_white_podium"
+        "processors": "dungeontrain:lost_city/office_tower_pale_podium"
       }
     },
     {
@@ -44,7 +44,7 @@
         "element_type": "minecraft:single_pool_element",
         "location": "dungeontrain:lost_city/office_tower",
         "projection": "rigid",
-        "processors": "dungeontrain:lost_city/office_tower_black_block"
+        "processors": "dungeontrain:lost_city/office_tower_green_block"
       }
     },
     {

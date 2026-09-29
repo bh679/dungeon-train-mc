@@ -22,15 +22,51 @@
       "swaps": [
         {
           "from": "minecraft:bricks",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:deepslate_tiles"
+        },
+        {
+          "from": "minecraft:terracotta",
+          "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:brown_terracotta",
           "to": "minecraft:deepslate_bricks"
         },
         {
-          "from": "minecraft:white_terracotta",
+          "from": "minecraft:packed_mud",
+          "to": "minecraft:polished_basalt"
+        },
+        {
+          "from": "minecraft:mossy_stone_bricks",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:cracked_stone_bricks",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:light_gray_terracotta",
           "to": "minecraft:gray_terracotta"
         },
         {
-          "from": "minecraft:brick_slab",
-          "to": "minecraft:deepslate_brick_slab"
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:cut_sandstone",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:light_gray_concrete_powder",
+          "to": "minecraft:gray_terracotta"
+        },
+        {
+          "from": "minecraft:white_terracotta",
+          "to": "minecraft:polished_deepslate"
         }
       ]
     }

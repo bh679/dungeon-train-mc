@@ -26,7 +26,8 @@ def validate(cells: Cells, spec: ArchetypeSpec) -> list[str]:
 
 
 def _unknown_blocks(cells: Cells) -> list[str]:
-    names = {state.name for state in cells.values()} - KNOWN
+    from .materials import MIX_BLOCKS
+    names = {state.name for state in cells.values()} - KNOWN - MIX_BLOCKS
     return [f"unknown block {n}" for n in sorted(names)]
 
 

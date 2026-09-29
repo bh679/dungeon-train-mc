@@ -13,6 +13,26 @@
       "swaps": [
         {
           "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:gray_concrete",
+          "to": "minecraft:deepslate_tiles"
+        },
+        {
+          "from": "minecraft:light_gray_concrete_powder",
+          "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:andesite",
+          "to": "minecraft:deepslate_bricks"
+        },
+        {
+          "from": "minecraft:polished_andesite",
+          "to": "minecraft:polished_basalt"
+        },
+        {
+          "from": "minecraft:tuff",
           "to": "minecraft:gray_concrete"
         }
       ]

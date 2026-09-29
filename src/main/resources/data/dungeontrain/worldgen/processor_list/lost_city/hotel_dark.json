@@ -22,6 +22,22 @@
         {
           "from": "minecraft:light_gray_concrete_powder",
           "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:terracotta",
+          "to": "minecraft:gray_terracotta"
+        },
+        {
+          "from": "minecraft:brown_terracotta",
+          "to": "minecraft:black_terracotta"
+        },
+        {
+          "from": "minecraft:orange_terracotta",
+          "to": "minecraft:brown_terracotta"
+        },
+        {
+          "from": "minecraft:red_terracotta",
+          "to": "minecraft:gray_terracotta"
         }
       ]
     }

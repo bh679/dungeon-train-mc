@@ -18,6 +18,38 @@
         {
           "from": "minecraft:gray_concrete",
           "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:polished_basalt",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:gravel",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:cobblestone",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:gray_concrete",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:tuff",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:polished_basalt",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:deepslate_tiles",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:gray_concrete_powder",
+          "to": "minecraft:light_gray_concrete"
         }
       ]
     }

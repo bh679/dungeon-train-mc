@@ -44,6 +44,15 @@
         "element_type": "minecraft:single_pool_element",
         "location": "dungeontrain:lost_city/hotel",
         "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hotel_dark"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hotel",
+        "projection": "rigid",
         "processors": "dungeontrain:lost_city/hotel_bitten"
       }
     },

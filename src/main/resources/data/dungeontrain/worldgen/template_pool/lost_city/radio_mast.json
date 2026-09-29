@@ -37,6 +37,15 @@
         "projection": "rigid",
         "processors": "dungeontrain:lost_city/radio_mast_rusted"
       }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/radio_mast",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/radio_mast_dark"
+      }
     }
   ]
 }

@@ -13,22 +13,78 @@
       "swaps": [
         {
           "from": "minecraft:stone_bricks",
-          "to": "minecraft:deepslate_bricks"
+          "to": "minecraft:black_concrete"
         },
         {
           "from": "minecraft:cracked_stone_bricks",
-          "to": "minecraft:cracked_deepslate_bricks"
+          "to": "minecraft:deepslate_tiles"
         },
         {
-          "from": "minecraft:smooth_quartz",
+          "from": "minecraft:mossy_stone_bricks",
           "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:andesite",
+          "to": "minecraft:deepslate_bricks"
+        },
+        {
+          "from": "minecraft:cobblestone",
+          "to": "minecraft:polished_basalt"
+        },
+        {
+          "from": "minecraft:chiseled_stone_bricks",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:smooth_sandstone",
+          "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:cut_sandstone",
+          "to": "minecraft:deepslate_tiles"
+        },
+        {
+          "from": "minecraft:polished_diorite",
+          "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:calcite",
+          "to": "minecraft:deepslate_tiles"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:chiseled_sandstone",
+          "to": "minecraft:deepslate_tiles"
         },
         {
           "from": "minecraft:quartz_pillar",
           "to": "minecraft:deepslate_tiles"
         },
         {
+          "from": "minecraft:polished_diorite",
+          "to": "minecraft:deepslate_tiles"
+        },
+        {
           "from": "minecraft:gray_concrete",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:tuff",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:polished_basalt",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:deepslate_tiles",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:gray_concrete_powder",
           "to": "minecraft:black_concrete"
         }
       ]

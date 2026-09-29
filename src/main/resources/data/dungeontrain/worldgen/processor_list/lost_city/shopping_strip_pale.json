@@ -13,51 +13,51 @@
       "swaps": [
         {
           "from": "minecraft:bricks",
-          "to": "minecraft:stone_bricks"
+          "to": "minecraft:light_gray_terracotta"
         },
         {
           "from": "minecraft:mud_bricks",
-          "to": "minecraft:cracked_stone_bricks"
+          "to": "minecraft:polished_diorite"
         },
         {
           "from": "minecraft:terracotta",
-          "to": "minecraft:mossy_stone_bricks"
+          "to": "minecraft:smooth_stone"
         },
         {
           "from": "minecraft:brown_terracotta",
-          "to": "minecraft:andesite"
+          "to": "minecraft:calcite"
         },
         {
           "from": "minecraft:packed_mud",
-          "to": "minecraft:stone_bricks"
+          "to": "minecraft:light_gray_concrete_powder"
         },
         {
           "from": "minecraft:mossy_stone_bricks",
-          "to": "minecraft:cracked_stone_bricks"
+          "to": "minecraft:cut_sandstone"
         },
         {
           "from": "minecraft:cracked_stone_bricks",
-          "to": "minecraft:mossy_stone_bricks"
+          "to": "minecraft:light_gray_terracotta"
         },
         {
           "from": "minecraft:gray_concrete",
-          "to": "minecraft:polished_andesite"
+          "to": "minecraft:light_gray_concrete"
         },
         {
           "from": "minecraft:tuff",
-          "to": "minecraft:andesite"
+          "to": "minecraft:gray_concrete"
         },
         {
           "from": "minecraft:polished_basalt",
-          "to": "minecraft:polished_andesite"
+          "to": "minecraft:light_gray_concrete"
         },
         {
           "from": "minecraft:deepslate_tiles",
-          "to": "minecraft:andesite"
+          "to": "minecraft:gray_concrete"
         },
         {
           "from": "minecraft:gray_concrete_powder",
-          "to": "minecraft:polished_andesite"
+          "to": "minecraft:light_gray_concrete"
         }
       ]
     }

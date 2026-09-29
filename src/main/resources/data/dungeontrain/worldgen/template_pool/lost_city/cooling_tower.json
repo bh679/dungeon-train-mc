@@ -21,21 +21,21 @@
       }
     },
     {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/cooling_tower",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/cooling_tower_sand"
+      }
+    },
+    {
       "weight": 2,
       "element": {
         "element_type": "minecraft:single_pool_element",
         "location": "dungeontrain:lost_city/cooling_tower",
         "projection": "rigid",
         "processors": "dungeontrain:lost_city/cooling_tower_bitten"
-      }
-    },
-    {
-      "weight": 1,
-      "element": {
-        "element_type": "minecraft:single_pool_element",
-        "location": "dungeontrain:lost_city/cooling_tower",
-        "projection": "rigid",
-        "processors": "dungeontrain:lost_city/cooling_tower_cracked"
       }
     },
     {

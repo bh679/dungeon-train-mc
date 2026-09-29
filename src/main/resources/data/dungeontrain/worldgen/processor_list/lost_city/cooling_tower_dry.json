@@ -20,14 +20,41 @@
           "to": "minecraft:air"
         },
         {
-          "from": "minecraft:light_gray_concrete_powder",
-          "to": "minecraft:light_gray_concrete",
+          "from": "minecraft:moss_block",
+          "to": "minecraft:coarse_dirt"
+        },
+        {
+          "from": "minecraft:oak_leaves",
+          "to": "minecraft:air",
           "chance": 0.7
         },
         {
-          "from": "minecraft:cracked_stone_bricks",
-          "to": "minecraft:stone_bricks",
+          "from": "minecraft:azalea",
+          "to": "minecraft:dead_bush"
+        },
+        {
+          "from": "minecraft:short_grass",
+          "to": "minecraft:dead_bush",
           "chance": 0.5
+        },
+        {
+          "from": "minecraft:short_grass",
+          "to": "minecraft:air",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:fern",
+          "to": "minecraft:dead_bush"
+        },
+        {
+          "from": "minecraft:mossy_cobblestone",
+          "to": "minecraft:cobblestone",
+          "chance": 0.7
+        },
+        {
+          "from": "minecraft:mossy_stone_bricks",
+          "to": "minecraft:cracked_stone_bricks",
+          "chance": 0.7
         }
       ]
     }

@@ -21,31 +21,51 @@
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
+          "from": "minecraft:bricks",
+          "to": "minecraft:light_gray_terracotta"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:polished_diorite"
+        },
+        {
           "from": "minecraft:terracotta",
-          "to": "minecraft:gray_terracotta"
+          "to": "minecraft:smooth_stone"
         },
         {
           "from": "minecraft:brown_terracotta",
-          "to": "minecraft:cyan_terracotta"
+          "to": "minecraft:calcite"
         },
         {
-          "from": "minecraft:orange_terracotta",
-          "to": "minecraft:green_terracotta"
+          "from": "minecraft:packed_mud",
+          "to": "minecraft:light_gray_concrete_powder"
         },
         {
-          "from": "minecraft:red_terracotta",
-          "to": "minecraft:tuff"
+          "from": "minecraft:mossy_stone_bricks",
+          "to": "minecraft:cut_sandstone"
         },
         {
-          "from": "minecraft:light_gray_concrete",
+          "from": "minecraft:cracked_stone_bricks",
           "to": "minecraft:light_gray_terracotta"
         },
         {
           "from": "minecraft:light_gray_terracotta",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:smooth_stone"
+        },
+        {
+          "from": "minecraft:cut_sandstone",
           "to": "minecraft:polished_diorite"
         },
         {
           "from": "minecraft:light_gray_concrete_powder",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:white_terracotta",
           "to": "minecraft:smooth_stone"
         }
       ]

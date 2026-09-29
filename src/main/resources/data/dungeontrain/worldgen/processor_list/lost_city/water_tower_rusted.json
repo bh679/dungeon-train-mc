@@ -12,12 +12,32 @@
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
-          "from": "minecraft:white_concrete",
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:waxed_oxidized_copper"
+        },
+        {
+          "from": "minecraft:light_gray_terracotta",
+          "to": "minecraft:waxed_weathered_copper"
+        },
+        {
+          "from": "minecraft:light_gray_concrete_powder",
           "to": "minecraft:waxed_exposed_copper"
         },
         {
           "from": "minecraft:polished_deepslate",
           "to": "minecraft:waxed_oxidized_copper"
+        },
+        {
+          "from": "minecraft:deepslate_tiles",
+          "to": "minecraft:waxed_weathered_copper"
+        },
+        {
+          "from": "minecraft:waxed_oxidized_copper",
+          "to": "minecraft:waxed_oxidized_copper"
+        },
+        {
+          "from": "minecraft:deepslate",
+          "to": "minecraft:waxed_weathered_copper"
         }
       ]
     }

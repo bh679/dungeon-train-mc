@@ -39,7 +39,8 @@ PAD_NATURAL = frozenset(
 
 # Paving deliberately outside PAD_NATURAL, so an apron survives the world's ground and bite rubble
 # has a floor to land on.
-PAVEMENT = (block("cobblestone"), block("stone_bricks"), block("cracked_stone_bricks"), block("polished_andesite"))
+PAVEMENT = (block("cobblestone"), block("cobblestone"), block("stone_bricks"), block("cracked_stone_bricks"),
+            block("polished_andesite"), block("mossy_cobblestone"), block("mossy_stone_bricks"))
 GROUND = (block("grass_block"), block("grass_block"), block("grass_block"), block("dirt"), block("coarse_dirt"), block("gravel"))
 
 # Material families. Each archetype picks a few; the variant recipes recolour them at placement.
@@ -79,7 +80,10 @@ COPPER_EXPOSED = block("waxed_exposed_copper")
 COPPER_SLAB = block("waxed_oxidized_cut_copper_slab")
 COPPER_STAIRS = block("waxed_oxidized_cut_copper_stairs")
 ASPHALT = block("black_concrete")
-ROAD_LINE = block("white_concrete")
+ROAD_LINE = block("white_concrete_powder")   # its own block, so the muted "white" mix never eats road markings
+MOSS_BLOCK = block("moss_block")
+MOSSY_COBBLESTONE = block("mossy_cobblestone")
+FERN = block("fern")
 ROAD_LINE_YELLOW = block("yellow_concrete")
 RED_PAINT = block("red_concrete")
 RED_LIGHT = block("redstone_lamp")

@@ -26,15 +26,67 @@
           "to": "minecraft:brown_terracotta"
         },
         {
-          "from": "minecraft:white_concrete",
+          "from": "minecraft:gray_concrete",
+          "to": "minecraft:terracotta"
+        },
+        {
+          "from": "minecraft:light_gray_concrete_powder",
+          "to": "minecraft:brown_concrete"
+        },
+        {
+          "from": "minecraft:andesite",
           "to": "minecraft:waxed_exposed_copper"
         },
         {
-          "from": "minecraft:light_blue_stained_glass",
+          "from": "minecraft:polished_andesite",
+          "to": "minecraft:mud_bricks"
+        },
+        {
+          "from": "minecraft:tuff",
+          "to": "minecraft:waxed_weathered_copper"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:waxed_exposed_copper"
+        },
+        {
+          "from": "minecraft:light_gray_terracotta",
+          "to": "minecraft:brown_terracotta"
+        },
+        {
+          "from": "minecraft:light_gray_concrete_powder",
+          "to": "minecraft:mud_bricks"
+        },
+        {
+          "from": "minecraft:light_gray_stained_glass",
           "to": "minecraft:brown_stained_glass"
         },
         {
+          "from": "minecraft:gray_stained_glass",
+          "to": "minecraft:brown_stained_glass"
+        },
+        {
+          "from": "minecraft:cyan_stained_glass",
+          "to": "minecraft:orange_stained_glass"
+        },
+        {
           "from": "minecraft:gray_concrete",
+          "to": "minecraft:waxed_oxidized_copper"
+        },
+        {
+          "from": "minecraft:tuff",
+          "to": "minecraft:brown_concrete"
+        },
+        {
+          "from": "minecraft:polished_basalt",
+          "to": "minecraft:waxed_oxidized_copper"
+        },
+        {
+          "from": "minecraft:deepslate_tiles",
+          "to": "minecraft:brown_concrete"
+        },
+        {
+          "from": "minecraft:gray_concrete_powder",
           "to": "minecraft:waxed_oxidized_copper"
         }
       ]

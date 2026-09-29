@@ -28,7 +28,8 @@
         "minecraft:gray_concrete",
         "minecraft:cobblestone",
         "minecraft:gravel",
-        "minecraft:andesite"
+        "minecraft:andesite",
+        "minecraft:tuff"
       ],
       "pile_scale": 0.8,
       "pile_max": 10
