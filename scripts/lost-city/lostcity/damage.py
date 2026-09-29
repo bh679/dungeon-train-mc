@@ -30,27 +30,58 @@ def drop_loose(canvas: Canvas) -> None:
         if _in_a_wall(canvas, (x, y, z)):
             continue
         landing = y
-        while landing > 1 and canvas.get((x, landing - 1, z)) in (None, AIR):
+        while landing > 1 and _passable(canvas.get((x, landing - 1, z))):
             landing -= 1
         if landing == y:
             continue
         indoors = any(canvas.get((x + dx, y + dy, z + dz)) == AIR for dx, dy, dz in NEIGHBOURS)
-        if indoors:
-            canvas.put((x, y, z), AIR)
-        else:
-            canvas.clear((x, y, z))
+        for yy in range(landing, y + 1):        # plants and roots in the way are torn out on the way down
+            if indoors:
+                canvas.put((x, yy, z), AIR)
+            else:
+                canvas.clear((x, yy, z))
         canvas.put((x, landing, z), state)
 
 
+PASSABLE = ("roots", "vine", "grass", "fern", "bush", "web", "leaves", "azalea", "carpet", "torch")
+
+
+def _passable(state: BlockState | None) -> bool:
+    return state is None or state == AIR or any(p in state.name for p in PASSABLE)
+
+
+def _fabric(state: BlockState | None) -> bool:
+    return state is not None and state != AIR and state.name not in LOOSE and not any(p in state.name for p in ROOF_MASS)
+
+
 def _in_a_wall(canvas: Canvas, pos: Pos) -> bool:
-    """A loose-looking block that is really part of the fabric: it touches a non-loose solid block beside
-    or above it (the stone mixes share names with the rubble, so a wall course over a hole must stay)."""
+    """A loose-looking block that is really part of the fabric: solid fabric above it, or fabric on both
+    sides of it along one axis (a wall course over a hole). Rubble leaning on a wall touches one side only."""
     x, y, z = pos
-    for dx, dy, dz in NEIGHBOURS:
-        beside = canvas.get((x + dx, y + dy, z + dz))
-        if beside is not None and beside != AIR and beside.name not in LOOSE and not any(p in beside.name for p in ROOF_MASS):
-            return True
-    return False
+    if _fabric(canvas.get((x, y + 1, z))):
+        return True
+    return ((_fabric(canvas.get((x - 1, y, z))) and _fabric(canvas.get((x + 1, y, z))))
+            or (_fabric(canvas.get((x, y, z - 1))) and _fabric(canvas.get((x, y, z + 1)))))
+
+
+def rubble_field(canvas: Canvas, seed: int, box: tuple[int, int, int, int], density: float, height: int,
+                 rubble: tuple[BlockState, ...] = RUBBLE) -> None:
+    """A field of rubble over the box (x0, z0, x1, z1): heaps up to `height` on the pad and on top of
+    whatever already lies there, thickest where two noise fields agree. Runs before the drop pass."""
+    rng = random.Random(seed ^ 0xF1E1D)
+    x0, z0, x1, z1 = box
+    for z in range(z0, z1 + 1):
+        for x in range(x0, x1 + 1):
+            if rng.random() >= density:
+                continue
+            base = 1
+            while canvas.get((x, base, z)) not in (None, AIR) and base < height + 8:
+                base += 1
+            for h in range(rng.randint(1, height)):
+                pos = (x, base + h, z)
+                if not canvas.inside(pos) or canvas.get(pos) not in (None, AIR):
+                    break
+                canvas.put(pos, rng.choice(rubble))
 
 
 def holes(canvas: Canvas, seed: int, count: tuple[int, int] = (3, 6), radius: tuple[float, float] = (1.5, 3.2),

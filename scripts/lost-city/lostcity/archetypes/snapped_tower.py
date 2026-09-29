@@ -2,10 +2,13 @@
 still stand, leaning, with rebar bristling from the ragged break. The upper half hangs hooked over the
 stub's east lip, lying down the slope of its own fall, and the far end is smashed flat on the ground."""
 
-from ..blocks import AIR, CONCRETE, CONCRETE_DARK, CONCRETE_WHITE, CRACKED_STONE_BRICKS, GLASS, STEEL_BARS, STEEL_DARK, loot_chest
+import random
+
+from ..blocks import (AIR, CONCRETE, CONCRETE_DARK, CONCRETE_WHITE, CRACKED_STONE_BRICKS, GLASS, STEEL_BARS, STEEL_DARK, block,
+                      loot_chest)
 from .. import furnish
-from ..canvas import Canvas, Cells, envelope_air
-from ..damage import RUBBLE
+from ..canvas import Canvas, Cells, Pos, envelope_air
+from ..damage import RUBBLE, rubble_field
 from ..floors import Facade, roof_plate, tower
 from ..shapes import box, walls
 from ..spec import Archetype, ArchetypeSpec
@@ -45,6 +48,10 @@ def draw(canvas: Canvas) -> None:
     canvas.put_all(_fallen({p: s for p, s in upright.items() if p[1] > BREAK}))
     _rebar(canvas)
     _smashed_end(canvas)
+    end = START + FLOORS * PERIOD - BREAK + 4
+    rubble_field(canvas, SPEC.seed, (X1 - 2, Z0, START + SMASH_FROM - 1, Z1), 0.7, 3)        # under the break and the hanging half
+    rubble_field(canvas, SPEC.seed + 1, (START + SMASH_FROM - 3, Z0, min(end + 2, SPEC.size[0] - 1 - SPEC.margin), Z1), 0.9, 4)   # where it came down
+    rubble_field(canvas, SPEC.seed + 2, (X0, Z0, X1 + 1, Z1), 0.35, 2)                     # round the stub's foot
     for f in range(STUB_FLOORS):
         y = 2 + f * PERIOD
         dx = lean(y)
@@ -54,7 +61,41 @@ def draw(canvas: Canvas) -> None:
         if f in (1, 3):
             furnish.spawners_and_loot(canvas, SPEC.seed + f, inside, [y], mobs=("zombie", "skeleton"), spawners=1, chests=1, tiers=(1, 2))
     finish(canvas, SPEC, vine_chance=0.4, vine_drop=(4, 12), moss_chance=0.28, roots_chance=0.15, leaf_clumps=36, gardens=8)
+    _dangling_chunks(canvas)
     _loot_in_the_wreck(canvas)
+
+
+CHUNK = (block("tuff"), block("andesite"), CRACKED_STONE_BRICKS, block("polished_tuff"), block("cobbled_deepslate"))
+
+
+def _dangling_chunks(canvas: Canvas) -> None:
+    """Lumps of concrete still hanging by their rebar: from the underside of the hanging half and from the
+    stub's torn lip, a bar one to three long with a clump of two to five blocks swinging at its end. Placed
+    after the finish so the gravity pass never mistakes them for loose rubble."""
+    rng = random.Random(SPEC.seed ^ 0xDA96)
+    anchors = [pos for pos, state in canvas.freeze().items()
+               if state not in (None, AIR) and state.name not in ("minecraft:iron_bars",) and _hangs_free(canvas, pos)]
+    rng.shuffle(anchors)
+    for (x, y, z) in anchors[:14]:
+        length = rng.randint(1, 3)
+        if y - length - 2 < 2:
+            continue
+        for i in range(1, length + 1):
+            canvas.put((x, y - i, z), STEEL_BARS)
+        cx, cy = x + rng.choice((-1, 0, 0, 1)), y - length - 1
+        for _ in range(rng.randint(2, 5)):
+            pos = (cx + rng.randint(-1, 1), cy - rng.randint(0, 1), z + rng.randint(-1, 1))
+            if canvas.inside(pos) and canvas.get(pos) in (None, AIR) and SPEC.margin <= pos[2] < SPEC.size[2] - SPEC.margin:
+                canvas.put(pos, rng.choice(CHUNK))
+        canvas.put((cx, cy, z), rng.choice(CHUNK))
+
+
+def _hangs_free(canvas: Canvas, pos: Pos) -> bool:
+    """A solid block on the underside of the hanging half or the stub's lip, with a long drop below it."""
+    x, y, z = pos
+    if not (START - 3 <= x < START + SMASH_FROM) or y < 6 or not (Z0 <= z <= Z1):
+        return False
+    return all(canvas.get((x, y - d, z)) in (None, AIR) for d in range(1, 5))
 
 
 def _upright() -> Cells:
