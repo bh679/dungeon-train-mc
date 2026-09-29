@@ -80,6 +80,17 @@ final class LostCityStructuresTest {
     }
 
     @Test
+    @DisplayName("The Lost City Terrain Fit sibling's all-biome copies are told apart from DT's own and the mod's")
+    void terrainFitCopies() {
+        ResourceLocation copy = ResourceLocation.fromNamespaceAndPath("lostcityterrainfit", "all_biome/warehouse");
+        assertTrue(LostCityStructures.isTerrainFitCopy(copy));
+        assertFalse(LostCityStructures.isLostCityStructure(copy));   // vetoed outright, never era-gated
+        assertFalse(LostCityStructures.isTerrainFitCopy(ResourceLocation.fromNamespaceAndPath("dungeontrain", "lost_city/warehouse")));
+        assertFalse(LostCityStructures.isTerrainFitCopy(ResourceLocation.fromNamespaceAndPath("big_lost_city", "warehouse")));
+        assertFalse(LostCityStructures.isTerrainFitCopy(null));
+    }
+
+    @Test
     @DisplayName("Lost City runs 4000 blocks alone between BetterNether and BetterEnd, entered over its own 750-block fade")
     void shippedPlacement() {
         int slot = slot();

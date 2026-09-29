@@ -157,7 +157,8 @@ class ApprovedModListTest {
         Set<String> baked = ApprovedModList.approved();
         for (String id : List.of("minecraft", "neoforge", "dungeontrain", "sable", "sablecompanion",
             "veil", "adventureitemnames", "adventureitemstats", "playermob",
-            "enderchestpersistence", "tradeeverything", "discordpresence", "ediblebackpacks")) {
+            "enderchestpersistence", "tradeeverything", "discordpresence", "ediblebackpacks",
+            "lostcityterrainfit")) {
             assertTrue(baked.contains(id), id + " must be approved — every player runs it");
         }
     }

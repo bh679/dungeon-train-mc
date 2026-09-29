@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.worldgen.LegacyUnderground;
-import games.brennan.dungeontrain.worldgen.LostCitySeating;
 import games.brennan.dungeontrain.worldgen.LostCityStructures;
 import games.brennan.dungeontrain.worldgen.UpsideDownSpawnerStructures;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
@@ -42,7 +41,8 @@ import java.util.function.Predicate;
  * <p>In a world without a basement {@code bedrockY} is the build floor, nothing generates below it,
  * and this never fires.</p>
  *
- * <p>Big Lost City's era veto ({@link LostCityStructures#allowedAt}) runs at {@code HEAD}, not with the
+ * <p>Big Lost City's era veto ({@link LostCityStructures#allowedAt}) — and the veto of Lost City Terrain Fit's
+ * all-biome copies — runs at {@code HEAD}, not with the
  * others at {@code RETURN}: it needs nothing from the built start, and a jigsaw start loads (and
  * datafixes — the mod ships 1.20.1 NBT) its templates and assembles every piece before returning. Vanilla's
  * structure-set loop also retries the set's other entries after a rejection, so a veto at {@code RETURN}
@@ -60,6 +60,12 @@ public abstract class StructureBasementMixin {
                                                 Predicate<Holder<Biome>> validBiome,
                                                 CallbackInfoReturnable<StructureStart> cir) {
         ResourceLocation id = registryAccess.registryOrThrow(Registries.STRUCTURE).getKey((Structure) (Object) this);
+        if (LostCityStructures.isTerrainFitCopy(id)) {
+            // Lost City Terrain Fit's all-biome copies of the big buildings: DT places its own
+            // (dungeontrain:lost_city/*) under the era rules, so the sibling's are never started here.
+            cir.setReturnValue(StructureStart.INVALID_START);
+            return;
+        }
         if (!LostCityStructures.isLostCityStructure(id)) return;
         // Big Lost City's cities belong to the Lost City era alone (LostCityStructures) — anywhere
         // else, including a start we can't place in a level (a sampler or foreign generator), is dropped
@@ -84,11 +90,8 @@ public abstract class StructureBasementMixin {
         int floorY = WorldFloor.bedrockY(heightAccessor, chunkGenerator);
         ResourceLocation id = registryAccess.registryOrThrow(Registries.STRUCTURE).getKey((Structure) (Object) this);
         ServerLevel level = dungeontrain$levelOf(heightAccessor, chunkGenerator);
-        // Only a start the HEAD veto allowed gets here (dungeontrain$vetoLostCityEarly).
-        if (LostCityStructures.isLostCityStructure(id)) {
-            // Seat the city on its footprint's floor (the seabed in water), not on one heightmap sample.
-            LostCitySeating.seat(start, chunkGenerator, heightAccessor, randomState);
-        }
+        // A Lost City start the HEAD veto allowed is already seated on its footprint's floor here: Lost City
+        // Terrain Fit's StructureSeatMixin (priority 900) runs its RETURN inject ahead of this one.
         if (level != null) {
             // Legacy bands and the sunk zone never get the underground set (LegacyUnderground).
             if (LegacyUnderground.appliesTo(level, chunkPos.x, chunkPos.z)

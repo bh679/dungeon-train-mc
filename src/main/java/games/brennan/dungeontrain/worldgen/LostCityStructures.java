@@ -30,8 +30,9 @@ import java.util.Set;
  *
  * <p>The mod lets its big buildings (skyscrapers, power plant, houses, store, warehouse, ferris wheel)
  * start almost only in plains. DT ships copies of them ({@code dungeontrain:lost_city/<name>}: the same
- * structure, every overworld biome — oceans and rivers included, where {@link LostCitySeating} sets them on
- * the seabed) that may start in any chunk the era owns, so the ride passes buildings whatever the ground is.</p>
+ * structure, every overworld biome — oceans and rivers included, where Lost City Terrain Fit's seating sets them
+ * on the seabed) that may start in any chunk the era owns, so the ride passes buildings whatever the ground is.
+ * The sibling ships all-biome copies of its own ({@link #isTerrainFitCopy}); DT never starts those.</p>
  *
  * <p>The city fades in: nothing on the Nether's exit range, then from the foot of its fall a start is kept
  * with a probability that climbs from {@link #FADE_FLOOR} to full {@link #FADE_BLOCKS} further on
@@ -40,7 +41,7 @@ import java.util.Set;
  * stretch loads fewer of the mod's large templates.</p>
  *
  * <p>How a city sits in the ground — its template's natural pad and lower air yielding to the stretch's own
- * terrain — is {@link LostCityGroundProcessor}'s.</p>
+ * terrain — belongs to the Lost City Terrain Fit sibling mod (jarJar'd; {@code bh679/lostcityterrainfit-mc}).</p>
  */
 public final class LostCityStructures {
 
@@ -58,6 +59,11 @@ public final class LostCityStructures {
     /** Whether {@code id} is a Big Lost City structure, or one of DT's copies of one. */
     public static boolean isLostCityStructure(ResourceLocation id) {
         return id != null && (NAMESPACE.equals(id.getNamespace()) || isTracksideCopy(id));
+    }
+
+    /** Lost City Terrain Fit's all-biome copies: {@code lostcityterrainfit:all_biome/<name>}. */
+    public static boolean isTerrainFitCopy(ResourceLocation id) {
+        return id != null && "lostcityterrainfit".equals(id.getNamespace()) && id.getPath().startsWith("all_biome/");
     }
 
     /** Whether {@code id} is one of DT's copies of a big building. */
