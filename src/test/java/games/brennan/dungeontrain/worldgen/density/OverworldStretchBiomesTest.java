@@ -52,6 +52,32 @@ class OverworldStretchBiomesTest {
     }
 
     @Test
+    void holderTableKeepsThePointsAndFindsTheMappedEntry() {
+        Climate.ParameterList<ResourceKey<Biome>> keyed = OverworldStretchBiomes.vanillaTable();
+        java.util.Map<ResourceKey<Biome>, Holder<Biome>> holders = new java.util.HashMap<>();
+        for (Pair<Climate.ParameterPoint, ResourceKey<Biome>> p : keyed.values()) {
+            holders.computeIfAbsent(p.getSecond(), k -> Holder.Reference.createStandAlone(OWNER, k));
+        }
+        ResourceKey<Biome> dropped = keyed.values().get(3).getSecond();   // "missing from the registry" → null
+        Climate.ParameterList<Holder<Biome>> table = OverworldStretchBiomes.withHolders(keyed,
+                k -> k == dropped ? null : holders.get(k));
+
+        assertEquals(keyed.values().size(), table.values().size());
+        for (int i = 0; i < keyed.values().size(); i++) {
+            assertSame(keyed.values().get(i).getFirst(), table.values().get(i).getFirst(), "same point, same order");
+        }
+        java.util.Random rnd = new java.util.Random(7);
+        for (int i = 0; i < 2000; i++) {
+            Climate.TargetPoint target = Climate.target(
+                    rnd.nextFloat() * 2 - 1, rnd.nextFloat() * 2 - 1, rnd.nextFloat() * 2 - 1,
+                    rnd.nextFloat() * 2 - 1, rnd.nextFloat() * 2 - 1, rnd.nextFloat() * 2 - 1);
+            ResourceKey<Biome> key = keyed.findValue(target);
+            Holder<Biome> expected = key == dropped ? null : holders.get(key);
+            assertSame(expected, table.findValue(target));
+        }
+    }
+
+    @Test
     void fallbackPicksTheVanillaTableBiomeFromTheSourcesOwnHolders() {
         // A source like TerraBlender's: every vanilla biome plus a modded one.
         List<Pair<Climate.ParameterPoint, Holder<Biome>>> points = new ArrayList<>();

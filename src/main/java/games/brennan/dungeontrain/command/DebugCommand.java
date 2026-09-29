@@ -131,6 +131,13 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setBandEarlyOuts(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setBandEarlyOuts(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> bandEarlyOutsStatus(ctx.getSource()))))
+            // /dungeontrain debug biome-memo <on|off|status> — toggles the per-column memo in the
+            // biome-source hook (ColumnBiomePlan). OFF = the pre-change per-quart path, byte-identical
+            // output — drives the Gate 2 A/B: same seed, compare [gen.timing] biome= with it on vs off.
+            .then(Commands.literal("biome-memo")
+                .then(Commands.literal("on").executes(ctx -> setBiomeMemo(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setBiomeMemo(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> biomeMemoStatus(ctx.getSource()))))
             // /dungeontrain debug nether-passes — core X range + core biomes of the first Nether bands
             // (even passes vanilla, odd passes BetterNether). Also logged at INFO for RCON runs.
             .then(Commands.literal("nether-passes").executes(ctx -> NetherPassesDebug.report(ctx.getSource())))
@@ -468,6 +475,24 @@ public final class DebugCommand {
         boolean on = games.brennan.dungeontrain.worldgen.BandEarlyOuts.ENABLED;
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Worldgen band early-outs " + (on ? "ON" : "OFF")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
+        return 1;
+    }
+
+    private static int setBiomeMemo(CommandSourceStack source, boolean on) {
+        games.brennan.dungeontrain.worldgen.density.ColumnBiomePlan.ENABLED = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Biome-source column memo " + (on
+                ? "ON (per-column decisions memoised)"
+                : "OFF (pre-change per-quart path — A/B mode)")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), true);
+        return 1;
+    }
+
+    private static int biomeMemoStatus(CommandSourceStack source) {
+        boolean on = games.brennan.dungeontrain.worldgen.density.ColumnBiomePlan.ENABLED;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Biome-source column memo " + (on ? "ON" : "OFF")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
         return 1;
     }
