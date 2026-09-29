@@ -56,6 +56,8 @@ public final class GenProfiler {
         BIOME_FORCE,
         /** {@code ChunkStatusSpawnMixin} upside-down mirror precompute. */
         MIRROR_PRECOMPUTE,
+        /** {@code ChunkStatusSpawnMixin} Nether-band foliage strip scan ({@code NetherFoliageStrip.compute}). */
+        NETHER_STRIP_PRECOMPUTE,
         /** {@code TrackBedFeature.place} — track/rail/pillar stamping. */
         TRACK_FEATURE,
         /** {@code DisintegrationFeature.place} — real-End router island sampling for the void-fade band (worker-thread). */
@@ -147,7 +149,8 @@ public final class GenProfiler {
          *  (already inside NETHER_FEATURE) and {@link Bucket#EROSION} (main-thread, not a worker slice). */
         public double dtTotalMs() {
             return ms(Bucket.DF) + ms(Bucket.NETHER_FEATURE) + ms(Bucket.BIOME_FORCE)
-                    + ms(Bucket.MIRROR_PRECOMPUTE) + ms(Bucket.TRACK_FEATURE) + ms(Bucket.DISINTEGRATION)
+                    + ms(Bucket.MIRROR_PRECOMPUTE) + ms(Bucket.NETHER_STRIP_PRECOMPUTE)
+                    + ms(Bucket.TRACK_FEATURE) + ms(Bucket.DISINTEGRATION)
                     + ms(Bucket.LEGACY);
         }
 

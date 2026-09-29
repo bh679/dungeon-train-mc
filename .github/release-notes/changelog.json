@@ -20464,6 +20464,101 @@
       "released": true,
       "released_in": "v0.1012.0",
       "released_at": "2026-09-28T18:35:01Z"
+    },
+    {
+      "id": "cargostairs-outterstairs-rooms",
+      "version": "0.1013.0",
+      "type": "chore",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Work-in-progress carriage builds",
+      "summary": "Behind the scenes: a new stairway room and carriage group, and a reworked cave room, are saved for later. None of them appear on the train yet.",
+      "highlights": [
+        "Builds saved for a future update; nothing changes in play"
+      ],
+      "pr": 1644,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "player-blocks-break-off",
+      "version": "0.1014.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Your additions to the train break off when they hit things",
+      "summary": "Blocks you build onto the train are no longer as tough as the train itself. When something you've added hits a hillside, a tunnel wall or another moving contraption, it breaks off and drops as items, and whatever it hit stays standing. The train's own carriages still plough through terrain exactly as before.",
+      "highlights": [
+        "Blocks you place on the train break off, and drop as items, when they hit terrain or another physics object",
+        "Chests you've added spill their contents when they break off",
+        "The train's own blocks are unchanged: they never break and still carve through terrain"
+      ],
+      "pr": 1647,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "nether-strip-offthread",
+      "version": "0.1015.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Smoother streaming into a later phase's terrain",
+      "summary": "Entering one of the later phases could freeze the game for several seconds at a time: the pass that clears stray overworld trees and flowers from the freshly generated terrain ran on the main server thread for every new chunk, and the train generates about a chunk a second. That pass now runs on the world-generation workers, skips terrain that has nothing to clear, and only the handful of block removals stays on the main thread. The generated world is unchanged.",
+      "highlights": [
+        "No more multi-second freezes while new terrain streams in around the transition into a later phase",
+        "Same terrain and vegetation as before \u2014 only where the work runs changed",
+        "A server config setting can restore the old in-line pass if ever needed"
+      ],
+      "pr": 1646,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sable-ordered-first-snapshot",
+      "version": "0.1016.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "No more \"non-existent sub-level\" errors while riding",
+      "summary": "Riding the train no longer fills your log with \"Received a sub-level movement packet for a non-existent sub-level\" errors. New carriages now reach your game in the right order, so their first movement update never arrives before the carriage itself.",
+      "highlights": [],
+      "pr": 1648,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fewer-ruins-again",
+      "version": "0.1017.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Fewer ruins",
+      "summary": "Ruins turn up a little less often along the line.",
+      "highlights": [],
+      "pr": 1649,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
