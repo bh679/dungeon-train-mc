@@ -20766,9 +20766,9 @@
       "highlights": [],
       "pr": 1663,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1032.0",
+      "released_at": "2026-09-29T13:56:01Z"
     },
     {
       "id": "nether-transition-caverns",
@@ -20784,9 +20784,9 @@
       "highlights": [],
       "pr": 1665,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1032.0",
+      "released_at": "2026-09-29T13:56:01Z"
     },
     {
       "id": "shorter-stretches-gradual-blend",
@@ -20801,9 +20801,9 @@
       "highlights": [],
       "pr": 1668,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1032.0",
+      "released_at": "2026-09-29T13:56:01Z"
     },
     {
       "id": "lost-city-terrain-fit-sibling",
@@ -20817,9 +20817,9 @@
       "highlights": [],
       "pr": 1667,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1032.0",
+      "released_at": "2026-09-29T13:56:01Z"
     },
     {
       "id": "original-lost-city-buildings",
@@ -20835,9 +20835,9 @@
       "summary": "More ruined buildings can be found along the way, each a little different every time you pass one.",
       "highlights": [],
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1032.0",
+      "released_at": "2026-09-29T13:56:01Z"
     },
     {
       "id": "killer-bunny",
