@@ -21,7 +21,7 @@ DESP = re.compile(r"\[despawn\] dim=.*snapshotted=(\d+) entitiesHeld=(\d+)")
 SWEEP = re.compile(r"\[despawn\] (swept|restored) pIdx=(-?\d+) entities=(\d+)")
 TELE = re.compile(r"Teleported \w+ to ([\d.]+)")
 
-#: Fields appended in 0.1013 (see README "[mspt] fields"); absent from older logs.
+#: Fields appended in 0.1019 (see README "[mspt] fields"); absent from older logs.
 LOAD_FIELDS = ("gcMs", "gcN", "heapUsedMb", "chunkWaitMs", "chunkWaits", "chunksLoaded",
                "pendingChunkTasks", "entities", "onCarriages", "tickMaxMs")
 

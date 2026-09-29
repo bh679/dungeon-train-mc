@@ -12,6 +12,7 @@ import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
+import games.brennan.dungeontrain.train.PlayerPlacedTrainBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -142,6 +143,8 @@ public final class SableShipyard implements Shipyard {
         ServerSubLevel subLevel = sableShip.subLevel();
         if (subLevel == null) return; // already collected — nothing left to remove
         subLevel.markRemoved();
+        // A deleted carriage's player-added blocks go with it (see PlayerPlacedTrainBlocks).
+        PlayerPlacedTrainBlocks.removeSubLevel(subLevel.getUniqueId());
         // The container's per-tick removal pass picks this up next tick and
         // also clears our weak cache entry once the ServerSubLevel is GC'd.
     }

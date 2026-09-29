@@ -85,6 +85,7 @@ previous line.
 | `blockChanges` | carriage-block edits that hit the voxel collider in the window |
 | `activeTracked` / `activeEntity` / `activeSettling` / `frozen` | why resident carriages are stepped, and how many are parked (`PhysicsFreezeController`, 0.1003.1+) |
 | `maxBodyLag` / `reparks` / `reanchors` | parked-body lag (blocks), re-parks and re-anchors in the window |
+| `colliderRebuilds` / `batchedBlockChanges` / `blockChangeMs` | whole-section collider uploads `ColliderBatch` made over carriage stamps, the per-block updates it skipped, and total wall time of Sable's per-block handling (ms) in the window (#1650) |
 | `gcMs` / `gcN` | GC **pause** time (ms) and collections in the window — stop-the-world beans only (G1 Young/Old; ZGC/Shenandoah "Pauses"), not concurrent cycles. First line after start reads 0 |
 | `heapUsedMb` / `heapMaxMb` | heap in use at the sample, and `-Xmx` |
 | `chunkWaitMs` / `chunkWaits` | server-thread time blocked on synchronous chunk loads (`ServerChunkCache$MainThreadExecutor.managedBlock` entered with the chunk still pending; outermost wait only) and how many. The first line after server start also carries the spawn-area loads |
