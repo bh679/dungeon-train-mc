@@ -80,6 +80,8 @@
     "RapierPipelineBlockChangeNoLoadMixin",
     "FluidInteractionNoLoadMixin",
     "SableBlockChangeGuardMixin",
+    "SubLevelPhysicsBlockChangeBatchMixin",
+    "PhysicsChunkTicketManagerAccessor",
     "MergedMassTrackerPivotFreezeMixin",
     "SubLevelHoldingChunkFileMixin",
     "SubLevelHoldingChunkMapLoadMixin",
