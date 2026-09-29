@@ -20940,6 +20940,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stage-blocks-left-creative-tab",
+      "version": "0.1039.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Stage Blocks get their own creative tab",
+      "summary": "Stage blocks now sit in their own tab along the side of the creative inventory, styled like the rest.",
+      "highlights": [],
+      "pr": 1677,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
