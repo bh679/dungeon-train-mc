@@ -751,9 +751,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
     /**
      * The one-block face of the mountain that looks into the real-Nether core. The core carves its caverns
-     * right up to the crossfade, leaving a cliff of overworld rock; repaint just the rock cells that sit
-     * beside an open (air/lava) core cell, so from inside the Nether the wall reads netherrack while the
-     * mountain behind it — and its tunnel — stay stone. Whether a neighbouring core cell is open comes from
+     * right up to the crossfade, leaving a cliff of overworld rock; repaint the rock cells that sit beside
+     * a core cell (open or solid), so from inside the Nether the wall reads netherrack while the mountain
+     * behind it — and its tunnel — stay stone. Whether a neighbouring core cell is open comes from
      * the same {@link NetherCoreGeometry} density {@link NetherCoreStamp} stamps with, so it is exact even
      * across a chunk border (no neighbour-chunk reads).
      *
@@ -787,10 +787,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         boolean changed = false;
         for (int y = coreGeom.minCoreY(); y <= coreGeom.maxCoreY(); y++) {
             if (!NetherRockCover.isOverworldRock(w.state(dx, y, dz))) continue;
-            if (facesOpenCore(coreSides, y)) {
+            if (facesCore(coreSides, y)) {
                 w.set(dx, y, dz, NETHERRACK);
                 changed = true;
-            } else if (facesOpenCore(behindSides, y)) {
+            } else if (facesCore(behindSides, y)) {
                 w.set(dx, y, dz, OBSIDIAN);
                 changed = true;
             }
@@ -798,11 +798,13 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         return changed;
     }
 
-    /** True when any of the neighbouring core columns is open (air or lava) at {@code y}. */
-    private static boolean facesOpenCore(List<NetherCoreGeometry.Column> coreSides, int y) {
+    /**
+     * True when any of the neighbouring core columns has core terrain at {@code y} — open (air/lava) or
+     * solid netherrack alike — so the layered wall is laid along the whole seam, not only its open faces.
+     */
+    private static boolean facesCore(List<NetherCoreGeometry.Column> coreSides, int y) {
         for (NetherCoreGeometry.Column c : coreSides) {
-            double d = c.densityAt(y);
-            if (!Double.isNaN(d) && d <= 0.0) return true;
+            if (!Double.isNaN(c.densityAt(y))) return true;
         }
         return false;
     }
