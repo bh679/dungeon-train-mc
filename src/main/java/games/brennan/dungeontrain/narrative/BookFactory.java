@@ -56,6 +56,13 @@ public final class BookFactory {
      */
     static final int MAX_CHARS_PER_PAGE = 256;
 
+    /**
+     * Longest page {@link #buildPlainBook} will serve, in chars. Vanilla's writable-book page cap
+     * (the most a player can put on one page before signing) and the relay's
+     * {@code BOOKS_MAX_PAGE_CHARS}, so an honestly written page is never shortened.
+     */
+    static final int MAX_PAGE_CHARS = 1024;
+
     /** Vanilla cap on pages per signed book — anything beyond is truncated. */
     public static final int MAX_PAGES = 100;
 
@@ -411,17 +418,19 @@ public final class BookFactory {
      * discovery pool builds the found book (which stays unstamped so reading
      * it counts as an ordinary written book, never as a story read).
      *
-     * <p>Reuses the same pagination, page-cap, title/author-clamp and
-     * {@link BookText} keybind expansion as the narrative books so layout is
-     * identical. Each source page is first re-flowed through {@link #paginate}
-     * (so an overlong contributed page is split rather than truncated by the
-     * client), then all sections are concatenated in order. A {@code null}
-     * or empty page list yields a single blank page so the book is still
-     * openable.</p>
+     * <p>The caller owns page breaks, as with {@link #buildPlainBookComponents}: each source page
+     * becomes exactly one book page, in order, with its whitespace intact. These pages were typed
+     * in a book-and-quill, which already caps a page by what fits on screen, so there is nothing to
+     * re-flow — and re-flowing them through the story paginator ({@link #paginate}) used to strip
+     * indentation, drop spacer lines and split word art across pages, moving everything after it.
+     * Each page is only sanitized and clamped to {@link #MAX_PAGE_CHARS}, and trailing blank pages
+     * are dropped (blank pages mid-book are spacers and stay). Shares the page cap,
+     * title/author clamps and {@link BookText} keybind expansion with the narrative books. A
+     * {@code null} or empty page list yields a single blank page so the book is still openable.</p>
      *
      * @param title  book title (clamped to {@link #MAX_TITLE_CHARS}); blank → "Untitled"
      * @param author author credited on the book (clamped); blank → "Anonymous"
-     * @param pages  source page strings in order; {@code null}/empty → one blank page
+     * @param pages  page strings in order, served one-to-one; {@code null}/empty → one blank page
      */
     public static ItemStack buildPlainBook(String title, String author, List<String> pages) {
         // Sanitize BEFORE the blank check. Book text is untrusted on both paths into here — the
@@ -437,15 +446,17 @@ public final class BookFactory {
         if (pages != null) {
             for (String page : pages) {
                 if (page == null) continue;
-                // Pages keep their newlines AND their § formatting codes — line structure is
-                // load-bearing here, and styling your own page is a feature. See BookSafeText.
+                // Pages keep their newlines, leading spaces AND § formatting codes — the author's
+                // layout (centred lines, spacer lines, word art) is the content. See BookSafeText.
                 String cleanPage = BookSafeText.sanitizePage(page);
-                // Re-flow each contributed page through the shared paginator so an
-                // overlong page is split across multiple book pages rather than
-                // silently clipped by the client's page renderer.
-                pageStrings.addAll(paginate(cleanPage));
+                pageStrings.add(BookSafeText.clampCp(cleanPage, MAX_PAGE_CHARS));
             }
         }
+        // A blank page in the middle is a spacer the author chose and keeps its place; blank pages
+        // at the end are dropped, as vanilla's book editor does before signing.
+        int end = pageStrings.size();
+        while (end > 0 && pageStrings.get(end - 1).isEmpty()) end--;
+        pageStrings = pageStrings.subList(0, end);
         if (pageStrings.size() > MAX_PAGES) {
             LOGGER.warn("[DungeonTrain] SharedBook: '{}' by '{}' produced {} pages — truncating to {} (vanilla cap)",
                 safeTitle, safeAuthor, pageStrings.size(), MAX_PAGES);

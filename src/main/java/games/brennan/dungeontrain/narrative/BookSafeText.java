@@ -40,8 +40,8 @@ public final class BookSafeText {
     private BookSafeText() {}
 
     /**
-     * Sanitize a PAGE BODY: newlines and {@code §} formatting codes are kept, since page line
-     * structure is load-bearing ({@link BookFactory#paginate} splits on blank lines) and styling
+     * Sanitize a PAGE BODY: newlines, spaces and {@code §} formatting codes are kept, since a page
+     * is served exactly as its author laid it out ({@link BookFactory#buildPlainBook}) and styling
      * your own page is a feature.
      */
     public static String sanitizePage(String raw) {
