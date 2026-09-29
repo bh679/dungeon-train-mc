@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.builder.BuilderSave;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.TemplateLootPrefabs;
 import games.brennan.dungeontrain.editor.TemplateSidecars;
+import games.brennan.dungeontrain.editor.relay.EditorRelayWrite;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import games.brennan.dungeontrain.event.SharedCarriageMode;
 import games.brennan.dungeontrain.net.BuilderUploadStatusPacket;
@@ -116,8 +117,12 @@ public final class BuilderRelayUpload {
         // files on disk rather than plumbed through BuilderSave.Written and the save packet: those
         // files are the source of truth for both the builder and the editor call site, and the save
         // that just ran has already written them.
-        TemplateSidecars.Collected collected =
-                TemplateSidecars.collectReport(written.kind(), written.subKind(), written.id());
+        // An editor whole room rides as a CARRIAGE build, but its sidecars are not the carriage
+        // shell's of the same name — read them from the whole room's own stores.
+        boolean wholeRoom = EditorRelayWrite.isWholeRoom(written);
+        TemplateSidecars.Collected collected = wholeRoom
+                ? TemplateSidecars.collectWholeRoomReport(written.subKind(), written.id())
+                : TemplateSidecars.collectReport(written.kind(), written.subKind(), written.id());
         String sidecars = collected.doc();
         if (!collected.dropped().isEmpty()) {
             // Said out loud: a build that went up without its chest loot or variant pools looks
@@ -129,7 +134,9 @@ public final class BuilderRelayUpload {
         }
         // And the loot prefabs those sidecars' chest links name — the ones this install authored.
         // Read from the same files, for the same reason; see TemplateLootPrefabs.
-        String lootPrefabs = TemplateLootPrefabs.collect(written.kind(), written.subKind(), written.id());
+        String lootPrefabs = wholeRoom
+                ? TemplateLootPrefabs.collectWholeRoom(written.id())
+                : TemplateLootPrefabs.collect(written.kind(), written.subKind(), written.id());
         Extras extras = new Extras(sidecars, lootPrefabs);
 
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
