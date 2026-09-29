@@ -20769,6 +20769,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-transition-caverns",
+      "version": "0.1029.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "mobs"
+      ],
+      "title": "Caverns under the mountain crossing",
+      "summary": "The mountains the line climbs before the fiery stretch are no longer solid rock. Big open caverns now run through them, and the track carries you straight through on pillars. On the way in they are lush and dripstone caves; on the way out something far darker takes over. The rock turns to deepslate as the heat draws near, and the last wall before it is sealed behind a seam of obsidian.",
+      "highlights": [
+        "Large lush and dripstone caverns inside the approach mountains, kept dry",
+        "A deep, dark stretch on the far side \u2014 nothing spawns there on its own, but a lost city may be waiting",
+        "Deepslate takes over the rock halfway along, behind a wavy natural boundary",
+        "An obsidian seam under the scorched skin and along the final wall"
+      ],
+      "pr": 1665,
+      "date": "2026-09-29",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
