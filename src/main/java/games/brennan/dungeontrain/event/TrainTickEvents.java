@@ -4,6 +4,7 @@ import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
+import games.brennan.dungeontrain.perf.ServerLoadSampler;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
@@ -338,7 +339,10 @@ public final class TrainTickEvents {
         // measured directly: physMs= is the mean per-tick wall time of the native
         // Rapier step over the window (RapierPipelineTimingMixin), substeps= the
         // live Sable setting the tuner controls, blockChanges= the carriage-block
-        // edits (mining/placing) that hit the voxel collider in the window. Lets
+        // edits (mining/placing) that hit the voxel collider in the window.
+        // batchedBlockChanges= the per-block updates a carriage stamp deferred and
+        // colliderRebuilds= the whole-section uploads that replaced them (ColliderBatch),
+            // blockChangeMs= the wall time of Sable's per-block handling over the window. Lets
         // MSPT-vs-resident-carriage scaling and the substep A/B be read straight
         // from the log, no /spark or /tick query. getAverageTickTimeNanos() is
         // server-wide (dominated by the train dimension's physics). See
@@ -356,13 +360,18 @@ public final class TrainTickEvents {
 
             // Drained unconditionally too, so the window never spans more than one period.
             PhysicsStepTimer.Window physics = PhysicsStepTimer.drain();
+            // The non-physics suspects for a slow window (GC, synchronous chunk loads, entity load,
+            // the worst single tick) — appended after the physics fields so older parsers keep
+            // reading. See ServerLoadSampler and scripts/perf/README.md.
+            ServerLoadSampler.Window load = ServerLoadSampler.drain(level, trainsById, MSPT_LOG_PERIOD_TICKS);
             double avgTickMs = level.getServer().getAverageTickTimeNanos() / 1_000_000.0;
             // activeTracked/activeEntity/activeSettling, maxBodyLag and reanchors: why each
             // resident carriage is still being stepped, how far the parked ones sit behind
             // their poses, and how many carriages re-anchored in the window — the fields
             // needed to attribute a slow physMs while the player is away from the train
             // (player logs of 28 Sep 2026: 45–205 ms at near=0). See PhysicsFreezeController.
-            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={}",
+            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={} colliderRebuilds={} batchedBlockChanges={} blockChangeMs={}"
+                    + " gcMs={} gcN={} heapUsedMb={} heapMaxMb={} chunkWaitMs={} chunkWaits={} chunksLoaded={} pendingChunkTasks={} entities={} onCarriages={} tickMaxMs={}",
                 level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
                 countNearCarriages(level, trainsById), trainsById.size(),
                 String.format("%.2f", physics.avgStepMs(MSPT_LOG_PERIOD_TICKS)),
@@ -370,7 +379,13 @@ public final class TrainTickEvents {
                 PhysicsFreezeController.lastActiveTracked(), PhysicsFreezeController.lastActiveEntity(),
                 PhysicsFreezeController.lastActiveSettling(), PhysicsFreezeController.lastFrozen(),
                 String.format("%.1f", PhysicsFreezeController.lastMaxBodyLagBlocks()),
-                PhysicsFreezeController.drainReparks(), physics.reanchors());
+                PhysicsFreezeController.drainReparks(), physics.reanchors(),
+                physics.colliderRebuilds(), physics.batchedBlockChanges(),
+                String.format("%.2f", physics.blockChangeMs()),
+                load.gcMillis(), load.gcCount(), load.heapUsedMb(), load.heapMaxMb(),
+                String.format("%.2f", load.chunkWaitMs()), load.chunkWaits(),
+                load.chunksLoaded(), load.pendingChunkTasks(), load.entities(), load.onCarriages(),
+                String.format("%.2f", load.tickMaxMs()));
         }
 
         // Kill-ahead runs once per train, against the lead carriage's

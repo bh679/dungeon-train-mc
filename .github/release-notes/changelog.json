@@ -20480,9 +20480,9 @@
       ],
       "pr": 1644,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "player-blocks-break-off",
@@ -20501,9 +20501,9 @@
       ],
       "pr": 1647,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "nether-strip-offthread",
@@ -20522,9 +20522,9 @@
       ],
       "pr": 1646,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "sable-ordered-first-snapshot",
@@ -20539,9 +20539,9 @@
       "highlights": [],
       "pr": 1648,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     },
     {
       "id": "fewer-ruins-again",
@@ -20556,9 +20556,68 @@
       "highlights": [],
       "pr": 1649,
       "date": "2026-09-29",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
+    },
+    {
+      "id": "batch-collider-updates-carriage-stamping",
+      "version": "0.1018.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "train"
+      ],
+      "title": "Smoother ticks when new carriages join the train",
+      "summary": "Each time the train grew by a group of carriages, the physics engine was told about every single block as it was placed \u2014 thousands of tiny collision updates in one tick, which showed up as a stutter right after each new group appeared. The train now builds a whole group first and hands the physics engine each finished chunk section once, so joining carriages cost a fraction of what they did. Mining or placing blocks on a carriage still updates collision immediately.",
+      "highlights": [
+        "Far fewer physics collision updates when a group of carriages is added",
+        "New performance counters in the lag log so the remaining cost is visible"
+      ],
+      "pr": 1649,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
+    },
+    {
+      "id": "fluid-interaction-no-sync-load",
+      "version": "0.1019.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "world"
+      ],
+      "title": "No more freezes when water or lava flows into terrain that is still generating",
+      "summary": "When water or lava reached the edge of terrain that had not finished generating, the server used to stop everything and build that terrain on the spot \u2014 a multi-second freeze, sometimes chained several times over. The check for what the two fluids should do when they meet now waits until the terrain is ready, then runs as normal, so obsidian and cobblestone still form and the train keeps moving.",
+      "highlights": [
+        "Multi-second freezes at the edge of freshly generated terrain are gone",
+        "Lava and water still turn to obsidian, cobblestone and basalt as before, just a moment later at chunk edges"
+      ],
+      "pr": 1651,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
+    },
+    {
+      "id": "mspt-lag-report-counters",
+      "version": "0.1020.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "More useful lag reports",
+      "summary": "Behind the scenes: lag reports now record what else was slowing the game down besides the train, such as memory clean-up pauses, waiting on terrain to load, and how many creatures are riding along. Nothing changes in play.",
+      "highlights": [
+        "Lag reports can now tell apart memory pauses, terrain loading and busy carriages"
+      ],
+      "pr": 1654,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
     }
   ]
 }
