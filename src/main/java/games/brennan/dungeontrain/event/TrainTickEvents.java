@@ -765,6 +765,11 @@ public final class TrainTickEvents {
                             && !state.getCollisionShape(level, cursor).isEmpty()) {
                             perfLookups++;
                             collide = !CarriageDeck.blockAt(ship, cursor).isAir();
+                            if (!collide && carriage.provider() != null) {
+                                // A paid-for lookup that found open carriage space — [sweep.sample].
+                                SweepSampleLog.record(carriage.provider().getPIdx(),
+                                    carriage.provider().getGroupSize(), cursor, state, box);
+                            }
                         }
 
                         if (shouldBreak(breakBlocks, collide, y, hardFloorY, broke, breakBudget)) {
@@ -845,6 +850,7 @@ public final class TrainTickEvents {
             String.format("%.3f", perfNanos / 1_000_000.0 / perfTicks),
             String.format("%.3f", perfMaxNanos / 1_000_000.0),
             perfCells / perfTicks, perfNonAir / perfTicks, perfLookups / perfTicks, perfBreaks);
+        SweepSampleLog.emit(JITTER_LOGGER, DungeonTrainWorldData.get(level).dims());
         resetSweepPerfWindow();
     }
 
@@ -863,6 +869,7 @@ public final class TrainTickEvents {
         perfLookups = 0;
         perfBreaks = 0;
         perfTicks = 0;
+        SweepSampleLog.reset();
     }
 
     /**
