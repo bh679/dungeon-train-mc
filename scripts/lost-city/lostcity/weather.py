@@ -27,8 +27,9 @@ def weather(canvas: Canvas, seed: int, cracked: dict[BlockState, BlockState], cr
 
 
 def _exposed_top(canvas: Canvas, pos: Pos) -> bool:
+    """An outdoor top: nothing at all above it (interior air is an explicit AIR cell, so rooms stay clean)."""
     above = (pos[0], pos[1] + 1, pos[2])
-    return canvas.inside(above) and (not canvas.has(above) or canvas.get(above) == AIR)
+    return canvas.inside(above) and not canvas.has(above)
 
 
 def _moss(canvas: Canvas, rng: random.Random, cells, chance: float) -> None:
