@@ -223,6 +223,22 @@ public final class TrackVariantRegistry {
      * {@code null} skips gating.
      */
     public static String pickName(TrackKind kind, long worldSeed, long tileIndex, GateContext gateCtx) {
+        return pickName(kind, worldSeed, tileIndex, gateCtx, null);
+    }
+
+    /**
+     * Group-aware {@link #pickName(TrackKind, long, long, GateContext)}: when {@code group} is
+     * non-null the gated pool is narrowed to that group's members (for
+     * {@link games.brennan.dungeontrain.template.TemplateGroup#UNGROUPED}, the names in no group)
+     * before the weighted draw. If the group has no member left after gating, the gated pool is used
+     * as-is (warned once per kind + group) so a spawn never goes without a template.
+     *
+     * <p>The random stream is untouched by the filter, so a pool where every name matches the group —
+     * e.g. a world where nothing is grouped, drawing {@code UNGROUPED} — picks exactly what the
+     * ungrouped overload would.</p>
+     */
+    public static String pickName(TrackKind kind, long worldSeed, long tileIndex, GateContext gateCtx,
+                                  games.brennan.dungeontrain.template.TemplateGroup group) {
         // Sub-variants are reached through their parent, never beside it — a member in the top-level
         // pool would be drawn twice over, once on its own and once through the group.
         List<String> pool = games.brennan.dungeontrain.editor.TrackVariantGroupStore.topLevelNames(kind);
@@ -239,6 +255,17 @@ public final class TrackVariantRegistry {
                 effective = gated;
             } else {
                 warnGateEmptyOnce(kind);
+            }
+        }
+        if (group != null) {
+            List<String> inGroup = new ArrayList<>(effective.size());
+            for (String name : effective) {
+                if (group.matches(TrackVariantWeights.groupsFor(kind, name))) inGroup.add(name);
+            }
+            if (!inGroup.isEmpty()) {
+                effective = inGroup;
+            } else {
+                warnGroupEmptyOnce(kind, group);
             }
         }
 
@@ -347,6 +374,16 @@ public final class TrackVariantRegistry {
     }
 
     private static final java.util.EnumSet<TrackKind> GATE_EMPTY_WARNED = java.util.EnumSet.noneOf(TrackKind.class);
+
+    private static final java.util.Set<String> WARNED_GROUP_EMPTY = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** One warning per (kind, group) whose members are all gated out — the gated pool stands in. */
+    private static void warnGroupEmptyOnce(TrackKind kind, games.brennan.dungeontrain.template.TemplateGroup group) {
+        if (WARNED_GROUP_EMPTY.add(kind.id() + "|" + group.id())) {
+            LOGGER.warn("[DungeonTrain] Track kind {} has no template in group {} allowed here — "
+                + "drawing from the whole pool instead.", kind.id(), group);
+        }
+    }
 
     private static synchronized void warnGateEmptyOnce(TrackKind kind) {
         if (!GATE_EMPTY_WARNED.add(kind)) return;

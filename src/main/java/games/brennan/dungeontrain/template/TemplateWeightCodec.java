@@ -68,6 +68,11 @@ public final class TemplateWeightCodec {
      * credit, so a store that never credits anybody round-trips byte-identically.
      */
     public static final String K_BUILDER = "builder";
+    /**
+     * Optional array of template-group ids — see {@link TemplateMeta#groups()}. Never emitted for an
+     * entry in no group, so stores that predate groups round-trip byte-identically.
+     */
+    public static final String K_GROUPS = "groups";
     public static final String K_BUILDER_UUID = "uuid";
     public static final String K_BUILDER_NAME = "name";
 
@@ -91,9 +96,32 @@ public final class TemplateWeightCodec {
             Integer w = finiteRound(we);
             if (w == null) return null;
             return new TemplateMeta(clampWeight.applyAsInt(w), parseGate(o), parseStage(o), parseMode(o),
-                parseFlip(o), parseName(o), parseBuilder(o));
+                parseFlip(o), parseName(o), parseBuilder(o), parseGroups(o));
         }
         return null;
+    }
+
+    /**
+     * The optional group memberships on an entry object; empty when absent or not an array. Invalid
+     * ids are dropped (the record normalises), never failing the entry.
+     */
+    public static List<String> parseGroups(JsonObject o) {
+        JsonElement el = o.get(K_GROUPS);
+        if (el == null || !el.isJsonArray()) return List.of();
+        java.util.ArrayList<String> raw = new java.util.ArrayList<>();
+        for (JsonElement e : el.getAsJsonArray()) {
+            String s = stringOrNull(e);
+            if (s != null) raw.add(s);
+        }
+        return TemplateMeta.normaliseGroups(raw);
+    }
+
+    /** Emit group memberships into {@code o}; nothing for none. Inverse of {@link #parseGroups}. */
+    public static void writeGroups(JsonObject o, List<String> groups) {
+        if (groups == null || groups.isEmpty()) return;
+        JsonArray arr = new JsonArray();
+        for (String g : groups) arr.add(g);
+        o.add(K_GROUPS, arr);
     }
 
     /** The optional display label on an entry object; {@code null} when absent or blank. */
@@ -287,10 +315,11 @@ public final class TemplateWeightCodec {
         for (Map.Entry<String, TemplateMeta> e : new TreeMap<>(byId).entrySet()) {
             TemplateMeta meta = e.getValue();
             // Bare-int only when every axis is at its no-op default: default inline gate, no Stage
-            // link, no mode tag, no flip block, no display label AND no builder credit. An entry
+            // link, no mode tag, no flip block, no display label, no groups AND no builder credit. An entry
             // carrying any of those takes the object form.
             if (meta.gate().isDefault() && meta.stageId() == null && meta.mode() == null
-                    && meta.flip() == null && meta.name() == null && meta.builder() == null) {
+                    && meta.flip() == null && meta.name() == null && meta.builder() == null
+                    && !meta.hasGroups()) {
                 out.addProperty(e.getKey(), meta.weight());
             } else {
                 out.add(e.getKey(), entryObject(meta));
@@ -308,6 +337,7 @@ public final class TemplateWeightCodec {
         writeFlip(o, meta.flip());
         if (meta.name() != null) o.addProperty(K_NAME, meta.name());
         writeBuilder(o, meta.builder());
+        writeGroups(o, meta.groups());
         return o;
     }
 

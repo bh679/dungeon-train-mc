@@ -178,6 +178,57 @@ public final class TrackVariantWeights {
     }
 
     /**
+     * The template groups {@code (kind, name)} belongs to — sorted, never null, empty when it is
+     * ungrouped. Read today only by the tunnel kinds; see {@link TemplateMeta#groups()}.
+     */
+    public static synchronized java.util.List<String> groupsFor(TrackKind kind, String name) {
+        if (name == null) return java.util.List.of();
+        TemplateMeta m = CURRENT.get(kind).get(name.toLowerCase(Locale.ROOT));
+        return m == null ? java.util.List.of() : m.groups();
+    }
+
+    /**
+     * Replace the group memberships of {@code (kind, name)} ({@code null} / empty = ungrouped),
+     * preserving every spawn rule, the label and the credit. Persists. Returns the stored list.
+     */
+    public static synchronized java.util.List<String> setGroups(TrackKind kind, String name,
+                                                             java.util.List<String> groups) throws IOException {
+        String key = name.toLowerCase(Locale.ROOT);
+        Map<String, TemplateMeta> next = new HashMap<>(CURRENT.get(kind));
+        TemplateMeta merged = TemplateMeta.mergeGroups(next.get(key), groups, DEFAULT);
+        next.put(key, merged);
+        CURRENT.put(kind, next);
+        writeConfig(kind, next);
+        trySaveToSource(kind, next);
+        LOGGER.info("[DungeonTrain] Set track groups {}:{}={} (persisted to {}).",
+            kind.id(), key, merged.groups(), configPath(kind));
+        return merged.groups();
+    }
+
+    /**
+     * Drop {@code groupId} from every {@code kind} entry that lists it — the upkeep half of deleting
+     * a group. Persists only when something changed. Returns how many entries lost it.
+     */
+    public static synchronized int stripGroup(TrackKind kind, String groupId) throws IOException {
+        Map<String, TemplateMeta> next = new HashMap<>(CURRENT.get(kind));
+        int stripped = 0;
+        for (Map.Entry<String, TemplateMeta> e : CURRENT.get(kind).entrySet()) {
+            if (!e.getValue().inGroup(groupId)) continue;
+            java.util.List<String> rest = new java.util.ArrayList<>(e.getValue().groups());
+            rest.remove(groupId);
+            next.put(e.getKey(), e.getValue().withGroups(rest));
+            stripped++;
+        }
+        if (stripped == 0) return 0;
+        CURRENT.put(kind, next);
+        writeConfig(kind, next);
+        trySaveToSource(kind, next);
+        LOGGER.info("[DungeonTrain] Removed group {} from {} {} entr{} (persisted to {}).",
+            groupId, stripped, kind.id(), stripped == 1 ? "y" : "ies", configPath(kind));
+        return stripped;
+    }
+
+    /**
      * Update one weight on disk and in memory, keeping the entry's inline gate, its Stage link
      * <b>and</b> its mode tag. Returns the clamped value.
      */
