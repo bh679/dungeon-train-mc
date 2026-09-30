@@ -155,6 +155,16 @@ public interface BlockVariantPlot {
     }
 
     /**
+     * True when this plot's spawn path grows the per-row {@link VariantState#growth()}
+     * columns ({@link GrowthPass}). The same plots as {@link #supportsConnectMode}: both
+     * need a placer that writes into the world after the overlay; the track path returns
+     * one state per cell and cannot grow.
+     */
+    default boolean supportsGrowth() {
+        return supportsConnectMode();
+    }
+
+    /**
      * How the cell at {@code localPos} rolls across a repeating room's copies.
      * Always {@link VariantCopyRoll#DEFAULT} — follow the room — where
      * {@link #supportsCopySettings} is false.

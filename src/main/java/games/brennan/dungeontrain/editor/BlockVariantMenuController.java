@@ -360,13 +360,14 @@ public final class BlockVariantMenuController {
                 s.difficulty().min(), s.difficulty().max(),
                 s.groupRef(), refLive,
                 (byte) s.active().mode().ordinal(),
-                (byte) s.connect().ordinal()));
+                (byte) s.connect().ordinal(),
+                s.growth().toInt()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
             (byte) plot.copyScopeAt(localPos).ordinal(),
             (byte) plot.spanAt(localPos).toByte(),
-            plot.supportsConnectMode());
+            plot.supportsConnectMode(), plot.supportsGrowth());
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -802,6 +803,22 @@ public final class BlockVariantMenuController {
                 if (!VariantConnect.canConnect(entry.state())) return;
                 int arms = packet.delta() & VariantConnect.ALL;
                 mutated.set(idx, entry.withState(VariantConnect.force(entry.state(), arms), entry.blockEntityNbt()));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_GROWTH -> {
+                // delta = VariantGrowth.toInt(); the canonical constructor clamps the range.
+                if (wasEmpty) return;
+                if (!plot.supportsGrowth()) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (entry.isMob() || entry.isGroupRef() || !GrowthShapes.canGrow(entry.state())) return;
+                VariantGrowth next = VariantGrowth.fromInt(packet.delta());
+                if (!GrowthShapes.growsBothWays(entry.state())) {
+                    next = next.withDir(GrowthShapes.effectiveDir(entry.state(), next.dir()));
+                }
+                mutated.set(idx, entry.withGrowth(next.isDefault() ? VariantGrowth.NONE : next));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
