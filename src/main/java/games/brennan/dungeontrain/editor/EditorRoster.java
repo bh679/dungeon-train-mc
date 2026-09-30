@@ -134,6 +134,12 @@ public final class EditorRoster {
         return entry.withRoom(mode, size.getX(), size.getZ(), size.getY());
     }
 
+    /** A carriage template's size, or the entry unchanged for every other row. */
+    private static EditorRosterPacket.Entry withShellSizeData(String categoryId, EditorRosterPacket.Entry entry) {
+        if (!EditorCategory.CARRIAGES.id().equals(categoryId)) return entry;
+        return entry.withShellSize(TemplateSizeStore.SHELLS.sizeOf(entry.variant().modelId()).key());
+    }
+
     /** A contents template's random-flip axes, or the entry unchanged for every other row. */
     private static EditorRosterPacket.Entry withFlipData(String categoryId, EditorRosterPacket.Entry entry) {
         if (!EditorCategory.CONTENTS.id().equals(categoryId)) return entry;
@@ -268,8 +274,8 @@ public final class EditorRoster {
         List<EditorRosterPacket.Entry> entries = new ArrayList<>(rows.size());
         for (EditorTypeMenusPacket.Variant v : rows) {
             int self = selfWeight == null ? EditorPlotLabelsPacket.NO_WEIGHT : selfWeight.of(v);
-            entries.add(withFlipData(categoryId, withRoomData(categoryId,
-                new EditorRosterPacket.Entry(v, self, relayIdFor(categoryId, modelId, v)))));
+            entries.add(withShellSizeData(categoryId, withFlipData(categoryId, withRoomData(categoryId,
+                new EditorRosterPacket.Entry(v, self, relayIdFor(categoryId, modelId, v))))));
         }
         return new EditorRosterPacket.Group(categoryId, typeName, modelId, entries);
     }

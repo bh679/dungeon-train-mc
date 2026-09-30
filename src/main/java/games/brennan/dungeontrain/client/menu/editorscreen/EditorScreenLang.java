@@ -184,6 +184,8 @@ public final class EditorScreenLang {
 
     public static final String SHEET_PATH = PREFIX + "sheet.path";
     public static final String SHEET_SIZE = PREFIX + "sheet.size";
+    public static final String SHEET_SHELL_SIZE = PREFIX + "sheet.shell_size";
+    public static final String SHEET_SHELL_SIZE_TIP = PREFIX + "sheet.shell_size.tip";
     public static final String SHEET_BLOCKS = PREFIX + "sheet.blocks";
     public static final String SHEET_ENTITIES = PREFIX + "sheet.entities";
     public static final String SHEET_CONTAINERS = PREFIX + "sheet.containers";

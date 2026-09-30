@@ -6482,6 +6482,72 @@
       ]
     }
   },
+  "chat.dungeontrain.editor.shell_size_set": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "a carriage size name",
+      "examples": [
+        "Room",
+        "Half",
+        "Group"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "9",
+        "13",
+        "27"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.shell_size_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "'fire' has unsaved edits — save or reset it first.",
+        "No such file"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.shell_size_unknown": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.half_join_set": {
+    "1": {
+      "label": "a Half pair join mode",
+      "examples": [
+        "wall",
+        "bridge",
+        "short",
+        "random"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.half_join_is": {
+    "1": {
+      "label": "a Half pair join mode",
+      "examples": [
+        "wall",
+        "bridge",
+        "short",
+        "random"
+      ]
+    }
+  },
   "chat.dungeontrain.editor.weight_saved": {
     "1": {
       "label": "the template kind id",

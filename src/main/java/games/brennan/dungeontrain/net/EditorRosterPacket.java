@@ -158,9 +158,14 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
      * relay recorded. {@code relayId} is 0 for a template the relay has never seen.
      */
     public record Entry(EditorTypeMenusPacket.Variant variant, int selfWeight, int relayId,
-                        String roomMode, int roomLength, int roomWidth, int roomHeight, int flipMask) {
+                        String roomMode, int roomLength, int roomWidth, int roomHeight, int flipMask,
+                        String shellSize) {
+        /** {@link #shellSize} for every row that is not a carriage template. */
+        public static final String NO_SHELL_SIZE = "";
+
         public Entry {
             if (roomMode == null || roomMode.isEmpty()) roomMode = EditorStatusPacket.NO_MODE;
+            if (shellSize == null) shellSize = NO_SHELL_SIZE;
         }
 
         public Entry(EditorTypeMenusPacket.Variant variant, int selfWeight) {
@@ -170,7 +175,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
         /** The three-field shape from before the screen could edit a room it is not stood in. */
         public Entry(EditorTypeMenusPacket.Variant variant, int selfWeight, int relayId) {
             this(variant, selfWeight, relayId, EditorStatusPacket.NO_MODE, EditorStatusPacket.NO_SIZE,
-                EditorStatusPacket.NO_SIZE, EditorStatusPacket.NO_SIZE, EditorStatusPacket.NO_FLIP);
+                EditorStatusPacket.NO_SIZE, EditorStatusPacket.NO_SIZE, EditorStatusPacket.NO_FLIP, NO_SHELL_SIZE);
         }
 
         /**
@@ -179,12 +184,17 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
          * which is what the pane read those rows from before.
          */
         public Entry withRoom(String mode, int length, int width, int height) {
-            return new Entry(variant, selfWeight, relayId, mode, length, width, height, flipMask);
+            return new Entry(variant, selfWeight, relayId, mode, length, width, height, flipMask, shellSize);
         }
 
         /** A contents template's random-flip axes, packed as {@link EditorStatusPacket#flipMaskOf}. */
         public Entry withFlipMask(int mask) {
-            return new Entry(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, mask);
+            return new Entry(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, mask, shellSize);
+        }
+
+        /** A carriage template's size key ({@code ContentsSize#key}) — Room, Half or Group. */
+        public Entry withShellSize(String size) {
+            return new Entry(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, flipMask, size);
         }
 
         /** True when this row is a portal room whose tag and box rode along. */
@@ -267,6 +277,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
                 buf.writeVarInt(e.roomWidth());
                 buf.writeVarInt(e.roomHeight());
                 buf.writeVarInt(e.flipMask());
+                buf.writeUtf(e.shellSize(), 16);
             }
         }
         buf.writeVarInt(stages.size());
@@ -331,7 +342,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
                 EditorTypeMenusPacket.Variant v = EditorTypeMenusPacket.decodeVariant(buf);
                 entries.add(new Entry(v, buf.readVarInt(), buf.readVarInt(),
                     buf.readUtf(EditorStatusPacket.MODE_TAG_MAX), buf.readVarInt(), buf.readVarInt(),
-                    buf.readVarInt(), buf.readVarInt()));
+                    buf.readVarInt(), buf.readVarInt(), buf.readUtf(16)));
             }
             groups.add(new Group(categoryId, typeName, modelId, entries));
         }
