@@ -43,10 +43,20 @@ public final class EditorTabBar {
      */
     public static List<Tab> layout(InventoryEditorLayout.Rect strip, ToIntFunction<String> widthOf,
                                    Function<EditorScreenPage, String> labelOf) {
+        return layout(strip, widthOf, labelOf, false);
+    }
+
+    /**
+     * As {@link #layout(InventoryEditorLayout.Rect, ToIntFunction, Function)}, with the Groups tab
+     * (after Nav) when {@code showGroups} — the screen passes true only while it is on Tracks.
+     */
+    public static List<Tab> layout(InventoryEditorLayout.Rect strip, ToIntFunction<String> widthOf,
+                                   Function<EditorScreenPage, String> labelOf, boolean showGroups) {
         List<Tab> out = new ArrayList<>();
         int x = strip.x();
         for (EditorScreenPage page : EditorScreenPage.values()) {
             if (page == EditorScreenPage.SETTINGS) continue;
+            if (page == EditorScreenPage.GROUPS && !showGroups) continue;
             Tab t = tab(Kind.PAGE, page, labelOf.apply(page), x, widthOf);
             out.add(t);
             x = t.x() + t.w() + GAP;

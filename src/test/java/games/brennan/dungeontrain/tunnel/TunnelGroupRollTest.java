@@ -175,6 +175,40 @@ final class TunnelGroupRollTest {
     }
 
     @Test
+    @DisplayName("inside a group each member draws at its weight in that group")
+    void memberWeightsInsideAGroup() {
+        stoneAndBrick();
+        // s_both weighs 0 in stone but keeps its template weight in brick.
+        TrackVariantWeights.injectForTesting(SECTION, "s_both",
+            TemplateMeta.of(1).withGroups(List.of("stone", "brick")).withGroupWeight("stone", 0));
+        assertEquals(Set.of("s_stone"), pickedOver(SECTION, TemplateGroup.of("stone"), OVERWORLD));
+        assertEquals(Set.of("s_brick", "s_both"), pickedOver(SECTION, TemplateGroup.of("brick"), OVERWORLD));
+    }
+
+    @Test
+    @DisplayName("the roster snapshot lists every group's members at their in-group weight")
+    void snapshotMembers() {
+        stoneAndBrick();
+        TrackVariantWeights.injectForTesting(SECTION, "s_both",
+            TemplateMeta.of(1).withGroups(List.of("stone", "brick")).withGroupWeight("stone", 6));
+        var snap = TunnelGroupEditing.snapshot();
+        assertTrue(snap.membersOf("stone", "tunnel_section").stream()
+            .anyMatch(m -> m.name().equals("s_both") && m.weight() == 6));
+        assertTrue(snap.membersOf("brick", "tunnel_section").stream()
+            .anyMatch(m -> m.name().equals("s_both") && m.weight() == 1));
+        // The synthetic default is ungrouped, so it is the Ungrouped pool's member.
+        assertTrue(snap.membersOf("", "tunnel_section").stream()
+            .anyMatch(m -> m.name().equals(TrackKind.DEFAULT_NAME)));
+    }
+
+    @Test
+    @DisplayName("'ungrouped' is reserved for the ungrouped pool")
+    void ungroupedIsReserved() {
+        assertNull(TunnelGroupEditing.parseId("ungrouped"));
+        assertEquals("stone", TunnelGroupEditing.parseId("Stone"));
+    }
+
+    @Test
     @DisplayName("the registry round-trips through groups.json")
     void registryJson() {
         TunnelGroupStore.Registry r = new TunnelGroupStore.Registry(Map.of("stone", 3, "brick", 1), 2);
