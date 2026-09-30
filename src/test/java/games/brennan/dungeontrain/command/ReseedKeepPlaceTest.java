@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Where a reseed leaves the author: where they stood anywhere within a chunk of the test copy, the
+ * Where a reseed leaves the author: where they stood anywhere within three chunks of the test copy, the
  * copy's arrival spot from further off. Once only the copy's own box counted, so an author looking
  * at it from beside or above was pulled back to the doorway on every press.
  */
