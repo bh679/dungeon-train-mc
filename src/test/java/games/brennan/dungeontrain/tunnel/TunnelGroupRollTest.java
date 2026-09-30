@@ -159,6 +159,22 @@ final class TunnelGroupRollTest {
     }
 
     @Test
+    @DisplayName("a test tunnel rolls only among the tested template's groups, preferring buildable ones")
+    void rollAmongTestedGroups() {
+        stoneAndBrick();
+        template(SECTION, "s_mossy", "mossy");   // no mossy entrance: cannot build
+        for (long k = 0; k < 50; k++) {
+            assertEquals(TemplateGroup.of("stone"),
+                TunnelGroupRoll.rollAmong(3L, k, OVERWORLD, List.of("mossy", "stone")));
+        }
+        Set<TemplateGroup> both = new HashSet<>();
+        for (long k = 0; k < 200; k++) both.add(TunnelGroupRoll.rollAmong(3L, k, OVERWORLD, List.of("brick", "stone")));
+        assertEquals(Set.of(TemplateGroup.of("stone"), TemplateGroup.of("brick")), both);
+        assertEquals(TemplateGroup.of("mossy"), TunnelGroupRoll.rollAmong(3L, 1L, OVERWORLD, List.of("mossy")));
+        assertEquals(TemplateGroup.UNGROUPED, TunnelGroupRoll.rollAmong(3L, 1L, OVERWORLD, List.of()));
+    }
+
+    @Test
     @DisplayName("the registry round-trips through groups.json")
     void registryJson() {
         TunnelGroupStore.Registry r = new TunnelGroupStore.Registry(Map.of("stone", 3, "brick", 1), 2);

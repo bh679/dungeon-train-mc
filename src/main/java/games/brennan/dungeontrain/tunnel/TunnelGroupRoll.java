@@ -43,6 +43,22 @@ public final class TunnelGroupRoll {
         return pick(SeededDraw.hash(worldSeed ^ SALT, key), candidates(gateCtx, TunnelGroupStore.current()));
     }
 
+    /**
+     * Roll among only the groups a given template belongs to ({@code memberOf}; empty = the ungrouped
+     * pool) — for a test tunnel built around that template. Prefers groups that can build a whole
+     * tunnel here, weighted as {@link #roll}; if none can, the first membership still wins so the
+     * tested template's set is used as far as it goes.
+     */
+    public static TemplateGroup rollAmong(long worldSeed, long key, GateContext gateCtx, List<String> memberOf) {
+        if (memberOf == null || memberOf.isEmpty()) return TemplateGroup.UNGROUPED;
+        List<Candidate> eligible = new ArrayList<>();
+        for (Candidate c : candidates(gateCtx, TunnelGroupStore.current())) {
+            if (!c.group().isUngrouped() && memberOf.contains(c.group().id())) eligible.add(c);
+        }
+        TemplateGroup picked = pick(SeededDraw.hash(worldSeed ^ SALT, key), eligible);
+        return picked != null ? picked : TemplateGroup.of(memberOf.get(0));
+    }
+
     /** Every group able to build a tunnel under {@code gateCtx}, weighted from {@code registry}. */
     static List<Candidate> candidates(GateContext gateCtx, TunnelGroupStore.Registry registry) {
         List<String> sections = TrackVariantGroupStore.topLevelNames(TrackKind.TUNNEL_SECTION);

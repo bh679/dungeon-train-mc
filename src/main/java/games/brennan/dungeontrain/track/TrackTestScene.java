@@ -2,10 +2,13 @@ package games.brennan.dungeontrain.track;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
+import games.brennan.dungeontrain.template.TemplateGroup;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
+import games.brennan.dungeontrain.tunnel.TunnelGroupRoll;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -55,6 +58,26 @@ public final class TrackTestScene {
         String nameFor(TrackKind kind, long index) {
             if (kind == piece.kind()) return name;
             return TrackVariantRegistry.pickName(kind, sceneSeed, index, band.context());
+        }
+
+        /** {@link #nameFor}, drawn from the tunnel's {@code group} — so the test tunnel is one set end to end. */
+        String nameFor(TrackKind kind, long index, TemplateGroup group) {
+            if (kind == piece.kind()) return name;
+            return TrackVariantRegistry.pickName(kind, sceneSeed, index, band.context(), group);
+        }
+
+        /**
+         * The template group the test tunnel is built from, as a tunnel in the world would be. Testing
+         * a tunnel section or entrance, it is one of the groups that template belongs to (the
+         * ungrouped pool if none), so every other piece around it comes from the same set; testing
+         * anything else, the tunnel rolls its group the world's way. Null = no group filter.
+         */
+        TemplateGroup tunnelGroup() {
+            if (piece.kind() == TrackKind.TUNNEL_SECTION || piece.kind() == TrackKind.TUNNEL_PORTAL) {
+                return TunnelGroupRoll.rollAmong(sceneSeed, 0, band.context(),
+                    TrackVariantWeights.groupsFor(piece.kind(), name));
+            }
+            return TunnelGroupRoll.roll(sceneSeed, 0, band.context());
         }
 
         /** The seed a kind's block variants roll on. */
@@ -173,15 +196,16 @@ public final class TrackTestScene {
     private static void stampTunnel(ServerLevel level, BlockPos corner, TrackTestLayout layout, TrackGeometry g,
                                     Roll roll) {
         int z = TunnelGeometry.from(g).wallMinZ() + 1;
+        TemplateGroup group = roll.tunnelGroup();
         for (TrackTestLayout.TunnelPiece piece : layout.tunnelPieces()) {
             int x = corner.getX() + piece.x();
             BlockPos at = new BlockPos(x, g.bedY(), z);
             if (piece.portal()) {
                 TunnelPlacer.placePortalNamed(level, at, piece.mirrored(),
-                    roll.nameFor(TrackKind.TUNNEL_PORTAL, x), roll.seedFor(TrackKind.TUNNEL_PORTAL), x);
+                    roll.nameFor(TrackKind.TUNNEL_PORTAL, x, group), roll.seedFor(TrackKind.TUNNEL_PORTAL), x);
             } else {
                 TunnelPlacer.placeSectionNamed(level, at,
-                    roll.nameFor(TrackKind.TUNNEL_SECTION, x), roll.seedFor(TrackKind.TUNNEL_SECTION), x);
+                    roll.nameFor(TrackKind.TUNNEL_SECTION, x, group), roll.seedFor(TrackKind.TUNNEL_SECTION), x);
             }
         }
     }
