@@ -284,6 +284,13 @@ public final class EditorMenuScreen implements MenuScreen {
         // Stage chip shows; to change the gate the player edits the Stage or picks Custom.
         if (weightRow != null) out.addAll(spawnGateRows(ctx));
 
+        // Tunnel groups — a tunnel builds every section and entrance from one group.
+        if (ctx.category() == PlotCategory.TRACKS && TunnelGroupPickerScreen.groupable(ctx.modelId())
+                && notEmpty(ctx.modelName())) {
+            out.add(new CommandMenuEntry.DrillIn("Tunnel groups…",
+                TunnelGroupPickerScreen.fromRoster(ctx.modelId(), ctx.modelName())));
+        }
+
         // Random flip — contents only. Which axes this template MAY be flipped along when it is
         // stamped into a carriage (each enabled axis is rolled per carriage), plus "Rooms": whether
         // that roll also applies when the template furnishes a portal room.

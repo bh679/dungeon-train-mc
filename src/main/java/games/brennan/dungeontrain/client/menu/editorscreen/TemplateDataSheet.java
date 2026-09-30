@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
+import games.brennan.dungeontrain.client.menu.TunnelGroupPickerScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.editor.TemplateCells;
@@ -162,20 +163,21 @@ public final class TemplateDataSheet {
         EditorTypeMenusPacket.Variant v = tile.variant();
         String pending = EditorScreenLang.text(EditorScreenLang.SHEET_PENDING);
 
-        // The path used to open the sheet; the bands line under a Custom stage needed its row more.
-        // A labelled build is drawn under its label everywhere else on this screen; the id is what
-        // every command and file is named by, so the sheet keeps it one line away.
-        if (v.isLabelled()) {
-            out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_ID), v.name()));
-        }
         out.add(builderLine(v, key, EditorStatusHudOverlay.isDevModeOn()));
         out.add(sizeLine(summary, roomRows, key, pending));
         out.add(blocksLine(summary, pending));
         out.add(lightsLine(summary, pending));
         out.add(lootLine(summary, pending));
-        out.add(weightLine(tile, key, pending));
+        out.add(withGroupsCell(weightLine(tile, key, pending), v, key));
         out.addAll(stageLines(v, key, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SOURCE), sourceLabel(provenance)));
+        // A labelled build is drawn under its label everywhere else on this screen; the id is what
+        // every command and file is named by, so the sheet still shows it — but last. The sheet
+        // drops whatever runs past the pane's height, and the id (also in the path above) is the
+        // line to lose, not the editable Weight it used to push off the bottom.
+        if (v.isLabelled()) {
+            out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_ID), v.name()));
+        }
         return out;
     }
 
@@ -439,6 +441,28 @@ public final class TemplateDataSheet {
         // bounds take the stage's line and the bands a row of their own, every letter a button.
         List<Cell> first = prepend(stage, levels);
         return List.of(new Line(label, first), bandsLine(v.phaseMask(), phases));
+    }
+
+    /**
+     * {@code weight} with a {@code · stone +1} groups cell appended for a tunnel section / entrance —
+     * which tunnel groups it belongs to (a tunnel builds entrance to exit from one group), opening
+     * the multi-select picker. Rides on the Weight line rather than a line of its own because the
+     * sheet drops whatever does not fit the pane's height, and the lines below Weight are the first
+     * to go. Any other template's weight line is returned unchanged.
+     */
+    static Line withGroupsCell(Line weight, EditorTypeMenusPacket.Variant v, VariantKey key) {
+        if (key == null || key.isSubVariant() || !TunnelGroupPickerScreen.groupable(key.modelId())) return weight;
+        // Short on purpose — the sheet drops a cell that runs past the pane's edge, and the full list
+        // is in the tooltip.
+        Cell groups = new Cell(TunnelGroupPickerScreen.summary(v.groupIds()), new Action.Open(
+            new TunnelGroupPickerScreen(key.modelId(), v.name(), v.groupIds())), true)
+            .withTooltip(v.groupIds().isEmpty()
+                ? "A tunnel builds every section and entrance from one group. Click to choose."
+                : "Groups: " + String.join(", ", v.groupIds()) + ". Click to change.");
+        List<Cell> cells = new ArrayList<>(weight.cells());
+        cells.add(Cell.plain("·"));
+        cells.add(groups);
+        return new Line(weight.label(), cells);
     }
 
     /** {@code Bands  O N V E U C}: every band its own letter button (or plain when read-only). */

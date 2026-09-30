@@ -14,6 +14,8 @@ public enum EditorScreenPage {
     LAYOUT(EditorScreenLang.TAB_LAYOUT),
     STAGES(EditorScreenLang.TAB_STAGES),
     NAV(EditorScreenLang.TAB_NAV),
+    /** Tunnel template groups — shown only while the editor is on Tracks, see {@link EditorGroupsTab}. */
+    GROUPS(EditorScreenLang.TAB_GROUPS),
     SETTINGS(EditorScreenLang.TAB_SETTINGS);
 
     private final String langKey;
