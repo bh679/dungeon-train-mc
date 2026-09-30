@@ -163,12 +163,6 @@ public final class TemplateDataSheet {
         EditorTypeMenusPacket.Variant v = tile.variant();
         String pending = EditorScreenLang.text(EditorScreenLang.SHEET_PENDING);
 
-        // The path used to open the sheet; the bands line under a Custom stage needed its row more.
-        // A labelled build is drawn under its label everywhere else on this screen; the id is what
-        // every command and file is named by, so the sheet keeps it one line away.
-        if (v.isLabelled()) {
-            out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_ID), v.name()));
-        }
         out.add(builderLine(v, key, EditorStatusHudOverlay.isDevModeOn()));
         out.add(sizeLine(summary, roomRows, key, pending));
         out.add(blocksLine(summary, pending));
@@ -177,6 +171,13 @@ public final class TemplateDataSheet {
         out.add(withGroupsCell(weightLine(tile, key, pending), v, key));
         out.addAll(stageLines(v, key, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SOURCE), sourceLabel(provenance)));
+        // A labelled build is drawn under its label everywhere else on this screen; the id is what
+        // every command and file is named by, so the sheet still shows it — but last. The sheet
+        // drops whatever runs past the pane's height, and the id (also in the path above) is the
+        // line to lose, not the editable Weight it used to push off the bottom.
+        if (v.isLabelled()) {
+            out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_ID), v.name()));
+        }
         return out;
     }
 
