@@ -21112,9 +21112,9 @@
       "highlights": [],
       "pr": 1688,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
     },
     {
       "id": "tunnel-template-groups",
@@ -21130,9 +21130,9 @@
       "highlights": [],
       "pr": 1690,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
     },
     {
       "id": "editor-teleport-fly-over-air",
@@ -21147,9 +21147,9 @@
       "highlights": [],
       "pr": 1691,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
     },
     {
       "id": "tunnel-group-spawn-gates",
@@ -21165,9 +21165,9 @@
       "highlights": [],
       "pr": 1692,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
     },
     {
       "id": "portal-room-modes-void-bedrock",
@@ -21182,9 +21182,9 @@
       "highlights": [],
       "pr": 1693,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
     },
     {
       "id": "plain-chunk-dimension-finds-ground",
@@ -21200,9 +21200,9 @@
       "highlights": [],
       "pr": 1695,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
     },
     {
       "id": "x-editor-blocks-page",
@@ -21218,9 +21218,9 @@
       "highlights": [],
       "pr": 1694,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
     },
     {
       "id": "community-item-trade-values",
@@ -21237,9 +21237,9 @@
       "highlights": [],
       "pr": 1696,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
     }
   ]
 }
