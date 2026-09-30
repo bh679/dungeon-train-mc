@@ -21098,6 +21098,23 @@
       "released": true,
       "released_in": "v0.1047.0",
       "released_at": "2026-09-29T21:08:02Z"
+    },
+    {
+      "id": "contents-templates-opt-in",
+      "version": "0.1048.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "New rooms start switched off",
+      "summary": "New carriage rooms now wait to be switched on in each carriage before they appear.",
+      "highlights": [],
+      "pr": 1688,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
