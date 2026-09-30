@@ -7,7 +7,9 @@ package games.brennan.dungeontrain.worldgen;
  * other 33, ~140 MB raw, no pool names). A jigsaw start loads its pieces on first use, which without a pre-load
  * happens right as the train meets the first city. {@code event/LostCityTemplatePreloadEvents} loads them on a
  * background thread once a player comes within {@link #LOOKAHEAD_BLOCKS} of the Lost City run, and evicts them
- * once every player has been {@link #quietAt quiet} for {@link #EVICT_AFTER_SCANS} seconds.
+ * once every player has been {@link #quietAt quiet} for {@link #EVICT_AFTER_SCANS} seconds. Measured on a dev
+ * server (0.1071.1): the 42 hold ~120 MB of block infos and positions and load in ~23 s on the background
+ * thread; all 75 held ~300 MB (~350 MB more heap after GC) for the rest of the session and took ~61 s.
  *
  * <p>Only the run counts, not the few ruins sprinkled through the WWOO stretch: the cache holds a loaded
  * template until it is evicted, which the run (it shows nearly every building) repays and a handful of
