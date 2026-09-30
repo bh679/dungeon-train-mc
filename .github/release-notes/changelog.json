@@ -21323,6 +21323,12 @@
       "summary": "The editor can now build carriage contents at Room, Half and Full size, and each carriage only takes contents of its own size.",
       "highlights": [],
       "pr": 1702,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "lost-city-terrain-fit-curseforge-sibling",
       "version": "0.1061.0",
       "type": "chore",
