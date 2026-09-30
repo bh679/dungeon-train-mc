@@ -21431,6 +21431,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "surface-rule-null-guard",
+      "version": "0.1067.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Steadier world loading",
+      "summary": "Dungeon Train worlds now load more reliably alongside other terrain mods.",
+      "highlights": [],
+      "pr": 1712,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
