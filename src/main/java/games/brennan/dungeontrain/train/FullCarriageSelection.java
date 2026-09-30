@@ -71,6 +71,8 @@ public final class FullCarriageSelection {
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
             if (CarriagePlacer.sizeOf(v) != ContentsSize.FULL) continue;
             if (weights.weightFor(v.id()) <= 0) continue;
+            // A Full carriage made blank and never built would put a hole in the train.
+            if (!CarriageTemplateStore.hasBlocks(v.id())) continue;
             if (anchorGate != null && !anchorGate.allows(weights.gateFor(v.id()))) continue;
             // An empty group-long hall is not a Full carriage: only a shell that would draw some
             // Full contents qualifies. Until someone authors one, the lottery never lands.

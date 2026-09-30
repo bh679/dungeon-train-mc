@@ -42,6 +42,8 @@ public final class ContentsShellPicker {
             int weight = weights.weightFor(v.id());
             if (weight <= 0 || isPortalPart(v) || isFlatbed(v)) continue;
             if (CarriagePlacer.sizeOf(v) != size) continue;
+            // A carriage made blank and never built is air — nothing to stand contents in.
+            if (!games.brennan.dungeontrain.editor.CarriageTemplateStore.hasBlocks(v.id())) continue;
             boolean allowed = CarriageVariantContentsAllowStore.get(v)
                 .map(a -> a.isAllowed(topId)).orElse(true);
             if (!allowed) continue;

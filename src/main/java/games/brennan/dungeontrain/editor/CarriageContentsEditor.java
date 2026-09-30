@@ -145,6 +145,7 @@ public final class CarriageContentsEditor {
             case HALF -> PortalCarriageBuilder.portalVariant(PortalCorridorKind.LONG);
             case FULL -> CarriageVariantRegistry.allVariants().stream()
                 .filter(v -> CarriagePlacer.sizeOf(v) == ContentsSize.FULL)
+                .filter(v -> CarriageTemplateStore.hasBlocks(v.id()))
                 .findFirst().orElse(DEFAULT_SHELL);
         };
     }
