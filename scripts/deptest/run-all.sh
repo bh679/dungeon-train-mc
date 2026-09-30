@@ -29,3 +29,5 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 "$HERE/run-case.sh" "L - no Sable Pathfinder (CurseForge path)"       dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf
 # VanillaBackport (+ Platform) is required on both sides for the Nether-exit sulfur caves.
 "$HERE/run-case.sh" "M - missing VanillaBackport (Platform present)"   dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc pf
+# Big Lost City is required with a `[x,)` floor; N is the only case without `blc`.
+"$HERE/run-case.sh" "N - missing Big Lost City"                        dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch vb pf
