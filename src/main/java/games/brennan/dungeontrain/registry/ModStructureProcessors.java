@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.PaintingTransformProcessor;
 import games.brennan.dungeontrain.worldgen.LostCityBiteProcessor;
 import games.brennan.dungeontrain.worldgen.LostCityFacadeProcessor;
 import games.brennan.dungeontrain.worldgen.LostCityStretchProcessor;
@@ -13,6 +14,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
  * Data-driven structure processors: the types a {@code worldgen/processor_list} JSON may name.
+ * {@link PaintingTransformProcessor} is attached at runtime today, but it rides in the same placement
+ * settings a jigsaw pool, datagen or template export would serialise, so it is registered too.
  * DT's other processors are runtime-only and never serialised, so they need no registry entry.
  * Mirrors {@link ModSounds}'s {@link DeferredRegister} pattern.
  */
@@ -27,6 +30,7 @@ public final class ModStructureProcessors {
         PROCESSORS.register("lost_city_bite", () -> LostCityBiteProcessor.TYPE);
         PROCESSORS.register("lost_city_stretch", () -> LostCityStretchProcessor.TYPE);
         PROCESSORS.register("lost_city_facade", () -> LostCityFacadeProcessor.TYPE);
+        PROCESSORS.register("painting_transform", () -> PaintingTransformProcessor.TYPE);
     }
 
     private ModStructureProcessors() {}
