@@ -1106,6 +1106,7 @@ public final class DungeonTrainCommonConfig {
                 .defineInRange("spheresEndSkyFadeBlocks", DEFAULT_SPHERES_END_SKY_FADE_BLOCKS,
                         MIN_SPHERES_END_SKY_FADE_BLOCKS, MAX_SPHERES_END_SKY_FADE_BLOCKS);
         SpheresProgressionConfig.define(b);
+        EndBandConfig.define(b);
         ModConfigSpec.BooleanValue stacksEnabled = b
                 .comment("Stacks phase — part of the single repeating world-gen cycle, appended after the spheres band",
                         "with a long plain-overworld lead-in. Along +X it is mostly void; scattered chunks each hold a",

@@ -1,12 +1,18 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -65,5 +71,32 @@ final class NetherSurfacePaletteTest {
         BlockState plains = NetherSurfacePalette.surfaceBlock(Biomes.PLAINS, 0, 0.5);
         assertTrue(wastes.is(Blocks.NETHERRACK));
         assertTrue(plains.is(Blocks.NETHERRACK));
+    }
+
+    @Test
+    @DisplayName("BoP erupting_inferno: brimstone at every skin depth, so its buds keep a floor they survive on")
+    void eruptingInfernoBrimstone() {
+        ResourceKey<Biome> inferno = bop("erupting_inferno");
+        assertTrue(NetherSurfacePalette.hasSurface(inferno));
+        assertEquals("biomesoplenty:brimstone", BopNetherSurfaceSkins.skinId(inferno));
+        // BoP may be absent from the unit-test runtime, so the resolved block is brimstone or the netherrack fallback.
+        for (int depth = 0; depth < 4; depth++) {
+            BlockState s = NetherSurfacePalette.surfaceBlock(inferno, depth, 0.5);
+            assertEquals(BopNetherSurfaceSkins.surfaceBlock(inferno), s);
+        }
+    }
+
+    @Test
+    @DisplayName("other BoP Nether biomes keep plain netherrack")
+    void otherBopBiomesNetherrack() {
+        for (String path : new String[] {"undergrowth", "crystalline_chasm", "visceral_heap", "withered_abyss"}) {
+            assertFalse(NetherSurfacePalette.hasSurface(bop(path)), path);
+            assertNull(BopNetherSurfaceSkins.skinId(bop(path)), path);
+            assertTrue(NetherSurfacePalette.surfaceBlock(bop(path), 0, 0.5).is(Blocks.NETHERRACK), path);
+        }
+    }
+
+    private static ResourceKey<Biome> bop(String path) {
+        return ResourceKey.create(Registries.BIOME, ResourceLocation.fromNamespaceAndPath("biomesoplenty", path));
     }
 }
