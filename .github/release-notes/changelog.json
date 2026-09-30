@@ -21327,6 +21327,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "lost-city-processor-memo",
+      "version": "0.1061.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Smoother building generation",
+      "summary": "Big ruined buildings along the line now appear with less of a hitch.",
+      "highlights": [],
+      "pr": 1707,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
