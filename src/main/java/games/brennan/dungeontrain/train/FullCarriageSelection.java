@@ -25,8 +25,9 @@ import java.util.Set;
  * answer, salted with {@link #FULL_SALT} so it never lines up with the portal or whole-group draws.
  * Both of those win a collision — the caller asks this only when neither took the group.</p>
  *
- * <p>No Full shell (or none this world's dims can build) means "not a Full group": the run is placed
- * as ordinary carriages, so a world only sees Full carriages once someone has made one.</p>
+ * <p>No Full shell with Full contents to draw (or none this world's dims can build) means "not a
+ * Full group": the run is placed as ordinary carriages, so a world only sees Full carriages once
+ * someone has authored Full contents for one.</p>
  */
 public final class FullCarriageSelection {
 
@@ -71,6 +72,12 @@ public final class FullCarriageSelection {
             if (CarriagePlacer.sizeOf(v) != ContentsSize.FULL) continue;
             if (weights.weightFor(v.id()) <= 0) continue;
             if (anchorGate != null && !anchorGate.allows(weights.gateFor(v.id()))) continue;
+            // An empty group-long hall is not a Full carriage: only a shell that would draw some
+            // Full contents qualifies. Until someone authors one, the lottery never lands.
+            if (!CarriageContentsRegistry.anyAllowed(
+                    games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore.get(v)
+                        .orElse(CarriageContentsAllowList.EMPTY),
+                    CarriageContentsRegistry.sizeFilter(ContentsSize.FULL))) continue;
             fits.add(v.id());
         }
         if (fits.isEmpty()) {
