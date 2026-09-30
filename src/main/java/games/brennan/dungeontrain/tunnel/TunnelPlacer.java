@@ -79,6 +79,11 @@ public final class TunnelPlacer {
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
+    /** Inside the Nether crossfade every tunnel is this group's Overworld look… */
+    public static final TemplateGroup FADE_BASE_GROUP = TemplateGroup.of("stone");
+    /** …dithering into this group's Nether look. */
+    public static final TemplateGroup FADE_NETHER_GROUP = TemplateGroup.of("blackstone");
+
     private TunnelPlacer() {}
 
     /**
@@ -176,8 +181,9 @@ public final class TunnelPlacer {
      * {@link NetherFade#selectsNether} is true — turning the tunnel Nether in the same clumps the
      * surrounding terrain turns netherrack. Both the OW and Nether names are picked deterministically
      * from this tile's seed with a phase-forced {@link GateContext}, so the blend is reproducible.
-     * Both picks honour the tunnel's {@code group}, each falling back to its whole gated pool when
-     * the group has no member for that phase.
+     * The crossfade is always {@link #FADE_BASE_GROUP} into {@link #FADE_NETHER_GROUP}, whatever
+     * {@code group} the tunnel rolled (each pick falls back to its whole gated pool if its group has
+     * no member for that phase); outside it the pick honours {@code group}.
      */
     private static boolean placeTunnelWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin,
                                                TunnelVariant variant, TrackKind kind, boolean mirrorX,
@@ -202,7 +208,7 @@ public final class TunnelPlacer {
 
         // Inside the crossfade: Overworld base, then a per-block-masked Nether overlay.
         String owName = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex,
-            new GateContext(baseCtx.level(), TrainPhase.OVERWORLD), group);
+            new GateContext(baseCtx.level(), TrainPhase.OVERWORLD), FADE_BASE_GROUP);
         Optional<StructureTemplate> owTemplate = TunnelTemplateStore.getFor(serverLevel, variant, owName);
         if (owTemplate.isEmpty()) return false;
         eraseInteriorAirspaceWorldgen(level, origin);
@@ -211,7 +217,7 @@ public final class TunnelPlacer {
 
         long genSeed = DungeonTrainWorldData.get(overworld).getGenerationSeed();
         String netherName = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex,
-            new GateContext(baseCtx.level(), TrainPhase.NETHER), group);
+            new GateContext(baseCtx.level(), TrainPhase.NETHER), FADE_NETHER_GROUP);
         Optional<StructureTemplate> netherTemplate = TunnelTemplateStore.getFor(serverLevel, variant, netherName);
         if (netherTemplate.isPresent()) {
             stampTemplateWorldgen(level, stampOrigin, netherTemplate.get(), mirrorX,
