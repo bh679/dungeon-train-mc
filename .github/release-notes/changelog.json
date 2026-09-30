@@ -21107,8 +21107,8 @@
         "feature",
         "editor"
       ],
-      "title": "New rooms start switched off",
-      "summary": "New carriage rooms now wait to be switched on in each carriage before they appear.",
+      "title": "Train Editor: new rooms start switched off",
+      "summary": "In the Train Editor, a newly made carriage room now starts switched off in every carriage's Contents list, and only appears once you switch it on.",
       "highlights": [],
       "pr": 1688,
       "date": "2026-09-30",
