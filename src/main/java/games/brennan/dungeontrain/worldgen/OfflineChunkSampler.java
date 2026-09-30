@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.mixin.NoiseBasedChunkGeneratorInvoker;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
@@ -10,14 +12,19 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.util.Mth;
 import net.minecraft.util.StaticCache2D;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.chunk.ChunkSource;
 import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.chunk.LightChunk;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.chunk.status.ChunkPyramid;
@@ -35,10 +42,12 @@ import net.minecraft.world.level.levelgen.NoiseSettings;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.WorldGenerationContext;
 import net.minecraft.world.level.levelgen.blending.Blender;
+import net.minecraft.world.level.lighting.LevelLightEngine;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 /**
@@ -93,6 +102,29 @@ public final class OfflineChunkSampler {
     /** True while this thread is decorating an offline sample (see {@link #decorate}). */
     public static boolean isSampling() {
         return SAMPLING.get();
+    }
+
+    /**
+     * The biome at {@code pos} as the sample knows it — from the region's own chunks (the sample and its
+     * ring), else from the level's biome source — <b>never</b> by loading a chunk of the live level. For
+     * mod code that asks the region's chunk source during decoration ({@code WoverBiomePickerSampleMixin}).
+     * {@code null} only if neither can answer.
+     */
+    public static Holder<Biome> biomeInSample(WorldGenLevel level, BlockPos pos) {
+        try {
+            return level.getBiome(pos);                   // inside the region: the sample's own biomes
+        } catch (RuntimeException outsideTheRegion) {
+            // fall through to the source
+        }
+        try {
+            ServerLevel server = level.getLevel();
+            ChunkGenerator generator = server.getChunkSource().getGenerator();
+            return generator.getBiomeSource().getNoiseBiome(QuartPos.fromBlock(pos.getX()),
+                QuartPos.fromBlock(pos.getY()), QuartPos.fromBlock(pos.getZ()),
+                server.getChunkSource().randomState().sampler());
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     /**
@@ -176,8 +208,8 @@ public final class OfflineChunkSampler {
                                          RandomState random, ChunkPos pos) {
         Registry<Biome> biomes = level.registryAccess().registryOrThrow(Registries.BIOME);
         ProtoChunk chunk = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomes, null);
-        // The End's biome sources ask the erosion function once per quart; memoised, that is one lookup per chunk.
-        chunk.fillBiomesFromNoise(generator.getBiomeSource(), EndErosionMemo.sampler(random));
+        // The End's biome sources ask the end_islands erosion once per quart: EndIslandDensityFunctionMixin memoises it.
+        chunk.fillBiomesFromNoise(generator.getBiomeSource(), random.sampler());
         chunk.setPersistedStatus(ChunkStatus.SURFACE);
         return chunk;
     }
@@ -295,7 +327,7 @@ public final class OfflineChunkSampler {
     public static BiomeManager biomeManager(NoiseBasedChunkGenerator generator, RandomState random,
                                             long worldSeed, ChunkAccess sample) {
         BiomeSource source = generator.getBiomeSource();
-        Climate.Sampler sampler = EndErosionMemo.sampler(random);
+        Climate.Sampler sampler = random.sampler();
         int minQx = QuartPos.fromBlock(sample.getPos().getMinBlockX());
         int minQz = QuartPos.fromBlock(sample.getPos().getMinBlockZ());
         int maxQx = minQx + QuartPos.fromBlock(16) - 1;
@@ -351,8 +383,71 @@ public final class OfflineChunkSampler {
                 blank.setPersistedStatus(ChunkStatus.SURFACE);
                 return new SampleHolder(pos, blank);
             });
-        return new WorldGenRegion(level, cache, step, chunk);
+        return new SampleRegion(level, cache, step, chunk);
     }
+
+    /**
+     * The region a sample is generated in: a {@link WorldGenRegion} whose chunk source is the region
+     * itself, never the live level's. Vanilla's returns {@code level.getChunkSource()}, and mod code that
+     * asks it for a chunk ({@code WoverBiomePicker.getBiomeAt}) loads and generates a real chunk of the
+     * live level and joins the future — a stray chunk 16 000 blocks out from a sampler thread, and a
+     * deadlock from a worldgen worker (which is where the End-band terrain is generated). Here a chunk of
+     * the region is answered from the region; anything else is {@code null}, logged once, and the feature
+     * asking for it fails on its own (the sample keeps its terrain, per {@link #decorate}'s callers).
+     */
+    private static final class SampleRegion extends WorldGenRegion {
+
+        private final ChunkSource guard = new ChunkSource() {
+            @Override
+            public ChunkAccess getChunk(int x, int z, ChunkStatus status, boolean load) {
+                if (hasChunk(x, z)) return SampleRegion.this.getChunk(x, z, ChunkStatus.EMPTY, false);
+                if (STRAY_CHUNK_ASKS.getAndIncrement() == 0) {
+                    LOGGER.warn("[DungeonTrain] a feature asked an offline sample's region for a chunk outside it ({}, {}); answering nothing rather than loading the live level", x, z);
+                }
+                return null;
+            }
+
+            @Override
+            public void tick(BooleanSupplier hasTimeLeft, boolean tickChunks) {}
+
+            @Override
+            public String gatherStats() {
+                return "offline sample";
+            }
+
+            @Override
+            public int getLoadedChunksCount() {
+                return 0;
+            }
+
+            @Override
+            public LevelLightEngine getLightEngine() {
+                return SampleRegion.this.getLightEngine();
+            }
+
+            @Override
+            public BlockGetter getLevel() {
+                return SampleRegion.this;
+            }
+
+            @Override
+            public LightChunk getChunkForLighting(int x, int z) {
+                return hasChunk(x, z) ? SampleRegion.this.getChunk(x, z, ChunkStatus.EMPTY, false) : null;
+            }
+        };
+
+        SampleRegion(ServerLevel level, StaticCache2D<GenerationChunkHolder> cache, ChunkStep step, ChunkAccess centre) {
+            super(level, cache, step, centre);
+        }
+
+        @Override
+        public ChunkSource getChunkSource() {
+            return guard;
+        }
+    }
+
+    private static final java.util.concurrent.atomic.AtomicInteger STRAY_CHUNK_ASKS = new java.util.concurrent.atomic.AtomicInteger();
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /**
      * The least a {@link WorldGenRegion} will accept as a chunk holder: one chunk, always present, never

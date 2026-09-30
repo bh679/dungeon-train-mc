@@ -210,7 +210,6 @@ public final class EndBandSampler {
         READY.clear();
         IN_FLIGHT.clear();
         GROUND.clear();
-        EndErosionMemo.clearAll();
     }
 
     /** One token's work: run the waiting job nearest a player, if any. A dropped job frees its chunk to be requested again. Sampler thread. */
