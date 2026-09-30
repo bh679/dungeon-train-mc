@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.ContentsSize;
 
 /**
  * Shared layout constants for every editor (carriage, contents, parts,
@@ -29,7 +30,8 @@ import games.brennan.dungeontrain.train.CarriageDims;
  *   <li>CARRIAGES: {@code Z=0..MAX_WIDTH-1} carriage row, then from {@link #PARTS_FIRST_Z} the parts
  *       grid — FLOOR / WALLS / ROOF / DOORS rows</li>
  *   <li>CONTENTS: {@code Z=CONTENTS_FIRST_Z} row, each group's members stacked along {@code +Z}
- *       below their parent by {@link #SUB_VARIANT_GAP}</li>
+ *       below their parent by {@link #SUB_VARIANT_GAP} — for the resident {@link ContentsSize}
+ *       only; Room, Half and Full share the origin like categories do ({@link ContentsResidentSize})</li>
  *   <li>TRACKS / PORTALS: from {@code Z=TRACKS_FIRST_Z}, one X column per kind, named variants
  *       stacked along {@code +Z} (see {@link TrackSidePlots})</li>
  * </ul></p>

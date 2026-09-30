@@ -594,6 +594,11 @@ dependencies {
     implementation "maven.modrinth:worldweaver-neoforge:${worldweaver_version}"
     implementation "maven.modrinth:wunderlib-neoforge:${wunderlib_version}"
 
+    // VanillaBackport + Platform — REQUIRED third-party deps (see gradle.properties). DT names its biomes and
+    // blocks only by registry id, so nothing compiles against these jars.
+    implementation "maven.modrinth:vanillabackport:${vanillabackport_version}"
+    implementation "maven.modrinth:platform:${platform_version}"
+
     // Big Lost City — REQUIRED third-party dep (see gradle.properties). Structures only; on the dev
     // classpath so runClient/runServer generate the Lost City era's cities.
     implementation "maven.modrinth:big-lost-city:${biglostcity_version}"
@@ -890,6 +895,9 @@ tasks.register('generateModMetadata', ProcessResources) {
         bclib_min_version                 : bclib_min_version,
         worldweaver_min_version           : worldweaver_min_version,
         wunderlib_min_version             : wunderlib_min_version,
+        // VanillaBackport + Platform — floors only.
+        vanillabackport_min_version       : vanillabackport_min_version,
+        platform_min_version              : platform_min_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

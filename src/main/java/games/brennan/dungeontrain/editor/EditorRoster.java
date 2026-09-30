@@ -218,11 +218,21 @@ public final class EditorRoster {
         }
     }
 
+    /**
+     * One group per contents size — Room, Half, Full — the way parts are one group per kind. Each
+     * carries its size key as the model id, so its "+" tile offers a blank of that size. A size with
+     * no templates yet still gets its group, or there would be nowhere to make the first one.
+     */
     private static void addContents(List<EditorRosterPacket.Group> out) {
         List<CarriageContents> topLevel = EditorTypeMenus.topLevelContents();
-        if (topLevel.isEmpty()) return;
-        out.add(group(EditorCategory.CONTENTS.id(), "Contents", "",
-            EditorTypeMenus.contentsRows(topLevel), EditorRoster::contentsSelfWeight));
+        for (games.brennan.dungeontrain.train.ContentsSize size : games.brennan.dungeontrain.train.ContentsSize.values()) {
+            List<CarriageContents> ofSize = new ArrayList<>();
+            for (CarriageContents c : topLevel) {
+                if (games.brennan.dungeontrain.train.CarriageContentsPlacer.sizeOf(c) == size) ofSize.add(c);
+            }
+            out.add(group(EditorCategory.CONTENTS.id(), EditorTypeMenus.contentsTypeName(size), size.key(),
+                EditorTypeMenus.contentsRows(ofSize), EditorRoster::contentsSelfWeight));
+        }
     }
 
     private static void addTracks(List<EditorRosterPacket.Group> out) {

@@ -52,9 +52,16 @@ public final class NetherBandBiomes {
 
     /** Cave biomes for the mountain interior on the way <em>into</em> the Nether core. */
     public static final List<ResourceKey<Biome>> CAVE_PRE = List.of(Biomes.LUSH_CAVES, Biomes.DRIPSTONE_CAVES);
-    /** Cave biomes for the mountain interior on the way <em>out</em> of the core — deep dark joins. */
+    /** VanillaBackport's sulfur caves ({@link BackportBiomes}) — vanilla's {@link Biomes} has no constant for it. */
+    public static final ResourceKey<Biome> SULFUR_CAVES = BackportBiomes.SULFUR_CAVES;
+    /** Cave biomes for the mountain interior on the way <em>out</em> of the core — deep dark and sulfur join. */
     public static final List<ResourceKey<Biome>> CAVE_POST =
-            List.of(Biomes.LUSH_CAVES, Biomes.DRIPSTONE_CAVES, Biomes.DEEP_DARK);
+            List.of(Biomes.LUSH_CAVES, Biomes.DRIPSTONE_CAVES, Biomes.DEEP_DARK, SULFUR_CAVES);
+    /** {@link #CAVE_POST} indices. */
+    public static final int CAVE_POST_DEEP_DARK = 2;
+    public static final int CAVE_POST_SULFUR = 3;
+    /** The lush / dripstone mix is the head of {@link #CAVE_POST}, before deep dark. */
+    private static final int CAVE_POST_MIX_SIZE = CAVE_POST_DEEP_DARK;
     /** Cave-biome regions are 128-block cells (a cave biome holds over a whole cavern, not a corner of it). */
     public static final int CAVE_REGION_SHIFT = 7;
     private static final long CAVE_SALT = 0x7F4A7C159E3779B9L;
@@ -64,22 +71,36 @@ public final class NetherBandBiomes {
         return pickWithinRegion(seed ^ CAVE_SALT, worldX, worldZ, size, CAVE_REGION_SHIFT);
     }
 
-    /** Deep-dark areas after the core are drawn over 512-block regions (bigger than the lush/dripstone mix). */
+    /** Deep-dark and sulfur areas after the core are drawn over 512-block regions (bigger than the lush/dripstone mix). */
     public static final int DEEP_DARK_REGION_SHIFT = 9;
-    /** Of every {@link #DEEP_DARK_WEIGHT_OF} coarse regions after the core, this many are deep dark. */
-    public static final int DEEP_DARK_WEIGHT = 3;
-    public static final int DEEP_DARK_WEIGHT_OF = 4;
+    /** Of every {@link #CAVE_POST_SHARES} coarse regions after the core: this many deep dark, then this many sulfur. */
+    public static final int CAVE_POST_SHARES = 10;
+    public static final int DEEP_DARK_SHARE = 5;
+    public static final int SULFUR_SHARE = 3;
+    /** Without sulfur caves, the original split: {@link #LEGACY_DEEP_DARK_WEIGHT} of every {@link #LEGACY_DEEP_DARK_WEIGHT_OF}. */
+    public static final int LEGACY_DEEP_DARK_WEIGHT = 3;
+    public static final int LEGACY_DEEP_DARK_WEIGHT_OF = 4;
     private static final long DEEP_DARK_SALT = 0x1B873593CC9E2D51L;
 
     /**
-     * Index into {@link #CAVE_POST} for a fall-side column: three quarters of the 512-block regions are
-     * deep dark (the palette's last entry); the rest fall through to the 128-block lush / dripstone mix, so
-     * those two blend while the deep dark stays large and mostly itself.
+     * Index into {@link #CAVE_POST} for a fall-side column, over 512-block regions: half are deep dark, three
+     * in ten sulfur caves, and the rest fall through to the 128-block lush / dripstone mix — so those two
+     * blend while the deep dark and sulfur stay large and mostly themselves.
+     *
+     * <p>{@code sulfurAvailable == false} (the biome isn't registered) keeps the original split exactly —
+     * three quarters deep dark, the rest the lush / dripstone mix.</p>
      */
-    public static int pickCavePost(long seed, int worldX, int worldZ) {
-        int coarse = pickWithinRegion(seed ^ DEEP_DARK_SALT, worldX, worldZ, DEEP_DARK_WEIGHT_OF, DEEP_DARK_REGION_SHIFT);
-        if (coarse < DEEP_DARK_WEIGHT) return CAVE_POST.size() - 1;
-        return pickCave(seed, worldX, worldZ, CAVE_POST.size() - 1);
+    public static int pickCavePost(long seed, int worldX, int worldZ, boolean sulfurAvailable) {
+        if (!sulfurAvailable) {
+            int coarse = pickWithinRegion(seed ^ DEEP_DARK_SALT, worldX, worldZ,
+                    LEGACY_DEEP_DARK_WEIGHT_OF, DEEP_DARK_REGION_SHIFT);
+            if (coarse < LEGACY_DEEP_DARK_WEIGHT) return CAVE_POST_DEEP_DARK;
+            return pickCave(seed, worldX, worldZ, CAVE_POST_MIX_SIZE);
+        }
+        int coarse = pickWithinRegion(seed ^ DEEP_DARK_SALT, worldX, worldZ, CAVE_POST_SHARES, DEEP_DARK_REGION_SHIFT);
+        if (coarse < DEEP_DARK_SHARE) return CAVE_POST_DEEP_DARK;
+        if (coarse < DEEP_DARK_SHARE + SULFUR_SHARE) return CAVE_POST_SULFUR;
+        return pickCave(seed, worldX, worldZ, CAVE_POST_MIX_SIZE);
     }
 
     private static ResourceKey<Biome> bop(String path) {

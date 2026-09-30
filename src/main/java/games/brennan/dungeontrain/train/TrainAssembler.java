@@ -482,6 +482,18 @@ public final class TrainAssembler {
             blocks.addAll(StagePlacementScope.with(anchorStage,
                 () -> WholeGroupSelection.place(level, runOrigin, groupPick, dims, groupSize, genCfg.seed(), anchorPIdx)));
         }
+        // A Full carriage: one group-long shell over the run, its Full contents laid after assembly
+        // like any carriage's. Portal and whole groups win the collision — see FullCarriageSelection.
+        FullCarriageSelection.FullPick fullPick = !wholeGroup
+            && FullCarriageSelection.isFullGroup(level, anchorPIdx, groupSize, genCfg.seed())
+                ? FullCarriageSelection.pick(level, anchorPIdx, groupSize, dims, genCfg.seed(), anchorGate) : null;
+        final boolean fullGroup = fullPick != null;
+        if (fullGroup) {
+            BlockPos runOrigin = origin.offset(enclosedStartOffset, 0, 0);
+            String anchorStage = games.brennan.dungeontrain.template.StageResolver.stageIdFor(anchorGate);
+            blocks.addAll(StagePlacementScope.with(anchorStage,
+                () -> FullCarriageSelection.place(level, runOrigin, fullPick, dims, groupSize, genCfg.seed(), anchorPIdx)));
+        }
 
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
@@ -498,6 +510,14 @@ public final class TrainAssembler {
                 // The run is already standing; this slot's shell, lease and room passes are all skipped.
                 PortalRegistry.get(level).noteStamped(carriagePIdx, false);
                 PlacedCarriageFacts.recordWholeGroup(carriagePIdx, variant, groupPick.group().id());
+                continue;
+            }
+            if (fullGroup) {
+                // Likewise: the Full shell spans every slot. The anchor slot's contents are recorded
+                // when they are laid after assembly; the rest are the same carriage.
+                PortalRegistry.get(level).noteStamped(carriagePIdx, false);
+                enclosedBySlot[slot] = fullPick.shell();
+                if (slot > 0) PlacedCarriageFacts.recordShellOnly(carriagePIdx, fullPick.shell());
                 continue;
             }
 
@@ -640,6 +660,21 @@ public final class TrainAssembler {
                     LeaseSnapshots.seqSeed(lease), // seq floor = max(baseSeq, delta seqs) so our edits clear the relay watermark
                     stageBySlot[slot], lease.credits(), lease.deaths());
                 inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
+                continue;
+            }
+            if (fullGroup) {
+                // One carriage over the run: its contents and its entities go in once, from the
+                // anchor slot, into the Full box; the shell's own decor goes back like a whole
+                // group's. The other slots are inside the same carriage and have nothing of their own.
+                pendingEntities[slot] = null;
+                if (slot == 0) {
+                    CarriagePlacer.applyContentsBlocksAt(level, carriageShipyardOrigin, fullPick.shell(), dims,
+                        genCfg, carriagePIdx, groupAnchorWorldX);
+                    pendingEntities[slot] = new PendingContentsEntitySpawn(
+                        carriageShipyardOrigin, fullPick.shell(), dims, genCfg, carriagePIdx, groupAnchorWorldX);
+                    pendingWholeDecor[slot] = new PendingWholeDecorSpawn(
+                        carriageShipyardOrigin, fullPick.template(), carriagePIdx, groupSize);
+                }
                 continue;
             }
             if (wholeGroup || roomBySlot[slot] != null) {
