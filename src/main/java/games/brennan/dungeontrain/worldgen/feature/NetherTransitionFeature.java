@@ -479,6 +479,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos origin = cp.getWorldPosition(); // chunk min corner; placement modifiers spread/raise from here
         WorldgenRandom random = new WorldgenRandom(new XoroshiroRandomSource(level.getSeed()));
         long decoSeed = random.setDecorationSeed(level.getSeed(), origin.getX(), origin.getZ());
+        CoreBiomeFilter.ColumnBiomes columnBiomes = columnBiomes(bandCtx);
 
         int maxSteps = 0;
         for (Holder<Biome> b : biomes) {
@@ -511,7 +512,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     }
                     random.setFeatureSeed(decoSeed, seedIndex, step);
                     try {
-                        if (remapForCore(pf, coreBottom, coreTop).place(level, generator, random, origin)) {
+                        if (remapForCore(pf, coreBottom, coreTop, columnBiomes).place(level, generator, random, origin)) {
                             placed++;
                         }
                     } catch (Throwable t) {
@@ -571,6 +572,19 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         return new ArrayList<>(out);
     }
 
+    /**
+     * Per-column core biome for this chunk's decoration — the same sample the world label and surface skin
+     * use ({@link NetherCoreStamp#coreBiomeKeyAt}), memoised for the pass. {@code null} without a band
+     * snapshot, so the fallback path keeps decorating every column.
+     */
+    private static CoreBiomeFilter.ColumnBiomes columnBiomes(NetherBandContext bandCtx) {
+        if (bandCtx == null || bandCtx.netherCoreBiomes() == null) return null;
+        NetherCoreBiomes ncb = bandCtx.netherCoreBiomes();
+        NetherCoreBiomes.SampleMemo samples = new NetherCoreBiomes.SampleMemo();
+        return new CoreBiomeFilter.ColumnBiomes(
+                (x, z) -> ncb.biomeAt(x, z, bandCtx.cycle().netherLookAt(x, z, ncb.seed()), samples));
+    }
+
     /** Registry namespace of a holder's key, or {@code null} for an unkeyed (direct) holder. */
     private static String namespaceOf(Holder<?> holder) {
         return holder.unwrapKey().map(k -> k.location().getNamespace()).orElse(null);
@@ -580,11 +594,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * Adapt a vanilla {@code nether_wastes} {@link PlacedFeature} so it actually decorates our
      * Overworld-embedded core:
      * <ol>
-     *   <li>drop the {@code minecraft:biome} ({@link BiomeFilter}) modifier — it is the one modifier
-     *       that requires a registered "top feature" and would otherwise throw
+     *   <li>swap the {@code minecraft:biome} ({@link BiomeFilter}) modifier for a {@link CoreBiomeFilter}
+     *       — vanilla's needs a registered "top feature" and would otherwise throw
      *       ({@code IllegalStateException: Tried to biome check an unregistered feature}) under the
-     *       no-biome-check {@link PlacedFeature#place} path; without it the feature places
-     *       unconditionally on whatever its block predicate accepts (netherrack);</li>
+     *       no-biome-check {@link PlacedFeature#place} path. The swap keeps each feature in the columns
+     *       whose core biome lists it, so a mixed chunk's biomes don't decorate each other's floors (with
+     *       {@code columnBiomes == null} it is simply dropped);</li>
      *   <li>retarget any {@link HeightRangePlacement} to the core's real world-Y band — the Nether's
      *       native ranges are calibrated for the Nether's {@code y0..128}, so left alone they scatter
      *       across the whole Overworld column ({@code y-64..255}) and miss the thin core, leaving it
@@ -593,12 +608,14 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * </ol>
      * Returns the original feature unchanged if it has neither modifier.
      */
-    private static PlacedFeature remapForCore(PlacedFeature pf, int coreBottom, int coreTop) {
+    private static PlacedFeature remapForCore(PlacedFeature pf, int coreBottom, int coreTop,
+                                              CoreBiomeFilter.ColumnBiomes columnBiomes) {
         List<PlacementModifier> out = new ArrayList<>(pf.placement().size());
         boolean changed = false;
         for (PlacementModifier m : pf.placement()) {
             if (m instanceof BiomeFilter) {
-                changed = true;                                  // drop the biome gate
+                if (columnBiomes != null) out.add(CoreBiomeFilter.listing(pf, columnBiomes));
+                changed = true;                                  // per-column core biome gate
             } else if (m instanceof HeightRangePlacement) {
                 out.add(HeightRangePlacement.uniform(
                         VerticalAnchor.absolute(coreBottom), VerticalAnchor.absolute(coreTop)));
