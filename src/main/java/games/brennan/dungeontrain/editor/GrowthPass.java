@@ -108,6 +108,9 @@ public final class GrowthPass {
         ServerLevel level = p.level();
         // A later write in the overlay may have replaced the cell — only grow what is still there.
         if (level.getBlockState(p.pos()).getBlock() != p.placed().getBlock()) return;
+        // Nor from a cell that can't hold its own block (bamboo on stone, a ladder with no wall): it
+        // breaks at the first neighbour update and takes the whole column with it as dropped items.
+        if (!p.placed().canSurvive(level, p.pos())) return;
         VariantGrowth.Dir dir = GrowthShapes.effectiveDir(p.placed(), p.growth().dir());
         Direction step = dir == VariantGrowth.Dir.UP ? Direction.UP : Direction.DOWN;
 
