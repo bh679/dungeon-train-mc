@@ -21486,8 +21486,25 @@
       "released_at": null
     },
     {
-      "id": "tall-dimensional-carriage-train-resumes",
+      "id": "structure-start-check-once",
       "version": "0.1070.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Lighter world generation",
+      "summary": "New land around the train now takes a little less work to generate.",
+      "highlights": [],
+      "pr": 1715,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tall-dimensional-carriage-train-resumes",
+      "version": "0.1071.0",
       "type": "fix",
       "tags": [
         "fix",
