@@ -21255,9 +21255,9 @@
       "highlights": [],
       "pr": 1698,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1058.0",
+      "released_at": "2026-09-30T10:52:40Z"
     },
     {
       "id": "reseed-keep-zone-two-chunks",
@@ -21272,9 +21272,9 @@
       "highlights": [],
       "pr": 1699,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1058.0",
+      "released_at": "2026-09-30T10:52:40Z"
     },
     {
       "id": "tunnel-groups-hold-longer",
@@ -21289,9 +21289,9 @@
       "highlights": [],
       "pr": 1700,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1058.0",
+      "released_at": "2026-09-30T10:52:40Z"
     }
   ]
 }
