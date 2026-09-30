@@ -21468,8 +21468,26 @@
       "released_at": null
     },
     {
-      "id": "tall-dimensional-carriage-train-resumes",
+      "id": "sable-pathfinder-presence-log",
       "version": "0.1069.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "internal"
+      ],
+      "title": "Support logs say whether Sable Pathfinder is installed",
+      "summary": "Your log now notes at world load whether the Sable Pathfinder companion is installed, so help requests can be answered faster.",
+      "highlights": [],
+      "pr": 1714,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tall-dimensional-carriage-train-resumes",
+      "version": "0.1070.0",
       "type": "fix",
       "tags": [
         "fix",
