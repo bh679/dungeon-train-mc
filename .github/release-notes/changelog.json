@@ -21380,8 +21380,26 @@
       "released_at": null
     },
     {
+      "id": "betterx-prompts-dt-worlds-only",
+      "version": "0.1064.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Other worlds left alone",
+      "summary": "Your other worlds now behave as they normally would.",
+      "highlights": [],
+      "pr": 1711,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "lost-city-terrain-fit-curseforge-sibling",
-      "version": "0.1061.0",
+      "version": "0.1065.0",
       "type": "chore",
       "tags": [
         "compatibility",
