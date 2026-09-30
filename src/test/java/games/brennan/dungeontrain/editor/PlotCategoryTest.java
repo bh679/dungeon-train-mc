@@ -118,13 +118,14 @@ final class PlotCategoryTest {
         // — plus the two Whole kinds, which have plots to save and a pool to weight.
         assertEquals(
             EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.CARRIAGES,
-                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS),
+                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS, PlotCategory.BUILDINGS),
             matching(PlotCategory::hasActionRow));
 
         // EditorPlotTeleport.weightCommandFor had arms for those same four, default -> null.
+        // Buildings: a new building's roster weight (a shipped one has none of its own).
         assertEquals(
             EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.CARRIAGES,
-                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS),
+                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS, PlotCategory.BUILDINGS),
             matching(PlotCategory::hasWeightPool));
 
         // levelCommandFor / phaseCommandFor / stageApplyCommandFor: same arms, whole rows included.

@@ -601,6 +601,7 @@ public final class EditorCommand {
                 .then(portalRoomGroupNode()))
             .then(WholeEditorCommand.build())
             .then(ChunkFrameCommand.build())
+            .then(BuildingCommand.build())
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -3230,6 +3231,8 @@ public final class EditorCommand {
             TrackEditor.enter(player, true, false);
         } else if (head instanceof Template.PortalRoom rm) {
             games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, rm.name(), true, false);
+        } else if (head instanceof Template.Building b) {
+            games.brennan.dungeontrain.editor.BuildingEditor.walkTo(player, player.serverLevel(), b.name(), false);
         }
     }
 
@@ -3250,6 +3253,8 @@ public final class EditorCommand {
             TrackEditor.stampPlot(overworld, dims);
         } else if (model instanceof Template.PortalRoom rm) {
             games.brennan.dungeontrain.editor.PortalRoomEditor.stampPlot(overworld, rm.name(), dims);
+        } else if (model instanceof Template.Building b) {
+            games.brennan.dungeontrain.editor.BuildingEditor.stampPlot(overworld, b.name());
         }
     }
 
@@ -3912,6 +3917,14 @@ public final class EditorCommand {
                     return 0;
                 }
             }
+        }
+
+        java.util.Optional<String> building = games.brennan.dungeontrain.editor.BuildingEditor.plotContaining(pos);
+        if (building.isPresent()) {
+            games.brennan.dungeontrain.editor.BuildingEditor.clearBlocks(overworld, building.get());
+            final String id = "building:" + building.get();
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.cleared_all_blocks", id, Component.literal(".")).withStyle(ChatFormatting.GREEN), true);
+            return 1;
         }
 
         CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(pos, dims);

@@ -17,7 +17,8 @@ public enum EditorCategoryFilter {
     CARRIAGES(PlotCategory.CARRIAGES, EditorScreenLang.TAB_CARRIAGES),
     CONTENTS(PlotCategory.CONTENTS, EditorScreenLang.TAB_CONTENTS),
     TRACKS(PlotCategory.TRACKS, EditorScreenLang.TAB_TRACKS),
-    DIMENSIONS(PlotCategory.PORTALS, EditorScreenLang.TAB_DIMENSIONS);
+    DIMENSIONS(PlotCategory.PORTALS, EditorScreenLang.TAB_DIMENSIONS),
+    BUILDINGS(PlotCategory.BUILDINGS, EditorScreenLang.TAB_BUILDINGS);
 
     private final PlotCategory category;
     private final String langKey;
@@ -45,6 +46,7 @@ public enum EditorCategoryFilter {
             case CONTENTS -> CONTENTS;
             case TRACKS -> TRACKS;
             case PORTALS, CHUNK_FRAMES -> DIMENSIONS;
+            case BUILDINGS -> BUILDINGS;
             case ARCHITECTURE -> null;
         };
     }

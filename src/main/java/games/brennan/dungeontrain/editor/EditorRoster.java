@@ -57,6 +57,7 @@ public final class EditorRoster {
             addTracks(out);
             addPortals(out);
             addChunkFrames(out);
+            addBuildings(out);
             return out;
         } finally {
             RELAY_ROWS.set(null);
@@ -249,6 +250,14 @@ public final class EditorRoster {
         if (names.isEmpty()) return;
         out.add(group(PlotCategory.CHUNK_FRAMES.id(), EditorTypeMenus.FRAMES_TYPE_NAME, ChunkFrameEditor.MODEL_ID,
             EditorTypeMenus.chunkFrameRows(names), null));
+    }
+
+    /** The buildings, one group — shipped Lost City buildings first, then new ones. */
+    private static void addBuildings(List<EditorRosterPacket.Group> out) {
+        List<String> names = games.brennan.dungeontrain.building.BuildingRegistry.names();
+        if (names.isEmpty()) return;
+        out.add(group(PlotCategory.BUILDINGS.id(), EditorTypeMenus.BUILDINGS_TYPE_NAME,
+            games.brennan.dungeontrain.building.Buildings.MODEL_ID, EditorTypeMenus.buildingRows(names), null));
     }
 
     private static EditorRosterPacket.Group group(

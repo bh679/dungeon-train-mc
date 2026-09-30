@@ -69,6 +69,7 @@ public final class EditorTypeMenus {
             case CONTENTS -> contentsMenus(dims);
             case TRACKS -> trackMenus(dims);
             case PORTALS -> portalMenus(dims);
+            case BUILDINGS -> buildingMenus();
             case ARCHITECTURE -> Collections.emptyList();
         };
     }
@@ -170,6 +171,37 @@ public final class EditorTypeMenus {
                 chunkFrameRows(frames), false, activeId, categoryBar, typeStrip));
         }
         return out;
+    }
+
+    /** The type label buildings go by in their menu and the roster. */
+    static final String BUILDINGS_TYPE_NAME = "Buildings";
+
+    private static List<EditorTypeMenusPacket.Menu> buildingMenus() {
+        List<String> names = games.brennan.dungeontrain.building.BuildingRegistry.names();
+        if (names.isEmpty()) return Collections.emptyList();
+        BlockPos first = BuildingEditor.registeredPlotOrigin(names.get(0));
+        if (first == null) return Collections.emptyList();
+        List<EditorTypeMenusPacket.TypeTab> typeStrip = List.of(new EditorTypeMenusPacket.TypeTab(
+            BUILDINGS_TYPE_NAME, PlotCategory.BUILDINGS.name(), games.brennan.dungeontrain.building.Buildings.MODEL_ID,
+            names.get(0)));
+        return List.of(new EditorTypeMenusPacket.Menu(
+            anchorForXRow(first, games.brennan.dungeontrain.building.BuildingSizes.sizeOf(names.get(0))),
+            BUILDINGS_TYPE_NAME, buildingRows(names), false, EditorCategory.BUILDINGS.id(),
+            buildCategoryBar(), typeStrip));
+    }
+
+    /** One row per building; a new building shows its roster weight, a shipped one none. */
+    static List<EditorTypeMenusPacket.Variant> buildingRows(List<String> names) {
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
+        for (String name : names) {
+            java.nio.file.Path file = games.brennan.dungeontrain.building.BuildingStore.playerFile(name);
+            EditorPlotLabels.Provenance p = file == null
+                ? new EditorPlotLabels.Provenance(false, false) : EditorPlotLabels.provenanceOf(file);
+            rows.add(new EditorTypeMenusPacket.Variant(
+                name, new games.brennan.dungeontrain.template.Template.Building(name).weight(), PlotCategory.BUILDINGS.name(),
+                games.brennan.dungeontrain.building.Buildings.MODEL_ID, name, p.isUser(), p.isImported()));
+        }
+        return rows;
     }
 
     /** The type label chunk frames go by in the Dimensions menus and the roster. */

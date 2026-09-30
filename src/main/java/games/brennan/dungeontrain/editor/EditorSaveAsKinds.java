@@ -78,6 +78,7 @@ public final class EditorSaveAsKinds {
             case Template.Adjunct ignored -> TRACK_SIDE;
             case Template.Tunnel ignored -> TRACK_SIDE;
             case Template.ChunkFrame ignored -> CHUNK_FRAME;
+            case Template.Building ignored -> BUILDING;
         };
     }
 
@@ -541,6 +542,48 @@ public final class EditorSaveAsKinds {
             games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.clearCache();
             games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.clearCache();
             ChunkFrameEditor.restamp(level, name);
+        }
+    };
+
+    // ---- buildings ----
+
+    private static final Adapter BUILDING = new Adapter() {
+        @Override public String categoryId(Template source) { return null; }
+
+        @Override public Optional<Component> validate(Template source, String name) {
+            if (!games.brennan.dungeontrain.building.Buildings.NAME.matcher(name).matches()) return invalid(name);
+            if (games.brennan.dungeontrain.building.BuildingRegistry.contains(name)) return taken(name);
+            return Optional.empty();
+        }
+
+        @Override public List<Template> reloaded(Template source, String name) {
+            return List.of();
+        }
+
+        @Override public List<Path> userFiles(Template source) {
+            String name = ((Template.Building) source).name();
+            Path nbt = games.brennan.dungeontrain.building.BuildingStore.writeFileFor(name);
+            return List.of(nbt, nbt.resolveSibling(name + games.brennan.dungeontrain.building.BuildingMeta.EXT));
+        }
+
+        @Override public Template copy(ServerPlayer player, Template source, String name) throws IOException {
+            String from = ((Template.Building) source).name();
+            ServerLevel level = player.serverLevel().getServer().overworld();
+            var tag = games.brennan.dungeontrain.building.BuildingStore.readTag(from)
+                .orElseThrow(() -> new IOException("'" + from + "' has no saved building to copy."));
+            boolean toSource = EditorDevMode.isEnabled();
+            games.brennan.dungeontrain.building.BuildingStore.save(name, tag, toSource);
+            games.brennan.dungeontrain.building.BuildingMeta.save(name,
+                games.brennan.dungeontrain.building.BuildingMeta.load(from), toSource);
+            games.brennan.dungeontrain.building.BuildingWorldgen.evict(level.getServer(), name);
+            BuildingEditor.enter(player, level, name, null);
+            return new Template.Building(name);
+        }
+
+        @Override public void restoreAndRestamp(ServerLevel level, Template source, CarriageDims dims) {
+            String name = ((Template.Building) source).name();
+            games.brennan.dungeontrain.building.BuildingWorldgen.evict(level.getServer(), name);
+            BuildingEditor.restamp(level, name);
         }
     };
 }

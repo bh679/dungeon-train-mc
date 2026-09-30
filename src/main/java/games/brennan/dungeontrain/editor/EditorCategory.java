@@ -53,6 +53,8 @@ public enum EditorCategory {
     CONTENTS("Contents"),
     TRACKS("Tracks"),
     PORTALS("Dimensions"),
+    /** The Lost City / WWOO buildings — DT's shipped ones to edit, and players' new ones. */
+    BUILDINGS("Buildings"),
     ARCHITECTURE("Architecture");
 
     private final String displayName;
@@ -82,6 +84,7 @@ public enum EditorCategory {
             case CONTENTS -> contentsModels();
             case TRACKS -> trackModels();
             case PORTALS -> portalModels();
+            case BUILDINGS -> buildingModels();
             case ARCHITECTURE -> List.of();
         };
     }
@@ -126,6 +129,8 @@ public enum EditorCategory {
             case CONTENTS -> locateContents(pos, dims);
             case TRACKS -> locateTracks(pos, dims);
             case PORTALS -> locatePortals(pos, dims);
+            case BUILDINGS -> BuildingEditor.plotContaining(pos)
+                .map(name -> new Located(BUILDINGS, new Template.Building(name)));
             case ARCHITECTURE -> Optional.empty();
         };
     }
@@ -280,6 +285,15 @@ public enum EditorCategory {
         return out;
     }
 
+    /** Every building — shipped first, then new ones — in the order their plots stand. */
+    private static List<Template> buildingModels() {
+        List<Template> out = new ArrayList<>();
+        for (String name : games.brennan.dungeontrain.building.BuildingRegistry.names()) {
+            out.add(new Template.Building(name));
+        }
+        return out;
+    }
+
     /** A category + which specific model the player is standing in. */
     public record Located(EditorCategory category, Template model) {}
 
@@ -303,6 +317,7 @@ public enum EditorCategory {
             case Template.PortalRoom r -> PORTALS;
             // Frames stand beside the rooms and are stamped with them.
             case Template.ChunkFrame f -> PORTALS;
+            case Template.Building b -> BUILDINGS;
         };
     }
 
@@ -435,6 +450,14 @@ public enum EditorCategory {
                 PortalRoomEditor.allPlotsBox(overworld, dims)));
             jobs.add(new EditorStampQueue.Job("erase chunk frames",
                 () -> ChunkFrameEditor.clearAllPlots(overworld)));
+        }
+        if (previous == BUILDINGS || (legacy && keep != BUILDINGS)) {
+            for (Template model : BUILDINGS.models()) {
+                String name = ((Template.Building) model).name();
+                jobs.add(new EditorStampQueue.Job("erase building " + name,
+                    () -> BuildingEditor.clearPlot(overworld, name),
+                    plotBoxOf(overworld, model, dims)));
+            }
         }
         return jobs;
     }

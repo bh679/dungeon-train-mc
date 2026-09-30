@@ -134,6 +134,9 @@ public final class EditorRelayWrite {
 
             // Frames have no relay kind yet, so nothing to file.
             case Template.ChunkFrame ignored -> null;
+            // Buildings wait for the relay to learn their kind — until then an upload would be filed
+            // as a carriage (the relay normalises unknown kinds), so nothing is sent.
+            case Template.Building ignored -> null;
         };
     }
 

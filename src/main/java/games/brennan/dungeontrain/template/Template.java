@@ -97,7 +97,8 @@ public sealed interface Template
             Template.Adjunct,
             Template.Tunnel,
             Template.PortalRoom,
-            Template.ChunkFrame {
+            Template.ChunkFrame,
+            Template.Building {
 
     /** Stable command-token identifier — used by EditorMenuScreen + commands. */
     String id();
@@ -1026,6 +1027,69 @@ public sealed interface Template
 
         @Override public Vec3i plotSize(CarriageDims dims) {
             return games.brennan.dungeontrain.portal.chunkframe.ChunkFrame.SIZE;
+        }
+    }
+
+    /**
+     * A Lost City / WWOO building ({@link games.brennan.dungeontrain.building.Buildings}): one of DT's shipped
+     * buildings, which an edit replaces in the player's worlds, or a new one, which joins the roster as built.
+     *
+     * <p>Named by name alone and browsed under the Buildings tab. A new building's weight is its sidecar's;
+     * a shipped building has none of its own here — its weight is its structure-set entry.</p>
+     */
+    record Building(String name) implements Template {
+        public Building {
+            Objects.requireNonNull(name, "name");
+        }
+
+        @Override public String id() { return games.brennan.dungeontrain.building.Buildings.MODEL_ID; }
+
+        @Override public String displayName() { return "building / " + name; }
+
+        @Override public TemplateKind kind() { return TemplateKind.BUILDING; }
+
+        @Override public boolean isBuiltin() {
+            return games.brennan.dungeontrain.building.BuildingStore.isBundled(name);
+        }
+
+        @Override public boolean canPromote() { return false; }
+
+        @Override public TemplateStore<Building> store() {
+            return games.brennan.dungeontrain.editor.BuildingTemplates.store();
+        }
+        @Override public TemplateRegistry<Building> registry() {
+            return games.brennan.dungeontrain.editor.BuildingTemplates.registry();
+        }
+
+        @Override public int weight() {
+            return games.brennan.dungeontrain.building.BuildingStore.isShipped(name)
+                ? games.brennan.dungeontrain.net.EditorStatusPacket.NO_WEIGHT
+                : games.brennan.dungeontrain.building.BuildingMeta.load(name).weight();
+        }
+
+        @Override public String variantName() { return name; }
+
+        @Override public boolean hasBundledTier() { return isBuiltin(); }
+
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            games.brennan.dungeontrain.editor.BuildingEditor.restamp(level, name);
+        }
+
+        /** The jar's building as a structure — what {@code /dt reset default} puts back. */
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return games.brennan.dungeontrain.building.BuildingStore.readBundledTag(name).map(tag -> {
+                StructureTemplate template = new StructureTemplate();
+                template.load(level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BLOCK), tag);
+                return template;
+            });
+        }
+
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return games.brennan.dungeontrain.editor.BuildingEditor.registeredPlotOrigin(name);
+        }
+
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return games.brennan.dungeontrain.building.BuildingSizes.sizeOf(name);
         }
     }
 }

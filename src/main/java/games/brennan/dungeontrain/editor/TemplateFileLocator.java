@@ -45,6 +45,7 @@ public final class TemplateFileLocator {
             case TRACKS -> Optional.ofNullable(trackKind(id)).flatMap(k -> named(k.subdir(), name));
             case PORTALS -> named(TrackKind.PORTAL_ROOM.subdir(), name);
             case CHUNK_FRAMES -> named(ChunkFrameStore.SUBDIR, name);
+            case BUILDINGS -> named(games.brennan.dungeontrain.building.Buildings.SUBDIR, name);
             case ARCHITECTURE -> Optional.empty();
         };
     }

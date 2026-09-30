@@ -39,6 +39,7 @@ public record EditorTemplateAddress(String type, String sub, String name) {
     public static final String TUNNEL = "tunnel";
     public static final String PORTAL_ROOM = "portal_room";
     public static final String CHUNK_FRAME = "chunk_frame";
+    public static final String BUILDING = "building";
 
     public EditorTemplateAddress {
         type = type == null ? "" : type;
@@ -61,6 +62,7 @@ public record EditorTemplateAddress(String type, String sub, String name) {
                     t.variant().name().toLowerCase(Locale.ROOT), t.name());
             case Template.PortalRoom r -> new EditorTemplateAddress(PORTAL_ROOM, "", r.name());
             case Template.ChunkFrame f -> new EditorTemplateAddress(CHUNK_FRAME, "", f.name());
+            case Template.Building b -> new EditorTemplateAddress(BUILDING, "", b.name());
         };
     }
 
@@ -81,6 +83,8 @@ public record EditorTemplateAddress(String type, String sub, String name) {
             case PORTAL_ROOM -> Optional.of(new Template.PortalRoom(name));
             case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names().contains(name)
                     ? Optional.of(new Template.ChunkFrame(name)) : Optional.empty();
+            case BUILDING -> games.brennan.dungeontrain.building.BuildingRegistry.contains(name)
+                    ? Optional.of(new Template.Building(name)) : Optional.empty();
             default -> Optional.empty();
         };
     }

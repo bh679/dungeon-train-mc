@@ -125,6 +125,7 @@ public final class EditorPlotLabels {
             case CONTENTS -> contentsLabels(dims);
             case TRACKS -> trackLabels(dims);
             case PORTALS -> portalLabels(dims);
+            case BUILDINGS -> buildingLabels();
             case ARCHITECTURE -> Collections.emptyList();
         };
     }
@@ -255,6 +256,22 @@ public final class EditorPlotLabels {
             addTrackKindLabels(out, TunnelTemplateStore.tunnelKind(v), dims);
         }
 
+        return out;
+    }
+
+    private static List<Label> buildingLabels() {
+        List<String> names = games.brennan.dungeontrain.building.BuildingRegistry.names();
+        List<Label> out = new ArrayList<>(names.size());
+        String category = EditorCategory.BUILDINGS.name();
+        for (String name : names) {
+            BlockPos origin = BuildingEditor.registeredPlotOrigin(name);
+            if (origin == null) continue;
+            Vec3i footprint = games.brennan.dungeontrain.building.BuildingSizes.sizeOf(name);
+            java.nio.file.Path file = games.brennan.dungeontrain.building.BuildingStore.playerFile(name);
+            Provenance p = file == null ? new Provenance(false, false) : provenanceOf(file);
+            out.add(new Label(anchorAbove(origin, footprint), name, new Template.Building(name).weight(), category,
+                games.brennan.dungeontrain.building.Buildings.MODEL_ID, name, false, p.isUser, p.isImported));
+        }
         return out;
     }
 

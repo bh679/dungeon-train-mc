@@ -27,7 +27,9 @@ public enum TemplateKind {
     /** The pocket room a portal carriage group's two corridors open into. */
     PORTAL_ROOM,
     /** The frame that dresses a dimensional carriage room — see {@code portal.chunkframe.ChunkFrame}. */
-    CHUNK_FRAME;
+    CHUNK_FRAME,
+    /** A Lost City / WWOO building — shipped or player-made; see {@code building.Buildings}. */
+    BUILDING;
 
     public String id() {
         return name().toLowerCase(Locale.ROOT);

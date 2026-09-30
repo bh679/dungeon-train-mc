@@ -681,6 +681,10 @@ public final class EditorTypeMenuInputHandler {
                 plotCategory == PlotCategory.WHOLE_GROUP
                     ? NewSourcePickerScreen.Category.WHOLE_GROUP : NewSourcePickerScreen.Category.WHOLE,
                 null, standingKindId(plotCategory));
+            // A new building is a bare pad or a copy of the one stood in (shipped or new).
+            case BUILDINGS -> new NewSourcePickerScreen(
+                NewSourcePickerScreen.Category.BUILDINGS, first.modelId(),
+                first.modelId().equals(EditorStatusHudOverlay.modelId()) ? EditorStatusHudOverlay.modelName() : "");
             // No models to seed a new one from.
             case ARCHITECTURE -> null;
         };

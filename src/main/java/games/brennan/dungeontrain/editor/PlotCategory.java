@@ -40,6 +40,7 @@ public enum PlotCategory {
     CONTENTS(EditorCategory.CONTENTS),
     TRACKS(EditorCategory.TRACKS),
     PORTALS(EditorCategory.PORTALS),
+    BUILDINGS(EditorCategory.BUILDINGS),
     ARCHITECTURE(EditorCategory.ARCHITECTURE),
     /** Carriage parts — addressable in its own right, but stamped as part of {@link #CARRIAGES}. */
     PARTS(EditorCategory.CARRIAGES),
@@ -130,7 +131,7 @@ public enum PlotCategory {
 
     /** Whether templates here carry a spawn gate — min/max level, dimensions, stage link. */
     public boolean hasGate() {
-        return this != PARTS && this != CHUNK_FRAMES && this != ARCHITECTURE;
+        return this != PARTS && this != CHUNK_FRAMES && this != ARCHITECTURE && this != BUILDINGS;
     }
 
     /**
