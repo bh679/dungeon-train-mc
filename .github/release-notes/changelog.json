@@ -21449,6 +21449,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "lost-city-terrain-fit-curseforge-sibling",
+      "version": "0.1068.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "A companion mod now installs on its own on CurseForge",
+      "summary": "One more small companion mod now installs alongside Dungeon Train on CurseForge; nothing changes in-game.",
+      "highlights": [],
+      "pr": 1704,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
