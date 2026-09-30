@@ -168,15 +168,47 @@ final class EditorGroupsTab {
         return tile != null ? tile.variant().displayName() : name;
     }
 
-    /** The template's most numerous block as an item, or null while its tile is still baking. */
-    private ItemStack iconOf(String kindId, String name) {
+    /** The template's tallies, or null while its tile is still baking. */
+    private static TemplateSummary summaryOf(String kindId, String name) {
         EditorRosterIndex.Tile tile = tileOf(kindId, name);
         VariantKey key = tile != null ? tile.key() : VariantKey.of(PlotCategory.TRACKS, kindId, name);
         TemplateArt art = TemplateArt.of(key);
-        TemplateSummary summary = art == null ? null : art.summary();
-        Block top = summary == null ? null : summary.topBlock();
-        if (top == null) return null;
-        ItemStack stack = stacks.computeIfAbsent(top, b -> new ItemStack(b.asItem()));
+        return art == null ? null : art.summary();
+    }
+
+    /** The template's most numerous solid block as an item, or null while its tile is still baking. */
+    private ItemStack iconOf(String kindId, String name) {
+        TemplateSummary summary = summaryOf(kindId, name);
+        return stackOf(summary == null ? null : summary.topBlock());
+    }
+
+    /**
+     * The group's most numerous solid block, counted over every entrance and section in it — or null
+     * while none of its members has baked, or it has none.
+     */
+    private ItemStack groupIconOf(String group) {
+        Map<Block, Integer> totals = new HashMap<>();
+        for (String kindId : List.of(PORTAL, SECTION)) {
+            for (EditorRosterPacket.TunnelGroups.Member m : members(group, kindId)) {
+                TemplateSummary summary = summaryOf(kindId, m.name());
+                if (summary == null) continue;
+                summary.solidCounts().forEach((b, n) -> totals.merge(b, n, Integer::sum));
+            }
+        }
+        Block top = null;
+        int best = 0;
+        for (Map.Entry<Block, Integer> e : totals.entrySet()) {
+            if (e.getValue() > best) {
+                best = e.getValue();
+                top = e.getKey();
+            }
+        }
+        return stackOf(top);
+    }
+
+    private ItemStack stackOf(Block block) {
+        if (block == null) return null;
+        ItemStack stack = stacks.computeIfAbsent(block, b -> new ItemStack(b.asItem()));
         return stack.is(Items.AIR) ? null : stack;
     }
 
@@ -224,18 +256,25 @@ final class EditorGroupsTab {
         g.enableScissor(r.x(), r.y(), r.right(), r.bottom());
         int y = r.y() + 2 - listScroll;
         for (String token : tokens()) {
-            InventoryEditorLayout.Rect row = new InventoryEditorLayout.Rect(r.x() + 2, y, r.w() - 4, ROW_H - 1);
+            InventoryEditorLayout.Rect row = new InventoryEditorLayout.Rect(r.x() + 2, y, r.w() - 4, ITEM_ROW_H - 1);
             boolean hov = row.contains(mx, my) && r.contains(mx, my);
-            if (token.equals(selected)) g.fill(row.x(), row.y(), row.right(), row.bottom(), ROW_SELECTED);
+            boolean sel = token.equals(selected);
+            if (sel) g.fill(row.x(), row.y(), row.right(), row.bottom(), ROW_SELECTED);
             else if (hov) g.fill(row.x(), row.y(), row.right(), row.bottom(), MenuRowPainter.CELL_HOVER);
+            // The rows sit on the dark sub-panel, so their text is light whatever the theme; black on
+            // the hover highlight, as every other list's hovered row.
+            int text = hov && !sel ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF;
+            ItemStack icon = groupIconOf(token);
+            if (icon != null) g.renderItem(icon, row.x() + 1, row.y());
+            int ty = row.y() + (ITEM_ROW_H - font.lineHeight) / 2;
             String right = "×" + weightOf(token) + "   " + members(token, PORTAL).size() + " entrances · "
                 + members(token, SECTION).size() + " sections";
             boolean builds = missing(token) == null;
-            g.drawString(font, (builds ? "" : "! ") + label(token), row.x() + 3, row.y() + 3,
-                builds ? theme.panelText() : WARN, false);
-            g.drawString(font, right, row.right() - font.width(right) - 3, row.y() + 3, theme.panelText(), false);
+            g.drawString(font, (builds ? "" : "! ") + label(token), row.x() + ICON + 5, ty,
+                builds ? text : WARN, false);
+            g.drawString(font, right, row.right() - font.width(right) - 3, ty, text, false);
             hits.add(new Hit(Kind.GROUP_ROW, row, token, null, null, null));
-            y += ROW_H;
+            y += ITEM_ROW_H;
         }
         InventoryEditorLayout.Rect newRow = new InventoryEditorLayout.Rect(r.x() + 2, y, r.w() - 4, ROW_H - 1);
         g.fill(newRow.x(), newRow.y(), newRow.right(), newRow.bottom(),
@@ -564,7 +603,7 @@ final class EditorGroupsTab {
     boolean scrollBy(double mx, double my, int dir) {
         if (leftRect != null && leftRect.contains(mx, my)) {
             int max = Math.max(0, listBottom - leftRect.bottom() + 4);
-            int next = Math.max(0, Math.min(max, listScroll + dir * ROW_H * 2));
+            int next = Math.max(0, Math.min(max, listScroll + dir * ITEM_ROW_H * 2));
             if (next == listScroll) return false;
             listScroll = next;
             return true;
