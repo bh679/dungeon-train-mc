@@ -410,10 +410,27 @@ final class EditorGroupsTab {
             InventoryEditorLayout.Rect cell = new InventoryEditorLayout.Rect(x, y, ICON, ICON);
             if (cell.contains(mx, my)) g.fill(x - 1, y - 1, x + ICON + 1, y + ICON + 1, MenuRowPainter.CELL_HOVER);
             drawIcon(g, font, iconOf(kindId, m.name()), displayOf(kindId, m.name()), x, y);
+            drawWeight(g, font, m.weight(), x, y);
             hits.add(new Hit(Kind.ICON, cell, selected, kindId, m.name(), target));
             x += ICON + 2;
         }
         return y + ICON + 2;
+    }
+
+    /**
+     * The member's weight inside the group as a little number in the icon's bottom-right corner,
+     * where a stack count sits — half size, so a three-digit weight stays inside its own icon.
+     */
+    private static void drawWeight(GuiGraphics g, Font font, int weight, int x, int y) {
+        String text = Integer.toString(weight);
+        float scale = 0.5F;
+        g.pose().pushPose();
+        g.pose().translate(0, 0, 200);   // over the item, as vanilla draws stack counts
+        g.pose().scale(scale, scale, 1F);
+        int tx = Math.round((x + ICON) / scale) - font.width(text);
+        int ty = Math.round((y + ICON) / scale) - font.lineHeight + 1;
+        g.drawString(font, text, tx, ty, 0xFFFFFFFF, true);
+        g.pose().popPose();
     }
 
     private static void drawIcon(GuiGraphics g, Font font, ItemStack icon, String name, int x, int y) {
