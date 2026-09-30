@@ -3,6 +3,9 @@
     "weight": 1,
     "phases": [
       "NETHER"
+    ],
+    "groups": [
+      "b"
     ]
   },
   "default": {
@@ -20,6 +23,9 @@
       "AMPLIFIED",
       "LOST_CITY",
       "CAVES_OF_CHAOS"
+    ],
+    "groups": [
+      "a"
     ]
   }
 }

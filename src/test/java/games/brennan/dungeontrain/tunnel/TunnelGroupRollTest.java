@@ -133,6 +133,32 @@ final class TunnelGroupRollTest {
     }
 
     @Test
+    @DisplayName("the shipped a/b split still fades Overworld tunnels into the Nether look")
+    void netherFadeSurvivesGroups() {
+        // The bundled setup: default in 'a' (never the Nether), the dark pair in 'b' (Nether only).
+        TemplateGate notNether = new TemplateGate(0, TemplateGate.ALL,
+            EnumSet.complementOf(EnumSet.of(TrainPhase.NETHER)));
+        for (TrackKind kind : List.of(SECTION, PORTAL)) {
+            TrackVariantWeights.injectForTesting(kind, TrackKind.DEFAULT_NAME,
+                new TemplateMeta(1, notNether).withGroups(List.of("a")));
+        }
+        TrackVariantRegistry.register(SECTION, "darktunnel");
+        TrackVariantRegistry.register(PORTAL, "darkportal");
+        TrackVariantWeights.injectForTesting(SECTION, "darktunnel", new TemplateMeta(1, NETHER_ONLY).withGroups(List.of("b")));
+        TrackVariantWeights.injectForTesting(PORTAL, "darkportal", new TemplateMeta(1, NETHER_ONLY).withGroups(List.of("b")));
+        GateContext nether = new GateContext(1, TrainPhase.NETHER);
+
+        // An Overworld tunnel can only roll 'a'; a Nether one only 'b'.
+        assertEquals(Set.of(TemplateGroup.of("a")), rolledOver(100, OVERWORLD));
+        assertEquals(Set.of(TemplateGroup.of("b")), rolledOver(100, nether));
+        // In the crossfade an 'a' tunnel's Nether overlay has no 'a' member allowed in the Nether,
+        // so it falls back to the dark template — the Overworld → Nether fade still happens.
+        assertEquals(Set.of("darktunnel"), pickedOver(SECTION, TemplateGroup.of("a"), nether));
+        assertEquals(Set.of("darkportal"), pickedOver(PORTAL, TemplateGroup.of("a"), nether));
+        assertEquals(Set.of(TrackKind.DEFAULT_NAME), pickedOver(SECTION, TemplateGroup.of("a"), OVERWORLD));
+    }
+
+    @Test
     @DisplayName("the registry round-trips through groups.json")
     void registryJson() {
         TunnelGroupStore.Registry r = new TunnelGroupStore.Registry(Map.of("stone", 3, "brick", 1), 2);
