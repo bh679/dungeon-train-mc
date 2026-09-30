@@ -21292,6 +21292,26 @@
       "released": true,
       "released_in": "v0.1058.0",
       "released_at": "2026-09-30T10:52:40Z"
+    },
+    {
+      "id": "lost-city-terrain-fit-curseforge-sibling",
+      "version": "0.1059.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "CurseForge installs the Lost City terrain companion alongside Dungeon Train",
+      "summary": "On CurseForge, the small companion mod that settles the ruined city buildings into the ground now installs as its own mod next to Dungeon Train instead of living inside it. Nothing changes in-game, and Modrinth and manual installs keep it built in.",
+      "highlights": [
+        "The CurseForge app installs it for you automatically",
+        "Modrinth and manual installs are unchanged"
+      ],
+      "pr": 1703,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
