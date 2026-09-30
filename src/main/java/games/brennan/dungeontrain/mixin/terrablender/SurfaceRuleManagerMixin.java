@@ -1,9 +1,11 @@
 package games.brennan.dungeontrain.mixin.terrablender;
 
+import games.brennan.dungeontrain.compat.VanillaBackportSurfaceRules;
 import games.brennan.dungeontrain.worldgen.DtSurfaceRules;
 import net.minecraft.world.level.levelgen.SurfaceRules;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -36,6 +38,20 @@ public abstract class SurfaceRuleManagerMixin {
         if (DtSurfaceRules.ownerOf(fallback).isEmpty()) return;
         Map<String, SurfaceRules.RuleSource> namespaced = new HashMap<>(surfaceRules.get(category));
         namespaced.remove("minecraft");
-        cir.setReturnValue(new NamespacedSurfaceRuleSource(fallback, Map.copyOf(namespaced)));
+        cir.setReturnValue(new NamespacedSurfaceRuleSource(dungeontrain$withBackport(category, fallback),
+                Map.copyOf(namespaced)));
+    }
+
+    /**
+     * VanillaBackport's rule rode on the {@code "minecraft"} entry dropped above; in the overworld it goes in
+     * front of DT's rule instead (it only touches VanillaBackport's own biomes). See
+     * {@link VanillaBackportSurfaceRules}.
+     */
+    @Unique
+    private static SurfaceRules.RuleSource dungeontrain$withBackport(SurfaceRuleManager.RuleCategory category,
+                                                                  SurfaceRules.RuleSource dtRule) {
+        if (category != SurfaceRuleManager.RuleCategory.OVERWORLD) return dtRule;
+        SurfaceRules.RuleSource backport = VanillaBackportSurfaceRules.rules();
+        return backport == null ? dtRule : SurfaceRules.sequence(backport, dtRule);
     }
 }

@@ -298,6 +298,35 @@
       "modrinth_version": "5db3GZzg"
     },
     {
+      "name": "VanillaBackport",
+      "slug": "vanillabackport",
+      "mod_ids": [
+        "vanillabackport"
+      ],
+      "project_id": 417430,
+      "file_id": 8229724,
+      "required": true,
+      "dependency_type": "required",
+      "version": "1.1.7.10",
+      "modrinth_project": "vanillabackport",
+      "modrinth_version": "rUSWdBok"
+    },
+    {
+      "name": "Platform",
+      "slug": "platform",
+      "mod_ids": [
+        "platform"
+      ],
+      "project_id": 997634,
+      "file_id": 8075942,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "platform_min_version",
+      "version": "1.3.3",
+      "modrinth_project": "platform",
+      "modrinth_version": "v7P0nBi2"
+    },
+    {
       "name": "Dungeon Backup",
       "slug": "dungeon-train-backup",
       "mod_ids": [
