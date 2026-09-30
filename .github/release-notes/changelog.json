@@ -21576,8 +21576,8 @@
         "fix",
         "train"
       ],
-      "title": "Speed changes keep the train in place",
-      "summary": "Changing the train's speed no longer moves it anywhere else.",
+      "title": "Steadier train",
+      "summary": "The train no longer jumps.",
       "highlights": [],
       "pr": 1722,
       "date": "2026-09-30",
