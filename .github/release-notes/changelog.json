@@ -21294,7 +21294,7 @@
       "released_at": "2026-09-30T10:52:40Z"
     },
     {
-      "id": "sulfur-caves",
+      "id": "backported-from-the-future",
       "version": "0.1059.0",
       "type": "feat",
       "tags": [
@@ -21302,8 +21302,8 @@
         "compatibility",
         "world"
       ],
-      "title": "Sulfur caves",
-      "summary": "Yellow sulfur caves now open up inside the mountains further down the line.",
+      "title": "Backported from the future",
+      "summary": "A little of the future has been backported into the present past — new biomes, mobs and blocks are waiting to be found.",
       "highlights": [],
       "pr": 1701,
       "date": "2026-09-30",
