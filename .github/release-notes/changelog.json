@@ -21115,6 +21115,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "tunnel-template-groups",
+      "version": "0.1049.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "world"
+      ],
+      "title": "Tunnels keep one look",
+      "summary": "Each tunnel now keeps one look from entrance to exit, and there are new ones to ride through \u2014 some built by Pumpkin_P_Patch.",
+      "highlights": [],
+      "pr": 1690,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
