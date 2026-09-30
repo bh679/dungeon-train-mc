@@ -592,8 +592,6 @@ public final class CarriageContentsEditor {
         // CarriageEditor.duplicate.
         TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CONTENTS, null,
             source.id(), target.id());
-        // The copy is a new top-level template: opt-in, whatever its source was.
-        CarriageContentsWeights.markNewOptIn(target.id());
 
         setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
 

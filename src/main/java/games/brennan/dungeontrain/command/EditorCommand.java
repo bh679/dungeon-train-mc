@@ -4873,6 +4873,9 @@ public final class EditorCommand {
         try {
             CarriageContents.Custom target = (CarriageContents.Custom) CarriageContents.custom(name);
             var origin = CarriageContentsEditor.duplicate(player, sourceContents, target);
+            // A top-level copy is a new template: opt-in, whatever its source was. (The sub-variant
+            // path reuses duplicate() too, which is why the mark lives here and not inside it.)
+            games.brennan.dungeontrain.train.CarriageContentsWeights.markNewOptIn(target.id());
             CarriageContentsEditor.enter(player, target, null);
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_contents_from_plot", target.id(), sourceContents.id(), origin.toShortString()), true);
             return 1;
