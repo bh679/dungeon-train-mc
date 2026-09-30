@@ -1177,6 +1177,9 @@ public final class EditorGuiScreen extends Screen {
                 dispatch(detail.goHereEntry());
                 return true;
             }
+            case BLOCK_GROUP -> {
+                return detail.clickBlock(hit.index());
+            }
             case PAGE_PREV -> {
                 return detail.scrollBy(-1);
             }
@@ -1255,6 +1258,9 @@ public final class EditorGuiScreen extends Screen {
         }
         if (action instanceof TemplateDataSheet.Action.ShowLoot) {
             return detail.showLootPage();
+        }
+        if (action instanceof TemplateDataSheet.Action.ShowBlocks) {
+            return detail.showBlocksPage();
         }
         if (action instanceof TemplateDataSheet.Action.PickBuilder pick) {
             setFocused(null);   // the filter box must not eat what is typed into the panel
@@ -1393,6 +1399,13 @@ public final class EditorGuiScreen extends Screen {
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             if (!modal.pop()) this.onClose();
+            return true;
+        }
+        // Ctrl/⌘+Z and +Y work with the screen open too — the in-game bindings stand down behind a screen.
+        String history = games.brennan.dungeontrain.client.EditorUndoHotkeyClient.commandForScreenKey(keyCode, scanCode);
+        if (history != null) {
+            CommandRunner.run(history);
+            afterCommand();
             return true;
         }
         if (HotbarPassthrough.key(this.minecraft, keyCode, scanCode)) return true;

@@ -202,6 +202,11 @@ public final class EditorScreenLang {
     public static final String LOOT_PAGE_HEADER = PREFIX + "loot_page.header";
     public static final String SUBMISSION_PAGE_HEADER = PREFIX + "submission_page.header";
     public static final String LOOT_PAGE_IN = PREFIX + "loot_page.in";
+    public static final String SHEET_BLOCKS_TIP = PREFIX + "sheet.blocks_tip";
+    public static final String BLOCKS_PAGE_HEADER = PREFIX + "blocks_page.header";
+    public static final String BLOCKS_PAGE_CLICK = PREFIX + "blocks_page.click";
+    public static final String BLOCKS_PAGE_HOLD = PREFIX + "blocks_page.hold";
+    public static final String BLOCKS_PAGE_GO_HERE = PREFIX + "blocks_page.go_here";
     public static final String SHEET_WEIGHT = PREFIX + "sheet.weight";
     public static final String SHEET_SHARE = PREFIX + "sheet.share";
     public static final String SHEET_SPAWNS = PREFIX + "sheet.spawns";

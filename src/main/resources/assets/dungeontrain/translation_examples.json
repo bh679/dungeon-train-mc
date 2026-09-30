@@ -3957,6 +3957,28 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.blocks_page.header": {
+    "1": {
+      "label": "how many different kinds of block the build uses",
+      "examples": [
+        "14"
+      ]
+    },
+    "2": {
+      "label": "how many blocks the build uses in all",
+      "examples": [
+        "312"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.blocks_page.click": {
+    "1": {
+      "label": "the name of the block the player is holding",
+      "examples": [
+        "Oak Planks"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.sheet.loot_variant": {
     "1": {
       "label": "the percent chance this block variant is the one placed",

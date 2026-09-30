@@ -251,7 +251,11 @@ final class TemplateDataSheetTest {
         TemplateDataSheet.Line line = TemplateDataSheet.blocksLine(full, "…");
         assertEquals(3, line.cells().size());
         assertEquals("312", line.cells().get(0).text());
-        for (TemplateDataSheet.Cell c : line.cells()) assertNull(c.action(), "read-only");
+        assertTrue(line.cells().get(0).action() instanceof TemplateDataSheet.Action.ShowBlocks,
+            "the count opens the Blocks page");
+        for (TemplateDataSheet.Cell c : line.cells().subList(1, line.cells().size())) {
+            assertNull(c.action(), "the tallies are read-only");
+        }
 
         // A sheet only just wide enough for the count: the count lands, the tallies give way.
         FixedFont font = new FixedFont();
