@@ -21361,6 +21361,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sync-sibling-mod-pins-2026-09",
+      "version": "0.1063.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "Fresher companion mods in the modpack",
+      "summary": "The modpack now installs the newest versions of its companion mods.",
+      "highlights": [],
+      "pr": 1710,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
