@@ -1029,6 +1029,8 @@ public final class EditorCommand {
                         .executes(ctx -> runWeightSet(ctx.getSource(),
                             StringArgumentType.getString(ctx, "variant"),
                             IntegerArgumentType.getInteger(ctx, "value"))))))
+            .then(CarriageSizeCommand.shellSize())
+            .then(CarriageSizeCommand.halfJoin())
             .then(minLevelSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
             .then(maxLevelSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
             .then(phaseSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))

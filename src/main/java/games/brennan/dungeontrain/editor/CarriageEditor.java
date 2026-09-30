@@ -581,6 +581,61 @@ public final class CarriageEditor {
     }
 
     /**
+     * Change {@code variant}'s size — Room, Half, or Group ({@link ContentsSize#FULL}) — keeping its
+     * saved blocks. The saved template is re-lengthed ({@link TemplateLength}), the size declared,
+     * and the result saved: growing pads the far end with air, shrinking crops it.
+     *
+     * <p>Works from the <b>saved</b> template, not the live plot, so a plot with unsaved edits is
+     * refused rather than having them silently dropped or baked in.</p>
+     *
+     * @return the new box
+     */
+    public static CarriageDims resize(ServerPlayer player, CarriageVariant variant, ContentsSize size) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        if (games.brennan.dungeontrain.portal.PortalCarriageBuilder.isPortalVariant(variant)) {
+            throw new IOException("Portal carriages keep the size the portal needs.");
+        }
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        BlockPos origin = plotOrigin(variant, dims);
+        if (origin == null) throw new IOException("Unknown variant '" + variant.id() + "'.");
+        ContentsSize from = CarriagePlacer.sizeOf(variant);
+        CarriageDims oldBox = plotDims(variant, dims);
+        CarriageDims newBox = size.shellDims(dims, groupSize()).orElseThrow(() -> new IOException(
+            "A " + size.key() + " carriage is longer than this world's carriages can be."));
+        if (from == size) return newBox;
+        if (EditorDirtyCheck.unsavedModelIds(overworld, dims, "carriages").contains(variant.id())) {
+            throw new IOException("'" + variant.id() + "' has unsaved edits — save or reset it first.");
+        }
+        StructureTemplate saved = CarriageTemplateStore.get(overworld, variant, oldBox).orElseThrow(() ->
+            new IOException("'" + variant.id() + "' has no saved template to resize."));
+        // Re-length the template itself rather than stamping and re-capturing: every category
+        // shares the plot origin, so the world there may be showing something else.
+        StructureTemplate resized = TemplateLength.withLength(saved, newBox.length(),
+            overworld.holderLookup(net.minecraft.core.registries.Registries.BLOCK));
+
+        boolean shown = EditorStampedCategoryState.isActive(EditorCategory.CARRIAGES);
+        if (shown) {
+            CarriagePlacer.eraseAt(overworld, origin, widestBox(dims));
+            setOutline(overworld, origin, Blocks.AIR.defaultBlockState(), oldBox);
+        }
+        TemplateSizeStore.SHELLS.set(variant.id(), size);
+        try {
+            CarriageTemplateStore.save(variant, resized);
+            if (EditorDevMode.isEnabled()) CarriageTemplateStore.saveToSource(variant, resized);
+        } catch (IOException e) {
+            TemplateSizeStore.SHELLS.set(variant.id(), from);
+            throw e;
+        } finally {
+            if (shown) stampPlot(overworld, variant, dims);
+        }
+        LOGGER.info("[DungeonTrain] Editor resize: {} resized '{}' {} -> {} ({} long)",
+            player.getName().getString(), variant.id(), from.key(), size.key(), newBox.length());
+        return newBox;
+    }
+
+    /**
      * Save the plot's current geometry under a new name. Follows the
      * rename-on-save rules documented in {@code EditorCommand}: protected
      * built-ins ({@code standard}, {@code flatbed}) cannot be renamed; other

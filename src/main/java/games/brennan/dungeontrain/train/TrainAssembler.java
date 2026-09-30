@@ -494,6 +494,17 @@ public final class TrainAssembler {
             blocks.addAll(StagePlacementScope.with(anchorStage,
                 () -> FullCarriageSelection.place(level, runOrigin, fullPick, dims, groupSize, genCfg.seed(), anchorPIdx)));
         }
+        // A Half pair: one Half shell stamped twice over the run, drawn by the Half shells' weights
+        // against the ordinary pool. Portal, whole and Full groups win — see HalfCarriageSelection.
+        HalfCarriageSelection.HalfPick halfPick = !wholeGroup && !fullGroup
+            ? HalfCarriageSelection.pick(level, anchorPIdx, groupSize, dims, genCfg.seed(), anchorGate) : null;
+        final boolean halfGroup = halfPick != null;
+        if (halfGroup) {
+            BlockPos runOrigin = origin.offset(enclosedStartOffset, 0, 0);
+            String anchorStage = games.brennan.dungeontrain.template.StageResolver.stageIdFor(anchorGate);
+            blocks.addAll(StagePlacementScope.with(anchorStage,
+                () -> HalfCarriageSelection.place(level, runOrigin, halfPick, dims, groupSize, genCfg.seed(), anchorPIdx)));
+        }
 
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
@@ -518,6 +529,14 @@ public final class TrainAssembler {
                 PortalRegistry.get(level).noteStamped(carriagePIdx, false);
                 enclosedBySlot[slot] = fullPick.shell();
                 if (slot > 0) PlacedCarriageFacts.recordShellOnly(carriagePIdx, fullPick.shell());
+                continue;
+            }
+            if (halfGroup) {
+                // The two halves span every slot; their contents are laid after assembly from the
+                // first and last slots, one per half. The slot between is inside them.
+                PortalRegistry.get(level).noteStamped(carriagePIdx, false);
+                enclosedBySlot[slot] = halfPick.shell();
+                if (slot > 0 && slot < groupSize - 1) PlacedCarriageFacts.recordShellOnly(carriagePIdx, halfPick.shell());
                 continue;
             }
 
@@ -595,7 +614,9 @@ public final class TrainAssembler {
         // be entered here (the same seam the relay lease needs above).
         if (wrapWithPads) {
             BlockPos backPadOrigin = origin;
-            BlockPos frontPadOrigin = origin.offset(halfPadLen + groupSize * length, 0, 0);
+            // A SHORT Half pair's run ends early; the front pad follows it in, so the group is shorter.
+            int shortening = halfGroup ? halfPick.shortening() : 0;
+            BlockPos frontPadOrigin = origin.offset(halfPadLen + groupSize * length - shortening, 0, 0);
             StagePlacementScope.run(stageBySlot[0], () -> blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
                 level, backPadOrigin, CarriagePlacer.HalfPadSide.BACK, dims)));
             StagePlacementScope.run(stageBySlot[groupSize - 1], () -> blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
@@ -674,6 +695,22 @@ public final class TrainAssembler {
                         carriageShipyardOrigin, fullPick.shell(), dims, genCfg, carriagePIdx, groupAnchorWorldX);
                     pendingWholeDecor[slot] = new PendingWholeDecorSpawn(
                         carriageShipyardOrigin, fullPick.template(), carriagePIdx, groupSize);
+                }
+                continue;
+            }
+            if (halfGroup) {
+                // Each half is its own carriage box: the first from slot 0, the second from the last
+                // slot at its own origin. Contents, entities and the shell's decor go in per half.
+                pendingEntities[slot] = null;
+                int halfOffset = slot == 0 ? 0 : slot == groupSize - 1 ? halfPick.secondOffset() : -1;
+                if (halfOffset >= 0) {
+                    BlockPos halfShipyardOrigin = shipyardOrigin.offset(enclosedStartOffset + halfOffset, 0, 0);
+                    CarriagePlacer.applyContentsBlocksAt(level, halfShipyardOrigin, halfPick.shell(), dims,
+                        genCfg, carriagePIdx, groupAnchorWorldX);
+                    pendingEntities[slot] = new PendingContentsEntitySpawn(
+                        halfShipyardOrigin, halfPick.shell(), dims, genCfg, carriagePIdx, groupAnchorWorldX);
+                    pendingWholeDecor[slot] = new PendingWholeDecorSpawn(
+                        halfShipyardOrigin, halfPick.template(), carriagePIdx, 1);
                 }
                 continue;
             }

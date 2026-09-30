@@ -1536,6 +1536,14 @@ public final class CarriagePlacer {
     }
 
     /**
+     * The shells an ordinary enclosed slot draws from — no portal, flatbed, Half or Full — for
+     * {@link HalfCarriageSelection} to weigh a Half pair against.
+     */
+    static List<CarriageVariant> enclosedSlotPool() {
+        return filterOutFlatbed(filterOutPortal(CarriageVariantRegistry.allVariants()));
+    }
+
+    /**
      * The pool without any portal template in it — see
      * {@link games.brennan.dungeontrain.portal.PortalCarriageBuilder#isPortalVariant}.
      */
@@ -1545,6 +1553,8 @@ public final class CarriagePlacer {
             if (games.brennan.dungeontrain.portal.PortalCarriageBuilder.isPortalVariant(v)) continue;
             // A Full shell is a whole group long; only FullCarriageSelection places one, over a run.
             if (sizeOf(v) == ContentsSize.FULL) continue;
+            // A Half shell runs past its slot; only HalfCarriageSelection places one, as a pair.
+            if (sizeOf(v) == ContentsSize.HALF) continue;
             out.add(v);
         }
         return out;
