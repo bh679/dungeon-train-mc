@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.template.TemplateGroup;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.worldgen.NetherFade;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -245,9 +246,14 @@ public final class TunnelGenerator {
     private static TemplateGroup[] resolveGroups(ServerLevel serverLevel, int chunkX, boolean[] qualified,
                                                  boolean prevQualified, boolean nextQualified) {
         long seed = serverLevel.getSeed();
+        ServerLevel overworld = serverLevel.getServer().overworld();
+        // A tunnel that starts in the Nether crossfade is Stone — the only group the fade blends from —
+        // so it carries that look out of either side instead of switching at the fade's edge.
         return TunnelRunGroups.resolve(TunnelGroupData.get(serverLevel), chunkX,
             TunnelRunGroups.runs(qualified, prevQualified, nextQualified),
-            (key, worldX) -> TunnelGroupRoll.roll(seed, key, GateContext.atWorldX(serverLevel, worldX)));
+            (key, worldX) -> NetherFade.intersectsCrossfade(overworld, worldX, worldX)
+                ? TunnelPlacer.FADE_BASE_GROUP
+                : TunnelGroupRoll.roll(seed, key, GateContext.atWorldX(serverLevel, worldX)));
     }
 
     /**
