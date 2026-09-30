@@ -18,7 +18,7 @@ import java.util.Optional;
 public final class LostCityTemplates {
 
     /** Why every write is refused — Big Lost City's buildings are All Rights Reserved. */
-    public static final String VIEW_ONLY = "Official Lost City buildings are view-only — they can't be saved, copied or changed.";
+    public static final String VIEW_ONLY = "You can't edit these, they are part of the Lost Cities mod.";
 
     private LostCityTemplates() {}
 

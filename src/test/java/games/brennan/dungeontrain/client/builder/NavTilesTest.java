@@ -15,7 +15,7 @@ final class NavTilesTest {
     private static final int[][] AREAS = {{60, 150}, {120, 200}, {200, 420}, {400, 900}};
 
     @Test
-    @DisplayName("tiles come in nav order: Whole and Dimensional first, then Buildings and the advanced three")
+    @DisplayName("tiles come in nav order: Whole and Dimensional first, then the advanced three, Buildings last")
     void order() {
         List<NavTiles.Cell> cells = NavTiles.layout(0, 0, 200, 420);
         assertEquals(BuilderMode.NAV_ORDER, cells.stream().map(NavTiles.Cell::mode).toList());

@@ -3300,7 +3300,7 @@
   "chat.dungeontrain.editor.unknown_variant_valid": "Unknown variant '%s'. Valid: %s",
   "chat.dungeontrain.editor.unknown_built_valid_standard": "Unknown built-in '%s'. Valid: standard, windowed, flatbed",
   "chat.dungeontrain.editor.architecture_coming_soon_walls": "Architecture editor: coming soon. Walls, floor, and roof templates aren't implemented yet.",
-  "chat.dungeontrain.editor.lost_city_view_only": "Official Lost City buildings are view-only.",
+  "chat.dungeontrain.editor.lost_city_view_only": "You can't edit these, they are part of the Lost Cities mod.",
   "chat.dungeontrain.editor.enter_failed": "enter failed: %s: %s",
   "chat.dungeontrain.editor.entered": "Editor: entered '%s' at '%s'.%s",
   "chat.dungeontrain.editor.unknown_pillar_section": "Unknown pillar section in '%s'.",

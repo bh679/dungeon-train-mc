@@ -30,9 +30,10 @@ final class BuilderModeTest {
         }
         assertEquals(6, ids.size(), "the picker screen lays out six tiles in a vertical list");
         assertEquals(BuilderMode.WHOLE_CARRIAGES, BuilderMode.values()[0], "Whole leads, as in the editor's row");
-        // The picker's order: the two big tiles, then Buildings and the advanced three.
-        assertEquals(java.util.List.of(BuilderMode.WHOLE_CARRIAGES, BuilderMode.TRAIN_DIMENSIONS, BuilderMode.BUILDINGS,
-            BuilderMode.TRAIN_OUTSIDE, BuilderMode.INSIDE_CARRIAGE, BuilderMode.TRACKS_TUNNELS), BuilderMode.NAV_ORDER);
+        // The picker's order: the two big tiles, then the advanced three, Buildings last.
+        assertEquals(java.util.List.of(BuilderMode.WHOLE_CARRIAGES, BuilderMode.TRAIN_DIMENSIONS,
+            BuilderMode.TRAIN_OUTSIDE, BuilderMode.INSIDE_CARRIAGE, BuilderMode.TRACKS_TUNNELS, BuilderMode.BUILDINGS),
+            BuilderMode.NAV_ORDER);
         assertEquals(java.util.Set.copyOf(java.util.Arrays.asList(BuilderMode.values())), java.util.Set.copyOf(BuilderMode.NAV_ORDER),
             "every mode has a tile");
         assertTrue(BuilderMode.WHOLE_CARRIAGES.primary() && BuilderMode.TRAIN_DIMENSIONS.primary());

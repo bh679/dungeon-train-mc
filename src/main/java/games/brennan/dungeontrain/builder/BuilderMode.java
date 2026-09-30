@@ -46,11 +46,11 @@ public enum BuilderMode {
     BUILDINGS("buildings", 0);
 
     /**
-     * The picker's tile order — the two big tiles first, then the short "advanced" ones. Separate from
-     * declaration order, which the builder world's mode strip and saved state keep.
+     * The picker's tile order — the two big tiles first, then the short "advanced" ones, Buildings last.
+     * Separate from declaration order, which the builder world's mode strip and saved state keep.
      */
     public static final java.util.List<BuilderMode> NAV_ORDER = java.util.List.of(
-        WHOLE_CARRIAGES, TRAIN_DIMENSIONS, BUILDINGS, TRAIN_OUTSIDE, INSIDE_CARRIAGE, TRACKS_TUNNELS);
+        WHOLE_CARRIAGES, TRAIN_DIMENSIONS, TRAIN_OUTSIDE, INSIDE_CARRIAGE, TRACKS_TUNNELS, BUILDINGS);
 
     /** The modes a Train Builder world can be in, in declaration order — its strip and its cycle button. */
     public static final java.util.List<BuilderMode> BUILDER_MODES = java.util.Arrays.stream(values())
