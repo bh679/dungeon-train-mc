@@ -186,6 +186,19 @@ class LeaderboardPoolTest {
         assertFalse(eras.get(1).isYear());
         assertEquals("v9.9", eras.get(4).label(), "a missing label falls back to the id");
         assertFalse(eras.get(4).current(), "a non-boolean current is not current");
+        assertEquals("0.0.0", eras.get(0).minVersion());
+        assertTrue(eras.get(0).isFounding());
+        assertEquals("", eras.get(1).minVersion(), "absent floor stays empty");
+        assertFalse(eras.get(2).isFounding(), "a year is never the founding era");
+        LeaderboardPool.applyEras(ERAS);
+        assertTrue(LeaderboardPool.nextVersionFloor("v9.9").isEmpty(), "the last one has no successor");
+        LeaderboardPool.applyEras("{\"eras\":[{\"id\":\"v0.0\",\"kind\":\"version\",\"minVersion\":\"0.0.0\"},"
+            + "{\"id\":\"y2025\",\"kind\":\"year\"},{\"id\":\"v0.1013\",\"kind\":\"version\",\"minVersion\":\"0.1013\"},"
+            + "{\"id\":\"v0.1020\",\"kind\":\"version\",\"minVersion\":\"0.1020\",\"current\":true}]}");
+        assertEquals("0.1013", LeaderboardPool.nextVersionFloor("v0.0").orElseThrow(), "years are skipped over");
+        assertEquals("0.1020", LeaderboardPool.nextVersionFloor("v0.1013").orElseThrow());
+        assertTrue(LeaderboardPool.nextVersionFloor("v0.1020").isEmpty());
+        assertTrue(LeaderboardPool.nextVersionFloor("y2025").isEmpty());
         assertTrue(LeaderboardPool.parseEras("{\"ok\":true}").isEmpty());
         assertTrue(LeaderboardPool.parseEras("not json").isEmpty());
     }

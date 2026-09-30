@@ -124,12 +124,27 @@ public final class LeaderboardBookFactory {
         return Optional.of(stack);
     }
 
-    /** "The Tallyman" for a current board; "The Tallyman, 2025" / "…, After the balancing" for a retired one. */
+    /**
+     * "The Tallyman" for a current board. For a retired one the era rides on the cover after the
+     * name, by VERSION rather than by the relay's free-text label: "The Tallyman, v0.1013",
+     * "The Tallyman, before v0.1013" for the founding era, "The Tallyman, 2025" for a year.
+     */
     static String author(String era) {
         if (era == null || era.isEmpty()) return AUTHOR;
-        String label = LeaderboardPool.era(era).map(LeaderboardPool.Era::label).orElse(era);
-        String out = AUTHOR + ", " + label;
+        String out = AUTHOR + ", " + eraShortName(era);
         return out.length() > MAX_AUTHOR_CHARS ? out.substring(0, MAX_AUTHOR_CHARS) : out;
+    }
+
+    /** The era as a few plain characters for the cover: a year, a version, or the id when unknown. */
+    static String eraShortName(String era) {
+        Optional<LeaderboardPool.Era> known = LeaderboardPool.era(era);
+        if (known.isEmpty()) return era;
+        LeaderboardPool.Era e = known.get();
+        if (e.isYear()) return e.label();
+        if (e.isFounding()) {
+            return LeaderboardPool.nextVersionFloor(era).map(v -> "before v" + v).orElse(e.label());
+        }
+        return e.minVersion().isEmpty() ? e.label() : "v" + e.minVersion();
     }
 
     /**
@@ -179,7 +194,9 @@ public final class LeaderboardBookFactory {
                 : Component.translatable(LeaderboardCategory.YOU_BEYOND_KEY,
                         Component.literal(category.render(s.score())),
                         Component.literal(Integer.toString(s.beyond()))))
-            .orElseGet(() -> Component.translatable(LeaderboardCategory.YOU_UNRANKED_KEY));
+            // "Not yet" is a promise a closed list cannot keep, so a retired board's unranked
+            // line is the plain statement.
+            .orElseGet(() -> Component.translatable(retired ? ERA_YOU_UNRANKED_KEY : LeaderboardCategory.YOU_UNRANKED_KEY));
         // A retired list says so where the reader's own line is: it is the one page a reader is sure
         // to reach, and "you are #4" on a board nobody can climb any more needs the caveat beside it.
         pages.add(retired
@@ -190,9 +207,15 @@ public final class LeaderboardBookFactory {
 
     /** Translation keys for the era wording. The heading wrapper takes the heading and the era's name. */
     static final String ERA_KEY = "dungeontrain.leaderboard.era";
-    static final String ERA_VERSION_KEY = "dungeontrain.leaderboard.era.version";
+    /** A version era with a known successor: "Dungeon Train v0.1013 up to v0.1020". */
+    static final String ERA_VERSION_RANGE_KEY = "dungeontrain.leaderboard.era.version.range";
+    /** The founding era, which has no floor of its own: "Dungeon Train before v0.1013". */
+    static final String ERA_VERSION_BEFORE_KEY = "dungeontrain.leaderboard.era.version.before";
+    /** A version era whose successor the relay did not list: "Dungeon Train v0.1013 onward". */
+    static final String ERA_VERSION_ONWARD_KEY = "dungeontrain.leaderboard.era.version.onward";
     static final String ERA_YEAR_KEY = "dungeontrain.leaderboard.era.year";
     static final String ERA_CLOSED_KEY = "dungeontrain.leaderboard.era.closed";
+    static final String ERA_YOU_UNRANKED_KEY = "dungeontrain.leaderboard.era.you_unranked";
 
     /** The heading for one era's board: the plain heading, wrapped with the era's name when retired. */
     static MutableComponent heading(LeaderboardCategory category, String era) {
@@ -202,15 +225,25 @@ public final class LeaderboardBookFactory {
     }
 
     /**
-     * How an era is named in the book: "The year 2025" for a year, "The <label> era" for a game
-     * version. An era the relay has not described (the list is stale, or never landed) is named by
-     * its id, which is still true if terse.
+     * How an era is named in the book: "The year 2025" for a year; for a game version, the span of
+     * Dungeon Train versions whose runs it holds — from the era's own floor up to (not including)
+     * the next era's, or "before v…" for the founding era. Versions, not the relay's label: a
+     * reader wants to know which game the numbers came from, and "0.1013" says that exactly. An
+     * era the relay has not described (the list is stale, or never landed) is named by its id.
      */
     static MutableComponent eraName(String era) {
         Optional<LeaderboardPool.Era> known = LeaderboardPool.era(era);
         if (known.isEmpty()) return Component.literal(era);
         LeaderboardPool.Era e = known.get();
-        return Component.translatable(e.isYear() ? ERA_YEAR_KEY : ERA_VERSION_KEY, Component.literal(e.label()));
+        if (e.isYear()) return Component.translatable(ERA_YEAR_KEY, Component.literal(e.label()));
+        Optional<String> next = LeaderboardPool.nextVersionFloor(era);
+        if (e.isFounding()) {
+            return next.map(v -> Component.translatable(ERA_VERSION_BEFORE_KEY, Component.literal(v)))
+                .orElseGet(() -> Component.literal(e.label()));
+        }
+        if (e.minVersion().isEmpty()) return Component.literal(e.label());
+        return next.map(v -> Component.translatable(ERA_VERSION_RANGE_KEY, Component.literal(e.minVersion()), Component.literal(v)))
+            .orElseGet(() -> Component.translatable(ERA_VERSION_ONWARD_KEY, Component.literal(e.minVersion())));
     }
 
     /**

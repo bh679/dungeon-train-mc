@@ -153,8 +153,9 @@ class LeaderboardBookFactoryTest {
     // ---- retired eras -----------------------------------------------------------
 
     private static final String ERAS = "{\"eras\":["
-        + "{\"id\":\"v0.0\",\"kind\":\"version\",\"label\":\"The First Era\",\"current\":false},"
-        + "{\"id\":\"v0.1013\",\"kind\":\"version\",\"label\":\"After the balancing\",\"current\":true},"
+        + "{\"id\":\"v0.0\",\"kind\":\"version\",\"label\":\"The First Era\",\"minVersion\":\"0.0.0\",\"current\":false},"
+        + "{\"id\":\"v0.1013\",\"kind\":\"version\",\"label\":\"After the balancing\",\"minVersion\":\"0.1013\",\"current\":false},"
+        + "{\"id\":\"v0.1020\",\"kind\":\"version\",\"label\":\"Newest\",\"minVersion\":\"0.1020\",\"current\":true},"
         + "{\"id\":\"y2025\",\"kind\":\"year\",\"label\":\"2025\",\"current\":false}]}";
 
     @Test
@@ -200,9 +201,19 @@ class LeaderboardBookFactoryTest {
         TranslatableContents v = (TranslatableContents) LeaderboardBookFactory.heading(CAT, "v0.0").getContents();
         assertEquals(LeaderboardBookFactory.ERA_KEY, v.getKey());
         assertEquals(LeaderboardBookFactory.heading(CAT), v.getArgs()[0], "the plain heading is still there");
+        // The era is named by VERSIONS, never by the relay's free-text label: the founding era is
+        // "before <first floor>", a middle era is "<its floor> up to <next floor>", the newest
+        // retired era with no successor listed is "<its floor> onward".
         TranslatableContents vName = (TranslatableContents) ((Component) v.getArgs()[1]).getContents();
-        assertEquals(LeaderboardBookFactory.ERA_VERSION_KEY, vName.getKey());
-        assertEquals("The First Era", ((Component) vName.getArgs()[0]).getString());
+        assertEquals(LeaderboardBookFactory.ERA_VERSION_BEFORE_KEY, vName.getKey());
+        assertEquals("0.1013", ((Component) vName.getArgs()[0]).getString());
+        TranslatableContents mid = (TranslatableContents) ((Component) ((TranslatableContents)
+            LeaderboardBookFactory.heading(CAT, "v0.1013").getContents()).getArgs()[1]).getContents();
+        assertEquals(LeaderboardBookFactory.ERA_VERSION_RANGE_KEY, mid.getKey());
+        assertEquals("0.1013", ((Component) mid.getArgs()[0]).getString());
+        assertEquals("0.1020", ((Component) mid.getArgs()[1]).getString());
+        TranslatableContents last = (TranslatableContents) LeaderboardBookFactory.eraName("v0.1020").getContents();
+        assertEquals(LeaderboardBookFactory.ERA_VERSION_ONWARD_KEY, last.getKey());
         TranslatableContents y = (TranslatableContents) LeaderboardBookFactory.heading(CAT, "y2025").getContents();
         assertEquals(LeaderboardBookFactory.ERA_YEAR_KEY, ((TranslatableContents) ((Component) y.getArgs()[1]).getContents()).getKey());
         TranslatableContents u = (TranslatableContents) LeaderboardBookFactory.heading(CAT, "v0.5").getContents();
@@ -212,10 +223,20 @@ class LeaderboardBookFactoryTest {
 
         String currentClose = current.get(current.size() - 1).getString();
         String versionClose = version.get(version.size() - 1).getString();
-        assertTrue(versionClose.startsWith(currentClose), "the reader's own line comes first, unchanged");
+        // Unranked on a closed list says so without "not yet"; ranked lines are unchanged.
+        TranslatableContents unranked = (TranslatableContents) version.get(version.size() - 1).getContents();
+        assertEquals(LeaderboardBookFactory.ERA_YOU_UNRANKED_KEY, unranked.getKey());
+        assertEquals(LeaderboardCategory.YOU_UNRANKED_KEY,
+            ((TranslatableContents) current.get(current.size() - 1).getContents()).getKey());
+        Optional<LeaderboardPool.Standing> second = Optional.of(new LeaderboardPool.Standing(2, 900L, 0));
+        List<Component> ranked = LeaderboardBookFactory.pages(CAT, "v0.0", entries(3), second);
+        List<Component> rankedCurrent = LeaderboardBookFactory.pages(CAT, entries(3), second);
+        assertTrue(ranked.get(ranked.size() - 1).getString()
+            .startsWith(rankedCurrent.get(rankedCurrent.size() - 1).getString()), "the reader's own line comes first, unchanged");
         assertTrue(versionClose.length() > currentClose.length(), "then the closed-list line");
         assertEquals("The Tallyman", LeaderboardBookFactory.author(LeaderboardPool.CURRENT));
-        assertEquals("The Tallyman, The First Era", LeaderboardBookFactory.author("v0.0"));
+        assertEquals("The Tallyman, before v0.1013", LeaderboardBookFactory.author("v0.0"));
+        assertEquals("The Tallyman, v0.1013", LeaderboardBookFactory.author("v0.1013"));
         assertEquals("The Tallyman, 2025", LeaderboardBookFactory.author("y2025"));
         assertEquals("The Tallyman, v0.5", LeaderboardBookFactory.author("v0.5"));
         LeaderboardPool.clear();

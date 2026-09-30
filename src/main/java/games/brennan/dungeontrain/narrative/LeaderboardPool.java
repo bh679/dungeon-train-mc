@@ -119,9 +119,13 @@ public final class LeaderboardPool {
      * stretch or a calendar year. {@code current} is the era new runs score into; everything else
      * is retired, kept for good, and what a retired-board book is about.
      */
-    public record Era(String id, String kind, String label, boolean current) {
+    public record Era(String id, String kind, String label, String minVersion, boolean current) {
         public boolean isRetired() { return !current; }
         public boolean isYear() { return "year".equals(kind); }
+        /** The founding version era: the one every jar older than the first retirement scores into. */
+        public boolean isFounding() {
+            return !isYear() && (minVersion.isEmpty() || "0.0.0".equals(minVersion) || "0.0".equals(minVersion));
+        }
     }
 
     /**
@@ -268,6 +272,21 @@ public final class LeaderboardPool {
 
     /** Every era the relay listed, oldest first. Empty until the first fetch lands. */
     public static List<Era> eras() { return ERAS; }
+
+    /**
+     * The floor of the version era that FOLLOWED {@code era} — the first version its board no longer
+     * covers — or empty when none is known. The relay lists version eras oldest first, so it is
+     * simply the next version era in the list.
+     */
+    public static Optional<String> nextVersionFloor(String era) {
+        boolean seen = false;
+        for (Era e : ERAS) {
+            if (e.isYear()) continue;
+            if (seen && !e.minVersion().isEmpty()) return Optional.of(e.minVersion());
+            if (e.id().equals(era)) seen = true;
+        }
+        return Optional.empty();
+    }
 
     /**
      * Fetch the era list if it is missing or stale. Safe to call every tick: held off by
@@ -532,9 +551,12 @@ public final class LeaderboardPool {
             if (!"version".equals(kind) && !"year".equals(kind)) continue;
             String label = str(o, "label");
             if (label.length() > MAX_ERA_LABEL_LEN) label = label.substring(0, MAX_ERA_LABEL_LEN);
+            // The lowest Dungeon Train version in a version era — what the book names it by.
+            String minVersion = str(o, "minVersion");
+            if (!minVersion.matches("\\d+(\\.\\d+){0,3}")) minVersion = "";
             boolean current = o.has("current") && o.get("current").isJsonPrimitive()
                 && o.get("current").getAsJsonPrimitive().isBoolean() && o.get("current").getAsBoolean();
-            out.add(new Era(id, kind, label.isEmpty() ? id : label, current));
+            out.add(new Era(id, kind, label.isEmpty() ? id : label, minVersion, current));
         }
         return out;
     }

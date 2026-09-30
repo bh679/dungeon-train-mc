@@ -2967,20 +2967,43 @@
           ]
         },
         {
-          "key": "dungeontrain.leaderboard.era.version",
+          "key": "dungeontrain.leaderboard.era.version.before",
           "args": [
-            "After the balancing"
+            "0.1013"
           ]
         }
       ]
     }
   },
-  "dungeontrain.leaderboard.era.version": {
+  "dungeontrain.leaderboard.era.version.range": {
     "1": {
-      "label": "the name the relay gave a past game version's stretch of play — not translated",
+      "label": "the lowest game version whose runs this retired list holds, digits only",
       "examples": [
-        "The First Era",
-        "After the balancing"
+        "0.1013",
+        "0.1020"
+      ]
+    },
+    "2": {
+      "label": "the first game version it no longer covers — the next era's floor",
+      "examples": [
+        "0.1020",
+        "0.1031.2"
+      ]
+    }
+  },
+  "dungeontrain.leaderboard.era.version.before": {
+    "1": {
+      "label": "the first game version to get a board of its own; everything older is on this list",
+      "examples": [
+        "0.1013"
+      ]
+    }
+  },
+  "dungeontrain.leaderboard.era.version.onward": {
+    "1": {
+      "label": "the lowest game version whose runs this list holds, digits only",
+      "examples": [
+        "0.1013"
       ]
     }
   },
