@@ -21415,8 +21415,26 @@
       "released_at": null
     },
     {
-      "id": "surface-rule-null-guard",
+      "id": "discord-build-submit-announcements",
       "version": "0.1066.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Submitted builds get announced",
+      "summary": "Submitting a build for review now shares it, picture and all, with the community on Discord.",
+      "highlights": [],
+      "pr": 1705,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "surface-rule-null-guard",
+      "version": "0.1067.0",
       "type": "fix",
       "tags": [
         "fix",
