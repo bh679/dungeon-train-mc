@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.worldgen.EndBandJobQueue;
 import games.brennan.dungeontrain.worldgen.EndBandSampler;
 import games.brennan.dungeontrain.worldgen.EndBandStyle;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.worldgen.PendingChunkSweep;
 import games.brennan.dungeontrain.worldgen.PrefetchDirection;
 import games.brennan.dungeontrain.worldgen.SunlitChunks;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
@@ -37,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.LinkedHashMap;
@@ -57,6 +59,10 @@ import java.util.UUID;
  *       train, −X walking the reversed cycle behind spawn), is requested before it exists. Finished
  *       samples for chunks that aren't loaded yet wait in a small {@link #STASH}, and are written the
  *       moment their chunk generates — so at speed the terrain is there on arrival, not popped in.</li>
+ *   <li><b>Sweep</b> — on the same beat, every loaded chunk within a player's view that is still pending
+ *       is re-checked ({@link PendingChunkSweep}): its stashed sample is written, or its sample asked for
+ *       again. A chunk only asks when it loads, so without this one that lost its request while staying
+ *       loaded (a job dropped before any player was near, a sample stashed mid-load) stayed void.</li>
  *   <li><b>Apply</b> — raw section writes (the Sable-safe path the other bands use), only into cells that
  *       are <b>still air</b> (nothing a player built is overwritten), clear of the track and the train's
  *       airspace ({@link SphereCarveGeometry}), and thinned across the band's fade edges
@@ -145,7 +151,10 @@ public final class WorldEndBandEvents {
     public static void onServerTick(ServerTickEvent.Post event) {
         ServerLevel level = event.getServer().overworld();
         if (level == null) return;
-        if (++tickCounter % PREFETCH_INTERVAL_TICKS == 0) prefetch(level);
+        if (++tickCounter % PREFETCH_INTERVAL_TICKS == 0) {
+            prefetch(level);
+            sweepPending(level);
+        }
         if (!DUE.isEmpty()) {
             // Prefetched terrain for chunks that arrived last tick: all of it, so none is seen bare.
             long t0 = GenProfiler.t0();
@@ -276,6 +285,41 @@ public final class WorldEndBandEvents {
         }
         LAST_PREFETCH_X.clear();                           // players who left drop out
         LAST_PREFETCH_X.putAll(seen);
+    }
+
+    /**
+     * Re-check every loaded chunk within a player's view that is still pending ({@link PendingChunkSweep}):
+     * write its stashed sample next tick, or ask for it again ({@link EndBandSampler#request} ignores a
+     * chunk already in flight). Reads only chunks already loaded ({@code getChunkNow}).
+     */
+    private static void sweepPending(ServerLevel level) {
+        if (DisintegrationBand.startX(level) == DisintegrationBand.OFF) return;
+        int view = level.getServer().getPlayerList().getViewDistance();
+        int bedY = -1;
+        Set<Long> visited = new HashSet<>();
+        for (ServerPlayer player : level.players()) {
+            ChunkPos at = player.chunkPosition();
+            for (int cx = at.x - view; cx <= at.x + view; cx++) {
+                for (int cz = at.z - view; cz <= at.z + view; cz++) {
+                    long key = ChunkPos.asLong(cx, cz);
+                    if (!visited.add(key)) continue;
+                    LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
+                    if (chunk == null) continue;
+                    PendingChunkSweep.Action action = PendingChunkSweep.decide(
+                            chunk.getData(ModDataAttachments.END_BAND_PENDING),
+                            STASH.containsKey(key), DUE.containsKey(key));
+                    if (action == PendingChunkSweep.Action.WRITE_STASHED) {
+                        DUE.put(key, STASH.remove(key));
+                    } else if (action == PendingChunkSweep.Action.REQUEST) {
+                        ChunkPos pos = chunk.getPos();
+                        long pass = betterEndPass(level, pos);
+                        if (pass < 0L) continue;
+                        if (bedY == -1) bedY = SphereCarveGeometry.of(level).bedY();
+                        EndBandSampler.request(level, pos, pass, bedY);
+                    }
+                }
+            }
+        }
     }
 
     /** Write one finished sample into its chunk and clear the chunk's pending flag. */
