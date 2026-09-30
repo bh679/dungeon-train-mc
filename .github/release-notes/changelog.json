@@ -21537,8 +21537,24 @@
       "released_at": null
     },
     {
+      "id": "endband-scenery-carries-on",
+      "version": "0.1073.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "No more hard edges",
+      "summary": "Some scenery now carries on past where it used to stop.",
+      "highlights": [],
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "lost-city-template-eviction",
-      "version": "0.1074.0",
+      "version": "0.1075.0",
       "type": "perf",
       "tags": [
         "performance"
