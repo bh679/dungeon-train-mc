@@ -30,7 +30,7 @@ import java.util.function.DoubleSupplier;
  * confines: the biome's colours, fog and sky, climate (snow and ice), ambient sounds and music, and
  * mob spawns all belong to the biome id and would apply on every lap. So for each live
  * {@code minecraft:} biome whose climate, effects or spawns differ from vanilla's, the vanilla
- * {@code Biome} (rebuilt from code by {@link VanillaWorldgenLookup#create()}, which datapacks can't
+ * {@code Biome} (rebuilt from code by {@link VanillaWorldgenLookup#get()}, which datapacks can't
  * touch) is kept as its twin. {@code BiomeMixin}, {@code ChunkGeneratorSpawnsMixin} and
  * {@code NaturalSpawnerChunkGenSpawnsMixin} (plus a dimensional carriage room's natives) answer from the
  * twin wherever the question has a position outside the WWOO stretch; inside it, WWOO answers.</p>
@@ -147,7 +147,7 @@ public final class VanillaBiomeTwins {
     }
 
     private static void collect(RegistryAccess live, Map<Biome, Biome> twins, Map<Biome, MobSpawnSettings> spawns) {
-        HolderLookup.Provider vanilla = VanillaWorldgenLookup.create();
+        HolderLookup.Provider vanilla = VanillaWorldgenLookup.get();
         HolderLookup.RegistryLookup<Biome> vanillaBiomes = vanilla.lookupOrThrow(Registries.BIOME);
         Registry<Biome> liveBiomes = live.registryOrThrow(Registries.BIOME);
         RegistryOps<JsonElement> liveOps = live.createSerializationContext(JsonOps.INSTANCE);
