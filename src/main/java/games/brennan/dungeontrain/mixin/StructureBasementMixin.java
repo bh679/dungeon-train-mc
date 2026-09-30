@@ -48,7 +48,10 @@ import java.util.function.Predicate;
  * datafixes — the mod ships 1.20.1 NBT) its templates and assembles every piece before returning. Vanilla's
  * structure-set loop also retries the set's other entries after a rejection, so a veto at {@code RETURN}
  * built and discarded up to the whole set's worth of cities in every refused chunk — most of new-world
- * spawn generation. The verdict doesn't depend on the structure id, so moving it changes no output.</p>
+ * spawn generation. The verdict needs nothing from the built start, so moving it changes no output. Its
+ * chunk part doesn't depend on the structure either, so the retries answer from a per-chunk memo
+ * ({@link games.brennan.dungeontrain.worldgen.LostCityChunkVeto}); only the WWOO stretch's building pick
+ * reads the id.</p>
  */
 @Mixin(Structure.class)
 public abstract class StructureBasementMixin {
