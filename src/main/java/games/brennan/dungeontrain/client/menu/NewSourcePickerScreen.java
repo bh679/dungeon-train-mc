@@ -116,20 +116,24 @@ public final class NewSourcePickerScreen implements MenuScreen {
                     "Standard", "name", "dungeontrain editor new", "standard"));
             }
             case CONTENTS -> {
-                // One blank per size; each lands in its own row of the contents editor.
-                out.add(new CommandMenuEntry.TypeArg(
-                    MenuLang.t("new_source.blank_size", sizeName("room")), "name", "dungeontrain editor contents new", "blank"));
-                out.add(new CommandMenuEntry.TypeArg(
-                    MenuLang.t("new_source.blank_size", sizeName("half")), "name", "dungeontrain editor contents new", "blank_half"));
-                out.add(new CommandMenuEntry.TypeArg(
-                    MenuLang.t("new_source.blank_size", sizeName("full")), "name", "dungeontrain editor contents new", "blank_full"));
+                // One blank per size — or, from a size's own strip ({@code kind} is its key), just
+                // that size's.
+                for (String size : new String[] {"room", "half", "full"}) {
+                    if (!kind.isEmpty() && !kind.equals(size)) continue;
+                    out.add(new CommandMenuEntry.TypeArg(
+                        MenuLang.t("new_source.blank_size", sizeName(size)), "name",
+                        "dungeontrain editor contents new", size.equals("room") ? "blank" : "blank_" + size));
+                }
                 if (!currentId.isEmpty()) {
                     out.add(new CommandMenuEntry.TypeArg(
                         MenuLang.t("new_source.current", currentId), "name",
                         "dungeontrain editor contents new", currentId));
                 }
-                out.add(new CommandMenuEntry.TypeArg(
-                    "Standard", "name", "dungeontrain editor contents new", "default"));
+                // Standard copies the built-in `default`, which is Room-sized.
+                if (kind.isEmpty() || kind.equals("room")) {
+                    out.add(new CommandMenuEntry.TypeArg(
+                        "Standard", "name", "dungeontrain editor contents new", "default"));
+                }
             }
             case PARTS -> {
                 String prefix = "dungeontrain editor part new " + kind;
