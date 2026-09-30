@@ -127,7 +127,9 @@ public final class EditorTypeMenuRenderer {
         /** The WHOLE category's "whole group every N" settings row — click +1, shift-click -1, cmd-click types. */
         WHOLE_EVERY,
         /** Top-right {@code ↻} on the top row — face the player; shift resets to the grid. */
-        FACE
+        FACE,
+        /** Tunnel template groups cell (tunnel section / entrance rows) — click opens the group picker. */
+        GROUPS
     }
 
     /**
@@ -944,7 +946,8 @@ public final class EditorTypeMenuRenderer {
         }
         RightCells rc = rightCells(-halfW, halfW, true, /*allowGate*/ true, variant.phaseMask(),
             /*showStage*/ true, variant.isStageLinked());
-        if (hitX < rc.nameRight()) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+        if (hitX < groupsLeft(rc, -halfW, halfW, variant)) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+        if (hitX < rc.nameRight()) return new Hovered(menuIdx, variantIdx, CellKind.GROUPS);
         if (!rc.showGate()) return new Hovered(menuIdx, variantIdx, CellKind.WEIGHT);
         if (hitX < rc.weightR()) return new Hovered(menuIdx, variantIdx, CellKind.WEIGHT);
         if (rc.linked()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE);
@@ -1074,7 +1077,8 @@ public final class EditorTypeMenuRenderer {
 
         RightCells rc = rightCells(colLeft, colRight, true, /*allowGate*/ true, variant.phaseMask(),
             /*showStage*/ true, variant.isStageLinked());
-        if (hitX < rc.nameRight()) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+        if (hitX < groupsLeft(rc, colLeft, colRight, variant)) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+        if (hitX < rc.nameRight()) return new Hovered(menuIdx, variantIdx, CellKind.GROUPS);
         if (!rc.showGate()) return new Hovered(menuIdx, variantIdx, CellKind.WEIGHT);
         if (hitX < rc.weightR()) return new Hovered(menuIdx, variantIdx, CellKind.WEIGHT);
         // Stage selector cell — when linked it spans the rest of the gate area (no min/max/phase).
@@ -1492,6 +1496,22 @@ public final class EditorTypeMenuRenderer {
         return new RightCells(true, true, false, false, gateLeft, gateLeft, weightR, weightR, minR, maxR);
     }
 
+    /** Share of a row's width the tunnel Groups cell takes from the right end of the name cell. */
+    static final double GROUPS_CELL_FRACTION = 0.13;
+
+    /**
+     * Left edge of the Groups cell on a tunnel section / entrance row — the name cell ends here and
+     * the Groups cell runs to {@link RightCells#nameRight()}. Any other row returns {@code nameRight},
+     * i.e. no Groups cell.
+     */
+    private static double groupsLeft(RightCells rc, double rowLeft, double rowRight, EditorTypeMenusPacket.Variant variant) {
+        if (!rc.hasWeight() || isPartRow(variant)
+                || !games.brennan.dungeontrain.client.menu.TunnelGroupPickerScreen.groupable(variant.modelId())) {
+            return rc.nameRight();
+        }
+        return Math.max(rowLeft, rc.nameRight() - (rowRight - rowLeft) * GROUPS_CELL_FRACTION);
+    }
+
     private static void drawVariantRow(
         PoseStack ps, MultiBufferSource buffer, Font font,
         EditorTypeMenusPacket.Variant variant,
@@ -1507,6 +1527,8 @@ public final class EditorTypeMenuRenderer {
         // visR is its right edge. Non-part rows have no checkbox, so visR == rowLeft (a no-op below).
         boolean isPart = isPartRow(variant);
         double visR = isPart ? rowLeft + partVisCellW(font) : rowLeft;
+        // Tunnel rows give the right end of the name cell to a Groups cell; nameR is the name's edge.
+        double nameR = groupsLeft(rc, rowLeft, rowRight, variant);
 
         // Provenance tint — orange for imported variants (highest priority),
         // blue for user-authored, no tint for bundled.
@@ -1530,7 +1552,11 @@ public final class EditorTypeMenuRenderer {
         // Hover highlight — per cell.
         switch (hoverCell) {
             case NAME -> drawQuad(ps, buffer, visR + 0.005, rowBottom + 0.005,
-                rc.nameRight() - 0.005, rowTop - 0.005, HOVER_COLOR);
+                nameR - 0.005, rowTop - 0.005, HOVER_COLOR);
+            case GROUPS -> {
+                if (nameR < rc.nameRight()) drawQuad(ps, buffer, nameR + 0.005, rowBottom + 0.005,
+                    rc.nameRight() - 0.005, rowTop - 0.005, HOVER_COLOR);
+            }
             case PART_VISIBLE -> drawQuad(ps, buffer, rowLeft + 0.005, rowBottom + 0.005,
                 visR - 0.005, rowTop - 0.005, HOVER_COLOR);
             case WEIGHT -> drawQuad(ps, buffer, rc.weightL() + 0.005, rowBottom + 0.005,
@@ -1570,7 +1596,13 @@ public final class EditorTypeMenuRenderer {
             drawCenteredText(ps, buffer, font, shown ? "[x]" : "[ ]", (rowLeft + visR) / 2.0, rowCY, NAME_COLOR);
             drawCenteredText(ps, buffer, font, variant.displayName(), (visR + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
         } else {
-            drawCenteredText(ps, buffer, font, variant.displayName(), (rowLeft + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
+            drawCenteredText(ps, buffer, font, variant.displayName(), (rowLeft + nameR) / 2.0, rowCY, NAME_COLOR);
+        }
+        if (nameR < rc.nameRight()) {
+            drawCenteredText(ps, buffer, font,
+                games.brennan.dungeontrain.client.menu.TunnelGroupPickerScreen.summary(variant.groupIds()),
+                (nameR + rc.nameRight()) / 2.0, rowCY,
+                variant.groupIds().isEmpty() ? STAGE_CUSTOM_COLOR : STAGE_COLOR);
         }
 
         if (!rc.hasWeight()) return;

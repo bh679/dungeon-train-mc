@@ -1,11 +1,5 @@
 {
-  "darktunnel": {
-    "weight": 1,
-    "phases": [
-      "NETHER"
-    ]
-  },
-  "default": {
+  "copper": {
     "weight": 1,
     "phases": [
       "OVERWORLD",
@@ -14,12 +8,91 @@
       "BETA",
       "ALPHA",
       "INFDEV",
-      "CLASSIC",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
+    ],
+    "name": "Copper",
+    "groups": [
+      "copper"
+    ]
+  },
+  "darktunnel": {
+    "weight": 1,
+    "phases": [
+      "NETHER"
+    ],
+    "groups": [
+      "blackstone"
+    ]
+  },
+  "default": {
+    "weight": 20,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "groups": [
+      "stone"
+    ]
+  },
+  "mud": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "name": "Mud",
+    "groups": [
+      "mud"
+    ]
+  },
+  "overgrowth": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "builder": {
+      "uuid": "25e62266fe0b4045904626fe81cde68c",
+      "name": "Pumpkin_P_Patch"
+    },
+    "groups": [
+      "mossy",
+      "stone"
     ]
   }
 }

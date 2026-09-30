@@ -580,7 +580,9 @@ public final class EditorCommand {
                 .then(Commands.literal("rebuild")
                     .executes(ctx -> runMirrorRebuild(ctx.getSource()))))
             .then(attachTrackVariantNodes(Commands.literal("tracks")
-                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS))))
+                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS)))
+                // Tunnel template groups — one group per tunnel, entrance to exit.
+                .then(TunnelGroupCommands.node()))
             // PORTALS takes the same (kind, name) variant subcommands — the pocket room is a
             // TrackKind under the hood, so weight / gate / new / reset are literally the same
             // handlers — plus one of its own: length, the axis only a portal room may choose.
