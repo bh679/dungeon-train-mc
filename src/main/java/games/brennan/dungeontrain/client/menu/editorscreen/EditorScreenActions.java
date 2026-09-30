@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
+import games.brennan.dungeontrain.client.builder.BuildRenderCapture;
 import games.brennan.dungeontrain.client.builder.BuilderSubmitNoteScreen;
 import games.brennan.dungeontrain.client.menu.EditorHistoryState;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
@@ -203,7 +204,8 @@ public final class EditorScreenActions {
         Runnable action = published
             ? () -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), false))
             : () -> BuilderSubmitNoteScreen.open(entry.relayId(), Component.literal(entry.buildName()),
-                note -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), true, note)));
+                note -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), true, note,
+                    BuildRenderCapture.png(entry.relayId()))));
         return new Icon(published ? "withdraw" : "submit", label,
             new CommandMenuEntry.ClientAction(label, action), null);
     }
