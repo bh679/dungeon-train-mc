@@ -404,7 +404,7 @@ public final class BuilderStructureNeeds {
         BlockPos origin = BuilderWorldLayout.portalRoomOrigin(size);
 
         if (!roomMode.tiles()) {
-            // Bedrockless is the mode whose boundary is *nothing at all* for a clearance either side.
+            // Void is the mode whose boundary is *nothing at all* for a clearance either side.
             // Declaring anything for it would contradict the one thing it says about itself.
             if (!roomMode.clearsSurroundings()) {
                 out.add(new BuilderStructure.Placement(

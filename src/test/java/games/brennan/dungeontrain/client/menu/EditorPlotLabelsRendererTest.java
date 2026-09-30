@@ -177,7 +177,7 @@ class EditorPlotLabelsRendererTest {
             // Directly under Walls, which is where the setting it qualifies lives.
             assertEquals(indexOf(rows, RowKind.MODE) + 1, indexOf(rows, RowKind.LOCK), sealing);
         }
-        for (String unsealed : new String[]{"endless_open", "endless_repetition", "bedrockless"}) {
+        for (String unsealed : new String[]{"endless_open", "endless_repetition", "void"}) {
             assertFalse(EditorPlotLabelsRenderer.hasLockRow(
                 entry("PORTALS", true, 1, 11, 13, 7, unsealed)), unsealed);
         }
@@ -240,7 +240,7 @@ class EditorPlotLabelsRendererTest {
             entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition")));
         // Endless Open writes floor and ceiling and nothing between them, so a copy there has no wall
         // to carry through the mouth's plane — the row would be a control over nothing.
-        for (String mode : new String[]{"endless_open", "bedrock_lock", "bedrockless"}) {
+        for (String mode : new String[]{"endless_open", "bedrock_lock", "void"}) {
             assertFalse(EditorPlotLabelsRenderer.hasDoorWallRow(
                 entry("PORTALS", true, 1, 11, 13, 7, mode)), mode);
         }
@@ -263,7 +263,7 @@ class EditorPlotLabelsRendererTest {
     @Test
     @DisplayName("Door Position shows on every portal room, whatever the walls do — same reach as L/W/H")
     void doorOffsetRowShowsOnEveryMode() {
-        for (String mode : new String[]{"endless_repetition", "endless_open", "bedrock_lock", "bedrockless"}) {
+        for (String mode : new String[]{"endless_repetition", "endless_open", "bedrock_lock", "void"}) {
             assertTrue(EditorPlotLabelsRenderer.hasDoorOffsetRow(
                 entry("PORTALS", true, 1, 11, 13, 7, mode)), mode);
         }
@@ -315,7 +315,7 @@ class EditorPlotLabelsRendererTest {
             assertTrue(EditorPlotLabelsRenderer.hasExitsRow(
                 entry("PORTALS", true, 1, 11, 13, 7, mode)), mode);
         }
-        for (String mode : new String[]{"bedrock_lock", "bedrockless"}) {
+        for (String mode : new String[]{"bedrock_lock", "void"}) {
             assertFalse(EditorPlotLabelsRenderer.hasExitsRow(
                 entry("PORTALS", true, 1, 11, 13, 7, mode)), mode);
         }
@@ -417,7 +417,7 @@ class EditorPlotLabelsRendererTest {
     @Test
     @DisplayName("Contents shows on every portal room, whatever the walls do — it is not a sub-mode")
     void roomContentsRowIsNotGatedOnTheWalls() {
-        for (String mode : new String[]{"bedrock_lock", "endless_open", "bedrockless",
+        for (String mode : new String[]{"bedrock_lock", "endless_open", "void",
                                         "endless_repetition", "endless_repetition/dynamic/tile"}) {
             EditorPlotLabelsPacket.Entry e = entry("PORTALS", true, 1, 11, 13, 7, mode);
             assertTrue(EditorPlotLabelsRenderer.hasRoomContentsRow(e), mode);
@@ -890,7 +890,7 @@ class EditorPlotLabelsRendererTest {
     void skyRowShowsOnEveryPortalRoomAndReadsItsValue() {
         // Every wall mode, on the same reasoning as Contents and Books: the sky a room stands under
         // is not a property of how it seals.
-        for (String mode : new String[]{"bedrock_lock", "bedrockless", "endless_open",
+        for (String mode : new String[]{"bedrock_lock", "void", "endless_open",
                 "endless_repetition"}) {
             assertTrue(EditorPlotLabelsRenderer.hasRoomSkyRow(
                 entry("PORTALS", true, 1, 11, 13, 7, mode)), mode);

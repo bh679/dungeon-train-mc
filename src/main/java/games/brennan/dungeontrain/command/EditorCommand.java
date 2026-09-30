@@ -7165,7 +7165,7 @@ public final class EditorCommand {
             games.brennan.dungeontrain.portal.PortalRoomMode.parse(raw);
         // parse is total by design, so a typo would silently set the default rather than complain.
         // Worth complaining about here: the player typed something and meant it.
-        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+        if (!wanted.matches(raw)) {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_dimensional_carriage_mode", raw));
             return 0;
         }

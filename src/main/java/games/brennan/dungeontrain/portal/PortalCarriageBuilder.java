@@ -1001,7 +1001,7 @@ public final class PortalCarriageBuilder {
         // PortalCorridorMask#facedBy. Bedrock Lock wraps the room here and its two corridors once
         // they are down, which is the other half of the same shell; the endless modes settle its own
         // side walls, which for Endless Open means taking them away so there is somewhere to walk
-        // out to. Bedrockless writes nothing around the room at all and sweeps the space instead.
+        // out to. Void writes nothing around the room at all and sweeps the space instead.
         // A generated room fills the box the template just laid before anything is wrapped around
         // it: the skin is written one column outside the room, so the two never touch, but the order
         // keeps "what the room turned out to be" true for the mode branch below.
@@ -1474,7 +1474,7 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * The box a {@link PortalRoomMode#BEDROCKLESS} room's emptiness fills: the room grown by
+     * The box a {@link PortalRoomMode#VOID} room's emptiness fills: the room grown by
      * {@link PortalRoomLayout#VOID_CLEARANCE} on both horizontal axes, never smaller than the
      * structure standing in it.
      *
@@ -1494,7 +1494,7 @@ public final class PortalCarriageBuilder {
      * all. What it does have is a <b>floor</b>: the sweep starts at the structure's own floor row and
      * leaves everything below it, one row shallower than {@link #footprintOf}. Two reasons, and the
      * second is the one that matters. It gives the emptiness something to stand on, so walking out of
-     * a Bedrockless room is a one-block step down rather than a fall. And in a Compatible Terrain
+     * a Void room is a one-block step down rather than a fall. And in a Compatible Terrain
      * world — no basement, {@link PortalTwinLanes#FLOOR_MARGIN} putting the lowest lane two rows off
      * the build floor — the row {@code footprintOf} reaches is inside the world's <i>own</i> bedrock
      * layer, and sweeping a hundred-block disc of it would open the bottom of the world.</p>
@@ -1521,7 +1521,7 @@ public final class PortalCarriageBuilder {
      * its {@link #footprintOf footprint}, and for a room that {@link PortalRoomMode#clearsSurroundings
      * clears its surroundings} the swept void around it as well.
      *
-     * <p>A Bedrockless room's void is part of what the player sees, so another pair standing in it
+     * <p>A Void room's void is part of what the player sees, so another pair standing in it
      * is visible damage — an old Bedrock Lock room left in there reads as bedrock where the void
      * should be. That is why the void counts here even though {@link #footprintOf} deliberately
      * leaves it out (see {@link #clearVoidAround} for why the erase and the tiler must not see it).</p>
@@ -1562,7 +1562,7 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * {@code halo} minus {@code footprint}, as up to four disjoint slabs — everything a Bedrockless
+     * {@code halo} minus {@code footprint}, as up to four disjoint slabs — everything a Void
      * room clears, and nothing the structure owns.
      *
      * <p><b>Slabs rather than one box and a mask.</b> The corridors, their doors, the seal rings and
@@ -1607,7 +1607,7 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * Empty the space around a {@link PortalRoomMode#BEDROCKLESS} room — its answer to
+     * Empty the space around a {@link PortalRoomMode#VOID} room — its answer to
      * {@link #bedrockSkin}.
      *
      * <p><b>Usually free.</b> Twins stand in the basement under the world's bedrock, which generation

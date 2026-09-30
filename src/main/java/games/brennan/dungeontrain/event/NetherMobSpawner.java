@@ -381,8 +381,8 @@ public final class NetherMobSpawner {
      * room in a basement world sits wholly below {@code bedrockY}, so the depth test alone covers
      * it; a Compatible Terrain world has no basement at all, its rooms are cut into rock well above
      * the floor, and there only {@link PortalCarriageEvents#isInsidePortalStructure} fires. That
-     * query is the broad one — room, corridors, every tiled copy, and the Bedrockless void
-     * clearance — so a mob can't arrive just outside the wall either.</p>
+     * query is the broad one — room, corridors, every tiled copy, and the swept
+     * Void clearance — so a mob can't arrive just outside the wall either.</p>
      *
      * <p>Probed at the column centre, the position {@link #spawn} hands to {@link Mob#moveTo},
      * so the test matches where the mob actually lands.</p>

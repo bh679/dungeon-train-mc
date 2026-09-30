@@ -79,8 +79,8 @@ final class EditorTemplateListsTest {
     private static final Map<String, String> ROOM_MODES = Map.ofEntries(
             Map.entry("default", "bedrock_lock"),
             Map.entry("pathsmol", "bedrock_lock"),
-            Map.entry("beam", "bedrockless"),
-            Map.entry("window_contents", "bedrockless/exact/fit"),
+            Map.entry("beam", "void"),
+            Map.entry("window_contents", "void/exact/fit"),
             Map.entry("singlepillar", "endless_open"),
             Map.entry("cubes", "endless_repetition"),
             Map.entry("labrynth", "endless_repetition/dynamic"));
@@ -89,9 +89,24 @@ final class EditorTemplateListsTest {
     @DisplayName("Each mode gets the rooms authored for it, and nothing else")
     void roomsBucketByMode() {
         assertEquals(List.of("default", "pathsmol"), roomsOf(PortalRoomMode.BEDROCK_LOCK));
-        assertEquals(List.of("beam", "window_contents"), roomsOf(PortalRoomMode.BEDROCKLESS));
+        assertEquals(List.of("beam", "window_contents"), roomsOf(PortalRoomMode.VOID));
         assertEquals(List.of("singlepillar"), roomsOf(PortalRoomMode.ENDLESS_OPEN));
         assertEquals(List.of("cubes", "labrynth"), roomsOf(PortalRoomMode.ENDLESS_REPETITION));
+    }
+
+    @Test
+    @DisplayName("a room still tagged 'bedrockless' from before the rename is filed under Void")
+    void legacyBedrocklessRoomsFileUnderVoid() {
+        Map<String, String> legacy = Map.of(
+                "old_beam", "bedrockless",
+                "old_window", "bedrockless/exact/fit",
+                "new_beam", "void");
+        assertEquals(List.of("new_beam", "old_beam", "old_window"),
+                EditorTemplateLists.filterByMode(List.of("new_beam", "old_beam", "old_window"),
+                        legacy::get, PortalRoomMode.VOID));
+        assertEquals(List.of(),
+                EditorTemplateLists.filterByMode(List.of("old_beam", "old_window"),
+                        legacy::get, PortalRoomMode.BEDROCK_LOCK));
     }
 
     @Test

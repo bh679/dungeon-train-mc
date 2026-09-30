@@ -39,7 +39,7 @@ public final class BuilderOpenOptions {
      * that is a judgement about reading, not a derivation, is a copy that drifts.</p>
      */
     public static final List<PortalRoomMode> PORTAL_ROOM_MODE_ORDER = List.of(
-            PortalRoomMode.BEDROCK_LOCK, PortalRoomMode.BEDROCKLESS,
+            PortalRoomMode.BEDROCK_LOCK, PortalRoomMode.VOID,
             PortalRoomMode.ENDLESS_OPEN, PortalRoomMode.ENDLESS_REPETITION);
 
     /** Which store the grid lists — and therefore what a clicked id means to the server. */

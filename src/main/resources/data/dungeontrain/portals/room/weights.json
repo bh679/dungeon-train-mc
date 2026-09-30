@@ -19,15 +19,15 @@
     "weight": 3,
     "minLevel": 1,
     "maxLevel": 20,
-    "mode": "bedrockless"
+    "mode": "void"
   },
   "beamcenter": {
     "weight": 1,
-    "mode": "bedrockless"
+    "mode": "void"
   },
   "beamlong": {
     "weight": 1,
-    "mode": "bedrockless"
+    "mode": "void"
   },
   "bearcave": 1,
   "bigger": {
@@ -169,7 +169,7 @@
   "dreamcore": 1,
   "end": {
     "weight": 1,
-    "mode": "bedrockless",
+    "mode": "void",
     "builder": {
       "uuid": "e79d74abff784cf8b96fa36e343dfcef",
       "name": "AntonioMacarely"
@@ -237,7 +237,7 @@
   },
   "jumps": {
     "weight": 1,
-    "mode": "bedrockless"
+    "mode": "void"
   },
   "kfc": 1,
   "labrynth": {
@@ -286,7 +286,7 @@
   },
   "nobeam": {
     "weight": 1,
-    "mode": "bedrockless"
+    "mode": "void"
   },
   "nostalgia": {
     "weight": 1,
@@ -303,7 +303,7 @@
   "parkour": {
     "weight": 2,
     "minLevel": 2,
-    "mode": "bedrockless"
+    "mode": "void"
   },
   "paths": {
     "weight": 1,
@@ -320,7 +320,7 @@
   },
   "peateargriffin": {
     "weight": 1,
-    "mode": "bedrockless/exact/off/off/off/day/sealed/0/0/0/0/minecraft:bedrock/off",
+    "mode": "void/exact/off/off/off/day/sealed/0/0/0/0/minecraft:bedrock/off",
     "builder": {
       "uuid": "753c591dc29a49adadaca1770b1ccf8d",
       "name": "dot_cheeselover"
@@ -353,7 +353,7 @@
   "safe": {
     "weight": 2,
     "minLevel": 4,
-    "mode": "bedrockless/exact/off/off/off/none/sealed/0/8"
+    "mode": "void/exact/off/off/off/none/sealed/0/8"
   },
   "safehaven": 1,
   "sanemaze": {
@@ -380,7 +380,7 @@
   },
   "skymaze": {
     "weight": 1,
-    "mode": "bedrockless/exact/off/off/off/none/sealed/0/5"
+    "mode": "void/exact/off/off/off/none/sealed/0/5"
   },
   "slime": {
     "weight": 1,
@@ -484,11 +484,11 @@
   "window": {
     "weight": 1,
     "maxLevel": 10,
-    "mode": "bedrockless"
+    "mode": "void"
   },
   "window_contents": {
     "weight": 1,
-    "mode": "bedrockless/exact/fit"
+    "mode": "void/exact/fit"
   },
   "woodpillars": {
     "weight": 1,

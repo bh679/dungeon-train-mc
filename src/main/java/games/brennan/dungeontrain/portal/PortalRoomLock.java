@@ -22,7 +22,7 @@ import java.util.Locale;
  * corridor shells and the plugs are all written as air, and the room is minable straight out into
  * the basement. That is deliberate — the same gesture that authors air on a Copies plane
  * ({@link PortalRoomCopies.Kind#SINGLE}'s floor and roof rows) means the same thing here — and it is
- * not the same as {@link PortalRoomMode#BEDROCKLESS}, which additionally sweeps a clearance around
+ * not the same as {@link PortalRoomMode#VOID}, which additionally sweeps a clearance around
  * the room and hides its edge behind fog.</p>
  *
  * <p>Stored as the last segment of the room's {@code mode} tag — {@link PortalRoomSettings} owns the

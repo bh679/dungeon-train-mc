@@ -40,7 +40,7 @@ class PortalChunkDimensionTest {
         }
         assertTrue(PortalRoomMode.BEDROCK_LOCK.sealsRoomBox());
         assertTrue(PortalRoomMode.BEDROCK_LOCK.sealsCorridors());
-        assertTrue(!PortalRoomMode.BEDROCKLESS.sealsRoomBox());
+        assertTrue(!PortalRoomMode.VOID.sealsRoomBox());
         assertTrue(!PortalRoomMode.ENDLESS_OPEN.sealsCorridors());
 
         // A generated room is one box, not a grid of them, and there is nowhere to fog or tile to.

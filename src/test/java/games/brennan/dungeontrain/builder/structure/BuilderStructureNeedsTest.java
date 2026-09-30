@@ -414,11 +414,11 @@ final class BuilderStructureNeedsTest {
     }
 
     @Test
-    @DisplayName("A Bedrockless room declares nothing, which is what it says about itself")
-    void bedrocklessDeclaresNothing() {
+    @DisplayName("A Void room declares nothing, which is what it says about itself")
+    void voidDeclaresNothing() {
         // Its boundary is *nothing at all* for a clearance either side. Declaring a skin or a copy
         // would contradict the one claim the mode makes.
-        assertTrue(BuilderStructureNeeds.around(room(PortalRoomMode.BEDROCKLESS)).isEmpty());
+        assertTrue(BuilderStructureNeeds.around(room(PortalRoomMode.VOID)).isEmpty());
     }
 
     // ---- invariants ----

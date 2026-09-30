@@ -374,7 +374,7 @@ final class EditorMenuScreenTest {
     void portals_exitsRowsAbsentWhereTheyMeanNothing() {
         // Only an endless room has anywhere to put an extra way back to the train.
         assertNull(EditorMenuPortalRows.exitsRowFor("bedrock_lock"));
-        assertNull(EditorMenuPortalRows.exitsRowFor("bedrockless"));
+        assertNull(EditorMenuPortalRows.exitsRowFor("void"));
         assertNull(EditorMenuPortalRows.exitsRowFor(
             games.brennan.dungeontrain.net.EditorStatusPacket.NO_MODE));
 

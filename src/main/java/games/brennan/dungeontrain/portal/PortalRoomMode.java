@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.portal;
 
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -23,14 +24,17 @@ import java.util.Locale;
  *       walls at all, so it reads as an open plain rather than a hall of rooms. Those two planes are
  *       still rolled per tile or once for the whole grid as {@link PortalRoomCopies} says — see
  *       {@link #copiesApply}.</li>
- *   <li>{@link #BEDROCKLESS} — {@link #BEDROCK_LOCK} with the bedrock taken away: no repetition, and
+ *   <li>{@link #VOID} — {@link #BEDROCK_LOCK} with the bedrock taken away: no repetition, and
  *       nothing at all around the room for {@link PortalRoomLayout#VOID_CLEARANCE} blocks.</li>
  * </ul>
  *
- * <h2>Bedrockless is not "the same room, unsealed"</h2>
+ * <p>Called Bedrockless until 0.1050; {@code bedrockless} is still read as {@link #VOID} — see
+ * {@link #parse}.</p>
+ *
+ * <h2>Void is not "the same room, unsealed"</h2>
  * <p>Twins are stamped in the empty basement under the world's bedrock ({@link PortalTwinLanes}),
  * which generation never reaches, so the space around a room is <i>already</i> empty in an ordinary
- * Dungeon Train world — the lock's skin was the only thing standing in it. What Bedrockless adds on
+ * Dungeon Train world — the lock's skin was the only thing standing in it. What Void adds on
  * top of not writing that skin is the guarantee: the clearance is swept whatever the room landed in,
  * which is what makes it hold in a Compatible Terrain world, where the basement does not exist and a
  * twin sits inside solid rock.</p>
@@ -71,7 +75,7 @@ public enum PortalRoomMode {
     ENDLESS_OPEN("endless_open", "Endless Open"),
 
     /** Sealed in nothing at all: no skin, no repetition, and empty space out to the clearance. */
-    BEDROCKLESS("bedrockless", "Bedrockless"),
+    VOID("void", "Void", "bedrockless"),
 
     /**
      * A single chunk of ordinary world generation, sealed in bedrock, with its surface on the
@@ -88,15 +92,38 @@ public enum PortalRoomMode {
 
     private final String id;
     private final String displayName;
+    private final List<String> legacyIds;
 
-    PortalRoomMode(String id, String displayName) {
+    /**
+     * @param legacyIds ids this mode was stored under before a rename. Read, never written: {@link #id}
+     *                  is the only token that goes back to disk, so old content upgrades itself the
+     *                  next time it is saved.
+     */
+    PortalRoomMode(String id, String displayName, String... legacyIds) {
         this.id = id;
         this.displayName = displayName;
+        this.legacyIds = List.of(legacyIds);
     }
 
     /** The on-disk / command-line token, e.g. {@code endless_open}. */
     public String id() {
         return id;
+    }
+
+    /** Ids this mode used to be stored under — still accepted by {@link #parse}, never written. */
+    public List<String> legacyIds() {
+        return legacyIds;
+    }
+
+    /**
+     * True when {@code raw} names this mode — its current id or a legacy one, trimmed and
+     * case-insensitive. What {@link #parse} matches on, so a caller checking that a typed mode was
+     * recognised (rather than defaulted) agrees with it about old names.
+     */
+    public boolean matches(String raw) {
+        if (raw == null) return false;
+        String key = raw.trim().toLowerCase(Locale.ROOT);
+        return id.equals(key) || legacyIds.contains(key);
     }
 
     /** Human-readable label for the editor row. */
@@ -114,22 +141,22 @@ public enum PortalRoomMode {
      *
      * <p>Named for what it decides rather than derived from {@link #tiles}, which is what the fog used
      * to be gated on. That read correctly only while tiling and fogging happened to coincide:
-     * {@link #BEDROCKLESS} repeats nothing and still has an edge worth hiding, and a mode added later
+     * {@link #VOID} repeats nothing and still has an edge worth hiding, and a mode added later
      * would inherit whichever of the two it did not mean. Both questions get asked by name now.</p>
      */
     public boolean fogs() {
-        return tiles() || this == BEDROCKLESS;
+        return tiles() || this == VOID;
     }
 
     /**
      * True when the room is stamped into a swept clearance rather than into whatever it landed in —
-     * {@link #BEDROCKLESS} alone.
+     * {@link #VOID} alone.
      *
      * <p>Deliberately not the complement of {@link #BEDROCK_LOCK}'s skin: the tiling modes write
      * neither, because their boundary is the next copy of the room.</p>
      */
     public boolean clearsSurroundings() {
-        return this == BEDROCKLESS;
+        return this == VOID;
     }
 
     /**
@@ -254,13 +281,19 @@ public enum PortalRoomMode {
      * <p>Deliberately total rather than throwing. The tag is free text on disk, and a room whose mode
      * was hand-edited to something misspelt should stamp as a normal sealed room, not fail the whole
      * pair's stamp and leave a player walking into an unbuilt corridor.</p>
+     *
+     * <p><b>Legacy ids are matched too, and must never be removed.</b> Being total is exactly what
+     * makes a rename dangerous: drop an old id and every room still stored under it — saved worlds,
+     * players' template overrides, weights files an older jar wrote — does not fail, it quietly
+     * becomes a {@link #DEFAULT} room. Renaming a mode means keeping its old id in the constant's
+     * legacy list.</p>
      */
     public static PortalRoomMode parse(String id) {
         if (id == null) return DEFAULT;
         String key = id.trim().toLowerCase(Locale.ROOT);
         if (key.isEmpty()) return DEFAULT;
         for (PortalRoomMode m : values()) {
-            if (m.id.equals(key)) return m;
+            if (m.matches(key)) return m;
         }
         return DEFAULT;
     }

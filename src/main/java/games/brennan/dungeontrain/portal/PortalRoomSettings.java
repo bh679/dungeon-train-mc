@@ -564,7 +564,7 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
      * <p>A locked room is one sealed box with no copies, no generated interior and no open wall, so
      * a single blob describes the whole of it and another world can stamp that blob back into the
      * same box. Nothing else the modes make is one thing: an endless room is a sliding window of
-     * copies, a Bedrockless room is a box standing in a swept void it does not own, and a chunk
+     * copies, a Void room is a box standing in a swept void it does not own, and a chunk
      * dimension's interior is sampled terrain no author drew. Asked of the mode by name rather than
      * through {@link PortalRoomMode#sealsRoomBox}, which Chunk Dimension also answers yes to.</p>
      */
