@@ -173,21 +173,53 @@ public final class EditorTypeMenus {
         return out;
     }
 
-    /** The type label buildings go by in their menu and the roster. */
+    /** The type labels the two building rows go by in their menus and the roster. */
     static final String BUILDINGS_TYPE_NAME = "Buildings";
+    static final String LOST_CITY_TYPE_NAME = "Lost City";
 
+    /**
+     * The Buildings tab's two menus — the editable Buildings row and the view-only official Lost City row —
+     * sharing one type strip, so the player switches between them the way Dimensions switches rooms/frames.
+     */
     private static List<EditorTypeMenusPacket.Menu> buildingMenus() {
         List<String> names = games.brennan.dungeontrain.building.BuildingRegistry.names();
-        if (names.isEmpty()) return Collections.emptyList();
-        BlockPos first = BuildingEditor.registeredPlotOrigin(names.get(0));
-        if (first == null) return Collections.emptyList();
-        List<EditorTypeMenusPacket.TypeTab> typeStrip = List.of(new EditorTypeMenusPacket.TypeTab(
-            BUILDINGS_TYPE_NAME, PlotCategory.BUILDINGS.name(), games.brennan.dungeontrain.building.Buildings.MODEL_ID,
-            names.get(0)));
-        return List.of(new EditorTypeMenusPacket.Menu(
-            anchorForXRow(first, games.brennan.dungeontrain.building.BuildingSizes.sizeOf(names.get(0))),
-            BUILDINGS_TYPE_NAME, buildingRows(names), false, EditorCategory.BUILDINGS.id(),
-            buildCategoryBar(), typeStrip));
+        List<games.brennan.dungeontrain.building.LostCityReferences.Reference> official =
+            games.brennan.dungeontrain.building.LostCityReferences.all();
+        List<EditorTypeMenusPacket.TypeTab> typeStrip = new ArrayList<>();
+        if (!names.isEmpty()) {
+            typeStrip.add(new EditorTypeMenusPacket.TypeTab(BUILDINGS_TYPE_NAME, PlotCategory.BUILDINGS.name(),
+                games.brennan.dungeontrain.building.Buildings.MODEL_ID, names.get(0)));
+        }
+        if (!official.isEmpty()) {
+            typeStrip.add(new EditorTypeMenusPacket.TypeTab(LOST_CITY_TYPE_NAME, PlotCategory.LOST_CITY.name(),
+                LostCityReferenceEditor.MODEL_ID, official.get(0).name()));
+        }
+        List<EditorTypeMenusPacket.Menu> out = new ArrayList<>();
+        List<EditorTypeMenusPacket.CategoryButton> bar = buildCategoryBar();
+        BlockPos first = names.isEmpty() ? null : BuildingEditor.registeredPlotOrigin(names.get(0));
+        if (first != null) {
+            out.add(new EditorTypeMenusPacket.Menu(
+                anchorForXRow(first, games.brennan.dungeontrain.building.BuildingSizes.sizeOf(names.get(0))),
+                BUILDINGS_TYPE_NAME, buildingRows(names), false, EditorCategory.BUILDINGS.id(), bar, typeStrip));
+        }
+        BlockPos firstOfficial = official.isEmpty() ? null : LostCityReferenceEditor.plotOrigin(official.get(0).name());
+        if (firstOfficial != null) {
+            out.add(new EditorTypeMenusPacket.Menu(
+                anchorForXRow(firstOfficial, games.brennan.dungeontrain.building.Buildings.MAX_SIZE),
+                LOST_CITY_TYPE_NAME, lostCityRows(official), false, EditorCategory.BUILDINGS.id(), bar, typeStrip));
+        }
+        return out;
+    }
+
+    /** One row per official building — no weight, never the player's. */
+    static List<EditorTypeMenusPacket.Variant> lostCityRows(
+            List<games.brennan.dungeontrain.building.LostCityReferences.Reference> official) {
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(official.size());
+        for (games.brennan.dungeontrain.building.LostCityReferences.Reference ref : official) {
+            rows.add(new EditorTypeMenusPacket.Variant(ref.name(), EditorPlotLabelsPacket.NO_WEIGHT,
+                PlotCategory.LOST_CITY.name(), LostCityReferenceEditor.MODEL_ID, ref.name(), false, false));
+        }
+        return rows;
     }
 
     /** One row per building; a new building shows its roster weight, a shipped one none. */

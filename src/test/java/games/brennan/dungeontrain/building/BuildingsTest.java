@@ -32,7 +32,7 @@ final class BuildingsTest {
     @Test
     @DisplayName("sizes clamp into the building caps on every axis")
     void clamp() {
-        assertEquals(new Vec3i(64, 80, 4), Buildings.clamp(new Vec3i(200, 99, 1)));
+        assertEquals(new Vec3i(64, 159, 4), Buildings.clamp(new Vec3i(200, 300, 1)));
         assertEquals(new Vec3i(16, 24, 16), Buildings.clamp(Buildings.DEFAULT_SIZE));
     }
 
@@ -78,6 +78,14 @@ final class BuildingsTest {
         assertEquals(BuildingMeta.MIN_WEIGHT, BuildingMeta.parse("{\"weight\": -4}").weight());
         assertEquals(BuildingMeta.DEFAULT_WEIGHT, BuildingMeta.parse("{}").weight());
         assertEquals(5, BuildingMeta.parse(BuildingMeta.DEFAULT.withWeight(5).toJson()).weight());
+    }
+
+    @Test
+    @DisplayName("an official building goes by its template's name without Big Lost City's lt suffix")
+    void lostCityDisplayName() {
+        assertEquals("tall_skyscraper", LostCityReferences.displayName(rl("big_lost_city", "tall_skyscraperlt")));
+        assertEquals("warehouse", LostCityReferences.displayName(rl("big_lost_city", "warehouse")));
+        assertEquals("lt", LostCityReferences.displayName(rl("big_lost_city", "lt")));
     }
 
     private static ResourceLocation rl(String ns, String path) {

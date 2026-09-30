@@ -98,7 +98,8 @@ public sealed interface Template
             Template.Tunnel,
             Template.PortalRoom,
             Template.ChunkFrame,
-            Template.Building {
+            Template.Building,
+            Template.LostCity {
 
     /** Stable command-token identifier — used by EditorMenuScreen + commands. */
     String id();
@@ -1090,6 +1091,58 @@ public sealed interface Template
 
         @Override public Vec3i plotSize(CarriageDims dims) {
             return games.brennan.dungeontrain.building.BuildingSizes.sizeOf(name);
+        }
+    }
+
+    /**
+     * An official Lost City building — Big Lost City's own ({@link games.brennan.dungeontrain.building.LostCityReferences}),
+     * shown under the Buildings tab's <b>Lost City</b> type to look at. View-only: that mod is All Rights Reserved,
+     * so its store refuses every write and its plot refuses every block change.
+     */
+    record LostCity(String name) implements Template {
+        public LostCity {
+            Objects.requireNonNull(name, "name");
+        }
+
+        @Override public String id() { return games.brennan.dungeontrain.editor.LostCityReferenceEditor.MODEL_ID; }
+
+        @Override public String displayName() { return "lost city / " + name; }
+
+        @Override public TemplateKind kind() { return TemplateKind.LOST_CITY; }
+
+        @Override public boolean isBuiltin() { return true; }
+
+        @Override public boolean canPromote() { return false; }
+
+        @Override public TemplateStore<LostCity> store() {
+            return games.brennan.dungeontrain.editor.LostCityTemplates.store();
+        }
+        @Override public TemplateRegistry<LostCity> registry() {
+            return games.brennan.dungeontrain.editor.LostCityTemplates.registry();
+        }
+
+        @Override public int weight() { return games.brennan.dungeontrain.net.EditorStatusPacket.NO_WEIGHT; }
+
+        @Override public String variantName() { return name; }
+
+        @Override public boolean hasBundledTier() { return false; }
+
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            games.brennan.dungeontrain.editor.LostCityReferenceEditor.stampPlot(level, name);
+        }
+
+        /** Never handed out: nothing may copy an official building's blocks. */
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return Optional.empty();
+        }
+
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return games.brennan.dungeontrain.editor.LostCityReferenceEditor.plotOrigin(name);
+        }
+
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            net.minecraft.server.MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+            return games.brennan.dungeontrain.building.LostCityReferences.sizeOf(server, name);
         }
     }
 }

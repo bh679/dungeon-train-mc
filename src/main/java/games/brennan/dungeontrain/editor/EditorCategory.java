@@ -130,7 +130,9 @@ public enum EditorCategory {
             case TRACKS -> locateTracks(pos, dims);
             case PORTALS -> locatePortals(pos, dims);
             case BUILDINGS -> BuildingEditor.plotContaining(pos)
-                .map(name -> new Located(BUILDINGS, new Template.Building(name)));
+                .map(name -> new Located(BUILDINGS, (Template) new Template.Building(name)))
+                .or(() -> LostCityReferenceEditor.plotContaining(pos)
+                    .map(name -> new Located(BUILDINGS, new Template.LostCity(name))));
             case ARCHITECTURE -> Optional.empty();
         };
     }
@@ -291,6 +293,11 @@ public enum EditorCategory {
         for (String name : games.brennan.dungeontrain.building.BuildingRegistry.names()) {
             out.add(new Template.Building(name));
         }
+        // The official Lost City row, behind them — view-only.
+        for (games.brennan.dungeontrain.building.LostCityReferences.Reference ref
+                : games.brennan.dungeontrain.building.LostCityReferences.all()) {
+            out.add(new Template.LostCity(ref.name()));
+        }
         return out;
     }
 
@@ -318,6 +325,7 @@ public enum EditorCategory {
             // Frames stand beside the rooms and are stamped with them.
             case Template.ChunkFrame f -> PORTALS;
             case Template.Building b -> BUILDINGS;
+            case Template.LostCity l -> BUILDINGS;
         };
     }
 
@@ -452,8 +460,11 @@ public enum EditorCategory {
                 () -> ChunkFrameEditor.clearAllPlots(overworld)));
         }
         if (previous == BUILDINGS || (legacy && keep != BUILDINGS)) {
+            jobs.add(new EditorStampQueue.Job("erase lost city row",
+                () -> LostCityReferenceEditor.clearAllPlots(overworld)));
             for (Template model : BUILDINGS.models()) {
-                String name = ((Template.Building) model).name();
+                if (!(model instanceof Template.Building building)) continue;
+                String name = building.name();
                 jobs.add(new EditorStampQueue.Job("erase building " + name,
                     () -> BuildingEditor.clearPlot(overworld, name),
                     plotBoxOf(overworld, model, dims)));

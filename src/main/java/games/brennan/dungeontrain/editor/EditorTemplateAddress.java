@@ -40,6 +40,7 @@ public record EditorTemplateAddress(String type, String sub, String name) {
     public static final String PORTAL_ROOM = "portal_room";
     public static final String CHUNK_FRAME = "chunk_frame";
     public static final String BUILDING = "building";
+    public static final String LOST_CITY = "lost_city";
 
     public EditorTemplateAddress {
         type = type == null ? "" : type;
@@ -63,6 +64,7 @@ public record EditorTemplateAddress(String type, String sub, String name) {
             case Template.PortalRoom r -> new EditorTemplateAddress(PORTAL_ROOM, "", r.name());
             case Template.ChunkFrame f -> new EditorTemplateAddress(CHUNK_FRAME, "", f.name());
             case Template.Building b -> new EditorTemplateAddress(BUILDING, "", b.name());
+            case Template.LostCity l -> new EditorTemplateAddress(LOST_CITY, "", l.name());
         };
     }
 
@@ -85,6 +87,8 @@ public record EditorTemplateAddress(String type, String sub, String name) {
                     ? Optional.of(new Template.ChunkFrame(name)) : Optional.empty();
             case BUILDING -> games.brennan.dungeontrain.building.BuildingRegistry.contains(name)
                     ? Optional.of(new Template.Building(name)) : Optional.empty();
+            case LOST_CITY -> games.brennan.dungeontrain.building.LostCityReferences.find(name)
+                    .map(r -> new Template.LostCity(r.name()));
             default -> Optional.empty();
         };
     }

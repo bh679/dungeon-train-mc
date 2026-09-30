@@ -29,7 +29,9 @@ public enum TemplateKind {
     /** The frame that dresses a dimensional carriage room — see {@code portal.chunkframe.ChunkFrame}. */
     CHUNK_FRAME,
     /** A Lost City / WWOO building — shipped or player-made; see {@code building.Buildings}. */
-    BUILDING;
+    BUILDING,
+    /** An official Lost City building — Big Lost City's, view-only; see {@code building.LostCityReferences}. */
+    LOST_CITY;
 
     public String id() {
         return name().toLowerCase(Locale.ROOT);

@@ -51,6 +51,10 @@ final class BuildingCommand {
     private static final SuggestionProvider<CommandSourceStack> BUILDINGS = (ctx, b) ->
         SharedSuggestionProvider.suggest(BuildingRegistry.names(), b);
 
+    private static final SuggestionProvider<CommandSourceStack> LOST_CITY = (ctx, b) ->
+        SharedSuggestionProvider.suggest(games.brennan.dungeontrain.building.LostCityReferences.all().stream()
+            .map(games.brennan.dungeontrain.building.LostCityReferences.Reference::name), b);
+
     private BuildingCommand() {}
 
     static LiteralArgumentBuilder<CommandSourceStack> build() {
@@ -81,6 +85,13 @@ final class BuildingCommand {
                     .then(Commands.argument("weight",
                             IntegerArgumentType.integer(BuildingMeta.MIN_WEIGHT, BuildingMeta.MAX_WEIGHT))
                         .executes(ctx -> weight(ctx, IntegerArgumentType.getInteger(ctx, "weight"), true)))))
+            .then(Commands.literal("lostcity")
+                .executes(ctx -> listLostCity(ctx.getSource()))
+                .then(Commands.literal("goto")
+                    .then(Commands.argument("name", StringArgumentType.word()).suggests(LOST_CITY)
+                        .executes(ctx -> walkToLostCity(ctx.getSource(), StringArgumentType.getString(ctx, "name"), false))
+                        .then(Commands.literal("centre")
+                            .executes(ctx -> walkToLostCity(ctx.getSource(), StringArgumentType.getString(ctx, "name"), true))))))
             .then(Commands.literal("delete")
                 .then(Commands.argument("name", StringArgumentType.word()).suggests(BUILDINGS)
                     .executes(ctx -> delete(ctx.getSource(), StringArgumentType.getString(ctx, "name")))));
@@ -191,6 +202,25 @@ final class BuildingCommand {
             LOGGER.error("[DungeonTrain] Building delete failed for {}", name, e);
             return fail(source, "Delete failed: " + e.getMessage());
         }
+    }
+
+    private static int listLostCity(CommandSourceStack source) {
+        var all = games.brennan.dungeontrain.building.LostCityReferences.all();
+        String names = String.join(", ", all.stream().map(games.brennan.dungeontrain.building.LostCityReferences.Reference::name).toList());
+        source.sendSuccess(() -> Component.literal("Official Lost City buildings (view-only): "
+            + (names.isEmpty() ? "none — Big Lost City isn't installed" : names)), false);
+        return 1;
+    }
+
+    private static int walkToLostCity(CommandSourceStack source, String name, boolean centre) {
+        ServerPlayer player = EditorCommand.playerOrNull(source);
+        if (player == null) return 0;
+        if (games.brennan.dungeontrain.building.LostCityReferences.find(name).isEmpty()) {
+            return fail(source, "No official Lost City building named " + name + ".");
+        }
+        if (!EditorCommand.ensureCategoryResident(source, EditorCategory.BUILDINGS)) return 0;
+        games.brennan.dungeontrain.editor.LostCityReferenceEditor.walkTo(player, source.getServer().overworld(), name, centre);
+        return 1;
     }
 
     private static int fail(CommandSourceStack source, String message) {

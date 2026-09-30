@@ -32,8 +32,12 @@ public final class Buildings {
     /** The same name rule the other named templates use. */
     public static final Pattern NAME = Pattern.compile("^[a-z0-9_]{1,32}$");
 
-    /** Largest box a building may be: wider than the widest shipped building, under the editor ceiling. */
-    public static final Vec3i MAX_SIZE = new Vec3i(64, 80, 64);
+    /**
+     * Largest box a building may be: the biggest building the Lost City places, per axis — the power
+     * plant's 63 wide, the tall skyscraper's 159 high, the skyscrapers' 64 deep. 64 across also keeps every
+     * building inside vanilla's 128-block chunk-reference radius, so none is clipped at a chunk edge.
+     */
+    public static final Vec3i MAX_SIZE = new Vec3i(64, 159, 64);
     /** Smallest box — a pad and something standing on it. */
     public static final Vec3i MIN_SIZE = new Vec3i(4, 4, 4);
     /** What "New building" starts from. */

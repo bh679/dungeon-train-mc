@@ -38,7 +38,23 @@ public enum BuilderMode {
     TRAIN_OUTSIDE("train_outside", BuilderWorldLayout.OUTSIDE_CARRIAGES),
     INSIDE_CARRIAGE("inside_carriage", BuilderWorldLayout.INSIDE_CARRIAGES),
     TRACKS_TUNNELS("tracks_tunnels", 0),
-    TRAIN_DIMENSIONS("train_dimensions", 0);
+    TRAIN_DIMENSIONS("train_dimensions", 0),
+    /**
+     * The Lost City / WWOO buildings — the editor's BUILDINGS category. Editor-only: there is no builder
+     * world for a building, so the builder-world flow shows it disabled ({@link #hasBuilderWorld}).
+     */
+    BUILDINGS("buildings", 0);
+
+    /**
+     * The picker's tile order — the two big tiles first, then the short "advanced" ones. Separate from
+     * declaration order, which the builder world's mode strip and saved state keep.
+     */
+    public static final java.util.List<BuilderMode> NAV_ORDER = java.util.List.of(
+        WHOLE_CARRIAGES, TRAIN_DIMENSIONS, BUILDINGS, TRAIN_OUTSIDE, INSIDE_CARRIAGE, TRACKS_TUNNELS);
+
+    /** The modes a Train Builder world can be in, in declaration order — its strip and its cycle button. */
+    public static final java.util.List<BuilderMode> BUILDER_MODES = java.util.Arrays.stream(values())
+        .filter(BuilderMode::hasBuilderWorld).toList();
 
     private final String id;
     private final int carriageCount;
@@ -58,6 +74,16 @@ public enum BuilderMode {
      */
     public int carriageCount() {
         return carriageCount;
+    }
+
+    /** Whether this is one of the picker's big tiles; the rest are the shorter "advanced" row. */
+    public boolean primary() {
+        return this == WHOLE_CARRIAGES || this == TRAIN_DIMENSIONS;
+    }
+
+    /** Whether a Train Builder world can be made in this mode. Buildings are authored in the editor only. */
+    public boolean hasBuilderWorld() {
+        return this != BUILDINGS;
     }
 
     /** Stable lower-case token — used in world names, logs, and (later) commands. */
@@ -90,6 +116,11 @@ public enum BuilderMode {
      */
     public String texturePath() {
         return "textures/gui/builder/" + id + ".png";
+    }
+
+    /** {@link #fromId}, refusing a mode with no builder world — what a builder packet may ask for. */
+    public static Optional<BuilderMode> fromBuilderId(String raw) {
+        return fromId(raw).filter(BuilderMode::hasBuilderWorld);
     }
 
     public static Optional<BuilderMode> fromId(String raw) {

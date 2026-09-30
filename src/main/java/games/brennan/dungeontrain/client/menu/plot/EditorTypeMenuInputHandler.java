@@ -685,8 +685,8 @@ public final class EditorTypeMenuInputHandler {
             case BUILDINGS -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.BUILDINGS, first.modelId(),
                 first.modelId().equals(EditorStatusHudOverlay.modelId()) ? EditorStatusHudOverlay.modelName() : "");
-            // No models to seed a new one from.
-            case ARCHITECTURE -> null;
+            // Official buildings are never a source; no models to seed from in architecture.
+            case LOST_CITY, ARCHITECTURE -> null;
         };
         if (picker == null) {
             LOGGER.warn("[DungeonTrain] EditorTypeMenu New: unsupported category '{}'", category);

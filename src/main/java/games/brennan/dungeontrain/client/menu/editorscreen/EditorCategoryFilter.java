@@ -46,7 +46,7 @@ public enum EditorCategoryFilter {
             case CONTENTS -> CONTENTS;
             case TRACKS -> TRACKS;
             case PORTALS, CHUNK_FRAMES -> DIMENSIONS;
-            case BUILDINGS -> BUILDINGS;
+            case BUILDINGS, LOST_CITY -> BUILDINGS;
             case ARCHITECTURE -> null;
         };
     }

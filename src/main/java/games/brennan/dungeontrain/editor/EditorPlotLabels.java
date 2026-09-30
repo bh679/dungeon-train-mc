@@ -272,6 +272,15 @@ public final class EditorPlotLabels {
             out.add(new Label(anchorAbove(origin, footprint), name, new Template.Building(name).weight(), category,
                 games.brennan.dungeontrain.building.Buildings.MODEL_ID, name, false, p.isUser, p.isImported));
         }
+        // The official Lost City row: labelled over the slot, which every one of them fits.
+        String official = PlotCategory.LOST_CITY.name();
+        for (games.brennan.dungeontrain.building.LostCityReferences.Reference ref
+                : games.brennan.dungeontrain.building.LostCityReferences.all()) {
+            BlockPos origin = LostCityReferenceEditor.plotOrigin(ref.name());
+            if (origin == null) continue;
+            out.add(new Label(anchorAbove(origin, games.brennan.dungeontrain.building.Buildings.MAX_SIZE), ref.name(),
+                EditorPlotLabelsPacket.NO_WEIGHT, official, LostCityReferenceEditor.MODEL_ID, ref.name(), false, false, false));
+        }
         return out;
     }
 

@@ -52,6 +52,12 @@ public final class BuildingEditor {
     private static final int STRIDE_PAD = EditorLayout.GAP + 2;
     private static final int STRIDE_X = Buildings.MAX_SIZE.getX() + STRIDE_PAD;
     private static final int ROW_Z = 0;
+    /**
+     * The Buildings plots stand lower than the shared {@link EditorLayout#PLOT_Y} layer: a building may be
+     * {@link Buildings#MAX_SIZE} (159) tall, which does not fit between y=230 and the editor world's ceiling
+     * at 320. Only the resident category is ever stamped, so this row never meets another category's.
+     */
+    public static final int PLOT_Y = 150;
     private static final BlockState OUTLINE = Blocks.BEDROCK.defaultBlockState();
     private static final BlockState PAD = Blocks.GRASS_BLOCK.defaultBlockState();
     private static final int QUIET = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
@@ -77,7 +83,7 @@ public final class BuildingEditor {
     }
 
     private static BlockPos slotOrigin(int index) {
-        return new BlockPos(index * STRIDE_X, EditorLayout.PLOT_Y, ROW_Z);
+        return new BlockPos(index * STRIDE_X, PLOT_Y, ROW_Z);
     }
 
     /** The building whose plot (cage included) holds {@code pos}, or empty. Resident category only. */

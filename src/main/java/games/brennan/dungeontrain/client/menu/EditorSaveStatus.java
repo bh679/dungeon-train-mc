@@ -61,7 +61,7 @@ public final class EditorSaveStatus {
             case CARRIAGES, CONTENTS, WHOLE, WHOLE_GROUP -> modelId;
             case TRACKS, PORTALS, CHUNK_FRAMES, BUILDINGS -> (modelName == null || modelName.isEmpty())
                 ? modelId : modelId + "." + modelName;
-            case ARCHITECTURE, PARTS -> null;
+            case ARCHITECTURE, PARTS, LOST_CITY -> null;
         };
     }
 

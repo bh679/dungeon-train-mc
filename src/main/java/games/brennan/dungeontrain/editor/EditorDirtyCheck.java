@@ -630,7 +630,7 @@ public final class EditorDirtyCheck {
             // Neither is covered by a scan pass yet.
             case CHUNK_FRAME -> ChunkFrameEditor.MODEL_ID + "." + model.variantName();
             case BUILDING -> games.brennan.dungeontrain.building.Buildings.MODEL_ID + "." + model.variantName();
-            case PART -> null;
+            case PART, LOST_CITY -> null;
         };
     }
 

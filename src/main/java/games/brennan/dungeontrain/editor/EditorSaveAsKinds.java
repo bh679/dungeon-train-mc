@@ -79,6 +79,7 @@ public final class EditorSaveAsKinds {
             case Template.Tunnel ignored -> TRACK_SIDE;
             case Template.ChunkFrame ignored -> CHUNK_FRAME;
             case Template.Building ignored -> BUILDING;
+            case Template.LostCity ignored -> LOST_CITY;
         };
     }
 
@@ -542,6 +543,29 @@ public final class EditorSaveAsKinds {
             games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.clearCache();
             games.brennan.dungeontrain.portal.chunkframe.ChunkFrameMetaStore.clearCache();
             ChunkFrameEditor.restamp(level, name);
+        }
+    };
+
+    // ---- official Lost City buildings: never copied ----
+
+    /** Refuses at validation, so nothing below it ever runs: Big Lost City's buildings are All Rights Reserved. */
+    private static final Adapter LOST_CITY = new Adapter() {
+        @Override public String categoryId(Template source) { return null; }
+
+        @Override public Optional<Component> validate(Template source, String name) {
+            return Optional.of(Component.literal(LostCityTemplates.VIEW_ONLY));
+        }
+
+        @Override public List<Template> reloaded(Template source, String name) { return List.of(); }
+
+        @Override public List<Path> userFiles(Template source) { return List.of(); }
+
+        @Override public Template copy(ServerPlayer player, Template source, String name) throws IOException {
+            throw new IOException(LostCityTemplates.VIEW_ONLY);
+        }
+
+        @Override public void restoreAndRestamp(ServerLevel level, Template source, CarriageDims dims) {
+            LostCityReferenceEditor.stampPlot(level, ((Template.LostCity) source).name());
         }
     };
 

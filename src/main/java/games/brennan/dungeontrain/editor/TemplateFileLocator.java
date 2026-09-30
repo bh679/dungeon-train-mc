@@ -46,7 +46,8 @@ public final class TemplateFileLocator {
             case PORTALS -> named(TrackKind.PORTAL_ROOM.subdir(), name);
             case CHUNK_FRAMES -> named(ChunkFrameStore.SUBDIR, name);
             case BUILDINGS -> named(games.brennan.dungeontrain.building.Buildings.SUBDIR, name);
-            case ARCHITECTURE -> Optional.empty();
+            // Official buildings have no file of the player's — Big Lost City's live only in its jar.
+            case LOST_CITY, ARCHITECTURE -> Optional.empty();
         };
     }
 

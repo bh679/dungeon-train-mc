@@ -134,7 +134,7 @@ public record BuilderOpenPacket(String modeId, String kindId, String id, String 
                 return;   // a client can send anything; this one clears and stamps blocks
             }
 
-            Optional<BuilderMode> mode = BuilderMode.fromId(packet.modeId);
+            Optional<BuilderMode> mode = BuilderMode.fromBuilderId(packet.modeId);
             if (mode.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Builder open: unknown mode '{}' — ignoring", packet.modeId);
                 return;
