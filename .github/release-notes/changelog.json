@@ -21112,6 +21112,357 @@
       "highlights": [],
       "pr": 1688,
       "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "tunnel-template-groups",
+      "version": "0.1049.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "world"
+      ],
+      "title": "Tunnels keep one look",
+      "summary": "Each tunnel now keeps one look from entrance to exit, and there are new ones to ride through \u2014 some built by Pumpkin_P_Patch.",
+      "highlights": [],
+      "pr": 1690,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "editor-teleport-fly-over-air",
+      "version": "0.1050.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Editor arrivals take flight",
+      "summary": "Jumping to a template in the editor no longer leaves you falling when there's nothing to stand on.",
+      "highlights": [],
+      "pr": 1691,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "tunnel-group-spawn-gates",
+      "version": "0.1051.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "world"
+      ],
+      "title": "Tunnel styles have their places",
+      "summary": "Each tunnel style now turns up only on the stretches of the journey it belongs to.",
+      "highlights": [],
+      "pr": 1692,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "portal-room-modes-void-bedrock",
+      "version": "0.1052.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Two dimensional carriage styles go by simpler names in the editor",
+      "summary": "Two dimensional carriage styles now go by simpler names in the editor, and anything built under the old names carries on as before.",
+      "highlights": [],
+      "pr": 1693,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "plain-chunk-dimension-finds-ground",
+      "version": "0.1053.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Overworld dimensional carriages find their ground",
+      "summary": "Overworld dimensional carriages, and testing them from the editor, now reliably find somewhere to stand.",
+      "highlights": [],
+      "pr": 1695,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "x-editor-blocks-page",
+      "version": "0.1054.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Blocks page in the editor",
+      "summary": "The X editor can now show every block in a build and swap any of them for the one in your hand.",
+      "highlights": [],
+      "pr": 1694,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "community-item-trade-values",
+      "version": "0.1055.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot",
+        "balance"
+      ],
+      "title": "Community item trade values",
+      "summary": "What items trade for with villagers can now be suggested and voted on by the community at brennan.games/dungeontrain/items.",
+      "highlights": [],
+      "pr": 1696,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "editor-test-mode-shortcut",
+      "version": "0.1056.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Test from the editor with Ctrl/Cmd+R",
+      "summary": "Ctrl/Cmd+R in the editor now takes you straight into testing what you're building.",
+      "highlights": [],
+      "pr": 1698,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1058.0",
+      "released_at": "2026-09-30T10:52:40Z"
+    },
+    {
+      "id": "reseed-keep-zone-two-chunks",
+      "version": "0.1056.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Reseeding a test carriage keeps your view",
+      "summary": "Reseeding a test carriage now leaves you where you were from a little further away.",
+      "highlights": [],
+      "pr": 1699,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1058.0",
+      "released_at": "2026-09-30T10:52:40Z"
+    },
+    {
+      "id": "tunnel-groups-hold-longer",
+      "version": "0.1058.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Tunnels keep their look",
+      "summary": "Tunnels now hold one style for longer stretches, and blend more cleanly as the world grows darker.",
+      "highlights": [],
+      "pr": 1700,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1058.0",
+      "released_at": "2026-09-30T10:52:40Z"
+    },
+    {
+      "id": "backported-from-the-future",
+      "version": "0.1059.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "world"
+      ],
+      "title": "Backported from the future",
+      "summary": "A little of the future has been backported into the present past \u2014 new biomes, mobs and blocks are waiting to be found.",
+      "highlights": [],
+      "pr": 1701,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1059.0",
+      "released_at": "2026-09-30T11:16:32Z"
+    },
+    {
+      "id": "sized-carriage-contents",
+      "version": "0.1060.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Carriage contents come in three sizes",
+      "summary": "The editor can now build carriage contents at Room, Half and Full size, and each carriage only takes contents of its own size.",
+      "highlights": [],
+      "pr": 1702,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
+    },
+    {
+      "id": "lost-city-processor-memo",
+      "version": "0.1061.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Smoother building generation",
+      "summary": "Big ruined buildings along the line now appear with less of a hitch.",
+      "highlights": [],
+      "pr": 1707,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
+    },
+    {
+      "id": "blended-landscape-air-matches-ground",
+      "version": "0.1062.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Blended landscapes feel of a piece",
+      "summary": "Where two landscapes blend into each other, the air and the creatures now match the ground beneath your feet.",
+      "highlights": [],
+      "pr": 1708,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
+    },
+    {
+      "id": "sync-sibling-mod-pins-2026-09",
+      "version": "0.1063.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "Fresher companion mods in the modpack",
+      "summary": "The modpack now installs the newest versions of its companion mods.",
+      "highlights": [],
+      "pr": 1710,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "betterx-prompts-dt-worlds-only",
+      "version": "0.1064.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Other worlds left alone",
+      "summary": "Your other worlds now behave as they normally would.",
+      "highlights": [],
+      "pr": 1711,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "memoise-worldgen-lookups",
+      "version": "0.1065.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Faster world start-up",
+      "summary": "Worlds now finish loading sooner.",
+      "highlights": [],
+      "pr": 1706,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "discord-build-submit-announcements",
+      "version": "0.1066.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Submitted builds get announced",
+      "summary": "Submitting a build for review now shares it, picture and all, with the community on Discord.",
+      "highlights": [],
+      "pr": 1705,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "surface-rule-null-guard",
+      "version": "0.1067.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Steadier world loading",
+      "summary": "Dungeon Train worlds now load more reliably alongside other terrain mods.",
+      "highlights": [],
+      "pr": 1712,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "lost-city-terrain-fit-curseforge-sibling",
+      "version": "0.1068.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "A companion mod now installs on its own on CurseForge",
+      "summary": "One more small companion mod now installs alongside Dungeon Train on CurseForge; nothing changes in-game.",
+      "highlights": [],
+      "pr": 1704,
+      "date": "2026-09-30",
       "released": false,
       "released_in": null,
       "released_at": null

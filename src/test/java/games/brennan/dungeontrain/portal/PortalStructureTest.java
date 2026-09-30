@@ -178,10 +178,10 @@ class PortalStructureTest {
     }
 
     @Test
-    @DisplayName("Bedrockless fogs at its clearance and pads its region by the same figure")
-    void bedrockless_fogsAtTheClearance() {
+    @DisplayName("Void fogs at its clearance and pads its region by the same figure")
+    void void_fogsAtTheClearance() {
         PortalStructure s = PortalStructure.withMode(ORIGIN, "default",
-            PortalRoomLayout.builtInSize(DIMS), PortalRoomMode.BEDROCKLESS, null);
+            PortalRoomLayout.builtInSize(DIMS), PortalRoomMode.VOID, null);
 
         // One number, not two: the space swept and the distance seen into it have to match, or the
         // fog sits inside the void and its far edge becomes visible.
@@ -190,10 +190,10 @@ class PortalStructureTest {
     }
 
     @Test
-    @DisplayName("Bedrockless closes to a whiteout at the far edge — the walk out is the point")
-    void bedrockless_rampsToAWhiteout() {
+    @DisplayName("Void closes to a whiteout at the far edge — the walk out is the point")
+    void void_rampsToAWhiteout() {
         PortalStructure s = PortalStructure.withMode(ORIGIN, "default",
-            PortalRoomLayout.builtInSize(DIMS), PortalRoomMode.BEDROCKLESS, null);
+            PortalRoomLayout.builtInSize(DIMS), PortalRoomMode.VOID, null);
 
         assertEquals((float) PortalRoomLayout.VOID_FOG_MIN, s.fogMinRadius());
         // A ramp that ends where it started is a flat fog wearing a ramp's clothes. This is the
@@ -206,7 +206,7 @@ class PortalStructureTest {
     @DisplayName("Every other mode fogs flat — a repeating room has no outside to ramp into")
     void otherModes_doNotRamp() {
         for (PortalRoomMode mode : PortalRoomMode.values()) {
-            if (mode == PortalRoomMode.BEDROCKLESS) continue;
+            if (mode == PortalRoomMode.VOID) continue;
             PortalStructure s = PortalStructure.withMode(ORIGIN, "default",
                 PortalRoomLayout.builtInSize(DIMS), mode, null);
             assertEquals(s.fogRadius(), s.fogMinRadius(), mode.id());
@@ -217,7 +217,7 @@ class PortalStructureTest {
     @DisplayName("The tiling modes are unpadded — their fog stops at the copies actually stamped")
     void tilingModes_padNothing() {
         for (PortalRoomMode mode : PortalRoomMode.values()) {
-            if (mode == PortalRoomMode.BEDROCKLESS) continue;
+            if (mode == PortalRoomMode.VOID) continue;
             assertEquals(0,
                 PortalStructure.withMode(ORIGIN, "default", PortalRoomLayout.builtInSize(DIMS),
                     mode, null).fogPad(),

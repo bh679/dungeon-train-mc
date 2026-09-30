@@ -99,6 +99,7 @@ public final class NetherBandContextEvents {
     }
 
     private static void publish(MinecraftServer server, boolean logInfo) {
+        long t0 = System.nanoTime();
         try {
             ServerLevel overworld = server.overworld();
             DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
@@ -150,7 +151,9 @@ public final class NetherBandContextEvents {
                     netherCore));
             // Second-lap overworld stretches: BoP only in its stretch, vanilla elsewhere. Published
             // alongside the band context so it is live before the first chunk bakes too.
+            long stretchT0 = System.nanoTime();
             OverworldStretchBiomes.publish(OverworldStretchBiomes.resolve(server));
+            long stretchMs = (System.nanoTime() - stretchT0) / 1_000_000L;
             // Upside-down band and the Lost City era: keep the source terrain low near the track
             // (erosion weighting).
             boolean lostCity = data.startsWithTrain()
@@ -161,11 +164,13 @@ public final class NetherBandContextEvents {
                     data.getGenerationSeed()));
             // Intermediate per-dimension-load republishes log at debug to avoid 3+ identical
             // info lines per start; the ServerStarted refresh logs the final snapshot at info.
+            long totalMs = (System.nanoTime() - t0) / 1_000_000L;
             if (logInfo) {
-                LOGGER.info("[DungeonTrain] Nether-band terrain context published: enabled={} seaLevel={} worldCeiling={} netherTop={} baseRelief={}",
-                        enabled, seaLevel, worldCeiling, netherTop, baseRelief);
+                LOGGER.info("[DungeonTrain] Nether-band terrain context published: enabled={} seaLevel={} worldCeiling={} netherTop={} baseRelief={} ({} ms, overworld stretches {} ms)",
+                        enabled, seaLevel, worldCeiling, netherTop, baseRelief, totalMs, stretchMs);
             } else {
-                LOGGER.debug("[DungeonTrain] Nether-band terrain context (re)published on level load: enabled={}", enabled);
+                LOGGER.debug("[DungeonTrain] Nether-band terrain context (re)published on level load: enabled={} ({} ms, overworld stretches {} ms)",
+                        enabled, totalMs, stretchMs);
             }
         } catch (Throwable t) {
             // Never block server start on the band snapshot — a missing context just leaves terrain vanilla.

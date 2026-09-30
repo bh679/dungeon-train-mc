@@ -28,6 +28,7 @@ public final class EditorRosterClient {
     public static final int REFRESH_DELAY_TICKS = 10;
 
     private static volatile EditorRosterIndex index = EditorRosterIndex.EMPTY;
+    private static volatile EditorRosterPacket.TunnelGroups tunnelGroups = EditorRosterPacket.TunnelGroups.EMPTY;
     private static int refreshTicks;
     private static boolean everRequested;
 
@@ -66,7 +67,13 @@ public final class EditorRosterClient {
         if (everRequested) scheduleRefresh(REFRESH_DELAY_TICKS);
     }
 
+    /** The tunnel template groups the latest roster offered, with their roll weights. */
+    public static EditorRosterPacket.TunnelGroups tunnelGroups() {
+        return tunnelGroups;
+    }
+
     public static void apply(EditorRosterPacket packet) {
+        tunnelGroups = packet.tunnelGroups();
         index = new EditorRosterIndex(packet.groups(), packet.stampedCategoryId(), packet.trainSize(),
             packet.stages());
     }

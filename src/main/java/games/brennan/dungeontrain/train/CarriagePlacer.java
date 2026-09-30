@@ -910,9 +910,10 @@ public final class CarriagePlacer {
      * The box {@code variant} actually occupies — which is <b>not</b> always the world's carriage
      * dims.
      *
-     * <p>The {@code portal} corridor is the exception: it runs past its slot into the cart between a
-     * portal's pair, so its template, its editor plot, its sidecar bounds and its mirror axis are
-     * all measured over {@link PortalCorridorSize#corridorDims} instead. Every question of the form
+     * <p>It is the box of the shell's {@link #sizeOf size}. The {@code portal} corridor (HALF) runs
+     * past its slot into the cart between a portal's pair, and a FULL shell spans its whole group,
+     * so their template, editor plot, sidecar bounds and mirror axis are all measured over that
+     * longer box instead. Every question of the form
      * "how big is this variant's box" has to come through here, because the pieces disagreeing is
      * not a visible mistake — it is a template silently rejected on size, a mirror reflecting around
      * the wrong axis, and a sidecar entry dropped for being out of bounds.</p>
@@ -926,9 +927,17 @@ public final class CarriagePlacer {
      * already-lengthened figure would apply the growth twice.</p>
      */
     public static CarriageDims variantDims(CarriageVariant variant, CarriageDims dims) {
-        return variant.equals(PortalCarriageBuilder.portalVariant(PortalCorridorKind.LONG))
-            ? PortalCorridorSize.corridorDims(dims, PortalCorridorKind.LONG)
-            : dims;
+        return sizeOf(variant).boxOrRoom(dims, games.brennan.dungeontrain.config.DungeonTrainConfig.getGroupSize());
+    }
+
+    /**
+     * The {@link ContentsSize} a shell is built at, and so the only size of contents it may take.
+     * Declared once when the shell is made ({@code templates/sizes.json}): {@code portal} is
+     * {@link ContentsSize#HALF}, a group-long carriage {@link ContentsSize#FULL}, everything else a
+     * one-carriage {@link ContentsSize#ROOM}.
+     */
+    public static ContentsSize sizeOf(CarriageVariant variant) {
+        return games.brennan.dungeontrain.editor.TemplateSizeStore.SHELLS.sizeOf(variant.id());
     }
 
     private static void applyVariantBlocks(
@@ -1534,6 +1543,8 @@ public final class CarriagePlacer {
         List<CarriageVariant> out = new ArrayList<>(variants.size());
         for (CarriageVariant v : variants) {
             if (games.brennan.dungeontrain.portal.PortalCarriageBuilder.isPortalVariant(v)) continue;
+            // A Full shell is a whole group long; only FullCarriageSelection places one, over a run.
+            if (sizeOf(v) == ContentsSize.FULL) continue;
             out.add(v);
         }
         return out;

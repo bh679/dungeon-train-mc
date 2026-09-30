@@ -41,7 +41,7 @@ final class TemplateWeightOverlayTest {
     @DisplayName("gate, mode, label and builder changes all count as differences")
     void nonWeightFields_count() {
         Map<String, TemplateMeta> merged = new java.util.HashMap<>(BUNDLED);
-        merged.put("outsidethebox", BUNDLED.get("outsidethebox").withMode("bedrockless"));
+        merged.put("outsidethebox", BUNDLED.get("outsidethebox").withMode("void"));
         merged.put("parkour", BUNDLED.get("parkour").withGate(new TemplateGate(3, TemplateGate.ALL, TemplateGate.DEFAULT.phases())));
         merged.put("nostalgia", BUNDLED.get("nostalgia").withName("Nostalgia!"));
         assertEquals(3, TemplateWeightOverlay.diff(merged, BUNDLED).size());

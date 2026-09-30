@@ -190,7 +190,10 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                                                  MultiNoiseBiomeSource source, int x, int y, int z, Climate.Sampler sampler) {
         long pickT0 = GenProfiler.t0();
         try {
-            return stretchBiomes.pick(look, source, x, y, z, sampler);
+            // VanillaBackport's biomes: vanilla stretch only, and never in a legacy band's chunks.
+            boolean allowBackport = look == SecondLapOverworld.Stretch.VANILLA
+                    && !LegacyBiomes.isLegacyChunk(x << 2, z << 2);
+            return stretchBiomes.pick(look, allowBackport, source, x, y, z, sampler);
         } finally {
             GenProfiler.add(GenProfiler.Bucket.BIOME_PICK, pickT0);
         }

@@ -103,6 +103,23 @@ public final class TemplateCells {
         return List.copyOf(out);
     }
 
+    /** One kind of block and how many of it a template holds. */
+    public record BlockCount(Block block, int count) {}
+
+    /** Every block in {@code cells}, one entry per block, most numerous first (registry id breaking ties). */
+    public static List<BlockCount> blockCounts(Map<BlockPos, BlockState> cells) {
+        Map<Block, Integer> tallies = new LinkedHashMap<>();
+        for (BlockState state : cells.values()) {
+            if (state.isAir()) continue;
+            tallies.merge(state.getBlock(), 1, Integer::sum);
+        }
+        List<BlockCount> out = new ArrayList<>(tallies.size());
+        tallies.forEach((block, n) -> out.add(new BlockCount(block, n)));
+        out.sort(Comparator.comparingInt(BlockCount::count).reversed()
+            .thenComparing(b -> net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(b.block()).toString()));
+        return List.copyOf(out);
+    }
+
     /** What a template's block-entity NBT adds up to: how many blocks carry any, and how many hold items. */
     public record NbtTally(int blockEntities, int containers) {}
 
