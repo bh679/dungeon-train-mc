@@ -112,6 +112,7 @@ public final class CarriageTemplateStore {
 
     public static synchronized void reload() {
         CACHE.clear();
+        HAS_BLOCKS.clear();
     }
 
     /**
@@ -122,6 +123,22 @@ public final class CarriageTemplateStore {
      */
     public static synchronized void clearCache() {
         CACHE.clear();
+        HAS_BLOCKS.clear();
+    }
+
+    /** {@link #hasBlocks} answers, per id; dropped with every template change. */
+    private static final java.util.Map<String, Boolean> HAS_BLOCKS = new java.util.HashMap<>();
+
+    /**
+     * Whether {@code id}'s template holds any blocks. A carriage made as a blank and never built is
+     * a box of air — stood around contents, or put on the train, it is no carriage at all — so the
+     * shell choices skip it. A variant with no template file at all has built-in geometry and counts
+     * as built.
+     */
+    public static synchronized boolean hasBlocks(String id) {
+        return HAS_BLOCKS.computeIfAbsent(id, k -> rawTag(k)
+            .map(tag -> !tag.getList("blocks", net.minecraft.nbt.Tag.TAG_COMPOUND).isEmpty())
+            .orElse(true));
     }
 
     /**
@@ -196,6 +213,7 @@ public final class CarriageTemplateStore {
         // Dropped rather than replaced: the file on disk is the repaired copy
         // (DoubleBlockTemplateRepair), and the next read picks that up.
         CACHE.remove(variant.id());
+        HAS_BLOCKS.remove(variant.id());
         ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved template {} to {}", variant.id(), file);
     }
@@ -279,6 +297,7 @@ public final class CarriageTemplateStore {
         Path file = fileFor(variant);
         boolean existed = Files.deleteIfExists(file);
         CACHE.put(variant.id(), Optional.empty());
+        HAS_BLOCKS.remove(variant.id());
         ProvenanceCache.invalidateAll();
         if (existed) LOGGER.info("[DungeonTrain] Deleted template {} ({})", variant.id(), file);
         return existed;

@@ -216,7 +216,7 @@ public final class EditorPlotLabels {
     }
 
     private static List<Label> contentsLabels(CarriageDims dims) {
-        List<CarriageContents> all = CarriageContentsRegistry.allContents();
+        List<CarriageContents> all = CarriageContentsEditor.residentContents();
         List<Label> out = new ArrayList<>(all.size());
         CarriageContentsWeights weights = CarriageContentsWeights.current();
         String category = EditorCategory.CONTENTS.name();
