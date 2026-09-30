@@ -21324,9 +21324,9 @@
       "highlights": [],
       "pr": 1702,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
     },
     {
       "id": "lost-city-processor-memo",
@@ -21341,9 +21341,9 @@
       "highlights": [],
       "pr": 1707,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
     },
     {
       "id": "blended-landscape-air-matches-ground",
@@ -21358,9 +21358,9 @@
       "highlights": [],
       "pr": 1708,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
     }
   ]
 }
