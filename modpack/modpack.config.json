@@ -368,6 +368,20 @@
       "curseforge_only": true
     },
     {
+      "name": "Lost City Terrain Fit",
+      "slug": "lost-city-terrain-fit-wwoo-and-vanilla",
+      "mod_ids": [
+        "lostcityterrainfit"
+      ],
+      "project_id": 1717775,
+      "file_id": 9009664,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.3.0",
+      "gradle_property": "lostcityterrainfit_min_version",
+      "curseforge_only": true
+    },
+    {
       "name": "AppleSkin",
       "slug": "appleskin",
       "mod_ids": [

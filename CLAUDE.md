@@ -323,7 +323,7 @@ loads (Advancement Plaques needs Iceberg).
 - **Sable-pin coupling:** when you bump `sable_version` in `gradle.properties`, also update
   `modpack/modpack.config.json` → `sable.file_id` (CurseForge) **and** `sable.modrinth_version`
   (Modrinth) — both modpacks pin Sable to the tested version. Flagged in `gradle.properties`.
-- **Hybrid siblings (KT/DB/SFF = Keep Trim, Dungeon Backup, Sable Fence & Trapdoor Fix):** jarJar'd inside the DT jar
+- **Hybrid siblings (KT/DB/SFF = Keep Trim, Dungeon Backup, Sable Fence & Trapdoor Fix; also Stream Detect, DPI Bypass Detect, Pigman Villagers, Lost City Terrain Fit — CF project 1717775):** jarJar'd inside the DT jar
   (so Modrinth + manual installs have them built in) AND declared `<slug>(required)` on **CurseForge
   only** + shipped as CurseForge modpack Includes (`curseforge_only: true` in `modpack.config.json`,
   which keeps them out of the `.mrpack`). When the CF app installs the top-level copy, NeoForge's
