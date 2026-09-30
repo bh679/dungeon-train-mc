@@ -29,7 +29,9 @@ import terrablender.api.Regions;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Picks the real-Nether biome for a Dungeon-Train Nether-<b>core</b> column the exact way the Nether
@@ -97,13 +99,29 @@ public final class NetherCoreBiomes {
      * A look whose biomes are not registered falls back to vanilla.
      */
     public Holder<Biome> biomeAt(int worldX, int worldZ, CycleLayout.Style style) {
+        return biomeAt(worldX, worldZ, style, null);
+    }
+
+    /**
+     * {@link #biomeAt(int, int, CycleLayout.Style)} with the climate sample — the costly, quart-resolution
+     * part — memoised in {@code memo} (nullable), for callers asking many columns of one chunk. The
+     * per-column region/cell pick is not memoised, so the answer is identical to the unmemoised call.
+     */
+    public Holder<Biome> biomeAt(int worldX, int worldZ, CycleLayout.Style style, SampleMemo memo) {
         if (style == CycleLayout.Style.BETTER && betterNether != null) {
             return betterNether.biomeAt(worldX, worldZ);
         }
         if (style == CycleLayout.Style.BOP && bopRegions != null) {
-            return sample(bopRegions.biomeAt(worldX, worldZ), worldX, worldZ);
+            return sample(bopRegions.biomeAt(worldX, worldZ), worldX, worldZ, memo);
         }
-        return vanillaBiomeAt(worldX, worldZ);
+        return sample(netherBiomeSource, worldX, worldZ, memo);
+    }
+
+    /** Climate samples by (source, quart X, quart Z) — one per decoration pass; not thread-safe. */
+    public static final class SampleMemo {
+        private record Key(BiomeSource source, int quartX, int quartZ) {}
+
+        private final Map<Key, Holder<Biome>> samples = new HashMap<>();
     }
 
     /** World seed — pass to {@code WorldGenCycle#netherLookAt(int, int, long)} for a column's look. */
@@ -121,16 +139,18 @@ public final class NetherCoreBiomes {
         return betterNether != null;
     }
 
-    private Holder<Biome> vanillaBiomeAt(int worldX, int worldZ) {
-        return sample(netherBiomeSource, worldX, worldZ);
+    private Holder<Biome> sample(BiomeSource source, int worldX, int worldZ, SampleMemo memo) {
+        if (source == null || netherSampler == null) return fallback;
+        int quartX = QuartPos.fromBlock(worldX + SAMPLE_OFFSET_X);
+        int quartZ = QuartPos.fromBlock(worldZ);
+        if (memo == null) return sampleQuart(source, quartX, quartZ);
+        return memo.samples.computeIfAbsent(new SampleMemo.Key(source, quartX, quartZ),
+                k -> sampleQuart(source, quartX, quartZ));
     }
 
-    private Holder<Biome> sample(BiomeSource source, int worldX, int worldZ) {
-        if (source == null || netherSampler == null) return fallback;
+    private Holder<Biome> sampleQuart(BiomeSource source, int quartX, int quartZ) {
         try {
-            return source.getNoiseBiome(
-                    QuartPos.fromBlock(worldX + SAMPLE_OFFSET_X), SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ),
-                    netherSampler);
+            return source.getNoiseBiome(quartX, SAMPLE_QUART_Y, quartZ, netherSampler);
         } catch (Throwable t) {
             SAMPLE_ERRORS.error(LOGGER,
                     "[DungeonTrain] Nether core biome sample failed; baking nether_wastes fallback instead", t);
