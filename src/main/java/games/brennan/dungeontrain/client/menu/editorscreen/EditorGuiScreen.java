@@ -1348,6 +1348,13 @@ public final class EditorGuiScreen extends Screen {
             if (!modal.pop()) this.onClose();
             return true;
         }
+        // Ctrl/⌘+Z and +Y work with the screen open too — the in-game bindings stand down behind a screen.
+        String history = games.brennan.dungeontrain.client.EditorUndoHotkeyClient.commandForScreenKey(keyCode, scanCode);
+        if (history != null) {
+            CommandRunner.run(history);
+            afterCommand();
+            return true;
+        }
         if (HotbarPassthrough.key(this.minecraft, keyCode, scanCode)) return true;
         return super.keyPressed(keyCode, scanCode, modifiers);
     }

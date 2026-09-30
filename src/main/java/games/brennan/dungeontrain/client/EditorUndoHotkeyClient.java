@@ -78,6 +78,25 @@ public final class EditorUndoHotkeyClient {
 
     private EditorUndoHotkeyClient() {}
 
+    /**
+     * The undo or redo command for a key pressed inside an editor screen, or null for any other
+     * key. The bindings are {@link KeyConflictContext#IN_GAME} and the tick watcher stands down
+     * while a screen is open, so a screen that wants the shortcut asks here — same binding, same
+     * modifier, same command, rebinding included.
+     */
+    public static String commandForScreenKey(int keyCode, int scanCode) {
+        if (TemplateBlocksHotkeyClient.inSurvival()) return null;
+        InputConstants.Key key = InputConstants.getKey(keyCode, scanCode);
+        if (pressed(UNDO, key)) return "dungeontrain editor undo";
+        if (pressed(REDO, key)) return "dungeontrain editor redo";
+        return null;
+    }
+
+    private static boolean pressed(KeyMapping mapping, InputConstants.Key key) {
+        return !mapping.isUnbound() && mapping.getKey().equals(key)
+            && mapping.getKeyModifier().isActive(KeyConflictContext.GUI);
+    }
+
     @SubscribeEvent
     public static void onRegister(RegisterKeyMappingsEvent event) {
         event.register(UNDO);
