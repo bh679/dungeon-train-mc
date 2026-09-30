@@ -13,8 +13,11 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProc
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 
 /**
@@ -129,7 +132,28 @@ public final class LostCityBiteProcessor extends StructureProcessor {
      * kept blocks plus the rubble piles. Pure — used by the processor and its tests.
      */
     public List<StructureTemplate.StructureBlockInfo> bite(BlockPos origin, List<StructureTemplate.StructureBlockInfo> processed) {
-        if (processed.isEmpty()) return processed;
+        return assemble(bitten(origin, processed), processed);
+    }
+
+    /**
+     * What the bites do to a processed list: the indices removed ({@code null} when the piece is left as it
+     * is) and the rubble added. Depends only on the origin and the list, so {@link LostCityPlacementMemo}
+     * keeps it across a piece's chunk calls; the rubble never carries NBT, so it is safe to share.
+     */
+    private record Bitten(@Nullable BitSet removed, List<StructureTemplate.StructureBlockInfo> rubble) {
+        static final Bitten NONE = new Bitten(null, List.of());
+    }
+
+    private static List<StructureTemplate.StructureBlockInfo> assemble(Bitten bitten, List<StructureTemplate.StructureBlockInfo> processed) {
+        if (bitten.removed() == null) return processed;
+        List<StructureTemplate.StructureBlockInfo> out = new ArrayList<>(processed.size() + bitten.rubble().size());
+        for (int i = 0; i < processed.size(); i++) if (!bitten.removed().get(i)) out.add(processed.get(i));
+        out.addAll(bitten.rubble());
+        return out;
+    }
+
+    private Bitten bitten(BlockPos origin, List<StructureTemplate.StructureBlockInfo> processed) {
+        if (processed.isEmpty()) return Bitten.NONE;
         int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE, top = 0;
         int bMinX = Integer.MAX_VALUE, bMaxX = Integer.MIN_VALUE, bMinZ = Integer.MAX_VALUE, bMaxZ = Integer.MIN_VALUE;
         for (StructureTemplate.StructureBlockInfo info : processed) {
@@ -140,14 +164,14 @@ public final class LostCityBiteProcessor extends StructureProcessor {
                 bMinX = Math.min(bMinX, x); bMaxX = Math.max(bMaxX, x); bMinZ = Math.min(bMinZ, z); bMaxZ = Math.max(bMaxZ, z);
             }
         }
-        if (bMinX > bMaxX || top < 4) return processed;
+        if (bMinX > bMaxX || top < 4) return Bitten.NONE;
         int height = top + 1, w = maxX - minX + 1, d = maxZ - minZ + 1;
         List<Bite> bites = bites(origin, bMinX, bMaxX, bMinZ, bMaxZ, height);
         long s = seed(origin);
         // occupancy: index of the kept solid block per cell, -1 for air / nothing
         int[] cell = new int[w * height * d];
         Arrays.fill(cell, -1);
-        boolean[] removed = new boolean[processed.size()];
+        BitSet removed = new BitSet(processed.size());
         int[] mass = new int[w * d];
         for (int i = 0; i < processed.size(); i++) {
             StructureTemplate.StructureBlockInfo info = processed.get(i);
@@ -160,7 +184,7 @@ public final class LostCityBiteProcessor extends StructureProcessor {
                 }
             }
             if (gone) {
-                removed[i] = true;
+                removed.set(i);
                 mass[x * d + z]++;
             } else {
                 cell[(x * height + y) * d + z] = i;
@@ -183,8 +207,7 @@ public final class LostCityBiteProcessor extends StructureProcessor {
                 }
             }
         }
-        List<StructureTemplate.StructureBlockInfo> out = new ArrayList<>(processed.size());
-        for (int i = 0; i < processed.size(); i++) if (!removed[i]) out.add(processed.get(i));
+        List<StructureTemplate.StructureBlockInfo> rubblePiles = new ArrayList<>();
         int lowest = height - 1;
         for (Bite b : bites) lowest = Math.min(lowest, (int) Math.floor(b.cy - b.ry));
         lowest = Math.max(1, lowest);
@@ -204,11 +227,11 @@ public final class LostCityBiteProcessor extends StructureProcessor {
                     int y = floor + k;
                     if (y >= height || cell[(x * height + y) * d + z] >= 0) break;
                     BlockPos at = new BlockPos(origin.getX() + minX + x, origin.getY() + y, origin.getZ() + minZ + z);
-                    out.add(new StructureTemplate.StructureBlockInfo(at, rubbleAt(s, x, y, z), null));
+                    rubblePiles.add(new StructureTemplate.StructureBlockInfo(at, rubbleAt(s, x, y, z), null));
                 }
             }
         }
-        return out;
+        return new Bitten(removed, List.copyOf(rubblePiles));
     }
 
     @Override
@@ -217,7 +240,10 @@ public final class LostCityBiteProcessor extends StructureProcessor {
                                                                          List<StructureTemplate.StructureBlockInfo> originals,
                                                                          List<StructureTemplate.StructureBlockInfo> processed,
                                                                          StructurePlaceSettings settings) {
-        return bite(offset, processed);
+        Bitten bitten = LostCityPlacementMemo.get(
+                new LostCityPlacementMemo.Key(this, offset.asLong(), LostCityPlacementMemo.fingerprint(processed, true)),
+                () -> bitten(offset, processed));
+        return assemble(bitten, processed);
     }
 
     @Override
