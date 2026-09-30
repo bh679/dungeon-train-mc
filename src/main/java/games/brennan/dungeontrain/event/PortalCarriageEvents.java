@@ -2704,7 +2704,6 @@ public final class PortalCarriageEvents {
         // Half the room's overhang either side of the corridor, plus a block; never less than the
         // slack the built-in room was tuned with.
         int slackZ = Math.max(POCKET_ROOM_SLACK, (room.getZ() - dims.width()) / 2 + 1);
-        int slackY = Math.max(POCKET_ROOM_SLACK, room.getY() - dims.height() + 1);
 
         int minX = Math.min(origin.getX() - 1, structure.tiledMinX(dims, layout) - 1);
         int maxX = Math.max(origin.getX() + span + 1, structure.tiledMaxX(dims, layout) + 2);
@@ -2721,9 +2720,11 @@ public final class PortalCarriageEvents {
         // entry door stands one corridor below the other. Everything this box drives (the fog, the
         // train audio, "is this player in the structure") then stopped at the lane and left the rest
         // of the room outside it.
-        // slackY already reaches past the room's own ceiling, so only the FLOOR term moves here.
+        // The ceiling is the room's own, counted up from its floor — counted up from the lane, a
+        // sunken room's box reached the train deck overhead (see structureCeilingY).
         int minY = Math.min(origin.getY(), roomOrigin.getY()) - 1;
-        int maxY = origin.getY() + dims.height() + slackY;
+        int maxY = PortalRoomLayout.structureCeilingY(origin.getY(), roomOrigin.getY(), room.getY(),
+            dims.height(), POCKET_ROOM_SLACK);
         if (corridors != null) {
             minX = Math.min(minX, corridors.minX() - 1);
             maxX = Math.max(maxX, corridors.maxX() + 2);
