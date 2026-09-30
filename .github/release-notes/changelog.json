@@ -21551,6 +21551,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "lost-city-template-eviction",
+      "version": "0.1075.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Lighter on memory after busy stretches",
+      "summary": "The game now lets go of memory it no longer needs once you've ridden on past the world's busiest stretches.",
+      "highlights": [],
+      "pr": 1719,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

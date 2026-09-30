@@ -2,15 +2,19 @@ package games.brennan.dungeontrain.worldgen;
 
 /**
  * When to pre-load Big Lost City's structure templates, so the first city a player reaches doesn't stall
- * worldgen on them. The mod ships 75 templates (~19 MB, 1.20.1 NBT that vanilla datafixes on load); a
- * jigsaw start loads its pieces on first use, which without a pre-load happens right as the train meets the
- * first city. {@code event/LostCityTemplatePreloadEvents} loads them on a background thread once a player
- * comes within {@link #LOOKAHEAD_BLOCKS} of the Lost City run.
+ * worldgen on them, and when to let them go again. A city can place 42 of the mod's 75 templates
+ * ({@link LostCityTemplateIds}; ~7.5 MB compressed, ~90 MB raw 1.20.1 NBT that vanilla datafixes on load — the
+ * other 33, ~140 MB raw, no pool names). A jigsaw start loads its pieces on first use, which without a pre-load
+ * happens right as the train meets the first city. {@code event/LostCityTemplatePreloadEvents} loads them on a
+ * background thread once a player comes within {@link #LOOKAHEAD_BLOCKS} of the Lost City run, and evicts them
+ * once every player has been {@link #quietAt quiet} for {@link #EVICT_AFTER_SCANS} seconds. Measured on a dev
+ * server (0.1071.1): the 42 hold ~120 MB of block infos and positions and load in ~23 s on the background
+ * thread; all 75 held ~300 MB (~350 MB more heap after GC) for the rest of the session and took ~61 s.
  *
- * <p>Only the run counts, not the few ruins sprinkled through the WWOO stretch: loading all 75 templates
- * holds ~350–400 MB for the rest of the session, which the run (it shows nearly every building) repays and
- * a handful of foretaste buildings — a per-world half of them at most ({@link LostCityStructures#wwooBuildings})
- * — do not; those load on demand on worldgen threads.</p>
+ * <p>Only the run counts, not the few ruins sprinkled through the WWOO stretch: the cache holds a loaded
+ * template until it is evicted, which the run (it shows nearly every building) repays and a handful of
+ * foretaste buildings — a per-world half of them at most ({@link LostCityStructures#wwooBuildings}) — do not;
+ * those load on demand on worldgen threads, and the stretch holds off eviction so they aren't reloaded mid-stretch.</p>
  */
 public final class LostCityTemplatePreload {
 
@@ -23,7 +27,26 @@ public final class LostCityTemplatePreload {
      */
     static final int STEP_BLOCKS = 256;
 
+    /**
+     * Consecutive quiet scans (one a second) before the templates are evicted — hysteresis so a player hovering
+     * at the window's edge, or the train reversing, doesn't evict and reload them back to back.
+     */
+    public static final int EVICT_AFTER_SCANS = 30;
+
     private LostCityTemplatePreload() {}
+
+    /**
+     * Whether a player at {@code worldX} needs none of the Lost City's templates: not within {@link #LOOKAHEAD_BLOCKS}
+     * of the run, and not in the WWOO stretch, whose foretaste buildings load on demand.
+     */
+    public static boolean quietAt(WorldGenCycle cycle, int worldX) {
+        return !nearLostCity(cycle, worldX, LOOKAHEAD_BLOCKS) && !LostCityStructures.inWwooStretch(cycle, worldX >> 4);
+    }
+
+    /** The quiet-scan count after a scan: one more if every player was {@link #quietAt quiet}, else back to 0. */
+    public static int nextQuietScans(int quietScans, boolean allQuiet) {
+        return allQuiet ? quietScans + 1 : 0;
+    }
 
     /** Whether the Lost City run (not the WWOO foretaste) can start a city within {@code lookahead} blocks of {@code worldX}. */
     public static boolean nearLostCity(WorldGenCycle cycle, int worldX, int lookahead) {

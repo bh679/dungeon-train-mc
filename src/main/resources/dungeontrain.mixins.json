@@ -40,6 +40,8 @@
     "StructureBasementMixin",
     "SinglePoolElementAccessor",
     "StructureTemplateAccessor",
+    "StructureTemplateManagerAccessor",
+    "ListPoolElementAccessor",
     "StructurePieceAccessor",
     "StructureTemplateUpsideDownEntitiesMixin",
     "StructureTemplateClearMixin",
