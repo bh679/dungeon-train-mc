@@ -20,7 +20,7 @@ final class EditorStagePalettePageTest {
         new EditorRosterPacket.Palette(List.of(), "spruce", "deepslate", true, false);
 
     @Test
-    @DisplayName("Palette page: Solid, Shapes and Wood headings, each family's cells wrapped to the column width")
+    @DisplayName("Palette page: Solid, Shapes, Wood and Colours sections, cells wrapped to the column width")
     void paletteRows() {
         List<EditorStagePalettePage.Row> rows = EditorStagePalettePage.paletteRows(PALETTE, 4);
         assertEquals(EditorStagePalettePage.Kind.HEADING, rows.get(0).kind());
@@ -36,10 +36,22 @@ final class EditorStagePalettePageTest {
         assertEquals(EditorStagePalettePage.Kind.FAMILY, wood.kind());
         assertEquals(StagePaletteEditPacket.Op.SET_WOOD, wood.familyOp());
         assertTrue(wood.text().endsWith("spruce" + EditorStagePalettePage.LOCK), wood.text());
-        int woodCells = rows.subList(8, rows.size()).stream().mapToInt(r -> r.names().size()).sum();
+        int colours = rows.size() - 5;
+        assertEquals(EditorStagePalettePage.Kind.HEADING, rows.get(colours).kind(), "Colours heading");
+        int woodCells = rows.subList(8, colours).stream().mapToInt(r -> r.names().size()).sum();
         assertEquals(14, woodCells, "the whole wood set");
+        List<EditorStagePalettePage.Row> colourRows = rows.subList(colours + 1, rows.size());
+        for (EditorStagePalettePage.Row r : colourRows) {
+            assertEquals(EditorStagePalettePage.Kind.LABELLED, r.kind(), r.text());
+        }
+        assertEquals(List.of("stage_terracotta_primary", "stage_terracotta_secondary", "stage_terracotta_background",
+            "stage_glazed_terracotta"), colourRows.get(0).names());
+        assertEquals(List.of("stage_concrete_primary", "stage_concrete_secondary", "stage_concrete_background"),
+            colourRows.get(1).names());
+        assertEquals(List.of("stage_glass_primary", "stage_glass_secondary"), colourRows.get(2).names());
+        assertEquals(List.of("stage_glass_pane_primary", "stage_glass_pane_secondary"), colourRows.get(3).names());
         int all = rows.stream().mapToInt(r -> r.names().size()).sum();
-        assertEquals(10 + 6 + 14, all);
+        assertEquals(10 + 6 + 14 + 11, all);
     }
 
     @Test

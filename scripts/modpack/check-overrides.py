@@ -46,6 +46,7 @@ ALLOWED = (
     "config/khi.toml",                              # Kinetic Hosting affiliate URL + banner text
     "config/crash_assistant/config.toml",           # Crash Assistant: help link + #bugs-feedback text
     "config/smoothswapping.json",                   # tuned Smooth Swapping animation
+    "config/DistantHorizons.toml",                  # DH low-CPU defaults (1 gen thread @50%, 128-chunk LODs) — see modpack/README.md
     "resourcepacks/DungeonTrain-*-compat.zip",      # companion-mod lang overlays, one per locale
     "TrashSlotSaveState.default.json",              # seeds TrashSlot's trash slot hidden on every screen
 )

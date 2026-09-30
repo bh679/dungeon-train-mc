@@ -1,0 +1,77 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:bricks",
+          "to": "minecraft:stone_bricks"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:cracked_stone_bricks"
+        },
+        {
+          "from": "minecraft:terracotta",
+          "to": "minecraft:mossy_stone_bricks"
+        },
+        {
+          "from": "minecraft:brown_terracotta",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:packed_mud",
+          "to": "minecraft:stone_bricks"
+        },
+        {
+          "from": "minecraft:mossy_stone_bricks",
+          "to": "minecraft:cracked_stone_bricks"
+        },
+        {
+          "from": "minecraft:cracked_stone_bricks",
+          "to": "minecraft:mossy_stone_bricks"
+        },
+        {
+          "from": "minecraft:cobbled_deepslate",
+          "to": "minecraft:polished_andesite"
+        },
+        {
+          "from": "minecraft:deepslate_bricks",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:polished_basalt",
+          "to": "minecraft:polished_andesite"
+        },
+        {
+          "from": "minecraft:tuff",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:deepslate_tiles",
+          "to": "minecraft:polished_andesite"
+        },
+        {
+          "from": "minecraft:polished_deepslate",
+          "to": "minecraft:andesite"
+        },
+        {
+          "from": "minecraft:cracked_deepslate_bricks",
+          "to": "minecraft:polished_andesite"
+        },
+        {
+          "from": "minecraft:gray_concrete",
+          "to": "minecraft:andesite"
+        }
+      ]
+    }
+  ]
+}

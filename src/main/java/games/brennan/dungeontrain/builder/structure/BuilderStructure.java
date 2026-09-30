@@ -64,7 +64,7 @@ public final class BuilderStructure {
         STAIRS,
         /** The copies a portal room repeats into. */
         ROOM_TILING,
-        /** The boundary a Bedrock Lock room repeats against. */
+        /** The boundary a Bedrock room repeats against. */
         ROOM_BEDROCK
     }
 
@@ -210,7 +210,7 @@ public final class BuilderStructure {
             }
         }
 
-        /** The one-block bedrock skin hugging a Bedrock Lock room — its boundary, which does not tile. */
+        /** The one-block bedrock skin hugging a Bedrock room — its boundary, which does not tile. */
         record RoomBedrock(String name) implements Kind {
             @Override
             public Category category() {

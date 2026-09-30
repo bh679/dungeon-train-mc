@@ -1,6 +1,9 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube_bottom_top",
   "textures": {
-    "all": "dungeontrain:block/stage_stone_mossy"
+    "bottom": "dungeontrain:block/stage_stone_mossy_bottom",
+    "particle": "dungeontrain:block/stage_stone_mossy_side",
+    "side": "dungeontrain:block/stage_stone_mossy_side",
+    "top": "dungeontrain:block/stage_stone_mossy_top"
   }
 }

@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "99";
+    public static final String PROTOCOL_VERSION = "107";
 
     private DungeonTrainNet() {}
 
@@ -59,10 +59,13 @@ public final class DungeonTrainNet {
         registrar.playToServer(TemplateBlocksMenuTogglePacket.TYPE, TemplateBlocksMenuTogglePacket.STREAM_CODEC, TemplateBlocksMenuTogglePacket::handle);
         registrar.playToClient(TemplateBlocksSyncPacket.TYPE, TemplateBlocksSyncPacket.STREAM_CODEC, TemplateBlocksSyncPacket::handle);
         registrar.playToServer(TemplateBlocksEditPacket.TYPE, TemplateBlocksEditPacket.STREAM_CODEC, TemplateBlocksEditPacket::handle);
+        registrar.playToServer(TemplateBlockGroupsEditPacket.TYPE, TemplateBlockGroupsEditPacket.STREAM_CODEC, TemplateBlockGroupsEditPacket::handle);
+        registrar.playToClient(TemplateBlockGroupsSyncPacket.TYPE, TemplateBlockGroupsSyncPacket.STREAM_CODEC, TemplateBlockGroupsSyncPacket::handle);
         registrar.playToClient(BlockVariantLockIdsPacket.TYPE, BlockVariantLockIdsPacket.STREAM_CODEC, BlockVariantLockIdsPacket::handle);
         registrar.playToClient(BlockVariantOutlinePacket.TYPE, BlockVariantOutlinePacket.STREAM_CODEC, BlockVariantOutlinePacket::handle);
         registrar.playToClient(EditorStrayBlocksPacket.TYPE, EditorStrayBlocksPacket.STREAM_CODEC, EditorStrayBlocksPacket::handle);
         registrar.playToClient(EditorDoorGhostsPacket.TYPE, EditorDoorGhostsPacket.STREAM_CODEC, EditorDoorGhostsPacket::handle);
+        registrar.playToClient(EditorTunnelEnvelopePacket.TYPE, EditorTunnelEnvelopePacket.STREAM_CODEC, EditorTunnelEnvelopePacket::handle);
         registrar.playToClient(EditorPlotLabelsPacket.TYPE, EditorPlotLabelsPacket.STREAM_CODEC, EditorPlotLabelsPacket::handle);
         registrar.playToServer(EditorPlotActionPacket.TYPE, EditorPlotActionPacket.STREAM_CODEC, EditorPlotActionPacket::handle);
         registrar.playToClient(EditorTypeMenusPacket.TYPE, EditorTypeMenusPacket.STREAM_CODEC, EditorTypeMenusPacket::handle);
@@ -140,6 +143,8 @@ public final class DungeonTrainNet {
         registrar.playToServer(PackageListRequestPacket.TYPE, PackageListRequestPacket.STREAM_CODEC, PackageListRequestPacket::handle);
         registrar.playToServer(ChunkFrameRoomsRequestPacket.TYPE, ChunkFrameRoomsRequestPacket.STREAM_CODEC, ChunkFrameRoomsRequestPacket::handle);
         registrar.playToClient(ChunkFrameRoomsSyncPacket.TYPE, ChunkFrameRoomsSyncPacket.STREAM_CODEC, ChunkFrameRoomsSyncPacket::handle);
+        registrar.playToServer(ContentsAllowRequestPacket.TYPE, ContentsAllowRequestPacket.STREAM_CODEC, ContentsAllowRequestPacket::handle);
+        registrar.playToClient(ContentsAllowSyncPacket.TYPE, ContentsAllowSyncPacket.STREAM_CODEC, ContentsAllowSyncPacket::handle);
         registrar.playToClient(PackageListSyncPacket.TYPE, PackageListSyncPacket.STREAM_CODEC, PackageListSyncPacket::handle);
 
         // Starting-book close-detection: client ScreenEvent.Closing → server burn flow.

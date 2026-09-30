@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -14,10 +15,14 @@ import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import games.brennan.dungeontrain.builder.BuilderCinematicService;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -232,6 +237,42 @@ public final class TrainBootstrapEvents {
     }
 
     /**
+     * Whether {@code level} has a train — loaded, <b>or</b> spawned this session and now asleep in
+     * Sable holding with at least one group that can be brought back.
+     *
+     * <p>{@link #findTrain} answers only for loaded sub-levels. A player who spends a dragon fight
+     * in the End leaves nobody in the Overworld, so every carriage is culled to holding and
+     * {@code findAll()} is empty — which used to read as "no train", and a second seed was spawned
+     * under the first when Sable resurrected it. The registry ({@link Trains#knownGroups}) is
+     * grow-only for exactly this moment; {@link Shipyard#isHeld} confirms the group is still on
+     * disk (via {@code SableHoldingIndex}, which survives save-time eviction).</p>
+     */
+    public static boolean trainKnownIn(ServerLevel level) {
+        return findTrain(level) != null || !heldTrainIdsIn(level).isEmpty();
+    }
+
+    /**
+     * Train ids registered this session for {@code level} that have at least one group in Sable
+     * holding. Empty when the dimension never had a train, or when nothing of it is recoverable.
+     */
+    public static List<UUID> heldTrainIdsIn(ServerLevel level) {
+        Shipyard shipyard = Shipyards.of(level);
+        List<UUID> out = new ArrayList<>();
+        for (UUID trainId : Trains.registeredTrainIds()) {
+            for (ManagedShip ship : Trains.knownGroups(trainId).values()) {
+                if (ship == null) continue;
+                if (!(ship.getKinematicDriver() instanceof TrainTransformProvider p)) continue;
+                if (!level.dimension().equals(p.getDimensionKey())) break; // whole train is elsewhere
+                if (shipyard.isHeld(ship.subLevelId())) {
+                    out.add(trainId);
+                    break;
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
      * Idempotently ensure a Dungeon Train seed exists in {@code target}.
      * Returns the existing train if {@link #findTrain} already finds one;
      * otherwise warms the carriage template cache for this dimension and
@@ -251,14 +292,26 @@ public final class TrainBootstrapEvents {
      *       speed instead.</li>
      * </ul>
      *
-     * <p>Returns {@code null} only if {@link TrainAssembler#spawnTrain}
-     * itself throws (logged at ERROR); the bootstrap path tolerates this
-     * and proceeds with degraded UI, and the respawn path skips its
-     * subsequent teleport.</p>
+     * <p>Returns {@code null} if the dimension's train is asleep in Sable
+     * holding ({@link #heldTrainIdsIn} non-empty — nothing is spawned, see
+     * {@link #trainKnownIn}), or if {@link TrainAssembler#spawnTrain} itself
+     * throws (logged at ERROR); the bootstrap path tolerates this and
+     * proceeds with degraded UI, and the respawn path falls back to a ground
+     * pose.</p>
      */
     public static ManagedShip ensureTrainSpawned(ServerLevel target, DungeonTrainWorldData data) {
         ManagedShip existing = findTrain(target);
         if (existing != null) return existing;
+        List<UUID> held = heldTrainIdsIn(target);
+        if (!held.isEmpty()) {
+            // Asleep, not absent. spawnTrain would wipe the registry, the holding index and the
+            // carriage/contents stores for the sleeping train and then lay a second one on top of
+            // it — the overlapping-trains bug. Callers that need a deck wake a held group instead
+            // (RespawnDimensionEvents).
+            LOGGER.warn("[DungeonTrain] Train {} is in Sable holding in {} — not spawning a second seed",
+                held, target.dimension().location());
+            return null;
+        }
 
         // Open this dimension's world-load motion-grace window BEFORE any
         // carriage is spawned, so the seed group AND the bootstrap eager-fill

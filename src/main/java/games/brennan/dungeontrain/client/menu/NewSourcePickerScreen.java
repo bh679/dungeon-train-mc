@@ -81,7 +81,8 @@ public final class NewSourcePickerScreen implements MenuScreen {
     @Override public String title() {
         return switch (category) {
             case PARTS, CHUNK_FRAMES -> MenuLang.t("new_source.title_kind_source", kind);
-            case CONTENTS -> MenuLang.t("new_source.title_contents");
+            case CONTENTS -> kind.isEmpty() ? MenuLang.t("new_source.title_contents")
+                : MenuLang.t("new_source.title_kind_source", sizeName(kind));
             case CARRIAGES -> MenuLang.t("new_source.title_carriage");
             // Tracks have no source picker today — only a name. Title still
             // matches the "New … — source" pattern so the screen reads
@@ -101,8 +102,12 @@ public final class NewSourcePickerScreen implements MenuScreen {
         List<CommandMenuEntry> out = new ArrayList<>();
         switch (category) {
             case CARRIAGES -> {
+                // A carriage is a Room or, for a group-long carriage, Full. Half is the portal
+                // corridor's size alone, so it is not offered here.
                 out.add(new CommandMenuEntry.TypeArg(
-                    "Blank", "name", "dungeontrain editor new", "blank"));
+                    MenuLang.t("new_source.blank_size", sizeName("room")), "name", "dungeontrain editor new", "blank"));
+                out.add(new CommandMenuEntry.TypeArg(
+                    MenuLang.t("new_source.blank_size", sizeName("full")), "name", "dungeontrain editor new", "blank_full"));
                 if (!currentId.isEmpty()) {
                     out.add(new CommandMenuEntry.TypeArg(
                         MenuLang.t("new_source.current", currentId), "name",
@@ -112,15 +117,22 @@ public final class NewSourcePickerScreen implements MenuScreen {
                     "Standard", "name", "dungeontrain editor new", "standard"));
             }
             case CONTENTS -> {
+                // Only the selected size ({@code kind} is its key — Room when none is known): its
+                // blank, a copy of the template stood in, and that size's standard template.
+                String size = kind.isEmpty() ? "room" : kind;
                 out.add(new CommandMenuEntry.TypeArg(
-                    "Blank", "name", "dungeontrain editor contents new", "blank"));
+                    MenuLang.t("new_source.blank"), "name",
+                    "dungeontrain editor contents new", size.equals("room") ? "blank" : "blank_" + size));
                 if (!currentId.isEmpty()) {
                     out.add(new CommandMenuEntry.TypeArg(
                         MenuLang.t("new_source.current", currentId), "name",
                         "dungeontrain editor contents new", currentId));
                 }
-                out.add(new CommandMenuEntry.TypeArg(
-                    "Standard", "name", "dungeontrain editor contents new", "default"));
+                String standard = standardContentsFor(size);
+                if (standard != null) {
+                    out.add(new CommandMenuEntry.TypeArg(
+                        MenuLang.t("new_source.standard"), "name", "dungeontrain editor contents new", standard));
+                }
             }
             case PARTS -> {
                 String prefix = "dungeontrain editor part new " + kind;
@@ -198,5 +210,41 @@ public final class NewSourcePickerScreen implements MenuScreen {
         }
         out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
+    }
+
+    /**
+     * The standard template a new contents of {@code sizeKey} copies: the built-in {@code default}
+     * for a Room, the long corridor's {@code portal} for a Half, {@code default_full} for a Full.
+     */
+    static String standardContentsFor(String sizeKey) {
+        return switch (sizeKey) {
+            case "room" -> "default";
+            case "half" -> "portal";
+            case "full" -> "default_full";
+            default -> null;
+        };
+    }
+
+    /**
+     * The contents size key a floating menu's type name stands for ({@code "Room"} → {@code room}),
+     * or null for any other menu.
+     */
+    public static String contentsSizeKey(String typeName) {
+        if (typeName == null) return null;
+        return switch (typeName) {
+            case "Room" -> "room";
+            case "Half" -> "half";
+            case "Full" -> "full";
+            default -> null;
+        };
+    }
+
+    /** The display name of a contents / carriage size, by its on-disk key. */
+    static String sizeName(String key) {
+        return switch (key) {
+            case "half" -> MenuLang.t("size.half");
+            case "full" -> MenuLang.t("size.full");
+            default -> MenuLang.t("size.room");
+        };
     }
 }

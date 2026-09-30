@@ -56,5 +56,8 @@ final class CarriageTestSessionTest {
     void kindLiterals() {
         assertTrue("carriages".equals(CarriageTestSession.Kind.CARRIAGE.literal()));
         assertTrue("contents".equals(CarriageTestSession.Kind.CONTENTS.literal()));
+        assertTrue("tracks".equals(CarriageTestSession.Kind.TRACKS.literal()));
+        // A piece of the line is stood up in a stretch of track, not as one whole template.
+        assertFalse(CarriageTestSession.Kind.TRACKS.isWhole());
     }
 }

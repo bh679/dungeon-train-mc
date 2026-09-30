@@ -1,10 +1,15 @@
 package games.brennan.dungeontrain.worldgen.density;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.NetherBandBiomes;
+import games.brennan.dungeontrain.worldgen.structure.AncientCitySite;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.biome.Biome;
+
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,14 +21,54 @@ import java.util.List;
  */
 public final class NetherBandBiomeSet {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private final Holder<Biome>[][] zones; // [zoneIndex][choice]
     private final Holder<Biome>[][] bopZones; // same zones in BoP's look; a missing zone is the vanilla one
+    private final Holder<Biome>[] cavePre;    // mountain-interior caves before the core
+    private final Holder<Biome>[] cavePost;   // ... and after it (deep dark and sulfur join; sulfur slot may be null)
+    private final boolean sulfurAvailable;    // VanillaBackport's sulfur caves registered in this world
     private final long seed;
 
-    private NetherBandBiomeSet(Holder<Biome>[][] zones, Holder<Biome>[][] bopZones, long seed) {
+    private NetherBandBiomeSet(Holder<Biome>[][] zones, Holder<Biome>[][] bopZones,
+                               Holder<Biome>[] cavePre, Holder<Biome>[] cavePost, long seed) {
         this.zones = zones;
         this.bopZones = bopZones;
+        this.cavePre = cavePre;
+        this.cavePost = cavePost;
+        this.sulfurAvailable = cavePost[NetherBandBiomes.CAVE_POST_SULFUR] != null;
         this.seed = seed;
+    }
+
+    /**
+     * Cave biome for a mountain-interior column ({@code BandBiomeDecision.Result.CAVE}), region-varied. On
+     * the fall side, the pass's ancient-city region ({@link AncientCitySite}) is always deep dark.
+     */
+    public Holder<Biome> caveBiomeFor(NetherBandContext ctx, int worldX, int worldZ, boolean pastCore) {
+        Holder<Biome>[] palette = pastCore ? cavePost : cavePre;
+        if (pastCore && (worldZ >> NetherBandBiomes.CAVE_REGION_SHIFT) == AncientCitySite.REGION_Z) {
+            long cell = ancientCityCell(ctx, ctx.cycle().netherPassIndex(worldX));
+            if (cell != AncientCitySite.NONE && cell == (worldX >> NetherBandBiomes.CAVE_REGION_SHIFT)) {
+                for (Holder<Biome> h : palette) if (h.is(Biomes.DEEP_DARK)) return h;
+            }
+        }
+        return palette[pastCore ? NetherBandBiomes.pickCavePost(seed, worldX, worldZ, sulfurAvailable)
+                : NetherBandBiomes.pickCave(seed, worldX, worldZ, palette.length)];
+    }
+
+    /** Per-pass ancient-city region, memoised per published context (the site walk costs a few noise samples). */
+    private final java.util.concurrent.ConcurrentHashMap<Long, Long> cityCells = new java.util.concurrent.ConcurrentHashMap<>();
+    private volatile NetherBandContext cityCtx;
+
+    /** Region-X of pass {@code pass}'s ancient city under {@code ctx}, or {@link AncientCitySite#NONE}. */
+    public long ancientCityCell(NetherBandContext ctx, long pass) {
+        if (ctx == null || ctx.cycle() == null || ctx.netherCore() == null) return AncientCitySite.NONE;
+        if (cityCtx != ctx) {                      // a republished context → drop the memo
+            cityCells.clear();
+            cityCtx = ctx;
+        }
+        return cityCells.computeIfAbsent(pass, p -> AncientCitySite.cellX(ctx.cycle(), ctx.generationSeed(), p,
+                ctx.seaLevel(), ctx.worldCeiling(), ctx.netherTop(), ctx.baseRelief(), ctx.netherCore().bedY()));
     }
 
     /** Highland biome for a band column at this world position — altitude-zoned + region-varied. */
@@ -58,6 +103,34 @@ public final class NetherBandBiomeSet {
             for (ResourceKey<Biome> key : NetherBandBiomes.BOP_ZONES.get(z)) biomes.get(key).ifPresent(bop::add);
             bopZones[z] = bop.isEmpty() ? resolved : bop.toArray(new Holder[0]);
         }
-        return new NetherBandBiomeSet(zones, bopZones, seed);
+        return new NetherBandBiomeSet(zones, bopZones, resolveAll(biomes, NetherBandBiomes.CAVE_PRE),
+                resolveCavePost(biomes), seed);
+    }
+
+    /**
+     * {@link NetherBandBiomes#CAVE_POST} resolved; the sulfur-caves slot is left {@code null} when
+     * VanillaBackport's biome isn't registered, which drops the fall side back to its original mix.
+     */
+    @SuppressWarnings("unchecked")
+    private static Holder<Biome>[] resolveCavePost(HolderGetter<Biome> biomes) {
+        List<ResourceKey<Biome>> keys = NetherBandBiomes.CAVE_POST;
+        Holder<Biome>[] resolved = new Holder[keys.size()];
+        for (int i = 0; i < keys.size(); i++) {
+            resolved[i] = i == NetherBandBiomes.CAVE_POST_SULFUR
+                    ? biomes.get(keys.get(i)).orElse(null)
+                    : biomes.getOrThrow(keys.get(i));
+        }
+        if (resolved[NetherBandBiomes.CAVE_POST_SULFUR] == null) {
+            LOGGER.warn("[DungeonTrain] Nether-exit caves: {} is not registered — using the deep dark / lush /"
+                    + " dripstone mix without it", NetherBandBiomes.SULFUR_CAVES.location());
+        }
+        return resolved;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Holder<Biome>[] resolveAll(HolderGetter<Biome> biomes, List<ResourceKey<Biome>> keys) {
+        Holder<Biome>[] resolved = new Holder[keys.size()];
+        for (int i = 0; i < keys.size(); i++) resolved[i] = biomes.getOrThrow(keys.get(i));
+        return resolved;
     }
 }

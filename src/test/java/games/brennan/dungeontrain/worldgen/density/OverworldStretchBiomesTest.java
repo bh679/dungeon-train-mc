@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen.density;
 
 import com.mojang.datafixers.util.Pair;
+import games.brennan.dungeontrain.worldgen.BackportBiomes;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderOwner;
@@ -49,6 +50,95 @@ class OverworldStretchBiomesTest {
                 .count();
         assertEquals(expected, table.size());
         assertSame(OverworldStretchBiomes.vanillaTable(), OverworldStretchBiomes.vanillaTable(), "cached");
+    }
+
+    @Test
+    void holderTableKeepsThePointsAndFindsTheMappedEntry() {
+        Climate.ParameterList<ResourceKey<Biome>> keyed = OverworldStretchBiomes.vanillaTable();
+        java.util.Map<ResourceKey<Biome>, Holder<Biome>> holders = new java.util.HashMap<>();
+        for (Pair<Climate.ParameterPoint, ResourceKey<Biome>> p : keyed.values()) {
+            holders.computeIfAbsent(p.getSecond(), k -> Holder.Reference.createStandAlone(OWNER, k));
+        }
+        ResourceKey<Biome> dropped = keyed.values().get(3).getSecond();   // "missing from the registry" → null
+        Climate.ParameterList<Holder<Biome>> table = OverworldStretchBiomes.withHolders(keyed,
+                k -> k == dropped ? null : holders.get(k));
+
+        assertEquals(keyed.values().size(), table.values().size());
+        for (int i = 0; i < keyed.values().size(); i++) {
+            assertSame(keyed.values().get(i).getFirst(), table.values().get(i).getFirst(), "same point, same order");
+        }
+        java.util.Random rnd = new java.util.Random(7);
+        for (int i = 0; i < 2000; i++) {
+            Climate.TargetPoint target = Climate.target(
+                    rnd.nextFloat() * 2 - 1, rnd.nextFloat() * 2 - 1, rnd.nextFloat() * 2 - 1,
+                    rnd.nextFloat() * 2 - 1, rnd.nextFloat() * 2 - 1, rnd.nextFloat() * 2 - 1);
+            ResourceKey<Biome> key = keyed.findValue(target);
+            Holder<Biome> expected = key == dropped ? null : holders.get(key);
+            assertSame(expected, table.findValue(target));
+        }
+    }
+
+    @Test
+    void tableWithoutBackportHasNoBackportBiomesAndIsCached() {
+        List<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> reduced =
+                OverworldStretchBiomes.vanillaTableWithoutBackport().values();
+        assertTrue(reduced.stream().noneMatch(p -> BackportBiomes.OVERWORLD.contains(p.getSecond())));
+        long expected = OverworldStretchBiomes.vanillaTable().values().stream()
+                .filter(p -> !BackportBiomes.OVERWORLD.contains(p.getSecond())).count();
+        assertEquals(expected, reduced.size());
+        assertSame(OverworldStretchBiomes.vanillaTableWithoutBackport(),
+                OverworldStretchBiomes.vanillaTableWithoutBackport(), "cached");
+    }
+
+    /**
+     * Platform appends VanillaBackport's points after vanilla's; dropping them must give back the
+     * pre-VanillaBackport pick everywhere. The base here is exact points (not vanilla's wide ranges, where a
+     * planted point only ties), so each planted backport point strictly wins its own target.
+     */
+    @Test
+    void droppingAppendedBackportPointsRestoresThePreBackportPick() {
+        java.util.Random rnd = new java.util.Random(11);
+        List<ResourceKey<Biome>> baseKeys = List.of(net.minecraft.world.level.biome.Biomes.PLAINS,
+                net.minecraft.world.level.biome.Biomes.DARK_FOREST, net.minecraft.world.level.biome.Biomes.BIRCH_FOREST,
+                net.minecraft.world.level.biome.Biomes.DRIPSTONE_CAVES);
+        List<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> base = new ArrayList<>();
+        for (int i = 0; i < 64; i++) base.add(Pair.of(exactPoint(randomTarget(rnd)), baseKeys.get(i % baseKeys.size())));
+        Climate.ParameterList<ResourceKey<Biome>> vanilla = new Climate.ParameterList<>(base);
+
+        List<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> appended = new ArrayList<>(base);
+        List<Climate.TargetPoint> planted = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            Climate.TargetPoint t = randomTarget(rnd);
+            planted.add(t);
+            appended.add(Pair.of(exactPoint(t), i % 2 == 0 ? BackportBiomes.PALE_GARDEN : BackportBiomes.SULFUR_CAVES));
+        }
+        Climate.ParameterList<ResourceKey<Biome>> withBackport = new Climate.ParameterList<>(appended);
+        Climate.ParameterList<ResourceKey<Biome>> reduced = OverworldStretchBiomes.withoutBackport(withBackport);
+
+        assertEquals(base.size(), reduced.values().size());
+        for (int i = 0; i < base.size(); i++) {
+            assertSame(base.get(i).getFirst(), reduced.values().get(i).getFirst(), "same point, same order");
+        }
+        for (Climate.TargetPoint t : planted) {
+            assertTrue(BackportBiomes.OVERWORLD.contains(withBackport.findValue(t)), "the appended table picks it");
+            assertEquals(vanilla.findValue(t), reduced.findValue(t), "the reduced table picks what vanilla did");
+        }
+        for (int i = 0; i < 2000; i++) {
+            Climate.TargetPoint t = randomTarget(rnd);
+            assertEquals(vanilla.findValue(t), reduced.findValue(t));
+        }
+    }
+
+    private static Climate.ParameterPoint exactPoint(Climate.TargetPoint t) {
+        return Climate.parameters(
+                Climate.unquantizeCoord(t.temperature()), Climate.unquantizeCoord(t.humidity()),
+                Climate.unquantizeCoord(t.continentalness()), Climate.unquantizeCoord(t.erosion()),
+                Climate.unquantizeCoord(t.depth()), Climate.unquantizeCoord(t.weirdness()), 0f);
+    }
+
+    private static Climate.TargetPoint randomTarget(java.util.Random rnd) {
+        return Climate.target(rnd.nextFloat() * 2 - 1, rnd.nextFloat() * 2 - 1, rnd.nextFloat() * 2 - 1,
+                rnd.nextFloat() * 2 - 1, rnd.nextFloat() * 2 - 1, rnd.nextFloat() * 2 - 1);
     }
 
     @Test

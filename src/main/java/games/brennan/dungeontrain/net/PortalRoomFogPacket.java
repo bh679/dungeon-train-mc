@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * whatever it was last told, so a packet arriving a tick late costs nothing.</p>
  *
  * <h2>The falloff is a shape, not a value</h2>
- * <p>A Bedrockless room fogs harder the further out of it you walk, and the server could send the
+ * <p>A Void room fogs harder the further out of it you walk, and the server could send the
  * current strength every tick as the player moves. It sends the <i>shape</i> instead — where the
  * ramp starts, how long it runs, where it ends — and the client evaluates it at the camera each
  * frame. Same reason the region is a place rather than a flag: a strength streamed per tick is a
@@ -40,13 +40,13 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * the padded region and the ramp, so no two of them can drift.</p>
  *
  * @param minX      world bounds of the stamped copies, inclusive — grown by the clearance for a
- *                  Bedrockless room, which owns swept space rather than copies
+ *                  Void room, which owns swept space rather than copies
  * @param radius    the mode's nominal fog distance in blocks, seen at the room's own walls — five
- *                  rooms out for the tiling modes, the clearance for Bedrockless; {@code 0} means
+ *                  rooms out for the tiling modes, the clearance for Void; {@code 0} means
  *                  "no longer in a room", which is also what a fresh client assumes
  * @param falloff   blocks of ramp between the room's walls and the edge of the region. {@code 0} is
  *                  a flat fog at {@code radius} everywhere inside the bounds, which is what every
- *                  mode but Bedrockless sends and what all of them sent before the ramp existed
+ *                  mode but Void sends and what all of them sent before the ramp existed
  * @param minRadius the fog distance at the far edge of the ramp. Ignored when {@code falloff} is
  *                  {@code 0}
  */

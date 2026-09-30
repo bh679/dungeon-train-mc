@@ -33,6 +33,7 @@ import net.minecraft.world.level.levelgen.WorldGenerationContext;
 import net.minecraft.world.level.levelgen.blending.Blender;
 
 import java.util.EnumSet;
+import java.util.function.Function;
 
 /**
  * World generation into a chunk that belongs to nobody — a dimension's real generator run over a
@@ -264,17 +265,32 @@ public final class OfflineChunkSampler {
     /** A workspace over {@code chunk} and the ring of throwaway neighbours around it. */
     public static Workspace workspaceFor(ServerLevel level, NoiseBasedChunkGenerator generator,
                                          RandomState random, ProtoChunk chunk) {
+        return workspaceFor(level, generator, random, chunk, pos -> null);
+    }
+
+    /**
+     * {@link #workspaceFor(ServerLevel, NoiseBasedChunkGenerator, RandomState, ProtoChunk)} with real
+     * neighbours: {@code ring} answers a chunk to stand at a neighbouring position (or {@code null} for a
+     * blank one). What features write into a supplied neighbour stays in it for the caller to read back —
+     * the End band's feature spill ({@link EndBandSpill}) — where a blank one is thrown away.
+     */
+    public static Workspace workspaceFor(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                         RandomState random, ProtoChunk chunk,
+                                         Function<ChunkPos, ProtoChunk> ring) {
         WorldGenRegion region = regionAround(level, chunk,
-            ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES));
+            ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES), ring);
         return new Workspace(region, level.structureManager().forWorldGenRegion(region));
     }
 
     /**
-     * A region centred on {@code chunk}, ringed by blank chunks out to the step's own radius. The
-     * neighbours only catch what a feature at the middle chunk's edge writes past it, and are thrown
-     * away; sampling their biomes too cost more than generating the middle chunk.
+     * A region centred on {@code chunk}, ringed out to the step's own radius by whatever {@code ring}
+     * supplies, else blank chunks. Blank neighbours only catch what a feature at the middle chunk's edge
+     * writes past it, and are thrown away; sampling their biomes too cost more than generating the middle
+     * chunk. (Vanilla's FEATURES step refuses writes beyond one chunk from the centre, so only the eight
+     * immediate neighbours ever receive anything.)
      */
-    private static WorldGenRegion regionAround(ServerLevel level, ProtoChunk chunk, ChunkStep step) {
+    private static WorldGenRegion regionAround(ServerLevel level, ProtoChunk chunk, ChunkStep step,
+                                               Function<ChunkPos, ProtoChunk> ring) {
         ChunkPos centre = chunk.getPos();
         int radius = Math.max(1, step.accumulatedDependencies().getRadius());
         Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
@@ -282,6 +298,8 @@ public final class OfflineChunkSampler {
             centre.x, centre.z, radius, (x, z) -> {
                 ChunkPos pos = new ChunkPos(x, z);
                 if (pos.equals(centre)) return new SampleHolder(pos, chunk);
+                ProtoChunk supplied = ring.apply(pos);
+                if (supplied != null) return new SampleHolder(pos, supplied);
                 ProtoChunk blank = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomeRegistry, null);
                 blank.setPersistedStatus(ChunkStatus.SURFACE);
                 return new SampleHolder(pos, blank);

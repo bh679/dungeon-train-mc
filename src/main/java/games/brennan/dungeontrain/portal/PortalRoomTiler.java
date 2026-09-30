@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalRoomTiling.Tile;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.StagePlacementScope;
+import games.brennan.dungeontrain.util.ThrottledLog;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.Vec3i;
@@ -72,6 +73,11 @@ import java.util.Set;
 public final class PortalRoomTiler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    /**
+     * canStamp rejects a candidate tile every tick while a neighbour pair overlaps it; one line per
+     * rejection was thousands of synchronous debug.log writes per session. One summary per window.
+     */
+    private static final ThrottledLog SKIPPED_OVERLAP_LOG = new ThrottledLog(10_000);
 
     /**
      * Copies erased per tick once nobody is inside.
@@ -292,7 +298,7 @@ public final class PortalRoomTiler {
      * hole in the plain.</p>
      *
      * <p>Tested against {@code ENDLESS_OPEN} rather than {@code !tilesWholeRoom()}, which is also
-     * true of {@link PortalRoomMode#BEDROCK_LOCK} and is only unreachable for it because
+     * true of {@link PortalRoomMode#BEDROCK} and is only unreachable for it because
      * {@link #tick} returns early for a mode that does not tile at all. That is a trap waiting for
      * the next mode to be added.</p>
      */
@@ -706,8 +712,11 @@ public final class PortalRoomTiler {
         for (PortalStructure other : neighbours) {
             if (other == structure) continue;
             if (box.intersects(PortalCarriageBuilder.footprintOf(level, other, dims))) {
-                LOGGER.debug("[DungeonTrain] Portal room copy at {} skipped — it would land on another pair",
-                    tile);
+                long skipped = SKIPPED_OVERLAP_LOG.record().orElse(0L);
+                if (skipped > 0) {
+                    LOGGER.debug("[DungeonTrain] Portal room copies skipped — would land on another pair: {} in last {}s (latest at {})",
+                        skipped, SKIPPED_OVERLAP_LOG.intervalSeconds(), tile);
+                }
                 return false;
             }
         }

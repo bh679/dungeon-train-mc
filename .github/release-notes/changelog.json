@@ -20464,6 +20464,1126 @@
       "released": true,
       "released_in": "v0.1012.0",
       "released_at": "2026-09-28T18:35:01Z"
+    },
+    {
+      "id": "cargostairs-outterstairs-rooms",
+      "version": "0.1013.0",
+      "type": "chore",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Work-in-progress carriage builds",
+      "summary": "Behind the scenes: a new stairway room and carriage group, and a reworked cave room, are saved for later. None of them appear on the train yet.",
+      "highlights": [
+        "Builds saved for a future update; nothing changes in play"
+      ],
+      "pr": 1644,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
+    },
+    {
+      "id": "player-blocks-break-off",
+      "version": "0.1014.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Your additions to the train break off when they hit things",
+      "summary": "Blocks you build onto the train are no longer as tough as the train itself. When something you've added hits a hillside, a tunnel wall or another moving contraption, it breaks off and drops as items, and whatever it hit stays standing. The train's own carriages still plough through terrain exactly as before.",
+      "highlights": [
+        "Blocks you place on the train break off, and drop as items, when they hit terrain or another physics object",
+        "Chests you've added spill their contents when they break off",
+        "The train's own blocks are unchanged: they never break and still carve through terrain"
+      ],
+      "pr": 1647,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
+    },
+    {
+      "id": "nether-strip-offthread",
+      "version": "0.1015.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Smoother streaming into a later phase's terrain",
+      "summary": "Entering one of the later phases could freeze the game for several seconds at a time: the pass that clears stray overworld trees and flowers from the freshly generated terrain ran on the main server thread for every new chunk, and the train generates about a chunk a second. That pass now runs on the world-generation workers, skips terrain that has nothing to clear, and only the handful of block removals stays on the main thread. The generated world is unchanged.",
+      "highlights": [
+        "No more multi-second freezes while new terrain streams in around the transition into a later phase",
+        "Same terrain and vegetation as before \u2014 only where the work runs changed",
+        "A server config setting can restore the old in-line pass if ever needed"
+      ],
+      "pr": 1646,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
+    },
+    {
+      "id": "sable-ordered-first-snapshot",
+      "version": "0.1016.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "No more \"non-existent sub-level\" errors while riding",
+      "summary": "Riding the train no longer fills your log with \"Received a sub-level movement packet for a non-existent sub-level\" errors. New carriages now reach your game in the right order, so their first movement update never arrives before the carriage itself.",
+      "highlights": [],
+      "pr": 1648,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
+    },
+    {
+      "id": "fewer-ruins-again",
+      "version": "0.1017.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Fewer ruins",
+      "summary": "Ruins turn up a little less often along the line.",
+      "highlights": [],
+      "pr": 1649,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
+    },
+    {
+      "id": "batch-collider-updates-carriage-stamping",
+      "version": "0.1018.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "train"
+      ],
+      "title": "Smoother ticks when new carriages join the train",
+      "summary": "Each time the train grew by a group of carriages, the physics engine was told about every single block as it was placed \u2014 thousands of tiny collision updates in one tick, which showed up as a stutter right after each new group appeared. The train now builds a whole group first and hands the physics engine each finished chunk section once, so joining carriages cost a fraction of what they did. Mining or placing blocks on a carriage still updates collision immediately.",
+      "highlights": [
+        "Far fewer physics collision updates when a group of carriages is added",
+        "New performance counters in the lag log so the remaining cost is visible"
+      ],
+      "pr": 1649,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
+    },
+    {
+      "id": "fluid-interaction-no-sync-load",
+      "version": "0.1019.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "world"
+      ],
+      "title": "No more freezes when water or lava flows into terrain that is still generating",
+      "summary": "When water or lava reached the edge of terrain that had not finished generating, the server used to stop everything and build that terrain on the spot \u2014 a multi-second freeze, sometimes chained several times over. The check for what the two fluids should do when they meet now waits until the terrain is ready, then runs as normal, so obsidian and cobblestone still form and the train keeps moving.",
+      "highlights": [
+        "Multi-second freezes at the edge of freshly generated terrain are gone",
+        "Lava and water still turn to obsidian, cobblestone and basalt as before, just a moment later at chunk edges"
+      ],
+      "pr": 1651,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
+    },
+    {
+      "id": "mspt-lag-report-counters",
+      "version": "0.1020.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "More useful lag reports",
+      "summary": "Behind the scenes: lag reports now record what else was slowing the game down besides the train, such as memory clean-up pauses, waiting on terrain to load, and how many creatures are riding along. Nothing changes in play.",
+      "highlights": [
+        "Lag reports can now tell apart memory pauses, terrain loading and busy carriages"
+      ],
+      "pr": 1654,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1020.0",
+      "released_at": "2026-09-29T05:04:51Z"
+    },
+    {
+      "id": "dh-update-prompt-keeps-quick-play",
+      "version": "0.1021.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Quick play no longer stops at the title screen when a Distant Horizons update is pending",
+      "summary": "Launching straight into a server or world (Minecraft's quick play) used to stall on the title screen whenever Distant Horizons had an update to offer, because the mod hid that prompt by opening a fresh title screen. The join now goes ahead as intended.",
+      "highlights": [
+        "The Distant Horizons update prompt is still kept out of the way for the modpack's pinned build; nothing changes for other Distant Horizons versions."
+      ],
+      "pr": 1656,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1022.0",
+      "released_at": "2026-09-29T05:42:33Z"
+    },
+    {
+      "id": "preserve-community-book-layout",
+      "version": "0.1022.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "books"
+      ],
+      "title": "Community books keep their author's layout",
+      "summary": "Community books now appear exactly as their author laid them out \u2014 indentation, blank lines and word art are preserved, and pages stay where they were written instead of spilling onto extra pages.",
+      "highlights": [
+        "Word art and centred text in found books are no longer flattened",
+        "Blank spacer lines survive, so signatures and page breaks stay where the author put them"
+      ],
+      "pr": 1657,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1022.0",
+      "released_at": "2026-09-29T05:42:33Z"
+    },
+    {
+      "id": "low-memory-warning",
+      "version": "0.1023.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "performance",
+        "compatibility",
+        "ui"
+      ],
+      "title": "A heads-up when Minecraft is short on memory",
+      "summary": "If your launcher gives Minecraft too little memory, the game can stutter and freeze as it runs out. Dungeon Train now tells you when that's the case and shows you how to fix it in your launcher.",
+      "highlights": [
+        "A notice on the title screen when Minecraft has under 5 GB of memory and your computer has more to give",
+        "\"How to do it\" opens a step-by-step guide for your launcher: CurseForge, Modrinth App, the Minecraft Launcher, Prism, MultiMC or ATLauncher",
+        "The modpack now recommends 6 GB of memory",
+        "Turn it off with \"Don't show again\", or in Options > Dungeon Train > Low Memory Warning"
+      ],
+      "pr": 1655,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1024.0",
+      "released_at": "2026-09-29T09:23:57Z"
+    },
+    {
+      "id": "cheap-production-logging",
+      "version": "0.1024.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Less dev logging",
+      "summary": "Less dev logs.",
+      "highlights": [],
+      "pr": 1658,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1024.0",
+      "released_at": "2026-09-29T09:23:57Z"
+    },
+    {
+      "id": "sweep-nonblocking-chunks",
+      "version": "0.1025.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "No more freezes when the train runs into new land",
+      "summary": "The game could freeze for a fraction of a second when the train ran into land that was still being generated, while it waited for that ground to finish. It now carries on and deals with that stretch a moment later, once it's ready.",
+      "highlights": [
+        "Fewer hitches when riding fast into unexplored terrain",
+        "The train still breaks blocks in its path and pushes water aside as before"
+      ],
+      "pr": 1659,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1025.0",
+      "released_at": "2026-09-29T09:49:19Z"
+    },
+    {
+      "id": "end-return-wakes-held-train",
+      "version": "0.1026.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Returning from the End puts you back on your train",
+      "summary": "Coming back through the End's exit portal now lands you on the train you left.",
+      "highlights": [],
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1027.0",
+      "released_at": "2026-09-29T11:38:22Z",
+      "pr": 1660
+    },
+    {
+      "id": "distant-horizons-lod-load",
+      "version": "0.1027.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility",
+        "world"
+      ],
+      "title": "Smoother ticks with Distant Horizons",
+      "summary": "Distant Horizons now generates its distant terrain more gently, so the train and the world keep ticking smoothly on smaller CPUs while it works in the background.",
+      "highlights": [],
+      "pr": 1662,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1027.0",
+      "released_at": "2026-09-29T11:38:22Z"
+    },
+    {
+      "id": "biome-column-memo",
+      "version": "0.1028.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Faster terrain generation",
+      "summary": "New terrain around the train now takes less server work to generate. The world itself is unchanged.",
+      "highlights": [],
+      "pr": 1663,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1032.0",
+      "released_at": "2026-09-29T13:56:01Z"
+    },
+    {
+      "id": "nether-transition-caverns",
+      "version": "0.1029.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "mobs"
+      ],
+      "title": "More caves",
+      "summary": "More caves. The mountains the line climbs through are no longer solid rock \u2014 big open caves now run through them, and the track carries you straight through.",
+      "highlights": [],
+      "pr": 1665,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1032.0",
+      "released_at": "2026-09-29T13:56:01Z"
+    },
+    {
+      "id": "shorter-stretches-gradual-blend",
+      "version": "0.1030.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Shorter stretches along the line",
+      "summary": "Several stretches of the line are now shorter, and the journey moves between some of them more smoothly.",
+      "highlights": [],
+      "pr": 1668,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1032.0",
+      "released_at": "2026-09-29T13:56:01Z"
+    },
+    {
+      "id": "lost-city-terrain-fit-sibling",
+      "version": "0.1031.0",
+      "type": "refactor",
+      "tags": [
+        "internal"
+      ],
+      "title": "Lost City Terrain Fit is now its own mod",
+      "summary": "The terrain-fitting for ruined-city buildings has moved into its own mod, Lost City Terrain Fit, which comes bundled with Dungeon Train. Nothing extra to install.",
+      "highlights": [],
+      "pr": 1667,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1032.0",
+      "released_at": "2026-09-29T13:56:01Z"
+    },
+    {
+      "id": "original-lost-city-buildings",
+      "version": "0.1032.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "mobs",
+        "loot"
+      ],
+      "title": "New ruins along the line",
+      "summary": "More ruined buildings can be found along the way, each a little different every time you pass one.",
+      "highlights": [],
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1032.0",
+      "released_at": "2026-09-29T13:56:01Z"
+    },
+    {
+      "id": "killer-bunny",
+      "version": "0.1033.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Something in the grass",
+      "summary": "Not every rabbit is as harmless as it looks.",
+      "highlights": [],
+      "pr": 1671,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1037.0",
+      "released_at": "2026-09-29T15:47:24Z"
+    },
+    {
+      "id": "reseed-keep-place-near-template",
+      "version": "0.1034.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Reseed leaves you where you are",
+      "summary": "Reseeding a test carriage now leaves you where you were standing, as long as you're close by.",
+      "highlights": [],
+      "pr": 1674,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1037.0",
+      "released_at": "2026-09-29T15:47:24Z"
+    },
+    {
+      "id": "carriage-test-flatbed-rolls",
+      "version": "0.1035.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Test the Carriage starts on a flatbed",
+      "summary": "Testing a carriage now starts you on a flatbed, looking at two rolls of it.",
+      "highlights": [],
+      "pr": 1673,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1037.0",
+      "released_at": "2026-09-29T15:47:24Z"
+    },
+    {
+      "id": "lost-city-overlap-meld",
+      "version": "0.1036.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Improvement to structure worldgen",
+      "summary": "Where two Lost City buildings stand on the same spot, both now keep their walls and floors.",
+      "highlights": [],
+      "pr": 1672,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1037.0",
+      "released_at": "2026-09-29T15:47:24Z"
+    },
+    {
+      "id": "test-mode-edit-notice",
+      "version": "0.1037.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Test mode reminder",
+      "summary": "Building inside a carriage you're testing now reminds you that none of it will be kept.",
+      "highlights": [],
+      "pr": 1675,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1037.0",
+      "released_at": "2026-09-29T15:47:24Z"
+    },
+    {
+      "id": "stage-block-orientation-marks",
+      "version": "0.1038.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Stage blocks show which way is up",
+      "summary": "Stage blocks in the editor now mark their top and bottom, with a small arrow on each side pointing up.",
+      "highlights": [],
+      "pr": 1676,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
+    },
+    {
+      "id": "stage-blocks-left-creative-tab",
+      "version": "0.1039.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Stage Blocks get their own creative tab",
+      "summary": "Stage blocks now sit in their own tab along the side of the creative inventory, styled like the rest.",
+      "highlights": [],
+      "pr": 1677,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
+    },
+    {
+      "id": "editor-whole-room-upload",
+      "version": "0.1040.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "community"
+      ],
+      "title": "Saved whole rooms reach My Builds",
+      "summary": "Whole rooms you save in the editor now show up in My Builds.",
+      "highlights": [],
+      "pr": 1678,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
+    },
+    {
+      "id": "stage-colour-blocks",
+      "version": "0.1041.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Stage blocks come in colour",
+      "summary": "Builders can now place terracotta, concrete, stained glass and glazed terracotta that take on each stage's own colours.",
+      "highlights": [],
+      "pr": 1680,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
+    },
+    {
+      "id": "open-template-files",
+      "version": "0.1042.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Open template files",
+      "summary": "The editor can now take you straight to where a template's files are saved.",
+      "highlights": [],
+      "pr": 1679,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
+    },
+    {
+      "id": "paintings-stay-hung-on-carriages",
+      "version": "0.1043.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Paintings stay on the wall",
+      "summary": "Paintings in carriages now stay hanging where they were placed, on the train and in Test the Carriage.",
+      "highlights": [],
+      "pr": 1682,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
+    },
+    {
+      "id": "tunnel-envelope-red-wash",
+      "version": "0.1044.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Tunnel templates show the train's path",
+      "summary": "Tunnel templates in the editor now show where the train will pass, and anything built in its way glows red.",
+      "highlights": [],
+      "pr": 1683,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
+    },
+    {
+      "id": "test-the-carriage-track-pieces",
+      "version": "0.1045.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Test the Carriage for track pieces",
+      "summary": "Track, pillar, stairs and tunnel templates can now be tested from the editor, with a carriage standing right where the piece is.",
+      "highlights": [],
+      "pr": 1685,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
+    },
+    {
+      "id": "stage-fence-connect-modes",
+      "version": "0.1046.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Fences that join up your way",
+      "summary": "Stage fences and walls now join up, and builders can pick exactly how any fence or wall connects.",
+      "highlights": [],
+      "pr": 1684,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1046.0",
+      "released_at": "2026-09-29T19:23:06Z"
+    },
+    {
+      "id": "backward-dimensional-carriage-spacing",
+      "version": "0.1047.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriages on the way back",
+      "summary": "Riding the train backwards, dimensional carriages now turn up no more often than they do going forwards.",
+      "highlights": [],
+      "pr": 1686,
+      "date": "2026-09-29",
+      "released": true,
+      "released_in": "v0.1047.0",
+      "released_at": "2026-09-29T21:08:02Z"
+    },
+    {
+      "id": "contents-templates-opt-in",
+      "version": "0.1048.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Train Editor: new rooms start switched off",
+      "summary": "In the Train Editor, a newly made carriage room now starts switched off in every carriage's Contents list, and only appears once you switch it on.",
+      "highlights": [],
+      "pr": 1688,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "tunnel-template-groups",
+      "version": "0.1049.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "world"
+      ],
+      "title": "Tunnels keep one look",
+      "summary": "Each tunnel now keeps one look from entrance to exit, and there are new ones to ride through \u2014 some built by Pumpkin_P_Patch.",
+      "highlights": [],
+      "pr": 1690,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "editor-teleport-fly-over-air",
+      "version": "0.1050.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Editor arrivals take flight",
+      "summary": "Jumping to a template in the editor no longer leaves you falling when there's nothing to stand on.",
+      "highlights": [],
+      "pr": 1691,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "tunnel-group-spawn-gates",
+      "version": "0.1051.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "world"
+      ],
+      "title": "Tunnel styles have their places",
+      "summary": "Each tunnel style now turns up only on the stretches of the journey it belongs to.",
+      "highlights": [],
+      "pr": 1692,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "portal-room-modes-void-bedrock",
+      "version": "0.1052.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Two dimensional carriage styles go by simpler names in the editor",
+      "summary": "Two dimensional carriage styles now go by simpler names in the editor, and anything built under the old names carries on as before.",
+      "highlights": [],
+      "pr": 1693,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "plain-chunk-dimension-finds-ground",
+      "version": "0.1053.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Overworld dimensional carriages find their ground",
+      "summary": "Overworld dimensional carriages, and testing them from the editor, now reliably find somewhere to stand.",
+      "highlights": [],
+      "pr": 1695,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "x-editor-blocks-page",
+      "version": "0.1054.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Blocks page in the editor",
+      "summary": "The X editor can now show every block in a build and swap any of them for the one in your hand.",
+      "highlights": [],
+      "pr": 1694,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "community-item-trade-values",
+      "version": "0.1055.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot",
+        "balance"
+      ],
+      "title": "Community item trade values",
+      "summary": "What items trade for with villagers can now be suggested and voted on by the community at brennan.games/dungeontrain/items.",
+      "highlights": [],
+      "pr": 1696,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "editor-test-mode-shortcut",
+      "version": "0.1056.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Test from the editor with Ctrl/Cmd+R",
+      "summary": "Ctrl/Cmd+R in the editor now takes you straight into testing what you're building.",
+      "highlights": [],
+      "pr": 1698,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1058.0",
+      "released_at": "2026-09-30T10:52:40Z"
+    },
+    {
+      "id": "reseed-keep-zone-two-chunks",
+      "version": "0.1056.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Reseeding a test carriage keeps your view",
+      "summary": "Reseeding a test carriage now leaves you where you were from a little further away.",
+      "highlights": [],
+      "pr": 1699,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1058.0",
+      "released_at": "2026-09-30T10:52:40Z"
+    },
+    {
+      "id": "tunnel-groups-hold-longer",
+      "version": "0.1058.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Tunnels keep their look",
+      "summary": "Tunnels now hold one style for longer stretches, and blend more cleanly as the world grows darker.",
+      "highlights": [],
+      "pr": 1700,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1058.0",
+      "released_at": "2026-09-30T10:52:40Z"
+    },
+    {
+      "id": "backported-from-the-future",
+      "version": "0.1059.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "world"
+      ],
+      "title": "Backported from the future",
+      "summary": "A little of the future has been backported into the present past \u2014 new biomes, mobs and blocks are waiting to be found.",
+      "highlights": [],
+      "pr": 1701,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1059.0",
+      "released_at": "2026-09-30T11:16:32Z"
+    },
+    {
+      "id": "sized-carriage-contents",
+      "version": "0.1060.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Carriage contents come in three sizes",
+      "summary": "The editor can now build carriage contents at Room, Half and Full size, and each carriage only takes contents of its own size.",
+      "highlights": [],
+      "pr": 1702,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
+    },
+    {
+      "id": "lost-city-processor-memo",
+      "version": "0.1061.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Smoother building generation",
+      "summary": "Big ruined buildings along the line now appear with less of a hitch.",
+      "highlights": [],
+      "pr": 1707,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
+    },
+    {
+      "id": "blended-landscape-air-matches-ground",
+      "version": "0.1062.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Blended landscapes feel of a piece",
+      "summary": "Where two landscapes blend into each other, the air and the creatures now match the ground beneath your feet.",
+      "highlights": [],
+      "pr": 1708,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
+    },
+    {
+      "id": "sync-sibling-mod-pins-2026-09",
+      "version": "0.1063.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "Fresher companion mods in the modpack",
+      "summary": "The modpack now installs the newest versions of its companion mods.",
+      "highlights": [],
+      "pr": 1710,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "betterx-prompts-dt-worlds-only",
+      "version": "0.1064.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Other worlds left alone",
+      "summary": "Your other worlds now behave as they normally would.",
+      "highlights": [],
+      "pr": 1711,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "memoise-worldgen-lookups",
+      "version": "0.1065.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Faster world start-up",
+      "summary": "Worlds now finish loading sooner.",
+      "highlights": [],
+      "pr": 1706,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "discord-build-submit-announcements",
+      "version": "0.1066.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Submitted builds get announced",
+      "summary": "Submitting a build for review now shares it, picture and all, with the community on Discord.",
+      "highlights": [],
+      "pr": 1705,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "surface-rule-null-guard",
+      "version": "0.1067.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Steadier world loading",
+      "summary": "Dungeon Train worlds now load more reliably alongside other terrain mods.",
+      "highlights": [],
+      "pr": 1712,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "lost-city-terrain-fit-curseforge-sibling",
+      "version": "0.1068.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "A companion mod now installs on its own on CurseForge",
+      "summary": "One more small companion mod now installs alongside Dungeon Train on CurseForge; nothing changes in-game.",
+      "highlights": [],
+      "pr": 1704,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sable-pathfinder-presence-log",
+      "version": "0.1069.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "internal"
+      ],
+      "title": "Support logs say whether Sable Pathfinder is installed",
+      "summary": "Your log now notes at world load whether the Sable Pathfinder companion is installed, so help requests can be answered faster.",
+      "highlights": [],
+      "pr": 1714,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "structure-start-check-once",
+      "version": "0.1070.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Lighter world generation",
+      "summary": "New land around the train now takes a little less work to generate.",
+      "highlights": [],
+      "pr": 1715,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tall-dimensional-carriage-train-resumes",
+      "version": "0.1071.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "The train gets going again after a visit to a tall dimensional carriage",
+      "summary": "Stepping back onto the train after exploring one of the taller dimensional carriages now sets it rolling again straight away.",
+      "highlights": [],
+      "pr": 1716,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "plants-stay-rooted",
+      "version": "0.1073.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Plants stay rooted",
+      "summary": "Plants along the line now only grow where they can stand.",
+      "highlights": [],
+      "pr": 1718,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "endband-scenery-carries-on",
+      "version": "0.1073.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "No more hard edges",
+      "summary": "Some scenery now carries on past where it used to stop.",
+      "highlights": [],
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "lost-city-template-eviction",
+      "version": "0.1075.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Lighter on memory after busy stretches",
+      "summary": "The game now lets go of memory it no longer needs once you've ridden on past the world's busiest stretches.",
+      "highlights": [],
+      "pr": 1719,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "speed-change-no-teleport",
+      "version": "0.1076.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Steadier train",
+      "summary": "The train no longer jumps.",
+      "highlights": [],
+      "pr": 1722,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

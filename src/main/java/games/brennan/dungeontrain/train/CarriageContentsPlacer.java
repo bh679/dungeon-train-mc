@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -115,13 +116,11 @@ public final class CarriageContentsPlacer {
      * The box {@code contents} is authored against — which is <b>not</b> always the world's carriage
      * dims.
      *
-     * <p>The {@code portal} corridor's contents are the exception: a
-     * {@link games.brennan.dungeontrain.portal.PortalCorridorKind#LONG} corridor runs past its slot
-     * into the cart between a portal's pair, so what stands inside one is measured over
-     * {@link games.brennan.dungeontrain.portal.PortalCorridorSize#corridorDims} — 13×7×7 at the
-     * default, giving an 11×5×5 interior. ({@code portal_short}'s corridor is exactly a carriage, so
-     * its contents need no exception — the same reason {@code portal_short} is a separate id rather
-     * than a second size of {@code portal}.) The contents-side counterpart of
+     * <p>It is the box of the contents' {@link #sizeOf size}: {@link ContentsSize#ROOM} is a carriage,
+     * {@link ContentsSize#HALF} the long portal corridor (13×7×7 at the default, an 11×5×5 interior —
+     * where the {@code portal} contents live), {@link ContentsSize#FULL} a whole group as one carriage.
+     * ({@code portal_short}'s corridor is exactly a carriage, so its contents are ROOM.) The
+     * contents-side counterpart of
      * {@link CarriagePlacer#variantDims}, and load-bearing for the same reason: the template's size
      * gate, the editor plot, and the sidecar's bounds all have to agree on one box or the template is
      * rejected, the plot is the wrong size, and entries past the carriage's length are dropped.</p>
@@ -134,40 +133,45 @@ public final class CarriageContentsPlacer {
      * callers pass the resolved box.</p>
      */
     public static CarriageDims contentsDims(CarriageContents contents, CarriageDims dims) {
-        PortalCorridorKind kind = portalCorridorKindOf(contents.id());
-        return kind == null ? dims : PortalCorridorSize.corridorDims(dims, kind);
+        return sizeOf(contents).boxOrRoom(dims, games.brennan.dungeontrain.config.DungeonTrainConfig.getGroupSize());
     }
 
     /**
-     * True for the portal contents <b>or any sub-variant of it</b>.
+     * The {@link ContentsSize} {@code contents} is authored at — its own declared size, or, for a
+     * sub-variant, its group root's. A sub-variant is another filling for its parent's slot,
+     * so it is always its parent's box; one declared differently would be captured at a size its
+     * slot can never take.
      *
-     * <p>A sub-variant is an alternative filling for the same space — the group picks between the
-     * parent and its members for one slot — so a member of the portal group is authored into a
-     * corridor exactly as its parent is, and has to be measured the same way. Sizing one as a
-     * carriage gives it a plot four blocks short, and a template captured there is rejected by the
-     * size gate the moment it is loaded.</p>
-     *
-     * <p>Walks the whole parent chain rather than checking one level, since groups may nest, and
-     * counts its steps: {@code findParentOf} reads sidecars off disk, and a cycle authored into
-     * them ({@code a}'s parent is {@code b}, {@code b}'s is {@code a}) would otherwise hang the
-     * server on a lookup that runs per placement.</p>
-     *
-     * <p><b>Public because the editor's shell choice reads it too</b>
-     * ({@code CarriageContentsEditor.shellFor}). It used to compare ids directly and so shelled a
-     * sub-variant's corridor-sized plot with a standard carriage — the box rule and the shell rule
-     * were the same question answered twice, and only one of them learned about groups.</p>
+     * <p>Walks the parent chain with the same bound as {@link #portalCorridorKindOf}, for the same
+     * reason: the chain is read off sidecars on disk and an authored cycle must not hang a
+     * placement.</p>
      */
-    public static boolean isPortalContents(CarriageContents contents) {
-        return portalCorridorKindOf(contents.id()) != null;
+    public static ContentsSize sizeOf(CarriageContents contents) {
+        return sizeOf(contents.id());
     }
+
+    public static ContentsSize sizeOf(String id) {
+        String current = id;
+        for (int depth = 0; depth <= MAX_GROUP_DEPTH; depth++) {
+            Optional<String> parent = CarriageContentsGroupStore.findParentOf(current);
+            if (parent.isEmpty()) {
+                return games.brennan.dungeontrain.editor.TemplateSizeStore.CONTENTS.sizeOf(current);
+            }
+            current = parent.get();
+        }
+        LOGGER.warn("[DungeonTrain] Contents group chain from '{}' exceeded {} levels — "
+            + "sizing as room. Check for a cycle in the group sidecars.", id, MAX_GROUP_DEPTH);
+        return ContentsSize.ROOM;
+    }
+
 
     /**
      * Which corridor kind's contents this id belongs to, or {@code null} if it is not a corridor's
      * at all.
      *
-     * <p>The kind matters and cannot be flattened to a boolean: it is what {@link #contentsDims}
-     * sizes the box from, and the two kinds are different boxes. Callers that only want "is this a
-     * corridor's furnishing" — go through {@link #isPortalContents}.</p>
+     * <p>No longer what sizes the box — that is {@link #sizeOf}, which reads the declared size
+     * ({@code portal} is Half). This answers only "which corridor is this the furnishing of", so the
+     * editor can shell a plot with the right one.</p>
      *
      * <p><b>Public because the editor's shell choice reads it</b>
      * ({@code CarriageContentsEditor.shellFor}): a plot showing {@code portal_short}'s contents has
@@ -193,7 +197,7 @@ public final class CarriageContentsPlacer {
         return null;
     }
 
-    /** How far {@link #isPortalContents} will walk a group chain before calling it a cycle. */
+    /** How far {@link #sizeOf} and {@link #portalCorridorKindOf} walk a group chain before calling it a cycle. */
     private static final int MAX_GROUP_DEPTH = 16;
 
     /** {@link #interiorSize} of the box {@code contents} is authored against. */
@@ -578,54 +582,57 @@ public final class CarriageContentsPlacer {
         boolean filterByDifficulty = carriageIndex != EDITOR_SENTINEL_PIDX;
         int diffTier = filterByDifficulty
             ? DifficultyProgression.positionTier(carriageIndex) : 0;
-        for (var entry : sidecar.entries()) {
-            VariantState picked = filterByDifficulty
-                ? sidecar.resolve(entry.localPos(), seed, carriageIndex, diffTier)
-                : sidecar.resolve(entry.localPos(), seed, carriageIndex);
-            // The cell keeps its AUTHORED local position everywhere a roll is seeded from it — only
-            // where it lands moves with the flip, so a flipped carriage draws the same blocks as an
-            // unflipped one, mirrored.
-            BlockPos world = origin.offset(ContentsFlip.mapLocal(entry.localPos(), size, flip));
-            if (mask.covers(world)) continue;
-            if (picked == null) {
-                // Difficulty-filtered to nothing: the cell's only candidates were mob
-                // (spawn-egg) entries, all out of band for this carriage's tier. The mob
-                // would have occupied an air cell, so clear to air rather than leaving the
-                // stamped interior block. (Only reachable on the difficulty-filtered path;
-                // the 3-arg editor-preview path never returns null for a populated cell.)
-                if (filterByDifficulty) {
-                    SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
-                }
-                continue;
-            }
-            int lockId = sidecar.lockIdAt(entry.localPos());
-            // A two-space cell (door / bed / tall plant) expands to both spaces in the authored
-            // local frame; each lands through the same flip as the cell itself.
-            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
-                    entry.localPos(), seed, carriageIndex,
-                    v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
-                        StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
-                        entry.localPos(), seed, carriageIndex, lockId))) {
-                BlockPos wWorld = origin.offset(ContentsFlip.mapLocal(w.localPos(), size, flip));
-                if (!wWorld.equals(world) && mask.covers(wWorld)) continue;
-                if (w.isAir()) {
-                    SilentBlockOps.setBlockSilent(level, wWorld, Blocks.AIR.defaultBlockState());
+        try (ConnectPass.Scope ignored = ConnectPass.open()) {
+            for (var entry : sidecar.entries()) {
+                VariantState picked = filterByDifficulty
+                    ? sidecar.resolve(entry.localPos(), seed, carriageIndex, diffTier)
+                    : sidecar.resolve(entry.localPos(), seed, carriageIndex);
+                // The cell keeps its AUTHORED local position everywhere a roll is seeded from it — only
+                // where it lands moves with the flip, so a flipped carriage draws the same blocks as an
+                // unflipped one, mirrored.
+                BlockPos world = origin.offset(ContentsFlip.mapLocal(entry.localPos(), size, flip));
+                if (mask.covers(world)) continue;
+                if (picked == null) {
+                    // Difficulty-filtered to nothing: the cell's only candidates were mob
+                    // (spawn-egg) entries, all out of band for this carriage's tier. The mob
+                    // would have occupied an air cell, so clear to air rather than leaving the
+                    // stamped interior block. (Only reachable on the difficulty-filtered path;
+                    // the 3-arg editor-preview path never returns null for a populated cell.)
+                    if (filterByDifficulty) {
+                        SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
+                    }
                     continue;
                 }
-                // Reflect AFTER the authored rotation roll, so the cell reads as the mirror image of
-                // what an unflipped stamp would have put there.
-                net.minecraft.world.level.block.state.BlockState rotated = ContentsFlip.reflect(w.state(), flip);
-                // First-band starter loot: swap rich loot/loot_irongold chests for the starter
-                // prefab while in the peaceful opening band. Skip the player scan for non-chest
-                // cells (null id) and never downgrade editor previews (sentinel pIdx).
-                String lootId = w.entry().linkedLootPrefabId();
-                if (lootId != null && carriageIndex != EDITOR_SENTINEL_PIDX) {
-                    lootId = DifficultyProgression.effectiveLootPrefabId(level, lootId);
+                int lockId = sidecar.lockIdAt(entry.localPos());
+                // A two-space cell (door / bed / tall plant) expands to both spaces in the authored
+                // local frame; each lands through the same flip as the cell itself.
+                for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
+                        entry.localPos(), seed, carriageIndex,
+                        v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
+                            StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                            entry.localPos(), seed, carriageIndex, lockId))) {
+                    BlockPos wWorld = origin.offset(ContentsFlip.mapLocal(w.localPos(), size, flip));
+                    if (!wWorld.equals(world) && mask.covers(wWorld)) continue;
+                    if (w.isAir()) {
+                        SilentBlockOps.setBlockSilent(level, wWorld, Blocks.AIR.defaultBlockState());
+                        continue;
+                    }
+                    // Reflect AFTER the authored rotation roll, so the cell reads as the mirror image of
+                    // what an unflipped stamp would have put there.
+                    net.minecraft.world.level.block.state.BlockState rotated = ContentsFlip.reflect(w.state(), flip);
+                    // First-band starter loot: swap rich loot/loot_irongold chests for the starter
+                    // prefab while in the peaceful opening band. Skip the player scan for non-chest
+                    // cells (null id) and never downgrade editor previews (sentinel pIdx).
+                    String lootId = w.entry().linkedLootPrefabId();
+                    if (lootId != null && carriageIndex != EDITOR_SENTINEL_PIDX) {
+                        lootId = DifficultyProgression.effectiveLootPrefabId(level, lootId);
+                    }
+                    games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
+                        level, wWorld, rotated, w.entry().blockEntityNbt(),
+                        "contents:" + contents.id(), w.localPos(), seed, carriageIndex,
+                        lootId);
+                    ConnectPass.note(level, wWorld, w.entry().connect(), rotated);
                 }
-                games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
-                    level, wWorld, rotated, w.entry().blockEntityNbt(),
-                    "contents:" + contents.id(), w.localPos(), seed, carriageIndex,
-                    lootId);
             }
         }
     }

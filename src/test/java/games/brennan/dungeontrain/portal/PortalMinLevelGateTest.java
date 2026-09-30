@@ -212,6 +212,51 @@ final class PortalMinLevelGateTest {
         assertTrue(previous != Integer.MIN_VALUE, "no portals past the gate to check the gap between");
     }
 
+    /**
+     * A train running backwards meets the track behind the origin, and that track owes it the same
+     * spacing. The gap rule used to look further from the origin there — past the draw's own origin,
+     * so it gave up at once — and a third of the portals behind landed back to back.
+     */
+    @Test
+    @DisplayName("the minimum gap holds behind the origin too")
+    void minimumGapHoldsBehindTheOrigin() {
+        int previous = Integer.MIN_VALUE;
+        for (int group = -SHIPPED_GATE; group > -SHIPPED_GATE - 5_000; group--) {
+            if (!PortalCarriageSelection.isPortalPart(
+                group * GROUP, GROUP, Rate.lottery(15), SEED, SHIPPED_GATE)) continue;
+            if (previous != Integer.MIN_VALUE) {
+                assertTrue(previous - group >= PortalCarriageSelection.MIN_GROUP_GAP,
+                    "groups " + group + " and " + previous + " are too close");
+            }
+            previous = group;
+        }
+        assertTrue(previous != Integer.MIN_VALUE, "no portals behind the gate to check the gap between");
+    }
+
+    /**
+     * At the shipped rate, riding backwards must not meet more portals than riding forwards. Tight
+     * enough to catch the unthinned draw, which ran about one and a half times as dense behind.
+     */
+    @Test
+    @DisplayName("the shipped rate is the same in both directions of travel")
+    void shippedRateMatchesInBothDirections() {
+        int every = PortalCarriageSelection.DEFAULT_CARRIAGE_EVERY;
+        int groups = 60_000;
+        int behind = 0;
+        int ahead = 0;
+        for (int offset = 0; offset < groups; offset++) {
+            if (PortalCarriageSelection.isPortalGroup(
+                -(SHIPPED_GATE + offset) * GROUP, GROUP, Rate.lottery(every), SEED, SHIPPED_GATE)) behind++;
+            if (PortalCarriageSelection.isPortalGroup(
+                (SHIPPED_GATE + offset) * GROUP, GROUP, Rate.lottery(every), SEED, SHIPPED_GATE)) ahead++;
+        }
+        double expected = (double) groups / every;
+        assertTrue(behind > expected * 0.88 && behind < expected * 1.12,
+            "behind the origin: " + behind + " of " + groups + ", expected about " + expected);
+        assertTrue(ahead > expected * 0.88 && ahead < expected * 1.12,
+            "ahead of the origin: " + ahead + " of " + groups + ", expected about " + expected);
+    }
+
     /** The track behind the origin is gated and drawn like the track ahead of it, not mirrored onto it. */
     /**
      * The dev-creative cadence exists so a tester always has a portal a short ride away. A gate that

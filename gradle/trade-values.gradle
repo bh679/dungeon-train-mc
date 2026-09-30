@@ -1,0 +1,48 @@
+// pullTradeValues — refresh the bundled community-approved Trade Everything item values.
+//
+// The relay's item-values page (brennan.games/dungeontrain/items/) is where members suggest and
+// Brennan approves what each item trades for. Nothing pushes from there: this task PULLS the
+// approved map (GET /items/export, a flat {itemId: sixteenths}) into
+// src/main/resources/data/dungeontrain/trade_values.json, which TradeValueTable reads at runtime.
+//
+// Deliberately NOT wired into `build` / `processResources`: CI and the auto-release cascade build
+// offline and must stay deterministic. Run it by hand, review the diff, commit.
+//
+//   ./gradlew pullTradeValues                                   from the live relay
+//   ./gradlew pullTradeValues -PtradeValuesUrl=http://127.0.0.1:3005/items/export   a local relay
+
+def tradeValuesFile = file('src/main/resources/data/dungeontrain/trade_values.json')
+def defaultTradeValuesUrl = 'https://brennan.games/api/dp-relay/items/export'
+
+tasks.register('pullTradeValues') {
+    group = 'dungeontrain'
+    description = 'Pull the approved item trade values from the relay into trade_values.json (never part of build).'
+    outputs.upToDateWhen { false }
+    doLast {
+        def url = project.hasProperty('tradeValuesUrl') ? project.property('tradeValuesUrl') : defaultTradeValuesUrl
+        def client = java.net.http.HttpClient.newBuilder()
+            .version(java.net.http.HttpClient.Version.HTTP_1_1)
+            .connectTimeout(java.time.Duration.ofSeconds(15)).build()
+        def req = java.net.http.HttpRequest.newBuilder(java.net.URI.create(url))
+            .timeout(java.time.Duration.ofSeconds(30))
+            .header('User-Agent', "dungeon-train-mc/${project.mod_version} pullTradeValues").GET().build()
+        def res = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofString())
+        if (res.statusCode() != 200) throw new GradleException("pullTradeValues: ${url} answered ${res.statusCode()}")
+        def body = new groovy.json.JsonSlurper().parseText(res.body())
+        if (!(body instanceof Map) || !(body.values instanceof Map)) {
+            throw new GradleException("pullTradeValues: ${url} did not return {values:{…}}")
+        }
+        def idPattern = ~/^[a-z0-9_.-]+:[a-z0-9_.\/-]+$/
+        def values = new TreeMap<String, Integer>()
+        body.values.each { id, v ->
+            if (!(id ==~ idPattern)) throw new GradleException("pullTradeValues: '${id}' is not an item id")
+            if (!(v instanceof Number) || v.intValue() != v || v.intValue() < 1 || v.intValue() > 65536) {
+                throw new GradleException("pullTradeValues: '${id}' has a bad value ${v}")
+            }
+            values[id] = v.intValue()
+        }
+        def out = [generatedAt: body.generatedAt ?: java.time.Instant.now().toString(), unit: 'sixteenths', values: values]
+        tradeValuesFile.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(out)) + '\n'
+        println "pullTradeValues: ${values.size()} approved value(s) → ${project.relativePath(tradeValuesFile)}"
+    }
+}

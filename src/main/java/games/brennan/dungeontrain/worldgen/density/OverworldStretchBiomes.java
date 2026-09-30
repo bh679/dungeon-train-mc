@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.worldgen.density;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.mixin.MultiNoiseBiomeSourceAccessor;
+import games.brennan.dungeontrain.worldgen.BackportBiomes;
 import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -26,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * The overworld biome for a column, confined by stretch: Biomes O' Plenty only in the
@@ -37,7 +39,8 @@ import java.util.Set;
  * <ul>
  *   <li><b>vanilla</b> — vanilla's own overworld preset table ({@code knownPresets}, which TerraBlender
  *       leaves alone), keys filtered to {@code minecraft:}. Identical to the pre-BoP world, so existing
- *       saves keep their biome layout outside the BoP stretch.</li>
+ *       saves keep their biome layout outside the BoP stretch — except that VanillaBackport's biomes
+ *       ({@link BackportBiomes}) join the vanilla stretch; every other stretch picks without them.</li>
  *   <li><b>BoP</b> — one table per BoP TerraBlender region, from the region's own biome points. The
  *       region at a column is TerraBlender's own region layout ({@code getUniqueness}), with non-BoP
  *       regions mapped onto a BoP one, so every column of the stretch is a BoP region. A point BoP
@@ -60,24 +63,48 @@ public final class OverworldStretchBiomes {
 
     /** Vanilla's overworld climate table ({@code minecraft:} keys only). Registry-free, so built once per JVM. */
     private static volatile Climate.ParameterList<ResourceKey<Biome>> vanillaTable;
+    /** {@link #vanillaTable} without VanillaBackport's biomes ({@link BackportBiomes#OVERWORLD}). */
+    private static volatile Climate.ParameterList<ResourceKey<Biome>> vanillaTableWithoutBackport;
 
     /** Key → holder for the last source {@link #vanillaFallback} served, cached against its biome set. */
     private static volatile HolderLookup fallbackHolders;
 
     private record HolderLookup(Set<Holder<Biome>> possible, Map<ResourceKey<Biome>, Holder<Biome>> byKey) {}
 
-    private final Registry<Biome> biomes;
-    private final Climate.ParameterList<ResourceKey<Biome>> vanilla;
-    private final List<Climate.ParameterList<ResourceKey<Biome>>> bopRegions;
+    /** The last {@link #resolve} result, cached against its inputs' identities — see {@link #resolve(Registry, List)}. */
+    private static volatile Resolved resolved;
+
+    private record Resolved(Registry<Biome> biomes, List<Region> regions, OverworldStretchBiomes value) {
+        boolean builtFrom(Registry<Biome> otherBiomes, List<Region> otherRegions) {
+            if (biomes != otherBiomes || regions.size() != otherRegions.size()) return false;
+            for (int i = 0; i < regions.size(); i++) {
+                if (regions.get(i) != otherRegions.get(i)) return false;
+            }
+            return true;
+        }
+    }
+
+    /**
+     * The tables hold resolved holders, not keys: {@link #pick} runs once per quart, so the registry
+     * lookup (a hash probe + an {@code Optional}) is done once per table entry at {@link #resolve}
+     * instead. Each table keeps its key table's points in the same order, so its search tree — built
+     * from the points alone — is identical and finds the same entry. The vanilla table maps an entry
+     * missing from the registry to {@link #fallback}; a BoP table maps TerraBlender's deferred
+     * placeholder and missing entries to {@code null}, which falls through to the vanilla table.
+     */
+    private final Climate.ParameterList<Holder<Biome>> vanilla;
+    /** {@link #vanilla} without VanillaBackport's biomes — every stretch but the vanilla one picks from this. */
+    private final Climate.ParameterList<Holder<Biome>> vanillaWithoutBackport;
+    private final List<Climate.ParameterList<Holder<Biome>>> bopRegions;
     private final Map<ResourceLocation, Integer> bopRegionIndex;
     private final Holder<Biome> fallback;
 
-    private OverworldStretchBiomes(Registry<Biome> biomes,
-                                   Climate.ParameterList<ResourceKey<Biome>> vanilla,
-                                   List<Climate.ParameterList<ResourceKey<Biome>>> bopRegions,
+    private OverworldStretchBiomes(Climate.ParameterList<Holder<Biome>> vanilla,
+                                   Climate.ParameterList<Holder<Biome>> vanillaWithoutBackport,
+                                   List<Climate.ParameterList<Holder<Biome>>> bopRegions,
                                    Map<ResourceLocation, Integer> bopRegionIndex, Holder<Biome> fallback) {
-        this.biomes = biomes;
         this.vanilla = vanilla;
+        this.vanillaWithoutBackport = vanillaWithoutBackport;
         this.bopRegions = bopRegions;
         this.bopRegionIndex = bopRegionIndex;
         this.fallback = fallback;
@@ -91,8 +118,10 @@ public final class OverworldStretchBiomes {
         current = value;
     }
 
+    /** Unpublish, and drop the cached build so a stopped server's registry isn't kept alive. */
     public static void clear() {
         current = null;
+        resolved = null;
     }
 
     /** Number of BoP regions found — 0 means the BoP stretch falls back to vanilla. */
@@ -103,19 +132,23 @@ public final class OverworldStretchBiomes {
     /**
      * The biome for the quart {@code (qx, qy, qz)} in this stretch. The {@link SecondLapOverworld.Stretch#WWOO}
      * stretch picks vanilla biomes — WWOO's look comes from its features, not its biome ids.
+     *
+     * <p>VanillaBackport's biomes ({@link BackportBiomes#OVERWORLD}) only land in the
+     * {@link SecondLapOverworld.Stretch#VANILLA VANILLA} stretch — which is also what spheres, chuncks and stacks
+     * resolve to. The WWOO stretch (and the Lost City run that wears it) and BoP's fall-through to vanilla pick
+     * from the table without them, so their layout is exactly the pre-VanillaBackport one. So do legacy-band
+     * chunks — the caller passes {@code allowBackport = false} for them ({@code LegacyBiomes#isLegacyChunk}).</p>
      */
-    public Holder<Biome> pick(SecondLapOverworld.Stretch stretch, MultiNoiseBiomeSource source,
+    public Holder<Biome> pick(SecondLapOverworld.Stretch stretch, boolean allowBackport, MultiNoiseBiomeSource source,
                               int qx, int qy, int qz, Climate.Sampler sampler) {
         Climate.TargetPoint target = sampler.sample(qx, qy, qz);
         if (stretch == SecondLapOverworld.Stretch.BOP && !bopRegions.isEmpty()) {
-            ResourceKey<Biome> key = bopRegionAt(regionLayout(source), qx, qy, qz).findValue(target);
-            if (key != Region.DEFERRED_PLACEHOLDER) {
-                Holder<Biome> h = holder(key);
-                if (h != null) return h;
-            }
+            Holder<Biome> h = bopRegionAt(regionLayout(source), qx, qy, qz).findValue(target);
+            if (h != null) return h;                       // deferred / missing → vanilla
         }
-        Holder<Biome> h = holder(vanilla.findValue(target));
-        return h != null ? h : fallback;
+        Climate.ParameterList<Holder<Biome>> table =
+                allowBackport && stretch == SecondLapOverworld.Stretch.VANILLA ? vanilla : vanillaWithoutBackport;
+        return table.findValue(target);                    // missing entries are the fallback already
     }
 
     /** TerraBlender's region layout on this source (or its clone), or {@code null} without one. */
@@ -124,8 +157,8 @@ public final class OverworldStretchBiomes {
                 instanceof IExtendedParameterList<?> ext ? ext : null;
     }
 
-    private Climate.ParameterList<ResourceKey<Biome>> bopRegionAt(IExtendedParameterList<?> regionLayout,
-                                                                  int qx, int qy, int qz) {
+    private Climate.ParameterList<Holder<Biome>> bopRegionAt(IExtendedParameterList<?> regionLayout,
+                                                             int qx, int qy, int qz) {
         if (regionLayout == null || !regionLayout.isInitialized()) return bopRegions.get(0);
         int index = regionLayout.getUniqueness(qx, qy, qz);
         Region region = regionLayout.getRegion(index);
@@ -133,21 +166,44 @@ public final class OverworldStretchBiomes {
         return bopRegions.get(own != null ? own : Math.floorMod(index, bopRegions.size()));
     }
 
-    private Holder<Biome> holder(ResourceKey<Biome> key) {
-        return biomes.getHolder(key).orElse(null);
-    }
-
     /** Build from the server's biome registry and TerraBlender's regions; {@code null} on any failure. */
     public static OverworldStretchBiomes resolve(MinecraftServer server) {
         try {
-            Registry<Biome> biomes = server.registryAccess().registryOrThrow(Registries.BIOME);
+            return resolve(server.registryAccess().registryOrThrow(Registries.BIOME), Regions.get(RegionType.OVERWORLD));
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] Failed to build the second-lap overworld biome tables; overworld stays as generated", t);
+            return null;
+        }
+    }
+
+    /**
+     * As {@link #resolve(MinecraftServer)}, reusing the last build while its inputs are the same objects:
+     * the band context republishes on every dimension load and at server start, all against one
+     * registry and one region set. {@link Regions#get} copies its list per call, so the regions are
+     * compared element by element. A failed build ({@code null}) is not kept, so the next call retries.
+     */
+    static OverworldStretchBiomes resolve(Registry<Biome> biomes, List<Region> regions) {
+        Resolved last = resolved;
+        if (last != null && last.builtFrom(biomes, regions)) return last.value();
+        OverworldStretchBiomes built = build(biomes, regions);
+        if (built != null) resolved = new Resolved(biomes, List.copyOf(regions), built);
+        return built;
+    }
+
+    private static OverworldStretchBiomes build(Registry<Biome> biomes, List<Region> regions) {
+        try {
             Holder<Biome> fallback = biomes.getHolderOrThrow(Biomes.PLAINS);
+            Function<ResourceKey<Biome>, Holder<Biome>> holder = key -> biomes.getHolder(key).orElse(null);
 
-            Climate.ParameterList<ResourceKey<Biome>> vanilla = vanillaTable();
+            Function<ResourceKey<Biome>, Holder<Biome>> orFallback =
+                    key -> { Holder<Biome> h = holder.apply(key); return h != null ? h : fallback; };
+            Climate.ParameterList<Holder<Biome>> vanilla = withHolders(vanillaTable(), orFallback);
+            Climate.ParameterList<Holder<Biome>> vanillaWithoutBackport =
+                    withHolders(vanillaTableWithoutBackport(), orFallback);
 
-            List<Climate.ParameterList<ResourceKey<Biome>>> bopRegions = new ArrayList<>();
+            List<Climate.ParameterList<Holder<Biome>>> bopRegions = new ArrayList<>();
             Map<ResourceLocation, Integer> bopRegionIndex = new HashMap<>();
-            for (Region region : Regions.get(RegionType.OVERWORLD)) {
+            for (Region region : regions) {
                 if (!BOP_NAMESPACE.equals(region.getName().getNamespace())) continue;
                 List<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> points = new ArrayList<>();
                 region.addBiomes(biomes, p -> {
@@ -156,15 +212,29 @@ public final class OverworldStretchBiomes {
                 });
                 if (points.isEmpty()) continue;
                 bopRegionIndex.put(region.getName(), bopRegions.size());
-                bopRegions.add(new Climate.ParameterList<>(points));
+                bopRegions.add(withHolders(new Climate.ParameterList<>(points),
+                        key -> key == Region.DEFERRED_PLACEHOLDER ? null : holder.apply(key)));
             }
 
-            return new OverworldStretchBiomes(biomes, vanilla, List.copyOf(bopRegions),
+            return new OverworldStretchBiomes(vanilla, vanillaWithoutBackport, List.copyOf(bopRegions),
                     Map.copyOf(bopRegionIndex), fallback);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to build the second-lap overworld biome tables; overworld stays as generated", t);
             return null;
         }
+    }
+
+    /**
+     * The same table with every key mapped through {@code holder} — same points, same order, so the
+     * search tree is identical to the key table's and every lookup lands on the mapped entry.
+     */
+    static Climate.ParameterList<Holder<Biome>> withHolders(Climate.ParameterList<ResourceKey<Biome>> keyed,
+                                                            Function<ResourceKey<Biome>, Holder<Biome>> holder) {
+        List<Pair<Climate.ParameterPoint, Holder<Biome>>> mapped = new ArrayList<>(keyed.values().size());
+        for (Pair<Climate.ParameterPoint, ResourceKey<Biome>> p : keyed.values()) {
+            mapped.add(Pair.of(p.getFirst(), holder.apply(p.getSecond())));
+        }
+        return new Climate.ParameterList<>(mapped);
     }
 
     /**
@@ -187,6 +257,29 @@ public final class OverworldStretchBiomes {
             vanillaTable = table;
         }
         return table;
+    }
+
+    /** {@link #vanillaTable()} without VanillaBackport's biomes — cached, registry-free. */
+    public static Climate.ParameterList<ResourceKey<Biome>> vanillaTableWithoutBackport() {
+        Climate.ParameterList<ResourceKey<Biome>> table = vanillaTableWithoutBackport;
+        if (table == null) {
+            table = withoutBackport(vanillaTable());
+            vanillaTableWithoutBackport = table;
+        }
+        return table;
+    }
+
+    /**
+     * {@code table} minus {@link BackportBiomes#OVERWORLD}, the remaining points kept in order. Platform only
+     * appends VanillaBackport's points, so this is the table as it was before them — the same search tree,
+     * so every lookup lands where it did without VanillaBackport.
+     */
+    static Climate.ParameterList<ResourceKey<Biome>> withoutBackport(Climate.ParameterList<ResourceKey<Biome>> table) {
+        List<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> kept = new ArrayList<>(table.values().size());
+        for (Pair<Climate.ParameterPoint, ResourceKey<Biome>> p : table.values()) {
+            if (!BackportBiomes.OVERWORLD.contains(p.getSecond())) kept.add(p);
+        }
+        return new Climate.ParameterList<>(kept);
     }
 
     private static Map<ResourceKey<Biome>, Holder<Biome>> holdersOf(MultiNoiseBiomeSource source) {

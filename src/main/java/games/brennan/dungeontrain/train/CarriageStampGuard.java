@@ -11,7 +11,9 @@ import net.minecraft.world.level.block.Block;
  *
  * <p><b>Consumers.</b> {@code CropBlockCarriageSurviveMixin} relaxes the crop light check while the
  * guard is held (the original reason for it, below), and {@code ObserverBlockStampMixin} keeps
- * observers from pulsing at our own placement — only a player or a gameplay cause should fire one.
+ * observers from pulsing at our own placement — only a player or a gameplay cause should fire one —
+ * and {@code FastPaintingStampSurviveMixin} keeps block paintings hung while their wall is still being
+ * written.
  * Any loader that writes a template with a cascading flag belongs inside this guard.</p>
  *
  * <p><b>Why:</b> a template is authoritative. Whatever the author saved into the {@code .nbt} is what

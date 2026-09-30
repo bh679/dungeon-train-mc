@@ -3,8 +3,10 @@ package games.brennan.dungeontrain.builder.relay;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderSave;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.discord.BuildSubmitReporter;
 import games.brennan.dungeontrain.editor.TemplateLootPrefabs;
 import games.brennan.dungeontrain.editor.TemplateSidecars;
+import games.brennan.dungeontrain.editor.relay.EditorRelayWrite;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
 import games.brennan.dungeontrain.event.SharedCarriageMode;
 import games.brennan.dungeontrain.net.BuilderUploadStatusPacket;
@@ -116,8 +118,12 @@ public final class BuilderRelayUpload {
         // files on disk rather than plumbed through BuilderSave.Written and the save packet: those
         // files are the source of truth for both the builder and the editor call site, and the save
         // that just ran has already written them.
-        TemplateSidecars.Collected collected =
-                TemplateSidecars.collectReport(written.kind(), written.subKind(), written.id());
+        // An editor whole room rides as a CARRIAGE build, but its sidecars are not the carriage
+        // shell's of the same name — read them from the whole room's own stores.
+        boolean wholeRoom = EditorRelayWrite.isWholeRoom(written);
+        TemplateSidecars.Collected collected = wholeRoom
+                ? TemplateSidecars.collectWholeRoomReport(written.subKind(), written.id())
+                : TemplateSidecars.collectReport(written.kind(), written.subKind(), written.id());
         String sidecars = collected.doc();
         if (!collected.dropped().isEmpty()) {
             // Said out loud: a build that went up without its chest loot or variant pools looks
@@ -129,7 +135,9 @@ public final class BuilderRelayUpload {
         }
         // And the loot prefabs those sidecars' chest links name — the ones this install authored.
         // Read from the same files, for the same reason; see TemplateLootPrefabs.
-        String lootPrefabs = TemplateLootPrefabs.collect(written.kind(), written.subKind(), written.id());
+        String lootPrefabs = wholeRoom
+                ? TemplateLootPrefabs.collectWholeRoom(written.id())
+                : TemplateLootPrefabs.collect(written.kind(), written.subKind(), written.id());
         Extras extras = new Extras(sidecars, lootPrefabs);
 
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
@@ -376,8 +384,19 @@ public final class BuilderRelayUpload {
      */
     public static CompletableFuture<Component> submitToTrain(ServerPlayer player, ServerLevel level,
                                                              int relayId, boolean publish, SubmitNote note) {
+        return submitToTrain(player, level, relayId, publish, note, null);
+    }
+
+    /**
+     * As {@link #submitToTrain(ServerPlayer, ServerLevel, int, boolean, SubmitNote)} with the
+     * client's picture of the build, which rides on the Discord announcement a successful submit
+     * posts ({@link BuildSubmitReporter}). Null or empty is "no picture"; a withdraw ignores it.
+     */
+    public static CompletableFuture<Component> submitToTrain(ServerPlayer player, ServerLevel level,
+                                                             int relayId, boolean publish, SubmitNote note,
+                                                             byte[] render) {
         return withSecret(player, level, relayId,
-                (key, entry, kind) -> publishWith(level, key, entry, kind, publish, note));
+                (key, entry, kind) -> publishWith(player, level, key, entry, kind, publish, note, render));
     }
 
     /**
@@ -585,9 +604,10 @@ public final class BuilderRelayUpload {
     }
 
     /** The publish call itself, once a secret is in hand — the tail both paths above share. */
-    private static CompletableFuture<Component> publishWith(ServerLevel level, String key,
+    private static CompletableFuture<Component> publishWith(ServerPlayer player, ServerLevel level, String key,
                                                             BuilderRelayBuilds.Entry entry,
-                                                            String kindId, boolean publish, SubmitNote note) {
+                                                            String kindId, boolean publish, SubmitNote note,
+                                                            byte[] render) {
         if (publish && BuilderRelayKinds.canJoinTheTrain(kindId)
                 && !DungeonTrainConfig.isSharedCarriagesEnabled()) {
             // Nothing leases from the pool while the feature is off, so publishing a carriage would put
@@ -604,6 +624,12 @@ public final class BuilderRelayUpload {
                     live.builderRelayBuilds().put(key,
                             entry.withPublished(publish).withToken(publish ? "" : result.token()));
                     live.markBuilderRelayBuildsDirty();
+                    // Announce it only now the relay has it; a withdraw is nobody's news.
+                    if (publish) {
+                        BuildSubmitReporter.postSafely(player, entry.relayId(), kindId,
+                                BuilderRelayBuilds.subKindOfKey(key), BuilderRelayBuilds.idOfKey(key),
+                                note, render);
+                    }
                 });
                 return msg(publish ? "gui.dungeontrain.builder.profile.published"
                         : "gui.dungeontrain.builder.profile.withdrawn", ChatFormatting.GREEN);

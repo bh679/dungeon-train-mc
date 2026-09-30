@@ -1,0 +1,29 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_bite",
+      "bites_min": 1,
+      "bites_max": 2,
+      "radius_min": 0.15,
+      "radius_max": 0.25,
+      "rubble": [
+        "minecraft:cobblestone",
+        "minecraft:cobbled_deepslate",
+        "minecraft:tuff",
+        "minecraft:andesite",
+        "minecraft:cracked_stone_bricks",
+        "minecraft:mossy_cobblestone"
+      ],
+      "pile_scale": 0.8,
+      "pile_max": 3
+    }
+  ]
+}

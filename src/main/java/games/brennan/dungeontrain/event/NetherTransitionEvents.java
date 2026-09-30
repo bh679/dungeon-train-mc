@@ -1,49 +1,36 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
-import games.brennan.dungeontrain.worldgen.WorldGenCycle;
-import games.brennan.dungeontrain.worldgen.feature.NetherTransitionFeature;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.SectionPos;
-import net.minecraft.core.registries.BuiltInRegistries;
+import games.brennan.dungeontrain.worldgen.feature.NetherFoliageStrip;
+import games.brennan.dungeontrain.worldgen.feature.StrippableFoliage;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.TagsUpdatedEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
 
 /**
- * Keeps overworld foliage (trees/leaves/flowers) out of the <b>netherrack crossfade + Nether
- * core</b> of the transition band, where green vegetation on netherrack would look wrong. The
- * mountain STAGES are now real, vegetated terrain (the band's height lives in the density router,
- * with highland biomes forced on top) — so foliage is KEPT there; only the netherrack zone
- * ({@link NetherBand#netherRampAt} {@code > 0}) is stripped.
+ * Applies the Nether-band foliage strip ({@link NetherFoliageStrip}) to each newly generated overworld chunk.
+ * Runs on {@link ChunkEvent.Load} gated on {@link ChunkEvent.Load#isNewChunk()} (once at generation, after
+ * all decoration, never on reload).
  *
- * <p>Runs on {@link ChunkEvent.Load} gated on {@link ChunkEvent.Load#isNewChunk()} (once at
- * generation, after all decoration, never on reload). Only touches columns the End band does not
- * own ({@link DisintegrationBand#middleRampAt} {@code == 0}). Writes go through raw
- * {@link LevelChunkSection#setBlockState}, the Sable-safe path (mirroring {@code WorldDisintegrationEvents}).</p>
+ * <p>The scan that decides <em>what</em> to strip was precomputed on the worldgen worker at the {@code SPAWN}
+ * step ({@code ChunkStatusSpawnMixin} → {@link NetherFoliageStrip#CACHE}); here on the main thread only the
+ * (few) block writes remain. A cache miss — precompute disabled, plan evicted — recomputes inline, which is
+ * still cheap thanks to the palette gate, and produces the identical result. The strip used to scan every
+ * block of every band chunk right here, which stalled the server thread for seconds in the 0.983.0 lag
+ * report.</p>
  *
- * <p>In the real-Nether <b>core</b> the Nether's own flora is kept ({@link #isNetherFlora}): the core is
- * decorated with real Nether features, and a huge fungus's stem is a {@code #minecraft:logs} block, so
- * stripping it left the cap floating.</p>
- *
- * <p><b>History:</b> this previously stripped foliage across the WHOLE band ({@code heightRampAt > 0})
- * to keep the old bare stamped mountains clean — which also deleted the trees/flowers the new
- * real-terrain mountains are meant to have. Scoped to the netherrack zone so mountains stay forested.</p>
+ * <p><b>History:</b> the strip once covered the WHOLE band ({@code heightRampAt > 0}) to keep the old bare
+ * stamped mountains clean — which also deleted the trees/flowers the new real-terrain mountains are meant to
+ * have. It is scoped to the netherrack zone so mountains stay forested; see {@link NetherFoliageStrip}.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NetherTransitionEvents {
-
-    private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
     private NetherTransitionEvents() {}
 
@@ -53,64 +40,31 @@ public final class NetherTransitionEvents {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
 
-        long startX = NetherBand.startX(level);
-        if (startX == NetherBand.OFF) return;
-
         ChunkAccess chunk = event.getChunk();
-        ChunkPos pos = chunk.getPos();
-        int chunkMinX = pos.getMinBlockX();
-
-        boolean[] band = new boolean[16];
-        boolean[] core = new boolean[16];
-        boolean any = false;
-        for (int dx = 0; dx < 16; dx++) {
-            int worldX = chunkMinX + dx;
-            // Only the netherrack crossfade + Nether core (netherRamp > 0) — NOT the vegetated
-            // mountain stages — and never a column the End band owns (End wins).
-            double ramp = NetherBand.netherRampAt(level, worldX, pos.getMinBlockZ());
-            band[dx] = ramp > 0.0
-                    && DisintegrationBand.middleRampAt(level, worldX, pos.getMinBlockZ()) <= 0.0;
-            core[dx] = ramp >= WorldGenCycle.NETHER_CORE_THRESHOLD;
-            if (band[dx]) any = true;
+        long key = chunk.getPos().toLong();
+        if (NetherBand.startX(level) == NetherBand.OFF) {
+            NetherFoliageStrip.CACHE.remove(key); // band switched off between SPAWN and Load: drop, don't apply
+            return;
         }
-        if (!any) return;
 
-        boolean changed = false;
-        for (int sIdx = 0; sIdx < chunk.getSectionsCount(); sIdx++) {
-            LevelChunkSection section = chunk.getSection(sIdx);
-            if (section.hasOnlyAir()) continue;
-            int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
-            for (int dx = 0; dx < 16; dx++) {
-                if (!band[dx]) continue;
-                for (int dz = 0; dz < 16; dz++) {
-                    for (int ly = 0; ly < 16; ly++) {
-                        BlockState cur = section.getBlockState(dx, ly, dz);
-                        if (cur.isAir() || !NetherTransitionFeature.isStrippableFoliage(cur)) continue;
-                        if (core[dx] && isNetherFlora(cur)) continue;   // the core's own Nether decoration
-                        if (cur.hasBlockEntity()) {
-                            chunk.removeBlockEntity(new BlockPos(chunkMinX + dx, baseY + ly, pos.getMinBlockZ() + dz));
-                        }
-                        section.setBlockState(dx, ly, dz, AIR, false);
-                        changed = true;
-                    }
-                }
-            }
-        }
-        if (changed) chunk.setUnsaved(true);
+        // Prefer the plan precomputed off-thread at SPAWN; fall back to the inline scan on a miss.
+        NetherFoliageStrip.Plan plan = NetherFoliageStrip.CACHE.remove(key);
+        if (plan == null) plan = NetherFoliageStrip.compute(level, chunk);
+        if (plan == null) return;
+        NetherFoliageStrip.apply(chunk, plan);
     }
 
-    /**
-     * Flora the real-Nether core's own decoration grows, which the strip must leave standing. Huge crimson /
-     * warped fungi have {@code #minecraft:logs} stems, and BetterNether / BoP Nether trees have modded logs
-     * and leaves; stripping them as "overworld foliage" left their caps, shroomlights, weeping vines, wall
-     * moss and wall mushrooms floating in mid-air. Overworld trees are vanilla ({@code minecraft:}) wood, so
-     * spilled overworld canopies are still stripped in the core.
-     */
-    static boolean isNetherFlora(BlockState state) {
-        if (state.is(BlockTags.CRIMSON_STEMS) || state.is(BlockTags.WARPED_STEMS)
-                || state.is(BlockTags.WART_BLOCKS)) {
-            return true;
+    /** Drop pending plans when the overworld unloads — a plan must never outlive its world. */
+    @SubscribeEvent
+    public static void onLevelUnload(LevelEvent.Unload event) {
+        if (event.getLevel() instanceof ServerLevel level && level.dimension().equals(Level.OVERWORLD)) {
+            NetherFoliageStrip.CACHE.clear();
         }
-        return !BuiltInRegistries.BLOCK.getKey(state.getBlock()).getNamespace().equals("minecraft");
+    }
+
+    /** Tags reloaded (datapack / {@code /reload}): the per-block predicate cache may be stale. */
+    @SubscribeEvent
+    public static void onTagsUpdated(TagsUpdatedEvent event) {
+        StrippableFoliage.reset();
     }
 }

@@ -1,0 +1,27 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_truncate",
+      "min_fraction": 0.45,
+      "max_fraction": 0.75,
+      "jagged": 3,
+      "rubble": [
+        "minecraft:bricks",
+        "minecraft:cobblestone",
+        "minecraft:cracked_stone_bricks",
+        "minecraft:mud_bricks",
+        "minecraft:andesite",
+        "minecraft:mossy_cobblestone",
+        "minecraft:air"
+      ]
+    }
+  ]
+}

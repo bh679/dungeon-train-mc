@@ -20,9 +20,9 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * camera is in it; walking out needs no message at all.</p>
  *
  * <p>Separate from the fog packet rather than a field on it, because the two do not cover the same
- * ground. Fog is sent only for modes that fog and reaches into the clearance a Bedrockless room
+ * ground. Fog is sent only for modes that fog and reaches into the clearance a Void room
  * swept; daylight is sent for any mode whose template opted in and stops at the room's own walls —
- * the corridors back to the train are not meant to be daylit, and the void outside a bedrockless
+ * the corridors back to the train are not meant to be daylit, and the emptiness outside a Void
  * room certainly is not.</p>
  *
  * <p>The bounds are of what has actually been <b>stamped</b>, for the reason the fog packet's are:

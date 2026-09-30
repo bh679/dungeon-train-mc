@@ -44,6 +44,9 @@ public final class DungeonTrainCommonConfig {
     /** Global DEFAULT Compatible Terrain mode for new worlds. false = classic Dungeon Train terrain. */
     public static final boolean DEFAULT_COMPATIBLE_TERRAIN = false;
 
+    /** Default for {@link #keepVanillaChorus()}: DT's chorus stays vanilla, as it always has. */
+    public static final boolean DEFAULT_KEEP_VANILLA_CHORUS = true;
+
     /**
      * World disintegration band — the world breaks apart into void past a carriage
      * count, then reassembles. Always-on core mechanic with a kill switch.
@@ -241,6 +244,18 @@ public final class DungeonTrainCommonConfig {
      * compute and apply everything at load (the original behaviour). Default true.
      */
     public static final boolean DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE = true;
+    /** Scan the Nether-band foliage strip on the worldgen worker (SPAWN) and only write at chunk load. */
+    public static final boolean DEFAULT_NETHER_FOLIAGE_STRIP_PRECOMPUTE = true;
+
+    /**
+     * Distant Horizons LOD-lite decoration. DH's LOD generator threads ({@code DH-World Gen Thread[N]})
+     * run the full Nether-core feature pass for never-saved LOD chunks that are only seen from beyond
+     * the vanilla render distance. true = on those threads place only the silhouette-scale steps
+     * (fungi, basalt pillars/columns, deltas), skipping ores/glowstone/fire/mushrooms/springs that are
+     * below LOD resolution; identical seeding keeps the kept features where the real chunk's will be.
+     * false = full decoration everywhere (the original behaviour). Default true.
+     */
+    public static final boolean DEFAULT_DISTANT_LOD_LITE_DECORATION = true;
 
     /**
      * Chuncks band — a fourth looping phase, appended after the upside-down band's trailing overworld
@@ -512,7 +527,17 @@ public final class DungeonTrainCommonConfig {
             + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:650, chuncks:2000, mix:4000, stacks:5000";
 
-    public static final int CURRENT_CONFIG_VERSION = 14;
+    /**
+     * The {@code worldgenCycleOrder} v14 shipped; v15 shortened most of Lap 1, Lap 2 and the legacy eras,
+     * and split Lap 1's first Nether into 1000 vanilla, a 400-block mix, then Biomes O' Plenty ({@code nether:vanilla=1000~400+bop>bop}).
+     */
+    public static final String V14_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:vanilla>bop:3000, ow:wwoo:4500, end:vanilla:1200, end:bop:2000, upside_down:2500:5000, "
+            + "ow:bop:8000, nether:better:8000, legacy:wwoo:lost_city=4000, end:better:8000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:650, chuncks:2000, mix:4000, stacks:5000";
+
+    public static final int CURRENT_CONFIG_VERSION = 15;
     public static final boolean DEFAULT_MIX_ENABLED = true;
     public static final String DEFAULT_MIX_EXCLUDE = "";
 
@@ -530,6 +555,8 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_BEHIND_SPAWN;
     public static final ModConfigSpec.IntValue AMBIENT_MONSTER_CAP;
     public static final ModConfigSpec.BooleanValue COMPATIBLE_TERRAIN;
+    /** Whether BetterEnd's chorus restyle is overridden. See {@link #keepVanillaChorus()}. */
+    public static final ModConfigSpec.BooleanValue KEEP_VANILLA_CHORUS;
     public static final ModConfigSpec.BooleanValue DISINTEGRATION_ENABLED;
     public static final ModConfigSpec.IntValue DISINTEGRATION_START_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_FADE_BLOCKS;
@@ -561,6 +588,8 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.DoubleValue UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON;
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_MAX_CEILING_HEIGHT;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_MIRROR_PRECOMPUTE;
+    public static final ModConfigSpec.BooleanValue DISTANT_LOD_LITE_DECORATION;
+    public static final ModConfigSpec.BooleanValue NETHER_FOLIAGE_STRIP_PRECOMPUTE;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_TRACK_FLATTEN;
     public static final ModConfigSpec.BooleanValue CHUNCKS_ENABLED;
     public static final ModConfigSpec.IntValue CHUNCKS_HOLD_BLOCKS;
@@ -603,6 +632,7 @@ public final class DungeonTrainCommonConfig {
         DEFAULT_PLAYER_MOB_BEHIND_SPAWN = pair.getLeft().defaultPlayerMobBehindSpawnPercent;
         AMBIENT_MONSTER_CAP = pair.getLeft().ambientMonsterCap;
         COMPATIBLE_TERRAIN = pair.getLeft().compatibleTerrain;
+        KEEP_VANILLA_CHORUS = pair.getLeft().keepVanillaChorus;
         DISINTEGRATION_ENABLED = pair.getLeft().disintegrationEnabled;
         DISINTEGRATION_START_BLOCKS = pair.getLeft().disintegrationStartBlocks;
         DISINTEGRATION_FADE_BLOCKS = pair.getLeft().disintegrationFadeBlocks;
@@ -634,6 +664,8 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_EXIT_NOISE_SKIP_EPSILON = pair.getLeft().upsideDownExitNoiseSkipEpsilon;
         UPSIDE_DOWN_MAX_CEILING_HEIGHT = pair.getLeft().upsideDownMaxCeilingHeight;
         UPSIDE_DOWN_MIRROR_PRECOMPUTE = pair.getLeft().upsideDownMirrorPrecompute;
+        DISTANT_LOD_LITE_DECORATION = pair.getLeft().distantLodLiteDecoration;
+        NETHER_FOLIAGE_STRIP_PRECOMPUTE = pair.getLeft().netherFoliageStripPrecompute;
         UPSIDE_DOWN_TRACK_FLATTEN = pair.getLeft().upsideDownTrackFlatten;
         CHUNCKS_ENABLED = pair.getLeft().chuncksEnabled;
         CHUNCKS_HOLD_BLOCKS = pair.getLeft().chuncksHoldBlocks;
@@ -733,6 +765,14 @@ public final class DungeonTrainCommonConfig {
                         "false = classic Dungeon Train terrain. Applies to NEW worlds only; existing worlds keep the terrain",
                         "they were created with. The matching terrain mod must also be installed for any visible change.")
                 .define("defaultCompatibleTerrain", DEFAULT_COMPATIBLE_TERRAIN);
+
+        ModConfigSpec.BooleanValue keepVanillaChorus = b
+                .comment("Keep chorus plants and flowers vanilla. BetterEnd: New Dawn's own change_chorus_plant option",
+                        "swaps their models (and the flower's hitbox) for its restyled ones everywhere, including the vanilla",
+                        "End-islands bands Dungeon Train grows chorus in. true = vanilla chorus whatever BetterEnd's config says.",
+                        "false = leave it to BetterEnd's change_chorus_plant setting. Models are chosen at startup, so a change",
+                        "needs a restart; keep client and server on the same value so the flower's hitbox matches its model.")
+                .define("keepVanillaChorus", DEFAULT_KEEP_VANILLA_CHORUS);
 
         ModConfigSpec.BooleanValue disintegrationEnabled = b
                 .comment("World disintegration band. When true (default), past a carriage count the world breaks apart",
@@ -929,6 +969,22 @@ public final class DungeonTrainCommonConfig {
                         "byte-identical terrain. Set false to compute and apply everything at load (original behaviour).",
                         "Default true.")
                 .define("upsideDownMirrorPrecompute", DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE);
+        ModConfigSpec.BooleanValue distantLodLiteDecoration = b
+                .comment("Distant Horizons LOD-lite decoration. DH's LOD generator threads (DH-World Gen Thread[N])",
+                        "run the Nether-core vanilla feature pass for LOD chunks that are never saved and only seen",
+                        "from beyond the vanilla render distance. true = on those threads place only the silhouette",
+                        "features (huge fungi, basalt pillars/columns, deltas, vegetation) and skip the sub-block",
+                        "detail (ores, glowstone, fire, mushrooms, springs) that is below LOD resolution; the kept",
+                        "features are seeded identically so they stand where the real chunk's will. Real chunks are",
+                        "never affected. false = full decoration on every thread (original behaviour). Default true.")
+                .define("distantLodLiteDecoration", DEFAULT_DISTANT_LOD_LITE_DECORATION);
+        ModConfigSpec.BooleanValue netherFoliageStripPrecompute = b
+                .comment("Scan the Nether transition band's foliage strip (which overworld leaves/logs/flowers to clear",
+                        "off the netherrack crossfade + Nether core) on the worldgen worker thread (SPAWN step) and only",
+                        "apply the block writes at chunk load, instead of scanning every block of every band chunk on",
+                        "the main thread at load. Byte-identical terrain. Set false to scan at load (original behaviour).",
+                        "Default true.")
+                .define("netherFoliageStripPrecompute", DEFAULT_NETHER_FOLIAGE_STRIP_PRECOMPUTE);
         ModConfigSpec.BooleanValue upsideDownTrackFlatten = b
                 .comment("Keep mountains off the track in the upside-down band: near the track the overworld terrain",
                         "(and its biomes) is weighted toward lowland before it is mirrored, fading smoothly back to the",
@@ -1050,6 +1106,7 @@ public final class DungeonTrainCommonConfig {
                 .defineInRange("spheresEndSkyFadeBlocks", DEFAULT_SPHERES_END_SKY_FADE_BLOCKS,
                         MIN_SPHERES_END_SKY_FADE_BLOCKS, MAX_SPHERES_END_SKY_FADE_BLOCKS);
         SpheresProgressionConfig.define(b);
+        EndBandConfig.define(b);
         ModConfigSpec.BooleanValue stacksEnabled = b
                 .comment("Stacks phase — part of the single repeating world-gen cycle, appended after the spheres band",
                         "with a long plain-overworld lead-in. Along +X it is mostly void; scattered chunks each hold a",
@@ -1109,7 +1166,7 @@ public final class DungeonTrainCommonConfig {
         b.pop();
 
         return new Holder(configVersion, defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent,
-                ambientMonsterCap, compatibleTerrain,
+                ambientMonsterCap, compatibleTerrain, keepVanillaChorus,
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
                 disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationEndCities,
                 disintegrationOverworldHoldBlocks,
@@ -1120,7 +1177,8 @@ public final class DungeonTrainCommonConfig {
                 upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks, upsideDownExitGapBlocks,
                 upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
                 upsideDownBedrockRoof, upsideDownCloudY, upsideDownExitNoiseSkipEpsilon,
-                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute, upsideDownTrackFlatten,
+                upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute, distantLodLiteDecoration,
+                netherFoliageStripPrecompute, upsideDownTrackFlatten,
                 chuncksEnabled, chuncksHoldBlocks, chuncksFadeBlocks, chuncksLeadGapBlocks,
                 chuncksKeepDensity, chuncksSliceRatio,
                 spheresEnabled, spheresHoldBlocks, spheresFadeBlocks, spheresLeadGapBlocks,
@@ -1350,6 +1408,15 @@ public final class DungeonTrainCommonConfig {
             WorldGenCycle.invalidateCache();
         }
 
+        // v14 -> v15: shorter bands and a split first Nether (vanilla, then BoP). Same rule: only an order
+        // still exactly as v14 shipped moves.
+        if (from < 15 && V14_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shorter bands, split Nether.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
         CONFIG_VERSION.set(CURRENT_CONFIG_VERSION);
         CONFIG_VERSION.save();
         CatchUpBurstAuto.invalidate();
@@ -1361,6 +1428,15 @@ public final class DungeonTrainCommonConfig {
         hold.set(target);
         LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: {} {} -> {}.",
                 from, CURRENT_CONFIG_VERSION, key, legacy, target);
+    }
+
+    /**
+     * Whether {@code BetterEndChorusCosmeticMixin} answers BetterEnd's {@code changeChorusPlant} with
+     * {@code false}. Read when models load (before any world) and for the flower's shape on both
+     * sides, so it can't be a per-world choice. Falls back to the default before the config loads.
+     */
+    public static boolean keepVanillaChorus() {
+        return isLoaded() ? KEEP_VANILLA_CHORUS.get() : DEFAULT_KEEP_VANILLA_CHORUS;
     }
 
     /** Global default Compatible Terrain mode for new worlds; falls back to the hardcoded default pre-load. */
@@ -1573,6 +1649,16 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? UPSIDE_DOWN_MIRROR_PRECOMPUTE.get() : DEFAULT_UPSIDE_DOWN_MIRROR_PRECOMPUTE;
     }
 
+    /** Whether Nether-core decoration goes LOD-lite on Distant Horizons generator threads; falls back pre-load. */
+    public static boolean isDistantLodLiteDecoration() {
+        return isLoaded() ? DISTANT_LOD_LITE_DECORATION.get() : DEFAULT_DISTANT_LOD_LITE_DECORATION;
+    }
+
+    /** Whether the Nether-band foliage strip is scanned off-thread at SPAWN; falls back to the default pre-load. */
+    public static boolean isNetherFoliageStripPrecompute() {
+        return isLoaded() ? NETHER_FOLIAGE_STRIP_PRECOMPUTE.get() : DEFAULT_NETHER_FOLIAGE_STRIP_PRECOMPUTE;
+    }
+
     /** Whether the chuncks band is active; falls back to the hardcoded default pre-load. */
     public static boolean isChuncksEnabled() {
         return isLoaded() ? CHUNCKS_ENABLED.get() : DEFAULT_CHUNCKS_ENABLED;
@@ -1720,6 +1806,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.IntValue ambientMonsterCap,
                           ModConfigSpec.BooleanValue compatibleTerrain,
+                          ModConfigSpec.BooleanValue keepVanillaChorus,
                           ModConfigSpec.BooleanValue disintegrationEnabled,
                           ModConfigSpec.IntValue disintegrationStartBlocks,
                           ModConfigSpec.IntValue disintegrationFadeBlocks,
@@ -1751,6 +1838,8 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.DoubleValue upsideDownExitNoiseSkipEpsilon,
                           ModConfigSpec.IntValue upsideDownMaxCeilingHeight,
                           ModConfigSpec.BooleanValue upsideDownMirrorPrecompute,
+                          ModConfigSpec.BooleanValue distantLodLiteDecoration,
+                          ModConfigSpec.BooleanValue netherFoliageStripPrecompute,
                           ModConfigSpec.BooleanValue upsideDownTrackFlatten,
                           ModConfigSpec.BooleanValue chuncksEnabled,
                           ModConfigSpec.IntValue chuncksHoldBlocks,

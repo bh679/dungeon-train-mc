@@ -206,7 +206,8 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         List<String> stageIds,
         String displayName,
         String builderUuid,
-        String builderName
+        String builderName,
+        List<String> groupIds
     ) {
         /**
          * {@code phaseMask == NO_GATE} marks a row with no per-template spawn gate (sub-variants /
@@ -220,6 +221,22 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
             if (displayName == null || displayName.isBlank()) displayName = name;
             builderUuid = builderUuid == null ? "" : builderUuid;
             builderName = builderName == null ? "" : builderName;
+            groupIds = groupIds == null ? List.of() : List.copyOf(groupIds);
+        }
+
+        /** The 15-field shape from before template groups — in no group. */
+        public Variant(String name, int weight, int minLevel, int maxLevel, int phaseMask,
+                       String category, String modelId, String modelName, boolean isUser, boolean isImported,
+                       List<Variant> subVariants, List<String> stageIds, String displayName,
+                       String builderUuid, String builderName) {
+            this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
+                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, List.of());
+        }
+
+        /** Copy with the template-group memberships replaced (tunnel templates only today). */
+        public Variant withGroups(List<String> groups) {
+            return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
+                isUser, isImported, subVariants, stageIds, displayName, builderUuid, builderName, groups);
         }
 
         /** The 13-field shape the label-aware builders used — no builder credit. */
@@ -241,13 +258,13 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         /** Copy with the drawn label replaced; {@code null} / blank falls back to the name. */
         public Variant withDisplayName(String label) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, label, builderUuid, builderName);
+                isUser, isImported, subVariants, stageIds, label, builderUuid, builderName, groupIds);
         }
 
         /** Copy with the builder credit replaced; {@code null} for either half means "none". */
         public Variant withBuilder(String uuid, String builderName) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, displayName, uuid, builderName);
+                isUser, isImported, subVariants, stageIds, displayName, uuid, builderName, groupIds);
         }
 
         /** True when somebody is credited as this template's original builder. */
@@ -416,6 +433,8 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         buf.writeUtf(v.displayName(), 128);
         buf.writeUtf(v.builderUuid(), 64);
         buf.writeUtf(v.builderName(), 64);
+        buf.writeVarInt(v.groupIds().size());
+        for (String g : v.groupIds()) buf.writeUtf(g, 64);
     }
 
     static Variant decodeVariant(FriendlyByteBuf buf) {
@@ -442,9 +461,12 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         String displayName = buf.readUtf(128);
         String builderUuid = buf.readUtf(64);
         String builderName = buf.readUtf(64);
+        int groupCount = buf.readVarInt();
+        List<String> groupIds = new ArrayList<>(groupCount);
+        for (int k = 0; k < groupCount; k++) groupIds.add(buf.readUtf(64));
         return new Variant(name, weight, minLevel, maxLevel, phaseMask,
             category, modelId, modelName, isUser, isImported, subs, stageIds, displayName,
-            builderUuid, builderName);
+            builderUuid, builderName, groupIds);
     }
 
     public static EditorTypeMenusPacket decode(FriendlyByteBuf buf) {

@@ -77,10 +77,10 @@ final class EditorTemplateListsTest {
 
     /** The mode tags as they actually appear in {@code portals/room/weights.json}. */
     private static final Map<String, String> ROOM_MODES = Map.ofEntries(
-            Map.entry("default", "bedrock_lock"),
-            Map.entry("pathsmol", "bedrock_lock"),
-            Map.entry("beam", "bedrockless"),
-            Map.entry("window_contents", "bedrockless/exact/fit"),
+            Map.entry("default", "bedrock"),
+            Map.entry("pathsmol", "bedrock"),
+            Map.entry("beam", "void"),
+            Map.entry("window_contents", "void/exact/fit"),
             Map.entry("singlepillar", "endless_open"),
             Map.entry("cubes", "endless_repetition"),
             Map.entry("labrynth", "endless_repetition/dynamic"));
@@ -88,24 +88,51 @@ final class EditorTemplateListsTest {
     @Test
     @DisplayName("Each mode gets the rooms authored for it, and nothing else")
     void roomsBucketByMode() {
-        assertEquals(List.of("default", "pathsmol"), roomsOf(PortalRoomMode.BEDROCK_LOCK));
-        assertEquals(List.of("beam", "window_contents"), roomsOf(PortalRoomMode.BEDROCKLESS));
+        assertEquals(List.of("default", "pathsmol"), roomsOf(PortalRoomMode.BEDROCK));
+        assertEquals(List.of("beam", "window_contents"), roomsOf(PortalRoomMode.VOID));
         assertEquals(List.of("singlepillar"), roomsOf(PortalRoomMode.ENDLESS_OPEN));
         assertEquals(List.of("cubes", "labrynth"), roomsOf(PortalRoomMode.ENDLESS_REPETITION));
+    }
+
+    @Test
+    @DisplayName("a room still tagged 'bedrockless' from before the rename is filed under Void")
+    void legacyBedrocklessRoomsFileUnderVoid() {
+        Map<String, String> legacy = Map.of(
+                "old_beam", "bedrockless",
+                "old_window", "bedrockless/exact/fit",
+                "new_beam", "void");
+        assertEquals(List.of("new_beam", "old_beam", "old_window"),
+                EditorTemplateLists.filterByMode(List.of("new_beam", "old_beam", "old_window"),
+                        legacy::get, PortalRoomMode.VOID));
+        assertEquals(List.of(),
+                EditorTemplateLists.filterByMode(List.of("old_beam", "old_window"),
+                        legacy::get, PortalRoomMode.BEDROCK));
+    }
+
+    @Test
+    @DisplayName("a room still tagged 'bedrock_lock' from before the rename is filed under Bedrock")
+    void legacyBedrockLockRoomsFileUnderBedrock() {
+        Map<String, String> legacy = Map.of(
+                "old_lock", "bedrock_lock",
+                "old_lock_sky", "bedrock_lock/exact/off/off/off/day",
+                "new_lock", "bedrock");
+        assertEquals(List.of("new_lock", "old_lock", "old_lock_sky"),
+                EditorTemplateLists.filterByMode(List.of("new_lock", "old_lock", "old_lock_sky"),
+                        legacy::get, PortalRoomMode.BEDROCK));
     }
 
     @Test
     @DisplayName("A tag carrying its settings still files under its mode, not the default")
     void settingsSegmentsDoNotChangeTheMode() {
         // The trap this test exists for: the stored tag is "endless_repetition/dynamic", so reading
-        // it with PortalRoomMode.parse would match no id and quietly return BEDROCK_LOCK — filing
+        // it with PortalRoomMode.parse would match no id and quietly return BEDROCK — filing
         // every settings-carrying room under Bedrock. Roughly half the shipped library has one.
         assertEquals(List.of("labrynth"),
                 EditorTemplateLists.filterByMode(List.of("labrynth"),
                         ROOM_MODES::get, PortalRoomMode.ENDLESS_REPETITION));
         assertEquals(List.of(),
                 EditorTemplateLists.filterByMode(List.of("labrynth"),
-                        ROOM_MODES::get, PortalRoomMode.BEDROCK_LOCK));
+                        ROOM_MODES::get, PortalRoomMode.BEDROCK));
     }
 
     @Test
@@ -122,10 +149,10 @@ final class EditorTemplateListsTest {
     @DisplayName("No names, or no mode, lists nothing rather than throwing")
     void emptyInputsAreTolerated() {
         assertEquals(List.of(), EditorTemplateLists.filterByMode(List.of(), ROOM_MODES::get,
-                PortalRoomMode.BEDROCK_LOCK));
+                PortalRoomMode.BEDROCK));
         assertEquals(List.of(), EditorTemplateLists.filterByMode(List.of("default"), ROOM_MODES::get, null));
         assertEquals(List.of(), EditorTemplateLists.filterByMode(null, ROOM_MODES::get,
-                PortalRoomMode.BEDROCK_LOCK));
+                PortalRoomMode.BEDROCK));
     }
 
     private static List<String> roomsOf(PortalRoomMode mode) {

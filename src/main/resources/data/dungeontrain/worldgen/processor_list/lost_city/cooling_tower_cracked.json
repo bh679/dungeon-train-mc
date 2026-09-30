@@ -1,0 +1,22 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:light_gray_concrete_powder",
+          "chance": 0.15
+        }
+      ]
+    }
+  ]
+}

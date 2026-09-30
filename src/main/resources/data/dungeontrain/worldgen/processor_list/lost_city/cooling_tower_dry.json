@@ -1,0 +1,78 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:moss_carpet",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:vine",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:moss_block",
+          "to": "minecraft:coarse_dirt"
+        },
+        {
+          "from": "minecraft:oak_leaves",
+          "to": "minecraft:air",
+          "chance": 0.7
+        },
+        {
+          "from": "minecraft:azalea",
+          "to": "minecraft:dead_bush"
+        },
+        {
+          "from": "minecraft:flowering_azalea",
+          "to": "minecraft:dead_bush"
+        },
+        {
+          "from": "minecraft:short_grass",
+          "to": "minecraft:dead_bush",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:short_grass",
+          "to": "minecraft:air",
+          "chance": 0.5
+        },
+        {
+          "from": "minecraft:tall_grass",
+          "to": "minecraft:dead_bush"
+        },
+        {
+          "from": "minecraft:fern",
+          "to": "minecraft:dead_bush"
+        },
+        {
+          "from": "minecraft:hanging_roots",
+          "to": "minecraft:air"
+        },
+        {
+          "from": "minecraft:grass_block",
+          "to": "minecraft:coarse_dirt"
+        },
+        {
+          "from": "minecraft:mossy_cobblestone",
+          "to": "minecraft:cobblestone",
+          "chance": 0.7
+        },
+        {
+          "from": "minecraft:mossy_stone_bricks",
+          "to": "minecraft:cracked_stone_bricks",
+          "chance": 0.7
+        }
+      ]
+    }
+  ]
+}

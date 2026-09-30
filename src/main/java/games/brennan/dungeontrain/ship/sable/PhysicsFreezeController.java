@@ -4,6 +4,7 @@ import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.Trains;
+import games.brennan.dungeontrain.util.DtLogging;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -63,7 +64,9 @@ import java.util.UUID;
  */
 public final class PhysicsFreezeController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
+    private static final Logger LOGGER = LoggerFactory.getLogger(DtLogging.JITTER);
+    /** The 2 s {@code [freeze]} window summary, kept in players' logs alongside {@code [mspt]}. */
+    private static final Logger PERF_LOGGER = LoggerFactory.getLogger(DtLogging.PERF);
 
     /**
      * Master switch. Flip via {@code /dungeontrain physicsfreeze <on|off>} for the Gate 2
@@ -172,8 +175,10 @@ public final class PhysicsFreezeController {
                         // PhysicsFreeze.followParked); only the native body is behind, by roughly
                         // train speed × parked ticks, and applyTickOutput's next teleport closes
                         // exactly this distance. Logged so the resume can be checked in a ride log:
-                        // bodyLagBlocks ≈ 0.1 × parkedTicks at the default 2 blocks/s.
-                        LOGGER.debug("[freeze.unpark] pIdx={} trainId={} parkedTicks={} bodyLagBlocks={}",
+                        // bodyLagBlocks ≈ 0.1 × parkedTicks at the default 2 blocks/s. Dev-only
+                        // (jitter is INFO for players): one line per carriage, a whole train at
+                        // once, is what stalled a player's server thread 6 s in the log appender.
+                        if (LOGGER.isDebugEnabled()) LOGGER.debug("[freeze.unpark] pIdx={} trainId={} parkedTicks={} bodyLagBlocks={}",
                             c.provider().getPIdx(), c.provider().getTrainId(),
                             PhysicsFreeze.parkedTicks(sl, level.getGameTime()),
                             String.format("%.2f", PhysicsFreeze.bodyLagBlocks(sl)));
@@ -202,7 +207,7 @@ public final class PhysicsFreezeController {
         REPARKS.add(reparks);
 
         if (frozen > 0 && level.getGameTime() % LOG_PERIOD_TICKS == 0) {
-            LOGGER.debug("[freeze] dim={} resident={} active={} frozen={}",
+            PERF_LOGGER.debug("[freeze] dim={} resident={} active={} frozen={}",
                 level.dimension().location(), resident, active, frozen);
         }
     }

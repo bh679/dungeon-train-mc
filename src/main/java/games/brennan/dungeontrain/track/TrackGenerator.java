@@ -435,7 +435,7 @@ public final class TrackGenerator {
      * hardcoded bed + rail palette); {@code sidecar} is null when the tile
      * has no {@code .variants.json} alongside it.
      */
-    private record TilePaint(
+    record TilePaint(
         Optional<BlockState[][][]> cells,
         TrackVariantBlocks sidecar,
         long worldSeed,
@@ -528,6 +528,18 @@ public final class TrackGenerator {
     }
 
     /**
+     * The paint for the tile named {@code name}, its block variants rolled on {@code (seed, idx)} —
+     * what {@link TrackTestScene} lays when the tile is the one under test, or one it has already
+     * picked, rather than letting the registry pick by world X.
+     */
+    static TilePaint tilePaintNamed(ServerLevel level, CarriageDims dims, String name, long seed, long idx) {
+        return new TilePaint(
+            TrackTemplateStore.getCellsFor(level, dims, name),
+            TrackVariantBlocks.loadFor(TrackKind.TILE, name, TrackKind.TILE.dims(dims)),
+            seed, idx);
+    }
+
+    /**
      * Place the bed + rail of one track column from the authored tile {@code paint}.
      *
      * @param chunk when non-null, bed/rail writes go <b>section-local with no per-block relight</b>
@@ -539,7 +551,7 @@ public final class TrackGenerator {
      * @param tally optional diagnostic counters — every branch below that declines to write a cell
      *              is otherwise invisible. See {@link PaintTally}.
      */
-    private static boolean placeTrackColumn(
+    static boolean placeTrackColumn(
         ServerLevel level,
         @Nullable LevelChunk chunk,
         int worldX,
@@ -706,7 +718,7 @@ public final class TrackGenerator {
      * {@link #placePillarSlice} since each section runs over up to 4 (TOP) /
      * 1 (MIDDLE) / 3 (BOTTOM) rows.
      */
-    private record PillarPaint(
+    record PillarPaint(
         Optional<BlockState[][]> column,
         TrackVariantBlocks sidecar,
         long worldSeed,
@@ -736,6 +748,14 @@ public final class TrackGenerator {
         // pillarIndex is the pillar's world-X — resolve its Diff-Level + phase for the gate.
         String name = TrackVariantRegistry.pickName(kind, worldSeed, pillarIndex,
             GateContext.atWorldX(level, pillarIndex));
+        return pillarPaintNamed(level, section, dims, name, worldSeed, pillarIndex);
+    }
+
+    /** {@link #loadPillarPaint} for a section already named — the test scene's forced or pre-picked one. */
+    static PillarPaint pillarPaintNamed(
+        ServerLevel level, PillarSection section, CarriageDims dims, String name, long worldSeed, int pillarIndex
+    ) {
+        TrackKind kind = PillarTemplateStore.pillarKind(section);
         Optional<BlockState[][]> col = PillarTemplateStore.getColumnFor(level, section, dims, name);
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
             kind, name, new Vec3i(1, section.height(), dims.width()));
@@ -1148,14 +1168,35 @@ public final class TrackGenerator {
         // cascading-step-down probe, no ship checks since chunkgen runs
         // before any ship exists.
         int deepestGroundY = probeDeepestGroundYWorldgen(level, worldX, g.trackZMin(), g.trackZMax(), bedY);
-        int h = topInclusive - deepestGroundY + 1;
-        if (h <= 0) return;
+        if (topInclusive - deepestGroundY + 1 <= 0) return;
 
         // Use pillarCenterX as the deterministic seed for paint selection so
         // every column in the same pillar slice picks the same template.
         PillarPaint top = loadPillarPaint(serverLevel, PillarSection.TOP, dims, worldSeed, pillarCenterX);
         PillarPaint mid = loadPillarPaint(serverLevel, PillarSection.MIDDLE, dims, worldSeed, pillarCenterX);
         PillarPaint bot = loadPillarPaint(serverLevel, PillarSection.BOTTOM, dims, worldSeed, pillarCenterX);
+        stampPillarSliceWorldgen(level, worldX, g, deepestGroundY, top, mid, bot);
+    }
+
+    /**
+     * Stack one pillar slice at {@code worldX} from {@code groundY} up to the bed, from paints already
+     * resolved: bottom rows, repeated middles, top rows. The stamping half of
+     * {@link #placePillarSliceWorldgen}, shared with {@link TrackTestScene}, whose ground is known
+     * rather than probed.
+     */
+    static void stampPillarSliceWorldgen(
+        WorldGenLevel level,
+        int worldX,
+        TrackGeometry g,
+        int groundY,
+        PillarPaint top,
+        PillarPaint mid,
+        PillarPaint bot
+    ) {
+        int topInclusive = g.bedY() - 1;
+        int deepestGroundY = groundY;
+        int h = topInclusive - deepestGroundY + 1;
+        if (h <= 0) return;
 
         int topH = PillarSection.TOP.height();
         int botH = PillarSection.BOTTOM.height();
@@ -1244,8 +1285,7 @@ public final class TrackGenerator {
         long worldSeed,
         int pillarCenterX
     ) {
-        int[] profile = archProfile(height);
-        if (profile.length == 0) return;
+        if (archProfile(height).length == 0) return;
 
         // Source the taper blocks from the pillar's own face — same paint,
         // same variant key — so the fade copies the pillar outward along X.
@@ -1253,7 +1293,23 @@ public final class TrackGenerator {
         // (the leading 5 of the tall profile); shorter steps stay within TOP.
         PillarPaint top = loadPillarPaint(serverLevel, PillarSection.TOP, dims, worldSeed, pillarCenterX);
         PillarPaint mid = loadPillarPaint(serverLevel, PillarSection.MIDDLE, dims, worldSeed, pillarCenterX);
+        stampArchTaperWorldgen(level, pillarMinX, pillarMaxX, height, g, top, mid);
+    }
 
+    /**
+     * The stamping half of {@link #placeArchTaperWorldgen}, from paints already resolved — shared with
+     * {@link TrackTestScene}, which names the pillar's sections rather than picking them.
+     */
+    static void stampArchTaperWorldgen(
+        WorldGenLevel level,
+        int pillarMinX,
+        int pillarMaxX,
+        int height,
+        TrackGeometry g,
+        PillarPaint top,
+        PillarPaint mid
+    ) {
+        int[] profile = archProfile(height);
         int topInclusive = g.bedY() - 1;
         for (int step = 0; step < profile.length; step++) {
             int count = profile[step];
@@ -1378,13 +1434,11 @@ public final class TrackGenerator {
         LOGGER.info("[stairs] candidate centerX={} pillarBaseY={} flipped={} template={}",
             centerX, pillarBaseY, flipped, stairsName);
         StructureTemplate template = templateOpt.get();
-        TrackVariantBlocks stairsSidecar = TrackVariantBlocks.loadFor(
-            TrackKind.ADJUNCT_STAIRS, stairsName,
-            new Vec3i(STAIRS_X, STAIRS_Y, STAIRS_Z));
+        TrackVariantBlocks stairsSidecar = stairsSidecar(stairsName);
 
-        int topInclusive = g.bedY() + 2;          // 3 rows above pillar top
+        int topInclusive = upStairsTopInclusive(g);
         int originX = centerX - 1;                 // centred 3-wide on centerX
-        int originZ = flipped ? g.trackZMin() - STAIRS_Z : g.trackZMax() + 1;
+        int originZ = upStairsOriginZ(flipped, g);
 
         // Single-column probe at stairs center XZ, anchored at pillar base Y.
         // Walk up if terrain is solid at that level (hill rising past the
@@ -1463,9 +1517,43 @@ public final class TrackGenerator {
             originX + STAIRS_X - 1, topInclusive, originZ + STAIRS_Z - 1,
             StairsLocationData.Kind.PILLAR_STAIRS));
 
+        stampStairsBesidePillarWorldgen(level, template, stairsSidecar, centerX, deepestGroundY, g,
+            worldSeed, flipped);
+    }
+
+    /** The per-block variants of the stairs adjunct named {@code name}, at the adjunct's own footprint. */
+    static TrackVariantBlocks stairsSidecar(String name) {
+        return TrackVariantBlocks.loadFor(TrackKind.ADJUNCT_STAIRS, name, new Vec3i(STAIRS_X, STAIRS_Y, STAIRS_Z));
+    }
+
+    /** Top row of a pillar staircase — 3 rows above the pillar top, level with the train's deck. */
+    static int upStairsTopInclusive(TrackGeometry g) {
+        return g.bedY() + 2;
+    }
+
+    /** Lowest Z of a pillar staircase on its side: flush against the corridor. */
+    static int upStairsOriginZ(boolean flipped, TrackGeometry g) {
+        return flipped ? g.trackZMin() - STAIRS_Z : g.trackZMax() + 1;
+    }
+
+    /**
+     * Stamp a staircase beside the pillar at {@code centerX}, from the deck down to
+     * {@code groundY} — the stamping half of {@link #placeStairsBesidePillarWorldgen}, without its
+     * ground probe or its usage-index record, shared with {@link TrackTestScene}.
+     */
+    static void stampStairsBesidePillarWorldgen(
+        WorldGenLevel level,
+        StructureTemplate template,
+        TrackVariantBlocks stairsSidecar,
+        int centerX,
+        int groundY,
+        TrackGeometry g,
+        long worldSeed,
+        boolean flipped
+    ) {
         stampStairsDescendingWorldgen(
             level, template, stairsSidecar,
-            originX, originZ, topInclusive, deepestGroundY,
+            centerX - 1, upStairsOriginZ(flipped, g), upStairsTopInclusive(g), groundY,
             flipped, worldSeed, centerX
         );
     }
@@ -1773,11 +1861,53 @@ public final class TrackGenerator {
             LOGGER.info("[downstairs] centerX={} reject=template_missing name={}", centerX, stairsName);
             return;
         }
-        StructureTemplate template = templateOpt.get();
-        TrackVariantBlocks stairsSidecar = TrackVariantBlocks.loadFor(
-            TrackKind.ADJUNCT_STAIRS, stairsName,
-            new Vec3i(STAIRS_X, STAIRS_Y, STAIRS_Z));
+        String entranceName = TrackVariantRegistry.pickName(
+            TrackKind.ADJUNCT_STAIRS_ENTRANCE, worldSeed, centerX,
+            GateContext.atWorldX(serverLevel, centerX));
+        stampDownStairsWorldgen(level, serverLevel, templateOpt.get(), stairsSidecar(stairsName),
+            entranceName, centerX, flipped, surfaceY, g, worldSeed);
 
+        // Index both the descending shaft and the surface entrance pavilion as
+        // TUNNEL_STAIRS so used_tunnel_stairs fires whether the player enters
+        // from the top or climbs up from the tunnel (StairsUsageEvents).
+        // Metadata only — the stamped blocks are unchanged.
+        int originX = centerX - 1;
+        int originZ = downStairsOriginZ(flipped, g);
+        int floorY = g.bedY() + 2;
+        int topInclusive = surfaceY - 1;
+        StairsLocationData index = StairsLocationData.get(serverLevel);
+        index.record(new StairsLocationData.Box(
+            originX, floorY, originZ,
+            originX + STAIRS_X - 1, topInclusive, originZ + STAIRS_Z - 1,
+            StairsLocationData.Kind.TUNNEL_STAIRS));
+        int entranceMinX = originX - 1;
+        int entranceMinZ = originZ - 1;
+        int entranceBaseY = surfaceY - ENTRANCE_OVERLAP_Y;
+        index.record(new StairsLocationData.Box(
+            entranceMinX, entranceBaseY, entranceMinZ,
+            entranceMinX + PillarAdjunct.STAIRS_ENTRANCE.xSize() - 1,
+            entranceBaseY + PillarAdjunct.STAIRS_ENTRANCE.ySize() - 1,
+            entranceMinZ + PillarAdjunct.STAIRS_ENTRANCE.zSize() - 1,
+            StairsLocationData.Kind.TUNNEL_STAIRS));
+    }
+
+    /**
+     * Carve and stamp one down-stairs shaft from the tunnel deck up to {@code surfaceY}, capped by the
+     * entrance named {@code entranceName} — the stamping half of {@link #placeDownStairsAtTarget},
+     * without its usage-index record, shared with {@link TrackTestScene}.
+     */
+    static void stampDownStairsWorldgen(
+        WorldGenLevel level,
+        ServerLevel serverLevel,
+        StructureTemplate template,
+        TrackVariantBlocks stairsSidecar,
+        String entranceName,
+        int centerX,
+        boolean flipped,
+        int surfaceY,
+        TrackGeometry g,
+        long worldSeed
+    ) {
         int originX = centerX - 1;
         // Down-stairs originZ is one block FURTHER from the corridor than
         // up-stairs (see {@link #downStairsOriginZ}). The outermost stair
@@ -1833,26 +1963,8 @@ public final class TrackGenerator {
         // overlap (e.g. the stair template's topmost landing row at
         // Y=surfaceY-1) is preserved while the entrance frame above gets
         // its own clean stamp.
-        stampDownStairsEntranceWorldgen(level, serverLevel, originX, originZ, surfaceY, flipped, worldSeed, centerX);
-
-        // Index both the descending shaft and the surface entrance pavilion as
-        // TUNNEL_STAIRS so used_tunnel_stairs fires whether the player enters
-        // from the top or climbs up from the tunnel (StairsUsageEvents).
-        // Metadata only — the stamped blocks are unchanged.
-        StairsLocationData index = StairsLocationData.get(serverLevel);
-        index.record(new StairsLocationData.Box(
-            originX, floorY, originZ,
-            originX + STAIRS_X - 1, topInclusive, originZ + STAIRS_Z - 1,
-            StairsLocationData.Kind.TUNNEL_STAIRS));
-        int entranceMinX = originX - 1;
-        int entranceMinZ = originZ - 1;
-        int entranceBaseY = surfaceY - ENTRANCE_OVERLAP_Y;
-        index.record(new StairsLocationData.Box(
-            entranceMinX, entranceBaseY, entranceMinZ,
-            entranceMinX + PillarAdjunct.STAIRS_ENTRANCE.xSize() - 1,
-            entranceBaseY + PillarAdjunct.STAIRS_ENTRANCE.ySize() - 1,
-            entranceMinZ + PillarAdjunct.STAIRS_ENTRANCE.zSize() - 1,
-            StairsLocationData.Kind.TUNNEL_STAIRS));
+        stampDownStairsEntranceWorldgen(level, serverLevel, originX, originZ, surfaceY, flipped, worldSeed,
+            centerX, entranceName);
     }
 
     /**
@@ -1946,7 +2058,8 @@ public final class TrackGenerator {
         ServerLevel serverLevel,
         int originX, int originZ, int surfaceY,
         boolean flipped,
-        long worldSeed, int centerX
+        long worldSeed, int centerX,
+        String entranceName
     ) {
         // 5×5 footprint centered on the 3×3 shaft.
         int minX = originX - 1;
@@ -1955,9 +2068,6 @@ public final class TrackGenerator {
         // sit inside the top of the staircase shaft.
         int entranceBaseY = surfaceY - ENTRANCE_OVERLAP_Y;
 
-        String entranceName = TrackVariantRegistry.pickName(
-            TrackKind.ADJUNCT_STAIRS_ENTRANCE, worldSeed, centerX,
-            GateContext.atWorldX(serverLevel, centerX));
         Optional<StructureTemplate> templateOpt =
             PillarTemplateStore.getAdjunctFor(serverLevel,
                 PillarAdjunct.STAIRS_ENTRANCE, entranceName);

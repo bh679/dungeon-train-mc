@@ -31,7 +31,20 @@ import net.minecraft.server.level.ServerLevel;
  */
 public final class EditorRelayWrite {
 
+    /**
+     * The sub kind an editor whole room is filed under on the relay — a CARRIAGE build that is a
+     * whole room rather than a shell. Carriage installs ignore sub kinds, so it only separates keys
+     * and tells {@code BuilderRelayUpload} whose sidecars to read.
+     */
+    public static final String WHOLE_ROOM_SUBKIND = "whole_room";
+
     private EditorRelayWrite() {}
+
+    /** Whether {@code written} is an editor whole room — see {@link #WHOLE_ROOM_SUBKIND}. */
+    public static boolean isWholeRoom(BuilderSave.Written written) {
+        return written != null && written.kind() == BuilderPhotoPaths.Kind.CARRIAGE
+                && WHOLE_ROOM_SUBKIND.equals(written.subKind());
+    }
 
     /**
      * How one template is filed on the relay.
@@ -50,9 +63,8 @@ public final class EditorRelayWrite {
     /**
      * What a save of {@code model} just wrote, or {@code null} when there is nothing to upload.
      *
-     * <p>Null for a template with no editor plot — a whole carriage, which is authored in a builder
-     * world and has none, and any variant whose plot origin does not resolve (an unregistered
-     * carriage, a contents id the registry has forgotten). Those are not failures; they are "this
+     * <p>Null for a template with no relay kind (a chunk frame) and for any variant whose plot origin
+     * does not resolve (an unregistered carriage, a contents id the registry has forgotten). Those are not failures; they are "this
      * did not come out of a plot", and the caller drops them.</p>
      */
     public static BuilderSave.Written of(Template model, ServerLevel level, CarriageDims dims) {
@@ -89,9 +101,12 @@ public final class EditorRelayWrite {
             case Template.Contents contents ->
                     new Naming(BuilderPhotoPaths.Kind.CONTENTS, "", contents.contents().id());
 
-            // Authored in a builder world, which has no plot grid to locate one in — Template's own
-            // editorPlotOrigin says so by returning null. Nothing to file.
-            case Template.WholeCarriage ignored -> null;
+            // A whole room is a full carriage box — shell and interior — so it rides as a CARRIAGE
+            // build, as the Train Builder's whole-carriage save does, and downloads can install it as
+            // a shell or back into the Whole pool. The sub kind keeps it apart from an editor shell
+            // of the same name, which is a different template and must not share its relay entry.
+            case Template.WholeCarriage room ->
+                    new Naming(BuilderPhotoPaths.Kind.CARRIAGE, WHOLE_ROOM_SUBKIND, room.id());
 
             // A group rides the relay under its own kind — the same key the Train Builder's save uses.
             case Template.CarriageGroup group ->

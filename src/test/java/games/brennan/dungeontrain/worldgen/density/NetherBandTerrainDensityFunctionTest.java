@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.worldgen.density;
 
 import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.feature.CavernNoise;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Correctness guarantee for the {@link NetherBandTerrainDensityFunction} per-column memo (the
@@ -44,7 +46,50 @@ final class NetherBandTerrainDensityFunctionTest {
         int wx = NetherMountainTerrain.wavyX(seed, x, z);
         if (!NetherMountainTerrain.raises(cycle, wx)) return base;
         double t = NetherMountainTerrain.targetTop(cycle, seed, wx, z, seaLevel, ceiling, netherTop, baseRelief);
+        double raised = Math.max(base, RAISE_SLOPE * (t - y));
+        // The finalDensity form also carves CavernNoise caverns out of non-core raised columns.
+        if (cycle.isNetherCore(wx)) return raised;
+        return CavernNoise.apply(seed, x, y, z, seaLevel, t, cycle.netherCoreGap(wx), raised);
+    }
+
+    /** The un-carved raise alone — what the initialDensityWithoutJaggedness (carve=false) form must give. */
+    private static double referenceNoCarve(WorldGenCycle cycle, long seed, int seaLevel, int ceiling,
+                                           int netherTop, int baseRelief, int x, int z, int y, double base) {
+        int wx = NetherMountainTerrain.wavyX(seed, x, z);
+        if (!NetherMountainTerrain.raises(cycle, wx)) return base;
+        double t = NetherMountainTerrain.targetTop(cycle, seed, wx, z, seaLevel, ceiling, netherTop, baseRelief);
         return Math.max(base, RAISE_SLOPE * (t - y));
+    }
+
+    @Test
+    @DisplayName("carve=false form never carves; carve=true form only ever lowers, and only inside the window")
+    void carveFlagAndBounds() {
+        long seed = 0x1234_5678L;
+        int seaLevel = 63, ceiling = 320, netherTop = 40, baseRelief = 100;
+        NetherBandContext.publish(new NetherBandContext(
+                true, seed, seaLevel, ceiling, netherTop, baseRelief, CYCLE, null, null, null, null, null, null));
+        NetherBandTerrainDensityFunction carving = new NetherBandTerrainDensityFunction(null, true);
+        NetherBandTerrainDensityFunction plain = new NetherBandTerrainDensityFunction(null, false);
+        boolean sawCarve = false;
+        for (int x = 1300; x < 1960; x += 5) {
+            for (int z = -16; z <= 16; z += 8) {
+                for (int y = 40; y <= 260; y += 3) {
+                    double base = ((x * 31 + z) * 7 + y) % 23 - 11;
+                    double noCarve = referenceNoCarve(CYCLE, seed, seaLevel, ceiling, netherTop, baseRelief, x, z, y, base);
+                    assertEquals(noCarve, plain.raisedOrBase(x, z, y, base), 0.0, "carve=false carved at x=" + x + " y=" + y);
+                    double carved = carving.raisedOrBase(x, z, y, base);
+                    assertTrue(carved <= noCarve, "carve raised density at x=" + x + " y=" + y);
+                    assertTrue(carved >= carving.minValueForTest(noCarve), "below minValue at x=" + x + " y=" + y);
+                    if (carved != noCarve) {
+                        sawCarve = true;
+                        assertTrue(carved < 0.0, "a carved sample must be air at x=" + x + " y=" + y);
+                        assertTrue(y >= CavernNoise.windowBottom(seaLevel) && y <= CavernNoise.DECORATION_CEILING,
+                                "carved outside the window at y=" + y);
+                    }
+                }
+            }
+        }
+        assertTrue(sawCarve, "no sample was carved across the band");
     }
 
     @Test

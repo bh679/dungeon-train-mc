@@ -396,16 +396,13 @@ public final class SableManagedShip implements ManagedShip {
         // fields so clients carry the prescribed motion. These are public
         // final Vector3d's — references stay; only contents change.
         //
-        // Gate the write on there being at least one tracking client. A
-        // carriage force-held resident (or catching up after a holding
-        // reload) with no client in range would otherwise have these velocity
-        // fields networked to nobody — and Sable logs "Received a sub-level
-        // movement packet for a non-existent sub-level" when a client that has
-        // culled the sub-level receives that stale movement. The server-side
-        // teleport above still runs unconditionally, so a client that
-        // re-enters tracking range gets a correct full-sync pose from Sable's
-        // own tracking system — only the redundant, desync-triggering velocity
-        // packet to non-tracking clients is suppressed.
+        // Gated on there being at least one tracking client, since with none
+        // the values would be networked to nobody. Note these fields do NOT
+        // decide whether Sable sends a movement snapshot — that is pure pose
+        // vs ServerSubLevel.lastNetworkedPose, and the client ignores the
+        // velocities. The "movement packet for a non-existent sub-level" error
+        // is a full-sync vs UDP-snapshot ordering race, closed by
+        // SubLevelTrackingOrderedSnapshotMixin.
         if (!subLevel.getTrackingPlayers().isEmpty()) {
             subLevel.latestLinearVelocity.set(output.linearVelocity());
             subLevel.latestAngularVelocity.set(output.angularVelocity());

@@ -80,7 +80,18 @@ final class LostCityStructuresTest {
     }
 
     @Test
-    @DisplayName("Lost City runs 4000 blocks alone between BetterNether and BetterEnd, entered over its own 750-block fade")
+    @DisplayName("The Lost City Terrain Fit sibling's all-biome copies are told apart from DT's own and the mod's")
+    void terrainFitCopies() {
+        ResourceLocation copy = ResourceLocation.fromNamespaceAndPath("lostcityterrainfit", "all_biome/warehouse");
+        assertTrue(LostCityStructures.isTerrainFitCopy(copy));
+        assertFalse(LostCityStructures.isLostCityStructure(copy));   // vetoed outright, never era-gated
+        assertFalse(LostCityStructures.isTerrainFitCopy(ResourceLocation.fromNamespaceAndPath("dungeontrain", "lost_city/warehouse")));
+        assertFalse(LostCityStructures.isTerrainFitCopy(ResourceLocation.fromNamespaceAndPath("big_lost_city", "warehouse")));
+        assertFalse(LostCityStructures.isTerrainFitCopy(null));
+    }
+
+    @Test
+    @DisplayName("Lost City runs 3000 blocks alone between BetterNether and BetterEnd, entered over its own 750-block fade")
     void shippedPlacement() {
         int slot = slot();
         assertEquals(CycleLayout.Type.NETHER, LAYOUT.slot(slot - 1).type());
@@ -89,7 +100,7 @@ final class LostCityStructuresTest {
         assertEquals(CycleLayout.Style.BETTER, LAYOUT.slot(slot + 1).style());
         assertEquals(1, LAYOUT.eras(slot).length);
         assertEquals(0, LAYOUT.eraIndex(LegacyBandKind.LOST_CITY));
-        assertEquals(4000L, C.legacyLen(LegacyBandKind.LOST_CITY));
+        assertEquals(3000L, C.legacyLen(LegacyBandKind.LOST_CITY));
         assertEquals(750L, LAYOUT.fadeBefore(slot, 0));
         assertEquals(480L, LAYOUT.fadeBefore(slot, 1));                // the run's exit fade
         assertEquals(legacyStart() + 750L, coreStart());
@@ -110,7 +121,7 @@ final class LostCityStructuresTest {
         long cs = coreStart();
         double early = share(cs - 740L, cs - 500L);
         double late = share(cs - 250L, cs - 10L);
-        double core = share(cs + 2500L, cs + 3800L);                       // past the density fade
+        double core = share(cs + 2000L, cs + 2850L);                       // past the density fade, short of the exit margin
         assertTrue(early > 0.0, "the first buildings appear inside the crossfade");
         assertTrue(early < late && late < core, early + " < " + late + " < " + core);
         assertEquals(1.0, core, 1e-9);
@@ -138,7 +149,7 @@ final class LostCityStructuresTest {
                 if (!lostCity) assertFalse(LostCityStructures.allowedAt(SEED, C, cx, cz));     // never off a Lost City chunk
             }
         }
-        for (int cx = x(cs + 2500L, 0) >> 4; cx < x(cs + 3000L, 0) >> 4; cx++) {              // full density: exactly the roll
+        for (int cx = x(cs + 2000L, 0) >> 4; cx < x(cs + 2850L, 0) >> 4; cx++) {              // full density: exactly the roll
             for (int cz = -16; cz < 16; cz++) {
                 boolean lostCity = LegacyBands.kindOfChunk(SEED, C, cx, cz) == LegacyBandKind.LOST_CITY;
                 assertEquals(lostCity, LostCityStructures.allowedAt(SEED, C, cx, cz));
@@ -149,7 +160,7 @@ final class LostCityStructuresTest {
     @Test
     @DisplayName("the exit keeps its margin: nothing within 128 blocks of the core's end, nothing in the End")
     void exitMargin() {
-        long ce = coreStart() + 4000L;
+        long ce = coreStart() + C.legacyLen(LegacyBandKind.LOST_CITY);
         int lastOk = Math.floorDiv(x(ce, 0) - 1 - LostCityStructures.EXIT_MARGIN_BLOCKS - 15, 16);
         assertTrue(LostCityStructures.allowedAt(SEED, C, lastOk, 0));
         assertFalse(LostCityStructures.allowedAt(SEED, C, lastOk + 1, 0));
@@ -168,7 +179,7 @@ final class LostCityStructuresTest {
     @Test
     @DisplayName("a disabled Lost City era allows no city anywhere")
     void disabled() {
-        CycleLayout without = layout(CycleLayout.DEFAULT_ORDER.replace("legacy:wwoo:lost_city=4000, ", ""));
+        CycleLayout without = layout(CycleLayout.DEFAULT_ORDER.replace("legacy:wwoo:lost_city=3000, ", ""));
         assertEquals(-1, without.legacySlotOf(LegacyBandKind.LOST_CITY));
         WorldGenCycle c = cycle(without);
         for (long u = 0; u < without.period(); u += 500) {
@@ -273,7 +284,7 @@ final class LostCityStructuresTest {
     }
 
     @Test
-    @DisplayName("nothing on the range; half the grid from the foot of its fall, full 2900 blocks on")
+    @DisplayName("nothing on the range; 15% of the grid from the foot of its fall, full 2900 blocks on")
     void fadeIn() {
         long lead = LAYOUT.legacyLeadIn(slot());
         long foot = LostCityStructures.fallFoot(C);
@@ -283,18 +294,22 @@ final class LostCityStructuresTest {
         assertEquals(0.0, LostCityStructures.density(C, x(leadInStart, 0) >> 4), 1e-9);              // the plateau
         assertEquals(0.0, LostCityStructures.density(C, x(leadInStart + foot - 32, 0) >> 4), 1e-9);  // still on the fall
         double atFoot = LostCityStructures.density(C, x(leadInStart + foot + 16, 0) >> 4);
-        assertTrue(atFoot >= 0.5 && atFoot < 0.52, "the floor at the foot: " + atFoot);
-        assertEquals(0.75, LostCityStructures.density(C, x(leadInStart + foot + 1450, 0) >> 4), 0.01);
+        assertTrue(atFoot >= 0.15 && atFoot < 0.17, "the floor at the foot: " + atFoot);
+        assertEquals(0.575, LostCityStructures.density(C, x(leadInStart + foot + 1450, 0) >> 4), 0.01);
         assertEquals(1.0, LostCityStructures.density(C, x(leadInStart + foot + 2916, 0) >> 4), 1e-9);
-        assertEquals(1.0, LostCityStructures.density(C, x(coreStart() + 3800L, 0) >> 4), 1e-9);
+        // full density reaches the core with ~870 blocks to spare before the exit margin (core 3000, margin 128)
+        long fullAt = LAYOUT.start(slot()) - lead + foot + LostCityStructures.FADE_BLOCKS;
+        assertTrue(fullAt < coreStart() + C.legacyLen(LegacyBandKind.LOST_CITY) - LostCityStructures.EXIT_MARGIN_BLOCKS - 500L,
+                "full density well inside the core: " + fullAt);
+        assertEquals(1.0, LostCityStructures.density(C, x(coreStart() + 2800L, 0) >> 4), 1e-9);
         assertEquals(0.0, LostCityStructures.density(C, x(coreStart() - 2500L, 0) >> 4), 1e-9);       // the Nether proper
         // the roll follows the density over a block of chunks, and is deterministic
-        int cx = x(leadInStart + foot + 1450, 0) >> 4;                                                  // density ~0.75
+        int cx = x(leadInStart + foot + 1450, 0) >> 4;                                                  // density ~0.575
         int kept = 0;
         for (int cz = -100; cz < 100; cz++) if (LostCityStructures.allowedAt(SEED, C, cx, cz)) kept++;
-        assertTrue(kept > 120 && kept < 180, "about 75% kept: " + kept);
+        assertTrue(kept > 90 && kept < 140, "about 57% kept: " + kept);
         int full = 0;
-        for (int cz = -100; cz < 100; cz++) if (LostCityStructures.allowedAt(SEED, C, x(coreStart() + 3500L, 0) >> 4, cz)) full++;
+        for (int cz = -100; cz < 100; cz++) if (LostCityStructures.allowedAt(SEED, C, x(coreStart() + 2500L, 0) >> 4, cz)) full++;
         assertEquals(200, full);
         assertEquals(LostCityStructures.allowedAt(SEED, C, cx, 7), LostCityStructures.allowedAt(SEED, C, cx, 7));
     }
@@ -307,7 +322,7 @@ final class LostCityStructuresTest {
         assertEquals(LostCityStructures.WWOO_STRETCH_DENSITY, LostCityStructures.density(C, cx), 1e-9);
         int kept = 0;
         for (int cz = -500; cz < 500; cz++) if (LostCityStructures.allowedAt(SEED, C, cx, cz)) kept++;
-        assertTrue(kept > 13 && kept < 46, "about 2.8% kept: " + kept);
+        assertTrue(kept > 11 && kept < 40, "about 2.4% kept: " + kept);
         assertEquals(0.0, LostCityStructures.density(C, x(1000L, 0) >> 4), 1e-9);              // lap-0 vanilla lead
         assertFalse(LostCityStructures.allowedAt(SEED, C, x(1000L, 0) >> 4, 0));
     }
@@ -334,7 +349,59 @@ final class LostCityStructuresTest {
                     .get("modid").getAsString(), name);
             assertEquals(weights.get("big_lost_city:" + name), weights.get("dungeontrain:lost_city/" + name), name);
         }
-        assertEquals(42 + big.length, weights.size());
+        assertEquals(42 + big.length + originals().size(), weights.size());
+    }
+
+    /** DT's own buildings, from the generator's manifest: {@code data/dungeontrain/structure/lost_city/manifest.json}. */
+    private static java.util.Set<String> originals() throws Exception {
+        return json("/data/dungeontrain/structure/lost_city/manifest.json").keySet();
+    }
+
+    @Test
+    @DisplayName("every DT-original building has a DT pool of DT processor lists placing a DT template, and sits in the set")
+    void originalPoolsAreSound() throws Exception {
+        com.google.gson.JsonObject set = json("/data/dungeontrain/worldgen/structure_set/lost_city.json");
+        java.util.Set<String> inSet = new java.util.HashSet<>();
+        for (com.google.gson.JsonElement e : set.getAsJsonArray("structures")) {
+            inSet.add(e.getAsJsonObject().get("structure").getAsString());
+        }
+        java.util.Set<String> names = originals();
+        assertFalse(names.isEmpty());
+        for (String name : names) {
+            String id = "dungeontrain:lost_city/" + name;
+            assertTrue(inSet.contains(id), id + " missing from the structure set");
+            com.google.gson.JsonObject structure = json("/data/dungeontrain/worldgen/structure/lost_city/" + name + ".json");
+            assertEquals(id, structure.get("start_pool").getAsString(), name);
+            assertEquals(1, structure.get("size").getAsInt(), name);
+            assertEquals("WORLD_SURFACE_WG", structure.get("project_start_to_heightmap").getAsString(), name);
+            assertFalse(structure.has("neoforge:conditions"), name + " must not depend on Big Lost City");
+            com.google.gson.JsonObject pool = json("/data/dungeontrain/worldgen/template_pool/lost_city/" + name + ".json");
+            assertEquals(id, pool.get("name").getAsString(), name);
+            com.google.gson.JsonArray elements = pool.getAsJsonArray("elements");
+            assertTrue(elements.size() >= 3, name + " has too few designs");
+            for (com.google.gson.JsonElement e : elements) {
+                com.google.gson.JsonObject element = e.getAsJsonObject().getAsJsonObject("element");
+                assertEquals(id, element.get("location").getAsString(), name + " element must place DT's own template");
+                String processors = element.get("processors").getAsString();
+                assertTrue(processors.startsWith("dungeontrain:lost_city/" + name + "_"), processors);
+                assertTrue(json("/data/dungeontrain/worldgen/processor_list/lost_city/" + processors.substring(processors.lastIndexOf('/') + 1)
+                        + ".json").has("processors"), processors);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("no DT pool ever places a Big Lost City template — DT processors never touch the all-rights-reserved models")
+    void noDtPoolNamesBigLostCity() throws Exception {
+        java.nio.file.Path pools = games.brennan.dungeontrain.RepoPaths.resources()
+                .resolve("data/dungeontrain/worldgen/template_pool/lost_city");
+        try (var files = java.nio.file.Files.list(pools)) {
+            java.util.List<java.nio.file.Path> all = files.toList();
+            assertFalse(all.isEmpty());
+            for (java.nio.file.Path p : all) {
+                assertFalse(java.nio.file.Files.readString(p).contains("big_lost_city"), p.toString());
+            }
+        }
     }
 
     private static com.google.gson.JsonObject json(String path) throws Exception {

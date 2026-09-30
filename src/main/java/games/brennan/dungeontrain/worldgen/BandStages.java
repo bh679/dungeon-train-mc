@@ -84,7 +84,7 @@ public final class BandStages {
                 long fade = Math.max(0, f.udFade());
                 add(out, "Entry fade", fade);
                 add(out, "Core", core);
-                add(out, "Trailing fade", fade);
+                add(out, "Trailing fade", layout.udTrailingFade(slot));
                 add(out, "Reassembly", layout.udReassembly(slot));
                 add(out, "Exit gap", Math.max(0, f.udExit()));
             }
