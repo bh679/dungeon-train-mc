@@ -121,13 +121,19 @@ public final class PortalTrainFreeze {
      * <p>The footprint test comes first and is the strict one — a rider is on the train however far
      * the carriage has drifted from anyone else — and the range test covers the ground beside the
      * track.</p>
+     *
+     * <p><b>The footprint outranks the room exclusion.</b> A room stands in its carriage's own
+     * columns, and a frozen train keeps that carriage parked right over it — so a room box that
+     * overreaches upward reads a rider on the deck as still inside, and nothing is ever left to thaw
+     * the train. A player on a carriage's own box is riding it, whatever any room box says; one in
+     * the room below is under the carriage's floor and does not match.</p>
      */
     private static boolean anyoneWatching(List<Trains.Carriage> carriages, List<ServerPlayer> players,
                                           CarriageDims dims,
                                           BiPredicate<CarriageDims, ServerPlayer> inStructure) {
         for (ServerPlayer player : players) {
-            if (inStructure.test(dims, player)) continue;
             if (CarriageDeck.isOnTrainFootprint(carriages, player)) return true;
+            if (inStructure.test(dims, player)) continue;
             if (withinRange(carriages, player, NEAR_TRAIN_RANGE)) return true;
         }
         return false;

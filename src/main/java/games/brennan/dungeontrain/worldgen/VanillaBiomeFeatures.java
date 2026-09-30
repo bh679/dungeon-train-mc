@@ -40,7 +40,7 @@ import java.util.TreeMap;
  * Choosing biomes can't confine that, so this class rebuilds each biome's vanilla feature list and
  * {@link WwooDecorationPass} decorates from it everywhere except the WWOO stretch.</p>
  *
- * <p>The vanilla lists come from {@link VanillaWorldgenLookup#create()}, which builds the vanilla
+ * <p>The vanilla lists come from {@link VanillaWorldgenLookup#get()}, which builds the vanilla
  * worldgen registries from code — datapacks can't touch it. Per biome and step, the <b>target</b> list
  * is the vanilla one plus whatever NeoForge biome modifiers added (so DT's own features and other
  * mods' injected ones survive). A live feature whose JSON differs from the vanilla one is
@@ -130,7 +130,7 @@ public final class VanillaBiomeFeatures {
     }
 
     private static VanillaBiomeFeatures build(RegistryAccess live) {
-        HolderLookup.Provider vanilla = VanillaWorldgenLookup.create();
+        HolderLookup.Provider vanilla = VanillaWorldgenLookup.get();
         Registry<Biome> liveBiomes = live.registryOrThrow(Registries.BIOME);
         Registry<PlacedFeature> livePlaced = live.registryOrThrow(Registries.PLACED_FEATURE);
         HolderLookup.RegistryLookup<Biome> vanillaBiomes = vanilla.lookupOrThrow(Registries.BIOME);

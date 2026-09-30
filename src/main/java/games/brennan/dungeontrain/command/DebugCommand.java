@@ -139,6 +139,13 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setBiomeMemo(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setBiomeMemo(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> biomeMemoStatus(ctx.getSource()))))
+            // /dungeontrain debug lost-city-memo <on|off|status> — toggles the per-chunk memo of the Lost City
+            // start veto (LostCityChunkVeto). OFF = the pre-change per-call path, byte-identical output —
+            // drives the Gate 2 A/B: same seed, compare the structure starts with it on vs off.
+            .then(Commands.literal("lost-city-memo")
+                .then(Commands.literal("on").executes(ctx -> setLostCityMemo(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setLostCityMemo(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> lostCityMemoStatus(ctx.getSource()))))
             // /dungeontrain debug lod-lite <auto|force|off|status> — Distant Horizons LOD-lite Nether-core
             // decoration (see LodGeneration). `auto` (default) = lite only on DH-World Gen threads; `force`
             // = lite on every worldgen thread so a headless server measures the saving with no DH
@@ -534,6 +541,24 @@ public final class DebugCommand {
         boolean on = games.brennan.dungeontrain.worldgen.density.ColumnBiomePlan.ENABLED;
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Biome-source column memo " + (on ? "ON" : "OFF")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
+        return 1;
+    }
+
+    private static int setLostCityMemo(CommandSourceStack source, boolean on) {
+        games.brennan.dungeontrain.worldgen.LostCityChunkVeto.ENABLED = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Lost City veto chunk memo " + (on
+                ? "ON (one verdict per chunk)"
+                : "OFF (pre-change per-call path — A/B mode)")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), true);
+        return 1;
+    }
+
+    private static int lostCityMemoStatus(CommandSourceStack source) {
+        boolean on = games.brennan.dungeontrain.worldgen.LostCityChunkVeto.ENABLED;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Lost City veto chunk memo " + (on ? "ON" : "OFF")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
         return 1;
     }

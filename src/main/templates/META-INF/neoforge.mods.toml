@@ -137,13 +137,14 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
-# Lost City Terrain Fit is jarJar'd INSIDE this jar (like Edible Backpacks) until its listings are
-# approved, so the shipped version is always exactly lostcityterrainfit_version — no floor indirection.
-# DT's Lost City era relies on it to seat the cities in the terrain.
+# Lost City Terrain Fit — hybrid sibling (like Keep Trim / Pigman Villagers): jarJar'd INSIDE this jar
+# for Modrinth/manual installs, and a required CurseForge sibling the CF app installs top-level
+# (NeoForge then skips the nested copy). The range is the floor DT calls (lostcityterrainfit_min_version),
+# not the nested build. DT's Lost City era relies on it to seat the cities in the terrain.
 [[dependencies.${mod_id}]]
     modId="lostcityterrainfit"
     type="required"
-    versionRange="[${lostcityterrainfit_version},)"
+    versionRange="[${lostcityterrainfit_min_version},)"
     ordering="AFTER"
     side="BOTH"
 

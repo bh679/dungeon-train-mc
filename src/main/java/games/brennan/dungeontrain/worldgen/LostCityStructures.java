@@ -81,9 +81,12 @@ public final class LostCityStructures {
         if (!data.startsWithTrain()) return false;
         long seed = data.getGenerationSeed();
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
-        if (!allowedAt(seed, cycle, chunkX, chunkZ)) return false;
-        if (!inWwooStretch(cycle, chunkX)) return true;
-        return LostCityWwooCensus.buildings(level, seed, cycle).contains(building(id));
+        // the chunk part once per chunk — vanilla retries the whole set in a refused one (LostCityChunkVeto)
+        return switch (LostCityChunkVeto.verdict(seed, cycle, chunkX, chunkZ)) {
+            case DENY -> false;
+            case ALLOW -> true;
+            case ALLOW_IF_WWOO_BUILDING -> LostCityWwooCensus.buildings(level, seed, cycle).contains(building(id));
+        };
     }
 
     /**
