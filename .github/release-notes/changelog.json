@@ -21258,6 +21258,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "reseed-keep-zone-two-chunks",
+      "version": "0.1056.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Reseeding a test carriage keeps your view",
+      "summary": "Reseeding a test carriage now leaves you where you were from a little further away.",
+      "highlights": [],
+      "pr": 1699,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
