@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
+import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
 import net.minecraft.server.level.ServerLevel;
 import org.slf4j.Logger;
 
@@ -79,13 +81,35 @@ public final class PortalCorridorContents {
         // portal tick handler. Gating here could let them draw differently, which is the single
         // failure this class exists to prevent. Gates on portal sub-variants therefore do not apply;
         // making them work means deriving a context from pairKey alone, at both sites.
-        CarriageContents picked = CarriageContentsRegistry.resolveSubVariant(
-            parent, seedFor(worldSeed, pairKey), /*gateCtx*/ null);
+        //
+        // Drawn from the corridor shell's own pool — contents of its size its allow-list lets in —
+        // so an authored Half contents can furnish a long corridor. When the draw lands on the
+        // kind's own group (all a stock install has) the member is rolled exactly as before, so a
+        // portal standing from before sizes existed keeps the corridor its twin was stamped with.
+        long pairSeed = seedFor(worldSeed, pairKey);
+        CarriageContents drawn = CarriageContentsRegistry.pick(
+            pairSeed, 0, PortalCarriageBuilder.portalVariant(kind), /*gateCtx*/ null);
+        CarriageContents picked = isOrUnder(drawn.id(), parent.id())
+                || drawn.equals(CarriageContents.of(ContentsType.DEFAULT))
+            ? CarriageContentsRegistry.resolveSubVariant(parent, pairSeed, /*gateCtx*/ null)
+            : drawn;
 
         PICKS.put(pairKey, picked);
         LOGGER.info("[DungeonTrain] Portal pair {} corridors furnished with contents '{}'",
             pairKey, picked.id());
         return picked;
+    }
+
+    /** True when {@code id} is {@code rootId} or sits somewhere in its group. Bounded against cycles. */
+    private static boolean isOrUnder(String id, String rootId) {
+        String current = id;
+        for (int depth = 0; depth <= 16; depth++) {
+            if (current.equals(rootId)) return true;
+            java.util.Optional<String> parent = CarriageContentsGroupStore.findParentOf(current);
+            if (parent.isEmpty()) return false;
+            current = parent.get();
+        }
+        return false;
     }
 
     /**
