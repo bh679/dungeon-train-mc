@@ -102,7 +102,8 @@ flag straight into the manifest:
   second-lap overworld mods **William Wythers' Overhauled Overworld** (+ **Cristel Lib**) and **Biomes O' Plenty** (+
   **TerraBlender**, **GlitchCore**). These are not companions: DT declares them as hard dependencies and will not
   load without them, so shipping any of them `required:false` (i.e. switched OFF) would break
-  the pack outright. **Keep Trim**, **Dungeon Backup** and **Sable Fence & Trapdoor Fix** ride the same row on
+  the pack outright. **Keep Trim**, **Dungeon Backup**, **Sable Fence & Trapdoor Fix**, **Stream Detect**, **DPI Bypass
+  Detect**, **Pigman Villagers** and **Lost City Terrain Fit** ride the same row on
   CurseForge only (`curseforge_only: true`): they are also jarJar'd inside the DT jar, so the
   Modrinth pack leaves them out and Modrinth players get them built in, while the CurseForge pack
   ships them as Includes so the CF app installs them from their own pages (NeoForge drops the

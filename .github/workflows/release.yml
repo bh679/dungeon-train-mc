@@ -266,7 +266,8 @@ jobs:
             # on Modrinth they stay jarJar'd inside the DT jar; only CurseForge treats them as
             # separate mods. (keep-trim's Modrinth listing is also still in review — mc-publish
             # cannot resolve a non-public slug — which is why it was re-bundled in 0.909.x.)
-          # keep-trim + dungeon-train-backup + sable-fence-trapdoor-fix are hybrid siblings: also jarJar'd in
+          # keep-trim + dungeon-train-backup + sable-fence-trapdoor-fix (+ stream-detect, dpi-bypass-detect,
+          # pigman-villagers, lost-city-terrain-fit-wwoo-and-vanilla) are hybrid siblings: also jarJar'd in
           # the DT jar (Modrinth/manual installs), but declared required here so the CurseForge
           # app installs them from their own pages. NeoForge drops the nested copy when the
           # top-level one is present. (No comments inside the list — check-relations.py parses it.)
@@ -283,6 +284,7 @@ jobs:
             stream-detect(required)
             dpi-bypass-detect(required)
             pigman-villagers(required)
+            lost-city-terrain-fit-wwoo-and-vanilla(required)
             fast-paintings(required)
             selene(required)
             betterend-neoforge(required)

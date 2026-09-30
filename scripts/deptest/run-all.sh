@@ -10,7 +10,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 # Positive control first: if A fails, every later "failed" result is meaningless.
-"$HERE/run-case.sh" "A - full set (positive control)"                  dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dbd pv sp blc vb pf
+"$HERE/run-case.sh" "A - full set (positive control)"                  dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dbd pv lctf sp blc vb pf
 "$HERE/run-case.sh" "B - missing AIN only"                             dt sable ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf
 "$HERE/run-case.sh" "C - missing all five siblings (upgrade path)"      dt sable fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf
 "$HERE/run-case.sh" "D - PlayerMob above floor (cascade tolerance)"    dt sable ain ais pmob-new ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sp blc vb pf
@@ -29,3 +29,5 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 "$HERE/run-case.sh" "L - no Sable Pathfinder (CurseForge path)"       dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf
 # VanillaBackport (+ Platform) is required on both sides for the Nether-exit sulfur caves.
 "$HERE/run-case.sh" "M - missing VanillaBackport (Platform present)"   dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc pf
+# Big Lost City is required with a `[x,)` floor; N is the only case without `blc`.
+"$HERE/run-case.sh" "N - missing Big Lost City"                        dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch vb pf
