@@ -5928,6 +5928,15 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.new_source.blank_size": {
+    "1": {
+      "label": "the size of the new template (room, half or full carriage)",
+      "examples": [
+        "Room",
+        "Full"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.new_source.current": {
     "1": {
       "label": "the name of the template the author stands in",

@@ -139,7 +139,7 @@ public final class EditorSaveAsKinds {
             CarriageEditor.duplicate(player, from, target);
             ServerLevel level = player.serverLevel().getServer().overworld();
             CarriageDims dims = games.brennan.dungeontrain.world.DungeonTrainWorldData.get(level).dims();
-            CarriageEditor.restampRowFrom(level, CarriageEditor.slotOf(target.id()), dims);
+            CarriageEditor.restampRowFrom(level, target.id(), dims);
             CarriageEditor.enter(player, target);
             return new Template.Carriage(target);
         }

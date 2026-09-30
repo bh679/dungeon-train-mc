@@ -3,12 +3,12 @@ package games.brennan.dungeontrain.editor;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCorridorKind;
-import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageDoorCells;
+import games.brennan.dungeontrain.train.ContentsSize;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -46,7 +46,6 @@ public final class CarriageContentsEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int PLOT_Y = EditorLayout.PLOT_Y;
     /**
      * Contents row Z-origin — sourced from {@link
      * EditorLayout#CONTENTS_FIRST_Z}: the origin every category shares.
@@ -91,41 +90,62 @@ public final class CarriageContentsEditor {
     }
 
     /**
-     * The uniform {@code +X} step between contents plots — the widest any of them can be, so the
-     * longer portal-corridor plot cannot reach its neighbour whatever order the registry is in.
+     * The {@code +X} step between plots in {@code size}'s row — that size's box plus a {@link
+     * EditorLayout#GAP}. Each size has its own row ({@link EditorLayout#sizeRowY}), so a row is
+     * spaced for its own box rather than the widest any contents can be.
      */
-    private static int plotStep(CarriageDims dims) {
-        return PortalCorridorSize.corridorLength(dims, PortalCorridorKind.LONG) + EditorLayout.GAP;
+    private static int plotStep(ContentsSize size, CarriageDims dims) {
+        return size.boxOrRoom(dims, groupSize()).length() + EditorLayout.GAP;
+    }
+
+    private static int groupSize() {
+        return games.brennan.dungeontrain.config.DungeonTrainConfig.getGroupSize();
     }
 
     /**
      * The shell stamped around a contents plot for visual context.
      *
-     * <p>The portal corridor's contents get the <b>corridor</b> rather than a standard carriage —
-     * they are authored to sit inside one, and against a standard shell they would be the wrong
-     * length and show none of the walkway, baffles or lantern floor they have to work around. That
-     * applies to its <b>sub-variants</b> too, which is why the test goes through
-     * {@link CarriageContentsPlacer#isPortalContents} rather than comparing ids: those two are the
-     * same question, and when the shell asked it separately a sub-variant got a corridor-sized plot
-     * with a carriage built around it.</p>
+     * <p>A portal corridor's own contents (and their sub-variants) get their <b>corridor</b> — they
+     * are authored to sit inside one, and against anything else they would show none of the walkway,
+     * baffles or lantern floor they have to work around.</p>
      *
-     * <p>Everything else stands in a carriage the train would really put it in: one whose contents
-     * list has it enabled, drawn by carriage weight — the rule Test the Carriage follows too, via
-     * {@link games.brennan.dungeontrain.train.ContentsShellPicker}. Fixed per template, so the plot
-     * shows the same carriage every visit. The standard carriage only when no carriage enables it
-     * (the plot still needs a shell to stand in).</p>
+     * <p>Everything else stands in a carriage the train would really put it in: one <b>of its size</b>
+     * whose contents list has it enabled, drawn by carriage weight — the rule Test the Carriage
+     * follows too, via {@link games.brennan.dungeontrain.train.ContentsShellPicker}. Fixed per
+     * template, so the plot shows the same carriage every visit. When no carriage of that size
+     * enables it, {@link #fallbackShell} stands in (the plot still needs a shell).</p>
      */
     public static CarriageVariant shellFor(CarriageContents contents) {
+        // A portal corridor's own furnishing stands in its corridor — the long one for `portal`
+        // (Half), the short one for `portal_short` (Room-sized, but no ordinary carriage takes it).
         PortalCorridorKind kind = CarriageContentsPlacer.portalCorridorKindOf(contents);
         if (kind != null) return PortalCarriageBuilder.portalVariant(kind);
+        ContentsSize size = CarriageContentsPlacer.sizeOf(contents);
+        CarriageVariant fallback = fallbackShell(size);
         try {
             return games.brennan.dungeontrain.train.ContentsShellPicker.stableFor(contents.id())
-                .orElse(DEFAULT_SHELL);
+                .filter(shell -> CarriagePlacer.sizeOf(shell) == size)
+                .orElse(fallback);
         } catch (RuntimeException e) {
-            LOGGER.warn("[DungeonTrain] Contents plot shell for '{}' fell back to standard: {}",
-                contents.id(), e.toString());
-            return DEFAULT_SHELL;
+            LOGGER.warn("[DungeonTrain] Contents plot shell for '{}' fell back to {}: {}",
+                contents.id(), fallback.id(), e.toString());
+            return fallback;
         }
+    }
+
+    /**
+     * The shell a plot of {@code size} stands in when no carriage of that size enables its contents:
+     * the standard carriage, the long portal corridor, or the first Full shell registered (the
+     * standard carriage when there is none yet, which the Full box's size gate leaves empty).
+     */
+    private static CarriageVariant fallbackShell(ContentsSize size) {
+        return switch (size) {
+            case ROOM -> DEFAULT_SHELL;
+            case HALF -> PortalCarriageBuilder.portalVariant(PortalCorridorKind.LONG);
+            case FULL -> CarriageVariantRegistry.allVariants().stream()
+                .filter(v -> CarriagePlacer.sizeOf(v) == ContentsSize.FULL)
+                .findFirst().orElse(DEFAULT_SHELL);
+        };
     }
 
     /**
@@ -164,30 +184,49 @@ public final class CarriageContentsEditor {
         );
     }
 
+    /** A plot as it stood: where, and how big. Captured before a delete moves the row. */
+    public record StandingPlot(BlockPos origin, CarriageDims box) {}
+
     /**
-     * Erase + re-stamp the dirty slice of the +X contents row after a contents
-     * entry has been removed from {@link CarriageContentsRegistry}. Same
-     * semantics as {@link CarriageEditor#restampRowAfterDeletion}: erases
-     * {@code [oldDeletedIndex, oldCount)} (shifted-from positions plus the
-     * vacated tail) then re-stamps every contents whose new index ≥
-     * {@code oldDeletedIndex}. Must be called <b>after</b>
-     * {@link CarriageContentsRegistry#unregister}.
+     * Every plot in {@code size}'s row from top-level slot {@code fromSlot} on — parents and their
+     * sub-variant columns. Call <b>before</b> {@link CarriageContentsRegistry#unregister}, so
+     * {@link #restampRowAfterDeletion} can clear exactly where the shifted plots used to be.
      */
-    public static void restampRowAfterDeletion(ServerLevel level, int oldDeletedIndex, int oldCount, CarriageDims dims) {
+    public static List<StandingPlot> plotsFrom(ContentsSize size, int fromSlot, CarriageDims dims) {
+        List<StandingPlot> out = new java.util.ArrayList<>();
+        for (CarriageContents c : CarriageContentsRegistry.allContents()) {
+            if (!inRowFrom(c, size, fromSlot)) continue;
+            BlockPos o = plotOrigin(c, dims);
+            if (o != null) out.add(new StandingPlot(o, plotDims(c, dims)));
+        }
+        return out;
+    }
+
+    /**
+     * Close the gap a deleted top-level contents left in {@code size}'s row: erase every plot
+     * {@link #plotsFrom} captured, then restamp everything now at slot {@code fromSlot} or later —
+     * the templates that slid left one slot, with their sub-variant columns. Must be called
+     * <b>after</b> {@link CarriageContentsRegistry#unregister}.
+     */
+    public static void restampRowAfterDeletion(ServerLevel level, ContentsSize size, int fromSlot,
+                                               List<StandingPlot> before, CarriageDims dims) {
         BlockState air = Blocks.AIR.defaultBlockState();
-        // Erased at the widest plot size — the loop works by index and cannot know which of the
-        // shifted contents was the long portal one, and clearing extra air is harmless.
-        CarriageDims widest = PortalCorridorSize.corridorDims(dims, PortalCorridorKind.LONG);
-        for (int i = oldDeletedIndex; i < oldCount; i++) {
-            BlockPos pos = new BlockPos(FIRST_PLOT_X + i * plotStep(dims), PLOT_Y, PLOT_Z);
-            CarriagePlacer.eraseAt(level, pos, widest);
-            CarriageContentsPlacer.eraseAt(level, pos, widest);
-            setOutline(level, pos, air, widest);
+        for (StandingPlot plot : before) {
+            CarriagePlacer.eraseAt(level, plot.origin(), plot.box());
+            CarriageContentsPlacer.eraseAt(level, plot.origin(), plot.box());
+            setOutline(level, plot.origin(), air, plot.box());
         }
-        List<CarriageContents> remaining = CarriageContentsRegistry.allContents();
-        for (int i = oldDeletedIndex; i < remaining.size(); i++) {
-            stampPlot(level, remaining.get(i), dims);
+        for (CarriageContents c : CarriageContentsRegistry.allContents()) {
+            if (inRowFrom(c, size, fromSlot)) stampPlot(level, c, dims);
         }
+    }
+
+    /** True for a contents in {@code size}'s row whose column is at top-level slot {@code fromSlot} or later. */
+    private static boolean inRowFrom(CarriageContents c, ContentsSize size, int fromSlot) {
+        if (CarriageContentsPlacer.sizeOf(c) != size) return false;
+        String columnId = CarriageContentsGroupStore.findParentOf(c.id()).orElse(c.id());
+        Integer slot = topLevelSlotIndex().get(columnId);
+        return slot != null && slot >= fromSlot;
     }
 
     /**
@@ -257,13 +296,15 @@ public final class CarriageContentsEditor {
     private static BlockPos topLevelPlotOrigin(String targetId, CarriageDims dims) {
         Integer index = topLevelSlotIndex().get(targetId);
         if (index == null) return null;
-        return new BlockPos(FIRST_PLOT_X + index * plotStep(dims), PLOT_Y, PLOT_Z);
+        ContentsSize size = CarriageContentsPlacer.sizeOf(targetId);
+        return new BlockPos(FIRST_PLOT_X + index * plotStep(size, dims), EditorLayout.sizeRowY(size, dims), PLOT_Z);
     }
 
     // ---- id → +X slot index, memoised on (registry snapshot, group child set) ------------------
 
     private static List<CarriageContents> slotIndexSource;
     private static java.util.Set<String> slotIndexChildren;
+    private static int slotIndexSizesVersion = -1;
     private static java.util.Map<String, Integer> SLOT_INDEX = java.util.Map.of();
 
     /**
@@ -276,17 +317,32 @@ public final class CarriageContentsEditor {
     private static synchronized java.util.Map<String, Integer> topLevelSlotIndex() {
         List<CarriageContents> all = CarriageContentsRegistry.allContents();
         java.util.Set<String> children = CarriageContentsGroupStore.allChildIds();
-        if (all == slotIndexSource && children == slotIndexChildren) return SLOT_INDEX;
-        java.util.Map<String, Integer> index = new java.util.HashMap<>(all.size() * 2);
-        int slot = 0;
-        for (CarriageContents c : all) {
-            if (children.contains(c.id())) continue;
-            if (index.putIfAbsent(c.id(), slot) == null) slot++;
+        int sizesVersion = TemplateSizeStore.CONTENTS.version();
+        if (all == slotIndexSource && children == slotIndexChildren && sizesVersion == slotIndexSizesVersion) {
+            return SLOT_INDEX;
         }
-        SLOT_INDEX = java.util.Map.copyOf(index);
+        SLOT_INDEX = slotIndex(all, children, id -> TemplateSizeStore.CONTENTS.sizeOf(id));
         slotIndexSource = all;
         slotIndexChildren = children;
+        slotIndexSizesVersion = sizesVersion;
         return SLOT_INDEX;
+    }
+
+    /**
+     * Top-level id → slot within its own size's row, in registry order. Each size counts from zero:
+     * the rows are separate shelves, so a Full template is the first plot of its row, not the
+     * two-hundredth. Pure, so the layout is testable without a world.
+     */
+    static java.util.Map<String, Integer> slotIndex(List<CarriageContents> all, java.util.Set<String> children,
+                                                    java.util.function.Function<String, ContentsSize> sizeOf) {
+        java.util.Map<String, Integer> index = new java.util.HashMap<>(all.size() * 2);
+        int[] next = new int[ContentsSize.values().length];
+        for (CarriageContents c : all) {
+            if (children.contains(c.id())) continue;
+            if (index.containsKey(c.id())) continue;
+            index.put(c.id(), next[sizeOf.apply(c.id()).ordinal()]++);
+        }
+        return java.util.Map.copyOf(index);
     }
 
     /** Index of {@code memberId} in {@code parentId}'s group, or {@code -1} if absent. */
@@ -506,7 +562,26 @@ public final class CarriageContentsEditor {
      * interior from scratch.
      */
     public static BlockPos createBlank(ServerPlayer player, CarriageContents.Custom target) throws IOException {
-        return createBlank(player, target, /*boxSource*/ null);
+        return createBlank(player, target, (CarriageContents) null);
+    }
+
+    /**
+     * A brand-new top-level contents of {@code size}. The size is declared before the template is
+     * registered, so its very first plot lookup already lands it in its own size's row.
+     */
+    public static BlockPos createBlank(ServerPlayer player, CarriageContents.Custom target,
+                                       ContentsSize size) throws IOException {
+        if (size != ContentsSize.ROOM && !size.available(
+                DungeonTrainWorldData.get(player.getServer().overworld()).dims(), groupSize())) {
+            throw new IOException("A " + size.key() + " carriage is longer than this world's carriages can be.");
+        }
+        TemplateSizeStore.CONTENTS.set(target.id(), size);
+        try {
+            return createBlank(player, target, (CarriageContents) null);
+        } catch (IOException | RuntimeException e) {
+            TemplateSizeStore.CONTENTS.forget(target.id());
+            throw e;
+        }
     }
 
     /**
@@ -562,6 +637,8 @@ public final class CarriageContentsEditor {
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
+        // A copy is its source's box, so it lives in its source's size row.
+        TemplateSizeStore.CONTENTS.set(target.id(), CarriageContentsPlacer.sizeOf(source));
         if (!CarriageContentsRegistry.register(target)) {
             throw new IOException("Contents '" + target.id() + "' is already registered.");
         }
@@ -589,7 +666,7 @@ public final class CarriageContentsEditor {
         TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CONTENTS, null,
             source.id(), target.id());
 
-        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
+        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, sourceBox);
 
         LOGGER.info("[DungeonTrain] Contents editor duplicate: {} created '{}' from '{}' at {}",
             player.getName().getString(), target.id(), source.id(), targetOrigin);
@@ -668,9 +745,11 @@ public final class CarriageContentsEditor {
         BlockPos origin = plotOrigin(current, dims);
         if (origin == null) throw new IOException("Unknown contents '" + current.id() + "'.");
 
-        StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, origin, dims);
+        StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, origin, plotDims(current, dims));
 
         String oldId;
+        // The renamed template is the same box, so it keeps its size (and its row).
+        TemplateSizeStore.CONTENTS.set(renamed.id(), CarriageContentsPlacer.sizeOf(current));
         if (current instanceof CarriageContents.Custom currentCustom) {
             if (!CarriageContentsRegistry.register(renamed)) {
                 throw new IOException("Name '" + renamed.id() + "' is already taken.");
@@ -681,6 +760,7 @@ public final class CarriageContentsEditor {
             CarriageContentsRegistry.unregister(oldId);
             CarriageContentsStore.delete(currentCustom);
             CarriageContentsVariantBlocks.invalidate(oldId);
+            TemplateSizeStore.CONTENTS.forget(oldId);
             LOGGER.info("[DungeonTrain] Contents editor saveAs (custom→custom): {} renamed '{}' -> '{}'",
                 player.getName().getString(), oldId, renamed.id());
         } else if (current instanceof CarriageContents.Builtin builtin) {

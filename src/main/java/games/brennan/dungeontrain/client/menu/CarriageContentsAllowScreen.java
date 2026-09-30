@@ -2,8 +2,11 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
+import games.brennan.dungeontrain.editor.TemplateSizeStore;
 import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
+import games.brennan.dungeontrain.train.ContentsSize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,9 +78,14 @@ public final class CarriageContentsAllowScreen implements MenuScreen {
         Set<String> children = CarriageContentsGroupStore.allChildIds();
         List<CarriageContents> all = CarriageContentsRegistry.allContents();
         List<CommandMenuEntry> out = new ArrayList<>(all.size() + 1);
+        // A carriage only ever takes contents of its own size, so only those are worth a toggle.
+        // A portal room fits whatever is small enough, so it keeps the whole list.
+        ContentsSize shellSize = CARRIAGE_COMMAND.equals(command)
+            ? TemplateSizeStore.SHELLS.sizeOf(targetId) : null;
         for (CarriageContents c : all) {
             String id = c.id();
             if (children.contains(id)) continue;
+            if (shellSize != null && CarriageContentsPlacer.sizeOf(id) != shellSize) continue;
             boolean allowed = !excluded.contains(id);
             out.add(new CommandMenuEntry.Toggle(
                 id,

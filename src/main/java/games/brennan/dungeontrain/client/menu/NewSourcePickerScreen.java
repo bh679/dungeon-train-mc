@@ -101,8 +101,12 @@ public final class NewSourcePickerScreen implements MenuScreen {
         List<CommandMenuEntry> out = new ArrayList<>();
         switch (category) {
             case CARRIAGES -> {
+                // A carriage is a Room or, for a group-long carriage, Full. Half is the portal
+                // corridor's size alone, so it is not offered here.
                 out.add(new CommandMenuEntry.TypeArg(
-                    "Blank", "name", "dungeontrain editor new", "blank"));
+                    MenuLang.t("new_source.blank_size", sizeName("room")), "name", "dungeontrain editor new", "blank"));
+                out.add(new CommandMenuEntry.TypeArg(
+                    MenuLang.t("new_source.blank_size", sizeName("full")), "name", "dungeontrain editor new", "blank_full"));
                 if (!currentId.isEmpty()) {
                     out.add(new CommandMenuEntry.TypeArg(
                         MenuLang.t("new_source.current", currentId), "name",
@@ -112,8 +116,13 @@ public final class NewSourcePickerScreen implements MenuScreen {
                     "Standard", "name", "dungeontrain editor new", "standard"));
             }
             case CONTENTS -> {
+                // One blank per size; each lands in its own row of the contents editor.
                 out.add(new CommandMenuEntry.TypeArg(
-                    "Blank", "name", "dungeontrain editor contents new", "blank"));
+                    MenuLang.t("new_source.blank_size", sizeName("room")), "name", "dungeontrain editor contents new", "blank"));
+                out.add(new CommandMenuEntry.TypeArg(
+                    MenuLang.t("new_source.blank_size", sizeName("half")), "name", "dungeontrain editor contents new", "blank_half"));
+                out.add(new CommandMenuEntry.TypeArg(
+                    MenuLang.t("new_source.blank_size", sizeName("full")), "name", "dungeontrain editor contents new", "blank_full"));
                 if (!currentId.isEmpty()) {
                     out.add(new CommandMenuEntry.TypeArg(
                         MenuLang.t("new_source.current", currentId), "name",
@@ -198,5 +207,14 @@ public final class NewSourcePickerScreen implements MenuScreen {
         }
         out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
+    }
+
+    /** The display name of a contents / carriage size, by its on-disk key. */
+    static String sizeName(String key) {
+        return switch (key) {
+            case "half" -> MenuLang.t("size.half");
+            case "full" -> MenuLang.t("size.full");
+            default -> MenuLang.t("size.room");
+        };
     }
 }

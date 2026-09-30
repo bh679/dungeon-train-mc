@@ -33,12 +33,15 @@ public final class ContentsShellPicker {
      */
     public static Optional<CarriageVariant> pick(String contentsId, long seed) {
         String topId = topParentOf(contentsId);
+        // A shell only takes contents of its own size, so only shells of this contents' size qualify.
+        ContentsSize size = CarriageContentsPlacer.sizeOf(topId);
         CarriageWeights weights = CarriageWeights.current();
         List<CarriageVariant> eligible = new ArrayList<>();
         int total = 0;
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
             int weight = weights.weightFor(v.id());
             if (weight <= 0 || isPortalPart(v) || isFlatbed(v)) continue;
+            if (CarriagePlacer.sizeOf(v) != size) continue;
             boolean allowed = CarriageVariantContentsAllowStore.get(v)
                 .map(a -> a.isAllowed(topId)).orElse(true);
             if (!allowed) continue;

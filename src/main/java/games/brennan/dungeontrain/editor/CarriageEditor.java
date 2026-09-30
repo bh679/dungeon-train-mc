@@ -1,10 +1,9 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.portal.PortalCorridorKind;
-import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.ContentsSize;
 import games.brennan.dungeontrain.train.CarriageDoorCells;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -46,7 +45,6 @@ public final class CarriageEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int PLOT_Y = EditorLayout.PLOT_Y;
     private static final int PLOT_Z = 0;
     private static final int FIRST_PLOT_X = 0;
 
@@ -101,11 +99,9 @@ public final class CarriageEditor {
     /**
      * The box a variant's plot occupies.
      *
-     * <p>Every variant but one is a plain carriage box. The <b>portal corridor</b> is longer than a
-     * carriage — it runs past its slot into the cart between a portal's pair
-     * ({@link games.brennan.dungeontrain.portal.PortalCorridorSize}) — so its plot has to be that
-     * long too, or stamping it would spill four blocks into the neighbouring variant's plot and its
-     * capture would save a truncated corridor.</p>
+     * <p>The box of the variant's size: a carriage for Room, the longer <b>portal corridor</b> for
+     * Half (it runs past its slot into the cart between a portal's pair), a whole group for Full. The
+     * plot has to be that long, or its capture would save a truncated shell.</p>
      *
      * <p><b>Only for sizing the plot box</b> — clearing it, caging it, capturing it, snapshotting it.
      * Never pass the result back into {@link CarriagePlacer#placeAt}: the placer derives the corridor
@@ -121,45 +117,71 @@ public final class CarriageEditor {
     }
 
     /**
-     * The uniform {@code +X} step between plots — the widest plot any variant can have, so the
-     * longer portal-corridor plot cannot reach its neighbour whatever order the registry is in.
+     * The {@code +X} step between plots in {@code size}'s row — that size's box plus a {@link
+     * EditorLayout#GAP}. Each shell size has its own row ({@link EditorLayout#sizeRowY}), the same
+     * shelves the contents editor uses, so the portal corridor and the group-long carriages no longer
+     * set the spacing of every ordinary carriage.
      */
-    private static int plotStep(CarriageDims dims) {
-        return PortalCorridorSize.corridorLength(dims, PortalCorridorKind.LONG) + EditorLayout.GAP;
+    private static int plotStep(ContentsSize size, CarriageDims dims) {
+        return size.boxOrRoom(dims, groupSize()).length() + EditorLayout.GAP;
+    }
+
+    private static int groupSize() {
+        return games.brennan.dungeontrain.config.DungeonTrainConfig.getGroupSize();
     }
 
     /**
-     * Plot origin for {@code variant}. Step along {@code +X} is
-     * {@link #plotStep} so adjacent plots always have at least a uniform
-     * {@link EditorLayout#GAP}-block air gap between footprints — matching the rule used in
-     * {@link CarriagePartEditor}, {@link TrackSidePlots}, and {@link CarriageContentsEditor}.
+     * Plot origin for {@code variant}: its slot in its own size's row, stepped by {@link #plotStep}
+     * so adjacent plots always have a uniform {@link EditorLayout#GAP}-block air gap — the rule used
+     * in {@link CarriagePartEditor}, {@link TrackSidePlots}, and {@link CarriageContentsEditor}.
      * Returns {@code null} if the variant is not registered.
      */
     public static BlockPos plotOrigin(CarriageVariant variant, CarriageDims dims) {
         Integer index = slotIndex().get(variant.id());
         if (index == null) return null;
-        return new BlockPos(FIRST_PLOT_X + index * plotStep(dims), PLOT_Y, PLOT_Z);
+        return rowPos(CarriagePlacer.sizeOf(variant), index, dims);
+    }
+
+    private static BlockPos rowPos(ContentsSize size, int slot, CarriageDims dims) {
+        return new BlockPos(FIRST_PLOT_X + slot * plotStep(size, dims), EditorLayout.sizeRowY(size, dims), PLOT_Z);
     }
 
     // ---- id → +X slot index, memoised on the registry snapshot --------------------------------
 
     /** The registry snapshot {@link #SLOT_INDEX} was built from; a new snapshot means a rebuild. */
     private static List<CarriageVariant> slotIndexSource;
+    private static int slotIndexSizesVersion = -1;
     private static java.util.Map<String, Integer> SLOT_INDEX = java.util.Map.of();
 
     /**
-     * Variant id → row slot. The overlay asks for every variant's origin every tick, and the
-     * linear walk this replaces made each ask O(n) — O(n²) per pass. The registry hands out one
-     * immutable snapshot until it mutates, so a reference compare is the whole staleness check.
+     * Variant id → slot within its size's row. The overlay asks for every variant's origin every
+     * tick, and the linear walk this replaces made each ask O(n) — O(n²) per pass. The registry
+     * hands out one immutable snapshot until it mutates, and the size store bumps a version on every
+     * change, so two compares are the whole staleness check.
      */
     private static synchronized java.util.Map<String, Integer> slotIndex() {
         List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
-        if (all == slotIndexSource) return SLOT_INDEX;
+        int sizesVersion = TemplateSizeStore.SHELLS.version();
+        if (all == slotIndexSource && sizesVersion == slotIndexSizesVersion) return SLOT_INDEX;
         java.util.Map<String, Integer> index = new java.util.HashMap<>(all.size() * 2);
-        for (int i = 0; i < all.size(); i++) index.putIfAbsent(all.get(i).id(), i);
+        int[] next = new int[ContentsSize.values().length];
+        for (CarriageVariant v : all) {
+            if (index.containsKey(v.id())) continue;
+            index.put(v.id(), next[CarriagePlacer.sizeOf(v).ordinal()]++);
+        }
         SLOT_INDEX = java.util.Map.copyOf(index);
         slotIndexSource = all;
+        slotIndexSizesVersion = sizesVersion;
         return SLOT_INDEX;
+    }
+
+    /** How many plots {@code size}'s row holds right now. */
+    public static int rowCount(ContentsSize size) {
+        int n = 0;
+        for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
+            if (CarriagePlacer.sizeOf(v) == size) n++;
+        }
+        return n;
     }
 
     /**
@@ -320,59 +342,54 @@ public final class CarriageEditor {
     }
 
     /**
-     * Erase + re-stamp the dirty slice of the +X row after a variant has been
-     * removed from {@link CarriageVariantRegistry}. {@code oldDeletedIndex} is
-     * the registry index the variant occupied <b>before</b> {@code unregister},
-     * and {@code oldCount} is the registry size before {@code unregister}.
+     * Erase + re-stamp the dirty slice of {@code size}'s row after a variant in it has been removed
+     * from {@link CarriageVariantRegistry}. {@code fromSlot} is the slot the variant held and
+     * {@code oldRowCount} the row's length, both from <b>before</b> {@code unregister}.
      *
-     * <p>Erases every slot from {@code oldDeletedIndex} through
-     * {@code oldCount - 1} (the dirty range — these positions either hold
-     * stale blocks from variants that just shifted left, or are the now-
-     * vacated tail slot the row no longer reaches), then re-stamps each
-     * variant whose <b>new</b> index ≥ {@code oldDeletedIndex} so its blocks
-     * land at the freshly-computed position.</p>
+     * <p>Erases every slot from {@code fromSlot} through {@code oldRowCount - 1} — the positions
+     * that hold stale blocks from variants that just shifted left, plus the vacated tail — then
+     * re-stamps each variant now at slot {@code fromSlot} or later. Every plot in a row is the same
+     * box, so the slot geometry alone says where the stale blocks are.</p>
      *
-     * <p>Must be called <b>after</b> {@link CarriageVariantRegistry#unregister}
-     * so {@code plotOrigin} resolves shifted indices to their new positions.
-     * Caller must capture {@code oldDeletedIndex} and {@code oldCount} from
-     * the pre-unregister registry snapshot.</p>
+     * <p>Must be called <b>after</b> {@link CarriageVariantRegistry#unregister}.</p>
      */
-    public static void restampRowAfterDeletion(ServerLevel level, int oldDeletedIndex, int oldCount, CarriageDims dims) {
-        BlockState air = Blocks.AIR.defaultBlockState();
-        // Erased at the widest plot size — the loop works by index and cannot know which of the
-        // shifted variants was the long portal-corridor plot, and clearing extra air is harmless.
-        CarriageDims widest = PortalCorridorSize.corridorDims(dims, PortalCorridorKind.LONG);
-        for (int i = oldDeletedIndex; i < oldCount; i++) {
-            BlockPos pos = new BlockPos(FIRST_PLOT_X + i * plotStep(dims), PLOT_Y, PLOT_Z);
-            CarriagePlacer.eraseAt(level, pos, widest);
-            setOutline(level, pos, air, widest);
-        }
-        List<CarriageVariant> remaining = CarriageVariantRegistry.allVariants();
-        for (int i = oldDeletedIndex; i < remaining.size(); i++) {
-            stampPlot(level, remaining.get(i), dims);
-        }
+    public static void restampRowAfterDeletion(ServerLevel level, ContentsSize size, int fromSlot,
+                                               int oldRowCount, CarriageDims dims) {
+        eraseRow(level, size, fromSlot, oldRowCount, dims);
+        restampRowSlots(level, size, fromSlot, dims);
     }
 
     /**
-     * The insertion counterpart of {@link #restampRowAfterDeletion}: a variant has just been
-     * <b>registered</b> at {@code fromIndex}, so every plot from there on sits one slot to the right
-     * of where its blocks were stamped. Erase that slice — one slot longer than it was — and stamp
-     * each variant from {@code fromIndex} at its new position, from its saved template.
+     * The insertion counterpart of {@link #restampRowAfterDeletion}: {@code id} has just been
+     * <b>registered</b>, so every plot after it in its row sits one slot to the right of where its
+     * blocks were stamped. Erase that slice and stamp each variant from {@code id}'s slot on at its
+     * new position, from its saved template.
      *
      * <p>{@link #duplicate} alone stamps only the new plot, which left the rest of the row drawn over
      * by one slot. Plots in the slice lose any unsaved edits; Save-as checks for those first.</p>
      */
-    public static void restampRowFrom(ServerLevel level, int fromIndex, CarriageDims dims) {
+    public static void restampRowFrom(ServerLevel level, String id, CarriageDims dims) {
+        int fromSlot = slotOf(id);
+        if (fromSlot < 0) return;
+        ContentsSize size = TemplateSizeStore.SHELLS.sizeOf(id);
+        eraseRow(level, size, fromSlot, rowCount(size), dims);
+        restampRowSlots(level, size, fromSlot, dims);
+    }
+
+    private static void eraseRow(ServerLevel level, ContentsSize size, int fromSlot, int toSlot, CarriageDims dims) {
         BlockState air = Blocks.AIR.defaultBlockState();
-        CarriageDims widest = PortalCorridorSize.corridorDims(dims, PortalCorridorKind.LONG);
-        List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
-        for (int i = Math.max(0, fromIndex); i < all.size(); i++) {
-            BlockPos pos = new BlockPos(FIRST_PLOT_X + i * plotStep(dims), PLOT_Y, PLOT_Z);
-            CarriagePlacer.eraseAt(level, pos, widest);
-            setOutline(level, pos, air, widest);
+        CarriageDims box = size.boxOrRoom(dims, groupSize());
+        for (int i = Math.max(0, fromSlot); i < toSlot; i++) {
+            BlockPos pos = rowPos(size, i, dims);
+            CarriagePlacer.eraseAt(level, pos, box);
+            setOutline(level, pos, air, box);
         }
-        for (int i = Math.max(0, fromIndex); i < all.size(); i++) {
-            stampPlot(level, all.get(i), dims);
+    }
+
+    private static void restampRowSlots(ServerLevel level, ContentsSize size, int fromSlot, CarriageDims dims) {
+        for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
+            if (CarriagePlacer.sizeOf(v) != size) continue;
+            if (slotOf(v.id()) >= fromSlot) stampPlot(level, v, dims);
         }
     }
 
@@ -486,27 +503,41 @@ public final class CarriageEditor {
      * builds the carriage from scratch on the bedrock floor.
      */
     public static BlockPos createBlank(ServerPlayer player, CarriageVariant.Custom target) throws IOException {
+        return createBlank(player, target, ContentsSize.ROOM);
+    }
+
+    /**
+     * As above, at {@code size}. The size is declared before the variant is registered, so its
+     * first plot lookup already lands it in its own size's row and its capture is that size's box.
+     */
+    public static BlockPos createBlank(ServerPlayer player, CarriageVariant.Custom target,
+                                       ContentsSize size) throws IOException {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        CarriageDims box = size.shellDims(dims, groupSize()).orElseThrow(() -> new IOException(
+            "A " + size.key() + " carriage is longer than this world's carriages can be."));
 
+        TemplateSizeStore.SHELLS.set(target.id(), size);
         if (!CarriageVariantRegistry.register(target)) {
+            TemplateSizeStore.SHELLS.forget(target.id());
             throw new IOException("Variant '" + target.id() + "' is already registered.");
         }
 
         BlockPos targetOrigin = plotOrigin(target, dims);
         if (targetOrigin == null) {
             CarriageVariantRegistry.unregister(target.id());
+            TemplateSizeStore.SHELLS.forget(target.id());
             throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
         }
 
-        CarriagePlacer.eraseAt(overworld, targetOrigin, dims);
+        CarriagePlacer.eraseAt(overworld, targetOrigin, box);
 
-        StructureTemplate template = captureTemplate(overworld, targetOrigin, dims);
+        StructureTemplate template = captureTemplate(overworld, targetOrigin, box);
         CarriageTemplateStore.save(target, template);
 
-        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
+        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, box);
 
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
             .trigger(player, "made_carriage");
@@ -521,6 +552,8 @@ public final class CarriageEditor {
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
+        // A copy is its source's length, so it lives in its source's size row.
+        TemplateSizeStore.SHELLS.set(target.id(), CarriagePlacer.sizeOf(source));
         if (!CarriageVariantRegistry.register(target)) {
             throw new IOException("Variant '" + target.id() + "' is already registered.");
         }
@@ -531,10 +564,11 @@ public final class CarriageEditor {
             throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
         }
 
-        CarriagePlacer.eraseAt(overworld, targetOrigin, dims);
+        CarriageDims box = plotDims(source, dims);
+        CarriagePlacer.eraseAt(overworld, targetOrigin, box);
         CarriagePlacer.placeAt(overworld, targetOrigin, source, dims);
 
-        StructureTemplate template = captureTemplate(overworld, targetOrigin, dims);
+        StructureTemplate template = captureTemplate(overworld, targetOrigin, box);
         if (template.getSize().equals(Vec3i.ZERO)) {
             CarriageVariantRegistry.unregister(target.id());
             throw new IOException("Source '" + source.id() + "' produced no geometry.");
@@ -547,7 +581,7 @@ public final class CarriageEditor {
         TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CARRIAGE, null,
             source.id(), target.id());
 
-        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
+        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, box);
 
         LOGGER.info("[DungeonTrain] Editor duplicate: {} created '{}' from '{}' at {}",
             player.getName().getString(), target.id(), source.id(), targetOrigin);
@@ -573,6 +607,8 @@ public final class CarriageEditor {
 
         StructureTemplate template = captureTemplate(overworld, origin, plotDims(current, dims));
 
+        // The renamed variant is the same length, so it keeps its size (and its row).
+        TemplateSizeStore.SHELLS.set(renamed.id(), CarriagePlacer.sizeOf(current));
         if (current instanceof CarriageVariant.Custom currentCustom) {
             if (!CarriageVariantRegistry.register(renamed)) {
                 throw new IOException("Name '" + renamed.id() + "' is already taken.");
@@ -582,6 +618,7 @@ public final class CarriageEditor {
             CarriageVariantRegistry.unregister(currentCustom.name());
             CarriageTemplateStore.delete(currentCustom);
             CarriageVariantBlocks.invalidate(currentCustom.name());
+            TemplateSizeStore.SHELLS.forget(currentCustom.name());
             LOGGER.info("[DungeonTrain] Editor saveAs (custom→custom): {} renamed '{}' -> '{}'",
                 player.getName().getString(), currentCustom.name(), renamed.id());
         } else if (current instanceof CarriageVariant.Builtin builtin) {

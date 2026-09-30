@@ -702,8 +702,9 @@ public final class EditorCommand {
                         .executes(ctx -> {
                             String name = StringArgumentType.getString(ctx, "name");
                             String src = StringArgumentType.getString(ctx, "source");
-                            if ("blank".equalsIgnoreCase(src)) {
-                                return runNewBlank(ctx.getSource(), name);
+                            java.util.Optional<games.brennan.dungeontrain.train.ContentsSize> blank = blankSize(src);
+                            if (blank.isPresent()) {
+                                return runNewBlank(ctx.getSource(), name, blank.get());
                             }
                             CarriageVariant variant = parseVariant(ctx.getSource(), src);
                             if (variant == null) return 0;
@@ -837,8 +838,9 @@ public final class EditorCommand {
                             .executes(ctx -> {
                                 String name = StringArgumentType.getString(ctx, "name");
                                 String src = StringArgumentType.getString(ctx, "source");
-                                if ("blank".equalsIgnoreCase(src)) {
-                                    return runContentsNewBlank(ctx.getSource(), name);
+                                java.util.Optional<games.brennan.dungeontrain.train.ContentsSize> blank = blankSize(src);
+                                if (blank.isPresent()) {
+                                    return runContentsNewBlank(ctx.getSource(), name, blank.get());
                                 }
                                 CarriageContents contents = parseContents(ctx.getSource(), src);
                                 if (contents == null) return 0;
@@ -3817,12 +3819,9 @@ public final class EditorCommand {
             // restamp pass knows which positions are dirty (the deleted
             // variant's slot plus every slot to the right that just shifted
             // left by one).
-            List<CarriageVariant> rowBefore = CarriageVariantRegistry.allVariants();
-            int oldIdx = -1;
-            for (int i = 0; i < rowBefore.size(); i++) {
-                if (rowBefore.get(i).id().equals(variant.id())) { oldIdx = i; break; }
-            }
-            int oldCount = rowBefore.size();
+            games.brennan.dungeontrain.train.ContentsSize rowSize = CarriagePlacer.sizeOf(variant);
+            int oldSlot = CarriageEditor.slotOf(variant.id());
+            int oldRowCount = CarriageEditor.rowCount(rowSize);
 
             // Plot erase + row restamp are DT's own rewrites — guarded so observers in the
             // touched plots stay quiet (ObserverBlockStampMixin).
@@ -3833,10 +3832,10 @@ public final class EditorCommand {
             boolean wasCustom = !variant.isBuiltin();
             if (wasCustom) {
                 CarriageVariantRegistry.unregister(variant.id());
-                if (oldIdx >= 0) {
-                    final int idx = oldIdx;
+                games.brennan.dungeontrain.editor.TemplateSizeStore.SHELLS.forget(variant.id());
+                if (oldSlot >= 0) {
                     CarriageStampGuard.run(() ->
-                        CarriageEditor.restampRowAfterDeletion(overworld, idx, oldCount, dims));
+                        CarriageEditor.restampRowAfterDeletion(overworld, rowSize, oldSlot, oldRowCount, dims));
                 }
             }
             source.sendSuccess(() -> (deleted
@@ -4050,7 +4049,20 @@ public final class EditorCommand {
      * variant and allocates a plot but stamps no geometry, then teleports the
      * author into the empty plot to build from scratch.
      */
-    private static int runNewBlank(CommandSourceStack source, String rawName) {
+    /**
+     * The size a {@code new <name> <source>} source token asks for a blank of: {@code blank} is a
+     * Room, {@code blank_half} / {@code blank_full} the bigger sizes. Empty for any other token,
+     * which names a template to copy instead.
+     */
+    static java.util.Optional<games.brennan.dungeontrain.train.ContentsSize> blankSize(String token) {
+        String t = token.toLowerCase(Locale.ROOT);
+        if (t.equals("blank")) return java.util.Optional.of(games.brennan.dungeontrain.train.ContentsSize.ROOM);
+        if (!t.startsWith("blank_")) return java.util.Optional.empty();
+        return games.brennan.dungeontrain.train.ContentsSize.parse(t.substring("blank_".length()));
+    }
+
+    private static int runNewBlank(CommandSourceStack source, String rawName,
+                                   games.brennan.dungeontrain.train.ContentsSize size) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
 
@@ -4070,7 +4082,7 @@ public final class EditorCommand {
 
         try {
             CarriageVariant.Custom target = (CarriageVariant.Custom) CarriageVariant.custom(name);
-            var origin = CarriageEditor.createBlank(player, target);
+            var origin = CarriageEditor.createBlank(player, target, size);
             CarriageEditor.enter(player, target);
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_blank_plot", target.id(), origin.toShortString()), true);
             return 1;
@@ -4712,12 +4724,12 @@ public final class EditorCommand {
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        List<CarriageContents> rowBefore = CarriageContentsRegistry.allContents();
-        int oldIdx = -1;
-        for (int i = 0; i < rowBefore.size(); i++) {
-            if (rowBefore.get(i).id().equals(contents.id())) { oldIdx = i; break; }
-        }
-        int oldCount = rowBefore.size();
+        // Only a top-level template holds a row slot; its row is its size's. Capture where every plot
+        // after it stands now, so the restamp can clear exactly those once the row closes up.
+        games.brennan.dungeontrain.train.ContentsSize rowSize = CarriageContentsPlacer.sizeOf(contents);
+        int oldSlot = CarriageContentsEditor.topLevelSlotOf(contents.id());
+        List<CarriageContentsEditor.StandingPlot> standing = oldSlot >= 0
+            ? CarriageContentsEditor.plotsFrom(rowSize, oldSlot, dims) : List.of();
 
         CarriageStampGuard.run(() -> CarriageContentsEditor.clearPlot(overworld, contents, dims));
         boolean deleted = CarriageContentsStore.delete(contents);
@@ -4726,10 +4738,10 @@ public final class EditorCommand {
         boolean wasCustom = !contents.isBuiltin();
         if (wasCustom) {
             CarriageContentsRegistry.unregister(contents.id());
-            if (oldIdx >= 0) {
-                final int idx = oldIdx;
+            games.brennan.dungeontrain.editor.TemplateSizeStore.CONTENTS.forget(contents.id());
+            if (oldSlot >= 0) {
                 CarriageStampGuard.run(() ->
-                    CarriageContentsEditor.restampRowAfterDeletion(overworld, idx, oldCount, dims));
+                    CarriageContentsEditor.restampRowAfterDeletion(overworld, rowSize, oldSlot, standing, dims));
             }
         }
         return (deleted
@@ -4873,7 +4885,8 @@ public final class EditorCommand {
      * registers and allocates the plot with only the default shell stamped,
      * then teleports the author inside to build the interior from scratch.
      */
-    private static int runContentsNewBlank(CommandSourceStack source, String rawName) {
+    private static int runContentsNewBlank(CommandSourceStack source, String rawName,
+                                           games.brennan.dungeontrain.train.ContentsSize size) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
 
@@ -4893,7 +4906,7 @@ public final class EditorCommand {
 
         try {
             CarriageContents.Custom target = (CarriageContents.Custom) CarriageContents.custom(name);
-            var origin = CarriageContentsEditor.createBlank(player, target);
+            var origin = CarriageContentsEditor.createBlank(player, target, size);
             CarriageContentsEditor.enter(player, target, null);
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_blank_contents_plot", target.id(), origin.toShortString()), true);
             return 1;

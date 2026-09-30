@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.ContentsSize;
 
 /**
  * Shared layout constants for every editor (carriage, contents, parts,
@@ -29,7 +30,8 @@ import games.brennan.dungeontrain.train.CarriageDims;
  *   <li>CARRIAGES: {@code Z=0..MAX_WIDTH-1} carriage row, then from {@link #PARTS_FIRST_Z} the parts
  *       grid — FLOOR / WALLS / ROOF / DOORS rows</li>
  *   <li>CONTENTS: {@code Z=CONTENTS_FIRST_Z} row, each group's members stacked along {@code +Z}
- *       below their parent by {@link #SUB_VARIANT_GAP}</li>
+ *       below their parent by {@link #SUB_VARIANT_GAP} — one such row per {@link ContentsSize},
+ *       stacked up the Y axis ({@link #sizeRowY})</li>
  *   <li>TRACKS / PORTALS: from {@code Z=TRACKS_FIRST_Z}, one X column per kind, named variants
  *       stacked along {@code +Z} (see {@link TrackSidePlots})</li>
  * </ul></p>
@@ -92,6 +94,16 @@ public final class EditorLayout {
      * it, so no caller writes the number out again.</p>
      */
     public static final int PLOT_Y = 230;
+
+    /**
+     * The plot floor for one {@link ContentsSize} row. Room sits at {@link #PLOT_Y}; each bigger size
+     * stacks one carriage height plus a {@link #GAP} above the last, so the three rows never touch
+     * and each reads as its own shelf (230 / 242 / 254 at the default height). The tallest carriage
+     * ({@link CarriageDims#MAX_HEIGHT}) still puts the Full row's roof under the 320 build ceiling.
+     */
+    public static int sizeRowY(ContentsSize size, CarriageDims dims) {
+        return PLOT_Y + size.ordinal() * (dims.height() + GAP);
+    }
 
     /**
      * Margin below {@link #PLOT_Y} that still counts as "up at the editor" — a player standing on
