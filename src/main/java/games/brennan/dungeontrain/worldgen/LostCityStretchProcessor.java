@@ -19,10 +19,9 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.BitSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -221,7 +220,11 @@ public final class LostCityStretchProcessor extends StructureProcessor {
      */
     @Nullable
     public Plan plan(BlockPos origin, List<StructureTemplate.StructureBlockInfo> originals) {
-        List<Set<Long>> slices = slices(originals);
+        return planFor(origin, slices(originals));
+    }
+
+    @Nullable
+    private Plan planFor(BlockPos origin, List<Set<Long>> slices) {
         if (slices.size() < 2 * MARGIN + 2 * periodMin) return null;
         Band band = findBand(slices);
         if (band == null) return null;
@@ -255,40 +258,122 @@ public final class LostCityStretchProcessor extends StructureProcessor {
     public List<StructureTemplate.StructureBlockInfo> apply(Plan plan, BlockPos origin, StructurePlaceSettings settings,
                                                              List<StructureTemplate.StructureBlockInfo> originals,
                                                              List<StructureTemplate.StructureBlockInfo> processed) {
-        Map<Long, Long> localOf = new HashMap<>(originals.size() * 2);
-        for (StructureTemplate.StructureBlockInfo info : originals) {
-            BlockPos world = StructureTemplate.calculateRelativePosition(settings, info.pos()).offset(origin);
-            localOf.put(world.asLong(), info.pos().asLong());
+        int sparsest = plan.floorLayers() != 0 ? sparsestOffset(plan.band(), slices(originals)) : 0;
+        return apply(new Prepared(plan, sparsest, Cells.of(originals)), origin, settings, processed);
+    }
+
+    /**
+     * What a placement's work needs from the template's own blocks: the plan ({@code null} when nothing is
+     * done), the sparsest offset for a ceiling change and the originals' cells. It depends only on the
+     * origin and the originals, so {@link LostCityPlacementMemo} keeps it across a piece's chunk calls.
+     */
+    private record Prepared(@Nullable Plan plan, int sparsest, @Nullable Cells cells) {}
+
+    private Prepared prepare(BlockPos origin, List<StructureTemplate.StructureBlockInfo> originals) {
+        List<Set<Long>> slices = slices(originals);
+        Plan plan = planFor(origin, slices);
+        if (plan == null) return new Prepared(null, 0, null);
+        int sparsest = plan.floorLayers() != 0 ? sparsestOffset(plan.band(), slices) : 0;
+        return new Prepared(plan, sparsest, Cells.of(originals));
+    }
+
+    /** The template-local cells the originals occupy, as a bitset over their bounding box. */
+    record Cells(int minX, int minY, int minZ, int sizeX, int sizeY, int sizeZ, BitSet occupied) {
+        static Cells of(List<StructureTemplate.StructureBlockInfo> originals) {
+            int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+            int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+            for (StructureTemplate.StructureBlockInfo info : originals) {
+                BlockPos p = info.pos();
+                minX = Math.min(minX, p.getX()); minY = Math.min(minY, p.getY()); minZ = Math.min(minZ, p.getZ());
+                maxX = Math.max(maxX, p.getX()); maxY = Math.max(maxY, p.getY()); maxZ = Math.max(maxZ, p.getZ());
+            }
+            if (originals.isEmpty()) return new Cells(0, 0, 0, 0, 0, 0, new BitSet());
+            Cells cells = new Cells(minX, minY, minZ, maxX - minX + 1, maxY - minY + 1, maxZ - minZ + 1, new BitSet());
+            for (StructureTemplate.StructureBlockInfo info : originals) cells.occupied.set(cells.index(info.pos()));
+            return cells;
         }
+
+        private int index(BlockPos p) {
+            int x = p.getX() - minX, y = p.getY() - minY, z = p.getZ() - minZ;
+            if (x < 0 || y < 0 || z < 0 || x >= sizeX || y >= sizeY || z >= sizeZ) return -1;
+            return (x * sizeY + y) * sizeZ + z;
+        }
+
+        boolean contains(BlockPos p) {
+            int i = index(p);
+            return i >= 0 && occupied.get(i);
+        }
+    }
+
+    /**
+     * A placement's transform, {@code world = origin + b + A·local}, read off
+     * {@link StructureTemplate#calculateRelativePosition} — mirror and rotation about the pivot are affine,
+     * and {@code A} is a signed permutation, so its inverse is its transpose. Maps a world position back to
+     * the template-local one it came from, exactly as a map of the originals' world positions would.
+     */
+    record Frame(int[] a, int bx, int by, int bz) {
+        static Frame of(StructurePlaceSettings settings) {
+            BlockPos b = StructureTemplate.calculateRelativePosition(settings, BlockPos.ZERO);
+            BlockPos[] units = {new BlockPos(1, 0, 0), new BlockPos(0, 1, 0), new BlockPos(0, 0, 1)};
+            int[] a = new int[9];                                                  // row-major: a[3r + c]
+            for (int c = 0; c < 3; c++) {
+                BlockPos t = StructureTemplate.calculateRelativePosition(settings, units[c]).subtract(b);
+                a[c] = t.getX();
+                a[3 + c] = t.getY();
+                a[6 + c] = t.getZ();
+            }
+            return new Frame(a, b.getX(), b.getY(), b.getZ());
+        }
+
+        BlockPos toLocal(BlockPos world, BlockPos origin) {
+            int dx = world.getX() - origin.getX() - bx, dy = world.getY() - origin.getY() - by, dz = world.getZ() - origin.getZ() - bz;
+            return new BlockPos(a[0] * dx + a[3] * dy + a[6] * dz,
+                    a[1] * dx + a[4] * dy + a[7] * dz,
+                    a[2] * dx + a[5] * dy + a[8] * dz);
+        }
+    }
+
+    private List<StructureTemplate.StructureBlockInfo> apply(Prepared prepared, BlockPos origin, StructurePlaceSettings settings,
+                                                             List<StructureTemplate.StructureBlockInfo> processed) {
+        LocalOf localOf = new LocalOf(Frame.of(settings), prepared.cells(), origin);
         Vec3i unit = StructureTemplate.transform(BlockPos.ZERO.relative(axis, 1), settings.getMirror(),
                 settings.getRotation(), BlockPos.ZERO);                          // one block along the axis, in world terms
         List<StructureTemplate.StructureBlockInfo> out = new ArrayList<>(processed.size() + processed.size() / 4);
-        if (plan.floorLayers() != 0) {
-            applyCeilings(plan, unit, localOf, originals, processed, out);
+        if (prepared.plan().floorLayers() != 0) {
+            applyCeilings(prepared.plan(), prepared.sparsest(), unit, localOf, processed, out);
         } else {
-            applyRepeats(plan, unit, localOf, processed, out);
+            applyRepeats(prepared.plan(), unit, localOf, processed, out);
         }
         return out;
     }
 
-    private void applyRepeats(Plan plan, Vec3i unit, Map<Long, Long> localOf,
+    /** The template-local position a processed block came from, or {@code null} for one another processor added. */
+    private record LocalOf(Frame frame, Cells cells, BlockPos origin) {
+        @Nullable
+        BlockPos get(BlockPos world) {
+            BlockPos local = frame.toLocal(world, origin);
+            return cells.contains(local) ? local : null;
+        }
+    }
+
+    private void applyRepeats(Plan plan, Vec3i unit, LocalOf localOf,
                               List<StructureTemplate.StructureBlockInfo> processed, List<StructureTemplate.StructureBlockInfo> out) {
         int p = plan.band().period();
         int delta = plan.delta();
         int bandStart = plan.band().start();
         int bandEnd = bandStart + p;                                              // one repeat: [start, end)
         for (StructureTemplate.StructureBlockInfo info : processed) {
-            Long local = localOf.get(info.pos().asLong());
+            BlockPos local = localOf.get(info.pos());
             if (local == null) {   // a block another processor added (footing, rubble): keep where it is
                 out.add(info);
                 continue;
             }
-            int layer = BlockPos.getY(local);
+            int layer = local.getY();
             if (layer < minLayer || layer > maxLayer) {                           // outside the podium / setback range
                 out.add(info);
                 continue;
             }
-            int at = along(BlockPos.of(local));
+            int at = along(local);
             if (delta > 0) {
                 if (at < bandEnd) {
                     out.add(info);
@@ -306,22 +391,21 @@ public final class LostCityStretchProcessor extends StructureProcessor {
         }
     }
 
-    private void applyCeilings(Plan plan, Vec3i unit, Map<Long, Long> localOf, List<StructureTemplate.StructureBlockInfo> originals,
+    private void applyCeilings(Plan plan, int m, Vec3i unit, LocalOf localOf,
                                List<StructureTemplate.StructureBlockInfo> processed, List<StructureTemplate.StructureBlockInfo> out) {
         Band band = plan.band();
         int p = band.period(), n = plan.floorLayers(), start = band.start();
         int regionEnd = start + band.count() * p;
-        int m = sparsestOffset(band, slices(originals));
         // the offsets a lowered ceiling drops: the sparsest layer and its neighbours
         int dropFrom = n < 0 ? Math.max(0, Math.min(m, p + n)) : 0;
         int dropTo = n < 0 ? dropFrom - n : 0;                                    // [dropFrom, dropTo)
         for (StructureTemplate.StructureBlockInfo info : processed) {
-            Long local = localOf.get(info.pos().asLong());
+            BlockPos local = localOf.get(info.pos());
             if (local == null) {
                 out.add(info);
                 continue;
             }
-            int at = along(BlockPos.of(local));
+            int at = along(local);
             if (at < start) {
                 out.add(info);
             } else if (at >= regionEnd) {
@@ -358,8 +442,10 @@ public final class LostCityStretchProcessor extends StructureProcessor {
                                                                          List<StructureTemplate.StructureBlockInfo> originals,
                                                                          List<StructureTemplate.StructureBlockInfo> processed,
                                                                          StructurePlaceSettings settings) {
-        Plan plan = plan(offset, originals);
-        return plan == null ? processed : apply(plan, offset, settings, originals, processed);
+        Prepared prepared = LostCityPlacementMemo.get(
+                new LostCityPlacementMemo.Key(this, offset.asLong(), LostCityPlacementMemo.fingerprint(originals, true)),
+                () -> prepare(offset, originals));
+        return prepared.plan() == null ? processed : apply(prepared, offset, settings, processed);
     }
 
     @Override
