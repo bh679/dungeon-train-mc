@@ -441,7 +441,7 @@ public final class PortalTestCommand {
      *
      * <p><b>They stay where they were.</b> The trip lands them in the doorway, but an author looking
      * at a chest wants the chest re-rolled under their nose, not a walk back to it. So where they
-     * stood is put back afterwards — provided it is within three chunks of the stamped box (see
+     * stood is put back afterwards — provided it is within two chunks of the stamped box (see
      * {@link #keepsPlaceOnReseed}) and the new roll left it open. A spot the reseed filled (a wall
      * variant, a bookcase where there was floor) would suffocate them, and they are left in the
      * doorway instead.</p>
@@ -502,11 +502,11 @@ public final class PortalTestCommand {
     }
 
     /**
-     * How far outside a test copy a reseed still leaves the author where they stood: three chunks. An
+     * How far outside a test copy a reseed still leaves the author where they stood: two chunks. An
      * author looking at the copy from beside it, above it or through a gap in its wall is still
      * looking at it, and wants the new roll in front of them rather than a trip to the doorway.
      */
-    static final int RESEED_KEEP_MARGIN = 3 * 16;
+    static final int RESEED_KEEP_MARGIN = 2 * 16;
 
     /**
      * Whether a reseed puts the author back where they stood rather than at the copy's arrival spot.
