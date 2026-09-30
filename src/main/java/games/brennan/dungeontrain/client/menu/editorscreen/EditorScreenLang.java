@@ -261,6 +261,8 @@ public final class EditorScreenLang {
     public static final String DISABLED_NOT_HERE = PREFIX + "disabled.not_here";
     public static final String DISABLED_NOT_TESTABLE = PREFIX + "disabled.not_testable";
     public static final String DISABLED_NOT_LOCAL = PREFIX + "disabled.not_local";
+    public static final String DISABLED_UNGROUPED = PREFIX + "disabled.ungrouped";
+    public static final String DISABLED_GROUP_SUBMIT = PREFIX + "disabled.group_submit";
 
     public static final String TEST_CARRIAGE = PREFIX + "test_carriage";
     public static final String EXIT_TEST = PREFIX + "exit_test";

@@ -73,10 +73,17 @@ final class EditorGroupsTab {
     /** The right column's pages, in button order. */
     enum Page { GROUP, ENTRANCES, SECTIONS }
 
-    private enum Kind { GROUP_ROW, NEW_ROW, PAGE, ICON, TOGGLE, WEIGHT, DEC, INC, TEST }
+    private enum Kind { GROUP_ROW, NEW_ROW, PAGE, ICON, TOGGLE, WEIGHT, DEC, INC, TEST, BUTTON }
+
+    /** Row height of the page buttons at the top of the body. */
+    private static final int PAGE_BTN_H = 14;
 
     private record Hit(Kind kind, InventoryEditorLayout.Rect rect, String group, String kindId, String name,
-                       Page page) {}
+                       Page page, EditorScreenActions.Icon icon) {
+        Hit(Kind kind, InventoryEditorLayout.Rect rect, String group, String kindId, String name, Page page) {
+            this(kind, rect, group, kindId, name, page, null);
+        }
+    }
 
     /** The picked group: {@code ""} is Ungrouped. */
     private String selected;
@@ -196,10 +203,12 @@ final class EditorGroupsTab {
         g.drawString(font, font.plainSubstrByWidth(head, h.w() - 4), h.x() + 2,
             h.y() + (h.h() - font.lineHeight) / 2, theme.panelText(), !theme.isLight());
 
-        renderPageButtons(g, font, layout.icons(), mx, my);
+        renderIcons(g, layout.icons(), mx, my);
         InventoryEditorLayout.Rect t = layout.test();
-        bodyRect = new InventoryEditorLayout.Rect(h.x(), layout.preview().y(), h.w(),
-            Math.max(0, t.y() - GAP - layout.preview().y()));
+        InventoryEditorLayout.Rect pages = new InventoryEditorLayout.Rect(h.x(), layout.preview().y(), h.w(), PAGE_BTN_H);
+        renderPageButtons(g, font, pages, mx, my);
+        int bodyY = pages.bottom() + 2;
+        bodyRect = new InventoryEditorLayout.Rect(h.x(), bodyY, h.w(), Math.max(0, t.y() - GAP - bodyY));
         g.fill(bodyRect.x(), bodyRect.y(), bodyRect.right(), bodyRect.bottom(), PreviewPane.BACKDROP);
         g.enableScissor(bodyRect.x(), bodyRect.y(), bodyRect.right(), bodyRect.bottom());
         if (page == Page.GROUP) renderGroupPage(g, font, mx, my);
@@ -237,6 +246,56 @@ final class EditorGroupsTab {
         g.disableScissor();
     }
 
+    /**
+     * The template preview's icon row, as far as it applies to a group: Rename, Delete and Open files
+     * (the folder its registry is saved in), with Submit shown but off — a group is not uploaded on
+     * its own. Same sprites, sizes and disabled look as {@code EditorDetailPane}.
+     */
+    private List<EditorScreenActions.Icon> icons() {
+        boolean named = !selected.isEmpty();
+        List<EditorScreenActions.Icon> out = new ArrayList<>(4);
+        out.add(new EditorScreenActions.Icon("rename", EditorScreenLang.ICON_RENAME,
+            named ? new CommandMenuEntry.TypeArg("Rename group", "name", ROOT + " rename " + selected, "", selected) : null,
+            EditorScreenLang.DISABLED_UNGROUPED));
+        out.add(new EditorScreenActions.Icon("remove", EditorScreenLang.ICON_REMOVE,
+            named ? new CommandMenuEntry.DrillIn("Delete",
+                new ConfirmScreen("Delete tunnel group '" + selected + "'? Its templates stay.", ROOT + " delete " + selected))
+                : null,
+            EditorScreenLang.DISABLED_UNGROUPED));
+        boolean local = net.minecraft.client.Minecraft.getInstance().hasSingleplayerServer();
+        java.nio.file.Path folder = games.brennan.dungeontrain.editor.UserContentPaths.dir("tunnels");
+        String label = EditorScreenLang.text(EditorScreenLang.ICON_OPEN_FILES);
+        out.add(new EditorScreenActions.Icon("open_files", EditorScreenLang.ICON_OPEN_FILES,
+            local ? new CommandMenuEntry.ClientAction(label,
+                () -> games.brennan.dungeontrain.client.menu.PackageMenuActions.openFolder(folder, "tunnel groups folder"))
+                : null,
+            EditorScreenLang.DISABLED_NOT_LOCAL, local ? "tunnels/groups.json" : null));
+        out.add(new EditorScreenActions.Icon("submit", EditorScreenLang.ICON_SUBMIT, null,
+            EditorScreenLang.DISABLED_GROUP_SUBMIT));
+        return out;
+    }
+
+    private void renderIcons(GuiGraphics g, InventoryEditorLayout.Rect r, int mx, int my) {
+        int cell = Math.min(EditorDetailPane.ICON_CELL, r.h());
+        int x = r.x();
+        for (EditorScreenActions.Icon icon : icons()) {
+            InventoryEditorLayout.Rect b = new InventoryEditorLayout.Rect(x, r.y(), cell, cell);
+            boolean hov = b.contains(mx, my);
+            boolean danger = "remove".equals(icon.id());
+            int fill = !icon.enabled() ? EditorDetailPane.DISABLED
+                : hov ? (danger ? 0xC0FF5544 : MenuRowPainter.CELL_HOVER) : MenuRowPainter.CELL_IDLE;
+            g.fill(b.x(), b.y(), b.right(), b.bottom(), fill);
+            if (!icon.enabled()) g.setColor(0.45f, 0.45f, 0.45f, 1f);
+            else if (hov) g.setColor(0f, 0f, 0f, 1f);
+            int sprite = Math.min(EditorDetailPane.ICON_SIZE, cell);
+            g.blitSprite(EditorIcons.forAction(icon.id()), x + (cell - sprite) / 2, r.y() + (cell - sprite) / 2,
+                sprite, sprite);
+            g.setColor(1f, 1f, 1f, 1f);
+            hits.add(new Hit(Kind.BUTTON, b, selected, null, null, null, icon));
+            x += cell + 2;
+        }
+    }
+
     private void renderPageButtons(GuiGraphics g, Font font, InventoryEditorLayout.Rect icons, int mx, int my) {
         int x = icons.x();
         for (Page p : Page.values()) {
@@ -267,11 +326,7 @@ final class EditorGroupsTab {
 
         List<TemplateDataSheet.Line> lines = new ArrayList<>();
         if (!selected.isEmpty()) {
-            lines.add(new TemplateDataSheet.Line("Name", List.of(
-                TemplateDataSheet.Cell.plain(selected),
-                // Drawn as buttons (they carry an action); click() answers them before the sheet does.
-                new TemplateDataSheet.Cell("Rename", new TemplateDataSheet.Action.Run(""), true),
-                new TemplateDataSheet.Cell("Delete", new TemplateDataSheet.Action.Run(""), true))));
+            lines.add(TemplateDataSheet.Line.of("Name", selected));
         }
         String weightPrefix = selected.isEmpty() ? ROOT + " ungrouped" : ROOT + " weight " + selected;
         lines.add(new TemplateDataSheet.Line("Weight", stepper(weightOf(selected), weightPrefix,
@@ -407,18 +462,7 @@ final class EditorGroupsTab {
     /** The click at {@code (mx, my)}, or null when it lands on nothing of this tab. */
     Click click(double mx, double my) {
         for (TemplateDataSheet.Placed p : sheetCells) {
-            if (!p.rect().contains(mx, my)) continue;
-            // Rename / Delete ride on the Name line, told apart by their text.
-            if ("Rename".equals(p.cell().text())) {
-                return new Click.Entry(new CommandMenuEntry.TypeArg("Rename group", "name",
-                    ROOT + " rename " + selected, "", selected));
-            }
-            if ("Delete".equals(p.cell().text())) {
-                return new Click.Entry(new CommandMenuEntry.DrillIn("Delete",
-                    new ConfirmScreen("Delete tunnel group '" + selected + "'? Its templates stay.",
-                        ROOT + " delete " + selected)));
-            }
-            if (p.cell().action() != null) return new Click.Sheet(p);
+            if (p.rect().contains(mx, my) && p.cell().action() != null) return new Click.Sheet(p);
         }
         for (Hit hit : hits) {
             if (!hit.rect().contains(mx, my)) continue;
@@ -466,6 +510,9 @@ final class EditorGroupsTab {
                     return new Click.Entry(new CommandMenuEntry.Run("Test",
                         "dungeontrain editor test tracks tunnelgroup " + token, false));
                 }
+                case BUTTON -> {
+                    return hit.icon().enabled() ? new Click.Entry(hit.icon().entry()) : new Click.Consumed();
+                }
             }
         }
         return null;
@@ -494,6 +541,14 @@ final class EditorGroupsTab {
                 case TOGGLE -> {
                     return memberOf(selected, hit.kindId(), hit.name()) != null
                         ? "Take it out of " + selected : "Add it to " + selected;
+                }
+                case BUTTON -> {
+                    EditorScreenActions.Icon icon = hit.icon();
+                    String label = EditorScreenLang.text(icon.labelKey());
+                    if (!icon.enabled() && icon.disabledKey() != null) {
+                        return label + " — " + EditorScreenLang.text(icon.disabledKey());
+                    }
+                    return icon.detail() == null ? label : label + " — " + icon.detail();
                 }
                 default -> { return null; }
             }
