@@ -2,8 +2,11 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
+import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.editorscreen.EditorScreenActions;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -16,7 +19,7 @@ import net.neoforged.neoforge.client.settings.KeyModifier;
 
 /**
  * Ctrl+Z / Ctrl+Y (⌘Z / ⌘Y on macOS) for the in-world editor, and Ctrl+R (⌘R)
- * to re-roll the Test the Carriage copy the author is standing in.
+ * to test the template the author is standing in — or, inside a test, to re-roll it.
  *
  * <p>{@link KeyModifier#CONTROL} is what makes one binding cover both
  * platforms: NeoForge resolves it to the Super keys under
@@ -35,11 +38,13 @@ import net.neoforged.neoforge.client.settings.KeyModifier;
  * author can change a weight, walk away, and still take it back. Only survival
  * is gated out.</p>
  *
- * <p>Reseed is the exception to "works from anywhere": it only fires inside a test
- * ({@link PortalTestSessionState#active()}), where it runs the same
- * {@link EditorScreenActions#RESEED_NOW_COMMAND} as the X menu's Reseed button. Outside
- * a test that button is the world's reseed switch instead, and a shortcut that silently
- * flipped a setting would be a trap — so there the key does nothing.</p>
+ * <p>Ctrl+R is the exception to "works from anywhere". Inside a test
+ * ({@link PortalTestSessionState#active()}) it runs the same
+ * {@link EditorScreenActions#RESEED_NOW_COMMAND} as the X menu's Reseed button. Outside a
+ * test it is Test the Carriage for the plot the author is standing in, through the same
+ * save check as the menus — straight in when clean, a save prompt when not. It never
+ * touches the world's reseed switch (the Reseed button outside a test): a shortcut that
+ * silently flipped a setting would be a trap.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class EditorUndoHotkeyClient {
@@ -92,6 +97,29 @@ public final class EditorUndoHotkeyClient {
         return null;
     }
 
+    /**
+     * True when a key pressed inside an editor screen is the test / reseed binding — the screen
+     * then runs its own Test (or, inside a test, Reseed) button, mirroring the in-world key.
+     */
+    public static boolean isTestKey(int keyCode, int scanCode) {
+        if (TemplateBlocksHotkeyClient.inSurvival()) return false;
+        return pressed(RESEED, InputConstants.getKey(keyCode, scanCode));
+    }
+
+    /**
+     * Test the plot the author is standing in — the row-list menu's Test the Carriage row, read
+     * from the same HUD state. The save check it opens goes straight in when the plot is clean
+     * and asks to save first when it isn't. Outside a plot, or in one with nothing to test (a
+     * part), the key does nothing.
+     */
+    private static void enterTestHere() {
+        if (!EditorStatusHudOverlay.isActive()) return;
+        PlotCategory category = PlotCategory.fromId(EditorStatusHudOverlay.category()).orElse(null);
+        MenuScreen check = EditorScreenActions.testCheckFor(category,
+            EditorStatusHudOverlay.modelId(), EditorStatusHudOverlay.modelName());
+        if (check != null) CommandMenuState.openAt(check);
+    }
+
     private static boolean pressed(KeyMapping mapping, InputConstants.Key key) {
         return !mapping.isUnbound() && mapping.getKey().equals(key)
             && mapping.getKeyModifier().isActive(KeyConflictContext.GUI);
@@ -133,6 +161,8 @@ public final class EditorUndoHotkeyClient {
             while (RESEED.consumeClick()) {
                 if (PortalTestSessionState.active()) {
                     CommandRunner.run(EditorScreenActions.reseedNowCommand());
+                } else {
+                    enterTestHere();
                 }
             }
         }
