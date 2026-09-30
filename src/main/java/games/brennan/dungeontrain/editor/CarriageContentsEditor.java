@@ -543,6 +543,11 @@ public final class CarriageContentsEditor {
             // Stamp the current contents template on top of the air interior.
             CarriageContentsPlacer.placeAt(overworld, origin, contents, dims);
             setOutline(overworld, origin, OUTLINE_BLOCK, box);
+            // The dirty-check baseline, as stampPlot takes it: a plot restamped here without one
+            // could never report an edit as unsaved.
+            Vec3i interior = CarriageContentsPlacer.interiorSize(box);
+            EditorPlotSnapshots.capture(EditorPlotSnapshots.key("contents", contents.id()),
+                overworld, origin.offset(1, 1, 1), interior.getX(), interior.getY(), interior.getZ());
         }
 
         Vec3i footprint = new Template.Contents(contents).plotSize(dims);
@@ -767,19 +772,7 @@ public final class CarriageContentsEditor {
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        if (!CarriageContentsRegistry.register(target)) {
-            throw new IOException("Contents '" + target.id() + "' is already registered.");
-        }
-        games.brennan.dungeontrain.train.CarriageContentsGroup existing = CarriageContentsGroupStore.get(parentId)
-            .orElse(games.brennan.dungeontrain.train.CarriageContentsGroup.EMPTY);
-        try {
-            CarriageContentsGroupStore.save(parentId, existing.withMember(
-                new games.brennan.dungeontrain.train.CarriageContentsGroup.Member(
-                    target.id(), games.brennan.dungeontrain.train.CarriageContentsGroup.DEFAULT_WEIGHT)));
-        } catch (IOException e) {
-            CarriageContentsRegistry.unregister(target.id());
-            throw e;
-        }
+        registerIntoGroup(target, parentId);
 
         BlockPos targetOrigin = plotOrigin(target, dims);
         if (targetOrigin == null) {
@@ -801,6 +794,57 @@ public final class CarriageContentsEditor {
         LOGGER.info("[DungeonTrain] Contents editor duplicate into group '{}': {} created '{}' from '{}' at {}",
             parentId, player.getName().getString(), target.id(), source.id(), targetOrigin);
         return targetOrigin;
+    }
+
+    /**
+     * As {@link #duplicateIntoGroup}, for a <b>blank</b> member: it joins {@code parentId}'s group
+     * before anything is stamped, so its box is the group's (a sub-variant is its root's size) and
+     * its first plot is its own place in the parent's column — never a top-level slot of the Room
+     * row, which is what a not-yet-member would answer.
+     */
+    public static BlockPos createBlankInGroup(ServerPlayer player, CarriageContents.Custom target,
+                                              String parentId) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        registerIntoGroup(target, parentId);
+        BlockPos targetOrigin = plotOrigin(target, dims);
+        if (targetOrigin == null) {
+            throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
+        }
+        CarriageDims box = plotDims(target, dims);
+        CarriagePlacer.eraseAt(overworld, targetOrigin, box);
+        CarriageContentsPlacer.eraseAt(overworld, targetOrigin, box);
+        CarriagePlacer.placeAt(overworld, targetOrigin, shellFor(target), dims);
+        StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, box);
+        CarriageContentsStore.save(target, template);
+        // Restamp through the ordinary path so the cage and the dirty baseline match every other plot.
+        stampPlot(overworld, target, dims);
+
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "made_contents");
+        LOGGER.info("[DungeonTrain] Contents editor createBlank into group '{}': {} created '{}' at {}",
+            parentId, player.getName().getString(), target.id(), targetOrigin);
+        return targetOrigin;
+    }
+
+    /** Register {@code target} and append it to {@code parentId}'s group, undoing the register on failure. */
+    private static void registerIntoGroup(CarriageContents.Custom target, String parentId) throws IOException {
+        if (!CarriageContentsRegistry.register(target)) {
+            throw new IOException("Contents '" + target.id() + "' is already registered.");
+        }
+        games.brennan.dungeontrain.train.CarriageContentsGroup existing = CarriageContentsGroupStore.get(parentId)
+            .orElse(games.brennan.dungeontrain.train.CarriageContentsGroup.EMPTY);
+        try {
+            CarriageContentsGroupStore.save(parentId, existing.withMember(
+                new games.brennan.dungeontrain.train.CarriageContentsGroup.Member(
+                    target.id(), games.brennan.dungeontrain.train.CarriageContentsGroup.DEFAULT_WEIGHT)));
+        } catch (IOException e) {
+            CarriageContentsRegistry.unregister(target.id());
+            throw e;
+        }
     }
 
     /** The top-level row slot {@code id} occupies, or -1 for a group member or an unknown id. */

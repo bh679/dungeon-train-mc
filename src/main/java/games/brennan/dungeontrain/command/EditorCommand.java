@@ -2641,17 +2641,15 @@ public final class EditorCommand {
             //    Either way it is sized as the PARENT: the target is not a group member yet, so
             //    asking for its own box would still answer "carriage" and capture a template the
             //    size gate then rejects on every load.
+            //    It joins the parent's group FIRST (inside the editor call), so it is stamped straight
+            //    into its own place in the parent's column at the group's size — never at a
+            //    top-level slot of the Room row, which is what it would answer as a non-member.
             CarriageContents.Custom target = (CarriageContents.Custom) CarriageContents.custom(name);
             var origin = blank
-                ? CarriageContentsEditor.createBlank(player, target, parent)
-                : CarriageContentsEditor.duplicate(player, cloneFrom, target);
-
-            // 4. Append to parent's group (creates the group sidecar if missing).
-            CarriageContentsGroup existing = CarriageContentsGroupStore.get(parent.id())
+                ? CarriageContentsEditor.createBlankInGroup(player, target, parent.id())
+                : CarriageContentsEditor.duplicateIntoGroup(player, cloneFrom, target, parent.id());
+            CarriageContentsGroup updated = CarriageContentsGroupStore.get(parent.id())
                 .orElse(CarriageContentsGroup.EMPTY);
-            CarriageContentsGroup updated = existing.withMember(
-                new CarriageContentsGroup.Member(target.id(), CarriageContentsGroup.DEFAULT_WEIGHT));
-            CarriageContentsGroupStore.save(parent.id(), updated);
 
             // 5. Teleport into the new plot (now positioned adjacent to parent
             // because the plot layout is flattened-by-group).
