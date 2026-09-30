@@ -362,6 +362,16 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             changed |= clearCorridorClearance(chunk, cycle, endBandActive, wavyXCache, chunkMinX, chunkMinZ,
                     bedY, railY, zMin, zMax, tg, minY, worldTop);
 
+            // Survival sweep (after the clearance, which can also cut a plant's support): drop decoration
+            // that a later neighbour's feature undermined anywhere in this chunk's 3x3 region — e.g. a
+            // brimstone bud whose netherrack floor a basalt_deltas blob turned to basalt.
+            if (fullCore) {
+                final boolean endActive = endBandActive;
+                NetherCoreSurvivalSweep.sweep(level, cp, coreGeom.minCoreY() - 1, coreGeom.maxCoreY() + 2,
+                        x -> cycle.isNetherCore(x) && !(endActive && cycle.endMiddleRamp(x) > 0.0),
+                        (x, y, z) -> isTrackBlock(z, y, bedY, railY, zMin, zMax, tg));
+            }
+
             if (!changed) return false;
             Heightmap.primeHeightmaps(chunk, WG_HEIGHTMAPS);
             chunk.setUnsaved(true);
