@@ -687,6 +687,12 @@ public final class EditorScreenActions {
             return new CommandMenuEntry.DrillIn(MenuLang.t("common.new"),
                 new NewSourcePickerScreen(NewSourcePickerScreen.Category.PARTS, stripModelId, current));
         }
+        if (stripCategory == PlotCategory.CONTENTS) {
+            // A contents strip is one size (Room / Half / Full); its model id is the size key, so
+            // the picker offers a blank of that size.
+            return new CommandMenuEntry.DrillIn(MenuLang.t("common.new"),
+                new NewSourcePickerScreen(NewSourcePickerScreen.Category.CONTENTS, stripModelId, current));
+        }
         String modelId = switch (stripCategory) {
             case TRACKS, PORTALS -> stripModelId;
             default -> current;
