@@ -21602,6 +21602,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "cargo-carriage-contents",
+      "version": "0.1078.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "Cargo carriages",
+      "summary": "Cargo carriages turn up in more shapes along the line.",
+      "highlights": [],
+      "pr": 1727,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
