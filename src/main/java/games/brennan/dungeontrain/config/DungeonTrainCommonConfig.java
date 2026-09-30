@@ -44,6 +44,9 @@ public final class DungeonTrainCommonConfig {
     /** Global DEFAULT Compatible Terrain mode for new worlds. false = classic Dungeon Train terrain. */
     public static final boolean DEFAULT_COMPATIBLE_TERRAIN = false;
 
+    /** Default for {@link #keepVanillaChorus()}: DT's chorus stays vanilla, as it always has. */
+    public static final boolean DEFAULT_KEEP_VANILLA_CHORUS = true;
+
     /**
      * World disintegration band — the world breaks apart into void past a carriage
      * count, then reassembles. Always-on core mechanic with a kill switch.
@@ -552,6 +555,8 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_BEHIND_SPAWN;
     public static final ModConfigSpec.IntValue AMBIENT_MONSTER_CAP;
     public static final ModConfigSpec.BooleanValue COMPATIBLE_TERRAIN;
+    /** Whether BetterEnd's chorus restyle is overridden. See {@link #keepVanillaChorus()}. */
+    public static final ModConfigSpec.BooleanValue KEEP_VANILLA_CHORUS;
     public static final ModConfigSpec.BooleanValue DISINTEGRATION_ENABLED;
     public static final ModConfigSpec.IntValue DISINTEGRATION_START_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_FADE_BLOCKS;
@@ -627,6 +632,7 @@ public final class DungeonTrainCommonConfig {
         DEFAULT_PLAYER_MOB_BEHIND_SPAWN = pair.getLeft().defaultPlayerMobBehindSpawnPercent;
         AMBIENT_MONSTER_CAP = pair.getLeft().ambientMonsterCap;
         COMPATIBLE_TERRAIN = pair.getLeft().compatibleTerrain;
+        KEEP_VANILLA_CHORUS = pair.getLeft().keepVanillaChorus;
         DISINTEGRATION_ENABLED = pair.getLeft().disintegrationEnabled;
         DISINTEGRATION_START_BLOCKS = pair.getLeft().disintegrationStartBlocks;
         DISINTEGRATION_FADE_BLOCKS = pair.getLeft().disintegrationFadeBlocks;
@@ -759,6 +765,14 @@ public final class DungeonTrainCommonConfig {
                         "false = classic Dungeon Train terrain. Applies to NEW worlds only; existing worlds keep the terrain",
                         "they were created with. The matching terrain mod must also be installed for any visible change.")
                 .define("defaultCompatibleTerrain", DEFAULT_COMPATIBLE_TERRAIN);
+
+        ModConfigSpec.BooleanValue keepVanillaChorus = b
+                .comment("Keep chorus plants and flowers vanilla. BetterEnd: New Dawn's own change_chorus_plant option",
+                        "swaps their models (and the flower's hitbox) for its restyled ones everywhere, including the vanilla",
+                        "End-islands bands Dungeon Train grows chorus in. true = vanilla chorus whatever BetterEnd's config says.",
+                        "false = leave it to BetterEnd's change_chorus_plant setting. Models are chosen at startup, so a change",
+                        "needs a restart; keep client and server on the same value so the flower's hitbox matches its model.")
+                .define("keepVanillaChorus", DEFAULT_KEEP_VANILLA_CHORUS);
 
         ModConfigSpec.BooleanValue disintegrationEnabled = b
                 .comment("World disintegration band. When true (default), past a carriage count the world breaks apart",
@@ -1151,7 +1165,7 @@ public final class DungeonTrainCommonConfig {
         b.pop();
 
         return new Holder(configVersion, defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent,
-                ambientMonsterCap, compatibleTerrain,
+                ambientMonsterCap, compatibleTerrain, keepVanillaChorus,
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
                 disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationEndCities,
                 disintegrationOverworldHoldBlocks,
@@ -1413,6 +1427,15 @@ public final class DungeonTrainCommonConfig {
         hold.set(target);
         LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: {} {} -> {}.",
                 from, CURRENT_CONFIG_VERSION, key, legacy, target);
+    }
+
+    /**
+     * Whether {@code BetterEndChorusCosmeticMixin} answers BetterEnd's {@code changeChorusPlant} with
+     * {@code false}. Read when models load (before any world) and for the flower's shape on both
+     * sides, so it can't be a per-world choice. Falls back to the default before the config loads.
+     */
+    public static boolean keepVanillaChorus() {
+        return isLoaded() ? KEEP_VANILLA_CHORUS.get() : DEFAULT_KEEP_VANILLA_CHORUS;
     }
 
     /** Global default Compatible Terrain mode for new worlds; falls back to the hardcoded default pre-load. */
@@ -1782,6 +1805,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.IntValue ambientMonsterCap,
                           ModConfigSpec.BooleanValue compatibleTerrain,
+                          ModConfigSpec.BooleanValue keepVanillaChorus,
                           ModConfigSpec.BooleanValue disintegrationEnabled,
                           ModConfigSpec.IntValue disintegrationStartBlocks,
                           ModConfigSpec.IntValue disintegrationFadeBlocks,
