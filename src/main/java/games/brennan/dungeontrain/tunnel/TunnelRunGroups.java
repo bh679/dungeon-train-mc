@@ -9,20 +9,20 @@ import java.util.List;
  * Keeps a tunnel one template group from entrance to exit even though worldgen builds it one chunk
  * at a time and no chunk in the middle of a long tunnel can see either end.
  *
- * <p><b>What counts as one tunnel.</b> Qualification is per column and has soft spots, so a tunnel
- * that looks continuous is often several qualified {@link Run runs} a few columns apart — each
- * section stamp reaches {@link TunnelPlacer#LENGTH} columns past the column it started on and
- * papers over the gap. So runs closer than {@link #BRIDGE} columns are one tunnel, both within a
- * chunk and across a chunk edge.</p>
+ * <p><b>What counts as one tunnel.</b> The group only changes after a stretch of at least
+ * {@link #GROUP_GAP_CHUNKS} chunks with no tunnel in it: qualified {@link Run runs} closer than
+ * {@link #BRIDGE} columns are one tunnel, both within a chunk and across any number of chunk
+ * edges — so a string of short tunnels a little apart keeps one look.</p>
  *
  * <p>Each chunk groups its runs into such tunnels and takes each tunnel's group from the first of
  * these that answers:</p>
  * <ol>
  *   <li>the answer this same chunk X already recorded for that edge (another chunk-Z row of the
  *       corridor got here first);</li>
- *   <li>for the westmost tunnel, what chunk {@code x-1} recorded at its <b>east</b> edge, when the
- *       two are within {@link #BRIDGE} columns of each other;</li>
- *   <li>for the eastmost tunnel, likewise chunk {@code x+1}'s <b>west</b> edge;</li>
+ *   <li>for the westmost tunnel, the <b>east</b> edge recorded by the nearest chunk to the west
+ *       (up to {@link #GROUP_GAP_CHUNKS} away; chunks without a tunnel record nothing and are
+ *       walked past), when the two are within {@link #BRIDGE} columns of each other;</li>
+ *   <li>for the eastmost tunnel, likewise the nearest chunk to the east's <b>west</b> edge;</li>
  *   <li>otherwise a roll keyed by where the tunnel starts in this chunk — or, for a run carrying on
  *       straight from the west edge, by a coarse X band — so every roll is deterministic.</li>
  * </ol>
@@ -36,8 +36,10 @@ import java.util.List;
  */
 public final class TunnelRunGroups {
 
-    /** Runs fewer than this many columns apart are one tunnel — a section stamp spans the gap. */
-    static final int BRIDGE = TunnelPlacer.LENGTH;
+    /** A tunnel's group may only change after a tunnel-free gap of at least this many chunks. */
+    static final int GROUP_GAP_CHUNKS = 5;
+    /** Runs fewer than this many columns apart are one tunnel and share its group. */
+    static final int BRIDGE = GROUP_GAP_CHUNKS * 16;
     /** Width of the fallback roll band, in blocks. */
     static final int FALLBACK_BAND = 1024;
     /** Keeps fallback band keys clear of start-X keys. */
@@ -161,22 +163,33 @@ public final class TunnelRunGroups {
         return perColumn;
     }
 
-    /** The westmost tunnel's inherited token: this chunk's own west answer, else chunk x-1's east one. */
+    /**
+     * The westmost tunnel's inherited token: this chunk's own west answer, else the east answer of
+     * the nearest chunk to the west that recorded one, if it lies within {@link #BRIDGE} columns.
+     */
     private static String fromWest(EdgeBook book, int chunkX, Tunnel t) {
         if (t.startDx() >= BRIDGE) return null;
         Edge own = book.westOf(chunkX);
         if (own != null) return own.token();
-        Edge west = book.eastOf(chunkX - 1);
-        return west != null && west.gap() + t.startDx() < BRIDGE ? west.token() : null;
+        for (int k = 1; k <= GROUP_GAP_CHUNKS; k++) {
+            Edge west = book.eastOf(chunkX - k);
+            if (west == null) continue;
+            return west.gap() + 16 * (k - 1) + t.startDx() < BRIDGE ? west.token() : null;
+        }
+        return null;
     }
 
-    /** The eastmost tunnel's inherited token: this chunk's own east answer, else chunk x+1's west one. */
+    /** The eastmost tunnel's inherited token — {@link #fromWest} mirrored. */
     private static String fromEast(EdgeBook book, int chunkX, Tunnel t) {
         if (t.eastGap() >= BRIDGE) return null;
         Edge own = book.eastOf(chunkX);
         if (own != null) return own.token();
-        Edge east = book.westOf(chunkX + 1);
-        return east != null && east.gap() + t.eastGap() < BRIDGE ? east.token() : null;
+        for (int k = 1; k <= GROUP_GAP_CHUNKS; k++) {
+            Edge east = book.westOf(chunkX + k);
+            if (east == null) continue;
+            return east.gap() + 16 * (k - 1) + t.eastGap() < BRIDGE ? east.token() : null;
+        }
+        return null;
     }
 
     static String toToken(TemplateGroup g) {
