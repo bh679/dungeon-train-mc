@@ -21242,6 +21242,24 @@
       "released_at": "2026-09-30T09:43:29Z"
     },
     {
+      "id": "editor-test-mode-shortcut",
+      "version": "0.1056.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Test from the editor with Ctrl/Cmd+R",
+      "summary": "Ctrl/Cmd+R in the editor now takes you straight into testing what you're building.",
+      "highlights": [],
+      "pr": 1698,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "reseed-keep-zone-two-chunks",
       "version": "0.1056.0",
       "type": "feat",

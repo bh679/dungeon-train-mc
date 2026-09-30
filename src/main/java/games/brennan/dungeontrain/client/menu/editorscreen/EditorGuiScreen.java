@@ -1408,6 +1408,16 @@ public final class EditorGuiScreen extends Screen {
             afterCommand();
             return true;
         }
+        // Ctrl/⌘+R: Test the selected template (save check first), or inside a test re-roll it.
+        if (games.brennan.dungeontrain.client.EditorUndoHotkeyClient.isTestKey(keyCode, scanCode)) {
+            if (games.brennan.dungeontrain.client.PortalTestSessionState.active()) {
+                CommandRunner.run(EditorScreenActions.reseedNowCommand());
+                afterCommand();
+            } else if (detail.testEntry() != null) {
+                dispatch(detail.testEntry());
+            }
+            return true;
+        }
         if (HotbarPassthrough.key(this.minecraft, keyCode, scanCode)) return true;
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
