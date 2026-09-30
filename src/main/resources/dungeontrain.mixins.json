@@ -27,6 +27,7 @@
     "NoiseBasedChunkGeneratorMixin",
     "NoiseRouterDataAccessor",
     "NoiseGeneratorSettingsAccessor",
+    "NoiseBasedChunkGeneratorInvoker",
     "ChunkGeneratorDecorationMixin",
     "ChunkStatusCarversMixin",
     "BclibFeatureSeedCounterMixin",

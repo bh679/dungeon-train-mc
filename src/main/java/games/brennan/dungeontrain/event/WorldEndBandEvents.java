@@ -2,10 +2,10 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.EndBandConfig;
 import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.EndBandJobQueue;
 import games.brennan.dungeontrain.worldgen.EndBandSampler;
@@ -17,17 +17,13 @@ import games.brennan.dungeontrain.worldgen.PrefetchDirection;
 import games.brennan.dungeontrain.worldgen.SunlitChunks;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.EntityBlock;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -46,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Writes the BetterEnd End-band passes ({@link EndBandStyle}) in: a chunk in one of those passes
@@ -135,6 +132,9 @@ public final class WorldEndBandEvents {
     /** Held spill whose (already-terrained) chunk has just reloaded — written at the start of the next tick. */
     private static final Map<Long, List<EndBandSpill>> DUE_SPILL = new LinkedHashMap<>();
 
+    /** Spill produced by samples written in worldgen ({@link EndBandInlineTerrain}), handed over from the worker threads. */
+    private static final ConcurrentLinkedQueue<Map<Long, EndBandSpill>> INLINE_SPILL = new ConcurrentLinkedQueue<>();
+
     private static int tickCounter;
 
     private WorldEndBandEvents() {}
@@ -145,23 +145,22 @@ public final class WorldEndBandEvents {
         if (!level.dimension().equals(Level.OVERWORLD)) return;
         ChunkAccess chunk = event.getChunk();
         ChunkPos pos = chunk.getPos();
-        long pass;
-        if (event.isNewChunk()) {
-            pass = betterEndPass(level, pos);
-            if (pass < 0L) return;
+        EndBandLoadDecision.Action action = EndBandLoadDecision.decide(event.isNewChunk(),
+                chunk.getData(ModDataAttachments.END_BAND_PENDING), EndBandConfig.terrainInWorldgen());
+        if (action == EndBandLoadDecision.Action.NONE) {
+            // Terrain already in (written in worldgen, or before it unloaded); only spill that arrived
+            // while it was away may be owed.
+            List<EndBandSpill> owed = SPILL_WAITING.remove(pos.toLong());
+            if (owed != null) DUE_SPILL.put(pos.toLong(), owed);
+            return;
+        }
+        long pass = betterEndPass(level, pos);
+        if (pass < 0L) return;
+        if (action == EndBandLoadDecision.Action.FLAG_AND_REQUEST) {
             chunk.setData(ModDataAttachments.END_BAND_PENDING, Boolean.TRUE);
             chunk.setUnsaved(true);
-        } else {
-            if (!chunk.getData(ModDataAttachments.END_BAND_PENDING)) {
-                // Terrain already in; only spill that arrived while it was away may be owed.
-                List<EndBandSpill> owed = SPILL_WAITING.remove(pos.toLong());
-                if (owed != null) DUE_SPILL.put(pos.toLong(), owed);
-                return;
-            }
-            // A chunk that unloaded before its terrain arrived: ask again.
-            pass = betterEndPass(level, pos);
-            if (pass < 0L) return;
         }
+        // Else: a chunk that unloaded before its terrain arrived (or whose worldgen write failed): ask again.
         EndBandSampler.Result early = STASH.remove(pos.toLong());
         if (early != null) {
             // Prefetched: written on the next tick (never mid-load — a block-entity write here would
@@ -177,9 +176,12 @@ public final class WorldEndBandEvents {
         ServerLevel level = event.getServer().overworld();
         if (level == null) return;
         if (++tickCounter % PREFETCH_INTERVAL_TICKS == 0) {
-            prefetch(level);
+            // In worldgen mode a chunk arrives with its terrain, so there is nothing to fetch ahead; the
+            // sweep still repairs old saves' pending chunks and any worldgen write that failed.
+            if (!EndBandConfig.terrainInWorldgen()) prefetch(level);
             sweepPending(level);
         }
+        drainInlineSpill(level);
         if (!DUE.isEmpty()) {
             // Prefetched terrain for chunks that arrived last tick: all of it, so none is seen bare.
             long t0 = GenProfiler.t0();
@@ -262,16 +264,30 @@ public final class WorldEndBandEvents {
         LAST_PREFETCH_X.clear();
         SPILL_WAITING.clear();
         DUE_SPILL.clear();
+        INLINE_SPILL.clear();
         tickCounter = 0;
+    }
+
+    /** A worldgen-time sample's spill for its neighbours; delivered on the next server tick. Any thread. */
+    static void offerSpill(Map<Long, EndBandSpill> spill) {
+        INLINE_SPILL.add(spill);
+    }
+
+    private static void drainInlineSpill(ServerLevel level) {
+        Map<Long, EndBandSpill> spill;
+        while ((spill = INLINE_SPILL.poll()) != null) {
+            spill.forEach((key, s) -> deliverSpill(level, key, s));
+        }
     }
 
     /**
      * The sampled (BetterEnd / BoP) End pass that owns any band column of {@code pos}, else {@code -1}.
      * Columns follow {@link WorldGenCycle#endSourcePassAt}: one pass per chunk everywhere except across the
      * seam of a joined End band, where vanilla and sampled columns interleave — there the sampled side's
-     * pass is the one to fetch, and {@link #fill} writes only the columns it owns.
+     * pass is the one to fetch, and {@link EndBandTerrainWriter} writes only the columns it owns.
+     * Any thread (reads only per-world data and memoised band layout).
      */
-    private static long betterEndPass(ServerLevel level, ChunkPos pos) {
+    static long betterEndPass(ServerLevel level, ChunkPos pos) {
         if (DisintegrationBand.startX(level) == DisintegrationBand.OFF) return -1L;
         WorldGenCycle cycle = MixBand.cycleAt(level, pos.x, pos.z);   // mix zone: the chunk's picked band
         int minX = pos.getMinBlockX();
@@ -401,29 +417,7 @@ public final class WorldEndBandEvents {
     }
 
     private static boolean fill(ServerLevel level, LevelChunk chunk, EndBandSampler.Result r) {
-        ChunkPos pos = r.pos();
-        SphereCarveGeometry geo = SphereCarveGeometry.of(level);
-        WorldGenCycle cycle = MixBand.cycleAt(level, pos.x, pos.z);    // mix zone: the chunk's picked band
-        long seed = DungeonTrainWorldData.get(level).getGenerationSeed();
-        int yStart = Math.max(r.minY(), chunk.getMinBuildHeight());
-        int yEnd = Math.min(r.minY() + r.height(), chunk.getMaxBuildHeight());
-        boolean changed = false;
-        for (int dx = 0; dx < 16; dx++) {
-            int worldX = pos.getMinBlockX() + dx;
-            double ramp = cycle.endIslandRamp(worldX);
-            if (ramp <= 0.0) continue;
-            for (int dz = 0; dz < 16; dz++) {
-                int worldZ = pos.getMinBlockZ() + dz;
-                if (!sampledOwns(level, cycle, seed, worldX, worldZ)) continue;
-                boolean laneZ = geo.laneZ(worldZ), airZ = geo.airZ(worldZ);
-                for (int y = yStart; y < yEnd; y++) {
-                    BlockState ns = r.stateAt(dx, y, dz);
-                    if (ns.isAir()) continue;
-                    changed |= placeSampled(level, chunk, geo, seed, ramp, laneZ, airZ, dx, y, dz, ns, r.blockEntities());
-                }
-            }
-        }
-        return changed;
+        return EndBandTerrainWriter.write(level, chunk, r, EndBandTerrainWriter.liveSink(level, chunk));
     }
 
     /**
@@ -437,56 +431,25 @@ public final class WorldEndBandEvents {
         long seed = DungeonTrainWorldData.get(level).getGenerationSeed();
         int yStart = chunk.getMinBuildHeight(), yEnd = chunk.getMaxBuildHeight();
         long[] at = spill.positions();
+        EndBandTerrainWriter.Sink sink = EndBandTerrainWriter.liveSink(level, chunk);
         boolean changed = false;
         for (int i = 0; i < at.length; i++) {
             int worldX = BlockPos.getX(at[i]), y = BlockPos.getY(at[i]), worldZ = BlockPos.getZ(at[i]);
             if (y < yStart || y >= yEnd || (worldX >> 4) != pos.x || (worldZ >> 4) != pos.z) continue;
             double ramp = cycle.endIslandRamp(worldX);
-            if (ramp <= 0.0 || !sampledOwns(level, cycle, seed, worldX, worldZ)) continue;
+            if (ramp <= 0.0 || !EndBandTerrainWriter.sampledOwns(level, cycle, seed, worldX, worldZ)) continue;
             int dx = worldX & 15, dz = worldZ & 15;
             BlockState after = spill.after()[i];
             if (after.isAir()) {
-                LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
-                BlockState current = section.getBlockState(dx, y & 15, dz);
+                BlockState current = sink.get(dx, y, dz);
                 if (!EndBandSpill.shouldWrite(current, spill.before()[i], after) || current.hasBlockEntity()) continue;
-                section.setBlockState(dx, y & 15, dz, after, false);
+                sink.set(dx, y, dz, after);
                 changed = true;
             } else {
-                changed |= placeSampled(level, chunk, geo, seed, ramp, geo.laneZ(worldZ), geo.airZ(worldZ),
-                        dx, y, dz, after, spill.blockEntities());
+                changed |= EndBandTerrainWriter.place(pos, geo, seed, ramp, geo.laneZ(worldZ), geo.airZ(worldZ),
+                        dx, y, dz, after, spill.blockEntities(), sink);
             }
         }
         return changed;
-    }
-
-    /** Whether the sampled look owns column {@code (worldX, worldZ)}: across a joined End band's seam the stamped vanilla look owns some. */
-    private static boolean sampledOwns(ServerLevel level, WorldGenCycle cycle, long seed, int worldX, int worldZ) {
-        return EndBandSampler.appliesTo(level.getServer(), cycle.endSourceLookAt(worldX, worldZ, seed));
-    }
-
-    /**
-     * The gate every sampled block passes on its way into the live chunk: clear of the track and the
-     * train's airspace, thinned across the band's fade, and only into a cell that is still air (never over
-     * a build). True if the block was written.
-     */
-    private static boolean placeSampled(ServerLevel level, LevelChunk chunk, SphereCarveGeometry geo, long seed,
-                                        double ramp, boolean laneZ, boolean airZ, int dx, int y, int dz,
-                                        BlockState ns, Map<Long, CompoundTag> blockEntities) {
-        if (geo.reserved(y, laneZ, airZ)) return false;
-        int worldX = chunk.getPos().getMinBlockX() + dx, worldZ = chunk.getPos().getMinBlockZ() + dz;
-        if (!EndBandStyle.keepSampledBlock(ramp, Disintegration.coherentNoise(seed, worldX, y, worldZ))) return false;
-        LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
-        if (!section.getBlockState(dx, y & 15, dz).isAir()) return false;   // never over a build
-        section.setBlockState(dx, y & 15, dz, ns, false);
-        if (ns.hasBlockEntity()) placeBlockEntity(level, new BlockPos(worldX, y, worldZ), ns, blockEntities);
-        return true;
-    }
-
-    private static void placeBlockEntity(ServerLevel level, BlockPos at, BlockState state, Map<Long, CompoundTag> blockEntities) {
-        CompoundTag nbt = blockEntities.get(at.asLong());
-        BlockEntity be = nbt != null
-                ? BlockEntity.loadStatic(at, state, nbt, level.registryAccess())
-                : (state.getBlock() instanceof EntityBlock eb ? eb.newBlockEntity(at, state) : null);
-        if (be != null) level.setBlockEntity(be);
     }
 }

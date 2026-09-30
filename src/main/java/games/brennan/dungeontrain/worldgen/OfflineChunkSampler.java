@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen;
 
+import games.brennan.dungeontrain.mixin.NoiseBasedChunkGeneratorInvoker;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
@@ -7,6 +8,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.GenerationChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
+import net.minecraft.util.Mth;
 import net.minecraft.util.StaticCache2D;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
@@ -15,6 +17,7 @@ import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.chunk.status.ChunkPyramid;
@@ -28,11 +31,14 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseChunk;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
+import net.minecraft.world.level.levelgen.NoiseSettings;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.WorldGenerationContext;
 import net.minecraft.world.level.levelgen.blending.Blender;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -116,12 +122,13 @@ public final class OfflineChunkSampler {
      */
     public static void decorate(NoiseBasedChunkGenerator generator, Workspace workspace, ProtoChunk chunk,
                                 boolean vanillaOnly, String alsoNamespace) {
+        Boolean was = SAMPLING.get();
         SAMPLING.set(Boolean.TRUE);
         VanillaOnlySample.set(vanillaOnly, alsoNamespace);
         try {
             generator.applyBiomeDecoration(workspace.region(), chunk, workspace.structures());
         } finally {
-            SAMPLING.set(Boolean.FALSE);
+            SAMPLING.set(was);                // restored, not reset: a sample can run inside a display chunk's own decoration
             VanillaOnlySample.set(false);
         }
     }
@@ -169,7 +176,8 @@ public final class OfflineChunkSampler {
                                          RandomState random, ChunkPos pos) {
         Registry<Biome> biomes = level.registryAccess().registryOrThrow(Registries.BIOME);
         ProtoChunk chunk = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomes, null);
-        chunk.fillBiomesFromNoise(generator.getBiomeSource(), random.sampler());
+        // The End's biome sources ask the erosion function once per quart; memoised, that is one lookup per chunk.
+        chunk.fillBiomesFromNoise(generator.getBiomeSource(), EndErosionMemo.sampler(random));
         chunk.setPersistedStatus(ChunkStatus.SURFACE);
         return chunk;
     }
@@ -178,12 +186,51 @@ public final class OfflineChunkSampler {
      * Pour the generator's terrain into {@code chunk} and run the surface rules over it — the ground,
      * before carvers or decoration. Returns the filled chunk, or {@code null} if the generator handed
      * back something other than a {@link ProtoChunk}. Blocks the calling thread for the fill; never
-     * call it from {@code Util.backgroundExecutor()}.
+     * call it from {@code Util.backgroundExecutor()} — use {@link #fillGroundInline} there.
      */
     public static ProtoChunk fillGround(ServerLevel level, NoiseBasedChunkGenerator generator,
                                         RandomState random, ProtoChunk chunk, Workspace workspace) {
         ChunkAccess filled =
             generator.fillFromNoise(Blender.empty(), random, workspace.structures(), chunk).join();
+        return finishGround(level, generator, random, filled);
+    }
+
+    /**
+     * {@link #fillGround} with the noise fill run <b>on the calling thread</b> — for a sample generated
+     * from inside a worldgen worker, which must never wait on {@code Util.backgroundExecutor()} (it is on
+     * it). Calls {@code doFill} directly, doing what {@code fillFromNoise} does around it: clamp the noise
+     * settings to the chunk, work out the cell range, and hold the sections it will write.
+     */
+    public static ProtoChunk fillGroundInline(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                              RandomState random, ProtoChunk chunk, Workspace workspace) {
+        NoiseSettings noise = generator.generatorSettings().value().noiseSettings()
+            .clampToHeightAccessor(chunk.getHeightAccessorForGeneration());
+        int minY = noise.minY();
+        int cellMinY = Mth.floorDiv(minY, noise.getCellHeight());
+        int cells = Mth.floorDiv(noise.height(), noise.getCellHeight());
+        ChunkAccess filled = chunk;
+        if (cells > 0) {
+            int top = chunk.getSectionIndex(cells * noise.getCellHeight() - 1 + minY);
+            int bottom = chunk.getSectionIndex(minY);
+            List<LevelChunkSection> held = new ArrayList<>();
+            for (int i = top; i >= bottom; i--) {
+                LevelChunkSection section = chunk.getSection(i);
+                section.acquire();
+                held.add(section);
+            }
+            try {
+                filled = ((NoiseBasedChunkGeneratorInvoker) generator)
+                    .dungeontrain$doFill(Blender.empty(), workspace.structures(), random, chunk, cellMinY, cells);
+            } finally {
+                held.forEach(LevelChunkSection::release);
+            }
+        }
+        return finishGround(level, generator, random, filled);
+    }
+
+    /** The surface rules and heightmaps over a noise-filled chunk — the tail both fills share. */
+    private static ProtoChunk finishGround(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                           RandomState random, ChunkAccess filled) {
         if (!(filled instanceof ProtoChunk ground)) return null;
         Heightmap.primeHeightmaps(ground, EnumSet.of(
             Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG,
@@ -248,7 +295,7 @@ public final class OfflineChunkSampler {
     public static BiomeManager biomeManager(NoiseBasedChunkGenerator generator, RandomState random,
                                             long worldSeed, ChunkAccess sample) {
         BiomeSource source = generator.getBiomeSource();
-        Climate.Sampler sampler = random.sampler();
+        Climate.Sampler sampler = EndErosionMemo.sampler(random);
         int minQx = QuartPos.fromBlock(sample.getPos().getMinBlockX());
         int minQz = QuartPos.fromBlock(sample.getPos().getMinBlockZ());
         int maxQx = minQx + QuartPos.fromBlock(16) - 1;
