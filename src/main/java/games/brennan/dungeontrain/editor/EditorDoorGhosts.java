@@ -143,7 +143,7 @@ public final class EditorDoorGhosts {
      * resolves both.
      */
     private static List<EditorDoorGhostsPacket.Door> contentsSnapshot(CarriageDims dims) {
-        List<CarriageContents> all = CarriageContentsRegistry.allContents();
+        List<CarriageContents> all = CarriageContentsEditor.residentContents();
         List<EditorDoorGhostsPacket.Door> out =
             new ArrayList<>(all.size() * CarriageDoorCells.DOORS_PER_CARRIAGE);
         for (CarriageContents contents : all) {
@@ -242,7 +242,7 @@ public final class EditorDoorGhosts {
 
     private static String contentsKey(CarriageDims dims) {
         StringBuilder sb = new StringBuilder();
-        for (CarriageContents contents : CarriageContentsRegistry.allContents()) {
+        for (CarriageContents contents : CarriageContentsEditor.residentContents()) {
             BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
             if (origin == null) continue;
             appendBox(sb, origin, CarriageContentsEditor.plotDims(contents, dims));

@@ -72,6 +72,22 @@ final class CarriageContentsRegistryFilterTest {
     }
 
     @Test
+    @DisplayName("Size filter: only contents of the shell's size are ever picked")
+    void sizeFilter_onlyPicksMatchingSize() {
+        CarriageContentsRegistry.register((CarriageContents.Custom) CarriageContents.custom("long_hall"));
+        CarriageContentsRegistry.register((CarriageContents.Custom) CarriageContents.custom("small_room"));
+        java.util.function.Predicate<String> fullOnly = "long_hall"::equals;
+        for (int i = 0; i < 64; i++) {
+            CarriageContents picked = CarriageContentsRegistry.pick(99L, i, CarriageContentsAllowList.EMPTY, null, fullOnly);
+            assertEquals("long_hall", picked.id(), "carriage " + i);
+        }
+        assertTrue(CarriageContentsRegistry.anyAllowed(CarriageContentsAllowList.EMPTY, fullOnly));
+        assertFalse(CarriageContentsRegistry.anyAllowed(
+            CarriageContentsAllowList.EMPTY.withExcluded("long_hall"), fullOnly),
+            "the allow-list still applies inside a size");
+    }
+
+    @Test
     @DisplayName("EMPTY allow-list matches the legacy unfiltered pick")
     void empty_allow_matches_legacy() {
         long seed = 0x1234_5678_9ABC_DEF0L;
