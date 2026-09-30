@@ -21133,6 +21133,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-teleport-fly-over-air",
+      "version": "0.1050.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Editor arrivals take flight",
+      "summary": "Jumping to a template in the editor no longer leaves you falling when there's nothing to stand on.",
+      "highlights": [],
+      "pr": 1691,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
