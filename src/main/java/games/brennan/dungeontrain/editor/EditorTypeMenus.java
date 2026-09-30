@@ -226,6 +226,10 @@ public final class EditorTypeMenus {
         // are filtered out of the top-level list here — same rule the CONTENTS menu follows.
         List<String> names = TrackVariantGroupStore.topLevelNames(kind);
         if (names.isEmpty()) return;
+        // Tunnel rows are laid out by group — list them in plot order, anchored at the first plot.
+        if (games.brennan.dungeontrain.tunnel.TunnelPlotOrder.isTunnel(kind)) {
+            names = games.brennan.dungeontrain.tunnel.TunnelPlotOrder.sortBySlot(kind, names);
+        }
         BlockPos firstOrigin = TrackSidePlots.plotOrigin(kind, names.get(0), dims);
         Vec3i footprint = TrackSidePlots.footprint(kind, names.get(0), dims);
         BlockPos anchor = anchorForZRow(firstOrigin, footprint);

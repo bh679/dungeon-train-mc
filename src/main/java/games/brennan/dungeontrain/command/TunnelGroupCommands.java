@@ -154,7 +154,7 @@ final class TunnelGroupCommands {
             return 0;
         }
         try {
-            int moved = TunnelGroupEditing.rename(from, to);
+            int moved = relayout(source, () -> TunnelGroupEditing.rename(from, to));
             if (moved < 0) {
                 source.sendFailure(Component.literal("Tunnel group '" + to + "' already exists."));
                 return 0;
@@ -207,7 +207,7 @@ final class TunnelGroupCommands {
         String id = idOrFail(source, raw);
         if (id == null) return 0;
         try {
-            int stripped = TunnelGroupEditing.delete(id);
+            int stripped = relayout(source, () -> TunnelGroupEditing.delete(id));
             return ok(source, "Deleted tunnel group '" + id + "' (removed from " + stripped + " template"
                 + (stripped == 1 ? "" : "s") + ").");
         } catch (IOException e) {
@@ -229,11 +229,45 @@ final class TunnelGroupCommands {
         String id = idOrFail(source, raw);
         if (id == null) return 0;
         try {
-            boolean joined = TunnelGroupEditing.toggle(kind, name.get(), id);
+            boolean joined = relayout(source, () -> TunnelGroupEditing.toggle(kind, name.get(), id));
             return ok(source, kind.id() + " '" + name.get() + "' " + (joined ? "joined" : "left")
                 + " tunnel group '" + id + "'.");
         } catch (IOException e) {
             return failed(source, "toggle", id, e);
+        }
+    }
+
+    /** An edit that may move tunnel plots — see {@link #relayout}. */
+    @FunctionalInterface
+    private interface GroupEdit<T> {
+        T run() throws IOException;
+    }
+
+    /**
+     * Run {@code edit}, which changes group membership and so the order the tunnel plots are laid
+     * out in ({@link games.brennan.dungeontrain.tunnel.TunnelPlotOrder}). While the Tracks plots are
+     * stamped, both tunnel rows are cleared at their old places first and restamped at their new
+     * ones after — plots that moved restamp from their saved templates.
+     */
+    private static <T> T relayout(CommandSourceStack source, GroupEdit<T> edit) throws IOException {
+        boolean stamped = games.brennan.dungeontrain.editor.EditorStampedCategoryState
+            .isActive(games.brennan.dungeontrain.editor.EditorCategory.TRACKS);
+        net.minecraft.server.level.ServerLevel level = source.getServer().overworld();
+        if (stamped) {
+            games.brennan.dungeontrain.editor.TunnelEditor.clearPlot(level,
+                games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant.SECTION);
+            games.brennan.dungeontrain.editor.TunnelEditor.clearPlot(level,
+                games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant.PORTAL);
+        }
+        try {
+            return edit.run();
+        } finally {
+            if (stamped) {
+                games.brennan.dungeontrain.editor.TunnelEditor.stampPlot(level,
+                    games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant.SECTION);
+                games.brennan.dungeontrain.editor.TunnelEditor.stampPlot(level,
+                    games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant.PORTAL);
+            }
         }
     }
 
