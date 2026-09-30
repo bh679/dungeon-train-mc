@@ -145,6 +145,8 @@ public final class SableShipyard implements Shipyard {
         subLevel.markRemoved();
         // A deleted carriage's player-added blocks go with it (see PlayerPlacedTrainBlocks).
         PlayerPlacedTrainBlocks.removeSubLevel(subLevel.getUniqueId());
+        // ...and so do its forced fence / wall arms (see ForcedConnectCells).
+        games.brennan.dungeontrain.train.ForcedConnectCells.removeSubLevel(subLevel.getUniqueId());
         // The container's per-tick removal pass picks this up next tick and
         // also clears our weak cache entry once the ServerSubLevel is GC'd.
     }

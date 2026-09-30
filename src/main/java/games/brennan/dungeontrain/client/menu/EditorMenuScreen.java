@@ -487,7 +487,7 @@ public final class EditorMenuScreen implements MenuScreen {
         // from what the author walked in to look at. PortalTestSaveCheckScreen asks first when this
         // room is dirty, and dispatches straight through when it isn't.
         MenuScreen testCheck = games.brennan.dungeontrain.client.menu.editorscreen.EditorScreenActions
-            .testCheckFor(ctx.category(), ctx.modelName());
+            .testCheckFor(ctx.category(), ctx.modelId(), ctx.modelName());
         if (testCheck != null) {
             out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.test_carriage"), testCheck));
         }

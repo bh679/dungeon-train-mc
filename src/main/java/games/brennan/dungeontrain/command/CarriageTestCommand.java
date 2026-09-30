@@ -50,6 +50,16 @@ import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 import java.util.Optional;
+import games.brennan.dungeontrain.track.TrackGenerator;
+import games.brennan.dungeontrain.track.TrackTestBand;
+import games.brennan.dungeontrain.track.TrackTestLayout;
+import games.brennan.dungeontrain.track.TrackTestPiece;
+import games.brennan.dungeontrain.track.TrackTestScene;
+import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
+import games.brennan.dungeontrain.train.CarriageGenerationConfig;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * {@code /dungeontrain editor test carriages|contents <id>} — Test the Carriage for a carriage or a
@@ -122,6 +132,18 @@ public final class CarriageTestCommand {
                     .suggests((ctx, b) -> SharedSuggestionProvider.suggest(CarriageGroupRegistry.ids(), b))
                     .executes(ctx -> runTest(ctx.getSource(), CarriageTestSession.Kind.WHOLE_GROUP,
                         StringArgumentType.getString(ctx, "name"), false))))
+            .then(Commands.literal(CarriageTestSession.Kind.TRACKS.literal())
+                .then(Commands.argument("model", StringArgumentType.word())
+                    .suggests((ctx, b) -> SharedSuggestionProvider.suggest(
+                        Arrays.stream(TrackTestPiece.values()).map(TrackTestPiece::modelId), b))
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .suggests((ctx, b) -> SharedSuggestionProvider.suggest(
+                            TrackTestPiece.ofModelId(StringArgumentType.getString(ctx, "model"))
+                                .map(p -> TrackVariantRegistry.namesFor(p.kind()))
+                                .orElse(List.of()), b))
+                        .executes(ctx -> runTrackCommand(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "model"),
+                            StringArgumentType.getString(ctx, "name"))))))
             .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())))
             .then(Commands.literal("reseed").executes(ctx -> runReseedNow(ctx.getSource(), false))
                 .then(Commands.literal("focus").executes(ctx -> runReseedNow(ctx.getSource(), true))));
@@ -159,10 +181,18 @@ public final class CarriageTestCommand {
         CarriageTestSession.Session current = CarriageTestSession.get(player.getUUID());
         if (focus && current != null) {
             // The other half keeps the seed it stood on; only the tested template rolls afresh.
-            if (kind == CarriageTestSession.Kind.CARRIAGE) contentsSeed = current.contentsSeed();
-            else shellSeed = current.shellSeed();
+            // A track test's shell seed is the piece's roll and its contents seed the line's, so
+            // it keeps the line the way a carriage test keeps its contents.
+            if (kind == CarriageTestSession.Kind.CARRIAGE || kind == CarriageTestSession.Kind.TRACKS) {
+                contentsSeed = current.contentsSeed();
+            } else {
+                shellSeed = current.shellSeed();
+            }
         }
         if (kind.isWhole()) return runWholeTest(source, player, overworld, kind, id, shellSeed, contentsSeed);
+        if (kind == CarriageTestSession.Kind.TRACKS) {
+            return runTrackTest(source, player, overworld, worldData, id, shellSeed, contentsSeed);
+        }
         Plan plan = planFor(source, kind, id, shellSeed, contentsSeed);
         if (plan == null) return 0;
         // The second copy: the same template on the next roll. Derived from the first, so a reseed
@@ -208,6 +238,107 @@ public final class CarriageTestCommand {
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.carriage_test.standing_in",
             id, plan.shell().id(), contentsId).withStyle(ChatFormatting.AQUA), false);
         return 1;
+    }
+
+    /** {@code editor test tracks <model> <name>}: refuse a model id that is not a piece of the line. */
+    private static int runTrackCommand(CommandSourceStack source, String modelId, String name) {
+        Optional<TrackTestPiece> piece = TrackTestPiece.ofModelId(modelId);
+        if (piece.isEmpty()) return failCode(source, "chat.dungeontrain.track_test.unknown_piece", modelId);
+        // A name the kind doesn't have would stamp the built-in fallback and look like a test of it.
+        List<String> names = TrackVariantRegistry.namesFor(piece.get().kind());
+        if (!names.contains(name)) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_variant_valid",
+                name, String.join(", ", names)).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        return runTest(source, CarriageTestSession.Kind.TRACKS, piece.get().templateId(name), false);
+    }
+
+    /**
+     * A piece of the line, in context: two rolls of a stretch of track — columns, a staircase, a
+     * tunnel with a shaft — with a carriage standing on the first between half flatbeds, the way a
+     * one-carriage sub-level stands on the real line. The author arrives on the back pad facing it.
+     *
+     * @param testSeed  what the piece under test rolls its block variants on
+     * @param sceneSeed what everything else — the line's other pieces and the carriage — rolls on
+     */
+    private static int runTrackTest(CommandSourceStack source, ServerPlayer player, ServerLevel overworld,
+                                    DungeonTrainWorldData worldData, String id, long testSeed, long sceneSeed) {
+        Optional<TrackTestPiece.Named> named = TrackTestPiece.parseTemplateId(id);
+        if (named.isEmpty()) return failCode(source, "chat.dungeontrain.track_test.unknown_piece", id);
+        TrackTestPiece piece = named.get().piece();
+        String name = named.get().name();
+
+        // A band the piece could really appear in, drawn with the line around it: a reseed can land
+        // in another, a focused one keeps it with the line.
+        TrackTestBand band = TrackTestBand.pick(TrackVariantWeights.gateFor(piece.kind(), name), sceneSeed);
+        CarriageDims dims = worldData.dims();
+        CarriageGenerationConfig config = worldData.getGenerationConfig();
+        CarriageVariant shell = CarriagePlacer.enclosedVariantForIndex(CarriageTestSession.TEST_INDEX,
+            new CarriageGenerationConfig(config.mode(), config.groupSize(), sceneSeed), band.context());
+        CarriageContents contents = contentsFor(shell, sceneSeed, band.context());
+        CarriageDims shellDims = CarriagePlacer.variantDims(shell, dims);
+        int spacing = TrackGenerator.computeSpacing(TrackTestLayout.COLUMN_HEIGHT);
+        TrackTestLayout layout = new TrackTestLayout(shellDims.length(), CarriagePlacer.halfPadLen(dims),
+            shellDims.height(), dims.width(), spacing, TrackGenerator.computeThickness(spacing));
+
+        leaveCurrentTests(source, player);
+
+        // On the tile grid, so the tiles' block variants key the way the line's own do.
+        int cornerX = Math.floorDiv(player.blockPosition().getX(), TrackTestLayout.TILE_LENGTH)
+            * TrackTestLayout.TILE_LENGTH;
+        BlockPos corner = new BlockPos(cornerX,
+            PortalTwinLanes.floorY(overworld.getMinBuildHeight()) + 1, TEST_Z_OFFSET);
+        BoundingBox box = new BoundingBox(
+            corner.getX(), corner.getY() - 1, corner.getZ() + TrackTestLayout.minZ(),
+            corner.getX() + layout.sceneLength() - 1, corner.getY() + layout.topY(),
+            corner.getZ() + layout.maxZ());
+        GameType previous = player.gameMode.getGameModeForPlayer();
+        CarriageTestSession.put(player.getUUID(), new CarriageTestSession.Session(
+            player.level().dimension(), player.position(), player.getYRot(), player.getXRot(),
+            previous, CarriageTestSession.Kind.TRACKS, id, box, testSeed, sceneSeed));
+
+        CarriageStampGuard.run(() -> {
+            TrackTestScene.stampStretch(overworld, corner, dims, layout,
+                new TrackTestScene.Roll(piece, name, testSeed, sceneSeed, band));
+            TrackTestScene.stampStretch(overworld, corner.offset(layout.stretchLength(), 0, 0), dims, layout,
+                new TrackTestScene.Roll(piece, name, nextRoll(testSeed), nextRoll(sceneSeed), band));
+        });
+        // The train stands on the section under test, so arriving on its back pad starts the author there.
+        BlockPos backPad = corner.offset(layout.backPadX(piece), TrackTestLayout.trainY(), 0);
+        stampCarriageOnTrack(overworld, corner, layout, piece, dims, shell, contents, sceneSeed);
+
+        arrive(overworld, player, backPad, new Vec3i(layout.halfPad(), dims.height(), dims.width()), previous, name);
+
+        String contentsId = contents == null ? "none" : contents.id();
+        LOGGER.info("[DungeonTrain] track test: stamped {} '{}' at {} for {} — carriage {} (contents={}), "
+                + "band={} (level {}), seeds={}/{}", piece.modelId(), name, corner, player.getName().getString(),
+            shell.id(), contentsId, band.phase(), band.level(), testSeed, sceneSeed);
+        Component bandName = Component.translatable(
+            "gui.dungeontrain.editor_menu.phase." + band.phase().name().toLowerCase(java.util.Locale.ROOT));
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.track_test.standing_in", name, bandName)
+            .withStyle(ChatFormatting.AQUA), false);
+        return 1;
+    }
+
+    /**
+     * The carriage between its two half pads, standing on the line's rails — the layout a
+     * one-carriage sub-level has on the train ({@code TrainAssembler}), so the author sees the
+     * clearance a real carriage gets.
+     */
+    private static void stampCarriageOnTrack(ServerLevel level, BlockPos corner, TrackTestLayout layout,
+                                             TrackTestPiece piece, CarriageDims dims, CarriageVariant shell,
+                                             CarriageContents contents, long seed) {
+        int y = TrackTestLayout.trainY();
+        BlockPos backPad = corner.offset(layout.backPadX(piece), y, 0);
+        BlockPos frontPad = corner.offset(layout.frontPadX(piece), y, 0);
+        String stage = games.brennan.dungeontrain.editor.EditorStageSelection.effective();
+        CarriageStampGuard.run(() -> StagePlacementScope.run(stage, () -> {
+            CarriagePlacer.placeHalfFlatbedPad(level, backPad, CarriagePlacer.HalfPadSide.BACK, dims);
+            CarriagePlacer.placeHalfFlatbedPad(level, frontPad, CarriagePlacer.HalfPadSide.FRONT, dims);
+        }));
+        CarriagePlacer.placeForTest(level, corner.offset(layout.carriageX(piece), y, 0), shell, contents, dims, seed,
+            seed, CarriageTestSession.TEST_INDEX, /*flatbedAtBack*/ true, /*flatbedAtFront*/ true);
     }
 
     /**
@@ -380,6 +511,12 @@ public final class CarriageTestCommand {
      * group; the cart between the corridors and a flatbed hold none.
      */
     private static CarriageContents contentsFor(CarriageVariant shell, long seed) {
+        return contentsFor(shell, seed, null);
+    }
+
+    /** {@link #contentsFor(CarriageVariant, long)} picked within a band — {@code null} for ungated. */
+    private static CarriageContents contentsFor(CarriageVariant shell, long seed,
+                                                games.brennan.dungeontrain.template.GateContext gateCtx) {
         if (ContentsShellPicker.isFlatbed(shell)) return null;
         for (games.brennan.dungeontrain.portal.PortalCorridorKind k
                 : games.brennan.dungeontrain.portal.PortalCorridorKind.values()) {
@@ -389,7 +526,7 @@ public final class CarriageTestCommand {
                 seed ^ CarriageTestSession.TEST_INDEX, null);
         }
         if (ContentsShellPicker.isPortalPart(shell)) return null;
-        return CarriageContentsRegistry.pick(seed, CarriageTestSession.TEST_INDEX, shell, null);
+        return CarriageContentsRegistry.pick(seed, CarriageTestSession.TEST_INDEX, shell, gateCtx);
     }
 
     private static Plan fail(CommandSourceStack source, String key, String id) {
@@ -494,8 +631,11 @@ public final class CarriageTestCommand {
         int cleared = PortalClear.clearBox(overworld, session.box(), PortalCorridorMask.NONE);
         LOGGER.info("[DungeonTrain] carriage test back: returned {} and cleared {} block(s), {} entit(ies) of {} '{}'",
             player.getName().getString(), cleared, discarded, session.kind().literal(), session.templateId());
+        // A piece of the line is filed as model:name; the author knows it by its name.
+        String shown = TrackTestPiece.parseTemplateId(session.templateId())
+            .map(TrackTestPiece.Named::name).orElse(session.templateId());
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.back_plot_test_has",
-            session.templateId()).withStyle(ChatFormatting.GRAY), false);
+            shown).withStyle(ChatFormatting.GRAY), false);
         return 1;
     }
 

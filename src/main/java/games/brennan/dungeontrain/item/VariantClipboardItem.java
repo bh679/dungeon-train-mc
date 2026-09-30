@@ -130,6 +130,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_GROUP_REF = "gref";
     /** Per-entry redstone-toggle mode ordinal ({@code VariantActive}). Absent when default INACTIVE. */
     private static final String NBT_ACTIVE_MODE = "am";
+    /** Per-entry fence / wall connect-mode ordinal ({@code VariantConnect.Mode}). Absent when Default. */
+    private static final String NBT_CONNECT_MODE = "cn";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -435,6 +437,9 @@ public final class VariantClipboardItem extends Item {
             if (!s.active().isDefault()) {
                 entry.putByte(NBT_ACTIVE_MODE, (byte) s.active().mode().ordinal());
             }
+            if (!s.connect().isDefault()) {
+                entry.putByte(NBT_CONNECT_MODE, (byte) s.connect().ordinal());
+            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
@@ -591,8 +596,11 @@ public final class VariantClipboardItem extends Item {
                 if (!raw.isEmpty()) lootPrefab = raw;
             }
             int groupRef = entry.contains(NBT_GROUP_REF, Tag.TAG_INT) ? entry.getInt(NBT_GROUP_REF) : 0;
+            games.brennan.dungeontrain.editor.VariantConnect.Mode connect =
+                games.brennan.dungeontrain.editor.VariantConnect.Mode.fromOrdinal(
+                    entry.contains(NBT_CONNECT_MODE, Tag.TAG_BYTE) ? entry.getByte(NBT_CONNECT_MODE) & 0xFF : 0);
             out.add(new VariantState(state, beNbt, weight, rotation, lootPrefab, null, half,
-                difficulty, groupRef, active));
+                difficulty, groupRef, active, connect));
         }
         return out;
     }

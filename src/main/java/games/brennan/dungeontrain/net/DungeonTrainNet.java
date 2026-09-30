@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "100";
+    public static final String PROTOCOL_VERSION = "102";
 
     private DungeonTrainNet() {}
 
@@ -63,6 +63,7 @@ public final class DungeonTrainNet {
         registrar.playToClient(BlockVariantOutlinePacket.TYPE, BlockVariantOutlinePacket.STREAM_CODEC, BlockVariantOutlinePacket::handle);
         registrar.playToClient(EditorStrayBlocksPacket.TYPE, EditorStrayBlocksPacket.STREAM_CODEC, EditorStrayBlocksPacket::handle);
         registrar.playToClient(EditorDoorGhostsPacket.TYPE, EditorDoorGhostsPacket.STREAM_CODEC, EditorDoorGhostsPacket::handle);
+        registrar.playToClient(EditorTunnelEnvelopePacket.TYPE, EditorTunnelEnvelopePacket.STREAM_CODEC, EditorTunnelEnvelopePacket::handle);
         registrar.playToClient(EditorPlotLabelsPacket.TYPE, EditorPlotLabelsPacket.STREAM_CODEC, EditorPlotLabelsPacket::handle);
         registrar.playToServer(EditorPlotActionPacket.TYPE, EditorPlotActionPacket.STREAM_CODEC, EditorPlotActionPacket::handle);
         registrar.playToClient(EditorTypeMenusPacket.TYPE, EditorTypeMenusPacket.STREAM_CODEC, EditorTypeMenusPacket::handle);
