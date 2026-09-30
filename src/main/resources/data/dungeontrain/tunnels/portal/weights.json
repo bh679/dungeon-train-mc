@@ -94,6 +94,7 @@
       "name": "Pumpkin_P_Patch"
     },
     "groups": [
+      "mossy",
       "stone"
     ]
   }

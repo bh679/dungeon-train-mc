@@ -37,11 +37,24 @@ public record TemplateSummary(int blocks, Vec3i declaredSize, int blockEntities,
         this(blocks, declaredSize, blockEntities, containers, entities, lights, loot, null);
     }
 
-    /** The most numerous block of {@code states}, or null when there is none. Ties go to the first seen. */
+    /**
+     * The most numerous <b>solid</b> block of {@code states} — full cubes only, so a template's
+     * stairs, slabs, walls and trapdoors never stand in for what it is built of — falling back to the
+     * most numerous block of any shape when it has no full cube. Null when there is none. Ties go to
+     * the first seen.
+     */
     public static Block topBlockOf(java.util.Collection<net.minecraft.world.level.block.state.BlockState> states) {
+        Block solid = topBlockOf(states, true);
+        return solid != null ? solid : topBlockOf(states, false);
+    }
+
+    private static Block topBlockOf(java.util.Collection<net.minecraft.world.level.block.state.BlockState> states,
+                                    boolean solidOnly) {
         java.util.Map<Block, Integer> counts = new java.util.LinkedHashMap<>();
         for (net.minecraft.world.level.block.state.BlockState s : states) {
             if (s == null || s.isAir()) continue;
+            if (solidOnly && !s.isCollisionShapeFullBlock(
+                    net.minecraft.world.level.EmptyBlockGetter.INSTANCE, net.minecraft.core.BlockPos.ZERO)) continue;
             counts.merge(s.getBlock(), 1, Integer::sum);
         }
         Block top = null;
