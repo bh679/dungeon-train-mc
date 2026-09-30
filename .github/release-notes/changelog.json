@@ -21567,6 +21567,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "survey-answers-show-version",
+      "version": "0.1076.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Feedback shows your version",
+      "summary": "Feedback you send from the game now says which version of Dungeon Train you were playing.",
+      "highlights": [],
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
