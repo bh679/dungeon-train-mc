@@ -176,6 +176,26 @@ def test_cascade_bump_of_build_version_does_not_trip_guard():
     assert proc.returncode == 0, proc.stderr
 
 
+def test_four_part_floor_equal_or_newer_passes():
+    """Third-party floors can be four-part (VanillaBackport 1.1.7.10)."""
+    for pinned in ("1.1.7.10", "1.1.8", "1.2.0.0"):
+        proc = run(
+            gradle_props("2.0.2+mc1.21.1", "2.0.2", playermob_min_version="1.1.7.10"),
+            _sibling_config(pinned),
+        )
+        assert proc.returncode == 0, (pinned, proc.stderr)
+
+
+def test_four_part_floor_older_fails():
+    for pinned in ("1.1.7.9", "1.1.7", "1.0.9.99"):
+        proc = run(
+            gradle_props("2.0.2+mc1.21.1", "2.0.2", playermob_min_version="1.1.7.10"),
+            _sibling_config(pinned),
+        )
+        assert proc.returncode != 0, pinned
+        assert "Interactive Player Mobs" in proc.stderr
+
+
 def test_sibling_missing_floor_key_fails():
     proc = run(
         gradle_props("2.0.2+mc1.21.1", "2.0.2"),  # no playermob_min_version at all

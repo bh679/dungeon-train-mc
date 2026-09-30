@@ -507,7 +507,8 @@ public final class BuilderProfileScreen extends Screen {
         // A submit first asks what the reviewer should know; the send happens on that screen's Submit,
         // and its Cancel comes back here with nothing sent.
         BuilderSubmitNoteScreen.open(entry.relayId(), Component.literal(entry.buildName()),
-                note -> sendAction(new BuilderProfileActionPacket(entry.relayId(), true, note)));
+                note -> sendAction(new BuilderProfileActionPacket(entry.relayId(), true, note,
+                        BuildRenderCapture.png(entry.relayId()))));
     }
 
     private void sendAction(BuilderProfileActionPacket packet) {

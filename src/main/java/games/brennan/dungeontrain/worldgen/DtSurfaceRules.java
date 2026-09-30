@@ -11,6 +11,7 @@ import net.minecraft.world.level.levelgen.SurfaceRules;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -48,5 +49,16 @@ public final class DtSurfaceRules {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * TerraBlender's namespace rules for one category minus {@code "minecraft"}, as an immutable copy.
+     * A category no mod registered rules under has no map at all, which reads as empty.
+     */
+    public static <R> Map<String, R> nonVanillaRules(Map<String, R> namespaced) {
+        if (namespaced == null || namespaced.isEmpty()) return Map.of();
+        Map<String, R> copy = new HashMap<>(namespaced);
+        copy.remove("minecraft");
+        return Map.copyOf(copy);
     }
 }
