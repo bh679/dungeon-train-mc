@@ -189,6 +189,13 @@ neoForge {
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
             }
+            // Item-icon dump for the relay's item-values page: ./gradlew runClient -PtradeValueIcons
+            // renders every item to run/trade-values-icons/<ns>/<path>.png at the title screen and
+            // quits (client/TradeValueIconDump).
+            if (project.hasProperty('tradeValueIcons')) {
+                systemProperty 'dungeontrain.tradeValueIcons', 'true'
+                systemProperty 'dungeontrain.tradeValueIcons.quit', 'true'
+            }
             // Collider-batch A/B seam: ./gradlew runServer -PcolliderBatch=false boots with
             // ColliderBatch off, so the bootstrap spawn (which runs before any command can reach the
             // server) can be measured on Sable's per-block path. See ship/sable/ColliderBatch.
@@ -979,6 +986,10 @@ neoForge.ideSyncTask tasks.named('generateModRoster')
 
 // The baked Free Play whitelist: modpack + siblings + dependencies generated, the rest curated.
 apply from: 'gradle/approved-mods.gradle'
+
+// `./gradlew pullTradeValues` — refresh the bundled community-approved Trade Everything item
+// values from the relay's item-values page. By hand only; never part of build.
+apply from: 'gradle/trade-values.gradle'
 
 // Fingerprint every shipped template the way the relay hashes an upload, so the relay can tell an
 // unmodified copy of a stock template from a build (see tools/BundledFingerprints and the relay's

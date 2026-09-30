@@ -151,6 +151,11 @@ public final class DebugCommand {
             // /dungeontrain debug nether-passes — core X range + core biomes of the first Nether bands
             // (even passes vanilla, odd passes BetterNether). Also logged at INFO for RCON runs.
             .then(Commands.literal("nether-passes").executes(ctx -> NetherPassesDebug.report(ctx.getSource())))
+            // /dungeontrain debug trade-values dump — every registered item with its name, Trade
+            // Everything's current value and where it comes from, to <server dir>/trade-values-catalog.json.
+            // Copied verbatim to the relay page's catalog.json (brennan.games/dungeontrain/items/).
+            .then(Commands.literal("trade-values")
+                .then(Commands.literal("dump").executes(ctx -> dumpTradeValues(ctx.getSource()))))
             // /dungeontrain debug cycle-layout [runs] — every band slot's world-X range (run 0 and the doubled
             // runs after it) with the phase read at its midpoint. Also logged at INFO for RCON runs.
             // /dungeontrain debug mix-pick — the mix-zone band each chunk around you generates as (a letter grid,
@@ -748,6 +753,25 @@ public final class DebugCommand {
         LOGGER.info("[DungeonTrain] Stage placeholder scan: {} leaked across {} carriage(s); top {}",
             leaked, carriages, fTop);
         return leaked == 0 ? 1 : 0;
+    }
+
+    /** See {@link games.brennan.dungeontrain.compat.TradeValuesCatalogDump}. Gated like the bridge. */
+    private static int dumpTradeValues(CommandSourceStack source) {
+        if (!net.neoforged.fml.ModList.get().isLoaded("tradeeverything")) {
+            source.sendFailure(Component.literal("Trade Everything is not loaded."));
+            return 0;
+        }
+        String version = net.neoforged.fml.ModList.get().getModContainerById("dungeontrain")
+            .map(c -> c.getModInfo().getVersion().toString()).orElse("dev");
+        try {
+            java.nio.file.Path out = games.brennan.dungeontrain.compat.TradeValuesCatalogDump.dump(source.getServer(), version);
+            source.sendSuccess(() -> Component.literal("Wrote " + out.toAbsolutePath()), false);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.warn("[trade-values] dump failed", t);
+            source.sendFailure(Component.literal("Dump failed: " + t));
+            return 0;
+        }
     }
 
     private static int runScan(CommandSourceStack source) {
