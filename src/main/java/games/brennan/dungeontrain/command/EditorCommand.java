@@ -3819,9 +3819,8 @@ public final class EditorCommand {
             // restamp pass knows which positions are dirty (the deleted
             // variant's slot plus every slot to the right that just shifted
             // left by one).
-            games.brennan.dungeontrain.train.ContentsSize rowSize = CarriagePlacer.sizeOf(variant);
             int oldSlot = CarriageEditor.slotOf(variant.id());
-            int oldRowCount = CarriageEditor.rowCount(rowSize);
+            int oldRowCount = CarriageEditor.rowCount();
 
             // Plot erase + row restamp are DT's own rewrites — guarded so observers in the
             // touched plots stay quiet (ObserverBlockStampMixin).
@@ -3835,7 +3834,7 @@ public final class EditorCommand {
                 games.brennan.dungeontrain.editor.TemplateSizeStore.SHELLS.forget(variant.id());
                 if (oldSlot >= 0) {
                     CarriageStampGuard.run(() ->
-                        CarriageEditor.restampRowAfterDeletion(overworld, rowSize, oldSlot, oldRowCount, dims));
+                        CarriageEditor.restampRowAfterDeletion(overworld, oldSlot, oldRowCount, dims));
                 }
             }
             source.sendSuccess(() -> (deleted
@@ -4538,12 +4537,44 @@ public final class EditorCommand {
         return sb.toString();
     }
 
+    /**
+     * {@code editor contents enter size.<key>}: show one size's contents plots — what a Room / Half
+     * / Full tab runs when that size has no template to jump to. Lands at the row's start.
+     */
+    private static int runContentsShowSize(CommandSourceStack source, ServerPlayer player, String key) {
+        java.util.Optional<games.brennan.dungeontrain.train.ContentsSize> size =
+            games.brennan.dungeontrain.train.ContentsSize.parse(key);
+        if (size.isEmpty()) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_contents", key));
+            return 0;
+        }
+        if (!ensureCategory(source, EditorCategory.CONTENTS)) return 0;
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        CarriageContentsEditor.ensureResident(overworld, size.get(), null, dims);
+        player.teleportTo(overworld, 0.5, games.brennan.dungeontrain.editor.EditorLayout.PLOT_Y + dims.height() + 1.0,
+            -4.5, 0f, 20f);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.showing_contents_size",
+            Component.translatable("gui.dungeontrain.editor_menu.size." + size.get().key())), false);
+        return 1;
+    }
+
     private static int runContentsEnter(CommandSourceStack source, String contentsRaw, String shellRaw) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        if (!ensureCategory(source, EditorCategory.CONTENTS)) return 0;
+        if (contentsRaw.startsWith(CarriageContentsEditor.SIZE_TOKEN_PREFIX)) {
+            return runContentsShowSize(source, player,
+                contentsRaw.substring(CarriageContentsEditor.SIZE_TOKEN_PREFIX.length()));
+        }
         CarriageContents contents = parseContents(source, contentsRaw);
         if (contents == null) return 0;
+        // Entering the category stamps the resident size — make that this template's size first,
+        // rather than stamping one size only to swap it straight out for another.
+        if (!games.brennan.dungeontrain.editor.EditorStampedCategoryState.isActive(EditorCategory.CONTENTS)) {
+            games.brennan.dungeontrain.editor.ContentsResidentSize.set(
+                source.getServer().overworld(), CarriageContentsPlacer.sizeOf(contents));
+        }
+        if (!ensureCategory(source, EditorCategory.CONTENTS)) return 0;
         // NOTE: group parents are now enterable — the parent's own .nbt is the
         // "default" sub-variant of its group (Phase 2 semantic). The synthetic
         // self entry in CarriageContentsRegistry.resolveGroup keeps the parent
@@ -4557,7 +4588,9 @@ public final class EditorCommand {
         }
         try {
             CarriageContentsEditor.enter(player, contents, shell);
-            final CarriageVariant shellUsed = CarriageContentsEditor.resolveShellOrDefault(shellRaw);
+            // The shell enter really stamped: the one named, else the contents' natural shell (a
+            // corridor, a Full-length carriage…) — not always the standard carriage.
+            final CarriageVariant shellUsed = shell != null ? shell : CarriageContentsEditor.shellFor(contents);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
             // Echo the display label when one is set (id in parens) so chat matches the panels.
             final String label = CarriageContentsWeights.current().nameFor(contents.id());

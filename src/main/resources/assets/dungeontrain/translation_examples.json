@@ -5928,6 +5928,15 @@
       ]
     }
   },
+  "chat.dungeontrain.editor.showing_contents_size": {
+    "1": {
+      "label": "the contents size being shown (room, half or full carriage)",
+      "examples": [
+        "Room",
+        "Full"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.new_source.blank_size": {
     "1": {
       "label": "the size of the new template (room, half or full carriage)",

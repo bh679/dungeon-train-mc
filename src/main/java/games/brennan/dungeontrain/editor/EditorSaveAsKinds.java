@@ -171,7 +171,7 @@ public final class EditorSaveAsKinds {
         @Override public List<Template> reloaded(Template source, String name) {
             List<Template> out = new ArrayList<>();
             if (parentOf(source).isPresent()) return out;
-            for (CarriageContents c : CarriageContentsRegistry.allContents()) {
+            for (CarriageContents c : CarriageContentsEditor.residentContents()) {
                 if (!(c instanceof CarriageContents.Custom) || c.id().compareTo(name) <= 0) continue;
                 if (CarriageContentsGroupStore.allChildIds().contains(c.id())) continue;
                 out.add(new Template.Contents(c));

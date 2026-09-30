@@ -166,19 +166,6 @@ final class CarriageContentsEditorLayoutTest {
     }
 
     @Test
-    @DisplayName("Size rows stack up Y one carriage height plus a gap apart, and fit under the build ceiling")
-    void sizeRows_stackUpY() {
-        assertEquals(EditorLayout.PLOT_Y, EditorLayout.sizeRowY(ContentsSize.ROOM, DIMS));
-        int step = DIMS.height() + EditorLayout.GAP;
-        assertEquals(EditorLayout.PLOT_Y + step, EditorLayout.sizeRowY(ContentsSize.HALF, DIMS));
-        assertEquals(EditorLayout.PLOT_Y + 2 * step, EditorLayout.sizeRowY(ContentsSize.FULL, DIMS));
-
-        CarriageDims tallest = new CarriageDims(DIMS.length(), DIMS.width(), CarriageDims.MAX_HEIGHT);
-        assertTrue(EditorLayout.sizeRowY(ContentsSize.FULL, tallest) + CarriageDims.MAX_HEIGHT <= 320,
-            "the Full row's roof must stay under the 320 build ceiling at the tallest carriage");
-    }
-
-    @Test
     @DisplayName("Multiple groups: each parent has its own +Z column at its own +X slot")
     void multipleGroups_independentColumns() {
         registerCustom("alpha");

@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageDoorCells;
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.train.ContentsSize;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
@@ -90,9 +91,9 @@ public final class CarriageContentsEditor {
     }
 
     /**
-     * The {@code +X} step between plots in {@code size}'s row — that size's box plus a {@link
-     * EditorLayout#GAP}. Each size has its own row ({@link EditorLayout#sizeRowY}), so a row is
-     * spaced for its own box rather than the widest any contents can be.
+     * The {@code +X} step between plots of {@code size} — that size's box plus a {@link
+     * EditorLayout#GAP}. Only one size is standing at a time ({@link ContentsResidentSize}), so a
+     * row is spaced for its own box rather than the widest any contents can be.
      */
     private static int plotStep(ContentsSize size, CarriageDims dims) {
         return size.boxOrRoom(dims, groupSize()).length() + EditorLayout.GAP;
@@ -182,6 +183,77 @@ public final class CarriageContentsEditor {
             EditorPlotSnapshots.key("contents", contents.id()),
             overworld, interiorOrigin, interior.getX(), interior.getY(), interior.getZ()
         );
+    }
+
+    /**
+     * Every registered contents of the {@link ContentsResidentSize resident size} — the ones whose
+     * plots are standing. Room, Half and Full are separate template types sharing one origin, so
+     * anything that walks "the contents plots" walks these.
+     */
+    /**
+     * {@code editor contents enter size.<key>} — "show this size", for a size tab whose size has no
+     * template to jump to. Contents ids cannot contain a dot, so the token can never be a name.
+     */
+    public static final String SIZE_TOKEN_PREFIX = "size.";
+
+    public static List<CarriageContents> residentContents() {
+        ContentsSize resident = ContentsResidentSize.current();
+        List<CarriageContents> out = new java.util.ArrayList<>();
+        for (CarriageContents c : CarriageContentsRegistry.allContents()) {
+            if (CarriageContentsPlacer.sizeOf(c) == resident) out.add(c);
+        }
+        return out;
+    }
+
+    /**
+     * Make {@code target}'s size the resident one before its plot is entered. When another size is
+     * standing, its plots are erased and this size's are repopulated — the way a category switch
+     * works, and for the same reason: every size lays out from the same origin. Anything under
+     * {@code target}'s plot is erased now; the rest, and every other plot of the new size, queue.
+     *
+     * @return true when the size changed, so the caller must stamp {@code target}'s plot itself
+     */
+    public static boolean ensureResident(ServerLevel overworld, CarriageContents target, CarriageDims dims) {
+        return ensureResident(overworld, CarriageContentsPlacer.sizeOf(target), target, dims);
+    }
+
+    /**
+     * {@link #ensureResident(ServerLevel, CarriageContents, CarriageDims)} for a size, with an
+     * optional {@code target} to leave for the caller to stamp — null when the size is shown
+     * without entering any plot (a size tab with no templates yet).
+     */
+    public static boolean ensureResident(ServerLevel overworld, ContentsSize size,
+                                         @org.jetbrains.annotations.Nullable CarriageContents target,
+                                         CarriageDims dims) {
+        if (size == ContentsResidentSize.current()) return false;
+        if (!EditorStampedCategoryState.isActive(EditorCategory.CONTENTS)) {
+            // Nothing of the old size is standing; the category entry stamps the new one.
+            ContentsResidentSize.set(overworld, size);
+            return false;
+        }
+        List<EditorStampQueue.Job> erases = new java.util.ArrayList<>();
+        for (CarriageContents c : residentContents()) {
+            erases.add(new EditorStampQueue.Job("erase contents " + c.id(),
+                () -> CarriageStampGuard.run(() -> clearPlot(overworld, c, dims)),
+                EditorCategory.plotBoxOf(overworld, new Template.Contents(c), dims)));
+        }
+        net.minecraft.world.level.levelgen.structure.BoundingBox headBox = target == null ? null
+            : EditorCategory.plotBoxOf(overworld, new Template.Contents(target), dims);
+        EditorStampQueue.Partition split = EditorStampQueue.partitionOverlapping(erases, headBox);
+        for (EditorStampQueue.Job job : split.overlapping()) job.work().run();
+
+        ContentsResidentSize.set(overworld, size);
+        List<EditorStampQueue.Job> queued = new java.util.ArrayList<>(split.rest());
+        if (!erases.isEmpty()) queued.add(EditorCategory.layerSweepJob(overworld, dims, headBox));
+        for (CarriageContents c : residentContents()) {
+            if (target != null && c.id().equals(target.id())) continue;
+            queued.add(new EditorStampQueue.Job("stamp contents " + c.id(),
+                () -> CarriageStampGuard.run(() -> stampPlot(overworld, c, dims))));
+        }
+        EditorStampQueue.start(queued, "contents " + size.key());
+        LOGGER.info("[DungeonTrain] Contents editor: switched to {} contents ({} plot(s) queued)",
+            size.key(), queued.size());
+        return true;
     }
 
     /** A plot as it stood: where, and how big. Captured before a delete moves the row. */
@@ -297,7 +369,7 @@ public final class CarriageContentsEditor {
         Integer index = topLevelSlotIndex().get(targetId);
         if (index == null) return null;
         ContentsSize size = CarriageContentsPlacer.sizeOf(targetId);
-        return new BlockPos(FIRST_PLOT_X + index * plotStep(size, dims), EditorLayout.sizeRowY(size, dims), PLOT_Z);
+        return new BlockPos(FIRST_PLOT_X + index * plotStep(size, dims), EditorLayout.PLOT_Y, PLOT_Z);
     }
 
     // ---- id → +X slot index, memoised on (registry snapshot, group child set) ------------------
@@ -367,7 +439,8 @@ public final class CarriageContentsEditor {
     public static CarriageContents plotContaining(BlockPos pos, CarriageDims dims) {
         // Answers only while CONTENTS is the resident category — every category shares the origin.
         if (!EditorStampedCategoryState.isActive(EditorCategory.CONTENTS)) return null;
-        for (CarriageContents contents : CarriageContentsRegistry.allContents()) {
+        // …and only for the resident size: every size lays out from the same origin too.
+        for (CarriageContents contents : residentContents()) {
             BlockPos o = plotOrigin(contents, dims);
             if (o == null) continue;
             CarriageDims box = plotDims(contents, dims);
@@ -451,6 +524,10 @@ public final class CarriageContentsEditor {
         CarriageDims box = plotDims(contents, dims);
 
         CarriageEditor.rememberReturn(player);
+
+        // A template of another size means switching the resident size first — which leaves this
+        // plot to be stamped here, whatever the caller asked.
+        if (ensureResident(overworld, contents, dims)) stamp = true;
 
         if (stamp) {
             CarriagePlacer.eraseAt(overworld, origin, box);

@@ -117,13 +117,15 @@ public final class CarriageEditor {
     }
 
     /**
-     * The {@code +X} step between plots in {@code size}'s row — that size's box plus a {@link
-     * EditorLayout#GAP}. Each shell size has its own row ({@link EditorLayout#sizeRowY}), the same
-     * shelves the contents editor uses, so the portal corridor and the group-long carriages no longer
-     * set the spacing of every ordinary carriage.
+     * The uniform {@code +X} step between plots — the widest plot any variant can have (a Full,
+     * group-long carriage where this world can build one, else the long portal corridor), so no plot
+     * can reach its neighbour whatever order the registry is in. One row for every size: there are
+     * only ever a handful of carriages.
      */
-    private static int plotStep(ContentsSize size, CarriageDims dims) {
-        return size.boxOrRoom(dims, groupSize()).length() + EditorLayout.GAP;
+    private static int plotStep(CarriageDims dims) {
+        int widest = ContentsSize.HALF.boxOrRoom(dims, groupSize()).length();
+        widest = Math.max(widest, ContentsSize.FULL.boxOrRoom(dims, groupSize()).length());
+        return widest + EditorLayout.GAP;
     }
 
     private static int groupSize() {
@@ -131,57 +133,53 @@ public final class CarriageEditor {
     }
 
     /**
-     * Plot origin for {@code variant}: its slot in its own size's row, stepped by {@link #plotStep}
-     * so adjacent plots always have a uniform {@link EditorLayout#GAP}-block air gap — the rule used
-     * in {@link CarriagePartEditor}, {@link TrackSidePlots}, and {@link CarriageContentsEditor}.
+     * Plot origin for {@code variant}. Step along {@code +X} is
+     * {@link #plotStep} so adjacent plots always have at least a uniform
+     * {@link EditorLayout#GAP}-block air gap between footprints — matching the rule used in
+     * {@link CarriagePartEditor}, {@link TrackSidePlots}, and {@link CarriageContentsEditor}.
      * Returns {@code null} if the variant is not registered.
      */
     public static BlockPos plotOrigin(CarriageVariant variant, CarriageDims dims) {
         Integer index = slotIndex().get(variant.id());
         if (index == null) return null;
-        return rowPos(CarriagePlacer.sizeOf(variant), index, dims);
+        return rowPos(index, dims);
     }
 
-    private static BlockPos rowPos(ContentsSize size, int slot, CarriageDims dims) {
-        return new BlockPos(FIRST_PLOT_X + slot * plotStep(size, dims), EditorLayout.sizeRowY(size, dims), PLOT_Z);
+    private static BlockPos rowPos(int slot, CarriageDims dims) {
+        return new BlockPos(FIRST_PLOT_X + slot * plotStep(dims), EditorLayout.PLOT_Y, PLOT_Z);
+    }
+
+    /** The widest box a plot in the row can be — what a slot-geometry erase clears. */
+    private static CarriageDims widestBox(CarriageDims dims) {
+        CarriageDims full = ContentsSize.FULL.boxOrRoom(dims, groupSize());
+        CarriageDims half = ContentsSize.HALF.boxOrRoom(dims, groupSize());
+        return full.length() >= half.length() ? full : half;
     }
 
     // ---- id → +X slot index, memoised on the registry snapshot --------------------------------
 
     /** The registry snapshot {@link #SLOT_INDEX} was built from; a new snapshot means a rebuild. */
     private static List<CarriageVariant> slotIndexSource;
-    private static int slotIndexSizesVersion = -1;
     private static java.util.Map<String, Integer> SLOT_INDEX = java.util.Map.of();
 
     /**
-     * Variant id → slot within its size's row. The overlay asks for every variant's origin every
-     * tick, and the linear walk this replaces made each ask O(n) — O(n²) per pass. The registry
-     * hands out one immutable snapshot until it mutates, and the size store bumps a version on every
-     * change, so two compares are the whole staleness check.
+     * Variant id → row slot. The overlay asks for every variant's origin every tick, and the
+     * linear walk this replaces made each ask O(n) — O(n²) per pass. The registry hands out one
+     * immutable snapshot until it mutates, so a reference compare is the whole staleness check.
      */
     private static synchronized java.util.Map<String, Integer> slotIndex() {
         List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
-        int sizesVersion = TemplateSizeStore.SHELLS.version();
-        if (all == slotIndexSource && sizesVersion == slotIndexSizesVersion) return SLOT_INDEX;
+        if (all == slotIndexSource) return SLOT_INDEX;
         java.util.Map<String, Integer> index = new java.util.HashMap<>(all.size() * 2);
-        int[] next = new int[ContentsSize.values().length];
-        for (CarriageVariant v : all) {
-            if (index.containsKey(v.id())) continue;
-            index.put(v.id(), next[CarriagePlacer.sizeOf(v).ordinal()]++);
-        }
+        for (int i = 0; i < all.size(); i++) index.putIfAbsent(all.get(i).id(), i);
         SLOT_INDEX = java.util.Map.copyOf(index);
         slotIndexSource = all;
-        slotIndexSizesVersion = sizesVersion;
         return SLOT_INDEX;
     }
 
-    /** How many plots {@code size}'s row holds right now. */
-    public static int rowCount(ContentsSize size) {
-        int n = 0;
-        for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
-            if (CarriagePlacer.sizeOf(v) == size) n++;
-        }
-        return n;
+    /** How many plots the row holds right now. */
+    public static int rowCount() {
+        return CarriageVariantRegistry.allVariants().size();
     }
 
     /**
@@ -342,28 +340,25 @@ public final class CarriageEditor {
     }
 
     /**
-     * Erase + re-stamp the dirty slice of {@code size}'s row after a variant in it has been removed
-     * from {@link CarriageVariantRegistry}. {@code fromSlot} is the slot the variant held and
-     * {@code oldRowCount} the row's length, both from <b>before</b> {@code unregister}.
+     * Erase + re-stamp the dirty slice of the +X row after a variant has been removed from
+     * {@link CarriageVariantRegistry}. {@code fromSlot} is the slot the variant held and
+     * {@code oldRowCount} the registry size, both from <b>before</b> {@code unregister}.
      *
-     * <p>Erases every slot from {@code fromSlot} through {@code oldRowCount - 1} — the positions
-     * that hold stale blocks from variants that just shifted left, plus the vacated tail — then
-     * re-stamps each variant now at slot {@code fromSlot} or later. Every plot in a row is the same
-     * box, so the slot geometry alone says where the stale blocks are.</p>
-     *
-     * <p>Must be called <b>after</b> {@link CarriageVariantRegistry#unregister}.</p>
+     * <p>Erases every slot from {@code fromSlot} through {@code oldRowCount - 1} at the widest plot
+     * size — the loop works by slot and cannot know which shifted variant was a longer one, and
+     * clearing extra air is harmless — then re-stamps each variant now at slot {@code fromSlot} or
+     * later. Must be called <b>after</b> {@link CarriageVariantRegistry#unregister}.</p>
      */
-    public static void restampRowAfterDeletion(ServerLevel level, ContentsSize size, int fromSlot,
-                                               int oldRowCount, CarriageDims dims) {
-        eraseRow(level, size, fromSlot, oldRowCount, dims);
-        restampRowSlots(level, size, fromSlot, dims);
+    public static void restampRowAfterDeletion(ServerLevel level, int fromSlot, int oldRowCount, CarriageDims dims) {
+        eraseRow(level, fromSlot, oldRowCount, dims);
+        restampRowSlots(level, fromSlot, dims);
     }
 
     /**
      * The insertion counterpart of {@link #restampRowAfterDeletion}: {@code id} has just been
-     * <b>registered</b>, so every plot after it in its row sits one slot to the right of where its
-     * blocks were stamped. Erase that slice and stamp each variant from {@code id}'s slot on at its
-     * new position, from its saved template.
+     * <b>registered</b>, so every plot after it sits one slot to the right of where its blocks were
+     * stamped. Erase that slice and stamp each variant from {@code id}'s slot on at its new
+     * position, from its saved template.
      *
      * <p>{@link #duplicate} alone stamps only the new plot, which left the rest of the row drawn over
      * by one slot. Plots in the slice lose any unsaved edits; Save-as checks for those first.</p>
@@ -371,26 +366,23 @@ public final class CarriageEditor {
     public static void restampRowFrom(ServerLevel level, String id, CarriageDims dims) {
         int fromSlot = slotOf(id);
         if (fromSlot < 0) return;
-        ContentsSize size = TemplateSizeStore.SHELLS.sizeOf(id);
-        eraseRow(level, size, fromSlot, rowCount(size), dims);
-        restampRowSlots(level, size, fromSlot, dims);
+        eraseRow(level, fromSlot, rowCount(), dims);
+        restampRowSlots(level, fromSlot, dims);
     }
 
-    private static void eraseRow(ServerLevel level, ContentsSize size, int fromSlot, int toSlot, CarriageDims dims) {
+    private static void eraseRow(ServerLevel level, int fromSlot, int toSlot, CarriageDims dims) {
         BlockState air = Blocks.AIR.defaultBlockState();
-        CarriageDims box = size.boxOrRoom(dims, groupSize());
+        CarriageDims box = widestBox(dims);
         for (int i = Math.max(0, fromSlot); i < toSlot; i++) {
-            BlockPos pos = rowPos(size, i, dims);
+            BlockPos pos = rowPos(i, dims);
             CarriagePlacer.eraseAt(level, pos, box);
             setOutline(level, pos, air, box);
         }
     }
 
-    private static void restampRowSlots(ServerLevel level, ContentsSize size, int fromSlot, CarriageDims dims) {
-        for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
-            if (CarriagePlacer.sizeOf(v) != size) continue;
-            if (slotOf(v.id()) >= fromSlot) stampPlot(level, v, dims);
-        }
+    private static void restampRowSlots(ServerLevel level, int fromSlot, CarriageDims dims) {
+        List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
+        for (int i = Math.max(0, fromSlot); i < all.size(); i++) stampPlot(level, all.get(i), dims);
     }
 
     /** The row slot {@code id} occupies, or -1 when it is not registered. */
