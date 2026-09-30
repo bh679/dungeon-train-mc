@@ -21203,6 +21203,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "community-item-trade-values",
+      "version": "0.1054.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot",
+        "balance"
+      ],
+      "title": "Community item trade values",
+      "summary": "What items trade for with villagers can now be suggested and voted on by the community at brennan.games/dungeontrain/items.",
+      "highlights": [],
+      "pr": 1696,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
