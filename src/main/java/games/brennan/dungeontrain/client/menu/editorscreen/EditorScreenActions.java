@@ -284,7 +284,7 @@ public final class EditorScreenActions {
                 "dungeontrain editor whole group label " + id, "", current);
             case CHUNK_FRAMES -> new CommandMenuEntry.TypeArg(label, "name",
                 "dungeontrain editor chunkframe rename " + sel.modelName(), "", sel.modelName());
-            case PARTS, TRACKS, ARCHITECTURE -> null;
+            case PARTS, TRACKS, BUILDINGS, LOST_CITY, ARCHITECTURE -> null;
         };
     }
 

@@ -100,6 +100,7 @@ public final class EditorDirtyCheck {
         scanTunnels(overworld, dims, devmode, out);
         scanPortalRooms(overworld, dims, devmode, out);
         scanChunkFrames(overworld, out);
+        scanBuildings(overworld, out);
 
         return out;
     }
@@ -323,6 +324,25 @@ public final class EditorDirtyCheck {
             if (unsaved) {
                 out.add(new DirtyEntry(PlotCategory.CHUNK_FRAMES.id(), ChunkFrameEditor.MODEL_ID + "." + name,
                     "frame / " + name, true, false));
+            }
+        }
+    }
+
+    /** Building plots: the live blocks against the baseline taken at stamp and at save, plus an unsaved resize. */
+    private static void scanBuildings(ServerLevel level, List<DirtyEntry> out) {
+        for (String name : games.brennan.dungeontrain.building.BuildingRegistry.names()) {
+            String key = BuildingEditor.snapshotKey(name);
+            boolean resized = games.brennan.dungeontrain.building.BuildingSizes.hasPending(name);
+            if (!EditorPlotSnapshots.has(key) && !resized) continue;
+            BlockPos origin = BuildingEditor.registeredPlotOrigin(name);
+            if (origin == null) continue;
+            Vec3i size = games.brennan.dungeontrain.building.BuildingSizes.sizeOf(name);
+            Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
+            boolean unsaved = resized || (snapshot != null
+                && !regionMatchesSnapshot(key, level, origin, size.getX(), size.getY(), size.getZ(), snapshot, Set.of()));
+            if (unsaved) {
+                out.add(new DirtyEntry(PlotCategory.BUILDINGS.id(),
+                    games.brennan.dungeontrain.building.Buildings.MODEL_ID + "." + name, "building / " + name, true, false));
             }
         }
     }
@@ -609,7 +629,8 @@ public final class EditorDirtyCheck {
             case WHOLE_CARRIAGE, CARRIAGE_GROUP -> model.id();
             // Neither is covered by a scan pass yet.
             case CHUNK_FRAME -> ChunkFrameEditor.MODEL_ID + "." + model.variantName();
-            case PART -> null;
+            case BUILDING -> games.brennan.dungeontrain.building.Buildings.MODEL_ID + "." + model.variantName();
+            case PART, LOST_CITY -> null;
         };
     }
 

@@ -17,7 +17,7 @@ import games.brennan.dungeontrain.builder.BuilderMode;
  * tile's height, exactly what the cycling tile occupied — so the template grid below keeps its
  * full budget.</p>
  *
- * <p>Slot order <em>is</em> menu order: slot {@code n} is always {@code BuilderMode.values()[n]}.
+ * <p>Slot order <em>is</em> menu order: slot {@code n} is always {@code BuilderMode.BUILDER_MODES.get(n)}.
  * The selection expands where it already sits rather than moving to a fixed middle, so a mode stays
  * where you last saw it and only its size changes. The row's outer bounds hold still while that
  * happens — one large tile and the rest small comes to the same {@link #stripWidth()} whichever one
@@ -28,7 +28,7 @@ record BuilderModeStripLayout(int originX, int topY, int selectedSlot,
                               int smallWidth, int smallHeight, int gap) {
 
     /** One slot per mode. Derived so a fifth mode joins the strip rather than falling off it. */
-    static final int SLOTS = BuilderMode.values().length;
+    static final int SLOTS = BuilderMode.BUILDER_MODES.size();
 
     static final int GAP = 4;
 

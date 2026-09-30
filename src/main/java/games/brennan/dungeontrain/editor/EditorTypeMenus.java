@@ -69,6 +69,7 @@ public final class EditorTypeMenus {
             case CONTENTS -> contentsMenus(dims);
             case TRACKS -> trackMenus(dims);
             case PORTALS -> portalMenus(dims);
+            case BUILDINGS -> buildingMenus();
             case ARCHITECTURE -> Collections.emptyList();
         };
     }
@@ -170,6 +171,69 @@ public final class EditorTypeMenus {
                 chunkFrameRows(frames), false, activeId, categoryBar, typeStrip));
         }
         return out;
+    }
+
+    /** The type labels the two building rows go by in their menus and the roster. */
+    static final String BUILDINGS_TYPE_NAME = "Buildings";
+    static final String LOST_CITY_TYPE_NAME = "Lost City";
+
+    /**
+     * The Buildings tab's two menus — the editable Buildings row and the view-only official Lost City row —
+     * sharing one type strip, so the player switches between them the way Dimensions switches rooms/frames.
+     */
+    private static List<EditorTypeMenusPacket.Menu> buildingMenus() {
+        List<String> names = games.brennan.dungeontrain.building.BuildingRegistry.names();
+        List<games.brennan.dungeontrain.building.LostCityReferences.Reference> official =
+            games.brennan.dungeontrain.building.LostCityReferences.all();
+        List<EditorTypeMenusPacket.TypeTab> typeStrip = new ArrayList<>();
+        if (!names.isEmpty()) {
+            typeStrip.add(new EditorTypeMenusPacket.TypeTab(BUILDINGS_TYPE_NAME, PlotCategory.BUILDINGS.name(),
+                games.brennan.dungeontrain.building.Buildings.MODEL_ID, names.get(0)));
+        }
+        if (!official.isEmpty()) {
+            typeStrip.add(new EditorTypeMenusPacket.TypeTab(LOST_CITY_TYPE_NAME, PlotCategory.LOST_CITY.name(),
+                LostCityReferenceEditor.MODEL_ID, official.get(0).name()));
+        }
+        List<EditorTypeMenusPacket.Menu> out = new ArrayList<>();
+        List<EditorTypeMenusPacket.CategoryButton> bar = buildCategoryBar();
+        BlockPos first = names.isEmpty() ? null : BuildingEditor.registeredPlotOrigin(names.get(0));
+        if (first != null) {
+            out.add(new EditorTypeMenusPacket.Menu(
+                anchorForXRow(first, games.brennan.dungeontrain.building.BuildingSizes.sizeOf(names.get(0))),
+                BUILDINGS_TYPE_NAME, buildingRows(names), false, EditorCategory.BUILDINGS.id(), bar, typeStrip));
+        }
+        BlockPos firstOfficial = official.isEmpty() ? null : LostCityReferenceEditor.plotOrigin(official.get(0).name());
+        if (firstOfficial != null) {
+            out.add(new EditorTypeMenusPacket.Menu(
+                anchorForXRow(firstOfficial, games.brennan.dungeontrain.building.Buildings.MAX_SIZE),
+                LOST_CITY_TYPE_NAME, lostCityRows(official), false, EditorCategory.BUILDINGS.id(), bar, typeStrip));
+        }
+        return out;
+    }
+
+    /** One row per official building — no weight, never the player's. */
+    static List<EditorTypeMenusPacket.Variant> lostCityRows(
+            List<games.brennan.dungeontrain.building.LostCityReferences.Reference> official) {
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(official.size());
+        for (games.brennan.dungeontrain.building.LostCityReferences.Reference ref : official) {
+            rows.add(new EditorTypeMenusPacket.Variant(ref.name(), EditorPlotLabelsPacket.NO_WEIGHT,
+                PlotCategory.LOST_CITY.name(), LostCityReferenceEditor.MODEL_ID, ref.name(), false, false));
+        }
+        return rows;
+    }
+
+    /** One row per building; a new building shows its roster weight, a shipped one none. */
+    static List<EditorTypeMenusPacket.Variant> buildingRows(List<String> names) {
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
+        for (String name : names) {
+            java.nio.file.Path file = games.brennan.dungeontrain.building.BuildingStore.playerFile(name);
+            EditorPlotLabels.Provenance p = file == null
+                ? new EditorPlotLabels.Provenance(false, false) : EditorPlotLabels.provenanceOf(file);
+            rows.add(new EditorTypeMenusPacket.Variant(
+                name, new games.brennan.dungeontrain.template.Template.Building(name).weight(), PlotCategory.BUILDINGS.name(),
+                games.brennan.dungeontrain.building.Buildings.MODEL_ID, name, p.isUser(), p.isImported()));
+        }
+        return rows;
     }
 
     /** The type label chunk frames go by in the Dimensions menus and the roster. */
