@@ -75,6 +75,9 @@ public final class EditorRelaySave {
      * is indistinguishable from the relay having lost their work.</p>
      */
     public static void afterSave(ServerPlayer player, Template model) {
+        // Saved: the Blocks page's cells merge, one per block. Before the upload so a failed
+        // upload cannot keep them apart.
+        if (player != null) games.brennan.dungeontrain.editor.TemplateBlockGroupsController.onSaved(player);
         // Nothing here may fail the save. This runs inside each editor's save(), after the template
         // is already on disk, so an exception escaping would report a write that actually succeeded
         // as a failure — and would do it for a feature the player may not even have turned on.

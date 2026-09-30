@@ -80,6 +80,9 @@ public final class TemplateDataSheet {
 
         /** Turn the detail pane to its Loot page — every item the build can give. */
         record ShowLoot() implements Action {}
+
+        /** Turn the detail pane to its Blocks page — every block the build uses, to swap. */
+        record ShowBlocks() implements Action {}
     }
 
     /**
@@ -287,7 +290,9 @@ public final class TemplateDataSheet {
         String label = EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS);
         if (summary == null || summary.isEmpty()) return Line.of(label, pending);
         List<Cell> cells = new ArrayList<>(3);
-        cells.add(Cell.plain(Integer.toString(summary.blocks())));
+        // The count opens the Blocks page, as the Loot total opens the Loot page.
+        cells.add(Cell.plain(Integer.toString(summary.blocks())).withAction(new Action.ShowBlocks())
+            .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS_TIP)));
         if (summary.entities() > 0) {
             cells.add(Cell.plain("· " + EditorScreenLang.text(EditorScreenLang.SHEET_ENTITIES, summary.entities())));
         }

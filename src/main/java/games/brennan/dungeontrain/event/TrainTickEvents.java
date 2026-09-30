@@ -217,6 +217,7 @@ public final class TrainTickEvents {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
             VariantOverlayRenderer.forget(sp);
+            games.brennan.dungeontrain.editor.TemplateBlockGroupsController.forget(sp);
         }
     }
 

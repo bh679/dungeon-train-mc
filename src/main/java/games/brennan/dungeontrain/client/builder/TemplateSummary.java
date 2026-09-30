@@ -16,10 +16,11 @@ import java.util.List;
  * @param entities      entities saved with the template
  * @param lights        the blocks that give off light, one entry per type, most numerous first
  * @param loot          the blocks that hand out loot, most valuable first
+ * @param blockCounts   every block, one entry per kind, most numerous first — the Blocks page
  */
 public record TemplateSummary(int blocks, Vec3i declaredSize, int blockEntities, int containers,
                               int entities, List<TemplateCells.LightBlock> lights,
-                              List<TemplateLoot.LootBlock> loot) {
+                              List<TemplateLoot.LootBlock> loot, List<TemplateCells.BlockCount> blockCounts) {
 
     /** The empty sheet — a template that could not be read. */
     public static final TemplateSummary NONE = new TemplateSummary(0, Vec3i.ZERO, 0, 0, 0, List.of(), List.of());
@@ -27,6 +28,14 @@ public record TemplateSummary(int blocks, Vec3i declaredSize, int blockEntities,
     public TemplateSummary {
         lights = lights == null ? List.of() : List.copyOf(lights);
         loot = loot == null ? List.of() : List.copyOf(loot);
+        blockCounts = blockCounts == null ? List.of() : List.copyOf(blockCounts);
+    }
+
+    /** A summary with no per-block tally — previews that never show a Blocks page. */
+    public TemplateSummary(int blocks, Vec3i declaredSize, int blockEntities, int containers,
+                           int entities, List<TemplateCells.LightBlock> lights,
+                           List<TemplateLoot.LootBlock> loot) {
+        this(blocks, declaredSize, blockEntities, containers, entities, lights, loot, List.of());
     }
 
     public boolean isEmpty() {
