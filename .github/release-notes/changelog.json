@@ -21518,6 +21518,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "plants-stay-rooted",
+      "version": "0.1073.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Plants stay rooted",
+      "summary": "Plants along the line now only grow where they can stand.",
+      "highlights": [],
+      "pr": 1718,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
