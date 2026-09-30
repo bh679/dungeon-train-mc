@@ -35,7 +35,11 @@ import java.util.TreeMap;
  * {@code /data/dungeontrain/tunnels/groups.json}, falling back to empty (every group at
  * {@link #DEFAULT_WEIGHT}):</p>
  *
- * <pre>{ "groups": { "stone": 3, "brick": 1 }, "ungroupedWeight": 1 }</pre>
+ * <pre>{ "groups": { "stone": 3, "brick": { "weight": 1, "minLevel": 3, "phases": ["NETHER"] } },
+ *   "ungroupedWeight": 1 }</pre>
+ *
+ * <p>Each group is a {@link TemplateMeta} in the template weight format — a bare weight, or an object
+ * once it has a spawn gate or a Stage link, the same spawn rules a template carries.</p>
  *
  * <p>The config copy, when present, is the whole registry rather than an overlay — a group deleted
  * in the editor must stay deleted. A group a template names but this registry does not is still a
@@ -56,35 +60,69 @@ public final class TunnelGroupStore {
     static final String K_GROUPS = "groups";
     static final String K_UNGROUPED = "ungroupedWeight";
 
-    /** Immutable snapshot of the registry. */
-    public record Registry(Map<String, Integer> groups, int ungroupedWeight) {
+    /**
+     * Immutable snapshot of the registry: each group's {@link TemplateMeta} — its roll weight, its
+     * inline spawn gate (Diff-Level band and phases) and its optional Stage link, exactly the spawn
+     * rules a template carries — plus the ungrouped pool's weight.
+     */
+    public record Registry(Map<String, TemplateMeta> entries, int ungroupedWeight) {
         public static final Registry EMPTY = new Registry(Map.of(), DEFAULT_WEIGHT);
 
         public Registry {
-            groups = Map.copyOf(groups);
+            entries = Map.copyOf(entries);
             ungroupedWeight = clamp(ungroupedWeight);
+        }
+
+        /** A registry of weight-only groups (no gates) — tests and simple callers. */
+        public static Registry ofWeights(Map<String, Integer> weights, int ungroupedWeight) {
+            Map<String, TemplateMeta> out = new TreeMap<>();
+            weights.forEach((id, w) -> out.put(id, TemplateMeta.of(clamp(w))));
+            return new Registry(out, ungroupedWeight);
+        }
+
+        /** Every registered group's roll weight, by id. */
+        public Map<String, Integer> groups() {
+            Map<String, Integer> out = new TreeMap<>();
+            entries.forEach((id, m) -> out.put(id, m.weight()));
+            return out;
         }
 
         /** Weight a tunnel rolls {@code id} at — {@link #DEFAULT_WEIGHT} for a group not listed. */
         public int weightOf(String id) {
-            Integer w = groups.get(id);
-            return w == null ? DEFAULT_WEIGHT : w;
+            TemplateMeta m = entries.get(id);
+            return m == null ? DEFAULT_WEIGHT : m.weight();
         }
 
-        Registry withGroup(String id, int weight) {
-            Map<String, Integer> next = new TreeMap<>(groups);
-            next.put(id, clamp(weight));
+        /** {@code id}'s entry, or a default-gated one at {@link #DEFAULT_WEIGHT} for a group not listed. */
+        public TemplateMeta metaOf(String id) {
+            TemplateMeta m = entries.get(id);
+            return m != null ? m : TemplateMeta.of(DEFAULT_WEIGHT);
+        }
+
+        /** {@code id}'s effective spawn gate: its linked Stage's when linked, else its inline one. */
+        public games.brennan.dungeontrain.template.TemplateGate gateOf(String id) {
+            TemplateMeta m = metaOf(id);
+            return games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), m.stageId());
+        }
+
+        Registry withMeta(String id, TemplateMeta meta) {
+            Map<String, TemplateMeta> next = new TreeMap<>(entries);
+            next.put(id, meta.withWeight(clamp(meta.weight())));
             return new Registry(next, ungroupedWeight);
         }
 
+        Registry withGroup(String id, int weight) {
+            return withMeta(id, metaOf(id).withWeight(weight));
+        }
+
         Registry withoutGroup(String id) {
-            Map<String, Integer> next = new TreeMap<>(groups);
+            Map<String, TemplateMeta> next = new TreeMap<>(entries);
             next.remove(id);
             return new Registry(next, ungroupedWeight);
         }
 
         Registry withUngroupedWeight(int weight) {
-            return new Registry(groups, weight);
+            return new Registry(entries, weight);
         }
     }
 
@@ -102,7 +140,7 @@ public final class TunnelGroupStore {
 
     /** Register {@code id} at {@link #DEFAULT_WEIGHT} unless it already exists. Returns false if it did. */
     public static synchronized boolean create(String id) throws IOException {
-        if (current.groups().containsKey(id)) return false;
+        if (current.entries().containsKey(id)) return false;
         save(current.withGroup(id, DEFAULT_WEIGHT));
         return true;
     }
@@ -125,17 +163,45 @@ public final class TunnelGroupStore {
      * {@code to} is already registered.
      */
     public static synchronized boolean rename(String from, String to) throws IOException {
-        if (current.groups().containsKey(to)) return false;
-        int weight = current.weightOf(from);
-        save(current.withoutGroup(from).withGroup(to, weight));
+        if (current.entries().containsKey(to)) return false;
+        TemplateMeta meta = current.metaOf(from);
+        save(current.withoutGroup(from).withMeta(to, meta));
         return true;
     }
 
     /** Drop {@code id} from the registry. Memberships are the caller's to strip. Returns false if absent. */
     public static synchronized boolean delete(String id) throws IOException {
-        if (!current.groups().containsKey(id)) return false;
+        if (!current.entries().containsKey(id)) return false;
         save(current.withoutGroup(id));
         return true;
+    }
+
+    /**
+     * Change {@code id}'s inline spawn gate (registering it if needed), keeping its weight and Stage
+     * link. Returns the stored gate. Inert while the group is Stage-linked, as a template's is.
+     */
+    public static synchronized games.brennan.dungeontrain.template.TemplateGate setGate(
+            String id, java.util.function.UnaryOperator<games.brennan.dungeontrain.template.TemplateGate> op)
+            throws IOException {
+        TemplateMeta meta = current.metaOf(id);
+        TemplateMeta next = meta.withGate(op.apply(meta.gate()));
+        save(current.withMeta(id, next));
+        return next.gate();
+    }
+
+    /**
+     * Link {@code id} to the Stage {@code stageId}, or detach it to Custom when null — snapshotting the
+     * Stage's gate inline, as a template's detach does. Keeps the weight. Returns the stored link.
+     */
+    public static synchronized String setStage(String id, String stageId) throws IOException {
+        TemplateMeta meta = current.metaOf(id);
+        String link = stageId == null || stageId.isBlank() ? null : stageId.toLowerCase(java.util.Locale.ROOT);
+        games.brennan.dungeontrain.template.TemplateGate inline = meta.gate();
+        if (link == null && meta.stageId() != null) {
+            inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, meta.stageId());
+        }
+        save(current.withMeta(id, meta.withGate(inline).withStage(link)));
+        return link;
     }
 
     /** Test-only seam: replace the in-memory registry without touching disk. */
@@ -163,11 +229,9 @@ public final class TunnelGroupStore {
 
     static JsonObject toJson(Registry r) {
         JsonObject root = new JsonObject();
-        JsonObject groups = new JsonObject();
-        for (Map.Entry<String, Integer> e : new TreeMap<>(r.groups()).entrySet()) {
-            groups.addProperty(e.getKey(), e.getValue());
-        }
-        root.add(K_GROUPS, groups);
+        // Each group in the template weight format: a bare weight while it has no gate or Stage, an
+        // object once it has — so registries written before groups had gates read unchanged.
+        root.add(K_GROUPS, games.brennan.dungeontrain.template.TemplateWeightCodec.toJson(r.entries()));
         root.addProperty(K_UNGROUPED, r.ungroupedWeight());
         return root;
     }
@@ -176,17 +240,18 @@ public final class TunnelGroupStore {
     static Registry fromJson(JsonElement root) {
         if (root == null || !root.isJsonObject()) return null;
         JsonObject o = root.getAsJsonObject();
-        Map<String, Integer> groups = new TreeMap<>();
+        Map<String, TemplateMeta> groups = new TreeMap<>();
         JsonElement g = o.get(K_GROUPS);
         if (g != null && g.isJsonObject()) {
             for (Map.Entry<String, JsonElement> e : g.getAsJsonObject().entrySet()) {
                 String id = TemplateMeta.normaliseGroupId(e.getKey());
-                JsonElement v = e.getValue();
-                if (id == null || !v.isJsonPrimitive() || !v.getAsJsonPrimitive().isNumber()) {
+                TemplateMeta meta = id == null ? null
+                    : games.brennan.dungeontrain.template.TemplateWeightCodec.parseEntry(e.getValue(), TunnelGroupStore::clamp);
+                if (meta == null) {
                     LOGGER.warn("[DungeonTrain] Tunnel group entry '{}' is invalid — ignoring.", e.getKey());
                     continue;
                 }
-                groups.put(id, clamp(v.getAsInt()));
+                groups.put(id, meta);
             }
         }
         JsonElement u = o.get(K_UNGROUPED);

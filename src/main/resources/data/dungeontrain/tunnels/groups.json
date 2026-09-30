@@ -1,8 +1,43 @@
 {
   "groups": {
-    "mossy": 1,
+    "blackstone": {
+      "weight": 1,
+      "phases": [
+        "NETHER",
+        "END",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY"
+      ]
+    },
+    "copper": {
+      "weight": 5,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY"
+      ]
+    },
+    "mossy": 10,
     "mud": 1,
-    "stone": 1
+    "stone": 100
   },
   "ungroupedWeight": 1
 }
