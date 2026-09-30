@@ -27,3 +27,5 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 # Sable Pathfinder is Modrinth-only: required there, `optional` in mods.toml so the CurseForge
 # layout (no Sable Pathfinder) must still boot. A/D/G carry it, so its mixins apply on a real server.
 "$HERE/run-case.sh" "L - no Sable Pathfinder (CurseForge path)"       dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc
+# Big Lost City is required with a `[x,)` floor; N is the only case without `blc`.
+"$HERE/run-case.sh" "N - missing Big Lost City"                        dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch

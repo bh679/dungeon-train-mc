@@ -56,6 +56,7 @@ The NeoForge version follows `neo_version` for the same reason.
 | **J** | minus BetterEnd (libraries present) | Fails — names `betterend` with its `[x,)` floor |
 | **K** | minus WWOO + Biomes O' Plenty (their libraries present) | Fails — names `wwoo` and `biomesoplenty` with their `[x,)` floors |
 | **L** | Case A minus Sable Pathfinder (CurseForge layout — it isn't listed there) | Server starts cleanly (`optional` in mods.toml). A, D and G include it, proving its mixins apply against production bytecode |
+| **N** | minus Big Lost City (the only case without it) | Fails — names `big_lost_city` with its `[x,)` floor |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.
