@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.event.EndBandInlineTerrain;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
@@ -156,10 +157,15 @@ public abstract class ChunkGeneratorDecorationMixin {
         WwooDecorationPass.beforeStep(level, (ChunkGenerator) (Object) this);
     }
 
+    /**
+     * After the last step — and after every feature, the track bed included — a sampled End-band chunk
+     * gets its real End terrain written in ({@link EndBandInlineTerrain}), so it never exists bare.
+     */
     @Inject(method = "applyBiomeDecoration", at = @At("TAIL"))
     private void dungeontrain$vanillaFeaturesLastStep(WorldGenLevel level, ChunkAccess chunk,
                                                       StructureManager structureManager, CallbackInfo ci) {
         WwooDecorationPass.finish(level, (ChunkGenerator) (Object) this);
+        EndBandInlineTerrain.write(level, chunk);
     }
 
     @Redirect(
