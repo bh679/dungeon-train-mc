@@ -192,6 +192,12 @@ public final class RelayBuildPreviews {
         return true;
     }
 
+    /** This build's baked mesh as it is now, or null until it has been baked — for a capture. */
+    static BuilderTileMesh mesh(int relayId) {
+        Entry entry = CACHE.get(new Key(relayId, 0));
+        return entry == null ? null : entry.mesh();
+    }
+
     /** This build's data-sheet numbers, or null until it has been baked. */
     public static TemplateSummary summary(int relayId) {
         return summary(relayId, 0);
