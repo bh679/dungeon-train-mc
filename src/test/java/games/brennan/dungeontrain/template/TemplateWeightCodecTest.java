@@ -178,10 +178,10 @@ final class TemplateWeightCodecTest {
     @DisplayName("round-trip preserves the mode alongside gate and stage link")
     void roundTripMode() {
         TemplateMeta original = new TemplateMeta(
-            6, new TemplateGate(1, 12, EnumSet.of(TrainPhase.VOID)), "endgame", "bedrock_lock");
+            6, new TemplateGate(1, 12, EnumSet.of(TrainPhase.VOID)), "endgame", "bedrock");
         JsonObject json = TemplateWeightCodec.toJson(Map.of("x", original));
         TemplateMeta back = TemplateWeightCodec.parseEntry(json.get("x"), CLAMP);
-        assertEquals("bedrock_lock", back.mode());
+        assertEquals("bedrock", back.mode());
         assertEquals("endgame", back.stageId());
         assertEquals(1, back.gate().minLevel());
         assertEquals(12, back.gate().maxLevel());
@@ -240,12 +240,12 @@ final class TemplateWeightCodecTest {
     @DisplayName("round-trip preserves the name alongside gate, stage link and mode")
     void roundTripName() {
         TemplateMeta original = new TemplateMeta(
-            6, new TemplateGate(1, 12, EnumSet.of(TrainPhase.VOID)), "endgame", "bedrock_lock")
+            6, new TemplateGate(1, 12, EnumSet.of(TrainPhase.VOID)), "endgame", "bedrock")
             .withName("Endgame Library");
         JsonObject json = TemplateWeightCodec.toJson(Map.of("x", original));
         TemplateMeta back = TemplateWeightCodec.parseEntry(json.get("x"), CLAMP);
         assertEquals("Endgame Library", back.name());
-        assertEquals("bedrock_lock", back.mode());
+        assertEquals("bedrock", back.mode());
         assertEquals("endgame", back.stageId());
         assertEquals(original.gate(), back.gate());
     }

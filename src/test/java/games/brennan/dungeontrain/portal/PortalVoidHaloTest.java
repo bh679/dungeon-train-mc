@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The slabs a Bedrockless room clears — halo minus footprint, carved geometrically rather than
+ * The slabs a Void room clears — halo minus footprint, carved geometrically rather than
  * masked.
  *
  * <p>The covering is the whole safety argument. A slab that reached into the footprint would clear

@@ -23,7 +23,7 @@ class ClientPortalRoomFogTest {
         new PortalRoomFogPacket(-50, -60, -50, 50, -50, 50, 65.0f, 0, 0.0f);
 
     /**
-     * A Bedrockless region: a room 20 blocks across at the origin, with 50 blocks of swept clearance
+     * A Void region: a room 20 blocks across at the origin, with 50 blocks of swept clearance
      * padded around it, fogging at 50 at the room's walls and closing to 8 at the clearance edge.
      */
     private static final PortalRoomFogPacket VOID_ROOM =
@@ -173,8 +173,8 @@ class ClientPortalRoomFogTest {
     }
 
     @Test
-    @DisplayName("inside a Bedrockless room the fog is the room's own distance — the ramp starts at the wall")
-    void bedrocklessInsideTheRoomIsNominal() {
+    @DisplayName("inside a Void room the fog is the room's own distance — the ramp starts at the wall")
+    void voidInsideTheRoomIsNominal() {
         ClientPortalRoomFog.update(VOID_ROOM);
         // Standing in the middle, and standing against the room's own wall: both are "not out in the
         // void yet", and neither may be fogged any harder than the room asks for.
@@ -184,7 +184,7 @@ class ClientPortalRoomFogTest {
 
     @Test
     @DisplayName("walking out into the clearance closes the fog in, step by step")
-    void bedrocklessRampsAsYouWalkOut() {
+    void voidRampsAsYouWalkOut() {
         ClientPortalRoomFog.update(VOID_ROOM);
         float atWall = settled(10, -55, 0);
         float quarter = settled(22.5, -55, 0);
@@ -200,7 +200,7 @@ class ClientPortalRoomFogTest {
 
     @Test
     @DisplayName("at the edge of the clearance it is a whiteout — the room you left is gone")
-    void bedrocklessBottomsOutAtTheWhiteout() {
+    void voidBottomsOutAtTheWhiteout() {
         ClientPortalRoomFog.update(VOID_ROOM);
         assertEquals(8.0f, settled(59.5, -55, 0), 0.5f);
         // The far corner is at the end of the walk on both axes, not √2 past it — the swept space is
@@ -209,8 +209,8 @@ class ClientPortalRoomFogTest {
     }
 
     @Test
-    @DisplayName("the ramp measures the walk, not the drop — a Bedrockless void has no vertical term")
-    void bedrocklessIgnoresHeight() {
+    @DisplayName("the ramp measures the walk, not the drop — a Void room's emptiness has no vertical term")
+    void voidIgnoresHeight() {
         ClientPortalRoomFog.update(VOID_ROOM);
         // Same spot in the room, floor and ceiling. Pairs sit twelve blocks apart in Y, so there is
         // no vertical emptiness for a ramp to cross and height must not change the fog.
@@ -219,15 +219,15 @@ class ClientPortalRoomFogTest {
 
     @Test
     @DisplayName("out past the swept clearance the fog is gone entirely, ramp or no ramp")
-    void bedrocklessStillReleasesOutsideTheRegion() {
+    void voidStillReleasesOutsideTheRegion() {
         ClientPortalRoomFog.update(VOID_ROOM);
         settled(0, -55, 0);
         assertEquals(0.0f, settled(900, 80, 900));
     }
 
     @Test
-    @DisplayName("a Bedrockless room on a short render distance still ramps rather than being skipped")
-    void bedrocklessRampsInsideAShortRenderDistance() {
+    @DisplayName("a Void room on a short render distance still ramps rather than being skipped")
+    void voidRampsInsideAShortRenderDistance() {
         ClientPortalRoomFog.update(VOID_ROOM);
         // Render distance 2 chunks: vanilla's plane is 32, already inside the room's nominal 50, so
         // standing in the room is vanilla's business. The walk out is not — the ramp goes below it.

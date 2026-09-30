@@ -21168,6 +21168,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-modes-void-bedrock",
+      "version": "0.1052.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Two dimensional carriage styles go by simpler names in the editor",
+      "summary": "Two dimensional carriage styles now go by simpler names in the editor, and anything built under the old names carries on as before.",
+      "highlights": [],
+      "pr": 1693,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
