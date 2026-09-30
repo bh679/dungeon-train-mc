@@ -57,6 +57,7 @@ The NeoForge version follows `neo_version` for the same reason.
 | **K** | minus WWOO + Biomes O' Plenty (their libraries present) | Fails — names `wwoo` and `biomesoplenty` with their `[x,)` floors |
 | **L** | Case A minus Sable Pathfinder (CurseForge layout — it isn't listed there) | Server starts cleanly (`optional` in mods.toml). A, D and G include it, proving its mixins apply against production bytecode |
 | **M** | minus VanillaBackport (Platform present) | Fails — names `vanillabackport` with its `[x,)` floor |
+| **N** | minus Big Lost City (the only case without it) | Fails — names `big_lost_city` with its `[x,)` floor, twice: requested by `dungeontrain` and by the jarJar'd `lostcityterrainfit` |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.

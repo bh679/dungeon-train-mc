@@ -21324,9 +21324,9 @@
       "highlights": [],
       "pr": 1702,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
     },
     {
       "id": "lost-city-processor-memo",
@@ -21340,6 +21340,40 @@
       "summary": "Big ruined buildings along the line now appear with less of a hitch.",
       "highlights": [],
       "pr": 1707,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
+    },
+    {
+      "id": "blended-landscape-air-matches-ground",
+      "version": "0.1062.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Blended landscapes feel of a piece",
+      "summary": "Where two landscapes blend into each other, the air and the creatures now match the ground beneath your feet.",
+      "highlights": [],
+      "pr": 1708,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
+    },
+    {
+      "id": "sync-sibling-mod-pins-2026-09",
+      "version": "0.1063.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "Fresher companion mods in the modpack",
+      "summary": "The modpack now installs the newest versions of its companion mods.",
+      "highlights": [],
+      "pr": 1710,
       "date": "2026-09-30",
       "released": false,
       "released_in": null,
