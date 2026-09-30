@@ -307,6 +307,7 @@
       "file_id": 8229724,
       "required": true,
       "dependency_type": "required",
+      "gradle_property": "vanillabackport_min_version",
       "version": "1.1.7.10",
       "modrinth_project": "vanillabackport",
       "modrinth_version": "rUSWdBok"

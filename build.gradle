@@ -594,8 +594,8 @@ dependencies {
     implementation "maven.modrinth:worldweaver-neoforge:${worldweaver_version}"
     implementation "maven.modrinth:wunderlib-neoforge:${wunderlib_version}"
 
-    // VanillaBackport + Platform — REQUIRED third-party deps (see gradle.properties). DT compiles against
-    // one VanillaBackport class (compat/VanillaBackportSurfaceRules) and names its biomes by registry id.
+    // VanillaBackport + Platform — REQUIRED third-party deps (see gradle.properties). DT names its biomes and
+    // blocks only by registry id, so nothing compiles against these jars.
     implementation "maven.modrinth:vanillabackport:${vanillabackport_version}"
     implementation "maven.modrinth:platform:${platform_version}"
 
