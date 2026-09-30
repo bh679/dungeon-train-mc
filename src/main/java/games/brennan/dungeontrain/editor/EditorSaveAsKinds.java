@@ -205,6 +205,8 @@ public final class EditorSaveAsKinds {
                     CarriageContentsEditor.clearPlot(level, ((Template.Contents) t).contents(), dims);
                 }
                 CarriageContentsEditor.duplicate(player, from, target);
+                // A top-level copy is a new template: opt-in, whatever its source was.
+                games.brennan.dungeontrain.train.CarriageContentsWeights.markNewOptIn(target.id());
                 CarriageContentsEditor.stampPlot(level, target, dims);
                 for (Template t : moving) {
                     CarriageContentsEditor.stampPlot(level, ((Template.Contents) t).contents(), dims);

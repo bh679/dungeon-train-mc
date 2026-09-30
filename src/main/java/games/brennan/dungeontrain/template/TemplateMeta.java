@@ -35,12 +35,17 @@ package games.brennan.dungeontrain.template;
  * sheet prints, the Credits page thanks, and the relay counts on the builder leaderboard.
  * {@code null} means nobody is credited. Nothing at spawn time reads it.</p>
  *
+ * <p><b>{@link #optIn()} is the carriage-contents opt-in mark</b>, read today only by the contents
+ * allow-list: a contents template carrying it is <i>off</i> in every carriage and portal room until one
+ * of their Contents lists switches it on explicitly. New top-level contents get it on creation; every
+ * template that existed before the mark did not, so {@code false} keeps the old opt-out behaviour.</p>
+ *
  * <p>An id with the {@link TemplateGate#DEFAULT default} gate, no stage link, no mode, no flip block,
- * no label <b>and</b> no builder serialises back to the legacy bare-int form (see
+ * no label, no builder <b>and</b> no opt-in mark serialises back to the legacy bare-int form (see
  * {@link TemplateWeightCodec}), so existing {@code weights.json} files are unaffected.</p>
  */
 public record TemplateMeta(int weight, TemplateGate gate, String stageId, String mode, FlipOptions flip,
-                           String name, BuilderCredit builder) {
+                           String name, BuilderCredit builder, boolean optIn) {
 
     /** Longest label the editor accepts — matches the wire field it travels in. */
     public static final int NAME_MAX = 32;
@@ -58,6 +63,12 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
         name = normaliseName(name);
         // A credit naming nobody is no credit, so "cleared" has one spelling on disk and in memory.
         if (builder != null && !builder.known()) builder = null;
+    }
+
+    /** Back-compat 7-arg form — not opt-in. */
+    public TemplateMeta(int weight, TemplateGate gate, String stageId, String mode, FlipOptions flip,
+                        String name, BuilderCredit builder) {
+        this(weight, gate, stageId, mode, flip, name, builder, false);
     }
 
     /** Back-compat 6-arg form — no builder credit. */
@@ -114,17 +125,17 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
 
     /** Copy with {@code weight} replaced, keeping the inline gate, stage link, mode, flip and label. */
     public TemplateMeta withWeight(int newWeight) {
-        return new TemplateMeta(newWeight, gate, stageId, mode, flip, name, builder);
+        return new TemplateMeta(newWeight, gate, stageId, mode, flip, name, builder, optIn);
     }
 
     /** Copy with the inline {@code gate} replaced, keeping the weight, stage link, mode, flip and label. */
     public TemplateMeta withGate(TemplateGate newGate) {
-        return new TemplateMeta(weight, newGate, stageId, mode, flip, name, builder);
+        return new TemplateMeta(weight, newGate, stageId, mode, flip, name, builder, optIn);
     }
 
     /** Copy with the {@code flip} block replaced ({@code null} / default = no block), keeping everything else. */
     public TemplateMeta withFlip(FlipOptions newFlip) {
-        return new TemplateMeta(weight, gate, stageId, mode, newFlip, name, builder);
+        return new TemplateMeta(weight, gate, stageId, mode, newFlip, name, builder, optIn);
     }
 
     /**
@@ -133,17 +144,17 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
      * gate reflects what the row was showing.
      */
     public TemplateMeta withStage(String newStageId) {
-        return new TemplateMeta(weight, gate, newStageId, mode, flip, name, builder);
+        return new TemplateMeta(weight, gate, newStageId, mode, flip, name, builder, optIn);
     }
 
     /** Copy with the {@code mode} tag replaced (null = this kind's default), keeping everything else. */
     public TemplateMeta withMode(String newMode) {
-        return new TemplateMeta(weight, gate, stageId, newMode, flip, name, builder);
+        return new TemplateMeta(weight, gate, stageId, newMode, flip, name, builder, optIn);
     }
 
     /** Copy with the display label replaced ({@code null} / blank = show the id), keeping everything else. */
     public TemplateMeta withName(String newName) {
-        return new TemplateMeta(weight, gate, stageId, mode, flip, newName, builder);
+        return new TemplateMeta(weight, gate, stageId, mode, flip, newName, builder, optIn);
     }
 
     /**
@@ -175,7 +186,7 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
 
     /** Copy with the builder credit replaced ({@code null} = nobody credited), keeping everything else. */
     public TemplateMeta withBuilder(BuilderCredit newBuilder) {
-        return new TemplateMeta(weight, gate, stageId, mode, flip, name, newBuilder);
+        return new TemplateMeta(weight, gate, stageId, mode, flip, name, newBuilder, optIn);
     }
 
     /**
@@ -188,6 +199,22 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
         return prev == null
             ? new TemplateMeta(defaultWeight, TemplateGate.DEFAULT, null, null, null, null, builder)
             : prev.withBuilder(builder);
+    }
+
+    /** Copy with the opt-in mark replaced, keeping everything else. */
+    public TemplateMeta withOptIn(boolean newOptIn) {
+        return new TemplateMeta(weight, gate, stageId, mode, flip, name, builder, newOptIn);
+    }
+
+    /**
+     * The entry a weight store should store when an opt-in edit lands on {@code prev} ({@code null} =
+     * no existing entry, created unlinked at {@code defaultWeight} with the default gate). Preserves
+     * every other field — marking a template opt-in changes where it may spawn, not how often.
+     */
+    public static TemplateMeta mergeOptIn(TemplateMeta prev, boolean optIn, int defaultWeight) {
+        return prev == null
+            ? new TemplateMeta(defaultWeight, TemplateGate.DEFAULT, null, null, null, null, null, optIn)
+            : prev.withOptIn(optIn);
     }
 
     /** True when this entry is linked live to a named Stage (vs. an inline Custom gate). */
