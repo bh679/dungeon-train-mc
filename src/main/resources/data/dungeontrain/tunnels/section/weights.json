@@ -50,6 +50,27 @@
       "a"
     ]
   },
+  "mud": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "name": "Mud",
+    "groups": [
+      "clay"
+    ]
+  },
   "overgrowth": {
     "weight": 1,
     "phases": [
