@@ -21203,6 +21203,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "x-editor-blocks-page",
+      "version": "0.1054.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Blocks page in the editor",
+      "summary": "The X editor can now show every block in a build and swap any of them for the one in your hand.",
+      "highlights": [],
+      "pr": 1694,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

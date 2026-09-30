@@ -20,11 +20,13 @@ import java.util.List;
  * @param topBlock      the most numerous block in the template — its one-icon signature — or null
  * @param solidCounts   how many of each full-cube block the template has, so a set of templates
  *                      (a tunnel group) can find its own most numerous block
+ * @param blockCounts   every block, one entry per kind, most numerous first — the Blocks page
  */
 public record TemplateSummary(int blocks, Vec3i declaredSize, int blockEntities, int containers,
                               int entities, List<TemplateCells.LightBlock> lights,
                               List<TemplateLoot.LootBlock> loot, Block topBlock,
-                              java.util.Map<Block, Integer> solidCounts) {
+                              java.util.Map<Block, Integer> solidCounts,
+                              List<TemplateCells.BlockCount> blockCounts) {
 
     /** The empty sheet — a template that could not be read. */
     public static final TemplateSummary NONE = new TemplateSummary(0, Vec3i.ZERO, 0, 0, 0, List.of(), List.of());
@@ -33,19 +35,27 @@ public record TemplateSummary(int blocks, Vec3i declaredSize, int blockEntities,
         lights = lights == null ? List.of() : List.copyOf(lights);
         loot = loot == null ? List.of() : List.copyOf(loot);
         solidCounts = solidCounts == null ? java.util.Map.of() : java.util.Map.copyOf(solidCounts);
+        blockCounts = blockCounts == null ? List.of() : List.copyOf(blockCounts);
+    }
+
+    /** A summary with no per-block tally — previews that never show a Blocks page. */
+    public TemplateSummary(int blocks, Vec3i declaredSize, int blockEntities, int containers,
+                           int entities, List<TemplateCells.LightBlock> lights, List<TemplateLoot.LootBlock> loot,
+                           Block topBlock, java.util.Map<Block, Integer> solidCounts) {
+        this(blocks, declaredSize, blockEntities, containers, entities, lights, loot, topBlock, solidCounts, List.of());
     }
 
     /** The shape from before the solid tallies were kept. */
     public TemplateSummary(int blocks, Vec3i declaredSize, int blockEntities, int containers,
                            int entities, List<TemplateCells.LightBlock> lights, List<TemplateLoot.LootBlock> loot,
                            Block topBlock) {
-        this(blocks, declaredSize, blockEntities, containers, entities, lights, loot, topBlock, java.util.Map.of());
+        this(blocks, declaredSize, blockEntities, containers, entities, lights, loot, topBlock, java.util.Map.of(), List.of());
     }
 
     /** The shape from before the top block was tallied. */
     public TemplateSummary(int blocks, Vec3i declaredSize, int blockEntities, int containers,
                            int entities, List<TemplateCells.LightBlock> lights, List<TemplateLoot.LootBlock> loot) {
-        this(blocks, declaredSize, blockEntities, containers, entities, lights, loot, null, java.util.Map.of());
+        this(blocks, declaredSize, blockEntities, containers, entities, lights, loot, null, java.util.Map.of(), List.of());
     }
 
     /** How many of each full-cube block {@code states} holds. */
