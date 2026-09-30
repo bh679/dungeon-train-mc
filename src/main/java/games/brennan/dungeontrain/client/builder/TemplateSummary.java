@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.builder;
 import games.brennan.dungeontrain.editor.TemplateCells;
 import games.brennan.dungeontrain.editor.TemplateLoot;
 import net.minecraft.core.Vec3i;
+import net.minecraft.world.level.block.Block;
 
 import java.util.List;
 
@@ -16,10 +17,11 @@ import java.util.List;
  * @param entities      entities saved with the template
  * @param lights        the blocks that give off light, one entry per type, most numerous first
  * @param loot          the blocks that hand out loot, most valuable first
+ * @param topBlock      the most numerous block in the template — its one-icon signature — or null
  */
 public record TemplateSummary(int blocks, Vec3i declaredSize, int blockEntities, int containers,
                               int entities, List<TemplateCells.LightBlock> lights,
-                              List<TemplateLoot.LootBlock> loot) {
+                              List<TemplateLoot.LootBlock> loot, Block topBlock) {
 
     /** The empty sheet — a template that could not be read. */
     public static final TemplateSummary NONE = new TemplateSummary(0, Vec3i.ZERO, 0, 0, 0, List.of(), List.of());
@@ -27,6 +29,30 @@ public record TemplateSummary(int blocks, Vec3i declaredSize, int blockEntities,
     public TemplateSummary {
         lights = lights == null ? List.of() : List.copyOf(lights);
         loot = loot == null ? List.of() : List.copyOf(loot);
+    }
+
+    /** The shape from before the top block was tallied. */
+    public TemplateSummary(int blocks, Vec3i declaredSize, int blockEntities, int containers,
+                           int entities, List<TemplateCells.LightBlock> lights, List<TemplateLoot.LootBlock> loot) {
+        this(blocks, declaredSize, blockEntities, containers, entities, lights, loot, null);
+    }
+
+    /** The most numerous block of {@code states}, or null when there is none. Ties go to the first seen. */
+    public static Block topBlockOf(java.util.Collection<net.minecraft.world.level.block.state.BlockState> states) {
+        java.util.Map<Block, Integer> counts = new java.util.LinkedHashMap<>();
+        for (net.minecraft.world.level.block.state.BlockState s : states) {
+            if (s == null || s.isAir()) continue;
+            counts.merge(s.getBlock(), 1, Integer::sum);
+        }
+        Block top = null;
+        int best = 0;
+        for (java.util.Map.Entry<Block, Integer> e : counts.entrySet()) {
+            if (e.getValue() > best) {
+                best = e.getValue();
+                top = e.getKey();
+            }
+        }
+        return top;
     }
 
     public boolean isEmpty() {

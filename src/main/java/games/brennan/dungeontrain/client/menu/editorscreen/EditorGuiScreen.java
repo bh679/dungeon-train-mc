@@ -1331,7 +1331,7 @@ public final class EditorGuiScreen extends Screen {
             return layoutPane.scrollBy(dir);
         }
         if (onGroups() && groupsTab.over(mouseX, mouseY)) {
-            return groupsTab.scrollBy(dir);
+            return groupsTab.scrollBy(mouseX, mouseY, dir);
         }
         if (onStages()) {
             if (stagesPane.over(layout, mouseX, mouseY)) return stagesPane.scrollBy(dir);
