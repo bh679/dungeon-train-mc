@@ -253,6 +253,9 @@ final class EditorGroupsTab {
 
     private void renderList(GuiGraphics g, Font font, EditorScreenTheme theme, int mx, int my) {
         InventoryEditorLayout.Rect r = leftRect;
+        // The list starts where the filter bar would be, above the screen's dark grid panel — fill
+        // the whole column dark so every row reads the same.
+        g.fill(r.x() - 1, r.y() - 1, r.right() + 1, r.bottom() + 1, theme.subPanel());
         g.enableScissor(r.x(), r.y(), r.right(), r.bottom());
         int y = r.y() + 2 - listScroll;
         for (String token : tokens()) {
@@ -270,9 +273,12 @@ final class EditorGroupsTab {
             String right = "×" + weightOf(token) + "   " + members(token, PORTAL).size() + " entrances · "
                 + members(token, SECTION).size() + " sections";
             boolean builds = missing(token) == null;
-            g.drawString(font, (builds ? "" : "! ") + label(token), row.x() + ICON + 5, ty,
-                builds ? text : WARN, false);
-            g.drawString(font, right, row.right() - font.width(right) - 3, ty, text, false);
+            int rightX = row.right() - font.width(right) - 3;
+            int nameX = row.x() + ICON + 5;
+            // Cut a long name short of the counts rather than letting the two run together.
+            String name = font.plainSubstrByWidth((builds ? "" : "! ") + label(token), Math.max(0, rightX - nameX - 6));
+            g.drawString(font, name, nameX, ty, builds ? text : WARN, false);
+            g.drawString(font, right, rightX, ty, text, false);
             hits.add(new Hit(Kind.GROUP_ROW, row, token, null, null, null));
             y += ITEM_ROW_H;
         }
