@@ -610,7 +610,16 @@ public final class EditorTypeMenuInputHandler {
      * every variant in a single floating menu shares its category.</p>
      */
     private static void dispatchNew(EditorTypeMenusPacket.Menu menu) {
-        if (menu.variants().isEmpty()) return;
+        String sizeKey = NewSourcePickerScreen.contentsSizeKey(menu.typeName());
+        if (menu.variants().isEmpty()) {
+            // A contents size with no templates yet still needs a way to make its first one.
+            if (sizeKey != null && games.brennan.dungeontrain.editor.EditorCategory.CONTENTS.id()
+                    .equals(menu.activeCategoryId())) {
+                CommandMenuState.openAt(new NewSourcePickerScreen(
+                    NewSourcePickerScreen.Category.CONTENTS, sizeKey, ""));
+            }
+            return;
+        }
         EditorTypeMenusPacket.Variant first = menu.variants().get(0);
         String category = first.category();
         PlotCategory plotCategory = first.plotCategory();
@@ -652,8 +661,9 @@ public final class EditorTypeMenuInputHandler {
         NewSourcePickerScreen picker = plotCategory == null ? null : switch (plotCategory) {
             case CARRIAGES -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.CARRIAGES, null, currentId);
+            // The menu is one contents size (Room / Half / Full): offer that size only.
             case CONTENTS -> new NewSourcePickerScreen(
-                NewSourcePickerScreen.Category.CONTENTS, null, currentId);
+                NewSourcePickerScreen.Category.CONTENTS, sizeKey, currentId);
             // For PARTS the modelId is the kind tag (floor / walls / roof /
             // doors); the picker's "Current" option needs a part variant id,
             // which the variant rows don't represent for the floating-menu
