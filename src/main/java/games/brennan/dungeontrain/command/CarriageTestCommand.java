@@ -549,23 +549,29 @@ public final class CarriageTestCommand {
         }
         Optional<CarriageContents> contents = CarriageContentsRegistry.find(id);
         if (contents.isEmpty()) return fail(source, "chat.dungeontrain.editor.unknown_contents", id);
-        // A corridor's furnishing is authored to the corridor's box and only ever stands in one, so
-        // it is tested in its corridor — the shell its editor plot uses.
-        if (CarriageContentsPlacer.portalCorridorKindOf(contents.get()) != null) {
-            CarriageContents rolled = CarriageContentsRegistry.resolveSubVariant(
-                contents.get(), seed ^ CarriageTestSession.TEST_INDEX, null);
-            return new Plan(games.brennan.dungeontrain.editor.CarriageContentsEditor.shellFor(rolled), rolled);
-        }
         // Only a carriage that would actually carry these contents on the train stands around them:
-        // one whose allow-list has them enabled and that spawns at all. A member is allowed through
-        // its group's top parent — the allow-list is only ever consulted at the top-level pick.
+        // one of their size whose allow-list has them enabled and that spawns at all. A member is
+        // allowed through its group's top parent — the allow-list is only ever consulted at the
+        // top-level pick.
         String topId = ContentsShellPicker.topParentOf(contents.get().id());
+        games.brennan.dungeontrain.train.ContentsSize size = CarriageContentsPlacer.sizeOf(contents.get());
         CarriageVariant shell = ContentsShellPicker.pick(topId, shellSeed).orElse(null);
+        if (shell == null) {
+            // A corridor's furnishing — and any Half contents — stand in a portal corridor, which the
+            // picker never offers (it is placed by the portal lottery, not rolled): test them in the
+            // shell their plot uses.
+            CarriageVariant plotShell = games.brennan.dungeontrain.editor.CarriageContentsEditor.shellFor(contents.get());
+            boolean fits = CarriagePlacer.sizeOf(plotShell) == size;
+            if (fits && (ContentsShellPicker.isPortalPart(plotShell)
+                    || size != games.brennan.dungeontrain.train.ContentsSize.ROOM)) {
+                shell = plotShell;
+            }
+        }
         if (shell == null) return fail(source, "chat.dungeontrain.carriage_test.no_shell_allows", topId);
-        // A group parent rolls a member, as it would in a carriage; a member named outright is used.
-        CarriageContents rolled = CarriageContentsRegistry.resolveSubVariant(
-            contents.get(), seed ^ CarriageTestSession.TEST_INDEX, null);
-        return new Plan(shell, rolled);
+        // Exactly the template the author is testing — a group parent is shown as itself, never
+        // swapped for one of its members. A re-roll changes only what the seed drives inside it
+        // (block variants, flip), so the author sees their own template under a new roll.
+        return new Plan(shell, contents.get());
     }
 
     /**
