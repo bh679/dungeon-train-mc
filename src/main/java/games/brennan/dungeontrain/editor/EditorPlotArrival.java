@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.builder.BuilderSpawn;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
@@ -35,6 +36,9 @@ public record EditorPlotArrival(double x, double y, double z, float yaw, float p
 
     /** Minecraft yaw that looks along +X — toward the menu from the roof, into the build from its door. */
     static final float FACING_POSITIVE_X = -90f;
+
+    /** Blocks under the landing searched for ground; none within this and the player arrives flying. */
+    static final int FLY_CLEARANCE = 2;
 
     /** Where an inside landing aims for before the free-space search has its say. */
     public enum Inside {
@@ -110,8 +114,23 @@ public record EditorPlotArrival(double x, double y, double z, float yaw, float p
      */
     public static void land(ServerPlayer player, ServerLevel level, BlockPos origin, Vec3i footprint,
                             boolean onTop, Inside inside, @Nullable BlockPos doorBase) {
-        landing(origin, footprint, onTop, inside, doorBase, player.getYRot(), player.getXRot(),
-            p -> passable(level, p)).teleport(player, level);
+        EditorPlotArrival arrival = landing(origin, footprint, onTop, inside, doorBase,
+            player.getYRot(), player.getXRot(), p -> passable(level, p));
+        arrival.teleport(player, level);
+        // The editor world is void: a landing with no floor under it — a roof without a cage, a
+        // part or pillar plot's centre — would otherwise drop the player out of the world.
+        BlockPos feet = BlockPos.containing(arrival.x, arrival.y, arrival.z);
+        if (overOpenAir(feet, p -> !level.getBlockState(p).getCollisionShape(level, p).isEmpty())) {
+            BuilderSpawn.fly(player);
+        }
+    }
+
+    /** Whether nothing {@code solid} lies in the {@link #FLY_CLEARANCE} cells under {@code feet}. */
+    static boolean overOpenAir(BlockPos feet, Predicate<BlockPos> solid) {
+        for (int d = 1; d <= FLY_CLEARANCE; d++) {
+            if (solid.test(feet.below(d))) return false;
+        }
+        return true;
     }
 
     /**
