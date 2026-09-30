@@ -6,6 +6,7 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexSorting;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.neoforged.api.distmarker.Dist;
@@ -49,14 +50,33 @@ public final class BuildRenderCapture {
      */
     public static byte[] png(int relayId) {
         if (!RenderSystem.isOnRenderThread()) return null;
-        BuilderTileMesh mesh = RelayBuildPreviews.mesh(relayId);
-        if (mesh == null) return null;
+        BuilderTileMesh mesh = meshOf(relayId);
+        if (mesh == null) {
+            LOGGER.info("[DungeonTrain] Build render for relay build {}: nothing baked to draw.", relayId);
+            return null;
+        }
         try {
             return capture(Minecraft.getInstance(), mesh);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Build render for relay build {} failed: {}", relayId, t.toString());
             return null;
         }
+    }
+
+    /**
+     * The mesh to draw: the copy that came down the wire if the editor has baked one, otherwise
+     * the local template the My Builds grid draws the author's own builds from — an author's
+     * upload has a file here, and that grid never asks the relay for a picture of it.
+     */
+    private static BuilderTileMesh meshOf(int relayId) {
+        BuilderTileMesh relay = RelayBuildPreviews.mesh(relayId);
+        if (relay != null) return relay;
+        BuilderProfilePacket.Entry entry = BuilderProfileState.ownBuild(relayId);
+        if (entry == null || entry.buildName().isEmpty()) return null;
+        // The grid has usually baked this already; allow one bake so a fresh screen still answers.
+        BuilderTileMeshCache.beginFrame(1);
+        return BuilderTileMeshCache.meshFor(BuilderProfileScreen.photoKindOf(entry), entry.buildName(),
+                BuilderProfileScreen.partKindOf(entry), BuilderProfileScreen.trackKindOf(entry));
     }
 
     /** Draws the mesh into a fresh offscreen target and reads it back; restores GL state after. */
