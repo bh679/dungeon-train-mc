@@ -16,6 +16,7 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.MobSpawnSettings;
 import org.slf4j.Logger;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -41,9 +42,14 @@ import java.util.function.DoubleSupplier;
 public final class VanillaBiomeTwins {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final Map<Biome, Biome> TWINS = new IdentityHashMap<>();
-    private static final Map<Biome, MobSpawnSettings> SPAWNS = new IdentityHashMap<>();
-    private static volatile boolean any;
+    /**
+     * Copy-on-write snapshots: readers (every tinted block on every chunk-mesh thread, every snow/ice
+     * check on worldgen workers) take one volatile read and never lock; {@link #build} / {@link #clear}
+     * publish a fresh unmodifiable map under {@link #WRITE_LOCK}.
+     */
+    private static volatile Map<Biome, Biome> twins = Map.of();
+    private static volatile Map<Biome, MobSpawnSettings> spawns = Map.of();
+    private static final Object WRITE_LOCK = new Object();
     /** The client camera's world X, set by the client at init — {@code null} on a dedicated server. */
     private static volatile DoubleSupplier cameraX;
     /** Client-side "this world has the train" gate; the server reads {@link NetherBandContext} instead. */
@@ -53,11 +59,7 @@ public final class VanillaBiomeTwins {
 
     /** The vanilla twin to answer for {@code live} at world {@code x}, or {@code null} to let it answer itself. */
     public static Biome twinFor(Biome live, double x) {
-        if (!any) return null;
-        Biome twin;
-        synchronized (TWINS) {
-            twin = TWINS.get(live);
-        }
+        Biome twin = twins.get(live);
         if (twin == null) return null;
         return outsideWwoo(x) ? twin : null;
     }
@@ -71,9 +73,7 @@ public final class VanillaBiomeTwins {
     /** The mob spawns a twinned biome offers at world {@code x}, or {@code null} to keep the live ones. */
     public static MobSpawnSettings spawnsFor(Biome live, double x) {
         if (twinFor(live, x) == null) return null;
-        synchronized (SPAWNS) {
-            return SPAWNS.get(live);
-        }
+        return spawns.get(live);
     }
 
     /** The spawn list {@code live} answers with at world {@code x}: the twin's outside the WWOO stretch, else its own. */
@@ -82,7 +82,7 @@ public final class VanillaBiomeTwins {
         return twin != null ? twin : live.getMobSettings();
     }
 
-    /** True when the WWOO stretch is elsewhere: the twin answers. Pure apart from the cycle lookup. */
+    /** True when the WWOO stretch is elsewhere: the twin answers. Pure apart from the cycle lookup (memoised per thread by block X). */
     static boolean outsideWwoo(double x) {
         NetherBandContext ctx = NetherBandContext.current();
         WorldGenCycle cycle;
@@ -93,7 +93,7 @@ public final class VanillaBiomeTwins {
         } else {
             return true; // no train in this world: nothing is ever a WWOO stretch
         }
-        return SecondLapOverworld.lookAt(cycle, (int) Math.floor(x)) != SecondLapOverworld.Stretch.WWOO;
+        return WwooStretchMemo.outside(cycle, (int) Math.floor(x));
     }
 
     public static void setCameraX(DoubleSupplier supplier) {
@@ -105,45 +105,45 @@ public final class VanillaBiomeTwins {
     }
 
     public static int count() {
-        synchronized (TWINS) {
-            return TWINS.size();
-        }
+        return twins.size();
     }
 
     /** Add this side's twins to the table (server at start, client at login). */
     public static void build(RegistryAccess live, String side) {
         long t0 = System.nanoTime();
         try {
-            Map<Biome, Biome> twins = new IdentityHashMap<>();
-            Map<Biome, MobSpawnSettings> spawns = new IdentityHashMap<>();
-            collect(live, twins, spawns);
-            synchronized (TWINS) {
-                TWINS.putAll(twins);
+            Map<Biome, Biome> newTwins = new IdentityHashMap<>();
+            Map<Biome, MobSpawnSettings> newSpawns = new IdentityHashMap<>();
+            collect(live, newTwins, newSpawns);
+            synchronized (WRITE_LOCK) {
+                // Spawns first: a reader that sees a new twin must also find its spawns.
+                spawns = merged(spawns, newSpawns);
+                twins = merged(twins, newTwins);
             }
             if (LOGGER.isDebugEnabled()) {
                 Registry<Biome> reg = live.registryOrThrow(Registries.BIOME);
                 LOGGER.debug("[DungeonTrain] Vanilla biome twins ({}): {}", side,
-                        twins.keySet().stream().map(b -> String.valueOf(reg.getKey(b))).sorted().toList());
+                        newTwins.keySet().stream().map(b -> String.valueOf(reg.getKey(b))).sorted().toList());
             }
-            synchronized (SPAWNS) {
-                SPAWNS.putAll(spawns);
-            }
-            any = count() > 0;
             LOGGER.info("[DungeonTrain] Vanilla biome twins ({}): {} biomes differ from vanilla ({} ms)",
-                    side, twins.size(), (System.nanoTime() - t0) / 1_000_000L);
+                    side, newTwins.size(), (System.nanoTime() - t0) / 1_000_000L);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to build vanilla biome twins ({}); WWOO's biome look applies everywhere", side, t);
         }
     }
 
     public static void clear() {
-        synchronized (TWINS) {
-            TWINS.clear();
+        synchronized (WRITE_LOCK) {
+            twins = Map.of();
+            spawns = Map.of();
         }
-        synchronized (SPAWNS) {
-            SPAWNS.clear();
-        }
-        any = false;
+    }
+
+    /** A new unmodifiable identity map: {@code base} plus {@code added} — never mutates either. */
+    private static <V> Map<Biome, V> merged(Map<Biome, V> base, Map<Biome, V> added) {
+        Map<Biome, V> copy = new IdentityHashMap<>(base);
+        copy.putAll(added);
+        return Collections.unmodifiableMap(copy);
     }
 
     private static void collect(RegistryAccess live, Map<Biome, Biome> twins, Map<Biome, MobSpawnSettings> spawns) {
