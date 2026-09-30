@@ -104,8 +104,45 @@ public final class BlockVariantWireframeRenderer {
                 new AABB(x0, y0, z0, x1, y1, z1),
                 1.0f, 1.0f, 1.0f, 1.0f);
         }
+        drawGrowthColumns(ps, vc, origin);
         ps.popPose();
 
         buffer.endBatch(RenderType.lines());
+    }
+
+    /**
+     * Green boxes over the longest column each growing row of the menu's open cell could reach. The
+     * editor preview never grows blocks in the world — they would be captured into the template on
+     * save — so this outline is how an author sees the reach. It shows the max, unclipped: what the
+     * column actually stops at depends on the carriage it spawns in.
+     */
+    private static void drawGrowthColumns(PoseStack ps, VertexConsumer vc, BlockPos origin) {
+        BlockPos local = BlockVariantMenu.localPos();
+        if (!BlockVariantMenu.isActive() || local == null || !BlockVariantMenu.growthSupported()) return;
+        int up = 0;
+        int down = 0;
+        for (games.brennan.dungeontrain.net.BlockVariantSyncPacket.Entry e : BlockVariantMenu.entries()) {
+            games.brennan.dungeontrain.editor.VariantGrowth g =
+                games.brennan.dungeontrain.editor.VariantGrowth.fromInt(e.growth());
+            if (!g.on() || e.isMob() || e.isGroupRef()) continue;
+            net.minecraft.world.level.block.state.BlockState state = BlockVariantMenu.parseState(e.stateString());
+            if (state == null || !games.brennan.dungeontrain.editor.GrowthShapes.canGrow(state)) continue;
+            if (games.brennan.dungeontrain.editor.GrowthShapes.effectiveDir(state, g.dir())
+                    == games.brennan.dungeontrain.editor.VariantGrowth.Dir.UP) {
+                up = Math.max(up, g.max() - 1);
+            } else {
+                down = Math.max(down, g.max() - 1);
+            }
+        }
+        BlockPos cell = origin.offset(local);
+        if (up > 0) growthBox(ps, vc, cell.above(), cell.above(up));
+        if (down > 0) growthBox(ps, vc, cell.below(down), cell.below());
+    }
+
+    private static void growthBox(PoseStack ps, VertexConsumer vc, BlockPos low, BlockPos high) {
+        LevelRenderer.renderLineBox(ps, vc,
+            new AABB(low.getX() + 0.05, low.getY() + EXPAND, low.getZ() + 0.05,
+                high.getX() + 0.95, high.getY() + 1.0 - EXPAND, high.getZ() + 0.95),
+            0.35f, 1.0f, 0.45f, 1.0f);
     }
 }
