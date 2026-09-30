@@ -21398,8 +21398,25 @@
       "released_at": null
     },
     {
-      "id": "discord-build-submit-announcements",
+      "id": "memoise-worldgen-lookups",
       "version": "0.1065.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Faster world start-up",
+      "summary": "Worlds now finish loading sooner.",
+      "highlights": [],
+      "pr": 1706,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "discord-build-submit-announcements",
+      "version": "0.1066.0",
       "type": "feat",
       "tags": [
         "feature",
