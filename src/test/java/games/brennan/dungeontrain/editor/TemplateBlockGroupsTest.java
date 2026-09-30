@@ -75,12 +75,35 @@ class TemplateBlockGroupsTest {
         Map<Member, String> live = template();
         List<Group<String>> g = TemplateBlockGroups.build(live, Comparator.naturalOrder());
         Map<Member, String> after = new LinkedHashMap<>(live);
-        after.put(at(3), "stone");        // the glass became stone
-        after.remove(at(4));              // a plank broken
+        after.put(at(0), "planks");       // one of three stones became planks
+        after.remove(at(3));              // the glass broken
         after.put(at(9), "lantern");      // something new
         List<Group<String>> synced = TemplateBlockGroups.reconcile(g, after);
         assertEquals(List.of("stone", "planks", "lantern"), blocks(synced));
-        assertEquals(List.of(4, 1, 1), counts(synced));
+        assertEquals(List.of(2, 3, 1), counts(synced));
+    }
+
+    @Test
+    @DisplayName("Undoing and redoing a re-skin keeps every cell where it was")
+    void undoRedoKeepsOrder() {
+        Map<Member, String> live = template();
+        List<Group<String>> g = TemplateBlockGroups.build(live, Comparator.naturalOrder());
+        // Re-skin the stone cell to planks.
+        g = TemplateBlockGroups.reskin(g, 0, "planks");
+        Map<Member, String> reskinned = new LinkedHashMap<>(live);
+        reskinned.replaceAll((m, b) -> b.equals("stone") ? "planks" : b);
+        g = TemplateBlockGroups.reconcile(g, reskinned);
+        assertEquals(List.of("planks", "planks", "glass"), blocks(g));
+
+        // Undo: the world is stone again — the first cell turns back, in place.
+        g = TemplateBlockGroups.reconcile(g, live);
+        assertEquals(List.of("stone", "planks", "glass"), blocks(g));
+        assertEquals(List.of(3, 2, 1), counts(g));
+
+        // Redo: planks again, still two cells, still in order.
+        g = TemplateBlockGroups.reconcile(g, reskinned);
+        assertEquals(List.of("planks", "planks", "glass"), blocks(g));
+        assertEquals(List.of(3, 2, 1), counts(g));
     }
 
     @Test

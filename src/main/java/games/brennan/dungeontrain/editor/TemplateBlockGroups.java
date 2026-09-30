@@ -75,8 +75,10 @@ public final class TemplateBlockGroups {
 
     /**
      * Bring {@code groups} up to date with {@code live} after edits made some other way — by hand,
-     * an undo, another menu. A use that is still its cell's block stays put. One that changed
-     * block, or is new, joins the first cell already showing its block, or a new cell at the end.
+     * an undo, another menu. A use that is still its cell's block stays put. A cell whose every
+     * use turned into one same block — undoing or redoing a re-skin — is relabelled where it
+     * stands. Any other use that changed block, or is new, joins the first cell already showing
+     * its block, or a new cell at the end.
      * Uses that are gone leave; a cell left with none goes. Cell order is otherwise kept, so the
      * page does not reshuffle under the pointer.
      */
@@ -85,11 +87,22 @@ public final class TemplateBlockGroups {
         List<List<Member>> members = new ArrayList<>(groups.size());
         Set<Member> placed = new HashSet<>();
         for (Group<B> g : groups) {
+            B block = g.block();
             List<Member> kept = new ArrayList<>(g.count());
             for (Member m : g.members()) {
-                if (g.block().equals(live.get(m)) && placed.add(m)) kept.add(m);
+                if (block.equals(live.get(m)) && placed.add(m)) kept.add(m);
             }
-            blocks.add(g.block());
+            B wholeCell = kept.isEmpty() ? sharedBlock(g.members(), live) : null;
+            if (wholeCell != null) {
+                // Every use of the cell turned into one block at once — an undo or redo of a
+                // re-skin, or another bulk swap. It is still the same cell: relabel it in place,
+                // so the page keeps its order and the cell stays apart until a save.
+                block = wholeCell;
+                for (Member m : g.members()) {
+                    if (live.containsKey(m) && placed.add(m)) kept.add(m);
+                }
+            }
+            blocks.add(block);
             members.add(kept);
         }
         live.forEach((m, b) -> {
@@ -108,6 +121,18 @@ public final class TemplateBlockGroups {
             if (!members.get(i).isEmpty()) out.add(new Group<>(blocks.get(i), members.get(i)));
         }
         return List.copyOf(out);
+    }
+
+    /** The one block every still-present member now is, or null when they differ or none remain. */
+    private static <B> B sharedBlock(List<Member> cell, Map<Member, B> live) {
+        B shared = null;
+        for (Member m : cell) {
+            B now = live.get(m);
+            if (now == null) continue;
+            if (shared == null) shared = now;
+            else if (!shared.equals(now)) return null;
+        }
+        return shared;
     }
 
     /** The first cell of {@code block} still holding anything, or failing that the first of it at all; -1 for none. */
