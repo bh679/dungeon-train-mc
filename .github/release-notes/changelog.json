@@ -21466,6 +21466,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "tall-dimensional-carriage-train-resumes",
+      "version": "0.1069.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "The train gets going again after a visit to a tall dimensional carriage",
+      "summary": "Stepping back onto the train after exploring one of the taller dimensional carriages now sets it rolling again straight away.",
+      "highlights": [],
+      "pr": 1716,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
