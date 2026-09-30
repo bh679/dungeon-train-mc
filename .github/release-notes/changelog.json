@@ -21098,6 +21098,93 @@
       "released": true,
       "released_in": "v0.1047.0",
       "released_at": "2026-09-29T21:08:02Z"
+    },
+    {
+      "id": "contents-templates-opt-in",
+      "version": "0.1048.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Train Editor: new rooms start switched off",
+      "summary": "In the Train Editor, a newly made carriage room now starts switched off in every carriage's Contents list, and only appears once you switch it on.",
+      "highlights": [],
+      "pr": 1688,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tunnel-template-groups",
+      "version": "0.1049.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "world"
+      ],
+      "title": "Tunnels keep one look",
+      "summary": "Each tunnel now keeps one look from entrance to exit, and there are new ones to ride through \u2014 some built by Pumpkin_P_Patch.",
+      "highlights": [],
+      "pr": 1690,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-teleport-fly-over-air",
+      "version": "0.1050.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Editor arrivals take flight",
+      "summary": "Jumping to a template in the editor no longer leaves you falling when there's nothing to stand on.",
+      "highlights": [],
+      "pr": 1691,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tunnel-group-spawn-gates",
+      "version": "0.1051.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "world"
+      ],
+      "title": "Tunnel styles have their places",
+      "summary": "Each tunnel style now turns up only on the stretches of the journey it belongs to.",
+      "highlights": [],
+      "pr": 1692,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-modes-void-bedrock",
+      "version": "0.1052.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Two dimensional carriage styles go by simpler names in the editor",
+      "summary": "Two dimensional carriage styles now go by simpler names in the editor, and anything built under the old names carries on as before.",
+      "highlights": [],
+      "pr": 1693,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

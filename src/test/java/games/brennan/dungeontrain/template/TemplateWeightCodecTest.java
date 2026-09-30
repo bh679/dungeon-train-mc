@@ -178,10 +178,10 @@ final class TemplateWeightCodecTest {
     @DisplayName("round-trip preserves the mode alongside gate and stage link")
     void roundTripMode() {
         TemplateMeta original = new TemplateMeta(
-            6, new TemplateGate(1, 12, EnumSet.of(TrainPhase.VOID)), "endgame", "bedrock_lock");
+            6, new TemplateGate(1, 12, EnumSet.of(TrainPhase.VOID)), "endgame", "bedrock");
         JsonObject json = TemplateWeightCodec.toJson(Map.of("x", original));
         TemplateMeta back = TemplateWeightCodec.parseEntry(json.get("x"), CLAMP);
-        assertEquals("bedrock_lock", back.mode());
+        assertEquals("bedrock", back.mode());
         assertEquals("endgame", back.stageId());
         assertEquals(1, back.gate().minLevel());
         assertEquals(12, back.gate().maxLevel());
@@ -240,12 +240,12 @@ final class TemplateWeightCodecTest {
     @DisplayName("round-trip preserves the name alongside gate, stage link and mode")
     void roundTripName() {
         TemplateMeta original = new TemplateMeta(
-            6, new TemplateGate(1, 12, EnumSet.of(TrainPhase.VOID)), "endgame", "bedrock_lock")
+            6, new TemplateGate(1, 12, EnumSet.of(TrainPhase.VOID)), "endgame", "bedrock")
             .withName("Endgame Library");
         JsonObject json = TemplateWeightCodec.toJson(Map.of("x", original));
         TemplateMeta back = TemplateWeightCodec.parseEntry(json.get("x"), CLAMP);
         assertEquals("Endgame Library", back.name());
-        assertEquals("bedrock_lock", back.mode());
+        assertEquals("bedrock", back.mode());
         assertEquals("endgame", back.stageId());
         assertEquals(original.gate(), back.gate());
     }
@@ -363,5 +363,25 @@ final class TemplateWeightCodecTest {
             .get("builder").getAsJsonObject();
         assertFalse(b.has("uuid"));
         assertEquals("Old Friend", b.get("name").getAsString());
+    }
+
+    @Test
+    @DisplayName("optIn round-trips as \"optIn\": true; a weight-only entry without it stays a bare int")
+    void optIn_roundTrip() {
+        TemplateMeta optIn = TemplateMeta.of(3).withOptIn(true);
+        JsonObject json = TemplateWeightCodec.toJson(Map.of("new_room", optIn, "old_room", TemplateMeta.of(3)));
+        assertTrue(json.get("new_room").getAsJsonObject().get(TemplateWeightCodec.K_OPT_IN).getAsBoolean());
+        assertTrue(json.get("old_room").isJsonPrimitive(), "no opt-in → legacy bare int");
+        assertTrue(TemplateWeightCodec.parseEntry(json.get("new_room"), CLAMP).optIn());
+        assertFalse(TemplateWeightCodec.parseEntry(json.get("old_room"), CLAMP).optIn());
+    }
+
+    @Test
+    @DisplayName("Other edits keep the opt-in mark — a weight or label change must not re-enable a template")
+    void optIn_survivesMerges() {
+        TemplateMeta m = TemplateMeta.of(1).withOptIn(true);
+        assertTrue(TemplateMeta.mergeWeight(m, 5).optIn());
+        assertTrue(TemplateMeta.mergeName(m, "Room", 1).optIn());
+        assertTrue(TemplateMeta.mergeGate(m, TemplateGate.DEFAULT, 1).optIn());
     }
 }

@@ -136,7 +136,7 @@ final class TemplateSidecarsTest {
     void doorPositionSurvivesTheWeightsEntry() {
         // The tag PortalRoomSettings.toTag() writes for a room whose two doorways are authored apart
         // — the long form, and the only shape that names the exit door at all.
-        String moved = "bedrock_lock/exact/off/off/off/none/sealed/0/0/1/0";
+        String moved = "bedrock/exact/off/off/off/none/sealed/0/0/1/0";
         TemplateMeta authored = new TemplateMeta(3, TemplateGate.DEFAULT, "", moved);
 
         TemplateMeta back = TemplateSidecars.decodeWeights(

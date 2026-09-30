@@ -112,7 +112,7 @@ public final class EditorPlotLabelsRenderer {
         ROOM_SKY_CYCLE,
         /** The fog row — Auto (the walls mode's answer), On or Off. */
         ROOM_FOG_CYCLE,
-        /** The drift row — whether a Bedrock Lock room is shared through the relay. */
+        /** The drift row — whether a Bedrock room is shared through the relay. */
         ROOM_DRIFT_CYCLE,
         /** The author-lock row — whether the room stocks its shelves from one person. */
         ROOM_BOOKS_CYCLE,
@@ -235,7 +235,7 @@ public final class EditorPlotLabelsRenderer {
      * Whether the Lock row shows: only when the walls seal, since a shell is the one thing the
      * block describes.
      *
-     * <p>Both sealing modes — Bedrock Lock and Chunk Dimension — because both write the same skin;
+     * <p>Both sealing modes — Bedrock and Chunk Dimension — because both write the same skin;
      * see {@code PortalRoomSettings.lockApplies}. Hidden rather than dimmed elsewhere, the same way
      * the Copies row is absent under walls that make no copies.</p>
      */
@@ -465,7 +465,7 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /**
-     * Whether the Drift row shows: a portal room whose walls are Bedrock Lock — the one mode a single
+     * Whether the Drift row shows: a portal room whose walls are Bedrock — the one mode a single
      * blob can describe, and so the only one the setting means anything under. Hidden elsewhere
      * rather than shown greyed, the way the Door Wall row is under a mode with no wall to carry.
      */

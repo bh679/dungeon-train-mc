@@ -40,7 +40,7 @@ public final class PortalTwinLanes {
      * How far above the build floor the lowest lane's floor sits.
      *
      * <p><b>Two, so the lowest lane gets an underside like every other lane.</b> A structure's skin
-     * writes one row <i>under</i> its floor — the Bedrock Lock underside — and
+     * writes one row <i>under</i> its floor — the Bedrock underside — and
      * {@code PortalCarriageBuilder.lowestWritableY} clamps that row to {@code worldMinY + 1}, since
      * nothing can be placed lower. At a margin of one those two are the same row, the clamp swallows
      * the underside, and lane 0 alone ends up with a floor you can break through into open basement

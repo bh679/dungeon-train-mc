@@ -1,5 +1,13 @@
 package games.brennan.dungeontrain.template;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.regex.Pattern;
+
 /**
  * The full per-id metadata a weight store holds for one template: its pick {@code weight}, its
  * inline spawn {@link TemplateGate gate} (min/max Diff-Level band + worldgen phase set), an
@@ -35,12 +43,25 @@ package games.brennan.dungeontrain.template;
  * sheet prints, the Credits page thanks, and the relay counts on the builder leaderboard.
  * {@code null} means nobody is credited. Nothing at spawn time reads it.</p>
  *
+ * <p><b>{@link #groups()} are the template groups this entry belongs to</b> — any number of
+ * group ids. Read today only by the tunnel kinds: a tunnel rolls one group and draws every section
+ * and entrance between its two ends from that group's members (see
+ * {@code games.brennan.dungeontrain.tunnel.TunnelGroupRoll}). Empty means ungrouped.
+ * {@link #groupWeights()} holds the entry's weight inside a group where it was set explicitly —
+ * a template can weigh differently in each group; a group with no entry uses {@link #weight()}.</p>
+ *
+ * <p><b>{@link #optIn()} is the carriage-contents opt-in mark</b>, read today only by the contents
+ * allow-list: a contents template carrying it is <i>off</i> in every carriage and portal room until one
+ * of their Contents lists switches it on explicitly. New top-level contents get it on creation; every
+ * template that existed before the mark did not, so {@code false} keeps the old opt-out behaviour.</p>
+ *
  * <p>An id with the {@link TemplateGate#DEFAULT default} gate, no stage link, no mode, no flip block,
- * no label <b>and</b> no builder serialises back to the legacy bare-int form (see
+ * no label, no groups, no opt-in mark <b>and</b> no builder serialises back to the legacy bare-int form (see
  * {@link TemplateWeightCodec}), so existing {@code weights.json} files are unaffected.</p>
  */
 public record TemplateMeta(int weight, TemplateGate gate, String stageId, String mode, FlipOptions flip,
-                           String name, BuilderCredit builder) {
+                           String name, BuilderCredit builder, boolean optIn, List<String> groups,
+                           Map<String, Integer> groupWeights) {
 
     /** Longest label the editor accepts — matches the wire field it travels in. */
     public static final int NAME_MAX = 32;
@@ -58,6 +79,27 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
         name = normaliseName(name);
         // A credit naming nobody is no credit, so "cleared" has one spelling on disk and in memory.
         if (builder != null && !builder.known()) builder = null;
+        // One spelling for "no groups", and a stable sorted, de-duplicated order for diffs.
+        groups = normaliseGroups(groups);
+        groupWeights = normaliseGroupWeights(groupWeights, groups);
+    }
+
+    /** Back-compat 8-arg form — no per-group weights (every member weighs its template weight). */
+    public TemplateMeta(int weight, TemplateGate gate, String stageId, String mode, FlipOptions flip,
+                        String name, BuilderCredit builder, List<String> groups) {
+        this(weight, gate, stageId, mode, flip, name, builder, false, groups, Map.of());
+    }
+
+    /** Back-compat form with the opt-in mark and no template groups. */
+    public TemplateMeta(int weight, TemplateGate gate, String stageId, String mode, FlipOptions flip,
+                        String name, BuilderCredit builder, boolean optIn) {
+        this(weight, gate, stageId, mode, flip, name, builder, optIn, List.of(), Map.of());
+    }
+
+    /** Back-compat 7-arg form — no template groups. */
+    public TemplateMeta(int weight, TemplateGate gate, String stageId, String mode, FlipOptions flip,
+                        String name, BuilderCredit builder) {
+        this(weight, gate, stageId, mode, flip, name, builder, false, List.of(), Map.of());
     }
 
     /** Back-compat 6-arg form — no builder credit. */
@@ -114,17 +156,17 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
 
     /** Copy with {@code weight} replaced, keeping the inline gate, stage link, mode, flip and label. */
     public TemplateMeta withWeight(int newWeight) {
-        return new TemplateMeta(newWeight, gate, stageId, mode, flip, name, builder);
+        return new TemplateMeta(newWeight, gate, stageId, mode, flip, name, builder, optIn, groups, groupWeights);
     }
 
     /** Copy with the inline {@code gate} replaced, keeping the weight, stage link, mode, flip and label. */
     public TemplateMeta withGate(TemplateGate newGate) {
-        return new TemplateMeta(weight, newGate, stageId, mode, flip, name, builder);
+        return new TemplateMeta(weight, newGate, stageId, mode, flip, name, builder, optIn, groups, groupWeights);
     }
 
     /** Copy with the {@code flip} block replaced ({@code null} / default = no block), keeping everything else. */
     public TemplateMeta withFlip(FlipOptions newFlip) {
-        return new TemplateMeta(weight, gate, stageId, mode, newFlip, name, builder);
+        return new TemplateMeta(weight, gate, stageId, mode, newFlip, name, builder, optIn, groups, groupWeights);
     }
 
     /**
@@ -133,17 +175,17 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
      * gate reflects what the row was showing.
      */
     public TemplateMeta withStage(String newStageId) {
-        return new TemplateMeta(weight, gate, newStageId, mode, flip, name, builder);
+        return new TemplateMeta(weight, gate, newStageId, mode, flip, name, builder, optIn, groups, groupWeights);
     }
 
     /** Copy with the {@code mode} tag replaced (null = this kind's default), keeping everything else. */
     public TemplateMeta withMode(String newMode) {
-        return new TemplateMeta(weight, gate, stageId, newMode, flip, name, builder);
+        return new TemplateMeta(weight, gate, stageId, newMode, flip, name, builder, optIn, groups, groupWeights);
     }
 
     /** Copy with the display label replaced ({@code null} / blank = show the id), keeping everything else. */
     public TemplateMeta withName(String newName) {
-        return new TemplateMeta(weight, gate, stageId, mode, flip, newName, builder);
+        return new TemplateMeta(weight, gate, stageId, mode, flip, newName, builder, optIn, groups, groupWeights);
     }
 
     /**
@@ -175,7 +217,7 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
 
     /** Copy with the builder credit replaced ({@code null} = nobody credited), keeping everything else. */
     public TemplateMeta withBuilder(BuilderCredit newBuilder) {
-        return new TemplateMeta(weight, gate, stageId, mode, flip, name, newBuilder);
+        return new TemplateMeta(weight, gate, stageId, mode, flip, name, newBuilder, optIn, groups, groupWeights);
     }
 
     /**
@@ -188,6 +230,104 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
         return prev == null
             ? new TemplateMeta(defaultWeight, TemplateGate.DEFAULT, null, null, null, null, builder)
             : prev.withBuilder(builder);
+    }
+
+    /** True when this entry belongs to at least one template group. */
+    public boolean hasGroups() {
+        return !groups.isEmpty();
+    }
+
+    /** True when this entry belongs to the group {@code groupId}. */
+    public boolean inGroup(String groupId) {
+        return groupId != null && groups.contains(groupId);
+    }
+
+    /** Copy with the group memberships replaced ({@code null} / empty = no groups), keeping everything else. */
+    public TemplateMeta withGroups(List<String> newGroups) {
+        // The record drops weights for groups the entry no longer belongs to.
+        return new TemplateMeta(weight, gate, stageId, mode, flip, name, builder, optIn, newGroups, groupWeights);
+    }
+
+    /**
+     * The entry a weight store should store when a group-membership edit lands on {@code prev}
+     * ({@code null} = no existing entry, created unlinked at {@code defaultWeight} with the default
+     * gate). Preserves every spawn rule, the label and the credit.
+     */
+    public static TemplateMeta mergeGroups(TemplateMeta prev, List<String> groups, int defaultWeight) {
+        return prev == null
+            ? new TemplateMeta(defaultWeight, TemplateGate.DEFAULT, null, null, null, null, null, false, groups, Map.of())
+            : prev.withGroups(groups);
+    }
+
+    /**
+     * This entry's weight inside {@code groupId}: its explicit per-group weight when one is set, else
+     * its template {@link #weight()}. Meaningless for a group it does not belong to.
+     */
+    public int weightInGroup(String groupId) {
+        Integer w = groupWeights.get(groupId);
+        return w == null ? weight : w;
+    }
+
+    /**
+     * Copy with the weight inside {@code groupId} set ({@code null} = back to the template weight).
+     * Ignored for a group the entry is not in.
+     */
+    public TemplateMeta withGroupWeight(String groupId, Integer w) {
+        Map<String, Integer> next = new TreeMap<>(groupWeights);
+        if (w == null) next.remove(groupId); else next.put(groupId, w);
+        return new TemplateMeta(weight, gate, stageId, mode, flip, name, builder, optIn, groups, next);
+    }
+
+    /** Copy with every per-group weight replaced by {@code weights} (limited to this entry's groups). */
+    public TemplateMeta withGroupWeights(Map<String, Integer> weights) {
+        return new TemplateMeta(weight, gate, stageId, mode, flip, name, builder, optIn, groups, weights);
+    }
+
+    /** {@code raw} limited to {@code groups}, sorted, immutable; null values dropped. Never null. */
+    static Map<String, Integer> normaliseGroupWeights(Map<String, Integer> raw, List<String> groups) {
+        if (raw == null || raw.isEmpty() || groups.isEmpty()) return Map.of();
+        TreeMap<String, Integer> out = new TreeMap<>();
+        for (Map.Entry<String, Integer> e : raw.entrySet()) {
+            if (e.getValue() != null && groups.contains(e.getKey())) out.put(e.getKey(), e.getValue());
+        }
+        return out.isEmpty() ? Map.of() : java.util.Collections.unmodifiableMap(out);
+    }
+
+    /** What a group id may look like — the same shape as a template name. */
+    public static final Pattern GROUP_ID = Pattern.compile("^[a-z0-9_]{1,32}$");
+
+    /** {@code raw} lowercased and trimmed when it is a valid group id, else {@code null}. */
+    public static String normaliseGroupId(String raw) {
+        if (raw == null) return null;
+        String s = raw.trim().toLowerCase(Locale.ROOT);
+        return GROUP_ID.matcher(s).matches() ? s : null;
+    }
+
+    /** {@code raw} as stored groups: valid ids only, de-duplicated, sorted, immutable. Never null. */
+    public static List<String> normaliseGroups(List<String> raw) {
+        if (raw == null || raw.isEmpty()) return List.of();
+        TreeSet<String> out = new TreeSet<>();
+        for (String g : raw) {
+            String id = normaliseGroupId(g);
+            if (id != null) out.add(id);
+        }
+        return List.copyOf(new ArrayList<>(out));
+    }
+
+    /** Copy with the opt-in mark replaced, keeping everything else. */
+    public TemplateMeta withOptIn(boolean newOptIn) {
+        return new TemplateMeta(weight, gate, stageId, mode, flip, name, builder, newOptIn, groups, groupWeights);
+    }
+
+    /**
+     * The entry a weight store should store when an opt-in edit lands on {@code prev} ({@code null} =
+     * no existing entry, created unlinked at {@code defaultWeight} with the default gate). Preserves
+     * every other field — marking a template opt-in changes where it may spawn, not how often.
+     */
+    public static TemplateMeta mergeOptIn(TemplateMeta prev, boolean optIn, int defaultWeight) {
+        return prev == null
+            ? new TemplateMeta(defaultWeight, TemplateGate.DEFAULT, null, null, null, null, null, optIn)
+            : prev.withOptIn(optIn);
     }
 
     /** True when this entry is linked live to a named Stage (vs. an inline Custom gate). */

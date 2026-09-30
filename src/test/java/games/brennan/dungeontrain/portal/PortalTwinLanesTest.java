@@ -124,7 +124,7 @@ final class PortalTwinLanesTest {
     @Test
     @DisplayName("every lane has a row under its floor to skin, lane 0 included")
     void everyLaneHasAnUnderside() {
-        // PortalCarriageBuilder writes the Bedrock Lock underside one row below the structure floor,
+        // PortalCarriageBuilder writes the Bedrock underside one row below the structure floor,
         // clamped to what the world can hold. A lane whose floor sits ON that clamp loses the row —
         // and with it the only thing between a room's floor and the open basement below.
         for (int lane = 0; lane < PortalTwinLanes.MAX_LANES; lane++) {

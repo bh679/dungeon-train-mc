@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The bedrock shell a Bedrock Lock room wraps its two corridors in.
+ * The bedrock shell a Bedrock room wraps its two corridors in.
  *
  * <p>Three properties, and each of them is a bug that has a face. A slab reaching into the corridor's
  * own box would overwrite the geometry a twin shares with its carriage and tear the crossing open. A

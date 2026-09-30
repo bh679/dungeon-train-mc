@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
+import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageGroup;
 import games.brennan.dungeontrain.train.CarriageGroupRegistry;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -470,6 +471,9 @@ public final class BuilderRelayInstall {
                 LOGGER.warn("[DungeonTrain] Builder relay download: '{}' is a reserved contents name", id);
                 return Outcome.FAILED;
             }
+            // Opt-in: a downloaded room starts off in every carriage until an editor switches it on.
+            // The weights sidecar applied after this merges weight + gate only, so the mark survives.
+            CarriageContentsWeights.markNewOptIn(id);
         }
         LOGGER.info("[DungeonTrain] Builder relay download: installed contents '{}'", id);
         return Outcome.INSTALLED;
