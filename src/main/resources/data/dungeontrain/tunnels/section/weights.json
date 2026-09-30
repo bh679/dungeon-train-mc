@@ -17,7 +17,6 @@
     ],
     "name": "Copper",
     "groups": [
-      "clay",
       "copper"
     ]
   },
@@ -47,7 +46,7 @@
       "LOST_CITY"
     ],
     "groups": [
-      "a"
+      "stone"
     ]
   },
   "mud": {
@@ -92,8 +91,8 @@
       "name": "Pumpkin_P_Patch"
     },
     "groups": [
-      "a",
-      "mossy"
+      "mossy",
+      "stone"
     ]
   }
 }

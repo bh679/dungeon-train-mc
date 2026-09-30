@@ -133,29 +133,29 @@ final class TunnelGroupRollTest {
     }
 
     @Test
-    @DisplayName("the shipped a/b split still fades Overworld tunnels into the Nether look")
+    @DisplayName("the shipped stone/blackstone split still fades Overworld tunnels into the Nether look")
     void netherFadeSurvivesGroups() {
-        // The bundled setup: default in 'a' (never the Nether), the dark pair in 'b' (Nether only).
+        // The bundled setup: default in 'stone' (never the Nether), the dark pair in 'blackstone' (Nether only).
         TemplateGate notNether = new TemplateGate(0, TemplateGate.ALL,
             EnumSet.complementOf(EnumSet.of(TrainPhase.NETHER)));
         for (TrackKind kind : List.of(SECTION, PORTAL)) {
             TrackVariantWeights.injectForTesting(kind, TrackKind.DEFAULT_NAME,
-                new TemplateMeta(1, notNether).withGroups(List.of("a")));
+                new TemplateMeta(1, notNether).withGroups(List.of("stone")));
         }
         TrackVariantRegistry.register(SECTION, "darktunnel");
         TrackVariantRegistry.register(PORTAL, "darkportal");
-        TrackVariantWeights.injectForTesting(SECTION, "darktunnel", new TemplateMeta(1, NETHER_ONLY).withGroups(List.of("b")));
-        TrackVariantWeights.injectForTesting(PORTAL, "darkportal", new TemplateMeta(1, NETHER_ONLY).withGroups(List.of("b")));
+        TrackVariantWeights.injectForTesting(SECTION, "darktunnel", new TemplateMeta(1, NETHER_ONLY).withGroups(List.of("blackstone")));
+        TrackVariantWeights.injectForTesting(PORTAL, "darkportal", new TemplateMeta(1, NETHER_ONLY).withGroups(List.of("blackstone")));
         GateContext nether = new GateContext(1, TrainPhase.NETHER);
 
-        // An Overworld tunnel can only roll 'a'; a Nether one only 'b'.
-        assertEquals(Set.of(TemplateGroup.of("a")), rolledOver(100, OVERWORLD));
-        assertEquals(Set.of(TemplateGroup.of("b")), rolledOver(100, nether));
-        // In the crossfade an 'a' tunnel's Nether overlay has no 'a' member allowed in the Nether,
+        // An Overworld tunnel can only roll 'stone'; a Nether one only 'blackstone'.
+        assertEquals(Set.of(TemplateGroup.of("stone")), rolledOver(100, OVERWORLD));
+        assertEquals(Set.of(TemplateGroup.of("blackstone")), rolledOver(100, nether));
+        // In the crossfade a 'stone' tunnel's Nether overlay has no 'stone' member allowed in the Nether,
         // so it falls back to the dark template — the Overworld → Nether fade still happens.
-        assertEquals(Set.of("darktunnel"), pickedOver(SECTION, TemplateGroup.of("a"), nether));
-        assertEquals(Set.of("darkportal"), pickedOver(PORTAL, TemplateGroup.of("a"), nether));
-        assertEquals(Set.of(TrackKind.DEFAULT_NAME), pickedOver(SECTION, TemplateGroup.of("a"), OVERWORLD));
+        assertEquals(Set.of("darktunnel"), pickedOver(SECTION, TemplateGroup.of("stone"), nether));
+        assertEquals(Set.of("darkportal"), pickedOver(PORTAL, TemplateGroup.of("stone"), nether));
+        assertEquals(Set.of(TrackKind.DEFAULT_NAME), pickedOver(SECTION, TemplateGroup.of("stone"), OVERWORLD));
     }
 
     @Test

@@ -20,7 +20,7 @@
       "name": "Pumpkin_P_Patch"
     },
     "groups": [
-      "clay"
+      "mud"
     ]
   },
   "copper": {
@@ -50,7 +50,7 @@
       "NETHER"
     ],
     "groups": [
-      "b"
+      "blackstone"
     ]
   },
   "default": {
@@ -70,7 +70,7 @@
       "LOST_CITY"
     ],
     "groups": [
-      "a"
+      "stone"
     ]
   },
   "fancytunnel": {
@@ -94,7 +94,7 @@
       "name": "Pumpkin_P_Patch"
     },
     "groups": [
-      "a"
+      "stone"
     ]
   }
 }
