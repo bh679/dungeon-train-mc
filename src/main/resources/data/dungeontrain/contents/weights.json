@@ -12,6 +12,7 @@
     }
   },
   "default": 1,
+  "default_full": 1,
   "dirt": 2,
   "dirt2": 2,
   "enchant": 2,

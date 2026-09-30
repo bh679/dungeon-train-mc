@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen.density;
 
+import games.brennan.dungeontrain.worldgen.CycleLayout;
 import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes;
@@ -59,8 +60,17 @@ public record LiveColumnProviders(NetherBandContext ctx) implements ColumnBiomeP
     /** Per-biome fog/ambient/music + the Nether decoration features' own biome filter pass. */
     @Override
     public Holder<Biome> netherCore(int blockX, int blockZ) {
-        WorldGenCycle cycle = ctx.cycle();
-        return ctx.netherCoreBiomes().biomeAt(blockX, blockZ, cycle.netherLookAt(blockX));
+        NetherCoreBiomes biomes = ctx.netherCoreBiomes();
+        return biomes.biomeAt(blockX, blockZ, netherCoreLook(ctx.cycle(), biomes.seed(), blockX, blockZ));
+    }
+
+    /**
+     * The look a Nether-core column wears — the seed-dithered {@link WorldGenCycle#netherLookAt(int, int, long)}
+     * the per-quart path, surface skin, decoration and structures all ask, so inside a split slot's mix the
+     * memoised label lands on the same side as the column's floor. Never the hard-cut {@code netherLookAt(x)}.
+     */
+    static CycleLayout.Style netherCoreLook(WorldGenCycle cycle, long seed, int blockX, int blockZ) {
+        return cycle.netherLookAt(blockX, blockZ, seed);
     }
 
     /** The real End's biome, swept across successive End-band passes — see {@link EndCoreBiomes}. */

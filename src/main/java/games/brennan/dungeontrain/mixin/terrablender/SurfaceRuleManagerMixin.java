@@ -10,7 +10,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import terrablender.api.SurfaceRuleManager;
 import terrablender.worldgen.surface.NamespacedSurfaceRuleSource;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -34,8 +33,7 @@ public abstract class SurfaceRuleManagerMixin {
                                                                SurfaceRules.RuleSource fallback,
                                                                CallbackInfoReturnable<SurfaceRules.RuleSource> cir) {
         if (DtSurfaceRules.ownerOf(fallback).isEmpty()) return;
-        Map<String, SurfaceRules.RuleSource> namespaced = new HashMap<>(surfaceRules.get(category));
-        namespaced.remove("minecraft");
-        cir.setReturnValue(new NamespacedSurfaceRuleSource(fallback, Map.copyOf(namespaced)));
+        Map<String, SurfaceRules.RuleSource> namespaced = DtSurfaceRules.nonVanillaRules(surfaceRules.get(category));
+        cir.setReturnValue(namespaced.isEmpty() ? fallback : new NamespacedSurfaceRuleSource(fallback, namespaced));
     }
 }

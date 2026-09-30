@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.worldgen;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
+import games.brennan.dungeontrain.worldgen.feature.OverworldDecorationGuard;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
@@ -159,8 +160,13 @@ public final class WwooDecorationPass {
                 random.setFeatureSeed(decorationSeed, extra.seedIndex(), step);
                 try {
                     level.setCurrentlyGenerating(() -> "dungeontrain vanilla " + extra.key().location());
-                    if (extra.feature().placeWithBiomeCheck(level, generator, random, origin)) {
-                        VANILLA_PLACED.incrementAndGet();
+                    OverworldDecorationGuard.enter();   // overworld decoration: kept out of the Nether core
+                    try {
+                        if (extra.feature().placeWithBiomeCheck(level, generator, random, origin)) {
+                            VANILLA_PLACED.incrementAndGet();
+                        }
+                    } finally {
+                        OverworldDecorationGuard.exit();
                     }
                 } catch (Exception e) {
                     ERRORS.error(LOGGER, "[DungeonTrain] Vanilla feature " + extra.key().location()
