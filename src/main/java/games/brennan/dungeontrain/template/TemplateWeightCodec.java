@@ -77,6 +77,12 @@ public final class TemplateWeightCodec {
     public static final String K_GROUP_WEIGHTS = "groupWeights";
     public static final String K_BUILDER_UUID = "uuid";
     public static final String K_BUILDER_NAME = "name";
+    /**
+     * Optional carriage-contents opt-in mark — see {@link TemplateMeta#optIn()}. Emitted only as
+     * {@code true}; absent (or anything but a JSON {@code true}) reads as not opt-in, so every entry
+     * written before the mark existed round-trips byte-identically.
+     */
+    public static final String K_OPT_IN = "optIn";
 
     public static final String MAX_ALL = "all";
 
@@ -98,9 +104,16 @@ public final class TemplateWeightCodec {
             Integer w = finiteRound(we);
             if (w == null) return null;
             return new TemplateMeta(clampWeight.applyAsInt(w), parseGate(o), parseStage(o), parseMode(o),
-                parseFlip(o), parseName(o), parseBuilder(o), parseGroups(o), parseGroupWeights(o));
+                parseFlip(o), parseName(o), parseBuilder(o), parseOptIn(o), parseGroups(o), parseGroupWeights(o));
         }
         return null;
+    }
+
+    /** The optional opt-in mark on an entry object; true only for a JSON boolean {@code true}. */
+    public static boolean parseOptIn(JsonObject o) {
+        JsonElement el = o.get(K_OPT_IN);
+        return el != null && el.isJsonPrimitive() && el.getAsJsonPrimitive().isBoolean()
+            && el.getAsBoolean();
     }
 
     /**
@@ -351,11 +364,11 @@ public final class TemplateWeightCodec {
         for (Map.Entry<String, TemplateMeta> e : new TreeMap<>(byId).entrySet()) {
             TemplateMeta meta = e.getValue();
             // Bare-int only when every axis is at its no-op default: default inline gate, no Stage
-            // link, no mode tag, no flip block, no display label, no groups AND no builder credit. An entry
+            // link, no mode tag, no flip block, no display label, no groups, no opt-in mark AND no builder credit. An entry
             // carrying any of those takes the object form.
             if (meta.gate().isDefault() && meta.stageId() == null && meta.mode() == null
                     && meta.flip() == null && meta.name() == null && meta.builder() == null
-                    && !meta.hasGroups()) {
+                    && !meta.hasGroups() && !meta.optIn()) {
                 out.addProperty(e.getKey(), meta.weight());
             } else {
                 out.add(e.getKey(), entryObject(meta));
@@ -373,6 +386,7 @@ public final class TemplateWeightCodec {
         writeFlip(o, meta.flip());
         if (meta.name() != null) o.addProperty(K_NAME, meta.name());
         writeBuilder(o, meta.builder());
+        if (meta.optIn()) o.addProperty(K_OPT_IN, true);
         writeGroups(o, meta.groups(), meta.groupWeights());
         return o;
     }

@@ -364,4 +364,24 @@ final class TemplateWeightCodecTest {
         assertFalse(b.has("uuid"));
         assertEquals("Old Friend", b.get("name").getAsString());
     }
+
+    @Test
+    @DisplayName("optIn round-trips as \"optIn\": true; a weight-only entry without it stays a bare int")
+    void optIn_roundTrip() {
+        TemplateMeta optIn = TemplateMeta.of(3).withOptIn(true);
+        JsonObject json = TemplateWeightCodec.toJson(Map.of("new_room", optIn, "old_room", TemplateMeta.of(3)));
+        assertTrue(json.get("new_room").getAsJsonObject().get(TemplateWeightCodec.K_OPT_IN).getAsBoolean());
+        assertTrue(json.get("old_room").isJsonPrimitive(), "no opt-in → legacy bare int");
+        assertTrue(TemplateWeightCodec.parseEntry(json.get("new_room"), CLAMP).optIn());
+        assertFalse(TemplateWeightCodec.parseEntry(json.get("old_room"), CLAMP).optIn());
+    }
+
+    @Test
+    @DisplayName("Other edits keep the opt-in mark — a weight or label change must not re-enable a template")
+    void optIn_survivesMerges() {
+        TemplateMeta m = TemplateMeta.of(1).withOptIn(true);
+        assertTrue(TemplateMeta.mergeWeight(m, 5).optIn());
+        assertTrue(TemplateMeta.mergeName(m, "Room", 1).optIn());
+        assertTrue(TemplateMeta.mergeGate(m, TemplateGate.DEFAULT, 1).optIn());
+    }
 }

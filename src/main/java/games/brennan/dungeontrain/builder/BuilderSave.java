@@ -23,6 +23,7 @@ import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
+import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageGroup;
 import games.brennan.dungeontrain.train.CarriageGroupPlacer;
@@ -396,6 +397,8 @@ public final class BuilderSave {
             if (!CarriageContentsRegistry.register(created)) {
                 throw new IOException("'" + name + "' is a reserved contents name");
             }
+            // Opt-in: a new build starts off in every carriage until an editor switches it on.
+            CarriageContentsWeights.markNewOptIn(name);
             LOGGER.info("[DungeonTrain] Builder save: registered new contents '{}'", name);
             carryContentsSidecars(level, dims, name);
             return written;

@@ -1888,8 +1888,8 @@ public final class PortalCarriageBuilder {
         if (interior.getX() <= 0 || interior.getY() <= 0 || interior.getZ() <= 0) return;
         BlockPos interiorOrigin = roomOrigin.offset(1, 1, 1);
 
-        // What this room is allowed to draw. Absent sidecar = everything, which is what a furnished
-        // room did before authors could steer it.
+        // What this room is allowed to draw. Absent sidecar = every template at its own default (on,
+        // bar new opt-in ones), which is what a furnished room did before authors could steer it.
         CarriageContentsAllowList allow = PortalRoomContentsAllowStore.getOrEmpty(roomName);
         // An all-excluded list means an empty room, not the built-in default. CarriageContentsRegistry
         // .pick would fall back to DEFAULT here — right for a carriage, which must never spawn

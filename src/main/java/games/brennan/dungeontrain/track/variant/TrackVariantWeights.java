@@ -263,7 +263,7 @@ public final class TrackVariantWeights {
             weights.remove(from);
             if (w != null) weights.put(to, w);
             next.put(e.getKey(), new TemplateMeta(m.weight(), m.gate(), m.stageId(), m.mode(), m.flip(),
-                m.name(), m.builder(), groups, weights));
+                m.name(), m.builder(), m.optIn(), groups, weights));
             moved++;
         }
         if (moved == 0) return 0;
