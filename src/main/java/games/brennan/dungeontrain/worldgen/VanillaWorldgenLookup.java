@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen;
 
+import com.mojang.logging.LogUtils;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.RegistrySetBuilder;
@@ -10,6 +11,7 @@ import net.minecraft.data.worldgen.Carvers;
 import net.minecraft.data.worldgen.ProcessorLists;
 import net.minecraft.data.worldgen.features.FeatureUtils;
 import net.minecraft.data.worldgen.placement.PlacementUtils;
+import org.slf4j.Logger;
 
 /**
  * Vanilla's biomes, placed/configured features and carvers rebuilt from code — the reference the WWOO
@@ -22,15 +24,36 @@ import net.minecraft.data.worldgen.placement.PlacementUtils;
  */
 public final class VanillaWorldgenLookup {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    /** Built once per JVM by {@link #get()}: its only inputs are code and the frozen built-in registries. */
+    private static HolderLookup.Provider shared;
+
     private VanillaWorldgenLookup() {}
 
+    /**
+     * The shared lookup, built on first use. Everything in it is immutable data made from code, so
+     * one copy serves the server's feature and twin builds and every client login alike. Synchronized:
+     * the server builds it on the server thread while an integrated client may log in on the render
+     * thread, and the second caller waits rather than building its own.
+     */
+    public static synchronized HolderLookup.Provider get() {
+        if (shared == null) shared = create();
+        return shared;
+    }
+
+    /** A fresh, uncached build — {@link #get()} is what callers want. */
     public static HolderLookup.Provider create() {
+        long t0 = System.nanoTime();
         RegistrySetBuilder builder = new RegistrySetBuilder()
                 .add(Registries.CONFIGURED_CARVER, Carvers::bootstrap)
                 .add(Registries.PROCESSOR_LIST, ProcessorLists::bootstrap) // fossil features reference these
                 .add(Registries.CONFIGURED_FEATURE, FeatureUtils::bootstrap)
                 .add(Registries.PLACED_FEATURE, PlacementUtils::bootstrap)
                 .add(Registries.BIOME, BiomeData::bootstrap);
-        return builder.build(RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY));
+        HolderLookup.Provider lookup = builder.build(RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY));
+        LOGGER.debug("[DungeonTrain] Vanilla worldgen lookup built on {} ({} ms)",
+                Thread.currentThread().getName(), (System.nanoTime() - t0) / 1_000_000L);
+        return lookup;
     }
 }
