@@ -51,10 +51,51 @@ final class CarriageContentsAllowListTest {
     }
 
     @Test
-    @DisplayName("withAllowed is idempotent — same instance returned when already allowed")
+    @DisplayName("withAllowed records an explicit ON and is idempotent — same instance the second time")
     void withAllowed_idempotent() {
         CarriageContentsAllowList a = CarriageContentsAllowList.EMPTY.withAllowed("default");
-        assertSame(CarriageContentsAllowList.EMPTY, a);
+        assertEquals(Set.of("default"), a.included());
+        assertSame(a, a.withAllowed("default"));
+    }
+
+    // ---- opt-in (new contents templates start off) ----
+
+    @Test
+    @DisplayName("An opt-in template with no decision is off; an opt-out one is on")
+    void optIn_defaultOff() {
+        assertFalse(CarriageContentsAllowList.EMPTY.isAllowed("new_room", true));
+        assertTrue(CarriageContentsAllowList.EMPTY.isAllowed("old_room", false));
+    }
+
+    @Test
+    @DisplayName("Switching an opt-in template on here allows it; switching it off again excludes it")
+    void optIn_includedWins() {
+        CarriageContentsAllowList on = CarriageContentsAllowList.EMPTY.withAllowed("new_room");
+        assertTrue(on.isAllowed("new_room", true));
+        CarriageContentsAllowList off = on.withExcluded("new_room");
+        assertFalse(off.isAllowed("new_room", true));
+        assertTrue(off.included().isEmpty());
+    }
+
+    @Test
+    @DisplayName("An id in both sets of a hand-edited file reads as excluded")
+    void bothSets_excludedWins() {
+        CarriageContentsAllowList a = new CarriageContentsAllowList(Set.of("x"), Set.of("x", "y"));
+        assertEquals(Set.of("y"), a.included());
+        assertFalse(a.isAllowed("x", false));
+    }
+
+    @Test
+    @DisplayName("included round-trips through JSON; a schema-1 file reads with none")
+    void included_jsonRoundTrip() {
+        CarriageContentsAllowList a = CarriageContentsAllowList.EMPTY.withAllowed("new_room").withExcluded("lava");
+        CarriageContentsAllowList back = CarriageContentsAllowList.fromJson(a.toJson());
+        assertEquals(a, back);
+        CarriageContentsAllowList v1 = CarriageContentsAllowList.fromJson(JsonParser.parseString(
+            "{\"schemaVersion\":1,\"excluded\":[\"lava\"]}").getAsJsonObject());
+        assertTrue(v1.included().isEmpty());
+        assertFalse(CarriageContentsAllowList.EMPTY.toJson().has("included"),
+            "no explicit ONs → no included key, so an opt-out-only file stays schema-1 shaped");
     }
 
     @Test

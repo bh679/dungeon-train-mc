@@ -205,6 +205,8 @@ public final class EditorSaveAsKinds {
                     CarriageContentsEditor.clearPlot(level, ((Template.Contents) t).contents(), dims);
                 }
                 CarriageContentsEditor.duplicate(player, from, target);
+                // A top-level copy is a new template: opt-in, whatever its source was.
+                games.brennan.dungeontrain.train.CarriageContentsWeights.markNewOptIn(target.id());
                 CarriageContentsEditor.stampPlot(level, target, dims);
                 for (Template t : moving) {
                     CarriageContentsEditor.stampPlot(level, ((Template.Contents) t).contents(), dims);
@@ -419,8 +421,12 @@ public final class EditorSaveAsKinds {
             case PILLAR_TOP -> PillarEditor.stampPlot(level, PillarSection.TOP, dims);
             case PILLAR_MIDDLE -> PillarEditor.stampPlot(level, PillarSection.MIDDLE, dims);
             case PILLAR_BOTTOM -> PillarEditor.stampPlot(level, PillarSection.BOTTOM, dims);
-            case TUNNEL_SECTION -> TunnelEditor.stampPlot(level, TunnelPlacer.TunnelVariant.SECTION);
-            case TUNNEL_PORTAL -> TunnelEditor.stampPlot(level, TunnelPlacer.TunnelVariant.PORTAL);
+            // Both tunnel rows: they are laid out by group, so a copy that keeps its groups can move
+            // the other row's plots too.
+            case TUNNEL_SECTION, TUNNEL_PORTAL -> {
+                TunnelEditor.stampPlot(level, TunnelPlacer.TunnelVariant.SECTION);
+                TunnelEditor.stampPlot(level, TunnelPlacer.TunnelVariant.PORTAL);
+            }
             case ADJUNCT_STAIRS -> PillarEditor.stampPlot(level, PillarAdjunct.STAIRS, dims);
             case PORTAL_ROOM -> PortalRoomEditor.stampAllPlots(level, dims);
         }

@@ -1,12 +1,8 @@
 package games.brennan.dungeontrain.client.menu;
 
-import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
-import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
-import games.brennan.dungeontrain.editor.TemplateSizeStore;
-import games.brennan.dungeontrain.train.CarriageContents;
-import games.brennan.dungeontrain.train.CarriageContentsPlacer;
-import games.brennan.dungeontrain.train.CarriageContentsRegistry;
-import games.brennan.dungeontrain.train.ContentsSize;
+import games.brennan.dungeontrain.client.ClientContentsAllowState;
+import games.brennan.dungeontrain.net.ContentsAllowRequestPacket;
+import games.brennan.dungeontrain.net.ContentsAllowSyncPacket;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,19 +10,20 @@ import java.util.Set;
 
 /**
  * Drilldown screen reached from the Editor menu's "Contents" row when the
- * player is editing a carriage template. Renders one {@link CommandMenuEntry.Toggle}
- * row per registered content — green {@code [ON]} = allowed in this carriage,
- * red {@code [OFF]} = excluded. Toggling a row dispatches
+ * player is editing a carriage template (or a portal room). Renders one {@link CommandMenuEntry.Toggle}
+ * row per top-level content — green {@code [ON]} = may spawn here, red {@code [OFF]} = won't.
+ * Toggling a row dispatches
  * {@code /dungeontrain editor carriage-contents <variantId> <contentsId> on|off}
- * and the server pushes a fresh {@link games.brennan.dungeontrain.net.EditorStatusPacket}
- * carrying the updated excluded set, so the next {@link #entries()} rebuild
- * reflects the new state.
+ * and the server pushes a fresh {@link ContentsAllowSyncPacket}, so the next {@link #entries()}
+ * rebuild reflects the new state.
  *
- * <p>Per spec: only top-level (parent) contents appear here — sub-variants
- * (group members) are picked through their parent's resolution, so toggling
- * them individually in the allow-list would be meaningless. The default for
- * a content with no record in the sidecar is "allowed" — matches the rule
- * "by default all are yes".</p>
+ * <p>The ON/OFF state is the server's <b>effective</b> answer ({@link ContentsAllowRequestPacket#build}),
+ * because it depends on more than the sidecar: an existing template is on unless excluded, but a new
+ * (opt-in) template is off until switched on here. Until the first answer arrives the screen shows
+ * a loading row rather than guessing.</p>
+ *
+ * <p>Only top-level (parent) contents appear here — sub-variants (group members) are picked through
+ * their parent's resolution, so toggling them individually would be meaningless.</p>
  */
 public final class CarriageContentsAllowScreen implements MenuScreen {
 
@@ -72,30 +69,39 @@ public final class CarriageContentsAllowScreen implements MenuScreen {
 
     @Override
     public List<CommandMenuEntry> entries() {
-        Set<String> excluded = EditorStatusHudOverlay.excludedContents();
-        // Filter out group children — only parents (or leaves) get a toggle
-        // row, since picks resolve through parents at spawn time.
-        Set<String> children = CarriageContentsGroupStore.allChildIds();
-        List<CarriageContents> all = CarriageContentsRegistry.allContents();
-        List<CommandMenuEntry> out = new ArrayList<>(all.size() + 1);
-        // A carriage only ever takes contents of its own size, so only those are worth a toggle.
-        // A portal room fits whatever is small enough, so it keeps the whole list.
-        ContentsSize shellSize = CARRIAGE_COMMAND.equals(command)
-            ? TemplateSizeStore.SHELLS.sizeOf(targetId) : null;
-        for (CarriageContents c : all) {
-            String id = c.id();
-            if (children.contains(id)) continue;
-            if (shellSize != null && CarriageContentsPlacer.sizeOf(id) != shellSize) continue;
-            boolean allowed = !excluded.contains(id);
+        ClientContentsAllowState.requestThrottled(kind(), targetId);
+        return entriesFrom(ClientContentsAllowState.snapshot(kind(), targetId).orElse(null));
+    }
+
+    /**
+     * The rows for one server answer ({@code null} = not arrived yet). Split out of {@link #entries()}
+     * so tests can pin the rows without a connection to ask.
+     */
+    List<CommandMenuEntry> entriesFrom(ContentsAllowSyncPacket state) {
+        List<CommandMenuEntry> out = new ArrayList<>();
+        if (state == null) {
+            out.add(new CommandMenuEntry.Loading(MenuLang.t("common.loading")));
+            out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
+            return out;
+        }
+        Set<String> off = Set.copyOf(state.off());
+        for (String id : state.rows()) {
             out.add(new CommandMenuEntry.Toggle(
                 id,
-                allowed,
+                !off.contains(id),
                 commandFor(id, true),
                 commandFor(id, false)
             ));
         }
         out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
+    }
+
+    /** Which allow-list this screen reads — the same split its subcommand makes. */
+    String kind() {
+        return PORTAL_ROOM_COMMAND.equals(command)
+            ? ContentsAllowRequestPacket.KIND_PORTAL_ROOM
+            : ContentsAllowRequestPacket.KIND_CARRIAGE;
     }
 
     /** The slash command one row's toggle dispatches, in the direction {@code on} names. */

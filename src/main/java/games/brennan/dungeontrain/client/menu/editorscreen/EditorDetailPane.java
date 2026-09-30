@@ -46,7 +46,7 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE }
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE, BLOCK_GROUP }
 
     private final VersionStrip versions = new VersionStrip();
     /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
@@ -58,6 +58,13 @@ public final class EditorDetailPane {
     /** Every item the selection's loot can give, most valuable first — the Loot page's grid. */
     private List<games.brennan.dungeontrain.editor.TemplateLoot.ItemEntry> lootItems = List.of();
     private LootGrid lootGrid;
+    /** The Blocks page's cells: live from the server while standing in the build, else the saved tally. */
+    private List<BlockGroupsState.Entry> blockEntries = List.of();
+    /** True while {@link #blockEntries} is the server's live list, so a click re-skins. */
+    private boolean blocksLive;
+    /** Whether the player stood in the selection last frame — walking in re-asks for the cells. */
+    private boolean wasHere;
+    private LootGrid blockGrid;
     /** The selection's Submit for Review answers, from the player's own relay listing; empty when none. */
     private SubmitNote submitNote = SubmitNote.EMPTY;
     /** Which questions the selection earns and whether the player may edit them — asked of the server once. */
@@ -94,7 +101,7 @@ public final class EditorDetailPane {
     private List<TemplateDataSheet.Placed> sheetCells = List.of();
     private CommandMenuEntry test;
     private int page;
-    private Pages pages = Pages.NONE;
+    private DetailPages pages = DetailPages.NONE;
     private VariantKey pagedFor;
     private Hit hovered = Hit.NONE;
     private int[] iconX = new int[0];
@@ -140,8 +147,10 @@ public final class EditorDetailPane {
         goHere = ctx.hasSelection() ? EditorScreenActions.enterEntry(ctx, DungeonTrainNet::sendToServer) : null;
         enterCentre = goHere != null ? EditorScreenActions.enterCentreEntry(ctx, DungeonTrainNet::sendToServer) : null;
         // A new selection starts on its first page; a shorter list clamps the page it was on.
-        if (ctx.selection() == null || !ctx.selection().equals(pagedFor)) page = 0;
+        boolean newSelection = ctx.selection() == null || !ctx.selection().equals(pagedFor);
+        if (newSelection) page = 0;
         pagedFor = ctx.selection();
+        layoutBlocks(nowMillis, newSelection);
         int perLootPage = LootGrid.of(lootGridArea(), 0).capacity();
         int lootPages = lootItems.isEmpty() || perLootPage <= 0 ? 0
             : (lootItems.size() + perLootPage - 1) / perLootPage;
@@ -154,12 +163,40 @@ public final class EditorDetailPane {
         submitAnswer = own == null ? BuilderSubmitHintsRequests.Answer.UNKNOWN
             : BuilderSubmitHintsRequests.peek(relayId, "", false);
         int submitPages = own == null ? 0 : 1;
-        pages = Pages.of(rows.size(), Math.max(0, body().h() / ROW_H), lootPages, submitPages);
+        int perBlockPage = LootGrid.of(lootGridArea(), 0).capacity();
+        int blockPages = blockEntries.isEmpty() || perBlockPage <= 0 ? 0
+            : (blockEntries.size() + perBlockPage - 1) / perBlockPage;
+        pages = DetailPages.of(rows.size(), Math.max(0, body().h() / ROW_H), lootPages, submitPages)
+            .withBlockPages(blockPages);
         page = pages.clamp(page);
 
         IconRow row = layoutIcons(icons.size(), layout.icons().x(), layout.icons().w());
         iconX = row.x();
         iconCell = row.cell();
+    }
+
+    /**
+     * Pick the Blocks page's list. Standing in the build it is the server's cells — asked for on a
+     * new selection and then once a second while the page is up, so hand edits show; elsewhere it
+     * is the saved file's tally, which the author can look at but not change from here.
+     */
+    private void layoutBlocks(long nowMillis, boolean newSelection) {
+        boolean here = ctx.standingInSelection();
+        // A new selection, or having just walked in, asks at once — the list held may be another plot's.
+        boolean arrived = here && (newSelection || !wasHere);
+        wasHere = here;
+        if (arrived || (here && (onBlocksPage() || BlockGroupsState.key().isEmpty()))) {
+            BlockGroupsState.request(nowMillis, arrived);
+        }
+        blocksLive = here && !BlockGroupsState.key().isEmpty();
+        if (blocksLive) {
+            blockEntries = BlockGroupsState.entries();
+        } else if (summary == null) {
+            blockEntries = List.of();
+        } else {
+            blockEntries = summary.blockCounts().stream()
+                .map(b -> new BlockGroupsState.Entry(b.block(), b.count())).toList();
+        }
     }
 
     /** Icon-row geometry: how big each button is, and where each one starts. */
@@ -269,6 +306,35 @@ public final class EditorDetailPane {
         return true;
     }
 
+    /** Turn to the first Blocks page — what clicking the sheet's Blocks line does. False when there is none. */
+    public boolean showBlocksPage() {
+        if (pages.blockPages() == 0) return false;
+        page = pages.firstBlockPage();
+        return true;
+    }
+
+    /** True while a Blocks page is showing. */
+    public boolean onBlocksPage() { return pages.isBlockPage(page); }
+
+    /**
+     * A click on Blocks cell {@code index}: re-skin it with the held block when standing in the
+     * build; elsewhere say where to stand. Held-block checks are the server's, which answers on the
+     * action bar either way.
+     */
+    public boolean clickBlock(int index) {
+        if (index < 0 || index >= blockEntries.size()) return false;
+        if (!blocksLive) {
+            var player = net.minecraft.client.Minecraft.getInstance().player;
+            if (player != null) {
+                player.displayClientMessage(net.minecraft.network.chat.Component.literal(
+                    EditorScreenLang.text(EditorScreenLang.BLOCKS_PAGE_GO_HERE)), true);
+            }
+            return true;
+        }
+        BlockGroupsState.reskin(index);
+        return true;
+    }
+
     /** True while the Loot page is showing. */
     public boolean onLootPage() { return pages.isLootPage(page); }
 
@@ -286,112 +352,10 @@ public final class EditorDetailPane {
     public int page() { return page; }
 
     /** How the body is cut into pages this frame. */
-    public Pages pages() { return pages; }
+    public DetailPages pages() { return pages; }
 
     /** True while the model and its sheet are showing rather than a page of rows. */
     public boolean onModelPage() { return page == 0; }
-
-    /**
-     * The body cut into pages.
-     *
-     * <p>The first page is always the model and its data sheet — path, size, blocks, weight, stage,
-     * levels. The room's rows come after, as many per page as the whole body holds less the pager's
-     * slot, so a long list of walls sub-options takes over the space the model had rather than
-     * squeezing under its sheet. The Loot pages, when the build has loot, come after them, and the
-     * Submitted answers page, when its author answered anything on submitting it, comes last. With
-     * none of those there is one page and no pager.</p>
-     *
-     * <p>Pure, so it can be tested without a screen.</p>
-     *
-     * @param count   how many rows there are
-     * @param perPage rows on each row page — the body's slots, less the pager's
-     */
-    public record Pages(int count, int perPage, int lootPages, int submitPages) {
-        public static final Pages NONE = new Pages(0, 0, 0, 0);
-
-        public static Pages of(int count, int bodySlots) {
-            return of(count, bodySlots, 0);
-        }
-
-        /** As {@link #of(int, int)}, with {@code lootPages} Loot pages after the rows. */
-        public static Pages of(int count, int bodySlots, int lootPages) {
-            return of(count, bodySlots, lootPages, 0);
-        }
-
-        /** As above, with {@code submitPages} Submitted answers pages (0 or 1) after the Loot pages. */
-        public static Pages of(int count, int bodySlots, int lootPages, int submitPages) {
-            return new Pages(Math.max(0, count), Math.max(0, bodySlots - 1), Math.max(0, lootPages),
-                Math.max(0, Math.min(1, submitPages)));
-        }
-
-        /** True when there is anything past the model page. */
-        public boolean paged() {
-            return hasRows() || lootPages > 0 || submitPages > 0;
-        }
-
-        private boolean hasRows() {
-            return count > 0 && perPage > 0;
-        }
-
-        /** How many row pages follow the model page. */
-        public int rowPages() {
-            return hasRows() ? (count + perPage - 1) / perPage : 0;
-        }
-
-        /** The first Loot page: straight after the last row page. */
-        public int firstLootPage() {
-            return 1 + rowPages();
-        }
-
-        /** The Submitted answers page: straight after the last Loot page. */
-        public int firstSubmitPage() {
-            return firstLootPage() + lootPages;
-        }
-
-        /** The model page, the row pages, the Loot pages, then the Submitted answers page; at least one. */
-        public int pageCount() {
-            return 1 + rowPages() + lootPages + submitPages;
-        }
-
-        public int clamp(int page) {
-            return Math.max(0, Math.min(page, pageCount() - 1));
-        }
-
-        public boolean isLootPage(int page) {
-            int p = clamp(page);
-            return lootPages > 0 && p >= firstLootPage() && p < firstSubmitPage();
-        }
-
-        public boolean isSubmitPage(int page) {
-            return submitPages > 0 && clamp(page) >= firstSubmitPage();
-        }
-
-        /** Which Loot page {@code page} is, from 0; meaningless off one. */
-        public int lootIndex(int page) {
-            return Math.max(0, clamp(page) - firstLootPage());
-        }
-
-        /** True when {@code page} is one of rows rather than the model or a Loot page. */
-        public boolean isRowPage(int page) {
-            int p = clamp(page);
-            return p >= 1 && p < firstLootPage();
-        }
-
-        /** The first row index on {@code page}; meaningless off a row page. */
-        public int first(int page) {
-            return Math.max(0, clamp(page) - 1) * perPage;
-        }
-
-        /** One past the last row index on {@code page}. */
-        public int end(int page) {
-            return isRowPage(page) ? Math.min(count, first(page) + perPage) : 0;
-        }
-
-        /** True when the pager is drawn — only when there is a page to turn to. */
-        public boolean hasPager() {
-            return paged();
-        }
-    }
 
     public void render(GuiGraphics g, Font font, EditorScreenTheme theme, TemplateArt art,
                        TemplateSummary summary, EditorRosterIndex.Tile tile, String pathLabel,
@@ -415,7 +379,8 @@ public final class EditorDetailPane {
             // Nothing of the model page is hittable while another page is up.
             sheetLines = List.of();
             sheetCells = List.of();
-            if (onLootPage()) drawLootPage(g, font, theme);
+            if (onBlocksPage()) drawBlocksPage(g, font);
+            else if (onLootPage()) drawLootPage(g, font, theme);
             else if (onSubmitPage()) editNoteRect = SubmissionPage.draw(g, font, rowArea(), submitNote,
                 submitAnswer.hints(), submitAnswer.canEdit(), mouseX, mouseY);
             else drawRows(g, font, theme);
@@ -589,6 +554,12 @@ public final class EditorDetailPane {
         }
     }
 
+    private void drawBlocksPage(GuiGraphics g, Font font) {
+        blockGrid = LootGrid.of(lootGridArea(), blockEntries.size()).page(pages.blockIndex(page));
+        BlocksPage.draw(g, font, rowArea(), blockGrid, blockEntries,
+            hovered.kind() == HitKind.BLOCK_GROUP ? hovered.index() : -1);
+    }
+
     /** This Loot page's slice of the grid: the items from its first on, as many as fit. */
     private LootGrid lootGridForPage() {
         LootGrid all = LootGrid.of(lootGridArea(), lootItems.size());
@@ -695,6 +666,10 @@ public final class EditorDetailPane {
             }
         }
         InventoryEditorLayout.Rect r = rowArea();
+        if (onBlocksPage() && r.contains(mx, my)) {
+            int i = blockGrid == null ? -1 : blockGrid.hit(mx, my);
+            return i >= 0 ? new Hit(HitKind.BLOCK_GROUP, blockGrid.first() + i, 0) : Hit.NONE;
+        }
         if (onLootPage() && r.contains(mx, my)) {
             int i = lootGrid == null ? -1 : lootGrid.hit(mx, my);
             return i >= 0 ? new Hit(HitKind.LOOT_ITEM, lootGrid.first() + i, 0) : Hit.NONE;
@@ -739,6 +714,11 @@ public final class EditorDetailPane {
                     ? List.of() : List.of(placed.cell().tooltip().split("\n"));
             }
             case LOOT_ITEM -> lootItemTooltip(hit.index());
+            case BLOCK_GROUP -> {
+                var player = net.minecraft.client.Minecraft.getInstance().player;
+                yield BlocksPage.tooltip(blockEntries, hit.index(), blocksLive,
+                    player == null ? net.minecraft.world.item.ItemStack.EMPTY : player.getMainHandItem());
+            }
             case GO_HERE -> goHere == null || ctx.selection() == null ? List.of()
                 : List.of(EditorScreenLang.text(EditorScreenLang.GO_HERE),
                           EditorScreenLang.text(EditorScreenLang.STANDING_IN, ctx.selection().displayName()));

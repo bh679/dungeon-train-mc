@@ -78,6 +78,15 @@ public final class BuilderSpawn {
                     || EditorWorldLayout.isEditorWorld(player.serverLevel()))) {
             return;
         }
+        fly(player);
+    }
+
+    /**
+     * Switch {@code player} into flight if their game mode already lets them fly, wherever they are.
+     * The ability flip behind {@link #startFlying}, which explains why {@code mayfly} is never
+     * granted here.
+     */
+    public static void fly(ServerPlayer player) {
         Abilities abilities = player.getAbilities();
         if (!abilities.mayfly || abilities.flying) {
             return;

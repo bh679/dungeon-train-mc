@@ -21098,6 +21098,200 @@
       "released": true,
       "released_in": "v0.1047.0",
       "released_at": "2026-09-29T21:08:02Z"
+    },
+    {
+      "id": "contents-templates-opt-in",
+      "version": "0.1048.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Train Editor: new rooms start switched off",
+      "summary": "In the Train Editor, a newly made carriage room now starts switched off in every carriage's Contents list, and only appears once you switch it on.",
+      "highlights": [],
+      "pr": 1688,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "tunnel-template-groups",
+      "version": "0.1049.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "world"
+      ],
+      "title": "Tunnels keep one look",
+      "summary": "Each tunnel now keeps one look from entrance to exit, and there are new ones to ride through \u2014 some built by Pumpkin_P_Patch.",
+      "highlights": [],
+      "pr": 1690,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "editor-teleport-fly-over-air",
+      "version": "0.1050.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Editor arrivals take flight",
+      "summary": "Jumping to a template in the editor no longer leaves you falling when there's nothing to stand on.",
+      "highlights": [],
+      "pr": 1691,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "tunnel-group-spawn-gates",
+      "version": "0.1051.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "world"
+      ],
+      "title": "Tunnel styles have their places",
+      "summary": "Each tunnel style now turns up only on the stretches of the journey it belongs to.",
+      "highlights": [],
+      "pr": 1692,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "portal-room-modes-void-bedrock",
+      "version": "0.1052.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Two dimensional carriage styles go by simpler names in the editor",
+      "summary": "Two dimensional carriage styles now go by simpler names in the editor, and anything built under the old names carries on as before.",
+      "highlights": [],
+      "pr": 1693,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "plain-chunk-dimension-finds-ground",
+      "version": "0.1053.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Overworld dimensional carriages find their ground",
+      "summary": "Overworld dimensional carriages, and testing them from the editor, now reliably find somewhere to stand.",
+      "highlights": [],
+      "pr": 1695,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "x-editor-blocks-page",
+      "version": "0.1054.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Blocks page in the editor",
+      "summary": "The X editor can now show every block in a build and swap any of them for the one in your hand.",
+      "highlights": [],
+      "pr": 1694,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "community-item-trade-values",
+      "version": "0.1055.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot",
+        "balance"
+      ],
+      "title": "Community item trade values",
+      "summary": "What items trade for with villagers can now be suggested and voted on by the community at brennan.games/dungeontrain/items.",
+      "highlights": [],
+      "pr": 1696,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1055.0",
+      "released_at": "2026-09-30T09:43:29Z"
+    },
+    {
+      "id": "editor-test-mode-shortcut",
+      "version": "0.1056.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Test from the editor with Ctrl/Cmd+R",
+      "summary": "Ctrl/Cmd+R in the editor now takes you straight into testing what you're building.",
+      "highlights": [],
+      "pr": 1698,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1058.0",
+      "released_at": "2026-09-30T10:52:40Z"
+    },
+    {
+      "id": "reseed-keep-zone-two-chunks",
+      "version": "0.1056.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Reseeding a test carriage keeps your view",
+      "summary": "Reseeding a test carriage now leaves you where you were from a little further away.",
+      "highlights": [],
+      "pr": 1699,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1058.0",
+      "released_at": "2026-09-30T10:52:40Z"
+    },
+    {
+      "id": "tunnel-groups-hold-longer",
+      "version": "0.1058.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Tunnels keep their look",
+      "summary": "Tunnels now hold one style for longer stretches, and blend more cleanly as the world grows darker.",
+      "highlights": [],
+      "pr": 1700,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1058.0",
+      "released_at": "2026-09-30T10:52:40Z"
     }
   ]
 }

@@ -580,7 +580,9 @@ public final class EditorCommand {
                 .then(Commands.literal("rebuild")
                     .executes(ctx -> runMirrorRebuild(ctx.getSource()))))
             .then(attachTrackVariantNodes(Commands.literal("tracks")
-                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS))))
+                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS)))
+                // Tunnel template groups — one group per tunnel, entrance to exit.
+                .then(TunnelGroupCommands.node()))
             // PORTALS takes the same (kind, name) variant subcommands — the pocket room is a
             // TrackKind under the hood, so weight / gate / new / reset are literally the same
             // handlers — plus one of its own: length, the axis only a portal room may choose.
@@ -4198,8 +4200,8 @@ public final class EditorCommand {
 
     /**
      * Toggle whether the named contents id may spawn inside the named carriage
-     * variant. {@code on} means allowed (removed from the excluded set);
-     * {@code off} means disallowed (added to the excluded set). Persists to
+     * variant. {@code on} records an explicit allow (the only way an opt-in template spawns here);
+     * {@code off} records an explicit exclusion. Persists to
      * {@link CarriageVariantContentsAllowStore} so the choice survives restarts.
      * Idempotent — re-toggling to the current state still rewrites the sidecar
      * but doesn't change content.
@@ -4225,6 +4227,8 @@ public final class EditorCommand {
                 ? current.withAllowed(contents.id())
                 : current.withExcluded(contents.id());
             CarriageVariantContentsAllowStore.save(variant, updated);
+            pushContentsAllow(source, games.brennan.dungeontrain.net.ContentsAllowRequestPacket.KIND_CARRIAGE,
+                variant.id());
             String summary = "Carriage '" + variant.id() + "' content '" + contents.id() + "': "
                 + (on ? "ALLOWED" : "EXCLUDED");
             source.sendSuccess(() -> Component.literal(summary)
@@ -4276,6 +4280,8 @@ public final class EditorCommand {
                 ? current.withAllowed(contents.id())
                 : current.withExcluded(contents.id());
             games.brennan.dungeontrain.editor.PortalRoomContentsAllowStore.save(room, updated);
+            pushContentsAllow(source, games.brennan.dungeontrain.net.ContentsAllowRequestPacket.KIND_PORTAL_ROOM,
+                room);
             String summary = "Dimensional carriage '" + room + "' content '" + contents.id() + "': "
                 + (on ? "ALLOWED" : "EXCLUDED");
             source.sendSuccess(() -> Component.literal(summary)
@@ -4286,6 +4292,17 @@ public final class EditorCommand {
                 room, contents.id(), e);
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.failed_update_contents_allow", e.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
+        }
+    }
+
+    /**
+     * Refresh the toggling player's Contents screen with the new effective state. A console or
+     * command block has no screen to refresh, so nothing is sent.
+     */
+    private static void pushContentsAllow(CommandSourceStack source, String kind, String target) {
+        if (source.getEntity() instanceof ServerPlayer player) {
+            games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.ContentsAllowRequestPacket.build(kind, target));
         }
     }
 
@@ -4901,6 +4918,9 @@ public final class EditorCommand {
         try {
             CarriageContents.Custom target = (CarriageContents.Custom) CarriageContents.custom(name);
             var origin = CarriageContentsEditor.duplicate(player, sourceContents, target);
+            // A top-level copy is a new template: opt-in, whatever its source was. (The sub-variant
+            // path reuses duplicate() too, which is why the mark lives here and not inside it.)
+            games.brennan.dungeontrain.train.CarriageContentsWeights.markNewOptIn(target.id());
             CarriageContentsEditor.enter(player, target, null);
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_contents_from_plot", target.id(), sourceContents.id(), origin.toShortString()), true);
             return 1;
@@ -6731,7 +6751,7 @@ public final class EditorCommand {
                     .suggests(PORTAL_ROOM_FOG_SUGGESTIONS)
                     .executes(ctx -> runPortalRoomFog(ctx,
                         StringArgumentType.getString(ctx, "fog")))))
-            // Whether a Bedrock Lock room drifts — is uploaded when edited and may be served from
+            // Whether a Bedrock room drifts — is uploaded when edited and may be served from
             // the shared pool. On by default; means nothing under the modes a blob cannot describe.
             .then(Commands.literal("drift")
                 .then(Commands.literal("next")
@@ -7189,7 +7209,7 @@ public final class EditorCommand {
             games.brennan.dungeontrain.portal.PortalRoomMode.parse(raw);
         // parse is total by design, so a typo would silently set the default rather than complain.
         // Worth complaining about here: the player typed something and meant it.
-        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+        if (!wanted.matches(raw)) {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_dimensional_carriage_mode", raw));
             return 0;
         }

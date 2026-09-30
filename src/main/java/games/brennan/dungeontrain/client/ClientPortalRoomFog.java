@@ -88,7 +88,7 @@ public final class ClientPortalRoomFog {
      * train-side door plane and everything at the room-side one, so the fog closes in over the walk
      * and is already at the room's distance when the room comes into view through the doorway.
      * Continuous across the door: at a ramp of {@code 1} the corridor target <i>is</i> the room's
-     * radius, which is what the inside branch hands back everywhere but a Bedrockless falloff.
+     * radius, which is what the inside branch hands back everywhere but a Void falloff.
      * Symmetric on the way out, since the ramp is measured from the train end either way.</p>
      *
      * @param vanillaFar the far plane vanilla had computed for this frame, from the player's own
@@ -118,7 +118,7 @@ public final class ClientPortalRoomFog {
         // returning zero with a live value still cached, which would ease out of a stale distance if
         // the render distance moved again.
         //
-        // Asked of the ramped distance rather than the room's nominal one: a Bedrockless room fogs
+        // Asked of the ramped distance rather than the room's nominal one: a Void room fogs
         // at the clearance, which on a short render distance is already past the far plane, and the
         // whole point of the ramp is what happens as a player walks out of that into eight blocks.
         // Testing the nominal figure would hand the entire walk to vanilla.
@@ -149,7 +149,7 @@ public final class ClientPortalRoomFog {
      * from inside, and easing toward it would only add a pointless engagement in both directions.</p>
      *
      * <p>The room's nominal radius rather than {@link #radiusAt}: the falloff ramp measures a walk
-     * out into the void a Bedrockless room swept, and a corridor is at the room, not in that void.</p>
+     * out into the emptiness a Void room swept, and a corridor is at the room, not in that void.</p>
      */
     private static float corridorRadius(float crossing, float vanillaFar) {
         PortalRoomFogPacket r = region;
@@ -164,7 +164,7 @@ public final class ClientPortalRoomFog {
      * clearance they get.
      *
      * <p>The room's own box is the region shrunk by the falloff, which is exactly how the server grew
-     * it. A {@code falloff} of zero — every mode but Bedrockless, and all of them before the ramp
+     * it. A {@code falloff} of zero — every mode but Void, and all of them before the ramp
      * existed — is a flat fog and returns before measuring anything.</p>
      *
      * <p><b>Chebyshev, not Euclidean.</b> The distance is the larger of the two axis overshoots
@@ -174,7 +174,7 @@ public final class ClientPortalRoomFog {
      *
      * <p><b>Y is not in it</b>, for the same reason the clearance has no vertical term — the lanes
      * pairs are spread over are one block taller than a structure, so there is no vertical emptiness
-     * to ramp across. A Bedrockless room's void is flat, and the distance worth measuring is the walk.</p>
+     * to ramp across. A Void room's void is flat, and the distance worth measuring is the walk.</p>
      */
     private static float radiusAt(double x, double z) {
         PortalRoomFogPacket r = region;

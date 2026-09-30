@@ -7,7 +7,7 @@ import java.util.Locale;
  * mode decides on its own.
  *
  * <p>The fog used to be a consequence of the walls alone: {@link PortalRoomMode#fogs} says yes for
- * the endless modes and Bedrockless, no for Bedrock Lock and Chunk Dimension, and that was the whole
+ * the endless modes and Void, no for Bedrock and Chunk Dimension, and that was the whole
  * answer. It is still the whole answer under {@link #AUTO}, which is what every room says unless
  * told otherwise. {@link #ON} and {@link #OFF} are the author saying they know better — a sealed
  * room built to be murky, or an endless plain built for the sightlines the fog would take away.</p>

@@ -7,7 +7,7 @@ import java.util.Locale;
  * does: a copy a player edits in play is uploaded, and another world planning the same room may be
  * handed that edited copy instead of stamping the template.
  *
- * <p>Only a {@link PortalRoomMode#BEDROCK_LOCK} room can drift, whatever this says — see
+ * <p>Only a {@link PortalRoomMode#BEDROCK} room can drift, whatever this says — see
  * {@link PortalRoomSettings#effectiveDrift}. A locked room is one sealed box that a single blob
  * describes, exactly like a carriage; an endless room is a window of copies with no single thing to
  * capture, and a chunk dimension's interior was never authored. The setting is an author's veto on

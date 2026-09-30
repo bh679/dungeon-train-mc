@@ -47,14 +47,14 @@ final class PortalRoomModeTest {
     @DisplayName("parse tolerates case and surrounding whitespace")
     void parseNormalises() {
         assertSame(PortalRoomMode.ENDLESS_OPEN, PortalRoomMode.parse("  Endless_Open "));
-        assertSame(PortalRoomMode.BEDROCK_LOCK, PortalRoomMode.parse("BEDROCK_LOCK"));
+        assertSame(PortalRoomMode.BEDROCK, PortalRoomMode.parse("BEDROCK"));
     }
 
     @Test
     @DisplayName("the default is the sealed mode — an unset variant behaves as it did before modes existed")
-    void defaultIsBedrockLock() {
-        assertSame(PortalRoomMode.BEDROCK_LOCK, PortalRoomMode.DEFAULT);
-        assertFalse(PortalRoomMode.BEDROCK_LOCK.tiles());
+    void defaultIsBedrock() {
+        assertSame(PortalRoomMode.BEDROCK, PortalRoomMode.DEFAULT);
+        assertFalse(PortalRoomMode.BEDROCK.tiles());
     }
 
     @Test
@@ -71,39 +71,77 @@ final class PortalRoomModeTest {
     void onlyEndlessOpenLeavesFacesOpen() {
         assertFalse(PortalRoomMode.ENDLESS_OPEN.closesOuterFaces());
         assertTrue(PortalRoomMode.ENDLESS_REPETITION.closesOuterFaces());
-        assertTrue(PortalRoomMode.BEDROCK_LOCK.closesOuterFaces());
+        assertTrue(PortalRoomMode.BEDROCK.closesOuterFaces());
     }
 
     @Test
-    @DisplayName("Bedrockless neither tiles nor seals — it is the sealed mode with the seal removed")
-    void bedrocklessRepeatsNothing() {
-        assertSame(PortalRoomMode.BEDROCKLESS, PortalRoomMode.parse("bedrockless"));
-        assertFalse(PortalRoomMode.BEDROCKLESS.tiles());
-        assertFalse(PortalRoomMode.BEDROCKLESS.tilesWholeRoom());
-        assertTrue(PortalRoomMode.BEDROCKLESS.clearsSurroundings());
+    @DisplayName("Void neither tiles nor seals — it is the sealed mode with the seal removed")
+    void voidRepeatsNothing() {
+        assertSame(PortalRoomMode.VOID, PortalRoomMode.parse("void"));
+        assertFalse(PortalRoomMode.VOID.tiles());
+        assertFalse(PortalRoomMode.VOID.tilesWholeRoom());
+        assertTrue(PortalRoomMode.VOID.clearsSurroundings());
     }
 
     @Test
-    @DisplayName("clearing the surroundings is Bedrockless alone — no other mode writes or sweeps a boundary")
-    void onlyBedrocklessClears() {
+    @DisplayName("clearing the surroundings is Void alone — no other mode writes or sweeps a boundary")
+    void onlyVoidClears() {
         for (PortalRoomMode m : PortalRoomMode.values()) {
-            assertEquals(m == PortalRoomMode.BEDROCKLESS, m.clearsSurroundings(), m.id());
+            assertEquals(m == PortalRoomMode.VOID, m.clearsSurroundings(), m.id());
+        }
+    }
+
+    @Test
+    @DisplayName("content written before the rename still reads as Void — 'bedrockless' must never fall back to the default")
+    void legacyBedrocklessIdReadsAsVoid() {
+        assertSame(PortalRoomMode.VOID, PortalRoomMode.parse("bedrockless"));
+        assertSame(PortalRoomMode.VOID, PortalRoomMode.parse("  BEDROCKLESS "));
+        assertTrue(PortalRoomMode.VOID.matches("bedrockless"));
+        assertTrue(PortalRoomMode.VOID.matches("Void"));
+        assertFalse(PortalRoomMode.BEDROCK.matches("bedrockless"));
+        assertFalse(PortalRoomMode.VOID.matches(null));
+        // Read, never written: the legacy id is not what goes back to disk.
+        assertEquals("void", PortalRoomMode.parse("bedrockless").id());
+    }
+
+    @Test
+    @DisplayName("content written before the rename still reads as Bedrock — 'bedrock_lock' is matched, not defaulted into")
+    void legacyBedrockLockIdReadsAsBedrock() {
+        assertSame(PortalRoomMode.BEDROCK, PortalRoomMode.parse("bedrock_lock"));
+        assertSame(PortalRoomMode.BEDROCK, PortalRoomMode.parse(" Bedrock_Lock"));
+        assertTrue(PortalRoomMode.BEDROCK.matches("bedrock_lock"));
+        assertFalse(PortalRoomMode.VOID.matches("bedrock_lock"));
+        assertEquals("bedrock", PortalRoomMode.parse("bedrock_lock").id());
+    }
+
+    @Test
+    @DisplayName("no legacy id can be claimed by two modes, or shadow a live id")
+    void legacyIdsAreUnambiguous() {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (PortalRoomMode m : PortalRoomMode.values()) {
+            assertTrue(seen.add(m.id()), m.id());
+        }
+        for (PortalRoomMode m : PortalRoomMode.values()) {
+            for (String legacy : m.legacyIds()) {
+                assertTrue(seen.add(legacy), legacy);
+                assertSame(m, PortalRoomMode.parse(legacy), legacy);
+            }
         }
     }
 
     /**
-     * Stated per mode rather than as {@code tiles() || BEDROCKLESS}, which would only restate the
+     * Stated per mode rather than as {@code tiles() || VOID}, which would only restate the
      * implementation. Fog used to be gated on {@code tiles()}, and the point of {@code fogs()} being
      * its own question is that a mode added later has to answer it deliberately — a test that derives
      * the answer would let the next one through.
      */
     @Test
-    @DisplayName("every mode with an edge to hide fogs; Bedrock Lock, which has none, does not")
+    @DisplayName("every mode with an edge to hide fogs; Bedrock, which has none, does not")
     void fogging() {
-        assertFalse(PortalRoomMode.BEDROCK_LOCK.fogs());
+        assertFalse(PortalRoomMode.BEDROCK.fogs());
         assertTrue(PortalRoomMode.ENDLESS_REPETITION.fogs());
         assertTrue(PortalRoomMode.ENDLESS_OPEN.fogs());
-        assertTrue(PortalRoomMode.BEDROCKLESS.fogs());
+        assertTrue(PortalRoomMode.VOID.fogs());
         // A chunk dimension is one sealed box with nothing beyond it — no edge, nothing to hide.
         assertFalse(PortalRoomMode.CHUNK_DIMENSION.fogs());
         assertEquals(5, PortalRoomMode.values().length,
@@ -121,8 +159,8 @@ final class PortalRoomModeTest {
     void copiesControl() {
         assertTrue(PortalRoomMode.ENDLESS_REPETITION.copiesApply());
         assertTrue(PortalRoomMode.ENDLESS_OPEN.copiesApply());
-        assertFalse(PortalRoomMode.BEDROCK_LOCK.copiesApply());
-        assertFalse(PortalRoomMode.BEDROCKLESS.copiesApply());
+        assertFalse(PortalRoomMode.BEDROCK.copiesApply());
+        assertFalse(PortalRoomMode.VOID.copiesApply());
         // A chunk dimension appends nothing: its terrain is one sample, sliced once.
         assertFalse(PortalRoomMode.CHUNK_DIMENSION.copiesApply());
         assertEquals(5, PortalRoomMode.values().length,
@@ -130,18 +168,18 @@ final class PortalRoomModeTest {
     }
 
     /**
-     * Stated per mode rather than as {@code == BEDROCK_LOCK}, for the reason {@link #fogging} is:
+     * Stated per mode rather than as {@code == BEDROCK}, for the reason {@link #fogging} is:
      * the room's own skin stops at its ±X ends, so this is the only thing closing off the two
      * corridors that stand off them, and a mode added later has to answer it deliberately.
      */
     @Test
     @DisplayName("the two sealed modes seal their corridors — the rest leave them as they are")
     void corridorSealing() {
-        assertTrue(PortalRoomMode.BEDROCK_LOCK.sealsCorridors());
+        assertTrue(PortalRoomMode.BEDROCK.sealsCorridors());
         assertFalse(PortalRoomMode.ENDLESS_REPETITION.sealsCorridors());
         assertFalse(PortalRoomMode.ENDLESS_OPEN.sealsCorridors());
-        assertFalse(PortalRoomMode.BEDROCKLESS.sealsCorridors());
-        // Sealed for a reason of its own rather than by inheriting Bedrock Lock's: a sampled
+        assertFalse(PortalRoomMode.VOID.sealsCorridors());
+        // Sealed for a reason of its own rather than by inheriting Bedrock's: a sampled
         // hillside has no walls, so the skin is the only thing between a player and the basement.
         assertTrue(PortalRoomMode.CHUNK_DIMENSION.sealsCorridors());
         assertTrue(PortalRoomMode.CHUNK_DIMENSION.sealsRoomBox());

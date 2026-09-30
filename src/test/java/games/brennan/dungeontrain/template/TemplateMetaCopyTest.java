@@ -25,7 +25,7 @@ final class TemplateMetaCopyTest {
         new TemplateGate(3, 40, EnumSet.of(TrainPhase.NETHER));
 
     /** A portal room's full boundary tag — sky, walls, copies, exits, books, door wall, offsets. */
-    private static final String ROOM_MODE = "bedrock_lock/exact/off/off/off/none/sealed/-1";
+    private static final String ROOM_MODE = "bedrock/exact/off/off/off/none/sealed/-1";
 
     @Test
     @DisplayName("asCopy keeps weight, gate, Stage link, mode, flip and builder — the room's settings travel")

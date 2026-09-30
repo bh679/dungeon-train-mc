@@ -44,8 +44,9 @@ public final class ContentsShellPicker {
             if (CarriagePlacer.sizeOf(v) != size) continue;
             // A carriage made blank and never built is air — nothing to stand contents in.
             if (!games.brennan.dungeontrain.editor.CarriageTemplateStore.hasBlocks(v.id())) continue;
+            // No sidecar is no explicit decision, not "everything": an opt-in template is still off.
             boolean allowed = CarriageVariantContentsAllowStore.get(v)
-                .map(a -> a.isAllowed(topId)).orElse(true);
+                .orElse(CarriageContentsAllowList.EMPTY).isAllowed(topId);
             if (!allowed) continue;
             eligible.add(v);
             total += weight;

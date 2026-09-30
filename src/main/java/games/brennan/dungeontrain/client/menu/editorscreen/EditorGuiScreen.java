@@ -87,6 +87,7 @@ public final class EditorGuiScreen extends Screen {
     private final EditorStagesPane stagesPane = new EditorStagesPane();
     private final EditorNavPane navPane = new EditorNavPane();
     private final EditorStageDetailPane stageDetail = new EditorStageDetailPane();
+    private final EditorGroupsTab groupsTab = new EditorGroupsTab();
     private final OrbitState orbit = new OrbitState();
     private final InlineEdit inlineEdit = new InlineEdit();
     private final EditorModalHost modal = new EditorModalHost(this::onClose, this::afterCommand);
@@ -193,7 +194,18 @@ public final class EditorGuiScreen extends Screen {
     /** The two tabs that browse the roster and so carry the filter bar; Stages, Nav and Settings do not. */
     private static boolean hasFilterBar() {
         EditorScreenPage page = EditorScreenState.page();
-        return page != EditorScreenPage.SETTINGS && page != EditorScreenPage.STAGES && page != EditorScreenPage.NAV;
+        return page != EditorScreenPage.SETTINGS && page != EditorScreenPage.STAGES && page != EditorScreenPage.NAV
+            && page != EditorScreenPage.GROUPS;
+    }
+
+    /** Whether the Groups tab owns the screen — both columns. */
+    private static boolean onGroups() {
+        return EditorScreenState.page() == EditorScreenPage.GROUPS;
+    }
+
+    /** The Groups tab is a Tracks tab: tunnel template groups are all it shows. */
+    private static boolean groupsShown() {
+        return EditorScreenState.category() == EditorCategoryFilter.TRACKS;
     }
 
     /** Whether the Nav tab owns the screen — both columns, no template or stage detail. */
@@ -328,7 +340,10 @@ public final class EditorGuiScreen extends Screen {
         super.render(g, mouseX, mouseY, partialTick);   // background + the filter box
 
         drawPanel(g, theme);
-        tabs = EditorTabBar.layout(layout.tabs(), this.font::width, p -> EditorScreenLang.text(p.langKey()));
+        // Leaving Tracks takes the Groups tab away; the screen goes back to Templates with it.
+        if (onGroups() && !groupsShown()) EditorScreenState.setPage(EditorScreenPage.TEMPLATES);
+        tabs = EditorTabBar.layout(layout.tabs(), this.font::width, p -> EditorScreenLang.text(p.langKey()),
+            groupsShown());
         hoveredTab = modal.isOpen() || search.isOpen() ? null
             : EditorTabBar.hit(tabs, layout.tabs(), mouseX, mouseY);
         // The standing plot's category is a cell of the Templates tab now, so that is the tab that
@@ -357,7 +372,9 @@ public final class EditorGuiScreen extends Screen {
             stagesPane.render(g, this.font, theme, layout, index, mx, my);
         }
 
-        if (onNav()) {
+        if (onGroups()) {
+            groupsTab.render(g, this.font, theme, layout, orbit.yaw(), mx, my);
+        } else if (onNav()) {
             // Nav owns the right column too: the picked area's picture and words stand where a
             // template's model and sheet would, and none of the template controls apply to an area.
             navPane.render(g, this.font, theme, layout, index, mx, my);
@@ -680,6 +697,12 @@ public final class EditorGuiScreen extends Screen {
             tip = layoutPane.tooltipAt(layout, EditorRosterClient.index(), mouseX, mouseY);
         } else if (onStages()) {
             tip = stagesPane.tooltipAt(layout, EditorRosterClient.index(), mouseX, mouseY);
+        } else if (onGroups()) {
+            tip = groupsTab.tooltipAt(mouseX, mouseY);
+            if (tip != null) {
+                g.renderTooltip(this.font, Component.literal(tip), mouseX, mouseY);
+            }
+            return;
         }
         if (tip == null && onNav()) {
             List<String> nav = navPane.tooltipAt(mouseX, mouseY, EditorRosterClient.index());
@@ -801,6 +824,8 @@ public final class EditorGuiScreen extends Screen {
                 setFocused(null);
                 return true;
             }
+        } else if (onGroups()) {
+            return onGroupsClick(groupsTab.click(mouseX, mouseY), mouseX, mouseY, button);
         } else if (onNav()) {
             EditorNavPane.Hit hit = navPane.hitTest(mouseX, mouseY);
             if (hit.kind() != EditorNavPane.Kind.NONE) {
@@ -1152,6 +1177,9 @@ public final class EditorGuiScreen extends Screen {
                 dispatch(detail.goHereEntry());
                 return true;
             }
+            case BLOCK_GROUP -> {
+                return detail.clickBlock(hit.index());
+            }
             case PAGE_PREV -> {
                 return detail.scrollBy(-1);
             }
@@ -1172,6 +1200,31 @@ public final class EditorGuiScreen extends Screen {
             }
             default -> { return false; }
         }
+    }
+
+    /** Carry out what a click on the Groups tab asked for. */
+    private boolean onGroupsClick(EditorGroupsTab.Click hit, double mouseX, double mouseY, int button) {
+        if (hit == null) {
+            setFocused(null);
+            return super.mouseClicked(mouseX, mouseY, button);
+        }
+        switch (hit) {
+            case EditorGroupsTab.Click.Consumed c -> click();
+            case EditorGroupsTab.Click.Entry e -> {
+                click();
+                dispatch(e.entry());
+            }
+            case EditorGroupsTab.Click.Open o -> {
+                click();
+                modal.open(o.screen());
+            }
+            case EditorGroupsTab.Click.Sheet s -> {
+                if (onSheetCell(s.placed())) click();
+            }
+            case EditorGroupsTab.Click.Preview p -> orbit.beginDrag();
+        }
+        setFocused(null);
+        return true;
     }
 
     /** A click on a data-sheet cell: type over it, run its command, or open its picker. */
@@ -1205,6 +1258,9 @@ public final class EditorGuiScreen extends Screen {
         }
         if (action instanceof TemplateDataSheet.Action.ShowLoot) {
             return detail.showLootPage();
+        }
+        if (action instanceof TemplateDataSheet.Action.ShowBlocks) {
+            return detail.showBlocksPage();
         }
         if (action instanceof TemplateDataSheet.Action.PickBuilder pick) {
             setFocused(null);   // the filter box must not eat what is typed into the panel
@@ -1280,6 +1336,9 @@ public final class EditorGuiScreen extends Screen {
             inlineEdit.cancel();
             return layoutPane.scrollBy(dir);
         }
+        if (onGroups() && groupsTab.over(mouseX, mouseY)) {
+            return groupsTab.scrollBy(mouseX, mouseY, dir);
+        }
         if (onStages()) {
             if (stagesPane.over(layout, mouseX, mouseY)) return stagesPane.scrollBy(dir);
             if (stageDetail.over(mouseX, mouseY) && stageDetail.scrollBy(dir)) return true;
@@ -1340,6 +1399,23 @@ public final class EditorGuiScreen extends Screen {
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             if (!modal.pop()) this.onClose();
+            return true;
+        }
+        // Ctrl/⌘+Z and +Y work with the screen open too — the in-game bindings stand down behind a screen.
+        String history = games.brennan.dungeontrain.client.EditorUndoHotkeyClient.commandForScreenKey(keyCode, scanCode);
+        if (history != null) {
+            CommandRunner.run(history);
+            afterCommand();
+            return true;
+        }
+        // Ctrl/⌘+R: Test the selected template (save check first), or inside a test re-roll it.
+        if (games.brennan.dungeontrain.client.EditorUndoHotkeyClient.isTestKey(keyCode, scanCode)) {
+            if (games.brennan.dungeontrain.client.PortalTestSessionState.active()) {
+                CommandRunner.run(EditorScreenActions.reseedNowCommand());
+                afterCommand();
+            } else if (detail.testEntry() != null) {
+                dispatch(detail.testEntry());
+            }
             return true;
         }
         if (HotbarPassthrough.key(this.minecraft, keyCode, scanCode)) return true;

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.compat;
 
 import games.brennan.tradeeverything.api.TradeEverythingApi;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
@@ -86,6 +87,14 @@ public final class TradeEverythingBridge {
     private TradeEverythingBridge() {}
 
     public static void install() {
+        // FIRST: the community-approved values bundled from the relay's item-values page
+        // (TradeValueTable). TE takes the first non-empty provider answer, so an approved
+        // value beats every hand-tuned constant below and TE's own defaults. Per item id —
+        // a plain lookup, no stack inspection.
+        TradeEverythingApi.registerValueProvider(stack ->
+            stack.isEmpty() ? OptionalInt.empty()
+                : TradeValueTable.valueOf(BuiltInRegistries.ITEM.getKey(stack.getItem())));
+
         // All written books in DT are narrative artifacts (random/lectern/shared/
         // player-written) — flat value, overriding rarity/recipe derivation.
         TradeEverythingApi.registerValueProvider(stack ->
@@ -124,6 +133,18 @@ public final class TradeEverythingBridge {
         TradeEverythingApi.setItemOverride(
             ResourceLocation.fromNamespaceAndPath("ediblebackpacks", "golden_edible_backpack"),
             GOLDEN_EDIBLE_BACKPACK_VALUE_SIXTEENTHS);
+    }
+
+    /**
+     * Whether {@code install()} prices this item by hand (a constant above, or the trim-template
+     * tag) rather than leaving it to TE — what the catalog dump labels {@code dt-bridge}. Potions
+     * and written books are stack-dependent and reported separately as {@code dynamic}.
+     */
+    static boolean isHandTuned(ResourceLocation id, ItemStack stack) {
+        if (stack.is(ItemTags.TRIM_TEMPLATES)) return true;
+        String s = id.toString();
+        return s.equals("minecraft:bookshelf") || s.equals("minecraft:honey_block")
+            || s.equals("ediblebackpacks:edible_backpack") || s.equals("ediblebackpacks:golden_edible_backpack");
     }
 
     /**

@@ -133,6 +133,17 @@ public final class CarriageTestCommand {
                     .executes(ctx -> runTest(ctx.getSource(), CarriageTestSession.Kind.WHOLE_GROUP,
                         StringArgumentType.getString(ctx, "name"), false))))
             .then(Commands.literal(CarriageTestSession.Kind.TRACKS.literal())
+                // A whole tunnel group: every section and entrance drawn from it.
+                .then(Commands.literal("tunnelgroup")
+                    .then(Commands.argument("group", StringArgumentType.word())
+                        .suggests((ctx, b) -> {
+                            java.util.List<String> ids = new java.util.ArrayList<>(
+                                games.brennan.dungeontrain.tunnel.TunnelGroupEditing.snapshot().ids());
+                            ids.add(games.brennan.dungeontrain.tunnel.TunnelGroupEditing.UNGROUPED_TOKEN);
+                            return SharedSuggestionProvider.suggest(ids, b);
+                        })
+                        .executes(ctx -> runTunnelGroupCommand(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "group")))))
                 .then(Commands.argument("model", StringArgumentType.word())
                     .suggests((ctx, b) -> SharedSuggestionProvider.suggest(
                         Arrays.stream(TrackTestPiece.values()).map(TrackTestPiece::modelId), b))
@@ -240,6 +251,38 @@ public final class CarriageTestCommand {
         return 1;
     }
 
+    /** Session template id prefix for a whole-group test — {@code tunnel_group:<id|ungrouped>}. */
+    static final String TUNNEL_GROUP_PREFIX = "tunnel_group:";
+
+    /** {@code editor test tracks tunnelgroup <id|ungrouped>}: refuse a group with no section to build from. */
+    private static int runTunnelGroupCommand(CommandSourceStack source, String raw) {
+        String token = raw.toLowerCase(java.util.Locale.ROOT);
+        if (firstSectionOf(token) == null) {
+            source.sendFailure(Component.literal("Tunnel group '" + token + "' has no tunnel section to test.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        return runTest(source, CarriageTestSession.Kind.TRACKS, TUNNEL_GROUP_PREFIX + token, false);
+    }
+
+    /** {@code token} ({@code ungrouped} = the ungrouped pool) as the group a test tunnel is forced to. */
+    private static games.brennan.dungeontrain.template.TemplateGroup groupOf(String token) {
+        return games.brennan.dungeontrain.tunnel.TunnelGroupEditing.UNGROUPED_TOKEN.equals(token)
+            ? games.brennan.dungeontrain.template.TemplateGroup.UNGROUPED
+            : games.brennan.dungeontrain.template.TemplateGroup.of(token);
+    }
+
+    /** The first tunnel section in the group named by {@code token}, or null when it has none. */
+    private static String firstSectionOf(String token) {
+        games.brennan.dungeontrain.template.TemplateGroup group = groupOf(token);
+        for (String n : games.brennan.dungeontrain.editor.TrackVariantGroupStore.topLevelNames(
+                games.brennan.dungeontrain.track.variant.TrackKind.TUNNEL_SECTION)) {
+            if (group.matches(TrackVariantWeights.groupsFor(
+                    games.brennan.dungeontrain.track.variant.TrackKind.TUNNEL_SECTION, n))) return n;
+        }
+        return null;
+    }
+
     /** {@code editor test tracks <model> <name>}: refuse a model id that is not a piece of the line. */
     private static int runTrackCommand(CommandSourceStack source, String modelId, String name) {
         Optional<TrackTestPiece> piece = TrackTestPiece.ofModelId(modelId);
@@ -264,14 +307,35 @@ public final class CarriageTestCommand {
      */
     private static int runTrackTest(CommandSourceStack source, ServerPlayer player, ServerLevel overworld,
                                     DungeonTrainWorldData worldData, String id, long testSeed, long sceneSeed) {
-        Optional<TrackTestPiece.Named> named = TrackTestPiece.parseTemplateId(id);
-        if (named.isEmpty()) return failCode(source, "chat.dungeontrain.track_test.unknown_piece", id);
-        TrackTestPiece piece = named.get().piece();
-        String name = named.get().name();
+        // A whole-group test builds its tunnel from the group alone; the section piece stands in for
+        // the layout, and the group's first section for the band and the log.
+        games.brennan.dungeontrain.template.TemplateGroup forced = null;
+        TrackTestPiece piece;
+        String name;
+        if (id.startsWith(TUNNEL_GROUP_PREFIX)) {
+            String token = id.substring(TUNNEL_GROUP_PREFIX.length());
+            name = firstSectionOf(token);
+            if (name == null) return failCode(source, "chat.dungeontrain.track_test.unknown_piece", id);
+            forced = groupOf(token);
+            piece = TrackTestPiece.TUNNEL_SECTION;
+        } else {
+            Optional<TrackTestPiece.Named> named = TrackTestPiece.parseTemplateId(id);
+            if (named.isEmpty()) return failCode(source, "chat.dungeontrain.track_test.unknown_piece", id);
+            piece = named.get().piece();
+            name = named.get().name();
+        }
+        final games.brennan.dungeontrain.template.TemplateGroup forcedGroup = forced;
 
         // A band the piece could really appear in, drawn with the line around it: a reseed can land
         // in another, a focused one keeps it with the line.
-        TrackTestBand band = TrackTestBand.pick(TrackVariantWeights.gateFor(piece.kind(), name), sceneSeed);
+        games.brennan.dungeontrain.template.TemplateGate bandGate = TrackVariantWeights.gateFor(piece.kind(), name);
+        if (forcedGroup != null && !forcedGroup.isUngrouped()) {
+            // A gated group is tested where it can spawn: its own gate decides the band.
+            games.brennan.dungeontrain.template.TemplateGate groupGate =
+                games.brennan.dungeontrain.tunnel.TunnelGroupStore.current().gateOf(forcedGroup.id());
+            if (!groupGate.isDefault()) bandGate = groupGate;
+        }
+        TrackTestBand band = TrackTestBand.pick(bandGate, sceneSeed);
         CarriageDims dims = worldData.dims();
         CarriageGenerationConfig config = worldData.getGenerationConfig();
         CarriageVariant shell = CarriagePlacer.enclosedVariantForIndex(CarriageTestSession.TEST_INDEX,
@@ -300,9 +364,9 @@ public final class CarriageTestCommand {
 
         CarriageStampGuard.run(() -> {
             TrackTestScene.stampStretch(overworld, corner, dims, layout,
-                new TrackTestScene.Roll(piece, name, testSeed, sceneSeed, band));
+                new TrackTestScene.Roll(piece, name, testSeed, sceneSeed, band, forcedGroup));
             TrackTestScene.stampStretch(overworld, corner.offset(layout.stretchLength(), 0, 0), dims, layout,
-                new TrackTestScene.Roll(piece, name, nextRoll(testSeed), nextRoll(sceneSeed), band));
+                new TrackTestScene.Roll(piece, name, nextRoll(testSeed), nextRoll(sceneSeed), band, forcedGroup));
         });
         // The train stands on the section under test, so arriving on its back pad starts the author there.
         BlockPos backPad = corner.offset(layout.backPadX(piece), TrackTestLayout.trainY(), 0);
@@ -579,7 +643,7 @@ public final class CarriageTestCommand {
 
     /**
      * {@code editor test reseed} — re-roll the copy the author is standing in and leave them where
-     * they stood, if that was within a chunk of the copy and the new roll left it open. The same rule
+     * they stood, if that was within two chunks of the copy and the new roll left it open. The same rule
      * {@code PortalTestCommand.runReseedNow} follows.
      */
     static int runReseedNow(CommandSourceStack source, boolean focus) {

@@ -87,7 +87,9 @@ final class BuilderTileTemplates {
         TemplateCells.NbtTally tally = TemplateCells.tallyBlockEntities(template);
         TemplateSummary summary = new TemplateSummary(cells.size(), template.getSize(),
                 tally.blockEntities(), tally.containers(), TemplateCells.entityCount(tag.get()),
-                TemplateCells.lights(cells), TemplateLoot.of(template, kind, subKindOf(partKind, trackKind), id));
+                TemplateCells.lights(cells), TemplateLoot.of(template, kind, subKindOf(partKind, trackKind), id),
+                TemplateSummary.topBlockOf(cells.values()), TemplateSummary.solidCountsOf(cells.values()),
+                TemplateCells.blockCounts(cells));
         return new Loaded(cells, summary);
     }
 

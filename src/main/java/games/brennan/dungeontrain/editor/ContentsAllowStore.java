@@ -32,7 +32,8 @@ import java.util.Optional;
  *   <li><b>Bundled resource</b> — {@code <resourcePrefix><id>.contents-allow.json} on the
  *       classpath. Shipped defaults.</li>
  *   <li><b>Absent</b> — no sidecar in either tier. The caller treats that as
- *       {@link CarriageContentsAllowList#EMPTY} (everything allowed).</li>
+ *       {@link CarriageContentsAllowList#EMPTY} (no explicit decisions: every template at its own
+ *       default — on, unless it is a new opt-in template).</li>
  * </ol>
  *
  * <h2>Why this is generic and its callers are not</h2>

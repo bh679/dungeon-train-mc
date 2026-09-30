@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.ship.ShipFilterProcessor;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.template.GateContext;
+import games.brennan.dungeontrain.template.TemplateGroup;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateType;
@@ -78,6 +79,11 @@ public final class TunnelPlacer {
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
+    /** Inside the Nether crossfade every tunnel is this group's Overworld look… */
+    public static final TemplateGroup FADE_BASE_GROUP = TemplateGroup.of("stone");
+    /** …dithering into this group's Nether look. */
+    public static final TemplateGroup FADE_NETHER_GROUP = TemplateGroup.of("blackstone");
+
     private TunnelPlacer() {}
 
     /**
@@ -145,9 +151,10 @@ public final class TunnelPlacer {
      * {@link Block#UPDATE_CLIENTS} as the placement flag — neighbour-update
      * cascades are unsafe within the worldgen 3×3 decoration window.</p>
      */
-    public static boolean placeSectionAtWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin) {
+    public static boolean placeSectionAtWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin,
+                                                 @Nullable TemplateGroup group) {
         return CarriageStampGuard.call(() -> placeTunnelWorldgen(level, serverLevel, origin,
-            TunnelVariant.SECTION, TrackKind.TUNNEL_SECTION, false));
+            TunnelVariant.SECTION, TrackKind.TUNNEL_SECTION, false, group));
     }
 
     /**
@@ -155,10 +162,14 @@ public final class TunnelPlacer {
      * reads/writes through {@link WorldGenLevel}. See
      * {@link #placeSectionAtWorldgen} for the rationale on skipped runtime-
      * only post-processing (shipyard guard, sidecar SilentBlockOps).
+     *
+     * <p>{@code group} is the tunnel's rolled template group ({@link TunnelRunGroups}); null draws
+     * from every template, as before groups existed.</p>
      */
-    public static boolean placePortalAtWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin, boolean mirrorX) {
+    public static boolean placePortalAtWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin,
+                                                boolean mirrorX, @Nullable TemplateGroup group) {
         return CarriageStampGuard.call(() -> placeTunnelWorldgen(level, serverLevel, origin,
-            TunnelVariant.PORTAL, TrackKind.TUNNEL_PORTAL, mirrorX));
+            TunnelVariant.PORTAL, TrackKind.TUNNEL_PORTAL, mirrorX, group));
     }
 
     /**
@@ -170,9 +181,13 @@ public final class TunnelPlacer {
      * {@link NetherFade#selectsNether} is true — turning the tunnel Nether in the same clumps the
      * surrounding terrain turns netherrack. Both the OW and Nether names are picked deterministically
      * from this tile's seed with a phase-forced {@link GateContext}, so the blend is reproducible.
+     * The crossfade is always {@link #FADE_BASE_GROUP} into {@link #FADE_NETHER_GROUP}, whatever
+     * {@code group} the tunnel rolled (each pick falls back to its whole gated pool if its group has
+     * no member for that phase); outside it the pick honours {@code group}.
      */
     private static boolean placeTunnelWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin,
-                                               TunnelVariant variant, TrackKind kind, boolean mirrorX) {
+                                               TunnelVariant variant, TrackKind kind, boolean mirrorX,
+                                               @Nullable TemplateGroup group) {
         long worldSeed = serverLevel.getSeed();
         int tileIndex = origin.getX();
         int diffIndex = diffIndexForTile(serverLevel, tileIndex);
@@ -182,7 +197,7 @@ public final class TunnelPlacer {
 
         // Outside the crossfade: classic single-variant stamp (hard phase).
         if (!NetherFade.intersectsCrossfade(overworld, origin.getX(), origin.getX() + LENGTH - 1)) {
-            String name = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex, baseCtx);
+            String name = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex, baseCtx, group);
             Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(serverLevel, variant, name);
             if (stored.isEmpty()) return false;
             eraseInteriorAirspaceWorldgen(level, origin);
@@ -193,7 +208,7 @@ public final class TunnelPlacer {
 
         // Inside the crossfade: Overworld base, then a per-block-masked Nether overlay.
         String owName = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex,
-            new GateContext(baseCtx.level(), TrainPhase.OVERWORLD));
+            new GateContext(baseCtx.level(), TrainPhase.OVERWORLD), FADE_BASE_GROUP);
         Optional<StructureTemplate> owTemplate = TunnelTemplateStore.getFor(serverLevel, variant, owName);
         if (owTemplate.isEmpty()) return false;
         eraseInteriorAirspaceWorldgen(level, origin);
@@ -202,7 +217,7 @@ public final class TunnelPlacer {
 
         long genSeed = DungeonTrainWorldData.get(overworld).getGenerationSeed();
         String netherName = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex,
-            new GateContext(baseCtx.level(), TrainPhase.NETHER));
+            new GateContext(baseCtx.level(), TrainPhase.NETHER), FADE_NETHER_GROUP);
         Optional<StructureTemplate> netherTemplate = TunnelTemplateStore.getFor(serverLevel, variant, netherName);
         if (netherTemplate.isPresent()) {
             stampTemplateWorldgen(level, stampOrigin, netherTemplate.get(), mirrorX,
