@@ -50,7 +50,14 @@ public final class TunnelGroupEditing {
                 }
             }
         }
-        return new EditorRosterPacket.TunnelGroups(weights, registry.ungroupedWeight(), members);
+        Map<String, EditorRosterPacket.TunnelGroups.Gate> gates = new TreeMap<>();
+        for (String id : weights.keySet()) {
+            games.brennan.dungeontrain.template.TemplateGate g = registry.gateOf(id);
+            String stage = registry.metaOf(id).stageId();
+            gates.put(id, new EditorRosterPacket.TunnelGroups.Gate(g.minLevel(), g.maxLevel(),
+                games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()), stage));
+        }
+        return new EditorRosterPacket.TunnelGroups(weights, registry.ungroupedWeight(), members, gates);
     }
 
     /**

@@ -328,7 +328,14 @@ public final class CarriageTestCommand {
 
         // A band the piece could really appear in, drawn with the line around it: a reseed can land
         // in another, a focused one keeps it with the line.
-        TrackTestBand band = TrackTestBand.pick(TrackVariantWeights.gateFor(piece.kind(), name), sceneSeed);
+        games.brennan.dungeontrain.template.TemplateGate bandGate = TrackVariantWeights.gateFor(piece.kind(), name);
+        if (forcedGroup != null && !forcedGroup.isUngrouped()) {
+            // A gated group is tested where it can spawn: its own gate decides the band.
+            games.brennan.dungeontrain.template.TemplateGate groupGate =
+                games.brennan.dungeontrain.tunnel.TunnelGroupStore.current().gateOf(forcedGroup.id());
+            if (!groupGate.isDefault()) bandGate = groupGate;
+        }
+        TrackTestBand band = TrackTestBand.pick(bandGate, sceneSeed);
         CarriageDims dims = worldData.dims();
         CarriageGenerationConfig config = worldData.getGenerationConfig();
         CarriageVariant shell = CarriagePlacer.enclosedVariantForIndex(CarriageTestSession.TEST_INDEX,

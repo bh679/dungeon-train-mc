@@ -31,6 +31,9 @@ import java.util.Optional;
  * tunnelgroups ungrouped &lt;0-100|inc|dec&gt;
  * tunnelgroups rename &lt;id&gt; &lt;new_id&gt;
  * tunnelgroups member &lt;tunnel_section|tunnel_portal&gt; &lt;name&gt; &lt;id&gt; &lt;0-100|inc|dec&gt;
+ * tunnelgroups minlevel|maxlevel &lt;id&gt; inc|dec|&lt;n&gt;
+ * tunnelgroups phase &lt;id&gt; &lt;band&gt; on|off|others
+ * tunnelgroups stage &lt;id&gt; &lt;stage|custom&gt;
  * tunnelgroups delete &lt;id&gt;
  * tunnelgroups toggle &lt;tunnel_section|tunnel_portal&gt; &lt;name&gt; &lt;id&gt;
  * </pre>
@@ -57,8 +60,23 @@ final class TunnelGroupCommands {
 
     private TunnelGroupCommands() {}
 
+    private static final SuggestionProvider<CommandSourceStack> STAGE_TOKENS = (ctx, builder) -> {
+        builder.suggest("custom");
+        for (String stageId : games.brennan.dungeontrain.editor.StageStore.allIds()) builder.suggest(stageId);
+        return builder.buildFuture();
+    };
+
     static LiteralArgumentBuilder<CommandSourceStack> node() {
         return Commands.literal("tunnelgroups")
+            // The same spawn gate a template has — the builders the Stage subtree uses, pointed at a group.
+            .then(EditorCommand.minLevelSingle(GROUP_IDS, TunnelGroupCommands::applyGroupGate))
+            .then(EditorCommand.maxLevelSingle(GROUP_IDS, TunnelGroupCommands::applyGroupGate))
+            .then(EditorCommand.phaseSingle(GROUP_IDS, TunnelGroupCommands::applyGroupGate))
+            .then(Commands.literal("stage")
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(GROUP_IDS)
+                    .then(Commands.argument("stage", StringArgumentType.word()).suggests(STAGE_TOKENS)
+                        .executes(ctx -> runStage(ctx.getSource(), StringArgumentType.getString(ctx, "id"),
+                            StringArgumentType.getString(ctx, "stage"))))))
             .then(Commands.literal("list").executes(ctx -> runList(ctx.getSource())))
             .then(Commands.literal("new")
                 .then(Commands.argument("id", StringArgumentType.word())
@@ -269,6 +287,47 @@ final class TunnelGroupCommands {
                     games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant.PORTAL);
             }
         }
+    }
+
+    /** Rewrite a group's inline spawn gate — {@link EditorCommand.SingleGateOp} for the gate builders. */
+    private static int applyGroupGate(CommandSourceStack source, String raw,
+                                      java.util.function.UnaryOperator<games.brennan.dungeontrain.template.TemplateGate> op) {
+        String id = knownGroup(source, raw);
+        if (id == null) return 0;
+        try {
+            games.brennan.dungeontrain.template.TemplateGate gate = TunnelGroupStore.setGate(id, op);
+            EditorCommand.gateSuccess(source, "tunnel group " + id, gate, TunnelGroupStore.configPath().toString(),
+                TunnelGroupStore.current().metaOf(id).stageId());
+            return 1;
+        } catch (IOException e) {
+            return EditorCommand.gateFail(source, "tunnel group", id, e);
+        }
+    }
+
+    /** {@code stage <id> <stage|custom>}: link the group to a Stage, or detach it to its own gate. */
+    private static int runStage(CommandSourceStack source, String raw, String token) {
+        String id = knownGroup(source, raw);
+        if (id == null) return 0;
+        String link = EditorCommand.resolveStageLink(source, token);
+        if (link == EditorCommand.INVALID_STAGE) return 0;
+        try {
+            String stored = TunnelGroupStore.setStage(id, link);
+            EditorCommand.stageApplySuccess(source, "tunnel group", id, stored);
+            return 1;
+        } catch (IOException e) {
+            return failed(source, "stage", id, e);
+        }
+    }
+
+    /** {@code raw} as a group id that exists (registered or named by a template), else null after saying so. */
+    private static String knownGroup(CommandSourceStack source, String raw) {
+        String id = idOrFail(source, raw);
+        if (id == null) return null;
+        if (!TunnelGroupEditing.snapshot().weights().containsKey(id)) {
+            source.sendFailure(Component.literal("No tunnel group '" + id + "'."));
+            return null;
+        }
+        return id;
     }
 
     private static String idOrFail(CommandSourceStack source, String raw) {

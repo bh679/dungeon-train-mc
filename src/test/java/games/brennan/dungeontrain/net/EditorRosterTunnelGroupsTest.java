@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Tunnel template groups on the editor roster wire. */
 final class EditorRosterTunnelGroupsTest {
@@ -29,13 +30,17 @@ final class EditorRosterTunnelGroupsTest {
             List.of(new EditorRosterPacket.Group("tracks", "Tunnel Section", "tunnel_section",
                 List.of(new EditorRosterPacket.Entry(v, 0)))),
             "", EditorRosterPacket.TrainSize.UNKNOWN, List.of(),
-            new EditorRosterPacket.TunnelGroups(Map.of("stone", 3, "brick", 1), 0));
+            new EditorRosterPacket.TunnelGroups(Map.of("stone", 3, "brick", 1), 0, List.of(),
+                Map.of("stone", new EditorRosterPacket.TunnelGroups.Gate(2, 9, 5, ""),
+                    "brick", new EditorRosterPacket.TunnelGroups.Gate(0, -1, 7, "deep"))));
 
         EditorRosterPacket back = roundTrip(sent);
 
         assertEquals(List.of("brick", "stone"), back.groups().get(0).entries().get(0).variant().groupIds());
         assertEquals(Map.of("stone", 3, "brick", 1), back.tunnelGroups().weights());
         assertEquals(0, back.tunnelGroups().ungroupedWeight());
+        assertEquals(new EditorRosterPacket.TunnelGroups.Gate(2, 9, 5, ""), back.tunnelGroups().gateOf("stone"));
+        assertTrue(back.tunnelGroups().gateOf("brick").linked());
     }
 
     @Test
