@@ -1,9 +1,14 @@
 package games.brennan.dungeontrain.tunnel;
 
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+
+import java.util.Set;
 
 /**
  * Centralised block palette for {@link TunnelGenerator} and the
@@ -32,7 +37,8 @@ public final class TunnelPalette {
      *       rooted dirt/podzol/grass block's subsoil), gravel, sandstone /
      *       red-sandstone, any of the common ores that replace those, and
      *       the clay family (terracotta + colored variants, red sand,
-     *       mud / packed mud).</li>
+     *       mud / packed mud), dripstone (block + pointed), and VanillaBackport's sulfur-cave rock
+     *       (sulfur, potent sulfur, cinnabar — {@link #BACKPORT_ROCK}).</li>
      *   <li><b>Nether</b> — netherrack, basalt (incl. smooth),
      *       blackstone, gilded blackstone, soul sand, soul soil, magma
      *       block, glowstone, nether-ore family
@@ -58,6 +64,22 @@ public final class TunnelPalette {
      * blocks from its own dimension) and the three block sets don't
      * naturally overlap.</p>
      */
+    /**
+     * VanillaBackport's natural sulfur-cave rock ({@code minecraft} namespace, so vanilla's {@link Blocks} has
+     * no constants). Its crafted variants (bricks, slabs, stairs, walls) stay out, like end-stone bricks.
+     */
+    public static final Set<ResourceKey<Block>> BACKPORT_ROCK = Set.of(
+            backportBlock("sulfur"), backportBlock("potent_sulfur"), backportBlock("cinnabar"));
+
+    /** True for VanillaBackport's sulfur-cave rock — matched by registry key, one field read + one set probe. */
+    static boolean isBackportRock(Block block) {
+        return BACKPORT_ROCK.contains(block.builtInRegistryHolder().key());
+    }
+
+    private static ResourceKey<Block> backportBlock(String path) {
+        return ResourceKey.create(Registries.BLOCK, ResourceLocation.withDefaultNamespace(path));
+    }
+
     public static boolean isUndergroundMaterial(BlockState s) {
         if (s.isAir()) return false;
         if (!s.getFluidState().isEmpty()) return false;
@@ -72,9 +94,11 @@ public final class TunnelPalette {
         if (s.is(Blocks.TUFF)) return true;
         if (s.is(Blocks.GRAVEL)) return true;
         if (s.is(Blocks.CLAY)) return true;
+        if (s.is(Blocks.DRIPSTONE_BLOCK) || s.is(Blocks.POINTED_DRIPSTONE)) return true;
         if (s.is(Blocks.SANDSTONE) || s.is(Blocks.RED_SANDSTONE)) return true;
 
         if (isClayFamilyMaterial(s)) return true;
+        if (isBackportRock(s.getBlock())) return true;
 
         if (s.is(BlockTags.COAL_ORES)) return true;
         if (s.is(BlockTags.IRON_ORES)) return true;

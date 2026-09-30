@@ -87,6 +87,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_EDITOR_PLOTS_STAMPED = "editorPlotsStamped";
     private static final String TAG_EDITOR_PORTAL_PLOT_BOXES = "editorPortalPlotBoxes";
     private static final String TAG_EDITOR_STAMPED_CATEGORY = "editorStampedCategory";
+    private static final String TAG_EDITOR_CONTENTS_SIZE = "editorContentsSize";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -108,6 +109,11 @@ public final class DungeonTrainWorldData extends SavedData {
      * erase every category on the next entry instead of just the last one.
      */
     private String editorStampedCategory = "";
+    /**
+     * Which contents size ({@code ContentsSize} key) the Contents category has stamped — only one
+     * size's plots stand at a time. Empty means Room, which is every world saved before sizes.
+     */
+    private String editorContentsSize = "";
     /**
      * Where each portal-room plot was last stamped, by room name: {@code [x, y, z, sx, sy, sz]}.
      *
@@ -483,6 +489,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_EDITOR_PLOTS_STAMPED)) {
             data.editorPlotsStamped = tag.getBoolean(TAG_EDITOR_PLOTS_STAMPED);
         }
+        if (tag.contains(TAG_EDITOR_CONTENTS_SIZE)) {
+            data.editorContentsSize = tag.getString(TAG_EDITOR_CONTENTS_SIZE);
+        }
         if (tag.contains(TAG_EDITOR_STAMPED_CATEGORY)) {
             data.editorStampedCategory = tag.getString(TAG_EDITOR_STAMPED_CATEGORY);
         }
@@ -623,6 +632,7 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
         tag.putBoolean(TAG_EDITOR_PLOTS_STAMPED, editorPlotsStamped);
         tag.putString(TAG_EDITOR_STAMPED_CATEGORY, editorStampedCategory);
+        tag.putString(TAG_EDITOR_CONTENTS_SIZE, editorContentsSize);
         tag.putInt(TAG_DIFFICULTY_TRAVELLED_OFFSET, difficultyTravelledOffset);
         tag.putString(TAG_CUSTOM_CONTENT_CHOICE, customContentChoice.nbtId());
         tag.putBoolean(TAG_PORTAL_RATE_TUNED, portalRateTuned);
@@ -945,6 +955,18 @@ public final class DungeonTrainWorldData extends SavedData {
     /** The id of the category whose plots are stamped, or empty — see {@link #setEditorStampedCategory}. */
     public String editorStampedCategory() {
         return editorStampedCategory;
+    }
+
+    /** The contents size whose plots are stamped ({@code ""} = room) — see {@code ContentsResidentSize}. */
+    public String editorContentsSize() {
+        return editorContentsSize;
+    }
+
+    public void setEditorContentsSize(String key) {
+        String next = key == null ? "" : key;
+        if (next.equals(editorContentsSize)) return;
+        editorContentsSize = next;
+        setDirty();
     }
 
     /** Record which category's plots stand in the sky ({@code ""} for none). */

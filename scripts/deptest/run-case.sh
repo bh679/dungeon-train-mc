@@ -13,6 +13,7 @@
 #   be         BetterEnd: New Dawn (shares BetterNether's three libraries)
 #   wwoo cristel bop tb glitch  WWOO + Cristel Lib, Biomes O' Plenty + TerraBlender + GlitchCore
 #   blc                         Big Lost City
+#   vb pf      VanillaBackport + its Platform library (third-party required deps)
 #              (second-lap overworld mods, third-party required deps)
 #   sp         Sable Pathfinder (Modrinth-required, `optional` in mods.toml — absent on CurseForge)
 #   pmob-new   PlayerMob ABOVE the declared floor (uses playermob_version)
@@ -86,6 +87,9 @@ resolve() {
     glitch)   cached "maven.modrinth/glitchcore"      "$(prop glitchcore_version)" ;;
     # Big Lost City — required structure datapack mod for the Lost City era (#1599).
     blc)      cached "maven.modrinth/big-lost-city"   "$(prop biglostcity_version)" ;;
+    # VanillaBackport + Platform — required; the Nether-exit sulfur caves.
+    vb)       cached "maven.modrinth/vanillabackport" "$(prop vanillabackport_version)" ;;
+    pf)       cached "maven.modrinth/platform"        "$(prop platform_version)" ;;
     # Hybrid siblings — ALSO jarJar'd inside the DT jar. Present as top-level jars they model the
     # CurseForge-app install (nested copy must be skipped); absent they model Modrinth/manual.
     kt)       cached "bh679/keeptrim"                "$(prop keeptrim_version)" ;;

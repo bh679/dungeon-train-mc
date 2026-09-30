@@ -1,11 +1,10 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.portal.PortalCorridorKind;
-import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsGroup;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.ContentsSize;
 import net.minecraft.core.BlockPos;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,10 +62,9 @@ final class CarriageContentsEditorLayoutTest {
     void noGroups_topLevelRow() {
         registerCustom("alpha");
         registerCustom("beta");
-        // The stride is the WIDEST plot any contents can have, not a carriage — the portal
-        // corridor's contents plot is longer, and a carriage-wide stride would run it into its
-        // neighbour. See CarriageContentsEditor.plotStep.
-        int xStep = PortalCorridorSize.corridorLength(DIMS, PortalCorridorKind.LONG) + EditorLayout.GAP;
+        // Room contents have a row of their own, so the stride is one carriage plus the gap — the
+        // longer Half and Full boxes live on the rows above. See CarriageContentsEditor.plotStep.
+        int xStep = DIMS.length() + EditorLayout.GAP;
 
         BlockPos alpha = plot("alpha");
         BlockPos beta = plot("beta");
@@ -75,7 +73,8 @@ final class CarriageContentsEditorLayoutTest {
         // Registry order is [default, alpha, beta]; alpha = slot 1, beta = slot 2.
         assertEquals(xStep, alpha.getX());
         assertEquals(2 * xStep, beta.getX());
-        // Same Y, same Z for top-level variants.
+        // Same Y (the Room row), same Z for top-level variants.
+        assertEquals(EditorLayout.PLOT_Y, alpha.getY());
         assertEquals(alpha.getY(), beta.getY());
         assertEquals(alpha.getZ(), beta.getZ());
     }
@@ -146,6 +145,24 @@ final class CarriageContentsEditorLayoutTest {
         BlockPos a = plot("container_wooden");
         BlockPos b = plot("container_wooden");
         assertEquals(a, b);
+    }
+
+    @Test
+    @DisplayName("Each size counts its own row from slot 0, in registry order; children claim no slot")
+    void slotIndex_perSizeRows() {
+        List<CarriageContents> all = List.of(
+            CarriageContents.custom("a"), CarriageContents.custom("big"), CarriageContents.custom("b"),
+            CarriageContents.custom("big_child"), CarriageContents.custom("huge"), CarriageContents.custom("c"));
+        java.util.Map<String, ContentsSize> sizes = java.util.Map.of("big", ContentsSize.HALF, "huge", ContentsSize.FULL);
+        java.util.Map<String, Integer> index = CarriageContentsEditor.slotIndex(all, java.util.Set.of("big_child"),
+            id -> sizes.getOrDefault(id, ContentsSize.ROOM));
+
+        assertEquals(0, index.get("a"));
+        assertEquals(1, index.get("b"));
+        assertEquals(2, index.get("c"));
+        assertEquals(0, index.get("big"), "the first Half template is the first plot of the Half row");
+        assertEquals(0, index.get("huge"), "the first Full template is the first plot of the Full row");
+        assertNull(index.get("big_child"), "a sub-variant sits in its parent's column, not the row");
     }
 
     @Test
