@@ -53,7 +53,10 @@ public final class LostCityStructures {
     /** DT's copies of the big buildings: {@code dungeontrain:lost_city/<name>}. */
     public static final String TRACKSIDE_PREFIX = "lost_city/";
 
-    /** Clearance kept before the core's end — wider than the largest city's footprint (the 152-block warship). */
+    /**
+     * Clearance kept before the core's end — wider than the largest placed piece: house2lt's 80-block footprint
+     * (36×50×80) is the widest, ruined_skyscraperlt (55×147×47) and tall_skyscraperlt (39×159×38) the tallest.
+     */
     public static final int EXIT_MARGIN_BLOCKS = 160;
 
     /** Whether {@code id} is a Big Lost City structure, or one of DT's copies of one. */
