@@ -51,6 +51,8 @@ final class TunnelPaletteTest {
             Blocks.SANDSTONE,
             Blocks.RED_SANDSTONE,
             Blocks.CLAY,
+            Blocks.DRIPSTONE_BLOCK,
+            Blocks.POINTED_DRIPSTONE,
             Blocks.TERRACOTTA,
             Blocks.WHITE_TERRACOTTA,
             Blocks.ORANGE_TERRACOTTA,

@@ -37,7 +37,7 @@ public final class TunnelPalette {
      *       rooted dirt/podzol/grass block's subsoil), gravel, sandstone /
      *       red-sandstone, any of the common ores that replace those, and
      *       the clay family (terracotta + colored variants, red sand,
-     *       mud / packed mud), and VanillaBackport's sulfur-cave rock
+     *       mud / packed mud), dripstone (block + pointed), and VanillaBackport's sulfur-cave rock
      *       (sulfur, potent sulfur, cinnabar — {@link #BACKPORT_ROCK}).</li>
      *   <li><b>Nether</b> — netherrack, basalt (incl. smooth),
      *       blackstone, gilded blackstone, soul sand, soul soil, magma
@@ -94,6 +94,7 @@ public final class TunnelPalette {
         if (s.is(Blocks.TUFF)) return true;
         if (s.is(Blocks.GRAVEL)) return true;
         if (s.is(Blocks.CLAY)) return true;
+        if (s.is(Blocks.DRIPSTONE_BLOCK) || s.is(Blocks.POINTED_DRIPSTONE)) return true;
         if (s.is(Blocks.SANDSTONE) || s.is(Blocks.RED_SANDSTONE)) return true;
 
         if (isClayFamilyMaterial(s)) return true;

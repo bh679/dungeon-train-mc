@@ -121,9 +121,10 @@ public final class OverworldStretchBiomes {
      * <p>VanillaBackport's biomes ({@link BackportBiomes#OVERWORLD}) only land in the
      * {@link SecondLapOverworld.Stretch#VANILLA VANILLA} stretch — which is also what spheres, chuncks and stacks
      * resolve to. The WWOO stretch (and the Lost City run that wears it) and BoP's fall-through to vanilla pick
-     * from the table without them, so their layout is exactly the pre-VanillaBackport one.</p>
+     * from the table without them, so their layout is exactly the pre-VanillaBackport one. So do legacy-band
+     * chunks — the caller passes {@code allowBackport = false} for them ({@code LegacyBiomes#isLegacyChunk}).</p>
      */
-    public Holder<Biome> pick(SecondLapOverworld.Stretch stretch, MultiNoiseBiomeSource source,
+    public Holder<Biome> pick(SecondLapOverworld.Stretch stretch, boolean allowBackport, MultiNoiseBiomeSource source,
                               int qx, int qy, int qz, Climate.Sampler sampler) {
         Climate.TargetPoint target = sampler.sample(qx, qy, qz);
         if (stretch == SecondLapOverworld.Stretch.BOP && !bopRegions.isEmpty()) {
@@ -131,7 +132,7 @@ public final class OverworldStretchBiomes {
             if (h != null) return h;                       // deferred / missing → vanilla
         }
         Climate.ParameterList<Holder<Biome>> table =
-                stretch == SecondLapOverworld.Stretch.VANILLA ? vanilla : vanillaWithoutBackport;
+                allowBackport && stretch == SecondLapOverworld.Stretch.VANILLA ? vanilla : vanillaWithoutBackport;
         return table.findValue(target);                    // missing entries are the fallback already
     }
 
