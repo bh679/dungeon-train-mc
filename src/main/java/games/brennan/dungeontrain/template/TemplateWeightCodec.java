@@ -73,6 +73,8 @@ public final class TemplateWeightCodec {
      * entry in no group, so stores that predate groups round-trip byte-identically.
      */
     public static final String K_GROUPS = "groups";
+    /** Optional per-group weights — see {@link TemplateMeta#groupWeights()}. Absent when none are set. */
+    public static final String K_GROUP_WEIGHTS = "groupWeights";
     public static final String K_BUILDER_UUID = "uuid";
     public static final String K_BUILDER_NAME = "name";
 
@@ -96,7 +98,7 @@ public final class TemplateWeightCodec {
             Integer w = finiteRound(we);
             if (w == null) return null;
             return new TemplateMeta(clampWeight.applyAsInt(w), parseGate(o), parseStage(o), parseMode(o),
-                parseFlip(o), parseName(o), parseBuilder(o), parseGroups(o));
+                parseFlip(o), parseName(o), parseBuilder(o), parseGroups(o), parseGroupWeights(o));
         }
         return null;
     }
@@ -107,21 +109,55 @@ public final class TemplateWeightCodec {
      */
     public static List<String> parseGroups(JsonObject o) {
         JsonElement el = o.get(K_GROUPS);
-        if (el == null || !el.isJsonArray()) return List.of();
         java.util.ArrayList<String> raw = new java.util.ArrayList<>();
-        for (JsonElement e : el.getAsJsonArray()) {
-            String s = stringOrNull(e);
-            if (s != null) raw.add(s);
+        if (el != null && el.isJsonArray()) {
+            for (JsonElement e : el.getAsJsonArray()) {
+                String s = stringOrNull(e);
+                if (s != null) raw.add(s);
+            }
+        } else if (el != null && el.isJsonObject()) {
+            raw.addAll(el.getAsJsonObject().keySet());
         }
         return TemplateMeta.normaliseGroups(raw);
     }
 
+    /**
+     * Per-group weights from {@code "groupWeights": {"stone": 5}} — the entry's weight inside each
+     * listed group; a group not listed uses the template weight. Ids are normalised like
+     * {@link #parseGroups}; bad values are dropped (the record also drops groups it is not in).
+     */
+    public static java.util.Map<String, Integer> parseGroupWeights(JsonObject o) {
+        JsonElement el = o.get(K_GROUP_WEIGHTS);
+        if (el == null || !el.isJsonObject()) return java.util.Map.of();
+        java.util.Map<String, Integer> out = new TreeMap<>();
+        for (Map.Entry<String, JsonElement> e : el.getAsJsonObject().entrySet()) {
+            String id = TemplateMeta.normaliseGroupId(e.getKey());
+            JsonElement v = e.getValue();
+            if (id == null || v == null || !v.isJsonPrimitive() || !v.getAsJsonPrimitive().isNumber()) continue;
+            Integer w = finiteRound(v);
+            if (w != null) out.put(id, w);
+        }
+        return out;
+    }
+
     /** Emit group memberships into {@code o}; nothing for none. Inverse of {@link #parseGroups}. */
     public static void writeGroups(JsonObject o, List<String> groups) {
+        writeGroups(o, groups, java.util.Map.of());
+    }
+
+    /**
+     * Emit memberships as the plain {@link #K_GROUPS} array, plus {@link #K_GROUP_WEIGHTS} only when
+     * a per-group weight is set — so files that never use them are unchanged.
+     */
+    public static void writeGroups(JsonObject o, List<String> groups, java.util.Map<String, Integer> weights) {
         if (groups == null || groups.isEmpty()) return;
         JsonArray arr = new JsonArray();
         for (String g : groups) arr.add(g);
         o.add(K_GROUPS, arr);
+        if (weights == null || weights.isEmpty()) return;
+        JsonObject w = new JsonObject();
+        for (Map.Entry<String, Integer> e : new TreeMap<>(weights).entrySet()) w.addProperty(e.getKey(), e.getValue());
+        o.add(K_GROUP_WEIGHTS, w);
     }
 
     /** The optional display label on an entry object; {@code null} when absent or blank. */
@@ -337,7 +373,7 @@ public final class TemplateWeightCodec {
         writeFlip(o, meta.flip());
         if (meta.name() != null) o.addProperty(K_NAME, meta.name());
         writeBuilder(o, meta.builder());
-        writeGroups(o, meta.groups());
+        writeGroups(o, meta.groups(), meta.groupWeights());
         return o;
     }
 

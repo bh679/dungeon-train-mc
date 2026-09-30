@@ -27,8 +27,10 @@ import java.util.Optional;
  * <pre>
  * tunnelgroups list
  * tunnelgroups new &lt;id&gt;
- * tunnelgroups weight &lt;id&gt; &lt;0-100&gt;
- * tunnelgroups ungrouped &lt;0-100&gt;
+ * tunnelgroups weight &lt;id&gt; &lt;0-100|inc|dec&gt;
+ * tunnelgroups ungrouped &lt;0-100|inc|dec&gt;
+ * tunnelgroups rename &lt;id&gt; &lt;new_id&gt;
+ * tunnelgroups member &lt;tunnel_section|tunnel_portal&gt; &lt;name&gt; &lt;id&gt; &lt;0-100|inc|dec&gt;
  * tunnelgroups delete &lt;id&gt;
  * tunnelgroups toggle &lt;tunnel_section|tunnel_portal&gt; &lt;name&gt; &lt;id&gt;
  * </pre>
@@ -63,12 +65,33 @@ final class TunnelGroupCommands {
                     .executes(ctx -> runNew(ctx.getSource(), StringArgumentType.getString(ctx, "id")))))
             .then(Commands.literal("weight")
                 .then(Commands.argument("id", StringArgumentType.word()).suggests(GROUP_IDS)
+                    .then(Commands.literal("inc").executes(ctx -> runWeightStep(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "id"), +1)))
+                    .then(Commands.literal("dec").executes(ctx -> runWeightStep(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "id"), -1)))
                     .then(Commands.argument("value", IntegerArgumentType.integer(TunnelGroupStore.MIN, TunnelGroupStore.MAX))
                         .executes(ctx -> runWeight(ctx.getSource(), StringArgumentType.getString(ctx, "id"),
                             IntegerArgumentType.getInteger(ctx, "value"))))))
             .then(Commands.literal("ungrouped")
+                .then(Commands.literal("inc").executes(ctx -> runUngrouped(ctx.getSource(),
+                    TunnelGroupStore.current().ungroupedWeight() + 1)))
+                .then(Commands.literal("dec").executes(ctx -> runUngrouped(ctx.getSource(),
+                    TunnelGroupStore.current().ungroupedWeight() - 1)))
                 .then(Commands.argument("value", IntegerArgumentType.integer(TunnelGroupStore.MIN, TunnelGroupStore.MAX))
                     .executes(ctx -> runUngrouped(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "value")))))
+            .then(Commands.literal("rename")
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(GROUP_IDS)
+                    .then(Commands.argument("new_id", StringArgumentType.word())
+                        .executes(ctx -> runRename(ctx.getSource(), StringArgumentType.getString(ctx, "id"),
+                            StringArgumentType.getString(ctx, "new_id"))))))
+            .then(Commands.literal("member")
+                .then(Commands.argument("kind", StringArgumentType.word()).suggests(KINDS)
+                    .then(Commands.argument("name", StringArgumentType.word()).suggests(NAMES)
+                        .then(Commands.argument("id", StringArgumentType.word()).suggests(GROUP_IDS)
+                            .then(Commands.literal("inc").executes(ctx -> runMember(ctx, +1, null)))
+                            .then(Commands.literal("dec").executes(ctx -> runMember(ctx, -1, null)))
+                            .then(Commands.argument("value", IntegerArgumentType.integer(0, 100))
+                                .executes(ctx -> runMember(ctx, 0, IntegerArgumentType.getInteger(ctx, "value"))))))))
             .then(Commands.literal("delete")
                 .then(Commands.argument("id", StringArgumentType.word()).suggests(GROUP_IDS)
                     .executes(ctx -> runDelete(ctx.getSource(), StringArgumentType.getString(ctx, "id")))))
@@ -112,6 +135,62 @@ final class TunnelGroupCommands {
             return ok(source, "Tunnel group '" + id + "' weight is now " + stored + ".");
         } catch (IOException e) {
             return failed(source, "weight", id, e);
+        }
+    }
+
+    private static int runWeightStep(CommandSourceStack source, String raw, int step) {
+        String id = idOrFail(source, raw);
+        if (id == null) return 0;
+        return runWeight(source, id, TunnelGroupStore.clamp(TunnelGroupEditing.snapshot().weights()
+            .getOrDefault(id, TunnelGroupStore.DEFAULT_WEIGHT) + step));
+    }
+
+    private static int runRename(CommandSourceStack source, String rawFrom, String rawTo) {
+        String from = idOrFail(source, rawFrom);
+        String to = from == null ? null : idOrFail(source, rawTo);
+        if (to == null) return 0;
+        if (!TunnelGroupEditing.snapshot().weights().containsKey(from)) {
+            source.sendFailure(Component.literal("No tunnel group '" + from + "'."));
+            return 0;
+        }
+        try {
+            int moved = TunnelGroupEditing.rename(from, to);
+            if (moved < 0) {
+                source.sendFailure(Component.literal("Tunnel group '" + to + "' already exists."));
+                return 0;
+            }
+            return ok(source, "Renamed tunnel group '" + from + "' to '" + to + "' (" + moved + " template"
+                + (moved == 1 ? "" : "s") + ").");
+        } catch (IOException e) {
+            return failed(source, "rename", from, e);
+        }
+    }
+
+    /** {@code member … inc|dec|<value>}: a template's weight inside one group. */
+    private static int runMember(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx,
+                                 int step, Integer value) {
+        CommandSourceStack source = ctx.getSource();
+        TrackKind kind = TrackKind.fromId(StringArgumentType.getString(ctx, "kind"));
+        if (kind == null || !TunnelGroupEditing.isGroupable(kind)) {
+            source.sendFailure(Component.literal("Only tunnel_section and tunnel_portal templates take groups."));
+            return 0;
+        }
+        Optional<String> name = TrackVariantRegistry.find(kind, StringArgumentType.getString(ctx, "name"));
+        if (name.isEmpty()) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown", kind.id(),
+                StringArgumentType.getString(ctx, "name")));
+            return 0;
+        }
+        String id = idOrFail(source, StringArgumentType.getString(ctx, "id"));
+        if (id == null) return 0;
+        int target = value != null ? value
+            : games.brennan.dungeontrain.track.variant.TrackVariantWeights.groupWeightFor(kind, name.get(), id) + step;
+        try {
+            int stored = games.brennan.dungeontrain.track.variant.TrackVariantWeights
+                .setGroupWeight(kind, name.get(), id, target);
+            return ok(source, kind.id() + " '" + name.get() + "' weighs " + stored + " in tunnel group '" + id + "'.");
+        } catch (IOException e) {
+            return failed(source, "member weight", id, e);
         }
     }
 

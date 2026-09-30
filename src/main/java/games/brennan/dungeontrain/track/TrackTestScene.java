@@ -52,7 +52,13 @@ public final class TrackTestScene {
      * The seeds are kept apart so a focused reseed can re-roll the piece and leave the line around it
      * standing.
      */
-    public record Roll(TrackTestPiece piece, String name, long testSeed, long sceneSeed, TrackTestBand band) {
+    public record Roll(TrackTestPiece piece, String name, long testSeed, long sceneSeed, TrackTestBand band,
+                       TemplateGroup forcedGroup) {
+
+        /** A piece test — no group forced; the tunnel follows the tested piece's groups. */
+        public Roll(TrackTestPiece piece, String name, long testSeed, long sceneSeed, TrackTestBand band) {
+            this(piece, name, testSeed, sceneSeed, band, null);
+        }
 
         /** The name at {@code index}: the one under test, or the world's pick in the band on the scene's seed. */
         String nameFor(TrackKind kind, long index) {
@@ -62,7 +68,8 @@ public final class TrackTestScene {
 
         /** {@link #nameFor}, drawn from the tunnel's {@code group} — so the test tunnel is one set end to end. */
         String nameFor(TrackKind kind, long index, TemplateGroup group) {
-            if (kind == piece.kind()) return name;
+            // A group test pins no piece: every section and entrance is the group's draw.
+            if (kind == piece.kind() && forcedGroup == null) return name;
             return TrackVariantRegistry.pickName(kind, sceneSeed, index, band.context(), group);
         }
 
@@ -73,6 +80,7 @@ public final class TrackTestScene {
          * anything else, the tunnel rolls its group the world's way. Null = no group filter.
          */
         TemplateGroup tunnelGroup() {
+            if (forcedGroup != null) return forcedGroup;
             if (piece.kind() == TrackKind.TUNNEL_SECTION || piece.kind() == TrackKind.TUNNEL_PORTAL) {
                 return TunnelGroupRoll.rollAmong(sceneSeed, 0, band.context(),
                     TrackVariantWeights.groupsFor(piece.kind(), name));

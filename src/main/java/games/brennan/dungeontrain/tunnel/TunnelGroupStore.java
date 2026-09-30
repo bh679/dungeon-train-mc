@@ -119,6 +119,18 @@ public final class TunnelGroupStore {
         return current.ungroupedWeight();
     }
 
+    /**
+     * Re-key {@code from} to {@code to}, keeping its weight (a group only templates named is
+     * registered at the default). Memberships are the caller's to move. Returns false when
+     * {@code to} is already registered.
+     */
+    public static synchronized boolean rename(String from, String to) throws IOException {
+        if (current.groups().containsKey(to)) return false;
+        int weight = current.weightOf(from);
+        save(current.withoutGroup(from).withGroup(to, weight));
+        return true;
+    }
+
     /** Drop {@code id} from the registry. Memberships are the caller's to strip. Returns false if absent. */
     public static synchronized boolean delete(String id) throws IOException {
         if (!current.groups().containsKey(id)) return false;

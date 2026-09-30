@@ -35,14 +35,35 @@ public final class TunnelGroupEditing {
     public static EditorRosterPacket.TunnelGroups snapshot() {
         TunnelGroupStore.Registry registry = TunnelGroupStore.current();
         Map<String, Integer> weights = new TreeMap<>(registry.groups());
+        List<EditorRosterPacket.TunnelGroups.Member> members = new ArrayList<>();
         for (TrackKind kind : KINDS) {
             for (String name : TrackVariantGroupStore.topLevelNames(kind)) {
-                for (String id : TrackVariantWeights.groupsFor(kind, name)) {
+                List<String> groups = TrackVariantWeights.groupsFor(kind, name);
+                if (groups.isEmpty()) {
+                    members.add(new EditorRosterPacket.TunnelGroups.Member("", kind.id(), name,
+                        TrackVariantWeights.weightFor(kind, name)));
+                }
+                for (String id : groups) {
                     weights.putIfAbsent(id, registry.weightOf(id));
+                    members.add(new EditorRosterPacket.TunnelGroups.Member(id, kind.id(), name,
+                        TrackVariantWeights.groupWeightFor(kind, name, id)));
                 }
             }
         }
-        return new EditorRosterPacket.TunnelGroups(weights, registry.ungroupedWeight());
+        return new EditorRosterPacket.TunnelGroups(weights, registry.ungroupedWeight(), members);
+    }
+
+    /**
+     * Rename {@code from} to {@code to} in the registry and on every tunnel template, keeping the
+     * group's weight and each member's weight inside it. Returns templates moved, or -1 when
+     * {@code to} already exists.
+     */
+    public static int rename(String from, String to) throws IOException {
+        if (snapshot().weights().containsKey(to)) return -1;
+        int moved = 0;
+        for (TrackKind kind : KINDS) moved += TrackVariantWeights.renameGroup(kind, from, to);
+        TunnelGroupStore.rename(from, to);
+        return moved;
     }
 
     /**
@@ -71,6 +92,10 @@ public final class TunnelGroupEditing {
 
     /** {@code raw} as a group id, or null when it cannot be one. */
     public static String parseId(String raw) {
-        return TemplateMeta.normaliseGroupId(raw);
+        String id = TemplateMeta.normaliseGroupId(raw);
+        return UNGROUPED_TOKEN.equals(id) ? null : id;
     }
+
+    /** The command / test token for the ungrouped pool — reserved, so no group may take it. */
+    public static final String UNGROUPED_TOKEN = "ungrouped";
 }

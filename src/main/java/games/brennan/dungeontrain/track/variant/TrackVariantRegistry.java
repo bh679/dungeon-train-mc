@@ -246,6 +246,7 @@ public final class TrackVariantRegistry {
         if (n == 0) return TrackKind.DEFAULT_NAME;
 
         List<String> effective = pool;
+        String groupId = null;
         if (gateCtx != null) {
             List<String> gated = new ArrayList<>(n);
             for (String name : pool) {
@@ -264,6 +265,8 @@ public final class TrackVariantRegistry {
             }
             if (!inGroup.isEmpty()) {
                 effective = inGroup;
+                // Inside a named group each member draws at its weight in that group.
+                if (!group.isUngrouped()) groupId = group.id();
             } else {
                 warnGroupEmptyOnce(kind, group);
             }
@@ -273,7 +276,9 @@ public final class TrackVariantRegistry {
         int[] cumulative = new int[en];
         int total = 0;
         for (int i = 0; i < en; i++) {
-            total += TrackVariantWeights.weightFor(kind, effective.get(i));
+            total += groupId == null
+                ? TrackVariantWeights.weightFor(kind, effective.get(i))
+                : TrackVariantWeights.groupWeightFor(kind, effective.get(i), groupId);
             cumulative[i] = total;
         }
         long mixed = worldSeed

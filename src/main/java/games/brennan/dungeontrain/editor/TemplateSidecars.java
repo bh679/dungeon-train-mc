@@ -386,7 +386,8 @@ public final class TemplateSidecars {
                     TrackVariantWeights.stageIdFor(trackKind, id),
                     TrackVariantWeights.modeFor(trackKind, id))
                     // Tunnel group memberships travel with the build, so a grouped set installs grouped.
-                    .withGroups(TrackVariantWeights.groupsFor(trackKind, id));
+                    .withGroups(TrackVariantWeights.groupsFor(trackKind, id))
+                    .withGroupWeights(TrackVariantWeights.groupWeightsFor(trackKind, id));
         }
         return switch (kind) {
             case CARRIAGE -> new TemplateMeta(CarriageWeights.current().weightFor(id),
@@ -500,7 +501,12 @@ public final class TemplateSidecars {
                 TrackVariantWeights.setGate(trackKind, id, meta.gate());
                 // Only a build that carries groups sets them — one uploaded before groups existed must
                 // not wipe memberships this install already gave the template.
-                if (meta.hasGroups()) TrackVariantWeights.setGroups(trackKind, id, meta.groups());
+                if (meta.hasGroups()) {
+                    TrackVariantWeights.setGroups(trackKind, id, meta.groups());
+                    for (java.util.Map.Entry<String, Integer> w : meta.groupWeights().entrySet()) {
+                        TrackVariantWeights.setGroupWeight(trackKind, id, w.getKey(), w.getValue());
+                    }
+                }
                 // The last of the three on purpose: this is the one carrying a portal room's door
                 // position, and the two above rewrite the same entry.
                 TrackVariantWeights.setMode(trackKind, id, meta.mode());

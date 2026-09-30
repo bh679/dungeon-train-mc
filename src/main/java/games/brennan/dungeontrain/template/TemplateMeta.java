@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.template;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
@@ -44,14 +46,17 @@ import java.util.regex.Pattern;
  * <p><b>{@link #groups()} are the template groups this entry belongs to</b> — any number of
  * group ids. Read today only by the tunnel kinds: a tunnel rolls one group and draws every section
  * and entrance between its two ends from that group's members (see
- * {@code games.brennan.dungeontrain.tunnel.TunnelGroupRoll}). Empty means ungrouped.</p>
+ * {@code games.brennan.dungeontrain.tunnel.TunnelGroupRoll}). Empty means ungrouped.
+ * {@link #groupWeights()} holds the entry's weight inside a group where it was set explicitly —
+ * a template can weigh differently in each group; a group with no entry uses {@link #weight()}.</p>
  *
  * <p>An id with the {@link TemplateGate#DEFAULT default} gate, no stage link, no mode, no flip block,
  * no label, no groups <b>and</b> no builder serialises back to the legacy bare-int form (see
  * {@link TemplateWeightCodec}), so existing {@code weights.json} files are unaffected.</p>
  */
 public record TemplateMeta(int weight, TemplateGate gate, String stageId, String mode, FlipOptions flip,
-                           String name, BuilderCredit builder, List<String> groups) {
+                           String name, BuilderCredit builder, List<String> groups,
+                           Map<String, Integer> groupWeights) {
 
     /** Longest label the editor accepts — matches the wire field it travels in. */
     public static final int NAME_MAX = 32;
@@ -71,12 +76,19 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
         if (builder != null && !builder.known()) builder = null;
         // One spelling for "no groups", and a stable sorted, de-duplicated order for diffs.
         groups = normaliseGroups(groups);
+        groupWeights = normaliseGroupWeights(groupWeights, groups);
+    }
+
+    /** Back-compat 8-arg form — no per-group weights (every member weighs its template weight). */
+    public TemplateMeta(int weight, TemplateGate gate, String stageId, String mode, FlipOptions flip,
+                        String name, BuilderCredit builder, List<String> groups) {
+        this(weight, gate, stageId, mode, flip, name, builder, groups, Map.of());
     }
 
     /** Back-compat 7-arg form — no template groups. */
     public TemplateMeta(int weight, TemplateGate gate, String stageId, String mode, FlipOptions flip,
                         String name, BuilderCredit builder) {
-        this(weight, gate, stageId, mode, flip, name, builder, List.of());
+        this(weight, gate, stageId, mode, flip, name, builder, List.of(), Map.of());
     }
 
     /** Back-compat 6-arg form — no builder credit. */
@@ -133,17 +145,17 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
 
     /** Copy with {@code weight} replaced, keeping the inline gate, stage link, mode, flip and label. */
     public TemplateMeta withWeight(int newWeight) {
-        return new TemplateMeta(newWeight, gate, stageId, mode, flip, name, builder, groups);
+        return new TemplateMeta(newWeight, gate, stageId, mode, flip, name, builder, groups, groupWeights);
     }
 
     /** Copy with the inline {@code gate} replaced, keeping the weight, stage link, mode, flip and label. */
     public TemplateMeta withGate(TemplateGate newGate) {
-        return new TemplateMeta(weight, newGate, stageId, mode, flip, name, builder, groups);
+        return new TemplateMeta(weight, newGate, stageId, mode, flip, name, builder, groups, groupWeights);
     }
 
     /** Copy with the {@code flip} block replaced ({@code null} / default = no block), keeping everything else. */
     public TemplateMeta withFlip(FlipOptions newFlip) {
-        return new TemplateMeta(weight, gate, stageId, mode, newFlip, name, builder, groups);
+        return new TemplateMeta(weight, gate, stageId, mode, newFlip, name, builder, groups, groupWeights);
     }
 
     /**
@@ -152,17 +164,17 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
      * gate reflects what the row was showing.
      */
     public TemplateMeta withStage(String newStageId) {
-        return new TemplateMeta(weight, gate, newStageId, mode, flip, name, builder, groups);
+        return new TemplateMeta(weight, gate, newStageId, mode, flip, name, builder, groups, groupWeights);
     }
 
     /** Copy with the {@code mode} tag replaced (null = this kind's default), keeping everything else. */
     public TemplateMeta withMode(String newMode) {
-        return new TemplateMeta(weight, gate, stageId, newMode, flip, name, builder, groups);
+        return new TemplateMeta(weight, gate, stageId, newMode, flip, name, builder, groups, groupWeights);
     }
 
     /** Copy with the display label replaced ({@code null} / blank = show the id), keeping everything else. */
     public TemplateMeta withName(String newName) {
-        return new TemplateMeta(weight, gate, stageId, mode, flip, newName, builder, groups);
+        return new TemplateMeta(weight, gate, stageId, mode, flip, newName, builder, groups, groupWeights);
     }
 
     /**
@@ -194,7 +206,7 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
 
     /** Copy with the builder credit replaced ({@code null} = nobody credited), keeping everything else. */
     public TemplateMeta withBuilder(BuilderCredit newBuilder) {
-        return new TemplateMeta(weight, gate, stageId, mode, flip, name, newBuilder, groups);
+        return new TemplateMeta(weight, gate, stageId, mode, flip, name, newBuilder, groups, groupWeights);
     }
 
     /**
@@ -221,7 +233,8 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
 
     /** Copy with the group memberships replaced ({@code null} / empty = no groups), keeping everything else. */
     public TemplateMeta withGroups(List<String> newGroups) {
-        return new TemplateMeta(weight, gate, stageId, mode, flip, name, builder, newGroups);
+        // The record drops weights for groups the entry no longer belongs to.
+        return new TemplateMeta(weight, gate, stageId, mode, flip, name, builder, newGroups, groupWeights);
     }
 
     /**
@@ -231,8 +244,42 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
      */
     public static TemplateMeta mergeGroups(TemplateMeta prev, List<String> groups, int defaultWeight) {
         return prev == null
-            ? new TemplateMeta(defaultWeight, TemplateGate.DEFAULT, null, null, null, null, null, groups)
+            ? new TemplateMeta(defaultWeight, TemplateGate.DEFAULT, null, null, null, null, null, groups, Map.of())
             : prev.withGroups(groups);
+    }
+
+    /**
+     * This entry's weight inside {@code groupId}: its explicit per-group weight when one is set, else
+     * its template {@link #weight()}. Meaningless for a group it does not belong to.
+     */
+    public int weightInGroup(String groupId) {
+        Integer w = groupWeights.get(groupId);
+        return w == null ? weight : w;
+    }
+
+    /**
+     * Copy with the weight inside {@code groupId} set ({@code null} = back to the template weight).
+     * Ignored for a group the entry is not in.
+     */
+    public TemplateMeta withGroupWeight(String groupId, Integer w) {
+        Map<String, Integer> next = new TreeMap<>(groupWeights);
+        if (w == null) next.remove(groupId); else next.put(groupId, w);
+        return new TemplateMeta(weight, gate, stageId, mode, flip, name, builder, groups, next);
+    }
+
+    /** Copy with every per-group weight replaced by {@code weights} (limited to this entry's groups). */
+    public TemplateMeta withGroupWeights(Map<String, Integer> weights) {
+        return new TemplateMeta(weight, gate, stageId, mode, flip, name, builder, groups, weights);
+    }
+
+    /** {@code raw} limited to {@code groups}, sorted, immutable; null values dropped. Never null. */
+    static Map<String, Integer> normaliseGroupWeights(Map<String, Integer> raw, List<String> groups) {
+        if (raw == null || raw.isEmpty() || groups.isEmpty()) return Map.of();
+        TreeMap<String, Integer> out = new TreeMap<>();
+        for (Map.Entry<String, Integer> e : raw.entrySet()) {
+            if (e.getValue() != null && groups.contains(e.getKey())) out.put(e.getKey(), e.getValue());
+        }
+        return out.isEmpty() ? Map.of() : java.util.Collections.unmodifiableMap(out);
     }
 
     /** What a group id may look like — the same shape as a template name. */
