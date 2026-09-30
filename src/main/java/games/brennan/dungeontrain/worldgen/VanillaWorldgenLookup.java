@@ -26,8 +26,23 @@ public final class VanillaWorldgenLookup {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /** Built once per JVM by {@link #get()}: its only inputs are code and the frozen built-in registries. */
+    private static HolderLookup.Provider shared;
+
     private VanillaWorldgenLookup() {}
 
+    /**
+     * The shared lookup, built on first use. Everything in it is immutable data made from code, so
+     * one copy serves the server's feature and twin builds and every client login alike. Synchronized:
+     * the server builds it on the server thread while an integrated client may log in on the render
+     * thread, and the second caller waits rather than building its own.
+     */
+    public static synchronized HolderLookup.Provider get() {
+        if (shared == null) shared = create();
+        return shared;
+    }
+
+    /** A fresh, uncached build — {@link #get()} is what callers want. */
     public static HolderLookup.Provider create() {
         long t0 = System.nanoTime();
         RegistrySetBuilder builder = new RegistrySetBuilder()

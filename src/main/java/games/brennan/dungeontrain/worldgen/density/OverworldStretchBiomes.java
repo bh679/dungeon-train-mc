@@ -67,6 +67,19 @@ public final class OverworldStretchBiomes {
 
     private record HolderLookup(Set<Holder<Biome>> possible, Map<ResourceKey<Biome>, Holder<Biome>> byKey) {}
 
+    /** The last {@link #resolve} result, cached against its inputs' identities — see {@link #resolve(Registry, List)}. */
+    private static volatile Resolved resolved;
+
+    private record Resolved(Registry<Biome> biomes, List<Region> regions, OverworldStretchBiomes value) {
+        boolean builtFrom(Registry<Biome> otherBiomes, List<Region> otherRegions) {
+            if (biomes != otherBiomes || regions.size() != otherRegions.size()) return false;
+            for (int i = 0; i < regions.size(); i++) {
+                if (regions.get(i) != otherRegions.get(i)) return false;
+            }
+            return true;
+        }
+    }
+
     /**
      * The tables hold resolved holders, not keys: {@link #pick} runs once per quart, so the registry
      * lookup (a hash probe + an {@code Optional}) is done once per table entry at {@link #resolve}
@@ -97,8 +110,10 @@ public final class OverworldStretchBiomes {
         current = value;
     }
 
+    /** Unpublish, and drop the cached build so a stopped server's registry isn't kept alive. */
     public static void clear() {
         current = null;
+        resolved = null;
     }
 
     /** Number of BoP regions found — 0 means the BoP stretch falls back to vanilla. */
@@ -138,7 +153,29 @@ public final class OverworldStretchBiomes {
     /** Build from the server's biome registry and TerraBlender's regions; {@code null} on any failure. */
     public static OverworldStretchBiomes resolve(MinecraftServer server) {
         try {
-            Registry<Biome> biomes = server.registryAccess().registryOrThrow(Registries.BIOME);
+            return resolve(server.registryAccess().registryOrThrow(Registries.BIOME), Regions.get(RegionType.OVERWORLD));
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] Failed to build the second-lap overworld biome tables; overworld stays as generated", t);
+            return null;
+        }
+    }
+
+    /**
+     * As {@link #resolve(MinecraftServer)}, reusing the last build while its inputs are the same objects:
+     * the band context republishes on every dimension load and at server start, all against one
+     * registry and one region set. {@link Regions#get} copies its list per call, so the regions are
+     * compared element by element. A failed build ({@code null}) is not kept, so the next call retries.
+     */
+    static OverworldStretchBiomes resolve(Registry<Biome> biomes, List<Region> regions) {
+        Resolved last = resolved;
+        if (last != null && last.builtFrom(biomes, regions)) return last.value();
+        OverworldStretchBiomes built = build(biomes, regions);
+        if (built != null) resolved = new Resolved(biomes, List.copyOf(regions), built);
+        return built;
+    }
+
+    private static OverworldStretchBiomes build(Registry<Biome> biomes, List<Region> regions) {
+        try {
             Holder<Biome> fallback = biomes.getHolderOrThrow(Biomes.PLAINS);
             Function<ResourceKey<Biome>, Holder<Biome>> holder = key -> biomes.getHolder(key).orElse(null);
 
@@ -147,7 +184,7 @@ public final class OverworldStretchBiomes {
 
             List<Climate.ParameterList<Holder<Biome>>> bopRegions = new ArrayList<>();
             Map<ResourceLocation, Integer> bopRegionIndex = new HashMap<>();
-            for (Region region : Regions.get(RegionType.OVERWORLD)) {
+            for (Region region : regions) {
                 if (!BOP_NAMESPACE.equals(region.getName().getNamespace())) continue;
                 List<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> points = new ArrayList<>();
                 region.addBiomes(biomes, p -> {
