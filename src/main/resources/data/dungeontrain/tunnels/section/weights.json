@@ -1,4 +1,25 @@
 {
+  "copper": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY",
+      "CAVES_OF_CHAOS"
+    ],
+    "name": "Copper",
+    "groups": [
+      "copper"
+    ]
+  },
   "darktunnel": {
     "weight": 1,
     "phases": [
@@ -27,5 +48,26 @@
     "groups": [
       "a"
     ]
+  },
+  "overgrowth": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "builder": {
+      "uuid": "25e62266fe0b4045904626fe81cde68c",
+      "name": "Pumpkin_P_Patch"
+    }
   }
 }
