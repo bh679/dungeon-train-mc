@@ -364,7 +364,7 @@ final class EditorMenuScreenTest {
         // …but never under the lattice, under Off, or on a room with no Exits control at all.
         assertNull(EditorMenuPortalRows.exitMoveTripleFor("endless_repetition"));
         assertNull(EditorMenuPortalRows.exitMoveTripleFor("endless_repetition/exact/off/off"));
-        assertNull(EditorMenuPortalRows.exitMoveTripleFor("bedrock_lock"));
+        assertNull(EditorMenuPortalRows.exitMoveTripleFor("bedrock"));
         assertNull(EditorMenuPortalRows.exitMoveTripleFor(
             games.brennan.dungeontrain.net.EditorStatusPacket.NO_MODE));
     }
@@ -373,7 +373,7 @@ final class EditorMenuScreenTest {
     @DisplayName("Exits is absent for a sealed room, and its spacing is absent when nothing is laid")
     void portals_exitsRowsAbsentWhereTheyMeanNothing() {
         // Only an endless room has anywhere to put an extra way back to the train.
-        assertNull(EditorMenuPortalRows.exitsRowFor("bedrock_lock"));
+        assertNull(EditorMenuPortalRows.exitsRowFor("bedrock"));
         assertNull(EditorMenuPortalRows.exitsRowFor("void"));
         assertNull(EditorMenuPortalRows.exitsRowFor(
             games.brennan.dungeontrain.net.EditorStatusPacket.NO_MODE));
@@ -599,7 +599,7 @@ final class EditorMenuScreenTest {
     void portalRowsForANamedRoom() {
         String prefix = EditorMenuPortalRows.prefixFor("labrynth");
         assertEquals("dungeontrain editor portals room labrynth", prefix);
-        List<CommandMenuEntry> rows = EditorMenuScreen.portalRows("bedrock_lock", 11, 13, 7, prefix);
+        List<CommandMenuEntry> rows = EditorMenuScreen.portalRows("bedrock", 11, 13, 7, prefix);
         List<String> labels = rows.stream().map(CommandMenuEntry::label).toList();
         assertTrue(labels.stream().anyMatch(l -> l.startsWith("Fog: Auto")), labels.toString());
         assertTrue(labels.stream().anyMatch(l -> l.startsWith("Sky:")), labels.toString());
@@ -611,7 +611,7 @@ final class EditorMenuScreenTest {
             }
         }
         // And the stood-in form still sends to the bare root.
-        CommandMenuEntry.Stay fog = (CommandMenuEntry.Stay) EditorMenuPortalRows.roomFogRowFor("bedrock_lock");
+        CommandMenuEntry.Stay fog = (CommandMenuEntry.Stay) EditorMenuPortalRows.roomFogRowFor("bedrock");
         assertEquals("dungeontrain editor portals fog next", fog.command());
     }
 

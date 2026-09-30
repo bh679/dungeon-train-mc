@@ -329,7 +329,7 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         }
         // The raw value gated on the control applying, not the effective one: effectiveDoorWall
         // pins every non-repetition mode to Merged, which is no longer the default, and testing it
-        // here would grow a "/sealed" segment onto every Endless Open and Bedrock Lock tag on its
+        // here would grow a "/sealed" segment onto every Endless Open and Bedrock tag on its
         // next save — a segment that says nothing, since parse pins those modes the same way.
         if (doorWallApplies() && doorWall != PortalRoomDoorWall.DEFAULT) {
             return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
@@ -442,7 +442,7 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
      *
      * <p>{@link PortalRoomMode#sealsRoomBox}, which is the writer's own question rather than the
      * name of a mode: {@link PortalRoomMode#CHUNK_DIMENSION} seals for a reason of its own, and a
-     * setting gated on {@link PortalRoomMode#BEDROCK_LOCK} alone would leave one mode whose shell
+     * setting gated on {@link PortalRoomMode#BEDROCK} alone would leave one mode whose shell
      * ignored the author.</p>
      */
     public boolean lockApplies() {
@@ -481,7 +481,7 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
      * and the mode's own default where it does not.
      *
      * <p>Read this rather than {@link #exits} anywhere the answer drives block writes. A room whose
-     * walls were changed from Endless Repetition to Bedrock Lock still carries whatever Exits value
+     * walls were changed from Endless Repetition to Bedrock still carries whatever Exits value
      * it had, and honouring it would stamp corridors into a sealed room that has no copies for them
      * to stand in.</p>
      */
@@ -559,7 +559,7 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
     }
 
     /**
-     * True when the Drift control applies at all — {@link PortalRoomMode#BEDROCK_LOCK} alone.
+     * True when the Drift control applies at all — {@link PortalRoomMode#BEDROCK} alone.
      *
      * <p>A locked room is one sealed box with no copies, no generated interior and no open wall, so
      * a single blob describes the whole of it and another world can stamp that blob back into the
@@ -569,7 +569,7 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
      * through {@link PortalRoomMode#sealsRoomBox}, which Chunk Dimension also answers yes to.</p>
      */
     public boolean driftApplies() {
-        return mode == PortalRoomMode.BEDROCK_LOCK;
+        return mode == PortalRoomMode.BEDROCK;
     }
 
     /**

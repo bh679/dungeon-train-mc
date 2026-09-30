@@ -92,7 +92,7 @@ class SharedCarriageRollsTest {
         assertFalse(SharedCarriageRolls.roomDrifts(seed, 30, 0.0));
         assertTrue(SharedCarriageRolls.roomDrifts(seed, 30, 1.0));
         double chance = games.brennan.dungeontrain.config.DungeonTrainConfig.DEFAULT_SHARED_ROOM_CHANCE;
-        assertEquals(1.0 / 15.0, chance, 1e-9, "one Bedrock Lock room in fifteen drifts by default");
+        assertEquals(1.0 / 15.0, chance, 1e-9, "one Bedrock room in fifteen drifts by default");
         int drifting = 0, disagree = 0;
         for (int pair = 0; pair < 20_000; pair += 3) {
             boolean drifts = SharedCarriageRolls.roomDrifts(seed, pair, chance);

@@ -141,7 +141,7 @@ public final class PortalCarriageBuilder {
     /** Solid fill behind the twin's dummy door. */
     private static final BlockState PLUG = Blocks.DEEPSLATE.defaultBlockState();
     /**
-     * {@link PortalRoomMode#BEDROCK_LOCK}'s unbreakable rock: the skin one block outside the room
+     * {@link PortalRoomMode#BEDROCK}'s unbreakable rock: the skin one block outside the room
      * box and outside each corridor, and the plug behind each twin's outer door — see
      * {@link PortalRoomMode#sealsCorridors}.
      */
@@ -998,7 +998,7 @@ public final class PortalCarriageBuilder {
         // as it was asked for. It does not follow that the corridors repair whatever a mode wrote at
         // a door plane — they are stamped over their own volume only, and never over the room's end
         // column one block inside it, which is why nothing may write there in the first place; see
-        // PortalCorridorMask#facedBy. Bedrock Lock wraps the room here and its two corridors once
+        // PortalCorridorMask#facedBy. Bedrock wraps the room here and its two corridors once
         // they are down, which is the other half of the same shell; the endless modes settle its own
         // side walls, which for Endless Open means taking them away so there is somewhere to walk
         // out to. Void writes nothing around the room at all and sweeps the space instead.
@@ -1326,7 +1326,7 @@ public final class PortalCarriageBuilder {
 
     /**
      * Wrap one corridor and its plug in bedrock, and cap the room end it stands against — the half of
-     * {@link PortalRoomMode#BEDROCK_LOCK}'s shell that is not the room box, laid once the corridor is
+     * {@link PortalRoomMode#BEDROCK}'s shell that is not the room box, laid once the corridor is
      * standing.
      *
      * <p>The room's skin covers the room's four long faces; this covers what hangs off the other two.
@@ -1522,7 +1522,7 @@ public final class PortalCarriageBuilder {
      * clears its surroundings} the swept void around it as well.
      *
      * <p>A Void room's void is part of what the player sees, so another pair standing in it
-     * is visible damage — an old Bedrock Lock room left in there reads as bedrock where the void
+     * is visible damage — an old Bedrock room left in there reads as bedrock where the void
      * should be. That is why the void counts here even though {@link #footprintOf} deliberately
      * leaves it out (see {@link #clearVoidAround} for why the erase and the tiler must not see it).</p>
      */
@@ -1654,7 +1654,7 @@ public final class PortalCarriageBuilder {
 
     /**
      * Every block a structure currently occupies: both corridors, both plugs, the room between them,
-     * every standing copy of that room, and the block of margin their closed faces and Bedrock Lock's
+     * every standing copy of that room, and the block of margin their closed faces and Bedrock's
      * skin sit in.
      *
      * <p><b>One definition, read by both sides.</b> {@link #eraseTwin} sweeps exactly this, and
@@ -1697,7 +1697,7 @@ public final class PortalCarriageBuilder {
             maxZ = Math.max(maxZ, corridors.maxZ() + 1);
         }
 
-        // One row below the floor as well as one past the top: Bedrock Lock skins both.
+        // One row below the floor as well as one past the top: Bedrock skins both.
         //
         // Measured from the ROOM's own floor, not the corridor lane's. They are the same row only
         // when the door sits at the room's floor; a door-height offset drops the room's floor below
@@ -1728,7 +1728,7 @@ public final class PortalCarriageBuilder {
      * or visible through it if it is ever forced open.
      *
      * <p>{@code fill} is the caller's, because "not reachable" is a stronger claim for some rooms
-     * than others: a {@link PortalRoomMode#BEDROCK_LOCK} room plugs with {@link #LOCK}, which is the
+     * than others: a {@link PortalRoomMode#BEDROCK} room plugs with {@link #LOCK}, which is the
      * end cap of the shell {@link #bedrockSkinCorridor} runs down the corridor's sides, every other
      * mode with ordinary {@link #PLUG} rock.</p>
      */

@@ -6707,7 +6707,7 @@ public final class EditorCommand {
                     .suggests(PORTAL_ROOM_FOG_SUGGESTIONS)
                     .executes(ctx -> runPortalRoomFog(ctx,
                         StringArgumentType.getString(ctx, "fog")))))
-            // Whether a Bedrock Lock room drifts — is uploaded when edited and may be served from
+            // Whether a Bedrock room drifts — is uploaded when edited and may be served from
             // the shared pool. On by default; means nothing under the modes a blob cannot describe.
             .then(Commands.literal("drift")
                 .then(Commands.literal("next")

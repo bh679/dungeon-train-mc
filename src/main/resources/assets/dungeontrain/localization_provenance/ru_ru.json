@@ -1562,7 +1562,6 @@
       "gui.dungeontrain.editor_menu.plot.walls",
       "gui.dungeontrain.editor_menu.plot.reset_short",
       "gui.dungeontrain.editor_menu.plot.clear_short",
-      "gui.dungeontrain.editor_menu.portal.mode.bedrock_lock",
       "gui.dungeontrain.editor_menu.portal.mode.endless_repetition",
       "gui.dungeontrain.editor_menu.portal.mode.endless_open",
       "gui.dungeontrain.editor_menu.portal.mode.void",

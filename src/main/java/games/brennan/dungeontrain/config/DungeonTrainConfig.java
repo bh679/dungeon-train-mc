@@ -204,7 +204,7 @@ public final class DungeonTrainConfig {
      * 65% / 30% / 5% — most slots show the community's work, a healthy share hands players their own
      * back, and a steady trickle of blank canvases keeps entering the pool.
      */
-    /** One Bedrock Lock dimensional carriage in fifteen drifts; the rest are the plain template. */
+    /** One Bedrock dimensional carriage in fifteen drifts; the rest are the plain template. */
     public static final double DEFAULT_SHARED_ROOM_CHANCE = 1.0 / 15.0;
     public static final double MIN_SHARED_ROOM_CHANCE = 0.0;
     public static final double MAX_SHARED_ROOM_CHANCE = 1.0;
@@ -641,7 +641,7 @@ public final class DungeonTrainConfig {
                         "uploads its own. NOTE: leasing additionally requires sharedCarriageLeasingEnabled below. Only",
                         "carriages captured off a running train are served; Train Builder builds are a separate system",
                         "the relay withholds from every lease, so submitting one puts it in the queue rather than in a run.",
-                        "Bedrock Lock dimensional carriages drift on the same switch: one a player edits is uploaded, and a",
+                        "Bedrock dimensional carriages drift on the same switch: one a player edits is uploaded, and a",
                         "pair planning that same room may be handed another world's copy instead. Authors can keep a room",
                         "out of it with its Drift setting (/dt editor portals <room> drift off).")
                 .define("sharedCarriagesEnabled", DEFAULT_SHARED_CARRIAGES_ENABLED);
@@ -651,7 +651,7 @@ public final class DungeonTrainConfig {
                         "Default true — a shared slot may place a carriage another world built, screened and approved by",
                         "the relay. Set it false to ride only this world's own carriages while still contributing yours.",
                         "With sharedCarriagesEnabled false it does nothing, since the master switch opts the world out of",
-                        "the feature entirely. Also gates leasing drifted dimensional carriages (Bedrock Lock rooms).")
+                        "the feature entirely. Also gates leasing drifted dimensional carriages (Bedrock rooms).")
                 .define("sharedCarriageLeasingEnabled", DEFAULT_SHARED_CARRIAGE_LEASING_ENABLED);
         ModConfigSpec.DoubleValue sharedCarriagePoolChance = b
                 .comment("When a shared-carriage slot spawns, the probability it LEASES an existing build by ANY author from",
@@ -662,7 +662,7 @@ public final class DungeonTrainConfig {
                 .defineInRange("sharedCarriagePoolChance", DEFAULT_SHARED_CARRIAGE_POOL_CHANCE,
                         MIN_SHARED_CARRIAGE_POOL_CHANCE, MAX_SHARED_CARRIAGE_POOL_CHANCE);
         ModConfigSpec.DoubleValue sharedRoomChance = b
-                .comment("The probability a Bedrock Lock dimensional carriage DRIFTS at all — takes part in the shared pool",
+                .comment("The probability a Bedrock dimensional carriage DRIFTS at all — takes part in the shared pool",
                         "the way a shared carriage slot does. A drifting one uploads when a player edits it and rolls the",
                         "pool/own/fresh split above for whether it arrives as another world's copy; the rest are the plain",
                         "template and never touch the relay. Rolled deterministically per pair. Default 1/15 (0.0667).",
@@ -818,7 +818,7 @@ public final class DungeonTrainConfig {
     }
 
 
-    /** Probability a Bedrock Lock dimensional carriage drifts at all — see {@code PortalRoomDriftPlanner}. */
+    /** Probability a Bedrock dimensional carriage drifts at all — see {@code PortalRoomDriftPlanner}. */
     public static double getSharedRoomChance() {
         double v = isLoaded() ? SHARED_ROOM_CHANCE.get() : DEFAULT_SHARED_ROOM_CHANCE;
         return Math.max(MIN_SHARED_ROOM_CHANCE, Math.min(MAX_SHARED_ROOM_CHANCE, v));

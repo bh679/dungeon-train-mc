@@ -43,7 +43,7 @@ class PortalRoomSettingsTest {
         // — but only where the control applies. Every other mode is pinned to Sealed, and none of
         // these tags may grow a segment on the way back out.
         for (String tag : new String[] {
-            "bedrock_lock", "void", "endless_open", "endless_repetition",
+            "bedrock", "void", "endless_open", "endless_repetition",
             "endless_repetition/dynamic", "endless_repetition/dynamic/fit",
             "endless_repetition/dynamic/fit/random:12",
             // The books segment's canonical form, not the "signature" alias — PortalRoomBooks
@@ -111,7 +111,7 @@ class PortalRoomSettingsTest {
     @DisplayName("Door Offset is absent from every tag ever written, and reads back centred")
     void doorOffsetDefaultsCentredForEveryLegacyTag() {
         for (String tag : new String[] {
-            "bedrock_lock", "void", "endless_open", "endless_repetition",
+            "bedrock", "void", "endless_open", "endless_repetition",
             "endless_repetition/dynamic", "endless_repetition/dynamic/fit",
             "endless_repetition/dynamic/fit/random:12",
             "endless_repetition/dynamic/fit/random:12/mix:0:0:1",
@@ -144,7 +144,7 @@ class PortalRoomSettingsTest {
     @DisplayName("Door Height Offset is absent from every tag ever written, and reads back the floor")
     void doorHeightOffsetDefaultsToFloorForEveryLegacyTag() {
         for (String tag : new String[] {
-            "bedrock_lock", "void", "endless_open", "endless_repetition",
+            "bedrock", "void", "endless_open", "endless_repetition",
             "endless_repetition/dynamic", "endless_repetition/dynamic/fit",
             "endless_repetition/dynamic/fit/random:12",
             "endless_repetition/dynamic/fit/random:12/mix:0:0:1",
@@ -198,8 +198,8 @@ class PortalRoomSettingsTest {
     @Test
     @DisplayName("A room that does not repeat stores the bare mode id it always did")
     void nonRepeatingRoomsRoundTripAsBareIds() {
-        assertEquals("bedrock_lock",
-            new PortalRoomSettings(PortalRoomMode.BEDROCK_LOCK, PortalRoomCopies.DYNAMIC).toTag());
+        assertEquals("bedrock",
+            new PortalRoomSettings(PortalRoomMode.BEDROCK, PortalRoomCopies.DYNAMIC).toTag());
         assertEquals("void",
             new PortalRoomSettings(PortalRoomMode.VOID, PortalRoomCopies.DYNAMIC).toTag());
     }
@@ -250,8 +250,8 @@ class PortalRoomSettingsTest {
     @Test
     @DisplayName("Contents is only written when it changes something")
     void contentsOmittedAtItsDefault() {
-        assertEquals("bedrock_lock", PortalRoomSettings.DEFAULT.toTag());
-        assertEquals("bedrock_lock/exact/fit",
+        assertEquals("bedrock", PortalRoomSettings.DEFAULT.toTag());
+        assertEquals("bedrock/exact/fit",
             PortalRoomSettings.DEFAULT.withContents(PortalRoomContents.FIT).toTag());
         assertEquals("endless_repetition/dynamic/tile",
             new PortalRoomSettings(PortalRoomMode.ENDLESS_REPETITION, PortalRoomCopies.DYNAMIC,
@@ -262,7 +262,7 @@ class PortalRoomSettingsTest {
     @DisplayName("Tags written before Contents existed still read, as unfurnished rooms")
     void shorterTagsStillParse() {
         // Every tag any earlier version could have written: one segment, or two.
-        assertSame(PortalRoomContents.DEFAULT, PortalRoomSettings.parse("bedrock_lock").contents());
+        assertSame(PortalRoomContents.DEFAULT, PortalRoomSettings.parse("bedrock").contents());
         assertSame(PortalRoomContents.DEFAULT, PortalRoomSettings.parse("endless_open").contents());
         PortalRoomSettings twoPart = PortalRoomSettings.parse("endless_repetition/dynamic");
         assertSame(PortalRoomMode.ENDLESS_REPETITION, twoPart.mode());
@@ -284,8 +284,8 @@ class PortalRoomSettingsTest {
     @Test
     @DisplayName("Fog is absent from every tag ever written and reads back Auto")
     void fogDefaultsToAutoForEveryLegacyTag() {
-        for (String tag : new String[] {"bedrock_lock", "endless_open/dynamic",
-                "bedrock_lock/exact/off/off/off/none/sealed/-3/2/-3/2/minecraft:obsidian"}) {
+        for (String tag : new String[] {"bedrock", "endless_open/dynamic",
+                "bedrock/exact/off/off/off/none/sealed/-3/2/-3/2/minecraft:obsidian"}) {
             PortalRoomSettings parsed = PortalRoomSettings.parse(tag);
             assertSame(PortalRoomFog.AUTO, parsed.fog(), tag);
             assertEquals(parsed.mode().fogs(), parsed.fogs(), tag);
@@ -296,7 +296,7 @@ class PortalRoomSettingsTest {
     @Test
     @DisplayName("On and Off round-trip as a thirteenth segment; Auto is never written")
     void fogOverrideRoundTrips() {
-        PortalRoomSettings sealedOn = PortalRoomSettings.parse("bedrock_lock").withFog(PortalRoomFog.ON);
+        PortalRoomSettings sealedOn = PortalRoomSettings.parse("bedrock").withFog(PortalRoomFog.ON);
         assertTrue(sealedOn.fogs());
         String tag = sealedOn.toTag();
         assertTrue(tag.endsWith("/on"), tag);
@@ -314,14 +314,14 @@ class PortalRoomSettingsTest {
         assertEquals(PortalRoomCopies.DYNAMIC, reread.copies());
         assertEquals(endlessOff.toTag(), reread.toTag());
 
-        assertEquals("bedrock_lock", sealedOn.withFog(PortalRoomFog.AUTO).toTag());
+        assertEquals("bedrock", sealedOn.withFog(PortalRoomFog.AUTO).toTag());
     }
 
     @Test
     @DisplayName("Every wither carries the fog override through, and withFog leaves the rest alone")
     void withersPreserveFog() {
         PortalRoomSettings on = PortalRoomSettings.parse("endless_open/dynamic").withFog(PortalRoomFog.ON);
-        assertSame(PortalRoomFog.ON, on.withMode(PortalRoomMode.BEDROCK_LOCK).fog());
+        assertSame(PortalRoomFog.ON, on.withMode(PortalRoomMode.BEDROCK).fog());
         assertSame(PortalRoomFog.ON, on.withCopies(PortalRoomCopies.EXACT).fog());
         assertSame(PortalRoomFog.ON, on.withContents(PortalRoomContents.FIT).fog());
         assertSame(PortalRoomFog.ON, on.withSky(PortalRoomSky.DAY).fog());
@@ -336,9 +336,9 @@ class PortalRoomSettingsTest {
     @Test
     @DisplayName("Drift is absent from every tag ever written and reads back On — a locked room drifts unless told not to")
     void driftDefaultsToOnForEveryLegacyTag() {
-        for (String tag : new String[] {"bedrock_lock", "endless_open/dynamic",
-                "bedrock_lock/exact/off/off/off/none/sealed/-3/2/-3/2/minecraft:obsidian",
-                "bedrock_lock/exact/off/off/off/none/sealed/0/0/0/0/minecraft:bedrock/off"}) {
+        for (String tag : new String[] {"bedrock", "endless_open/dynamic",
+                "bedrock/exact/off/off/off/none/sealed/-3/2/-3/2/minecraft:obsidian",
+                "bedrock/exact/off/off/off/none/sealed/0/0/0/0/minecraft:bedrock/off"}) {
             PortalRoomSettings parsed = PortalRoomSettings.parse(tag);
             assertSame(PortalRoomDrift.ON, parsed.drift(), tag);
             assertEquals(tag, parsed.toTag(), tag);
@@ -346,13 +346,13 @@ class PortalRoomSettingsTest {
     }
 
     @Test
-    @DisplayName("Only a Bedrock Lock room drifts, whatever its drift segment says")
-    void onlyBedrockLockDrifts() {
+    @DisplayName("Only a Bedrock room drifts, whatever its drift segment says")
+    void onlyBedrockDrifts() {
         for (PortalRoomMode mode : PortalRoomMode.values()) {
             PortalRoomSettings on = PortalRoomSettings.parse(mode.id());
-            assertEquals(mode == PortalRoomMode.BEDROCK_LOCK, on.driftApplies(), mode.name());
-            assertEquals(mode == PortalRoomMode.BEDROCK_LOCK, on.drifts(), mode.name());
-            assertEquals(mode == PortalRoomMode.BEDROCK_LOCK ? PortalRoomDrift.ON : PortalRoomDrift.OFF,
+            assertEquals(mode == PortalRoomMode.BEDROCK, on.driftApplies(), mode.name());
+            assertEquals(mode == PortalRoomMode.BEDROCK, on.drifts(), mode.name());
+            assertEquals(mode == PortalRoomMode.BEDROCK ? PortalRoomDrift.ON : PortalRoomDrift.OFF,
                 on.effectiveDrift(), mode.name());
             assertFalse(on.withDrift(PortalRoomDrift.OFF).drifts(), mode.name());
         }
@@ -361,7 +361,7 @@ class PortalRoomSettingsTest {
     @Test
     @DisplayName("Off round-trips as a fourteenth segment on a locked room; On is never written")
     void driftOffRoundTrips() {
-        PortalRoomSettings sealedOff = PortalRoomSettings.parse("bedrock_lock").withDrift(PortalRoomDrift.OFF);
+        PortalRoomSettings sealedOff = PortalRoomSettings.parse("bedrock").withDrift(PortalRoomDrift.OFF);
         assertFalse(sealedOff.drifts());
         String tag = sealedOff.toTag();
         assertTrue(tag.endsWith("/auto/off"), tag);
@@ -369,7 +369,7 @@ class PortalRoomSettingsTest {
         assertSame(PortalRoomDrift.OFF, PortalRoomSettings.parse(tag).drift());
         assertSame(PortalRoomFog.AUTO, PortalRoomSettings.parse(tag).fog());
         assertEquals(tag, PortalRoomSettings.parse(tag).toTag());
-        assertEquals("bedrock_lock", sealedOff.withDrift(PortalRoomDrift.ON).toTag());
+        assertEquals("bedrock", sealedOff.withDrift(PortalRoomDrift.ON).toTag());
         assertSame(PortalRoomDrift.OFF, sealedOff.nextDrift().nextDrift().drift());
     }
 
@@ -381,13 +381,13 @@ class PortalRoomSettingsTest {
         assertSame(PortalRoomDrift.OFF, endless.effectiveDrift());
         assertEquals("endless_open/dynamic", endless.toTag());
         // Switching the walls back to a lock brings the author's veto with it.
-        assertFalse(endless.withMode(PortalRoomMode.BEDROCK_LOCK).drifts());
+        assertFalse(endless.withMode(PortalRoomMode.BEDROCK).drifts());
     }
 
     @Test
     @DisplayName("Every wither carries the drift veto through, and withDrift leaves the rest alone")
     void withersPreserveDrift() {
-        PortalRoomSettings off = PortalRoomSettings.parse("bedrock_lock").withDrift(PortalRoomDrift.OFF);
+        PortalRoomSettings off = PortalRoomSettings.parse("bedrock").withDrift(PortalRoomDrift.OFF);
         assertSame(PortalRoomDrift.OFF, off.withMode(PortalRoomMode.ENDLESS_OPEN).drift());
         assertSame(PortalRoomDrift.OFF, off.withCopies(PortalRoomCopies.EXACT).drift());
         assertSame(PortalRoomDrift.OFF, off.withContents(PortalRoomContents.FIT).drift());
@@ -401,14 +401,14 @@ class PortalRoomSettingsTest {
         assertSame(PortalRoomDrift.OFF, off.withDoorHeightOffset(new PortalRoomDoorHeightOffset(1)).drift());
         assertSame(PortalRoomDrift.OFF, off.withExitDoorOffset(new PortalRoomDoorOffset(1)).drift());
         assertSame(PortalRoomDrift.OFF, off.withExitDoorHeightOffset(new PortalRoomDoorHeightOffset(1)).drift());
-        assertSame(PortalRoomMode.BEDROCK_LOCK, off.withDrift(PortalRoomDrift.ON).mode());
+        assertSame(PortalRoomMode.BEDROCK, off.withDrift(PortalRoomDrift.ON).mode());
         assertSame(PortalRoomFog.AUTO, off.withDrift(PortalRoomDrift.ON).fog());
     }
 
     @Test
     @DisplayName("The longest tag with a seal block, a fog override and a drift veto still fits the packet's cap")
     void longestSealedTagWithDriftFitsTheModeTagCap() {
-        String tag = PortalRoomSettings.parse("bedrock_lock")
+        String tag = PortalRoomSettings.parse("bedrock")
             .withLock(new PortalRoomLock("a".repeat(PortalRoomLock.BLOCK_ID_MAX)))
             .withDoorOffset(new PortalRoomDoorOffset(-PortalRoomLayout.MAX_WIDTH))
             .withFog(PortalRoomFog.OFF).withDrift(PortalRoomDrift.OFF).toTag();
@@ -419,7 +419,7 @@ class PortalRoomSettingsTest {
     @Test
     @DisplayName("The longest tag with a seal block and a fog override still fits the packet's cap")
     void longestSealedTagWithFogFitsTheModeTagCap() {
-        String tag = PortalRoomSettings.parse("bedrock_lock")
+        String tag = PortalRoomSettings.parse("bedrock")
             .withLock(new PortalRoomLock("a".repeat(PortalRoomLock.BLOCK_ID_MAX)))
             .withDoorOffset(new PortalRoomDoorOffset(-PortalRoomLayout.MAX_WIDTH))
             .withFog(PortalRoomFog.OFF).toTag();
@@ -468,7 +468,7 @@ class PortalRoomSettingsTest {
         // Endless Open has sightlines across it, so the way back stays visible and it lays none.
         assertEquals(PortalRoomExits.Kind.OFF,
             PortalRoomSettings.parse("endless_open").exits().kind());
-        assertEquals(PortalRoomExits.Kind.OFF, PortalRoomSettings.parse("bedrock_lock").exits().kind());
+        assertEquals(PortalRoomExits.Kind.OFF, PortalRoomSettings.parse("bedrock").exits().kind());
     }
 
     @Test
@@ -542,7 +542,7 @@ class PortalRoomSettingsTest {
     void exitsApplyToBothEndlessModes() {
         assertTrue(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_REPETITION).exitsApply());
         assertTrue(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_OPEN).exitsApply());
-        assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.BEDROCK_LOCK).exitsApply());
+        assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.BEDROCK).exitsApply());
         assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.VOID).exitsApply());
 
         // A room whose walls were changed to a sealed mode keeps its stored value but must not act
@@ -550,7 +550,7 @@ class PortalRoomSettingsTest {
         PortalRoomSettings offMode = PortalRoomSettings.DEFAULT
             .withMode(PortalRoomMode.ENDLESS_REPETITION)
             .withExits(new PortalRoomExits(PortalRoomExits.Kind.RANDOM, 4))
-            .withMode(PortalRoomMode.BEDROCK_LOCK);
+            .withMode(PortalRoomMode.BEDROCK);
         assertEquals(PortalRoomExits.Kind.RANDOM, offMode.exits().kind());
         assertEquals(PortalRoomExits.Kind.OFF, offMode.effectiveExits().kind());
     }
@@ -593,14 +593,14 @@ class PortalRoomSettingsTest {
     @DisplayName("Books is only written when a room actually locks its books")
     void booksOnlyWrittenWhenSet() {
         // Off is the default, so every tag written before this setting existed is re-written unchanged.
-        assertEquals("bedrock_lock", PortalRoomSettings.parse("bedrock_lock").toTag());
+        assertEquals("bedrock", PortalRoomSettings.parse("bedrock").toTag());
         assertEquals("endless_repetition/dynamic/fit",
             PortalRoomSettings.parse("endless_repetition/dynamic/fit").toTag());
 
         // Set, and the earlier segments appear in front of it as placeholders — including an Exits
         // segment the author never chose, because a positional segment cannot be skipped.
-        assertEquals("bedrock_lock/exact/off/off/mix",
-            PortalRoomSettings.parse("bedrock_lock")
+        assertEquals("bedrock/exact/off/off/mix",
+            PortalRoomSettings.parse("bedrock")
                 .withBooks(new PortalRoomBooks(PortalRoomBooks.Kind.MIX)).toTag());
     }
 
@@ -629,7 +629,7 @@ class PortalRoomSettingsTest {
     @Test
     @DisplayName("Tags written before Books existed still read, as rooms that lock nothing")
     void tagsWithoutBooksReadAsUnlocked() {
-        assertSame(PortalRoomBooks.Kind.OFF, PortalRoomSettings.parse("bedrock_lock").books().kind());
+        assertSame(PortalRoomBooks.Kind.OFF, PortalRoomSettings.parse("bedrock").books().kind());
         assertSame(PortalRoomBooks.Kind.OFF, PortalRoomSettings.parse("endless_repetition/dynamic").books().kind());
         assertSame(PortalRoomBooks.Kind.OFF, PortalRoomSettings.parse("endless_repetition/dynamic/fit").books().kind());
         assertSame(PortalRoomBooks.Kind.OFF,
@@ -664,7 +664,7 @@ class PortalRoomSettingsTest {
         assertSame(PortalRoomBooks.Kind.MIX, after.books().kind());
         // ...and it survives a walls change, which re-derives Exits but has no opinion on books.
         assertSame(PortalRoomBooks.Kind.MIX,
-            after.withMode(PortalRoomMode.BEDROCK_LOCK).books().kind());
+            after.withMode(PortalRoomMode.BEDROCK).books().kind());
     }
 
     @Test
@@ -710,12 +710,12 @@ class PortalRoomSettingsTest {
     @Test
     @DisplayName("Bedrock writes no segment, so every tag ever written is re-written unchanged")
     void defaultLockAddsNothingToTheTag() {
-        assertEquals("bedrock_lock", PortalRoomSettings.DEFAULT.toTag());
-        assertEquals("bedrock_lock",
+        assertEquals("bedrock", PortalRoomSettings.DEFAULT.toTag());
+        assertEquals("bedrock",
             PortalRoomSettings.DEFAULT.withLockBlock(PortalRoomLock.DEFAULT_BLOCK).toTag());
         for (String tag : new String[] {
-            "bedrock_lock", "endless_open", "endless_repetition/dynamic",
-            "bedrock_lock/exact/fit", "chunk_dimension"
+            "bedrock", "endless_open", "endless_repetition/dynamic",
+            "bedrock/exact/fit", "chunk_dimension"
         }) {
             assertEquals(PortalRoomLock.DEFAULT, PortalRoomSettings.parse(tag).lock(), tag);
             assertEquals(tag, PortalRoomSettings.parse(tag).toTag(), tag);
@@ -741,7 +741,7 @@ class PortalRoomSettingsTest {
             // The raw value survives the trip through a mode that cannot use it, so switching the
             // walls away and back does not lose the block the author picked.
             assertEquals("minecraft:obsidian",
-                settings.withMode(PortalRoomMode.BEDROCK_LOCK).effectiveLock().blockId(), mode.id());
+                settings.withMode(PortalRoomMode.BEDROCK).effectiveLock().blockId(), mode.id());
         }
     }
 
@@ -794,7 +794,7 @@ class PortalRoomSettingsTest {
     @DisplayName("A sealed room reads Single back as Exact too — it appends no tiles at all")
     void singleDoesNotApplyWithoutTiling() {
         PortalRoomSettings sealed = PortalRoomSettings.DEFAULT
-            .withMode(PortalRoomMode.BEDROCK_LOCK)
+            .withMode(PortalRoomMode.BEDROCK)
             .withCopies(PortalRoomCopies.of(PortalRoomCopies.Kind.SINGLE));
 
         assertEquals(PortalRoomCopies.DEFAULT, sealed.effectiveCopies());
@@ -842,7 +842,7 @@ class PortalRoomSettingsTest {
     void copiesApplyToBothEndlessModes() {
         assertTrue(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_REPETITION).copiesApply());
         assertTrue(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.ENDLESS_OPEN).copiesApply());
-        assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.BEDROCK_LOCK).copiesApply());
+        assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.BEDROCK).copiesApply());
         assertFalse(PortalRoomSettings.DEFAULT.withMode(PortalRoomMode.VOID).copiesApply());
     }
 
@@ -980,6 +980,17 @@ class PortalRoomSettingsTest {
     }
 
     @Test
+    @DisplayName("a pre-rename 'bedrock_lock' tag keeps every segment and re-writes itself as 'bedrock'")
+    void legacyBedrockLockTagUpgradesOnWrite() {
+        assertSame(PortalRoomMode.BEDROCK, PortalRoomSettings.parse("bedrock_lock").mode());
+        assertEquals(PortalRoomSettings.parse("bedrock/exact/off/off/off/day"),
+            PortalRoomSettings.parse("bedrock_lock/exact/off/off/off/day"));
+        assertEquals(PortalRoomSettings.parse("bedrock/exact/off/off/off/day").toTag(),
+            PortalRoomSettings.parse("bedrock_lock/exact/off/off/off/day").toTag());
+        assertTrue(PortalRoomSettings.parse("bedrock_lock/exact/off/off/off/day").toTag().startsWith("bedrock/"));
+    }
+
+    @Test
     @DisplayName("A sky round-trips through the tag, placeholders and all")
     void skyRoundTrips() {
         for (PortalRoomSky sky : PortalRoomSky.values()) {
@@ -1003,7 +1014,7 @@ class PortalRoomSettingsTest {
         assertSame(PortalRoomSky.END,
             PortalRoomSettings.parse("void/exact/off/off/off/end").sky());
         assertSame(PortalRoomSky.DAY,
-            PortalRoomSettings.parse("bedrock_lock/exact/off/off/off/day").sky());
+            PortalRoomSettings.parse("bedrock/exact/off/off/off/day").sky());
         // window_contents carries a real Contents value in front of its sky.
         PortalRoomSettings furnished =
             PortalRoomSettings.parse("void/exact/fit/off/off/day");
@@ -1042,7 +1053,7 @@ class PortalRoomSettingsTest {
         // instance for an "off" segment rather than returning DEFAULT. Cycling Sky writes that
         // placeholder on the way through, so a room set to Daylight and back used to come to rest
         // one segment longer than it started — permanent churn in weights.json for no change at all.
-        for (String original : new String[]{"bedrock_lock", "endless_open/single:minecraft:stone",
+        for (String original : new String[]{"bedrock", "endless_open/single:minecraft:stone",
                 "endless_repetition/dynamic", "void/exact/fit"}) {
             String lit = PortalRoomSettings.parse(original).withSky(PortalRoomSky.DAY).toTag();
             String back = PortalRoomSettings.parse(lit).withSky(PortalRoomSky.NONE).toTag();
@@ -1061,7 +1072,7 @@ class PortalRoomSettingsTest {
      */
     private static PortalRoomSettings mirroredAt(int offset, int heightOffset) {
         return PortalRoomSettings.parse(
-            "bedrock_lock/exact/off/off/off/none/sealed/" + offset + "/" + heightOffset);
+            "bedrock/exact/off/off/off/none/sealed/" + offset + "/" + heightOffset);
     }
 
     @Test
@@ -1077,9 +1088,9 @@ class PortalRoomSettingsTest {
         assertFalse(nine.doorsDiffer(), "a tag that never named an exit door has one, mirrored");
 
         // And the bare mode id every stock room still carries.
-        PortalRoomSettings bare = PortalRoomSettings.parse("bedrock_lock");
+        PortalRoomSettings bare = PortalRoomSettings.parse("bedrock");
         assertFalse(bare.doorsDiffer());
-        assertEquals("bedrock_lock", bare.toTag());
+        assertEquals("bedrock", bare.toTag());
     }
 
     @Test
@@ -1088,14 +1099,14 @@ class PortalRoomSettingsTest {
         // A room mirrored the way every real one is: a tag written before the exit door existed.
         PortalRoomSettings mirrored = mirroredAt(2, 3);
         // Nine segments, exactly as before the exit door existed — the shape most rooms keep forever.
-        assertEquals("bedrock_lock/exact/off/off/off/none/sealed/2/3", mirrored.toTag());
+        assertEquals("bedrock/exact/off/off/off/none/sealed/2/3", mirrored.toTag());
         assertFalse(mirrored.doorsDiffer());
 
         PortalRoomSettings apart = mirrored
             .withExitDoorOffset(new PortalRoomDoorOffset(-4))
             .withExitDoorHeightOffset(new PortalRoomDoorHeightOffset(1));
         assertTrue(apart.doorsDiffer());
-        assertEquals("bedrock_lock/exact/off/off/off/none/sealed/2/3/-4/1", apart.toTag());
+        assertEquals("bedrock/exact/off/off/off/none/sealed/2/3/-4/1", apart.toTag());
 
         PortalRoomSettings reread = PortalRoomSettings.parse(apart.toTag());
         assertEquals(2, reread.doorOffset().value());
@@ -1111,13 +1122,13 @@ class PortalRoomSettingsTest {
         PortalRoomSettings zOnly = PortalRoomSettings.DEFAULT
             .withExitDoorOffset(new PortalRoomDoorOffset(5));
         assertTrue(zOnly.doorsDiffer());
-        assertEquals("bedrock_lock/exact/off/off/off/none/sealed/0/0/5/0", zOnly.toTag());
+        assertEquals("bedrock/exact/off/off/off/none/sealed/0/0/5/0", zOnly.toTag());
         assertEquals(zOnly.toTag(), PortalRoomSettings.parse(zOnly.toTag()).toTag());
 
         PortalRoomSettings yOnly = PortalRoomSettings.DEFAULT
             .withExitDoorHeightOffset(new PortalRoomDoorHeightOffset(2));
         assertTrue(yOnly.doorsDiffer());
-        assertEquals("bedrock_lock/exact/off/off/off/none/sealed/0/0/0/2", yOnly.toTag());
+        assertEquals("bedrock/exact/off/off/off/none/sealed/0/0/0/2", yOnly.toTag());
     }
 
     @Test
@@ -1134,7 +1145,7 @@ class PortalRoomSettingsTest {
         assertEquals(3, entryMoved.doorHeightOffset().value(), "the untouched axis must not move");
         assertEquals(3, entryMoved.exitDoorHeightOffset().value());
         assertTrue(entryMoved.doorsDiffer());
-        assertEquals("bedrock_lock/exact/off/off/off/none/sealed/5/3/2/3", entryMoved.toTag());
+        assertEquals("bedrock/exact/off/off/off/none/sealed/5/3/2/3", entryMoved.toTag());
 
         // And the mirror image: moving the EXIT door leaves the entry door alone.
         PortalRoomSettings exitMoved = mirrored.withExitDoorOffset(new PortalRoomDoorOffset(-4));
@@ -1152,7 +1163,7 @@ class PortalRoomSettingsTest {
     @DisplayName("An unreadable exit-door segment reads back mirroring, never as a centred door")
     void exitDoor_survivesAHandEditedTypo() {
         PortalRoomSettings settings = PortalRoomSettings.parse(
-            "bedrock_lock/exact/off/off/off/none/sealed/3/2/wat/nope");
+            "bedrock/exact/off/off/off/none/sealed/3/2/wat/nope");
         // A present-but-unreadable segment is a value of its own, and every parser in this package
         // is total — so it falls to that segment's default rather than failing the room's stamp.
         assertEquals(0, settings.exitDoorOffset().value());

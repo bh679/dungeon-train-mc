@@ -32,7 +32,7 @@ final class TemplateMetaMergeTest {
     @Test
     @DisplayName("mergeName keeps weight, inline gate, Stage link, mode and flip — a rename never retunes")
     void mergeName_keepsEverySpawnRule() {
-        TemplateMeta prev = new TemplateMeta(4, NETHER_GATE, "nether", "bedrock_lock",
+        TemplateMeta prev = new TemplateMeta(4, NETHER_GATE, "nether", "bedrock",
             FlipOptions.DEFAULT.with("x", true));
         TemplateMeta next = TemplateMeta.mergeName(prev, "Hell Hall", 1);
 
@@ -40,7 +40,7 @@ final class TemplateMetaMergeTest {
         assertEquals(4, next.weight());
         assertEquals(NETHER_GATE, next.gate());
         assertEquals("nether", next.stageId());
-        assertEquals("bedrock_lock", next.mode());
+        assertEquals("bedrock", next.mode());
         assertEquals(prev.flip(), next.flip());
     }
 
@@ -153,12 +153,12 @@ final class TemplateMetaMergeTest {
     @DisplayName("mergeBuilder keeps every spawn rule and the label; the other merges keep the builder")
     void mergeBuilder_keepsEverythingAndIsKept() {
         BuilderCredit mika = new BuilderCredit("380df991f603344ca090369bad2a924a", "Mika");
-        TemplateMeta prev = new TemplateMeta(4, NETHER_GATE, "nether", "bedrock_lock", null, "Tome");
+        TemplateMeta prev = new TemplateMeta(4, NETHER_GATE, "nether", "bedrock", null, "Tome");
         TemplateMeta credited = TemplateMeta.mergeBuilder(prev, mika, 1);
         assertEquals(4, credited.weight());
         assertEquals(NETHER_GATE, credited.gate());
         assertEquals("nether", credited.stageId());
-        assertEquals("bedrock_lock", credited.mode());
+        assertEquals("bedrock", credited.mode());
         assertEquals("Tome", credited.name());
         assertEquals(mika, credited.builder());
 

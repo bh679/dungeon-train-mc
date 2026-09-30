@@ -1,7 +1,7 @@
 {
   "abandonedroom": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1",
+    "mode": "bedrock/exact/off/off/off/none/sealed/-1",
     "builder": {
       "uuid": "e79d74abff784cf8b96fa36e343dfcef",
       "name": "AntonioMacarely"
@@ -9,7 +9,7 @@
   },
   "author_new": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/mix:2:1:0:1:5:0"
+    "mode": "bedrock/exact/off/off/mix:2:1:0:1:5:0"
   },
   "backrooms": {
     "weight": 1,
@@ -36,7 +36,7 @@
   },
   "biggerlibrary": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "bedrock"
   },
   "blocks": {
     "weight": 1,
@@ -49,7 +49,7 @@
   },
   "chess": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/0/0/dungeontrain:skybox_end",
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0/dungeontrain:skybox_end",
     "builder": {
       "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
       "name": "Firefly_on_ytb"
@@ -99,17 +99,17 @@
       "SPHERES",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
-    "mode": "bedrock_lock",
+    "mode": "bedrock",
     "builder": {
       "uuid": "d3bf88f298b74343a19152a8a445e49b",
       "name": "CorporalJackShep"
@@ -125,14 +125,14 @@
       "BETA",
       "ALPHA",
       "INFDEV",
-      "CLASSIC",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
-    "mode": "endless_open/single:minecraft:stone"
+    "mode": "bedrock"
   },
   "defaultweird": {
     "weight": 1,
@@ -144,14 +144,14 @@
       "BETA",
       "ALPHA",
       "INFDEV",
-      "CLASSIC",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
-    "mode": "bedrock_lock"
+    "mode": "bedrock"
   },
   "deserter": {
     "weight": 1,
@@ -210,22 +210,22 @@
       "SPHERES",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
-    "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
   },
   "gravityfalls": 1,
   "house": {
     "weight": 1,
-    "mode": "bedrock_lock",
+    "mode": "bedrock",
     "builder": {
       "uuid": "e79d74abff784cf8b96fa36e343dfcef",
       "name": "AntonioMacarely"
@@ -270,11 +270,11 @@
   },
   "midlibrary": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/mix:3:1:1:1:24:120"
+    "mode": "bedrock/exact/off/off/mix:3:1:1:1:24:120"
   },
   "miniword": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/day",
+    "mode": "bedrock/exact/off/off/off/day",
     "builder": {
       "uuid": "753c591dc29a49adadaca1770b1ccf8d",
       "name": "dot_cheeselover"
@@ -290,7 +290,7 @@
   },
   "nostalgia": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/day",
+    "mode": "bedrock/exact/off/off/off/day",
     "builder": {
       "uuid": "e79d74abff784cf8b96fa36e343dfcef",
       "name": "AntonioMacarely"
@@ -358,7 +358,7 @@
   "safehaven": 1,
   "sanemaze": {
     "weight": 1,
-    "mode": "bedrock_lock",
+    "mode": "bedrock",
     "builder": {
       "uuid": "e79d74abff784cf8b96fa36e343dfcef",
       "name": "AntonioMacarely"
@@ -392,12 +392,12 @@
   },
   "smalllibrary": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/mix:1:1:1:0:10:0"
+    "mode": "bedrock/exact/off/off/mix:1:1:1:0:10:0"
   },
   "smallpat": 1,
   "squidwardshouse_2": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/1/-1/1"
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/1/-1/1"
   },
   "statue2": {
     "weight": 1,
@@ -436,15 +436,15 @@
       "SPHERES",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
   },
@@ -454,7 +454,7 @@
   },
   "suspiciousfurniturestore": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/day",
+    "mode": "bedrock/exact/off/off/off/day",
     "builder": {
       "uuid": "e79d74abff784cf8b96fa36e343dfcef",
       "name": "AntonioMacarely"
@@ -462,7 +462,7 @@
   },
   "terrarium": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/day/sealed/0/73/0/19",
+    "mode": "bedrock/exact/off/off/off/day/sealed/0/73/0/19",
     "builder": {
       "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
       "name": "Firefly_on_ytb"
@@ -471,11 +471,11 @@
   "trap": {
     "weight": 1,
     "minLevel": 10,
-    "mode": "bedrock_lock"
+    "mode": "bedrock"
   },
   "upsidedown": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1",
+    "mode": "bedrock/exact/off/off/off/none/sealed/-1",
     "builder": {
       "uuid": "e79d74abff784cf8b96fa36e343dfcef",
       "name": "AntonioMacarely"

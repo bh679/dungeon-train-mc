@@ -404,10 +404,10 @@ final class BuilderStructureNeedsTest {
     }
 
     @Test
-    @DisplayName("A Bedrock Lock room declares its boundary and no tiling")
-    void bedrockLockDeclaresItsBoundary() {
+    @DisplayName("A Bedrock room declares its boundary and no tiling")
+    void bedrockDeclaresItsBoundary() {
         List<BuilderStructure.Placement> out =
-                BuilderStructureNeeds.around(room(PortalRoomMode.BEDROCK_LOCK));
+                BuilderStructureNeeds.around(room(PortalRoomMode.BEDROCK));
 
         assertEquals(EnumSet.of(BuilderStructure.Category.ROOM_BEDROCK), categories(out));
         assertEquals(BuilderWorldLayout.portalRoomOrigin(ROOM), out.get(0).origin());
@@ -555,7 +555,7 @@ final class BuilderStructureNeedsTest {
                 carriage(BuilderMode.TRAIN_OUTSIDE, BuilderNewOptions.SubType.CARRIAGE_ROOM, 1),
                 carriage(BuilderMode.INSIDE_CARRIAGE, BuilderNewOptions.SubType.CARRIAGE_ROOM, 1),
                 track(TrackKind.TILE), track(TrackKind.TUNNEL_SECTION), track(TrackKind.PILLAR_TOP),
-                room(PortalRoomMode.ENDLESS_REPETITION), room(PortalRoomMode.BEDROCK_LOCK));
+                room(PortalRoomMode.ENDLESS_REPETITION), room(PortalRoomMode.BEDROCK));
 
         for (BuilderStructureNeeds.Context ctx : contexts) {
             assertEquals(BuilderStructureNeeds.around(ctx), BuilderStructureNeeds.around(ctx));

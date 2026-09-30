@@ -14,7 +14,7 @@ import java.util.Locale;
  *
  * <h2>What each mode does</h2>
  * <ul>
- *   <li>{@link #BEDROCK_LOCK} — a one-block bedrock skin outside the whole structure: the room box,
+ *   <li>{@link #BEDROCK} — a one-block bedrock skin outside the whole structure: the room box,
  *       the two corridors standing off its ends, and the plugs beyond their outer doors. No
  *       repetition. The default, and the closest to how every room behaved before this existed.</li>
  *   <li>{@link #ENDLESS_REPETITION} — the whole room repeats as a grid of copies around the base
@@ -24,12 +24,12 @@ import java.util.Locale;
  *       walls at all, so it reads as an open plain rather than a hall of rooms. Those two planes are
  *       still rolled per tile or once for the whole grid as {@link PortalRoomCopies} says — see
  *       {@link #copiesApply}.</li>
- *   <li>{@link #VOID} — {@link #BEDROCK_LOCK} with the bedrock taken away: no repetition, and
+ *   <li>{@link #VOID} — {@link #BEDROCK} with the bedrock taken away: no repetition, and
  *       nothing at all around the room for {@link PortalRoomLayout#VOID_CLEARANCE} blocks.</li>
  * </ul>
  *
- * <p>Called Bedrockless until 0.1050; {@code bedrockless} is still read as {@link #VOID} — see
- * {@link #parse}.</p>
+ * <p>{@link #BEDROCK} was called Bedrock Lock and {@link #VOID} Bedrockless until 0.1050;
+ * {@code bedrock_lock} and {@code bedrockless} are still read as them — see {@link #parse}.</p>
  *
  * <h2>Void is not "the same room, unsealed"</h2>
  * <p>Twins are stamped in the empty basement under the world's bedrock ({@link PortalTwinLanes}),
@@ -66,7 +66,7 @@ import java.util.Locale;
 public enum PortalRoomMode {
 
     /** Sealed in unbreakable rock. The default when a variant says nothing. */
-    BEDROCK_LOCK("bedrock_lock", "Bedrock Lock"),
+    BEDROCK("bedrock", "Bedrock", "bedrock_lock"),
 
     /** The room repeats around itself, forever, walls between copies carved open. */
     ENDLESS_REPETITION("endless_repetition", "Endless Repetition"),
@@ -88,7 +88,7 @@ public enum PortalRoomMode {
     CHUNK_DIMENSION("chunk_dimension", "Chunk Dimension");
 
     /** What a variant with no mode tag — or an unreadable one — behaves as. */
-    public static final PortalRoomMode DEFAULT = BEDROCK_LOCK;
+    public static final PortalRoomMode DEFAULT = BEDROCK;
 
     private final String id;
     private final String displayName;
@@ -152,7 +152,7 @@ public enum PortalRoomMode {
      * True when the room is stamped into a swept clearance rather than into whatever it landed in —
      * {@link #VOID} alone.
      *
-     * <p>Deliberately not the complement of {@link #BEDROCK_LOCK}'s skin: the tiling modes write
+     * <p>Deliberately not the complement of {@link #BEDROCK}'s skin: the tiling modes write
      * neither, because their boundary is the next copy of the room.</p>
      */
     public boolean clearsSurroundings() {
@@ -181,7 +181,7 @@ public enum PortalRoomMode {
     /**
      * True when the room's own box is wrapped in a block of bedrock.
      *
-     * <p>{@link #BEDROCK_LOCK} and {@link #CHUNK_DIMENSION}. The second wraps for a reason of its
+     * <p>{@link #BEDROCK} and {@link #CHUNK_DIMENSION}. The second wraps for a reason of its
      * own rather than by inheriting the first's: a chunk dimension is a slice of terrain with no
      * walls of its own worth speaking of — a sampled hillside runs straight into the box's faces —
      * so what stops a player digging out of it and into the basement rock is the skin, and nothing
@@ -189,7 +189,7 @@ public enum PortalRoomMode {
      * its box, or the other way round, has somewhere to say so.</p>
      */
     public boolean sealsRoomBox() {
-        return this == BEDROCK_LOCK || this == CHUNK_DIMENSION;
+        return this == BEDROCK || this == CHUNK_DIMENSION;
     }
 
     /**

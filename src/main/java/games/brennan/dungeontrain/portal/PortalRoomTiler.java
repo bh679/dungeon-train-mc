@@ -298,7 +298,7 @@ public final class PortalRoomTiler {
      * hole in the plain.</p>
      *
      * <p>Tested against {@code ENDLESS_OPEN} rather than {@code !tilesWholeRoom()}, which is also
-     * true of {@link PortalRoomMode#BEDROCK_LOCK} and is only unreachable for it because
+     * true of {@link PortalRoomMode#BEDROCK} and is only unreachable for it because
      * {@link #tick} returns early for a mode that does not tile at all. That is a trap waiting for
      * the next mode to be added.</p>
      */
