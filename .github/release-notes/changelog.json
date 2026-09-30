@@ -21371,8 +21371,8 @@
         "compatibility",
         "ui"
       ],
-      "title": "Your other worlds keep BetterX's own prompts",
-      "summary": "Worlds that aren't Dungeon Train runs now ask before BetterX updates them, and new settings let you bring back BetterEnd's chorus plants and BetterX's startup screens.",
+      "title": "Other worlds left alone",
+      "summary": "Your other worlds now behave as they normally would.",
       "highlights": [],
       "pr": 1711,
       "date": "2026-09-30",
