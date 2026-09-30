@@ -51,6 +51,8 @@ final class TunnelPaletteTest {
             Blocks.SANDSTONE,
             Blocks.RED_SANDSTONE,
             Blocks.CLAY,
+            Blocks.DRIPSTONE_BLOCK,
+            Blocks.POINTED_DRIPSTONE,
             Blocks.TERRACOTTA,
             Blocks.WHITE_TERRACOTTA,
             Blocks.ORANGE_TERRACOTTA,
@@ -159,5 +161,21 @@ final class TunnelPaletteTest {
             TunnelPalette.isUndergroundMaterial(block.defaultBlockState()),
             () -> block + " must be rejected by the FluidState guard"
         );
+    }
+
+    @org.junit.jupiter.api.Test
+    @DisplayName("VanillaBackport's sulfur-cave rock is earth; its crafted variants and vanilla stone-likes are not listed")
+    void backportRockIsEarth() {
+        assertTrue(TunnelPalette.BACKPORT_ROCK.stream().map(k -> k.location().toString()).toList()
+                .containsAll(java.util.List.of("minecraft:sulfur", "minecraft:potent_sulfur", "minecraft:cinnabar")));
+        assertFalse(TunnelPalette.BACKPORT_ROCK.stream().anyMatch(k -> k.location().getPath().contains("brick")));
+        assertFalse(TunnelPalette.isBackportRock(Blocks.STONE_BRICKS));
+        // With VanillaBackport on the test classpath its blocks are registered: they must read as earth.
+        for (var key : TunnelPalette.BACKPORT_ROCK) {
+            net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(key).ifPresent(block -> {
+                assertTrue(TunnelPalette.isBackportRock(block), key.location().toString());
+                assertTrue(TunnelPalette.isUndergroundMaterial(block.defaultBlockState()), key.location().toString());
+            });
+        }
     }
 }

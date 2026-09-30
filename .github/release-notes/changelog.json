@@ -21292,6 +21292,75 @@
       "released": true,
       "released_in": "v0.1058.0",
       "released_at": "2026-09-30T10:52:40Z"
+    },
+    {
+      "id": "backported-from-the-future",
+      "version": "0.1059.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "world"
+      ],
+      "title": "Backported from the future",
+      "summary": "A little of the future has been backported into the present past \u2014 new biomes, mobs and blocks are waiting to be found.",
+      "highlights": [],
+      "pr": 1701,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1059.0",
+      "released_at": "2026-09-30T11:16:32Z"
+    },
+    {
+      "id": "sized-carriage-contents",
+      "version": "0.1060.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Carriage contents come in three sizes",
+      "summary": "The editor can now build carriage contents at Room, Half and Full size, and each carriage only takes contents of its own size.",
+      "highlights": [],
+      "pr": 1702,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
+    },
+    {
+      "id": "lost-city-processor-memo",
+      "version": "0.1061.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Smoother building generation",
+      "summary": "Big ruined buildings along the line now appear with less of a hitch.",
+      "highlights": [],
+      "pr": 1707,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
+    },
+    {
+      "id": "blended-landscape-air-matches-ground",
+      "version": "0.1062.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Blended landscapes feel of a piece",
+      "summary": "Where two landscapes blend into each other, the air and the creatures now match the ground beneath your feet.",
+      "highlights": [],
+      "pr": 1708,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1062.0",
+      "released_at": "2026-09-30T14:20:24Z"
     }
   ]
 }

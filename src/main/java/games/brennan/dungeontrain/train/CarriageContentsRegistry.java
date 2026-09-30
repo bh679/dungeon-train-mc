@@ -32,6 +32,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 /**
  * Ordered list of all carriage-contents variants available for spawning and
@@ -190,10 +191,19 @@ public final class CarriageContentsRegistry {
      * gating — used by the editor-preview path (sentinel pIdx) and tests.
      */
     public static synchronized CarriageContents pick(long worldSeed, int carriageIndex, CarriageVariant variant, GateContext gateCtx) {
-        CarriageContentsAllowList allow = (variant == null)
-            ? CarriageContentsAllowList.EMPTY
-            : CarriageVariantContentsAllowStore.get(variant).orElse(CarriageContentsAllowList.EMPTY);
-        return pick(worldSeed, carriageIndex, allow, gateCtx);
+        if (variant == null) return pick(worldSeed, carriageIndex, CarriageContentsAllowList.EMPTY, gateCtx);
+        CarriageContentsAllowList allow =
+            CarriageVariantContentsAllowStore.get(variant).orElse(CarriageContentsAllowList.EMPTY);
+        return pick(worldSeed, carriageIndex, allow, gateCtx, sizeFilter(CarriagePlacer.sizeOf(variant)));
+    }
+
+    /**
+     * Contents of exactly {@code size} — a shell only ever takes contents of its own size, so this
+     * runs before the allow-list and the weights ever see the pool. A group counts by its root's
+     * size, which its members share ({@link CarriageContentsPlacer#sizeOf}).
+     */
+    public static Predicate<String> sizeFilter(ContentsSize size) {
+        return id -> CarriageContentsPlacer.sizeOf(id) == size;
     }
 
     /**
@@ -221,8 +231,17 @@ public final class CarriageContentsRegistry {
 
     /** Gate-aware {@link #pick(long, int, CarriageContentsAllowList)}. */
     public static CarriageContents pick(long worldSeed, int carriageIndex, CarriageContentsAllowList allow, GateContext gateCtx) {
+        return pick(worldSeed, carriageIndex, allow, gateCtx, id -> true);
+    }
+
+    /**
+     * Size-aware {@link #pick(long, int, CarriageContentsAllowList, GateContext)}: only ids
+     * {@code sizeOk} accepts enter the top-level pool. Pure — the predicate carries any disk read.
+     */
+    public static CarriageContents pick(long worldSeed, int carriageIndex, CarriageContentsAllowList allow,
+                                        GateContext gateCtx, Predicate<String> sizeOk) {
         CarriageContentsAllowList safeAllow = (allow == null) ? CarriageContentsAllowList.EMPTY : allow;
-        PickContext ctx = buildPickContext(worldSeed, carriageIndex, safeAllow, gateCtx);
+        PickContext ctx = buildPickContext(worldSeed, carriageIndex, safeAllow, gateCtx, sizeOk);
         if (ctx.fallbackToDefault) {
             return CarriageContents.of(ContentsType.DEFAULT);
         }
@@ -246,18 +265,24 @@ public final class CarriageContentsRegistry {
      * what "empty" means.</p>
      */
     public static synchronized boolean anyAllowed(CarriageContentsAllowList allow) {
+        return anyAllowed(allow, id -> true);
+    }
+
+    /** {@link #anyAllowed(CarriageContentsAllowList)}, counting only ids {@code sizeOk} accepts. */
+    public static synchronized boolean anyAllowed(CarriageContentsAllowList allow, Predicate<String> sizeOk) {
         CarriageContentsAllowList safeAllow = (allow == null) ? CarriageContentsAllowList.EMPTY : allow;
         Set<String> childIds = CarriageContentsGroupStore.allChildIds();
         for (CarriageContents c : allContents()) {
             if (childIds.contains(c.id())) continue;
-            if (safeAllow.isAllowed(c.id())) return true;
+            if (safeAllow.isAllowed(c.id()) && sizeOk.test(c.id())) return true;
         }
         return false;
     }
 
     /** Synchronised pool snapshot + top-level weighted pick. */
     private static synchronized PickContext buildPickContext(
-        long worldSeed, int carriageIndex, CarriageContentsAllowList allow, GateContext gateCtx
+        long worldSeed, int carriageIndex, CarriageContentsAllowList allow, GateContext gateCtx,
+        Predicate<String> sizeOk
     ) {
         List<CarriageContents> all = allContents();
         if (all.isEmpty()) return PickContext.fallback();
@@ -267,6 +292,7 @@ public final class CarriageContentsRegistry {
         for (CarriageContents c : all) {
             if (childIds.contains(c.id())) continue;
             if (!allow.isAllowed(c.id())) continue;
+            if (!sizeOk.test(c.id())) continue;
             pool.add(c);
         }
         if (pool.isEmpty()) {
