@@ -141,6 +141,8 @@ public final class DungeonTrainNet {
         registrar.playToServer(PackageListRequestPacket.TYPE, PackageListRequestPacket.STREAM_CODEC, PackageListRequestPacket::handle);
         registrar.playToServer(ChunkFrameRoomsRequestPacket.TYPE, ChunkFrameRoomsRequestPacket.STREAM_CODEC, ChunkFrameRoomsRequestPacket::handle);
         registrar.playToClient(ChunkFrameRoomsSyncPacket.TYPE, ChunkFrameRoomsSyncPacket.STREAM_CODEC, ChunkFrameRoomsSyncPacket::handle);
+        registrar.playToServer(ContentsAllowRequestPacket.TYPE, ContentsAllowRequestPacket.STREAM_CODEC, ContentsAllowRequestPacket::handle);
+        registrar.playToClient(ContentsAllowSyncPacket.TYPE, ContentsAllowSyncPacket.STREAM_CODEC, ContentsAllowSyncPacket::handle);
         registrar.playToClient(PackageListSyncPacket.TYPE, PackageListSyncPacket.STREAM_CODEC, PackageListSyncPacket::handle);
 
         // Starting-book close-detection: client ScreenEvent.Closing → server burn flow.

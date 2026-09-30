@@ -307,6 +307,51 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
     }
 
     /**
+     * True when {@code id} is opt-in: off in every carriage and portal room whose Contents list has
+     * not switched it on explicitly (see {@link CarriageContentsAllowList#isAllowed}). False for any id
+     * with no entry — every template that existed before the mark keeps the old opt-out default.
+     */
+    public boolean optInFor(String id) {
+        if (id == null) return false;
+        TemplateMeta m = byId.get(id.toLowerCase(Locale.ROOT));
+        return m != null && m.optIn();
+    }
+
+    /**
+     * Set the opt-in mark for {@code id}, preserving every other field, and persist. See
+     * {@link #optInFor}.
+     */
+    public static synchronized void setOptIn(String id, boolean optIn) throws IOException {
+        String key = id.toLowerCase(Locale.ROOT);
+        Map<String, TemplateMeta> next = new HashMap<>(current.byId());
+        TemplateMeta prev = next.get(key);
+        next.put(key, TemplateMeta.mergeOptIn(prev, optIn, DEFAULT));
+        current = new CarriageContentsWeights(next);
+        writeConfig(current);
+        trySaveToSource(current);
+        LOGGER.info("[DungeonTrain] Set carriage contents opt-in {}={} (persisted to {}).",
+                key, optIn, configPath());
+    }
+
+    /**
+     * Mark a just-created <b>top-level</b> contents template opt-in, so it starts off in every
+     * carriage's and portal room's Contents list rather than turning up everywhere at once. Called by
+     * each path that brings a new top-level contents into being (editor new/duplicate, Train Builder
+     * save, relay install) — never for a group member, which the allow-list never consults.
+     *
+     * <p>Best-effort: the template itself is already saved and registered, so a failed write is logged
+     * rather than thrown — the template then simply behaves as opt-out, as every template did before.</p>
+     */
+    public static void markNewOptIn(String id) {
+        try {
+            setOptIn(id, true);
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Could not mark new contents '{}' opt-in: {} — it will start on in every carriage.",
+                    id, e.toString());
+        }
+    }
+
+    /**
      * Give {@code to} a copy of {@code from}'s entry — weight, inline gate, Stage link, mode,
      * flip and builder credit — leaving {@code from} as it was. The display label is the one
      * field that stays behind: the copy is labelled by its own id until its author names it.

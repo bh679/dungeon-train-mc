@@ -4189,8 +4189,8 @@ public final class EditorCommand {
 
     /**
      * Toggle whether the named contents id may spawn inside the named carriage
-     * variant. {@code on} means allowed (removed from the excluded set);
-     * {@code off} means disallowed (added to the excluded set). Persists to
+     * variant. {@code on} records an explicit allow (the only way an opt-in template spawns here);
+     * {@code off} records an explicit exclusion. Persists to
      * {@link CarriageVariantContentsAllowStore} so the choice survives restarts.
      * Idempotent — re-toggling to the current state still rewrites the sidecar
      * but doesn't change content.
@@ -4216,6 +4216,8 @@ public final class EditorCommand {
                 ? current.withAllowed(contents.id())
                 : current.withExcluded(contents.id());
             CarriageVariantContentsAllowStore.save(variant, updated);
+            pushContentsAllow(source, games.brennan.dungeontrain.net.ContentsAllowRequestPacket.KIND_CARRIAGE,
+                variant.id());
             String summary = "Carriage '" + variant.id() + "' content '" + contents.id() + "': "
                 + (on ? "ALLOWED" : "EXCLUDED");
             source.sendSuccess(() -> Component.literal(summary)
@@ -4267,6 +4269,8 @@ public final class EditorCommand {
                 ? current.withAllowed(contents.id())
                 : current.withExcluded(contents.id());
             games.brennan.dungeontrain.editor.PortalRoomContentsAllowStore.save(room, updated);
+            pushContentsAllow(source, games.brennan.dungeontrain.net.ContentsAllowRequestPacket.KIND_PORTAL_ROOM,
+                room);
             String summary = "Dimensional carriage '" + room + "' content '" + contents.id() + "': "
                 + (on ? "ALLOWED" : "EXCLUDED");
             source.sendSuccess(() -> Component.literal(summary)
@@ -4277,6 +4281,17 @@ public final class EditorCommand {
                 room, contents.id(), e);
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.failed_update_contents_allow", e.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
+        }
+    }
+
+    /**
+     * Refresh the toggling player's Contents screen with the new effective state. A console or
+     * command block has no screen to refresh, so nothing is sent.
+     */
+    private static void pushContentsAllow(CommandSourceStack source, String kind, String target) {
+        if (source.getEntity() instanceof ServerPlayer player) {
+            games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.ContentsAllowRequestPacket.build(kind, target));
         }
     }
 

@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
+import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageDoorCells;
@@ -546,6 +547,9 @@ public final class CarriageContentsEditor {
 
         StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, box);
         CarriageContentsStore.save(target, template);
+        // A new top-level contents starts off in every carriage's Contents list. A sub-variant (named by
+        // its box source) is never consulted against the allow-list, so it is left unmarked.
+        if (boxSource == null) CarriageContentsWeights.markNewOptIn(target.id());
 
         setOutline(overworld, targetOrigin, OUTLINE_BLOCK, box);
 
@@ -588,6 +592,8 @@ public final class CarriageContentsEditor {
         // CarriageEditor.duplicate.
         TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CONTENTS, null,
             source.id(), target.id());
+        // The copy is a new top-level template: opt-in, whatever its source was.
+        CarriageContentsWeights.markNewOptIn(target.id());
 
         setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
 

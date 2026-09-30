@@ -39,8 +39,9 @@ public final class ContentsShellPicker {
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
             int weight = weights.weightFor(v.id());
             if (weight <= 0 || isPortalPart(v) || isFlatbed(v)) continue;
+            // No sidecar is no explicit decision, not "everything": an opt-in template is still off.
             boolean allowed = CarriageVariantContentsAllowStore.get(v)
-                .map(a -> a.isAllowed(topId)).orElse(true);
+                .orElse(CarriageContentsAllowList.EMPTY).isAllowed(topId);
             if (!allowed) continue;
             eligible.add(v);
             total += weight;
