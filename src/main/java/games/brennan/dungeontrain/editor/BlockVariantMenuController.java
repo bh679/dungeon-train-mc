@@ -359,12 +359,14 @@ public final class BlockVariantMenuController {
                 (byte) s.half().mode().ordinal(),
                 s.difficulty().min(), s.difficulty().max(),
                 s.groupRef(), refLive,
-                (byte) s.active().mode().ordinal()));
+                (byte) s.active().mode().ordinal(),
+                (byte) s.connect().ordinal()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
             (byte) plot.copyScopeAt(localPos).ordinal(),
-            (byte) plot.spanAt(localPos).toByte());
+            (byte) plot.spanAt(localPos).toByte(),
+            plot.supportsConnectMode());
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -778,6 +780,28 @@ public final class BlockVariantMenuController {
                 if (ord < 0 || ord >= modes.length) return;
                 VariantActive next = new VariantActive(modes[ord]);
                 mutated.set(idx, mutated.get(idx).withActive(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_CONNECT_MODE -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                if (!VariantConnect.canConnect(mutated.get(idx).state())) return;
+                if (packet.delta() < 0 || packet.delta() >= VariantConnect.Mode.values().length) return;
+                mutated.set(idx, mutated.get(idx).withConnect(VariantConnect.Mode.fromOrdinal(packet.delta())));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_CONNECT_ARMS -> {
+                // Lock's arms are the entry's own stored state properties — rewrite them.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (!VariantConnect.canConnect(entry.state())) return;
+                int arms = packet.delta() & VariantConnect.ALL;
+                mutated.set(idx, entry.withState(VariantConnect.force(entry.state(), arms), entry.blockEntityNbt()));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }

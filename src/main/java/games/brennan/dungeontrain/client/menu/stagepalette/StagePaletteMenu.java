@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu.stagepalette;
 
 import games.brennan.dungeontrain.client.menu.MenuLang;
+import games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks;
 import games.brennan.dungeontrain.block.stage.StageStoneFamily.StoneKind;
 import games.brennan.dungeontrain.net.StagePaletteSyncPacket;
 import net.minecraft.core.BlockPos;
@@ -68,12 +69,13 @@ public final class StagePaletteMenu {
      * Which set of cells a {@link RowKind#CELLS} row belongs to. The X menu's palette page groups
      * rows by this rather than by what the label says, so the label can be translated.
      */
-    public enum RowGroup { NONE, SOLID, WOOD, STONE, STONE_KIND }
+    public enum RowGroup { NONE, SOLID, WOOD, STONE, STONE_KIND, COLOUR }
 
     /**
      * One table row. {@code cells} maps a column to a placeholder name; {@code labelAction} is the
      * hit kind of the row-label column ({@link CellKind#NONE} for plain labels, WOOD_HEADER /
-     * STONE_HEADER for the family rows). {@code labelArg} is the solid index or the stone kind id;
+     * STONE_HEADER for the family rows). {@code labelArg} is the solid index, the stone kind id or
+     * the colour material ({@code terracotta} / {@code concrete} / {@code glass} / {@code glass_pane});
      * the text a player reads comes from {@link #label()}, resolved when drawn so it follows the
      * language rather than the class-load.
      */
@@ -81,6 +83,7 @@ public final class StagePaletteMenu {
         static Row plain(RowKind kind) { return new Row(kind, RowGroup.NONE, "", Map.of(), CellKind.NONE); }
         static Row solid(int index, Map<Column, String> cells) { return new Row(RowKind.CELLS, RowGroup.SOLID, Integer.toString(index), cells, CellKind.NONE); }
         static Row stoneKind(String kindId, Map<Column, String> cells) { return new Row(RowKind.CELLS, RowGroup.STONE_KIND, kindId, cells, CellKind.NONE); }
+        static Row colour(String material, Map<Column, String> cells) { return new Row(RowKind.CELLS, RowGroup.COLOUR, material, cells, CellKind.NONE); }
         static Row family(RowGroup group, CellKind action, Map<Column, String> cells) { return new Row(RowKind.CELLS, group, "", cells, action); }
         public String cell(Column c) { return cells.get(c); }
 
@@ -91,6 +94,7 @@ public final class StagePaletteMenu {
                 case WOOD -> MenuLang.t("palette.wood");
                 case STONE -> MenuLang.t("palette.stone");
                 case STONE_KIND -> "  " + MenuLang.named("palette.stone_kind", labelArg, labelArg);
+                case COLOUR -> MenuLang.named("palette.colour", labelArg, labelArg);
                 case NONE -> "";
             };
         }
@@ -110,6 +114,14 @@ public final class StagePaletteMenu {
     private static volatile Hit hovered = Hit.NONE;
 
     private StagePaletteMenu() {}
+
+    /** {@code prefix + role} across {@code slots} in order, then {@code extra} (if any) in the next slot. */
+    private static Map<Column, String> colourCells(String prefix, List<String> roles, Column[] slots, String extra) {
+        Map<Column, String> cells = new EnumMap<>(Column.class);
+        for (int i = 0; i < roles.size(); i++) cells.put(slots[i], prefix + roles.get(i));
+        if (extra != null) cells.put(slots[roles.size()], extra);
+        return cells;
+    }
 
     private static List<Row> buildLayout() {
         List<Row> rows = new ArrayList<>();
@@ -155,6 +167,14 @@ public final class StagePaletteMenu {
             cells.put(Column.WALL, base + "_wall");
             rows.add(Row.stoneKind(kind.id(), cells));
         }
+        // Colour slots — primary / secondary / background in the first three columns; glazed
+        // terracotta after the terracotta trio; glass / pane primary + secondary.
+        Column[] slots = {Column.BLOCK, Column.STAIRS, Column.SLAB, Column.WALL};
+        rows.add(Row.colour("terracotta", colourCells("stage_terracotta_", StagePlaceholderBlocks.COLOUR_ROLES,
+            slots, "stage_glazed_terracotta")));
+        rows.add(Row.colour("concrete", colourCells("stage_concrete_", StagePlaceholderBlocks.COLOUR_ROLES, slots, null)));
+        rows.add(Row.colour("glass", colourCells("stage_glass_", StagePlaceholderBlocks.GLASS_ROLES, slots, null)));
+        rows.add(Row.colour("glass_pane", colourCells("stage_glass_pane_", StagePlaceholderBlocks.GLASS_ROLES, slots, null)));
         rows.add(Row.plain(RowKind.STATUS));
         return List.copyOf(rows);
     }

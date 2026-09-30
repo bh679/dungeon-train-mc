@@ -66,12 +66,50 @@ final class EditorScreenActionsTest {
     // ---- icon row ----
 
     @Test
+    @DisplayName("open files names the selection's file and is live for any selection when the files are local")
+    void openFilesLocal() {
+        java.util.function.BooleanSupplier was = EditorScreenActions.filesAreLocal;
+        EditorScreenActions.filesAreLocal = () -> true;
+        try {
+            VariantKey k = VariantKey.of(PlotCategory.WHOLE, "hall", "hall");
+            VariantKey elsewhere = VariantKey.of(PlotCategory.CARRIAGES, "windowed", "windowed");
+            EditorScreenActions.Icon icon = EditorScreenActions.openFilesIcon(
+                ctx(k, gated("WHOLE", "hall", "hall", 20, List.of()), elsewhere, PlotCategory.CARRIAGES));
+            assertInstanceOf(CommandMenuEntry.ClientAction.class, icon.entry());
+            assertEquals("wholecarriages/hall.nbt", icon.detail());
+
+            VariantKey arch = VariantKey.of(PlotCategory.ARCHITECTURE, "walls", "walls");
+            assertFalse(EditorScreenActions.openFilesIcon(
+                ctx(arch, gated("ARCHITECTURE", "walls", "walls", 20, List.of()), arch, PlotCategory.ARCHITECTURE))
+                .enabled());
+        } finally {
+            EditorScreenActions.filesAreLocal = was;
+        }
+    }
+
+    @Test
+    @DisplayName("open files is off on a remote server, whose files are not on this machine")
+    void openFilesRemote() {
+        java.util.function.BooleanSupplier was = EditorScreenActions.filesAreLocal;
+        EditorScreenActions.filesAreLocal = () -> false;
+        try {
+            VariantKey k = VariantKey.of(PlotCategory.WHOLE, "hall", "hall");
+            EditorScreenActions.Icon icon = EditorScreenActions.openFilesIcon(
+                ctx(k, gated("WHOLE", "hall", "hall", 20, List.of()), k, PlotCategory.WHOLE));
+            assertFalse(icon.enabled());
+            assertEquals(EditorScreenLang.DISABLED_NOT_LOCAL, icon.disabledKey());
+        } finally {
+            EditorScreenActions.filesAreLocal = was;
+        }
+    }
+
+    @Test
     @DisplayName("standing in the selected carriage: every icon is live and position-resolved commands are plain")
     void iconsWhenStanding() {
         VariantKey k = VariantKey.of(PlotCategory.CARRIAGES, "windowed", "windowed");
         EditorScreenActions.Ctx c = ctx(k, gated("CARRIAGES", "windowed", "windowed", 20, List.of()), k, PlotCategory.CARRIAGES);
         Map<String, EditorScreenActions.Icon> icons = iconsById(c, new ArrayList<>());
-        assertEquals(List.of("save", "rename", "move", "remove", "undo", "redo", "reset", "clear", "submit"),
+        assertEquals(List.of("save", "rename", "move", "remove", "undo", "redo", "open_files", "reset", "clear", "submit"),
             new ArrayList<>(icons.keySet()));
         assertEquals("dungeontrain save", command(icons.get("save").entry()));
         assertInstanceOf(CommandMenuEntry.TypeArg.class, icons.get("rename").entry());
@@ -301,10 +339,28 @@ final class EditorScreenActionsTest {
             ((CommandMenuEntry.DrillIn) contentsTest).target());
         assertEquals("dungeontrain editor test contents library", contentsCheck.testCommand());
 
-        // A part or a track tile is only ever a piece of something — nothing to stand up.
+        // A part is only ever a piece of a carriage — nothing to stand up.
         VariantKey part = VariantKey.of(PlotCategory.PARTS, "floor", "oak");
         assertNull(EditorScreenActions.testEntry(ctx(part, gated("PARTS", "floor", "oak", 1, List.of()), part, PlotCategory.CARRIAGES)));
         assertNull(EditorScreenActions.testEntry(ctx(null, null, null, null)));
+    }
+
+    @Test
+    @DisplayName("Every piece of the line the Tracks list shows can be tested, by its model id and name")
+    void testCarriage_tracks() {
+        for (String modelId : List.of("track", "pillar_bottom", "pillar_middle", "pillar_top",
+                "adjunct_stairs", "adjunct_stairs_entrance", "tunnel_section", "tunnel_portal")) {
+            VariantKey piece = VariantKey.of(PlotCategory.TRACKS, modelId, "mossy");
+            CommandMenuEntry entry = EditorScreenActions.testEntry(
+                ctx(piece, gated("TRACKS", modelId, "mossy", 1, List.of()), null, PlotCategory.TRACKS));
+            assertNotNull(entry, modelId);
+            PortalTestSaveCheckScreen check = assertInstanceOf(PortalTestSaveCheckScreen.class,
+                ((CommandMenuEntry.DrillIn) entry).target());
+            assertEquals("dungeontrain editor test tracks " + modelId + " mossy", check.testCommand());
+        }
+        // A model id that is not a piece of the line has nothing to stand up.
+        assertNull(EditorScreenActions.testCheckFor(PlotCategory.TRACKS, "portal_room", "mossy"));
+        assertNull(EditorScreenActions.testCheckFor(PlotCategory.TRACKS, null, "mossy"));
     }
 
     // ---- settings rows ----

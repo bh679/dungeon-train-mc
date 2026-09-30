@@ -1,0 +1,69 @@
+{
+  "name": "dungeontrain:lost_city/civic_hall",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/civic_hall",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/civic_hall_shipped"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/civic_hall",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/civic_hall_wider"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/civic_hall",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/civic_hall_narrower"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/civic_hall",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/civic_hall_sandstone"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/civic_hall",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/civic_hall_dark"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/civic_hall",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/civic_hall_bitten"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/civic_hall",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/civic_hall_dry"
+      }
+    }
+  ]
+}

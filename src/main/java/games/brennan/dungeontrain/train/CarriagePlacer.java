@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
@@ -102,6 +103,11 @@ public final class CarriagePlacer {
 
     /** Cached immutable handle to the flatbed built-in — used as the Random-Grouped separator. */
     private static final CarriageVariant FLATBED_VARIANT = CarriageVariant.of(CarriageType.FLATBED);
+
+    /** The flatbed built-in — what Test the Carriage stands the author on before the copies. */
+    public static CarriageVariant flatbedVariant() {
+        return FLATBED_VARIANT;
+    }
 
     /**
      * In-memory cache of half-sized flatbed templates derived once per
@@ -468,6 +474,19 @@ public final class CarriagePlacer {
     public static void placeForTest(ServerLevel level, BlockPos origin, CarriageVariant variant,
                                     CarriageContents contents, CarriageDims dims, long seed,
                                     long contentsSeed, int carriageIndex) {
+        placeForTest(level, origin, variant, contents, dims, seed, contentsSeed, carriageIndex,
+            /*flatbedAtBack*/ false, /*flatbedAtFront*/ false);
+    }
+
+    /**
+     * {@link #placeForTest(ServerLevel, BlockPos, CarriageVariant, CarriageContents, CarriageDims,
+     * long, long, int)} with the flatbed-neighbour flags the door part picker reads — so a copy
+     * stood behind the test's flatbed picks its {@code end} doors the way the train would.
+     */
+    public static void placeForTest(ServerLevel level, BlockPos origin, CarriageVariant variant,
+                                    CarriageContents contents, CarriageDims dims, long seed,
+                                    long contentsSeed, int carriageIndex,
+                                    boolean flatbedAtBack, boolean flatbedAtFront) {
         int anchor = GateContext.WORLDX_FROM_PIDX;
         // Placeholders resolve for the stage the editor is previewing, so the test copy matches the
         // preview (null only when no stages exist ⇒ the default palette).
@@ -486,9 +505,9 @@ public final class CarriagePlacer {
                 return;
             }
             String base = stampBase(level, origin, variant, dims, seed, carriageIndex,
-                /*flatbedAtBack*/ false, /*flatbedAtFront*/ false, anchor, /*relight*/ true);
+                flatbedAtBack, flatbedAtFront, anchor, /*relight*/ true);
             String overlay = stampPartsOverlay(level, origin, variant, dims, seed, carriageIndex,
-                false, false, anchor, /*stageFilter*/ null, /*relight*/ true);
+                flatbedAtBack, flatbedAtFront, anchor, /*stageFilter*/ null, /*relight*/ true);
             if ("stored".equals(base) || overlay != null) {
                 applyVariantBlocks(level, origin, variant, dims, seed, carriageIndex);
             }
@@ -938,22 +957,25 @@ public final class CarriagePlacer {
     ) {
         CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
         if (sidecar.isEmpty()) return;
-        for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
-            VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
-            int lockId = sidecar.lockIdAt(e.localPos());
-            // One write per space: a door / bed / tall plant cell owns two (MultiBlockVariants).
-            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(e.states(), sidecar.spanAt(e.localPos()), picked, e.localPos(),
-                    seed, carriageIndex, v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
-                        StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
-                        e.localPos(), seed, carriageIndex, lockId))) {
-                BlockPos world = origin.offset(w.localPos());
-                if (w.isAir()) {
-                    SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
-                } else {
-                    games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
-                        level, world, w.state(), w.entry().blockEntityNbt(),
-                        "carriage:" + variant.id(), w.localPos(), seed, carriageIndex,
-                        w.entry().linkedLootPrefabId());
+        try (ConnectPass.Scope ignored = ConnectPass.open()) {
+            for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
+                VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
+                int lockId = sidecar.lockIdAt(e.localPos());
+                // One write per space: a door / bed / tall plant cell owns two (MultiBlockVariants).
+                for (MultiBlockVariants.Write w : MultiBlockVariants.expand(e.states(), sidecar.spanAt(e.localPos()), picked, e.localPos(),
+                        seed, carriageIndex, v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
+                            StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                            e.localPos(), seed, carriageIndex, lockId))) {
+                    BlockPos world = origin.offset(w.localPos());
+                    if (w.isAir()) {
+                        SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
+                    } else {
+                        games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
+                            level, world, w.state(), w.entry().blockEntityNbt(),
+                            "carriage:" + variant.id(), w.localPos(), seed, carriageIndex,
+                            w.entry().linkedLootPrefabId());
+                        ConnectPass.note(level, world, w.entry().connect(), w.state());
+                    }
                 }
             }
         }

@@ -14,6 +14,7 @@ public final class EditorScreenLang {
     public static final String TAB_LAYOUT = PREFIX + "tab.layout";
     public static final String TAB_STAGES = PREFIX + "tab.stages";
     public static final String TAB_NAV = PREFIX + "tab.nav";
+    public static final String TAB_GROUPS = PREFIX + "tab.groups";
     public static final String TAB_SETTINGS = PREFIX + "tab.settings";
     public static final String TAB_EXIT = PREFIX + "tab.exit";
 
@@ -87,6 +88,7 @@ public final class EditorScreenLang {
     public static final String STAGES_PALETTE_SHAPES = PREFIX + "stages.palette.shapes";
     public static final String STAGES_PALETTE_WOOD = PREFIX + "stages.palette.wood";
     public static final String STAGES_PALETTE_STONE = PREFIX + "stages.palette.stone";
+    public static final String STAGES_PALETTE_COLOURS = PREFIX + "stages.palette.colours";
     public static final String STAGES_PALETTE_TITLE = PREFIX + "stages.palette.title";
     public static final String STAGES_PALETTE_OVERRIDE = PREFIX + "stages.palette.override";
     public static final String STAGES_PALETTE_DERIVED = PREFIX + "stages.palette.derived";
@@ -235,6 +237,7 @@ public final class EditorScreenLang {
     public static final String ICON_CLEAR = PREFIX + "icon.clear";
     public static final String ICON_PACKAGE = PREFIX + "icon.package";
     public static final String ICON_MOVE = PREFIX + "icon.move";
+    public static final String ICON_OPEN_FILES = PREFIX + "icon.open_files";
     public static final String SHEET_ID = PREFIX + "sheet.id";
     /** "Built by" — who originally made the template; a picker in dev mode. */
     public static final String SHEET_BUILDER = PREFIX + "sheet.builder";
@@ -257,6 +260,9 @@ public final class EditorScreenLang {
     public static final String DISABLED_BUILTIN = PREFIX + "disabled.builtin";
     public static final String DISABLED_NOT_HERE = PREFIX + "disabled.not_here";
     public static final String DISABLED_NOT_TESTABLE = PREFIX + "disabled.not_testable";
+    public static final String DISABLED_NOT_LOCAL = PREFIX + "disabled.not_local";
+    public static final String DISABLED_UNGROUPED = PREFIX + "disabled.ungrouped";
+    public static final String DISABLED_GROUP_SUBMIT = PREFIX + "disabled.group_submit";
 
     public static final String TEST_CARRIAGE = PREFIX + "test_carriage";
     public static final String EXIT_TEST = PREFIX + "exit_test";

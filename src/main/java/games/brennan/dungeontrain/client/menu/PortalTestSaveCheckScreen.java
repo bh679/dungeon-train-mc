@@ -86,8 +86,21 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
             TEMPLATE_TEST_COMMAND + " " + categoryId + " " + id);
     }
 
+    /**
+     * Test a piece of the line — a track tile, pillar section, staircase or tunnel piece. The Tracks
+     * dirty scan keys every row {@code <modelId>.<name>} ({@code EditorDirtyCheck}), and the command
+     * names both, since one name can belong to several kinds.
+     */
+    public static PortalTestSaveCheckScreen forTrack(String modelId, String name) {
+        return new PortalTestSaveCheckScreen("tracks", modelId + "." + name,
+            TEMPLATE_TEST_COMMAND + " tracks " + modelId + " " + name);
+    }
+
     /** The command this screen dispatches — visible for testing. */
     public String testCommand() { return testCommand; }
+
+    /** The unsaved-row key this screen checks before testing — visible for testing. */
+    String checkedKey() { return dirtyKey; }
 
     @Override public String title() { return MenuLang.t("portal_test.title"); }
 

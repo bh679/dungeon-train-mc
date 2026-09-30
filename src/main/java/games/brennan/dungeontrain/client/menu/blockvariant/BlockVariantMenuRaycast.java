@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu.blockvariant;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.editor.RedstoneToggle;
+import games.brennan.dungeontrain.editor.VariantConnect;
 import games.brennan.dungeontrain.editor.RotationApplier;
 import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
@@ -184,6 +185,8 @@ public final class BlockVariantMenuRaycast {
         boolean rotatable = parsed != null && concrete && RotationApplier.canRotate(parsed);
         boolean halfable = parsed != null && concrete && RotationApplier.canFlip(parsed);
         boolean toggleable = parsed != null && concrete && RedstoneToggle.canToggle(parsed);
+        boolean connectable = parsed != null && concrete && BlockVariantMenu.connectSupported()
+            && VariantConnect.canConnect(parsed);
         VariantRotation.Mode rowMode = BlockVariantMenuRenderer.decodeMode(entry.rotMode());
         boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
         double rotDirsCellR = weightCellL;
@@ -194,10 +197,16 @@ public final class BlockVariantMenuRaycast {
         double halfModeCellL = halfable ? halfModeCellR - BlockVariantMenuRenderer.HALF_MODE_CELL_WIDTH : halfModeCellR;
         double activeModeCellR = halfModeCellL;
         double activeModeCellL = toggleable ? activeModeCellR - BlockVariantMenuRenderer.ACTIVE_MODE_CELL_WIDTH : activeModeCellR;
+        double connectCellR = activeModeCellL;
+        double connectCellL = connectable ? connectCellR - BlockVariantMenuRenderer.CONNECT_CELL_WIDTH : connectCellR;
+        boolean showArms = connectable
+            && VariantConnect.Mode.fromOrdinal(entry.connectMode() & 0xFF) == VariantConnect.Mode.LOCK;
+        double armsCellR = connectCellL;
+        double armsCellL = showArms ? armsCellR - BlockVariantMenuRenderer.ARMS_CELL_WIDTH : armsCellR;
         // Difficulty cells (mob rows only) — mirror the renderer geometry: they
         // occupy the space the rotation/half cells leave free on a mob row.
         boolean showDiff = entry.isMob();
-        double diffMaxCellR = activeModeCellL;
+        double diffMaxCellR = armsCellL;
         double diffMaxCellL = showDiff ? diffMaxCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMaxCellR;
         double diffMinCellR = diffMaxCellL;
         double diffMinCellL = showDiff ? diffMinCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMinCellR;
@@ -219,6 +228,16 @@ public final class BlockVariantMenuRaycast {
         }
         if (toggleable && hitX >= activeModeCellL && hitX <= activeModeCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_ACTIVE_MODE, idx);
+        }
+        if (connectable && hitX >= connectCellL && hitX <= connectCellR) {
+            int seg = BlockVariantMenuRenderer.segmentAt(hitX, connectCellL, connectCellR,
+                BlockVariantMenu.CONNECT_SEGMENTS.length);
+            return new BlockVariantMenu.Hit(BlockVariantMenu.CONNECT_SEGMENTS[seg], idx);
+        }
+        if (showArms && hitX >= armsCellL && hitX <= armsCellR) {
+            int seg = BlockVariantMenuRenderer.segmentAt(hitX, armsCellL, armsCellR,
+                BlockVariantMenu.ARM_SEGMENTS.length);
+            return new BlockVariantMenu.Hit(BlockVariantMenu.ARM_SEGMENTS[seg], idx);
         }
         if (showDiff && hitX >= diffMinCellL && hitX <= diffMinCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_DIFF_MIN, idx);

@@ -376,7 +376,7 @@ public final class BuilderOpenScreen extends Screen {
     private Component groupLabel() {
         BuilderOpenOptions.OpenSource source = BuilderOpenOptions.openSourceFor(mode, subType);
         if (source == BuilderOpenOptions.OpenSource.PORTAL_ROOMS) {
-            // Not BuilderLabels.pretty: a room mode's id would come back as "Bedrock Lock", which is
+            // Not BuilderLabels.pretty: a room mode's id would come back as "Bedrock", which is
             // not what the tile the player clicked said.
             return portalModeLabel(group);
         }
@@ -485,7 +485,7 @@ public final class BuilderOpenScreen extends Screen {
      * The breadcrumb's caption — what {@link #group} is called, in the same words its tile used.
      *
      * <p>Not {@code BuilderLabels.pretty(group)} for every source: a room mode's id would come back
-     * as "Bedrock Lock", which is not what the tile the player clicked said.</p>
+     * as "Bedrock", which is not what the tile the player clicked said.</p>
      */
     /**
      * Whether {@code value} is a row the grid can look inside — the drill-in button's condition.

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor.relay;
 
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.builder.BuilderSave;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.template.Template;
@@ -18,9 +19,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The two questions an editor upload has to get right, pinned here because nothing downstream can
@@ -124,11 +127,43 @@ final class EditorRelayWriteTest {
     }
 
     @Test
-    @DisplayName("a whole carriage has no editor plot and so nothing to upload")
-    void wholeCarriageIsNotAnEditorTemplate() {
-        assertNull(EditorRelayWrite.namingOf(new Template.WholeCarriage(
-                games.brennan.dungeontrain.train.WholeCarriage.of("built_in_builder"))));
+    @DisplayName("a whole room uploads as a carriage build, kept apart from a shell of the same name")
+    void wholeRoomUploadsAsACarriage() {
+        EditorRelayWrite.Naming room = EditorRelayWrite.namingOf(new Template.WholeCarriage(
+                games.brennan.dungeontrain.train.WholeCarriage.of("lounge")));
+        assertEquals(BuilderPhotoPaths.Kind.CARRIAGE, room.kind());
+        assertEquals(EditorRelayWrite.WHOLE_ROOM_SUBKIND, room.subKind());
+        assertEquals("lounge", room.id());
+
+        EditorRelayWrite.Naming shell = EditorRelayWrite.namingOf(
+                new Template.Carriage(CarriageVariant.custom("lounge")));
+        assertNotEquals(
+                BuilderRelayBuilds.keyOf(BuilderRelayKinds.idOf(shell.kind()), shell.subKind(), shell.id()),
+                BuilderRelayBuilds.keyOf(BuilderRelayKinds.idOf(room.kind()), room.subKind(), room.id()));
         assertNull(EditorRelayWrite.namingOf(null));
+    }
+
+    @Test
+    @DisplayName("a whole room captures the full carriage box, not an interior")
+    void wholeRoomCapturesTheWholeBox() {
+        Template room = new Template.WholeCarriage(games.brennan.dungeontrain.train.WholeCarriage.of("lounge"));
+        BlockPos plot = new BlockPos(10, 20, 30);
+        assertEquals(plot, EditorRelayWrite.capturedOrigin(room, plot));
+        assertEquals(new Vec3i(DIMS.length(), DIMS.height(), DIMS.width()),
+                EditorRelayWrite.capturedSize(room, DIMS));
+    }
+
+    @Test
+    @DisplayName("only an editor whole room reads whole-room sidecars on upload")
+    void isWholeRoomOnlyForWholeRooms() {
+        Vec3i size = new Vec3i(9, 5, 5);
+        assertTrue(EditorRelayWrite.isWholeRoom(new BuilderSave.Written(BuilderPhotoPaths.Kind.CARRIAGE,
+                "lounge", EditorRelayWrite.WHOLE_ROOM_SUBKIND, BlockPos.ZERO, size)));
+        assertFalse(EditorRelayWrite.isWholeRoom(new BuilderSave.Written(BuilderPhotoPaths.Kind.CARRIAGE,
+                "lounge", "", BlockPos.ZERO, size)));
+        assertFalse(EditorRelayWrite.isWholeRoom(new BuilderSave.Written(BuilderPhotoPaths.Kind.CONTENTS,
+                "lounge", EditorRelayWrite.WHOLE_ROOM_SUBKIND, BlockPos.ZERO, size)));
+        assertFalse(EditorRelayWrite.isWholeRoom(null));
     }
 
     @Test

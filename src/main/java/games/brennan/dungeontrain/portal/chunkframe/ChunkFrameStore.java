@@ -36,7 +36,7 @@ import java.util.Optional;
 public final class ChunkFrameStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final String SUBDIR = "chunk_frames";
+    public static final String SUBDIR = "chunk_frames";
     private static final String EXT = ".nbt";
     static final String RESOURCE_PREFIX = "/data/dungeontrain/chunk_frames/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/chunk_frames";

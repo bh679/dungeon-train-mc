@@ -9,13 +9,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The toolbar has to hold all eight buttons at every pane width the mod supports — it ran off the
+ * The toolbar has to hold all ten buttons at every pane width the mod supports — it ran off the
  * right edge at the narrowest one, which is the size a 720p window at GUI scale 3 actually gets.
  */
 @ExtendWith(MenuTestLanguage.class)
 final class EditorDetailPaneIconRowTest {
 
-    private static final int COUNT = 8;
+    private static final int COUNT = 10;
 
     /** The right edge of the last button, relative to the row's left edge. */
     private static int spanOf(EditorDetailPane.IconRow row, int x0) {

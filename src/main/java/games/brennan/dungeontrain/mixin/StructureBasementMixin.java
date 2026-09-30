@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.worldgen.LegacyUnderground;
+import games.brennan.dungeontrain.worldgen.LostCityFootprint;
 import games.brennan.dungeontrain.worldgen.LostCityStructures;
 import games.brennan.dungeontrain.worldgen.UpsideDownSpawnerStructures;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
@@ -92,6 +93,10 @@ public abstract class StructureBasementMixin {
         ServerLevel level = dungeontrain$levelOf(heightAccessor, chunkGenerator);
         // A Lost City start the HEAD veto allowed is already seated on its footprint's floor here: Lost City
         // Terrain Fit's StructureSeatMixin (priority 900) runs its RETURN inject ahead of this one.
+        if (LostCityStructures.isLostCityStructure(id)) {
+            // A stretched building's box must match what its processors will place (LostCityFootprint).
+            LostCityFootprint.resize(start, structureTemplateManager);
+        }
         if (level != null) {
             // Legacy bands and the sunk zone never get the underground set (LegacyUnderground).
             if (LegacyUnderground.appliesTo(level, chunkPos.x, chunkPos.z)

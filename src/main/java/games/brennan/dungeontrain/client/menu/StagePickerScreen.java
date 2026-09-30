@@ -59,6 +59,12 @@ public final class StagePickerScreen implements MenuScreen {
     private final String groupKindId;
     private final LinkedHashSet<String> groupSelected = new LinkedHashSet<>();
 
+    /**
+     * Command mode for something that is not a template (a tunnel group): the pick's command, from
+     * the picked token ({@code "custom"} or a Stage id). Null for every other mode.
+     */
+    private java.util.function.Function<String, String> commandFor;
+
     public StagePickerScreen(PlotCategory category, String modelId, String modelName, String currentStageId) {
         // Typed rather than a String because this screen is reached from two places that used to
         // disagree about case — the keyboard menu passed lowercase, the world-space variant row
@@ -209,7 +215,21 @@ public final class StagePickerScreen implements MenuScreen {
     }
 
     /** Build one single-select picker row for {@code token} ({@code "custom"} = detach). */
+    /**
+     * Single-select picker, like a template's, whose pick runs {@code commandFor.apply(token)} —
+     * {@code token} is {@code "custom"} (detach to the inline gate) or a Stage id.
+     */
+    public static StagePickerScreen forCommand(java.util.function.Function<String, String> commandFor,
+                                               String currentStageId) {
+        StagePickerScreen screen = new StagePickerScreen((PlotCategory) null, "", "", currentStageId);
+        screen.commandFor = commandFor;
+        return screen;
+    }
+
     private CommandMenuEntry pickEntry(String label, String token, boolean highlighted) {
+        if (commandFor != null) {
+            return new CommandMenuEntry.Run(label, commandFor.apply(token), highlighted);
+        }
         if (partsMode) {
             String stageId = "custom".equals(token) ? "" : token;
             return new CommandMenuEntry.ClientAction(label, () -> {

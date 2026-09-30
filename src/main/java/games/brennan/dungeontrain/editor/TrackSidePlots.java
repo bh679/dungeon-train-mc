@@ -192,7 +192,10 @@ public final class TrackSidePlots {
         // Top-level names only — a sub-variant claims no Z slot of its own (it sits +X of its
         // parent), so its parent's row position stays where it would have been without it.
         List<String> names = TrackVariantGroupStore.topLevelNames(kind);
-        int idx = names.indexOf(name);
+        // Tunnel rows are laid out by group, so a group's entrances stand over its sections.
+        int idx = games.brennan.dungeontrain.tunnel.TunnelPlotOrder.isTunnel(kind)
+            ? games.brennan.dungeontrain.tunnel.TunnelPlotOrder.slotOf(kind, name)
+            : names.indexOf(name);
         if (idx < 0) idx = 0;
 
         if (kind.freeSizeAboveFloor()) {

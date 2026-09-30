@@ -1,6 +1,8 @@
 {
-  "parent": "minecraft:block/template_trapdoor_top",
+  "parent": "dungeontrain:block/stage_trapdoor_top_template",
   "textures": {
-    "texture": "dungeontrain:block/stage_trapdoor"
+    "bottom": "dungeontrain:block/stage_trapdoor_bottom",
+    "side": "dungeontrain:block/stage_trapdoor",
+    "top": "dungeontrain:block/stage_trapdoor_top"
   }
 }

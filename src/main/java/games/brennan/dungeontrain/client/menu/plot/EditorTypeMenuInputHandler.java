@@ -345,6 +345,9 @@ public final class EditorTypeMenuInputHandler {
             }
             // Stage selector cell → open the Stage / Custom picker (chip when linked, ◆? when Custom).
             case STAGE -> openStagePicker(menu, variant);
+            // Tunnel rows' Groups cell → the multi-select tunnel group picker.
+            case GROUPS -> CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.TunnelGroupPickerScreen(
+                variant.modelId(), variant.name(), variant.groupIds()));
             // Gate cells: while the row is Stage-linked its cells show the Stage's (read-only) gate,
             // so a click opens the picker (re-pick / Custom) instead of editing — which would
             // silently detach. Custom rows edit the inline gate as before.

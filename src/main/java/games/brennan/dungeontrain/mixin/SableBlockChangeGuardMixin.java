@@ -92,6 +92,9 @@ public abstract class SableBlockChangeGuardMixin {
         // A player-added block that is broken or replaced — by anything — stops being the player's.
         // Runs before the place event of a player's own placement, which then re-marks the cell.
         PlayerPlacedTrainBlocks.onBlockChanged(serverSub, x, y, z, oldState.getBlock() != newState.getBlock());
+        // Likewise a forced fence / wall connect mode: replace the block and it is an ordinary one.
+        games.brennan.dungeontrain.train.ForcedConnectCells.onBlockChanged(
+            serverSub, x, y, z, oldState.getBlock() != newState.getBlock());
 
         // Hallway portal: a corridor and its twin must stay block-for-block identical or the crossing
         // becomes visible, so any edit inside a portal carriage is copied to its twin. Placed on

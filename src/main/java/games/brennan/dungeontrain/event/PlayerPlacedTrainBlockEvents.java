@@ -51,6 +51,7 @@ public final class PlayerPlacedTrainBlockEvents {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         PlayerPlacedTrainBlocks.clear();
+        games.brennan.dungeontrain.train.ForcedConnectCells.clear();
     }
 
     private static void markIfCarriage(ServerLevel level, BlockPos pos) {

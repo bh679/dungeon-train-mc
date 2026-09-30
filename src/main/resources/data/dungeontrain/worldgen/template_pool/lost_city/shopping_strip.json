@@ -1,0 +1,69 @@
+{
+  "name": "dungeontrain:lost_city/shopping_strip",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/shopping_strip",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/shopping_strip_shipped"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/shopping_strip",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/shopping_strip_longer"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/shopping_strip",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/shopping_strip_shorter"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/shopping_strip",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/shopping_strip_pale"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/shopping_strip",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/shopping_strip_dark"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/shopping_strip",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/shopping_strip_bitten"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/shopping_strip",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/shopping_strip_dry"
+      }
+    }
+  ]
+}

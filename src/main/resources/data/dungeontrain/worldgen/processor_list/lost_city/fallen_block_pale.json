@@ -1,0 +1,69 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:bricks",
+          "to": "minecraft:light_gray_terracotta"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:polished_diorite"
+        },
+        {
+          "from": "minecraft:terracotta",
+          "to": "minecraft:smooth_stone"
+        },
+        {
+          "from": "minecraft:brown_terracotta",
+          "to": "minecraft:calcite"
+        },
+        {
+          "from": "minecraft:packed_mud",
+          "to": "minecraft:light_gray_concrete_powder"
+        },
+        {
+          "from": "minecraft:mossy_stone_bricks",
+          "to": "minecraft:cut_sandstone"
+        },
+        {
+          "from": "minecraft:cracked_stone_bricks",
+          "to": "minecraft:light_gray_terracotta"
+        },
+        {
+          "from": "minecraft:light_gray_terracotta",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:smooth_stone"
+        },
+        {
+          "from": "minecraft:cut_sandstone",
+          "to": "minecraft:polished_diorite"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:light_gray_concrete"
+        },
+        {
+          "from": "minecraft:polished_diorite",
+          "to": "minecraft:smooth_stone"
+        },
+        {
+          "from": "minecraft:white_terracotta",
+          "to": "minecraft:polished_diorite"
+        }
+      ]
+    }
+  ]
+}

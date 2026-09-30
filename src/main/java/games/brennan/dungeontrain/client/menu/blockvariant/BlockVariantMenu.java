@@ -72,6 +72,15 @@ public final class BlockVariantMenu {
         ENTRY_ROT_DIRS,
         ENTRY_HALF_MODE,
         ENTRY_ACTIVE_MODE,
+        /** The four fence / wall / pane connect-mode segments, in {@code VariantConnect.Mode} order. */
+        ENTRY_CONNECT_DEFAULT,
+        ENTRY_CONNECT_AUTO,
+        ENTRY_CONNECT_LOCK,
+        /** The four locked-arm toggles of a Lock row, in N / E / S / W order. */
+        ENTRY_ARM_NORTH,
+        ENTRY_ARM_EAST,
+        ENTRY_ARM_SOUTH,
+        ENTRY_ARM_WEST,
         ENTRY_DIFF_MIN,
         ENTRY_DIFF_MAX,
         ROT_DIR_OPTION,
@@ -102,6 +111,8 @@ public final class BlockVariantMenu {
     private static int lockId = 0;
     private static VariantCopyRoll copyRoll = VariantCopyRoll.DEFAULT;
     private static boolean copySettingsSupported;
+    /** Whether this plot's spawn path honours the fence / wall connect mode — gates the row pill. */
+    private static boolean connectSupported;
     private static VariantCopyScope copyScope = VariantCopyScope.BOTH;
     private static games.brennan.dungeontrain.editor.VariantSpan spanMode =
         games.brennan.dungeontrain.editor.VariantSpan.NONE;
@@ -162,6 +173,15 @@ public final class BlockVariantMenu {
 
     /** True when this plot's template repeats at all — only then are the two copy cells drawn. */
     public static boolean copySettingsSupported() { return copySettingsSupported; }
+    public static boolean connectSupported() { return connectSupported; }
+
+    /** The connect-mode segment kinds, indexed by {@code VariantConnect.Mode} ordinal. */
+    public static final CellKind[] CONNECT_SEGMENTS = {
+        CellKind.ENTRY_CONNECT_DEFAULT, CellKind.ENTRY_CONNECT_AUTO, CellKind.ENTRY_CONNECT_LOCK};
+
+    /** The locked-arm toggle kinds, index-aligned with {@code VariantConnect.ARM_BITS} (N, E, S, W). */
+    public static final CellKind[] ARM_SEGMENTS = {
+        CellKind.ENTRY_ARM_NORTH, CellKind.ENTRY_ARM_EAST, CellKind.ENTRY_ARM_SOUTH, CellKind.ENTRY_ARM_WEST};
 
     /** Which tiles of a repeating room this cell applies in. */
     public static VariantCopyScope copyScope() { return copyScope; }
@@ -271,6 +291,7 @@ public final class BlockVariantMenu {
             lockId = 0;
             copyRoll = VariantCopyRoll.DEFAULT;
             copySettingsSupported = false;
+            connectSupported = false;
             copyScope = VariantCopyScope.BOTH;
             screen = Screen.ROOT;
             removeMode = false;
@@ -293,6 +314,7 @@ public final class BlockVariantMenu {
         lockId = packet.lockId();
         copyRoll = VariantCopyRoll.fromOrdinal(packet.copyRoll());
         copySettingsSupported = packet.copySettingsSupported();
+        connectSupported = packet.connectSupported();
         copyScope = VariantCopyScope.fromOrdinal(packet.copyScope());
         spanMode = games.brennan.dungeontrain.editor.VariantSpan.fromByte(packet.spanMode());
         anchorPos = packet.anchorPos();

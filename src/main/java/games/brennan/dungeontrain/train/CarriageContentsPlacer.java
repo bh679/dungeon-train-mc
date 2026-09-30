@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -578,54 +579,57 @@ public final class CarriageContentsPlacer {
         boolean filterByDifficulty = carriageIndex != EDITOR_SENTINEL_PIDX;
         int diffTier = filterByDifficulty
             ? DifficultyProgression.positionTier(carriageIndex) : 0;
-        for (var entry : sidecar.entries()) {
-            VariantState picked = filterByDifficulty
-                ? sidecar.resolve(entry.localPos(), seed, carriageIndex, diffTier)
-                : sidecar.resolve(entry.localPos(), seed, carriageIndex);
-            // The cell keeps its AUTHORED local position everywhere a roll is seeded from it — only
-            // where it lands moves with the flip, so a flipped carriage draws the same blocks as an
-            // unflipped one, mirrored.
-            BlockPos world = origin.offset(ContentsFlip.mapLocal(entry.localPos(), size, flip));
-            if (mask.covers(world)) continue;
-            if (picked == null) {
-                // Difficulty-filtered to nothing: the cell's only candidates were mob
-                // (spawn-egg) entries, all out of band for this carriage's tier. The mob
-                // would have occupied an air cell, so clear to air rather than leaving the
-                // stamped interior block. (Only reachable on the difficulty-filtered path;
-                // the 3-arg editor-preview path never returns null for a populated cell.)
-                if (filterByDifficulty) {
-                    SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
-                }
-                continue;
-            }
-            int lockId = sidecar.lockIdAt(entry.localPos());
-            // A two-space cell (door / bed / tall plant) expands to both spaces in the authored
-            // local frame; each lands through the same flip as the cell itself.
-            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
-                    entry.localPos(), seed, carriageIndex,
-                    v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
-                        StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
-                        entry.localPos(), seed, carriageIndex, lockId))) {
-                BlockPos wWorld = origin.offset(ContentsFlip.mapLocal(w.localPos(), size, flip));
-                if (!wWorld.equals(world) && mask.covers(wWorld)) continue;
-                if (w.isAir()) {
-                    SilentBlockOps.setBlockSilent(level, wWorld, Blocks.AIR.defaultBlockState());
+        try (ConnectPass.Scope ignored = ConnectPass.open()) {
+            for (var entry : sidecar.entries()) {
+                VariantState picked = filterByDifficulty
+                    ? sidecar.resolve(entry.localPos(), seed, carriageIndex, diffTier)
+                    : sidecar.resolve(entry.localPos(), seed, carriageIndex);
+                // The cell keeps its AUTHORED local position everywhere a roll is seeded from it — only
+                // where it lands moves with the flip, so a flipped carriage draws the same blocks as an
+                // unflipped one, mirrored.
+                BlockPos world = origin.offset(ContentsFlip.mapLocal(entry.localPos(), size, flip));
+                if (mask.covers(world)) continue;
+                if (picked == null) {
+                    // Difficulty-filtered to nothing: the cell's only candidates were mob
+                    // (spawn-egg) entries, all out of band for this carriage's tier. The mob
+                    // would have occupied an air cell, so clear to air rather than leaving the
+                    // stamped interior block. (Only reachable on the difficulty-filtered path;
+                    // the 3-arg editor-preview path never returns null for a populated cell.)
+                    if (filterByDifficulty) {
+                        SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
+                    }
                     continue;
                 }
-                // Reflect AFTER the authored rotation roll, so the cell reads as the mirror image of
-                // what an unflipped stamp would have put there.
-                net.minecraft.world.level.block.state.BlockState rotated = ContentsFlip.reflect(w.state(), flip);
-                // First-band starter loot: swap rich loot/loot_irongold chests for the starter
-                // prefab while in the peaceful opening band. Skip the player scan for non-chest
-                // cells (null id) and never downgrade editor previews (sentinel pIdx).
-                String lootId = w.entry().linkedLootPrefabId();
-                if (lootId != null && carriageIndex != EDITOR_SENTINEL_PIDX) {
-                    lootId = DifficultyProgression.effectiveLootPrefabId(level, lootId);
+                int lockId = sidecar.lockIdAt(entry.localPos());
+                // A two-space cell (door / bed / tall plant) expands to both spaces in the authored
+                // local frame; each lands through the same flip as the cell itself.
+                for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
+                        entry.localPos(), seed, carriageIndex,
+                        v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
+                            StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                            entry.localPos(), seed, carriageIndex, lockId))) {
+                    BlockPos wWorld = origin.offset(ContentsFlip.mapLocal(w.localPos(), size, flip));
+                    if (!wWorld.equals(world) && mask.covers(wWorld)) continue;
+                    if (w.isAir()) {
+                        SilentBlockOps.setBlockSilent(level, wWorld, Blocks.AIR.defaultBlockState());
+                        continue;
+                    }
+                    // Reflect AFTER the authored rotation roll, so the cell reads as the mirror image of
+                    // what an unflipped stamp would have put there.
+                    net.minecraft.world.level.block.state.BlockState rotated = ContentsFlip.reflect(w.state(), flip);
+                    // First-band starter loot: swap rich loot/loot_irongold chests for the starter
+                    // prefab while in the peaceful opening band. Skip the player scan for non-chest
+                    // cells (null id) and never downgrade editor previews (sentinel pIdx).
+                    String lootId = w.entry().linkedLootPrefabId();
+                    if (lootId != null && carriageIndex != EDITOR_SENTINEL_PIDX) {
+                        lootId = DifficultyProgression.effectiveLootPrefabId(level, lootId);
+                    }
+                    games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
+                        level, wWorld, rotated, w.entry().blockEntityNbt(),
+                        "contents:" + contents.id(), w.localPos(), seed, carriageIndex,
+                        lootId);
+                    ConnectPass.note(level, wWorld, w.entry().connect(), rotated);
                 }
-                games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
-                    level, wWorld, rotated, w.entry().blockEntityNbt(),
-                    "contents:" + contents.id(), w.localPos(), seed, carriageIndex,
-                    lootId);
             }
         }
     }

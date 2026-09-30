@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -333,5 +334,15 @@ final class EditorPlotArrivalTest {
     @Test
     void firstOrNull_takesTheFrontDoor() {
         assertEquals(DOOR, EditorPlotArrival.firstOrNull(List.of(DOOR, new BlockPos(8, 231, 3))));
+    }
+
+    @Test
+    @DisplayName("fly on arrival: only when nothing solid lies in the two cells under the feet")
+    void overOpenAir_checksTwoBelow() {
+        BlockPos feet = new BlockPos(4, 238, 3);
+        assertTrue(EditorPlotArrival.overOpenAir(feet, p -> false));
+        assertFalse(EditorPlotArrival.overOpenAir(feet, p -> p.equals(feet.below())));
+        assertFalse(EditorPlotArrival.overOpenAir(feet, p -> p.equals(feet.below(2))));
+        assertTrue(EditorPlotArrival.overOpenAir(feet, p -> p.equals(feet.below(3))));
     }
 }

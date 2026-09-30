@@ -1,0 +1,66 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 2,
+      "max_floors": 2,
+      "period_min": 4,
+      "period_max": 4,
+      "min_similarity": 0.45,
+      "axis": "x"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": 2,
+      "max_floors": 2,
+      "period_min": 4,
+      "period_max": 4,
+      "min_similarity": 0.45,
+      "axis": "z"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_stretch",
+      "min_floors": -4,
+      "max_floors": -2,
+      "period_min": 5,
+      "period_max": 5,
+      "min_similarity": 0.45,
+      "axis": "y"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:light_blue_stained_glass",
+          "to": "minecraft:black_stained_glass"
+        },
+        {
+          "from": "minecraft:white_concrete",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:polished_deepslate",
+          "to": "minecraft:deepslate_tiles"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_facade",
+      "pilaster_every": 6,
+      "min_layer": 2,
+      "ledge": "minecraft:smooth_stone_slab"
+    }
+  ]
+}
