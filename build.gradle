@@ -570,7 +570,11 @@ dependencies {
 
     // Sable Pathfinder — third-party mob pathing across Sable sub-levels (see gradle.properties).
     // Nothing compiles against it; on the dev classpath so runClient/runServer behave like players.
-    implementation "maven.modrinth:sable-pathfinder:${sablepathfinder_version}"
+    // A/B seam: ./gradlew runServer -PnoSablePathfinder boots without it, matching a player who
+    // never installed it (mods.toml marks it optional), so its per-node cost can be measured.
+    if (!project.hasProperty('noSablePathfinder')) {
+        implementation "maven.modrinth:sable-pathfinder:${sablepathfinder_version}"
+    }
 
     // Second-lap overworld mods (WWOO + Biomes O' Plenty) and their libraries — REQUIRED third-party
     // deps (see gradle.properties). Not bundled. DT names their biomes/features only by registry id,
