@@ -251,7 +251,9 @@ class LeaderboardBookFactoryTest {
             "{\"rows\":[{\"name\":\"Grace\",\"score\":9000}]}");
         assertTrue(LeaderboardBookFactory.build(LeaderboardCategory.DISTANCE_RUN, null).isEmpty(), "no current board");
         var stack = LeaderboardBookFactory.build(LeaderboardCategory.DISTANCE_RUN, "v0.0", null).orElseThrow();
-        assertEquals(LeaderboardCategory.DISTANCE_RUN.title(), stack.getHoverName().getString());
+        assertEquals(LeaderboardBookFactory.RETIRED_TITLE, stack.getHoverName().getString(),
+            "a retired book is titled for what it is; the board is named on page one");
+        assertTrue(LeaderboardBookFactory.RETIRED_TITLE.length() <= BookFactory.MAX_TITLE_CHARS);
         assertTrue(LeaderboardBookTag.is(stack));
         // and with only retired boards on hand, a roll finds one
         assertTrue(LeaderboardBookFactory.roll(42L, null).isPresent());

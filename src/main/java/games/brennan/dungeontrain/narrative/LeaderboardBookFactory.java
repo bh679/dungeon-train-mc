@@ -65,6 +65,14 @@ public final class LeaderboardBookFactory {
     /** The author line's cap — the era label rides on the cover next to the name. */
     private static final int MAX_AUTHOR_CHARS = 48;
 
+    /**
+     * The cover title of every retired-era book. One title for all of them rather than the board's
+     * own: a 32-character title cannot hold "Furthest Distance, One Life" AND say it is old, and a
+     * reader picking one up should know at a glance that these numbers are history. The subject and
+     * the versions it covers are on page one; the era is in the author line.
+     */
+    static final String RETIRED_TITLE = "Ancient Records";
+
     private LeaderboardBookFactory() {}
 
     /**
@@ -110,16 +118,16 @@ public final class LeaderboardBookFactory {
 
     /**
      * The book for one board in one era ({@link LeaderboardPool#CURRENT} for the live board), or
-     * empty when that board has no rows yet. A retired era's book keeps the same cover title — the
-     * 32-character title has no room for an era — and says which era it is on page one's heading
-     * and in the author line.
+     * empty when that board has no rows yet. A retired era's book is titled {@link #RETIRED_TITLE}
+     * and says which board and which era it is on page one's heading and in the author line.
      */
     public static Optional<ItemStack> build(LeaderboardCategory category, String era, UUID reader) {
         List<LeaderboardPool.Entry> entries = LeaderboardPool.board(category, era).entries();
         if (entries.isEmpty()) return Optional.empty();
         List<Component> pages = pages(category, era, entries,
             reader == null ? Optional.empty() : LeaderboardPool.standing(reader, category, era));
-        ItemStack stack = BookFactory.buildPlainBookComponents(category.title(), author(era), pages);
+        boolean retired = era != null && !era.isEmpty();
+        ItemStack stack = BookFactory.buildPlainBookComponents(retired ? RETIRED_TITLE : category.title(), author(era), pages);
         LeaderboardBookTag.stamp(stack);
         return Optional.of(stack);
     }
