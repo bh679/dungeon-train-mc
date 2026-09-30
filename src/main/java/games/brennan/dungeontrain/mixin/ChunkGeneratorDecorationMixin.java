@@ -17,6 +17,7 @@ import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.legacy.SuperflatHeight;
 import games.brennan.dungeontrain.worldgen.WwooDecorationPass;
 import games.brennan.dungeontrain.worldgen.feature.DeferredStructurePlacement;
+import games.brennan.dungeontrain.worldgen.feature.OverworldDecorationGuard;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
 import net.minecraft.core.BlockPos;
@@ -139,6 +140,7 @@ public abstract class ChunkGeneratorDecorationMixin {
         dungeontrain$superflatVillages.set(skip && dungeontrain$isSuperflatChunk(level, chunk)
                 ? level.registryAccess() : null);
         WwooDecorationPass.begin(level, chunk, skip);
+        OverworldDecorationGuard.beginChunk(level, chunk.getPos());
     }
 
     /**
@@ -194,7 +196,15 @@ public abstract class ChunkGeneratorDecorationMixin {
                 upsideDown.registryOrThrow(Registries.PLACED_FEATURE).getKey(feature))) {
             return false; // upside-down band: no dungeon spawners hanging in the mirrored ceiling
         }
-        return feature.placeWithBiomeCheck(level, generator, random, origin);
+        if (dungeontrain$isDtNamespaceFeature(feature)) {
+            return feature.placeWithBiomeCheck(level, generator, random, origin);  // DT's own: the core's decoration
+        }
+        OverworldDecorationGuard.enter();   // overworld decoration: its writes into the Nether core are refused
+        try {
+            return feature.placeWithBiomeCheck(level, generator, random, origin);
+        } finally {
+            OverworldDecorationGuard.exit();
+        }
     }
 
     /**

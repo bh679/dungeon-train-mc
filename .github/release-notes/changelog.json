@@ -21294,8 +21294,26 @@
       "released_at": "2026-09-30T10:52:40Z"
     },
     {
-      "id": "sized-carriage-contents",
+      "id": "backported-from-the-future",
       "version": "0.1059.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "world"
+      ],
+      "title": "Backported from the future",
+      "summary": "A little of the future has been backported into the present past \u2014 new biomes, mobs and blocks are waiting to be found.",
+      "highlights": [],
+      "pr": 1701,
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1059.0",
+      "released_at": "2026-09-30T11:16:32Z"
+    },
+    {
+      "id": "sized-carriage-contents",
+      "version": "0.1060.0",
       "type": "feat",
       "tags": [
         "feature",
