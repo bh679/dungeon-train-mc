@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.worldgen.density;
 
+import games.brennan.dungeontrain.worldgen.CycleLayout;
 import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
+import games.brennan.dungeontrain.worldgen.ShippedCycles;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.BandBiomeDecision.Result;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +16,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Pins {@link ColumnBiomePlan}: every column served from the memo equals a fresh computation, the
@@ -173,6 +177,48 @@ final class ColumnBiomePlanTest {
             assertEquals("nether@1500,8/" + fake.epoch, got.core());
             previous = got;
         }
+    }
+
+    /** Every column a Nether core; the core is the live provider's look, so the memo serves exactly what it would sample. */
+    private static final class LiveNetherLook implements ColumnBiomePlan.Providers<CycleLayout.Style> {
+        private final WorldGenCycle cycle;
+        private final long seed;
+
+        LiveNetherLook(WorldGenCycle cycle, long seed) {
+            this.cycle = cycle;
+            this.seed = seed;
+        }
+
+        @Override public CycleLayout.Style legacy(int blockX, int blockZ) { return null; }
+        @Override public Result decideAboveSea(int blockX, int blockZ) { return Result.NETHER_CORE; }
+        @Override public int caveWindowTop(int blockX, int blockZ) { return BandBiomeDecision.NO_CAVE; }
+        @Override public CycleLayout.Style netherCore(int blockX, int blockZ) {
+            return LiveColumnProviders.netherCoreLook(cycle, seed, blockX, blockZ);
+        }
+        @Override public CycleLayout.Style endCore(int blockX, int blockZ) { return null; }
+        @Override public SecondLapOverworld.Stretch look(int blockX) { return SecondLapOverworld.Stretch.VANILLA; }
+    }
+
+    @Test
+    @DisplayName("across the vanilla → BoP Nether mix the memoised core look equals the per-quart path's dithered look")
+    void netherMixLookMatchesPerQuartPath() {
+        WorldGenCycle cycle = ShippedCycles.CYCLE;
+        long seed = 1450L;
+        LiveNetherLook providers = new LiveNetherLook(cycle, seed);
+        int mixStart = ShippedCycles.netherMixStartX();
+        int mixEnd = mixStart + ShippedCycles.netherMixLength();
+        int hardCutDisagreements = 0;
+        for (int blockX = (mixStart - 64) & ~3; blockX < mixEnd + 64; blockX += 4) {
+            for (int blockZ = -512; blockZ < 512; blockZ += 12) {
+                // the per-quart path (MultiNoiseBiomeSourceMixin), surface skin, decoration and structures all ask this
+                CycleLayout.Style perQuart = cycle.netherLookAt(blockX, blockZ, seed);
+                CycleLayout.Style memo = ColumnBiomePlan.column(blockX, blockZ, CTX, TABLES, CYCLE, LEGACY, 0L, providers).core();
+                assertEquals(perQuart, memo, "column " + blockX + "," + blockZ);
+                if (cycle.netherLookAt(blockX) != perQuart) hardCutDisagreements++;
+            }
+        }
+        // the sample really crosses the dither: the column-free hard cut would have mislabelled some of it
+        assertTrue(hardCutDisagreements > 0, "no column in the mix differs from the hard cut");
     }
 
     @Test
