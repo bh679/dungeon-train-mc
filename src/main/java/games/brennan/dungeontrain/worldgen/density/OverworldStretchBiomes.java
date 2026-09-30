@@ -120,8 +120,36 @@ public final class OverworldStretchBiomes {
         return vanilla.findValue(target);                  // missing entries are the fallback already
     }
 
+    /**
+     * TerraBlender's region layout is its internal {@code IExtendedParameterList}, not its API, and DT
+     * declares TerraBlender {@code [floor,)}. Probed once: if an update moved it, the BoP stretch uses its
+     * first region throughout (the no-layout path below) instead of failing on every quart.
+     */
+    private static final boolean REGION_LAYOUT_USABLE = probeRegionLayout();
+
+    private static boolean probeRegionLayout() {
+        try {
+            Class<?> api = Class.forName("terrablender.worldgen.IExtendedParameterList", false,
+                    OverworldStretchBiomes.class.getClassLoader());
+            boolean usable = api.getMethod("isInitialized").getReturnType() == boolean.class
+                    && api.getMethod("getUniqueness", int.class, int.class, int.class).getReturnType() == int.class
+                    && api.getMethod("getRegion", int.class).getReturnType() == Region.class;
+            if (!usable) warnRegionLayoutMoved("method signatures changed");
+            return usable;
+        } catch (ReflectiveOperationException | LinkageError e) {
+            warnRegionLayoutMoved(e.toString());
+            return false;
+        }
+    }
+
+    private static void warnRegionLayoutMoved(String why) {
+        LOGGER.warn("[DungeonTrain] TerraBlender's IExtendedParameterList no longer matches ({}); the Biomes O' "
+                + "Plenty stretch uses one BoP region throughout. Re-check the TerraBlender list in gradle.properties.", why);
+    }
+
     /** TerraBlender's region layout on this source (or its clone), or {@code null} without one. */
     private static IExtendedParameterList<?> regionLayout(MultiNoiseBiomeSource source) {
+        if (!REGION_LAYOUT_USABLE) return null;
         return ((MultiNoiseBiomeSourceAccessor) source).dungeontrain$parameters()
                 instanceof IExtendedParameterList<?> ext ? ext : null;
     }

@@ -883,6 +883,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         // Second-lap overworld mods — floors only.
         wwoo_min_version                  : wwoo_min_version,
         biomesoplenty_min_version         : biomesoplenty_min_version,
+        terrablender_min_version          : terrablender_min_version,
         betternether_min_version          : betternether_min_version,
         biglostcity_min_version           : biglostcity_min_version,
         // BetterEnd: New Dawn + its libraries — floors only.
