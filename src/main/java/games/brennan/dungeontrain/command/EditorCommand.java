@@ -6707,7 +6707,7 @@ public final class EditorCommand {
                     .suggests(PORTAL_ROOM_FOG_SUGGESTIONS)
                     .executes(ctx -> runPortalRoomFog(ctx,
                         StringArgumentType.getString(ctx, "fog")))))
-            // Whether a Bedrock Lock room drifts — is uploaded when edited and may be served from
+            // Whether a Bedrock room drifts — is uploaded when edited and may be served from
             // the shared pool. On by default; means nothing under the modes a blob cannot describe.
             .then(Commands.literal("drift")
                 .then(Commands.literal("next")
@@ -7165,7 +7165,7 @@ public final class EditorCommand {
             games.brennan.dungeontrain.portal.PortalRoomMode.parse(raw);
         // parse is total by design, so a typo would silently set the default rather than complain.
         // Worth complaining about here: the player typed something and meant it.
-        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+        if (!wanted.matches(raw)) {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_dimensional_carriage_mode", raw));
             return 0;
         }

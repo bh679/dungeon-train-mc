@@ -48,13 +48,13 @@ public final class PortalRoomLayout {
     private static final int BUILT_IN_INTERIOR_HEIGHT = 5;
 
     /**
-     * How far {@link PortalRoomMode#BEDROCKLESS} sweeps the space around a room, in blocks, on each
+     * How far {@link PortalRoomMode#VOID} sweeps the space around a room, in blocks, on each
      * horizontal axis.
      *
      * <p><b>Horizontal only.</b> There is no vertical counterpart and there must not be one:
      * {@link PortalTwinLanes#laneHeight} is the whole distance to the next pair's structure, and it
      * is only one block more than the structure's own height, so a clearance of this size in Y would
-     * delete it. A Bedrockless room's emptiness is a flat void the height of the structure that sits
+     * delete it. A Void room's emptiness is a flat void the height of the structure that sits
      * in it, and the fog — drawn at this same distance — is what keeps its ceiling out of view.</p>
      *
      * <p>Chosen against the fog rather than against the world: it is the radius
@@ -65,7 +65,7 @@ public final class PortalRoomLayout {
 
     /**
      * How far a player can see once they are all the way out at the edge of {@link #VOID_CLEARANCE},
-     * in blocks — the far end of the ramp a {@link PortalRoomMode#BEDROCKLESS} room fogs on.
+     * in blocks — the far end of the ramp a {@link PortalRoomMode#VOID} room fogs on.
      *
      * <p>The clearance used to be fogged flat: the same fifty blocks standing in the middle of the
      * room and standing forty-five blocks out in the void, so stepping off a beam into the emptiness

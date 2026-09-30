@@ -416,31 +416,44 @@ public final class TemplateDataSheet {
             return List.of(Line.of(label, pending));
         }
         boolean linked = v.isStageLinked();
+        MenuScreen picker = new StagePickerScreen(key.category(), key.modelId(), key.modelName(),
+            linked ? v.primaryStageId() : "");
+        Stepper min = Stepper.of(EditorScreenActions.levelRow(key, "minlevel", Integer.toString(v.minLevel())));
+        Stepper max = Stepper.of(EditorScreenActions.levelRow(key, "maxlevel",
+            v.maxLevel() < 0 ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(v.maxLevel())));
+        PhaseCommand phases = (p, on) -> EditorPlotTeleport.phaseCommandFor(key.category(),
+            key.modelId(), key.modelName(), p.token(), on ? "off" : "on");
+        return stageLines(v.minLevel(), v.maxLevel(), v.phaseMask(), linked ? v.primaryStageId() : "", picker,
+            min, max, phases);
+    }
 
-        String stageName = linked ? v.primaryStageId()
-            : EditorScreenLang.text(EditorScreenLang.STAGE_CUSTOM_SHORT);
-        Cell stage = new Cell(stageName,
-            new Action.Open(new StagePickerScreen(key.category(), key.modelId(), key.modelName(),
-                linked ? v.primaryStageId() : "")), true)
+    /**
+     * The Stage / levels / bands lines for anything with a spawn gate — a template above, or a tunnel
+     * group on the Groups tab — given its <b>effective</b> gate, its Stage id ({@code ""} = Custom),
+     * the Stage picker to open, and the level steppers / band command to edit its inline gate with.
+     * While linked the bounds and letters are read-only, as the Stage owns them.
+     */
+    static List<Line> stageLines(int minLevel, int maxLevel, int phaseMask, String stageId, MenuScreen picker,
+                                 Stepper minStepper, Stepper maxStepper, PhaseCommand phaseCommand) {
+        String label = EditorScreenLang.text(EditorScreenLang.SHEET_STAGE);
+        boolean linked = stageId != null && !stageId.isEmpty();
+
+        String stageName = linked ? stageId : EditorScreenLang.text(EditorScreenLang.STAGE_CUSTOM_SHORT);
+        Cell stage = new Cell(stageName, new Action.Open(picker), true)
             .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_STAGE_TOOLTIP));
 
-        List<Cell> levels = levelCells(
-            v.minLevel(), linked ? null : Stepper.of(EditorScreenActions.levelRow(key, "minlevel", Integer.toString(v.minLevel()))),
-            v.maxLevel(), linked ? null : Stepper.of(EditorScreenActions.levelRow(key, "maxlevel",
-                v.maxLevel() < 0 ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(v.maxLevel()))));
-        PhaseCommand phases = linked ? null : (p, on) -> EditorPlotTeleport.phaseCommandFor(key.category(),
-            key.modelId(), key.modelName(), p.token(), on ? "off" : "on");
+        List<Cell> levels = levelCells(minLevel, linked ? null : minStepper, maxLevel, linked ? null : maxStepper);
         if (linked) {
             // A linked Stage owns the gate: its bounds and letters are read-only and fit beside the name.
             List<Cell> cells = prepend(stage, levels);
             cells.add(Cell.plain("·"));
-            cells.addAll(bandCells(v.phaseMask(), null));
+            cells.addAll(bandCells(phaseMask, null));
             return List.of(new Line(label, cells));
         }
         // Custom means every bound and letter is live, which is too much for one line — so the
         // bounds take the stage's line and the bands a row of their own, every letter a button.
         List<Cell> first = prepend(stage, levels);
-        return List.of(new Line(label, first), bandsLine(v.phaseMask(), phases));
+        return List.of(new Line(label, first), bandsLine(phaseMask, phaseCommand));
     }
 
     /**

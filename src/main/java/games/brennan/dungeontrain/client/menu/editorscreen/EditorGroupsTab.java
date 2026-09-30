@@ -276,7 +276,8 @@ final class EditorGroupsTab {
             int rightX = row.right() - font.width(right) - 3;
             int nameX = row.x() + ICON + 5;
             // Cut a long name short of the counts rather than letting the two run together.
-            String name = font.plainSubstrByWidth((builds ? "" : "! ") + label(token), Math.max(0, rightX - nameX - 6));
+            String mark = !token.isEmpty() && gated(token) ? " ◆" : "";
+            String name = font.plainSubstrByWidth((builds ? "" : "! ") + label(token) + mark, Math.max(0, rightX - nameX - 6));
             g.drawString(font, name, nameX, ty, builds ? text : WARN, false);
             g.drawString(font, right, rightX, ty, text, false);
             hits.add(new Hit(Kind.GROUP_ROW, row, token, null, null, null));
@@ -376,6 +377,7 @@ final class EditorGroupsTab {
         String weightPrefix = selected.isEmpty() ? ROOT + " ungrouped" : ROOT + " weight " + selected;
         lines.add(new TemplateDataSheet.Line("Weight", stepper(weightOf(selected), weightPrefix,
             "How often a tunnel rolls this group, against the other groups.")));
+        if (!selected.isEmpty()) lines.addAll(gateLines(selected));
         String why = missing(selected);
         lines.add(TemplateDataSheet.Line.of("Builds", why == null ? "yes" : why));
         InventoryEditorLayout.Rect sheet = new InventoryEditorLayout.Rect(r.x() + 2, y + GAP * 2, r.w() - 4,
@@ -408,10 +410,27 @@ final class EditorGroupsTab {
             InventoryEditorLayout.Rect cell = new InventoryEditorLayout.Rect(x, y, ICON, ICON);
             if (cell.contains(mx, my)) g.fill(x - 1, y - 1, x + ICON + 1, y + ICON + 1, MenuRowPainter.CELL_HOVER);
             drawIcon(g, font, iconOf(kindId, m.name()), displayOf(kindId, m.name()), x, y);
+            drawWeight(g, font, m.weight(), x, y);
             hits.add(new Hit(Kind.ICON, cell, selected, kindId, m.name(), target));
             x += ICON + 2;
         }
         return y + ICON + 2;
+    }
+
+    /**
+     * The member's weight inside the group as a little number in the icon's bottom-right corner,
+     * where a stack count sits — half size, so a three-digit weight stays inside its own icon.
+     */
+    private static void drawWeight(GuiGraphics g, Font font, int weight, int x, int y) {
+        String text = Integer.toString(weight);
+        float scale = 0.5F;
+        g.pose().pushPose();
+        g.pose().translate(0, 0, 200);   // over the item, as vanilla draws stack counts
+        g.pose().scale(scale, scale, 1F);
+        int tx = Math.round((x + ICON) / scale) - font.width(text);
+        int ty = Math.round((y + ICON) / scale) - font.lineHeight + 1;
+        g.drawString(font, text, tx, ty, 0xFFFFFFFF, true);
+        g.pose().popPose();
     }
 
     private static void drawIcon(GuiGraphics g, Font font, ItemStack icon, String name, int x, int y) {
@@ -484,6 +503,44 @@ final class EditorGroupsTab {
         g.drawString(font, font.plainSubstrByWidth(text, t.w() - 6), t.x() + 4,
             t.y() + (t.h() - font.lineHeight) / 2 + 1, can ? 0xFFFFFFFF : 0x80FFFFFF, false);
         if (can) hits.add(new Hit(Kind.TEST, t, selected, null, null, null));
+    }
+
+    /** {@code id}'s spawn gate as it travelled, or the every-band default when none did. */
+    private static EditorRosterPacket.TunnelGroups.Gate gateOf(String id) {
+        EditorRosterPacket.TunnelGroups.Gate g = groups().gateOf(id);
+        return g != null ? g : new EditorRosterPacket.TunnelGroups.Gate(0, games.brennan.dungeontrain.template.TemplateGate.ALL,
+            games.brennan.dungeontrain.worldgen.TrainPhase.toMask(java.util.EnumSet.allOf(
+                games.brennan.dungeontrain.worldgen.TrainPhase.class)), "");
+    }
+
+    /** True when {@code id} is limited at all — linked to a Stage, or a band / level bound set. */
+    private static boolean gated(String id) {
+        EditorRosterPacket.TunnelGroups.Gate g = gateOf(id);
+        return g.linked() || g.minLevel() > 0 || g.maxLevel() >= 0
+            || g.phaseMask() != gateOf("\0").phaseMask();
+    }
+
+    /**
+     * The Stage / levels / bands lines — the same cells a template's sheet shows, through the same
+     * {@link TemplateDataSheet#stageLines} — pointed at the group's {@code tunnelgroups} commands.
+     */
+    private static List<TemplateDataSheet.Line> gateLines(String id) {
+        EditorRosterPacket.TunnelGroups.Gate g = gateOf(id);
+        String minPrefix = ROOT + " minlevel " + id;
+        String maxPrefix = ROOT + " maxlevel " + id;
+        String minShown = Integer.toString(g.minLevel());
+        String maxShown = g.maxLevel() < 0 ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL)
+            : Integer.toString(g.maxLevel());
+        TemplateDataSheet.Stepper min = new TemplateDataSheet.Stepper(minPrefix, minPrefix + " dec", minPrefix + " inc",
+            minShown, "(" + minShown + ")");
+        TemplateDataSheet.Stepper max = new TemplateDataSheet.Stepper(maxPrefix, maxPrefix + " dec", maxPrefix + " inc",
+            maxShown, "(" + maxShown + ")");
+        TemplateDataSheet.PhaseCommand phases = (p, on) ->
+            ROOT + " phase " + id + " " + p.token() + " " + (on ? "off" : "on");
+        MenuScreen picker = games.brennan.dungeontrain.client.menu.StagePickerScreen.forCommand(
+            token -> ROOT + " stage " + id + " " + token, g.stageId());
+        return TemplateDataSheet.stageLines(g.minLevel(), g.maxLevel(), g.phaseMask(), g.stageId(), picker,
+            min, max, phases);
     }
 
     private static List<TemplateDataSheet.Cell> stepper(int value, String prefix, String tip) {
@@ -573,7 +630,11 @@ final class EditorGroupsTab {
             switch (hit.kind()) {
                 case GROUP_ROW -> {
                     String why = missing(hit.group());
-                    return why == null ? null : label(hit.group()) + " can't make a tunnel yet: " + why + ".";
+                    if (why != null) return label(hit.group()) + " can't make a tunnel yet: " + why + ".";
+                    if (hit.group().isEmpty() || !gated(hit.group())) return null;
+                    EditorRosterPacket.TunnelGroups.Gate g = gateOf(hit.group());
+                    return g.linked() ? label(hit.group()) + " spawns where Stage " + g.stageId() + " allows."
+                        : label(hit.group()) + " spawns only within its own level and band limits.";
                 }
                 case ICON -> {
                     EditorRosterPacket.TunnelGroups.Member m = memberOf(selected, hit.kindId(), hit.name());
