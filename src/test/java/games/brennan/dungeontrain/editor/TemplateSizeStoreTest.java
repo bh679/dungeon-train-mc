@@ -50,6 +50,9 @@ final class TemplateSizeStoreTest {
                     TemplateSizeStore.parse(new InputStreamReader(in, StandardCharsets.UTF_8), path);
                 assertEquals(ContentsSize.HALF, sizes.get("portal"), path);
                 assertEquals(null, sizes.get("portal_short"), path + ": the short corridor is Room-sized");
+                if (path.contains("/contents/")) {
+                    assertEquals(ContentsSize.FULL, sizes.get("default_full"), "the Full size's standard template");
+                }
             }
         }
     }

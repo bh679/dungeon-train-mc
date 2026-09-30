@@ -44,7 +44,11 @@ public final class FullCarriageSettings {
     private static final String K_EVERY = "every";
 
     public static final int OFF = 0;
-    public static final int DEFAULT_EVERY = 40;
+    /**
+     * Off unless switched on: a Full carriage is a new kind of carriage on every player's train, so
+     * it waits until there are Full contents worth riding through.
+     */
+    public static final int DEFAULT_EVERY = OFF;
     public static final int MAX_EVERY = 1000;
 
     private static volatile int every = DEFAULT_EVERY;

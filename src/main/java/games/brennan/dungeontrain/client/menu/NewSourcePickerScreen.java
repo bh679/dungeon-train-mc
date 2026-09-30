@@ -214,13 +214,13 @@ public final class NewSourcePickerScreen implements MenuScreen {
 
     /**
      * The standard template a new contents of {@code sizeKey} copies: the built-in {@code default}
-     * for a Room, the long corridor's {@code portal} for a Half. None for a Full yet — nothing Full
-     * ships, so the row is left out rather than copying a template of the wrong size.
+     * for a Room, the long corridor's {@code portal} for a Half, {@code default_full} for a Full.
      */
     static String standardContentsFor(String sizeKey) {
         return switch (sizeKey) {
             case "room" -> "default";
             case "half" -> "portal";
+            case "full" -> "default_full";
             default -> null;
         };
     }
