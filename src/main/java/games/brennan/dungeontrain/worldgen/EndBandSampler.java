@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.worldgen;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
@@ -40,8 +39,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * prefetch strip keeps queuing chunks beyond the view, and under load the chunks beside the player used to
  * wait behind them as squares of void in the islands.</p>
  *
- * <p>Same threading rules as {@link ForeignSphereSampler}: dedicated threads, never
- * {@code Util.backgroundExecutor()} ({@code fillFromNoise} schedules onto that pool and joins).</p>
+ * <p>Runs on the {@link SamplerPool} it shares with {@link ForeignSphereSampler}. Each request queues its
+ * job here and posts one token to the pool; a token runs whichever job is nearest a player <em>when it
+ * starts</em>, or nothing if the queue has emptied (job replaced, dropped or cleared) — so the order is
+ * decided at run time, and every job has a token.</p>
  */
 public final class EndBandSampler {
 
@@ -73,11 +74,10 @@ public final class EndBandSampler {
     private static final ConcurrentLinkedQueue<Result> READY = new ConcurrentLinkedQueue<>();
     /** Bumped on server stop so a job still running for the old server drops its result. */
     private static final AtomicInteger EPOCH = new AtomicInteger();
-    /** Waiting jobs, nearest player first; taken by the sampler threads ({@link #startWorkers}). */
+    /** Waiting jobs, nearest player first; taken by the tokens {@link #request} posts to {@link SamplerPool}. */
     private static final EndBandJobQueue<Job> QUEUE = new EndBandJobQueue<>();
     /** Chunks from the nearest player beyond which a waiting job is dropped (view + prefetch strip + slack). */
     private static volatile int keepRadius = Integer.MAX_VALUE;
-    private static volatile boolean workersStarted;
 
     /** One queued sample: the chunk it is for, and the work. */
     private record Job(long key, Runnable work) {}
@@ -116,7 +116,6 @@ public final class EndBandSampler {
         int displayMinY = overworld.getMinBuildHeight();
         int displayMaxY = overworld.getMaxBuildHeight();
         int epoch = EPOCH.get();
-        startWorkers();
         QUEUE.add(pos.toLong(), pos.x, pos.z, new Job(pos.toLong(), () -> {
             long t0 = System.nanoTime();
             try {
@@ -129,6 +128,7 @@ public final class EndBandSampler {
             }
             GenProfiler.addNanos(GenProfiler.Bucket.END_BAND_SAMPLE, System.nanoTime() - t0);
         }));
+        SamplerPool.execute(EndBandSampler::runNearest);
     }
 
     /**
@@ -164,37 +164,13 @@ public final class EndBandSampler {
         IN_FLIGHT.clear();
     }
 
-    /**
-     * Start the sampler threads once. Each loops taking the nearest waiting job; a dropped job frees its
-     * chunk to be requested again. Same threading rule as {@link ForeignSphereSampler}: dedicated daemon
-     * threads, never {@code Util.backgroundExecutor()}.
-     */
-    private static void startWorkers() {
-        if (workersStarted) return;
-        synchronized (EndBandSampler.class) {
-            if (workersStarted) return;
-            int threads = SpheresProgressionConfig.samplerThreads();
-            for (int i = 1; i <= threads; i++) {
-                Thread thread = new Thread(EndBandSampler::workLoop, "DungeonTrain-endband-sampler-" + i);
-                thread.setDaemon(true);
-                thread.setPriority(Thread.NORM_PRIORITY - 1);
-                thread.start();
-            }
-            workersStarted = true;
-        }
-    }
-
-    private static void workLoop() {
-        while (true) {
-            try {
-                Job job = QUEUE.take(keepRadius, dropped -> IN_FLIGHT.remove(dropped.key()));
-                job.work().run();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            } catch (Throwable t) {
-                LOGGER.warn("[DungeonTrain] End-band sampler job threw", t);
-            }
+    /** One token's work: run the waiting job nearest a player, if any. A dropped job frees its chunk to be requested again. Sampler thread. */
+    private static void runNearest() {
+        try {
+            Job job = QUEUE.poll(keepRadius, dropped -> IN_FLIGHT.remove(dropped.key()));
+            if (job != null) job.work().run();
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] End-band sampler job threw", t);
         }
     }
 

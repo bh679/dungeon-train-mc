@@ -50,6 +50,19 @@ class EndBandJobQueueTest {
     }
 
     @Test
+    @DisplayName("a sampler token's poll hands dropped jobs on and returns null once the queue is empty")
+    void pollHandsOnDropsAndNeverBlocks() {
+        EndBandJobQueue<String> q = new EndBandJobQueue<>();
+        add(q, 0, 0);
+        add(q, 3000, 1);
+        q.setPlayers(playerAt(3000, 0));
+        List<String> dropped = new ArrayList<>();
+        assertEquals("3000,1", q.poll(18, dropped::add));
+        assertEquals(List.of("0,0"), dropped);
+        assertNull(q.poll(18, dropped::add));      // a spare token (job replaced or dropped) does nothing
+    }
+
+    @Test
     @DisplayName("with no players (headless forceload) jobs run oldest first and nothing is dropped")
     void noPlayersIsFifo() {
         EndBandJobQueue<String> q = new EndBandJobQueue<>();

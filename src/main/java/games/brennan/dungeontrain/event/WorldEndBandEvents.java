@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.worldgen.EndBandJobQueue;
 import games.brennan.dungeontrain.worldgen.EndBandSampler;
 import games.brennan.dungeontrain.worldgen.EndBandStyle;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.worldgen.PrefetchDirection;
 import games.brennan.dungeontrain.worldgen.SunlitChunks;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
@@ -35,11 +36,13 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Writes the BetterEnd End-band passes ({@link EndBandStyle}) in: a chunk in one of those passes
@@ -50,7 +53,8 @@ import java.util.Set;
  *   <li><b>Queue</b> — a new band chunk is flagged {@link ModDataAttachments#END_BAND_PENDING} and its
  *       sample requested; a chunk that reloads still flagged asks again.</li>
  *   <li><b>Prefetch</b> — every {@link #PREFETCH_INTERVAL_TICKS} ticks, the strip of band chunks just past
- *       each player's view distance (in the train's +X direction) is requested before it exists. Finished
+ *       each player's view distance, on the side they are heading ({@link PrefetchDirection}: +X with the
+ *       train, −X walking the reversed cycle behind spawn), is requested before it exists. Finished
  *       samples for chunks that aren't loaded yet wait in a small {@link #STASH}, and are written the
  *       moment their chunk generates — so at speed the terrain is there on arrival, not popped in.</li>
  *   <li><b>Apply</b> — raw section writes (the Sable-safe path the other bands use), only into cells that
@@ -101,6 +105,9 @@ public final class WorldEndBandEvents {
 
     /** Stashed samples whose chunk has now loaded — written at the start of the next tick. */
     private static final Map<Long, EndBandSampler.Result> DUE = new LinkedHashMap<>();
+
+    /** Each player's world X at the last prefetch, for {@link PrefetchDirection}. Server thread only. */
+    private static final Map<UUID, Double> LAST_PREFETCH_X = new HashMap<>();
 
     private static int tickCounter;
 
@@ -209,6 +216,7 @@ public final class WorldEndBandEvents {
         STASH.clear();
         DUE.clear();
         FINISHED.clear();
+        LAST_PREFETCH_X.clear();
         tickCounter = 0;
     }
 
@@ -234,14 +242,24 @@ public final class WorldEndBandEvents {
         return -1L;
     }
 
-    /** Request the not-yet-generated band chunks just beyond each player's view, ahead in +X. */
+    /** Request the not-yet-generated band chunks just beyond each player's view, on the side they are heading. */
     private static void prefetch(ServerLevel level) {
+        long anchorX = DisintegrationBand.startX(level);
+        if (anchorX == DisintegrationBand.OFF) {
+            LAST_PREFETCH_X.clear();
+            return;
+        }
         int view = level.getServer().getPlayerList().getViewDistance();
         int bedY = -1;
+        Map<UUID, Double> seen = new HashMap<>();
         for (ServerPlayer player : level.players()) {
+            double x = player.getX();
+            Double last = LAST_PREFETCH_X.get(player.getUUID());
+            seen.put(player.getUUID(), x);
+            int dir = PrefetchDirection.pick(last == null ? Double.NaN : x - last, x < anchorX);
             ChunkPos at = player.chunkPosition();
             for (int ahead = 0; ahead < PREFETCH_DEPTH_CHUNKS; ahead++) {
-                int cx = at.x + view + PREFETCH_LEAD_CHUNKS + ahead;
+                int cx = at.x + dir * (view + PREFETCH_LEAD_CHUNKS + ahead);
                 for (int cz = at.z - view; cz <= at.z + view; cz++) {
                     ChunkPos pos = new ChunkPos(cx, cz);
                     if (STASH.containsKey(pos.toLong())) continue;
@@ -256,6 +274,8 @@ public final class WorldEndBandEvents {
                 }
             }
         }
+        LAST_PREFETCH_X.clear();                           // players who left drop out
+        LAST_PREFETCH_X.putAll(seen);
     }
 
     /** Write one finished sample into its chunk and clear the chunk's pending flag. */
