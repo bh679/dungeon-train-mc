@@ -521,4 +521,35 @@ class PortalRoomLayoutTest {
         assertEquals(new Vec3i(43, 70, 9), PortalRoomLayout.heldForAuthoring(terrarium, new Vec3i(43, 70, 9)));
         assertEquals(new Vec3i(64, 80, 9), PortalRoomLayout.heldForAuthoring(terrarium, new Vec3i(90, 80, 9)));
     }
+
+    private static final int SLACK = 8;   // PortalCarriageEvents.POCKET_ROOM_SLACK
+
+    @Test
+    @DisplayName("A room standing at its lane keeps exactly the ceiling its structure box always had")
+    void structureCeiling_unsunkenRoomIsUnchanged() {
+        int lane = 11;
+        int carriage = DEFAULT_DIMS.height();
+        for (int roomHeight = 4; roomHeight <= 80; roomHeight++) {
+            int oldSlackY = Math.max(SLACK, roomHeight - carriage + 1);
+            assertEquals(lane + carriage + oldSlackY,
+                PortalRoomLayout.structureCeilingY(lane, lane, roomHeight, carriage, SLACK),
+                "room height " + roomHeight);
+        }
+    }
+
+    @Test
+    @DisplayName("A sunken room's box stops at its own ceiling, well under the train deck overhead")
+    void structureCeiling_sunkenRoomStopsBelowTheDeck() {
+        // The terrarium from the 2026-09-30 report: 80 tall, floor at -62, lane at 11, deck at ~78.
+        int ceiling = PortalRoomLayout.structureCeilingY(11, -62, 80, DEFAULT_DIMS.height(), SLACK);
+        assertEquals(26, ceiling, "lane + carriage + slack binds: the room itself tops out at 17");
+        assertTrue(ceiling < 78, "the box must not reach the deck — got " + ceiling);
+    }
+
+    @Test
+    @DisplayName("The ceiling never drops below the lane's carriage height plus slack")
+    void structureCeiling_neverBelowTheLaneSlack() {
+        assertEquals(11 + 7 + SLACK, PortalRoomLayout.structureCeilingY(11, 5, 7, 7, SLACK));
+        assertEquals(11 + 7 + SLACK, PortalRoomLayout.structureCeilingY(11, 11, 4, 7, SLACK));
+    }
 }
