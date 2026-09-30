@@ -504,10 +504,10 @@ public final class CarriageTestCommand {
             }
         }
         if (shell == null) return fail(source, "chat.dungeontrain.carriage_test.no_shell_allows", topId);
-        // A group parent rolls a member, as it would in a carriage; a member named outright is used.
-        CarriageContents rolled = CarriageContentsRegistry.resolveSubVariant(
-            contents.get(), seed ^ CarriageTestSession.TEST_INDEX, null);
-        return new Plan(shell, rolled);
+        // Exactly the template the author is testing — a group parent is shown as itself, never
+        // swapped for one of its members. A re-roll changes only what the seed drives inside it
+        // (block variants, flip), so the author sees their own template under a new roll.
+        return new Plan(shell, contents.get());
     }
 
     /**
