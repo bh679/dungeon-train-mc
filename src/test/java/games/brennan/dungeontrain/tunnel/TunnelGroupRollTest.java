@@ -53,7 +53,7 @@ final class TunnelGroupRollTest {
         template(SECTION, "s_both", "stone", "brick");
         template(PORTAL, "p_stone", "stone");
         template(PORTAL, "p_brick", "brick");
-        TunnelGroupStore.injectForTesting(new TunnelGroupStore.Registry(Map.of("stone", 1, "brick", 1), 0));
+        TunnelGroupStore.injectForTesting(TunnelGroupStore.Registry.ofWeights(Map.of("stone", 1, "brick", 1), 0));
     }
 
     private static Set<TemplateGroup> rolledOver(int keys, GateContext ctx) {
@@ -128,7 +128,7 @@ final class TunnelGroupRollTest {
     @DisplayName("every weight at zero means no group filter at all")
     void allZeroIsNoFilter() {
         stoneAndBrick();
-        TunnelGroupStore.injectForTesting(new TunnelGroupStore.Registry(Map.of("stone", 0, "brick", 0), 0));
+        TunnelGroupStore.injectForTesting(TunnelGroupStore.Registry.ofWeights(Map.of("stone", 0, "brick", 0), 0));
         assertNull(TunnelGroupRoll.roll(1L, 1L, OVERWORLD));
     }
 
@@ -209,9 +209,42 @@ final class TunnelGroupRollTest {
     }
 
     @Test
+    @DisplayName("a group whose own gate excludes the spot is never rolled there")
+    void groupGateExcludes() {
+        stoneAndBrick();
+        TunnelGroupStore.injectForTesting(new TunnelGroupStore.Registry(Map.of(
+            "stone", new TemplateMeta(1, NETHER_ONLY),
+            "brick", TemplateMeta.of(1)), 0));
+        assertEquals(Set.of(TemplateGroup.of("brick")), rolledOver(200, OVERWORLD));
+        // Level bounds count too: brick from level 5 up leaves nothing at level 1.
+        TunnelGroupStore.injectForTesting(new TunnelGroupStore.Registry(Map.of(
+            "stone", new TemplateMeta(1, NETHER_ONLY),
+            "brick", new TemplateMeta(1, new TemplateGate(5, TemplateGate.ALL, null))), 0));
+        assertNull(TunnelGroupRoll.roll(1L, 1L, OVERWORLD));
+    }
+
+    @Test
+    @DisplayName("groups.json keeps bare weights for ungated groups and objects for gated ones")
+    void registryGateJson() {
+        TunnelGroupStore.Registry r = new TunnelGroupStore.Registry(Map.of(
+            "stone", TemplateMeta.of(3),
+            "dark", new TemplateMeta(2, NETHER_ONLY),
+            "deep", new TemplateMeta(1, TemplateGate.DEFAULT, "deep_stage")), 1);
+        com.google.gson.JsonObject json = TunnelGroupStore.toJson(r);
+        assertTrue(json.getAsJsonObject("groups").get("stone").isJsonPrimitive());
+        assertTrue(json.getAsJsonObject("groups").get("dark").isJsonObject());
+        assertEquals(r, TunnelGroupStore.fromJson(json));
+        // A file from before groups had gates reads as plain weights.
+        TunnelGroupStore.Registry old = TunnelGroupStore.fromJson(com.google.gson.JsonParser.parseString(
+            "{\"groups\":{\"stone\":4},\"ungroupedWeight\":2}"));
+        assertEquals(4, old.weightOf("stone"));
+        assertTrue(old.gateOf("stone").isDefault());
+    }
+
+    @Test
     @DisplayName("the registry round-trips through groups.json")
     void registryJson() {
-        TunnelGroupStore.Registry r = new TunnelGroupStore.Registry(Map.of("stone", 3, "brick", 1), 2);
+        TunnelGroupStore.Registry r = TunnelGroupStore.Registry.ofWeights(Map.of("stone", 3, "brick", 1), 2);
         assertEquals(r, TunnelGroupStore.fromJson(TunnelGroupStore.toJson(r)));
     }
 }

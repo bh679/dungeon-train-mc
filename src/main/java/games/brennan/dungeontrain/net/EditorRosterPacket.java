@@ -39,8 +39,33 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
      * The tunnel template groups the editor can offer — every registered group plus any a template
      * already names — each with the weight a tunnel rolls it at, and the ungrouped pool's weight.
      */
-    public record TunnelGroups(java.util.Map<String, Integer> weights, int ungroupedWeight, List<Member> members) {
-        public static final TunnelGroups EMPTY = new TunnelGroups(java.util.Map.of(), 1, List.of());
+    public record TunnelGroups(java.util.Map<String, Integer> weights, int ungroupedWeight, List<Member> members,
+                               java.util.Map<String, Gate> gates) {
+        public static final TunnelGroups EMPTY = new TunnelGroups(java.util.Map.of(), 1, List.of(), java.util.Map.of());
+
+        /**
+         * A group's spawn gate as a template row sends it: the <b>effective</b> Diff-Level band and
+         * phase mask (its Stage's when linked), and the Stage id ({@code ""} = Custom).
+         */
+        public record Gate(int minLevel, int maxLevel, int phaseMask, String stageId) {
+            public Gate {
+                stageId = stageId == null ? "" : stageId;
+            }
+
+            public boolean linked() {
+                return !stageId.isEmpty();
+            }
+        }
+
+        /** The shape from before groups carried gates. */
+        public TunnelGroups(java.util.Map<String, Integer> weights, int ungroupedWeight, List<Member> members) {
+            this(weights, ungroupedWeight, members, java.util.Map.of());
+        }
+
+        /** {@code id}'s gate, or null when none travelled (an ungated group reads as every band). */
+        public Gate gateOf(String id) {
+            return gates.get(id);
+        }
 
         /**
          * One tunnel template in one group, at the weight it draws at there. {@code groupId} is
@@ -51,6 +76,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
         public TunnelGroups {
             weights = weights == null ? java.util.Map.of() : java.util.Map.copyOf(new java.util.TreeMap<>(weights));
             members = members == null ? List.of() : List.copyOf(members);
+            gates = gates == null ? java.util.Map.of() : java.util.Map.copyOf(gates);
         }
 
         /** The shape from before members travelled — weights only. */
@@ -280,6 +306,14 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             buf.writeUtf(m.name(), 128);
             buf.writeVarInt(m.weight());
         }
+        buf.writeVarInt(tunnelGroups.gates().size());
+        for (var e : new java.util.TreeMap<>(tunnelGroups.gates()).entrySet()) {
+            buf.writeUtf(e.getKey(), 64);
+            buf.writeVarInt(e.getValue().minLevel());
+            buf.writeVarInt(e.getValue().maxLevel());
+            buf.writeVarInt(e.getValue().phaseMask());
+            buf.writeUtf(e.getValue().stageId(), 64);
+        }
     }
 
     public static EditorRosterPacket decode(FriendlyByteBuf buf) {
@@ -331,8 +365,14 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
         for (int i = 0; i < nm; i++) {
             members.add(new TunnelGroups.Member(buf.readUtf(64), buf.readUtf(32), buf.readUtf(128), buf.readVarInt()));
         }
+        int ngt = buf.readVarInt();
+        java.util.Map<String, TunnelGroups.Gate> gates = new java.util.TreeMap<>();
+        for (int i = 0; i < ngt; i++) {
+            gates.put(buf.readUtf(64), new TunnelGroups.Gate(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
+                buf.readUtf(64)));
+        }
         return new EditorRosterPacket(groups, stamped, trainSize, stages,
-            new TunnelGroups(weights, ungroupedWeight, members));
+            new TunnelGroups(weights, ungroupedWeight, members, gates));
     }
 
     @Override

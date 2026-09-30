@@ -21152,8 +21152,26 @@
       "released_at": null
     },
     {
-      "id": "portal-room-modes-void-bedrock",
+      "id": "tunnel-group-spawn-gates",
       "version": "0.1051.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "world"
+      ],
+      "title": "Tunnel styles have their places",
+      "summary": "Each tunnel style now turns up only on the stretches of the journey it belongs to.",
+      "highlights": [],
+      "pr": 1692,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-modes-void-bedrock",
+      "version": "0.1052.0",
       "type": "feat",
       "tags": [
         "feature",

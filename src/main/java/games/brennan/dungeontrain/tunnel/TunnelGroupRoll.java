@@ -15,7 +15,8 @@ import java.util.TreeSet;
  * Which template group a tunnel is built from — rolled once per tunnel, then handed to every
  * section and entrance stamp between its two ends (see {@link TunnelRunGroups}).
  *
- * <p>A group can only win where it could actually build a whole tunnel: it needs at least one
+ * <p>A group can only win where its own spawn gate allows (see {@link TunnelGroupStore.Registry#gateOf})
+ * and where it could actually build a whole tunnel: it needs at least one
  * section <b>and</b> one entrance template the {@link GateContext} allows. So a Nether-only group
  * is never rolled in the Overworld, and a group missing its entrance is never rolled at all. The
  * implicit {@link TemplateGroup#UNGROUPED} pool competes on the same terms at
@@ -72,6 +73,9 @@ public final class TunnelGroupRoll {
             out.add(new Candidate(TemplateGroup.UNGROUPED, registry.ungroupedWeight()));
         }
         for (String id : ids) {
+            // A group carries its own spawn gate (inline or its Stage's), as a template does: where
+            // it does not allow the spot, the group is not rolled at all.
+            if (gateCtx != null && !gateCtx.allows(registry.gateOf(id))) continue;
             TemplateGroup g = TemplateGroup.of(id);
             if (canBuild(g, sections, portals, gateCtx)) out.add(new Candidate(g, registry.weightOf(id)));
         }
