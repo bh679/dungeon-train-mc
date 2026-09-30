@@ -12,10 +12,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
@@ -336,9 +338,7 @@ public final class EndBandSampler {
         Registry<Biome> biomes = end.registryAccess().registryOrThrow(Registries.BIOME);
         LevelChunkSection[] from = source.getSections();
         LevelChunkSection[] to = new LevelChunkSection[from.length];
-        for (int i = 0; i < from.length; i++) {
-            to[i] = new LevelChunkSection(from[i].getStates().copy(), from[i].getBiomes());
-        }
+        for (int i = 0; i < from.length; i++) to[i] = copySection(from[i]);
         ProtoChunk copy = new ProtoChunk(source.getPos(), UpgradeData.EMPTY, to, new ProtoChunkTicks<>(),
                 new ProtoChunkTicks<>(), end, biomes, null);
         Heightmap.primeHeightmaps(copy, EnumSet.of(
@@ -346,6 +346,28 @@ public final class EndBandSampler {
                 Heightmap.Types.MOTION_BLOCKING, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));
         copy.setPersistedStatus(ChunkStatus.FEATURES);
         return copy;
+    }
+
+    /**
+     * A fresh section holding {@code source}'s blocks, sharing its biomes. Written block by block rather than
+     * through {@code PalettedContainer.copy()}: a copied single-value (all-air) container keeps its palette's
+     * resize hook bound to the <i>original</i>, so the first block a feature writes into it fails
+     * ("value 1 is not in the range 0 to 0") — and would resize the cached ground instead.
+     */
+    private static LevelChunkSection copySection(LevelChunkSection source) {
+        PalettedContainer<BlockState> states = new PalettedContainer<>(
+                Block.BLOCK_STATE_REGISTRY, AIR, PalettedContainer.Strategy.SECTION_STATES);
+        LevelChunkSection out = new LevelChunkSection(states, source.getBiomes());
+        if (source.hasOnlyAir()) return out;
+        for (int y = 0; y < 16; y++) {
+            for (int z = 0; z < 16; z++) {
+                for (int x = 0; x < 16; x++) {
+                    BlockState s = source.getBlockState(x, y, z);
+                    if (!s.isAir()) out.setBlockState(x, y, z, s, false);
+                }
+            }
+        }
+        return out;
     }
 
     /** Copy the End's island band out of the sample, shifted onto track level. */
