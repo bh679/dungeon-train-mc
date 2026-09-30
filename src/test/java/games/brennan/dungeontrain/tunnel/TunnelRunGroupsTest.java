@@ -116,17 +116,63 @@ final class TunnelRunGroupsTest {
     }
 
     @Test
-    @DisplayName("tunnels a stamp-length apart in one chunk roll separately, keyed by their own starts")
-    void separateTunnels() {
+    @DisplayName("tunnels in one chunk are always one group — a chunk is narrower than the group gap")
+    void tunnelsInOneChunkShareGroup() {
         Book book = new Book();
         KeyRoller roller = new KeyRoller();
         boolean[] q = cols(0, 2);
         q[13] = q[14] = true;
         TemplateGroup[] g = resolve(book, 0, q, false, false, roller);
-        assertEquals(List.of(0L, 13L), roller.keys);
+        assertEquals(List.of(0L), roller.keys);
         assertEquals(TemplateGroup.of("g0"), g[1]);
-        assertEquals(TemplateGroup.of("gd"), g[13]);
+        assertEquals(TemplateGroup.of("g0"), g[13]);
         assertNull(g[6]);
+    }
+
+    @Test
+    @DisplayName("tunnels a few empty chunks apart keep one group, in either generation order")
+    void shortGapAcrossEmptyChunksKeepsGroup() {
+        // Chunk 0's tunnel ends 5 short of its edge; chunks 1-3 hold no tunnel; chunk 4's starts at 2.
+        // Gap: 5 + 48 + 2 = 55 columns < 80.
+        Book book = new Book();
+        KeyRoller roller = new KeyRoller();
+        TemplateGroup west = resolve(book, 0, cols(0, 10), false, false, roller)[0];
+        TemplateGroup east = resolve(book, 4, cols(2, 9), false, false, roller)[2];
+        assertEquals(west, east);
+        assertEquals(1, roller.keys.size());
+
+        Book book2 = new Book();
+        KeyRoller roller2 = new KeyRoller();
+        TemplateGroup east2 = resolve(book2, 4, cols(2, 9), false, false, roller2)[2];
+        TemplateGroup west2 = resolve(book2, 0, cols(0, 10), false, false, roller2)[0];
+        assertEquals(east2, west2);
+        assertEquals(1, roller2.keys.size());
+    }
+
+    @Test
+    @DisplayName("79 empty columns keep the group; five whole empty chunks roll a new one")
+    void groupGapBoundary() {
+        Book book = new Book();
+        KeyRoller roller = new KeyRoller();
+        resolve(book, 0, cols(0, 15), false, false, roller);  // ends on its east edge
+        resolve(book, 5, cols(15, 15), false, false, roller); // 64 + 15 = 79 empty columns
+        assertEquals(List.of(0L), roller.keys);
+
+        Book book2 = new Book();
+        KeyRoller roller2 = new KeyRoller();
+        resolve(book2, 0, cols(0, 15), false, false, roller2);
+        resolve(book2, 6, cols(0, 15), false, false, roller2); // chunks 1-5 empty: 80 columns
+        assertEquals(List.of(0L, 96L), roller2.keys);
+    }
+
+    @Test
+    @DisplayName("the walk takes the nearest recorded tunnel, not a farther one")
+    void nearestNeighbourWins() {
+        Book book = new Book();
+        resolve(book, 0, cols(0, 3), false, false, (k, x) -> TemplateGroup.of("a"));
+        book.record(3, new TunnelRunGroups.Edge("c", 0), new TunnelRunGroups.Edge("c", 12));
+        assertEquals(TemplateGroup.of("c"),
+            resolve(book, 4, cols(0, 3), false, false, (k, x) -> TemplateGroup.of("z"))[0]);
     }
 
     @DisplayName("runs a few columns apart are one tunnel — a section stamp spans the gap")
@@ -161,13 +207,13 @@ final class TunnelRunGroupsTest {
     }
 
     @Test
-    @DisplayName("a gap of a stamp length or more across a chunk edge is a new tunnel")
-    void wideGapAcrossChunksSplits() {
+    @DisplayName("a gap of a stamp length across a chunk edge no longer splits the tunnel")
+    void stampLengthGapAcrossChunksKeepsGroup() {
         Book book = new Book();
         KeyRoller roller = new KeyRoller();
         resolve(book, 0, cols(0, 9), false, false, roller);   // 6 short of the edge
         resolve(book, 1, cols(4, 15), false, true, roller);   // 4 in: 10 apart
-        assertEquals(List.of(0L, 20L), roller.keys);
+        assertEquals(List.of(0L), roller.keys);
     }
 
     @Test

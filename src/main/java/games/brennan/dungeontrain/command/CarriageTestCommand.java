@@ -637,7 +637,7 @@ public final class CarriageTestCommand {
 
     /**
      * {@code editor test reseed} — re-roll the copy the author is standing in and leave them where
-     * they stood, if that was within a chunk of the copy and the new roll left it open. The same rule
+     * they stood, if that was within two chunks of the copy and the new roll left it open. The same rule
      * {@code PortalTestCommand.runReseedNow} follows.
      */
     static int runReseedNow(CommandSourceStack source, boolean focus) {
