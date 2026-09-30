@@ -28,7 +28,7 @@ import java.util.Locale;
  *       nothing at all around the room for {@link PortalRoomLayout#VOID_CLEARANCE} blocks.</li>
  * </ul>
  *
- * <p>{@link #BEDROCK} was called Bedrock Lock and {@link #VOID} Bedrockless until 0.1050;
+ * <p>{@link #BEDROCK} was called Bedrock Lock and {@link #VOID} Bedrockless before 0.1051;
  * {@code bedrock_lock} and {@code bedrockless} are still read as them — see {@link #parse}.</p>
  *
  * <h2>Void is not "the same room, unsealed"</h2>
