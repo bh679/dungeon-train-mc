@@ -21584,6 +21584,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "endband-islands-arrive-whole",
+      "version": "0.1077.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "world"
+      ],
+      "title": "Islands arrive whole",
+      "summary": "Floating scenery no longer shows up as bare squares when you arrive somewhere in a hurry, and the world builds itself a little faster there.",
+      "highlights": [],
+      "pr": 1725,
+      "date": "2026-09-30",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
