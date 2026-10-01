@@ -21654,6 +21654,24 @@
       "released": true,
       "released_in": "v0.1080.0",
       "released_at": "2026-10-01T12:55:59Z"
+    },
+    {
+      "id": "echoes-leave-their-mark",
+      "version": "0.1081.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot"
+      ],
+      "title": "Echoes leave their mark",
+      "summary": "Gear an echo leaves behind now remembers who it belonged to.",
+      "highlights": [],
+      "pr": 1733,
+      "date": "2026-10-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
