@@ -69,6 +69,13 @@ public final class DungeonTrainConfig {
     public static final double DEFAULT_KILLER_BUNNY_CHANCE = 1.0 / 250.0;
     public static final double MIN_KILLER_BUNNY_CHANCE = 0.0;
     public static final double MAX_KILLER_BUNNY_CHANCE = 1.0;
+    /**
+     * One Killer Bunny in ten carries a Monty Python name — double AIN's 5% passive-mob naming roll,
+     * so a named Killer Bunny leans toward the Rabbit of Caerbannog. See {@code KillerBunnyNames}.
+     */
+    public static final double DEFAULT_KILLER_BUNNY_NAME_CHANCE = 0.10;
+    public static final double MIN_KILLER_BUNNY_NAME_CHANCE = 0.0;
+    public static final double MAX_KILLER_BUNNY_NAME_CHANCE = 1.0;
     public static final int MIN_PROGRESSION_LEVEL_DELAY = 0;
     public static final int MAX_PROGRESSION_LEVEL_DELAY = 100;
     public static final int DEFAULT_PROGRESSION_LEVEL_DELAY = 1;
@@ -357,6 +364,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_POOL_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_ROOM_CHANCE;
     public static final ModConfigSpec.DoubleValue KILLER_BUNNY_CHANCE;
+    public static final ModConfigSpec.DoubleValue KILLER_BUNNY_NAME_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_OWN_CHANCE;
     public static final ModConfigSpec.IntValue SHARED_CARRIAGE_MAX_ENTITIES;
     public static final ModConfigSpec.BooleanValue DISCOVER_NARRATIVES_ENABLED;
@@ -422,6 +430,7 @@ public final class DungeonTrainConfig {
         SHARED_CARRIAGE_POOL_CHANCE = pair.getLeft().sharedCarriagePoolChance;
         SHARED_ROOM_CHANCE = pair.getLeft().sharedRoomChance;
         KILLER_BUNNY_CHANCE = pair.getLeft().killerBunnyChance;
+        KILLER_BUNNY_NAME_CHANCE = pair.getLeft().killerBunnyNameChance;
         SHARED_CARRIAGE_OWN_CHANCE = pair.getLeft().sharedCarriageOwnChance;
         SHARED_CARRIAGE_MAX_ENTITIES = pair.getLeft().sharedCarriageMaxEntities;
         DISCOVER_NARRATIVES_ENABLED = pair.getLeft().discoverNarrativesEnabled;
@@ -485,6 +494,13 @@ public final class DungeonTrainConfig {
                         "spawns; never on Peaceful or during the opening no-hostiles stretch. Default 1/250 (0.004). 0 disables it.")
                 .defineInRange("killerBunnyChance", DEFAULT_KILLER_BUNNY_CHANCE,
                         MIN_KILLER_BUNNY_CHANCE, MAX_KILLER_BUNNY_CHANCE);
+        ModConfigSpec.DoubleValue killerBunnyNameChance = b
+                .comment("The probability a Killer Bunny spawns carrying a name from Monty Python and the Holy Grail (Rabbit of",
+                        "Caerbannog, Tim's Pet, Run Away, ...). Rolled once when the rabbit turns killer. On a miss the rabbit",
+                        "keeps whatever name Adventure Item Names already gave it, or none — it still reads as The Killer Bunny.",
+                        "Default 0.1, twice AIN's passive-mob naming rate. 0 never names it, 1 always does.")
+                .defineInRange("killerBunnyNameChance", DEFAULT_KILLER_BUNNY_NAME_CHANCE,
+                        MIN_KILLER_BUNNY_NAME_CHANCE, MAX_KILLER_BUNNY_NAME_CHANCE);
         ModConfigSpec.IntValue progressionLevelDelay = b
                 .comment("Delay difficulty progression by this many levels (tiers). The effective Diff-Level driving mob gear, potion effects, villager trade caps, and the boarding HUD becomes max(0, rawTier - this), where rawTier = floor(abs(travelled) / carriagesPerTier). Default 1 = the whole difficulty curve arrives one level later. 0 = no delay (original curve).")
                 .defineInRange("progressionLevelDelay", DEFAULT_PROGRESSION_LEVEL_DELAY, MIN_PROGRESSION_LEVEL_DELAY, MAX_PROGRESSION_LEVEL_DELAY);
@@ -800,7 +816,7 @@ public final class DungeonTrainConfig {
                 introCinematicChunkPreloadEnabled, spawnSearchSyncGen, sharedCarriagesEnabled, sharedCarriageLeasingEnabled,
                 sharedCarriagePoolChance,
                 sharedCarriageOwnChance, sharedCarriageMaxEntities, builderProfileEnabled, sharedRoomChance,
-                killerBunnyChance);
+                killerBunnyChance, killerBunnyNameChance);
     }
 
     /**
@@ -841,6 +857,12 @@ public final class DungeonTrainConfig {
     public static double getKillerBunnyChance() {
         double v = isLoaded() ? KILLER_BUNNY_CHANCE.get() : DEFAULT_KILLER_BUNNY_CHANCE;
         return Math.max(MIN_KILLER_BUNNY_CHANCE, Math.min(MAX_KILLER_BUNNY_CHANCE, v));
+    }
+
+    /** Probability a Killer Bunny carries a Monty Python name — see {@code KillerBunnyEvents}. */
+    public static double getKillerBunnyNameChance() {
+        double v = isLoaded() ? KILLER_BUNNY_NAME_CHANCE.get() : DEFAULT_KILLER_BUNNY_NAME_CHANCE;
+        return Math.max(MIN_KILLER_BUNNY_NAME_CHANCE, Math.min(MAX_KILLER_BUNNY_NAME_CHANCE, v));
     }
 
     /** Probability a shared-carriage slot leases a build by any author from the relay pool. */
@@ -1339,6 +1361,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue sharedCarriageMaxEntities,
             ModConfigSpec.BooleanValue builderProfileEnabled,
             ModConfigSpec.DoubleValue sharedRoomChance,
-            ModConfigSpec.DoubleValue killerBunnyChance
+            ModConfigSpec.DoubleValue killerBunnyChance,
+            ModConfigSpec.DoubleValue killerBunnyNameChance
     ) {}
 }
