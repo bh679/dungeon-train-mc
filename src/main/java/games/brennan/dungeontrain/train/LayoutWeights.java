@@ -31,7 +31,7 @@ import java.nio.file.Path;
  * {@code config/dungeontrain/user/layout-weights.json} (in a dev checkout the source copy is
  * written too) — the shape of {@link FullCarriageSettings}.</p>
  *
- * <pre>{"rooms": 8, "halves": 1, "group": 1}</pre>
+ * <pre>{"rooms": 100, "halves": 1, "group": 1}</pre>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public record LayoutWeights(int rooms, int halves, int group) {
@@ -44,7 +44,7 @@ public record LayoutWeights(int rooms, int halves, int group) {
     public static final int MIN = 0;
     public static final int MAX = 1000;
     /** Mostly rooms, as the train has always been, with a Half pair or a Group carriage among them. */
-    public static final LayoutWeights DEFAULT = new LayoutWeights(8, 1, 1);
+    public static final LayoutWeights DEFAULT = new LayoutWeights(100, 1, 1);
 
     private static volatile LayoutWeights current = DEFAULT;
 
