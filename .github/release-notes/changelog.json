@@ -21672,6 +21672,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "translation-character-cards",
+      "version": "0.1082.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "Know who's speaking",
+      "summary": "Translators can see more info about the characters they're translating for.",
+      "highlights": [],
+      "pr": 1734,
+      "date": "2026-10-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
