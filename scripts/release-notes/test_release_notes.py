@@ -145,6 +145,34 @@ def test_append_records_all_fields() -> None:
     assert len(e["date"]) == 10 and e["date"][4] == "-"
 
 
+def test_append_addresses_recorded_and_ordered() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = append(ws, "fixes", "--addresses", "train_vanished", "--addresses", "lag",
+               "--addresses", "lag")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["addresses"] == ["lag", "train_vanished"]
+    keys = list(e.keys())
+    assert keys.index("highlights") < keys.index("addresses") < keys.index("date")
+
+
+def test_append_addresses_omitted_when_none() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    assert append(ws, "plain").returncode == 0
+    assert "addresses" not in read_changelog(ws)["entries"][0]
+
+
+def test_append_unknown_address_rejected() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = append(ws, "bad-issue", "--addresses", "crash")
+    assert r.returncode != 0
+    assert not os.path.exists(changelog_path(ws)) or \
+        read_changelog(ws)["entries"] == []
+
+
 def test_append_duplicate_id_refused() -> None:
     ws = make_workspace()
     write_gradle(ws, "0.290.3")
@@ -543,6 +571,7 @@ def test_produced_and_shipped_changelog_match_schema() -> None:
         APPEND, ws, "--id", "schema-feat", "--type", "feat",
         "--title", "Schema feat", "--summary", "Validates.",
         "--highlight", "h1", "--pr", "42", "--tag", "train",
+        "--addresses", "lag",
     )
     run(MARK, ws, "--released-in", "v0.291.0")
     jsonschema.validate(read_changelog(ws), schema)
@@ -555,6 +584,9 @@ def main() -> int:
         test_append_version_override,
         test_append_records_all_fields,
         test_append_duplicate_id_refused,
+        test_append_addresses_recorded_and_ordered,
+        test_append_addresses_omitted_when_none,
+        test_append_unknown_address_rejected,
         test_append_bad_version_override_rejected,
         test_append_creates_file_when_missing,
         test_append_type_derived_tag_always_present,

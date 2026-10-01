@@ -21690,6 +21690,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "bug-report-response",
+      "version": "0.1083.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Your bug reports get an answer",
+      "summary": "Report a bug after a fall and the train now tells you whether help is already on the way.",
+      "highlights": [],
+      "pr": 1735,
+      "date": "2026-10-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
