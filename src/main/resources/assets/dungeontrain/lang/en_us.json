@@ -1022,7 +1022,6 @@
   "gui.dungeontrain.bug_response.outdated.fixes.one": "Those releases include %s bug fix, so updating may already solve this.",
   "gui.dungeontrain.bug_response.outdated.fixes.other": "Those releases include %s bug fixes, so updating may already solve this.",
   "gui.dungeontrain.bug_response.outdated.server": "Please update. The server needs the same version too.",
-  "gui.dungeontrain.bug_response.button.update": "Update on %s",
   "gui.dungeontrain.bug_response.button.get": "Get v%1$s on %2$s",
   "gui.dungeontrain.bug_response.button.changes": "See changes",
   "gui.dungeontrain.bug_response.fixed.title.lag": "Good news, lag has already had fixes.",

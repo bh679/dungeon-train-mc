@@ -850,7 +850,6 @@
   "gui.dungeontrain.bug_response.outdated.update": "Mag-update pa rin.",
   "gui.dungeontrain.bug_response.outdated.fixes.other": "May %s bug fix ang mga release na iyon, kaya baka maayos na ito kapag nag-update ka.",
   "gui.dungeontrain.bug_response.outdated.server": "Mag-update ka sana. Kailangan din ng server ang parehong bersyon.",
-  "gui.dungeontrain.bug_response.button.update": "Mag-update sa %s",
   "gui.dungeontrain.bug_response.button.get": "Kunin ang v%1$s sa %2$s",
   "gui.dungeontrain.bug_response.button.changes": "Tingnan ang pagbabago",
   "gui.dungeontrain.bug_response.fixed.title.lag": "Magandang balita, may mga ayos na para sa lag.",

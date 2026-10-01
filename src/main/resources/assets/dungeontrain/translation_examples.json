@@ -12892,15 +12892,6 @@
       ]
     }
   },
-  "gui.dungeontrain.bug_response.button.update": {
-    "1": {
-      "label": "a launcher name (Modrinth or CurseForge)",
-      "examples": [
-        "Modrinth",
-        "CurseForge"
-      ]
-    }
-  },
   "gui.dungeontrain.bug_response.button.get": {
     "1": {
       "label": "the newest version on Modrinth, without the leading v",

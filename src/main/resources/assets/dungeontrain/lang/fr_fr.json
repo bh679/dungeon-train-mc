@@ -884,7 +884,6 @@
   "gui.dungeontrain.bug_response.outdated.fixes.one": "Ces versions contiennent %s correctif, la mise à jour règle peut-être déjà le problème.",
   "gui.dungeontrain.bug_response.outdated.fixes.other": "Ces versions contiennent %s correctifs, la mise à jour règle peut-être déjà le problème.",
   "gui.dungeontrain.bug_response.outdated.server": "Mets à jour, s'il te plaît. Le serveur doit aussi avoir la même version.",
-  "gui.dungeontrain.bug_response.button.update": "Mettre à jour sur %s",
   "gui.dungeontrain.bug_response.button.get": "Avoir la v%1$s sur %2$s",
   "gui.dungeontrain.bug_response.button.changes": "Voir les changements",
   "gui.dungeontrain.bug_response.fixed.title.lag": "Bonne nouvelle, le lag a déjà été amélioré.",

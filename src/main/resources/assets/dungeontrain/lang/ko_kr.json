@@ -850,7 +850,6 @@
   "gui.dungeontrain.bug_response.outdated.update": "그래도 업데이트하세요.",
   "gui.dungeontrain.bug_response.outdated.fixes.other": "그 릴리스에는 버그 수정 %s개가 들어 있어서, 업데이트하면 이미 해결될 수도 있어요.",
   "gui.dungeontrain.bug_response.outdated.server": "업데이트해 주세요. 서버도 같은 버전이어야 해요.",
-  "gui.dungeontrain.bug_response.button.update": "%s에서 업데이트",
   "gui.dungeontrain.bug_response.button.get": "%2$s에서 v%1$s 받기",
   "gui.dungeontrain.bug_response.button.changes": "변경 사항",
   "gui.dungeontrain.bug_response.fixed.title.lag": "좋은 소식, 렉은 이미 개선되었어요.",

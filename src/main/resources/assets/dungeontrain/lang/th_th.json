@@ -850,7 +850,6 @@
   "gui.dungeontrain.bug_response.outdated.update": "อัปเดตไว้ก่อนก็ดี",
   "gui.dungeontrain.bug_response.outdated.fixes.other": "รุ่นเหล่านั้นมีการแก้บั๊ก %s รายการ การอัปเดตอาจแก้ปัญหานี้ไปแล้ว",
   "gui.dungeontrain.bug_response.outdated.server": "กรุณาอัปเดต เซิร์ฟเวอร์ก็ต้องใช้เวอร์ชันเดียวกันด้วย",
-  "gui.dungeontrain.bug_response.button.update": "อัปเดตบน %s",
   "gui.dungeontrain.bug_response.button.get": "รับ v%1$s บน %2$s",
   "gui.dungeontrain.bug_response.button.changes": "ดูสิ่งที่เปลี่ยน",
   "gui.dungeontrain.bug_response.fixed.title.lag": "ข่าวดี อาการแล็กได้รับการแก้ไขแล้ว",

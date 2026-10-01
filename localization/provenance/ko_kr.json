@@ -850,7 +850,6 @@
   "gui.dungeontrain.bug_response.outdated.update": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "f0528f211ebeff37"},
   "gui.dungeontrain.bug_response.outdated.fixes.other": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c99228e792e2a13b"},
   "gui.dungeontrain.bug_response.outdated.server": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "6a95d608284fef36"},
-  "gui.dungeontrain.bug_response.button.update": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "9486d399ff67d233"},
   "gui.dungeontrain.bug_response.button.get": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "dc7aadc72c88751d"},
   "gui.dungeontrain.bug_response.button.changes": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "619379de430b1504"},
   "gui.dungeontrain.bug_response.fixed.title.lag": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0e1250eb238ab966"},

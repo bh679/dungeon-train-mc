@@ -850,7 +850,6 @@
   "gui.dungeontrain.bug_response.outdated.update": "Kemas kini juga.",
   "gui.dungeontrain.bug_response.outdated.fixes.other": "Keluaran tersebut mengandungi %s pembetulan pepijat, jadi kemas kini mungkin sudah menyelesaikan masalah ini.",
   "gui.dungeontrain.bug_response.outdated.server": "Sila kemas kini. Pelayan juga perlukan versi yang sama.",
-  "gui.dungeontrain.bug_response.button.update": "Kemas kini di %s",
   "gui.dungeontrain.bug_response.button.get": "Dapatkan v%1$s di %2$s",
   "gui.dungeontrain.bug_response.button.changes": "Lihat perubahan",
   "gui.dungeontrain.bug_response.fixed.title.lag": "Berita baik, lag sudah pun dibaiki.",

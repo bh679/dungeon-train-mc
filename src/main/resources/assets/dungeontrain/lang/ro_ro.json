@@ -1055,7 +1055,6 @@
   "gui.dungeontrain.bug_response.outdated.fixes.few": "Acele lansări includ %s remedieri de bug-uri, așa că actualizarea poate rezolva deja asta.",
   "gui.dungeontrain.bug_response.outdated.fixes.other": "Acele lansări includ %s de remedieri de bug-uri, așa că actualizarea poate rezolva deja asta.",
   "gui.dungeontrain.bug_response.outdated.server": "Te rugăm să actualizezi. Și serverul are nevoie de aceeași versiune.",
-  "gui.dungeontrain.bug_response.button.update": "Actualizează pe %s",
   "gui.dungeontrain.bug_response.button.get": "Ia v%1$s de pe %2$s",
   "gui.dungeontrain.bug_response.button.changes": "Vezi modificările",
   "gui.dungeontrain.bug_response.fixed.title.lag": "Vești bune, lagul a primit deja remedieri.",

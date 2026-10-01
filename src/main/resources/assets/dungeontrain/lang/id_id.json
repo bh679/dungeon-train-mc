@@ -850,7 +850,6 @@
   "gui.dungeontrain.bug_response.outdated.update": "Tetap perbarui.",
   "gui.dungeontrain.bug_response.outdated.fixes.other": "Rilis-rilis itu berisi %s perbaikan bug, jadi memperbarui mungkin sudah menyelesaikan ini.",
   "gui.dungeontrain.bug_response.outdated.server": "Silakan perbarui. Server juga butuh versi yang sama.",
-  "gui.dungeontrain.bug_response.button.update": "Perbarui di %s",
   "gui.dungeontrain.bug_response.button.get": "Ambil v%1$s di %2$s",
   "gui.dungeontrain.bug_response.button.changes": "Lihat perubahan",
   "gui.dungeontrain.bug_response.fixed.title.lag": "Kabar baik, lag sudah diperbaiki.",

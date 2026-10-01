@@ -194,12 +194,8 @@ public final class BugResponseCard {
     }
 
     private void buttonSteps(Result r, Font font, int inner, List<Step> steps) {
+        // No Update button here: the death screen's final page already offers one beside Board anew.
         List<Button> buttons = new ArrayList<>();
-        Platform own = r.launcher();
-        if (r.behind()) {
-            buttons.add(new Button(Component.translatable(KEY + "button.update", own.displayName()), Style.UPDATE,
-                    () -> openLink(packUrl(own))));
-        }
         if (r.curseforgeReview() && r.modrinthTarget().isPresent()) {
             buttons.add(new Button(Component.translatable(KEY + "button.get",
                     r.modrinthTarget().get().toString(), Platform.MODRINTH.displayName()), Style.MODRINTH,

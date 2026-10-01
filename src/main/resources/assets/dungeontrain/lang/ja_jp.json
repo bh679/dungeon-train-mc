@@ -850,7 +850,6 @@
   "gui.dungeontrain.bug_response.outdated.update": "それでも更新しましょう。",
   "gui.dungeontrain.bug_response.outdated.fixes.other": "それらのリリースには %s 件のバグ修正が含まれています。更新すれば解決するかもしれません。",
   "gui.dungeontrain.bug_response.outdated.server": "更新してください。サーバーも同じバージョンが必要です。",
-  "gui.dungeontrain.bug_response.button.update": "%s で更新",
   "gui.dungeontrain.bug_response.button.get": "%2$s で v%1$s を入手",
   "gui.dungeontrain.bug_response.button.changes": "変更点を見る",
   "gui.dungeontrain.bug_response.fixed.title.lag": "朗報です。ラグはすでに改善されています。",

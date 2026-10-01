@@ -884,7 +884,6 @@
   "gui.dungeontrain.bug_response.outdated.fixes.one": "Die releases bevatten %s bugfix, dus updaten lost dit misschien al op.",
   "gui.dungeontrain.bug_response.outdated.fixes.other": "Die releases bevatten %s bugfixes, dus updaten lost dit misschien al op.",
   "gui.dungeontrain.bug_response.outdated.server": "Update alsjeblieft. De server heeft ook dezelfde versie nodig.",
-  "gui.dungeontrain.bug_response.button.update": "Updaten op %s",
   "gui.dungeontrain.bug_response.button.get": "v%1$s op %2$s",
   "gui.dungeontrain.bug_response.button.changes": "Wijzigingen bekijken",
   "gui.dungeontrain.bug_response.fixed.title.lag": "Goed nieuws, lag is al aangepakt.",

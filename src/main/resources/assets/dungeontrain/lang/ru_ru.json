@@ -923,7 +923,6 @@
   "gui.dungeontrain.bug_response.outdated.fixes.few": "В этих выпусках есть %s исправления ошибок, так что обновление может уже решить проблему.",
   "gui.dungeontrain.bug_response.outdated.fixes.many": "В этих выпусках есть %s исправлений ошибок, так что обновление может уже решить проблему.",
   "gui.dungeontrain.bug_response.outdated.server": "Пожалуйста, обновитесь. На сервере тоже нужна та же версия.",
-  "gui.dungeontrain.bug_response.button.update": "Обновить на %s",
   "gui.dungeontrain.bug_response.button.get": "v%1$s на %2$s",
   "gui.dungeontrain.bug_response.button.changes": "Что изменилось",
   "gui.dungeontrain.bug_response.fixed.title.lag": "Хорошие новости, лаги уже исправляли.",

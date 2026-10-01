@@ -850,7 +850,6 @@
   "gui.dungeontrain.bug_response.outdated.update": "还是建议更新一下。",
   "gui.dungeontrain.bug_response.outdated.fixes.other": "这些版本包含 %s 个错误修复，更新后问题可能已经解决。",
   "gui.dungeontrain.bug_response.outdated.server": "请更新。服务器也需要相同的版本。",
-  "gui.dungeontrain.bug_response.button.update": "在 %s 更新",
   "gui.dungeontrain.bug_response.button.get": "在 %2$s 获取 v%1$s",
   "gui.dungeontrain.bug_response.button.changes": "查看更新内容",
   "gui.dungeontrain.bug_response.fixed.title.lag": "好消息，卡顿问题已经修复过了。",
