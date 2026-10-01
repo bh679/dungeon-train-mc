@@ -7,6 +7,15 @@ import games.brennan.discordpresence.survey.SurveyKeys;
 import games.brennan.discordpresence.survey.SurveyRegistry;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
+import games.brennan.dungeontrain.client.bugresponse.BugIssueClassifier;
+import games.brennan.dungeontrain.narrative.PluralRules;
+import games.brennan.dungeontrain.client.bugresponse.BugResponseCard;
+import games.brennan.dungeontrain.client.bugresponse.ReleasesBehind;
+import games.brennan.dungeontrain.client.version.compare.FullSemver;
+import games.brennan.dungeontrain.client.version.compare.InstalledVersion;
+import games.brennan.dungeontrain.client.version.compare.Platform;
+import games.brennan.dungeontrain.client.version.compare.PlatformVersions;
+import games.brennan.dungeontrain.client.version.compare.VersionCompareState;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.support.DevHours;
 import games.brennan.dungeontrain.client.support.DonateCards;
@@ -45,6 +54,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Renderable;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -170,6 +180,11 @@ public final class NarrativeDeathScreen extends Screen {
     // forcing Survival — blue instead of green signals "mode carries over".
     private static final int BTN_PRI_SHIFT_BG    = 0xFF3C416B;
     private static final int BTN_PRI_SHIFT_LIGHT = 0xFF5C6291;
+    // Update-to-latest (gold) and Modrinth (green) buttons: the bug-report card and the platform page.
+    private static final int BTN_UPD_BG     = 0xFF7A6324;
+    private static final int BTN_UPD_LIGHT  = 0xFFB0913C;
+    private static final int BTN_MR_BG      = 0xFF1B7A4C;
+    private static final int BTN_MR_LIGHT   = 0xFF2FB36F;
     // Red "Submit Bug" shortcut button (start page, beside Next Screen).
     private static final int BTN_BUG_BG     = 0xFF8B3A3A;
     private static final int BTN_BUG_LIGHT  = 0xFFB45C5C;
@@ -373,6 +388,12 @@ public final class NarrativeDeathScreen extends Screen {
     // Set when the bug page is opened via the shortcut, so the next Next Screen on that
     // page returns to the start page instead of advancing forward.
     private boolean returnToStartAfterBug = false;
+    // The response shown on the bug page once a real bug has been submitted ("already fixed",
+    // known multiplayer issue, lag tips, update nudge); null until then, and cleared when the
+    // answer changes so the edited report gets a fresh response.
+    private BugResponseCard bugCard;
+    // Platform page: "Update to vX" beside Board anew, shown only while behind on this launcher.
+    private Rect updateRect;
     private final List<Rect> scoreRects = new ArrayList<>();
 
     // ---- Cargo (GEAR) page: inline cargo icons + scrollable advancements row ----
@@ -392,6 +413,9 @@ public final class NarrativeDeathScreen extends Screen {
 
     public NarrativeDeathScreen() {
         super(Component.translatable("gui.dungeontrain.death.narr.title"));
+        // The bug-report response and the platform page's Update button read the launcher
+        // listings + changelog; start (or reuse) that fetch now so it has landed by then.
+        VersionCompareState.ensureFetched();
     }
 
     private List<Page> buildPages() {
@@ -527,7 +551,11 @@ public final class NarrativeDeathScreen extends Screen {
             // Editing an already-sent answer clears its "Sent" badge so the new text
             // re-submits on Next Screen. setValue above runs before this responder is
             // attached, so re-entering the page doesn't spuriously fire it.
-            commentBox.setResponder(s -> { comments.put(qid, s); submitted.remove(qid); });
+            commentBox.setResponder(s -> {
+                comments.put(qid, s);
+                submitted.remove(qid);
+                if (qid.equals(BUG_REPORT_ID)) bugCard = null;
+            });
             // The bug question asks for a detailed free-text description; otherwise a text question
             // (no rating scale) makes the box the sole answer (prompt for it directly), and a scale
             // question's comment just explains the score.
@@ -727,6 +755,7 @@ public final class NarrativeDeathScreen extends Screen {
         // Clickable regions are set by the page body / footer each frame; clear
         // any from last frame so a page that doesn't draw one can't be clicked.
         boardAnewRect = null;
+        updateRect = null;
         platformLeaveRect = null;
         donateRect = null;
         dollarRect = null;
@@ -1414,10 +1443,14 @@ public final class NarrativeDeathScreen extends Screen {
 
     private int drawSurvey(GuiGraphics g, SurveyQuestionPayload.Entry e, int left, int w, int cx, int y) {
         scoreRects.clear();
+        // Once a bug is submitted its response card needs the room: the train art and intro fold away.
+        boolean showBugCard = bugCard != null && e != null && e.id().equals(BUG_REPORT_ID);
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_ledger");
         y += 14;
-        drawTrain(g, left, w, y, currentPage);
-        y += 46;
+        if (!showBugCard) {
+            drawTrain(g, left, w, y, currentPage);
+            y += 46;
+        }
         // The first survey question keeps the calm "ledger" intro; the second (and any later)
         // question switches to a more urgent plea. drawSurvey only runs for the current page, so
         // the survey's ordinal is how many SURVEY pages occur up to and including this one.
@@ -1437,8 +1470,10 @@ public final class NarrativeDeathScreen extends Screen {
             }
             introKey = SURVEY_INTRO_2_KEYS[surveyIntro2Choice];
         }
-        y = drawCentered(g, Component.translatable(introKey), cx, w, y, NARR);
-        y += 6;
+        if (!showBugCard) {
+            y = drawCentered(g, Component.translatable(introKey), cx, w, y, NARR);
+            y += 6;
+        }
         if (e != null) {
             // Localize the prompt for display via DiscordPresence's derived survey key (falling back
             // to the literal, which still drives the Discord embed + the answer-matching logic below).
@@ -1494,13 +1529,18 @@ public final class NarrativeDeathScreen extends Screen {
             // Privacy notice: only when the bug question has a real-bug option selected (not "No"),
             // warning that recent logs will be attached. For "Lag" the notice also mentions the
             // system-spec summary that gets collected to diagnose performance.
-            if (e.id().equals(BUG_REPORT_ID) && selected >= 0 && selected < e.options().size()
+            if (!showBugCard && e.id().equals(BUG_REPORT_ID) && selected >= 0 && selected < e.options().size()
                     && !e.options().get(selected).equalsIgnoreCase("No")) {
                 String noticeKey = e.options().get(selected).equalsIgnoreCase("Lag")
                         ? "gui.dungeontrain.death.narr.bug_log_notice_lag"
                         : "gui.dungeontrain.death.narr.bug_log_notice";
                 y = drawCentered(g, Component.translatable(noticeKey), cx, w, y, SUBLINE);
                 y += 4;
+            }
+            if (showBugCard) {
+                // Wider than the page column: the card carries buttons and release titles.
+                int cardW = Math.max(w, Math.min(this.width - 24, 460));
+                y = bugCard.render(g, this.font, bugCardChrome, cx, cardW, y) + 4;
             }
             // Only from the second time this question is put in front of someone who already
             // answered it — a first ask has nothing to opt out of yet.
@@ -1953,10 +1993,21 @@ public final class NarrativeDeathScreen extends Screen {
         boolean shiftHeld = Screen.hasShiftDown();
         boolean shiftReboard = shiftHeld && !remote();
         int baW = 180, baH = 22;
-        boardAnewRect = drawBevel(g, cx - baW / 2, y, baW, baH, runEndLabel(false),
+        // Out of date on this launcher: an "Update to vX" button rides beside Board anew.
+        Optional<FullSemver> update = updateTarget();
+        Component updateLabel = update.map(v -> (Component) Component.translatable(
+                "gui.dungeontrain.death.update_button", v.toString())).orElse(null);
+        int upW = updateLabel != null ? this.font.width(updateLabel) + 20 : 0;
+        int gap = updateLabel != null ? 6 : 0;
+        int bx = cx - (baW + gap + upW) / 2;
+        boardAnewRect = drawBevel(g, bx, y, baW, baH, runEndLabel(false),
                 shiftReboard ? BTN_PRI_SHIFT_BG : BTN_PRI_BG,
                 shiftReboard ? BTN_PRI_SHIFT_LIGHT : BTN_PRI_LIGHT,
                 BTN_DARK, 0xFFFFFFFF);
+        if (updateLabel != null) {
+            updateRect = drawBevel(g, bx + baW + gap, y, upW, baH, updateLabel,
+                    BTN_UPD_BG, BTN_UPD_LIGHT, BTN_DARK, 0xFFFFFFFF);
+        }
         y += baH + 8;
         // Leave the line — smaller, secondary, beneath it. Hold Shift to convert it
         // into a "Quit Game" button (darker, lighter text + bevel) that quits to desktop.
@@ -1968,8 +2019,66 @@ public final class NarrativeDeathScreen extends Screen {
                 quit ? BTN_QUIT_LIGHT : BTN_LIGHT,
                 quit ? BTN_QUIT_DARK  : BTN_DARK,
                 quit ? BTN_QUIT_TEXT  : BTN_TEXT);
-        return y + lvH + 6;
+        y += lvH + 6;
+        if (updateLabel != null) {
+            int behind = releasesBehind();
+            y = drawCentered(g, Component.translatable(
+                    "gui.dungeontrain.death.update_sub." + PluralRules.category(ClientLanguage.selected(), behind),
+                    Platform.current().displayName(), behind), cx, w, y, SUBLINE);
+        }
+        return y;
     }
+
+    /** This launcher's listing, when it has arrived. */
+    private static Optional<PlatformVersions> ownListing() {
+        return VersionCompareState.versions(Platform.current());
+    }
+
+    /** The version this launcher would update to, when it is a newer real release than this build. */
+    private static Optional<FullSemver> updateTarget() {
+        Optional<FullSemver> installed = InstalledVersion.get();
+        Optional<PlatformVersions> own = ownListing();
+        if (installed.isEmpty() || own.isEmpty()) return Optional.empty();
+        return ReleasesBehind.updateTarget(own.get(), installed.get());
+    }
+
+    private static int releasesBehind() {
+        Optional<FullSemver> installed = InstalledVersion.get();
+        Optional<PlatformVersions> own = ownListing();
+        if (installed.isEmpty() || own.isEmpty()) return 0;
+        return ReleasesBehind.count(own.get(), installed.get());
+    }
+
+    private void openUpdatePage() {
+        ConfirmLinkScreen.confirmLinkNow(this, BugResponseCard.packUrl(Platform.current()));
+    }
+
+    /** The bug-report card draws with this screen's bevels, chips and fade. */
+    private final BugResponseCard.Chrome bugCardChrome = new BugResponseCard.Chrome() {
+        @Override
+        public int fade(int argb) {
+            return NarrativeDeathScreen.this.fade(argb);
+        }
+
+        @Override
+        public void bevel(GuiGraphics g, int x, int y, int w, int h, Component text, BugResponseCard.Style style) {
+            switch (style) {
+                case UPDATE -> drawBevel(g, x, y, w, h, text, BTN_UPD_BG, BTN_UPD_LIGHT, BTN_DARK, 0xFFFFFFFF);
+                case MODRINTH -> drawBevel(g, x, y, w, h, text, BTN_MR_BG, BTN_MR_LIGHT, BTN_DARK, 0xFFFFFFFF);
+                case PLAIN -> drawBevel(g, x, y, w, h, text, BTN_BG, BTN_LIGHT, BTN_DARK, BTN_TEXT);
+            }
+        }
+
+        @Override
+        public void chip(GuiGraphics g, int x, int y, Component text, int border, int textColor) {
+            drawChip(g, x, y, text, border, textColor);
+        }
+
+        @Override
+        public void border(GuiGraphics g, int x, int y, int w, int h, int color) {
+            drawBorder(g, x, y, w, h, color);
+        }
+    };
 
     // ---- Chrome ----
 
@@ -2257,6 +2366,7 @@ public final class NarrativeDeathScreen extends Screen {
             }
             if (page.kind() == Kind.PLATFORM) {
                 if (boardAnewRect != null && boardAnewRect.has(mx, my)) { boardAnew(); return true; }
+                if (updateRect != null && updateRect.has(mx, my)) { openUpdatePage(); return true; }
                 if (platformLeaveRect != null && platformLeaveRect.has(mx, my)) { leaveOrQuit(); return true; }
             } else if (continueRect != null && continueRect.has(mx, my)) {
                 advance();
@@ -2293,6 +2403,10 @@ public final class NarrativeDeathScreen extends Screen {
                     return true;
                 }
             }
+            if (page.kind() == Kind.SURVEY && page.survey() != null
+                    && BUG_REPORT_ID.equals(page.survey().id()) && bugCard != null && bugCard.click(mx, my)) {
+                return true;
+            }
             if (page.kind() == Kind.SURVEY && page.survey() != null) {
                 String qid = page.survey().id();
                 for (int i = 0; i < scoreRects.size(); i++) {
@@ -2300,7 +2414,10 @@ public final class NarrativeDeathScreen extends Screen {
                         int value = page.survey().scaleMin() + i;
                         // Changing the answer clears its "Sent" badge so it re-submits on
                         // Next Screen; re-clicking the same tile is a no-op for that state.
-                        if (value != scores.getOrDefault(qid, -1)) submitted.remove(qid);
+                        if (value != scores.getOrDefault(qid, -1)) {
+                            submitted.remove(qid);
+                            if (qid.equals(BUG_REPORT_ID)) bugCard = null;
+                        }
                         scores.put(qid, value);
                         return true;
                     }
@@ -2340,9 +2457,20 @@ public final class NarrativeDeathScreen extends Screen {
         if (pages.isEmpty() || uiBusy) return;
         Page page = pages.get(currentPage);
         if (page.kind() == Kind.SURVEY) {
+            boolean bugPage = page.survey() != null && BUG_REPORT_ID.equals(page.survey().id());
+            boolean alreadySent = bugPage && submitted.contains(BUG_REPORT_ID);
             // Submit the answer if one was given; the survey is optional, so an
             // unanswered question must not block Continue.
             maybeSubmit(page.survey());
+            // A bug was just reported: stay on this page and answer it. The next Next Screen
+            // moves on exactly as before (the report is already sent, so it does not re-submit).
+            if (bugPage && !alreadySent && bugCard == null && bugReported()) {
+                SurveyQuestionPayload.Entry e = page.survey();
+                String option = e.options().get(scores.getOrDefault(BUG_REPORT_ID, 0));
+                bugCard = new BugResponseCard(this,
+                        BugIssueClassifier.classify(option, comments.getOrDefault(BUG_REPORT_ID, "")), remote());
+                return;
+            }
         }
         // Bug page reached via the start-page shortcut: Next Screen returns to the start
         // (page 0) instead of paging forward. Consume the flag either way.
