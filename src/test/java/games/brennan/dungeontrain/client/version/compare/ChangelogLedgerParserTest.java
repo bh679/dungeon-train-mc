@@ -19,6 +19,7 @@ class ChangelogLedgerParserTest {
                "title": "A", "summary": "Sa", "highlights": ["h1", ""], "pr": 1, "date": "2026-09-01",
                "released": true, "released_in": "v0.851.0", "released_at": "2026-09-01T00:00:00Z"},
               {"id": "b", "version": "0.851.0", "type": "fix", "tags": ["fix", "someday-tag"],
+               "addresses": ["lag", "someday-issue"],
                "title": "B", "summary": "Sb", "highlights": [], "date": "2026-09-01",
                "released": true, "released_in": "v0.851.0", "released_at": "2026-09-01T00:00:00Z"},
               {"id": "c", "version": "0.852.0", "type": "feat", "tags": ["feature"],
@@ -47,6 +48,29 @@ class ChangelogLedgerParserTest {
         List<LedgerEntry> in851 = ledger.entriesReleasedIn(v("0.851.0"));
         assertEquals(List.of("a", "b"), in851.stream().map(LedgerEntry::id).toList());
         assertEquals(List.of(), ledger.entriesReleasedIn(v("0.1.0")));
+    }
+
+    @Test
+    @DisplayName("addresses are read as ids; a missing addresses key is an empty set")
+    void addresses() {
+        ChangelogLedger ledger = ChangelogLedgerParser.parse(LEDGER);
+        List<LedgerEntry> in851 = ledger.entriesReleasedIn(v("0.851.0"));
+        assertEquals(Set.of(), in851.get(0).addresses());
+        assertEquals(Set.of("lag", "someday-issue"), in851.get(1).addresses());
+    }
+
+    @Test
+    @DisplayName("entriesReleasedBetween is exclusive below, inclusive above, newest release first")
+    void between() {
+        ChangelogLedger ledger = ChangelogLedgerParser.parse(LEDGER);
+        assertEquals(List.of("a", "b", "d"),
+                ledger.entriesReleasedBetween(v("0.840.0"), v("0.851.0")).stream().map(LedgerEntry::id).toList()
+                        .stream().sorted().toList());
+        assertEquals(List.of("a", "b"),
+                ledger.entriesReleasedBetween(v("0.841.0"), v("0.900.0")).stream().map(LedgerEntry::id).toList());
+        assertEquals("a", ledger.entriesReleasedBetween(v("0.0.0"), v("0.900.0")).get(0).id(),
+                "newest release first");
+        assertEquals(List.of(), ledger.entriesReleasedBetween(v("0.851.0"), v("0.900.0")));
     }
 
     @Test

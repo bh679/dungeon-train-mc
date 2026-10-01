@@ -38,6 +38,18 @@ public final class ChangelogLedger {
         return byRelease.containsKey(release);
     }
 
+    /**
+     * Every entry that shipped in a release newer than {@code exclusiveFrom} and no newer than
+     * {@code inclusiveTo}, newest release first, ledger order within a release.
+     */
+    public List<LedgerEntry> entriesReleasedBetween(FullSemver exclusiveFrom, FullSemver inclusiveTo) {
+        return byRelease.entrySet().stream()
+                .filter(e -> e.getKey().isNewerThan(exclusiveFrom) && !e.getKey().isNewerThan(inclusiveTo))
+                .sorted(Map.Entry.<FullSemver, List<LedgerEntry>>comparingByKey().reversed())
+                .flatMap(e -> e.getValue().stream())
+                .toList();
+    }
+
     /** The entries that shipped in {@code release}, in ledger (merge) order; empty when unknown. */
     public List<LedgerEntry> entriesReleasedIn(FullSemver release) {
         return byRelease.getOrDefault(release, List.of());
