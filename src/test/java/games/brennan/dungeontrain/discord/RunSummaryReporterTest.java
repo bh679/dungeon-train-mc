@@ -83,4 +83,15 @@ class RunSummaryReporterTest {
         assertTrue(out.has("freePlay"));
         assertFalse(out.get("freePlay").getAsBoolean());
     }
+
+    @Test
+    @DisplayName("modVersion rides along when known, and is left out when unknown or blank")
+    void modVersionOptional() {
+        assertEquals("0.1013.0",
+            RunSummaryReporter.buildPayload(UUID, "x", 10L, 0, 0, NO_POS, false, " 0.1013.0 ").get("modVersion").getAsString());
+        assertFalse(RunSummaryReporter.buildPayload(UUID, "x", 10L, 0, 0, NO_POS, false, null).has("modVersion"));
+        assertFalse(RunSummaryReporter.buildPayload(UUID, "x", 10L, 0, 0, NO_POS, false, "").has("modVersion"));
+        assertFalse(RunSummaryReporter.buildPayload(UUID, "x", 10L, 0, 0, NO_POS, false, "unknown").has("modVersion"));
+        assertFalse(RunSummaryReporter.buildPayload(UUID, "x", 10L, 0, 0, NO_POS, false).has("modVersion"));
+    }
 }

@@ -360,7 +360,7 @@ public final class StartingBookFactory {
      * this algorithm live in {@code scripts/books-editor/web/js/paginate.js} and
      * dp-relay's {@code web/js/book-paginate.js} — change all three together.</p>
      */
-    static List<String> paginateExplicit(String body) {
+    public static List<String> paginateExplicit(String body) {
         List<String> pages = new ArrayList<>();
         // Split on the marker line. The -1 limit keeps trailing empty chunks so
         // they can become blank pages (or be trimmed off at the end below).
