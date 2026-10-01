@@ -159,7 +159,8 @@ public final class VariantBlockInteractions {
             sidecar.put(local, updated);
         } catch (IllegalArgumentException e) {
             player.displayClientMessage(
-                Component.literal("Variant add failed: " + e.getMessage())
+                Component.translatable("chat.dungeontrain.editor_bar.common.variant_add_failed",
+                        String.valueOf(e.getMessage()))
                     .withStyle(ChatFormatting.RED), true);
             suppressVanillaPlace(event);
             return;
@@ -207,13 +208,15 @@ public final class VariantBlockInteractions {
             sidecar.save(kind, name);
         } catch (IllegalArgumentException e) {
             player.displayClientMessage(
-                Component.literal("Variant add failed: " + e.getMessage())
+                Component.translatable("chat.dungeontrain.editor_bar.common.variant_add_failed",
+                        String.valueOf(e.getMessage()))
                     .withStyle(ChatFormatting.RED), true);
             suppressVanillaPlace(event);
             return;
         } catch (IOException e) {
             player.displayClientMessage(
-                Component.literal("Variant save failed: " + e.getMessage())
+                Component.translatable("chat.dungeontrain.editor_bar.common.variant_save_failed",
+                        String.valueOf(e.getMessage()))
                     .withStyle(ChatFormatting.RED), true);
             suppressVanillaPlace(event);
             return;
@@ -262,13 +265,15 @@ public final class VariantBlockInteractions {
             sidecar.save(contents);
         } catch (IllegalArgumentException e) {
             player.displayClientMessage(
-                Component.literal("Variant add failed: " + e.getMessage())
+                Component.translatable("chat.dungeontrain.editor_bar.common.variant_add_failed",
+                        String.valueOf(e.getMessage()))
                     .withStyle(ChatFormatting.RED), true);
             suppressVanillaPlace(event);
             return;
         } catch (IOException e) {
             player.displayClientMessage(
-                Component.literal("Variant save failed: " + e.getMessage())
+                Component.translatable("chat.dungeontrain.editor_bar.common.variant_save_failed",
+                        String.valueOf(e.getMessage()))
                     .withStyle(ChatFormatting.RED), true);
             suppressVanillaPlace(event);
             return;
@@ -314,13 +319,15 @@ public final class VariantBlockInteractions {
             sidecar.save(loc.kind(), loc.name());
         } catch (IllegalArgumentException e) {
             player.displayClientMessage(
-                Component.literal("Variant add failed: " + e.getMessage())
+                Component.translatable("chat.dungeontrain.editor_bar.common.variant_add_failed",
+                        String.valueOf(e.getMessage()))
                     .withStyle(ChatFormatting.RED), true);
             suppressVanillaPlace(event);
             return;
         } catch (IOException e) {
             player.displayClientMessage(
-                Component.literal("Variant save failed: " + e.getMessage())
+                Component.translatable("chat.dungeontrain.editor_bar.common.variant_save_failed",
+                        String.valueOf(e.getMessage()))
                     .withStyle(ChatFormatting.RED), true);
             suppressVanillaPlace(event);
             return;
@@ -379,14 +386,14 @@ public final class VariantBlockInteractions {
         EntityType<?> type = egg.getType(held);
         if (type == null) {
             player.displayClientMessage(
-                Component.literal("Spawn egg has no entity type — cannot add as variant.")
+                Component.translatable("chat.dungeontrain.editor_bar.common.spawn_egg_no_type")
                     .withStyle(ChatFormatting.YELLOW), true);
             return null;
         }
         ResourceLocation eid = BuiltInRegistries.ENTITY_TYPE.getKey(type);
         if (eid == null) {
             player.displayClientMessage(
-                Component.literal("Cannot resolve entity id for spawn egg.")
+                Component.translatable("chat.dungeontrain.editor_bar.common.spawn_egg_no_id")
                     .withStyle(ChatFormatting.YELLOW), true);
             return null;
         }
@@ -451,7 +458,7 @@ public final class VariantBlockInteractions {
                         CarriageVariantBlocks.emptyPlaceholder()));
                 } else {
                     player.displayClientMessage(
-                        Component.literal("Target block is air — place a base block first.")
+                        Component.translatable("chat.dungeontrain.editor_bar.variant_edit.target_is_air")
                             .withStyle(ChatFormatting.YELLOW), true);
                     suppressVanillaPlace(event);
                     return null;
@@ -462,7 +469,8 @@ public final class VariantBlockInteractions {
         } else {
             if (existing.size() >= MAX_VARIANTS_PER_POSITION) {
                 player.displayClientMessage(
-                    Component.literal("Variant list full (" + MAX_VARIANTS_PER_POSITION + ") — clear or reset this position.")
+                    Component.translatable("chat.dungeontrain.editor_bar.variant_edit.variant_list_full",
+                            MAX_VARIANTS_PER_POSITION)
                         .withStyle(ChatFormatting.YELLOW), true);
                 suppressVanillaPlace(event);
                 return null;
@@ -494,25 +502,20 @@ public final class VariantBlockInteractions {
         final int lx = local.getX();
         final int ly = local.getY();
         final int lz = local.getZ();
+        final String bar = "chat.dungeontrain.editor_bar.variant_edit.";
         if (added.isMob()) {
-            String mobLabel = added.entityId().toString() + " (mob)"
-                + (added.hasBlockEntityData() ? " (+nbt)" : "");
+            String key = added.hasBlockEntityData() ? "added_mob_nbt" : "added_mob";
             player.displayClientMessage(
-                Component.literal("+ " + mobLabel + "  →  " + count + " variants @ " + lx + "," + ly + "," + lz)
+                Component.translatable(bar + key, added.entityId().toString(), count, lx, ly, lz)
                     .withStyle(ChatFormatting.LIGHT_PURPLE), true);
             return;
         }
         ResourceLocation newName = BuiltInRegistries.BLOCK.getKey(added.state().getBlock());
         boolean sentinel = CarriageVariantBlocks.isEmptyPlaceholder(added.state());
-        StringBuilder label = new StringBuilder();
-        if (sentinel) {
-            label.append(newName).append(" (empty-space)");
-        } else {
-            label.append(newName);
-            if (added.hasBlockEntityData()) label.append(" (+nbt)");
-        }
+        String key = sentinel ? "added_empty_space"
+            : (added.hasBlockEntityData() ? "added_block_nbt" : "added_block");
         player.displayClientMessage(
-            Component.literal("+ " + label + "  →  " + count + " variants @ " + lx + "," + ly + "," + lz)
+            Component.translatable(bar + key, newName.toString(), count, lx, ly, lz)
                 .withStyle(sentinel ? ChatFormatting.AQUA : ChatFormatting.GREEN), true);
     }
 

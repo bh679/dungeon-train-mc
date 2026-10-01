@@ -75,11 +75,11 @@ public record SaveBlockVariantPrefabPacket(BlockPos localPos, String name) imple
             Player p = ctx.player();
             if (!(p instanceof ServerPlayer player)) return;
             if (!player.hasPermissions(2)) {
-                actionBar(player, "Save requires OP", ChatFormatting.RED);
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_requires_op"), ChatFormatting.RED);
                 return;
             }
             if (!BlockVariantPrefabStore.isValidName(packet.name())) {
-                actionBar(player, "Invalid name '" + packet.name() + "' (a-z, 0-9, _, 1-32 chars)",
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.invalid_prefab_name", packet.name()),
                     ChatFormatting.RED);
                 return;
             }
@@ -87,24 +87,25 @@ public record SaveBlockVariantPrefabPacket(BlockPos localPos, String name) imple
             CarriageDims dims = DungeonTrainWorldData.get(level).dims();
             BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
             if (plot == null) {
-                actionBar(player, "Not in an editor plot", ChatFormatting.YELLOW);
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.not_in_plot"), ChatFormatting.YELLOW);
                 return;
             }
             List<VariantState> states = plot.statesAt(packet.localPos());
             if (states == null || states.isEmpty()) {
-                actionBar(player, "No data at this cell", ChatFormatting.YELLOW);
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.prefab.no_data_at_cell"), ChatFormatting.YELLOW);
                 return;
             }
             try {
                 boolean isNew = BlockVariantPrefabStore.save(packet.name(), states);
                 String suffix = writeToSourceTreeIfDevMode(packet.name(), states);
                 actionBar(player,
-                    (isNew ? "Saved prefab '" : "Overwrote prefab '") + packet.name() + "'" + suffix,
+                    Component.translatable(isNew ? "chat.dungeontrain.editor_bar.prefab.saved_prefab" : "chat.dungeontrain.editor_bar.prefab.overwrote_prefab",
+                        packet.name(), suffix),
                     ChatFormatting.GREEN);
                 broadcastSync();
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] SaveBlockVariantPrefab failed: {}", e.toString());
-                actionBar(player, "Save failed: " + e.getClass().getSimpleName(),
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()),
                     ChatFormatting.RED);
             }
         });
@@ -122,8 +123,8 @@ public record SaveBlockVariantPrefabPacket(BlockPos localPos, String name) imple
         }
     }
 
-    private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {
-        player.displayClientMessage(Component.literal(text).withStyle(colour), true);
+    private static void actionBar(ServerPlayer player, Component text, ChatFormatting colour) {
+        player.displayClientMessage(text.copy().withStyle(colour), true);
     }
 
     private static void broadcastSync() {

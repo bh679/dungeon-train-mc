@@ -214,15 +214,15 @@ public final class EditorStampQueue {
             long ms = (clock.getAsLong() - startedNanos) / 1_000_000L;
             LOGGER.info("[DungeonTrain] Editor plots ready: {} stamped in {}.{} s ({} failed) for '{}'",
                 total, ms / 1000, (ms % 1000) / 100, failed, whatFor);
-            say(overworld, "Plots ready.", ChatFormatting.GREEN);
+            say(overworld, Component.translatable("chat.dungeontrain.editor_bar.stamp_queue.plots_ready"), ChatFormatting.GREEN);
         } else if (now != before && overworld.getGameTime() % PROGRESS_PERIOD_TICKS == 0) {
-            say(overworld, "Setting up plots… " + now + "/" + total, ChatFormatting.GRAY);
+            say(overworld, Component.translatable("chat.dungeontrain.editor_bar.stamp_queue.setting_up", now, total), ChatFormatting.GRAY);
         }
     }
 
     /** Action bar to everyone up at the plots — the editor's channel for transient feedback. */
-    private static void say(ServerLevel overworld, String text, ChatFormatting colour) {
-        Component line = Component.literal(text).withStyle(colour);
+    private static void say(ServerLevel overworld, Component text, ChatFormatting colour) {
+        Component line = text.copy().withStyle(colour);
         for (ServerPlayer player : overworld.players()) {
             if (EditorLayout.isAtPlotHeight(player.getBlockY())) {
                 player.displayClientMessage(line, true);
