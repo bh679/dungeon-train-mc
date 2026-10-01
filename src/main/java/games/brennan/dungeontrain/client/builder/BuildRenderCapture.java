@@ -6,9 +6,15 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexSorting;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.builder.BuilderTemplateFiles;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
+import games.brennan.dungeontrain.editor.relay.EditorRelayWrite;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.client.ClientHooks;
@@ -16,6 +22,8 @@ import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.lwjgl.opengl.GL13;
 import org.slf4j.Logger;
+
+import java.util.Map;
 
 /**
  * A picture of a relay build, taken for the Discord post that announces its submission.
@@ -49,12 +57,36 @@ public final class BuildRenderCapture {
      * capture failed. Render thread only.
      */
     public static byte[] png(int relayId) {
+        return png(relayId, BuilderProfileState.ownBuild(relayId));
+    }
+
+    /**
+     * As {@link #png(int)} for a row the caller already holds. The X editor's Creator pane lists
+     * builds from its own fetch, not the My Builds profile {@link #png(int)} looks the row up in,
+     * so it passes the row it has rather than hoping that profile has arrived this session.
+     */
+    public static byte[] png(BuilderProfilePacket.Entry entry) {
+        return entry == null ? null : png(entry.relayId(), entry);
+    }
+
+    private static byte[] png(int relayId, BuilderProfilePacket.Entry entry) {
         if (!RenderSystem.isOnRenderThread()) return null;
-        BuilderTileMesh mesh = meshOf(relayId);
-        if (mesh == null) {
-            LOGGER.info("[DungeonTrain] Build render for relay build {}: nothing baked to draw.", relayId);
-            return null;
+        if (isWholeRoom(entry) && RelayBuildPreviews.mesh(relayId) == null) {
+            // Baked here and closed after: the tile cache keys a carriage by name alone, so asking it
+            // would draw a carriage shell that happens to share the room's name.
+            BuilderTileMesh room = wholeRoomMesh(entry);
+            if (room == null) return nothingToDraw(relayId);
+            try {
+                return draw(relayId, room);
+            } finally {
+                room.close();
+            }
         }
+        BuilderTileMesh mesh = meshOf(relayId, entry);
+        return mesh == null ? nothingToDraw(relayId) : draw(relayId, mesh);
+    }
+
+    private static byte[] draw(int relayId, BuilderTileMesh mesh) {
         try {
             return capture(Minecraft.getInstance(), mesh);
         } catch (Throwable t) {
@@ -63,15 +95,34 @@ public final class BuildRenderCapture {
         }
     }
 
+    private static byte[] nothingToDraw(int relayId) {
+        LOGGER.info("[DungeonTrain] Build render for relay build {}: nothing baked to draw.", relayId);
+        return null;
+    }
+
+    /** An editor whole room, which rides the relay as a carriage with its own sub kind. */
+    private static boolean isWholeRoom(BuilderProfilePacket.Entry entry) {
+        return entry != null && BuilderRelayKinds.CARRIAGE.equals(entry.kind())
+                && EditorRelayWrite.WHOLE_ROOM_SUBKIND.equals(entry.subKind());
+    }
+
+    /** The room's own template, baked; null when there is no file or nothing in it. */
+    private static BuilderTileMesh wholeRoomMesh(BuilderProfilePacket.Entry entry) {
+        Map<BlockPos, BlockState> cells = BuilderTemplateFiles
+                .rawTag(BuilderPhotoPaths.Kind.CARRIAGE, entry.subKind(), entry.buildName())
+                .map(BuilderTileTemplates::cellsOf)
+                .orElse(Map.of());
+        return cells.isEmpty() ? null : BuilderTileMesh.bake(cells);
+    }
+
     /**
      * The mesh to draw: the copy that came down the wire if the editor has baked one, otherwise
      * the local template the My Builds grid draws the author's own builds from — an author's
      * upload has a file here, and that grid never asks the relay for a picture of it.
      */
-    private static BuilderTileMesh meshOf(int relayId) {
+    private static BuilderTileMesh meshOf(int relayId, BuilderProfilePacket.Entry entry) {
         BuilderTileMesh relay = RelayBuildPreviews.mesh(relayId);
         if (relay != null) return relay;
-        BuilderProfilePacket.Entry entry = BuilderProfileState.ownBuild(relayId);
         if (entry == null || entry.buildName().isEmpty()) return null;
         // The grid has usually baked this already; allow one bake so a fresh screen still answers.
         BuilderTileMeshCache.beginFrame(1);

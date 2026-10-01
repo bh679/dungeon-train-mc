@@ -100,6 +100,11 @@ public final class BugResponseCard {
 
     /** The response with whatever version data has arrived so far. */
     public Result result() {
+        return decideNow(issue, multiplayer);
+    }
+
+    /** {@link BugResponse#decide} for this client right now; shared with the chat response. */
+    public static Result decideNow(BugIssue issue, boolean multiplayer) {
         return BugResponse.decide(new BugResponse.Input(issue, multiplayer, InstalledVersion.get(),
                 Platform.current(), VersionCompareState.versions(Platform.MODRINTH),
                 VersionCompareState.versions(Platform.CURSEFORGE), VersionCompareState.ledger()));
@@ -170,8 +175,10 @@ public final class BugResponseCard {
     }
 
     private void lagSteps(Result r, Font font, int inner, List<Step> steps) {
-        text(steps, font, inner, Component.translatable(KEY + "tips.title"), TITLE_PLAIN);
-        for (LagTips.Tip tip : LagTips.applicable(host)) steps.add(new TipRow(tip));
+        List<LagTips.Tip> tips = LagTips.applicable(host);
+        // No tip applies (often the case on a server): a plain thanks, not a heading over nothing.
+        text(steps, font, inner, Component.translatable(BugResponseChat.lagTitleKey(!tips.isEmpty())), TITLE_PLAIN);
+        for (LagTips.Tip tip : tips) steps.add(new TipRow(tip));
         if (r.behind()) {
             text(steps, font, inner, outdated(r).copy().append(" ")
                     .append(Component.translatable(KEY + "outdated.update")), WARN);
