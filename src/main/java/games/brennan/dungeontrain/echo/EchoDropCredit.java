@@ -17,8 +17,8 @@ import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
@@ -68,7 +68,7 @@ public final class EchoDropCredit {
             if (mob.level().isClientSide() || !eligible(stack)) return;
             boolean dying = mob.isDeadOrDying();
             if (!wasEquipped(mob, stack, dying)) return;
-            credit(mob, stack, dying ? deathCause(mob.getLastDamageSource()) : EchoCreditText.Cause.SWAP);
+            credit(mob, stack, dying ? deathCause(mob.getKillCredit()) : EchoCreditText.Cause.SWAP);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] echo drop credit failed: {}", t.toString());
         }
@@ -108,9 +108,13 @@ public final class EchoDropCredit {
         return false;
     }
 
-    /** Grim when a player (or a player's projectile) made the kill; Wistful for anything else. */
-    static EchoCreditText.Cause deathCause(DamageSource source) {
-        return source != null && source.getEntity() instanceof Player
+    /**
+     * Grim when a player gets the kill credit; Wistful for anything else. Uses the kill credit (a player
+     * who hurt the echo in the last 100 ticks — vanilla's own "killed by player" rule) rather than
+     * {@code getLastDamageSource()}, which vanilla only assigns after {@code die()} has dropped the loot.
+     */
+    static EchoCreditText.Cause deathCause(LivingEntity killCredit) {
+        return killCredit instanceof Player
                 ? EchoCreditText.Cause.KILLED_BY_PLAYER
                 : EchoCreditText.Cause.DIED;
     }
