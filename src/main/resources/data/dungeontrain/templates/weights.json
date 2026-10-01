@@ -46,6 +46,10 @@
       "CAVES_OF_CHAOS"
     ]
   },
+  "standard_half": {
+    "weight": 1,
+    "name": "Standard Half"
+  },
   "stonecargo": {
     "weight": 1,
     "name": "Cargo Stone"

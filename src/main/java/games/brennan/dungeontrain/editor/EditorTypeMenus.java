@@ -81,20 +81,18 @@ public final class EditorTypeMenus {
         List<EditorTypeMenusPacket.TypeTab> typeStrip = buildCarriagesTypeStrip();
         String activeId = EditorCategory.CARRIAGES.id();
 
-        // Carriages row (extends along +X). First plot is the first variant
-        // in the registry's ordering — same as EditorPlotLabels.carriageLabels.
-        List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
-        if (!variants.isEmpty()) {
-            CarriageVariant first = variants.get(0);
-            BlockPos firstOrigin = CarriageEditor.plotOrigin(first, dims);
-            if (firstOrigin != null) {
-                Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
-                BlockPos anchor = anchorForXRow(firstOrigin, footprint);
-                List<EditorTypeMenusPacket.Variant> rows = carriageRows(variants);
-                out.add(new EditorTypeMenusPacket.Menu(
-                    anchor, "Carriages", rows, false,
-                    activeId, categoryBar, typeStrip));
-            }
+        // One menu per template row (Rooms, Halves, Groups, Flatbeds, Portals — each extends along
+        // +X), anchored at the row's first plot and listing only that row's templates: the list beside
+        // the row you are in is that row's.
+        Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
+        for (CarriagePlotRows.Row row : CarriagePlotRows.Row.values()) {
+            List<CarriageVariant> inRow = CarriagePlotRows.membersOf(row);
+            if (inRow.isEmpty()) continue;
+            BlockPos firstOrigin = CarriageEditor.plotOrigin(inRow.get(0), dims);
+            if (firstOrigin == null) continue;
+            out.add(new EditorTypeMenusPacket.Menu(
+                anchorForXRow(firstOrigin, footprint), carriageRowTypeName(row), carriageRows(inRow), false,
+                activeId, categoryBar, typeStrip));
         }
 
         // Parts kind rows (CARRIAGES view stamps these alongside the carriage row).
