@@ -44,7 +44,8 @@ public enum TranslationPreviewKind {
         if (key == null || key.isEmpty()) {
             return NONE;
         }
-        if (key.startsWith("book.")) {
+        // Leaderboard lines are only ever printed in a leaderboard book.
+        if (key.startsWith("book.") || key.startsWith(BookPreviewContext.LEADERBOARD_PREFIX)) {
             return BOOK;
         }
         // Seen on a button outranks the prefixes: it is what the game actually did with the key,

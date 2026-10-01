@@ -236,7 +236,7 @@ public final class TranslationEditScreen extends Screen {
                     : null);
         }
         minecraft.setScreen(new TranslationPreviewScreen(this, previewKind, shown,
-            ButtonKeyRecorder.widthOf(unit.id())));
+            ButtonKeyRecorder.widthOf(unit.id()), unit, locale, value));
     }
 
     /**

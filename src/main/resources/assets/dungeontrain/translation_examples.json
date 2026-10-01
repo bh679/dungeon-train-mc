@@ -4766,6 +4766,49 @@
       ]
     }
   },
+  "gui.dungeontrain.translate.preview.button.fits": {
+    "1": {
+      "label": "a button's width in GUI pixels",
+      "examples": [
+        "200",
+        "150"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.preview.button.overflow": {
+    "1": {
+      "label": "a button's width in GUI pixels",
+      "examples": [
+        "150",
+        "200"
+      ]
+    },
+    "2": {
+      "label": "how many pixels too wide the label is",
+      "examples": [
+        "12",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.preview.chat.lines": {
+    "1": {
+      "label": "a number of chat lines",
+      "examples": [
+        "2",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.preview.book.cut": {
+    "1": {
+      "label": "a number of lines",
+      "examples": [
+        "3",
+        "1"
+      ]
+    }
+  },
   "gui.dungeontrain.version.update": {
     "1": {
       "label": "the newest version number",

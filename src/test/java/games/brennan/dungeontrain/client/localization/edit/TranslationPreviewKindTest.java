@@ -33,6 +33,9 @@ class TranslationPreviewKindTest {
             TranslationPreviewKind.of(book("random_books/deathnote#variants.0"), NOTHING_SEEN));
         assertEquals(TranslationPreviewKind.BOOK,
             TranslationPreviewKind.of(lang("book.dungeontrain.statbook.open.0"), NOTHING_SEEN));
+        // Leaderboard lines are only ever printed in a leaderboard book.
+        assertEquals(TranslationPreviewKind.BOOK,
+            TranslationPreviewKind.of(lang("dungeontrain.leaderboard.you_unranked"), NOTHING_SEEN));
     }
 
     @Test

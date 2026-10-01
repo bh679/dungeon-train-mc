@@ -35,25 +35,25 @@ import java.util.UUID;
 public final class LeaderboardBookFactory {
 
     /** Pages per book. */
-    static final int PAGES = 8;
+    public static final int PAGES = 8;
 
     /** Lines a written-book page fits at default font size. */
     static final int LINES_PER_PAGE = 13;
 
     /** Lines one ranked entry occupies: the name, then the score under it. */
-    static final int LINES_PER_ENTRY = 2;
+    public static final int LINES_PER_ENTRY = 2;
 
     /** Page one gives two lines to the heading and one to the blank beneath it. */
-    static final int FIRST_PAGE_ROWS = (LINES_PER_PAGE - 3) / LINES_PER_ENTRY;
+    public static final int FIRST_PAGE_ROWS = (LINES_PER_PAGE - 3) / LINES_PER_ENTRY;
 
     /** Ranks every page after the first carries. The odd leftover line stays blank. */
-    static final int ROWS_PER_PAGE = LINES_PER_PAGE / LINES_PER_ENTRY;
+    public static final int ROWS_PER_PAGE = LINES_PER_PAGE / LINES_PER_ENTRY;
 
     /** Ranks a full book holds. */
-    static final int MAX_ROWS = FIRST_PAGE_ROWS + (PAGES - 1) * ROWS_PER_PAGE;
+    public static final int MAX_ROWS = FIRST_PAGE_ROWS + (PAGES - 1) * ROWS_PER_PAGE;
 
     /** Credited author. Nobody wrote this; something counted it. */
-    private static final String AUTHOR = "The Tallyman";
+    public static final String AUTHOR = "The Tallyman";
 
     private LeaderboardBookFactory() {}
 
