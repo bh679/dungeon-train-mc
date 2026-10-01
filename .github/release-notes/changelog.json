@@ -21763,6 +21763,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "killer-bunny-monty-python-names",
+      "version": "0.1087.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "The Killer Bunny has a name",
+      "summary": "Some Killer Bunnies now turn up wearing a name that long-time fans of a certain rabbit will recognise.",
+      "highlights": [],
+      "pr": 1740,
+      "date": "2026-10-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
