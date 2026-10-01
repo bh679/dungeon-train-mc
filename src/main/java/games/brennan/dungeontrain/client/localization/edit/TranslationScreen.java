@@ -292,8 +292,8 @@ public final class TranslationScreen extends Screen {
             // is bypassed simply by reopening the screen.
             stateFilter = StateFilter.AI_UNREVIEWED;
         }
-        // The characters with at least one line in this catalog; the third cycle exists only when
-        // there are any. A story that is not loaded yet is not offered as a filter that empties
+        // The characters with at least one book line in this catalog; the third cycle exists only
+        // when there are any, and shows only under "Books & stories" (applyFilterVisibility). A story that is not loaded yet is not offered as a filter that empties
         // the list.
         List<String> characters = charactersInCatalog();
         if (!characterFilter.isEmpty() && !characters.contains(characterFilter)) {
@@ -369,6 +369,7 @@ public final class TranslationScreen extends Screen {
                 Component.translatable("gui.dungeontrain.translate.body"),
                 (button, value) -> {
                     bodyFilter = value;
+                    applyFilterVisibility();
                     refresh();
                 }));
         characterCycle = null;
@@ -586,7 +587,9 @@ public final class TranslationScreen extends Screen {
             bodyCycle.visible = unfinished;
         }
         if (characterCycle != null) {
-            characterCycle.visible = unfinished;
+            // Characters are a way through the books and stories, so the cycle belongs to that view
+            // alone. Its slot stays reserved so the other cycles do not jump when it comes and goes.
+            characterCycle.visible = unfinished && bodyFilter == BodyFilter.BOOKS;
         }
         // Grouping goes with them, and for the same reason: a finished submission is a record of
         // what was sent, and folding it into sets would hide strings the translator is here to read.
@@ -826,8 +829,10 @@ public final class TranslationScreen extends Screen {
             members, TranslationOverrides.approvedFor(locale), this::isDismissed));
     }
 
+    /** Ignored outside "Books & stories", where the cycle is hidden — but kept for the way back. */
     private boolean matchesCharacter(TranslationUnit unit) {
-        return characterFilter.isEmpty() || TranslationCharacters.forUnit(unit)
+        return characterFilter.isEmpty() || bodyFilter != BodyFilter.BOOKS
+            || TranslationCharacters.forUnit(unit)
             .map(character -> character.id().equals(characterFilter)).orElse(false);
     }
 
@@ -845,11 +850,15 @@ public final class TranslationScreen extends Screen {
     }
 
     /**
-     * {@code ""} (everyone), then every character with a line in this language's catalog, by name.
+     * {@code ""} (everyone), then every character with a book line in this language's catalog, by
+     * name. Lang-only characters (the Conductor, the Creator) still get a card, just not a filter.
      */
     private List<String> charactersInCatalog() {
         java.util.Set<String> present = new java.util.HashSet<>();
         for (TranslationUnit unit : TranslationCatalog.forLocale(locale)) {
+            if (unit.type() != TranslationUnit.Type.BOOK) {
+                continue;
+            }
             TranslationCharacters.forUnit(unit).ifPresent(character -> present.add(character.id()));
         }
         List<String> out = new ArrayList<>();
@@ -875,6 +884,8 @@ public final class TranslationScreen extends Screen {
      */
     void showCharacter(String id) {
         characterFilter = id == null ? "" : id;
+        // The filter only exists in the books view, so that is where their lines are shown.
+        bodyFilter = BodyFilter.BOOKS;
         listScroll = 0;
         if (list != null) {
             list.setScrollOffset(0);
