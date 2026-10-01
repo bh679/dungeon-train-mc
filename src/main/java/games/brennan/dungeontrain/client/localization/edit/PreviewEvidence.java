@@ -31,6 +31,12 @@ public interface PreviewEvidence {
     /** An advancement title that pops up as the vanilla toast when earned. */
     default boolean showsAdvancementToast(String key) { return false; }
 
+    /**
+     * Whether a reading of the code put {@code key} in {@code view} — the shipped categorisation
+     * ({@link TranslationContexts}), so a string is placed before it has ever been seen in game.
+     */
+    default boolean declared(String key, TranslationPreviewKind view) { return false; }
+
     /** Knows nothing; every answer is no. */
     PreviewEvidence NONE = new PreviewEvidence() { };
 }

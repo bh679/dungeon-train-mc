@@ -39,6 +39,11 @@ public final class ClientPreviewEvidence implements PreviewEvidence {
     private ClientPreviewEvidence() {}
 
     @Override
+    public boolean declared(String key, TranslationPreviewKind view) {
+        return TranslationContexts.declares(key, view);
+    }
+
+    @Override
     public boolean seenOnButton(String key) {
         return ButtonKeyRecorder.seen(key);
     }

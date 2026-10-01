@@ -74,25 +74,25 @@ public enum TranslationPreviewKind {
         if (BookPreviewContext.sourceOf(unit) != BookPreviewContext.Source.NONE) {
             views.add(BOOK);
         }
-        if (key.startsWith(DEATH_MESSAGE_PREFIX)) {
+        if (key.startsWith(DEATH_MESSAGE_PREFIX) || known.declared(key, DEATH_SCREEN)) {
             views.add(DEATH_SCREEN);
         }
-        if (known.isItemName(key) || known.seenInItemTooltip(key)) {
+        if (known.isItemName(key) || known.seenInItemTooltip(key) || known.declared(key, ITEM)) {
             views.add(ITEM);
         }
         if (known.showsAdvancementToast(key)) {
             views.add(ADVANCEMENT);
         }
-        if (known.seenOnButton(key)) {
+        if (known.seenOnButton(key) || known.declared(key, BUTTON)) {
             views.add(BUTTON);
         }
-        if (known.seenInWidgetTooltip(key)) {
+        if (known.seenInWidgetTooltip(key) || known.declared(key, TOOLTIP)) {
             views.add(TOOLTIP);
         }
-        if (key.startsWith(DEATH_MESSAGE_PREFIX) || known.seenInChat(key)) {
+        if (key.startsWith(DEATH_MESSAGE_PREFIX) || known.seenInChat(key) || known.declared(key, CHAT)) {
             views.add(CHAT);
         }
-        if (known.seenInActionBar(key)) {
+        if (known.seenInActionBar(key) || known.declared(key, ACTION_BAR)) {
             views.add(ACTION_BAR);
         }
         return List.copyOf(views);
