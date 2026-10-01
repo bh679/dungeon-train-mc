@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.builder.BuildRenderCapture;
 import games.brennan.dungeontrain.client.builder.BuilderProfilePrefabConflictScreen;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.builder.BuilderMode;
@@ -544,7 +545,8 @@ public final class EditorGuiScreen extends Screen {
         // A submit first asks what the reviewer should know; the send happens on that screen's
         // Submit, and its Cancel comes back here with nothing sent.
         BuilderSubmitNoteScreen.open(entry.relayId(), Component.literal(entry.buildName()),
-                note -> sendCreatorAction(new BuilderProfileActionPacket(entry.relayId(), true, note)));
+                note -> sendCreatorAction(new BuilderProfileActionPacket(entry.relayId(), true, note,
+                    BuildRenderCapture.png(entry))));
     }
 
     private void sendCreatorAction(BuilderProfileActionPacket packet) {

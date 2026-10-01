@@ -75,7 +75,7 @@ public final class StagePanelController {
     /** Apply a {@link StagePanelEditPacket} op, with OP validation. Runs on the server thread. */
     public static void applyEdit(ServerPlayer player, StagePanelEditPacket packet) {
         if (!player.hasPermissions(2)) {
-            actionBar(player, "Stage panel requires OP", ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.requires_op"), ChatFormatting.RED);
             return;
         }
         switch (packet.op()) {
@@ -89,11 +89,11 @@ public final class StagePanelController {
     private static void open(ServerPlayer player, String rawStageId) {
         String stageId = rawStageId == null ? "" : rawStageId.toLowerCase(Locale.ROOT);
         if (!StageStore.exists(stageId)) {
-            actionBar(player, "No such stage: " + rawStageId, ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.no_such_stage", rawStageId), ChatFormatting.YELLOW);
             return;
         }
         if (EditorStampedCategoryState.current().isEmpty()) {
-            actionBar(player, "Enter an editor category first", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.enter_category_first"), ChatFormatting.YELLOW);
             return;
         }
         OPEN.put(player.getUUID(), stageId);
@@ -111,19 +111,19 @@ public final class StagePanelController {
     /** Apply a {@link StagePaletteEditPacket} op, with OP validation. Runs on the server thread. */
     public static void applyPaletteEdit(ServerPlayer player, StagePaletteEditPacket packet) {
         if (!player.hasPermissions(2)) {
-            actionBar(player, "Stage palette requires OP", ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.palette_requires_op"), ChatFormatting.RED);
             return;
         }
         String stageId = packet.stageId() == null ? "" : packet.stageId().toLowerCase(Locale.ROOT);
         // The editor screen's Palette page edits any stage it shows; the world-space panel only the
         // one it has open, since its rows are that snapshot.
         if (!packet.fromScreen() && !stageId.equals(OPEN.get(player.getUUID()))) {
-            actionBar(player, "Open the stage's panel first", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.open_stage_panel_first"), ChatFormatting.YELLOW);
             return;
         }
         Optional<games.brennan.dungeontrain.template.Stage> stage = StageStore.get(stageId);
         if (stage.isEmpty()) {
-            actionBar(player, "No such stage: " + stageId, ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.no_such_stage", stageId), ChatFormatting.YELLOW);
             return;
         }
         ServerLevel overworld = player.getServer().overworld();
@@ -135,56 +135,56 @@ public final class StagePanelController {
         switch (packet.op()) {
             case SET_OVERRIDE -> {
                 if (!StagePlaceholderBlocks.names().contains(packet.name())) {
-                    actionBar(player, "Unknown placeholder: " + packet.name(), ChatFormatting.RED);
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.unknown_placeholder", packet.name()), ChatFormatting.RED);
                     return;
                 }
                 if (heldId == null) {
                     // Empty hand ⇒ clear — the same gesture as a CLEAR_OVERRIDE op.
                     next = current.withOverride(packet.name(), null);
-                    actionBar(player, packet.name() + " → back to the baked value", ChatFormatting.YELLOW);
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.placeholder_reset", packet.name()), ChatFormatting.YELLOW);
                 } else if (heldId.startsWith(DungeonTrain.MOD_ID + ":stage_")) {
-                    actionBar(player, "A placeholder can't resolve to another placeholder", ChatFormatting.RED);
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.placeholder_to_placeholder"), ChatFormatting.RED);
                     return;
                 } else {
                     next = current.withOverride(packet.name(), heldId);
-                    actionBar(player, packet.name() + " → " + heldId, ChatFormatting.GREEN);
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.placeholder_set", packet.name(), heldId), ChatFormatting.GREEN);
                 }
             }
             case CLEAR_OVERRIDE -> {
                 next = current.withOverride(packet.name(), null);
-                actionBar(player, packet.name() + " → back to the baked value", ChatFormatting.YELLOW);
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.placeholder_reset", packet.name()), ChatFormatting.YELLOW);
             }
             case SET_WOOD -> {
                 if (heldId == null) {
                     next = current.withWood(null);
-                    actionBar(player, "Wood family unlocked — re-bake to re-detect", ChatFormatting.YELLOW);
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.wood_family_unlocked"), ChatFormatting.YELLOW);
                 } else {
                     Optional<StageWoodFamily> f = StageWoodFamily.owning(heldId);
                     if (f.isEmpty()) {
-                        actionBar(player, heldId + " is not part of any wood family", ChatFormatting.RED);
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.not_wood_family", heldId), ChatFormatting.RED);
                         return;
                     }
                     next = current.withWood(f.get());
-                    actionBar(player, "Wood family → " + f.get().id(), ChatFormatting.GREEN);
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.wood_family_set", f.get().id()), ChatFormatting.GREEN);
                 }
             }
             case SET_STONE -> {
                 if (heldId == null) {
                     next = current.withStone(null);
-                    actionBar(player, "Stone family unlocked — re-bake to re-detect", ChatFormatting.YELLOW);
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.stone_family_unlocked"), ChatFormatting.YELLOW);
                 } else {
                     Optional<StageStoneFamily> f = StageStoneFamily.owning(heldId, id -> blockById(id).isPresent());
                     if (f.isEmpty()) {
-                        actionBar(player, heldId + " is not part of any stone family", ChatFormatting.RED);
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.not_stone_family", heldId), ChatFormatting.RED);
                         return;
                     }
                     next = current.withStone(f.get());
-                    actionBar(player, "Stone family → " + f.get().id(), ChatFormatting.GREEN);
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.stone_family_set", f.get().id()), ChatFormatting.GREEN);
                 }
             }
             case REBAKE -> {
                 StagePaletteBaker.bake(overworld, stageId);
-                actionBar(player, "Stage palette re-baked (overrides kept)", ChatFormatting.GREEN);
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.palette_rebaked"), ChatFormatting.GREEN);
                 resyncAllOpen(player.getServer());
                 return;
             }
@@ -194,7 +194,7 @@ public final class StagePanelController {
             StageStore.savePalettes(Map.of(stageId, next));
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Stage palette edit failed for '{}': {}", stageId, e.toString());
-            actionBar(player, "Save failed: " + e.getMessage(), ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getMessage()), ChatFormatting.RED);
         }
         resyncAllOpen(player.getServer());
     }
@@ -247,29 +247,29 @@ public final class StagePanelController {
     private static void swapBlock(ServerPlayer player, StagePanelEditPacket packet) {
         String stageId = packet.stageId() == null ? "" : packet.stageId().toLowerCase(Locale.ROOT);
         if (!stageId.equals(OPEN.get(player.getUUID()))) {
-            actionBar(player, "Open the stage's panel first", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.open_stage_panel_first"), ChatFormatting.YELLOW);
             return;
         }
         // Editor-presence gate (the OPEN map isn't cleared on editor exit) — never rewrite part files
         // for a player who has left the editor. Mirrors open()'s stamped-category check.
         if (EditorStampedCategoryState.current().isEmpty()) {
-            actionBar(player, "Enter an editor category first", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.enter_category_first"), ChatFormatting.YELLOW);
             return;
         }
         Optional<Block> from = blockById(packet.blockId());
         if (from.isEmpty()) {
-            actionBar(player, "Unknown block: " + packet.blockId(), ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.unknown_block", packet.blockId()), ChatFormatting.RED);
             return;
         }
         // Replacement comes from the hand (mirrors #636's SWAP_BLOCK) — must be a placeable block.
         net.minecraft.world.item.ItemStack held = player.getMainHandItem();
         if (held.isEmpty() || !(held.getItem() instanceof net.minecraft.world.item.BlockItem blockItem)) {
-            actionBar(player, "Hold a block to replace with", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.hold_block_to_replace"), ChatFormatting.YELLOW);
             return;
         }
         Block to = blockItem.getBlock();
         if (to == from.get()) {
-            actionBar(player, "Held block is the same as the selected block", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.held_block_same"), ChatFormatting.YELLOW);
             return;
         }
         net.minecraft.nbt.CompoundTag heldBeNbt = null;
@@ -295,7 +295,7 @@ public final class StagePanelController {
             }
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Stage panel swap failed for '{}': {}", stageId, e.toString());
-            actionBar(player, "Swap failed: " + e.getMessage(), ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.stage_panel.swap_failed", e.getMessage()), ChatFormatting.RED);
         }
         // Data changed for everyone — refresh every open panel, not just the actor's.
         resyncAllOpen(player.getServer());
@@ -316,8 +316,8 @@ public final class StagePanelController {
             CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
             CarriagePartEditor.stampAllPlots(overworld, dims);
         }
-        actionBar(player, active ? "Parts grid showing only the focused stage's parts"
-                : "Parts grid showing all parts",
+        actionBar(player, active ? Component.translatable("chat.dungeontrain.editor_bar.stage_panel.parts_grid_focused")
+                : Component.translatable("chat.dungeontrain.editor_bar.stage_panel.parts_grid_all"),
             active ? ChatFormatting.GREEN : ChatFormatting.YELLOW);
         // The flag is global — reflect the new button state on every open panel.
         resyncAllOpen(player.getServer());
@@ -405,8 +405,8 @@ public final class StagePanelController {
         return loc == null ? Optional.empty() : BuiltInRegistries.BLOCK.getOptional(loc);
     }
 
-    private static void actionBar(ServerPlayer player, String message, ChatFormatting color) {
-        player.displayClientMessage(Component.literal(message).withStyle(color), true);
+    private static void actionBar(ServerPlayer player, Component message, ChatFormatting color) {
+        player.displayClientMessage(message.copy().withStyle(color), true);
     }
 
     @SubscribeEvent

@@ -61,7 +61,8 @@ public final class VariantBlockBreakHandler {
             plot.save();
         } catch (IOException e) {
             player.displayClientMessage(
-                Component.literal("Variant save failed: " + e.getMessage())
+                Component.translatable("chat.dungeontrain.editor_bar.common.variant_save_failed",
+                        String.valueOf(e.getMessage()))
                     .withStyle(ChatFormatting.YELLOW), true);
             return;
         }
@@ -74,7 +75,8 @@ public final class VariantBlockBreakHandler {
         final int ly = local.getY();
         final int lz = local.getZ();
         player.displayClientMessage(
-            Component.literal("- removed " + removedCount + " variants @ " + lx + "," + ly + "," + lz)
+            Component.translatable("chat.dungeontrain.editor_bar.variant_edit.removed_variants_at",
+                    removedCount, lx, ly, lz)
                 .withStyle(ChatFormatting.GOLD), true);
     }
 }
