@@ -192,10 +192,9 @@ public final class TranslationPreviewScreen extends Screen {
                 row.add(refresh);
             }
         }
-        // A book has its own Done; elsewhere a click on the preview, or Esc, goes back.
-        if (kind == TranslationPreviewKind.BOOK) {
-            row.add(Button.builder(CommonComponents.GUI_DONE, b -> onClose()).build());
-        }
+        // A book has its own Done; elsewhere Back — a click on the preview, or Esc, does the same.
+        row.add(Button.builder(kind == TranslationPreviewKind.BOOK ? CommonComponents.GUI_DONE
+            : CommonComponents.GUI_BACK, b -> onClose()).build());
         controlRow = !row.isEmpty();
         if (!controlRow) {
             return; // nothing to lay out — the preview takes the whole window
