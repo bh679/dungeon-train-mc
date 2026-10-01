@@ -21818,8 +21818,26 @@
       "released_at": null
     },
     {
-      "id": "variant-block-growth",
+      "id": "pause-menu-shift-exits-multiplayer",
       "version": "0.1091.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer",
+        "ui"
+      ],
+      "title": "Shift exits on the pause menu, on servers too",
+      "summary": "Holding Shift on the pause menu now reveals the Exit to Title and Quit Game buttons on a server as well, with Disconnect still there when Shift is up.",
+      "highlights": [],
+      "pr": 1741,
+      "date": "2026-10-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "variant-block-growth",
+      "version": "0.1092.0",
       "type": "feat",
       "tags": [
         "feature",
