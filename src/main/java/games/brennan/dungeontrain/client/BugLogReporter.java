@@ -21,7 +21,8 @@ import java.util.List;
  * (see {@code BugReportSink}). For a "Lag" answer a short system-spec summary (allocated game
  * memory, CPU/GPU, OS, launcher) is gathered on the render thread and sent alongside so lag
  * reports carry the hardware context needed to diagnose them. Best-effort — a missed/empty
- * collection simply sends nothing.</p>
+ * collection simply sends nothing. The same submission is answered in chat by
+ * {@code bugresponse.BugResponseChatNotifier}.</p>
  */
 public final class BugLogReporter {
 

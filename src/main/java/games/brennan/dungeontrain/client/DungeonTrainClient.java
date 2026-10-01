@@ -1,7 +1,10 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.discordpresence.client.SurveySubmitClientHook;
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.bugresponse.BugResponseChatNotifier;
+import org.slf4j.Logger;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
@@ -23,6 +26,8 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DungeonTrainClient {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private DungeonTrainClient() {}
 
     @SubscribeEvent
@@ -35,8 +40,20 @@ public final class DungeonTrainClient {
                 (mc, parent) -> new DungeonTrainSettingsScreen(parent)));
 
         // Route bug-report answers submitted from DP's on-demand survey (/bug, /feedback) into
-        // the same log-collection path the death screen uses.
-        SurveySubmitClientHook.register(BugLogReporter::maybeReport);
+        // the same log-collection path the death screen uses, and answer them in chat. Each is
+        // guarded so one failing never stops the other.
+        SurveySubmitClientHook.register((entry, score) -> {
+            try {
+                BugLogReporter.maybeReport(entry, score);
+            } catch (Exception ex) {
+                LOGGER.warn("[DungeonTrain] Bug-report log shipping failed: {}", ex.toString());
+            }
+            try {
+                BugResponseChatNotifier.onSurveySubmit(entry, score);
+            } catch (Exception ex) {
+                LOGGER.warn("[DungeonTrain] Bug-report chat response failed: {}", ex.toString());
+            }
+        });
 
         // "@s" in the chat box for a non-op capstone-holder: the server decides for real, this only
         // keeps the syntax highlighter from painting the selector red once the server has exposed

@@ -21748,8 +21748,25 @@
       "released_at": "2026-10-01T16:04:57Z"
     },
     {
-      "id": "build-submit-picture-every-button",
+      "id": "bug-report-chat-answer",
       "version": "0.1086.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Bug reports from /bug and /feedback get an answer",
+      "summary": "Sending a bug report with /bug or /feedback now replies in chat with what might help.",
+      "highlights": [],
+      "pr": 1737,
+      "date": "2026-10-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "build-submit-picture-every-button",
+      "version": "0.1087.0",
       "type": "fix",
       "tags": [
         "fix",
