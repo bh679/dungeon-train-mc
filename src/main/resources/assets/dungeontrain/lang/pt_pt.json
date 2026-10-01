@@ -909,6 +909,7 @@
   "gui.dungeontrain.bug_response.mp.title": "Problema conhecido no multijogador",
   "gui.dungeontrain.bug_response.mp.body": "O Dungeon Train ainda não suporta oficialmente o multijogador. Os problemas com o comboio vão ser corrigidos na atualização oficial de multijogador.",
   "gui.dungeontrain.bug_response.mp.sent": "O teu relatório foi enviado e ajuda-nos a chegar lá.",
+  "chat.dungeontrain.bug_response.prefix": "[Dungeon Train]",
   "gui.dungeontrain.discord_button": "Discord",
   "gui.dungeontrain.bilibili_button": "Bilibili",
   "gui.dungeontrain.support.button": "Apoia o Mod",

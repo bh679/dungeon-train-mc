@@ -879,6 +879,7 @@
       "gui.dungeontrain.bug_response.mp.title",
       "gui.dungeontrain.bug_response.mp.body",
       "gui.dungeontrain.bug_response.mp.sent",
+      "chat.dungeontrain.bug_response.prefix",
       "gui.dungeontrain.discord_button",
       "gui.dungeontrain.bilibili_button",
       "gui.dungeontrain.support.financial.desc.cn",

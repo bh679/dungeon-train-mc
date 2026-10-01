@@ -875,6 +875,7 @@
   "gui.dungeontrain.bug_response.mp.title": "Masalah multipemain yang diketahui",
   "gui.dungeontrain.bug_response.mp.body": "Dungeon Train belum resmi mendukung multipemain. Masalah dengan kereta akan diperbaiki di pembaruan multipemain resmi.",
   "gui.dungeontrain.bug_response.mp.sent": "Laporanmu sudah terkirim dan membantu kami mewujudkannya.",
+  "chat.dungeontrain.bug_response.prefix": "[Dungeon Train]",
   "gui.dungeontrain.discord_button": "Discord",
   "gui.dungeontrain.bilibili_button": "Bilibili",
   "gui.dungeontrain.support.button": "Dukung Mod Ini",

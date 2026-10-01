@@ -875,6 +875,7 @@
   "gui.dungeontrain.bug_response.mp.title": "Lỗi chơi mạng đã biết",
   "gui.dungeontrain.bug_response.mp.body": "Dungeon Train chưa chính thức hỗ trợ chơi mạng. Các lỗi với tàu sẽ được sửa trong bản cập nhật chơi mạng chính thức.",
   "gui.dungeontrain.bug_response.mp.sent": "Báo cáo của bạn đã được gửi và giúp chúng tôi tiến gần hơn tới đó.",
+  "chat.dungeontrain.bug_response.prefix": "[Dungeon Train]",
   "gui.dungeontrain.discord_button": "Discord",
   "gui.dungeontrain.bilibili_button": "Bilibili",
   "gui.dungeontrain.support.button": "Ủng hộ Mod",

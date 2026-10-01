@@ -948,6 +948,7 @@
   "gui.dungeontrain.bug_response.mp.title": "Известная проблема мультиплеера",
   "gui.dungeontrain.bug_response.mp.body": "Dungeon Train пока официально не поддерживает мультиплеер. Проблемы с поездом будут исправлены в официальном обновлении для мультиплеера.",
   "gui.dungeontrain.bug_response.mp.sent": "Ваш отчёт отправлен и помогает нам приблизить этот момент.",
+  "chat.dungeontrain.bug_response.prefix": "[Dungeon Train]",
   "gui.dungeontrain.discord_button": "Discord",
   "gui.dungeontrain.bilibili_button": "Bilibili",
   "gui.dungeontrain.support.button": "Поддержать мод",

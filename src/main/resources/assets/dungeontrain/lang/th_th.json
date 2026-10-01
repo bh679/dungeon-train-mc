@@ -875,6 +875,7 @@
   "gui.dungeontrain.bug_response.mp.title": "ปัญหาที่ทราบแล้วในโหมดผู้เล่นหลายคน",
   "gui.dungeontrain.bug_response.mp.body": "Dungeon Train ยังไม่รองรับโหมดผู้เล่นหลายคนอย่างเป็นทางการ ปัญหาเกี่ยวกับรถไฟจะได้รับการแก้ไขในอัปเดตผู้เล่นหลายคนอย่างเป็นทางการ",
   "gui.dungeontrain.bug_response.mp.sent": "ส่งรายงานของคุณแล้ว และช่วยให้เราไปถึงจุดนั้นได้เร็วขึ้น",
+  "chat.dungeontrain.bug_response.prefix": "[Dungeon Train]",
   "gui.dungeontrain.discord_button": "Discord",
   "gui.dungeontrain.bilibili_button": "Bilibili",
   "gui.dungeontrain.support.button": "สนับสนุนม็อด",

@@ -875,6 +875,7 @@
   "gui.dungeontrain.bug_response.mp.title": "알려진 멀티플레이 문제",
   "gui.dungeontrain.bug_response.mp.body": "Dungeon Train은 아직 멀티플레이를 공식 지원하지 않아요. 열차 관련 문제는 공식 멀티플레이 업데이트에서 고쳐질 거예요.",
   "gui.dungeontrain.bug_response.mp.sent": "신고가 전송되었고, 그날을 앞당기는 데 도움이 돼요.",
+  "chat.dungeontrain.bug_response.prefix": "[Dungeon Train]",
   "gui.dungeontrain.discord_button": "Discord",
   "gui.dungeontrain.bilibili_button": "Bilibili",
   "gui.dungeontrain.support.button": "모드 후원하기",

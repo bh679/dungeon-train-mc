@@ -100,6 +100,11 @@ public final class BugResponseCard {
 
     /** The response with whatever version data has arrived so far. */
     public Result result() {
+        return decideNow(issue, multiplayer);
+    }
+
+    /** {@link BugResponse#decide} for this client right now; shared with the chat response. */
+    public static Result decideNow(BugIssue issue, boolean multiplayer) {
         return BugResponse.decide(new BugResponse.Input(issue, multiplayer, InstalledVersion.get(),
                 Platform.current(), VersionCompareState.versions(Platform.MODRINTH),
                 VersionCompareState.versions(Platform.CURSEFORGE), VersionCompareState.ledger()));

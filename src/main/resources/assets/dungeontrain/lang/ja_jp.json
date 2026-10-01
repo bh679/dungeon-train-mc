@@ -875,6 +875,7 @@
   "gui.dungeontrain.bug_response.mp.title": "マルチプレイの既知の問題",
   "gui.dungeontrain.bug_response.mp.body": "Dungeon Train はまだマルチプレイを公式にサポートしていません。列車の問題は公式のマルチプレイアップデートで修正されます。",
   "gui.dungeontrain.bug_response.mp.sent": "レポートは送信済みです。実現への助けになります。",
+  "chat.dungeontrain.bug_response.prefix": "[Dungeon Train]",
   "gui.dungeontrain.discord_button": "Discord",
   "gui.dungeontrain.bilibili_button": "Bilibili",
   "gui.dungeontrain.support.button": "Modを応援する",
