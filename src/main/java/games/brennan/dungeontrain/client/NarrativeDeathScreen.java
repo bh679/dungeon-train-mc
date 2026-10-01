@@ -118,7 +118,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class NarrativeDeathScreen extends Screen {
 
-    private enum Kind { FALL, DEEDS, GEAR, LIVES, SURVEY, MODREC, DONATE, PLATFORM }
+    private enum Kind { FALL, DEEDS, GEAR, LIVES, SURVEY, BUG_RESPONSE, MODREC, DONATE, PLATFORM }
 
     private record Page(Kind kind, SurveyQuestionPayload.Entry survey) {
         static Page of(Kind k) { return new Page(k, null); }
@@ -429,6 +429,9 @@ public final class NarrativeDeathScreen extends Screen {
             // outOfFlow), exactly like the gated-out donation page — that keeps it reachable
             // through the envelope chip, which is where it gets un-muted.
             list.add(Page.survey(e));
+            // The answer to a submitted bug report gets its own page straight after the question.
+            // Always in the deck, but out of flow until a real bug has been sent (see outOfFlow).
+            if (BUG_REPORT_ID.equals(e.id())) list.add(Page.of(Kind.BUG_RESPONSE));
         }
         // "Support the line" — the donation ledger. Always in the list (so the "$" chip can always
         // reach it); whether it appears in the normal Next-Screen flow is gated by donateInFlow
@@ -458,6 +461,7 @@ public final class NarrativeDeathScreen extends Screen {
      */
     private boolean outOfFlow(Page p) {
         if (p.kind() == Kind.DONATE) return !donateInFlow;
+        if (p.kind() == Kind.BUG_RESPONSE) return bugCard == null;
         String id = formId(p);
         return id != null && deckMutedForms.contains(id);
     }
@@ -800,6 +804,7 @@ public final class NarrativeDeathScreen extends Screen {
                 case GEAR -> y = drawGear(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
                 case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
                 case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
+                case BUG_RESPONSE -> y = drawBugResponse(g, left, contentW, cx, y);
                 case MODREC -> y = drawModRec(g, left, contentW, cx, y, mouseX, mouseY);
                 case DONATE -> y = drawDonate(g, left, contentW, cx, y, mouseX, mouseY);
                 case PLATFORM -> y = drawPlatform(g, narr, left, contentW, cx, y);
@@ -890,7 +895,7 @@ public final class NarrativeDeathScreen extends Screen {
             case DEEDS    -> List.of(SnapshotTag.COMBAT, SnapshotTag.SCENIC);
             case GEAR     -> List.of(SnapshotTag.GEAR, SnapshotTag.SCENIC);
             case LIVES    -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
-            case SURVEY, MODREC, DONATE, PLATFORM -> List.of();
+            case SURVEY, BUG_RESPONSE, MODREC, DONATE, PLATFORM -> List.of();
         };
     }
 
@@ -907,7 +912,7 @@ public final class NarrativeDeathScreen extends Screen {
             case DEEDS -> UiAnalytics.PAGE_DEEDS;
             case GEAR -> UiAnalytics.PAGE_GEAR;
             case LIVES -> UiAnalytics.PAGE_LIVES;
-            case SURVEY -> UiAnalytics.PAGE_SURVEY;
+            case SURVEY, BUG_RESPONSE -> UiAnalytics.PAGE_SURVEY;
             case MODREC -> UiAnalytics.PAGE_MODREC;
             case DONATE -> UiAnalytics.PAGE_DONATE;
             case PLATFORM -> UiAnalytics.PAGE_PLATFORM;
@@ -1441,16 +1446,24 @@ public final class NarrativeDeathScreen extends Screen {
         }
     }
 
-    private int drawSurvey(GuiGraphics g, SurveyQuestionPayload.Entry e, int left, int w, int cx, int y) {
-        scoreRects.clear();
-        // Once a bug is submitted its response card needs the room: the train art and intro fold away.
-        boolean showBugCard = bugCard != null && e != null && e.id().equals(BUG_REPORT_ID);
+    /** The page after a submitted bug report: the response card ("already fixed", lag tips, update). */
+    private int drawBugResponse(GuiGraphics g, int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_ledger");
         y += 14;
-        if (!showBugCard) {
-            drawTrain(g, left, w, y, currentPage);
-            y += 46;
-        }
+        drawTrain(g, left, w, y, currentPage);
+        y += 46;
+        if (bugCard == null) return y;
+        // Wider than the page column: the card carries buttons and release titles.
+        int cardW = Math.max(w, Math.min(this.width - 24, 460));
+        return bugCard.render(g, this.font, bugCardChrome, cx, cardW, y) + 4;
+    }
+
+    private int drawSurvey(GuiGraphics g, SurveyQuestionPayload.Entry e, int left, int w, int cx, int y) {
+        scoreRects.clear();
+        drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_ledger");
+        y += 14;
+        drawTrain(g, left, w, y, currentPage);
+        y += 46;
         // The first survey question keeps the calm "ledger" intro; the second (and any later)
         // question switches to a more urgent plea. drawSurvey only runs for the current page, so
         // the survey's ordinal is how many SURVEY pages occur up to and including this one.
@@ -1470,10 +1483,8 @@ public final class NarrativeDeathScreen extends Screen {
             }
             introKey = SURVEY_INTRO_2_KEYS[surveyIntro2Choice];
         }
-        if (!showBugCard) {
-            y = drawCentered(g, Component.translatable(introKey), cx, w, y, NARR);
-            y += 6;
-        }
+        y = drawCentered(g, Component.translatable(introKey), cx, w, y, NARR);
+        y += 6;
         if (e != null) {
             // Localize the prompt for display via DiscordPresence's derived survey key (falling back
             // to the literal, which still drives the Discord embed + the answer-matching logic below).
@@ -1529,18 +1540,13 @@ public final class NarrativeDeathScreen extends Screen {
             // Privacy notice: only when the bug question has a real-bug option selected (not "No"),
             // warning that recent logs will be attached. For "Lag" the notice also mentions the
             // system-spec summary that gets collected to diagnose performance.
-            if (!showBugCard && e.id().equals(BUG_REPORT_ID) && selected >= 0 && selected < e.options().size()
+            if (e.id().equals(BUG_REPORT_ID) && selected >= 0 && selected < e.options().size()
                     && !e.options().get(selected).equalsIgnoreCase("No")) {
                 String noticeKey = e.options().get(selected).equalsIgnoreCase("Lag")
                         ? "gui.dungeontrain.death.narr.bug_log_notice_lag"
                         : "gui.dungeontrain.death.narr.bug_log_notice";
                 y = drawCentered(g, Component.translatable(noticeKey), cx, w, y, SUBLINE);
                 y += 4;
-            }
-            if (showBugCard) {
-                // Wider than the page column: the card carries buttons and release titles.
-                int cardW = Math.max(w, Math.min(this.width - 24, 460));
-                y = bugCard.render(g, this.font, bugCardChrome, cx, cardW, y) + 4;
             }
             // Only from the second time this question is put in front of someone who already
             // answered it — a first ask has nothing to opt out of yet.
@@ -2248,6 +2254,18 @@ public final class NarrativeDeathScreen extends Screen {
         return -1;
     }
 
+    /** Index of the page answering a submitted bug report, or -1 if the bug question isn't in this run's set. */
+    private int bugResponsePageIndex() {
+        for (int i = 0; i < pages.size(); i++) if (pages.get(i).kind() == Kind.BUG_RESPONSE) return i;
+        return -1;
+    }
+
+    /** The bug-report question or the page answering it — the two pages the "Submit Bug" shortcut covers. */
+    private static boolean isBugFlowPage(Page p) {
+        return p.kind() == Kind.BUG_RESPONSE
+                || (p.kind() == Kind.SURVEY && p.survey() != null && BUG_REPORT_ID.equals(p.survey().id()));
+    }
+
     /**
      * True once the bug-report question has been submitted with a real-bug answer (anything
      * but "No"). Drives the start-page shortcut's red "Submit Bug" → green "Bug Submitted"
@@ -2403,8 +2421,7 @@ public final class NarrativeDeathScreen extends Screen {
                     return true;
                 }
             }
-            if (page.kind() == Kind.SURVEY && page.survey() != null
-                    && BUG_REPORT_ID.equals(page.survey().id()) && bugCard != null && bugCard.click(mx, my)) {
+            if (page.kind() == Kind.BUG_RESPONSE && bugCard != null && bugCard.click(mx, my)) {
                 return true;
             }
             if (page.kind() == Kind.SURVEY && page.survey() != null) {
@@ -2462,25 +2479,26 @@ public final class NarrativeDeathScreen extends Screen {
             // Submit the answer if one was given; the survey is optional, so an
             // unanswered question must not block Continue.
             maybeSubmit(page.survey());
-            // A bug was just reported: stay on this page and answer it. The next Next Screen
-            // moves on exactly as before (the report is already sent, so it does not re-submit).
+            // A bug was just reported: answer it on the page that follows. The shortcut / tour /
+            // chip routing is left armed so it applies when Next Screen leaves that page instead.
             if (bugPage && !alreadySent && bugCard == null && bugReported()) {
                 SurveyQuestionPayload.Entry e = page.survey();
                 String option = e.options().get(scores.getOrDefault(BUG_REPORT_ID, 0));
                 bugCard = new BugResponseCard(this,
                         BugIssueClassifier.classify(option, comments.getOrDefault(BUG_REPORT_ID, "")), remote());
-                return;
+                if (bugResponsePageIndex() >= 0) {
+                    startTransition(bugResponsePageIndex());
+                    return;
+                }
             }
         }
-        // Bug page reached via the start-page shortcut: Next Screen returns to the start
-        // (page 0) instead of paging forward. Consume the flag either way.
-        boolean returnToStart = returnToStartAfterBug
-                && page.kind() == Kind.SURVEY && page.survey() != null
-                && BUG_REPORT_ID.equals(page.survey().id());
+        // Bug page (or its response page) reached via the start-page shortcut: Next Screen returns
+        // to the start (page 0) instead of paging forward. Consume the flag either way.
+        boolean returnToStart = returnToStartAfterBug && isBugFlowPage(page);
         returnToStartAfterBug = false;
         // Walking the survey via the envelope chip: Next Screen steps to the following question
         // (muted ones included) and only hands back once they have all been offered.
-        if (surveyTour && page.kind() == Kind.SURVEY) {
+        if (surveyTour && (page.kind() == Kind.SURVEY || page.kind() == Kind.BUG_RESPONSE)) {
             int next = nextSurveyPage(currentPage, +1);
             if (next >= 0) {
                 startTransition(next);
@@ -2508,6 +2526,10 @@ public final class NarrativeDeathScreen extends Screen {
 
     private void back() {
         if (uiBusy) return;
+        if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.BUG_RESPONSE && bugPageIndex() >= 0) {
+            startTransition(bugPageIndex());
+            return;
+        }
         returnToStartAfterBug = false;
         // Same walk in reverse; from the first question, back leaves the tour and returns.
         if (surveyTour && !pages.isEmpty() && pages.get(currentPage).kind() == Kind.SURVEY) {

@@ -229,7 +229,7 @@ public final class BugResponseCard {
         return r.installed().map(FullSemver::toString).orElse(InstalledVersion.display());
     }
 
-    static String packUrl(Platform p) {
+    public static String packUrl(Platform p) {
         return p == Platform.CURSEFORGE ? CURSEFORGE_PACK_URL : MODRINTH_PACK_URL;
     }
 
