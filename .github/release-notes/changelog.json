@@ -21669,9 +21669,9 @@
       "highlights": [],
       "pr": 1733,
       "date": "2026-10-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
     },
     {
       "id": "translation-character-cards",
@@ -21687,9 +21687,9 @@
       "highlights": [],
       "pr": 1734,
       "date": "2026-10-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
     },
     {
       "id": "bug-report-response",
@@ -21704,9 +21704,9 @@
       "highlights": [],
       "pr": 1735,
       "date": "2026-10-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
     },
     {
       "id": "translation-previews",
@@ -21722,9 +21722,9 @@
       "highlights": [],
       "pr": 1736,
       "date": "2026-10-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
     },
     {
       "id": "leaderboard-eras-ancient-records",
@@ -21743,9 +21743,9 @@
         "Each year has its own one-life boards alongside the version boards."
       ],
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
     }
   ]
 }
