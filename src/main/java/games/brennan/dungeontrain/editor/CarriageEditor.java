@@ -407,6 +407,26 @@ public final class CarriageEditor {
     }
 
     /**
+     * Clear the carriage row's whole span — wherever plots are now, and wherever a build that spaced
+     * every plot for the widest box ({@link #plotStep}) put them. A world stamped by that build
+     * otherwise keeps those plots in the sky where no slot points any more.
+     */
+    public static void clearRowSpan(ServerLevel level, CarriageDims dims) {
+        eraseSpan(level, FIRST_PLOT_X, rowSpanEndX(dims), dims);
+    }
+
+    /** The box {@link #clearRowSpan} clears, for the stamp queue's ordering. */
+    public static net.minecraft.world.level.levelgen.structure.BoundingBox rowSpanBox(CarriageDims dims) {
+        CarriageDims box = widestBox(dims);
+        return EditorLayerSweep.plotBox(new BlockPos(FIRST_PLOT_X, EditorLayout.PLOT_Y, PLOT_Z),
+            new Vec3i(rowSpanEndX(dims) - FIRST_PLOT_X, box.height(), box.width()));
+    }
+
+    private static int rowSpanEndX(CarriageDims dims) {
+        return Math.max(rowEndX(dims), FIRST_PLOT_X + rowCount() * plotStep(dims));
+    }
+
+    /**
      * Clear the row from {@code fromX} up to {@code toX} — every plot and cage in it. Plots are their
      * own lengths, so after a size or row change the old ones no longer sit where the slots now
      * say; clearing the span rather than slot by slot reaches wherever they were.
