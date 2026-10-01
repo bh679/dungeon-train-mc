@@ -21375,9 +21375,9 @@
       "highlights": [],
       "pr": 1710,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "betterx-prompts-dt-worlds-only",
@@ -21393,9 +21393,9 @@
       "highlights": [],
       "pr": 1711,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "memoise-worldgen-lookups",
@@ -21410,9 +21410,9 @@
       "highlights": [],
       "pr": 1706,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "discord-build-submit-announcements",
@@ -21428,9 +21428,9 @@
       "highlights": [],
       "pr": 1705,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "surface-rule-null-guard",
@@ -21446,9 +21446,9 @@
       "highlights": [],
       "pr": 1712,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "lost-city-terrain-fit-curseforge-sibling",
@@ -21463,9 +21463,9 @@
       "highlights": [],
       "pr": 1704,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "sable-pathfinder-presence-log",
@@ -21481,9 +21481,9 @@
       "highlights": [],
       "pr": 1714,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "structure-start-check-once",
@@ -21498,9 +21498,9 @@
       "highlights": [],
       "pr": 1715,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "tall-dimensional-carriage-train-resumes",
@@ -21515,9 +21515,9 @@
       "highlights": [],
       "pr": 1716,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "plants-stay-rooted",
@@ -21532,9 +21532,9 @@
       "highlights": [],
       "pr": 1718,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "endband-scenery-carries-on",
@@ -21548,9 +21548,9 @@
       "summary": "Some scenery now carries on past where it used to stop.",
       "highlights": [],
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "lost-city-template-eviction",
@@ -21564,9 +21564,9 @@
       "highlights": [],
       "pr": 1719,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "speed-change-no-teleport",
@@ -21581,9 +21581,9 @@
       "highlights": [],
       "pr": 1722,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "endband-islands-arrive-whole",
@@ -21599,9 +21599,9 @@
       "highlights": [],
       "pr": 1725,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "cargo-carriage-contents",
@@ -21616,9 +21616,9 @@
       "highlights": [],
       "pr": 1727,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "survey-answers-show-version",
@@ -21633,9 +21633,9 @@
       "highlights": [],
       "pr": 1729,
       "date": "2026-09-30",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     },
     {
       "id": "trash-slot-returns-on-close",
@@ -21651,9 +21651,9 @@
       "highlights": [],
       "pr": 1731,
       "date": "2026-10-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1080.0",
+      "released_at": "2026-10-01T12:55:59Z"
     }
   ]
 }
