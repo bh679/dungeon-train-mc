@@ -21646,8 +21646,8 @@
         "compatibility",
         "ui"
       ],
-      "title": "Trash slot gives items back",
-      "summary": "Anything still sitting in the trash slot now comes back to you when you close your inventory.",
+      "title": "Trash slot won't keep holding items when menu closes",
+      "summary": "Anything still sitting in the trash slot that hasn't been intentionally deleted now comes back to you when you close your inventory.",
       "highlights": [],
       "pr": 1731,
       "date": "2026-10-01",
