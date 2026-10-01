@@ -2617,7 +2617,7 @@
   "gui.dungeontrain.translate.preview.frame.click": "Fă clic pe previzualizare ca să umpli fereastra. Fă clic din nou sau apasă Esc ca să revii.",
   "gui.dungeontrain.translate.preview.frame.screen": "Văzut ultima dată pe: %s",
   "gui.dungeontrain.translate.preview.text.lines": "Rânduri ca text pe ecran: %s. Rânduri ca indiciu: %s",
-  "gui.dungeontrain.translate.preview.switch.tip": "Arată acest text altfel: ca text pe ecran, pagină de carte, buton sau rând de chat.",
+  "gui.dungeontrain.translate.preview.switch.tip": "Arată acest text în celălalt loc din joc unde este folosit.",
   "gui.dungeontrain.translate.replies.toast": "Un verificator ți-a răspuns",
   "gui.dungeontrain.translate.replies.detail": "%s dintre traducerile tale au un răspuns",
   "gui.dungeontrain.translate.files.export": "Exportă",

@@ -2052,7 +2052,7 @@
   "gui.dungeontrain.translate.preview.frame.click": "プレビューをクリックするとウィンドウいっぱいに表示します。もう一度クリックするか Esc で戻ります。",
   "gui.dungeontrain.translate.preview.frame.screen": "最後に見た画面：%s",
   "gui.dungeontrain.translate.preview.text.lines": "画面の文字としての行数：%s。ツールチップとしての行数：%s",
-  "gui.dungeontrain.translate.preview.switch.tip": "この文を別の形で表示します：画面の文字、本のページ、ボタン、チャットの行。",
+  "gui.dungeontrain.translate.preview.switch.tip": "この文がゲーム内で使われている別の場所で表示します。",
   "gui.dungeontrain.translate.replies.toast": "確認者から返信がありました",
   "gui.dungeontrain.translate.replies.detail": "返信のあった翻訳: %s 件",
   "gui.dungeontrain.translate.files.export": "書き出す",

@@ -2052,7 +2052,7 @@
   "gui.dungeontrain.translate.preview.frame.click": "Klik pratinjau untuk memenuhi jendela. Klik lagi atau tekan Esc untuk kembali.",
   "gui.dungeontrain.translate.preview.frame.screen": "Terakhir terlihat di: %s",
   "gui.dungeontrain.translate.preview.text.lines": "Baris sebagai teks layar: %s. Baris sebagai tooltip: %s",
-  "gui.dungeontrain.translate.preview.switch.tip": "Tampilkan teks ini dengan cara lain: sebagai teks layar, halaman buku, tombol, atau baris obrolan.",
+  "gui.dungeontrain.translate.preview.switch.tip": "Tampilkan teks ini di tempat lain yang memakainya di dalam game.",
   "gui.dungeontrain.translate.replies.toast": "Peninjau membalas",
   "gui.dungeontrain.translate.replies.detail": "%s terjemahanmu mendapat balasan",
   "gui.dungeontrain.translate.files.export": "Ekspor",

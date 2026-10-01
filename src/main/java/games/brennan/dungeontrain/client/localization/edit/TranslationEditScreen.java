@@ -89,6 +89,8 @@ public final class TranslationEditScreen extends Screen {
     private String typed;
     /** Where this string shows up in game, which picks the Preview button (or none). */
     private TranslationPreviewKind previewKind = TranslationPreviewKind.NONE;
+    /** Every place this string is known to be read; the preview's switch cycles these. */
+    private List<TranslationPreviewKind> previewViews = List.of();
 
     /** Why the typed text will not render, or null. Recomputed on every keystroke. */
     private TranslationFormatCheck.Problem formatProblem;
@@ -188,7 +190,8 @@ public final class TranslationEditScreen extends Screen {
         // AI queue was to rewrite a line that needed nothing. A fifth, Preview, opens the view that
         // fits where the string lands (plain screen text when that is not known; the preview can
         // switch). It is a square icon, what it previews as an item, so the four words keep their width.
-        previewKind = TranslationPreviewKind.of(unit, ButtonKeyRecorder::seen);
+        previewViews = TranslationPreviewKind.viewsOf(unit, ButtonKeyRecorder::seen, ChatKeyRecorder::seen);
+        previewKind = previewViews.isEmpty() ? TranslationPreviewKind.NONE : previewViews.get(0);
         boolean hasPreview = previewKind != TranslationPreviewKind.NONE;
         int iconRoom = hasPreview ? ROW_H + GAP : 0;
         int buttonWidth = (contentWidth - iconRoom - GAP * 3) / 4;
@@ -250,7 +253,7 @@ public final class TranslationEditScreen extends Screen {
                     ? examples.render(variable.examples().get(0)).localized()
                     : null);
         }
-        minecraft.setScreen(new TranslationPreviewScreen(this, previewKind, shown,
+        minecraft.setScreen(new TranslationPreviewScreen(this, previewKind, previewViews, shown,
             ButtonKeyRecorder.widthOf(unit.id()), unit, locale, value));
     }
 

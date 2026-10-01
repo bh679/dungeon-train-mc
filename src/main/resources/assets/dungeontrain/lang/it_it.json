@@ -2090,7 +2090,7 @@
   "gui.dungeontrain.translate.preview.frame.click": "Fai clic sull'anteprima per riempire la finestra. Fai di nuovo clic o premi Esc per tornare indietro.",
   "gui.dungeontrain.translate.preview.frame.screen": "Visto l'ultima volta in: %s",
   "gui.dungeontrain.translate.preview.text.lines": "Righe come testo a schermo: %s. Righe come tooltip: %s",
-  "gui.dungeontrain.translate.preview.switch.tip": "Mostra questo testo in un altro modo: come testo a schermo, pagina di libro, pulsante o riga di chat.",
+  "gui.dungeontrain.translate.preview.switch.tip": "Mostra questo testo dove altro viene usato nel gioco.",
   "gui.dungeontrain.translate.replies.toast": "Un revisore ha risposto",
   "gui.dungeontrain.translate.replies.detail": "%s delle tue traduzioni hanno una risposta",
   "gui.dungeontrain.translate.files.export": "Esporta",

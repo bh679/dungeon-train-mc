@@ -2052,7 +2052,7 @@
   "gui.dungeontrain.translate.preview.frame.click": "미리보기를 클릭하면 창을 가득 채웁니다. 다시 클릭하거나 Esc를 누르면 돌아갑니다.",
   "gui.dungeontrain.translate.preview.frame.screen": "마지막으로 본 화면: %s",
   "gui.dungeontrain.translate.preview.text.lines": "화면 글자로 줄 수: %s. 툴팁으로 줄 수: %s",
-  "gui.dungeontrain.translate.preview.switch.tip": "이 텍스트를 다른 방식으로 봅니다: 화면 글자, 책 페이지, 버튼, 채팅 줄.",
+  "gui.dungeontrain.translate.preview.switch.tip": "이 텍스트가 게임에서 쓰이는 다른 곳에서 봅니다.",
   "gui.dungeontrain.translate.replies.toast": "검토자가 답장했습니다",
   "gui.dungeontrain.translate.replies.detail": "답장이 온 번역: %s개",
   "gui.dungeontrain.translate.files.export": "내보내기",

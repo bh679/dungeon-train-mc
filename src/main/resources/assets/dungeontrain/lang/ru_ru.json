@@ -2133,7 +2133,7 @@
   "gui.dungeontrain.translate.preview.frame.click": "Нажмите на превью, чтобы развернуть его на всё окно. Нажмите ещё раз или Esc, чтобы вернуться.",
   "gui.dungeontrain.translate.preview.frame.screen": "В последний раз на экране: %s",
   "gui.dungeontrain.translate.preview.text.lines": "Строк как текст на экране: %s. Строк как подсказка: %s",
-  "gui.dungeontrain.translate.preview.switch.tip": "Показать этот текст иначе: как текст на экране, страницу книги, кнопку или строку чата.",
+  "gui.dungeontrain.translate.preview.switch.tip": "Показать этот текст там, где ещё он используется в игре.",
   "gui.dungeontrain.translate.replies.toast": "Проверяющий ответил",
   "gui.dungeontrain.translate.replies.detail": "Ваших переводов с ответом: %s",
   "gui.dungeontrain.translate.files.export": "Выгрузить",

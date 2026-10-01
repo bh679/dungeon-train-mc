@@ -2052,7 +2052,7 @@
   "gui.dungeontrain.translate.preview.frame.click": "I-click ang preview para punuin ang window. I-click ulit o pindutin ang Esc para bumalik.",
   "gui.dungeontrain.translate.preview.frame.screen": "Huling nakita sa: %s",
   "gui.dungeontrain.translate.preview.text.lines": "Mga linya bilang teksto sa screen: %s. Mga linya bilang tooltip: %s",
-  "gui.dungeontrain.translate.preview.switch.tip": "Ipakita ang tekstong ito sa ibang paraan: bilang teksto sa screen, pahina ng aklat, button o linya sa chat.",
+  "gui.dungeontrain.translate.preview.switch.tip": "Ipakita ang tekstong ito sa iba pang lugar kung saan ito ginagamit sa laro.",
   "gui.dungeontrain.translate.replies.toast": "May sumagot na reviewer",
   "gui.dungeontrain.translate.replies.detail": "%s sa mga salin mo ang may sagot",
   "gui.dungeontrain.translate.files.export": "I-export",

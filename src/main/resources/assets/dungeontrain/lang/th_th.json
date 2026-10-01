@@ -2052,7 +2052,7 @@
   "gui.dungeontrain.translate.preview.frame.click": "คลิกตัวอย่างเพื่อขยายเต็มหน้าต่าง คลิกอีกครั้งหรือกด Esc เพื่อกลับ",
   "gui.dungeontrain.translate.preview.frame.screen": "เห็นครั้งล่าสุดที่: %s",
   "gui.dungeontrain.translate.preview.text.lines": "จำนวนบรรทัดเป็นข้อความบนหน้าจอ: %s จำนวนบรรทัดเป็นคำแนะนำเครื่องมือ: %s",
-  "gui.dungeontrain.translate.preview.switch.tip": "แสดงข้อความนี้แบบอื่น: เป็นข้อความบนหน้าจอ หน้าหนังสือ ปุ่ม หรือบรรทัดแชต",
+  "gui.dungeontrain.translate.preview.switch.tip": "แสดงข้อความนี้ในที่อื่นที่ใช้ในเกม",
   "gui.dungeontrain.translate.replies.toast": "ผู้ตรวจตอบกลับแล้ว",
   "gui.dungeontrain.translate.replies.detail": "คำแปลของคุณ %s รายการมีการตอบกลับ",
   "gui.dungeontrain.translate.files.export": "ส่งออก",

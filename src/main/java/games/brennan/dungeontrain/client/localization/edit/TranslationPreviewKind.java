@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.localization.edit;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -8,8 +10,8 @@ import java.util.function.Predicate;
  * concerned — a page of a book, a button label, a line of chat, or plain screen text.
  *
  * <p>Pure, so the guesswork is testable without a client. A string that matches none of the rules
- * gets {@link #TEXT} — screen text and tooltips, where most unplaced strings end up — and the
- * preview can switch to any other view ({@link #next}), so every string has one.</p>
+ * gets {@link #TEXT} — screen text and tooltips, where most unplaced strings end up — so every
+ * string has a preview; one read in several places can switch between them ({@link #viewsOf}).</p>
  */
 public enum TranslationPreviewKind {
     BOOK,
@@ -18,9 +20,6 @@ public enum TranslationPreviewKind {
     TEXT,
     /** No string at all; never offered a preview. */
     NONE;
-
-    /** The views the preview cycles through, in order. */
-    private static final List<TranslationPreviewKind> VIEWS = List.of(TEXT, BOOK, BUTTON, CHAT);
 
     /** Lang-key prefixes whose text is printed into chat — system messages, command feedback, deaths. */
     static final List<String> CHAT_PREFIXES =
@@ -34,47 +33,55 @@ public enum TranslationPreviewKind {
         ".button", ".save", ".close", ".reset", ".done", ".cancel", ".back", ".next", ".on", ".off");
 
     /**
-     * Which preview fits {@code unit}.
+     * Which preview fits {@code unit} best — the first of {@link #viewsOf}, or NONE for no unit.
      *
      * @param seenOnButton whether a key has been seen labelling a real button on some screen
      */
     public static TranslationPreviewKind of(TranslationUnit unit, Predicate<String> seenOnButton) {
+        List<TranslationPreviewKind> views = viewsOf(unit, seenOnButton, key -> false);
+        return views.isEmpty() ? NONE : views.get(0);
+    }
+
+    /**
+     * Every place {@code unit} is known to be read, best evidence first: the preview opens on the
+     * first and its switch cycles only these. {@link #TEXT} only when nothing places the string;
+     * empty for no unit.
+     *
+     * @param seenOnButton whether a key has been seen labelling a real button ({@link ButtonKeyRecorder})
+     * @param seenInChat   whether a key has been seen in a chat message ({@link ChatKeyRecorder})
+     */
+    public static List<TranslationPreviewKind> viewsOf(TranslationUnit unit, Predicate<String> seenOnButton,
+                                                       Predicate<String> seenInChat) {
         if (unit == null) {
-            return NONE;
+            return List.of();
         }
         if (unit.type() == TranslationUnit.Type.BOOK) {
-            return BOOK;
+            return List.of(BOOK);
         }
         String key = unit.id();
         if (key == null || key.isEmpty()) {
-            return TEXT;
+            return List.of(TEXT);
         }
+        Set<TranslationPreviewKind> views = new LinkedHashSet<>();
         // Leaderboard lines are only ever printed in a leaderboard book.
         if (key.startsWith("book.") || key.startsWith(BookPreviewContext.LEADERBOARD_PREFIX)) {
-            return BOOK;
+            views.add(BOOK);
         }
-        // Seen on a button outranks the prefixes: it is what the game actually did with the key,
-        // where the rest is inference from its name.
+        // What the game was seen doing with the key outranks inference from its name.
         if (seenOnButton != null && seenOnButton.test(key)) {
-            return BUTTON;
+            views.add(BUTTON);
         }
-        for (String prefix : CHAT_PREFIXES) {
-            if (key.startsWith(prefix)) {
-                return CHAT;
-            }
+        if ((seenInChat != null && seenInChat.test(key))
+            || CHAT_PREFIXES.stream().anyMatch(key::startsWith)) {
+            views.add(CHAT);
         }
-        for (String suffix : BUTTON_SUFFIXES) {
-            if (key.endsWith(suffix)) {
-                return BUTTON;
-            }
+        if (BUTTON_SUFFIXES.stream().anyMatch(key::endsWith)) {
+            views.add(BUTTON);
         }
-        return TEXT;
-    }
-
-    /** The view after this one, for the preview's switch button. */
-    public TranslationPreviewKind next() {
-        int at = VIEWS.indexOf(this);
-        return VIEWS.get((at + 1) % VIEWS.size());
+        if (views.isEmpty()) {
+            views.add(TEXT);
+        }
+        return List.copyOf(views);
     }
 
     /** The lang key of the edit screen's Preview button for this kind; never called for NONE. */

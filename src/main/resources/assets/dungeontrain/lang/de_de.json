@@ -2090,7 +2090,7 @@
   "gui.dungeontrain.translate.preview.frame.click": "Klicke auf die Vorschau, um das Fenster zu füllen. Klicke erneut oder drücke Esc, um zurückzugehen.",
   "gui.dungeontrain.translate.preview.frame.screen": "Zuletzt gesehen auf: %s",
   "gui.dungeontrain.translate.preview.text.lines": "Zeilen als Bildschirmtext: %s. Zeilen als Tooltip: %s",
-  "gui.dungeontrain.translate.preview.switch.tip": "Zeigt diesen Text anders: als Bildschirmtext, Buchseite, Knopf oder Chatzeile.",
+  "gui.dungeontrain.translate.preview.switch.tip": "Zeigt diesen Text dort, wo er sonst noch im Spiel verwendet wird.",
   "gui.dungeontrain.translate.replies.toast": "Ein Prüfer hat geantwortet",
   "gui.dungeontrain.translate.replies.detail": "Auf %s deiner Übersetzungen gibt es eine Antwort",
   "gui.dungeontrain.translate.files.export": "Exportieren",

@@ -2090,7 +2090,7 @@
   "gui.dungeontrain.translate.preview.frame.click": "Klik op het voorbeeld om het venster te vullen. Klik nogmaals of druk op Esc om terug te gaan.",
   "gui.dungeontrain.translate.preview.frame.screen": "Laatst gezien op: %s",
   "gui.dungeontrain.translate.preview.text.lines": "Regels als schermtekst: %s. Regels als tooltip: %s",
-  "gui.dungeontrain.translate.preview.switch.tip": "Toon deze tekst op een andere manier: als schermtekst, boekpagina, knop of chatregel.",
+  "gui.dungeontrain.translate.preview.switch.tip": "Toon deze tekst op de andere plek waar hij in het spel wordt gebruikt.",
   "gui.dungeontrain.translate.replies.toast": "Een beoordelaar heeft geantwoord",
   "gui.dungeontrain.translate.replies.detail": "%s van je vertalingen hebben een antwoord",
   "gui.dungeontrain.translate.files.export": "Exporteren",

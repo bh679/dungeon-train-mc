@@ -2052,7 +2052,7 @@
   "gui.dungeontrain.translate.preview.frame.click": "Nhấp vào bản xem trước để phóng to toàn cửa sổ. Nhấp lần nữa hoặc nhấn Esc để quay lại.",
   "gui.dungeontrain.translate.preview.frame.screen": "Thấy lần cuối ở: %s",
   "gui.dungeontrain.translate.preview.text.lines": "Số dòng dạng chữ trên màn hình: %s. Số dòng dạng chú thích: %s",
-  "gui.dungeontrain.translate.preview.switch.tip": "Hiện văn bản này theo cách khác: chữ trên màn hình, trang sách, nút hoặc dòng trò chuyện.",
+  "gui.dungeontrain.translate.preview.switch.tip": "Hiện văn bản này ở chỗ khác mà nó được dùng trong trò chơi.",
   "gui.dungeontrain.translate.replies.toast": "Người duyệt đã phản hồi",
   "gui.dungeontrain.translate.replies.detail": "%s bản dịch của bạn có phản hồi",
   "gui.dungeontrain.translate.files.export": "Xuất",

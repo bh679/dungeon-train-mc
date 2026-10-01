@@ -2052,7 +2052,7 @@
   "gui.dungeontrain.translate.preview.frame.click": "点击预览可铺满窗口。再次点击或按 Esc 返回。",
   "gui.dungeontrain.translate.preview.frame.screen": "最后一次见于：%s",
   "gui.dungeontrain.translate.preview.text.lines": "作为屏幕文字的行数：%s。作为提示框的行数：%s",
-  "gui.dungeontrain.translate.preview.switch.tip": "换一种方式显示这段文字：屏幕文字、书页、按钮或聊天行。",
+  "gui.dungeontrain.translate.preview.switch.tip": "在游戏中使用这段文字的其他位置显示它。",
   "gui.dungeontrain.translate.replies.toast": "审阅者回复了你",
   "gui.dungeontrain.translate.replies.detail": "你有 %s 条翻译收到了回复",
   "gui.dungeontrain.translate.files.export": "导出",

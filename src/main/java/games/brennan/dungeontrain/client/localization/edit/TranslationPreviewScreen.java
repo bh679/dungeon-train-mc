@@ -70,6 +70,7 @@ public final class TranslationPreviewScreen extends Screen {
 
     private final Screen parent;
     private final TranslationPreviewKind kind;
+    private final List<TranslationPreviewKind> views;
     /** The typed text with its placeholders filled in — what a player would actually read. */
     private final String text;
     /** The real width of this string's button, or -1 when it has never been seen on one. */
@@ -101,12 +102,19 @@ public final class TranslationPreviewScreen extends Screen {
     private final List<Button> sampleButtons = new ArrayList<>();
     private final List<Component> readout = new ArrayList<>();
 
-    public TranslationPreviewScreen(Screen parent, TranslationPreviewKind kind, String text,
+    /**
+     * @param kind  the view to show
+     * @param views every view this string is read in ({@link TranslationPreviewKind#viewsOf}); the
+     *              switch button cycles these
+     */
+    public TranslationPreviewScreen(Screen parent, TranslationPreviewKind kind,
+                                    List<TranslationPreviewKind> views, String text,
                                     int knownButtonWidth, TranslationUnit unit, String locale,
                                     String typed) {
         super(Component.translatable(kind.buttonKey()));
         this.parent = parent;
         this.kind = kind;
+        this.views = views.contains(kind) ? List.copyOf(views) : List.of(kind);
         this.text = text == null ? "" : text;
         this.knownButtonWidth = knownButtonWidth;
         this.unit = unit;
@@ -135,11 +143,14 @@ public final class TranslationPreviewScreen extends Screen {
     /** Done, and when there is wider context the Full Context toggle and (when rolled) Refresh. */
     private void initBottomRow() {
         List<Button> row = new ArrayList<>();
-        // Every string can be seen every way: the guess at its place only picks the first view.
-        Button view = Button.builder(Component.translatable(kind.next().buttonKey()), b -> switchView())
-            .build();
-        view.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.translate.preview.switch.tip")));
-        row.add(view);
+        // Only the places this string is known to be read — a view it never appears in would mislead.
+        if (views.size() > 1) {
+            Button view = Button.builder(Component.translatable(nextView().buttonKey()), b -> switchView())
+                .build();
+            view.setTooltip(Tooltip.create(
+                Component.translatable("gui.dungeontrain.translate.preview.switch.tip")));
+            row.add(view);
+        }
         if (source != BookPreviewContext.Source.NONE || buttonLayout != null) {
             Button toggle = Button.builder(Component.translatable(fullContext
                     ? "gui.dungeontrain.translate.preview.just_this"
@@ -174,8 +185,12 @@ public final class TranslationPreviewScreen extends Screen {
         }
     }
 
+    private TranslationPreviewKind nextView() {
+        return views.get((views.indexOf(kind) + 1) % views.size());
+    }
+
     private void switchView() {
-        minecraft.setScreen(new TranslationPreviewScreen(parent, kind.next(), text, knownButtonWidth,
+        minecraft.setScreen(new TranslationPreviewScreen(parent, nextView(), views, text, knownButtonWidth,
             unit, locale, typed));
     }
 

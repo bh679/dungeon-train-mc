@@ -2577,7 +2577,7 @@
   "gui.dungeontrain.translate.preview.frame.click": "Click the preview to fill the window. Click again or press Esc to go back.",
   "gui.dungeontrain.translate.preview.frame.screen": "As last seen on: %s",
   "gui.dungeontrain.translate.preview.text.lines": "Lines as screen text: %s. Lines as a tooltip: %s",
-  "gui.dungeontrain.translate.preview.switch.tip": "Show this text another way: as screen text, a book page, a button or a chat line.",
+  "gui.dungeontrain.translate.preview.switch.tip": "Show this text where else it is used in the game.",
   "gui.dungeontrain.translate.replies.toast": "A reviewer replied",
   "gui.dungeontrain.translate.replies.detail": "%s of your translations have a reply",
   "gui.dungeontrain.translate.files.export": "Export",

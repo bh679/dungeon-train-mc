@@ -2128,7 +2128,7 @@
   "gui.dungeontrain.translate.preview.frame.click": "Kliknij podgląd, aby wypełnić okno. Kliknij ponownie lub naciśnij Esc, aby wrócić.",
   "gui.dungeontrain.translate.preview.frame.screen": "Ostatnio widziany na: %s",
   "gui.dungeontrain.translate.preview.text.lines": "Wiersze jako tekst na ekranie: %s. Wiersze jako podpowiedź: %s",
-  "gui.dungeontrain.translate.preview.switch.tip": "Pokaż ten tekst inaczej: jako tekst na ekranie, stronę książki, przycisk lub wiersz czatu.",
+  "gui.dungeontrain.translate.preview.switch.tip": "Pokaż ten tekst w innym miejscu gry, w którym jest używany.",
   "gui.dungeontrain.translate.replies.toast": "Recenzent odpowiedział",
   "gui.dungeontrain.translate.replies.detail": "Odpowiedź otrzymało twoich tłumaczeń: %s",
   "gui.dungeontrain.translate.files.export": "Eksportuj",

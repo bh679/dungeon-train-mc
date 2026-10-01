@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.localization.edit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -79,12 +80,21 @@ class TranslationPreviewKindTest {
     }
 
     @Test
-    @DisplayName("the preview's switch cycles every view and comes back round")
+    @DisplayName("the preview offers only the places a string is known to be read, best first")
     void views() {
-        assertEquals(TranslationPreviewKind.BOOK, TranslationPreviewKind.TEXT.next());
-        assertEquals(TranslationPreviewKind.BUTTON, TranslationPreviewKind.BOOK.next());
-        assertEquals(TranslationPreviewKind.CHAT, TranslationPreviewKind.BUTTON.next());
-        assertEquals(TranslationPreviewKind.TEXT, TranslationPreviewKind.CHAT.next());
+        Predicate<String> onButton = Set.of("chat.dungeontrain.open")::contains;
+        Predicate<String> inChat = Set.of("gui.dungeontrain.support.donate", "chat.dungeontrain.open")::contains;
+        // Seen on a button and named for chat: both, the button first.
+        assertEquals(List.of(TranslationPreviewKind.BUTTON, TranslationPreviewKind.CHAT),
+            TranslationPreviewKind.viewsOf(lang("chat.dungeontrain.open"), onButton, inChat));
+        // Only seen in chat: chat alone — no screen-text view it was never shown in.
+        assertEquals(List.of(TranslationPreviewKind.CHAT),
+            TranslationPreviewKind.viewsOf(lang("gui.dungeontrain.support.donate"), NOTHING_SEEN, inChat));
+        // Nothing places it: plain text, and nothing to switch to.
+        assertEquals(List.of(TranslationPreviewKind.TEXT),
+            TranslationPreviewKind.viewsOf(lang("gui.dungeontrain.support.title"), NOTHING_SEEN, NOTHING_SEEN));
+        assertEquals(List.of(TranslationPreviewKind.BOOK),
+            TranslationPreviewKind.viewsOf(book("random_books/deathnote#title"), onButton, inChat));
     }
 
     @Test
