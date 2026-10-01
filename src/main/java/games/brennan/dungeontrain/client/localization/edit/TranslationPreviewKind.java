@@ -5,17 +5,22 @@ import java.util.function.Predicate;
 
 /**
  * Where a translated string ends up in the game, as far as the edit screen's Preview button is
- * concerned — a page of a book, a button label, or a line of chat.
+ * concerned — a page of a book, a button label, a line of chat, or plain screen text.
  *
- * <p>Pure, so the guesswork is testable without a client. It only ever answers when it has a
- * reason to: a string that matches none of the rules gets {@link #NONE} and no Preview button,
- * because a preview in the wrong context would tell the translator something false.</p>
+ * <p>Pure, so the guesswork is testable without a client. A string that matches none of the rules
+ * gets {@link #TEXT} — screen text and tooltips, where most unplaced strings end up — and the
+ * preview can switch to any other view ({@link #next}), so every string has one.</p>
  */
 public enum TranslationPreviewKind {
     BOOK,
     BUTTON,
     CHAT,
+    TEXT,
+    /** No string at all; never offered a preview. */
     NONE;
+
+    /** The views the preview cycles through, in order. */
+    private static final List<TranslationPreviewKind> VIEWS = List.of(TEXT, BOOK, BUTTON, CHAT);
 
     /** Lang-key prefixes whose text is printed into chat — system messages, command feedback, deaths. */
     static final List<String> CHAT_PREFIXES =
@@ -42,7 +47,7 @@ public enum TranslationPreviewKind {
         }
         String key = unit.id();
         if (key == null || key.isEmpty()) {
-            return NONE;
+            return TEXT;
         }
         // Leaderboard lines are only ever printed in a leaderboard book.
         if (key.startsWith("book.") || key.startsWith(BookPreviewContext.LEADERBOARD_PREFIX)) {
@@ -63,7 +68,13 @@ public enum TranslationPreviewKind {
                 return BUTTON;
             }
         }
-        return NONE;
+        return TEXT;
+    }
+
+    /** The view after this one, for the preview's switch button. */
+    public TranslationPreviewKind next() {
+        int at = VIEWS.indexOf(this);
+        return VIEWS.get((at + 1) % VIEWS.size());
     }
 
     /** The lang key of the edit screen's Preview button for this kind; never called for NONE. */

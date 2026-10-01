@@ -4818,6 +4818,22 @@
       ]
     }
   },
+  "gui.dungeontrain.translate.preview.text.lines": {
+    "1": {
+      "label": "a number of lines",
+      "examples": [
+        "2",
+        "1"
+      ]
+    },
+    "2": {
+      "label": "a number of lines",
+      "examples": [
+        "3",
+        "1"
+      ]
+    }
+  },
   "gui.dungeontrain.version.update": {
     "1": {
       "label": "the newest version number",

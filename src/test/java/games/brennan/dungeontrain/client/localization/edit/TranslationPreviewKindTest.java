@@ -68,14 +68,23 @@ class TranslationPreviewKindTest {
     }
 
     @Test
-    @DisplayName("anything else gets no Preview button rather than a misleading one")
-    void none() {
+    @DisplayName("anything else previews as plain screen text")
+    void text() {
         for (String key : new String[] {"gui.dungeontrain.translate.edit.hint",
             "advancements.dungeontrain.root.description", "gui.dungeontrain.support.title",
             "block.dungeontrain.track", ""}) {
-            assertEquals(TranslationPreviewKind.NONE, TranslationPreviewKind.of(lang(key), NOTHING_SEEN), key);
+            assertEquals(TranslationPreviewKind.TEXT, TranslationPreviewKind.of(lang(key), NOTHING_SEEN), key);
         }
         assertEquals(TranslationPreviewKind.NONE, TranslationPreviewKind.of(null, NOTHING_SEEN));
+    }
+
+    @Test
+    @DisplayName("the preview's switch cycles every view and comes back round")
+    void views() {
+        assertEquals(TranslationPreviewKind.BOOK, TranslationPreviewKind.TEXT.next());
+        assertEquals(TranslationPreviewKind.BUTTON, TranslationPreviewKind.BOOK.next());
+        assertEquals(TranslationPreviewKind.CHAT, TranslationPreviewKind.BUTTON.next());
+        assertEquals(TranslationPreviewKind.TEXT, TranslationPreviewKind.CHAT.next());
     }
 
     @Test
