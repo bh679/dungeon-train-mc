@@ -682,7 +682,10 @@ public final class TranslationScreen extends Screen {
         // Unlocked by contributing — or, on a language with no machine translation to review, from
         // the start: the gate exists to point a newcomer at the review queue first, and where there
         // is no queue it would only hide the entire catalog behind work they cannot do yet.
-        if (TranslationContributor.hasApprovedTranslation() || !hasAiQueue()) {
+        // And under From: Characters — looking a character up is reading for reference, not
+        // skipping the queue, and in a language already reviewed every other State is empty there.
+        if (TranslationContributor.hasApprovedTranslation() || !hasAiQueue()
+            || bodyFilter == BodyFilter.CHARACTERS) {
             out.add(StateFilter.ALL);
         }
         return out;
