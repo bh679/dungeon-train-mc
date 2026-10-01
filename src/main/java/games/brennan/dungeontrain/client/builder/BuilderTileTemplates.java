@@ -93,6 +93,21 @@ final class BuilderTileTemplates {
         return new Loaded(cells, summary);
     }
 
+    /** Every non-air block of a template already read from disk, or empty when it will not load. */
+    static Map<BlockPos, BlockState> cellsOf(CompoundTag tag) {
+        HolderGetter<Block> blocks = blockRegistry();
+        if (tag == null || blocks == null) {
+            return Map.of();
+        }
+        StructureTemplate template = new StructureTemplate();
+        try {
+            template.load(blocks, tag);
+        } catch (RuntimeException e) {
+            return Map.of();
+        }
+        return TemplateCells.of(template);
+    }
+
     /** The sub kind a part or track is keyed by in its sidecars, or null for every other kind. */
     private static String subKindOf(CarriagePartKind partKind, TrackKind trackKind) {
         if (partKind != null) return partKind.id();
