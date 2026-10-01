@@ -100,6 +100,11 @@ Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 4. Squash-merge after explicit user approval of the changelog notes + diff
 5. Delete feature branch
 6. Bump version in `gradle.properties` per the versioning rule
+7. **Leaderboard resets are never yours to propose.** Retiring a leaderboard era (`-f leaderboard_reset=true`
+   on `release.yml`, the relay's `POST …/leaderboard/era/retire`, or `scripts/retire-leaderboard-era.js`)
+   happens **only when Brennan brings it up himself**. Do not set the flag, do not suggest it at merge or
+   release time, and do not ask whether a release should reset the boards — not even for a balancing
+   release. If he has not mentioned it, the answer is no.
 
 ---
 
@@ -240,11 +245,11 @@ dev-only changes, minor cosmetic fixes. When in doubt, ask the user.
    gh workflow run release.yml -f tag=v<version> \
      -f changelog="$(python3 scripts/release-notes/render-unreleased.py)"
    ```
-   **Balancing release?** If the release re-tunes what a good run is (distance, carriages, run
-   length, loot density…), add `-f leaderboard_reset=true` (and optionally
-   `-f leaderboard_era_label="…"`, default `v<version>`). The workflow then retires the current
-   one-life leaderboard era on the relay and opens `v<version>`; retired boards stay readable and
-   circulate as books. Ask the user when in doubt — it is a one-way door for the boards.
+   **Leaderboard reset — only on Brennan's explicit say-so.** `-f leaderboard_reset=true` (optionally
+   `-f leaderboard_era_label="…"`, default `v<version>`) retires the current one-life leaderboard era on
+   the relay and opens `v<version>`; retired boards stay readable and circulate as Ancient Records books.
+   Never add it on your own, never suggest it, and never ask whether a release should reset the boards
+   (see Gate 3 step 7). Use it only when he asks for a reset in his own words.
 5. Watch the run:
    ```bash
    gh run watch $(gh run list --workflow=release.yml --limit 1 --json databaseId --jq '.[0].databaseId')
