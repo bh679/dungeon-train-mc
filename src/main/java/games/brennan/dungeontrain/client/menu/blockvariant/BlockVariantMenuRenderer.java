@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.menu.blockvariant;
 
+import games.brennan.dungeontrain.editor.VariantGrowth;
+import games.brennan.dungeontrain.editor.GrowthShapes;
 import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -122,6 +124,8 @@ public final class BlockVariantMenuRenderer {
     static final double ACTIVE_MODE_CELL_WIDTH = 0.78;
     /** Def/Auto/Lock pill width — the fence / wall / pane connect-mode control (four-glyph-max labels). */
     static final double CONNECT_CELL_WIDTH = 0.96;
+    /** Grow pill width — "Grow" or a column range such as "↓12-32". */
+    static final double GROWTH_CELL_WIDTH = 0.62;
     /** N/E/S/W locked-arm toggles width — shown beside the connect pill on a Lock row. */
     static final double ARMS_CELL_WIDTH = 0.72;
     /** Inset of the connect pill's segments inside its cell — shared with the raycaster's segment maths. */
@@ -385,12 +389,16 @@ public final class BlockVariantMenuRenderer {
                 && VariantConnect.Mode.fromOrdinal(entry.connectMode() & 0xFF) == VariantConnect.Mode.LOCK;
             double armsCellR = connectCellL;
             double armsCellL = showArms ? armsCellR - ARMS_CELL_WIDTH : armsCellR;
+            boolean growable = parsed != null && concrete && BlockVariantMenu.growthSupported()
+                && GrowthShapes.canGrow(parsed);
+            double growthCellR = armsCellL;
+            double growthCellL = growable ? growthCellR - GROWTH_CELL_WIDTH : growthCellR;
             // Difficulty min/max cells (mob rows only) sit between the name and
             // weight, reusing the space the rotation/half cells leave free on a
             // mob row. They collapse to zero width on block rows, so nameCellR
             // is unchanged there.
             boolean showDiff = entry.isMob();
-            double diffMaxCellR = armsCellL;
+            double diffMaxCellR = growthCellL;
             double diffMaxCellL = showDiff ? diffMaxCellR - DIFF_CELL_WIDTH : diffMaxCellR;
             double diffMinCellR = diffMaxCellL;
             double diffMinCellL = showDiff ? diffMinCellR - DIFF_CELL_WIDTH : diffMinCellR;
@@ -492,6 +500,12 @@ public final class BlockVariantMenuRenderer {
                     armsCellL, armsCellR, rowBottom, rowTop, rowCY, hovered);
             }
 
+            // Grow pill (vines / ladders / bamboo / dripstone …)
+            if (growable) {
+                drawGrowthCell(ps, buffer, font, i, entry, parsed,
+                    growthCellL, growthCellR, rowBottom, rowTop, rowCY, hovered);
+            }
+
             // Difficulty band cells (mob rows only)
             if (showDiff) {
                 drawDifficultyCells(ps, buffer, font, i, entry,
@@ -524,6 +538,15 @@ public final class BlockVariantMenuRenderer {
         // Span option strip, floating just above the panel.
         if (BlockVariantMenu.spanPopupOpen()) {
             drawSpanPopup(ps, buffer, font, panelW, halfH, hovered);
+        }
+
+        // Grow popup, floating just above the panel like the Span strip.
+        int growthRow = BlockVariantMenu.growthPopupRow();
+        if (growthRow >= 0) {
+            BlockState growthState = BlockVariantMenu.parseState(entries.get(growthRow).stateString());
+            if (growthState != null) {
+                drawGrowthPopup(ps, buffer, font, entries.get(growthRow), growthState, panelW, halfH, hovered);
+            }
         }
 
         // OPTIONS popup is drawn last so it shadows the row underneath.
@@ -560,6 +583,57 @@ public final class BlockVariantMenuRenderer {
                 drawQuad(ps, buffer, bL + 0.005, bBot, bR - 0.005, bTop, tint);
                 drawCenteredText(ps, buffer, font, row.buttons()[i], (bL + bR) / 2.0, cy,
                     selected || hover ? 0xFFFFFFFF : 0xFFAAAAAA);
+            }
+        }
+    }
+
+    /**
+     * The Grow pill: "Grow" when off, the column range (e.g. {@code ↓2-5}) in green when on, lit
+     * while its popup is open.
+     */
+    private static void drawGrowthCell(PoseStack ps, MultiBufferSource buffer, Font font,
+                                       int rowIndex, BlockVariantSyncPacket.Entry entry, BlockState parsed,
+                                       double cellL, double cellR,
+                                       double rowBottom, double rowTop, double rowCY,
+                                       BlockVariantMenu.Hit hovered) {
+        VariantGrowth growth = VariantGrowth.fromInt(entry.growth());
+        boolean hover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_GROWTH && hovered.index() == rowIndex;
+        boolean open = BlockVariantMenu.growthPopupRow() == rowIndex;
+        int tint = growth.on()
+            ? (hover || open ? 0xC055CC66 : 0x80338844)
+            : (hover || open ? 0x60AAAAAA : 0x30777777);
+        drawQuad(ps, buffer, cellL + 0.01, rowBottom + 0.02, cellR - 0.01, rowTop - 0.02, tint);
+        drawCenteredText(ps, buffer, font, GrowthPopupLayout.shortLabel(growth, parsed),
+            (cellL + cellR) / 2.0, rowCY, growth.on() || hover ? 0xFFFFFFFF : 0xFF888888);
+    }
+
+    /** The Grow popup: the visible sections of {@link GrowthPopupLayout} for one row. */
+    private static void drawGrowthPopup(PoseStack ps, MultiBufferSource buffer, Font font,
+                                        BlockVariantSyncPacket.Entry entry, BlockState state,
+                                        double panelW, double halfH, BlockVariantMenu.Hit hovered) {
+        List<GrowthPopupLayout.Row> rows = GrowthPopupLayout.rows(
+            VariantGrowth.fromInt(entry.growth()), state, panelW, halfH);
+        double[] r = GrowthPopupLayout.rect(rows);
+        drawQuad(ps, buffer, r[0], r[2], r[1], r[3], 0xE0202020);
+        for (GrowthPopupLayout.Row row : rows) {
+            double bBot = row.bottom() + 0.02;
+            double bTop = row.top() - 0.02;
+            double cy = (bBot + bTop) / 2.0;
+            drawLeftText(ps, buffer, font, row.label(), row.left() + GrowthPopupLayout.PAD + 0.03, cy, 0xFFCCCCCC);
+            boolean stepper = row.selected() < 0;
+            for (int i = 0; i < row.buttons().length; i++) {
+                double bL = row.buttonLeft(i);
+                double bR = bL + row.buttonWidth();
+                boolean value = stepper && i == GrowthPopupLayout.STEPPER_VALUE;
+                boolean selected = i == row.selected();
+                boolean hover = !value && hovered.kind() == BlockVariantMenu.CellKind.GROWTH_OPTION
+                    && hovered.secondary() == GrowthPopupLayout.encode(row.section(), i);
+                int tint = value ? 0x00000000
+                    : selected ? (hover ? 0xC0D98CFF : 0x808A4FB3)
+                    : (hover ? 0x60AAAAAA : 0x30777777);
+                if (!value) drawQuad(ps, buffer, bL + 0.005, bBot, bR - 0.005, bTop, tint);
+                drawCenteredText(ps, buffer, font, row.buttons()[i], (bL + bR) / 2.0, cy,
+                    selected || hover || value ? 0xFFFFFFFF : 0xFFAAAAAA);
             }
         }
     }

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
@@ -964,9 +965,13 @@ public final class CarriagePlacer {
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, long seed, int carriageIndex
     ) {
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
+        CarriageDims sidecarDims = variantDims(variant, dims);
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
         if (sidecar.isEmpty()) return;
-        try (ConnectPass.Scope ignored = ConnectPass.open()) {
+        java.util.function.Predicate<BlockPos> within = GrowthPass.inside(origin,
+            sidecarDims.length(), sidecarDims.height(), sidecarDims.width());
+        try (ConnectPass.Scope ignored = ConnectPass.open();
+             GrowthPass.Scope grown = GrowthPass.open()) {
             for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
                 VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
                 int lockId = sidecar.lockIdAt(e.localPos());
@@ -984,6 +989,7 @@ public final class CarriagePlacer {
                             "carriage:" + variant.id(), w.localPos(), seed, carriageIndex,
                             w.entry().linkedLootPrefabId());
                         ConnectPass.note(level, world, w.entry().connect(), w.state());
+                        GrowthPass.note(level, world, w.entry(), w.state(), w.localPos(), seed, carriageIndex, within);
                     }
                 }
             }
