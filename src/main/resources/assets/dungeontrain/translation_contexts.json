@@ -1,5 +1,5 @@
 {
- "_note": "Where each DT lang key is shown in game, traced from the code (see TranslationContexts). Keys not listed were set aside: localization/translation-contexts-unsure.json.",
+ "_note": "Where each DT lang key is shown in game, traced from the code (see TranslationContexts). Keys not listed were set aside: localization/translation-contexts-unsure.json. \"unused\" marks strings nothing in the game shows; the translation editor hides them.",
  "book.dungeontrain.statbook.open.0": [
   "book"
  ],
@@ -854,6 +854,21 @@
  ],
  "command.dungeontrain.rebuild.unavailable": [
   "chat"
+ ],
+ "gui.dungeontrain.consent.feature.leaderboard": [
+  "unused"
+ ],
+ "gui.dungeontrain.consent.feature.dev_chat": [
+  "unused"
+ ],
+ "gui.dungeontrain.consent.feature.book_share": [
+  "unused"
+ ],
+ "gui.dungeontrain.consent.feature.reincarnate": [
+  "unused"
+ ],
+ "gui.dungeontrain.consent.nonfeature.harvest_soul": [
+  "unused"
  ],
  "gui.dungeontrain.political_filter.title": [
   "screen"
@@ -2511,6 +2526,84 @@
  "gui.dungeontrain.menu_chat.author_me": [
   "screen"
  ],
+ "gui.dungeontrain.death.new_world": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.title": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.mobs": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.carts": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.distance": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.time": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.containers": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.books": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.encountered": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.players_killed": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.befriended": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.damage_dealt": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.damage_taken": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.weapon": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.armor": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.short.distance": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.short.time": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.short.carts": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.short.mobs": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.short.loot": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.short.books": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.short.encountered": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.short.players_killed": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.short.befriended": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.short.damage_dealt": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.stats.short.damage_taken": [
+  "unused"
+ ],
  "gui.dungeontrain.death.narr.title": [
   "not_shown"
  ],
@@ -2718,6 +2811,9 @@
  "gui.dungeontrain.death.narr.lbl_running_cost": [
   "death_screen"
  ],
+ "gui.dungeontrain.death.narr.lbl_server_cost": [
+  "unused"
+ ],
  "gui.dungeontrain.death.narr.lbl_covered": [
   "death_screen"
  ],
@@ -2787,6 +2883,15 @@
   "death_screen",
   "tooltip"
  ],
+ "gui.dungeontrain.death.narr.carried": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.narr.this_life": [
+  "unused"
+ ],
+ "gui.dungeontrain.death.narr.all_lives": [
+  "unused"
+ ],
  "gui.dungeontrain.death.narr.survey_intro": [
   "death_screen"
  ],
@@ -2810,6 +2915,9 @@
  ],
  "gui.dungeontrain.death.narr.survey_intro_2_7": [
   "death_screen"
+ ],
+ "gui.dungeontrain.death.narr.line_caption": [
+  "unused"
  ],
  "gui.dungeontrain.death.narr.lbl_carriage": [
   "death_screen"
@@ -2852,6 +2960,9 @@
  ],
  "gui.dungeontrain.death.narr.lbl_books": [
   "death_screen"
+ ],
+ "gui.dungeontrain.death.narr.lbl_loot": [
+  "unused"
  ],
  "gui.dungeontrain.death.narr.tip_loot": [
   "tooltip"
@@ -3017,6 +3128,9 @@
  "gui.dungeontrain.discord_button": [
   "button"
  ],
+ "gui.dungeontrain.bilibili_button": [
+  "unused"
+ ],
  "gui.dungeontrain.support.button": [
   "button"
  ],
@@ -3133,6 +3247,9 @@
  ],
  "gui.dungeontrain.credits.team.header": [
   "screen"
+ ],
+ "gui.dungeontrain.credits.team.person": [
+  "unused"
  ],
  "gui.dungeontrain.credits.team.designer": [
   "screen"
@@ -3810,6 +3927,9 @@
  "gui.dungeontrain.videos.flag.failed": [
   "screen"
  ],
+ "gui.dungeontrain.videos.flag.tooltip": [
+  "unused"
+ ],
  "gui.dungeontrain.videos.channels.youtube": [
   "not_shown"
  ],
@@ -4393,6 +4513,12 @@
  "gui.dungeontrain.builder.creators.unavailable": [
   "screen"
  ],
+ "gui.dungeontrain.builder.creators.no_admin": [
+  "unused"
+ ],
+ "gui.dungeontrain.builder.package": [
+  "unused"
+ ],
  "gui.dungeontrain.builder.feedback": [
   "button"
  ],
@@ -4697,6 +4823,15 @@
  "gui.dungeontrain.editor_screen.tab.stages": [
   "button"
  ],
+ "gui.dungeontrain.editor_screen.stages.blocks": [
+  "unused"
+ ],
+ "gui.dungeontrain.editor_screen.stages.parts": [
+  "unused"
+ ],
+ "gui.dungeontrain.editor_screen.stages.more": [
+  "unused"
+ ],
  "gui.dungeontrain.editor_screen.stages.none": [
   "screen"
  ],
@@ -4705,6 +4840,9 @@
  ],
  "gui.dungeontrain.editor_screen.stages.block_tip": [
   "tooltip"
+ ],
+ "gui.dungeontrain.editor_screen.stages.templates": [
+  "unused"
  ],
  "gui.dungeontrain.editor_screen.stages.no_templates": [
   "screen"
@@ -4739,6 +4877,9 @@
  ],
  "gui.dungeontrain.editor_screen.stages.icon.next": [
   "tooltip"
+ ],
+ "gui.dungeontrain.editor_screen.stages.one_template": [
+  "unused"
  ],
  "gui.dungeontrain.editor_screen.stages.delete_confirm": [
   "screen"
@@ -4776,6 +4917,9 @@
  "gui.dungeontrain.editor_screen.stages.palette.colours": [
   "screen"
  ],
+ "gui.dungeontrain.editor_screen.stages.palette.title": [
+  "unused"
+ ],
  "gui.dungeontrain.editor_screen.stages.palette.override": [
   "tooltip"
  ],
@@ -4802,6 +4946,9 @@
  ],
  "gui.dungeontrain.editor_screen.layout.section_tip": [
   "tooltip"
+ ],
+ "gui.dungeontrain.editor_screen.layout.move": [
+  "unused"
  ],
  "gui.dungeontrain.editor_screen.layout.no_matches": [
   "screen"
@@ -4853,6 +5000,9 @@
   "screen",
   "tooltip"
  ],
+ "gui.dungeontrain.editor_screen.tile.builtin_room": [
+  "unused"
+ ],
  "gui.dungeontrain.editor_screen.no_roster": [
   "screen"
  ],
@@ -4864,6 +5014,12 @@
  ],
  "gui.dungeontrain.editor_screen.standing_in": [
   "tooltip"
+ ],
+ "gui.dungeontrain.editor_screen.unsaved": [
+  "unused"
+ ],
+ "gui.dungeontrain.editor_screen.sheet.path": [
+  "unused"
  ],
  "gui.dungeontrain.editor_screen.sheet.size": [
   "screen"
@@ -4979,6 +5135,9 @@
  "gui.dungeontrain.editor_screen.icon.clear": [
   "tooltip"
  ],
+ "gui.dungeontrain.editor_screen.icon.package": [
+  "unused"
+ ],
  "gui.dungeontrain.editor_screen.icon.move": [
   "button",
   "tooltip"
@@ -5076,12 +5235,24 @@
   "button",
   "tooltip"
  ],
+ "gui.dungeontrain.editor_screen.exit_editor": [
+  "unused"
+ ],
  "gui.dungeontrain.editor_screen.weight": [
   "button",
   "screen"
  ],
  "gui.dungeontrain.editor_screen.weight_read_only": [
   "tooltip"
+ ],
+ "gui.dungeontrain.editor_screen.phases": [
+  "unused"
+ ],
+ "gui.dungeontrain.editor_screen.stage_custom": [
+  "unused"
+ ],
+ "gui.dungeontrain.editor_screen.stage_linked": [
+  "unused"
  ],
  "gui.dungeontrain.editor_screen.contents_allow": [
   "button",
@@ -5098,6 +5269,9 @@
  ],
  "gui.dungeontrain.editor_screen.sheet.max_level": [
   "tooltip"
+ ],
+ "gui.dungeontrain.editor_screen.sheet.weight_tooltip": [
+  "unused"
  ],
  "gui.dungeontrain.editor_screen.sheet.weight_up": [
   "tooltip"
@@ -5225,6 +5399,9 @@
  ],
  "gui.dungeontrain.editor_screen.load_all.tip": [
   "tooltip"
+ ],
+ "gui.dungeontrain.editor_screen.load_all.progress": [
+  "unused"
  ],
  "gui.dungeontrain.editor_screen.version": [
   "screen"
@@ -5456,6 +5633,9 @@
  ],
  "gui.dungeontrain.creative_tab.stage_blocks": [
   "screen"
+ ],
+ "gui.dungeontrain.prefab_tab.empty": [
+  "unused"
  ],
  "gui.dungeontrain.prefab_delete.title.variant": [
   "screen"
@@ -5857,6 +6037,12 @@
   "death_screen",
   "screen"
  ],
+ "chat.dungeontrain.time.year.one": [
+  "unused"
+ ],
+ "chat.dungeontrain.time.year.other": [
+  "unused"
+ ],
  "advancements.dungeontrain.hidden_description": [
   "advancement_screen"
  ],
@@ -5902,6 +6088,9 @@
  "advancements.dungeontrain.dungeon_train.read_all_stories.hint": [
   "advancement_screen"
  ],
+ "advancements.dungeontrain.dungeon_train.read_all_story_variants.hint": [
+  "unused"
+ ],
  "advancements.dungeontrain.dungeon_train.the_great_beyond.hint": [
   "advancement_screen"
  ],
@@ -5916,6 +6105,9 @@
  ],
  "advancements.dungeontrain.dungeon_train.all_biome_families.hint": [
   "advancement_screen"
+ ],
+ "advancements.dungeontrain.dungeon_train.multiplayer.hint": [
+  "unused"
  ],
  "advancements.dungeontrain.dungeon_train.echo_encounter.hint": [
   "advancement_screen"
@@ -6971,6 +7163,12 @@
  "advancements.dungeontrain.dungeon_train.welcome_back.description": [
   "advancement_screen"
  ],
+ "advancements.dungeontrain.dungeon_train.inter_reality_passenger.title": [
+  "unused"
+ ],
+ "advancements.dungeontrain.dungeon_train.inter_reality_passenger.description": [
+  "unused"
+ ],
  "advancements.dungeontrain.dungeon_train.read_all_stories.title": [
   "advancement",
   "advancement_screen",
@@ -6978,6 +7176,12 @@
  ],
  "advancements.dungeontrain.dungeon_train.read_all_stories.description": [
   "advancement_screen"
+ ],
+ "advancements.dungeontrain.dungeon_train.read_all_story_variants.title": [
+  "unused"
+ ],
+ "advancements.dungeontrain.dungeon_train.read_all_story_variants.description": [
+  "unused"
  ],
  "advancements.dungeontrain.dungeon_train.carts_100.title": [
   "advancement",
@@ -7202,6 +7406,12 @@
  ],
  "advancements.dungeontrain.dungeon_train.read_all_nether_starting_books.description": [
   "advancement_screen"
+ ],
+ "advancements.dungeontrain.dungeon_train.multiplayer.title": [
+  "unused"
+ ],
+ "advancements.dungeontrain.dungeon_train.multiplayer.description": [
+  "unused"
  ],
  "advancements.dungeontrain.dungeon_train.im_not_alone.title": [
   "advancement",
@@ -7501,6 +7711,12 @@
  "gui.dungeontrain.options.value_row": [
   "button"
  ],
+ "gui.dungeontrain.options.editor_settings": [
+  "unused"
+ ],
+ "gui.dungeontrain.options.editor_settings.tip": [
+  "unused"
+ ],
  "gui.dungeontrain.options.train_volume": [
   "button"
  ],
@@ -7509,6 +7725,12 @@
  ],
  "gui.dungeontrain.sound.train_engine.tip": [
   "tooltip"
+ ],
+ "gui.dungeontrain.options.internet": [
+  "unused"
+ ],
+ "gui.dungeontrain.options.internet.tip": [
+  "unused"
  ],
  "gui.dungeontrain.options.cinematic_hotkey": [
   "button"
@@ -7572,6 +7794,9 @@
  ],
  "gui.dungeontrain.options.snapshot_max_res.auto": [
   "button"
+ ],
+ "gui.dungeontrain.editor_settings.title": [
+  "unused"
  ],
  "gui.dungeontrain.editor_settings.all_displays": [
   "button"
@@ -11459,6 +11684,9 @@
  ],
  "chat.dungeontrain.portal.tall_and_world_can": [
   "chat"
+ ],
+ "chat.dungeontrain.portal.still_sampling_its_chunk": [
+  "unused"
  ],
  "chat.dungeontrain.portal.test_waiting_for_sample": [
   "chat"

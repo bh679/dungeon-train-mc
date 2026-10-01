@@ -28,21 +28,40 @@ final class TranslationContexts {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String PATH = "assets/dungeontrain/translation_contexts.json";
 
+    /** The category marking a string nothing in the game shows. */
+    static final String UNUSED = "unused";
+
     /** key → the preview views its categories name. */
     private static Map<String, Set<TranslationPreviewKind>> views;
+    /** Keys nothing in the game shows; the editor leaves them out. */
+    private static Set<String> unused;
 
     private TranslationContexts() {}
 
     /** Whether the code puts {@code key} in {@code view}. */
     static synchronized boolean declares(String key, TranslationPreviewKind view) {
-        if (views == null) {
-            views = load();
-        }
+        ensureLoaded();
         Set<TranslationPreviewKind> set = key == null ? null : views.get(key);
         return set != null && set.contains(view);
     }
 
-    private static Map<String, Set<TranslationPreviewKind>> load() {
+    /**
+     * Whether nothing in the game shows {@code key} — dead strings left in the lang file. The editor
+     * hides them so no translator spends time on text no player will read.
+     */
+    static synchronized boolean isUnused(String key) {
+        ensureLoaded();
+        return key != null && unused.contains(key);
+    }
+
+    private static void ensureLoaded() {
+        if (views == null) {
+            unused = new HashSet<>();
+            views = load(unused);
+        }
+    }
+
+    private static Map<String, Set<TranslationPreviewKind>> load(Set<String> unusedOut) {
         Map<String, Set<TranslationPreviewKind>> out = new HashMap<>();
         String json = ModJarResources.read(PATH);
         if (json == null) {
@@ -55,6 +74,10 @@ final class TranslationContexts {
                 }
                 Set<TranslationPreviewKind> set = new HashSet<>();
                 for (JsonElement category : entry.getValue().getAsJsonArray()) {
+                    if (UNUSED.equals(category.getAsString())) {
+                        unusedOut.add(entry.getKey());
+                        continue;
+                    }
                     TranslationPreviewKind kind = viewOf(category.getAsString());
                     if (kind != null) {
                         set.add(kind);
