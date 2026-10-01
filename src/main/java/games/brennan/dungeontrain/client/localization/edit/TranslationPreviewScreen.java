@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 
 /**
@@ -82,8 +81,6 @@ public final class TranslationPreviewScreen extends Screen {
 
     /** On by default: the whole page, book or screen is what a player actually sees. */
     private boolean fullContext = true;
-    /** The frame fills the window; a click or Esc goes back. */
-    private boolean fullscreen;
     /**
      * The screen this string was last seen on — as a button's label, or in a widget's tooltip — for
      * its full context; null if never seen.
@@ -112,6 +109,8 @@ public final class TranslationPreviewScreen extends Screen {
     private int cutLines;
     private final List<Button> sampleButtons = new ArrayList<>();
     private final List<Component> readout = new ArrayList<>();
+    /** Whether the bottom row holds any controls; the frame takes the room when it does not. */
+    private boolean controlRow;
 
     /**
      * @param kind  the view to show
@@ -193,12 +192,18 @@ public final class TranslationPreviewScreen extends Screen {
                 row.add(refresh);
             }
         }
-        row.add(Button.builder(CommonComponents.GUI_DONE, b -> onClose()).build());
+        // A book has its own Done; elsewhere a click on the preview, or Esc, goes back.
+        if (kind == TranslationPreviewKind.BOOK) {
+            row.add(Button.builder(CommonComponents.GUI_DONE, b -> onClose()).build());
+        }
+        controlRow = !row.isEmpty();
 
+        // The book keeps its margin; a preview filling the window keeps the strip under it thin.
+        int rowY = kind == TranslationPreviewKind.BOOK ? height - MARGIN - ROW_H : height - GAP - ROW_H;
         int each = Math.min(200, (width - MARGIN * 2 - GAP * (row.size() - 1)) / row.size());
         int x = (width - (each * row.size() + GAP * (row.size() - 1))) / 2;
         for (Button button : row) {
-            button.setRectangle(each, ROW_H, x, height - MARGIN - ROW_H);
+            button.setRectangle(each, ROW_H, x, rowY);
             addRenderableWidget(button);
             x += each + GAP;
         }
@@ -526,6 +531,10 @@ public final class TranslationPreviewScreen extends Screen {
 
     // ---- the frame --------------------------------------------------------------------------
 
+    private boolean hasControlRow() {
+        return controlRow;
+    }
+
     /** The frame's size in its own GUI pixels: the recorded screen, or the smallest default one. */
     private int frameWidth() {
         return layoutContext() ? screenLayout.width() : TranslationPreviewText.SMALL_SCREEN_WIDTH;
@@ -535,27 +544,14 @@ public final class TranslationPreviewScreen extends Screen {
         return layoutContext() ? screenLayout.height() : TranslationPreviewText.SMALL_SCREEN_HEIGHT;
     }
 
-    /** The scale the frame's pixels were drawn at: the recorded screen's, or GUI scale Auto's 2. */
-    private float actualScale() {
-        int scale = layoutContext() ? Math.max(1, screenLayout.scale()) : TranslationPreviewText.SMALL_SCREEN_GUI_SCALE;
-        return (float) (scale / minecraft.getWindow().getGuiScale());
-    }
-
     /**
-     * How much to scale the frame so one of its pixels is the size it really was on this window —
-     * or less, when this window cannot fit it at that size. Fullscreen fills the window either way.
+     * How much to scale the frame so it fills the window: the preview is the whole screen, with only
+     * its readout and controls along the bottom.
      */
     private float frameScale() {
-        float fitWide = (float) (width - MARGIN * 2) / frameWidth();
-        if (fullscreen) {
-            return Math.min(fitWide, (float) (height - MARGIN * 2) / frameHeight());
-        }
-        float fitHigh = (float) frameRoom() / frameHeight();
-        return Math.min(actualScale(), Math.min(fitWide, fitHigh));
-    }
-
-    private boolean frameShrunk() {
-        return frameScale() < actualScale() - 0.001f;
+        float fitWide = (float) (width - GAP * 2) / frameWidth();
+        float fitHigh = (float) (bottomStripTop() - GAP * 2) / frameHeight();
+        return Math.min(fitWide, fitHigh);
     }
 
     /** Readout lines wrapped to the window, so a long one is never cut off at the edges. */
@@ -569,10 +565,10 @@ public final class TranslationPreviewScreen extends Screen {
         return lines;
     }
 
-    /** Vertical room for the frame: below the caption, above the readout and the Done row. */
-    private int frameRoom() {
-        int readoutHeight = (readoutLines().size() + 1) * (font.lineHeight + 2);
-        return height - TOP - font.lineHeight - GAP - readoutHeight - MARGIN - ROW_H - GAP;
+    /** Where the strip under the frame starts: the readout, then the control row if there is one. */
+    private int bottomStripTop() {
+        int rowRoom = hasControlRow() ? ROW_H + GAP : 0;
+        return height - GAP - rowRoom - readoutLines().size() * (font.lineHeight + 2);
     }
 
     /** The frame's place on this window, as {x, y, w, h}. */
@@ -580,7 +576,7 @@ public final class TranslationPreviewScreen extends Screen {
         float scale = frameScale();
         int frameW = Math.round(frameWidth() * scale);
         int frameH = Math.round(frameHeight() * scale);
-        int frameY = fullscreen ? (height - frameH) / 2 : TOP + font.lineHeight + GAP;
+        int frameY = GAP + (bottomStripTop() - GAP * 2 - frameH) / 2;
         return new int[] {(width - frameW) / 2, frameY, frameW, frameH};
     }
 
@@ -588,15 +584,6 @@ public final class TranslationPreviewScreen extends Screen {
         float scale = frameScale();
         int[] r = frameRect();
         int frameX = r[0], frameY = r[1], frameW = r[2], frameH = r[3];
-
-        if (!fullscreen) {
-            Component caption = layoutContext()
-                ? Component.translatable("gui.dungeontrain.translate.preview.frame.screen", screenLayout.title())
-                : Component.translatable(frameShrunk()
-                    ? "gui.dungeontrain.translate.preview.frame.shrunk"
-                    : "gui.dungeontrain.translate.preview.frame");
-            drawCentered(g, caption, TOP, LABEL_COLOUR);
-        }
 
         g.fill(frameX - 1, frameY - 1, frameX + frameW + 1, frameY + frameH + 1, 0xFF808080);
         g.fill(frameX, frameY, frameX + frameW, frameY + frameH, 0xFF1E2530);
@@ -621,10 +608,7 @@ public final class TranslationPreviewScreen extends Screen {
         g.pose().popPose();
         g.disableScissor();
 
-        if (fullscreen) {
-            return;
-        }
-        int y = frameY + frameH + GAP;
+        int y = bottomStripTop();
         for (FormattedCharSequence line : readoutLines()) {
             g.drawCenteredString(font, line, width / 2, y, LABEL_COLOUR);
             y += font.lineHeight + 2;
@@ -635,31 +619,17 @@ public final class TranslationPreviewScreen extends Screen {
         g.drawCenteredString(font, line, width / 2, y, colour);
     }
 
-    // ---- fullscreen -------------------------------------------------------------------------
-
+    /** A click on the preview goes back to the editor, like Esc. */
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (fullscreen) {
-            fullscreen = false;
-            return true;
-        }
         if (kind != TranslationPreviewKind.BOOK) {
             int[] r = frameRect();
             if (mouseX >= r[0] && mouseX < r[0] + r[2] && mouseY >= r[1] && mouseY < r[1] + r[3]) {
-                fullscreen = true;
+                onClose();
                 return true;
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (fullscreen && keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            fullscreen = false;
-            return true;
-        }
-        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
@@ -675,17 +645,10 @@ public final class TranslationPreviewScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        if (fullscreen) {
-            // Only the frame: no buttons to hit, and a click anywhere goes back.
-            renderBackground(g, mouseX, mouseY, partialTick);
-            return;
-        }
         super.render(g, mouseX, mouseY, partialTick);
         if (kind == TranslationPreviewKind.BOOK) {
             renderBookCaption(g);
             renderCover(g);
-        } else {
-            g.drawCenteredString(font, title, width / 2, 8, 0xFFFFFFFF);
         }
     }
 
