@@ -88,7 +88,7 @@ public final class DeathDetailReporter {
             }
             String uuid = player.getUUID().toString().replace("-", "");
             JsonObject payload = buildPayload(uuid, packet.narrative(), DeathStats.from(packet), feats,
-                    freePlay);
+                    freePlay, WorldJoinReport.modVersion());
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] death-detail relay report failed: {}", t.toString());
@@ -101,6 +101,16 @@ public final class DeathDetailReporter {
      */
     static JsonObject buildPayload(String uuid, DeathNarrative narrative, DeathStats s, Feats feats,
                                    boolean freePlay) {
+        return buildPayload(uuid, narrative, s, feats, freePlay, null);
+    }
+
+    /**
+     * As above, with the Dungeon Train version this client runs — what the relay places this life's
+     * one-life scores (chests, echoes, friends, pacifist carriages…) in an ERA by. See
+     * {@link RunSummaryReporter#addModVersion}.
+     */
+    static JsonObject buildPayload(String uuid, DeathNarrative narrative, DeathStats s, Feats feats,
+                                   boolean freePlay, String modVersion) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
 
@@ -163,6 +173,7 @@ public final class DeathDetailReporter {
         // That is also why this may not be optimised back into a write-only-when-true: doing so
         // would silently unrank every player on this build.
         body.addProperty("freePlay", freePlay);
+        RunSummaryReporter.addModVersion(body, modVersion);
         return body;
     }
 

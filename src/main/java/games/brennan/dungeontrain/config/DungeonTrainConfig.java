@@ -128,6 +128,9 @@ public final class DungeonTrainConfig {
     /** Default for POSTing per-join world-info telemetry (world/train seeds + regen inputs + mods) to the relay. */
     public static final boolean DEFAULT_WORLD_INFO_TO_RELAY = true;
 
+    /** Default for letting retired leaderboard eras (past versions, past years) roll as loot books. */
+    public static final boolean DEFAULT_RETIRED_LEADERBOARD_BOOKS = true;
+
     /** Default master for the community "share books" contribution half (uploading signed books). */
     public static final boolean DEFAULT_SHARE_BOOKS_ENABLED = true;
 
@@ -338,6 +341,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue ECHO_ENCOUNTER_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue WORLD_JOIN_REPORT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue WORLD_INFO_TO_RELAY;
+    public static final ModConfigSpec.BooleanValue RETIRED_LEADERBOARD_BOOKS;
     public static final ModConfigSpec.BooleanValue SHARE_BOOKS_ENABLED;
     public static final ModConfigSpec.BooleanValue DISCOVER_SHARED_BOOKS_ENABLED;
     public static final ModConfigSpec.BooleanValue DEATH_NOTES_ENABLED;
@@ -402,6 +406,7 @@ public final class DungeonTrainConfig {
         ECHO_ENCOUNTER_TO_DISCORD = pair.getLeft().echoEncounterToDiscord;
         WORLD_JOIN_REPORT_TO_DISCORD = pair.getLeft().worldJoinReportToDiscord;
         WORLD_INFO_TO_RELAY = pair.getLeft().worldInfoToRelay;
+        RETIRED_LEADERBOARD_BOOKS = pair.getLeft().retiredLeaderboardBooks;
         SHARE_BOOKS_ENABLED = pair.getLeft().shareBooksEnabled;
         DISCOVER_SHARED_BOOKS_ENABLED = pair.getLeft().discoverSharedBooksEnabled;
         DEATH_NOTES_ENABLED = pair.getLeft().deathNotesEnabled;
@@ -740,6 +745,14 @@ public final class DungeonTrainConfig {
                         "records); carries no chat, location, or personal data beyond the Minecraft UUID + name",
                         "already sent to Discord. Independent of worldJoinReportToDiscord.")
                 .define("worldInfoToRelay", DEFAULT_WORLD_INFO_TO_RELAY);
+        ModConfigSpec.BooleanValue retiredLeaderboardBooks = b
+                .comment("Let The Tallyman's loot books also be about RETIRED leaderboards: the one-life boards",
+                        "of past game versions (each balancing release retires the current one) and of past",
+                        "years. Retired boards are kept forever on the relay; this only decides whether they",
+                        "circulate as books here. About one loot book in forty is an Ancient Records book when",
+                        "on, and the Stat Room shelves one Ancient Records book per retired era beside the",
+                        "current boards.")
+                .define("retiredLeaderboardBooks", DEFAULT_RETIRED_LEADERBOARD_BOOKS);
         ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord = b
                 .comment("Post a short embed to Discord each time a player's difficulty tier increases — i.e. they",
                         "have advanced far enough through carriages to reach the next Difficulty Level. Fires once per",
@@ -779,7 +792,7 @@ public final class DungeonTrainConfig {
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
-                worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled,
+                worldInfoToRelay, retiredLeaderboardBooks, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled,
                 loveNotesEnabled, lettersEnabled,
                 sharedBookLootMaxChance, sharedBookRepeatGroups, portalRoomAuthorMinBooks, portalRoomDaylight,
                 discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
@@ -1019,6 +1032,11 @@ public final class DungeonTrainConfig {
     /** Whether to POST per-join world-info telemetry (world/train seeds + regen inputs + mods) to the relay. */
     public static boolean isWorldInfoToRelay() {
         return isLoaded() ? WORLD_INFO_TO_RELAY.get() : DEFAULT_WORLD_INFO_TO_RELAY;
+    }
+
+    /** Whether retired leaderboard eras (past versions, past years) may roll as loot books. */
+    public static boolean isRetiredLeaderboardBooks() {
+        return isLoaded() ? RETIRED_LEADERBOARD_BOOKS.get() : DEFAULT_RETIRED_LEADERBOARD_BOOKS;
     }
 
     /** Master for the community shared-books CONTRIBUTION half (upload + burn on sign). */
@@ -1297,6 +1315,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue echoEncounterToDiscord,
             ModConfigSpec.BooleanValue worldJoinReportToDiscord,
             ModConfigSpec.BooleanValue worldInfoToRelay,
+            ModConfigSpec.BooleanValue retiredLeaderboardBooks,
             ModConfigSpec.BooleanValue shareBooksEnabled,
             ModConfigSpec.BooleanValue discoverSharedBooksEnabled,
             ModConfigSpec.BooleanValue deathNotesEnabled,
