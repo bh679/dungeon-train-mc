@@ -144,13 +144,13 @@ public final class TemplateBlockGroupsController {
     private static void reskin(ServerPlayer player, String key, int group) {
         BlockVariantPlot plot = plotOf(player);
         if (plot == null || !plot.key().equals(key)) {
-            actionBar(player, "Stand in the template to change its blocks", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.block_groups.stand_in_template"), ChatFormatting.YELLOW);
             sync(player);
             return;
         }
         ItemStack held = player.getMainHandItem();
         if (held.isEmpty() || !(held.getItem() instanceof BlockItem blockItem)) {
-            actionBar(player, "Hold a block to replace with", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.hold_block_to_replace"), ChatFormatting.YELLOW);
             return;
         }
         List<TemplateBlockGroups.Group<Block>> groups = currentGroups(player, plot);
@@ -161,7 +161,7 @@ public final class TemplateBlockGroupsController {
         TemplateBlockGroups.Group<Block> target = groups.get(group);
         Block newBlock = blockItem.getBlock();
         if (newBlock == target.block()) {
-            actionBar(player, "Those blocks are already " + newBlock.getName().getString(), ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.block_groups.already_block", newBlock.getName()), ChatFormatting.YELLOW);
             return;
         }
         CompoundTag heldBeNbt = heldBlockEntityNbt(held, newBlock);
@@ -174,8 +174,7 @@ public final class TemplateBlockGroupsController {
             SESSIONS.put(player.getUUID(),
                 new Session(plot.key(), TemplateBlockGroups.reskin(session.groups(), group, newBlock)));
         }
-        actionBar(player, "Replaced " + target.count() + " × " + target.block().getName().getString()
-            + " with " + newBlock.getName().getString(), ChatFormatting.GREEN);
+        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.block_groups.replaced", target.count(), target.block().getName(), newBlock.getName()), ChatFormatting.GREEN);
         sync(player);
     }
 
@@ -210,7 +209,7 @@ public final class TemplateBlockGroupsController {
             plot.save();
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Template block groups save failed for {}: {}", plot.key(), e.toString());
-            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()), ChatFormatting.RED);
         }
     }
 
@@ -244,7 +243,7 @@ public final class TemplateBlockGroupsController {
         return BlockVariantPlot.resolveAt(player, dims);
     }
 
-    private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {
-        player.displayClientMessage(Component.literal(text).withStyle(colour), true);
+    private static void actionBar(ServerPlayer player, Component text, ChatFormatting colour) {
+        player.displayClientMessage(text.copy().withStyle(colour), true);
     }
 }

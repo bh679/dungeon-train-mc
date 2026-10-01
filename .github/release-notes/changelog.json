@@ -21783,8 +21783,43 @@
       "released_at": null
     },
     {
-      "id": "variant-block-growth",
+      "id": "translatable-editor-action-bar",
       "version": "0.1088.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "translations"
+      ],
+      "title": "Build editor messages in your language",
+      "summary": "The build editor's quick messages above the hotbar now speak your language.",
+      "highlights": [],
+      "pr": 1739,
+      "date": "2026-10-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "killer-bunny-monty-python-names",
+      "version": "0.1089.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "An ode to Monty Python",
+      "summary": "Something out there may now introduce itself with a name that Monty Python fans will recognise.",
+      "highlights": [],
+      "pr": 1740,
+      "date": "2026-10-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "variant-block-growth",
+      "version": "0.1091.0",
       "type": "feat",
       "tags": [
         "feature",
