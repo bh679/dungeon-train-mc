@@ -57,56 +57,85 @@ public final class BugResponseChat {
         return List.copyOf(out);
     }
 
+    /**
+     * The response in two sends: {@code now} (headline: title and what it means) and {@code later}
+     * (the details: fixes, update lines, links), posted {@link BugResponseChatNotifier#LATER_DELAY_TICKS}
+     * after, so the headline is read before the details push it up the chat. A short response arrives
+     * whole: {@code later} is empty.
+     */
+    public record Messages(List<Component> now, List<Component> later) {}
+
+    /** A response longer than this many chat messages is sent in two parts. */
+    static final int SPLIT_ABOVE = 6;
+
+    /** The lag card's title: the tips heading, or a plain thanks when no tip applies. */
+    static String lagTitleKey(boolean hasTips) {
+        return KEY + (hasTips ? "tips.title" : "sent");
+    }
+
     /** The response, one chat message per element, the first carrying the {@code [Dungeon Train]} prefix. */
     public static List<Component> lines(Result r, List<TipLine> tips, @Nullable String locale) {
-        List<Component> out = new ArrayList<>();
-        switch (r.kind()) {
-            case FIXED -> fixed(r, out);
-            case MULTIPLAYER -> multiplayer(r, locale, out);
-            case LAG_TIPS -> lag(r, tips, locale, out);
-            case GENERIC -> generic(r, locale, out);
-        }
-        links(r).ifPresent(out::add);
-
-        Component first = Component.translatable(PREFIX_KEY).withStyle(ChatFormatting.GOLD)
-                .append(" ").append(out.get(0));
-        out.set(0, first);
+        Messages m = messages(r, tips, locale);
+        List<Component> out = new ArrayList<>(m.now());
+        out.addAll(m.later());
         return List.copyOf(out);
     }
 
-    // ---- Bodies (mirroring BugResponseCard) ----
+    /** {@link #lines}, split into what to send now and what to send after a pause. */
+    public static Messages messages(Result r, List<TipLine> tips, @Nullable String locale) {
+        List<Component> head = new ArrayList<>();
+        List<Component> tail = new ArrayList<>();
+        switch (r.kind()) {
+            case FIXED -> fixed(r, head, tail);
+            case MULTIPLAYER -> multiplayer(r, locale, head, tail);
+            case LAG_TIPS -> lag(r, tips, locale, head, tail);
+            case GENERIC -> generic(r, locale, head, tail);
+        }
+        links(r).ifPresent(tail::add);
 
-    private static void fixed(Result r, List<Component> out) {
+        head.set(0, Component.translatable(PREFIX_KEY).withStyle(ChatFormatting.GOLD)
+                .append(" ").append(head.get(0)));
+        if (head.size() + tail.size() <= SPLIT_ABOVE) {
+            head.addAll(tail);
+            return new Messages(List.copyOf(head), List.of());
+        }
+        return new Messages(List.copyOf(head), List.copyOf(tail));
+    }
+
+    // ---- Bodies (mirroring BugResponseCard): headline into head, details into tail ----
+
+    private static void fixed(Result r, List<Component> head, List<Component> tail) {
         String issueId = r.issue().ledgerId().orElse("lag");
-        out.add(Component.translatable(KEY + "fixed.title." + issueId).withStyle(ChatFormatting.GREEN));
-        out.add(Component.translatable(KEY + "fixed.intro." + issueId, installedText(r)).withStyle(ChatFormatting.GRAY));
-        for (Fix fix : r.fixes()) out.add(fixRow(fix));
-        out.add(Component.translatable(KEY + "fixed.update").withStyle(ChatFormatting.GRAY));
+        head.add(Component.translatable(KEY + "fixed.title." + issueId).withStyle(ChatFormatting.GREEN));
+        head.add(Component.translatable(KEY + "fixed.intro." + issueId, installedText(r)).withStyle(ChatFormatting.GRAY));
+        for (Fix fix : r.fixes()) tail.add(fixRow(fix));
+        tail.add(Component.translatable(KEY + "fixed.update").withStyle(ChatFormatting.GRAY));
         if (r.curseforgeReview()) {
-            out.add(Component.translatable(KEY + "fixed.curseforge_review").withStyle(ChatFormatting.YELLOW));
+            tail.add(Component.translatable(KEY + "fixed.curseforge_review").withStyle(ChatFormatting.YELLOW));
         }
     }
 
-    private static void multiplayer(Result r, @Nullable String locale, List<Component> out) {
-        out.add(Component.translatable(KEY + "mp.title").withStyle(ChatFormatting.AQUA));
-        out.add(Component.translatable(KEY + "mp.body").withStyle(ChatFormatting.GRAY));
-        out.add(Component.translatable(KEY + "mp.sent").withStyle(ChatFormatting.GRAY));
-        if (r.behind()) out.add(outdatedLine(r, locale, Component.translatable(KEY + "outdated.server")));
+    private static void multiplayer(Result r, @Nullable String locale, List<Component> head, List<Component> tail) {
+        head.add(Component.translatable(KEY + "mp.title").withStyle(ChatFormatting.AQUA));
+        head.add(Component.translatable(KEY + "mp.body").withStyle(ChatFormatting.GRAY));
+        head.add(Component.translatable(KEY + "mp.sent").withStyle(ChatFormatting.GRAY));
+        if (r.behind()) tail.add(outdatedLine(r, locale, Component.translatable(KEY + "outdated.server")));
     }
 
-    private static void lag(Result r, List<TipLine> tips, @Nullable String locale, List<Component> out) {
-        out.add(Component.translatable(KEY + "tips.title").withStyle(ChatFormatting.GOLD));
-        for (TipLine tip : tips) out.add(tipRow(tip));
-        if (r.behind()) out.add(outdatedLine(r, locale, Component.translatable(KEY + "outdated.update")));
+    private static void lag(Result r, List<TipLine> tips, @Nullable String locale,
+                            List<Component> head, List<Component> tail) {
+        head.add(Component.translatable(lagTitleKey(!tips.isEmpty())).withStyle(ChatFormatting.GOLD));
+        for (TipLine tip : tips) head.add(tipRow(tip));
+        if (r.behind()) tail.add(outdatedLine(r, locale, Component.translatable(KEY + "outdated.update")));
     }
 
-    private static void generic(Result r, @Nullable String locale, List<Component> out) {
-        out.add(Component.translatable(KEY + "sent").withStyle(ChatFormatting.GOLD));
+    private static void generic(Result r, @Nullable String locale, List<Component> head, List<Component> tail) {
+        head.add(Component.translatable(KEY + "sent").withStyle(ChatFormatting.GOLD));
         if (!r.behind()) return;
-        Component tail = r.bugFixesMissed() > 0
+        Component more = r.bugFixesMissed() > 0
                 ? Component.translatable(KEY + "outdated.fixes." + plural(locale, r.bugFixesMissed()), r.bugFixesMissed())
                 : Component.translatable(KEY + "outdated.update");
-        out.add(outdatedLine(r, locale, tail));
+        tail.add(outdatedLine(r, locale, more));
     }
 
     // ---- Rows ----

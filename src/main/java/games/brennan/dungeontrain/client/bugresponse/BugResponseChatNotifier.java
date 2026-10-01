@@ -50,9 +50,14 @@ public final class BugResponseChatNotifier {
 
     private record Pending(BugIssue issue, boolean multiplayer) {}
 
+    /** Pause between a long response's headline and its details ({@link BugResponseChat.Messages}). */
+    static final int LATER_DELAY_TICKS = 80;
+
     /** Render thread only. */
     private static Pending pending;
     private static int waitedTicks;
+    private static List<Component> later = List.of();
+    private static int laterInTicks;
     private static boolean commentFieldWarned;
 
     private BugResponseChatNotifier() {}
@@ -76,16 +81,24 @@ public final class BugResponseChatNotifier {
         VersionCompareState.ensureFetched();
         pending = new Pending(issue, multiplayer);
         waitedTicks = 0;
+        later = List.of(); // a newer report replaces what was still to come
     }
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        if (pending == null) return;
+        if (pending == null && later.isEmpty()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
             pending = null; // left the world before it could be answered
+            later = List.of();
             return;
         }
+        if (!later.isEmpty() && --laterInTicks <= 0) {
+            List<Component> lines = later;
+            later = List.of();
+            for (Component line : lines) mc.player.displayClientMessage(line, false);
+        }
+        if (pending == null) return;
         if (mc.screen instanceof SurveyScreen) return; // answer once the player is back in the game
         if (!settled() && ++waitedTicks < SETTLE_TIMEOUT_TICKS) return;
 
@@ -109,9 +122,10 @@ public final class BugResponseChatNotifier {
         List<BugResponseChat.TipLine> tips = r.kind() == BugResponse.Kind.LAG_TIPS
                 ? BugResponseChat.tipLines(LagTips.applicable(null))
                 : List.of();
-        for (Component line : BugResponseChat.lines(r, tips, ClientLanguage.selected())) {
-            mc.player.displayClientMessage(line, false);
-        }
+        BugResponseChat.Messages m = BugResponseChat.messages(r, tips, ClientLanguage.selected());
+        for (Component line : m.now()) mc.player.displayClientMessage(line, false);
+        later = m.later();
+        laterInTicks = LATER_DELAY_TICKS;
     }
 
     /** The comment typed into the open survey, or "" when it cannot be read. */

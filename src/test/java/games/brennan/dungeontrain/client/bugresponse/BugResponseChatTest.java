@@ -202,6 +202,44 @@ class BugResponseChatTest {
     }
 
     @Test
+    @DisplayName("Lag with no applicable tip: a plain thanks, not a heading over nothing")
+    void lagWithoutTipsFallsBackToThanks() {
+        Result r = decide(BugIssue.LAG, true, "0.1081.0", Platform.MODRINTH, null);
+        assertEquals(Kind.LAG_TIPS, r.kind());
+        assertEquals(List.of(BugResponseChat.PREFIX_KEY, KEY + "sent"), keys(lines(r, List.of())));
+        assertEquals(KEY + "tips.title", BugResponseChat.lagTitleKey(true));
+        assertEquals(KEY + "sent", BugResponseChat.lagTitleKey(false));
+    }
+
+    @Test
+    @DisplayName("A long response is sent in two: headline now, update details and links later")
+    void longResponseIsSplit() {
+        Result r = decide(BugIssue.LAG, false, "0.1081.0", Platform.MODRINTH,
+                null);
+        Result behind = new Result(r.kind(), r.issue(), Optional.of(v("0.1079.0")), r.launcher(), r.fixes(),
+                false, Optional.empty(), 2, Optional.of(v("0.1081.0")), 0);
+        List<BugResponseChat.TipLine> tips = List.of("dh", "render_distance", "shaders", "photos", "carriages").stream()
+                .map(id -> new BugResponseChat.TipLine(id, Component.literal(id), Component.literal("Open"), null))
+                .toList();
+        BugResponseChat.Messages m = BugResponseChat.messages(behind, tips, "en_us");
+
+        assertEquals(6, m.now().size(), "title and five tips");
+        assertEquals(List.of(BugResponseChat.PREFIX_KEY, KEY + "tips.title"), keys(m.now().subList(0, 1)));
+        assertEquals(List.of(KEY + "outdated.other", KEY + "outdated.update", BugResponseChat.UPDATE_KEY,
+                KEY + "button.changes"), keys(m.later()));
+        assertEquals(BugResponseChat.lines(behind, tips, "en_us").size(), m.now().size() + m.later().size());
+    }
+
+    @Test
+    @DisplayName("A short response arrives whole")
+    void shortResponseIsNotSplit() {
+        Result r = decide(BugIssue.TRAIN_VANISHED, true, "0.1080.0", Platform.MODRINTH, null);
+        BugResponseChat.Messages m = BugResponseChat.messages(r, List.of(), "en_us");
+        assertTrue(m.later().isEmpty());
+        assertEquals(5, m.now().size());
+    }
+
+    @Test
     @DisplayName("Other, up to date: just the thanks, no links")
     void otherUpToDate() {
         Result r = decide(BugIssue.OTHER, false, "0.1081.0", Platform.MODRINTH, null);
