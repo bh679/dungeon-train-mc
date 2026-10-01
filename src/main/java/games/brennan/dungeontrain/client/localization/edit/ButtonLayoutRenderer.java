@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.client.localization.edit;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
 import java.util.Map;
@@ -36,10 +35,9 @@ final class ButtonLayoutRenderer {
             boolean edited = editedKey.equals(w.key());
             String text = labelOf(w, edited, label, lang);
             if (w.button()) {
-                Button sample = Button.builder(Component.literal(text), b -> { })
-                    .bounds(w.x(), w.y(), w.w(), w.h()).build();
-                // Off-screen mouse: never hovered, so it shows the resting look players see.
-                sample.render(g, -1, -1, 0);
+                // An icon button's label is narration only, never drawn — and its icon is not recorded.
+                new PreviewButton(w.x(), w.y(), w.w(), w.h(),
+                    w.icon() ? Component.empty() : Component.literal(text)).draw(g);
             } else {
                 g.fill(w.x(), w.y(), w.x() + w.w(), w.y() + w.h(), OTHER_FILL);
                 g.renderOutline(w.x(), w.y(), w.w(), w.h(), OTHER_OUTLINE);

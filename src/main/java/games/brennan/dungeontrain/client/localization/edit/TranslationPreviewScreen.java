@@ -107,7 +107,7 @@ public final class TranslationPreviewScreen extends Screen {
     private PageButton back;
     /** Lines of the current page the book has no room for; set as the page is drawn. */
     private int cutLines;
-    private final List<Button> sampleButtons = new ArrayList<>();
+    private final List<PreviewButton> sampleButtons = new ArrayList<>();
     private final List<Component> readout = new ArrayList<>();
     /** Whether the bottom row holds any controls; the frame takes the room when it does not. */
     private boolean controlRow;
@@ -356,8 +356,8 @@ public final class TranslationPreviewScreen extends Screen {
         for (int w : widths) {
             // Laid out in FRAME coordinates and drawn by hand inside the scaled frame, never added
             // as a widget: it is a picture of a button, and must not be clickable.
-            sampleButtons.add(Button.builder(Component.literal(text), b -> { })
-                .bounds((TranslationPreviewText.SMALL_SCREEN_WIDTH - w) / 2, y, w, ROW_H).build());
+            sampleButtons.add(new PreviewButton((TranslationPreviewText.SMALL_SCREEN_WIDTH - w) / 2, y, w, ROW_H,
+                Component.literal(text)));
             y += ROW_H + GAP * 2;
             readout.add(fitLine(w));
         }
@@ -602,9 +602,8 @@ public final class TranslationPreviewScreen extends Screen {
         } else if (layoutContext()) {
             ButtonLayoutRenderer.render(g, font, screenLayout, unit.id(), text, contextLang);
         } else {
-            for (Button sample : sampleButtons) {
-                // Off-screen mouse: never hovered, so it shows the resting look players see.
-                sample.render(g, -1, -1, 0);
+            for (PreviewButton sample : sampleButtons) {
+                sample.draw(g);
             }
         }
         g.pose().popPose();

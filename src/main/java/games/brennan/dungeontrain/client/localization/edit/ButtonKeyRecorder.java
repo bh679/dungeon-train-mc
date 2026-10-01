@@ -6,6 +6,8 @@ import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.gui.components.AbstractButton;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
@@ -48,6 +50,8 @@ public final class ButtonKeyRecorder {
     private static final int MAX_ENTRIES = 5000;
     /** What a CycleButton wraps its caption in ("Caption: value"). */
     private static final String OPTION_VALUE_KEY = "options.generic_value";
+    /** Vanilla's square icon button; no label fits a button this narrow. */
+    private static final int ICON_BUTTON_MAX_WIDTH = 20;
 
     /** key → narrowest button width seen, in GUI pixels. Null until first read off disk. */
     private static Map<String, Integer> widths;
@@ -58,7 +62,7 @@ public final class ButtonKeyRecorder {
     public static void onScreenInitPost(ScreenEvent.Init.Post event) {
         boolean changed = false;
         for (GuiEventListener listener : event.getListenersList()) {
-            if (listener instanceof AbstractButton button) {
+            if (listener instanceof AbstractButton button && !isIconOnly(button)) {
                 String key = keyOf(button.getMessage());
                 if (key != null) {
                     changed |= record(key, button.getWidth());
@@ -70,6 +74,17 @@ public final class ButtonKeyRecorder {
         }
         // The whole screen too, for the button preview's full context.
         ButtonScreenLayouts.record(event.getScreen(), event.getListenersList());
+    }
+
+    /**
+     * Whether {@code widget} shows an icon rather than its label, so its label — narration only —
+     * is never on screen: vanilla's centred-icon button, DT's {@code …IconButton}s, and anything 20px
+     * wide or narrower, which no label fits.
+     */
+    static boolean isIconOnly(AbstractWidget widget) {
+        return widget instanceof SpriteIconButton.CenteredIcon
+            || widget.getClass().getSimpleName().endsWith("IconButton")
+            || widget.getWidth() <= ICON_BUTTON_MAX_WIDTH;
     }
 
     /** Whether {@code key} has been seen on a button. */

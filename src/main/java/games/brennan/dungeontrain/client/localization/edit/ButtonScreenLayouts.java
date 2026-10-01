@@ -56,9 +56,10 @@ public final class ButtonScreenLayouts {
      * @param suffix      for an option button ("Caption: value"), the value half; else empty
      * @param tooltipKeys the editor keys in its hover tooltip (empty when it has none of ours)
      * @param tooltip     its hover tooltip as component JSON, or null when it has none
+     * @param icon        an icon-only button, whose label is narration and never drawn
      */
     public record Widget(int x, int y, int w, int h, String key, String text, boolean button, String suffix,
-                         List<String> tooltipKeys, String tooltip) {}
+                         List<String> tooltipKeys, String tooltip, boolean icon) {}
 
     /** A screen as it was laid out, in GUI pixels at GUI scale {@code scale}. */
     public record Layout(String title, int width, int height, int scale, List<Widget> widgets) {}
@@ -87,7 +88,7 @@ public final class ButtonScreenLayouts {
             if (listener instanceof AbstractWidget widget && widget.visible) {
                 Widget w = widgetOf(widget);
                 widgets.add(w);
-                if (w.key() != null && w.button()) {
+                if (w.key() != null && w.button() && !w.icon()) {
                     ours.add(w.key());
                 }
                 tips.addAll(w.tooltipKeys());
@@ -150,7 +151,8 @@ public final class ButtonScreenLayouts {
         }
         return new Widget(widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(),
             ButtonKeyRecorder.keyOf(message), message == null ? "" : message.getString(),
-            widget instanceof AbstractButton, suffix, List.copyOf(tipKeys), tipJson);
+            widget instanceof AbstractButton, suffix, List.copyOf(tipKeys), tipJson,
+            ButtonKeyRecorder.isIconOnly(widget));
     }
 
     private static void collectKeys(Component component, List<String> out, int depth) {
