@@ -457,6 +457,16 @@ public final class TrackGenerator {
             return resolveSidecar(sidecar, base, xMod, y, zOff);
         }
 
+        /** The entry this cell rolled when it is one that grows, else null (see {@link #noteTileColumn}). */
+        @Nullable
+        games.brennan.dungeontrain.editor.VariantState growingEntry(int xMod, int y, int zOff) {
+            if (sidecar == null || sidecar.isEmpty()) return null;
+            BlockPos local = new BlockPos(xMod, y, zOff);
+            if (!sidecar.growsAt(local)) return null;
+            games.brennan.dungeontrain.editor.VariantState picked = sidecar.resolve(local, worldSeed, (int) tileIndex);
+            return picked != null && !picked.growth().isDefault() ? picked : null;
+        }
+
         private BlockState resolveSidecar(TrackVariantBlocks sc, BlockState base, int xMod, int y, int zOff) {
             if (sc == null || sc.isEmpty() || base == null) return base;
             BlockPos local = new BlockPos(xMod, y, zOff);
@@ -614,7 +624,31 @@ public final class TrackGenerator {
                 }
             }
         }
+        noteTileColumn(chunk != null
+                ? games.brennan.dungeontrain.editor.GrowthPass.sectionLocal(level)
+                : games.brennan.dungeontrain.editor.GrowthPass.runtime(level),
+            paint, worldX, worldZ, g, xMod, zOff, bedState, railState);
         return true;
+    }
+
+    /**
+     * Grow a track tile's bed / rail cells whose rolled entry has growth on. The tile is two rows tall
+     * and the carriage envelope above the rail is cleared, so a column can only run between the bed
+     * and the rail row (into a rail-row gap). Called after both rows of the column are written.
+     */
+    private static void noteTileColumn(games.brennan.dungeontrain.editor.GrowthPass.Target target,
+                                       TilePaint paint, int x, int z, TrackGeometry g, int xMod, int zOff,
+                                       @Nullable BlockState bedState, @Nullable BlockState railState) {
+        java.util.function.Predicate<BlockPos> within = p -> p.getY() >= g.bedY() && p.getY() <= g.railY();
+        for (int row = 0; row <= 1; row++) {
+            BlockState placed = row == 0 ? bedState : railState;
+            if (placed == null) continue;
+            games.brennan.dungeontrain.editor.VariantState entry = paint.growingEntry(xMod, row, zOff);
+            if (entry == null) continue;
+            games.brennan.dungeontrain.editor.GrowthPass.note(target,
+                new BlockPos(x, row == 0 ? g.bedY() : g.railY(), z), entry, placed,
+                new BlockPos(xMod, row, zOff), paint.worldSeed(), (int) paint.tileIndex(), within);
+        }
     }
 
     /**
@@ -724,6 +758,25 @@ public final class TrackGenerator {
         long worldSeed,
         int pillarIndex
     ) {
+        /** The entry this cell rolled when it is one that grows, else null. */
+        @Nullable
+        games.brennan.dungeontrain.editor.VariantState growingEntry(int row, int zIdx) {
+            if (sidecar == null || sidecar.isEmpty()) return null;
+            BlockPos local = new BlockPos(0, row, zIdx);
+            if (!sidecar.growsAt(local)) return null;
+            games.brennan.dungeontrain.editor.VariantState picked = sidecar.resolve(local, worldSeed, pillarIndex);
+            return picked != null && !picked.growth().isDefault() ? picked : null;
+        }
+
+        /** Note a written pillar cell for {@link games.brennan.dungeontrain.editor.GrowthPass}, if it grows. */
+        void noteGrowth(WorldGenLevel level, BlockPos pos, BlockState placed, int row, int zIdx,
+                        java.util.function.Predicate<BlockPos> within) {
+            games.brennan.dungeontrain.editor.VariantState entry = growingEntry(row, zIdx);
+            if (entry == null) return;
+            games.brennan.dungeontrain.editor.GrowthPass.note(games.brennan.dungeontrain.editor.GrowthPass.worldgen(level),
+                pos.immutable(), entry, placed, new BlockPos(0, row, zIdx), worldSeed, pillarIndex, within);
+        }
+
         BlockState resolveSidecar(BlockState base, int row, int zIdx) {
             if (sidecar == null || sidecar.isEmpty() || base == null) return base;
             BlockPos local = new BlockPos(0, row, zIdx);
@@ -1205,18 +1258,23 @@ public final class TrackGenerator {
         int placeMidH = h - placeBotH - placeTopH;
 
         int zMin = g.trackZMin();
-        for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
-            int zIdx = z - zMin;
-            for (int i = 0; i < placeBotH; i++) {
-                stampSliceCellWorldgen(level, worldX, deepestGroundY + i, z, bot, i, zIdx);
-            }
-            for (int i = 0; i < placeMidH; i++) {
-                stampSliceCellWorldgen(level, worldX, deepestGroundY + placeBotH + i, z, mid, 0, zIdx);
-            }
-            for (int i = 0; i < placeTopH; i++) {
-                int y = topInclusive - placeTopH + 1 + i;
-                int row = (topH - placeTopH) + i;
-                stampSliceCellWorldgen(level, worldX, y, z, top, row, zIdx);
+        // A grown column stays inside this slice: ground up to the cap under the bed.
+        java.util.function.Predicate<BlockPos> within =
+            p -> p.getX() == worldX && p.getY() >= deepestGroundY && p.getY() <= topInclusive;
+        try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
+            for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
+                int zIdx = z - zMin;
+                for (int i = 0; i < placeBotH; i++) {
+                    stampSliceCellWorldgen(level, worldX, deepestGroundY + i, z, bot, i, zIdx, within);
+                }
+                for (int i = 0; i < placeMidH; i++) {
+                    stampSliceCellWorldgen(level, worldX, deepestGroundY + placeBotH + i, z, mid, 0, zIdx, within);
+                }
+                for (int i = 0; i < placeTopH; i++) {
+                    int y = topInclusive - placeTopH + 1 + i;
+                    int row = (topH - placeTopH) + i;
+                    stampSliceCellWorldgen(level, worldX, y, z, top, row, zIdx, within);
+                }
             }
         }
     }
@@ -1226,7 +1284,8 @@ public final class TrackGenerator {
         int x, int y, int z,
         PillarPaint paint,
         int row,
-        int zIdx
+        int zIdx,
+        java.util.function.Predicate<BlockPos> within
     ) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         pos.set(x, y, z);
@@ -1247,6 +1306,7 @@ public final class TrackGenerator {
         state = paint.resolveSidecar(state, row, zIdx);
         if (state == null) return;
         level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+        paint.noteGrowth(level, pos, state, row, zIdx, within);
     }
 
     /**
@@ -1338,15 +1398,23 @@ public final class TrackGenerator {
         PillarPaint mid
     ) {
         int zMin = g.trackZMin();
+        int topH = PillarSection.TOP.height();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
-            int zIdx = z - zMin;
-            for (int i = 0; i < count; i++) {
-                BlockState state = taperBlockAt(top, mid, i, zIdx);
-                if (state == null) continue; // authored air cell — keep the gap
-                pos.set(worldX, topInclusive - i, z);
-                if (!isPassable(level.getBlockState(pos))) continue;
-                level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+        // A grown column stays in this arch column, hanging no lower than a full-length vine.
+        java.util.function.Predicate<BlockPos> within = p -> p.getX() == worldX && p.getY() <= topInclusive;
+        try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
+            for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
+                int zIdx = z - zMin;
+                for (int i = 0; i < count; i++) {
+                    BlockState state = taperBlockAt(top, mid, i, zIdx);
+                    if (state == null) continue; // authored air cell — keep the gap
+                    pos.set(worldX, topInclusive - i, z);
+                    if (!isPassable(level.getBlockState(pos))) continue;
+                    level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+                    // Same paint and row taperBlockAt read the cell from.
+                    if (i < topH) top.noteGrowth(level, pos, state, topH - 1 - i, zIdx, within);
+                    else mid.noteGrowth(level, pos, state, 0, zIdx, within);
+                }
             }
         }
     }
@@ -1587,71 +1655,81 @@ public final class TrackGenerator {
     ) {
         int stampOriginZ = !flipped ? originZ + STAIRS_Z - 1 : originZ;
 
-        int currentTop = topInclusive;
-        while (currentTop >= floorY) {
-            int remaining = currentTop - floorY + 1;
-            int copyHeight = Math.min(STAIRS_Y, remaining);
-            int bottomY = currentTop - copyHeight + 1;
+        // Grown columns stay inside the shaft; the scope grows them once every copy is stamped, so a
+        // copy stamped later cannot cut one off.
+        BoundingBox shaft = new BoundingBox(originX, floorY, originZ,
+            originX + STAIRS_X - 1, topInclusive, originZ + STAIRS_Z - 1);
+        games.brennan.dungeontrain.editor.GrowthPass.Target growTarget =
+            games.brennan.dungeontrain.editor.GrowthPass.worldgen(level);
+        try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
+            int currentTop = topInclusive;
+            while (currentTop >= floorY) {
+                int remaining = currentTop - floorY + 1;
+                int copyHeight = Math.min(STAIRS_Y, remaining);
+                int bottomY = currentTop - copyHeight + 1;
 
-            BlockPos copyOrigin = new BlockPos(originX, currentTop - (STAIRS_Y - 1), stampOriginZ);
+                BlockPos copyOrigin = new BlockPos(originX, currentTop - (STAIRS_Y - 1), stampOriginZ);
 
-            BoundingBox clip = new BoundingBox(
-                originX, bottomY, originZ,
-                originX + STAIRS_X - 1, currentTop, originZ + STAIRS_Z - 1
-            );
+                BoundingBox clip = new BoundingBox(
+                    originX, bottomY, originZ,
+                    originX + STAIRS_X - 1, currentTop, originZ + STAIRS_Z - 1
+                );
 
-            StructurePlaceSettings settings = new StructurePlaceSettings()
-                .setIgnoreEntities(true)
-                .setBoundingBox(clip)
-                // Dry pillar stairs — don't inherit terrain water into waterloggable
-                // blocks (see TunnelPlacer.stampTemplateWorldgen for the full rationale).
-                .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
-            // No ShipFilterProcessor — no ships at chunkgen.
-            if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
-            // Re-hang Fast Paintings block paintings under the mirror (they don't mirror themselves).
-            if (!flipped) settings.addProcessor(PaintingTransformProcessor.horizontal());
+                StructurePlaceSettings settings = new StructurePlaceSettings()
+                    .setIgnoreEntities(true)
+                    .setBoundingBox(clip)
+                    // Dry pillar stairs — don't inherit terrain water into waterloggable
+                    // blocks (see TunnelPlacer.stampTemplateWorldgen for the full rationale).
+                    .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
+                // No ShipFilterProcessor — no ships at chunkgen.
+                if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
+                // Re-hang Fast Paintings block paintings under the mirror (they don't mirror themselves).
+                if (!flipped) settings.addProcessor(PaintingTransformProcessor.horizontal());
 
-            // Position-pure random — only consumed for container LootTableSeeds (see StampRandom).
-            template.placeInWorld(level, copyOrigin, copyOrigin, settings,
-                StampRandom.at(level.getSeed(), copyOrigin), CarriageStampGuard.STAMP_FLAGS);
-            // The template's item frames and paintings — entities, so no block pass writes them.
-            // Under the same settings as the blocks, which carry both the mirror and the terrain
-            // clip box, so a picture on a cut-away half is not left hanging in open air.
-            TemplateDecor.replace(level, copyOrigin, template, settings, null);
+                // Position-pure random — only consumed for container LootTableSeeds (see StampRandom).
+                template.placeInWorld(level, copyOrigin, copyOrigin, settings,
+                    StampRandom.at(level.getSeed(), copyOrigin), CarriageStampGuard.STAMP_FLAGS);
+                // The template's item frames and paintings — entities, so no block pass writes them.
+                // Under the same settings as the blocks, which carry both the mirror and the terrain
+                // clip box, so a picture on a cut-away half is not left hanging in open air.
+                TemplateDecor.replace(level, copyOrigin, template, settings, null);
 
-            // Sidecar pass — overwrite flagged template-local positions
-            // with the deterministic per-block pick. Mirror semantics
-            // mirror the runtime variant. Block-entity NBT stamping is
-            // skipped at worldgen (vanilla stairs/sign templates rarely
-            // need it, and BE wiring through WorldGenLevel is awkward).
-            if (!stairsSidecar.isEmpty()) {
-                int templateBaseY = currentTop - (STAIRS_Y - 1);
-                for (var entry : stairsSidecar.entries()) {
-                    int lx = entry.localPos().getX();
-                    int ly = entry.localPos().getY();
-                    int lz = entry.localPos().getZ();
-                    int wy = templateBaseY + ly;
-                    if (wy < bottomY || wy > currentTop) continue;
-                    int wx = originX + lx;
-                    int wz = flipped ? (originZ + lz) : (originZ + STAIRS_Z - 1 - lz);
-                    BlockPos wpos = new BlockPos(wx, wy, wz);
-                    games.brennan.dungeontrain.editor.VariantState picked =
-                        stairsSidecar.resolve(entry.localPos(), worldSeed, centerX);
-                    if (picked == null) continue;
-                    if (picked.isMob()) {
-                        TrackVariantMobs.warnDropped("stairs", entry.localPos(), picked.entityId());
-                        level.setBlock(wpos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
-                        continue;
+                // Sidecar pass — overwrite flagged template-local positions
+                // with the deterministic per-block pick. Mirror semantics
+                // mirror the runtime variant. Block-entity NBT stamping is
+                // skipped at worldgen (vanilla stairs/sign templates rarely
+                // need it, and BE wiring through WorldGenLevel is awkward).
+                if (!stairsSidecar.isEmpty()) {
+                    int templateBaseY = currentTop - (STAIRS_Y - 1);
+                    for (var entry : stairsSidecar.entries()) {
+                        int lx = entry.localPos().getX();
+                        int ly = entry.localPos().getY();
+                        int lz = entry.localPos().getZ();
+                        int wy = templateBaseY + ly;
+                        if (wy < bottomY || wy > currentTop) continue;
+                        int wx = originX + lx;
+                        int wz = flipped ? (originZ + lz) : (originZ + STAIRS_Z - 1 - lz);
+                        BlockPos wpos = new BlockPos(wx, wy, wz);
+                        games.brennan.dungeontrain.editor.VariantState picked =
+                            stairsSidecar.resolve(entry.localPos(), worldSeed, centerX);
+                        if (picked == null) continue;
+                        if (picked.isMob()) {
+                            TrackVariantMobs.warnDropped("stairs", entry.localPos(), picked.entityId());
+                            level.setBlock(wpos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                            continue;
+                        }
+                        BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
+                            picked.state(), picked.rotation(), picked.half(), picked.active(),
+                            entry.localPos(), worldSeed, centerX,
+                            stairsSidecar.lockIdAt(entry.localPos()));
+                        level.setBlock(wpos, rotated, Block.UPDATE_CLIENTS);
+                        games.brennan.dungeontrain.editor.GrowthPass.note(growTarget, wpos, picked, rotated,
+                            entry.localPos(), worldSeed, centerX, shaft::isInside);
                     }
-                    BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
-                        picked.state(), picked.rotation(), picked.half(), picked.active(),
-                        entry.localPos(), worldSeed, centerX,
-                        stairsSidecar.lockIdAt(entry.localPos()));
-                    level.setBlock(wpos, rotated, Block.UPDATE_CLIENTS);
                 }
-            }
 
-            currentTop -= STAIRS_Y;
+                currentTop -= STAIRS_Y;
+            }
         }
     }
 
@@ -2096,27 +2174,37 @@ public final class TrackGenerator {
             TemplateDecor.replace(level, stampOrigin, template, settings, null);
             // Sidecar pass — same shape as stairs stamp.
             if (!sidecar.isEmpty()) {
-                for (var entry : sidecar.entries()) {
-                    int lx = entry.localPos().getX();
-                    int ly = entry.localPos().getY();
-                    int lz = entry.localPos().getZ();
-                    int wx = minX + lx;
-                    int wy = entranceBaseY + ly;
-                    int wz = flipped ? (minZ + lz) : (minZ + PillarAdjunct.STAIRS_ENTRANCE.zSize() - 1 - lz);
-                    BlockPos wpos = new BlockPos(wx, wy, wz);
-                    games.brennan.dungeontrain.editor.VariantState picked =
-                        sidecar.resolve(entry.localPos(), worldSeed, centerX);
-                    if (picked == null) continue;
-                    if (picked.isMob()) {
-                        TrackVariantMobs.warnDropped("stairs_entrance", entry.localPos(), picked.entityId());
-                        level.setBlock(wpos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
-                        continue;
+                BoundingBox box = new BoundingBox(minX, entranceBaseY, minZ,
+                    minX + PillarAdjunct.STAIRS_ENTRANCE.xSize() - 1,
+                    entranceBaseY + PillarAdjunct.STAIRS_ENTRANCE.ySize() - 1,
+                    minZ + PillarAdjunct.STAIRS_ENTRANCE.zSize() - 1);
+                games.brennan.dungeontrain.editor.GrowthPass.Target growTarget =
+                    games.brennan.dungeontrain.editor.GrowthPass.worldgen(level);
+                try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
+                    for (var entry : sidecar.entries()) {
+                        int lx = entry.localPos().getX();
+                        int ly = entry.localPos().getY();
+                        int lz = entry.localPos().getZ();
+                        int wx = minX + lx;
+                        int wy = entranceBaseY + ly;
+                        int wz = flipped ? (minZ + lz) : (minZ + PillarAdjunct.STAIRS_ENTRANCE.zSize() - 1 - lz);
+                        BlockPos wpos = new BlockPos(wx, wy, wz);
+                        games.brennan.dungeontrain.editor.VariantState picked =
+                            sidecar.resolve(entry.localPos(), worldSeed, centerX);
+                        if (picked == null) continue;
+                        if (picked.isMob()) {
+                            TrackVariantMobs.warnDropped("stairs_entrance", entry.localPos(), picked.entityId());
+                            level.setBlock(wpos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                            continue;
+                        }
+                        BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
+                            picked.state(), picked.rotation(), picked.half(), picked.active(),
+                            entry.localPos(), worldSeed, centerX,
+                            sidecar.lockIdAt(entry.localPos()));
+                        level.setBlock(wpos, rotated, Block.UPDATE_CLIENTS);
+                        games.brennan.dungeontrain.editor.GrowthPass.note(growTarget, wpos, picked, rotated,
+                            entry.localPos(), worldSeed, centerX, box::isInside);
                     }
-                    BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
-                        picked.state(), picked.rotation(), picked.half(), picked.active(),
-                        entry.localPos(), worldSeed, centerX,
-                        sidecar.lockIdAt(entry.localPos()));
-                    level.setBlock(wpos, rotated, Block.UPDATE_CLIENTS);
                 }
             }
             LOGGER.info("[downstairs.entrance] centerX={} NBT placed name={} flipped={}",
@@ -2456,6 +2544,8 @@ public final class TrackGenerator {
                     pos.set(x, g.railY(), z);
                     level.setBlock(pos, railState != null ? railState : air, Block.UPDATE_CLIENTS);
                 }
+                noteTileColumn(games.brennan.dungeontrain.editor.GrowthPass.worldgen(level), paint, x, z, g,
+                    xMod, zOff, bedState, canPlaceRail ? railState : null);
             }
         }
 
@@ -2579,6 +2669,11 @@ public final class TrackGenerator {
                     railState = paint.resolveComposite(railState, xMod, 1, zOff, x, g.railY(), z);
                     pos.set(x, g.railY(), z);
                     SilentBlockOps.setBlockSectionLocal(level, chunk, pos, railState != null ? railState : air);
+                    noteTileColumn(games.brennan.dungeontrain.editor.GrowthPass.sectionLocal(level), paint, x, z, g,
+                        xMod, zOff, bedState, railState);
+                } else {
+                    noteTileColumn(games.brennan.dungeontrain.editor.GrowthPass.sectionLocal(level), paint, x, z, g,
+                        xMod, zOff, bedState, null);
                 }
 
                 // Carve the tube through the flipped ceiling terrain so the carriage rides clear.

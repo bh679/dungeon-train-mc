@@ -21834,6 +21834,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "variant-block-growth",
+      "version": "0.1092.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "world"
+      ],
+      "title": "Things that grow",
+      "summary": "Vines, glow berries, ladders, bamboo, dripstone and more can now grow into longer columns in your builds, and the overgrown tunnels hang a little lower.",
+      "highlights": [],
+      "pr": 1742,
+      "date": "2026-10-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

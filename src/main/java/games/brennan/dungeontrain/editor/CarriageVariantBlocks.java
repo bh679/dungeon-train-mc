@@ -666,8 +666,11 @@ public final class CarriageVariantBlocks {
             // Additive fence / wall / pane connect mode. Absent → Default
             // (place the captured arms), so older files spawn unchanged.
             VariantConnect.Mode connect = parseConnect(obj.get("connect"), contextId, contextPos);
+            // Additive column growth. Absent → off (a single block), so older
+            // files spawn unchanged.
+            VariantGrowth growth = parseGrowth(obj.get("growth"), contextId, contextPos);
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
-                VariantDifficulty.NONE, groupRef, active, connect);
+                VariantDifficulty.NONE, groupRef, active, connect, growth);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -1395,6 +1398,9 @@ public final class CarriageVariantBlocks {
         if (!s.connect().isDefault()) {
             sb.append(", \"connect\": \"").append(s.connect().id()).append("\"");
         }
+        if (!s.growth().isDefault()) {
+            sb.append(", \"growth\": \"").append(s.growth().id()).append("\"");
+        }
         sb.append("}");
     }
 
@@ -1475,6 +1481,22 @@ public final class CarriageVariantBlocks {
             return VariantConnect.Mode.DEFAULT;
         }
         return mode;
+    }
+
+    /**
+     * Parse an optional {@code "growth"} token ({@code "up 2-5"}, {@code "down 1-8 notip"}).
+     * Absent → off; malformed → off with a warning.
+     */
+    private static VariantGrowth parseGrowth(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantGrowth.NONE;
+        String token = el.isJsonPrimitive() && el.getAsJsonPrimitive().isString() ? el.getAsString() : null;
+        VariantGrowth growth = VariantGrowth.parse(token);
+        if (growth == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown growth '{}', using off.",
+                contextId, contextPos, el);
+            return VariantGrowth.NONE;
+        }
+        return growth;
     }
 
     private static VariantActive parseActive(JsonElement el, String contextId, BlockPos contextPos) {

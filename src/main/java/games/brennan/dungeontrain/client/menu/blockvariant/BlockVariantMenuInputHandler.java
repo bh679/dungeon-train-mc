@@ -175,7 +175,35 @@ public final class BlockVariantMenuInputHandler {
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.CYCLE_COPY_SCOPE, variantId, local, -1, "", 0));
             case SPAN -> {
                 BlockVariantMenu.closeRotPopup();
+                BlockVariantMenu.closeGrowthPopup();
                 BlockVariantMenu.toggleSpanPopup();
+            }
+            case ENTRY_GROWTH -> {
+                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                BlockVariantMenu.closeRotPopup();
+                BlockVariantMenu.closeSpanPopup();
+                BlockVariantMenu.toggleGrowthPopup(hit.index());
+            }
+            case GROWTH_OPTION -> {
+                // -2 = clicked elsewhere in the panel (close), -1 = the popup's own margin (ignore).
+                // A button sets that one section and leaves the popup open for the next choice.
+                int code = hit.secondary();
+                if (code == -1) return;
+                if (code < 0 || hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) {
+                    BlockVariantMenu.closeGrowthPopup();
+                    return;
+                }
+                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
+                BlockState parsed = BlockVariantMenu.parseState(e.stateString());
+                if (parsed == null) return;
+                if (code / 10 != GrowthPopupLayout.SECTION_ON && code % 10 == GrowthPopupLayout.STEPPER_VALUE
+                    && (code / 10 == GrowthPopupLayout.SECTION_MIN || code / 10 == GrowthPopupLayout.SECTION_MAX)) {
+                    return;
+                }
+                games.brennan.dungeontrain.editor.VariantGrowth next = GrowthPopupLayout.apply(
+                    games.brennan.dungeontrain.editor.VariantGrowth.fromInt(e.growth()), parsed, code / 10, code % 10);
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_GROWTH, variantId, local, hit.index(), "", next.toInt()));
             }
             case SPAN_OPTION -> {
                 // -2 = clicked elsewhere in the panel (close), -1 = the popup's own margin (ignore).
