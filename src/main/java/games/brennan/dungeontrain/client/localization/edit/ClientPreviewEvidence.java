@@ -65,7 +65,7 @@ public final class ClientPreviewEvidence implements PreviewEvidence {
 
     @Override
     public boolean seenInItemTooltip(String key) {
-        return ItemTooltipRecorder.snapshotFor(key) != null;
+        return ItemTooltipRecorder.seen(key);
     }
 
     @Override

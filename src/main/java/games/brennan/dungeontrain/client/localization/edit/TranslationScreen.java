@@ -125,21 +125,35 @@ public final class TranslationScreen extends Screen {
     }
 
     /**
-     * Which body the list shows. The three named bodies partition the catalog: a lang line is
+     * Which body the list shows. The first three named bodies partition the catalog: a lang line is
      * either the build editor's ({@link TranslationFilters#isEditorKey}) or the game's, and a book
      * is neither — so "Menus & messages" is the game a player sees, and the editor's jargon is a
      * body of its own that a translator takes or leaves whole.
+     *
+     * <p>The rest are the places the Preview can show a string in ({@link TranslationPreviewKind}),
+     * one each, matched by the very rule that offers the view — so a string listed under "Tooltips"
+     * always previews as one. Books need no entry: "Books & stories" is that.</p>
      */
     private enum BodyFilter {
-        ALL("all"),
-        UI("ui"),
-        EDITOR("editor"),
-        BOOKS("books");
+        ALL("all", null),
+        UI("ui", null),
+        EDITOR("editor", null),
+        BOOKS("books", null),
+        DEATH_SCREEN("death_screen", TranslationPreviewKind.DEATH_SCREEN),
+        ITEMS("items", TranslationPreviewKind.ITEM),
+        ADVANCEMENTS("advancements", TranslationPreviewKind.ADVANCEMENT),
+        BUTTONS("buttons", TranslationPreviewKind.BUTTON),
+        TOOLTIPS("tooltips", TranslationPreviewKind.TOOLTIP),
+        CHAT("chat", TranslationPreviewKind.CHAT),
+        ACTION_BAR("action_bar", TranslationPreviewKind.ACTION_BAR);
 
         final String key;
+        /** The preview view this body is, or null for the named bodies. */
+        final TranslationPreviewKind view;
 
-        BodyFilter(String key) {
+        BodyFilter(String key, TranslationPreviewKind view) {
             this.key = key;
+            this.view = view;
         }
 
         Component label() {
@@ -797,6 +811,7 @@ public final class TranslationScreen extends Screen {
             case UI -> unit.type() == TranslationUnit.Type.LANG && !TranslationFilters.isEditor(unit);
             case EDITOR -> TranslationFilters.isEditor(unit);
             case BOOKS -> unit.type() == TranslationUnit.Type.BOOK;
+            default -> TranslationPreviewKind.viewsOf(unit, ClientPreviewEvidence.INSTANCE).contains(bodyFilter.view);
         };
     }
 

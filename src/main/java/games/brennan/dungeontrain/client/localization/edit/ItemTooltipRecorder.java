@@ -81,6 +81,11 @@ public final class ItemTooltipRecorder {
         }
     }
 
+    /** Whether {@code key} has been seen in an item tooltip — cheap, unlike {@link #snapshotFor}. */
+    public static synchronized boolean seen(String key) {
+        return key != null && snapshots().containsKey(key);
+    }
+
     /** The tooltip {@code key} was first seen in, or null. */
     public static synchronized Snapshot snapshotFor(String key) {
         JsonObject obj = key == null ? null : snapshots().get(key);
