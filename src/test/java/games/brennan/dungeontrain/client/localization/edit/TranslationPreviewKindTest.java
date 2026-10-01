@@ -28,24 +28,33 @@ class TranslationPreviewKindTest {
     }
 
     @Test
-    @DisplayName("narrative book fields and book.* keys preview as a book")
+    @DisplayName("printed book prose and the stat/leaderboard book keys preview as a book")
     void books() {
         assertEquals(TranslationPreviewKind.BOOK,
             TranslationPreviewKind.of(book("random_books/deathnote#variants.0"), NOTHING_SEEN));
         assertEquals(TranslationPreviewKind.BOOK,
             TranslationPreviewKind.of(lang("book.dungeontrain.statbook.open.0"), NOTHING_SEEN));
-        // Leaderboard lines are only ever printed in a leaderboard book.
         assertEquals(TranslationPreviewKind.BOOK,
             TranslationPreviewKind.of(lang("dungeontrain.leaderboard.you_unranked"), NOTHING_SEEN));
     }
 
     @Test
-    @DisplayName("chat, command feedback and death messages preview as chat")
+    @DisplayName("death lore and story notes are not books, so they get no book preview")
+    void notBooks() {
+        assertEquals(TranslationPreviewKind.NONE,
+            TranslationPreviewKind.of(book("death_lore/default#4.narration"), NOTHING_SEEN));
+        assertEquals(TranslationPreviewKind.NONE,
+            TranslationPreviewKind.of(book("stories/x#letters.0.notes.0.text"), NOTHING_SEEN));
+    }
+
+    @Test
+    @DisplayName("death messages are always chat; other chat needs to have been seen there")
     void chat() {
-        for (String key : new String[] {"chat.dungeontrain.welcome", "commands.dungeontrain.done",
-            "command.dungeontrain.usage", "death.attack.dungeontrain.train"}) {
-            assertEquals(TranslationPreviewKind.CHAT, TranslationPreviewKind.of(lang(key), NOTHING_SEEN), key);
-        }
+        assertEquals(TranslationPreviewKind.CHAT,
+            TranslationPreviewKind.of(lang("death.attack.dungeontrain.train"), NOTHING_SEEN));
+        Predicate<String> inChat = Set.of("chat.dungeontrain.welcome")::contains;
+        assertEquals(List.of(TranslationPreviewKind.CHAT),
+            TranslationPreviewKind.viewsOf(lang("chat.dungeontrain.welcome"), NOTHING_SEEN, inChat));
     }
 
     @Test
@@ -54,45 +63,28 @@ class TranslationPreviewKindTest {
         Predicate<String> seen = Set.of("gui.dungeontrain.support.donate", "chat.dungeontrain.open")::contains;
         assertEquals(TranslationPreviewKind.BUTTON,
             TranslationPreviewKind.of(lang("gui.dungeontrain.support.donate"), seen));
-        // What the game did with the key beats what its name suggests.
         assertEquals(TranslationPreviewKind.BUTTON,
             TranslationPreviewKind.of(lang("chat.dungeontrain.open"), seen));
     }
 
     @Test
-    @DisplayName("button-ish key endings preview as a button before the screen has been seen")
-    void buttonSuffixes() {
-        for (String key : new String[] {"gui.dungeontrain.translate.edit.save",
-            "gui.dungeontrain.options.close", "gui.dungeontrain.videos.button"}) {
-            assertEquals(TranslationPreviewKind.BUTTON, TranslationPreviewKind.of(lang(key), NOTHING_SEEN), key);
-        }
-    }
-
-    @Test
-    @DisplayName("anything else previews as plain screen text")
-    void text() {
-        for (String key : new String[] {"gui.dungeontrain.translate.edit.hint",
-            "advancements.dungeontrain.root.description", "gui.dungeontrain.support.title",
-            "block.dungeontrain.track", ""}) {
-            assertEquals(TranslationPreviewKind.TEXT, TranslationPreviewKind.of(lang(key), NOTHING_SEEN), key);
+    @DisplayName("a guess from the key's name is never a preview")
+    void guessesGetNothing() {
+        for (String key : new String[] {"gui.dungeontrain.translate.edit.save", "gui.dungeontrain.options.close",
+            "chat.dungeontrain.welcome", "commands.dungeontrain.done", "gui.dungeontrain.support.title",
+            "advancements.dungeontrain.root.description", ""}) {
+            assertEquals(TranslationPreviewKind.NONE, TranslationPreviewKind.of(lang(key), NOTHING_SEEN), key);
         }
         assertEquals(TranslationPreviewKind.NONE, TranslationPreviewKind.of(null, NOTHING_SEEN));
     }
 
     @Test
-    @DisplayName("the preview offers only the places a string is known to be read, best first")
+    @DisplayName("a string read in several places offers each, and only those")
     void views() {
         Predicate<String> onButton = Set.of("chat.dungeontrain.open")::contains;
-        Predicate<String> inChat = Set.of("gui.dungeontrain.support.donate", "chat.dungeontrain.open")::contains;
-        // Seen on a button and named for chat: both, the button first.
+        Predicate<String> inChat = Set.of("chat.dungeontrain.open")::contains;
         assertEquals(List.of(TranslationPreviewKind.BUTTON, TranslationPreviewKind.CHAT),
             TranslationPreviewKind.viewsOf(lang("chat.dungeontrain.open"), onButton, inChat));
-        // Only seen in chat: chat alone — no screen-text view it was never shown in.
-        assertEquals(List.of(TranslationPreviewKind.CHAT),
-            TranslationPreviewKind.viewsOf(lang("gui.dungeontrain.support.donate"), NOTHING_SEEN, inChat));
-        // Nothing places it: plain text, and nothing to switch to.
-        assertEquals(List.of(TranslationPreviewKind.TEXT),
-            TranslationPreviewKind.viewsOf(lang("gui.dungeontrain.support.title"), NOTHING_SEEN, NOTHING_SEEN));
         assertEquals(List.of(TranslationPreviewKind.BOOK),
             TranslationPreviewKind.viewsOf(book("random_books/deathnote#title"), onButton, inChat));
     }

@@ -6,7 +6,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ComponentRenderUtils;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
 import net.minecraft.client.gui.screens.inventory.PageButton;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -53,11 +52,6 @@ public final class TranslationPreviewScreen extends Screen {
     private static final int BOOK_TEXT_WIDTH = 114;
     private static final int BOOK_LINES = 128 / 9;
 
-    /** Vanilla's tooltip wrap width ({@code Tooltip}'s 170px). */
-    private static final int TOOLTIP_WIDTH = 170;
-    private static final int TEXT_TOP = 30;
-    private static final int TEXT_SIDE = 20;
-
     /** The two widths a label commonly gets when this install has never seen its button. */
     private static final int[] DEFAULT_BUTTON_WIDTHS = {200, 150};
 
@@ -82,7 +76,8 @@ public final class TranslationPreviewScreen extends Screen {
     /** Which wider page or book this string belongs to; NONE hides the Full Context button. */
     private final BookPreviewContext.Source source;
 
-    private boolean fullContext;
+    /** On by default: the whole page, book or screen is what a player actually sees. */
+    private boolean fullContext = true;
     /** The frame fills the window; a click or Esc goes back. */
     private boolean fullscreen;
     /** The screen a button label was last seen on, for its full context; null if never seen. */
@@ -134,7 +129,6 @@ public final class TranslationPreviewScreen extends Screen {
             case BOOK -> initBook();
             case BUTTON -> initButtons();
             case CHAT -> initChat();
-            case TEXT -> initText();
             default -> { }
         }
         initBottomRow();
@@ -394,40 +388,6 @@ public final class TranslationPreviewScreen extends Screen {
             hotbarLeft + 182, TranslationPreviewText.SMALL_SCREEN_HEIGHT, 0x60000000);
     }
 
-    // ---- plain text -------------------------------------------------------------------------
-
-    private List<FormattedCharSequence> screenTextLines() {
-        return font.split(Component.literal(text), TranslationPreviewText.SMALL_SCREEN_WIDTH - TEXT_SIDE * 2);
-    }
-
-    private List<FormattedCharSequence> tooltipLines() {
-        return font.split(Component.literal(text), TOOLTIP_WIDTH);
-    }
-
-    private void initText() {
-        readout.add(Component.translatable("gui.dungeontrain.translate.preview.text.lines",
-            screenTextLines().size(), tooltipLines().size()).withColor(LABEL_COLOUR));
-    }
-
-    /** The text as a screen draws it (centred, shadowed), then as a vanilla tooltip below it. */
-    private void renderText(GuiGraphics g) {
-        int y = TEXT_TOP;
-        for (FormattedCharSequence line : screenTextLines()) {
-            g.drawCenteredString(font, line, TranslationPreviewText.SMALL_SCREEN_WIDTH / 2, y, 0xFFFFFFFF);
-            y += font.lineHeight + 1;
-        }
-        List<FormattedCharSequence> tip = tooltipLines();
-        int tipW = tip.stream().mapToInt(font::width).max().orElse(0);
-        int tipH = tip.size() * 10 - 2;
-        int tipX = (TranslationPreviewText.SMALL_SCREEN_WIDTH - tipW) / 2;
-        int tipY = y + TEXT_TOP / 2;
-        TooltipRenderUtil.renderTooltipBackground(g, tipX, tipY, tipW, tipH, 0);
-        for (FormattedCharSequence line : tip) {
-            g.drawString(font, line, tipX, tipY, 0xFFFFFFFF);
-            tipY += 10;
-        }
-    }
-
     // ---- the frame --------------------------------------------------------------------------
 
     /** The frame's size in its own GUI pixels: the recorded screen, or the smallest default one. */
@@ -512,8 +472,6 @@ public final class TranslationPreviewScreen extends Screen {
         g.pose().scale(scale, scale, 1);
         if (kind == TranslationPreviewKind.CHAT) {
             renderChat(g);
-        } else if (kind == TranslationPreviewKind.TEXT) {
-            renderText(g);
         } else if (buttonContext()) {
             ButtonLayoutRenderer.render(g, font, buttonLayout, unit.id(), text, contextLang);
         } else {

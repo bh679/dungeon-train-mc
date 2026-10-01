@@ -187,9 +187,9 @@ public final class TranslationEditScreen extends Screen {
 
         // Four now: the fourth is the answer this screen never had for the commonest case, which
         // is a machine translation that is already correct. Without it the only way out of the
-        // AI queue was to rewrite a line that needed nothing. A fifth, Preview, opens the view that
-        // fits where the string lands (plain screen text when that is not known; the preview can
-        // switch). It is a square icon, what it previews as an item, so the four words keep their width.
+        // AI queue was to rewrite a line that needed nothing. A fifth, Preview, only for strings whose
+        // place in the game is certain — a preview in the wrong setting would mislead. It is a square
+        // icon, what it previews as an item, so the four words keep their width.
         previewViews = TranslationPreviewKind.viewsOf(unit, ButtonKeyRecorder::seen, ChatKeyRecorder::seen);
         previewKind = previewViews.isEmpty() ? TranslationPreviewKind.NONE : previewViews.get(0);
         boolean hasPreview = previewKind != TranslationPreviewKind.NONE;
@@ -230,8 +230,7 @@ public final class TranslationEditScreen extends Screen {
         return new ItemStack(switch (kind) {
             case BOOK -> Items.BOOK;
             case BUTTON -> Items.STONE_BUTTON;
-            case CHAT -> Items.OAK_SIGN;
-            default -> Items.PAPER;
+            default -> Items.OAK_SIGN;
         });
     }
 

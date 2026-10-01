@@ -24,8 +24,8 @@ import java.util.Set;
  * Remembers which lang keys this install has seen arriving in chat, so the translation preview knows
  * a string is read there even when its key does not say so.
  *
- * <p>The chat-side twin of {@link ButtonKeyRecorder}: every message — player chat and system lines —
- * is walked for translatable parts, arguments and siblings included, and the editor's own keys
+ * <p>The chat-side twin of {@link ButtonKeyRecorder}: every message — player chat and system lines,
+ * never the action bar — is walked for translatable parts, arguments and siblings included, and the editor's own keys
  * ({@link ButtonKeyRecorder#isOurs}) are written down. Best-effort like the other stores here: an
  * unreadable file reads as "seen nothing", which only narrows the preview's choice of views.</p>
  */
@@ -45,6 +45,9 @@ public final class ChatKeyRecorder {
 
     @SubscribeEvent
     public static void onChat(ClientChatReceivedEvent event) {
+        if (event instanceof ClientChatReceivedEvent.System system && system.isOverlay()) {
+            return; // the action bar, not chat — it must not make a string look like a chat line
+        }
         Set<String> found = new LinkedHashSet<>();
         collect(event.getMessage(), found, 0);
         if (!found.isEmpty() && record(found)) {
