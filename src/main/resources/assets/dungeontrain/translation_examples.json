@@ -4809,6 +4809,15 @@
       ]
     }
   },
+  "gui.dungeontrain.translate.preview.frame.screen": {
+    "1": {
+      "label": "a screen's title",
+      "examples": [
+        "Options",
+        "Train Builder"
+      ]
+    }
+  },
   "gui.dungeontrain.version.update": {
     "1": {
       "label": "the newest version number",

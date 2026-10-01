@@ -15,8 +15,10 @@ import net.minecraft.util.FormattedCharSequence;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 
 /**
@@ -74,6 +76,12 @@ public final class TranslationPreviewScreen extends Screen {
     private final BookPreviewContext.Source source;
 
     private boolean fullContext;
+    /** The frame fills the window; a click or Esc goes back. */
+    private boolean fullscreen;
+    /** The screen a button label was last seen on, for its full context; null if never seen. */
+    private final ButtonScreenLayouts.Layout buttonLayout;
+    /** This locale's lang values, for the other buttons on {@link #buttonLayout}. */
+    private Map<String, String> contextLang = Map.of();
     /** Rolls the parts of the full context picked at random; Refresh changes it. */
     private long seed;
     /** The full context being shown, or null in the just-this-line view. */
@@ -100,6 +108,8 @@ public final class TranslationPreviewScreen extends Screen {
         this.typed = typed == null ? "" : typed;
         this.source = kind == TranslationPreviewKind.BOOK
             ? BookPreviewContext.sourceOf(unit) : BookPreviewContext.Source.NONE;
+        this.buttonLayout = kind == TranslationPreviewKind.BUTTON && unit != null
+            ? ButtonScreenLayouts.layoutFor(unit.id()) : null;
     }
 
     @Override
@@ -115,10 +125,10 @@ public final class TranslationPreviewScreen extends Screen {
         initBottomRow();
     }
 
-    /** Done, and for a book with wider context the Full Context toggle and (when rolled) Refresh. */
+    /** Done, and when there is wider context the Full Context toggle and (when rolled) Refresh. */
     private void initBottomRow() {
         List<Button> row = new ArrayList<>();
-        if (source != BookPreviewContext.Source.NONE) {
+        if (source != BookPreviewContext.Source.NONE || buttonLayout != null) {
             Button toggle = Button.builder(Component.translatable(fullContext
                     ? "gui.dungeontrain.translate.preview.just_this"
                     : "gui.dungeontrain.translate.preview.full_context"), b -> {
@@ -126,8 +136,9 @@ public final class TranslationPreviewScreen extends Screen {
                     page = 0;
                     rebuildWidgets();
                 }).build();
-            toggle.setTooltip(Tooltip.create(
-                Component.translatable("gui.dungeontrain.translate.preview.full_context.tip")));
+            toggle.setTooltip(Tooltip.create(Component.translatable(kind == TranslationPreviewKind.BUTTON
+                ? "gui.dungeontrain.translate.preview.full_context.button_tip"
+                : "gui.dungeontrain.translate.preview.full_context.tip")));
             row.add(toggle);
             if (context != null && context.rolled()) {
                 Button refresh = Button.builder(
@@ -277,27 +288,48 @@ public final class TranslationPreviewScreen extends Screen {
     // ---- button -----------------------------------------------------------------------------
 
     private void initButtons() {
+        if (buttonContext()) {
+            initButtonContext();
+            return;
+        }
         int[] widths = knownButtonWidth > 0 ? new int[] {knownButtonWidth} : DEFAULT_BUTTON_WIDTHS;
         int stackHeight = widths.length * ROW_H + (widths.length - 1) * GAP * 2;
         int y = (TranslationPreviewText.SMALL_SCREEN_HEIGHT - stackHeight) / 2;
-        int textWidth = font.width(text);
         for (int w : widths) {
             // Laid out in FRAME coordinates and drawn by hand inside the scaled frame, never added
             // as a widget: it is a picture of a button, and must not be clickable.
             sampleButtons.add(Button.builder(Component.literal(text), b -> { })
                 .bounds((TranslationPreviewText.SMALL_SCREEN_WIDTH - w) / 2, y, w, ROW_H).build());
             y += ROW_H + GAP * 2;
-            int overflow = TranslationPreviewText.buttonOverflow(textWidth, w);
-            readout.add(overflow <= 0
-                ? Component.translatable("gui.dungeontrain.translate.preview.button.fits", w)
-                    .withColor(GOOD_COLOUR)
-                : Component.translatable("gui.dungeontrain.translate.preview.button.overflow",
-                    w, overflow).withColor(BAD_COLOUR));
+            readout.add(fitLine(w));
         }
         if (knownButtonWidth <= 0) {
             readout.add(Component.translatable("gui.dungeontrain.translate.preview.button.unknown")
                 .withColor(LABEL_COLOUR));
         }
+    }
+
+    /** Full context: the screen this label was last seen on, read out for each button it labels. */
+    private void initButtonContext() {
+        contextLang = BookPreviewSiblings.lang(locale, "");
+        buttonLayout.widgets().stream()
+            .filter(w -> w.button() && unit.id().equals(w.key()))
+            .mapToInt(ButtonScreenLayouts.Widget::w).distinct().sorted()
+            .forEach(w -> readout.add(fitLine(w)));
+    }
+
+    private Component fitLine(int buttonWidth) {
+        int overflow = TranslationPreviewText.buttonOverflow(font.width(text), buttonWidth);
+        return overflow <= 0
+            ? Component.translatable("gui.dungeontrain.translate.preview.button.fits", buttonWidth)
+                .withColor(GOOD_COLOUR)
+            : Component.translatable("gui.dungeontrain.translate.preview.button.overflow",
+                buttonWidth, overflow).withColor(BAD_COLOUR);
+    }
+
+    /** Whether the button preview is showing the recorded screen rather than sample buttons. */
+    private boolean buttonContext() {
+        return kind == TranslationPreviewKind.BUTTON && fullContext && buttonLayout != null;
     }
 
     // ---- chat -------------------------------------------------------------------------------
@@ -330,41 +362,79 @@ public final class TranslationPreviewScreen extends Screen {
             hotbarLeft + 182, TranslationPreviewText.SMALL_SCREEN_HEIGHT, 0x60000000);
     }
 
-    // ---- the small-screen frame -------------------------------------------------------------
+    // ---- the frame --------------------------------------------------------------------------
+
+    /** The frame's size in its own GUI pixels: the recorded screen, or the smallest default one. */
+    private int frameWidth() {
+        return buttonContext() ? buttonLayout.width() : TranslationPreviewText.SMALL_SCREEN_WIDTH;
+    }
+
+    private int frameHeight() {
+        return buttonContext() ? buttonLayout.height() : TranslationPreviewText.SMALL_SCREEN_HEIGHT;
+    }
+
+    /** The scale the frame's pixels were drawn at: the recorded screen's, or GUI scale Auto's 2. */
+    private float actualScale() {
+        int scale = buttonContext() ? Math.max(1, buttonLayout.scale()) : TranslationPreviewText.SMALL_SCREEN_GUI_SCALE;
+        return (float) (scale / minecraft.getWindow().getGuiScale());
+    }
 
     /**
-     * How much to scale the 427×240 frame so one of its pixels is a GUI-scale-2 pixel on this
-     * window — or less, when this window cannot fit it at that size.
+     * How much to scale the frame so one of its pixels is the size it really was on this window —
+     * or less, when this window cannot fit it at that size. Fullscreen fills the window either way.
      */
     private float frameScale() {
-        double guiScale = minecraft.getWindow().getGuiScale();
-        float actual = (float) (TranslationPreviewText.SMALL_SCREEN_GUI_SCALE / guiScale);
-        float fitWide = (float) (width - MARGIN * 2) / TranslationPreviewText.SMALL_SCREEN_WIDTH;
-        float fitHigh = (float) frameRoom() / TranslationPreviewText.SMALL_SCREEN_HEIGHT;
-        return Math.min(actual, Math.min(fitWide, fitHigh));
+        float fitWide = (float) (width - MARGIN * 2) / frameWidth();
+        if (fullscreen) {
+            return Math.min(fitWide, (float) (height - MARGIN * 2) / frameHeight());
+        }
+        float fitHigh = (float) frameRoom() / frameHeight();
+        return Math.min(actualScale(), Math.min(fitWide, fitHigh));
     }
 
     private boolean frameShrunk() {
-        double guiScale = minecraft.getWindow().getGuiScale();
-        return frameScale() < (float) (TranslationPreviewText.SMALL_SCREEN_GUI_SCALE / guiScale) - 0.001f;
+        return frameScale() < actualScale() - 0.001f;
+    }
+
+    /** Readout lines wrapped to the window, so a long one is never cut off at the edges. */
+    private List<FormattedCharSequence> readoutLines() {
+        List<FormattedCharSequence> lines = new ArrayList<>();
+        for (Component line : readout) {
+            lines.addAll(font.split(line, width - MARGIN * 2));
+        }
+        lines.addAll(font.split(Component.translatable("gui.dungeontrain.translate.preview.frame.click")
+            .withColor(LABEL_COLOUR), width - MARGIN * 2));
+        return lines;
     }
 
     /** Vertical room for the frame: below the caption, above the readout and the Done row. */
     private int frameRoom() {
-        int readoutHeight = (readout.size() + 1) * (font.lineHeight + 2);
+        int readoutHeight = (readoutLines().size() + 1) * (font.lineHeight + 2);
         return height - TOP - font.lineHeight - GAP - readoutHeight - MARGIN - ROW_H - GAP;
+    }
+
+    /** The frame's place on this window, as {x, y, w, h}. */
+    private int[] frameRect() {
+        float scale = frameScale();
+        int frameW = Math.round(frameWidth() * scale);
+        int frameH = Math.round(frameHeight() * scale);
+        int frameY = fullscreen ? (height - frameH) / 2 : TOP + font.lineHeight + GAP;
+        return new int[] {(width - frameW) / 2, frameY, frameW, frameH};
     }
 
     private void renderFrame(GuiGraphics g) {
         float scale = frameScale();
-        int frameW = Math.round(TranslationPreviewText.SMALL_SCREEN_WIDTH * scale);
-        int frameH = Math.round(TranslationPreviewText.SMALL_SCREEN_HEIGHT * scale);
-        int frameX = (width - frameW) / 2;
-        int frameY = TOP + font.lineHeight + GAP;
+        int[] r = frameRect();
+        int frameX = r[0], frameY = r[1], frameW = r[2], frameH = r[3];
 
-        drawCentered(g, Component.translatable(frameShrunk()
-            ? "gui.dungeontrain.translate.preview.frame.shrunk"
-            : "gui.dungeontrain.translate.preview.frame"), TOP, LABEL_COLOUR);
+        if (!fullscreen) {
+            Component caption = buttonContext()
+                ? Component.translatable("gui.dungeontrain.translate.preview.frame.screen", buttonLayout.title())
+                : Component.translatable(frameShrunk()
+                    ? "gui.dungeontrain.translate.preview.frame.shrunk"
+                    : "gui.dungeontrain.translate.preview.frame");
+            drawCentered(g, caption, TOP, LABEL_COLOUR);
+        }
 
         g.fill(frameX - 1, frameY - 1, frameX + frameW + 1, frameY + frameH + 1, 0xFF808080);
         g.fill(frameX, frameY, frameX + frameW, frameY + frameH, 0xFF1E2530);
@@ -376,6 +446,8 @@ public final class TranslationPreviewScreen extends Screen {
         g.pose().scale(scale, scale, 1);
         if (kind == TranslationPreviewKind.CHAT) {
             renderChat(g);
+        } else if (buttonContext()) {
+            ButtonLayoutRenderer.render(g, font, buttonLayout, unit.id(), text, contextLang);
         } else {
             for (Button sample : sampleButtons) {
                 // Off-screen mouse: never hovered, so it shows the resting look players see.
@@ -385,15 +457,45 @@ public final class TranslationPreviewScreen extends Screen {
         g.pose().popPose();
         g.disableScissor();
 
+        if (fullscreen) {
+            return;
+        }
         int y = frameY + frameH + GAP;
-        for (Component line : readout) {
-            drawCentered(g, line, y, LABEL_COLOUR);
+        for (FormattedCharSequence line : readoutLines()) {
+            g.drawCenteredString(font, line, width / 2, y, LABEL_COLOUR);
             y += font.lineHeight + 2;
         }
     }
 
     private void drawCentered(GuiGraphics g, Component line, int y, int colour) {
         g.drawCenteredString(font, line, width / 2, y, colour);
+    }
+
+    // ---- fullscreen -------------------------------------------------------------------------
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (fullscreen) {
+            fullscreen = false;
+            return true;
+        }
+        if (kind != TranslationPreviewKind.BOOK) {
+            int[] r = frameRect();
+            if (mouseX >= r[0] && mouseX < r[0] + r[2] && mouseY >= r[1] && mouseY < r[1] + r[3]) {
+                fullscreen = true;
+                return true;
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (fullscreen && keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            fullscreen = false;
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
@@ -409,6 +511,11 @@ public final class TranslationPreviewScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        if (fullscreen) {
+            // Only the frame: no buttons to hit, and a click anywhere goes back.
+            renderBackground(g, mouseX, mouseY, partialTick);
+            return;
+        }
         super.render(g, mouseX, mouseY, partialTick);
         if (kind == TranslationPreviewKind.BOOK) {
             renderBookCaption(g);

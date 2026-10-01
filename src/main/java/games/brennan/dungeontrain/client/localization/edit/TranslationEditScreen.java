@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.client.localization.edit;
 
+import games.brennan.dungeontrain.client.menu.ItemIconButton;
 import net.minecraft.Util;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.MultiLineEditBox;
@@ -11,6 +13,8 @@ import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.Mth;
 
@@ -182,11 +186,12 @@ public final class TranslationEditScreen extends Screen {
         // Four now: the fourth is the answer this screen never had for the commonest case, which
         // is a machine translation that is already correct. Without it the only way out of the
         // AI queue was to rewrite a line that needed nothing. A fifth, Preview, only for strings
-        // whose place in the game is known — a preview in the wrong setting would mislead.
+        // whose place in the game is known — a preview in the wrong setting would mislead. It is a
+        // square icon (what it previews, as an item), so the four words keep their width.
         previewKind = TranslationPreviewKind.of(unit, ButtonKeyRecorder::seen);
         boolean hasPreview = previewKind != TranslationPreviewKind.NONE;
-        int buttons = hasPreview ? 5 : 4;
-        int buttonWidth = (contentWidth - GAP * (buttons - 1)) / buttons;
+        int iconRoom = hasPreview ? ROW_H + GAP : 0;
+        int buttonWidth = (contentWidth - iconRoom - GAP * 3) / 4;
         int x = MARGIN;
         saveButton = addRenderableWidget(Button.builder(
             Component.translatable("gui.dungeontrain.translate.edit.save"), b -> save())
@@ -202,12 +207,12 @@ public final class TranslationEditScreen extends Screen {
             Component.translatable("gui.dungeontrain.translate.edit.good_as_is.tip")));
         x += buttonWidth + GAP;
         if (hasPreview) {
-            Button preview = addRenderableWidget(Button.builder(
-                Component.translatable(previewKind.buttonKey()), b -> openPreview())
-                .bounds(x, bottomRow, buttonWidth, ROW_H).build());
-            preview.setTooltip(Tooltip.create(
-                Component.translatable(previewKind.buttonKey() + ".tip")));
-            x += buttonWidth + GAP;
+            Component label = Component.translatable(previewKind.buttonKey());
+            Button preview = addRenderableWidget(new ItemIconButton(x, bottomRow, ROW_H,
+                previewIcon(previewKind), label, b -> openPreview()));
+            preview.setTooltip(Tooltip.create(label.copy().append("\n").append(
+                Component.translatable(previewKind.buttonKey() + ".tip").withStyle(ChatFormatting.GRAY))));
+            x += ROW_H + GAP;
         }
         addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose())
             .bounds(x, bottomRow, buttonWidth, ROW_H).build());
@@ -215,6 +220,15 @@ public final class TranslationEditScreen extends Screen {
         // Once up front, not only on edit: an override stored before this check existed — or one
         // pulled down from the relay — can already be broken when the screen opens.
         revalidate();
+    }
+
+    /** What the Preview button shows: the thing the text will be seen on. */
+    private static ItemStack previewIcon(TranslationPreviewKind kind) {
+        return new ItemStack(switch (kind) {
+            case BOOK -> Items.BOOK;
+            case BUTTON -> Items.STONE_BUTTON;
+            default -> Items.OAK_SIGN;
+        });
     }
 
     /**

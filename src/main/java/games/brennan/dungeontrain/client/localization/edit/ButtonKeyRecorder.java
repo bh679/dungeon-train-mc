@@ -68,6 +68,8 @@ public final class ButtonKeyRecorder {
         if (changed) {
             save();
         }
+        // The whole screen too, for the button preview's full context.
+        ButtonScreenLayouts.record(event.getScreen(), event.getListenersList());
     }
 
     /** Whether {@code key} has been seen on a button. */
