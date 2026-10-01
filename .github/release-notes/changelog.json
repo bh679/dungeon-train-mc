@@ -21707,6 +21707,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "translation-previews",
+      "version": "0.1084.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "See your translation where it appears",
+      "summary": "Translators can now preview their text in place \u2014 on a book page, a button, a tooltip, the death screen, in chat and more \u2014 before saving.",
+      "highlights": [],
+      "pr": 1736,
+      "date": "2026-10-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
