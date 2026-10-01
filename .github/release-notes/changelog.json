@@ -21781,6 +21781,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "translatable-editor-action-bar",
+      "version": "0.1088.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "translations"
+      ],
+      "title": "Build editor messages in your language",
+      "summary": "The build editor's quick messages above the hotbar now speak your language.",
+      "highlights": [],
+      "pr": 1739,
+      "date": "2026-10-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
