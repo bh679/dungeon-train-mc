@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
@@ -47,7 +46,6 @@ public final class EndBandJobQueue<J> {
 
     private final Map<Long, Entry<J>> jobs = new LinkedHashMap<>();
     private final ReentrantLock lock = new ReentrantLock();
-    private final Condition notEmpty = lock.newCondition();
     private volatile Players players = Players.NONE;
 
     /** Replace the player snapshot the next takes are ordered by. Server thread. */
@@ -64,40 +62,25 @@ public final class EndBandJobQueue<J> {
         lock.lock();
         try {
             jobs.put(key, new Entry<>(cx, cz, job));
-            notEmpty.signal();
         } finally {
             lock.unlock();
         }
     }
 
     /**
-     * Block until a job is waiting, then remove and return the one nearest a player. With players present,
-     * jobs further than {@code keepRadius} chunks from all of them are removed and handed to {@code onDrop}
-     * first. With no players (a headless forceload) the oldest job goes first and nothing is dropped.
+     * Remove and return the waiting job nearest a player, or {@code null} if none is waiting. Never blocks.
+     * With players present, jobs further than {@code keepRadius} chunks from all of them are removed and
+     * handed to {@code onDrop} (outside the lock) first. With no players (a headless forceload) the oldest
+     * job goes first and nothing is dropped.
      */
-    public J take(int keepRadius, Consumer<J> onDrop) throws InterruptedException {
-        lock.lock();
-        try {
-            while (true) {
-                List<J> dropped = new ArrayList<>();
-                J picked = pickLocked(players, keepRadius, dropped);
-                if (!dropped.isEmpty()) {
-                    lock.unlock();
-                    try {
-                        dropped.forEach(onDrop);
-                    } finally {
-                        lock.lock();
-                    }
-                }
-                if (picked != null) return picked;
-                notEmpty.await();
-            }
-        } finally {
-            lock.unlock();
-        }
+    public J poll(int keepRadius, Consumer<J> onDrop) {
+        List<J> dropped = new ArrayList<>();
+        J picked = pollNearest(keepRadius, dropped);
+        dropped.forEach(onDrop);
+        return picked;
     }
 
-    /** Non-blocking {@link #take} for tests: the job it would hand out now, or {@code null}. */
+    /** {@link #poll} with the dropped jobs collected into {@code dropped} rather than handed on. */
     J pollNearest(int keepRadius, List<J> dropped) {
         lock.lock();
         try {

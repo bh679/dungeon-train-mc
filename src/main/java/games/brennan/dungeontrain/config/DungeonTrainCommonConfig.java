@@ -383,6 +383,12 @@ public final class DungeonTrainCommonConfig {
     public static final double MAX_BACKER_NAME_WEIGHT = 1000.0;
 
     /**
+     * Whether echoes write a credit line into the description of gear they drop or give (see
+     * {@code echo.EchoDropCredit}). Default true.
+     */
+    public static final boolean DEFAULT_ECHO_DROP_CREDIT = true;
+
+    /**
      * Catch-up spawning defaults to filling the whole shortfall in one tick.
      * Measured in play, two groups per settle window HELD a ~8-group deficit
      * steady at speed without ever closing it — the train stayed gone, which is
@@ -621,6 +627,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.ConfigValue<String> WORLDGEN_CYCLE_ORDER;
     public static final ModConfigSpec.BooleanValue BREAK_BLOCKS_ON_CONTACT;
     public static final ModConfigSpec.DoubleValue BACKER_NAME_WEIGHT;
+    public static final ModConfigSpec.BooleanValue ECHO_DROP_CREDIT;
     public static final ModConfigSpec.EnumValue<CatchUpBurstMode> CATCH_UP_BURST_MODE;
 
     static {
@@ -697,6 +704,7 @@ public final class DungeonTrainCommonConfig {
         WORLDGEN_CYCLE_ORDER = pair.getLeft().worldgenCycleOrder;
         BREAK_BLOCKS_ON_CONTACT = pair.getLeft().breakBlocksOnContact;
         BACKER_NAME_WEIGHT = pair.getLeft().backerNameWeight;
+        ECHO_DROP_CREDIT = pair.getLeft().echoDropCredit;
         CATCH_UP_BURST_MODE = pair.getLeft().catchUpBurstMode;
     }
 
@@ -752,6 +760,12 @@ public final class DungeonTrainCommonConfig {
                         "case naming is byte-identical to a build without the feature.")
                 .defineInRange("backerNameWeight", DEFAULT_BACKER_NAME_WEIGHT,
                         MIN_BACKER_NAME_WEIGHT, MAX_BACKER_NAME_WEIGHT);
+        ModConfigSpec.BooleanValue echoDropCredit = b
+                .comment("When an echo drops gear it had equipped, or gives a gift, the item's description gains a",
+                        "line crediting the player the echo came from (\"Once wielded by the echo of Steve\").",
+                        "Non-stackable items only; at most once per player per item. false = items are left as",
+                        "dropped. Default true.")
+                .define("echoDropCredit", DEFAULT_ECHO_DROP_CREDIT);
         ModConfigSpec.EnumValue<CatchUpBurstMode> catchUpBurstMode = b
                 .comment("How fast the train may extend when a spawn lane has fallen BEHIND the carriages a player needs around them (fast speed, a reload, a chunk-gen wait). Normally each end adds one group per settle window, which is what keeps the seams between groups even — and also what lets a fast train run away from a standing player. FILL (default) = add however many groups that end is short, all in one tick, so it catches up instantly; costs one bigger server-tick spike as they appear. BURST_TWO = add two in one tick while an end is two or more groups short — a gentler catch-up that may not keep up at high speed. OFF = never add more than one group at a time. No mode changes the steady state, where an end is at most one group short. One global setting: it lives here rather than per-save, so it can be set from the title screen and applies to every world.")
                 .defineEnum("catchUpBurstMode", DEFAULT_CATCH_UP_BURST_MODE);
@@ -1188,7 +1202,7 @@ public final class DungeonTrainCommonConfig {
                 stacksEnabled, stacksHoldBlocks, stacksFadeBlocks, stacksLeadGapBlocks, stacksDensity,
                 mixEnabled, mixExclude,
                 worldgenCycleOrder,
-                breakBlocksOnContact, backerNameWeight, catchUpBurstMode);
+                breakBlocksOnContact, backerNameWeight, echoDropCredit, catchUpBurstMode);
     }
 
     /**
@@ -1228,6 +1242,11 @@ public final class DungeonTrainCommonConfig {
     /** Weight of a backer name/phrase in AIN naming; falls back to the hardcoded default pre-load. */
     public static double getBackerNameWeight() {
         return isLoaded() ? BACKER_NAME_WEIGHT.get() : DEFAULT_BACKER_NAME_WEIGHT;
+    }
+
+    /** Whether echo drops and gifts get a credit line; falls back to the hardcoded default pre-load. */
+    public static boolean isEchoDropCreditEnabled() {
+        return isLoaded() ? ECHO_DROP_CREDIT.get() : DEFAULT_ECHO_DROP_CREDIT;
     }
 
     /** Global default for train-on-contact block breaking; falls back to the hardcoded default pre-load. */
@@ -1871,5 +1890,6 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.ConfigValue<String> worldgenCycleOrder,
                           ModConfigSpec.BooleanValue breakBlocksOnContact,
                           ModConfigSpec.DoubleValue backerNameWeight,
+                          ModConfigSpec.BooleanValue echoDropCredit,
                           ModConfigSpec.EnumValue<CatchUpBurstMode> catchUpBurstMode) {}
 }

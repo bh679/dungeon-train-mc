@@ -300,6 +300,11 @@ public final class RideSnapshotCapture {
         }
     }
 
+    /** The long edge a gallery ride photo would be stored at right now (the bug-report lag tip reads it). */
+    public static int currentGalleryEdge() {
+        return targetEdge(false);
+    }
+
     /**
      * The long-edge the stored/uploaded shot is down-scaled to. Echo captures always use {@link #BASE_EDGE}.
      * A gallery shot goes hi-res only when {@link GraphicsCapabilities#wantsHiRes()} (Distant Horizons + a
