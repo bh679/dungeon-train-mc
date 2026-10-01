@@ -21669,9 +21669,9 @@
       "highlights": [],
       "pr": 1733,
       "date": "2026-10-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
     },
     {
       "id": "translation-character-cards",
@@ -21687,9 +21687,65 @@
       "highlights": [],
       "pr": 1734,
       "date": "2026-10-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
+    },
+    {
+      "id": "bug-report-response",
+      "version": "0.1083.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Your bug reports get an answer",
+      "summary": "Report a bug after a fall and the train now tells you whether help is already on the way.",
+      "highlights": [],
+      "pr": 1735,
+      "date": "2026-10-01",
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
+    },
+    {
+      "id": "translation-previews",
+      "version": "0.1084.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "See your translation where it appears",
+      "summary": "Translators can now preview their text in place \u2014 on a book page, a button, a tooltip, the death screen, in chat and more \u2014 before saving.",
+      "highlights": [],
+      "pr": 1736,
+      "date": "2026-10-01",
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
+    },
+    {
+      "id": "leaderboard-eras-ancient-records",
+      "version": "0.1077.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books"
+      ],
+      "title": "Leaderboard eras and Ancient Records",
+      "summary": "The one-life leaderboards now belong to eras. When a balancing release changes what a good run is, the boards are retired and a fresh set opens for the new version; each calendar year gets its own boards too. Nothing is lost: every retired board is kept for good, and The Tallyman's books about them keep turning up in loot as Ancient Records, naming the game versions their numbers came from. Players still on an older version keep scoring on their own era's boards.",
+      "highlights": [
+        "One-life boards (distance, carriages, time aboard, chests, echoes, friends, pacifist and no-chest runs) reset per game version; all-lives totals and contribution boards stay all-time.",
+        "Retired boards stay readable and circulate as Ancient Records books: about one loot book in forty, and one per retired era on the Stat Room's shelves. The server setting retiredLeaderboardBooks turns them off.",
+        "Each year has its own one-life boards alongside the version boards."
+      ],
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
     }
   ]
 }

@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.client.localization.edit;
 
+import games.brennan.dungeontrain.client.menu.ItemIconButton;
 import net.minecraft.Util;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.MultiLineEditBox;
@@ -11,6 +13,8 @@ import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.Mth;
 
@@ -76,6 +80,17 @@ public final class TranslationEditScreen extends Screen {
     private Component setReadout;
     /** The way on to the next variation; relabelled in place, like the dismiss button beside it. */
     private Button nextButton;
+
+    /**
+     * What the translator has typed, or null until they type anything. Kept across rebuilds — the
+     * preview, a resize and the unsaved-changes prompt all re-run {@link #init} on return, and the
+     * box must come back holding their words rather than the stored value.
+     */
+    private String typed;
+    /** Where this string shows up in game, which picks the Preview button (or none). */
+    private TranslationPreviewKind previewKind = TranslationPreviewKind.NONE;
+    /** Every place this string is known to be read; the preview's switch cycles these. */
+    private List<TranslationPreviewKind> previewViews = List.of();
 
     /** Why the typed text will not render, or null. Recomputed on every keystroke. */
     private TranslationFormatCheck.Problem formatProblem;
@@ -162,16 +177,24 @@ public final class TranslationEditScreen extends Screen {
             Component.translatable("gui.dungeontrain.translate.edit.hint"),
             Component.translatable("gui.dungeontrain.translate.edit.label"));
         editor.setCharacterLimit(TranslationEdits.MAX_VALUE_CHARS);
-        editor.setValue(currentValue());
-        editor.setValueListener(value -> revalidate());
+        editor.setValue(typed != null ? typed : currentValue());
+        editor.setValueListener(value -> {
+            typed = value;
+            revalidate();
+        });
         addRenderableWidget(editor);
         setInitialFocus(editor);
 
         // Four now: the fourth is the answer this screen never had for the commonest case, which
         // is a machine translation that is already correct. Without it the only way out of the
-        // AI queue was to rewrite a line that needed nothing.
-        int buttons = 4;
-        int buttonWidth = (contentWidth - GAP * (buttons - 1)) / buttons;
+        // AI queue was to rewrite a line that needed nothing. A fifth, Preview, only for strings whose
+        // place in the game is certain — a preview in the wrong setting would mislead. It is a square
+        // icon, what it previews as an item, so the four words keep their width.
+        previewViews = TranslationPreviewKind.viewsOf(unit, ClientPreviewEvidence.INSTANCE);
+        previewKind = previewViews.isEmpty() ? TranslationPreviewKind.NONE : previewViews.get(0);
+        boolean hasPreview = previewKind != TranslationPreviewKind.NONE;
+        int iconRoom = hasPreview ? ROW_H + GAP : 0;
+        int buttonWidth = (contentWidth - iconRoom - GAP * 3) / 4;
         int x = MARGIN;
         saveButton = addRenderableWidget(Button.builder(
             Component.translatable("gui.dungeontrain.translate.edit.save"), b -> save())
@@ -186,12 +209,56 @@ public final class TranslationEditScreen extends Screen {
         dismissButton.setTooltip(Tooltip.create(
             Component.translatable("gui.dungeontrain.translate.edit.good_as_is.tip")));
         x += buttonWidth + GAP;
+        if (hasPreview) {
+            Component label = Component.translatable(previewKind.buttonKey());
+            Button preview = addRenderableWidget(new ItemIconButton(x, bottomRow, ROW_H,
+                previewIcon(previewKind), label, b -> openPreview()));
+            preview.setTooltip(Tooltip.create(label.copy().append("\n").append(
+                Component.translatable(previewKind.buttonKey() + ".tip").withStyle(ChatFormatting.GRAY))));
+            x += ROW_H + GAP;
+        }
         addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose())
             .bounds(x, bottomRow, buttonWidth, ROW_H).build());
 
         // Once up front, not only on edit: an override stored before this check existed — or one
         // pulled down from the relay — can already be broken when the screen opens.
         revalidate();
+    }
+
+    /** What the Preview button shows: the thing the text will be seen on. */
+    private static ItemStack previewIcon(TranslationPreviewKind kind) {
+        return new ItemStack(switch (kind) {
+            case BOOK -> Items.BOOK;
+            case DEATH_SCREEN -> Items.SKELETON_SKULL;
+            case ITEM -> Items.ITEM_FRAME;
+            case ADVANCEMENT -> Items.KNOWLEDGE_BOOK;
+            case BUTTON -> Items.STONE_BUTTON;
+            case TOOLTIP -> Items.NAME_TAG;
+            case ACTION_BAR -> Items.CLOCK;
+            default -> Items.OAK_SIGN;
+        });
+    }
+
+    /**
+     * Show what is in the box — saved or not — where the game will show it.
+     *
+     * <p>Placeholders in a lang string are filled with this locale's curated examples, so the
+     * preview is as long as the line a player will actually read; a slot with no example keeps its
+     * token. Narrative book prose is not a format string ({@link #problemWith}) and goes as typed.</p>
+     */
+    private void openPreview() {
+        String value = editor.getValue();
+        String shown = value;
+        if (unit.type() == TranslationUnit.Type.LANG) {
+            TranslationExampleValues examples = TranslationExampleValues.forLocale(locale);
+            shown = TranslationPreviewText.fill(value,
+                TranslationVariableScanner.scan(unit.id(), value),
+                variable -> variable.hasExamples()
+                    ? examples.render(variable.examples().get(0)).localized()
+                    : null);
+        }
+        minecraft.setScreen(new TranslationPreviewScreen(this, previewKind, previewViews, shown,
+            ButtonKeyRecorder.widthOf(unit.id()), unit, locale, value));
     }
 
     /**

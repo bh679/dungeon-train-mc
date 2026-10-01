@@ -48,7 +48,8 @@ public final class RunSummaryReporter {
             long runSec = Math.max(0L, packet.trainTimeTicks() / TICKS_PER_SECOND);
             int carriage = packet.cartsTravelled();
             int distanceBlocks = (int) Math.round(packet.distanceBlocks());
-            JsonObject payload = buildPayload(uuid, name, runSec, carriage, distanceBlocks, pos, freePlay);
+            JsonObject payload = buildPayload(uuid, name, runSec, carriage, distanceBlocks, pos, freePlay,
+                    WorldJoinReport.modVersion());
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] run-summary relay report failed: {}", t.toString());
@@ -67,6 +68,16 @@ public final class RunSummaryReporter {
      */
     static JsonObject buildPayload(String uuid, String player, long runSec, int carriage, int distanceBlocks,
                                    RunPosition pos, boolean freePlay) {
+        return buildPayload(uuid, player, runSec, carriage, distanceBlocks, pos, freePlay, null);
+    }
+
+    /**
+     * As above, with the Dungeon Train version this client runs. The relay cuts the one-life boards
+     * into ERAS by version (a balancing release opens a new one), and this field is what places a run
+     * in its era — absent, the relay files it under the oldest era there is. Sent only when known.
+     */
+    static JsonObject buildPayload(String uuid, String player, long runSec, int carriage, int distanceBlocks,
+                                   RunPosition pos, boolean freePlay, String modVersion) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         if (player != null && !player.isEmpty()) {
@@ -81,7 +92,15 @@ public final class RunSummaryReporter {
         // playtime and carriage boards are built from, so it is the one that was showing
         // world-border "distances" before the flag existed.
         body.addProperty("freePlay", freePlay);
+        addModVersion(body, modVersion);
         return body;
+    }
+
+    /** The version the relay places a one-life score by, when this jar knows its own. Shared with the death payload. */
+    static void addModVersion(JsonObject body, String modVersion) {
+        if (modVersion != null && !modVersion.isBlank() && !"unknown".equals(modVersion)) {
+            body.addProperty("modVersion", modVersion.trim());
+        }
     }
 
     private static void post(String uuid, String json) {
