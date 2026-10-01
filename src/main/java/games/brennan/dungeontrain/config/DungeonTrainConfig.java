@@ -497,7 +497,7 @@ public final class DungeonTrainConfig {
         ModConfigSpec.DoubleValue killerBunnyNameChance = b
                 .comment("The probability a Killer Bunny spawns carrying a name from Monty Python and the Holy Grail (Rabbit of",
                         "Caerbannog, Tim's Pet, Run Away, ...). Rolled once when the rabbit turns killer. On a miss the rabbit",
-                        "keeps whatever name Adventure Item Names already gave it, or none — it still reads as The Killer Bunny.",
+                        "keeps whatever name Adventure Item Names already gave it, or vanilla's plain 'The Killer Bunny'.",
                         "Default 0.1, twice AIN's passive-mob naming rate. 0 never names it, 1 always does.")
                 .defineInRange("killerBunnyNameChance", DEFAULT_KILLER_BUNNY_NAME_CHANCE,
                         MIN_KILLER_BUNNY_NAME_CHANCE, MAX_KILLER_BUNNY_NAME_CHANCE);

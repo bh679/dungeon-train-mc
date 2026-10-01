@@ -38,8 +38,8 @@ import org.slf4j.Logger;
  * {@link DungeonTrainConfig#getKillerBunnyNameChance()}: a win names it from
  * {@link KillerBunnyNames} (the Monty Python pool), replacing any Adventure Item
  * Names fantasy name so the pool is what named Killer Bunnies lean toward. On a
- * miss the rabbit is left alone — an AIN name stays, and an unnamed one still
- * reads "The Killer Bunny" through vanilla's EVIL type name.</p>
+ * miss the rabbit is left alone — an AIN name stays, and an unnamed one keeps
+ * the "The Killer Bunny" name vanilla's {@code setVariant(EVIL)} gives it.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class KillerBunnyEvents {
