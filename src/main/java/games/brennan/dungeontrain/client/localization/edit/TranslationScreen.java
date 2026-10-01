@@ -58,6 +58,8 @@ public final class TranslationScreen extends Screen {
      * competing with it. Wide enough for the longest label; the rest of the row is search.
      */
     private static final int FILTER_MAX_W = 110;
+    /** A button's text keeps a couple of pixels clear of each edge; a little more reads as breathing. */
+    private static final int CYCLE_TEXT_PAD = 8;
 
     /**
      * The row's glyphs. Search borrows vanilla's own magnifier — it is the icon Minecraft uses for
@@ -312,6 +314,23 @@ public final class TranslationScreen extends Screen {
         int cyclesX = MARGIN + contentWidth - (cycleWidth + GAP) * (cycles - 1) - cycleWidth;
         cyclesLeftEdge = cyclesX;
         int searchWidth = Math.max(ROW_H, cyclesX - GAP - searchX);
+        // Equal slots by default. When State or From cannot fit their longest label and the
+        // character cycle has room to spare (its names are short), it gives that room to them;
+        // the group's total width — and so everything left of it — stays put.
+        int stateWidth = cycleWidth;
+        int bodyWidth = cycleWidth;
+        int characterWidth = cycleWidth;
+        if (cycles == 3) {
+            int stateShort = Math.max(0, labelNeed(states, StateFilter::label) - cycleWidth);
+            int bodyShort = Math.max(0, labelNeed(List.of(BodyFilter.values()), BodyFilter::label)
+                - cycleWidth);
+            int spare = Math.max(0, cycleWidth - labelNeed(characters, this::characterLabel));
+            int toState = Math.min(stateShort, spare);
+            int toBody = Math.min(bodyShort, spare - toState);
+            stateWidth += toState;
+            bodyWidth += toBody;
+            characterWidth -= toState + toBody;
+        }
 
         searchToggle = addRenderableWidget(spriteButton(MARGIN, TOP, SEARCH_ICON, VANILLA_ICON_PX,
             Component.translatable("gui.dungeontrain.translate.search"),
@@ -357,7 +376,7 @@ public final class TranslationScreen extends Screen {
             .withValues(states)
             .withInitialValue(stateFilter)
             .displayOnlyValue()
-            .create(cyclesX, TOP, cycleWidth, ROW_H,
+            .create(cyclesX, TOP, stateWidth, ROW_H,
                 Component.translatable("gui.dungeontrain.translate.filter"),
                 (button, value) -> {
                     stateFilter = value;
@@ -367,7 +386,7 @@ public final class TranslationScreen extends Screen {
             .withValues(BodyFilter.values())
             .withInitialValue(bodyFilter)
             .displayOnlyValue()
-            .create(cyclesX + cycleWidth + GAP, TOP, cycleWidth, ROW_H,
+            .create(cyclesX + stateWidth + GAP, TOP, bodyWidth, ROW_H,
                 Component.translatable("gui.dungeontrain.translate.body"),
                 (button, value) -> {
                     boolean booksChanged = (value == BodyFilter.BOOKS) != (bodyFilter == BodyFilter.BOOKS);
@@ -385,7 +404,8 @@ public final class TranslationScreen extends Screen {
                 .withValues(characters)
                 .withInitialValue(characterFilter)
                 .displayOnlyValue()
-                .create(cyclesX + (cycleWidth + GAP) * 2, TOP, cycleWidth, ROW_H,
+                .create(cyclesX + stateWidth + bodyWidth + GAP * 2, TOP, characterWidth,
+                    ROW_H,
                     Component.translatable("gui.dungeontrain.translate.character_filter"),
                     (button, value) -> {
                         characterFilter = value;
@@ -872,6 +892,15 @@ public final class TranslationScreen extends Screen {
             }
         }
         return out;
+    }
+
+    /** The width a cycle needs to show its longest value whole — text plus the button's margins. */
+    private <T> int labelNeed(List<T> values, java.util.function.Function<T, Component> label) {
+        int widest = 0;
+        for (T value : values) {
+            widest = Math.max(widest, font.width(label.apply(value)));
+        }
+        return widest + CYCLE_TEXT_PAD;
     }
 
     private Component characterLabel(String id) {
