@@ -157,35 +157,48 @@ public final class EditorRoster {
     private static int relayIdFor(String categoryId, String groupModelId, EditorTypeMenusPacket.Variant v) {
         games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds rows = RELAY_ROWS.get();
         if (rows == null) return 0;
-        java.util.List<String> keys = new ArrayList<>(2);
-        String K = null;
-        if (EditorCategory.CARRIAGES.id().equals(categoryId) || PlotCategory.WHOLE.id().equals(categoryId)) {
-            // A whole room rides the relay under the carriage kind — see BuilderRelayInstall.
-            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
-                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE, "", v.modelId()));
-        } else if (PlotCategory.WHOLE_GROUP.id().equals(categoryId)) {
-            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
-                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE_GROUP, "", v.modelId()));
-        } else if (PlotCategory.PARTS.id().equals(categoryId)) {
-            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
-                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PART, groupModelId, v.modelName()));
-        } else if (EditorCategory.CONTENTS.id().equals(categoryId)) {
-            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
-                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CONTENTS, "", v.modelId()));
-        } else if (EditorCategory.TRACKS.id().equals(categoryId)) {
-            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
-                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.TRACK, groupModelId, v.modelName()));
-        } else if (EditorCategory.PORTALS.id().equals(categoryId)) {
-            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
-                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PORTAL_ROOM, "", v.modelName()));
-            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
-                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.TRACK, TrackKind.PORTAL_ROOM.id(), v.modelName()));
-        }
-        for (String key : keys) {
+        for (String key : relayKeysFor(categoryId, groupModelId, v.modelId(), v.modelName())) {
             games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.Entry row = rows.get(key);
             if (row != null && row.relayId() > 0) return row.relayId();
         }
         return 0;
+    }
+
+    /** The relay keys a roster row may be filed under, most likely first. */
+    static java.util.List<String> relayKeysFor(String categoryId, String groupModelId,
+                                               String modelId, String modelName) {
+        java.util.List<String> keys = new ArrayList<>(2);
+        if (PlotCategory.WHOLE.id().equals(categoryId)) {
+            // An editor save files a whole room under the carriage kind with its own sub kind, apart
+            // from a shell of the same name (EditorRelayWrite); a room installed from the relay
+            // before that sub kind existed is filed without one.
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE,
+                games.brennan.dungeontrain.editor.relay.EditorRelayWrite.WHOLE_ROOM_SUBKIND, modelId));
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE, "", modelId));
+        } else if (EditorCategory.CARRIAGES.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE, "", modelId));
+        } else if (PlotCategory.WHOLE_GROUP.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE_GROUP, "", modelId));
+        } else if (PlotCategory.PARTS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PART, groupModelId, modelName));
+        } else if (EditorCategory.CONTENTS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CONTENTS, "", modelId));
+        } else if (EditorCategory.TRACKS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.TRACK, groupModelId, modelName));
+        } else if (EditorCategory.PORTALS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PORTAL_ROOM, "", modelName));
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.TRACK, TrackKind.PORTAL_ROOM.id(), modelName));
+        }
+        return keys;
     }
 
     /** The Whole section first — rooms then groups — matching the category bar and the world rows. */

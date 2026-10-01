@@ -508,7 +508,7 @@ public final class BuilderProfileScreen extends Screen {
         // and its Cancel comes back here with nothing sent.
         BuilderSubmitNoteScreen.open(entry.relayId(), Component.literal(entry.buildName()),
                 note -> sendAction(new BuilderProfileActionPacket(entry.relayId(), true, note,
-                        BuildRenderCapture.png(entry.relayId()))));
+                        BuildRenderCapture.png(entry))));
     }
 
     private void sendAction(BuilderProfileActionPacket packet) {
