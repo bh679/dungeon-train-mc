@@ -197,6 +197,9 @@ public final class TranslationPreviewScreen extends Screen {
             row.add(Button.builder(CommonComponents.GUI_DONE, b -> onClose()).build());
         }
         controlRow = !row.isEmpty();
+        if (!controlRow) {
+            return; // nothing to lay out — the preview takes the whole window
+        }
 
         // The book keeps its margin; a preview filling the window keeps the strip under it thin.
         int rowY = kind == TranslationPreviewKind.BOOK ? height - MARGIN - ROW_H : height - GAP - ROW_H;
