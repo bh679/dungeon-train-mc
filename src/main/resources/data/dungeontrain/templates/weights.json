@@ -35,15 +35,15 @@
       "SPHERES",
       "BETA",
       "ALPHA",
-      "SKYLANDS",
       "INFDEV",
+      "CLASSIC",
+      "SKYLANDS",
       "FLOATING",
       "FAR_LANDS",
-      "CLASSIC",
-      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY"
+      "LOST_CITY",
+      "CAVES_OF_CHAOS"
     ]
   },
   "standard_half": {
