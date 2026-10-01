@@ -12,6 +12,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.tooltip.BelowOrAboveWidgetTooltipPositioner;
 import net.minecraft.client.gui.screens.options.LanguageSelectScreen;
 import net.minecraft.client.resources.language.LanguageInfo;
 import net.minecraft.network.chat.CommonComponents;
@@ -293,13 +294,14 @@ public final class TranslationScreen extends Screen {
             stateFilter = StateFilter.AI_UNREVIEWED;
         }
         // The characters with at least one book line in this catalog; the third cycle exists only
-        // when there are any, and shows only under "Books & stories" (applyFilterVisibility). A story that is not loaded yet is not offered as a filter that empties
+        // when there are any, and only under "Books & stories" — characters are a way through the
+        // books, so anywhere else the row goes back to two cycles at their usual width. A story that is not loaded yet is not offered as a filter that empties
         // the list.
         List<String> characters = charactersInCatalog();
         if (!characterFilter.isEmpty() && !characters.contains(characterFilter)) {
             characterFilter = "";
         }
-        int cycles = characters.size() > 1 ? 3 : 2;
+        int cycles = characters.size() > 1 && bodyFilter == BodyFilter.BOOKS ? 3 : 2;
         int cycleWidth = Math.min(FILTER_MAX_W,
             (contentWidth - GAP * cycles) / (cycles == 3 ? 5 : 4));
         // Search costs one square until you want it. Both ends of the row are pinned — icons left,
@@ -368,9 +370,14 @@ public final class TranslationScreen extends Screen {
             .create(cyclesX + cycleWidth + GAP, TOP, cycleWidth, ROW_H,
                 Component.translatable("gui.dungeontrain.translate.body"),
                 (button, value) -> {
+                    boolean booksChanged = (value == BodyFilter.BOOKS) != (bodyFilter == BodyFilter.BOOKS);
                     bodyFilter = value;
-                    applyFilterVisibility();
-                    refresh();
+                    if (booksChanged) {
+                        // The character cycle comes or goes, and the row re-spaces around it.
+                        rebuildWidgets();
+                    } else {
+                        refresh();
+                    }
                 }));
         characterCycle = null;
         if (cycles == 3) {
@@ -384,8 +391,6 @@ public final class TranslationScreen extends Screen {
                         characterFilter = value;
                         refresh();
                     }));
-            characterCycle.setTooltip(Tooltip.create(
-                Component.translatable("gui.dungeontrain.translate.character_filter.tip")));
         }
         applySearchOpen(); // the box starts collapsed, and survives a resize in whatever state it was
 
@@ -587,9 +592,7 @@ public final class TranslationScreen extends Screen {
             bodyCycle.visible = unfinished;
         }
         if (characterCycle != null) {
-            // Characters are a way through the books and stories, so the cycle belongs to that view
-            // alone. Its slot stays reserved so the other cycles do not jump when it comes and goes.
-            characterCycle.visible = unfinished && bodyFilter == BodyFilter.BOOKS;
+            characterCycle.visible = unfinished;
         }
         // Grouping goes with them, and for the same reason: a finished submission is a record of
         // what was sent, and folding it into sets would hide strings the translator is here to read.
@@ -1002,6 +1005,14 @@ public final class TranslationScreen extends Screen {
 
         // A sprite button has no pressed state, so the one control here that is a MODE rather than
         // an action says so with a ring — drawn after the widgets, over the button's own frame.
+        // The character cycle shows a name, not what it filters by, so hovering it says so — under
+        // the button rather than at the cursor, where it would cover the name being read.
+        if (characterCycle != null && characterCycle.visible && characterCycle.isHovered()) {
+            setTooltipForNextRenderPass(Tooltip.splitTooltip(minecraft,
+                    Component.translatable("gui.dungeontrain.translate.character_filter")),
+                new BelowOrAboveWidgetTooltipPositioner(characterCycle.getRectangle()), false);
+        }
+
         if (grouped && groupToggle != null && groupToggle.visible) {
             g.renderOutline(groupToggle.getX(), groupToggle.getY(), ROW_H, ROW_H, TOGGLE_ON_COLOUR);
         }
