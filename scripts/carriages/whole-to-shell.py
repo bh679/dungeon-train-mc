@@ -4,7 +4,7 @@
 A whole group (`whole/group/<id>.nbt`) is a shell and its inside saved as one template. A Group
 carriage template (`templates/group/<id>.nbt`) is the shell alone — its inside comes from the
 contents pool (`cargocontents` and the like). So the copy keeps every block, block entity and entity
-on the box's outer layer and drops everything strictly inside it, and keeps only the matching
+on the box's outer layer and its end walls one row in, drops everything inside, and keeps only the matching
 `.variants.json` entries.
 
 Idempotent and checkable: `--check` reports whether the shipped shells match their sources.
@@ -42,10 +42,14 @@ def size_of(root: Tag) -> tuple[int, int, int]:
 
 
 def interior(pos: tuple[int, int, int], size: tuple[int, int, int]) -> bool:
-    """True when (x, y, z) is strictly inside a box of `size` (length, height, width)."""
+    """True when (x, y, z) is inside the carriage's room — what the contents pool fills.
+
+    A whole carriage's end walls stand one row in from each end (x = 1 and x = length - 2), so
+    they stay with the shell; everything between them, inside the floor, roof and side walls, goes.
+    """
     x, y, z = pos
     length, height, width = size
-    return 0 < x < length - 1 and 0 < y < height - 1 and 0 < z < width - 1
+    return 1 < x < length - 2 and 0 < y < height - 1 and 0 < z < width - 1
 
 
 def int_pos(entry: Tag, key: str) -> tuple[int, ...] | None:

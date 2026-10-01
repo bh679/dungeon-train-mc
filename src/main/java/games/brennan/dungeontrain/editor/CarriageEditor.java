@@ -395,9 +395,9 @@ public final class CarriageEditor {
         CarriageDims box = widestBox(dims);
         int end = FIRST_PLOT_X;
         for (CarriagePlotRows.Row pool : CarriagePlotRows.Row.values()) end = Math.max(end, rowSpanEndX(pool, dims));
-        int zMin = CarriagePlotRows.rowZ(CarriagePlotRows.Row.PORTALS);   // the furthest row toward -Z
+        int zMin = CarriagePlotRows.rowZ(CarriagePlotRows.Row.PORTALS, dims.width());   // the furthest row toward -Z
         return EditorLayerSweep.plotBox(new BlockPos(FIRST_PLOT_X, EditorLayout.PLOT_Y, zMin),
-            new Vec3i(end - FIRST_PLOT_X, box.height(), CarriagePlotRows.rowZ(CarriagePlotRows.Row.ROOMS) - zMin + box.width()));
+            new Vec3i(end - FIRST_PLOT_X, box.height(), CarriagePlotRows.rowZ(CarriagePlotRows.Row.ROOMS, dims.width()) - zMin + box.width()));
     }
 
     private static int rowSpanEndX(CarriagePlotRows.Row pool, CarriageDims dims) {
@@ -416,7 +416,7 @@ public final class CarriageEditor {
     private static void eraseSpan(ServerLevel level, CarriagePlotRows.Row pool, int fromX, int toX, CarriageDims dims) {
         BlockState air = Blocks.AIR.defaultBlockState();
         CarriageDims box = widestBox(dims);
-        int rowZ = CarriagePlotRows.rowZ(pool);
+        int rowZ = CarriagePlotRows.rowZ(pool, dims.width());
         int y0 = EditorLayout.PLOT_Y - 1;
         for (int x = fromX - 1; x <= toX; x++) {
             for (int y = y0; y <= EditorLayout.PLOT_Y + box.height(); y++) {

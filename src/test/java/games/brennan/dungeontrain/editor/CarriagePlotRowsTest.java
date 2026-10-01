@@ -38,20 +38,20 @@ final class CarriagePlotRowsTest {
     }
 
     @Test
-    @DisplayName("Rooms keep Z 0; Halves and Groups stand in their own rows toward -Z, clear of each other")
+    @DisplayName("Rooms keep Z 0; each further row is one carriage width plus the gap toward -Z")
     void rowZ() {
-        assertEquals(0, CarriagePlotRows.rowZ(Row.ROOMS));
-        assertEquals(-CarriagePlotRows.ROW_STEP_Z, CarriagePlotRows.rowZ(Row.HALVES));
-        assertEquals(-2 * CarriagePlotRows.ROW_STEP_Z, CarriagePlotRows.rowZ(Row.GROUPS));
-        assertTrue(CarriagePlotRows.ROW_STEP_Z > games.brennan.dungeontrain.train.CarriageDims.MAX_WIDTH,
-            "a row step wider than any carriage keeps rows from touching");
+        assertEquals(0, CarriagePlotRows.rowZ(Row.ROOMS, 7));
+        assertEquals(-12, CarriagePlotRows.rowZ(Row.HALVES, 7));
+        assertEquals(-24, CarriagePlotRows.rowZ(Row.GROUPS, 7));
+        assertTrue(CarriagePlotRows.rowStepZ(7) - 7 - 2 == G - 2,
+            "rows stand as far apart as plots along a row: GAP - 2 air blocks between cages");
     }
 
     @Test
     @DisplayName("Flatbeds and Portals stand in rows of their own, beyond the Groups")
     void fixedRows() {
-        assertEquals(-3 * CarriagePlotRows.ROW_STEP_Z, CarriagePlotRows.rowZ(Row.FLATBEDS));
-        assertEquals(-4 * CarriagePlotRows.ROW_STEP_Z, CarriagePlotRows.rowZ(Row.PORTALS));
+        assertEquals(-36, CarriagePlotRows.rowZ(Row.FLATBEDS, 7));
+        assertEquals(-48, CarriagePlotRows.rowZ(Row.PORTALS, 7));
         Map<String, Row> row = Map.of("standard", Row.ROOMS, "flatbed", Row.FLATBEDS,
             "portal", Row.PORTALS, "portal_short", Row.PORTALS);
         Map<String, Integer> len = Map.of("standard", 9, "flatbed", 9, "portal", 13, "portal_short", 9);

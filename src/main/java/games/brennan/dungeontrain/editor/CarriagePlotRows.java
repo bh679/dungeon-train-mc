@@ -43,8 +43,10 @@ public final class CarriagePlotRows {
         }
     }
 
-    /** One row's spacing toward {@code -Z}: the widest a carriage can be, plus the gap. */
-    public static final int ROW_STEP_Z = CarriageDims.MAX_WIDTH + EditorLayout.GAP;
+    /** One row's spacing toward {@code -Z} for carriages {@code width} wide: a carriage plus the gap. */
+    public static int rowStepZ(int width) {
+        return width + EditorLayout.GAP;
+    }
 
     /** The laid-out rows: each id's X start and row, and where each row's next plot would go. */
     public record Rows(Map<String, Integer> startX, Map<String, Row> rowOf, Map<Row, Integer> endX) {
@@ -55,9 +57,9 @@ public final class CarriagePlotRows {
 
     private CarriagePlotRows() {}
 
-    /** The {@code Z} of {@code row}. */
-    public static int rowZ(Row row) {
-        return -row.ordinal() * ROW_STEP_Z;
+    /** The {@code Z} of {@code row}, for carriages {@code width} wide. */
+    public static int rowZ(Row row, int width) {
+        return -row.ordinal() * rowStepZ(width);
     }
 
     /** The row {@code variant}'s plot stands in. */
@@ -126,7 +128,7 @@ public final class CarriagePlotRows {
         Rows rows = current(dims, groupSize);
         Integer x = rows.startX().get(variant.id());
         if (x == null) return null;
-        return new BlockPos(x, EditorLayout.PLOT_Y, rowZ(rows.rowOf().get(variant.id())));
+        return new BlockPos(x, EditorLayout.PLOT_Y, rowZ(rows.rowOf().get(variant.id()), dims.width()));
     }
 
     /** The variants standing in {@code row}, in row order. */
