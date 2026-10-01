@@ -2091,6 +2091,7 @@
   "gui.dungeontrain.translate.body.all": "Весь текст",
   "gui.dungeontrain.translate.body.ui": "Меню и сообщения",
   "gui.dungeontrain.translate.body.books": "Книги и истории",
+  "gui.dungeontrain.translate.body.characters": "Персонажи",
   "gui.dungeontrain.translate.body.editor": "Редактор построек",
   "gui.dungeontrain.translate.character_filter": "Персонажи",
   "gui.dungeontrain.translate.character_filter.any": "Все",

@@ -35,7 +35,8 @@ import java.util.Optional;
  * <p>Hand-authored, like {@link TranslationVariableExamples}: a lang key's name does not identify
  * a speaker, so nothing can derive this. A book unit is matched by its book path (every field of
  * Della's letters is Della's); a lang unit by its exact key first, then by the longest key prefix.
- * </p>
+ * The filter also takes in every book whose English names the character — its {@code mentions},
+ * matched as whole words.</p>
  *
  * <pre>{@code
  * { "characters": {
@@ -66,7 +67,7 @@ public final class TranslationCharacters {
      */
     public record Character(String id, String name, String pronouns, String gender, String age,
                             String about, String notes, List<String> books, List<String> keys,
-                            List<String> keyPrefixes) {
+                            List<String> keyPrefixes, List<String> mentions) {
         public Character {
             name = clean(name);
             pronouns = clean(pronouns);
@@ -77,6 +78,36 @@ public final class TranslationCharacters {
             books = books == null ? List.of() : List.copyOf(books);
             keys = keys == null ? List.of() : List.copyOf(keys);
             keyPrefixes = keyPrefixes == null ? List.of() : List.copyOf(keyPrefixes);
+            mentions = mentions == null ? List.of() : List.copyOf(mentions);
+        }
+
+        /**
+         * Whether {@code text} names this character — any of its {@code mentions} as a whole,
+         * case-sensitive word, so "Pip" finds Della's letters about her daughter but not "pipe".
+         */
+        public boolean isMentionedIn(String text) {
+            if (text == null || text.isEmpty()) {
+                return false;
+            }
+            for (String mention : mentions) {
+                if (containsWord(text, mention)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static boolean containsWord(String text, String word) {
+            for (int at = text.indexOf(word); at >= 0; at = text.indexOf(word, at + 1)) {
+                int end = at + word.length();
+                boolean startOk = at == 0 || !java.lang.Character.isLetterOrDigit(text.charAt(at - 1));
+                boolean endOk = end == text.length()
+                    || !java.lang.Character.isLetterOrDigit(text.charAt(end));
+                if (startOk && endOk) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /** "—" is how the hand-edited list writes "not stated"; it means the same as blank. */
@@ -119,6 +150,41 @@ public final class TranslationCharacters {
             return Optional.ofNullable(best);
         }
 
+        /**
+         * Which characters each book names, from the English of every field — so a filter on Pip
+         * also finds her mother's letters about her. Built once per catalog by the caller.
+         */
+        public Map<String, java.util.Set<String>> bookMentions(List<TranslationUnit> units) {
+            Map<String, java.util.Set<String>> out = new HashMap<>();
+            for (TranslationUnit unit : units) {
+                if (unit.type() != TranslationUnit.Type.BOOK
+                    || !NAMESPACE.equals(unit.namespace())) {
+                    continue;
+                }
+                for (Character character : byId.values()) {
+                    if (character.isMentionedIn(unit.source())) {
+                        out.computeIfAbsent(unit.bookPath(), path -> new java.util.HashSet<>())
+                            .add(character.id());
+                    }
+                }
+            }
+            return out;
+        }
+
+        /**
+         * Every character a unit belongs to: the one it is by or about ({@link #forUnit}), plus,
+         * for a book field, everyone the book mentions anywhere.
+         */
+        public java.util.Set<String> idsFor(TranslationUnit unit,
+                                            Map<String, java.util.Set<String>> bookMentions) {
+            java.util.Set<String> out = new java.util.HashSet<>();
+            forUnit(unit).ifPresent(character -> out.add(character.id()));
+            if (unit != null && unit.type() == TranslationUnit.Type.BOOK) {
+                out.addAll(bookMentions.getOrDefault(unit.bookPath(), java.util.Set.of()));
+            }
+            return out;
+        }
+
         /** Every character, sorted by name — the order the filter cycles through them. */
         public List<Character> sorted() {
             List<Character> out = new ArrayList<>(byId.values());
@@ -134,6 +200,17 @@ public final class TranslationCharacters {
     /** The character {@code unit} belongs to, if any. */
     public static Optional<Character> forUnit(TranslationUnit unit) {
         return index.forUnit(unit);
+    }
+
+    /** See {@link Index#bookMentions}. */
+    public static Map<String, java.util.Set<String>> bookMentions(List<TranslationUnit> units) {
+        return index.bookMentions(units);
+    }
+
+    /** See {@link Index#idsFor}. */
+    public static java.util.Set<String> idsFor(TranslationUnit unit,
+                                               Map<String, java.util.Set<String>> bookMentions) {
+        return index.idsFor(unit, bookMentions);
     }
 
     /** One character by id, or null. */
@@ -193,7 +270,8 @@ public final class TranslationCharacters {
             Character character = new Character(entry.getKey(), string(object, "name"),
                 string(object, "pronouns"), string(object, "gender"), string(object, "age"),
                 string(object, "about"), string(object, "notes"), strings(object, "books"),
-                strings(object, "keys"), strings(object, "key_prefixes"));
+                strings(object, "keys"), strings(object, "key_prefixes"),
+                strings(object, "mentions"));
             if (character.name().isEmpty()) {
                 LOGGER.warn("[DungeonTrain] TranslationCharacters: {} has no name — skipped.",
                     entry.getKey());

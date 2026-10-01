@@ -45,14 +45,19 @@ class TranslationCharactersTest {
     }
 
     private static TranslationUnit book(String path, String field) {
+        return book(path, field, "");
+    }
+
+    private static TranslationUnit book(String path, String field, String english) {
         return new TranslationUnit(TranslationUnit.Type.BOOK, "dungeontrain", path + "#" + field,
-            "", "", false, false);
+            english, "", false, false);
     }
 
     private static final String SAMPLE = """
         { "characters": {
             "della": { "name": "Della Aaro", "pronouns": "she/her", "gender": "Female",
                        "age": "—", "books": ["stories/della"] },
+            "pip":   { "name": "Pip Aaro", "mentions": ["Pip"], "books": ["stories/pip"] },
             "faul":  { "name": "Faulthurst", "keys": ["adv.faul.title"],
                        "key_prefixes": ["book.statbook."] },
             "faul_tail": { "name": "Tail Voice", "key_prefixes": ["book.statbook.tail."] }
@@ -89,6 +94,32 @@ class TranslationCharactersTest {
     }
 
     @Test
+    @DisplayName("a mention is a whole, case-sensitive word")
+    void mentionsAreWholeWords() {
+        var pip = parse(SAMPLE).byId().get("pip");
+        assertTrue(pip.isMentionedIn("Pip waited by the door."));
+        assertTrue(pip.isMentionedIn("Where is my Pip?"));
+        assertTrue(!pip.isMentionedIn("The pipe rattled."));
+        assertTrue(!pip.isMentionedIn("Pippa sang."));
+        assertTrue(!pip.isMentionedIn("pip"));
+    }
+
+    @Test
+    @DisplayName("a book belongs to its narrator and to everyone it mentions, in every field")
+    void booksTakeInEveryoneTheyMention() {
+        var index = parse(SAMPLE);
+        var units = List.of(
+            book("stories/della", "title", "The searching mother"),
+            book("stories/della", "letters.0", "I am looking for Pip."),
+            book("stories/other", "title", "Nobody here"));
+        var mentions = index.bookMentions(units);
+        assertEquals(java.util.Set.of("della", "pip"), index.idsFor(units.get(0), mentions));
+        assertEquals(java.util.Set.of(), index.idsFor(units.get(2), mentions));
+        // a lang line is only ever its mapped owner
+        assertEquals(java.util.Set.of("faul"), index.idsFor(lang("adv.faul.title"), mentions));
+    }
+
+    @Test
     @DisplayName("a dash or a missing field reads as not stated")
     void dashesAndGapsAreBlank() {
         var della = parse(SAMPLE).byId().get("della");
@@ -102,7 +133,7 @@ class TranslationCharactersTest {
     void sortedByName() {
         var names = parse(SAMPLE).sorted().stream()
             .map(TranslationCharacters.Character::name).toList();
-        assertEquals(List.of("Della Aaro", "Faulthurst", "Tail Voice"), names);
+        assertEquals(List.of("Della Aaro", "Faulthurst", "Pip Aaro", "Tail Voice"), names);
     }
 
     @Test
@@ -157,6 +188,46 @@ class TranslationCharactersTest {
             }
         }
         assertEquals(List.of(), missing, "translation_characters.json points at strings that are gone");
+    }
+
+    /** One BOOK unit per shipped book, its whole file as the English — enough to find mentions. */
+    private static List<TranslationUnit> shippedBookUnits() throws IOException {
+        Path root = RepoPaths.root().resolve(NARRATIVES);
+        List<TranslationUnit> out = new ArrayList<>();
+        try (Stream<Path> files = Files.walk(root)) {
+            for (Path file : files.filter(f -> f.toString().endsWith(".json")).sorted().toList()) {
+                String rel = root.relativize(file).toString().replace('\\', '/');
+                out.add(book(rel.substring(0, rel.length() - ".json".length()), "all",
+                    Files.readString(file, StandardCharsets.UTF_8)));
+            }
+        }
+        return out;
+    }
+
+    @Test
+    @DisplayName("every character has lines for the filter to show")
+    void everyCharacterHasLines() throws IOException {
+        var index = shipped();
+        List<TranslationUnit> units = new ArrayList<>(shippedBookUnits());
+        englishLang().keySet().forEach(key -> units.add(lang(key)));
+        var mentions = index.bookMentions(units);
+        java.util.Set<String> present = new java.util.HashSet<>();
+        units.forEach(unit -> present.addAll(index.idsFor(unit, mentions)));
+        List<String> empty = index.byId().keySet().stream()
+            .filter(id -> !present.contains(id)).sorted().toList();
+        assertEquals(List.of(), empty, "characters whose filter would show nothing");
+    }
+
+    @Test
+    @DisplayName("a character's filter takes in the books that mention them")
+    void shippedMentionsReachOtherBooks() throws IOException {
+        var index = shipped();
+        List<TranslationUnit> units = shippedBookUnits();
+        var mentions = index.bookMentions(units);
+        assertTrue(mentions.getOrDefault("stories/della_aaro_the_searching_mother", java.util.Set.of())
+            .contains("pip_aaro"), "Della's letters are about Pip");
+        assertTrue(mentions.getOrDefault("stories/augustus_park", java.util.Set.of())
+            .contains("faulthurst"), "Augustus writes about the mouse (as Faulhurst)");
     }
 
     @Test

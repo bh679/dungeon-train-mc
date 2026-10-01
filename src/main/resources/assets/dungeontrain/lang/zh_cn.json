@@ -2010,6 +2010,7 @@
   "gui.dungeontrain.translate.body.all": "全部文本",
   "gui.dungeontrain.translate.body.ui": "菜单与消息",
   "gui.dungeontrain.translate.body.books": "书籍与故事",
+  "gui.dungeontrain.translate.body.characters": "角色",
   "gui.dungeontrain.translate.body.editor": "建造编辑器",
   "gui.dungeontrain.translate.character_filter": "角色",
   "gui.dungeontrain.translate.character_filter.any": "全部",

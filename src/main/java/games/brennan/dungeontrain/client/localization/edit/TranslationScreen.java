@@ -131,13 +131,16 @@ public final class TranslationScreen extends Screen {
      * Which body the list shows. The three named bodies partition the catalog: a lang line is
      * either the build editor's ({@link TranslationFilters#isEditorKey}) or the game's, and a book
      * is neither — so "Menus & messages" is the game a player sees, and the editor's jargon is a
-     * body of its own that a translator takes or leaves whole.
+     * body of its own that a translator takes or leaves whole. Characters cuts across them: every
+     * line a character narrates, is about, or is named in, narrowed further by the character cycle.
      */
     private enum BodyFilter {
         ALL("all"),
         UI("ui"),
         EDITOR("editor"),
-        BOOKS("books");
+        BOOKS("books"),
+        /** Every line tied to a character — narrated by, about, or mentioning them. */
+        CHARACTERS("characters");
 
         final String key;
 
@@ -163,6 +166,8 @@ public final class TranslationScreen extends Screen {
      * Held on the screen like the other two, so an edit-and-back keeps it.
      */
     private String characterFilter = "";
+    /** Book path → the characters its English names; rebuilt with the catalog in {@link #init}. */
+    private Map<String, java.util.Set<String>> bookMentions = Map.of();
     /** The strings of the submission currently picked in the SENT view. */
     private List<TranslationSubmissionsClient.SentUnit> sentUnits = List.of();
     /** True when the picked row is the working batch, whose strings come from disk, not the relay. */
@@ -295,15 +300,16 @@ public final class TranslationScreen extends Screen {
             // is bypassed simply by reopening the screen.
             stateFilter = StateFilter.AI_UNREVIEWED;
         }
-        // The characters with at least one book line in this catalog; the third cycle exists only
-        // when there are any, and only under "Books & stories" — characters are a way through the
-        // books, so anywhere else the row goes back to two cycles at their usual width. A story that is not loaded yet is not offered as a filter that empties
-        // the list.
+        // The characters with at least one line in this catalog — a story that is not loaded yet
+        // is not offered as a filter that empties the list. Picking one narrows From: Characters,
+        // so the third cycle exists only there; anywhere else the row goes back to two cycles at
+        // their usual width.
+        bookMentions = TranslationCharacters.bookMentions(TranslationCatalog.forLocale(locale));
         List<String> characters = charactersInCatalog();
         if (!characterFilter.isEmpty() && !characters.contains(characterFilter)) {
             characterFilter = "";
         }
-        int cycles = characters.size() > 1 && bodyFilter == BodyFilter.BOOKS ? 3 : 2;
+        int cycles = characters.size() > 1 && bodyFilter == BodyFilter.CHARACTERS ? 3 : 2;
         int cycleWidth = Math.min(FILTER_MAX_W,
             (contentWidth - GAP * cycles) / (cycles == 3 ? 5 : 4));
         // Search costs one square until you want it. Both ends of the row are pinned — icons left,
@@ -389,9 +395,10 @@ public final class TranslationScreen extends Screen {
             .create(cyclesX + stateWidth + GAP, TOP, bodyWidth, ROW_H,
                 Component.translatable("gui.dungeontrain.translate.body"),
                 (button, value) -> {
-                    boolean booksChanged = (value == BodyFilter.BOOKS) != (bodyFilter == BodyFilter.BOOKS);
+                    boolean characterRowChanged =
+                        (value == BodyFilter.CHARACTERS) != (bodyFilter == BodyFilter.CHARACTERS);
                     bodyFilter = value;
-                    if (booksChanged) {
+                    if (characterRowChanged) {
                         // The character cycle comes or goes, and the row re-spaces around it.
                         rebuildWidgets();
                     } else {
@@ -828,12 +835,22 @@ public final class TranslationScreen extends Screen {
         // true. See TranslationFilters#needsHuman.
         TranslationEdits approved = TranslationOverrides.approvedFor(locale);
         List<TranslationUnit> out = new ArrayList<>();
+        int characterLines = 0;
         for (TranslationUnit unit : TranslationCatalog.forLocale(locale)) {
-            if (!matchesBody(unit) || !matchesCharacter(unit)
-                || !matchesState(unit, edits, approved) || !matchesSearch(unit, needle)) {
+            if (!matchesBody(unit) || !matchesCharacter(unit)) {
+                continue;
+            }
+            characterLines++;
+            if (!matchesState(unit, edits, approved) || !matchesSearch(unit, needle)) {
                 continue;
             }
             out.add(unit);
+        }
+        if (bodyFilter == BodyFilter.CHARACTERS) {
+            // A character's lines can all be hidden by State or the search — this says which.
+            LOGGER.debug("[DungeonTrain] Translations: {} character '{}' — {} line(s), {} after "
+                + "state {} and search", locale, characterFilter, characterLines, out.size(),
+                stateFilter);
         }
         // Collapsing LAST, over what the filters and the search have already left: the row standing
         // for a set has to be one that survived them, or clicking it would open a string the list
@@ -852,11 +869,10 @@ public final class TranslationScreen extends Screen {
             members, TranslationOverrides.approvedFor(locale), this::isDismissed));
     }
 
-    /** Ignored outside "Books & stories", where the cycle is hidden — but kept for the way back. */
+    /** Ignored outside From: Characters, where the cycle is hidden — but kept for the way back. */
     private boolean matchesCharacter(TranslationUnit unit) {
-        return characterFilter.isEmpty() || bodyFilter != BodyFilter.BOOKS
-            || TranslationCharacters.forUnit(unit)
-            .map(character -> character.id().equals(characterFilter)).orElse(false);
+        return characterFilter.isEmpty() || bodyFilter != BodyFilter.CHARACTERS
+            || TranslationCharacters.idsFor(unit, bookMentions).contains(characterFilter);
     }
 
     /**
@@ -873,16 +889,12 @@ public final class TranslationScreen extends Screen {
     }
 
     /**
-     * {@code ""} (everyone), then every character with a book line in this language's catalog, by
-     * name. Lang-only characters (the Conductor, the Creator) still get a card, just not a filter.
+     * {@code ""} (everyone), then every character with a line in this language's catalog, by name.
      */
     private List<String> charactersInCatalog() {
         java.util.Set<String> present = new java.util.HashSet<>();
         for (TranslationUnit unit : TranslationCatalog.forLocale(locale)) {
-            if (unit.type() != TranslationUnit.Type.BOOK) {
-                continue;
-            }
-            TranslationCharacters.forUnit(unit).ifPresent(character -> present.add(character.id()));
+            present.addAll(TranslationCharacters.idsFor(unit, bookMentions));
         }
         List<String> out = new ArrayList<>();
         out.add("");
@@ -916,8 +928,8 @@ public final class TranslationScreen extends Screen {
      */
     void showCharacter(String id) {
         characterFilter = id == null ? "" : id;
-        // The filter only exists in the books view, so that is where their lines are shown.
-        bodyFilter = BodyFilter.BOOKS;
+        // The picker lives under From: Characters, so that is where their lines are shown.
+        bodyFilter = BodyFilter.CHARACTERS;
         listScroll = 0;
         if (list != null) {
             list.setScrollOffset(0);
@@ -930,6 +942,7 @@ public final class TranslationScreen extends Screen {
             case UI -> unit.type() == TranslationUnit.Type.LANG && !TranslationFilters.isEditor(unit);
             case EDITOR -> TranslationFilters.isEditor(unit);
             case BOOKS -> unit.type() == TranslationUnit.Type.BOOK;
+            case CHARACTERS -> !TranslationCharacters.idsFor(unit, bookMentions).isEmpty();
         };
     }
 

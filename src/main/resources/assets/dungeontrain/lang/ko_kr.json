@@ -2010,6 +2010,7 @@
   "gui.dungeontrain.translate.body.all": "모든 텍스트",
   "gui.dungeontrain.translate.body.ui": "메뉴 및 메시지",
   "gui.dungeontrain.translate.body.books": "책과 이야기",
+  "gui.dungeontrain.translate.body.characters": "캐릭터",
   "gui.dungeontrain.translate.body.editor": "건축 편집기",
   "gui.dungeontrain.translate.character_filter": "캐릭터",
   "gui.dungeontrain.translate.character_filter.any": "전체",

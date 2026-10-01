@@ -1,8 +1,9 @@
 {
-  "_comment": "Who speaks or is spoken of in each string, for the translation editor's character card and filter. Hand-authored; see TranslationCharacters. Empty fields show as 'Not stated'.",
+  "_comment": "Who speaks or is spoken of in each string, for the translation editor's character card and filter. Hand-authored; see TranslationCharacters. Empty fields show as 'Not stated'. 'mentions' are the whole words (case-sensitive) that put a book in this character's filter.",
   "characters": {
     "aelis": {
       "name": "Aelis",
+      "mentions": ["Aelis"],
       "pronouns": "",
       "gender": "Female",
       "age": "Adult",
@@ -16,6 +17,7 @@
     },
     "augustus_park": {
       "name": "Augustus Park",
+      "mentions": ["Augustus"],
       "pronouns": "",
       "gender": "Male",
       "age": "Student",
@@ -29,6 +31,7 @@
     },
     "corren_vale": {
       "name": "Corren Vale",
+      "mentions": ["Corren"],
       "pronouns": "",
       "gender": "Female (not specified)",
       "age": "",
@@ -42,6 +45,7 @@
     },
     "della_aaro": {
       "name": "Della Aaro",
+      "mentions": ["Della"],
       "pronouns": "she/her",
       "gender": "Female",
       "age": "Adult (mother)",
@@ -55,6 +59,7 @@
     },
     "edda_marsh": {
       "name": "Edda Marsh",
+      "mentions": ["Edda"],
       "pronouns": "",
       "gender": "Female",
       "age": "Adult (widow)",
@@ -68,6 +73,7 @@
     },
     "halen_pent": {
       "name": "Halen Pent",
+      "mentions": ["Halen"],
       "pronouns": "",
       "gender": "Female",
       "age": "37",
@@ -81,6 +87,7 @@
     },
     "jay_kuruvilla": {
       "name": "Jay Kuruvilla",
+      "mentions": ["Jay", "Kuruvilla"],
       "pronouns": "",
       "gender": "Male",
       "age": "Adult",
@@ -94,6 +101,7 @@
     },
     "maxwell_valiant": {
       "name": "Maxwell Valiant",
+      "mentions": ["Maxwell"],
       "pronouns": "",
       "gender": "Male",
       "age": "Grad student",
@@ -107,6 +115,7 @@
     },
     "pip_aaro": {
       "name": "Pip Aaro",
+      "mentions": ["Pip"],
       "pronouns": "she/her",
       "gender": "Female",
       "age": "8",
@@ -120,6 +129,7 @@
     },
     "soll_marra": {
       "name": "Soll Marra",
+      "mentions": ["Soll"],
       "pronouns": "",
       "gender": "",
       "age": "19",
@@ -133,6 +143,7 @@
     },
     "soren": {
       "name": "Soren",
+      "mentions": ["Soren"],
       "pronouns": "she/her",
       "gender": "Female",
       "age": "Long aboard",
@@ -146,6 +157,7 @@
     },
     "madame_ulster": {
       "name": "Madame Ulster",
+      "mentions": ["Ulster"],
       "pronouns": "she/her",
       "gender": "Female",
       "age": "157",
@@ -159,6 +171,7 @@
     },
     "fourteen": {
       "name": "Fourteen",
+      "mentions": ["Fourteen"],
       "pronouns": "",
       "gender": "",
       "age": "",
@@ -172,6 +185,7 @@
     },
     "tomas_aaro": {
       "name": "Tomas Aaro",
+      "mentions": ["Tomas"],
       "pronouns": "he/him",
       "gender": "Male",
       "age": "Adult (father)",
@@ -185,6 +199,7 @@
     },
     "wren_halloway": {
       "name": "Wren Halloway",
+      "mentions": ["Wren"],
       "pronouns": "",
       "gender": "",
       "age": "",
@@ -198,6 +213,7 @@
     },
     "faulthurst": {
       "name": "Faulthurst",
+      "mentions": ["Faulthurst", "Faulhurst"],
       "pronouns": "he/him",
       "gender": "Male (talking rat/mouse)",
       "age": "Long aboard",
@@ -219,6 +235,7 @@
     },
     "librarian": {
       "name": "The Librarian",
+      "mentions": ["Librarian"],
       "pronouns": "They (can be single or plural)",
       "gender": "None",
       "age": "",
@@ -232,6 +249,7 @@
     },
     "nell_ardwick": {
       "name": "Nell Ardwick",
+      "mentions": ["Nell"],
       "pronouns": "",
       "gender": "",
       "age": "",
@@ -245,6 +263,7 @@
     },
     "conductor": {
       "name": "The Conductor",
+      "mentions": ["Conductor"],
       "pronouns": "he/him",
       "gender": "Male",
       "age": "",
@@ -264,6 +283,7 @@
     },
     "brennan": {
       "name": "Brennan / the Creator",
+      "mentions": ["Brennan", "Creator"],
       "pronouns": "he/him",
       "gender": "Male",
       "age": "",

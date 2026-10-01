@@ -2010,6 +2010,7 @@
   "gui.dungeontrain.translate.body.all": "すべてのテキスト",
   "gui.dungeontrain.translate.body.ui": "メニューとメッセージ",
   "gui.dungeontrain.translate.body.books": "本と物語",
+  "gui.dungeontrain.translate.body.characters": "キャラクター",
   "gui.dungeontrain.translate.body.editor": "ビルドエディター",
   "gui.dungeontrain.translate.character_filter": "キャラクター",
   "gui.dungeontrain.translate.character_filter.any": "すべて",

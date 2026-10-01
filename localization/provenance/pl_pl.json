@@ -2086,6 +2086,7 @@
   "gui.dungeontrain.translate.body.all": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "cc4201cc0f8e9598"},
   "gui.dungeontrain.translate.body.ui": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "dbfe7597cd916662"},
   "gui.dungeontrain.translate.body.books": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "b867af523fb1e226"},
+  "gui.dungeontrain.translate.body.characters": {"author": "Claude", "reviewer": "", "source_hash": "6fac39e2845bb812"},
   "gui.dungeontrain.translate.body.editor": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "53f7b27dac70c7ca"},
   "gui.dungeontrain.translate.character_filter": {"author": "Claude", "reviewer": "", "source_hash": "6fac39e2845bb812"},
   "gui.dungeontrain.translate.character_filter.any": {"author": "Claude", "reviewer": "", "source_hash": "a52ace420f2175d0"},

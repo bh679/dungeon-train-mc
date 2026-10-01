@@ -56,13 +56,9 @@ public final class TranslationCharacterScreen extends Screen {
         int buttonWidth = Math.min(width - 40, 220);
         int x = width / 2 - buttonWidth / 2;
         int y = height - ROW_H * 2 - GAP * 3;
-        // The list's character filter covers books and stories only, so a character with none
-        // (the Conductor, the Creator) has no lines for it to show.
-        if (!character.books().isEmpty()) {
-            addRenderableWidget(Button.builder(
-                Component.translatable("gui.dungeontrain.translate.character.show_lines"),
-                b -> onChoice.accept(Choice.SHOW_LINES)).bounds(x, y, buttonWidth, ROW_H).build());
-        }
+        addRenderableWidget(Button.builder(
+            Component.translatable("gui.dungeontrain.translate.character.show_lines"),
+            b -> onChoice.accept(Choice.SHOW_LINES)).bounds(x, y, buttonWidth, ROW_H).build());
         y += ROW_H + GAP / 2;
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK,
             b -> onChoice.accept(Choice.BACK)).bounds(x, y, buttonWidth, ROW_H).build());

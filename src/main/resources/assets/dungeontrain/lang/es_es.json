@@ -2048,6 +2048,7 @@
   "gui.dungeontrain.translate.body.all": "Todos los textos",
   "gui.dungeontrain.translate.body.ui": "Menús y mensajes",
   "gui.dungeontrain.translate.body.books": "Libros e historias",
+  "gui.dungeontrain.translate.body.characters": "Personajes",
   "gui.dungeontrain.translate.body.editor": "Editor de construcción",
   "gui.dungeontrain.translate.character_filter": "Personajes",
   "gui.dungeontrain.translate.character_filter.any": "Todos",
