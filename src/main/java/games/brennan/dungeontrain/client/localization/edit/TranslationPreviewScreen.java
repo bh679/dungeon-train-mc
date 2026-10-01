@@ -10,7 +10,11 @@ import net.minecraft.client.gui.screens.inventory.PageButton;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.util.FormattedCharSequence;
 
 import java.util.ArrayList;
@@ -80,9 +84,21 @@ public final class TranslationPreviewScreen extends Screen {
     private boolean fullContext = true;
     /** The frame fills the window; a click or Esc goes back. */
     private boolean fullscreen;
-    /** The screen a button label was last seen on, for its full context; null if never seen. */
-    private final ButtonScreenLayouts.Layout buttonLayout;
-    /** This locale's lang values, for the other buttons on {@link #buttonLayout}. */
+    /**
+     * The screen this string was last seen on — as a button's label, or in a widget's tooltip — for
+     * its full context; null if never seen.
+     */
+    private final ButtonScreenLayouts.Layout screenLayout;
+    /** The message, tooltip or line being previewed, rebuilt from what was recorded with the typed text. */
+    private Component scene;
+    /** The death-screen page being previewed, and how far down its text reaches. */
+    private DeathScreenPreview.Page deathPage;
+    /** The item and its tooltip lines, for the item view. */
+    private ItemStack sceneItem = ItemStack.EMPTY;
+    private List<Component> itemLines = List.of();
+    /** The advancement's toast, for the popup view. */
+    private ClientPreviewEvidence.Toast toast;
+    /** This locale's lang values, for the other buttons on {@link #screenLayout}. */
     private Map<String, String> contextLang = Map.of();
     /** Rolls the parts of the full context picked at random; Refresh changes it. */
     private long seed;
@@ -117,8 +133,10 @@ public final class TranslationPreviewScreen extends Screen {
         this.typed = typed == null ? "" : typed;
         this.source = kind == TranslationPreviewKind.BOOK
             ? BookPreviewContext.sourceOf(unit) : BookPreviewContext.Source.NONE;
-        this.buttonLayout = kind == TranslationPreviewKind.BUTTON && unit != null
-            ? ButtonScreenLayouts.layoutFor(unit.id()) : null;
+        this.screenLayout = unit == null ? null
+            : kind == TranslationPreviewKind.BUTTON ? ButtonScreenLayouts.layoutFor(unit.id())
+            : kind == TranslationPreviewKind.TOOLTIP ? ButtonScreenLayouts.layoutForTooltip(unit.id())
+            : null;
     }
 
     @Override
@@ -129,6 +147,11 @@ public final class TranslationPreviewScreen extends Screen {
             case BOOK -> initBook();
             case BUTTON -> initButtons();
             case CHAT -> initChat();
+            case DEATH_SCREEN -> initDeathScreen();
+            case ITEM -> initItem();
+            case ADVANCEMENT -> initToast();
+            case TOOLTIP -> initTooltip();
+            case ACTION_BAR -> initActionBar();
             default -> { }
         }
         initBottomRow();
@@ -145,7 +168,7 @@ public final class TranslationPreviewScreen extends Screen {
                 Component.translatable("gui.dungeontrain.translate.preview.switch.tip")));
             row.add(view);
         }
-        if (source != BookPreviewContext.Source.NONE || buttonLayout != null) {
+        if (source != BookPreviewContext.Source.NONE || screenLayout != null) {
             Button toggle = Button.builder(Component.translatable(fullContext
                     ? "gui.dungeontrain.translate.preview.just_this"
                     : "gui.dungeontrain.translate.preview.full_context"), b -> {
@@ -153,9 +176,11 @@ public final class TranslationPreviewScreen extends Screen {
                     page = 0;
                     rebuildWidgets();
                 }).build();
-            toggle.setTooltip(Tooltip.create(Component.translatable(kind == TranslationPreviewKind.BUTTON
-                ? "gui.dungeontrain.translate.preview.full_context.button_tip"
-                : "gui.dungeontrain.translate.preview.full_context.tip")));
+            toggle.setTooltip(Tooltip.create(Component.translatable(switch (kind) {
+                case BUTTON -> "gui.dungeontrain.translate.preview.full_context.button_tip";
+                case TOOLTIP -> "gui.dungeontrain.translate.preview.full_context.tooltip_tip";
+                default -> "gui.dungeontrain.translate.preview.full_context.tip";
+            })));
             row.add(toggle);
             if (context != null && context.rolled()) {
                 Button refresh = Button.builder(
@@ -314,7 +339,7 @@ public final class TranslationPreviewScreen extends Screen {
     // ---- button -----------------------------------------------------------------------------
 
     private void initButtons() {
-        if (buttonContext()) {
+        if (layoutContext()) {
             initButtonContext();
             return;
         }
@@ -338,7 +363,7 @@ public final class TranslationPreviewScreen extends Screen {
     /** Full context: the screen this label was last seen on, read out for each button it labels. */
     private void initButtonContext() {
         contextLang = BookPreviewSiblings.lang(locale, "");
-        buttonLayout.widgets().stream()
+        screenLayout.widgets().stream()
             .filter(w -> w.button() && unit.id().equals(w.key()))
             .mapToInt(ButtonScreenLayouts.Widget::w).distinct().sorted()
             .forEach(w -> readout.add(fitLine(w)));
@@ -353,9 +378,120 @@ public final class TranslationPreviewScreen extends Screen {
                 buttonWidth, overflow).withColor(BAD_COLOUR);
     }
 
-    /** Whether the button preview is showing the recorded screen rather than sample buttons. */
-    private boolean buttonContext() {
-        return kind == TranslationPreviewKind.BUTTON && fullContext && buttonLayout != null;
+    /** Whether the preview is showing the recorded screen the string was seen on. */
+    private boolean layoutContext() {
+        return (kind == TranslationPreviewKind.BUTTON || kind == TranslationPreviewKind.TOOLTIP)
+            && fullContext && screenLayout != null;
+    }
+
+    // ---- the scenes: death screen, item, advancement, widget tooltip, action bar -------------
+
+    private void initDeathScreen() {
+        deathPage = unit.type() == TranslationUnit.Type.BOOK
+            ? DeathScreenPreview.forLore(locale, unit.bookField(), typed)
+            : DeathScreenPreview.forDeathMessage(locale, typed);
+        if (deathPage == null) {
+            return;
+        }
+        int bottom = DeathScreenPreview.measure(font, deathPage, TranslationPreviewText.SMALL_SCREEN_WIDTH);
+        if (DeathScreenPreview.overlapsFooter(deathPage, bottom, TranslationPreviewText.SMALL_SCREEN_HEIGHT)) {
+            readout.add(Component.translatable("gui.dungeontrain.translate.preview.death.overlap").withColor(BAD_COLOUR));
+        }
+        readout.add(Component.translatable("gui.dungeontrain.translate.preview.death.sample").withColor(LABEL_COLOUR));
+    }
+
+    /** The item, and its tooltip as recorded — or, for a name never seen in one, as the item builds it. */
+    private void initItem() {
+        ItemTooltipRecorder.Snapshot snapshot = ItemTooltipRecorder.snapshotFor(unit.id());
+        List<Component> lines;
+        if (snapshot != null) {
+            sceneItem = new ItemStack(BuiltInRegistries.ITEM.get(snapshot.item()));
+            lines = snapshot.lines();
+        } else {
+            Item item = ClientPreviewEvidence.itemNamed(unit.id());
+            if (item == null) {
+                return;
+            }
+            sceneItem = new ItemStack(item);
+            Item.TooltipContext context = minecraft.level != null
+                ? Item.TooltipContext.of(minecraft.level) : Item.TooltipContext.EMPTY;
+            lines = sceneItem.getTooltipLines(context, minecraft.player, TooltipFlag.NORMAL);
+        }
+        itemLines = lines.stream().map(line -> ComponentSubstitute.replace(line, unit.id(), typed)).toList();
+    }
+
+    private void initToast() {
+        toast = ClientPreviewEvidence.toastFor(unit.id());
+        scene = Component.literal(text);
+        readout.add(Component.translatable("gui.dungeontrain.translate.preview.toast.lines",
+            PreviewScenes.toastTitleLines(font, scene)).withColor(LABEL_COLOUR));
+    }
+
+    /** The tooltip as recorded on its widget, with the typed text in place of this string. */
+    private void initTooltip() {
+        if (layoutContext()) {
+            contextLang = BookPreviewSiblings.lang(locale, "");
+        }
+        ButtonScreenLayouts.Widget widget = tooltipWidget();
+        Component recorded = widget == null || widget.tooltip() == null ? null : RecordedComponents.fromJson(widget.tooltip());
+        scene = recorded == null ? Component.literal(text) : ComponentSubstitute.replace(recorded, unit.id(), typed);
+        readout.add(Component.translatable("gui.dungeontrain.translate.preview.tooltip.lines",
+            font.split(scene, PreviewScenes.WIDGET_TOOLTIP_WIDTH).size()).withColor(LABEL_COLOUR));
+    }
+
+    /** The widget on {@link #screenLayout} whose tooltip shows this string, or null. */
+    private ButtonScreenLayouts.Widget tooltipWidget() {
+        if (screenLayout == null) {
+            return null;
+        }
+        return screenLayout.widgets().stream()
+            .filter(w -> w.tooltipKeys() != null && w.tooltipKeys().contains(unit.id()))
+            .findFirst().orElse(null);
+    }
+
+    /** The action-bar message as recorded, with the typed text in place of this string. */
+    private void initActionBar() {
+        Component recorded = ChatKeyRecorder.actionBarMessage(unit.id());
+        scene = recorded == null ? Component.literal(text) : ComponentSubstitute.replace(recorded, unit.id(), typed);
+        int w = font.width(scene);
+        int screen = TranslationPreviewText.SMALL_SCREEN_WIDTH;
+        readout.add(Component.translatable("gui.dungeontrain.translate.preview.action_bar.width", w, screen)
+            .withColor(w <= screen ? GOOD_COLOUR : BAD_COLOUR));
+    }
+
+    /** Draws this view's scene inside the frame, in the frame's own GUI pixels. */
+    private void renderScene(GuiGraphics g) {
+        int fw = frameWidth();
+        int fh = frameHeight();
+        switch (kind) {
+            case DEATH_SCREEN -> {
+                if (deathPage != null) {
+                    DeathScreenPreview.render(g, font, deathPage, fw, fh);
+                }
+            }
+            case ITEM -> PreviewScenes.itemTooltip(g, font, sceneItem, itemLines, fw, fh);
+            case ADVANCEMENT -> {
+                if (toast != null) {
+                    PreviewScenes.toast(g, font, toast.frame(), new ItemStack(toast.icon()), scene, fw);
+                }
+            }
+            case ACTION_BAR -> PreviewScenes.actionBar(g, font, scene, fw, fh);
+            case TOOLTIP -> renderTooltipScene(g, fw, fh);
+            default -> { }
+        }
+    }
+
+    /** The tooltip at its widget on the recorded screen, or alone mid-frame. */
+    private void renderTooltipScene(GuiGraphics g, int fw, int fh) {
+        List<FormattedCharSequence> lines = font.split(scene, PreviewScenes.WIDGET_TOOLTIP_WIDTH);
+        ButtonScreenLayouts.Widget widget = layoutContext() ? tooltipWidget() : null;
+        if (widget == null) {
+            PreviewScenes.tooltip(g, font, lines, fw / 3, fh / 3, fw, fh);
+            return;
+        }
+        ButtonLayoutRenderer.render(g, font, screenLayout, unit.id(), text, contextLang);
+        g.renderOutline(widget.x() - 1, widget.y() - 1, widget.w() + 2, widget.h() + 2, 0xFFFFFF55);
+        PreviewScenes.tooltip(g, font, lines, widget.x() + widget.w() / 2, widget.y() + widget.h() / 2, fw, fh);
     }
 
     // ---- chat -------------------------------------------------------------------------------
@@ -392,16 +528,16 @@ public final class TranslationPreviewScreen extends Screen {
 
     /** The frame's size in its own GUI pixels: the recorded screen, or the smallest default one. */
     private int frameWidth() {
-        return buttonContext() ? buttonLayout.width() : TranslationPreviewText.SMALL_SCREEN_WIDTH;
+        return layoutContext() ? screenLayout.width() : TranslationPreviewText.SMALL_SCREEN_WIDTH;
     }
 
     private int frameHeight() {
-        return buttonContext() ? buttonLayout.height() : TranslationPreviewText.SMALL_SCREEN_HEIGHT;
+        return layoutContext() ? screenLayout.height() : TranslationPreviewText.SMALL_SCREEN_HEIGHT;
     }
 
     /** The scale the frame's pixels were drawn at: the recorded screen's, or GUI scale Auto's 2. */
     private float actualScale() {
-        int scale = buttonContext() ? Math.max(1, buttonLayout.scale()) : TranslationPreviewText.SMALL_SCREEN_GUI_SCALE;
+        int scale = layoutContext() ? Math.max(1, screenLayout.scale()) : TranslationPreviewText.SMALL_SCREEN_GUI_SCALE;
         return (float) (scale / minecraft.getWindow().getGuiScale());
     }
 
@@ -454,8 +590,8 @@ public final class TranslationPreviewScreen extends Screen {
         int frameX = r[0], frameY = r[1], frameW = r[2], frameH = r[3];
 
         if (!fullscreen) {
-            Component caption = buttonContext()
-                ? Component.translatable("gui.dungeontrain.translate.preview.frame.screen", buttonLayout.title())
+            Component caption = layoutContext()
+                ? Component.translatable("gui.dungeontrain.translate.preview.frame.screen", screenLayout.title())
                 : Component.translatable(frameShrunk()
                     ? "gui.dungeontrain.translate.preview.frame.shrunk"
                     : "gui.dungeontrain.translate.preview.frame");
@@ -472,8 +608,10 @@ public final class TranslationPreviewScreen extends Screen {
         g.pose().scale(scale, scale, 1);
         if (kind == TranslationPreviewKind.CHAT) {
             renderChat(g);
-        } else if (buttonContext()) {
-            ButtonLayoutRenderer.render(g, font, buttonLayout, unit.id(), text, contextLang);
+        } else if (kind != TranslationPreviewKind.BUTTON) {
+            renderScene(g);
+        } else if (layoutContext()) {
+            ButtonLayoutRenderer.render(g, font, screenLayout, unit.id(), text, contextLang);
         } else {
             for (Button sample : sampleButtons) {
                 // Off-screen mouse: never hovered, so it shows the resting look players see.

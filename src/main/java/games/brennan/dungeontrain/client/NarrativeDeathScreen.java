@@ -48,8 +48,6 @@ import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -123,7 +121,7 @@ public final class NarrativeDeathScreen extends Screen {
     private record AdvIcon(ItemStack icon, Component title, Component description, AdvancementType type, Rect rect) {}
 
     // ---- Palette (ARGB) ----
-    private static final int OVERLAY        = 0xF2090A0D;
+    private static final int OVERLAY        = DeathScreenText.OVERLAY;
     // Dark-blue wash laid over the DONATE page's backdrop ONLY (translucent, so the ride photo
     // still shows) — a colder mood for the donation page without touching the other pages.
     private static final int DONATE_WASH    = 0x40081830;
@@ -131,13 +129,11 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int TILE_BORDER    = 0x33D6C496;
     private static final int VALUE          = 0xFFE6D6B0;
     private static final int LABEL          = 0xFF9A8F74;
-    private static final int QUESTION       = 0xFFE0B56A;
-    private static final int NARR           = 0xFFC7BDA7;
-    private static final int KICKER         = 0xFF8A7C60;
-    private static final int SUBLINE        = 0xFF948A70;
+    private static final int QUESTION       = DeathScreenText.QUESTION;
+    private static final int NARR           = DeathScreenText.NARR;
+    private static final int KICKER         = DeathScreenText.KICKER;
+    private static final int SUBLINE        = DeathScreenText.SUBLINE;
     private static final int RED            = 0xFFFF5555;
-    private static final int RAIL           = 0xFF43454E;
-    private static final int INF            = 0xFF5A5C66;
     private static final int SLOT_BG        = 0xFF211E1A;
     private static final int SLOT_LIGHT     = 0xFF3A352D;
     private static final int SLOT_DARK      = 0xFF100E0B;
@@ -1759,7 +1755,7 @@ public final class NarrativeDeathScreen extends Screen {
         if (!UpdateStats.hasWeekPitch(updates)) {
             return Component.translatable("gui.dungeontrain.death.narr.donate_intro").getString();
         }
-        String figure = NUM_START + UpdateStats.groupedWeek(updates) + NUM_END;
+        String figure = DeathScreenText.NUM_START + UpdateStats.groupedWeek(updates) + DeathScreenText.NUM_END;
         Component clause = UpdateStats.changesClause(updates, ClientLanguage.selected(), figure);
         return Component.translatable("gui.dungeontrain.death.narr.donate_intro_updates", clause)
                 .getString();
@@ -2579,62 +2575,20 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private int drawQuestion(GuiGraphics g, String text, int cx, int w, int y) {
-        if (text == null || text.isEmpty()) return y;
-        return drawCentered(g, styled(text), cx, w, y + 2, QUESTION) + 2;
+        return DeathScreenText.drawQuestion(g, this.font, text, cx, w, y, fade(QUESTION));
     }
 
     private int drawNarration(GuiGraphics g, String text, int cx, int w, int y) {
-        if (text == null || text.isEmpty()) return y;
-        return drawCentered(g, styled(text), cx, w, y + 4, NARR);
+        return DeathScreenText.drawNarration(g, this.font, text, cx, w, y, fade(NARR));
     }
 
-    private static final char NUM_START = '';
-    private static final char NUM_END = '';
-
-    /**
-     * Build a Component from a narration string, colouring the spans the server
-     * wrapped in number-sentinels white so the figures pop against the muted
-     * narration. Plain strings (no sentinels) pass straight through.
-     */
+    /** See {@link DeathScreenText#styled}: number figures white, the rest in the page colour. */
     private Component styled(String raw) {
-        if (raw == null || raw.isEmpty()) return Component.empty();
-        if (raw.indexOf(NUM_START) < 0) return Component.literal(raw);
-        MutableComponent out = Component.empty();
-        StringBuilder buf = new StringBuilder();
-        boolean inNum = false;
-        for (int i = 0; i < raw.length(); i++) {
-            char c = raw.charAt(i);
-            if (c == NUM_START) {
-                flushPiece(out, buf, false);
-                inNum = true;
-            } else if (c == NUM_END) {
-                flushPiece(out, buf, true);
-                inNum = false;
-            } else {
-                buf.append(c);
-            }
-        }
-        flushPiece(out, buf, inNum);
-        return out;
-    }
-
-    private void flushPiece(MutableComponent out, StringBuilder buf, boolean white) {
-        if (buf.length() == 0) return;
-        MutableComponent piece = Component.literal(buf.toString());
-        if (white) piece.setStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xFFFFFF)));
-        out.append(piece);
-        buf.setLength(0);
+        return DeathScreenText.styled(raw);
     }
 
     private int drawCentered(GuiGraphics g, Component text, int cx, int w, int y, int color) {
-        List<FormattedCharSequence> lines = this.font.split(text, w - 8);
-        int faded = fade(color);
-        for (FormattedCharSequence line : lines) {
-            int lw = this.font.width(line);
-            g.drawString(this.font, line, cx - lw / 2, y, faded, false);
-            y += this.font.lineHeight + 2;
-        }
-        return y;
+        return DeathScreenText.drawCentered(g, this.font, text, cx, w, y, fade(color));
     }
 
     private void drawCell(GuiGraphics g, int centerX, int y, String value, String labelKey) {
@@ -2704,47 +2658,7 @@ public final class NarrativeDeathScreen extends Screen {
      * — a train that completes itself exactly as the narrative ends.
      */
     private void drawTrain(GuiGraphics g, int left, int w, int y, int advance) {
-        int railY = y + 30;
-        g.fill(left + 2, railY, left + w - 2, railY + 2, fade(RAIL));
-        int carW = 22, carH = 14, gap = 4, spacing = carW + gap;
-        int startX = left + 6;
-        int rightEdge = left + w - 14;            // leave room for the ∞
-        int slots = Math.max(1, (rightEdge - startX) / spacing);
-        // One carriage on the first page, scaling to a full rail of solid
-        // carriages by the last. "Full" is the whole rail — the fade tail does
-        // NOT count toward it, so the final screen fills completely (only the ∞
-        // beyond), while earlier screens trail off into the fade.
-        int pageCount = pages.size();
-        boolean lastPage = advance >= pageCount - 1;
-        int full = slots;
-        int solid = pageCount > 1
-                ? Math.round(1f + (full - 1) * (float) advance / (pageCount - 1))
-                : full;
-        if (solid < 1) solid = 1;
-        if (solid > full) solid = full;
-        for (int i = 0; i < solid; i++) {
-            int cxp = startX + i * spacing;
-            if (cxp + carW > rightEdge) break;
-            g.fill(cxp, railY - carH, cxp + carW, railY, fade(0xFF33353E));
-            g.fill(cxp, railY - carH, cxp + carW, railY - carH + 2, fade(RED));
-            g.fill(cxp + 4, railY - carH + 4, cxp + 9, railY - carH + 9, fade(0xFF14151A));
-            g.fill(cxp + 13, railY - carH + 4, cxp + 18, railY - carH + 9, fade(0xFF14151A));
-        }
-        // The fade tail trails off beyond the solid run on every screen but the
-        // last, where the train has filled the rail.
-        if (!lastPage) {
-            int[] tail = { 0x8033353E, 0x4D2B2C33, 0x2624252B };
-            int fadeX = startX + solid * spacing;
-            for (int j = 0; j < tail.length; j++) {
-                int cxp = fadeX + j * spacing;
-                int fw = Math.min(cxp + carW, rightEdge);
-                if (fw <= cxp) break;
-                int fh = carH - 2 - j * 3;
-                if (fh < 5) fh = 5;
-                g.fill(cxp, railY - fh, fw, railY, fade(tail[j]));
-            }
-        }
-        g.drawString(this.font, "∞", left + w - 12, railY - 8, fade(INF), false);
+        DeathScreenText.drawTrain(g, this.font, left, w, y, advance, pages.size(), this::fade);
     }
 
     /** A single beveled inventory-style slot (matches the loadout slots). */

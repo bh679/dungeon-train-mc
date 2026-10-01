@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.mixin.client.TooltipAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -30,8 +31,9 @@ import java.util.Set;
  * label in its "Full Context": the real screen it sits on, with every other widget where it was.
  *
  * <p>The companion of {@link ButtonKeyRecorder}, fed by the same {@code ScreenEvent.Init.Post}: each
- * screen showing at least one of the editor's keys is written down as its size, title and widgets
- * (position, size, label, and the label's key when it is one of ours). A key points at the last
+ * screen showing at least one of the editor's keys — on a button, or in a widget's hover tooltip —
+ * is written down as its size, title and widgets (position, size, label, the label's key when it is
+ * one of ours, and the tooltip). A key points at the last
  * layout it was seen on. Text a screen draws itself, outside any widget, is not captured.</p>
  *
  * <p>Best-effort like the other stores here: an unreadable file reads as "seen nothing", which costs
@@ -50,10 +52,13 @@ public final class ButtonScreenLayouts {
     /**
      * One widget as it was drawn.
      *
-     * @param key    the editor key behind its label, or null when the label is not one of ours
-     * @param suffix for an option button ("Caption: value"), the value half; else empty
+     * @param key         the editor key behind its label, or null when the label is not one of ours
+     * @param suffix      for an option button ("Caption: value"), the value half; else empty
+     * @param tooltipKeys the editor keys in its hover tooltip (empty when it has none of ours)
+     * @param tooltip     its hover tooltip as component JSON, or null when it has none
      */
-    public record Widget(int x, int y, int w, int h, String key, String text, boolean button, String suffix) {}
+    public record Widget(int x, int y, int w, int h, String key, String text, boolean button, String suffix,
+                         List<String> tooltipKeys, String tooltip) {}
 
     /** A screen as it was laid out, in GUI pixels at GUI scale {@code scale}. */
     public record Layout(String title, int width, int height, int scale, List<Widget> widgets) {}
@@ -62,6 +67,8 @@ public final class ButtonScreenLayouts {
     private static final class Store {
         Map<String, Layout> layouts = new LinkedHashMap<>();
         Map<String, String> keys = new LinkedHashMap<>();
+        /** Tooltip key → the layout its widget was last seen on. */
+        Map<String, String> tooltips = new LinkedHashMap<>();
     }
 
     private static Store store;
@@ -75,6 +82,7 @@ public final class ButtonScreenLayouts {
         }
         List<Widget> widgets = new ArrayList<>();
         Set<String> ours = new HashSet<>();
+        Set<String> tips = new HashSet<>();
         for (GuiEventListener listener : listeners) {
             if (listener instanceof AbstractWidget widget && widget.visible) {
                 Widget w = widgetOf(widget);
@@ -82,9 +90,10 @@ public final class ButtonScreenLayouts {
                 if (w.key() != null && w.button()) {
                     ours.add(w.key());
                 }
+                tips.addAll(w.tooltipKeys());
             }
         }
-        if (ours.isEmpty()) {
+        if (ours.isEmpty() && tips.isEmpty()) {
             return;
         }
         Layout layout = new Layout(screen.getTitle().getString(), screen.width, screen.height,
@@ -95,6 +104,9 @@ public final class ButtonScreenLayouts {
             boolean changed = s.layouts.put(id, layout) == null;
             for (String key : ours) {
                 changed |= !id.equals(s.keys.put(key, id));
+            }
+            for (String key : tips) {
+                changed |= !id.equals(s.tooltips.put(key, id));
             }
             if (changed) {
                 prune(s);
@@ -112,6 +124,15 @@ public final class ButtonScreenLayouts {
         return id == null ? null : store().layouts.get(id);
     }
 
+    /** The screen a widget whose tooltip shows {@code key} was last seen on, or null. */
+    public static synchronized Layout layoutForTooltip(String key) {
+        if (key == null) {
+            return null;
+        }
+        String id = store().tooltips.get(key);
+        return id == null ? null : store().layouts.get(id);
+    }
+
     private static Widget widgetOf(AbstractWidget widget) {
         Component message = widget.getMessage();
         String suffix = "";
@@ -120,19 +141,47 @@ public final class ButtonScreenLayouts {
             Object value = contents.getArgs()[1];
             suffix = value instanceof Component c ? c.getString() : String.valueOf(value);
         }
+        Component tip = widget.getTooltip() instanceof TooltipAccessor accessor ? accessor.dungeontrain$getMessage() : null;
+        List<String> tipKeys = new ArrayList<>();
+        String tipJson = null;
+        if (tip != null) {
+            collectKeys(tip, tipKeys, 0);
+            tipJson = tipKeys.isEmpty() ? null : RecordedComponents.toJson(tip);
+        }
         return new Widget(widget.getX(), widget.getY(), widget.getWidth(), widget.getHeight(),
             ButtonKeyRecorder.keyOf(message), message == null ? "" : message.getString(),
-            widget instanceof AbstractButton, suffix);
+            widget instanceof AbstractButton, suffix, List.copyOf(tipKeys), tipJson);
+    }
+
+    private static void collectKeys(Component component, List<String> out, int depth) {
+        if (component == null || depth > 16) {
+            return;
+        }
+        if (component.getContents() instanceof TranslatableContents contents) {
+            if (ButtonKeyRecorder.isOurs(contents.getKey()) && !out.contains(contents.getKey())) {
+                out.add(contents.getKey());
+            }
+            for (Object arg : contents.getArgs()) {
+                if (arg instanceof Component nested) {
+                    collectKeys(nested, out, depth + 1);
+                }
+            }
+        }
+        for (Component sibling : component.getSiblings()) {
+            collectKeys(sibling, out, depth + 1);
+        }
     }
 
     /** Drop layouts no key points at, then the oldest, down to {@link #MAX_LAYOUTS}. */
     private static void prune(Store s) {
         Set<String> live = new HashSet<>(s.keys.values());
+        live.addAll(s.tooltips.values());
         s.layouts.keySet().removeIf(id -> !live.contains(id));
         while (s.layouts.size() > MAX_LAYOUTS) {
             String oldest = s.layouts.keySet().iterator().next();
             s.layouts.remove(oldest);
             s.keys.values().removeIf(oldest::equals);
+            s.tooltips.values().removeIf(oldest::equals);
         }
     }
 
@@ -164,7 +213,11 @@ public final class ButtonScreenLayouts {
             if (s == null || s.layouts == null || s.keys == null) {
                 return new Store();
             }
+            if (s.tooltips == null) {
+                s.tooltips = new LinkedHashMap<>(); // written before tooltips were recorded
+            }
             s.keys.values().removeIf(id -> !s.layouts.containsKey(id));
+            s.tooltips.values().removeIf(id -> !s.layouts.containsKey(id));
             return s;
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Translations: failed to read {}; ignoring it — {}", file, e.toString());

@@ -190,7 +190,7 @@ public final class TranslationEditScreen extends Screen {
         // AI queue was to rewrite a line that needed nothing. A fifth, Preview, only for strings whose
         // place in the game is certain — a preview in the wrong setting would mislead. It is a square
         // icon, what it previews as an item, so the four words keep their width.
-        previewViews = TranslationPreviewKind.viewsOf(unit, ButtonKeyRecorder::seen, ChatKeyRecorder::seen);
+        previewViews = TranslationPreviewKind.viewsOf(unit, ClientPreviewEvidence.INSTANCE);
         previewKind = previewViews.isEmpty() ? TranslationPreviewKind.NONE : previewViews.get(0);
         boolean hasPreview = previewKind != TranslationPreviewKind.NONE;
         int iconRoom = hasPreview ? ROW_H + GAP : 0;
@@ -229,7 +229,12 @@ public final class TranslationEditScreen extends Screen {
     private static ItemStack previewIcon(TranslationPreviewKind kind) {
         return new ItemStack(switch (kind) {
             case BOOK -> Items.BOOK;
+            case DEATH_SCREEN -> Items.SKELETON_SKULL;
+            case ITEM -> Items.ITEM_FRAME;
+            case ADVANCEMENT -> Items.KNOWLEDGE_BOOK;
             case BUTTON -> Items.STONE_BUTTON;
+            case TOOLTIP -> Items.NAME_TAG;
+            case ACTION_BAR -> Items.CLOCK;
             default -> Items.OAK_SIGN;
         });
     }

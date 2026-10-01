@@ -115,6 +115,7 @@
     "client.LocalPlayerFlyDoubleTapSprintMixin",
     "client.DebugScreenOverlayDepthMixin",
     "client.BookViewScreenAccessor",
+    "client.TooltipAccessor",
     "client.BookEditScreenAccessor",
     "client.BookEditScreenAuthorMixin",
     "client.BookEditScreenSignMixin",

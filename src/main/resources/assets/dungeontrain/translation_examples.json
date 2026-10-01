@@ -4818,6 +4818,39 @@
       ]
     }
   },
+  "gui.dungeontrain.translate.preview.toast.lines": {
+    "1": {
+      "label": "a number of lines",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.preview.tooltip.lines": {
+    "1": {
+      "label": "a number of lines",
+      "examples": [
+        "2",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.preview.action_bar.width": {
+    "1": {
+      "label": "the message's width in GUI pixels",
+      "examples": [
+        "212",
+        "480"
+      ]
+    },
+    "2": {
+      "label": "the screen's width in GUI pixels",
+      "examples": [
+        "427"
+      ]
+    }
+  },
   "gui.dungeontrain.version.update": {
     "1": {
       "label": "the newest version number",
