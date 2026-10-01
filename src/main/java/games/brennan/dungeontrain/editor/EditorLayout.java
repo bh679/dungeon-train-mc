@@ -116,5 +116,17 @@ public final class EditorLayout {
         return y >= PLOT_Y - PLOT_HEIGHT_MARGIN;
     }
 
+    /**
+     * X starts for a row of plots laid end to end, each {@link #GAP} after the one before: plot
+     * {@code i} starts at {@code [i]}, and {@code [lengths.length]} is where the next plot would go.
+     * For a row whose plots are each their own length, rather than spaced for the widest.
+     */
+    public static int[] rowStarts(int firstX, int[] lengths) {
+        int[] starts = new int[lengths.length + 1];
+        starts[0] = firstX;
+        for (int i = 0; i < lengths.length; i++) starts[i + 1] = starts[i] + lengths[i] + GAP;
+        return starts;
+    }
+
     private EditorLayout() {}
 }

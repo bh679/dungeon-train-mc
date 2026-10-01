@@ -117,10 +117,9 @@ public final class CarriageEditor {
     }
 
     /**
-     * The uniform {@code +X} step between plots — the widest plot any variant can have (a Full,
-     * group-long carriage where this world can build one, else the long portal corridor), so no plot
-     * can reach its neighbour whatever order the registry is in. One row for every size: there are
-     * only ever a handful of carriages.
+     * The widest plot any variant can have (a Full, group-long carriage where this world can build
+     * one, else the long portal corridor) plus the gap — the most one plot can move the row by, so
+     * what an erase after a removal has to reach past the row's end.
      */
     private static int plotStep(CarriageDims dims) {
         int widest = ContentsSize.HALF.boxOrRoom(dims, groupSize()).length();
@@ -133,11 +132,9 @@ public final class CarriageEditor {
     }
 
     /**
-     * Plot origin for {@code variant}. Step along {@code +X} is
-     * {@link #plotStep} so adjacent plots always have at least a uniform
-     * {@link EditorLayout#GAP}-block air gap between footprints — matching the rule used in
-     * {@link CarriagePartEditor}, {@link TrackSidePlots}, and {@link CarriageContentsEditor}.
-     * Returns {@code null} if the variant is not registered.
+     * Plot origin for {@code variant}. The row is laid end to end along {@code +X}, each plot its
+     * own saved size ({@link #plotDims}) and {@link EditorLayout#GAP} after the one before — a Room
+     * is not spaced as if it were a Group. Returns {@code null} if the variant is not registered.
      */
     public static BlockPos plotOrigin(CarriageVariant variant, CarriageDims dims) {
         Integer index = slotIndex().get(variant.id());
@@ -145,8 +142,44 @@ public final class CarriageEditor {
         return rowPos(index, dims);
     }
 
+    /** Slot {@code slot}'s origin; past the row's end it steps on by the widest plot. */
     private static BlockPos rowPos(int slot, CarriageDims dims) {
-        return new BlockPos(FIRST_PLOT_X + slot * plotStep(dims), EditorLayout.PLOT_Y, PLOT_Z);
+        int[] starts = plotStarts(dims);
+        int n = starts.length - 1;
+        int x = slot <= n ? starts[slot] : starts[n] + (slot - n) * plotStep(dims);
+        return new BlockPos(x, EditorLayout.PLOT_Y, PLOT_Z);
+    }
+
+    /** Where the next plot would start — just past the last plot's gap. */
+    private static int rowEndX(CarriageDims dims) {
+        int[] starts = plotStarts(dims);
+        return starts[starts.length - 1];
+    }
+
+    // ---- slot → X start, memoised on the registry snapshot and the declared sizes -------------
+
+    private static List<CarriageVariant> startsSource;
+    private static int startsSizesVersion = -1;
+    private static CarriageDims startsDims;
+    private static int startsGroupSize;
+    private static int[] STARTS = {FIRST_PLOT_X};
+
+    /** Every slot's X start (see {@link EditorLayout#rowStarts}); rebuilt when a size or the row changes. */
+    private static synchronized int[] plotStarts(CarriageDims dims) {
+        List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
+        int version = TemplateSizeStore.SHELLS.version();
+        int group = groupSize();
+        if (all == startsSource && version == startsSizesVersion && dims.equals(startsDims) && group == startsGroupSize) {
+            return STARTS;
+        }
+        int[] lengths = new int[all.size()];
+        for (int i = 0; i < lengths.length; i++) lengths[i] = plotDims(all.get(i), dims).length();
+        STARTS = EditorLayout.rowStarts(FIRST_PLOT_X, lengths);
+        startsSource = all;
+        startsSizesVersion = version;
+        startsDims = dims;
+        startsGroupSize = group;
+        return STARTS;
     }
 
     /** The widest box a plot in the row can be — what a slot-geometry erase clears. */
@@ -350,7 +383,9 @@ public final class CarriageEditor {
      * later. Must be called <b>after</b> {@link CarriageVariantRegistry#unregister}.</p>
      */
     public static void restampRowAfterDeletion(ServerLevel level, int fromSlot, int oldRowCount, CarriageDims dims) {
-        eraseRow(level, fromSlot, oldRowCount, dims);
+        // The plots before the deleted one never moved; everything from its slot shifted left by at
+        // most one widest plot, so the old row ended no further than that past the new end.
+        eraseSpan(level, rowPos(Math.max(0, fromSlot), dims).getX(), rowEndX(dims) + plotStep(dims), dims);
         restampRowSlots(level, fromSlot, dims);
     }
 
@@ -366,17 +401,28 @@ public final class CarriageEditor {
     public static void restampRowFrom(ServerLevel level, String id, CarriageDims dims) {
         int fromSlot = slotOf(id);
         if (fromSlot < 0) return;
-        eraseRow(level, fromSlot, rowCount(), dims);
+        // An insertion only pushes the row right, so the new end covers the old one.
+        eraseSpan(level, rowPos(fromSlot, dims).getX(), rowEndX(dims), dims);
         restampRowSlots(level, fromSlot, dims);
     }
 
-    private static void eraseRow(ServerLevel level, int fromSlot, int toSlot, CarriageDims dims) {
+    /**
+     * Clear the row from {@code fromX} up to {@code toX} — every plot and cage in it. Plots are their
+     * own lengths, so after a size or row change the old ones no longer sit where the slots now
+     * say; clearing the span rather than slot by slot reaches wherever they were.
+     */
+    private static void eraseSpan(ServerLevel level, int fromX, int toX, CarriageDims dims) {
         BlockState air = Blocks.AIR.defaultBlockState();
         CarriageDims box = widestBox(dims);
-        for (int i = Math.max(0, fromSlot); i < toSlot; i++) {
-            BlockPos pos = rowPos(i, dims);
-            CarriagePlacer.eraseAt(level, pos, box);
-            setOutline(level, pos, air, box);
+        int y0 = EditorLayout.PLOT_Y - 1;
+        int z0 = PLOT_Z - 1;
+        for (int x = fromX - 1; x <= toX; x++) {
+            for (int y = y0; y <= EditorLayout.PLOT_Y + box.height(); y++) {
+                for (int z = z0; z <= PLOT_Z + box.width(); z++) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    if (!level.getBlockState(pos).isAir()) level.setBlock(pos, air, 3);
+                }
+            }
         }
     }
 
@@ -605,8 +651,15 @@ public final class CarriageEditor {
         CarriageDims newBox = size.shellDims(dims, groupSize()).orElseThrow(() -> new IOException(
             "A " + size.key() + " carriage is longer than this world's carriages can be."));
         if (from == size) return newBox;
-        if (EditorDirtyCheck.unsavedModelIds(overworld, dims, "carriages").contains(variant.id())) {
-            throw new IOException("'" + variant.id() + "' has unsaved edits — save or reset it first.");
+        // A new length moves every plot after this one, and those are restamped from their saved
+        // templates — so none of them may be holding unsaved edits either.
+        int slot = slotOf(variant.id());
+        java.util.Set<String> unsaved = EditorDirtyCheck.unsavedModelIds(overworld, dims, "carriages");
+        List<CarriageVariant> row = CarriageVariantRegistry.allVariants();
+        for (int i = Math.max(0, slot); i < row.size(); i++) {
+            if (unsaved.contains(row.get(i).id())) {
+                throw new IOException("'" + row.get(i).id() + "' has unsaved edits — save or reset it first.");
+            }
         }
         StructureTemplate saved = CarriageTemplateStore.get(overworld, variant, oldBox).orElseThrow(() ->
             new IOException("'" + variant.id() + "' has no saved template to resize."));
@@ -616,10 +669,7 @@ public final class CarriageEditor {
             overworld.holderLookup(net.minecraft.core.registries.Registries.BLOCK));
 
         boolean shown = EditorStampedCategoryState.isActive(EditorCategory.CARRIAGES);
-        if (shown) {
-            CarriagePlacer.eraseAt(overworld, origin, widestBox(dims));
-            setOutline(overworld, origin, Blocks.AIR.defaultBlockState(), oldBox);
-        }
+        int oldEnd = rowEndX(dims);
         TemplateSizeStore.SHELLS.set(variant.id(), size);
         try {
             CarriageTemplateStore.save(variant, resized);
@@ -628,7 +678,11 @@ public final class CarriageEditor {
             TemplateSizeStore.SHELLS.set(variant.id(), from);
             throw e;
         } finally {
-            if (shown) stampPlot(overworld, variant, dims);
+            if (shown) {
+                // Every plot from this one on moves to its new place.
+                eraseSpan(overworld, origin.getX(), Math.max(oldEnd, rowEndX(dims)), dims);
+                restampRowSlots(overworld, slot, dims);
+            }
         }
         LOGGER.info("[DungeonTrain] Editor resize: {} resized '{}' {} -> {} ({} long)",
             player.getName().getString(), variant.id(), from.key(), size.key(), newBox.length());
