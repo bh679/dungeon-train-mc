@@ -13,6 +13,8 @@ Idempotent and checkable: `--check` reports whether the shipped shells match the
     python3 scripts/carriages/whole-to-shell.py --check   # CI / review
 """
 
+from __future__ import annotations
+
 import argparse
 import gzip
 import json
@@ -35,23 +37,23 @@ COPIES = {
 }
 
 
-def size_of(root):
+def size_of(root: Tag) -> tuple[int, int, int]:
     return tuple(t.value for t in get(root, "size").value[1])
 
 
-def interior(pos, size):
+def interior(pos: tuple[int, int, int], size: tuple[int, int, int]) -> bool:
     """True when (x, y, z) is strictly inside a box of `size` (length, height, width)."""
     x, y, z = pos
     length, height, width = size
     return 0 < x < length - 1 and 0 < y < height - 1 and 0 < z < width - 1
 
 
-def int_pos(entry, key):
+def int_pos(entry: Tag, key: str) -> tuple[int, ...] | None:
     tag = get(entry, key)
     return tuple(t.value for t in tag.value[1]) if tag is not None else None
 
 
-def shell(root):
+def shell(root: Tag) -> tuple[Tag, int]:
     """`root` with every block and entity strictly inside the box removed (in place)."""
     size = size_of(root)
     blocks_id, blocks = get(root, "blocks").value
@@ -66,7 +68,7 @@ def shell(root):
     return root, len(blocks) - len(kept)
 
 
-def shell_variants(doc, size):
+def shell_variants(doc: dict, size: tuple[int, int, int]) -> dict:
     """The variants sidecar keeping only the shell's positions."""
     out = dict(doc)
     out["variants"] = {
@@ -76,9 +78,9 @@ def shell_variants(doc, size):
     return out
 
 
-def dump_variants(doc):
+def dump_variants(doc: dict) -> str:
     """The sidecar in the game's own layout: top-level keys one per line, one variant entry per line."""
-    def compact(v):
+    def compact(v: object) -> str:
         return json.dumps(v, separators=(", ", ": "), ensure_ascii=False)
     lines = ["{"]
     keys = list(doc.keys())
@@ -96,7 +98,7 @@ def dump_variants(doc):
     return "\n".join(lines) + "\n"
 
 
-def build(source_id):
+def build(source_id: str) -> tuple[bytes, str | None, int, tuple[int, int, int]]:
     name, root = read(gzip.open(WHOLE_GROUP / f"{source_id}.nbt", "rb").read())
     root, dropped = shell(root)
     nbt_bytes = write(name, root)
@@ -107,7 +109,7 @@ def build(source_id):
     return nbt_bytes, variants, dropped, size_of(root)
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--check", action="store_true", help="report drift without writing")

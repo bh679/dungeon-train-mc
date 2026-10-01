@@ -1545,14 +1545,6 @@ public final class CarriagePlacer {
     }
 
     /**
-     * The shells an ordinary enclosed slot draws from — no portal, flatbed, Half or Full — for
-     * {@link HalfCarriageSelection} to weigh a Half pair against.
-     */
-    static List<CarriageVariant> enclosedSlotPool() {
-        return filterOutFlatbed(filterOutPortal(CarriageVariantRegistry.allVariants()));
-    }
-
-    /**
      * The pool without any portal template in it — see
      * {@link games.brennan.dungeontrain.portal.PortalCarriageBuilder#isPortalVariant}.
      */

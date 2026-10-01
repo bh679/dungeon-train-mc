@@ -32,8 +32,24 @@ import java.util.List;
  *                          anywhere in the editor world
  */
 public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, TrainSize trainSize,
-                                 List<StageEntry> stages, TunnelGroups tunnelGroups)
+                                 List<StageEntry> stages, TunnelGroups tunnelGroups, Layout layout)
     implements CustomPacketPayload {
+
+    /**
+     * How often each way of filling a group is drawn — Rooms ×3, Halves ×2, Group ×1 — for the
+     * Settings tab's Carriage layout rows. {@link #UNKNOWN} until a server has sent it.
+     */
+    public record Layout(int rooms, int halves, int group) {
+        public static final Layout UNKNOWN = new Layout(-1, -1, -1);
+
+        public boolean isKnown() {
+            return rooms >= 0 && halves >= 0 && group >= 0;
+        }
+
+        public int total() {
+            return Math.max(0, rooms) + Math.max(0, halves) + Math.max(0, group);
+        }
+    }
 
     /**
      * The tunnel template groups the editor can offer — every registered group plus any a template
@@ -239,6 +255,13 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
         if (trainSize == null) trainSize = TrainSize.UNKNOWN;
         stages = stages == null ? List.of() : List.copyOf(stages);
         if (tunnelGroups == null) tunnelGroups = TunnelGroups.EMPTY;
+        if (layout == null) layout = Layout.UNKNOWN;
+    }
+
+    /** The shape from before carriage layouts: no layout weights. */
+    public EditorRosterPacket(List<Group> groups, String stampedCategoryId, TrainSize trainSize,
+                              List<StageEntry> stages, TunnelGroups tunnelGroups) {
+        this(groups, stampedCategoryId, trainSize, stages, tunnelGroups, Layout.UNKNOWN);
     }
 
     /** The shape from before tunnel groups: a roster with no group registry. */
@@ -325,6 +348,9 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             buf.writeVarInt(e.getValue().phaseMask());
             buf.writeUtf(e.getValue().stageId(), 64);
         }
+        buf.writeVarInt(layout.rooms());
+        buf.writeVarInt(layout.halves());
+        buf.writeVarInt(layout.group());
     }
 
     public static EditorRosterPacket decode(FriendlyByteBuf buf) {
@@ -382,8 +408,9 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             gates.put(buf.readUtf(64), new TunnelGroups.Gate(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
                 buf.readUtf(64)));
         }
+        Layout layout = new Layout(buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
         return new EditorRosterPacket(groups, stamped, trainSize, stages,
-            new TunnelGroups(weights, ungroupedWeight, members, gates));
+            new TunnelGroups(weights, ungroupedWeight, members, gates), layout);
     }
 
     @Override

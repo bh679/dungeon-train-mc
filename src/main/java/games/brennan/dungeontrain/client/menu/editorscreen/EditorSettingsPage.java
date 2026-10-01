@@ -34,6 +34,7 @@ public final class EditorSettingsPage {
         out.add(themeRow(theme, setTheme));
         out.add(skyboxRow());
         out.add(wholeEveryRow());
+        out.addAll(layoutRows(EditorRosterClient.layout()));
         if (DungeonTrain.isDevBuild()) out.add(relayRow());
         out.addAll(EditorMenuScreen.settingsRows(standingCategory, standingName));
         return out;
@@ -54,6 +55,31 @@ public final class EditorSettingsPage {
      */
     static CommandMenuEntry wholeEveryRow() {
         return wholeEveryRow(games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer.wholeGroupEvery());
+    }
+
+    /**
+     * Carriage layout — how often a group is three Rooms, two Halves or one Group carriage: a heading
+     * and one {@code − weight +} row per layout, each showing its share. Empty until a roster has
+     * said the weights.
+     */
+    static List<CommandMenuEntry> layoutRows(games.brennan.dungeontrain.net.EditorRosterPacket.Layout layout) {
+        if (!layout.isKnown()) return List.of();
+        List<CommandMenuEntry> rows = new ArrayList<>(4);
+        rows.add(new CommandMenuEntry.Label(EditorScreenLang.text(EditorScreenLang.LAYOUT_HEADING)));
+        rows.add(layoutRow("rooms", EditorScreenLang.LAYOUT_ROOMS, layout.rooms(), layout.total()));
+        rows.add(layoutRow("halves", EditorScreenLang.LAYOUT_HALVES, layout.halves(), layout.total()));
+        rows.add(layoutRow("group", EditorScreenLang.LAYOUT_GROUP, layout.group(), layout.total()));
+        return rows;
+    }
+
+    static CommandMenuEntry layoutRow(String key, String labelKey, int weight, int total) {
+        String prefix = "dungeontrain editor layout " + key;
+        int share = total > 0 ? Math.round(100f * weight / total) : 0;
+        String label = EditorScreenLang.text(labelKey, weight, share);
+        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
+        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(label, "0-1000", prefix);
+        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
+        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
     }
 
     static CommandMenuEntry wholeEveryRow(int every) {

@@ -102,14 +102,15 @@ public final class NewSourcePickerScreen implements MenuScreen {
         List<CommandMenuEntry> out = new ArrayList<>();
         switch (category) {
             case CARRIAGES -> {
-                // A carriage is a Room, a Half (spawned as two in a row over a group), or a
-                // group-long Full ("Group").
-                out.add(new CommandMenuEntry.TypeArg(
-                    MenuLang.t("new_source.blank_size", sizeName("room")), "name", "dungeontrain editor new", "blank"));
-                out.add(new CommandMenuEntry.TypeArg(
-                    MenuLang.t("new_source.blank_size", sizeName("half")), "name", "dungeontrain editor new", "blank_half"));
-                out.add(new CommandMenuEntry.TypeArg(
-                    MenuLang.t("new_source.blank_size", sizeName("full")), "name", "dungeontrain editor new", "blank_full"));
+                // A carriage is a Room, a Half (two to a group), or a group-long Full ("Group"),
+                // each its own pool. From a pool's tab ({@code kind} is its size key) only that
+                // pool's blank is offered; from anywhere else, all three.
+                for (String size : List.of("room", "half", "full")) {
+                    if (kind != null && !kind.isEmpty() && !kind.equals(size)) continue;
+                    out.add(new CommandMenuEntry.TypeArg(
+                        MenuLang.t("new_source.blank_size", sizeName(size)), "name", "dungeontrain editor new",
+                        size.equals("room") ? "blank" : "blank_" + size));
+                }
                 if (!currentId.isEmpty()) {
                     out.add(new CommandMenuEntry.TypeArg(
                         MenuLang.t("new_source.current", currentId), "name",

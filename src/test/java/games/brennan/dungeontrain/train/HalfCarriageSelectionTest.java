@@ -28,36 +28,39 @@ final class HalfCarriageSelectionTest {
     }
 
     @Test
-    @DisplayName("no Half shell with a weight never makes a Half pair")
-    void noWeightNeverHits() {
-        for (long g = 0; g < 500; g++) {
-            assertNull(HalfCarriageSelection.draw(42L, g, 100, List.of(), id -> 5));
-            assertNull(HalfCarriageSelection.draw(42L, g, 100, List.of("halfy"), id -> 0));
+    @DisplayName("no Half template with a weight draws nothing")
+    void noWeightDrawsNothing() {
+        for (long g = 0; g < 200; g++) {
+            assertNull(HalfCarriageSelection.draw(42L, g, 0, List.of(), id -> 5));
+            assertNull(HalfCarriageSelection.draw(42L, g, 1, List.of("halfy"), id -> 0));
         }
     }
 
     @Test
-    @DisplayName("a Half shell takes about its weight's share of groups, the same each time")
-    void weightedShare() {
-        Map<String, Integer> w = Map.of("halfy", 25);
-        int hits = 0;
-        int n = 4000;
-        for (long g = 0; g < n; g++) {
-            String a = HalfCarriageSelection.draw(7L, g, 75, List.of("halfy"), w::get);
-            String b = HalfCarriageSelection.draw(7L, g, 75, List.of("halfy"), w::get);
-            assertEquals(a, b, "the draw is seeded — a re-stamped group gets the same answer");
-            if (a != null) hits++;
+    @DisplayName("the two halves are separate picks — they differ in some groups, and repeat exactly")
+    void halvesAreIndependent() {
+        Map<String, Integer> w = Map.of("a", 1, "b", 1);
+        List<String> ids = List.of("a", "b");
+        int differ = 0;
+        for (long g = 0; g < 400; g++) {
+            String first = HalfCarriageSelection.draw(7L, g, 0, ids, w::get);
+            String second = HalfCarriageSelection.draw(7L, g, 1, ids, w::get);
+            assertEquals(first, HalfCarriageSelection.draw(7L, g, 0, ids, w::get), "seeded per group");
+            if (!first.equals(second)) differ++;
         }
-        double share = hits / (double) n;
-        assertTrue(share > 0.21 && share < 0.29, "expected ~25%, got " + share);
+        assertTrue(differ > 120 && differ < 280, "two even halves should differ about half the time, got " + differ);
     }
 
     @Test
-    @DisplayName("with no ordinary pool at all, every group is a Half pair")
-    void emptyRoomPoolAlwaysHalf() {
-        for (long g = 0; g < 100; g++) {
-            assertEquals("halfy", HalfCarriageSelection.draw(1L, g, 0, List.of("halfy"), id -> 1));
+    @DisplayName("a half's template follows its weight")
+    void weightedHalf() {
+        Map<String, Integer> w = Map.of("a", 3, "b", 1);
+        int a = 0;
+        for (long g = 0; g < 4000; g++) {
+            if ("a".equals(HalfCarriageSelection.draw(9L, g, 0, List.of("a", "b"), w::get))) a++;
         }
+        double share = a / 4000.0;
+        assertTrue(share > 0.70 && share < 0.80, "expected ~75%, got " + share);
     }
 
     @Test

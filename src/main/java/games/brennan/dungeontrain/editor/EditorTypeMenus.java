@@ -152,6 +152,15 @@ public final class EditorTypeMenus {
             EditorCategory.CONTENTS.id(), buildCategoryBar(), buildContentsTypeStrip(topLevel)));
     }
 
+    /** The tab a carriage pool goes by: Rooms, Halves, Groups. */
+    public static String carriagePoolTypeName(games.brennan.dungeontrain.train.ShellPool pool) {
+        return switch (pool) {
+            case ROOM -> "Rooms";
+            case HALF -> "Halves";
+            case GROUP -> "Groups";
+        };
+    }
+
     /** The type label a contents size goes by in the Contents menus. */
     static String contentsTypeName(ContentsSize size) {
         return switch (size) {
@@ -416,10 +425,14 @@ public final class EditorTypeMenus {
         List<EditorTypeMenusPacket.TypeTab> strip = new ArrayList<>();
         String carriagesCat = EditorCategory.CARRIAGES.name();
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
-        if (!variants.isEmpty()) {
-            CarriageVariant first = variants.get(0);
-            strip.add(new EditorTypeMenusPacket.TypeTab(
-                "Carriages", carriagesCat, first.id(), first.id()));
+        // One tab per pool that holds a template, jumping to its first.
+        for (games.brennan.dungeontrain.train.ShellPool pool : games.brennan.dungeontrain.train.ShellPool.values()) {
+            for (CarriageVariant v : variants) {
+                if (games.brennan.dungeontrain.train.CarriagePlacer.sizeOf(v) != pool.size()) continue;
+                strip.add(new EditorTypeMenusPacket.TypeTab(
+                    carriagePoolTypeName(pool), carriagesCat, v.id(), v.id()));
+                break;
+            }
         }
         addPartTab(strip, CarriagePartKind.FLOOR, "Floor");
         addPartTab(strip, CarriagePartKind.WALLS, "Walls");

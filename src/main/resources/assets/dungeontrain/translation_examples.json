@@ -6548,6 +6548,128 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.layout.rooms": {
+    "1": {
+      "label": "a weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "2": {
+      "label": "a percentage",
+      "examples": [
+        "80",
+        "10",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.layout.halves": {
+    "1": {
+      "label": "a weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "2": {
+      "label": "a percentage",
+      "examples": [
+        "80",
+        "10",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.layout.group": {
+    "1": {
+      "label": "a weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "2": {
+      "label": "a percentage",
+      "examples": [
+        "80",
+        "10",
+        "0"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.layout_is": {
+    "1": {
+      "label": "the rooms weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "2": {
+      "label": "the halves weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "3": {
+      "label": "the group weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.layout_set": {
+    "1": {
+      "label": "a carriage layout",
+      "examples": [
+        "rooms",
+        "halves",
+        "group"
+      ]
+    },
+    "2": {
+      "label": "a weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "3": {
+      "label": "the rooms weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "4": {
+      "label": "the halves weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "5": {
+      "label": "the group weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    }
+  },
   "chat.dungeontrain.editor.weight_saved": {
     "1": {
       "label": "the template kind id",

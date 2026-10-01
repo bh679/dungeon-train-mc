@@ -29,6 +29,7 @@ public final class EditorRosterClient {
 
     private static volatile EditorRosterIndex index = EditorRosterIndex.EMPTY;
     private static volatile EditorRosterPacket.TunnelGroups tunnelGroups = EditorRosterPacket.TunnelGroups.EMPTY;
+    private static volatile EditorRosterPacket.Layout layout = EditorRosterPacket.Layout.UNKNOWN;
     private static int refreshTicks;
     private static boolean everRequested;
 
@@ -72,8 +73,14 @@ public final class EditorRosterClient {
         return tunnelGroups;
     }
 
+    /** How often each way of filling a group is drawn, as the latest roster said. */
+    public static EditorRosterPacket.Layout layout() {
+        return layout;
+    }
+
     public static void apply(EditorRosterPacket packet) {
         tunnelGroups = packet.tunnelGroups();
+        layout = packet.layout();
         index = new EditorRosterIndex(packet.groups(), packet.stampedCategoryId(), packet.trainSize(),
             packet.stages());
     }

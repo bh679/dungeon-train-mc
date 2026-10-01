@@ -10,6 +10,9 @@ import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.train.ContentsSize;
 import games.brennan.dungeontrain.train.HalfCarriageSettings;
 import games.brennan.dungeontrain.train.HalfJoinMode;
+import games.brennan.dungeontrain.train.CarriageLayout;
+import games.brennan.dungeontrain.train.LayoutWeights;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -44,6 +47,46 @@ final class CarriageSizeCommand {
                 runShellSize(ctx.getSource(), StringArgumentType.getString(ctx, "variant"), size)));
         }
         return sizeNode.then(variantArg);
+    }
+
+    /**
+     * {@code layout} — how often each way of filling a group is drawn: {@code layout rooms|halves|group
+     * <n>|inc|dec}, and bare {@code layout} to read all three.
+     */
+    static LiteralArgumentBuilder<CommandSourceStack> layout() {
+        LiteralArgumentBuilder<CommandSourceStack> node = Commands.literal("layout")
+            .executes(ctx -> {
+                LayoutWeights w = LayoutWeights.current();
+                ctx.getSource().sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.layout_is",
+                    w.rooms(), w.halves(), w.group()), false);
+                return 1;
+            });
+        for (CarriageLayout layout : CarriageLayout.values()) {
+            node.then(Commands.literal(layout.key())
+                .then(Commands.literal("inc").executes(ctx -> runLayout(ctx.getSource(), layout,
+                    LayoutWeights.current().weightOf(layout) + 1)))
+                .then(Commands.literal("dec").executes(ctx -> runLayout(ctx.getSource(), layout,
+                    LayoutWeights.current().weightOf(layout) - 1)))
+                .then(Commands.argument("weight", IntegerArgumentType.integer(LayoutWeights.MIN, LayoutWeights.MAX))
+                    .executes(ctx -> runLayout(ctx.getSource(), layout,
+                        IntegerArgumentType.getInteger(ctx, "weight")))));
+        }
+        return node;
+    }
+
+    private static int runLayout(CommandSourceStack source, CarriageLayout layout, int weight) {
+        try {
+            LayoutWeights w = LayoutWeights.set(layout, weight);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.layout_set",
+                layout.key(), w.weightOf(layout), w.rooms(), w.halves(), w.group())
+                .withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] editor layout failed", e);
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.shell_size_failed", e.getMessage())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
     }
 
     static LiteralArgumentBuilder<CommandSourceStack> halfJoin() {

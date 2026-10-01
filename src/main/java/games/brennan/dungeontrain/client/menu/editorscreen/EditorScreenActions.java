@@ -687,6 +687,12 @@ public final class EditorScreenActions {
             return new CommandMenuEntry.DrillIn(MenuLang.t("common.new"),
                 new NewSourcePickerScreen(NewSourcePickerScreen.Category.PARTS, stripModelId, current));
         }
+        if (stripCategory == PlotCategory.CARRIAGES) {
+            // A carriage strip is one pool (Rooms / Halves / Groups); its model id is the pool's
+            // size key, so the picker offers a blank in that pool.
+            return new CommandMenuEntry.DrillIn(MenuLang.t("common.new"),
+                new NewSourcePickerScreen(NewSourcePickerScreen.Category.CARRIAGES, stripModelId, current));
+        }
         if (stripCategory == PlotCategory.CONTENTS) {
             // A contents strip is one size (Room / Half / Full); its model id is the size key, so
             // the picker offers a blank of that size.

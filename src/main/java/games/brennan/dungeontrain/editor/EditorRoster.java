@@ -209,11 +209,22 @@ public final class EditorRoster {
         }
     }
 
+    /**
+     * One group per carriage pool — Rooms, Halves, Groups — each modelled by its size key, so the
+     * X menu shows a tab per pool and its "+" makes a template in that pool. An empty pool still gets
+     * its group, so the "+" is there to make its first template.
+     */
     private static void addCarriages(List<EditorRosterPacket.Group> out) {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
         if (variants.isEmpty()) return;
-        out.add(group(EditorCategory.CARRIAGES.id(), "Carriages", "",
-            EditorTypeMenus.carriageRows(variants), null));
+        for (games.brennan.dungeontrain.train.ShellPool pool : games.brennan.dungeontrain.train.ShellPool.values()) {
+            List<CarriageVariant> inPool = new ArrayList<>();
+            for (CarriageVariant v : variants) {
+                if (games.brennan.dungeontrain.train.CarriagePlacer.sizeOf(v) == pool.size()) inPool.add(v);
+            }
+            out.add(group(EditorCategory.CARRIAGES.id(), EditorTypeMenus.carriagePoolTypeName(pool),
+                pool.size().key(), EditorTypeMenus.carriageRows(inPool), null));
+        }
     }
 
     private static void addParts(List<EditorRosterPacket.Group> out) {
