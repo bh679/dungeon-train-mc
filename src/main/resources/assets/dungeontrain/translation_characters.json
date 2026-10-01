@@ -1,0 +1,335 @@
+{
+  "_comment": "Who speaks or is spoken of in each string, for the translation editor's character card and filter. Hand-authored; see TranslationCharacters. Empty fields show as 'Not stated'. 'mentions' are the whole words (case-sensitive) that put a book in this character's filter.",
+  "characters": {
+    "aelis": {
+      "name": "Aelis",
+      "mentions": ["Aelis"],
+      "pronouns": "",
+      "gender": "Female",
+      "age": "Adult",
+      "about": "Former shield maiden investigating the deaths of two women they found dead aboard.",
+      "notes": "",
+      "books": [
+        "stories/aelis_the_ronin_shield_maiden_part_one_outline"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "augustus_park": {
+      "name": "Augustus Park",
+      "mentions": ["Augustus"],
+      "pronouns": "",
+      "gender": "Male",
+      "age": "Student",
+      "about": "Restless student who boarded on impulse, journaling the train's oddities.",
+      "notes": "Spells the mouse \"Faulhurst\".",
+      "books": [
+        "stories/augustus_park"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "corren_vale": {
+      "name": "Corren Vale",
+      "mentions": ["Corren"],
+      "pronouns": "",
+      "gender": "Female (not specified)",
+      "age": "",
+      "about": "Mapmaker, sole survivor of a lost party, writing to dead companions.",
+      "notes": "Lowercase variants are intentional.",
+      "books": [
+        "stories/corren_vale_three_heads"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "della_aaro": {
+      "name": "Della Aaro",
+      "mentions": ["Della"],
+      "pronouns": "she/her",
+      "gender": "Female",
+      "age": "Adult (mother)",
+      "about": "Mother searching the carriages for her daughter Pip and husband Tomas.",
+      "notes": "",
+      "books": [
+        "stories/della_aaro_the_searching_mother"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "edda_marsh": {
+      "name": "Edda Marsh",
+      "mentions": ["Edda"],
+      "pronouns": "",
+      "gender": "Female",
+      "age": "Adult (widow)",
+      "about": "Widow who sees a three-headed figure at every window.",
+      "notes": "",
+      "books": [
+        "stories/edda_marsh_the_wither_at_the_window"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "halen_pent": {
+      "name": "Halen Pent",
+      "mentions": ["Halen"],
+      "pronouns": "",
+      "gender": "Female",
+      "age": "37",
+      "about": "Folklorist cataloguing sightings of a white-eyed figure.",
+      "notes": "Bracketed lines are a deliberate editorial layer.",
+      "books": [
+        "stories/halen_pent_white_eyed_man"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "jay_kuruvilla": {
+      "name": "Jay Kuruvilla",
+      "mentions": ["Jay", "Kuruvilla"],
+      "pronouns": "",
+      "gender": "Male",
+      "age": "Adult",
+      "about": "Cheerful, Japanese, English (or target language) Second Language time-tangled passenger who keeps meeting Faulthurst out of order.",
+      "notes": "",
+      "books": [
+        "stories/jay_kuruvilla_the_time_traveler"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "maxwell_valiant": {
+      "name": "Maxwell Valiant",
+      "mentions": ["Maxwell"],
+      "pronouns": "",
+      "gender": "Male",
+      "age": "Grad student",
+      "about": "Melodramatic, heartbroken grad student role playing as a character on the train hunting the Erstwhile Monarch.",
+      "notes": "Mixes archaic and casual register on purpose.",
+      "books": [
+        "stories/maxwell_valiant"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "pip_aaro": {
+      "name": "Pip Aaro",
+      "mentions": ["Pip"],
+      "pronouns": "she/her",
+      "gender": "Female",
+      "age": "8",
+      "about": "Young girl who wakes alone on the train, looking for her mum.",
+      "notes": "Missing apostrophes are intentional (child voice).",
+      "books": [
+        "stories/pip_aaro_the_waiting_child"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "soll_marra": {
+      "name": "Soll Marra",
+      "mentions": ["Soll"],
+      "pronouns": "",
+      "gender": "",
+      "age": "19",
+      "about": "Apprentice carrying a dead mentor's dragon-fighting notebook.",
+      "notes": "",
+      "books": [
+        "stories/soll_marra_the_borrowed_champion"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "soren": {
+      "name": "Soren",
+      "mentions": ["Soren"],
+      "pronouns": "she/her",
+      "gender": "Female",
+      "age": "Long aboard",
+      "about": "Long-time passenger who leaves apples and speaks of a door off the train.",
+      "notes": "Uses endearments: \"love\", \"sweetheart\", \"dear one\".",
+      "books": [
+        "stories/soren_the_keeper_of_the_door"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "madame_ulster": {
+      "name": "Madame Ulster",
+      "mentions": ["Ulster"],
+      "pronouns": "she/her",
+      "gender": "Female",
+      "age": "157",
+      "about": "Aged prophet whose letters are mostly written by her priestess, Cadence Fermi.",
+      "notes": "Letters 4, 8, 9 are an invented language — keep untranslated.",
+      "books": [
+        "stories/the_letters_of_madame_ulster_the_answerless_prophet"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "fourteen": {
+      "name": "Fourteen",
+      "mentions": ["Fourteen"],
+      "pronouns": "",
+      "gender": "",
+      "age": "",
+      "about": "Android philosopher (M-29 series) reporting query logs to Serenity Base.",
+      "notes": "Garbled text in Queries 12–13 is intentional.",
+      "books": [
+        "stories/the_querys_and_life_of_fourteen"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "tomas_aaro": {
+      "name": "Tomas Aaro",
+      "mentions": ["Tomas"],
+      "pronouns": "he/him",
+      "gender": "Male",
+      "age": "Adult (father)",
+      "about": "Farmer father who boarded to find help, slowly losing himself.",
+      "notes": "Later letters go lowercase on purpose.",
+      "books": [
+        "stories/tomas_aaro_the_walking_father"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "wren_halloway": {
+      "name": "Wren Halloway",
+      "mentions": ["Wren"],
+      "pronouns": "",
+      "gender": "",
+      "age": "",
+      "about": "Skeptic writing rebuttals to Faulthurst's books.",
+      "notes": "Quotes Faulthurst's Musings word for word — keep the two translations matching.",
+      "books": [
+        "stories/wren_halloway_rebuttals"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "faulthurst": {
+      "name": "Faulthurst",
+      "mentions": ["Faulthurst", "Faulhurst"],
+      "pronouns": "he/him",
+      "gender": "Male (talking rat/mouse)",
+      "age": "Long aboard",
+      "about": "Small, curious talking rat with a British accent, who has watched the train a long time. Almost part of the train.",
+      "notes": "Other characters may misspell his name \"Faulhurst\". It may not be revealed right away that he is a rat.",
+      "books": [
+        "random_books/faulthursts_asides_i",
+        "random_books/musings_of_faulthurst"
+      ],
+      "keys": [
+        "advancements.dungeontrain.dungeon_train.burned_stat_book.hint",
+        "advancements.dungeontrain.dungeon_train.i_must_know.description",
+        "advancements.dungeontrain.dungeon_train.faulthursts_favourite.title",
+        "advancements.dungeontrain.dungeon_train.faulthursts_favourite.description"
+      ],
+      "key_prefixes": [
+        "book.dungeontrain.statbook."
+      ]
+    },
+    "librarian": {
+      "name": "The Librarian",
+      "mentions": ["Librarian"],
+      "pronouns": "They (can be single or plural)",
+      "gender": "None",
+      "age": "",
+      "about": "Quiet keeper of a ledger of which books find which passengers.",
+      "notes": "",
+      "books": [
+        "random_books/how_a_book_finds_you"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "nell_ardwick": {
+      "name": "Nell Ardwick",
+      "mentions": ["Nell"],
+      "pronouns": "",
+      "gender": "",
+      "age": "",
+      "about": "Long walker who counts \"drifting carriages\", and built one.",
+      "notes": "",
+      "books": [
+        "random_books/the_drifting_carriages"
+      ],
+      "keys": [],
+      "key_prefixes": []
+    },
+    "conductor": {
+      "name": "The Conductor",
+      "mentions": ["Conductor"],
+      "pronouns": "he/him",
+      "gender": "Male",
+      "age": "",
+      "about": "Courteous train official who stamps, files and inspects books.",
+      "notes": "",
+      "books": [],
+      "keys": [
+        "chat.dungeontrain.advancements_hint.4",
+        "chat.dungeontrain.advancements_hint.5",
+        "chat.dungeontrain.advancements_hint.6",
+        "gui.dungeontrain.book_vote.report_response.2",
+        "gui.dungeontrain.book_vote.response.yes.3",
+        "gui.dungeontrain.book_vote.response.no.3",
+        "gui.dungeontrain.book_vote.response.general.3"
+      ],
+      "key_prefixes": []
+    },
+    "brennan": {
+      "name": "Brennan / the Creator",
+      "mentions": ["Brennan", "Creator"],
+      "pronouns": "he/him",
+      "gender": "Male",
+      "age": "",
+      "about": "In-world: half-mythic maker of the train. Out of world: the developer speaking to players.",
+      "notes": "",
+      "books": [],
+      "keys": [
+        "gui.dungeontrain.loading.story.4.line.12",
+        "gui.dungeontrain.loading.story.4.line.24",
+        "gui.dungeontrain.loading.story.6.line.16",
+        "gui.dungeontrain.loading.story.9.line.3",
+        "gui.dungeontrain.loading.story.9.line.23",
+        "chat.dungeontrain.portal.no_shulker_box.1",
+        "gui.dungeontrain.death.modrec.ask",
+        "gui.dungeontrain.death.narr.bug_intro",
+        "gui.dungeontrain.death.narr.feedback_chip_tip",
+        "gui.dungeontrain.death.narr.kicker_ledger",
+        "gui.dungeontrain.death.narr.donate_intro",
+        "gui.dungeontrain.death.narr.donate_intro_updates",
+        "gui.dungeontrain.death.narr.donate_chip_tip",
+        "gui.dungeontrain.death.narr.tip_monthly_cost",
+        "gui.dungeontrain.death.narr.tip_last_active",
+        "gui.dungeontrain.death.narr.survey_intro",
+        "gui.dungeontrain.death.narr.survey_intro_2_1",
+        "gui.dungeontrain.death.narr.survey_intro_2_4",
+        "gui.dungeontrain.death.narr.survey_intro_2_7",
+        "gui.dungeontrain.support.donate_tooltip",
+        "gui.dungeontrain.videos.channels.youtube",
+        "gui.dungeontrain.videos.channels.bilibili",
+        "gui.dungeontrain.videos.channels.instagram",
+        "chat.dungeontrain.presence.online_now",
+        "chat.dungeontrain.presence.was_online",
+        "chat.dungeontrain.presence.last_seen",
+        "chat.dungeontrain.editor_welcome.line3",
+        "chat.dungeontrain.editor_welcome.mention_hover",
+        "gui.dungeontrain.translate.submit.note"
+      ],
+      "key_prefixes": [
+        "gui.dungeontrain.loading.story.5.",
+        "gui.dungeontrain.developer_popup.",
+        "gui.dungeontrain.ai_policy.",
+        "gui.dungeontrain.credits.team.brennan.",
+        "gui.dungeontrain.options.ai_policy",
+        "advancements.dungeontrain.dungeon_train.summon_the_creator.",
+        "advancements.dungeontrain.dungeon_train.the_creator_answers."
+      ]
+    }
+  }
+}

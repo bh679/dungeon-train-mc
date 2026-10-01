@@ -12970,5 +12970,23 @@
         "8"
       ]
     }
+  },
+  "gui.dungeontrain.translate.edit.character": {
+    "1": {
+      "label": "the name of the character this line belongs to",
+      "examples": [
+        "Della Aaro",
+        "Faulthurst"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.edit.character.tip": {
+    "1": {
+      "label": "the name of the character this line belongs to",
+      "examples": [
+        "Della Aaro",
+        "Faulthurst"
+      ]
+    }
   }
 }

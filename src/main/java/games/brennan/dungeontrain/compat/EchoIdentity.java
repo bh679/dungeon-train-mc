@@ -37,10 +37,18 @@ public final class EchoIdentity {
      * a plain PlayerMob).
      */
     public static Optional<UUID> sourcePlayer(Entity entity) {
+        return sourceProfile(entity).map(SourceProfileSkin.Ref::uuid);
+    }
+
+    /**
+     * The fallen player {@code entity} reincarnates — UUID and name as recorded when the echo was
+     * made — or empty when {@code entity} is not an echo.
+     */
+    public static Optional<SourceProfileSkin.Ref> sourceProfile(Entity entity) {
         if (!(entity instanceof PlayerMobEntity mob)) {
             return Optional.empty();
         }
-        return SourceProfileSkin.decode(mob.getSkinTextureUrl()).map(SourceProfileSkin.Ref::uuid);
+        return SourceProfileSkin.decode(mob.getSkinTextureUrl());
     }
 
     /**
