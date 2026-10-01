@@ -84,9 +84,10 @@ public final class TrashSlotReturnOnClose {
             warnOnce("could not read or clear TrashSlot's slot", t);
             return;
         }
-        player.getInventory().placeItemBackInInventory(parked);
-        LOGGER.debug("[DungeonTrain] returned {} x{} from the trash slot to {}",
+        // Logged first: placeItemBackInInventory drains the stack as it merges it in.
+        LOGGER.debug("[DungeonTrain] returning {} x{} from the trash slot to {}",
                 parked.getItem(), parked.getCount(), player.getGameProfile().getName());
+        player.getInventory().placeItemBackInInventory(parked);
         if (syncClient) {
             syncEmptySlot(player, h);
         }
