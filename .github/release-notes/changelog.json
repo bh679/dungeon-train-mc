@@ -21760,9 +21760,9 @@
       "highlights": [],
       "pr": 1737,
       "date": "2026-10-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1093.0",
+      "released_at": "2026-10-01T17:53:18Z"
     },
     {
       "id": "build-submit-picture-every-button",
@@ -21778,9 +21778,9 @@
       "highlights": [],
       "pr": 1738,
       "date": "2026-10-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1093.0",
+      "released_at": "2026-10-01T17:53:18Z"
     },
     {
       "id": "translatable-editor-action-bar",
@@ -21796,9 +21796,9 @@
       "highlights": [],
       "pr": 1739,
       "date": "2026-10-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1093.0",
+      "released_at": "2026-10-01T17:53:18Z"
     },
     {
       "id": "killer-bunny-monty-python-names",
@@ -21813,9 +21813,9 @@
       "highlights": [],
       "pr": 1740,
       "date": "2026-10-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1093.0",
+      "released_at": "2026-10-01T17:53:18Z"
     },
     {
       "id": "pause-menu-shift-exits-multiplayer",
@@ -21831,9 +21831,9 @@
       "highlights": [],
       "pr": 1741,
       "date": "2026-10-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1093.0",
+      "released_at": "2026-10-01T17:53:18Z"
     },
     {
       "id": "variant-block-growth",
@@ -21849,9 +21849,9 @@
       "highlights": [],
       "pr": 1742,
       "date": "2026-10-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1093.0",
+      "released_at": "2026-10-01T17:53:18Z"
     },
     {
       "id": "supported-mods-internal",
@@ -21866,9 +21866,9 @@
       "highlights": [],
       "pr": 1743,
       "date": "2026-10-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1093.0",
+      "released_at": "2026-10-01T17:53:18Z"
     }
   ]
 }
