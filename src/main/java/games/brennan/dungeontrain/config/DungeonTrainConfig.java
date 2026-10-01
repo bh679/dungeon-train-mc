@@ -749,8 +749,9 @@ public final class DungeonTrainConfig {
                 .comment("Let The Tallyman's loot books also be about RETIRED leaderboards: the one-life boards",
                         "of past game versions (each balancing release retires the current one) and of past",
                         "years. Retired boards are kept forever on the relay; this only decides whether they",
-                        "circulate as books here. About one loot book in four is a retired board when on. The",
-                        "Stat Room shelves always show the current boards only.")
+                        "circulate as books here. About one loot book in forty is an Ancient Records book when",
+                        "on, and the Stat Room shelves one Ancient Records book per retired era beside the",
+                        "current boards.")
                 .define("retiredLeaderboardBooks", DEFAULT_RETIRED_LEADERBOARD_BOOKS);
         ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord = b
                 .comment("Post a short embed to Discord each time a player's difficulty tier increases — i.e. they",

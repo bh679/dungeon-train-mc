@@ -245,7 +245,7 @@ public final class LeaderboardPool {
     }
 
     /** Whether retired eras may become books at all — a server setting, read defensively. */
-    static boolean retiredBooksWanted() {
+    public static boolean retiredBooksWanted() {
         try {
             return DungeonTrainConfig.isRetiredLeaderboardBooks();
         } catch (Throwable t) {
@@ -325,6 +325,13 @@ public final class LeaderboardPool {
         refreshEras();
         for (LeaderboardCategory category : LeaderboardCategory.values()) {
             refresh(category);
+        }
+        // The Stat Room shelves one Ancient Records book per retired era, so a room a player is
+        // standing in wants those boards too. Same throttles: a fetch per board per TTL at most.
+        if (retiredBooksWanted()) {
+            for (String era : circulatingEras()) {
+                for (LeaderboardCategory category : eraCategories()) refresh(category, era);
+            }
         }
     }
 

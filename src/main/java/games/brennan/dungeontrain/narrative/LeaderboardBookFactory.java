@@ -57,10 +57,10 @@ public final class LeaderboardBookFactory {
 
     /**
      * One loot book in this many is about a RETIRED board (a past game version's or a past year's
-     * one-life board) when any are on hand. The current boards stay the common find: a retired list
-     * is a curiosity, and a chest that mostly turned up last year's numbers would read as stale.
+     * one-life board) when any are on hand. The current boards stay the common find: an Ancient
+     * Records book is a rare curiosity, and the Stat Room is where every retired era is on the shelf.
      */
-    static final int RETIRED_ONE_IN = 4;
+    static final int RETIRED_ONE_IN = 40;
 
     /** The author line's cap — the era label rides on the cover next to the name. */
     private static final int MAX_AUTHOR_CHARS = 48;

@@ -177,7 +177,7 @@ class LeaderboardBookFactoryTest {
             }
         }
         double share = retiredPicks / (double) n;
-        assertTrue(share > 0.18 && share < 0.32, "retired share " + share);
+        assertTrue(share > 0.012 && share < 0.04, "retired share " + share + " (expected 1 in " + LeaderboardBookFactory.RETIRED_ONE_IN + ")");
         for (long i = 0; i < 200; i++) {
             assertTrue(LeaderboardBookFactory.pick(i, current, List.of()).orElseThrow().isCurrent());
             assertTrue(!LeaderboardBookFactory.pick(i, List.of(), retired).orElseThrow().isCurrent(),
