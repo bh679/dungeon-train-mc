@@ -128,8 +128,8 @@ def main() -> int:
               f"{dropped} interior blocks dropped — {status}")
         if status == "stale":
             stale.append(target_id)
-        if args.check:
-            continue
+        if args.check or status == "ok":
+            continue   # nothing to write — rewriting would only change the gzip timestamp
         GROUP_POOL.mkdir(parents=True, exist_ok=True)
         with gzip.open(nbt_path, "wb") as out:
             out.write(nbt_bytes)
