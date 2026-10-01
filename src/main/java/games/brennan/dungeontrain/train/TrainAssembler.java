@@ -629,15 +629,19 @@ public final class TrainAssembler {
         // the carriage it abuts, so the flatbed template's stage placeholder blocks resolve to that
         // stage's real blocks — this call runs outside CarriagePlacer.placeAt, so the scope has to
         // be entered here (the same seam the relay lease needs above).
+        // Both pads of this group are cut from one flatbed — the built-in, or a flatbed variant drawn
+        // by weight for the group (FlatbedPadSelection).
+        CarriageVariant padFlatbed = wrapWithPads
+            ? FlatbedPadSelection.pick(anchorPIdx, groupSize, genCfg.seed(), anchorGate) : null;
         if (wrapWithPads) {
             BlockPos backPadOrigin = origin;
             // A SHORT Half pair's run ends early; the front pad follows it in, so the group is shorter.
             int shortening = halfGroup ? halfPick.shortening() : 0;
             BlockPos frontPadOrigin = origin.offset(halfPadLen + groupSize * length - shortening, 0, 0);
             StagePlacementScope.run(stageBySlot[0], () -> blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
-                level, backPadOrigin, CarriagePlacer.HalfPadSide.BACK, dims)));
+                level, backPadOrigin, CarriagePlacer.HalfPadSide.BACK, dims, padFlatbed)));
             StagePlacementScope.run(stageBySlot[groupSize - 1], () -> blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
-                level, frontPadOrigin, CarriagePlacer.HalfPadSide.FRONT, dims)));
+                level, frontPadOrigin, CarriagePlacer.HalfPadSide.FRONT, dims, padFlatbed)));
         }
         long tAfterPlace = System.nanoTime();
 

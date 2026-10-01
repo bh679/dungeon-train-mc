@@ -16,7 +16,7 @@
     "weight": 1,
     "name": "Flatbed"
   },
-  "long": 1,
+  "long": 0,
   "pen": 15,
   "portal": 0,
   "portal_middle": 0,
@@ -35,15 +35,15 @@
       "SPHERES",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ]
   },
   "standard_half": {

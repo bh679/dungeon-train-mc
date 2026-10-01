@@ -555,6 +555,13 @@ public final class CarriageEditor {
      */
     public static BlockPos createBlank(ServerPlayer player, CarriageVariant.Custom target,
                                        ContentsSize size) throws IOException {
+        return createBlank(player, target, games.brennan.dungeontrain.train.ShellPool.of(size));
+    }
+
+    /** As above, into {@code pool} — its size's box, or a Room box for a flatbed variant. */
+    public static BlockPos createBlank(ServerPlayer player, CarriageVariant.Custom target,
+                                       games.brennan.dungeontrain.train.ShellPool pool) throws IOException {
+        ContentsSize size = pool.size();
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
@@ -566,7 +573,7 @@ public final class CarriageEditor {
             throw new IOException("Variant '" + target.id() + "' is already registered.");
         }
         // The pool is where the template is saved, so it is chosen before anything is written.
-        games.brennan.dungeontrain.train.ShellPool.set(target.id(), games.brennan.dungeontrain.train.ShellPool.of(size));
+        games.brennan.dungeontrain.train.ShellPool.set(target.id(), pool);
         if (!CarriageVariantRegistry.register(target)) {
             games.brennan.dungeontrain.train.ShellPool.forget(target.id());
             throw new IOException("Variant '" + target.id() + "' is already registered.");
@@ -599,8 +606,10 @@ public final class CarriageEditor {
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        // A copy is its source's length, so it lives in its source's pool.
-        games.brennan.dungeontrain.train.ShellPool.set(target.id(), games.brennan.dungeontrain.train.ShellPool.of(CarriagePlacer.sizeOf(source)));
+        // A copy is its source's length, so it lives in its source's pool — and a copy of a flatbed
+        // (the built-in or a variant) is another flatbed variant.
+        games.brennan.dungeontrain.train.ShellPool.set(target.id(), CarriagePlotRows.rowOf(source) == CarriagePlotRows.Row.FLATBEDS
+            ? games.brennan.dungeontrain.train.ShellPool.FLATBED : games.brennan.dungeontrain.train.ShellPool.of(CarriagePlacer.sizeOf(source)));
         if (!CarriageVariantRegistry.register(target)) {
             throw new IOException("Variant '" + target.id() + "' is already registered.");
         }

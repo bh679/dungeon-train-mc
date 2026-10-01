@@ -704,7 +704,7 @@ public final class EditorCommand {
                         .executes(ctx -> {
                             String name = StringArgumentType.getString(ctx, "name");
                             String src = StringArgumentType.getString(ctx, "source");
-                            java.util.Optional<games.brennan.dungeontrain.train.ContentsSize> blank = blankSize(src);
+                            java.util.Optional<games.brennan.dungeontrain.train.ShellPool> blank = blankPool(src);
                             if (blank.isPresent()) {
                                 return runNewBlank(ctx.getSource(), name, blank.get());
                             }
@@ -4064,8 +4064,17 @@ public final class EditorCommand {
         return games.brennan.dungeontrain.train.ContentsSize.parse(t.substring("blank_".length()));
     }
 
+    /**
+     * A carriage blank's pool from its source token: {@code blank} (Room), {@code blank_half},
+     * {@code blank_full} (Group) or {@code blank_flatbed} (a flatbed variant).
+     */
+    static java.util.Optional<games.brennan.dungeontrain.train.ShellPool> blankPool(String token) {
+        if ("blank_flatbed".equalsIgnoreCase(token)) return java.util.Optional.of(games.brennan.dungeontrain.train.ShellPool.FLATBED);
+        return blankSize(token).map(games.brennan.dungeontrain.train.ShellPool::of);
+    }
+
     private static int runNewBlank(CommandSourceStack source, String rawName,
-                                   games.brennan.dungeontrain.train.ContentsSize size) {
+                                   games.brennan.dungeontrain.train.ShellPool size) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
 

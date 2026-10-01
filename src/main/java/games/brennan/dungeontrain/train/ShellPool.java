@@ -21,7 +21,12 @@ import java.util.Optional;
 public enum ShellPool {
     ROOM("", ContentsSize.ROOM),
     HALF("half", ContentsSize.HALF),
-    GROUP("group", ContentsSize.FULL);
+    GROUP("group", ContentsSize.FULL),
+    /**
+     * Flatbed variants: Room-sized templates the half-flatbed pads between groups are cut from
+     * ({@link FlatbedPadSelection}), alongside the built-in flatbed. Never drawn as an ordinary carriage.
+     */
+    FLATBED("flatbed", ContentsSize.ROOM);
 
     private final String folder;
     private final ContentsSize size;
@@ -41,7 +46,7 @@ public enum ShellPool {
         return size;
     }
 
-    /** The pool of {@code size}'s templates. */
+    /** The pool of {@code size}'s templates — Room for a Room box (never {@link #FLATBED}). */
     public static ShellPool of(ContentsSize size) {
         for (ShellPool p : values()) {
             if (p.size == size) return p;

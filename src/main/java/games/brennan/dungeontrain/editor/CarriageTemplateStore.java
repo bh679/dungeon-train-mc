@@ -215,6 +215,8 @@ public final class CarriageTemplateStore {
         CACHE.remove(variant.id());
         HAS_BLOCKS.remove(variant.id());
         ProvenanceCache.invalidateAll();
+        // A flatbed's pads are cut from its template — the next pad re-cuts from the saved one.
+        games.brennan.dungeontrain.train.CarriagePlacer.clearHalfFlatbedCache();
         LOGGER.info("[DungeonTrain] Saved template {} to {}", variant.id(), file);
     }
 

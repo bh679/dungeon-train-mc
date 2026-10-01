@@ -122,8 +122,11 @@ public final class CarriagePlacer {
      * no NBT," so subsequent spawns short-circuit straight to the
      * hardcoded floor fallback without re-attempting the extraction.</p>
      */
-    private static final Map<CarriageDims, Optional<StructureTemplate>> HALF_FLATBED_CACHE
+    private static final Map<HalfFlatbedKey, Optional<StructureTemplate>> HALF_FLATBED_CACHE
         = new ConcurrentHashMap<>();
+
+    /** A half-flatbed template is cut per flatbed (the built-in or a variant) and per dims. */
+    private record HalfFlatbedKey(String flatbedId, CarriageDims dims) {}
 
     /**
      * Lazy-init holder for the {@link BlockState} templates. Keeping
@@ -1179,10 +1182,16 @@ public final class CarriagePlacer {
      * {@link #legacyHalfFlatbedFloor} without re-attempting extraction.
      */
     private static Optional<StructureTemplate> getOrBuildHalfFlatbedTemplate(ServerLevel level, CarriageDims dims) {
-        Optional<StructureTemplate> cached = HALF_FLATBED_CACHE.get(dims);
+        return getOrBuildHalfFlatbedTemplate(level, dims, FLATBED_VARIANT);
+    }
+
+    private static Optional<StructureTemplate> getOrBuildHalfFlatbedTemplate(ServerLevel level, CarriageDims dims,
+                                                                             CarriageVariant flatbed) {
+        HalfFlatbedKey key = new HalfFlatbedKey(flatbed.id(), dims);
+        Optional<StructureTemplate> cached = HALF_FLATBED_CACHE.get(key);
         if (cached != null) return cached;
-        Optional<StructureTemplate> built = buildHalfFlatbedTemplate(level, dims);
-        HALF_FLATBED_CACHE.put(dims, built);
+        Optional<StructureTemplate> built = buildHalfFlatbedTemplate(level, dims, flatbed);
+        HALF_FLATBED_CACHE.put(key, built);
         return built;
     }
 
@@ -1196,8 +1205,9 @@ public final class CarriagePlacer {
      * {@code "entities"} lists carry over unchanged — orphaned palette
      * entries don't hurt placement.
      */
-    private static Optional<StructureTemplate> buildHalfFlatbedTemplate(ServerLevel level, CarriageDims dims) {
-        Optional<StructureTemplate> source = CarriageTemplateStore.get(level, FLATBED_VARIANT, dims);
+    private static Optional<StructureTemplate> buildHalfFlatbedTemplate(ServerLevel level, CarriageDims dims,
+                                                                        CarriageVariant flatbed) {
+        Optional<StructureTemplate> source = CarriageTemplateStore.get(level, flatbed, dims);
         if (source.isEmpty()) {
             LOGGER.debug("[DungeonTrain] No FLATBED NBT for dims {}x{}x{} — half-flatbed pads will use hardcoded floor fallback.",
                 dims.length(), dims.height(), dims.width());
@@ -1259,8 +1269,17 @@ public final class CarriagePlacer {
      *     {@code Shipyards.assemble()} alongside the enclosed carriages.
      */
     public static Set<BlockPos> placeHalfFlatbedPad(ServerLevel level, BlockPos origin, HalfPadSide side, CarriageDims dims) {
+        return placeHalfFlatbedPad(level, origin, side, dims, FLATBED_VARIANT);
+    }
+
+    /**
+     * As above, cut from {@code flatbed} — the built-in or a flatbed variant ({@link FlatbedPadSelection}).
+     * A group's two pads are cut from the same one.
+     */
+    public static Set<BlockPos> placeHalfFlatbedPad(ServerLevel level, BlockPos origin, HalfPadSide side, CarriageDims dims,
+                                                    CarriageVariant flatbed) {
         int padLen = halfPadLen(dims);
-        Optional<StructureTemplate> halfTemplate = getOrBuildHalfFlatbedTemplate(level, dims);
+        Optional<StructureTemplate> halfTemplate = getOrBuildHalfFlatbedTemplate(level, dims, flatbed);
         if (halfTemplate.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             BlockPos stampOrigin;
@@ -1578,6 +1597,8 @@ public final class CarriagePlacer {
      * {@code isAnyFlatbed} for caller-API stability.
      */
     static boolean isAnyFlatbed(CarriageVariant v) {
+        // A flatbed variant (the flatbed pool) is as much a flatbed as the built-in: pads only.
+        if (ShellPool.poolOf(v.id()) == ShellPool.FLATBED) return true;
         if (!(v instanceof CarriageVariant.Builtin b)) return false;
         return b.type() == CarriageType.FLATBED;
     }

@@ -39,6 +39,7 @@ public final class CarriagePlotRows {
                 case ROOM -> ROOMS;
                 case HALF -> HALVES;
                 case GROUP -> GROUPS;
+                case FLATBED -> FLATBEDS;
             };
         }
     }
@@ -68,6 +69,7 @@ public final class CarriagePlotRows {
                 && b.type() == CarriagePlacer.CarriageType.FLATBED) {
             return Row.FLATBEDS;
         }
+        if (ShellPool.poolOf(variant.id()) == ShellPool.FLATBED) return Row.FLATBEDS;
         if (games.brennan.dungeontrain.portal.PortalCarriageBuilder.isPortalVariant(variant)) return Row.PORTALS;
         return Row.of(ShellPool.of(CarriagePlacer.sizeOf(variant)));
     }
