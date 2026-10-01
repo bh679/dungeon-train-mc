@@ -49,8 +49,21 @@ public final class BuildRenderCapture {
      * capture failed. Render thread only.
      */
     public static byte[] png(int relayId) {
+        return png(relayId, BuilderProfileState.ownBuild(relayId));
+    }
+
+    /**
+     * As {@link #png(int)} for a row the caller already holds. The X editor's Creator pane lists
+     * builds from its own fetch, not the My Builds profile {@link #png(int)} looks the row up in,
+     * so it passes the row it has rather than hoping that profile has arrived this session.
+     */
+    public static byte[] png(BuilderProfilePacket.Entry entry) {
+        return entry == null ? null : png(entry.relayId(), entry);
+    }
+
+    private static byte[] png(int relayId, BuilderProfilePacket.Entry entry) {
         if (!RenderSystem.isOnRenderThread()) return null;
-        BuilderTileMesh mesh = meshOf(relayId);
+        BuilderTileMesh mesh = meshOf(relayId, entry);
         if (mesh == null) {
             LOGGER.info("[DungeonTrain] Build render for relay build {}: nothing baked to draw.", relayId);
             return null;
@@ -68,10 +81,9 @@ public final class BuildRenderCapture {
      * the local template the My Builds grid draws the author's own builds from — an author's
      * upload has a file here, and that grid never asks the relay for a picture of it.
      */
-    private static BuilderTileMesh meshOf(int relayId) {
+    private static BuilderTileMesh meshOf(int relayId, BuilderProfilePacket.Entry entry) {
         BuilderTileMesh relay = RelayBuildPreviews.mesh(relayId);
         if (relay != null) return relay;
-        BuilderProfilePacket.Entry entry = BuilderProfileState.ownBuild(relayId);
         if (entry == null || entry.buildName().isEmpty()) return null;
         // The grid has usually baked this already; allow one bake so a fresh screen still answers.
         BuilderTileMeshCache.beginFrame(1);
