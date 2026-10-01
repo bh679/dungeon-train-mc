@@ -137,7 +137,8 @@ public final class EditorRoster {
     /** A carriage template's size, or the entry unchanged for every other row. */
     private static EditorRosterPacket.Entry withShellSizeData(String categoryId, EditorRosterPacket.Entry entry) {
         if (!EditorCategory.CARRIAGES.id().equals(categoryId)) return entry;
-        return entry.withShellSize(TemplateSizeStore.SHELLS.sizeOf(entry.variant().modelId()).key());
+        return entry.withShellSize(
+            games.brennan.dungeontrain.train.CarriagePlacer.sizeOfId(entry.variant().modelId()).key());
     }
 
     /** A contents template's random-flip axes, or the entry unchanged for every other row. */

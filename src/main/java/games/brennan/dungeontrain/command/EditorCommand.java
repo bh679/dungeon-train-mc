@@ -3834,6 +3834,7 @@ public final class EditorCommand {
             if (wasCustom) {
                 CarriageVariantRegistry.unregister(variant.id());
                 games.brennan.dungeontrain.editor.TemplateSizeStore.SHELLS.forget(variant.id());
+                games.brennan.dungeontrain.train.ShellPool.forget(variant.id());
                 if (oldSlot >= 0) {
                     CarriageStampGuard.run(() ->
                         CarriageEditor.restampRowAfterDeletion(overworld, oldSlot, oldRowCount, dims));

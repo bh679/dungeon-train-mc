@@ -160,6 +160,7 @@ public final class CarriageEditor {
 
     private static List<CarriageVariant> startsSource;
     private static int startsSizesVersion = -1;
+    private static int startsPoolsVersion = -1;
     private static CarriageDims startsDims;
     private static int startsGroupSize;
     private static int[] STARTS = {FIRST_PLOT_X};
@@ -168,8 +169,10 @@ public final class CarriageEditor {
     private static synchronized int[] plotStarts(CarriageDims dims) {
         List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
         int version = TemplateSizeStore.SHELLS.version();
+        int poolsVersion = games.brennan.dungeontrain.train.ShellPool.version();
         int group = groupSize();
-        if (all == startsSource && version == startsSizesVersion && dims.equals(startsDims) && group == startsGroupSize) {
+        if (all == startsSource && version == startsSizesVersion && poolsVersion == startsPoolsVersion
+                && dims.equals(startsDims) && group == startsGroupSize) {
             return STARTS;
         }
         int[] lengths = new int[all.size()];
@@ -177,6 +180,7 @@ public final class CarriageEditor {
         STARTS = EditorLayout.rowStarts(FIRST_PLOT_X, lengths);
         startsSource = all;
         startsSizesVersion = version;
+        startsPoolsVersion = poolsVersion;
         startsDims = dims;
         startsGroupSize = group;
         return STARTS;
@@ -577,16 +581,20 @@ public final class CarriageEditor {
         CarriageDims box = size.shellDims(dims, groupSize()).orElseThrow(() -> new IOException(
             "A " + size.key() + " carriage is longer than this world's carriages can be."));
 
-        TemplateSizeStore.SHELLS.set(target.id(), size);
+        if (CarriageVariantRegistry.find(target.id()).isPresent()) {
+            throw new IOException("Variant '" + target.id() + "' is already registered.");
+        }
+        // The pool is where the template is saved, so it is chosen before anything is written.
+        games.brennan.dungeontrain.train.ShellPool.set(target.id(), games.brennan.dungeontrain.train.ShellPool.of(size));
         if (!CarriageVariantRegistry.register(target)) {
-            TemplateSizeStore.SHELLS.forget(target.id());
+            games.brennan.dungeontrain.train.ShellPool.forget(target.id());
             throw new IOException("Variant '" + target.id() + "' is already registered.");
         }
 
         BlockPos targetOrigin = plotOrigin(target, dims);
         if (targetOrigin == null) {
             CarriageVariantRegistry.unregister(target.id());
-            TemplateSizeStore.SHELLS.forget(target.id());
+            games.brennan.dungeontrain.train.ShellPool.forget(target.id());
             throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
         }
 
@@ -610,8 +618,8 @@ public final class CarriageEditor {
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        // A copy is its source's length, so it lives in its source's size row.
-        TemplateSizeStore.SHELLS.set(target.id(), CarriagePlacer.sizeOf(source));
+        // A copy is its source's length, so it lives in its source's pool.
+        games.brennan.dungeontrain.train.ShellPool.set(target.id(), games.brennan.dungeontrain.train.ShellPool.of(CarriagePlacer.sizeOf(source)));
         if (!CarriageVariantRegistry.register(target)) {
             throw new IOException("Variant '" + target.id() + "' is already registered.");
         }
@@ -648,8 +656,9 @@ public final class CarriageEditor {
 
     /**
      * Change {@code variant}'s size — Room, Half, or Group ({@link ContentsSize#FULL}) — keeping its
-     * saved blocks. The saved template is re-lengthed ({@link TemplateLength}), the size declared,
-     * and the result saved: growing pads the far end with air, shrinking crops it.
+     * saved blocks. The saved template is re-lengthed ({@link TemplateLength}) and moved, with its
+     * sidecars, into that size's pool ({@link ShellPoolMove}): growing pads the far end with air,
+     * shrinking crops it.
      *
      * <p>Works from the <b>saved</b> template, not the live plot, so a plot with unsaved edits is
      * refused rather than having them silently dropped or baked in.</p>
@@ -690,13 +699,10 @@ public final class CarriageEditor {
 
         boolean shown = EditorStampedCategoryState.isActive(EditorCategory.CARRIAGES);
         int oldEnd = rowEndX(dims);
-        TemplateSizeStore.SHELLS.set(variant.id(), size);
         try {
-            CarriageTemplateStore.save(variant, resized);
-            if (EditorDevMode.isEnabled()) CarriageTemplateStore.saveToSource(variant, resized);
-        } catch (IOException e) {
-            TemplateSizeStore.SHELLS.set(variant.id(), from);
-            throw e;
+            // Each size is its own pool of templates, stored apart: the switch moves it there.
+            ShellPoolMove.move(variant, games.brennan.dungeontrain.train.ShellPool.of(size), resized,
+                EditorDevMode.isEnabled());
         } finally {
             if (shown) {
                 // Every plot from this one on moves to its new place.
@@ -729,7 +735,7 @@ public final class CarriageEditor {
         StructureTemplate template = captureTemplate(overworld, origin, plotDims(current, dims));
 
         // The renamed variant is the same length, so it keeps its size (and its row).
-        TemplateSizeStore.SHELLS.set(renamed.id(), CarriagePlacer.sizeOf(current));
+        games.brennan.dungeontrain.train.ShellPool.set(renamed.id(), games.brennan.dungeontrain.train.ShellPool.of(CarriagePlacer.sizeOf(current)));
         if (current instanceof CarriageVariant.Custom currentCustom) {
             if (!CarriageVariantRegistry.register(renamed)) {
                 throw new IOException("Name '" + renamed.id() + "' is already taken.");
@@ -740,6 +746,7 @@ public final class CarriageEditor {
             CarriageTemplateStore.delete(currentCustom);
             CarriageVariantBlocks.invalidate(currentCustom.name());
             TemplateSizeStore.SHELLS.forget(currentCustom.name());
+            games.brennan.dungeontrain.train.ShellPool.forget(currentCustom.name());
             LOGGER.info("[DungeonTrain] Editor saveAs (custom→custom): {} renamed '{}' -> '{}'",
                 player.getName().getString(), currentCustom.name(), renamed.id());
         } else if (current instanceof CarriageVariant.Builtin builtin) {

@@ -936,7 +936,16 @@ public final class CarriagePlacer {
      * {@link ContentsSize#HALF}, a group-long carriage {@link ContentsSize#FULL}, everything else a
      * one-carriage {@link ContentsSize#ROOM}.
      */
+    /** {@link #sizeOf(CarriageVariant)} by id — Room for an id with no variant. */
+    public static ContentsSize sizeOfId(String id) {
+        return CarriageVariantRegistry.find(id).map(CarriagePlacer::sizeOf).orElse(ContentsSize.ROOM);
+    }
+
     public static ContentsSize sizeOf(CarriageVariant variant) {
+        // A template's pool is its size (ShellPool). One in the Room folder may still carry a size
+        // declaration: the portal corridors, and a Group carriage made before the pools existed.
+        ShellPool pool = ShellPool.poolOf(variant.id());
+        if (pool != ShellPool.ROOM) return pool.size();
         return games.brennan.dungeontrain.editor.TemplateSizeStore.SHELLS.sizeOf(variant.id());
     }
 

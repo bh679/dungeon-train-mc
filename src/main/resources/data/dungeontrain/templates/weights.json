@@ -1,5 +1,9 @@
 {
   "black": 1,
+  "cargo": {
+    "weight": 1,
+    "name": "Cargo"
+  },
   "cracked": 3,
   "fancywood": 13,
   "fire": {
@@ -7,6 +11,10 @@
     "phases": [
       "NETHER"
     ]
+  },
+  "flatbedgroup": {
+    "weight": 1,
+    "name": "Flatbed"
   },
   "long": 1,
   "pen": 15,
@@ -37,6 +45,10 @@
       "LOST_CITY",
       "CAVES_OF_CHAOS"
     ]
+  },
+  "stonecargo": {
+    "weight": 1,
+    "name": "Cargo Stone"
   },
   "whole": 0,
   "windowed": 20
