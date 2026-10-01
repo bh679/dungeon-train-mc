@@ -156,7 +156,7 @@ public final class TranslationEditScreen extends Screen {
                 preferredPaneHeight, content, available, font.lineHeight);
         sourcePane.place(MARGIN, contentTop, paneHeight);
         addRenderableWidget(sourcePane);
-        addSourceLink(contentWidth);
+        addHeadingLinks(contentWidth);
 
         // Only where there is something to trade. A short string whose English already fits has
         // no room to give the edit box, so it gets a plain gap rather than a handle that does
@@ -329,24 +329,7 @@ public final class TranslationEditScreen extends Screen {
         if (target == null) {
             return;
         }
-        if (editor.getValue().equals(currentValue())) {
-            openInSet(target);
-            return;
-        }
-        minecraft.setScreen(new TranslationUnsavedScreen(choice -> {
-            switch (choice) {
-                case SAVE -> {
-                    if (formatProblem != null) {
-                        minecraft.setScreen(this);   // cannot save this; stay and show why
-                        return;
-                    }
-                    store(editor.getValue());
-                    openInSet(target);
-                }
-                case DISCARD -> openInSet(target);
-                case STAY -> minecraft.setScreen(this);
-            }
-        }));
+        leaveFor(() -> openInSet(target));
     }
 
     /**
@@ -361,28 +344,96 @@ public final class TranslationEditScreen extends Screen {
     }
 
     /**
-     * The link to where this string lives in the repo, at the right of the heading row.
+     * The links at the right of the heading row: who this string's character is, then where it
+     * lives in the repo.
      *
-     * <p>That row is the one part of the pane that does not scroll, so the link stays put while
-     * long English scrolls under it. Only Dungeon Train's own strings get one — see
-     * {@link TranslationSourceLink#available}.</p>
+     * <p>That row is the one part of the pane that does not scroll, so the links stay put while
+     * long English scrolls under them. Only Dungeon Train's own strings get a source link — see
+     * {@link TranslationSourceLink#available} — and only strings tied to a character get the
+     * character link ({@link TranslationCharacters#forUnit}).</p>
      */
-    private void addSourceLink(int contentWidth) {
-        if (!TranslationSourceLink.available(unit)) {
-            sourcePane.reserveHeading(0);
+    private void addHeadingLinks(int contentWidth) {
+        // Never let the links eat more than half the row between them: long translated labels
+        // would otherwise squeeze the heading out of existence on a narrow window.
+        int budget = contentWidth / 2;
+        int right = MARGIN + contentWidth;
+        if (TranslationSourceLink.available(unit)) {
+            Component label = Component.translatable("gui.dungeontrain.translate.edit.source_link");
+            int linkWidth = Mth.clamp(font.width(label), 0, budget);
+            right -= linkWidth;
+            budget -= linkWidth;
+            PlainTextButton link = new PlainTextButton(right, contentTop(), linkWidth,
+                font.lineHeight, label, b -> openSource(), font);
+            link.setTooltip(Tooltip.create(
+                Component.translatable("gui.dungeontrain.translate.edit.source_link.tip")));
+            addRenderableWidget(link);
+        }
+        TranslationCharacters.Character character = TranslationCharacters.forUnit(unit).orElse(null);
+        if (character != null) {
+            // Two links read as one if they touch, so the second keeps a wider gap than the heading.
+            int gap = right < MARGIN + contentWidth ? GAP * 3 : 0;
+            // The name when it fits — "About Della Aaro" says what the link is for before it is
+            // hovered — and the bare word when it does not. Source keeps its place either way, and
+            // on a window too narrow for even the bare word the character link is what gives way.
+            Component label = Component.translatable(
+                "gui.dungeontrain.translate.edit.character", character.name());
+            if (font.width(label) + gap > budget) {
+                label = Component.translatable("gui.dungeontrain.translate.edit.character.short");
+            }
+            if (font.width(label) + gap <= budget) {
+                int linkWidth = font.width(label);
+                right -= gap + linkWidth;
+                PlainTextButton link = new PlainTextButton(right, contentTop(), linkWidth,
+                    font.lineHeight, label, b -> openCharacter(character), font);
+                link.setTooltip(Tooltip.create(Component.translatable(
+                    "gui.dungeontrain.translate.edit.character.tip", character.name())));
+                addRenderableWidget(link);
+            }
+        }
+        int used = MARGIN + contentWidth - right;
+        sourcePane.reserveHeading(used == 0 ? 0 : used + GAP);
+    }
+
+    /**
+     * The character card, then back to this screen with the edit box as it was — or, if the
+     * translator asks to see every line of theirs, on to the list filtered to them.
+     */
+    private void openCharacter(TranslationCharacters.Character character) {
+        minecraft.setScreen(new TranslationCharacterScreen(character, choice -> {
+            if (choice == TranslationCharacterScreen.Choice.SHOW_LINES) {
+                leaveFor(() -> {
+                    parent.showCharacter(character.id());
+                    close();
+                });
+            } else {
+                minecraft.setScreen(this);
+            }
+        }));
+    }
+
+    /**
+     * Leave this string for somewhere else, asking first if there is typing in the box that would
+     * be lost — the same three answers {@link #goToNext} offers, for the same reason.
+     */
+    private void leaveFor(Runnable go) {
+        if (editor.getValue().equals(currentValue())) {
+            go.run();
             return;
         }
-        Component label = Component.translatable("gui.dungeontrain.translate.edit.source_link");
-        // Never let the link eat more than half the row: a long translated label would otherwise
-        // squeeze the heading out of existence on a narrow window.
-        int linkWidth = Mth.clamp(font.width(label), 0, contentWidth / 2);
-        PlainTextButton link = new PlainTextButton(
-            MARGIN + contentWidth - linkWidth, contentTop(), linkWidth, font.lineHeight,
-            label, b -> openSource(), font);
-        link.setTooltip(Tooltip.create(
-            Component.translatable("gui.dungeontrain.translate.edit.source_link.tip")));
-        addRenderableWidget(link);
-        sourcePane.reserveHeading(linkWidth + GAP);
+        minecraft.setScreen(new TranslationUnsavedScreen(choice -> {
+            switch (choice) {
+                case SAVE -> {
+                    if (formatProblem != null) {
+                        minecraft.setScreen(this);   // cannot save this; stay and show why
+                        return;
+                    }
+                    store(editor.getValue());
+                    go.run();
+                }
+                case DISCARD -> go.run();
+                case STAY -> minecraft.setScreen(this);
+            }
+        }));
     }
 
     /** Standard external-link confirm, then back to this screen with the edit box as it was. */

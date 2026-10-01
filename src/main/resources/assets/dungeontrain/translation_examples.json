@@ -12862,5 +12862,207 @@
         }
       ]
     }
+  },
+  "gui.dungeontrain.death.update_button": {
+    "1": {
+      "label": "the newest version on the player's launcher, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.update_sub.one": {
+    "1": {
+      "label": "a launcher name (Modrinth or CurseForge)",
+      "examples": [
+        "Modrinth",
+        "CurseForge"
+      ]
+    },
+    "2": {
+      "label": "how many newer releases there are",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.update_sub.other": {
+    "1": {
+      "label": "a launcher name (Modrinth or CurseForge)",
+      "examples": [
+        "Modrinth",
+        "CurseForge"
+      ]
+    },
+    "2": {
+      "label": "how many newer releases there are",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.outdated.one": {
+    "1": {
+      "label": "how many newer releases there are",
+      "examples": [
+        "1",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the version the player is on, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    },
+    "3": {
+      "label": "the version an update would bring, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.outdated.other": {
+    "1": {
+      "label": "how many newer releases there are",
+      "examples": [
+        "1",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the version the player is on, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    },
+    "3": {
+      "label": "the version an update would bring, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.outdated.fixes.one": {
+    "1": {
+      "label": "how many bug fixes those newer releases contain",
+      "examples": [
+        "1",
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.outdated.fixes.other": {
+    "1": {
+      "label": "how many bug fixes those newer releases contain",
+      "examples": [
+        "1",
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.button.get": {
+    "1": {
+      "label": "the newest version on Modrinth, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    },
+    "2": {
+      "label": "a launcher name (always Modrinth here)",
+      "examples": [
+        "Modrinth"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.fixed.intro.lag": {
+    "1": {
+      "label": "the version the player is on, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.fixed.intro.train_vanished": {
+    "1": {
+      "label": "the version the player is on, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.tips.render_distance": {
+    "1": {
+      "label": "the player's current render distance in chunks",
+      "examples": [
+        "16",
+        "24"
+      ]
+    },
+    "2": {
+      "label": "the suggested render distance in chunks",
+      "examples": [
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.tips.photos": {
+    "1": {
+      "label": "the current ride photo resolution (long edge in pixels)",
+      "examples": [
+        "1080",
+        "1440"
+      ]
+    },
+    "2": {
+      "label": "the suggested lower resolution (long edge in pixels)",
+      "examples": [
+        "720"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.tips.memory": {
+    "1": {
+      "label": "how many gigabytes of memory the launcher gave the game",
+      "examples": [
+        "3",
+        "4"
+      ]
+    },
+    "2": {
+      "label": "the recommended gigabytes of memory",
+      "examples": [
+        "6",
+        "8"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.edit.character": {
+    "1": {
+      "label": "the name of the character this line belongs to",
+      "examples": [
+        "Della Aaro",
+        "Faulthurst"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.edit.character.tip": {
+    "1": {
+      "label": "the name of the character this line belongs to",
+      "examples": [
+        "Della Aaro",
+        "Faulthurst"
+      ]
+    }
   }
 }

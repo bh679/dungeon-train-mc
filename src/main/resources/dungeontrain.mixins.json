@@ -28,6 +28,8 @@
     "NoiseRouterDataAccessor",
     "NoiseGeneratorSettingsAccessor",
     "NoiseBasedChunkGeneratorInvoker",
+    "EchoDropCreditMixin",
+    "LivingEntityLastEquipmentAccessor",
     "EndIslandDensityFunctionMixin",
     "ChunkGeneratorDecorationMixin",
     "ChunkStatusCarversMixin",

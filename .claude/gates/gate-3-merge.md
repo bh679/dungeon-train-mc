@@ -17,6 +17,10 @@
    applies — the script refuses to run without one or the other). Tag the subject, not what the
    prose mentions: "rides the train" is not `train`, "other players' books" is not `multiplayer`.
    Present the chosen tags with the notes at step 4 — they are part of what the user confirms.
+   **Addresses:** if the change fixes or improves a player-reported issue the death-screen bug
+   report offers — lag, or the train vanishing / derailing / duplicating — pass
+   `--addresses lag` and/or `--addresses train_vanished`. Players who report that issue on an
+   older version are then told this release addresses it. Present the choice with the tags.
 3b. **Modpack whitelist check** — if the diff adds an entry to `modpack/modpack.config.json`
    (`optional_mods[]`), or changes an entry's `mod_ids` / pin: every mod the modpack ships is
    **auto-approved for fair play** (the `generateApprovedMods` build task reads `mod_ids`), unless

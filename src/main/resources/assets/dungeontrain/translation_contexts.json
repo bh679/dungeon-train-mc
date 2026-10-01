@@ -8081,6 +8081,12 @@
  "gui.dungeontrain.translate.edit.source_link.tip": [
   "tooltip"
  ],
+ "gui.dungeontrain.translate.edit.character.tip": [
+  "tooltip"
+ ],
+ "gui.dungeontrain.translate.character.show_lines": [
+  "button"
+ ],
  "gui.dungeontrain.translate.edit.save": [
   "button"
  ],
