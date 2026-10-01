@@ -895,6 +895,7 @@
   "gui.dungeontrain.death.narr.kicker_lives": "all your lives",
   "gui.dungeontrain.death.narr.kicker_ledger": "the creator's ledger",
   "gui.dungeontrain.death.narr.kicker_platform": "the platform",
+  "gui.dungeontrain.death.narr.kicker_upgrades": "train upgrades",
   "gui.dungeontrain.death.narr.kicker_gear": "the cargo",
   "gui.dungeontrain.death.narr.kicker_donate": "the engine room",
   "gui.dungeontrain.death.narr.donate_intro": "The rails do not lay themselves. Every mile you rode was paid for — in coin, not blood. First by the creator, and now travellers like you. The creator bore their time, passion and love, yet they alone cannot sustain it forever. What can you offer to keep the engines roaring?",

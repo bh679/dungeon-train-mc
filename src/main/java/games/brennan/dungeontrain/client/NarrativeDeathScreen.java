@@ -1448,7 +1448,7 @@ public final class NarrativeDeathScreen extends Screen {
 
     /** The page after a submitted bug report: the response card ("already fixed", lag tips, update). */
     private int drawBugResponse(GuiGraphics g, int left, int w, int cx, int y) {
-        drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_ledger");
+        drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_upgrades");
         y += 14;
         drawTrain(g, left, w, y, currentPage);
         y += 46;

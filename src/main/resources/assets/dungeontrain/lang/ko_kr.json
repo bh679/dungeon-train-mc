@@ -740,6 +740,7 @@
   "gui.dungeontrain.death.narr.kicker_lives": "당신의 모든 생",
   "gui.dungeontrain.death.narr.kicker_ledger": "창조자의 장부",
   "gui.dungeontrain.death.narr.kicker_platform": "승강장",
+  "gui.dungeontrain.death.narr.kicker_upgrades": "열차 업그레이드",
   "gui.dungeontrain.death.narr.kicker_gear": "화물",
   "gui.dungeontrain.death.narr.kicker_donate": "기관실",
   "gui.dungeontrain.death.narr.donate_intro": "선로는 스스로 놓이지 않는다. 네가 달린 모든 마일에는 대가가 치러졌다 — 피가 아니라, 돈으로. 처음엔 창조자가, 이제는 너 같은 여행자들이. 창조자는 자신의 시간과 열정과 사랑을 바쳤지만, 홀로 영원히 떠받칠 수는 없다. 엔진이 계속 우렁차게 울리도록, 너는 무엇을 내어줄 수 있는가?",

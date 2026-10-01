@@ -740,6 +740,7 @@
   "gui.dungeontrain.death.narr.kicker_lives": "ทุกชีวิตของคุณ",
   "gui.dungeontrain.death.narr.kicker_ledger": "บัญชีของผู้สร้าง",
   "gui.dungeontrain.death.narr.kicker_platform": "ชานชาลา",
+  "gui.dungeontrain.death.narr.kicker_upgrades": "การอัปเกรดรถไฟ",
   "gui.dungeontrain.death.narr.kicker_gear": "สัมภาระ",
   "gui.dungeontrain.death.narr.kicker_donate": "ห้องเครื่องยนต์",
   "gui.dungeontrain.death.narr.donate_intro": "รางรถไฟไม่ได้ปูตัวมันเอง ทุกไมล์ที่คุณโดยสารมาล้วนถูกจ่ายไปแล้ว — ด้วยเหรียญเงิน ไม่ใช่เลือดเนื้อ แรกเริ่มโดยผู้สร้าง และบัดนี้โดยนักเดินทางเช่นคุณ ผู้สร้างได้มอบเวลา ความหลงใหล และความรักของเขา ทว่าลำพังเขาผู้เดียวไม่อาจค้ำจุนมันไว้ได้ตลอดกาล คุณมีสิ่งใดจะมอบให้เพื่อให้เครื่องยนต์ยังคำรามต่อไป?",

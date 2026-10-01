@@ -923,6 +923,7 @@
   "gui.dungeontrain.death.narr.kicker_lives": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "33c6df2366ed383c"},
   "gui.dungeontrain.death.narr.kicker_ledger": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "5c886f46fced66b6"},
   "gui.dungeontrain.death.narr.kicker_platform": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "b298f7541ebfd197"},
+  "gui.dungeontrain.death.narr.kicker_upgrades": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e5821553be63d111"},
   "gui.dungeontrain.death.narr.kicker_gear": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "228aad0a081842ad"},
   "gui.dungeontrain.death.narr.kicker_donate": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "38f70aa9a6cf704e"},
   "gui.dungeontrain.death.narr.donate_intro": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "a6d8d15f9daf0ac7"},
