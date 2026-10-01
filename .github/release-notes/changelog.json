@@ -21801,8 +21801,25 @@
       "released_at": null
     },
     {
-      "id": "pause-menu-shift-exits-multiplayer",
+      "id": "killer-bunny-monty-python-names",
       "version": "0.1089.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "An ode to Monty Python",
+      "summary": "Something out there may now introduce itself with a name that Monty Python fans will recognise.",
+      "highlights": [],
+      "pr": 1740,
+      "date": "2026-10-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "pause-menu-shift-exits-multiplayer",
+      "version": "0.1091.0",
       "type": "feat",
       "tags": [
         "feature",
