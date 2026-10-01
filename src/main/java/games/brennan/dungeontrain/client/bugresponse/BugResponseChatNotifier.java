@@ -71,6 +71,8 @@ public final class BugResponseChatNotifier {
         BugIssue issue = BugIssueClassifier.classify(option, surveyComment(mc));
         // Same rule as the death screen: our own world (LAN host included) is singleplayer.
         boolean multiplayer = mc.getSingleplayerServer() == null;
+        LOGGER.info("[DungeonTrain] Bug report from the survey: option={} issue={} multiplayer={}",
+                option, issue, multiplayer);
         VersionCompareState.ensureFetched();
         pending = new Pending(issue, multiplayer);
         waitedTicks = 0;
