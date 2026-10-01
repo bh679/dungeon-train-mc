@@ -156,12 +156,13 @@ public interface BlockVariantPlot {
 
     /**
      * True when this plot's spawn path grows the per-row {@link VariantState#growth()}
-     * columns ({@link GrowthPass}). The same plots as {@link #supportsConnectMode}: both
-     * need a placer that writes into the world after the overlay; the track path returns
-     * one state per cell and cannot grow.
+     * columns ({@link GrowthPass}). Every template's placer does — carriages, contents,
+     * parts, wholes, tunnels, track tiles, pillars, stairs, portal rooms, their floor and
+     * roof planes, and chunk frames — so the menu offers Grow everywhere. Each placer bounds
+     * the column to its own piece (a track tile only has its bed and rail rows).
      */
     default boolean supportsGrowth() {
-        return supportsConnectMode();
+        return true;
     }
 
     /**

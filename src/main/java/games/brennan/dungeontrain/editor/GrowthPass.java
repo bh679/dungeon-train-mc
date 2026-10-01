@@ -4,6 +4,9 @@ import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ScaffoldingBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -26,13 +29,52 @@ import java.util.function.Predicate;
  * lies outside the piece being placed, or where the next block can't survive.
  * It never overwrites a block.</p>
  *
- * <p>Writes go through {@link SilentBlockOps#setBlockSilentNoCascade}: no
- * neighbour shape updates, so scaffolding and dripstone keep the shape given
- * here instead of re-deriving (or dropping) mid-overlay.</p>
+ * <p>Writes go through the placer's own {@link Target} — the same kind of write it
+ * makes for the cell itself: a silent no-cascade write at runtime (so scaffolding
+ * and dripstone keep the shape given here), a plain region write during world
+ * generation, or a section-local write on the Sable-safe track paths. The roll is a
+ * pure function of seed, cell and index, so world generation stays deterministic.</p>
  */
 public final class GrowthPass {
 
-    private record Pending(ServerLevel level, BlockPos pos, BlockState placed, VariantGrowth growth,
+    /** Where a column is read from and written to — the placer's own level and write style. */
+    public interface Target {
+        LevelReader reader();
+
+        void set(BlockPos pos, BlockState state);
+    }
+
+    /** Runtime stamps (carriages, portal rooms, frames): silent, no neighbour shape cascade. */
+    public static Target runtime(ServerLevel level) {
+        return new Target() {
+            @Override public LevelReader reader() { return level; }
+            @Override public void set(BlockPos pos, BlockState state) {
+                SilentBlockOps.setBlockSilentNoCascade(level, pos, state, null);
+            }
+        };
+    }
+
+    /** World generation (tunnels, track bed, pillars, stairs): the region write the feature already uses. */
+    public static Target worldgen(WorldGenLevel level) {
+        return new Target() {
+            @Override public LevelReader reader() { return level; }
+            @Override public void set(BlockPos pos, BlockState state) {
+                level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+            }
+        };
+    }
+
+    /** The Sable-safe track paths that only ever write section-local (no {@code LevelChunk.setBlockState}). */
+    public static Target sectionLocal(ServerLevel level) {
+        return new Target() {
+            @Override public LevelReader reader() { return level; }
+            @Override public void set(BlockPos pos, BlockState state) {
+                SilentBlockOps.setBlockSectionLocal(level, pos, state);
+            }
+        };
+    }
+
+    private record Pending(Target target, BlockPos pos, BlockState placed, VariantGrowth growth,
                            int length, Predicate<BlockPos> within) {}
 
     private static final class Frame {
@@ -75,23 +117,34 @@ public final class GrowthPass {
         return box::isInside;
     }
 
+    /** {@link #note(Target, BlockPos, VariantState, BlockState, BlockPos, long, int, Predicate)} for a runtime stamp. */
+    public static void note(ServerLevel level, BlockPos world, VariantState entry, BlockState placed,
+                            BlockPos localPos, long seed, int index, Predicate<BlockPos> within) {
+        if (!wantsGrowth(entry, placed)) return;
+        note(runtime(level), world, entry, placed, localPos, seed, index, within);
+    }
+
     /**
      * Mark {@code world} as holding {@code entry}, placed as {@code placed}. Ignored unless the entry
      * has growth on and the placed block can grow, and on the editor's template-load stamp (its blocks
      * would be captured back into the template). {@code localPos} / {@code seed} / {@code index} seed
      * the length roll; the column only grows into world positions {@code within} accepts.
      */
-    public static void note(ServerLevel level, BlockPos world, VariantState entry, BlockState placed,
+    public static void note(Target target, BlockPos world, VariantState entry, BlockState placed,
                             BlockPos localPos, long seed, int index, Predicate<BlockPos> within) {
-        VariantGrowth growth = entry.growth();
-        if (growth.isDefault() || !GrowthShapes.canGrow(placed)) return;
+        if (!wantsGrowth(entry, placed)) return;
         if (index == games.brennan.dungeontrain.train.CarriageContentsPlacer.EDITOR_SENTINEL_PIDX) return;
-        int length = growth.rollLength(seed, localPos.asLong(), index);
+        int length = entry.growth().rollLength(seed, localPos.asLong(), index);
         if (length < 2) return;
-        Pending p = new Pending(level, world.immutable(), placed, growth, length, within);
+        Pending p = new Pending(target, world.immutable(), placed, entry.growth(), length, within);
         Frame frame = FRAME.get();
         if (frame.depth > 0) frame.pending.add(p);
         else grow(p);
+    }
+
+    /** Cheap pre-check so placers can skip building a {@link Target} for the common no-growth cell. */
+    public static boolean wantsGrowth(VariantState entry, BlockState placed) {
+        return entry != null && !entry.growth().isDefault() && GrowthShapes.canGrow(placed);
     }
 
     /**
@@ -105,7 +158,7 @@ public final class GrowthPass {
     }
 
     private static void grow(Pending p) {
-        ServerLevel level = p.level();
+        LevelReader level = p.target().reader();
         // A later write in the overlay may have replaced the cell — only grow what is still there.
         if (level.getBlockState(p.pos()).getBlock() != p.placed().getBlock()) return;
         // Nor from a cell that can't hold its own block (bamboo on stone, a ladder with no wall): it
@@ -119,19 +172,22 @@ public final class GrowthPass {
             if (!p.within().test(at)) return false;
             return GrowthShapes.isFree(p.placed(), level.getBlockState(at));
         });
+        if (n < 2) return;
 
         // Place, and shorten if a block can't survive where it lands (a ladder run off its wall).
         // A failed block is never written, so re-placing the shorter column overwrites only its own.
         while (n >= 2) {
-            int survived = place(level, p, step, n);
+            int survived = place(p, step, n);
             if (survived == n) return;
             n = survived;
         }
-        SilentBlockOps.setBlockSilentNoCascade(level, p.pos(), p.placed(), null);
+        // Nothing beyond the cell survived — put the cell back as it was placed.
+        p.target().set(p.pos(), p.placed());
     }
 
     /** Write an {@code n}-long column; returns how many blocks were placed before one failed to survive. */
-    private static int place(ServerLevel level, Pending p, Direction step, int n) {
+    private static int place(Pending p, Direction step, int n) {
+        LevelReader level = p.target().reader();
         List<BlockState> states = GrowthShapes.column(p.placed(), p.growth().dir(), n, p.growth().tip());
         boolean scaffolding = GrowthShapes.isScaffolding(p.placed());
         for (int i = 0; i < n; i++) {
@@ -144,7 +200,7 @@ public final class GrowthPass {
                     .setValue(ScaffoldingBlock.BOTTOM, distance > 0 && !level.getBlockState(at.below()).is(Blocks.SCAFFOLDING));
             }
             if (i > 0 && !state.canSurvive(level, at)) return i;
-            SilentBlockOps.setBlockSilentNoCascade(level, at, state, null);
+            p.target().set(at, state);
         }
         return n;
     }
