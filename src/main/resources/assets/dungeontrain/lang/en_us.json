@@ -3146,6 +3146,8 @@
   "gui.dungeontrain.editor_menu.type_name.rooms": "Rooms",
   "gui.dungeontrain.editor_menu.type_name.halves": "Halves",
   "gui.dungeontrain.editor_menu.type_name.groups": "Groups",
+  "gui.dungeontrain.editor_menu.type_name.flatbeds": "Flatbeds",
+  "gui.dungeontrain.editor_menu.type_name.portals": "Portals",
   "gui.dungeontrain.editor_menu.type_name.dimensional_carriage": "Dimensional Carriage",
   "gui.dungeontrain.editor_menu.type_name.floor": "Floor",
   "gui.dungeontrain.editor_menu.type_name.walls": "Walls",

@@ -152,13 +152,34 @@ public final class EditorTypeMenus {
             EditorCategory.CONTENTS.id(), buildCategoryBar(), buildContentsTypeStrip(topLevel)));
     }
 
-    /** The tab a carriage pool goes by: Rooms, Halves, Groups. */
-    public static String carriagePoolTypeName(games.brennan.dungeontrain.train.ShellPool pool) {
-        return switch (pool) {
-            case ROOM -> "Rooms";
-            case HALF -> "Halves";
-            case GROUP -> "Groups";
+    /** The tab a carriage template row goes by. */
+    public static String carriageRowTypeName(CarriagePlotRows.Row row) {
+        return switch (row) {
+            case ROOMS -> "Rooms";
+            case HALVES -> "Halves";
+            case GROUPS -> "Groups";
+            case FLATBEDS -> "Flatbeds";
+            case PORTALS -> "Portals";
         };
+    }
+
+    /**
+     * A row's model id on the roster: a pool row's size key (what its "+" makes), else the row's own
+     * name — the X menu reads anything that is not a size key as a row with no "+".
+     */
+    public static String carriageRowModelId(CarriagePlotRows.Row row) {
+        return switch (row) {
+            case ROOMS -> "room";
+            case HALVES -> "half";
+            case GROUPS -> "full";
+            case FLATBEDS -> "flatbeds";
+            case PORTALS -> "portals";
+        };
+    }
+
+    /** True for the rows placed by fixed rules rather than drawn by weight — nothing is made into them. */
+    public static boolean isFixedRow(CarriagePlotRows.Row row) {
+        return row == CarriagePlotRows.Row.FLATBEDS || row == CarriagePlotRows.Row.PORTALS;
     }
 
     /** The type label a contents size goes by in the Contents menus. */
@@ -425,12 +446,12 @@ public final class EditorTypeMenus {
         List<EditorTypeMenusPacket.TypeTab> strip = new ArrayList<>();
         String carriagesCat = EditorCategory.CARRIAGES.name();
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
-        // One tab per pool that holds a template, jumping to its first.
-        for (games.brennan.dungeontrain.train.ShellPool pool : games.brennan.dungeontrain.train.ShellPool.values()) {
+        // One tab per template row that holds a template, jumping to its first.
+        for (CarriagePlotRows.Row row : CarriagePlotRows.Row.values()) {
             for (CarriageVariant v : variants) {
-                if (games.brennan.dungeontrain.train.CarriagePlacer.sizeOf(v) != pool.size()) continue;
+                if (CarriagePlotRows.rowOf(v) != row) continue;
                 strip.add(new EditorTypeMenusPacket.TypeTab(
-                    carriagePoolTypeName(pool), carriagesCat, v.id(), v.id()));
+                    carriageRowTypeName(row), carriagesCat, v.id(), v.id()));
                 break;
             }
         }

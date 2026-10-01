@@ -688,8 +688,12 @@ public final class EditorScreenActions {
                 new NewSourcePickerScreen(NewSourcePickerScreen.Category.PARTS, stripModelId, current));
         }
         if (stripCategory == PlotCategory.CARRIAGES) {
-            // A carriage strip is one pool (Rooms / Halves / Groups); its model id is the pool's
-            // size key, so the picker offers a blank in that pool.
+            // A carriage strip is one row. A pool row (Rooms / Halves / Groups) has the pool's size
+            // key as its model id, so the picker offers a blank in that pool; Flatbeds and Portals
+            // hold templates placed by fixed rules, and nothing new is made into them.
+            if (!java.util.Set.of("", "room", "half", "full").contains(stripModelId == null ? "" : stripModelId)) {
+                return null;
+            }
             return new CommandMenuEntry.DrillIn(MenuLang.t("common.new"),
                 new NewSourcePickerScreen(NewSourcePickerScreen.Category.CARRIAGES, stripModelId, current));
         }

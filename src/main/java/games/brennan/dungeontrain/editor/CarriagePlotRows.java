@@ -16,48 +16,69 @@ import java.util.function.Function;
 import java.util.function.ToIntFunction;
 
 /**
- * Where each carriage plot stands in the editor: one {@code +X} row per {@link ShellPool} — Rooms at
- * {@code Z 0}, Halves one row toward {@code -Z}, Groups one further — each row its own plots laid end
- * to end at their own lengths, a {@link EditorLayout#GAP} apart. The part rows keep {@code +Z}.
+ * Where each carriage plot stands in the editor: one {@code +X} row per {@link Row} — Rooms at
+ * {@code Z 0}, then Halves, Groups, Flatbeds and Portals each one row further toward {@code -Z} —
+ * each row its own plots laid end to end at their own lengths, a {@link EditorLayout#GAP} apart.
+ * The part rows keep {@code +Z}.
  *
- * <p>A plot's row is its template's effective size, so a Group carriage still in the Room folder
- * from before the pools existed stands with the Groups. Memoised on everything a position depends
- * on; {@link #rows(String[], Function, ToIntFunction, int)} is the pure layout, testable without a
- * world.</p>
+ * <p>The flatbed and the portal templates are placed by fixed rules rather than drawn by weight, so
+ * they stand in rows of their own; every other template stands in its pool's row, by its effective
+ * size (a Group carriage still in the Room folder from before the pools existed stands with the
+ * Groups). Memoised on everything a position depends on;
+ * {@link #rows(String[], Function, ToIntFunction, int)} is the pure layout, testable without a world.</p>
  */
 public final class CarriagePlotRows {
+
+    /** The template rows, in {@code -Z} order. */
+    public enum Row {
+        ROOMS, HALVES, GROUPS, FLATBEDS, PORTALS;
+
+        /** The row a template of {@code pool} stands in. */
+        public static Row of(ShellPool pool) {
+            return switch (pool) {
+                case ROOM -> ROOMS;
+                case HALF -> HALVES;
+                case GROUP -> GROUPS;
+            };
+        }
+    }
 
     /** One row's spacing toward {@code -Z}: the widest a carriage can be, plus the gap. */
     public static final int ROW_STEP_Z = CarriageDims.MAX_WIDTH + EditorLayout.GAP;
 
     /** The laid-out rows: each id's X start and row, and where each row's next plot would go. */
-    public record Rows(Map<String, Integer> startX, Map<String, ShellPool> rowOf, Map<ShellPool, Integer> endX) {
-        public int endOf(ShellPool pool) {
-            return endX.getOrDefault(pool, 0);
+    public record Rows(Map<String, Integer> startX, Map<String, Row> rowOf, Map<Row, Integer> endX) {
+        public int endOf(Row row) {
+            return endX.getOrDefault(row, 0);
         }
     }
 
     private CarriagePlotRows() {}
 
-    /** The {@code Z} of {@code pool}'s row. */
-    public static int rowZ(ShellPool pool) {
-        return -pool.ordinal() * ROW_STEP_Z;
+    /** The {@code Z} of {@code row}. */
+    public static int rowZ(Row row) {
+        return -row.ordinal() * ROW_STEP_Z;
     }
 
-    /** The pool row {@code variant}'s plot stands in. */
-    public static ShellPool rowOf(CarriageVariant variant) {
-        return ShellPool.of(CarriagePlacer.sizeOf(variant));
+    /** The row {@code variant}'s plot stands in. */
+    public static Row rowOf(CarriageVariant variant) {
+        if (variant instanceof CarriageVariant.Builtin b
+                && b.type() == CarriagePlacer.CarriageType.FLATBED) {
+            return Row.FLATBEDS;
+        }
+        if (games.brennan.dungeontrain.portal.PortalCarriageBuilder.isPortalVariant(variant)) return Row.PORTALS;
+        return Row.of(ShellPool.of(CarriagePlacer.sizeOf(variant)));
     }
 
     /** The pure layout: {@code ids} in registry order, each laid in its row after the ones before. */
-    static Rows rows(String[] ids, Function<String, ShellPool> rowOf, ToIntFunction<String> lengthOf, int firstX) {
+    static Rows rows(String[] ids, Function<String, Row> rowOf, ToIntFunction<String> lengthOf, int firstX) {
         Map<String, Integer> startX = new HashMap<>(ids.length * 2);
-        Map<String, ShellPool> rows = new HashMap<>(ids.length * 2);
-        Map<ShellPool, Integer> next = new EnumMap<>(ShellPool.class);
-        for (ShellPool p : ShellPool.values()) next.put(p, firstX);
+        Map<String, Row> rows = new HashMap<>(ids.length * 2);
+        Map<Row, Integer> next = new EnumMap<>(Row.class);
+        for (Row r : Row.values()) next.put(r, firstX);
         for (String id : ids) {
             if (startX.containsKey(id)) continue;
-            ShellPool row = rowOf.apply(id);
+            Row row = rowOf.apply(id);
             int x = next.get(row);
             startX.put(id, x);
             rows.put(id, row);
@@ -108,11 +129,11 @@ public final class CarriagePlotRows {
         return new BlockPos(x, EditorLayout.PLOT_Y, rowZ(rows.rowOf().get(variant.id())));
     }
 
-    /** The variants standing in {@code pool}'s row, in row order. */
-    public static List<CarriageVariant> membersOf(ShellPool pool) {
+    /** The variants standing in {@code row}, in row order. */
+    public static List<CarriageVariant> membersOf(Row row) {
         List<CarriageVariant> out = new ArrayList<>();
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
-            if (rowOf(v) == pool) out.add(v);
+            if (rowOf(v) == row) out.add(v);
         }
         return out;
     }

@@ -140,12 +140,12 @@ public final class CarriageEditor {
     }
 
     /** Where {@code pool}'s row would put its next plot. */
-    private static int rowEndX(games.brennan.dungeontrain.train.ShellPool pool, CarriageDims dims) {
+    private static int rowEndX(CarriagePlotRows.Row pool, CarriageDims dims) {
         return CarriagePlotRows.current(dims, groupSize()).endOf(pool);
     }
 
     /** A plot's row and X — taken before a change moves it, so the old footprint can be cleared. */
-    public record RowSpot(games.brennan.dungeontrain.train.ShellPool pool, int x) {}
+    public record RowSpot(CarriagePlotRows.Row pool, int x) {}
 
     /** {@code variant}'s row and X now, or null when it has no plot. */
     public static RowSpot spotOf(CarriageVariant variant, CarriageDims dims) {
@@ -385,7 +385,7 @@ public final class CarriageEditor {
      * stamped by that build otherwise keeps those plots in the sky where no slot points any more.
      */
     public static void clearRowSpan(ServerLevel level, CarriageDims dims) {
-        for (games.brennan.dungeontrain.train.ShellPool pool : games.brennan.dungeontrain.train.ShellPool.values()) {
+        for (CarriagePlotRows.Row pool : CarriagePlotRows.Row.values()) {
             eraseSpan(level, pool, FIRST_PLOT_X, rowSpanEndX(pool, dims), dims);
         }
     }
@@ -394,16 +394,16 @@ public final class CarriageEditor {
     public static net.minecraft.world.level.levelgen.structure.BoundingBox rowSpanBox(CarriageDims dims) {
         CarriageDims box = widestBox(dims);
         int end = FIRST_PLOT_X;
-        for (games.brennan.dungeontrain.train.ShellPool pool : games.brennan.dungeontrain.train.ShellPool.values()) end = Math.max(end, rowSpanEndX(pool, dims));
-        int zMin = CarriagePlotRows.rowZ(games.brennan.dungeontrain.train.ShellPool.GROUP);
+        for (CarriagePlotRows.Row pool : CarriagePlotRows.Row.values()) end = Math.max(end, rowSpanEndX(pool, dims));
+        int zMin = CarriagePlotRows.rowZ(CarriagePlotRows.Row.PORTALS);   // the furthest row toward -Z
         return EditorLayerSweep.plotBox(new BlockPos(FIRST_PLOT_X, EditorLayout.PLOT_Y, zMin),
-            new Vec3i(end - FIRST_PLOT_X, box.height(), CarriagePlotRows.rowZ(games.brennan.dungeontrain.train.ShellPool.ROOM) - zMin + box.width()));
+            new Vec3i(end - FIRST_PLOT_X, box.height(), CarriagePlotRows.rowZ(CarriagePlotRows.Row.ROOMS) - zMin + box.width()));
     }
 
-    private static int rowSpanEndX(games.brennan.dungeontrain.train.ShellPool pool, CarriageDims dims) {
+    private static int rowSpanEndX(CarriagePlotRows.Row pool, CarriageDims dims) {
         int end = rowEndX(pool, dims) + plotStep(dims);
         // The Room row is also where the single widest-spaced row of older builds stood.
-        if (pool == games.brennan.dungeontrain.train.ShellPool.ROOM) end = Math.max(end, FIRST_PLOT_X + rowCount() * plotStep(dims));
+        if (pool == CarriagePlotRows.Row.ROOMS) end = Math.max(end, FIRST_PLOT_X + rowCount() * plotStep(dims));
         return end;
     }
 
@@ -413,7 +413,7 @@ public final class CarriageEditor {
      * ones no longer sit where the slots now say; clearing the span rather than slot by slot reaches
      * wherever they were.
      */
-    private static void eraseSpan(ServerLevel level, games.brennan.dungeontrain.train.ShellPool pool, int fromX, int toX, CarriageDims dims) {
+    private static void eraseSpan(ServerLevel level, CarriagePlotRows.Row pool, int fromX, int toX, CarriageDims dims) {
         BlockState air = Blocks.AIR.defaultBlockState();
         CarriageDims box = widestBox(dims);
         int rowZ = CarriagePlotRows.rowZ(pool);
@@ -429,7 +429,7 @@ public final class CarriageEditor {
     }
 
     /** Stamp every plot in {@code pool}'s row from {@code fromX} on. */
-    private static void restampRowFrom(ServerLevel level, games.brennan.dungeontrain.train.ShellPool pool, int fromX, CarriageDims dims) {
+    private static void restampRowFrom(ServerLevel level, CarriagePlotRows.Row pool, int fromX, CarriageDims dims) {
         for (CarriageVariant v : CarriagePlotRows.membersOf(pool)) {
             BlockPos o = plotOrigin(v, dims);
             if (o != null && o.getX() >= fromX) stampPlot(level, v, dims);
@@ -652,6 +652,9 @@ public final class CarriageEditor {
         if (games.brennan.dungeontrain.portal.PortalCarriageBuilder.isPortalVariant(variant)) {
             throw new IOException("Portal carriages keep the size the portal needs.");
         }
+        if (CarriagePlotRows.rowOf(variant) == CarriagePlotRows.Row.FLATBEDS) {
+            throw new IOException("The flatbed keeps its size — the pads between groups are cut from it.");
+        }
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         BlockPos origin = plotOrigin(variant, dims);
@@ -666,7 +669,7 @@ public final class CarriageEditor {
         // from their saved templates — so none of them may be holding unsaved edits either.
         games.brennan.dungeontrain.train.ShellPool toPool = games.brennan.dungeontrain.train.ShellPool.of(size);
         RowSpot oldSpot = spotOf(variant, dims);
-        refuseUnsaved(overworld, dims, variant, oldSpot, toPool);
+        refuseUnsaved(overworld, dims, variant, oldSpot, CarriagePlotRows.Row.of(toPool));
         StructureTemplate saved = CarriageTemplateStore.get(overworld, variant, oldBox).orElseThrow(() ->
             new IOException("'" + variant.id() + "' has no saved template to resize."));
         // Re-length the template itself rather than stamping and re-capturing: every category
@@ -676,7 +679,7 @@ public final class CarriageEditor {
 
         boolean shown = EditorStampedCategoryState.isActive(EditorCategory.CARRIAGES);
         int oldEnd = oldSpot == null ? FIRST_PLOT_X : rowEndX(oldSpot.pool(), dims);
-        int newRowOldEnd = rowEndX(toPool, dims);
+        int newRowOldEnd = rowEndX(CarriagePlotRows.Row.of(toPool), dims);
         try {
             // Each size is its own pool of templates, stored apart: the switch moves it there.
             ShellPoolMove.move(variant, toPool, resized, EditorDevMode.isEnabled());
@@ -704,7 +707,7 @@ public final class CarriageEditor {
      * its row, and the plots that come after it in registry order in the row it moves to.
      */
     private static void refuseUnsaved(ServerLevel overworld, CarriageDims dims, CarriageVariant variant,
-                                      RowSpot oldSpot, games.brennan.dungeontrain.train.ShellPool toPool) throws IOException {
+                                      RowSpot oldSpot, CarriagePlotRows.Row toRow) throws IOException {
         java.util.Set<String> unsaved = EditorDirtyCheck.unsavedModelIds(overworld, dims, "carriages");
         if (unsaved.isEmpty()) return;
         int at = slotOf(variant.id());
@@ -714,7 +717,7 @@ public final class CarriageEditor {
             if (!unsaved.contains(v.id())) continue;
             boolean movesInOldRow = oldSpot != null && CarriagePlotRows.rowOf(v) == oldSpot.pool()
                 && plotOrigin(v, dims) != null && plotOrigin(v, dims).getX() >= oldSpot.x();
-            boolean movesInNewRow = CarriagePlotRows.rowOf(v) == toPool && i > at;
+            boolean movesInNewRow = CarriagePlotRows.rowOf(v) == toRow && i > at;
             if (v.id().equals(variant.id()) || movesInOldRow || movesInNewRow) {
                 throw new IOException("'" + v.id() + "' has unsaved edits — save or reset it first.");
             }

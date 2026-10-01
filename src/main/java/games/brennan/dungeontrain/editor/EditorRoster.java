@@ -137,6 +137,9 @@ public final class EditorRoster {
     /** A carriage template's size, or the entry unchanged for every other row. */
     private static EditorRosterPacket.Entry withShellSizeData(String categoryId, EditorRosterPacket.Entry entry) {
         if (!EditorCategory.CARRIAGES.id().equals(categoryId)) return entry;
+        // A flatbed or portal keeps the size its role needs — no Room · Half · Group switch.
+        CarriageVariant v = CarriageVariantRegistry.find(entry.variant().modelId()).orElse(null);
+        if (v != null && EditorTypeMenus.isFixedRow(CarriagePlotRows.rowOf(v))) return entry;
         return entry.withShellSize(
             games.brennan.dungeontrain.train.CarriagePlacer.sizeOfId(entry.variant().modelId()).key());
     }
@@ -217,13 +220,15 @@ public final class EditorRoster {
     private static void addCarriages(List<EditorRosterPacket.Group> out) {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
         if (variants.isEmpty()) return;
-        for (games.brennan.dungeontrain.train.ShellPool pool : games.brennan.dungeontrain.train.ShellPool.values()) {
-            List<CarriageVariant> inPool = new ArrayList<>();
+        for (CarriagePlotRows.Row row : CarriagePlotRows.Row.values()) {
+            List<CarriageVariant> inRow = new ArrayList<>();
             for (CarriageVariant v : variants) {
-                if (games.brennan.dungeontrain.train.CarriagePlacer.sizeOf(v) == pool.size()) inPool.add(v);
+                if (CarriagePlotRows.rowOf(v) == row) inRow.add(v);
             }
-            out.add(group(EditorCategory.CARRIAGES.id(), EditorTypeMenus.carriagePoolTypeName(pool),
-                pool.size().key(), EditorTypeMenus.carriageRows(inPool), null));
+            // Flatbeds and Portals are only shown when they hold something: nothing is made into them.
+            if (inRow.isEmpty() && EditorTypeMenus.isFixedRow(row)) continue;
+            out.add(group(EditorCategory.CARRIAGES.id(), EditorTypeMenus.carriageRowTypeName(row),
+                EditorTypeMenus.carriageRowModelId(row), EditorTypeMenus.carriageRows(inRow), null));
         }
     }
 
