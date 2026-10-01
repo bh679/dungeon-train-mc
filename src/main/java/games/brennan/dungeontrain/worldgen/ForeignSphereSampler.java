@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.worldgen;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
@@ -22,8 +21,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -38,9 +35,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * {@link Result} waits in a queue for {@code WorldSpheresEvents} to write it into the live chunk on the
  * server thread.</p>
  *
- * <p>Runs on its own dedicated threads ({@code DungeonTrain-sphere-sampler-N}), never on
- * {@code Util.backgroundExecutor()}: {@code fillFromNoise} schedules onto that pool and joins, and a
- * job that joined from inside it would starve it (the chunk-dimension portal room's lesson).</p>
+ * <p>Runs on the {@link SamplerPool} it shares with {@link EndBandSampler}, first in first out — never on
+ * {@code Util.backgroundExecutor()} (see {@link SamplerPool}).</p>
  */
 public final class ForeignSphereSampler {
 
@@ -73,7 +69,6 @@ public final class ForeignSphereSampler {
     private static final ConcurrentLinkedQueue<Result> READY = new ConcurrentLinkedQueue<>();
     /** Bumped on server stop so a job still running for the old server drops its result. */
     private static final AtomicInteger EPOCH = new AtomicInteger();
-    private static volatile ExecutorService executor;
 
     private ForeignSphereSampler() {}
 
@@ -88,7 +83,7 @@ public final class ForeignSphereSampler {
         int displayMinY = overworld.getMinBuildHeight();
         int displayMaxY = overworld.getMaxBuildHeight();
         int epoch = EPOCH.get();
-        executor().execute(() -> {
+        SamplerPool.execute(() -> {
             long t0 = System.nanoTime();
             try {
                 Result result = sample(server, sphere, pos, seed, displayMinY, displayMaxY);
@@ -120,23 +115,6 @@ public final class ForeignSphereSampler {
 
     private static long jobKey(SphereField.Sphere sphere, ChunkPos pos) {
         return sphere.id() * 0x9E3779B97F4A7C15L ^ pos.toLong();
-    }
-
-    private static ExecutorService executor() {
-        ExecutorService e = executor;
-        if (e != null) return e;
-        synchronized (ForeignSphereSampler.class) {
-            if (executor == null) {
-                AtomicInteger n = new AtomicInteger();
-                executor = Executors.newFixedThreadPool(SpheresProgressionConfig.samplerThreads(), task -> {
-                    Thread thread = new Thread(task, "DungeonTrain-sphere-sampler-" + n.incrementAndGet());
-                    thread.setDaemon(true);
-                    thread.setPriority(Thread.NORM_PRIORITY - 1);
-                    return thread;
-                });
-            }
-            return executor;
-        }
     }
 
     /** The level a sphere's terrain is generated in. */

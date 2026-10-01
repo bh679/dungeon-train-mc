@@ -557,6 +557,9 @@ public class DungeonTrain {
             @Override public boolean surveyResultsCopyEnabled() { return true; }
             @Override public String surveyResultsWebhookUrl() { return surveyResultsWebhookOverride(); }
             @Override public String surveyResultsLinkGuildId() { return linkGuildIdForBranch(VersionInfo.BRANCH); }
+            // Stamp the DT version on genuine survey answers (bug / feedback / improvement) and their
+            // results copy as the embed footer — Discord's smallest text. Notices stay unstamped.
+            @Override public String surveyEmbedFooter() { return "DT " + VersionInfo.VERSION; }
         });
 
         // One-line dev-vs-live routing signal at startup: states which Discord channel this build

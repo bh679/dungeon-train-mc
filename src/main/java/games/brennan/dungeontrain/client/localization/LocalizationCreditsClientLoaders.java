@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.localization;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.localization.edit.LocalizationCoverage;
 import games.brennan.dungeontrain.client.localization.edit.ProvenanceManifestRegistry;
+import games.brennan.dungeontrain.client.localization.edit.TranslationCharacters;
 import games.brennan.dungeontrain.client.localization.edit.TranslationVariableExamples;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
@@ -88,6 +89,17 @@ public final class LocalizationCreditsClientLoaders {
             @Override
             public String getName() {
                 return "dungeontrain:translation_examples";
+            }
+        });
+        event.registerReloadListener(new ResourceManagerReloadListener() {
+            @Override
+            public void onResourceManagerReload(ResourceManager resourceManager) {
+                TranslationCharacters.load(resourceManager);
+            }
+
+            @Override
+            public String getName() {
+                return "dungeontrain:translation_characters";
             }
         });
     }

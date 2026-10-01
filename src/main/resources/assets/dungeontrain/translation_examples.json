@@ -2961,6 +2961,79 @@
       ]
     }
   },
+  "dungeontrain.leaderboard.era": {
+    "1": {
+      "label": "the board's heading, already wrapped by its span clause where it has one",
+      "examples": [
+        {
+          "key": "dungeontrain.leaderboard.distance.header",
+          "args": []
+        },
+        {
+          "key": "dungeontrain.leaderboard.carriages_no_chest.header",
+          "args": []
+        }
+      ]
+    },
+    "2": {
+      "label": "the era this retired list belongs to, as a short phrase",
+      "examples": [
+        {
+          "key": "dungeontrain.leaderboard.era.year",
+          "args": [
+            "2025"
+          ]
+        },
+        {
+          "key": "dungeontrain.leaderboard.era.version.before",
+          "args": [
+            "0.1013"
+          ]
+        }
+      ]
+    }
+  },
+  "dungeontrain.leaderboard.era.version.range": {
+    "1": {
+      "label": "the lowest game version whose runs this retired list holds, digits only",
+      "examples": [
+        "0.1013",
+        "0.1020"
+      ]
+    },
+    "2": {
+      "label": "the first game version it no longer covers — the next era's floor",
+      "examples": [
+        "0.1020",
+        "0.1031.2"
+      ]
+    }
+  },
+  "dungeontrain.leaderboard.era.version.before": {
+    "1": {
+      "label": "the first game version to get a board of its own; everything older is on this list",
+      "examples": [
+        "0.1013"
+      ]
+    }
+  },
+  "dungeontrain.leaderboard.era.version.onward": {
+    "1": {
+      "label": "the lowest game version whose runs this list holds, digits only",
+      "examples": [
+        "0.1013"
+      ]
+    }
+  },
+  "dungeontrain.leaderboard.era.year": {
+    "1": {
+      "label": "a calendar year, as a plain number",
+      "examples": [
+        "2025",
+        "2026"
+      ]
+    }
+  },
   "dungeontrain.leaderboard.you": {
     "1": {
       "label": "the reader's rank on this board, as a plain number",
@@ -4763,6 +4836,82 @@
         "Polski",
         "日本語",
         "Deutsch"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.preview.button.fits": {
+    "1": {
+      "label": "a button's width in GUI pixels",
+      "examples": [
+        "200",
+        "150"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.preview.button.overflow": {
+    "1": {
+      "label": "a button's width in GUI pixels",
+      "examples": [
+        "150",
+        "200"
+      ]
+    },
+    "2": {
+      "label": "how many pixels too wide the label is",
+      "examples": [
+        "12",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.preview.chat.lines": {
+    "1": {
+      "label": "a number of chat lines",
+      "examples": [
+        "2",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.preview.book.cut": {
+    "1": {
+      "label": "a number of lines",
+      "examples": [
+        "3",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.preview.toast.lines": {
+    "1": {
+      "label": "a number of lines",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.preview.tooltip.lines": {
+    "1": {
+      "label": "a number of lines",
+      "examples": [
+        "2",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.preview.action_bar.width": {
+    "1": {
+      "label": "the message's width in GUI pixels",
+      "examples": [
+        "212",
+        "480"
+      ]
+    },
+    "2": {
+      "label": "the screen's width in GUI pixels",
+      "examples": [
+        "427"
       ]
     }
   },
@@ -12784,6 +12933,208 @@
           "key": "gui.dungeontrain.free_play.safe_space",
           "args": []
         }
+      ]
+    }
+  },
+  "gui.dungeontrain.death.update_button": {
+    "1": {
+      "label": "the newest version on the player's launcher, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.update_sub.one": {
+    "1": {
+      "label": "a launcher name (Modrinth or CurseForge)",
+      "examples": [
+        "Modrinth",
+        "CurseForge"
+      ]
+    },
+    "2": {
+      "label": "how many newer releases there are",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.update_sub.other": {
+    "1": {
+      "label": "a launcher name (Modrinth or CurseForge)",
+      "examples": [
+        "Modrinth",
+        "CurseForge"
+      ]
+    },
+    "2": {
+      "label": "how many newer releases there are",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.outdated.one": {
+    "1": {
+      "label": "how many newer releases there are",
+      "examples": [
+        "1",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the version the player is on, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    },
+    "3": {
+      "label": "the version an update would bring, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.outdated.other": {
+    "1": {
+      "label": "how many newer releases there are",
+      "examples": [
+        "1",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the version the player is on, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    },
+    "3": {
+      "label": "the version an update would bring, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.outdated.fixes.one": {
+    "1": {
+      "label": "how many bug fixes those newer releases contain",
+      "examples": [
+        "1",
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.outdated.fixes.other": {
+    "1": {
+      "label": "how many bug fixes those newer releases contain",
+      "examples": [
+        "1",
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.button.get": {
+    "1": {
+      "label": "the newest version on Modrinth, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    },
+    "2": {
+      "label": "a launcher name (always Modrinth here)",
+      "examples": [
+        "Modrinth"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.fixed.intro.lag": {
+    "1": {
+      "label": "the version the player is on, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.fixed.intro.train_vanished": {
+    "1": {
+      "label": "the version the player is on, without the leading v",
+      "examples": [
+        "0.1078.0",
+        "0.1081.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.tips.render_distance": {
+    "1": {
+      "label": "the player's current render distance in chunks",
+      "examples": [
+        "16",
+        "24"
+      ]
+    },
+    "2": {
+      "label": "the suggested render distance in chunks",
+      "examples": [
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.tips.photos": {
+    "1": {
+      "label": "the current ride photo resolution (long edge in pixels)",
+      "examples": [
+        "1080",
+        "1440"
+      ]
+    },
+    "2": {
+      "label": "the suggested lower resolution (long edge in pixels)",
+      "examples": [
+        "720"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.tips.memory": {
+    "1": {
+      "label": "how many gigabytes of memory the launcher gave the game",
+      "examples": [
+        "3",
+        "4"
+      ]
+    },
+    "2": {
+      "label": "the recommended gigabytes of memory",
+      "examples": [
+        "6",
+        "8"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.edit.character": {
+    "1": {
+      "label": "the name of the character this line belongs to",
+      "examples": [
+        "Della Aaro",
+        "Faulthurst"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.edit.character.tip": {
+    "1": {
+      "label": "the name of the character this line belongs to",
+      "examples": [
+        "Della Aaro",
+        "Faulthurst"
       ]
     }
   }

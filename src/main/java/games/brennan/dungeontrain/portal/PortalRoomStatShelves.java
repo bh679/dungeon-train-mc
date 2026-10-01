@@ -64,6 +64,15 @@ public final class PortalRoomStatShelves {
     /** Key prefix for a run-stat note. */
     private static final String KEY_STAT = "stat:";
 
+    /**
+     * Key prefix for an Ancient Records book — ONE per retired leaderboard era, not one per board.
+     * A retired era holds eight one-life boards; shelving all of them would grow the room by eight
+     * books per balancing release, so the room keeps a single volume per era and lets the seeded roll
+     * pick which board it is about. These are extras over {@link #FULL_SET}: a room is complete on
+     * its boards and stats, and an era book is shelved when its era's boards arrive.
+     */
+    private static final String KEY_ERA = "era:";
+
     /** Seeds the per-book roll off the pair key, so a re-stamped room bakes the same books. */
     private static final long SALT_BOOK = 0x57A75B00C5EEDL;
 
@@ -101,7 +110,8 @@ public final class PortalRoomStatShelves {
         // that with a few dozen set lookups, before scanning a room-sized box of block positions or
         // building a single book, is what keeps a room waiting on the relay from costing anything.
         if (missingStats(already).isEmpty()
-            && missingBoards(already, LeaderboardPool.populated()).isEmpty()) {
+            && missingBoards(already, LeaderboardPool.populated()).isEmpty()
+            && missingEras(already, retiredBoards()).isEmpty()) {
             return new Progress(already, false);
         }
 
@@ -151,7 +161,43 @@ public final class PortalRoomStatShelves {
             LeaderboardBookFactory.build(category, reader)
                 .ifPresent(stack -> out.put(KEY_BOARD + category.id(), stack));
         }
+
+        // One Ancient Records book per retired era whose boards have arrived, about a board the
+        // room's seed picks — the same volume in every copy of this room.
+        List<LeaderboardPool.BoardKey> retired = retiredBoards();
+        for (String era : missingEras(already, retired)) {
+            LeaderboardCategory category = eraSubject(era, retired, pairKey);
+            if (category == null) continue;
+            LeaderboardBookFactory.build(category, era, reader)
+                .ifPresent(stack -> out.put(KEY_ERA + era, stack));
+        }
         return out;
+    }
+
+    /** The retired-era boards on hand, or none when retired books are switched off. */
+    private static List<LeaderboardPool.BoardKey> retiredBoards() {
+        return LeaderboardPool.retiredBooksWanted() ? LeaderboardPool.populatedRetired() : List.of();
+    }
+
+    /**
+     * The retired eras this room does not hold a volume for yet AND has at least one board of. Same
+     * two filters as {@link #missingBoards}, over eras; ordered as the relay lists them.
+     */
+    static List<String> missingEras(Set<String> already, List<LeaderboardPool.BoardKey> retired) {
+        List<String> out = new ArrayList<>();
+        for (LeaderboardPool.BoardKey key : retired) {
+            String era = key.era();
+            if (!already.contains(KEY_ERA + era) && !out.contains(era)) out.add(era);
+        }
+        return out;
+    }
+
+    /** Which of an era's arrived boards its one volume is about — stable per room. */
+    static LeaderboardCategory eraSubject(String era, List<LeaderboardPool.BoardKey> retired, int pairKey) {
+        List<LeaderboardCategory> boards = new ArrayList<>();
+        for (LeaderboardPool.BoardKey key : retired) if (key.era().equals(era)) boards.add(key.category());
+        if (boards.isEmpty()) return null;
+        return boards.get((int) Math.floorMod(bookSeed(KEY_ERA + era, pairKey), boards.size()));
     }
 
     /**
@@ -192,6 +238,11 @@ public final class PortalRoomStatShelves {
     /** This room's key for one run stat. */
     static String statKey(RunStatSubject subject) {
         return KEY_STAT + subject.id();
+    }
+
+    /** This room's key for one retired era's Ancient Records volume. */
+    static String eraKey(String era) {
+        return KEY_ERA + era;
     }
 
     /**
@@ -253,7 +304,11 @@ public final class PortalRoomStatShelves {
 
     /** True once this room holds everything it is ever going to be asked to hold. */
     public static boolean isComplete(Set<String> placed) {
-        return placed != null && placed.size() >= FULL_SET;
+        if (placed == null) return false;
+        // Era volumes are extras: they must not let a room call itself complete while a board is
+        // still missing, nor hold a room open once its boards and stats are all up.
+        long core = placed.stream().filter(k -> !k.startsWith(KEY_ERA)).count();
+        return core >= FULL_SET;
     }
 
     /** Warm every board this room wants, so it does not wait on the one-per-tick rotation. */

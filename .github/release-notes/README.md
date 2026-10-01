@@ -74,6 +74,7 @@ The auto-release cascade dispatches `release.yml` with `auto=true`. The mark ste
 | `title` | yes | Short headline. |
 | `summary` | yes | Player-facing prose. |
 | `highlights` | no | Bullet points. |
+| `addresses` | no | Player-reported issues the change fixes or improves: `lag`, `train_vanished` (`--addresses`, repeatable). A player who reports that issue on the death screen while on an older version is told a newer release addresses it. Omitted when empty. |
 | `pr` | no | PR number. |
 | `date` | yes | UTC `YYYY-MM-DD` set at append time. |
 | `released` | yes | `false` until shipped; flipped by `release.yml`. |
