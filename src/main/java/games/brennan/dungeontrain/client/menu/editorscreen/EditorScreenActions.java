@@ -205,7 +205,7 @@ public final class EditorScreenActions {
             ? () -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), false))
             : () -> BuilderSubmitNoteScreen.open(entry.relayId(), Component.literal(entry.buildName()),
                 note -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), true, note,
-                    BuildRenderCapture.png(entry.relayId()))));
+                    BuildRenderCapture.png(entry))));
         return new Icon(published ? "withdraw" : "submit", label,
             new CommandMenuEntry.ClientAction(label, action), null);
     }

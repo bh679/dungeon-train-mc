@@ -21765,8 +21765,26 @@
       "released_at": null
     },
     {
-      "id": "killer-bunny-monty-python-names",
+      "id": "build-submit-picture-every-button",
       "version": "0.1087.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "community"
+      ],
+      "title": "Submitted builds show their picture",
+      "summary": "Builds submitted for review from the editor now arrive with their picture, whole rooms included.",
+      "highlights": [],
+      "pr": 1738,
+      "date": "2026-10-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "killer-bunny-monty-python-names",
+      "version": "0.1088.0",
       "type": "feat",
       "tags": [
         "feature",
