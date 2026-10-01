@@ -339,4 +339,30 @@ final class EditorLayoutPageTest {
         EditorScreenState.toggleGroup(null);
         assertNull(null);
     }
+
+    @Test
+    @DisplayName("the Carriage layout block heads the table: a heading and Rooms / Halves / Group weight rows")
+    void carriageLayoutRows() {
+        List<EditorLayoutPage.Row> rows = EditorLayoutPage.layoutRows(
+            new EditorRosterPacket.Layout(8, 1, 1), EditorLayoutPage.Query.EVERYTHING);
+        assertEquals(4, rows.size());
+        assertNull(rows.get(1).key(), "not a template — nothing to select");
+        assertEquals("dungeontrain editor layout rooms inc", rows.get(1).weight().inc());
+        assertEquals("dungeontrain editor layout halves dec", rows.get(2).weight().dec());
+        assertEquals("dungeontrain editor layout group", rows.get(3).weight().prefix());
+        assertEquals("8", rows.get(1).weight().value());
+    }
+
+    @Test
+    @DisplayName("the layout block hides for another category, a search, or before a roster says the weights")
+    void carriageLayoutRowsHidden() {
+        EditorRosterPacket.Layout known = new EditorRosterPacket.Layout(8, 1, 1);
+        assertTrue(EditorLayoutPage.layoutRows(EditorRosterPacket.Layout.UNKNOWN, EditorLayoutPage.Query.EVERYTHING).isEmpty());
+        assertTrue(EditorLayoutPage.layoutRows(known, new EditorLayoutPage.Query(
+            EditorCategoryFilter.CONTENTS, "", EditorRosterIndex.Filters.NONE, "")).isEmpty());
+        assertTrue(EditorLayoutPage.layoutRows(known, new EditorLayoutPage.Query(
+            EditorCategoryFilter.ALL, "", EditorRosterIndex.Filters.NONE, "cargo")).isEmpty());
+        assertEquals(4, EditorLayoutPage.layoutRows(known, new EditorLayoutPage.Query(
+            EditorCategoryFilter.CARRIAGES, "", EditorRosterIndex.Filters.NONE, "")).size());
+    }
 }

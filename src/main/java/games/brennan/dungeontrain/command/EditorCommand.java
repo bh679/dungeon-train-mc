@@ -3822,8 +3822,8 @@ public final class EditorCommand {
             // restamp pass knows which positions are dirty (the deleted
             // variant's slot plus every slot to the right that just shifted
             // left by one).
-            int oldSlot = CarriageEditor.slotOf(variant.id());
-            int oldRowCount = CarriageEditor.rowCount();
+            // Where its plot stood, taken before it leaves the registry and its row closes up.
+            CarriageEditor.RowSpot oldSpot = CarriageEditor.spotOf(variant, dims);
 
             // Plot erase + row restamp are DT's own rewrites — guarded so observers in the
             // touched plots stay quiet (ObserverBlockStampMixin).
@@ -3836,9 +3836,9 @@ public final class EditorCommand {
                 CarriageVariantRegistry.unregister(variant.id());
                 games.brennan.dungeontrain.editor.TemplateSizeStore.SHELLS.forget(variant.id());
                 games.brennan.dungeontrain.train.ShellPool.forget(variant.id());
-                if (oldSlot >= 0) {
+                if (oldSpot != null) {
                     CarriageStampGuard.run(() ->
-                        CarriageEditor.restampRowAfterDeletion(overworld, oldSlot, oldRowCount, dims));
+                        CarriageEditor.restampRowAfterDeletion(overworld, oldSpot, dims));
                 }
             }
             source.sendSuccess(() -> (deleted

@@ -45,7 +45,6 @@ public final class CarriageEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int PLOT_Z = 0;
     private static final int FIRST_PLOT_X = 0;
 
     private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
@@ -132,58 +131,26 @@ public final class CarriageEditor {
     }
 
     /**
-     * Plot origin for {@code variant}. The row is laid end to end along {@code +X}, each plot its
-     * own saved size ({@link #plotDims}) and {@link EditorLayout#GAP} after the one before — a Room
-     * is not spaced as if it were a Group. Returns {@code null} if the variant is not registered.
+     * Plot origin for {@code variant}: its pool's row ({@link CarriagePlotRows} — Rooms, Halves and
+     * Groups each a row of their own), laid end to end at each plot's own saved size. Returns
+     * {@code null} if the variant is not registered.
      */
     public static BlockPos plotOrigin(CarriageVariant variant, CarriageDims dims) {
-        Integer index = slotIndex().get(variant.id());
-        if (index == null) return null;
-        return rowPos(index, dims);
+        return CarriagePlotRows.originOf(variant, dims, groupSize());
     }
 
-    /** Slot {@code slot}'s origin; past the row's end it steps on by the widest plot. */
-    private static BlockPos rowPos(int slot, CarriageDims dims) {
-        int[] starts = plotStarts(dims);
-        int n = starts.length - 1;
-        int x = slot <= n ? starts[slot] : starts[n] + (slot - n) * plotStep(dims);
-        return new BlockPos(x, EditorLayout.PLOT_Y, PLOT_Z);
+    /** Where {@code pool}'s row would put its next plot. */
+    private static int rowEndX(games.brennan.dungeontrain.train.ShellPool pool, CarriageDims dims) {
+        return CarriagePlotRows.current(dims, groupSize()).endOf(pool);
     }
 
-    /** Where the next plot would start — just past the last plot's gap. */
-    private static int rowEndX(CarriageDims dims) {
-        int[] starts = plotStarts(dims);
-        return starts[starts.length - 1];
-    }
+    /** A plot's row and X — taken before a change moves it, so the old footprint can be cleared. */
+    public record RowSpot(games.brennan.dungeontrain.train.ShellPool pool, int x) {}
 
-    // ---- slot → X start, memoised on the registry snapshot and the declared sizes -------------
-
-    private static List<CarriageVariant> startsSource;
-    private static int startsSizesVersion = -1;
-    private static int startsPoolsVersion = -1;
-    private static CarriageDims startsDims;
-    private static int startsGroupSize;
-    private static int[] STARTS = {FIRST_PLOT_X};
-
-    /** Every slot's X start (see {@link EditorLayout#rowStarts}); rebuilt when a size or the row changes. */
-    private static synchronized int[] plotStarts(CarriageDims dims) {
-        List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
-        int version = TemplateSizeStore.SHELLS.version();
-        int poolsVersion = games.brennan.dungeontrain.train.ShellPool.version();
-        int group = groupSize();
-        if (all == startsSource && version == startsSizesVersion && poolsVersion == startsPoolsVersion
-                && dims.equals(startsDims) && group == startsGroupSize) {
-            return STARTS;
-        }
-        int[] lengths = new int[all.size()];
-        for (int i = 0; i < lengths.length; i++) lengths[i] = plotDims(all.get(i), dims).length();
-        STARTS = EditorLayout.rowStarts(FIRST_PLOT_X, lengths);
-        startsSource = all;
-        startsSizesVersion = version;
-        startsPoolsVersion = poolsVersion;
-        startsDims = dims;
-        startsGroupSize = group;
-        return STARTS;
+    /** {@code variant}'s row and X now, or null when it has no plot. */
+    public static RowSpot spotOf(CarriageVariant variant, CarriageDims dims) {
+        BlockPos o = plotOrigin(variant, dims);
+        return o == null ? null : new RowSpot(CarriagePlotRows.rowOf(variant), o.getX());
     }
 
     /** The widest box a plot in the row can be — what a slot-geometry erase clears. */
@@ -386,63 +353,74 @@ public final class CarriageEditor {
      * clearing extra air is harmless — then re-stamps each variant now at slot {@code fromSlot} or
      * later. Must be called <b>after</b> {@link CarriageVariantRegistry#unregister}.</p>
      */
-    public static void restampRowAfterDeletion(ServerLevel level, int fromSlot, int oldRowCount, CarriageDims dims) {
-        // The plots before the deleted one never moved; everything from its slot shifted left by at
-        // most one widest plot, so the old row ended no further than that past the new end.
-        eraseSpan(level, rowPos(Math.max(0, fromSlot), dims).getX(), rowEndX(dims) + plotStep(dims), dims);
-        restampRowSlots(level, fromSlot, dims);
+    public static void restampRowAfterDeletion(ServerLevel level, RowSpot spot, CarriageDims dims) {
+        if (spot == null) return;
+        // The plots before the deleted one never moved; everything after it in its row shifted left by
+        // at most one widest plot, so the old row ended no further than that past the new end.
+        eraseSpan(level, spot.pool(), spot.x(), rowEndX(spot.pool(), dims) + plotStep(dims), dims);
+        restampRowFrom(level, spot.pool(), spot.x(), dims);
     }
 
     /**
      * The insertion counterpart of {@link #restampRowAfterDeletion}: {@code id} has just been
-     * <b>registered</b>, so every plot after it sits one slot to the right of where its blocks were
-     * stamped. Erase that slice and stamp each variant from {@code id}'s slot on at its new
-     * position, from its saved template.
+     * <b>registered</b>, so every plot after it in its row sits further along than where its blocks
+     * were stamped. Erase that slice and stamp each plot from {@code id}'s on at its new position,
+     * from its saved template.
      *
-     * <p>{@link #duplicate} alone stamps only the new plot, which left the rest of the row drawn over
-     * by one slot. Plots in the slice lose any unsaved edits; Save-as checks for those first.</p>
+     * <p>{@link #duplicate} alone stamps only the new plot, which left the rest of the row drawn over.
+     * Plots in the slice lose any unsaved edits; Save-as checks for those first.</p>
      */
     public static void restampRowFrom(ServerLevel level, String id, CarriageDims dims) {
-        int fromSlot = slotOf(id);
-        if (fromSlot < 0) return;
-        // An insertion only pushes the row right, so the new end covers the old one.
-        eraseSpan(level, rowPos(fromSlot, dims).getX(), rowEndX(dims), dims);
-        restampRowSlots(level, fromSlot, dims);
+        CarriageVariant v = CarriageVariantRegistry.find(id).orElse(null);
+        RowSpot spot = v == null ? null : spotOf(v, dims);
+        if (spot == null) return;
+        // An insertion only pushes the row further, so the new end covers the old one.
+        eraseSpan(level, spot.pool(), spot.x(), rowEndX(spot.pool(), dims), dims);
+        restampRowFrom(level, spot.pool(), spot.x(), dims);
     }
 
     /**
-     * Clear the carriage row's whole span — wherever plots are now, and wherever a build that spaced
-     * every plot for the widest box ({@link #plotStep}) put them. A world stamped by that build
-     * otherwise keeps those plots in the sky where no slot points any more.
+     * Clear every carriage row's whole span — wherever plots are now, and wherever a build that put
+     * every carriage in one row spaced for the widest box ({@link #plotStep}) left them. A world
+     * stamped by that build otherwise keeps those plots in the sky where no slot points any more.
      */
     public static void clearRowSpan(ServerLevel level, CarriageDims dims) {
-        eraseSpan(level, FIRST_PLOT_X, rowSpanEndX(dims), dims);
+        for (games.brennan.dungeontrain.train.ShellPool pool : games.brennan.dungeontrain.train.ShellPool.values()) {
+            eraseSpan(level, pool, FIRST_PLOT_X, rowSpanEndX(pool, dims), dims);
+        }
     }
 
     /** The box {@link #clearRowSpan} clears, for the stamp queue's ordering. */
     public static net.minecraft.world.level.levelgen.structure.BoundingBox rowSpanBox(CarriageDims dims) {
         CarriageDims box = widestBox(dims);
-        return EditorLayerSweep.plotBox(new BlockPos(FIRST_PLOT_X, EditorLayout.PLOT_Y, PLOT_Z),
-            new Vec3i(rowSpanEndX(dims) - FIRST_PLOT_X, box.height(), box.width()));
+        int end = FIRST_PLOT_X;
+        for (games.brennan.dungeontrain.train.ShellPool pool : games.brennan.dungeontrain.train.ShellPool.values()) end = Math.max(end, rowSpanEndX(pool, dims));
+        int zMin = CarriagePlotRows.rowZ(games.brennan.dungeontrain.train.ShellPool.GROUP);
+        return EditorLayerSweep.plotBox(new BlockPos(FIRST_PLOT_X, EditorLayout.PLOT_Y, zMin),
+            new Vec3i(end - FIRST_PLOT_X, box.height(), CarriagePlotRows.rowZ(games.brennan.dungeontrain.train.ShellPool.ROOM) - zMin + box.width()));
     }
 
-    private static int rowSpanEndX(CarriageDims dims) {
-        return Math.max(rowEndX(dims), FIRST_PLOT_X + rowCount() * plotStep(dims));
+    private static int rowSpanEndX(games.brennan.dungeontrain.train.ShellPool pool, CarriageDims dims) {
+        int end = rowEndX(pool, dims) + plotStep(dims);
+        // The Room row is also where the single widest-spaced row of older builds stood.
+        if (pool == games.brennan.dungeontrain.train.ShellPool.ROOM) end = Math.max(end, FIRST_PLOT_X + rowCount() * plotStep(dims));
+        return end;
     }
 
     /**
-     * Clear the row from {@code fromX} up to {@code toX} — every plot and cage in it. Plots are their
-     * own lengths, so after a size or row change the old ones no longer sit where the slots now
-     * say; clearing the span rather than slot by slot reaches wherever they were.
+     * Clear {@code pool}'s row from {@code fromX} up to {@code toX} — every plot and cage in it, and
+     * nothing in any other row. Plots are their own lengths, so after a size or row change the old
+     * ones no longer sit where the slots now say; clearing the span rather than slot by slot reaches
+     * wherever they were.
      */
-    private static void eraseSpan(ServerLevel level, int fromX, int toX, CarriageDims dims) {
+    private static void eraseSpan(ServerLevel level, games.brennan.dungeontrain.train.ShellPool pool, int fromX, int toX, CarriageDims dims) {
         BlockState air = Blocks.AIR.defaultBlockState();
         CarriageDims box = widestBox(dims);
+        int rowZ = CarriagePlotRows.rowZ(pool);
         int y0 = EditorLayout.PLOT_Y - 1;
-        int z0 = PLOT_Z - 1;
         for (int x = fromX - 1; x <= toX; x++) {
             for (int y = y0; y <= EditorLayout.PLOT_Y + box.height(); y++) {
-                for (int z = z0; z <= PLOT_Z + box.width(); z++) {
+                for (int z = rowZ - 1; z <= rowZ + box.width(); z++) {
                     BlockPos pos = new BlockPos(x, y, z);
                     if (!level.getBlockState(pos).isAir()) level.setBlock(pos, air, 3);
                 }
@@ -450,9 +428,12 @@ public final class CarriageEditor {
         }
     }
 
-    private static void restampRowSlots(ServerLevel level, int fromSlot, CarriageDims dims) {
-        List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
-        for (int i = Math.max(0, fromSlot); i < all.size(); i++) stampPlot(level, all.get(i), dims);
+    /** Stamp every plot in {@code pool}'s row from {@code fromX} on. */
+    private static void restampRowFrom(ServerLevel level, games.brennan.dungeontrain.train.ShellPool pool, int fromX, CarriageDims dims) {
+        for (CarriageVariant v : CarriagePlotRows.membersOf(pool)) {
+            BlockPos o = plotOrigin(v, dims);
+            if (o != null && o.getX() >= fromX) stampPlot(level, v, dims);
+        }
     }
 
     /** The row slot {@code id} occupies, or -1 when it is not registered. */
@@ -680,16 +661,12 @@ public final class CarriageEditor {
         CarriageDims newBox = size.shellDims(dims, groupSize()).orElseThrow(() -> new IOException(
             "A " + size.key() + " carriage is longer than this world's carriages can be."));
         if (from == size) return newBox;
-        // A new length moves every plot after this one, and those are restamped from their saved
-        // templates — so none of them may be holding unsaved edits either.
-        int slot = slotOf(variant.id());
-        java.util.Set<String> unsaved = EditorDirtyCheck.unsavedModelIds(overworld, dims, "carriages");
-        List<CarriageVariant> row = CarriageVariantRegistry.allVariants();
-        for (int i = Math.max(0, slot); i < row.size(); i++) {
-            if (unsaved.contains(row.get(i).id())) {
-                throw new IOException("'" + row.get(i).id() + "' has unsaved edits — save or reset it first.");
-            }
-        }
+        // The plot leaves its row and joins another: every plot after it in the old row slides back,
+        // every plot after where it lands in the new row slides on, and all of those are restamped
+        // from their saved templates — so none of them may be holding unsaved edits either.
+        games.brennan.dungeontrain.train.ShellPool toPool = games.brennan.dungeontrain.train.ShellPool.of(size);
+        RowSpot oldSpot = spotOf(variant, dims);
+        refuseUnsaved(overworld, dims, variant, oldSpot, toPool);
         StructureTemplate saved = CarriageTemplateStore.get(overworld, variant, oldBox).orElseThrow(() ->
             new IOException("'" + variant.id() + "' has no saved template to resize."));
         // Re-length the template itself rather than stamping and re-capturing: every category
@@ -698,21 +675,50 @@ public final class CarriageEditor {
             overworld.holderLookup(net.minecraft.core.registries.Registries.BLOCK));
 
         boolean shown = EditorStampedCategoryState.isActive(EditorCategory.CARRIAGES);
-        int oldEnd = rowEndX(dims);
+        int oldEnd = oldSpot == null ? FIRST_PLOT_X : rowEndX(oldSpot.pool(), dims);
+        int newRowOldEnd = rowEndX(toPool, dims);
         try {
             // Each size is its own pool of templates, stored apart: the switch moves it there.
-            ShellPoolMove.move(variant, games.brennan.dungeontrain.train.ShellPool.of(size), resized,
-                EditorDevMode.isEnabled());
+            ShellPoolMove.move(variant, toPool, resized, EditorDevMode.isEnabled());
         } finally {
             if (shown) {
-                // Every plot from this one on moves to its new place.
-                eraseSpan(overworld, origin.getX(), Math.max(oldEnd, rowEndX(dims)), dims);
-                restampRowSlots(overworld, slot, dims);
+                // The old row closes the gap; the new row opens one where the plot lands.
+                if (oldSpot != null) {
+                    eraseSpan(overworld, oldSpot.pool(), oldSpot.x(), Math.max(oldEnd, rowEndX(oldSpot.pool(), dims)), dims);
+                    restampRowFrom(overworld, oldSpot.pool(), oldSpot.x(), dims);
+                }
+                RowSpot newSpot = spotOf(variant, dims);
+                if (newSpot != null) {
+                    eraseSpan(overworld, newSpot.pool(), newSpot.x(), Math.max(newRowOldEnd, rowEndX(newSpot.pool(), dims)), dims);
+                    restampRowFrom(overworld, newSpot.pool(), newSpot.x(), dims);
+                }
             }
         }
         LOGGER.info("[DungeonTrain] Editor resize: {} resized '{}' {} -> {} ({} long)",
             player.getName().getString(), variant.id(), from.key(), size.key(), newBox.length());
         return newBox;
+    }
+
+    /**
+     * Refuse a move when a plot it would restamp holds unsaved edits: this one, the plots after it in
+     * its row, and the plots that come after it in registry order in the row it moves to.
+     */
+    private static void refuseUnsaved(ServerLevel overworld, CarriageDims dims, CarriageVariant variant,
+                                      RowSpot oldSpot, games.brennan.dungeontrain.train.ShellPool toPool) throws IOException {
+        java.util.Set<String> unsaved = EditorDirtyCheck.unsavedModelIds(overworld, dims, "carriages");
+        if (unsaved.isEmpty()) return;
+        int at = slotOf(variant.id());
+        List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
+        for (int i = 0; i < all.size(); i++) {
+            CarriageVariant v = all.get(i);
+            if (!unsaved.contains(v.id())) continue;
+            boolean movesInOldRow = oldSpot != null && CarriagePlotRows.rowOf(v) == oldSpot.pool()
+                && plotOrigin(v, dims) != null && plotOrigin(v, dims).getX() >= oldSpot.x();
+            boolean movesInNewRow = CarriagePlotRows.rowOf(v) == toPool && i > at;
+            if (v.id().equals(variant.id()) || movesInOldRow || movesInNewRow) {
+                throw new IOException("'" + v.id() + "' has unsaved edits — save or reset it first.");
+            }
+        }
     }
 
     /**

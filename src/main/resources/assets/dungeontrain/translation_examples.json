@@ -6566,6 +6566,16 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.layout.rooms.name": {
+    "1": {
+      "label": "a percentage",
+      "examples": [
+        "80",
+        "10",
+        "0"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.layout.halves": {
     "1": {
       "label": "a weight",
@@ -6584,6 +6594,16 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.layout.halves.name": {
+    "1": {
+      "label": "a percentage",
+      "examples": [
+        "80",
+        "10",
+        "0"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.layout.group": {
     "1": {
       "label": "a weight",
@@ -6594,6 +6614,16 @@
       ]
     },
     "2": {
+      "label": "a percentage",
+      "examples": [
+        "80",
+        "10",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.layout.group.name": {
+    "1": {
       "label": "a percentage",
       "examples": [
         "80",
