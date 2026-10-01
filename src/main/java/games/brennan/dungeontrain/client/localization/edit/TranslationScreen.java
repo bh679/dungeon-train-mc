@@ -155,6 +155,11 @@ public final class TranslationScreen extends Screen {
     private TranslationSubmissionList sentList;
     private StateFilter stateFilter;
     private BodyFilter bodyFilter = BodyFilter.ALL;
+    /**
+     * Whose lines the list shows — a {@link TranslationCharacters} id, or {@code ""} for everyone.
+     * Held on the screen like the other two, so an edit-and-back keeps it.
+     */
+    private String characterFilter = "";
     /** The strings of the submission currently picked in the SENT view. */
     private List<TranslationSubmissionsClient.SentUnit> sentUnits = List.of();
     /** True when the picked row is the working batch, whose strings come from disk, not the relay. */
@@ -167,6 +172,8 @@ public final class TranslationScreen extends Screen {
     /** The two narrowing controls — hidden while the left pane belongs to a finished submission. */
     private CycleButton<StateFilter> stateCycle;
     private CycleButton<BodyFilter> bodyCycle;
+    /** Null when no character file is loaded — there is nothing to pick between. */
+    private CycleButton<String> characterCycle;
     /**
      * The green ask-for-a-first-draft button, present only on a language the mod ships nothing for,
      * and the tally of other players who have asked for the same one ({@code -1} until it lands).
@@ -285,13 +292,22 @@ public final class TranslationScreen extends Screen {
             // is bypassed simply by reopening the screen.
             stateFilter = StateFilter.AI_UNREVIEWED;
         }
-        int cycleWidth = Math.min(FILTER_MAX_W, (contentWidth - GAP * 2) / 4);
+        // The characters with at least one line in this catalog; the third cycle exists only when
+        // there are any. A story that is not loaded yet is not offered as a filter that empties
+        // the list.
+        List<String> characters = charactersInCatalog();
+        if (!characterFilter.isEmpty() && !characters.contains(characterFilter)) {
+            characterFilter = "";
+        }
+        int cycles = characters.size() > 1 ? 3 : 2;
+        int cycleWidth = Math.min(FILTER_MAX_W,
+            (contentWidth - GAP * cycles) / (cycles == 3 ? 5 : 4));
         // Search costs one square until you want it. Both ends of the row are pinned — icons left,
         // cycles right — so opening the box fills the middle instead of shoving anything sideways.
         // Two squares now: grouping is a view control like search, and unlike the file actions it
         // stays put when the box opens, because a list that is grouped has to keep saying so.
         int searchX = MARGIN + (ROW_H + GAP) * 2;
-        int cyclesX = MARGIN + contentWidth - (cycleWidth + GAP) - cycleWidth;
+        int cyclesX = MARGIN + contentWidth - (cycleWidth + GAP) * (cycles - 1) - cycleWidth;
         cyclesLeftEdge = cyclesX;
         int searchWidth = Math.max(ROW_H, cyclesX - GAP - searchX);
 
@@ -355,6 +371,21 @@ public final class TranslationScreen extends Screen {
                     bodyFilter = value;
                     refresh();
                 }));
+        characterCycle = null;
+        if (cycles == 3) {
+            characterCycle = addRenderableWidget(CycleButton.<String>builder(this::characterLabel)
+                .withValues(characters)
+                .withInitialValue(characterFilter)
+                .displayOnlyValue()
+                .create(cyclesX + (cycleWidth + GAP) * 2, TOP, cycleWidth, ROW_H,
+                    Component.translatable("gui.dungeontrain.translate.character_filter"),
+                    (button, value) -> {
+                        characterFilter = value;
+                        refresh();
+                    }));
+            characterCycle.setTooltip(Tooltip.create(
+                Component.translatable("gui.dungeontrain.translate.character_filter.tip")));
+        }
         applySearchOpen(); // the box starts collapsed, and survives a resize in whatever state it was
 
         if (offerRequest) {
@@ -554,6 +585,9 @@ public final class TranslationScreen extends Screen {
         if (bodyCycle != null) {
             bodyCycle.visible = unfinished;
         }
+        if (characterCycle != null) {
+            characterCycle.visible = unfinished;
+        }
         // Grouping goes with them, and for the same reason: a finished submission is a record of
         // what was sent, and folding it into sets would hide strings the translator is here to read.
         if (groupToggle != null) {
@@ -594,7 +628,7 @@ public final class TranslationScreen extends Screen {
         List<TranslationUnit> out = new ArrayList<>();
         for (TranslationSubmissionsClient.SentUnit sent : sentUnits) {
             TranslationUnit unit = byId.get(sent.unitId());
-            if (unit != null && unit.matches(needle)) {
+            if (unit != null && matchesSearch(unit, needle)) {
                 out.add(unit);
             }
         }
@@ -769,7 +803,8 @@ public final class TranslationScreen extends Screen {
         TranslationEdits approved = TranslationOverrides.approvedFor(locale);
         List<TranslationUnit> out = new ArrayList<>();
         for (TranslationUnit unit : TranslationCatalog.forLocale(locale)) {
-            if (!matchesBody(unit) || !matchesState(unit, edits, approved) || !unit.matches(needle)) {
+            if (!matchesBody(unit) || !matchesCharacter(unit)
+                || !matchesState(unit, edits, approved) || !matchesSearch(unit, needle)) {
                 continue;
             }
             out.add(unit);
@@ -789,6 +824,61 @@ public final class TranslationScreen extends Screen {
         }
         return new TranslationGroups.Badge(members.size(), TranslationGroups.needingReview(
             members, TranslationOverrides.approvedFor(locale), this::isDismissed));
+    }
+
+    private boolean matchesCharacter(TranslationUnit unit) {
+        return characterFilter.isEmpty() || TranslationCharacters.forUnit(unit)
+            .map(character -> character.id().equals(characterFilter)).orElse(false);
+    }
+
+    /**
+     * The search text against what the row shows — and against the name of the character it
+     * belongs to, so "faulthurst" finds his stat-book lines, none of which say his name.
+     */
+    private static boolean matchesSearch(TranslationUnit unit, String needle) {
+        if (unit.matches(needle)) {
+            return true;
+        }
+        return TranslationCharacters.forUnit(unit)
+            .map(character -> character.name().toLowerCase(Locale.ROOT).contains(needle))
+            .orElse(false);
+    }
+
+    /**
+     * {@code ""} (everyone), then every character with a line in this language's catalog, by name.
+     */
+    private List<String> charactersInCatalog() {
+        java.util.Set<String> present = new java.util.HashSet<>();
+        for (TranslationUnit unit : TranslationCatalog.forLocale(locale)) {
+            TranslationCharacters.forUnit(unit).ifPresent(character -> present.add(character.id()));
+        }
+        List<String> out = new ArrayList<>();
+        out.add("");
+        for (TranslationCharacters.Character character : TranslationCharacters.all()) {
+            if (present.contains(character.id())) {
+                out.add(character.id());
+            }
+        }
+        return out;
+    }
+
+    private Component characterLabel(String id) {
+        TranslationCharacters.Character character = TranslationCharacters.byId(id);
+        return character == null
+            ? Component.translatable("gui.dungeontrain.translate.character_filter.any")
+            : Component.literal(character.name());
+    }
+
+    /**
+     * Narrow the list to one character's lines — the character card's "show all their lines".
+     * Applied on the way back in, when {@link #init} rebuilds the cycle with it selected.
+     */
+    void showCharacter(String id) {
+        characterFilter = id == null ? "" : id;
+        listScroll = 0;
+        if (list != null) {
+            list.setScrollOffset(0);
+        }
     }
 
     private boolean matchesBody(TranslationUnit unit) {
