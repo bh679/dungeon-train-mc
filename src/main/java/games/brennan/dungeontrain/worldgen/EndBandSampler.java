@@ -52,8 +52,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * prefetch strip keeps queuing chunks beyond the view, and under load the chunks beside the player used to
  * wait behind them as squares of void in the islands.</p>
  *
- * <p>Same threading rules as {@link ForeignSphereSampler}: dedicated threads, never
- * {@code Util.backgroundExecutor()} ({@code fillFromNoise} schedules onto that pool and joins).</p>
+ * <p>Runs on the {@link SamplerPool} it shares with {@link ForeignSphereSampler}. Each request queues its
+ * job here and posts one token to the pool; a token runs whichever job is nearest a player <em>when it
+ * starts</em>, or nothing if the queue has emptied (job replaced, dropped or cleared) — so the order is
+ * decided at run time, and every job has a token.</p>
  */
 public final class EndBandSampler {
 
@@ -90,18 +92,44 @@ public final class EndBandSampler {
     private static final ConcurrentLinkedQueue<Result> READY = new ConcurrentLinkedQueue<>();
     /** Bumped on server stop so a job still running for the old server drops its result. */
     private static final AtomicInteger EPOCH = new AtomicInteger();
-    /** Waiting jobs, nearest player first; taken by the sampler threads ({@link #startWorkers}). */
+    /** Waiting jobs, nearest player first; taken by the tokens {@link #request} posts to {@link SamplerPool}. */
     private static final EndBandJobQueue<Job> QUEUE = new EndBandJobQueue<>();
     /** Undecorated End ground shared between samples under {@code endBandFeatureSpill} ({@link #sampleWithSpill}). */
     private static final EndBandGroundCache<ProtoChunk> GROUND = new EndBandGroundCache<>(EndBandGroundCache.DEFAULT_CAP);
     /** Chunks from the nearest player beyond which a waiting job is dropped (view + prefetch strip + slack). */
     private static volatile int keepRadius = Integer.MAX_VALUE;
-    private static volatile boolean workersStarted;
 
     /** One queued sample: the chunk it is for, and the work. */
     private record Job(long key, Runnable work) {}
 
+    /**
+     * How a sample's ground is filled: {@link OfflineChunkSampler#fillGround} joins the noise future from a
+     * sampler thread; {@link OfflineChunkSampler#fillGroundInline} runs the noise on the calling worldgen
+     * worker, which must never wait on the pool it is part of.
+     */
+    @FunctionalInterface
+    private interface GroundFill {
+        ProtoChunk fill(ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random, ProtoChunk chunk,
+                        OfflineChunkSampler.Workspace workspace);
+    }
+
     private EndBandSampler() {}
+
+    /**
+     * Sample display chunk {@code pos}'s End terrain <b>now, on this thread</b> — for the worldgen path
+     * ({@code EndBandInlineTerrain}), where the display chunk is still being generated and the terrain
+     * goes straight into it. Never touches the queue; timed into {@code END_BAND_SAMPLE} like a queued job.
+     * Returns {@code null} when the End can't be sampled (the caller flags the chunk for the background path).
+     */
+    public static Result sampleNow(MinecraftServer server, ChunkPos pos, long passIndex, int bedY,
+                                   int displayMinY, int displayMaxY) {
+        long t0 = System.nanoTime();
+        try {
+            return sample(server, pos, passIndex, bedY, displayMinY, displayMaxY, OfflineChunkSampler::fillGroundInline);
+        } finally {
+            GenProfiler.addNanos(GenProfiler.Bucket.END_BAND_SAMPLE, System.nanoTime() - t0);
+        }
+    }
 
     /**
      * True if this server's End can be sampled — it exists and runs a noise generator. When false every
@@ -135,11 +163,10 @@ public final class EndBandSampler {
         int displayMinY = overworld.getMinBuildHeight();
         int displayMaxY = overworld.getMaxBuildHeight();
         int epoch = EPOCH.get();
-        startWorkers();
         QUEUE.add(pos.toLong(), pos.x, pos.z, new Job(pos.toLong(), () -> {
             long t0 = System.nanoTime();
             try {
-                Result result = sample(server, pos, passIndex, bedY, displayMinY, displayMaxY);
+                Result result = sample(server, pos, passIndex, bedY, displayMinY, displayMaxY, OfflineChunkSampler::fillGround);
                 if (result != null && epoch == EPOCH.get()) READY.add(result);
                 else IN_FLIGHT.remove(pos.toLong());
             } catch (Throwable t) {
@@ -148,6 +175,7 @@ public final class EndBandSampler {
             }
             GenProfiler.addNanos(GenProfiler.Bucket.END_BAND_SAMPLE, System.nanoTime() - t0);
         }));
+        SamplerPool.execute(EndBandSampler::runNearest);
     }
 
     /**
@@ -184,43 +212,19 @@ public final class EndBandSampler {
         GROUND.clear();
     }
 
-    /**
-     * Start the sampler threads once. Each loops taking the nearest waiting job; a dropped job frees its
-     * chunk to be requested again. Same threading rule as {@link ForeignSphereSampler}: dedicated daemon
-     * threads, never {@code Util.backgroundExecutor()}.
-     */
-    private static void startWorkers() {
-        if (workersStarted) return;
-        synchronized (EndBandSampler.class) {
-            if (workersStarted) return;
-            int threads = SpheresProgressionConfig.samplerThreads();
-            for (int i = 1; i <= threads; i++) {
-                Thread thread = new Thread(EndBandSampler::workLoop, "DungeonTrain-endband-sampler-" + i);
-                thread.setDaemon(true);
-                thread.setPriority(Thread.NORM_PRIORITY - 1);
-                thread.start();
-            }
-            workersStarted = true;
+    /** One token's work: run the waiting job nearest a player, if any. A dropped job frees its chunk to be requested again. Sampler thread. */
+    private static void runNearest() {
+        try {
+            Job job = QUEUE.poll(keepRadius, dropped -> IN_FLIGHT.remove(dropped.key()));
+            if (job != null) job.work().run();
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] End-band sampler job threw", t);
         }
     }
 
-    private static void workLoop() {
-        while (true) {
-            try {
-                Job job = QUEUE.take(keepRadius, dropped -> IN_FLIGHT.remove(dropped.key()));
-                job.work().run();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            } catch (Throwable t) {
-                LOGGER.warn("[DungeonTrain] End-band sampler job threw", t);
-            }
-        }
-    }
-
-    /** Generate the End chunk behind display chunk {@code pos} and copy it out. Sampler thread. */
+    /** Generate the End chunk behind display chunk {@code pos} and copy it out. Sampler thread, or a worldgen worker with the inline fill. */
     private static Result sample(MinecraftServer server, ChunkPos pos, long passIndex, int bedY,
-                                 int displayMinY, int displayMaxY) {
+                                 int displayMinY, int displayMaxY, GroundFill fill) {
         ServerLevel end = server.getLevel(Level.END);
         if (end == null) return null;
         ChunkGenerator generator = end.getChunkSource().getGenerator();
@@ -237,11 +241,11 @@ public final class EndBandSampler {
 
         ChunkPos endPos = new ChunkPos(pos.x + EndBandStyle.endChunkOffsetX(passIndex), pos.z);
         if (EndBandConfig.featureSpill()) {
-            return sampleWithSpill(end, noise, random, bop, pos, endPos, passIndex, bedY, displayMinY, displayMaxY);
+            return sampleWithSpill(end, noise, random, bop, pos, endPos, passIndex, bedY, displayMinY, displayMaxY, fill);
         }
         ProtoChunk chunk = OfflineChunkSampler.blankSample(end, noise, random, endPos);
         OfflineChunkSampler.Workspace workspace = OfflineChunkSampler.workspaceFor(end, noise, random, chunk);
-        ProtoChunk ground = OfflineChunkSampler.fillGround(end, noise, random, chunk, workspace);
+        ProtoChunk ground = fill.fill(end, noise, random, chunk, workspace);
         if (ground == null) return null;
         try {
             OfflineChunkSampler.carve(noise, random, ground, workspace, end.getSeed());
@@ -269,9 +273,9 @@ public final class EndBandSampler {
      */
     private static Result sampleWithSpill(ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random,
                                           boolean bop, ChunkPos pos, ChunkPos endPos, long passIndex, int bedY,
-                                          int displayMinY, int displayMaxY) {
+                                          int displayMinY, int displayMaxY, GroundFill fill) {
         CycleLayout.Style style = bop ? CycleLayout.Style.BOP : CycleLayout.Style.BETTER;
-        ProtoChunk cached = cachedGround(end, noise, random, style, endPos);
+        ProtoChunk cached = cachedGround(end, noise, random, style, endPos, fill);
         if (cached == null) return null;
         ProtoChunk centre = copyGround(end, cached);
         Map<ChunkPos, ProtoChunk> originals = new HashMap<>(8);
@@ -280,7 +284,7 @@ public final class EndBandSampler {
             for (int dz = -1; dz <= 1; dz++) {
                 if (dx == 0 && dz == 0) continue;
                 ChunkPos n = new ChunkPos(endPos.x + dx, endPos.z + dz);
-                ProtoChunk g = cachedGround(end, noise, random, style, n);
+                ProtoChunk g = cachedGround(end, noise, random, style, n, fill);
                 if (g == null) continue;
                 originals.put(n, g);
                 ring.put(n, copyGround(end, g));
@@ -308,17 +312,17 @@ public final class EndBandSampler {
 
     /** The undecorated ground of End chunk {@code endPos} for look {@code style}, generated once and shared. */
     private static ProtoChunk cachedGround(ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random,
-                                           CycleLayout.Style style, ChunkPos endPos) {
+                                           CycleLayout.Style style, ChunkPos endPos, GroundFill fill) {
         return GROUND.get(new EndBandGroundCache.Key(style, endPos.toLong()),
-                () -> generateGround(end, noise, random, endPos));
+                () -> generateGround(end, noise, random, endPos, fill));
     }
 
     /** Noise, surface rules and carvers for one End chunk — everything but decoration. */
     private static ProtoChunk generateGround(ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random,
-                                             ChunkPos endPos) {
+                                             ChunkPos endPos, GroundFill fill) {
         ProtoChunk chunk = OfflineChunkSampler.blankSample(end, noise, random, endPos);
         OfflineChunkSampler.Workspace workspace = OfflineChunkSampler.workspaceFor(end, noise, random, chunk);
-        ProtoChunk ground = OfflineChunkSampler.fillGround(end, noise, random, chunk, workspace);
+        ProtoChunk ground = fill.fill(end, noise, random, chunk, workspace);
         if (ground == null) return null;
         try {
             OfflineChunkSampler.carve(noise, random, ground, workspace, end.getSeed());

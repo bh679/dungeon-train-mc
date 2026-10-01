@@ -297,4 +297,30 @@ final class TrainTransformProviderTest {
         assertTrue(TrainTransformProvider.shouldReanchor(10L, 12L));   // gap 2
         assertTrue(TrainTransformProvider.shouldReanchor(10L, 1310L)); // large cull gap
     }
+
+    @Test
+    @DisplayName("shouldRebaseOnVelocityChange: only a real change of an already-set velocity re-bases")
+    void shouldRebaseOnVelocityChange_truthTable() {
+        Vector3d two = new Vector3d(2.0, 0.0, 0.0);
+        assertFalse(TrainTransformProvider.shouldRebaseOnVelocityChange(null, two));            // first assignment
+        assertFalse(TrainTransformProvider.shouldRebaseOnVelocityChange(two, new Vector3d(two))); // same value re-applied
+        assertTrue(TrainTransformProvider.shouldRebaseOnVelocityChange(two, new Vector3d(0.0, 0.0, 0.0))); // speed 2 → 0
+        assertTrue(TrainTransformProvider.shouldRebaseOnVelocityChange(new Vector3d(0.0, 0.0, 0.0), two)); // speed 0 → 2
+    }
+
+    @Test
+    @DisplayName("re-based anchor keeps the position continuous across a velocity change")
+    void rebasedAnchor_positionIsContinuous() {
+        // 500 ticks at 2 b/s from x=1000, then the speed drops to 0. Without the re-base the
+        // formula would re-price those 500 ticks at 0 b/s and snap back to 1000; with the anchor
+        // moved onto the current position, elapsed restarts at 0 and the carriage stays put.
+        double before = 1000.0 + 2.0 * TrainTransformProvider.effectiveElapsedTicks(600L, 100L, Long.MIN_VALUE) * DT;
+        double anchorX = before;
+        long anchorTick = 600L;
+        double after = anchorX + 0.0 * TrainTransformProvider.effectiveElapsedTicks(600L, anchorTick, Long.MIN_VALUE) * DT;
+        assertEquals(before, after, EPS);
+        // ...and resuming at 2 b/s 40 ticks later advances from there, not from spawn.
+        double resumed = anchorX + 2.0 * TrainTransformProvider.effectiveElapsedTicks(640L, anchorTick, Long.MIN_VALUE) * DT;
+        assertEquals(before + 2.0 * 40 * DT, resumed, EPS);
+    }
 }
