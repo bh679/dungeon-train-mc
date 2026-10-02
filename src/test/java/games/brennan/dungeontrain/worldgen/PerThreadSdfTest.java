@@ -70,6 +70,23 @@ final class PerThreadSdfTest {
     }
 
     @Test
+    @DisplayName("a lambda that reads its own node follows the copy's settings, not the shared node's")
+    void selfReadingLambdaFollowsTheCopy() {
+        SDFFlatWave wave = new SDFFlatWave().setRaysCount(12).setIntensity(1.3F);
+        wave.setSource(new SDFSphere().setRadius(3.0F));
+        SDFFlatWave copy = PerThreadSdf.copyOf(wave, new IdentityHashMap<>());
+        copy.setRaysCount(5).setIntensity(4.0F).setAngle(0.7F);
+
+        SDFFlatWave expected = new SDFFlatWave().setRaysCount(5).setIntensity(4.0F).setAngle(0.7F);
+        expected.setSource(new SDFSphere().setRadius(3.0F));
+        SDFFlatWave untouched = new SDFFlatWave().setRaysCount(12).setIntensity(1.3F);
+        untouched.setSource(new SDFSphere().setRadius(3.0F));
+
+        assertEquals(expected.getDistance(1, 0, 2), copy.getDistance(1, 0, 2));
+        assertEquals(untouched.getDistance(1, 0, 2), wave.getDistance(1, 0, 2));
+    }
+
+    @Test
     @DisplayName("each thread gets its own stable copy")
     void copyIsPerThread() throws InterruptedException {
         SDFSphere shared = new SDFSphere().setRadius(3.0F);

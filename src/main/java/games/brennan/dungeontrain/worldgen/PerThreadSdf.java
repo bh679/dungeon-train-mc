@@ -69,6 +69,16 @@ public final class PerThreadSdf {
         return copyNode(original, copies);
     }
 
+    /**
+     * True if the copy's constructor already made its own instance of the lambda the original holds. Such a
+     * lambda captures its node ({@code SDFFlatWave} reads its own ray count and angle through one), so the
+     * copy must keep the one bound to itself; the original's would go on reading the shared node.
+     */
+    private static boolean isOwnLambda(Object own, Object shared) {
+        return own != null && shared != null && own != shared
+            && own.getClass() == shared.getClass() && own.getClass().isHidden();
+    }
+
     private static Object copyNode(Object original, Map<Object, Object> copies) {
         try {
             var constructor = original.getClass().getDeclaredConstructor();
@@ -80,7 +90,11 @@ public final class PerThreadSdf {
                     if (Modifier.isStatic(field.getModifiers())) continue;
                     field.setAccessible(true);
                     Object value = field.get(original);
-                    field.set(copy, field.getType().isPrimitive() ? value : copy(value, copies));
+                    if (field.getType().isPrimitive()) {
+                        field.set(copy, value);
+                    } else if (!isOwnLambda(field.get(copy), value)) {
+                        field.set(copy, copy(value, copies));
+                    }
                 }
             }
             return copy;
