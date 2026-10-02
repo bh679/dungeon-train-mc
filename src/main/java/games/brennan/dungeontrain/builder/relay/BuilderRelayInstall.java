@@ -2,6 +2,12 @@ package games.brennan.dungeontrain.builder.relay;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.building.BuildingMeta;
+import games.brennan.dungeontrain.building.BuildingRegistry;
+import games.brennan.dungeontrain.building.BuildingSizes;
+import games.brennan.dungeontrain.building.BuildingStore;
+import games.brennan.dungeontrain.building.BuildingWorldgen;
+import games.brennan.dungeontrain.building.Buildings;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
@@ -28,7 +34,11 @@ import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.train.WholeCarriage;
 import games.brennan.dungeontrain.train.WholeCarriageRegistry;
+import net.minecraft.core.Vec3i;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -213,8 +223,9 @@ public final class BuilderRelayInstall {
             case PORTAL_ROOM -> installPortalRoom(id, template);
             // Frames have no relay kind yet: nothing is ever offered for one.
             case CHUNK_FRAME -> Outcome.UNSUPPORTED;
-            // Buildings wait for the relay to learn their kind; official Lost City ones are never installed.
-            case BUILDING, LOST_CITY -> Outcome.UNSUPPORTED;
+            case BUILDING -> installBuilding(id, template);
+            // Official Lost City buildings are never installed — Big Lost City is All Rights Reserved.
+            case LOST_CITY -> Outcome.UNSUPPORTED;
         };
         if (outcome == Outcome.INSTALLED) TemplateSidecars.apply(kind, subKind, id, sidecars);
         return outcome;
@@ -435,6 +446,29 @@ public final class BuilderRelayInstall {
                 PortalRoomSizes.forget(id);
                 return true;
             }
+            case BUILDING -> {
+                // Only the player's own copy can move; a shipped building has no file of theirs.
+                CompoundTag tag = BuildingStore.readPlayerTag(id).orElse(null);
+                if (tag == null || !Buildings.NAME.matcher(newId).matches()) return false;
+                BuildingMeta meta = BuildingMeta.load(id);
+                BuildingStore.save(newId, tag, false);
+                if (!BuildingStore.isShipped(newId)) BuildingMeta.save(newId, meta, false);
+                BuildingStore.deleteFiles(id, false);
+                BuildingMeta.delete(id);
+                // Appended, and the old name left registered: the caller writes the download under
+                // it next, and re-sorting the roster here would move every plot after it in a
+                // Buildings tab that is already stamped.
+                BuildingRegistry.register(newId);
+                BuildingSizes.settle(newId, BuildingSizes.sizeIn(tag));
+                BuildingSizes.forget(id);
+                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+                BuildingWorldgen.evict(server, id);
+                BuildingWorldgen.evict(server, newId);
+                return true;
+            }
+            // No store of the player's to move: frames are never offered, groups handled above,
+            // and an official Lost City building is not a file.
+            case CHUNK_FRAME, LOST_CITY -> { }
         }
         return false;
     }
@@ -526,6 +560,31 @@ public final class BuilderRelayInstall {
         PortalRoomTemplateStore.save(id, template);
         TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, id);
         LOGGER.info("[DungeonTrain] Builder relay download: installed portal room '{}'", id);
+        return Outcome.INSTALLED;
+    }
+
+    /**
+     * A building: write the file, register the name, and drop worldgen's cached copy so the next
+     * chunk places the downloaded one.
+     *
+     * <p>Refused, rather than clamped, when the name or the size is not one a building may have —
+     * the relay holds what an author uploaded, and a download that silently lost its top floors
+     * would be a different building under the same name. A new building takes the default roster
+     * weight unless its sidecar says otherwise ({@code TemplateSidecars.apply} runs after this).</p>
+     */
+    private static Outcome installBuilding(String id, StructureTemplate template) throws IOException {
+        Vec3i size = template.getSize();
+        if (!Buildings.NAME.matcher(id).matches() || !Buildings.clamp(size).equals(size)) {
+            LOGGER.warn("[DungeonTrain] Builder relay download: '{}' ({}) is not a building this install can hold",
+                    id, size);
+            return Outcome.UNSUPPORTED;
+        }
+        BuildingStore.save(id, template.save(new CompoundTag()), false);
+        if (!BuildingStore.isShipped(id)) BuildingMeta.save(id, BuildingMeta.load(id), false);
+        BuildingRegistry.register(id);
+        BuildingSizes.settle(id, size);
+        BuildingWorldgen.evict(ServerLifecycleHooks.getCurrentServer(), id);
+        LOGGER.info("[DungeonTrain] Builder relay download: installed building '{}'", id);
         return Outcome.INSTALLED;
     }
 

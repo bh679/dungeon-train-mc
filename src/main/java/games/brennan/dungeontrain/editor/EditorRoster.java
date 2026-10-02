@@ -198,6 +198,9 @@ public final class EditorRoster {
                 games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PORTAL_ROOM, "", modelName));
             keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
                 games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.TRACK, TrackKind.PORTAL_ROOM.id(), modelName));
+        } else if (PlotCategory.BUILDINGS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.BUILDING, "", modelName));
         }
         return keys;
     }

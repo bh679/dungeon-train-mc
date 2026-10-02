@@ -140,6 +140,8 @@ public final class BuilderTemplateSource {
                     : BuilderPhotoPaths.Kind.TRACK;
             out.add(new Slug(kind, track.id(), track.subdir()));
         }
+        out.add(new Slug(BuilderPhotoPaths.Kind.BUILDING, "",
+                games.brennan.dungeontrain.building.Buildings.SUBDIR));
         return List.copyOf(out);
     }
 

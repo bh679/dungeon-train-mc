@@ -38,7 +38,7 @@ public final class BuilderRelayKinds {
     public static final String PORTAL_ROOM = "portal_room";
     /** A chunk frame. No relay kind of its own yet — frames are never uploaded (EditorRelayWrite.namingOf). */
     public static final String CHUNK_FRAME = "chunk_frame";
-    /** A building. Not uploaded until the relay knows the kind (EditorRelayWrite.namingOf). */
+    /** A world building. Shared and reviewed like the rest; never something a train slot holds. */
     public static final String BUILDING = "building";
     /** An official Lost City building — a name only; never uploaded, installed or offered. */
     public static final String LOST_CITY = "lost_city";
