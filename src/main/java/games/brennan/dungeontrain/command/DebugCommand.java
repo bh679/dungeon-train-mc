@@ -184,6 +184,17 @@ public final class DebugCommand {
             // which second-lap mod owns each (WWOO before, Biomes O' Plenty after, odd laps) and a biome
             // census sampled from the overworld source. Also logged at INFO for RCON runs.
             .then(Commands.literal("overworld-laps").executes(ctx -> OverworldLapsDebug.report(ctx.getSource())))
+            // /dungeontrain debug sampler-pool — the shared End-band / sphere sampler pool: threads, jobs
+            // waiting, and what the queue cap has evicted or refused since this world loaded.
+            .then(Commands.literal("sampler-pool").executes(ctx -> {
+                games.brennan.dungeontrain.worldgen.SamplerPool pool = games.brennan.dungeontrain.worldgen.SamplerPool.shared();
+                games.brennan.dungeontrain.worldgen.SamplerPool.Stats stats = pool.stats();
+                ctx.getSource().sendSuccess(() -> Component.literal("[sampler-pool] threads=" + pool.threads()
+                        + " queued=" + stats.queued() + " peak=" + stats.peakQueued()
+                        + " evicted=" + stats.evicted() + " refused=" + stats.refused()
+                        + " dropped=" + stats.dropped()), false);
+                return 1;
+            }))
             // /dungeontrain debug portal-sites [count] — which stretch each overworld dimensional
             // carriage's sample site sits in, old scattered rule vs the stretch rules. INFO-logged too.
             .then(Commands.literal("portal-sites")

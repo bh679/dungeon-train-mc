@@ -73,6 +73,8 @@ public final class WorldSpheresForeignEvents {
             Heightmap.Types.OCEAN_FLOOR);
 
     private static final int RETRY_INTERVAL_TICKS = 10;
+    /** Refused chunks re-read per retry pass, so a backlog clearing can't stall one tick. */
+    private static final int RETRY_CHUNKS_PER_PASS = 64;
 
     /**
      * Loaded chunks whose sphere samples the full sampler queue turned away, asked for again while it has
@@ -166,8 +168,9 @@ public final class WorldSpheresForeignEvents {
      * back into {@link #RETRY}; one that has unloaded is forgotten (it asks when it loads).
      */
     private static void retryRefused(ServerLevel level) {
+        int budget = RETRY_CHUNKS_PER_PASS;
         for (long key : List.copyOf(RETRY)) {
-            if (!SamplerPool.shared().hasRoom()) return;
+            if (budget-- <= 0 || !SamplerPool.shared().hasRoom()) return;
             RETRY.remove(key);
             LevelChunk chunk = level.getChunkSource().getChunkNow(ChunkPos.getX(key), ChunkPos.getZ(key));
             if (chunk != null) requestOwed(level, chunk);

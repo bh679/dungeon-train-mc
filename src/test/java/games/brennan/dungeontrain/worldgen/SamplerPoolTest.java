@@ -111,6 +111,7 @@ class SamplerPoolTest {
 
         assertEquals(6, pool.close());
         assertEquals(6, dropped.get());
+        assertEquals(6, pool.stats().dropped());
         assertEquals(0, pool.stats().queued());
         assertFalse(pool.awaitQuiescent(50), "the job running at stop has not finished yet");
 
@@ -200,7 +201,7 @@ class SamplerPoolTest {
         assertFalse(pool.submit(END_BAND, 99, 99, 0, true, NOTHING, () -> dropped.add(99)));
         assertEquals(List.of(30), dropped, "a newcomer further than everything waiting is the one turned away");
 
-        assertEquals(new SamplerPool.Stats(3, 3, 1, 1), pool.stats());
+        assertEquals(new SamplerPool.Stats(3, 3, 1, 1, 1), pool.stats());
         finish(pool, gate);
     }
 

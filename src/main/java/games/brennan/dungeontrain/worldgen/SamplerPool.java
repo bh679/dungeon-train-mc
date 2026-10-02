@@ -55,8 +55,11 @@ public final class SamplerPool {
     /** Which sampler a job belongs to. */
     public enum Kind { END_BAND, SPHERE }
 
-    /** Queue depth and what the cap has cost since the pool was last opened. */
-    public record Stats(int queued, int peakQueued, long evicted, long refused) {}
+    /**
+     * Queue depth and what has been turned away since the pool was last opened: {@code dropped} counts every
+     * queued job removed without running (evicted ones included), {@code refused} every job never queued.
+     */
+    public record Stats(int queued, int peakQueued, long evicted, long refused, long dropped) {}
 
     private record Key(Kind kind, long id) {}
 
@@ -74,6 +77,7 @@ public final class SamplerPool {
     private final AtomicInteger peakQueued = new AtomicInteger();
     private final AtomicLong evicted = new AtomicLong();
     private final AtomicLong refused = new AtomicLong();
+    private final AtomicLong droppedUnrun = new AtomicLong();
 
     private boolean open = true;
     private ThreadPoolExecutor executor;
@@ -140,12 +144,12 @@ public final class SamplerPool {
     /** Drop {@code kind}'s waiting jobs for chunk {@code (cx, cz)} — it unloaded, and asks again when it loads. */
     public void forget(Kind kind, int cx, int cz) {
         if (queue.size() == 0) return;
-        queue.removeIf(job -> job.kind() == kind && job.cx() == cx && job.cz() == cz, SamplerPool::dropped);
+        queue.removeIf(job -> job.kind() == kind && job.cx() == cx && job.cz() == cz, this::dropped);
     }
 
     /** Drop every waiting job of {@code kind}. */
     public void cancel(Kind kind) {
-        queue.removeIf(job -> job.kind() == kind, SamplerPool::dropped);
+        queue.removeIf(job -> job.kind() == kind, this::dropped);
     }
 
     /** True while another job can be queued without the cap coming into play. */
@@ -154,11 +158,11 @@ public final class SamplerPool {
     }
 
     public Stats stats() {
-        return new Stats(queue.size(), peakQueued.get(), evicted.get(), refused.get());
+        return new Stats(queue.size(), peakQueued.get(), evicted.get(), refused.get(), droppedUnrun.get());
     }
 
     /** The current world's sampler threads; {@code 0} until its first job. */
-    int threads() {
+    public int threads() {
         synchronized (lifecycle) {
             return executor == null ? 0 : executor.getCorePoolSize();
         }
@@ -171,6 +175,7 @@ public final class SamplerPool {
             peakQueued.set(0);
             evicted.set(0);
             refused.set(0);
+            droppedUnrun.set(0);
         }
     }
 
@@ -184,7 +189,6 @@ public final class SamplerPool {
         Stats before;
         synchronized (lifecycle) {
             open = false;
-            before = stats();
             queue.clear(job -> {
                 waiting[0]++;
                 dropped(job);
@@ -196,9 +200,10 @@ public final class SamplerPool {
                 retired = executor;
                 executor = null;
             }
+            before = stats();
         }
-        LOGGER.debug("[DungeonTrain] Sampler pool closed: {} waiting job(s) dropped, peak queue {}, {} evicted, {} refused",
-                waiting[0], before.peakQueued(), before.evicted(), before.refused());
+        LOGGER.debug("[DungeonTrain] Sampler pool closed: {} job(s) dropped unrun this world ({} of them evicted), {} refused, peak queue {}",
+                before.dropped(), before.evicted(), before.refused(), before.peakQueued());
         return waiting[0];
     }
 
@@ -240,7 +245,7 @@ public final class SamplerPool {
     /** One token's work: run waiting jobs, nearest a player first, until none is left or this world's pool has closed. Sampler thread. */
     private void drain(ThreadPoolExecutor self) {
         while (!self.isShutdown()) {
-            Job job = queue.poll(keepRadius, SamplerPool::dropped);
+            Job job = queue.poll(keepRadius, this::dropped);
             if (job == null) return;
             try {
                 job.work().run();
@@ -255,7 +260,8 @@ public final class SamplerPool {
         dropped(job);
     }
 
-    private static void dropped(Job job) {
+    private void dropped(Job job) {
+        droppedUnrun.incrementAndGet();
         try {
             job.onDrop().run();
         } catch (Throwable t) {
