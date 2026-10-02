@@ -946,12 +946,17 @@ public final class BuilderWorldSetup {
      * copies, so the Z and C menus open onto what the template already has rather than onto nothing.
      *
      * <p>A template with no sidecar seeds an empty document, which is also what a build with no
-     * template behind it — a carriage group, or anything New made — starts from.</p>
+     * template behind it — anything New made — starts from.</p>
      */
     private static void seedSidecars(ServerLevel level, CarriageDims dims, BuilderOpenRequest request) {
+        if (request.kind() == BuilderPhotoPaths.Kind.CARRIAGE_GROUP) {
+            // One document for the run, several parked carriages to share it between.
+            BuilderSidecarCarry.seedGroupFromTemplate(level, request.id(), dims);
+            return;
+        }
         String plotKey = request.templatePlotKey();
-        // Null means the template has no sidecar of its own (a carriage group). Nothing to seed —
-        // resetScene has already emptied the working copies, which is the right starting point.
+        // Null means this install cannot name the template's plot (an unknown part or track kind).
+        // Nothing to seed — resetScene has already emptied the working copies.
         if (plotKey == null) return;
         BuilderSidecarCarry.seedFromTemplate(level, plotKey, dims,
                 BuilderSidecarCarry.offsetFor(request.kind(), request.partKind(), dims));

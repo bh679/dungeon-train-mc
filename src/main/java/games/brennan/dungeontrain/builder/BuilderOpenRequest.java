@@ -198,9 +198,8 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
      * The {@link BlockVariantPlot} key of the template being opened, or {@code null} when it has no
      * per-block sidecar of its own.
      *
-     * <p>Only a carriage group answers null, and only because a group is a run of carriages saved
-     * as one NBT with no sidecar behind it — its members' pools live on the carriages it was
-     * composed from. Opening one therefore starts the builder's own documents empty.</p>
+     * <p>A carriage group's is the run's own {@code whole_group:} key — one document for the whole
+     * run, which {@code BuilderSidecarCarry.seedGroupFromTemplate} slices per parked carriage.</p>
      */
     public @Nullable String templatePlotKey() {
         return switch (kind) {
@@ -210,7 +209,7 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
             case TRACK -> trackKind == null ? null : BlockVariantPlot.trackKey(trackKind, id);
             case PORTAL_ROOM -> BlockVariantPlot.trackKey(TrackKind.PORTAL_ROOM, id);
             case CHUNK_FRAME -> games.brennan.dungeontrain.editor.ChunkFramePlot.KEY_PREFIX + id;
-            case CARRIAGE_GROUP -> null;
+            case CARRIAGE_GROUP -> BlockVariantPlot.wholeKey(games.brennan.dungeontrain.train.WholeKind.GROUP, id);
         };
     }
 

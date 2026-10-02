@@ -33,9 +33,8 @@ import java.util.Map;
  * <h2>One file, every kind</h2>
  * <p>Keyed by {@link BuilderRelayBuilds#keyOf} — the {@code (kind, subKind, id)} triple every
  * other part of the download path identifies a template by, because {@code standard} is both a
- * floor part and a door part. One keyed file rather than a sidecar beside each {@code .nbt}: a
- * carriage group has no sidecar family at all ({@code TemplateSidecars.filesFor} returns nothing
- * for it), and it would have been the one kind that silently lost its attribution.</p>
+ * floor part and a door part. One keyed file rather than a sidecar beside each {@code .nbt}, so
+ * a kind's attribution never depends on which sidecar files that kind happens to have.</p>
  *
  * <p>Filed in the active content package, like the templates it describes — switching package
  * switches both together, which is the only way the two cannot disagree.</p>
