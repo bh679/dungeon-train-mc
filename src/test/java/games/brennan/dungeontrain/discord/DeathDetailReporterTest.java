@@ -133,4 +133,13 @@ class DeathDetailReporterTest {
         assertTrue(out.has("freePlay"));
         assertFalse(out.get("freePlay").getAsBoolean());
     }
+
+    @Test
+    @DisplayName("modVersion rides along when known — the relay files this life's one-life scores by it")
+    void modVersionOptional() {
+        assertEquals("0.1013.0",
+            DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS, false, "0.1013.0").get("modVersion").getAsString());
+        assertFalse(DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS, false, "unknown").has("modVersion"));
+        assertFalse(DeathDetailReporter.buildPayload(UUID, NARRATIVE, STATS, FEATS, false).has("modVersion"));
+    }
 }

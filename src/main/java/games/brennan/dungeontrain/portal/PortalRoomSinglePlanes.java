@@ -110,30 +110,43 @@ public final class PortalRoomSinglePlanes {
 
         boolean liquidFloor = palette.hasLiquid(PortalRoomCopiesVariant.Plane.FLOOR);
 
+        // A grown column stays in the room; it can only start from the top floor layer or the roof,
+        // since every lower layer has the next one standing on it.
+        java.util.function.Predicate<BlockPos> within = games.brennan.dungeontrain.editor.GrowthPass
+            .inside(origin, size.getX(), size.getY(), size.getZ()).and(p -> !clearMask.covers(p));
+        GrowthTarget growth = new GrowthTarget(relight
+            ? games.brennan.dungeontrain.editor.GrowthPass.runtime(level)
+            : games.brennan.dungeontrain.editor.GrowthPass.sectionLocal(level), within);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for (int x = x0; x <= x1; x++) {
-            for (int z = z0; z <= z1; z++) {
-                if (liquidFloor) bedUnder(level, pos.set(x, floorY - 1, z), clearMask, relight);
-                // The floor is laid floorHeight deep, bottom up; each layer rolls on its own local
-                // position so a mixed palette reads as a mix in depth as well as across the plain.
-                for (int y = floorY; y <= floorTop; y++) {
-                    setPlaneBlock(level, pos.set(x, y, z), origin,
-                        PortalRoomCopiesVariant.Plane.FLOOR, palette, clearMask, relight,
-                        worldSeed, variantIndex);
-                }
-                // A room one block tall would have its floor and its ceiling in the same plane, and
-                // the second write would be the first one again. PortalRoomLayout.MIN_HEIGHT rules
-                // that out, but the guard costs a comparison and the alternative is a silent
-                // double-write if the floor ever moves. With the two planes authored apart it would
-                // also be the roof quietly overwriting the floor.
-                if (ceilingY != floorY) {
-                    setPlaneBlock(level, pos.set(x, ceilingY, z), origin,
-                        PortalRoomCopiesVariant.Plane.ROOF, palette, clearMask,
-                        relight, worldSeed, variantIndex);
+        try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
+            for (int x = x0; x <= x1; x++) {
+                for (int z = z0; z <= z1; z++) {
+                    if (liquidFloor) bedUnder(level, pos.set(x, floorY - 1, z), clearMask, relight);
+                    // The floor is laid floorHeight deep, bottom up; each layer rolls on its own local
+                    // position so a mixed palette reads as a mix in depth as well as across the plain.
+                    for (int y = floorY; y <= floorTop; y++) {
+                        setPlaneBlock(level, pos.set(x, y, z), origin,
+                            PortalRoomCopiesVariant.Plane.FLOOR, palette, clearMask, relight,
+                            worldSeed, variantIndex, growth);
+                    }
+                    // A room one block tall would have its floor and its ceiling in the same plane, and
+                    // the second write would be the first one again. PortalRoomLayout.MIN_HEIGHT rules
+                    // that out, but the guard costs a comparison and the alternative is a silent
+                    // double-write if the floor ever moves. With the two planes authored apart it would
+                    // also be the roof quietly overwriting the floor.
+                    if (ceilingY != floorY) {
+                        setPlaneBlock(level, pos.set(x, ceilingY, z), origin,
+                            PortalRoomCopiesVariant.Plane.ROOF, palette, clearMask,
+                            relight, worldSeed, variantIndex, growth);
+                    }
                 }
             }
         }
     }
+
+    /** Where a plane cell's growth writes, and the box it may grow in. */
+    private record GrowthTarget(games.brennan.dungeontrain.editor.GrowthPass.Target target,
+                                java.util.function.Predicate<BlockPos> within) {}
 
     /**
      * Put {@link #LIQUID_BED} at {@code pos} — the cell under a liquid floor — when nothing solid is
@@ -175,7 +188,8 @@ public final class PortalRoomSinglePlanes {
     private static void setPlaneBlock(ServerLevel level, BlockPos pos, BlockPos origin,
                                       PortalRoomCopiesVariant.Plane plane,
                                       PortalRoomCopiesVariant palette, PortalCorridorMask clearMask,
-                                      boolean relight, long worldSeed, int variantIndex) {
+                                      boolean relight, long worldSeed, int variantIndex,
+                                      GrowthTarget growth) {
         if (clearMask.covers(pos)) return;
         BlockPos local = pos.subtract(origin);
         VariantState picked = palette.resolve(plane, local, worldSeed, variantIndex);
@@ -221,5 +235,7 @@ public final class PortalRoomSinglePlanes {
         } else {
             SilentBlockOps.setBlockSectionLocal(level, pos, state);
         }
+        games.brennan.dungeontrain.editor.GrowthPass.note(growth.target(), pos.immutable(), picked, state,
+            local, worldSeed, variantIndex, growth.within());
     }
 }

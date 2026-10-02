@@ -84,6 +84,15 @@ VALID_TAGS = (
     "internal",
 )
 
+# Player-reported issues an entry can say it addresses (the optional "addresses" field).
+# The in-game bug-report response reads these to tell a player who reports one of these
+# issues that a newer release already fixes it. Keep in sync with the schema enum and the
+# client's BugIssue enum.
+VALID_ISSUES = (
+    "lag",
+    "train_vanished",
+)
+
 # The tag an entry always carries by virtue of its conventional-commit type.
 # Non-player-facing types (chore/ci/refactor/docs/test) derive "internal" —
 # Behind the Scenes — so no entry is ever untagged.
@@ -149,6 +158,15 @@ def normalise_tags(entry_type: str, tags: list[str] | None) -> list[str]:
     if derived is not None:
         wanted = wanted | {derived}
     return [t for t in VALID_TAGS if t in wanted]
+
+
+def normalise_addresses(addresses: list[str] | None) -> list[str]:
+    """Dedupe and order `addresses` by VALID_ISSUES. Raises ValueError on an unknown issue."""
+    wanted = set(addresses or [])
+    unknown = sorted(wanted - set(VALID_ISSUES))
+    if unknown:
+        raise ValueError(f"unknown addressed issue(s): {', '.join(unknown)}")
+    return [i for i in VALID_ISSUES if i in wanted]
 
 
 def read_json(path: str) -> Any:
@@ -236,6 +254,7 @@ def make_entry(
     highlights: list[str] | None = None,
     pr: int | None = None,
     tags: list[str] | None = None,
+    addresses: list[str] | None = None,
 ) -> dict:
     """Build a normalized, unreleased entry. Keys are inserted in display order."""
     entry: dict = {
@@ -247,6 +266,9 @@ def make_entry(
         "summary": summary,
         "highlights": list(highlights or []),
     }
+    issues = normalise_addresses(addresses)
+    if issues:
+        entry["addresses"] = issues
     if pr is not None:
         entry["pr"] = pr
     entry["date"] = date

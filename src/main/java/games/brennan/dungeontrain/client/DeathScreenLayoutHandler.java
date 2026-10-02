@@ -508,7 +508,7 @@ public final class DeathScreenLayoutHandler {
         if (mc.level != null) {
             mc.level.disconnect();
         }
-        mc.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
+        disconnectWithSaveNotice(mc, server != null);
         mc.setScreen(new TitleScreen());
     }
 
@@ -531,8 +531,20 @@ public final class DeathScreenLayoutHandler {
         if (mc.level != null) {
             mc.level.disconnect();
         }
-        mc.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
+        disconnectWithSaveNotice(mc, server != null);
         mc.stop();
+    }
+
+    /**
+     * Leave the current level. "Saving level" is only true of an integrated server; on a remote
+     * server (the pause menu's Shift pair works there too) the plain disconnect screen is shown.
+     */
+    private static void disconnectWithSaveNotice(Minecraft mc, boolean integratedServer) {
+        if (integratedServer) {
+            mc.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
+        } else {
+            mc.disconnect();
+        }
     }
 
     private static ResourceKey<WorldPreset> presetFor(StartingDimension dim) {

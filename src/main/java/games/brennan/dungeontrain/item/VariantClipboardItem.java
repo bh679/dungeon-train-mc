@@ -132,6 +132,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_ACTIVE_MODE = "am";
     /** Per-entry fence / wall connect-mode ordinal ({@code VariantConnect.Mode}). Absent when Default. */
     private static final String NBT_CONNECT_MODE = "cn";
+    /** Per-entry column growth, packed ({@code VariantGrowth#toInt}). Absent when off. */
+    private static final String NBT_GROWTH = "gr";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -158,7 +160,7 @@ public final class VariantClipboardItem extends Item {
         if (!(level instanceof ServerLevel serverLevel)) return InteractionResult.PASS;
         if (!(ctx.getPlayer() instanceof ServerPlayer player)) return InteractionResult.PASS;
         if (!player.hasPermissions(2)) {
-            sendActionBar(player, "Variant clipboard requires OP", ChatFormatting.RED);
+            sendActionBar(player, Component.translatable("chat.dungeontrain.editor_bar.clipboard.paste_requires_op"), ChatFormatting.RED);
             return InteractionResult.FAIL;
         }
 
@@ -171,7 +173,7 @@ public final class VariantClipboardItem extends Item {
         CarriageDims dims = DungeonTrainWorldData.get(serverLevel).dims();
         BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
         if (plot == null) {
-            sendActionBar(player, "Stand inside a block-variant editor plot to paste", ChatFormatting.YELLOW);
+            sendActionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.stand_in_variant_plot_to_paste"), ChatFormatting.YELLOW);
             return InteractionResult.FAIL;
         }
         BlockPos localPos = placePos.subtract(plot.origin());
@@ -186,15 +188,14 @@ public final class VariantClipboardItem extends Item {
             plot.save();
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] VariantClipboard save failed for {}: {}", plot.key(), e.toString());
-            sendActionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+            sendActionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()), ChatFormatting.RED);
             return InteractionResult.FAIL;
         }
         boolean poolPasted = savePool(player, plot, outcome);
 
-        String lockSuffix = outcome.lockId() > 0 ? " (lock-id " + outcome.lockId() + ")" : "";
-        String poolSuffix = poolPasted ? " +pool(" + outcome.pool().size() + ")" : "";
-        sendActionBar(player, "Pasted " + outcome.stateCount() + " variants at " + localPos.getX()
-            + "," + localPos.getY() + "," + localPos.getZ() + lockSuffix + poolSuffix,
+        sendActionBar(player, Component.translatable("chat.dungeontrain.editor_bar.clipboard.paste_pasted_at",
+                outcome.stateCount(), localPos.getX(), localPos.getY(), localPos.getZ(),
+                lockSuffix(outcome.lockId()), poolSuffix(poolPasted ? outcome.pool() : null)),
             ChatFormatting.GREEN);
         if (!player.getAbilities().instabuild) {
             stack.shrink(1);
@@ -208,8 +209,8 @@ public final class VariantClipboardItem extends Item {
      * ({@link #savePool}): a bulk paste writes many cells and saves each store once.
      */
     public record PasteOutcome(int stateCount, int lockId, @Nullable ContainerContentsPool pool,
-                               @Nullable String error, @Nullable ChatFormatting errorColour) {
-        static PasteOutcome fail(String error, ChatFormatting colour) {
+                               @Nullable Component error, @Nullable ChatFormatting errorColour) {
+        static PasteOutcome fail(Component error, ChatFormatting colour) {
             return new PasteOutcome(0, 0, null, error, colour);
         }
     }
@@ -225,7 +226,7 @@ public final class VariantClipboardItem extends Item {
                                        BlockPos placePos, ItemStack stack) {
         BlockPos localPos = placePos.subtract(plot.origin());
         if (!plot.inBounds(localPos)) {
-            return PasteOutcome.fail("Target is outside the plot's footprint", ChatFormatting.YELLOW);
+            return PasteOutcome.fail(Component.translatable("chat.dungeontrain.editor_bar.common.outside_footprint"), ChatFormatting.YELLOW);
         }
         CompoundTag tag = readClipboardTag(stack);
         List<VariantState> states = decodeStates(tag);
@@ -235,8 +236,8 @@ public final class VariantClipboardItem extends Item {
         VariantCopyScope copyScope = decodeCopyScope(tag);
         games.brennan.dungeontrain.editor.VariantSpan span = decodeSpan(tag);
         if (states.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
-            return PasteOutcome.fail("Clipboard needs at least "
-                + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " variants", ChatFormatting.YELLOW);
+            return PasteOutcome.fail(Component.translatable("chat.dungeontrain.editor_bar.clipboard.paste_needs_min_variants",
+                CarriageVariantBlocks.MIN_STATES_PER_ENTRY), ChatFormatting.YELLOW);
         }
 
         // Match the source cell's appearance: place the first variant's
@@ -326,8 +327,8 @@ public final class VariantClipboardItem extends Item {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] VariantClipboard pool save failed for {}: {}",
                 plot.key(), e.toString());
-            sendActionBar(player, "Pasted variants but pool save failed: "
-                + e.getClass().getSimpleName(), ChatFormatting.YELLOW);
+            sendActionBar(player, Component.translatable("chat.dungeontrain.editor_bar.clipboard.paste_pool_save_failed",
+                e.getClass().getSimpleName()), ChatFormatting.YELLOW);
             return false;
         }
     }
@@ -439,6 +440,9 @@ public final class VariantClipboardItem extends Item {
             }
             if (!s.connect().isDefault()) {
                 entry.putByte(NBT_CONNECT_MODE, (byte) s.connect().ordinal());
+            }
+            if (!s.growth().isDefault()) {
+                entry.putInt(NBT_GROWTH, s.growth().toInt());
             }
             list.add(entry);
         }
@@ -599,8 +603,11 @@ public final class VariantClipboardItem extends Item {
             games.brennan.dungeontrain.editor.VariantConnect.Mode connect =
                 games.brennan.dungeontrain.editor.VariantConnect.Mode.fromOrdinal(
                     entry.contains(NBT_CONNECT_MODE, Tag.TAG_BYTE) ? entry.getByte(NBT_CONNECT_MODE) & 0xFF : 0);
+            games.brennan.dungeontrain.editor.VariantGrowth growth = entry.contains(NBT_GROWTH, Tag.TAG_INT)
+                ? games.brennan.dungeontrain.editor.VariantGrowth.fromInt(entry.getInt(NBT_GROWTH))
+                : games.brennan.dungeontrain.editor.VariantGrowth.NONE;
             out.add(new VariantState(state, beNbt, weight, rotation, lootPrefab, null, half,
-                difficulty, groupRef, active, connect));
+                difficulty, groupRef, active, connect, growth));
         }
         return out;
     }
@@ -628,10 +635,25 @@ public final class VariantClipboardItem extends Item {
         return v < 0 ? 0 : v;
     }
 
-    private static void sendActionBar(ServerPlayer player, String text, ChatFormatting colour) {
-        player.displayClientMessage(
-            Component.literal(text).withStyle(colour),
-            true);
+    /**
+     * The " (lock-id N)" tail of a paste summary, or empty when the clipboard carried no lock-id.
+     * Shared with {@link games.brennan.dungeontrain.compat.EffortlessBuildingVariants}'s bulk line.
+     */
+    public static Component lockSuffix(int lockId) {
+        return lockId > 0
+            ? Component.translatable("chat.dungeontrain.editor_bar.clipboard.paste_lock_suffix", lockId)
+            : Component.empty();
+    }
+
+    /** The " +pool(N)" tail of a paste summary, or empty when no pool was persisted. */
+    public static Component poolSuffix(@Nullable ContainerContentsPool pool) {
+        return pool != null
+            ? Component.translatable("chat.dungeontrain.editor_bar.clipboard.paste_pool_suffix", pool.size())
+            : Component.empty();
+    }
+
+    private static void sendActionBar(ServerPlayer player, Component text, ChatFormatting colour) {
+        player.displayClientMessage(text.copy().withStyle(colour), true);
     }
 
     @Override

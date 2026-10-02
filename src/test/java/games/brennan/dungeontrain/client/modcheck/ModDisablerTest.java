@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Which jars Quit and Disable may rename, and the Windows after-exit script. Pure. */
+/** Which jars Quit and Disable may rename, and what counts as disabled. Pure. */
 class ModDisablerTest {
 
     private static final Path MODS = Path.of("/game/mods");
@@ -39,11 +39,9 @@ class ModDisablerTest {
     }
 
     @Test
-    @DisplayName("The Windows script renames to .jar.disabled, retries, and deletes itself")
-    void windowsScript() {
-        String s = ModDisabler.windowsScript(List.of(Path.of("C:\\game\\mods\\cool mod.jar")));
-        assertTrue(s.contains("ren \"C:\\game\\mods\\cool mod.jar\" \"cool mod.jar.disabled\""), s);
-        assertTrue(s.contains("timeout /t 1"), s);
-        assertTrue(s.contains("del \"%~f0\""), s);
+    @DisplayName("Nothing renamed means nothing disabled, whatever was skipped")
+    void outcomeAnyDisabled() {
+        assertFalse(new ModDisabler.Outcome(List.of(), List.of("coolmod")).anyDisabled());
+        assertTrue(new ModDisabler.Outcome(List.of(MODS.resolve("cool.jar")), List.of("other")).anyDisabled());
     }
 }

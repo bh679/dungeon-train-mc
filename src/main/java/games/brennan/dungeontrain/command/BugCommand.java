@@ -17,8 +17,9 @@ import net.minecraft.server.level.ServerPlayer;
  *
  * <p>Answering the bug question in the opened survey ships the player's logs to the server the
  * same way the death screen does — DP's {@code SurveyScreen} routes the submission through
- * {@code SurveySubmitClientHook} into {@link BugLogReporter}. Whitelisted in
- * {@code CommandAllowlist} so running it never taints a run.</p>
+ * {@code SurveySubmitClientHook} into {@link BugLogReporter}, and the report is answered in chat
+ * ({@code BugResponseChatNotifier}) the way the death screen answers it with its response card.
+ * Whitelisted in {@code CommandAllowlist} so running it never taints a run.</p>
  */
 public final class BugCommand {
 

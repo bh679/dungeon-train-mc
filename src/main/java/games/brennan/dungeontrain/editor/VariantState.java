@@ -85,7 +85,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
                            VariantRotation rotation, @Nullable String linkedLootPrefabId,
                            @Nullable ResourceLocation entityId, VariantHalf half,
                            VariantDifficulty difficulty, int groupRef, VariantActive active,
-                           VariantConnect.Mode connect) {
+                           VariantConnect.Mode connect, VariantGrowth growth) {
 
     public VariantState {
         if (entityId != null) {
@@ -117,11 +117,25 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
         if (groupRef < 0) groupRef = 0;
         if (active == null) active = VariantActive.NONE;
         if (connect == null) connect = VariantConnect.Mode.DEFAULT;
+        if (growth == null) growth = VariantGrowth.NONE;
         // Keep the stored state's redstone toggle in step with the flag so the
         // serialised state string and the mode can never disagree: ACTIVE
         // stores open/lit/powered=true, RANDOM and INACTIVE store false (the
         // spawn roll decides for RANDOM). No-op for blocks with no toggle.
         state = RedstoneToggle.set(state, active.mode() == VariantActive.Mode.ACTIVE);
+    }
+
+    /**
+     * Eleven-arg overload defaulting {@code growth} to {@link VariantGrowth#NONE}:
+     * the entry places a single block, as before growth existed.
+     */
+    public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
+                        VariantRotation rotation, @Nullable String linkedLootPrefabId,
+                        @Nullable ResourceLocation entityId, VariantHalf half,
+                        VariantDifficulty difficulty, int groupRef, VariantActive active,
+                        VariantConnect.Mode connect) {
+        this(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty,
+            groupRef, active, connect, VariantGrowth.NONE);
     }
 
     /**
@@ -251,7 +265,8 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
     public boolean isPlainBareString() {
         return blockEntityNbt == null && weight == 1 && rotation.isDefault()
             && linkedLootPrefabId == null && entityId == null && half.isDefault()
-            && difficulty.isDefault() && groupRef == 0 && active.isDefault() && connect.isDefault();
+            && difficulty.isDefault() && groupRef == 0 && active.isDefault() && connect.isDefault()
+            && growth.isDefault();
     }
 
     /**
@@ -260,32 +275,32 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
      * is preserved. Not meaningful for mob entries (their state is the sentinel).
      */
     public VariantState withState(BlockState newState, @Nullable CompoundTag newBlockEntityNbt) {
-        return new VariantState(newState, newBlockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect);
+        return new VariantState(newState, newBlockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect, growth);
     }
 
     /** Return a copy with {@code weight} replaced (clamped ≥ 1 by the canonical constructor). */
     public VariantState withWeight(int newWeight) {
-        return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect);
+        return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect, growth);
     }
 
     /** Return a copy with {@code rotation} replaced. */
     public VariantState withRotation(VariantRotation newRotation) {
-        return new VariantState(state, blockEntityNbt, weight, newRotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect);
+        return new VariantState(state, blockEntityNbt, weight, newRotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect, growth);
     }
 
     /** Return a copy with {@code linkedLootPrefabId} replaced ({@code null} clears the link). */
     public VariantState withLinkedLootPrefabId(@Nullable String newLinkedLootPrefabId) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, newLinkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect);
+        return new VariantState(state, blockEntityNbt, weight, rotation, newLinkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect, growth);
     }
 
     /** Return a copy with {@code half} replaced. */
     public VariantState withHalf(VariantHalf newHalf) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, newHalf, difficulty, groupRef, active, connect);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, newHalf, difficulty, groupRef, active, connect, growth);
     }
 
     /** Return a copy with {@code difficulty} replaced (only meaningful for mob entries). */
     public VariantState withDifficulty(VariantDifficulty newDifficulty) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, newDifficulty, groupRef, active, connect);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, newDifficulty, groupRef, active, connect, growth);
     }
 
     /**
@@ -294,7 +309,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
      * why the placeholder is kept alongside the ref rather than discarded.
      */
     public VariantState withGroupRef(int newGroupRef) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, newGroupRef, active, connect);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, newGroupRef, active, connect, growth);
     }
 
     /**
@@ -302,7 +317,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
      * re-syncs the stored state's toggle property to the new mode.
      */
     public VariantState withActive(VariantActive newActive) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, newActive, connect);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, newActive, connect, growth);
     }
 
     /**
@@ -310,7 +325,12 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
      * ({@code null} = Default).
      */
     public VariantState withConnect(VariantConnect.Mode newConnect) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, newConnect);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, newConnect, growth);
+    }
+
+    /** Return a copy with {@code growth} replaced ({@code null} = off). */
+    public VariantState withGrowth(VariantGrowth newGrowth) {
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect, newGrowth);
     }
 
     /**

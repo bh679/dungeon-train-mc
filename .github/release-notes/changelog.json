@@ -21669,6 +21669,238 @@
       "highlights": [],
       "pr": 1733,
       "date": "2026-10-01",
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
+    },
+    {
+      "id": "translation-character-cards",
+      "version": "0.1082.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "Know who's speaking",
+      "summary": "Translators can see more info about the characters they're translating for.",
+      "highlights": [],
+      "pr": 1734,
+      "date": "2026-10-01",
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
+    },
+    {
+      "id": "bug-report-response",
+      "version": "0.1083.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Your bug reports get an answer",
+      "summary": "Report a bug after a fall and the train now tells you whether help is already on the way.",
+      "highlights": [],
+      "pr": 1735,
+      "date": "2026-10-01",
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
+    },
+    {
+      "id": "translation-previews",
+      "version": "0.1084.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "See your translation where it appears",
+      "summary": "Translators can now preview their text in place \u2014 on a book page, a button, a tooltip, the death screen, in chat and more \u2014 before saving.",
+      "highlights": [],
+      "pr": 1736,
+      "date": "2026-10-01",
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
+    },
+    {
+      "id": "leaderboard-eras-ancient-records",
+      "version": "0.1077.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books"
+      ],
+      "title": "Leaderboard eras and Ancient Records",
+      "summary": "The one-life leaderboards now belong to eras. When a balancing release changes what a good run is, the boards are retired and a fresh set opens for the new version; each calendar year gets its own boards too. Nothing is lost: every retired board is kept for good, and The Tallyman's books about them keep turning up in loot as Ancient Records, naming the game versions their numbers came from. Players still on an older version keep scoring on their own era's boards.",
+      "highlights": [
+        "One-life boards (distance, carriages, time aboard, chests, echoes, friends, pacifist and no-chest runs) reset per game version; all-lives totals and contribution boards stay all-time.",
+        "Retired boards stay readable and circulate as Ancient Records books: about one loot book in forty, and one per retired era on the Stat Room's shelves. The server setting retiredLeaderboardBooks turns them off.",
+        "Each year has its own one-life boards alongside the version boards."
+      ],
+      "date": "2026-09-30",
+      "released": true,
+      "released_in": "v0.1085.0",
+      "released_at": "2026-10-01T16:04:57Z"
+    },
+    {
+      "id": "bug-report-chat-answer",
+      "version": "0.1086.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Bug reports from /bug and /feedback get an answer",
+      "summary": "Sending a bug report with /bug or /feedback now replies in chat with what might help.",
+      "highlights": [],
+      "pr": 1737,
+      "date": "2026-10-01",
+      "released": true,
+      "released_in": "v0.1093.0",
+      "released_at": "2026-10-01T17:53:18Z"
+    },
+    {
+      "id": "build-submit-picture-every-button",
+      "version": "0.1087.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "community"
+      ],
+      "title": "Submitted builds show their picture",
+      "summary": "Builds submitted for review from the editor now arrive with their picture, whole rooms included.",
+      "highlights": [],
+      "pr": 1738,
+      "date": "2026-10-01",
+      "released": true,
+      "released_in": "v0.1093.0",
+      "released_at": "2026-10-01T17:53:18Z"
+    },
+    {
+      "id": "translatable-editor-action-bar",
+      "version": "0.1088.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "translations"
+      ],
+      "title": "Build editor messages in your language",
+      "summary": "The build editor's quick messages above the hotbar now speak your language.",
+      "highlights": [],
+      "pr": 1739,
+      "date": "2026-10-01",
+      "released": true,
+      "released_in": "v0.1093.0",
+      "released_at": "2026-10-01T17:53:18Z"
+    },
+    {
+      "id": "killer-bunny-monty-python-names",
+      "version": "0.1089.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "An ode to Monty Python",
+      "summary": "Something out there may now introduce itself with a name that Monty Python fans will recognise.",
+      "highlights": [],
+      "pr": 1740,
+      "date": "2026-10-01",
+      "released": true,
+      "released_in": "v0.1093.0",
+      "released_at": "2026-10-01T17:53:18Z"
+    },
+    {
+      "id": "pause-menu-shift-exits-multiplayer",
+      "version": "0.1091.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer",
+        "ui"
+      ],
+      "title": "Shift exits on the pause menu, on servers too",
+      "summary": "Holding Shift on the pause menu now reveals the Exit to Title and Quit Game buttons on a server as well, with Disconnect still there when Shift is up.",
+      "highlights": [],
+      "pr": 1741,
+      "date": "2026-10-01",
+      "released": true,
+      "released_in": "v0.1093.0",
+      "released_at": "2026-10-01T17:53:18Z"
+    },
+    {
+      "id": "variant-block-growth",
+      "version": "0.1092.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "world"
+      ],
+      "title": "Things that grow",
+      "summary": "Vines, glow berries, ladders, bamboo, dripstone and more can now grow into longer columns in your builds, and the overgrown tunnels hang a little lower.",
+      "highlights": [],
+      "pr": 1742,
+      "date": "2026-10-01",
+      "released": true,
+      "released_in": "v0.1093.0",
+      "released_at": "2026-10-01T17:53:18Z"
+    },
+    {
+      "id": "supported-mods-internal",
+      "version": "0.1093.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Supported mods",
+      "summary": "Internal changes to how supported mods are handled, to meet CurseForge's requirements.",
+      "highlights": [],
+      "pr": 1743,
+      "date": "2026-10-01",
+      "released": true,
+      "released_in": "v0.1093.0",
+      "released_at": "2026-10-01T17:53:18Z"
+    },
+    {
+      "id": "leaving-world-no-crash",
+      "version": "0.1094.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Leaving a world",
+      "summary": "Leaving a world no longer crashes the game now and then.",
+      "highlights": [],
+      "pr": 1744,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "end-band-spill-hardening",
+      "version": "0.1095.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "world"
+      ],
+      "title": "Tidier joins between terrain styles",
+      "summary": "With the optional border-blending setting on, trees and other features now stay with their own terrain where two styles meet.",
+      "highlights": [],
+      "pr": 1745,
+      "date": "2026-10-02",
       "released": false,
       "released_in": null,
       "released_at": null

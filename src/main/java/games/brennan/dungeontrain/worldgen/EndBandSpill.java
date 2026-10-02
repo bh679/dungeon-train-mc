@@ -32,11 +32,21 @@ import java.util.Map;
  *
  * <p>Pure logic apart from {@link #diff}, which reads two proto chunks; the rest is unit-tested directly.</p>
  */
-public record EndBandSpill(long[] positions, BlockState[] before, BlockState[] after,
+public record EndBandSpill(long pass, long source, long[] positions, BlockState[] before, BlockState[] after,
                            Map<Long, CompoundTag> blockEntities) {
 
     public int size() {
         return positions.length;
+    }
+
+    /**
+     * Whether a column whose End source is pass {@code columnPass} ({@code WorldGenCycle#endSourcePassAt}) may
+     * take this spill. Only its own pass: another pass copies a different stretch of the End
+     * ({@link EndBandStyle#endChunkOffsetX}), so across a seam where two sampled passes meet the spill would land
+     * as the wrong half of someone else's feature.
+     */
+    public boolean ownedBy(long columnPass) {
+        return columnPass == pass;
     }
 
     /** The display chunk an End chunk maps onto (the inverse of {@link EndBandStyle#endChunkOffsetX}). */
@@ -54,11 +64,12 @@ public record EndBandSpill(long[] positions, BlockState[] before, BlockState[] a
      * Every cell of {@code decorated} (a copy of {@code original} that neighbouring features wrote into)
      * that no longer matches, shifted to display space: X by {@code shiftX}, Y through
      * {@link EndBandStyle#displayY} and clipped to {@code [minY, maxY]}. Block entities the features left
-     * come along with their NBT, re-keyed the same way. {@code null} when nothing spilled.
+     * come along with their NBT, re-keyed the same way. {@code null} when nothing spilled. {@code pass} and
+     * {@code source} (the display chunk key of the sample it came from) travel with it.
      */
     public static EndBandSpill diff(ProtoChunk original, ProtoChunk decorated, int shiftX, int bedY,
-                                    int minY, int maxY, RegistryAccess registries) {
-        Builder out = new Builder();
+                                    int minY, int maxY, RegistryAccess registries, long pass, long source) {
+        Builder out = new Builder(pass, source);
         LevelChunkSection[] was = original.getSections();
         LevelChunkSection[] now = decorated.getSections();
         int baseX = decorated.getPos().getMinBlockX() + shiftX;
@@ -91,10 +102,18 @@ public record EndBandSpill(long[] positions, BlockState[] before, BlockState[] a
 
     /** Collects cells; {@link #build} packs them into an immutable spill. */
     public static final class Builder {
+        private final long pass;
+        private final long source;
         private final LongArrayList positions = new LongArrayList();
         private final List<BlockState> before = new ArrayList<>();
         private final List<BlockState> after = new ArrayList<>();
         private final Map<Long, CompoundTag> blockEntities = new HashMap<>();
+
+        /** A spill from pass {@code pass}'s sample of display chunk {@code source} (a {@link ChunkPos} key). */
+        public Builder(long pass, long source) {
+            this.pass = pass;
+            this.source = source;
+        }
 
         public void add(long packedDisplayPos, BlockState was, BlockState now) {
             positions.add(packedDisplayPos);
@@ -114,7 +133,7 @@ public record EndBandSpill(long[] positions, BlockState[] before, BlockState[] a
         }
 
         public EndBandSpill build() {
-            return new EndBandSpill(positions.toLongArray(), before.toArray(new BlockState[0]),
+            return new EndBandSpill(pass, source, positions.toLongArray(), before.toArray(new BlockState[0]),
                     after.toArray(new BlockState[0]), Map.copyOf(blockEntities));
         }
     }

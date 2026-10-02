@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
@@ -600,7 +601,10 @@ public final class CarriageContentsPlacer {
         boolean filterByDifficulty = carriageIndex != EDITOR_SENTINEL_PIDX;
         int diffTier = filterByDifficulty
             ? DifficultyProgression.positionTier(carriageIndex) : 0;
-        try (ConnectPass.Scope ignored = ConnectPass.open()) {
+        java.util.function.Predicate<BlockPos> within =
+            GrowthPass.inside(origin, size.getX(), size.getY(), size.getZ()).and(pos -> !mask.covers(pos));
+        try (ConnectPass.Scope ignored = ConnectPass.open();
+             GrowthPass.Scope grown = GrowthPass.open()) {
             for (var entry : sidecar.entries()) {
                 VariantState picked = filterByDifficulty
                     ? sidecar.resolve(entry.localPos(), seed, carriageIndex, diffTier)
@@ -650,6 +654,10 @@ public final class CarriageContentsPlacer {
                         "contents:" + contents.id(), w.localPos(), seed, carriageIndex,
                         lootId);
                     ConnectPass.note(level, wWorld, w.entry().connect(), rotated);
+                    // A Y flip turns the carriage upside down, so an up-growing column grows down.
+                    VariantState growthEntry = flip.y() && !w.entry().growth().isDefault()
+                        ? w.entry().withGrowth(w.entry().growth().flipped()) : w.entry();
+                    GrowthPass.note(level, wWorld, growthEntry, rotated, w.localPos(), seed, carriageIndex, within);
                 }
             }
         }
