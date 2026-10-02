@@ -48,5 +48,23 @@ echo "==> PlayerMob $OLD_PMOB (below-floor fixture)"
 curl -fsSL -o "$HERE/playermob-old.jar" \
   "https://github.com/bh679/playermob-mc/releases/download/v$OLD_PMOB/playermob-neoforge-$OLD_PMOB+$(prop minecraft_version).jar"
 
+# Cases O/P and the client-join test need What Are They Up To + CoroUtil. They are modpack
+# companions, not Gradle dependencies, so the Gradle cache never has them — fetch the builds the
+# modpack pins. Both are All Rights Reserved: downloaded here, gitignored, never committed.
+modpack_jar() {
+  local slug="$1" out="$2" version url
+  version="$(python3 -c '
+import json, sys
+mods = json.load(open(sys.argv[1]))["optional_mods"]
+print(next(m["modrinth_version"] for m in mods if m["slug"] == sys.argv[2]))
+' "$REPO/modpack/modpack.config.json" "$slug")"
+  url="$(curl -fsSL "https://api.modrinth.com/v2/version/$version" \
+    | python3 -c 'import json, sys; print(json.load(sys.stdin)["files"][0]["url"])')"
+  echo "==> $slug ($version, modpack pin)"
+  curl -fsSL -o "$out" "$url"
+}
+modpack_jar what-are-they-up-to "$HERE/watut.jar"
+modpack_jar coroutil            "$HERE/coroutil.jar"
+
 echo
 echo "Setup complete. Run: scripts/deptest/run-all.sh"
