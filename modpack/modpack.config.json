@@ -328,6 +328,21 @@
       "modrinth_version": "v7P0nBi2"
     },
     {
+      "name": "Exposure",
+      "slug": "exposure",
+      "mod_ids": [
+        "exposure"
+      ],
+      "project_id": 871755,
+      "file_id": 8957000,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "exposure_min_version",
+      "version": "1.9.19",
+      "modrinth_project": "exposure",
+      "modrinth_version": "iBvaR6AK"
+    },
+    {
       "name": "Dungeon Backup",
       "slug": "dungeon-train-backup",
       "mod_ids": [

@@ -44,7 +44,7 @@ The NeoForge version follows `neo_version` for the same reason.
 
 | Case | `mods/` contents | Expected |
 |---|---|---|
-| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + BetterNether + BetterEnd and their three shared libraries + WWOO/BoP and their libraries + VanillaBackport + Platform + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids |
+| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + BetterNether + BetterEnd and their three shared libraries + WWOO/BoP and their libraries + VanillaBackport + Platform + Exposure + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids |
 | **B** | minus AIN | Fails — `adventureitemnames … Actual version: '[MISSING]'` |
 | **C** | DT + Sable only | Fails — names **all five**, with each declared range (the hybrid trio is nested, so never missing) |
 | **D** | PlayerMob **above** the floor | Server starts cleanly |
@@ -58,6 +58,7 @@ The NeoForge version follows `neo_version` for the same reason.
 | **L** | Case A minus Sable Pathfinder (CurseForge layout — it isn't listed there) | Server starts cleanly (`optional` in mods.toml). A, D and G include it, proving its mixins apply against production bytecode |
 | **M** | minus VanillaBackport (Platform present) | Fails — names `vanillabackport` with its `[x,)` floor |
 | **N** | minus Big Lost City (the only case without it) | Fails — names `big_lost_city` with its `[x,)` floor, twice: requested by `dungeontrain` and by the jarJar'd `lostcityterrainfit` |
+| **O** | minus Exposure (the only case without it) | Fails — names `exposure` with its `[x,)` floor |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.

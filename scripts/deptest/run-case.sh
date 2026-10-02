@@ -15,6 +15,7 @@
 #   blc                         Big Lost City
 #   lctf       Lost City Terrain Fit (hybrid: jarJar'd AND a CurseForge sibling)
 #   vb pf      VanillaBackport + its Platform library (third-party required deps)
+#   exp        Exposure (third-party required dep)
 #              (second-lap overworld mods, third-party required deps)
 #   sp         Sable Pathfinder (Modrinth-required, `optional` in mods.toml — absent on CurseForge)
 #   pmob-new   PlayerMob ABOVE the declared floor (uses playermob_version)
@@ -91,6 +92,8 @@ resolve() {
     # VanillaBackport + Platform — required; the Nether-exit sulfur caves.
     vb)       cached "maven.modrinth/vanillabackport" "$(prop vanillabackport_version)" ;;
     pf)       cached "maven.modrinth/platform"        "$(prop platform_version)" ;;
+    # Exposure — required; DT's container loot hands out its camera and film.
+    exp)      cached "maven.modrinth/exposure"        "$(prop exposure_version)" ;;
     # Hybrid siblings — ALSO jarJar'd inside the DT jar. Present as top-level jars they model the
     # CurseForge-app install (nested copy must be skipped); absent they model Modrinth/manual.
     kt)       cached "bh679/keeptrim"                "$(prop keeptrim_version)" ;;
