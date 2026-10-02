@@ -1,7 +1,9 @@
 {
   "black": 1,
+  "boxcar": 2,
+  "boxcarcenter": 2,
   "cargo": {
-    "weight": 1,
+    "weight": 2,
     "name": "Cargo"
   },
   "cracked": 3,
@@ -35,15 +37,15 @@
       "SPHERES",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ]
   },
   "standard_half": {
@@ -51,7 +53,7 @@
     "name": "Standard Half"
   },
   "stonecargo": {
-    "weight": 1,
+    "weight": 2,
     "name": "Cargo Stone"
   },
   "whole": 0,
