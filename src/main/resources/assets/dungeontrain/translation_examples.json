@@ -3939,6 +3939,15 @@
       ]
     }
   },
+  "gui.dungeontrain.auto_restore.body": {
+    "1": {
+      "label": "how many files were put back from the backup",
+      "examples": [
+        "6",
+        "214"
+      ]
+    }
+  },
   "gui.dungeontrain.dpi_bypass.body": {
     "1": {
       "label": "the bypass tool's program name, as it appears in the process list",
