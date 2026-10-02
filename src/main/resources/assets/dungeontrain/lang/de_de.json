@@ -4016,6 +4016,7 @@
   "item.dungeontrain.random_potion": "Zufälliger Trank",
   "item.dungeontrain.random_good_potion": "Zufälliger guter Trank",
   "item.dungeontrain.random_bad_potion": "Zufälliger schlechter Trank",
+  "item.dungeontrain.disposable_camera": "Einwegkamera",
   "gui.dungeontrain.options.book_author_chat": "Autorenhinweis im Chat",
   "gui.dungeontrain.options.book_author_chat.tip": "Gibt jedes Mal, wenn ein Dungeon-Train-Buch verbrennt, eine Chatzeile mit dem Namen des Autors aus — „Das Buch von X verbrennt“. Die Bücher, die du liest, wegwirfst oder beim Tod fallen lässt, fangen alle Feuer, und dies ist die einzige Stelle, an der ihre Verfasser genannt werden. Standardmäßig aus.",
   "gui.dungeontrain.options.update_notice_chat": "Chat bei neuer Version",

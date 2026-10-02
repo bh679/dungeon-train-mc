@@ -1905,6 +1905,7 @@
   "item.dungeontrain.random_potion": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "06517a59acd2f7be"},
   "item.dungeontrain.random_good_potion": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "1c1cadaafa018add"},
   "item.dungeontrain.random_bad_potion": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "4bcb3af91f3ac6d3"},
+  "item.dungeontrain.disposable_camera": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "f0fd8f7a59f59b1d"},
   "gui.dungeontrain.prefab_tab.variants": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "7ebb4e05582a32c9"},
   "gui.dungeontrain.prefab_tab.loot": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "b2915b9c1628b85b"},
   "gui.dungeontrain.prefab_tab.loot_entity": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "0dff9a8828fca392"},

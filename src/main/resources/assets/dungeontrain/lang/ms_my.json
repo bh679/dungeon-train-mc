@@ -3970,6 +3970,7 @@
   "item.dungeontrain.random_potion": "Ramuan Rawak",
   "item.dungeontrain.random_good_potion": "Ramuan Baik Rawak",
   "item.dungeontrain.random_bad_potion": "Ramuan Buruk Rawak",
+  "item.dungeontrain.disposable_camera": "Kamera Pakai Buang",
   "gui.dungeontrain.options.book_author_chat": "Penulis buku dalam sembang",
   "gui.dungeontrain.options.book_author_chat.tip": "Menulis satu baris sembang yang menamakan penulisnya setiap kali sebuah buku Dungeon Train terbakar — \"Buku karya X terbakar\". Buku yang anda baca, anda buang, atau anda jatuhkan ketika mati semuanya terbakar, dan hanya di sinilah penulisnya dikreditkan. Dimatikan secara lalai.",
   "gui.dungeontrain.options.update_notice_chat": "Chat Versi Baharu",

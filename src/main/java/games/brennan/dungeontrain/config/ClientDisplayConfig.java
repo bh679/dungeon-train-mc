@@ -590,8 +590,8 @@ public final class ClientDisplayConfig {
                          "Turn this off for pure vanilla creative-menu behaviour.")
                 .define("shiftClickToHotbar", true);
         ModConfigSpec.BooleanValue creativeModBlockTabs = b
-                .comment("Show the creative tabs the biome mods add — BetterNether, BetterEnd, Biomes O' Plenty and",
-                         "VanillaBackport. Off by default, which keeps the creative menu on the vanilla and Dungeon",
+                .comment("Show the creative tabs the bundled mods add — BetterNether, BetterEnd, Biomes O' Plenty,",
+                         "VanillaBackport and Exposure. Off by default, which keeps the creative menu on the vanilla and Dungeon",
                          "Train tabs. Set in-game from Options > Dungeon Train > Editor.")
                 .define("modBlockTabs", DEFAULT_CREATIVE_MOD_BLOCK_TABS);
         ModConfigSpec.BooleanValue creativeModBlocksInSearch = b

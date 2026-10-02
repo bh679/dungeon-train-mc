@@ -4016,6 +4016,7 @@
   "item.dungeontrain.random_potion": "Poção Aleatória",
   "item.dungeontrain.random_good_potion": "Poção Boa Aleatória",
   "item.dungeontrain.random_bad_potion": "Poção Ruim Aleatória",
+  "item.dungeontrain.disposable_camera": "Câmera descartável",
   "gui.dungeontrain.options.book_author_chat": "Autor do livro no chat",
   "gui.dungeontrain.options.book_author_chat.tip": "Escreve no chat uma linha com o nome do autor toda vez que um livro do Dungeon Train queima — \"O livro de X queima\". Os livros que você lê, joga fora ou derruba ao morrer pegam fogo todos, e este é o único lugar em que quem os escreveu recebe crédito. Desligado por padrão.",
   "gui.dungeontrain.options.update_notice_chat": "Chat de nova versão",
