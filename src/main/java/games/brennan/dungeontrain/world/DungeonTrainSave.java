@@ -26,9 +26,11 @@ import java.nio.file.Path;
  *       verbatim under {@code Data.WorldGenSettings.dimensions."minecraft:overworld"} in
  *       {@code level.dat}.</li>
  *   <li><b>The preset marker.</b> {@code dungeontrain:dungeon_train_compat} (Compatible Terrain)
- *       deliberately uses the vanilla overworld type and noise, and WorldWeaver rewrites every
- *       world's Nether and End, so its {@code level.dat} is the same as a plain world's. What
- *       separates them is {@value #PRESET_MARKER_TAG} in {@code data/dungeontrain_world.dat},
+ *       deliberately uses the vanilla overworld type and noise, so its overworld reads the same as
+ *       a plain world's. Its Nether and End are no sign either: what they store has changed
+ *       between DT versions (all-vanilla until the End moved to WorldWeaver's generator) and a
+ *       BetterX preset stores the same End. What separates them is
+ *       {@value #PRESET_MARKER_TAG} in {@code data/dungeontrain_world.dat},
  *       recorded once at world creation: true for a {@code dungeontrain:} preset, false for any
  *       other. The file's mere presence says nothing — DT writes it into every world it opens, and
  *       runs a train there too.</li>

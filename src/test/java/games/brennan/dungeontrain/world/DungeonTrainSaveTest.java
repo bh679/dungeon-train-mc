@@ -51,7 +51,7 @@ class DungeonTrainSaveTest {
         assertTrue(DungeonTrainSave.isDungeonTrainLevelData(root));
     }
 
-    /** Vanilla, {@code wover:normal} and Compatible Terrain all store this — {@code level.dat} alone can't tell them apart. */
+    /** Vanilla, {@code wover:normal} and Compatible Terrain all store this overworld. */
     @Test
     void vanillaOverworldIsNotDungeonTrainByLevelDatAlone() {
         assertFalse(DungeonTrainSave.isDungeonTrainLevelData(vanillaLevelDat()));
@@ -100,7 +100,7 @@ class DungeonTrainSaveTest {
     }
 
     @Test
-    @DisplayName("the same world behind BetterX's rewritten Nether and End is still recognised")
+    @DisplayName("the same world with a BetterX Nether and End is still recognised")
     void compatPresetWithBetterXDimensionsIsDungeonTrain() throws IOException {
         writeSave(betterXLevelDat(), worldData(true, true));
         assertTrue(DungeonTrainSave.isDungeonTrainSave(saveDir, COMPAT_OFF));
@@ -229,7 +229,7 @@ class DungeonTrainSaveTest {
         return levelDat("minecraft:overworld", "minecraft:overworld");
     }
 
-    /** A vanilla overworld beside the Nether and End entries WorldWeaver writes into every save. */
+    /** A vanilla overworld beside the Nether and End a BetterX (WorldWeaver) world preset stores. */
     private static CompoundTag betterXLevelDat() {
         CompoundTag root = vanillaLevelDat();
         CompoundTag dimensions = root.getCompound("Data").getCompound("WorldGenSettings").getCompound("dimensions");
