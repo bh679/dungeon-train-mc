@@ -85,13 +85,13 @@
         "tradeeverything"
       ],
       "project_id": 1622962,
-      "file_id": 8845030,
+      "file_id": 9036459,
       "required": true,
       "dependency_type": "required",
-      "version": "0.13.0",
+      "version": "0.14.0",
       "gradle_property": "tradeeverything_min_version",
       "modrinth_project": "trade-everything",
-      "modrinth_version": "1078Z5Qf"
+      "modrinth_version": "9XSQif7F"
     },
     {
       "name": "Keep Trim",
