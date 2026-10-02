@@ -166,6 +166,8 @@
     "client.LightTexturePortalCrossingMixin",
     "client.LevelGetShadeMixin",
     "client.ModelBlockRendererUpsideDownMixin",
+    "client.SectionCompilerNoLevelGuardMixin",
+    "client.LevelRendererSubLevelTeardownMixin",
     "client.MinecraftFramerateThrottleMixin",
     "client.MinecraftInitialScreensMixin",
     "client.SoundEngineMusicFadeMixin",
