@@ -19,6 +19,8 @@
 #   sp         Sable Pathfinder (Modrinth-required, `optional` in mods.toml — absent on CurseForge)
 #   pmob-new   PlayerMob ABOVE the declared floor (uses playermob_version)
 #   pmob-old   PlayerMob BELOW the declared floor (downloaded, see README)
+#   watut coro What Are They Up To + its CoroUtil library (modpack companions, downloaded by
+#              setup.sh at the modpack's pins — not Gradle deps, so not in the Gradle cache)
 #
 # Everything is resolved from the Gradle cache, so the versions tested are exactly the ones
 # gradle.properties declares — there is no second list to keep in sync.
@@ -113,6 +115,9 @@ resolve() {
     # values differ, this case is the live proof that cascade bumps don't break players.
     pmob-new) cached "bh679/playermob"               "$(prop playermob_version)" ;;
     pmob-old) echo "$HERE/playermob-old.jar" ;;
+    # Modpack companions (on by default in both packs), at the modpack's pins.
+    watut)    echo "$HERE/watut.jar" ;;
+    coro)     echo "$HERE/coroutil.jar" ;;
     *) echo "unknown mod key: $1" >&2; return 1 ;;
   esac
 }
