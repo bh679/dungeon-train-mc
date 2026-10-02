@@ -22045,6 +22045,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "narrative-tab-side-shortcut",
+      "version": "0.1104.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Narrative tab shortcut",
+      "summary": "The creative inventory's left edge now has a shortcut to the Dungeon Train narrative tab.",
+      "highlights": [],
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
