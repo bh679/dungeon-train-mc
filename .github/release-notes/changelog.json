@@ -22132,6 +22132,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "photos-burn-when-dropped",
+      "version": "0.1109.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Photographs burn when dropped",
+      "summary": "A photograph now burns if you drop it.",
+      "highlights": [],
+      "pr": 1765,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

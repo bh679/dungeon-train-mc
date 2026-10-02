@@ -616,9 +616,10 @@ public final class StartingBookEvents {
      * smoke a burnable book gets, for an item that is not one (a spent disposable camera, a viewed
      * photograph; see {@code compat/DisposableCameraEvents}).
      *
-     * <p>The caller has already taken the stack out of the inventory. Because this ignites the
-     * entity directly instead of through {@link BurnableBookTag}, the item does NOT burn when it is
-     * dropped any other way.</p>
+     * <p>The caller has already taken the stack out of the inventory. This ignites the entity
+     * directly instead of through {@link BurnableBookTag}, so a spent camera burns only here — an
+     * unused one dropped by hand does not. Photographs also burn on any drop, through
+     * {@link #onEntityJoinLevel}.</p>
      */
     public static void dropAndBurn(ServerPlayer player, ItemStack stack) {
         if (stack == null || stack.isEmpty()) return;
@@ -679,7 +680,15 @@ public final class StartingBookEvents {
         if (event.getLevel().isClientSide()) return;
         if (!(event.getEntity() instanceof ItemEntity item)) return;
         ItemStack stack = item.getItem();
-        if (!BurnableBookTag.isBurnable(stack)) return;
+        if (!BurnableBookTag.isBurnable(stack)) {
+            // A disposable-camera photograph burns on any drop too — the same flame, with none of
+            // the book bookkeeping below.
+            if (games.brennan.dungeontrain.compat.DisposableCamera.holdsBurnAfterViewing(stack)
+                    && !BURN_ENTITIES.containsKey(item.getUUID())) {
+                igniteItem(item, FlameVariant.DEFAULT);
+            }
+            return;
+        }
         if (item.getPersistentData().getBoolean(ENTITY_TAG_SPAWN_BOOK)) return;
         if (BURN_ENTITIES.containsKey(item.getUUID())) return;
 
