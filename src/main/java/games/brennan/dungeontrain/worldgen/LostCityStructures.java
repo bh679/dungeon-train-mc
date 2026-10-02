@@ -88,7 +88,9 @@ public final class LostCityStructures {
         return switch (LostCityChunkVeto.verdict(seed, cycle, chunkX, chunkZ)) {
             case DENY -> false;
             case ALLOW -> true;
-            case ALLOW_IF_WWOO_BUILDING -> LostCityWwooCensus.buildings(level, seed, cycle).contains(building(id));
+            // The new-building slot stands outside the WWOO pick — see isNewBuildingSlot.
+            case ALLOW_IF_WWOO_BUILDING -> isNewBuildingSlot(id)
+                || LostCityWwooCensus.buildings(level, seed, cycle).contains(building(id));
         };
     }
 
@@ -99,7 +101,17 @@ public final class LostCityStructures {
     public static boolean allowedAt(long seed, WorldGenCycle cycle, int chunkX, int chunkZ, ResourceLocation id,
                                     Set<String> wwooBuildings) {
         if (!allowedAt(seed, cycle, chunkX, chunkZ)) return false;
-        return !inWwooStretch(cycle, chunkX) || wwooBuildings.contains(building(id));
+        return !inWwooStretch(cycle, chunkX) || isNewBuildingSlot(id) || wwooBuildings.contains(building(id));
+    }
+
+    /**
+     * Whether {@code id} is the slot that places players' new buildings
+     * ({@link games.brennan.dungeontrain.building.Buildings#PLAYER_STRUCTURE}). It stands outside the WWOO
+     * foretaste's per-world pick — that pick is of DT's and Big Lost City's buildings, and counting the slot
+     * would reshuffle it in every existing world — so a new building may start anywhere a Lost City start may.
+     */
+    public static boolean isNewBuildingSlot(ResourceLocation id) {
+        return games.brennan.dungeontrain.building.Buildings.PLAYER_STRUCTURE.equals(id);
     }
 
     /** Whether {@code chunkX} lies in a WWOO overworld stretch (the foretaste, not the Lost City run). */

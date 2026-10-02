@@ -349,7 +349,9 @@ final class LostCityStructuresTest {
                     .get("modid").getAsString(), name);
             assertEquals(weights.get("big_lost_city:" + name), weights.get("dungeontrain:lost_city/" + name), name);
         }
-        assertEquals(42 + big.length + originals().size(), weights.size());
+        // + 1: the new-building slot (dungeontrain:lost_city/player_building).
+        assertEquals(42 + big.length + originals().size() + 1, weights.size());
+        assertTrue(weights.containsKey(games.brennan.dungeontrain.building.Buildings.PLAYER_STRUCTURE.toString()));
     }
 
     /** DT's own buildings, from the generator's manifest: {@code data/dungeontrain/structure/lost_city/manifest.json}. */

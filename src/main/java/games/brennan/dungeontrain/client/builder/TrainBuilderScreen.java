@@ -121,13 +121,15 @@ public final class TrainBuilderScreen extends Screen {
 
         layout = BuilderPickerLayout.of(this.width, this.height, topY, this.height - BODY_BOTTOM_MARGIN);
 
-        BuilderMode[] modes = BuilderMode.values();
+        List<BuilderMode> modes = BuilderMode.NAV_ORDER;
         List<BuilderPickerLayout.Rect> cells = layout.tiles();
-        for (int i = 0; i < modes.length && i < cells.size(); i++) {
-            BuilderMode mode = modes[i];
+        for (int i = 0; i < modes.size() && i < cells.size(); i++) {
+            BuilderMode mode = modes.get(i);
             BuilderPickerLayout.Rect cell = cells.get(i);
-            this.addRenderableWidget(BuilderTileButton.pickerTile(
+            var tile = this.addRenderableWidget(BuilderTileButton.pickerTile(
                     cell.x(), cell.y(), cell.w(), cell.h(), mode, mode == selected, b -> select(mode)));
+            // Buildings live in the editor only: there is no builder world to open them in.
+            tile.active = offered(mode);
         }
 
         BuilderPickerLayout.Rect go = layout.go();
@@ -143,9 +145,14 @@ public final class TrainBuilderScreen extends Screen {
                 .build());
     }
 
+    /** Whether this picker can go to {@code mode} — every mode for the editor, builder-world modes otherwise. */
+    private boolean offered(BuilderMode mode) {
+        return launch == Launch.EDITOR_WORLD || mode.hasBuilderWorld();
+    }
+
     /** A tile click: re-light the grid around the new choice; the detail column follows on render. */
     private void select(BuilderMode mode) {
-        if (mode == selected) return;
+        if (mode == selected || !offered(mode)) return;
         selected = mode;
         this.rebuildWidgets();
     }
