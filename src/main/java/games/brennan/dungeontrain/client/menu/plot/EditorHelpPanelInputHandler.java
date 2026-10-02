@@ -111,7 +111,7 @@ public final class EditorHelpPanelInputHandler {
         if (EditorTypeMenuRenderer.helpPanelDismissed()) return false;
         if (EditorHelpPanelRenderer.firstNavMenu() == null) return false;
         if (CommandMenuState.isOpen()) return false;
-        if (PartPositionMenu.isActive()) return false;
+        if (PartPositionMenu.claimsPointer()) return false;
         return true;
     }
 

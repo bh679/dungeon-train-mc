@@ -592,12 +592,11 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue creativeModBlockTabs = b
                 .comment("Show the creative tabs the bundled mods add — BetterNether, BetterEnd, Biomes O' Plenty,",
                          "VanillaBackport and Exposure. Off by default, which keeps the creative menu on the vanilla and Dungeon",
-                         "Train tabs. Set in-game from the Mod Block Tabs row of the editor's X-menu Settings tab.")
+                         "Train tabs. Set in-game from Options > Dungeon Train > Editor.")
                 .define("modBlockTabs", DEFAULT_CREATIVE_MOD_BLOCK_TABS);
         ModConfigSpec.BooleanValue creativeModBlocksInSearch = b
                 .comment("List the contents of those biome-mod tabs in the creative search tab. Off by default.",
-                         "Independent of modBlockTabs. Set in-game from the Mod Blocks in Search row of the",
-                         "editor's X-menu Settings tab.")
+                         "Independent of modBlockTabs. Set in-game from Options > Dungeon Train > Editor.")
                 .define("modBlocksInSearch", DEFAULT_CREATIVE_MOD_BLOCKS_IN_SEARCH);
         b.pop();
 

@@ -21955,6 +21955,113 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "see-what-others-are-doing",
+      "version": "0.1099.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer",
+        "compatibility"
+      ],
+      "title": "See what others are up to",
+      "summary": "You can now see what the players riding with you are doing.",
+      "highlights": [],
+      "pr": 1754,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "hide-biome-mod-creative-tabs",
+      "version": "0.1100.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Tidier creative inventory",
+      "summary": "The creative inventory now keeps to the vanilla and Dungeon Train tabs, and the mod block tabs and their search entries can be switched back on from Options, Dungeon Train, Editor.",
+      "highlights": [],
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "bookshelves-four-per-emerald",
+      "version": "0.1101.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "balance"
+      ],
+      "title": "Bookshelves trade four for an emerald",
+      "summary": "Villagers now give one emerald's worth for every four bookshelves.",
+      "highlights": [],
+      "pr": 1758,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "own-library-dimension-odds",
+      "version": "0.1102.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "books",
+        "balance"
+      ],
+      "title": "Your own library turns up when you've written something",
+      "summary": "A dimensional carriage is more likely to open onto a library of your own books after you've written one.",
+      "highlights": [],
+      "pr": 1757,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "longer-carriages",
+      "version": "0.1103.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Longer carriages",
+      "summary": "Some carriages on the train are now much longer.",
+      "highlights": [],
+      "pr": 1755,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "narrative-tab-side-shortcut",
+      "version": "0.1104.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Narrative tab shortcut",
+      "summary": "The creative inventory's left edge now has a shortcut to the Dungeon Train narrative tab.",
+      "highlights": [],
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

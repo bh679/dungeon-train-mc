@@ -323,6 +323,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case MENU_SPACE_TEMPLATE_BLOCKS -> menuSpaceCandidates("template_blocks_menu");
             case MENU_SPACE_CONTAINER_CONTENTS -> menuSpaceCandidates("container_contents_menu");
             case MENU_SPACE_BLOCK_VARIANT -> menuSpaceCandidates("block_variant_menu");
+            case CREATIVE_MOD_BLOCK_TABS -> onOffCandidates("gui.dungeontrain.editor_settings.mod_block_tabs");
+            case CREATIVE_MOD_BLOCKS_IN_SEARCH ->
+                    onOffCandidates("gui.dungeontrain.editor_settings.mod_blocks_in_search");
         };
     }
 
@@ -545,6 +548,27 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case MENU_SPACE_BLOCK_VARIANT -> menuSpaceRow("block_variant_menu",
                     ClientDisplayConfig::getBlockVariantMenuSpace,
                     ClientDisplayConfig::setBlockVariantMenuSpace, width);
+
+            // The biome mods' creative tabs and their search entries, both hidden by default. The
+            // tabs are rebuilt on the spot so the change shows without a relog.
+            case CREATIVE_MOD_BLOCK_TABS -> withTip(
+                    CycleButton.onOffBuilder(ClientDisplayConfig.isCreativeModBlockTabs())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.editor_settings.mod_block_tabs"),
+                                    (btn, on) -> {
+                                        ClientDisplayConfig.setCreativeModBlockTabs(on);
+                                        CreativeTabRefresh.rebuild();
+                                    }),
+                    "gui.dungeontrain.editor_settings.mod_block_tabs.tip");
+            case CREATIVE_MOD_BLOCKS_IN_SEARCH -> withTip(
+                    CycleButton.onOffBuilder(ClientDisplayConfig.isCreativeModBlocksInSearch())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.editor_settings.mod_blocks_in_search"),
+                                    (btn, on) -> {
+                                        ClientDisplayConfig.setCreativeModBlocksInSearch(on);
+                                        CreativeTabRefresh.rebuild();
+                                    }),
+                    "gui.dungeontrain.editor_settings.mod_blocks_in_search.tip");
         };
     }
 

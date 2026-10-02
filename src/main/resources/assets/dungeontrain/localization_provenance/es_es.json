@@ -86,6 +86,8 @@
       "gui.dungeontrain.editor_settings.container_contents_menu.tip",
       "gui.dungeontrain.editor_settings.block_variant_menu.tip",
       "dungeontrain.leaderboard.deathnotes_people.header",
+      "gui.dungeontrain.editor_menu.size.full",
+      "gui.dungeontrain.editor_menu.type_name.full",
       "gui.dungeontrain.builder.profile.empty",
       "gui.dungeontrain.builder.profile.pick",
       "gui.dungeontrain.builder.profile.withheld",

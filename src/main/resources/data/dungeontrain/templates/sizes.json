@@ -1,7 +1,6 @@
 {
   "schemaVersion": 1,
   "sizes": {
-    "long": "full",
     "portal": "half"
   }
 }

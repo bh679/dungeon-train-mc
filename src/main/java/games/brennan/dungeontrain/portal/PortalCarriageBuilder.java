@@ -868,10 +868,23 @@ public final class PortalCarriageBuilder {
     public static PortalStructure planStructure(ServerLevel level, CarriageDims dims,
                                                 BlockPos entryOrigin, int pairKey,
                                                 PortalTwinRegion region,
-                                                games.brennan.dungeontrain.template.GateContext gateCtx) {
-        String roomName = TrackVariantRegistry.pickName(
-            TrackKind.PORTAL_ROOM, level.getSeed(), pairKey, gateCtx);
+                                                games.brennan.dungeontrain.template.GateContext gateCtx,
+                                                boolean ownShelfBoost) {
+        long seed = level.getSeed();
+        // The seeded pick, then how often it may answer "a library of the rider's own books" — the
+        // one outcome whose weight depends on the run rather than on the room weights alone. See
+        // PortalOwnShelves; at a scale of 1 this is the pick and nothing else.
+        PortalOwnShelves.Outcome picked = PortalOwnShelves.adjust(seed, pairKey,
+            TrackVariantRegistry.pickName(TrackKind.PORTAL_ROOM, seed, pairKey, gateCtx),
+            () -> TrackVariantRegistry.leafOdds(TrackKind.PORTAL_ROOM, gateCtx),
+            name -> PortalRoomSettings.of(name).books(),
+            index -> TrackVariantRegistry.pickName(TrackKind.PORTAL_ROOM, seed, index, gateCtx),
+            DungeonTrainConfig.getOwnLibraryChanceScale(ownShelfBoost));
+        String roomName = picked.roomName();
         PortalRoomSettings settings = PortalRoomSettings.of(roomName);
+        if (picked.pinnedToSelf()) {
+            settings = settings.withBooks(PortalOwnShelves.selfOnly(settings.books()));
+        }
         PortalCorridorKind kind = PortalCarriageSelection.corridorKindFor(level, pairKey);
         Vec3i size = heldInRegion(region, PortalRoomTemplateStore.sizeOf(level, roomName, dims));
 

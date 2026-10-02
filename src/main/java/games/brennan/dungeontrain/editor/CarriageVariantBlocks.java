@@ -352,7 +352,7 @@ public final class CarriageVariantBlocks {
     }
 
     private static Path configPathForId(String id) {
-        return UserContentPaths.dir(SUBDIR).resolve(id + EXT);
+        return UserContentPaths.dir(SUBDIR).resolve(games.brennan.dungeontrain.train.ShellPool.path(id) + EXT);
     }
 
     /** Classpath resource for the bundled sidecar matching {@code variant} (only exists for shipped variants). */
@@ -361,7 +361,7 @@ public final class CarriageVariantBlocks {
     }
 
     private static String bundledResourceForId(String id) {
-        return RESOURCE_PREFIX + id + EXT;
+        return RESOURCE_PREFIX + games.brennan.dungeontrain.train.ShellPool.path(id) + EXT;
     }
 
     /** Source-tree path for the bundled sidecar — only writable in a {@code ./gradlew runClient} dev checkout. */
@@ -376,7 +376,7 @@ public final class CarriageVariantBlocks {
         if (projectRoot == null) {
             throw new IllegalStateException("Cannot resolve source directory — FMLPaths.GAMEDIR has no parent.");
         }
-        return projectRoot.resolve(SOURCE_REL_PATH).resolve(variant.id() + EXT);
+        return projectRoot.resolve(SOURCE_REL_PATH).resolve(games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT);
     }
 
     /**
@@ -432,7 +432,7 @@ public final class CarriageVariantBlocks {
 
     /** Id-keyed {@link #loadFromDisk(CarriageVariant)} — the loader only ever needs the id. */
     private static CarriageVariantBlocks loadFromDisk(String id) {
-        Path cfg = UserContentPaths.findFile(SUBDIR, id + EXT);
+        Path cfg = UserContentPaths.findFile(SUBDIR, games.brennan.dungeontrain.train.ShellPool.path(id) + EXT);
         if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
                 return parse(r, id, "config " + cfg);

@@ -60,10 +60,23 @@ final class ContentsAllowStore {
     /** Per-id cache; {@code Optional.empty()} means "both tiers missing", and short-circuits. */
     private final Map<String, Optional<CarriageContentsAllowList>> cache = new HashMap<>();
 
+    /** An id's file name under the store's directory, before the extension — see {@link #ContentsAllowStore(String, String, String, java.util.function.UnaryOperator)}. */
+    private final java.util.function.UnaryOperator<String> nameOf;
+
     ContentsAllowStore(String subdir, String resourcePrefix, String sourceRelPath) {
+        this(subdir, resourcePrefix, sourceRelPath, java.util.function.UnaryOperator.identity());
+    }
+
+    /**
+     * @param nameOf an id's path under the directory — carriage shells put a Half or Group
+     *               template's sidecar in its pool folder ({@code ShellPool#path})
+     */
+    ContentsAllowStore(String subdir, String resourcePrefix, String sourceRelPath,
+                       java.util.function.UnaryOperator<String> nameOf) {
         this.subdir = subdir;
         this.resourcePrefix = resourcePrefix;
         this.sourceRelPath = sourceRelPath;
+        this.nameOf = nameOf;
     }
 
     Path directory() {
@@ -71,11 +84,11 @@ final class ContentsAllowStore {
     }
 
     Path fileFor(String id) {
-        return directory().resolve(id + EXT);
+        return directory().resolve(nameOf.apply(id) + EXT);
     }
 
     Path sourceFileFor(String id) {
-        return sourceDirectory().resolve(id + EXT);
+        return sourceDirectory().resolve(nameOf.apply(id) + EXT);
     }
 
     boolean sourceTreeAvailable() {
@@ -120,8 +133,8 @@ final class ContentsAllowStore {
      * everything back on, and it keeps the write idempotent with the toggle round-trip.
      */
     synchronized void save(String id, CarriageContentsAllowList allow) throws IOException {
-        Files.createDirectories(directory());
         Path file = fileFor(id);
+        Files.createDirectories(file.getParent());
         write(file, allow);
         cache.put(id, Optional.of(allow));
         LOGGER.info("[DungeonTrain] Saved contents allow-list for {} to {}", id, file);
@@ -197,7 +210,7 @@ final class ContentsAllowStore {
      */
     private boolean shipsWithGame(String id) {
         if (!sourceTreeAvailable()) return false;
-        return Files.exists(sourceDirectory().resolve(id + ".nbt"));
+        return Files.exists(sourceDirectory().resolve(nameOf.apply(id) + ".nbt"));
     }
 
     // ---------- io ----------
@@ -210,7 +223,7 @@ final class ContentsAllowStore {
     }
 
     private Optional<CarriageContentsAllowList> loadFromConfig(String id) {
-        Path file = UserContentPaths.findFile(subdir, id + EXT);
+        Path file = UserContentPaths.findFile(subdir, nameOf.apply(id) + EXT);
         if (file == null) return Optional.empty();
         try (BufferedReader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             JsonElement root = JsonParser.parseReader(r);
@@ -229,7 +242,7 @@ final class ContentsAllowStore {
     }
 
     private Optional<CarriageContentsAllowList> loadFromResource(String id) {
-        String resource = resourcePrefix + id + EXT;
+        String resource = resourcePrefix + nameOf.apply(id) + EXT;
         try (InputStream in = ContentsAllowStore.class.getResourceAsStream(resource)) {
             if (in == null) return Optional.empty();
             JsonElement root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8));

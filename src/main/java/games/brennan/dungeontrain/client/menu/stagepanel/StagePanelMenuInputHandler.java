@@ -98,7 +98,7 @@ public final class StagePanelMenuInputHandler {
         if (CommandMenuState.isOpen()) return false;
         // Defer to the other world-space menus while they own the crosshair.
         if (BlockVariantMenu.isActive()) return false;
-        if (PartPositionMenu.isActive()) return false;
+        if (PartPositionMenu.claimsPointer()) return false;
         // Disjoint billboards ⇒ at most one non-NONE hover; guard anyway.
         if (EditorTypeMenuRenderer.hovered().cell() != EditorTypeMenuRenderer.CellKind.NONE) return false;
         return true;
