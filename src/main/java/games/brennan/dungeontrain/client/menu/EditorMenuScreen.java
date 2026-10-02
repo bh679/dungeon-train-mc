@@ -439,11 +439,6 @@ public final class EditorMenuScreen implements MenuScreen {
         // switched it off from a portal plot must be able to switch it back on from anywhere.
         out.add(plotLightingRow());
 
-        // Mod Block Tabs / Mod Blocks in Search — the biome mods' creative tabs and their search
-        // entries, both off by default so the creative menu stays on vanilla's and DT's own tabs.
-        out.add(modBlockTabsRow());
-        out.add(modBlocksInSearchRow());
-
         // Observers — Off keeps every observer inside an editor plot quiet, hand-placed blocks
         // included, so a contraption can be wired without firing. World state (persisted), which is
         // why it is a server round-trip rather than a client preference like Plot Lighting.
@@ -583,27 +578,6 @@ public final class EditorMenuScreen implements MenuScreen {
         return new CommandMenuEntry.ClientAction(
             MenuLang.t("editor.plot_lighting", MenuLang.t(on ? "common.on_caps" : "common.off_caps")),
             () -> ClientDisplayConfig.setEditorPlotLighting(!ClientDisplayConfig.isEditorPlotLighting()));
-    }
-
-    /** Client preference like Plot Lighting; the tabs are rebuilt at once so the change shows without a relog. */
-    private static CommandMenuEntry modBlockTabsRow() {
-        boolean on = ClientDisplayConfig.isCreativeModBlockTabs();
-        return new CommandMenuEntry.ClientAction(
-            MenuLang.t("editor.mod_block_tabs", MenuLang.t(on ? "common.on_caps" : "common.off_caps")),
-            () -> {
-                ClientDisplayConfig.setCreativeModBlockTabs(!ClientDisplayConfig.isCreativeModBlockTabs());
-                games.brennan.dungeontrain.client.CreativeTabRefresh.rebuild();
-            });
-    }
-
-    private static CommandMenuEntry modBlocksInSearchRow() {
-        boolean on = ClientDisplayConfig.isCreativeModBlocksInSearch();
-        return new CommandMenuEntry.ClientAction(
-            MenuLang.t("editor.mod_blocks_in_search", MenuLang.t(on ? "common.on_caps" : "common.off_caps")),
-            () -> {
-                ClientDisplayConfig.setCreativeModBlocksInSearch(!ClientDisplayConfig.isCreativeModBlocksInSearch());
-                games.brennan.dungeontrain.client.CreativeTabRefresh.rebuild();
-            });
     }
 
     /** Observers | On | Off — the same Label-plus-state-cells shape as Editor Menus. */
